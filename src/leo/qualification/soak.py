@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from leo.acquisition import AcquisitionApplication, AdmissionEstimate, CaptureSessionResult
 from leo.contracts.profile import CapturePlanV1
-from leo.contracts.recording import RecordingManifestV1
+from leo.contracts.recording import RecordingManifestV1, RecordingManifestV3
 from leo.contracts.states import CaptureState, StreamState
 from leo.radio import RadioSource
 from leo.storage import BundleNotFoundError, PublishedBundle, RecordingStore
@@ -934,7 +934,9 @@ def _requires_early_stop(violations: tuple[str, ...]) -> bool:
     return any(violation != _POST_COMMIT_POLICY_VIOLATION for violation in violations)
 
 
-def _manifest_capture_bounds(manifest: RecordingManifestV1) -> tuple[int, int]:
+def _manifest_capture_bounds(
+    manifest: RecordingManifestV1 | RecordingManifestV3,
+) -> tuple[int, int]:
     starts = tuple(
         stream.timing.first_sample.estimate_utc_ns
         for stream in manifest.streams

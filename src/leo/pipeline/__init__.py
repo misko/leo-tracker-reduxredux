@@ -69,12 +69,20 @@ from leo.pipeline.rate_analysis import (
     rate_analysis_configuration_v1,
 )
 from leo.pipeline.registry import AnalyzerRegistry, DuplicateAnalyzerError, UnknownAnalyzerError
+from leo.pipeline.standard_native import standard_native_pipeline_definition_v1
 from leo.pipeline.subjects import SubjectBindingReader
 from leo.pipeline.topology import (
     CompiledScopeInventory,
     compile_scope_inventory,
     compile_standard_run_plan,
     synchronization_inventory_document,
+)
+from leo.pipeline.validity import (
+    ContinuitySegmentIqReader,
+    DeviceIqSpan,
+    ValidityAwareIqReader,
+    WindowClassification,
+    WindowValidity,
 )
 
 __all__ = [
@@ -83,10 +91,12 @@ __all__ = [
     "Analyzer",
     "AnalyzerRegistry",
     "CompiledScopeInventory",
+    "ContinuitySegmentIqReader",
     "CalibrationDerivationInputV1",
     "DerivationOutputSchemaV1",
     "DuplicateAnalyzerError",
     "DuplicateStageError",
+    "DeviceIqSpan",
     "ExpandedRunPlanV1",
     "EvidenceDerivationInputV1",
     "FIVE_M_GAP_AWARE_CAPABILITY_V1",
@@ -133,6 +143,9 @@ __all__ = [
     "UpstreamDerivationOutputV1",
     "UnknownAnalyzerError",
     "UpstreamJsonProduct",
+    "ValidityAwareIqReader",
+    "WindowClassification",
+    "WindowValidity",
     "compile_scope_inventory",
     "compile_rate_baseline_run_plan",
     "compile_standard_run_plan",
@@ -144,4 +157,5 @@ __all__ = [
     "rate_analysis_capability",
     "rate_analysis_configuration_v1",
     "synchronization_inventory_document",
+    "standard_native_pipeline_definition_v1",
 ]

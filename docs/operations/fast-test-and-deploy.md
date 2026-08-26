@@ -9,7 +9,7 @@ release_revision=$(git rev-parse origin/main)
 sudo ./ops deploy --stage-only --revision "$release_revision"
 # Run the authorized hardware qualification with
 # /opt/leo-tracker/releases/$release_revision/.venv/bin/python.
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v3.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v4.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -38,11 +38,31 @@ The available test tiers are:
 ```
 
 `./ops deploy --plan` is read-only. A full-cutover plan also requires the sealed,
-exact-revision V3 3 MS/s receipt via `--rate-qualification-receipt`. V3 binds the production-radio
-safety evidence, native-IP canaries, writer benchmark, and ten strict trials; it has no
-non-production USB control arm. The plan requires a clean worktree and an exact local
-`origin/main` SHA, compares it with `/opt/leo-tracker/current`, and reports affected components,
-service restarts, migration requirements, and worker-fence requirements.
+exact-revision V4 combined-pool receipt via `--rate-qualification-receipt`. V4 binds the exact
+deployed 3 MS/s and 5 MS/s device-axis profiles and fixed two-radio plans, production-radio safety
+evidence, native-IP canaries, a measured incompressible writer benchmark of at least 100 MB/s, and
+ten strict lossless 3 MS/s Recording V3 trials. It also binds the exact passing V1 pre/post
+host-health evidence described below into the target digest.
+The same bounded campaign must also seal one full-span 5 MS/s Recording V3 characterization: each
+radio has 300,000,000 logical samples, observed plus physical zero fill closes that span, the gap
+map and validity inventory agree, and overflow, enqueue failure, and terminal rejection remain
+zero. Each 5 MS/s stream must also bind the exact 32-refill queue and a measured high-water no
+greater than 24 refills. The accepted receipt is published only after radio restoration and
+maintenance-lease release. It has no non-production USB control arm. The plan requires a clean
+worktree and an exact local `origin/main` SHA, compares it with `/opt/leo-tracker/current`, and
+reports affected components, service restarts, migration requirements, and worker-fence
+requirements.
+
+The initial production catalog admits at most two concurrent `heavy` leases. Worker process count
+does not override this safety cap. Raising HEAVY capacity to four requires a separately reviewed,
+sealed headroom result with healthy non-resyncing RAID, no new kernel I/O or OOM events, no swap
+activity, and sufficient free memory and disk before and after the bounded qualification run.
+`capture_qualification_host_health_snapshot` is read-only and bounded; capture one snapshot
+before the first writer benchmark or RF action, then capture the second only after exact radio
+restoration and maintenance-lease release. Seal them with `evaluate_qualification_host_health`.
+V4 requires this evidence to pass under the reviewed `md127`, `/srv/bulk`, 32 GiB available-memory,
+and 1 TiB free-disk policy; the evidence is a required V4 prerequisite and therefore part of the
+rate target digest. V1–V3 rate receipts remain unchanged.
 
 `sudo ./ops deploy --stage-only --revision FULL_SHA` is the pre-qualification half of a full
 deployment. It requires a clean worktree and an explicit SHA equal to the locally fetched
@@ -60,6 +80,13 @@ startup launches the API, workers, and acquisition directly; reconciliation rema
 asynchronous on its timer. A no-migration failure restores the prior environment, selectors,
 units, and services. Migration cutovers require a production backup and fail closed rather than
 attempting an unsafe schema rollback.
+
+After any required Alembic upgrade and before worker startup, cutover reads the complete production
+resource-capacity inventory and requires exactly `streaming=16,cpu=8,memory=4,heavy=2`; any row
+drift, omission, duplication, or addition blocks startup. Deployment does not resume the durable
+capture authority. For post-cutover 3 MS/s and 5 MS/s direct canaries, stop the acquisition service,
+explicitly resume for one `leo acquire once`, immediately re-pause and drain, and only then restart
+the still-paused service. Continuous acquisition requires a later, separate operator resume.
 
 The first rollout containing component selectors must use `sudo ./ops deploy --full`. Subsequent
 web/API-only deployments avoid worker fencing, acquisition interruption, database work, and full

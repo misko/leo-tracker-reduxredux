@@ -18,10 +18,13 @@ from leo.analysis.research import (
     research_pipeline_definition_id,
 )
 from leo.analysis.standard import production_standard_v2_registry
+from leo.analysis.standard.native_analyzers import production_standard_native_evidence_registry
 from leo.api.app import create_app
 from leo.application import (
     CatalogPresentationRepository,
+    CatalogStandardNativePresentationRepository,
     CatalogStandardPresentationRepository,
+    DefinitionDispatchedStandardPresentationRepository,
     OperatorCaptureControl,
     ResearchReprocessService,
     StandardReprocessService,
@@ -115,7 +118,11 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         bulk_root=configured.bulk_root,
         campaigns=campaigns,
     )
-    standard_repository = CatalogStandardPresentationRepository(catalog, artifacts)
+    standard_v2_repository = CatalogStandardPresentationRepository(catalog, artifacts)
+    standard_repository = DefinitionDispatchedStandardPresentationRepository(
+        standard_v2_repository,
+        CatalogStandardNativePresentationRepository(catalog, artifacts),
+    )
     # Bound unconditionally.  The reader resolves availability per request, so
     # an API started before the hourly collector first creates its state
     # directory begins serving as soon as a snapshot appears, rather than
@@ -131,6 +138,10 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
     research_reprocessor: ResearchReprocessService | None = None
     if configured.pipeline_release_id is not None:
         registry = production_standard_v2_registry()
+        default_stage_keys = registry.keys
+        native_registry = production_standard_native_evidence_registry()
+        for stage_key in native_registry.keys:
+            registry.register(native_registry.get(stage_key))
         research_configuration = production_research_v1_configuration()
         research_definition_id = research_pipeline_definition_id(
             pipeline_release_id=configured.pipeline_release_id,
@@ -142,7 +153,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             artifacts=artifacts,
             registry=registry,
             iq_readers=RecordingIqReaderProvider(recordings),
-            default_stage_keys=registry.keys,
+            default_stage_keys=default_stage_keys,
             lane_registries={PipelineLane.RESEARCH: research_registry},
         )
         standard_reprocessor = StandardReprocessService(

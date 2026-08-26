@@ -17,24 +17,32 @@ import zstandard as zstd
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, IqBlockMetadataV2, RadioIdentityV1
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
     ContinuitySummaryV1,
     ContinuitySummaryV2,
+    DeviceAxisRecordingChunkV1,
     RecordingChunkV1,
     RecordingManifestV1,
+    RecordingManifestV3,
     RecordingStreamV1,
     RecordingStreamV2,
+    RecordingStreamV3,
     TerminalGapEvidenceV1,
 )
 from leo.contracts.states import ContinuityStatus, StreamState
+from leo.contracts.validity import DeviceAxisContentKind
 from leo.domain.continuity import ContinuityChainValidator
 from leo.domain.gap_map import build_iq_gap_map
 from leo.domain.iq import IqBlock
+from leo.domain.validity import build_validity_inventory_v1
 from leo.storage.errors import BundleStateError
 from leo.storage.uri import BulkUriResolver
 
 FailureInjector = Callable[[str], None]
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+_MAX_COUNTER = (1 << 64) - 1
+_ZERO_BUFFER_BYTES = 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +57,27 @@ class StreamWriteReceipt:
     gap_map_relative_path: str | None
     gap_map_sha256: str | None
     continuity: ContinuitySummaryV1 | ContinuitySummaryV2
+
+
+@dataclass(frozen=True, slots=True)
+class DeviceAxisStreamWriteReceipt:
+    stream_id: str
+    radio_id: str
+    receiver_ids: tuple[int, ...]
+    requested_sample_count: int
+    logical_sample_count: int
+    observed_sample_count: int
+    zero_fill_sample_count: int
+    chunks: tuple[DeviceAxisRecordingChunkV1, ...]
+    observed_iq_sha256: str
+    logical_iq_sha256: str
+    timeline_relative_path: str
+    timeline_sha256: str
+    gap_map_relative_path: str
+    gap_map_sha256: str
+    validity_inventory_relative_path: str
+    validity_inventory_sha256: str
+    continuity: ContinuitySummaryV2
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,7 +101,7 @@ class PublishedBundle:
     session_id: str
     path: Path
     uri: str
-    manifest: RecordingManifestV1
+    manifest: RecordingManifestV1 | RecordingManifestV3
     manifest_sha256: str
 
 
@@ -171,6 +200,57 @@ class _ChunkWriter:
             segment_index=self.segment_index,
             relative_path=final_path.relative_to(session_directory).as_posix(),
             sample_start=self.sample_start,
+            sample_count=self.sample_count,
+            uncompressed_bytes=self.uncompressed_bytes,
+            compressed_bytes=compressed_bytes,
+            uncompressed_sha256=f"sha256:{self._uncompressed_digest.hexdigest()}",
+            compressed_sha256=compressed_digest,
+        )
+
+    def abort(self) -> None:
+        self._compressed.abort()
+
+
+class _DeviceAxisChunkWriter:
+    def __init__(
+        self,
+        stream_directory: Path,
+        *,
+        chunk_index: int,
+        content_kind: DeviceAxisContentKind,
+        continuity_segment_index: int | None,
+        device_sample_start: int,
+        level: int,
+    ) -> None:
+        name = f"iq-{chunk_index:06d}.ci16.zst"
+        self._compressed = _CompressedFileWriter(
+            stream_directory / f"{name}.partial",
+            level=level,
+        )
+        self.chunk_index = chunk_index
+        self.content_kind = content_kind
+        self.continuity_segment_index = continuity_segment_index
+        self.device_sample_start = device_sample_start
+        self.sample_count = 0
+        self.uncompressed_bytes = 0
+        self._uncompressed_digest = hashlib.sha256()
+
+    def append(self, payload: bytes | bytearray | memoryview, *, sample_count: int) -> None:
+        if sample_count <= 0 or not payload:
+            raise ValueError("device-axis chunk append must be nonempty")
+        self._compressed.write(payload)
+        self._uncompressed_digest.update(payload)
+        self.uncompressed_bytes += len(payload)
+        self.sample_count += sample_count
+
+    def finish(self, session_directory: Path) -> DeviceAxisRecordingChunkV1:
+        final_path, compressed_bytes, compressed_digest = self._compressed.finish()
+        return DeviceAxisRecordingChunkV1(
+            chunk_index=self.chunk_index,
+            content_kind=self.content_kind,
+            continuity_segment_index=self.continuity_segment_index,
+            relative_path=final_path.relative_to(session_directory).as_posix(),
+            device_sample_start=self.device_sample_start,
             sample_count=self.sample_count,
             uncompressed_bytes=self.uncompressed_bytes,
             compressed_bytes=compressed_bytes,
@@ -494,6 +574,361 @@ class StreamBundleWriter:
             raise BundleStateError("IQ stream writer is closed")
 
 
+class DeviceAxisStreamBundleWriter:
+    """Write one counter-proven V3 stream over its complete device-time axis."""
+
+    def __init__(
+        self,
+        session_directory: Path,
+        stream_directory: Path,
+        *,
+        stream_id: str,
+        radio: RadioIdentityV1,
+        receiver_ids: tuple[int, ...],
+        requested_device_span: int,
+        compression: CompressionSettingsV1,
+        kernel_buffers: int,
+        on_finalize: Callable[[DeviceAxisStreamWriteReceipt], None],
+    ) -> None:
+        if requested_device_span <= 0:
+            raise ValueError("device-axis writer requires a positive requested span")
+        if kernel_buffers < 2:
+            raise ValueError("device-axis writer requires verified kernel buffers")
+        if compression.policy_id != DEVICE_AXIS_STORAGE_POLICY_V1:
+            raise ValueError("device-axis writer requires the exact V3 storage policy")
+        bytes_per_sample = len(receiver_ids) * 4
+        if compression.target_uncompressed_bytes < bytes_per_sample:
+            raise ValueError("device-axis chunk target cannot hold one CI16 sample")
+
+        self._session_directory = session_directory
+        self._stream_directory = stream_directory
+        self._stream_id = stream_id
+        self._radio = radio
+        self._receiver_ids = receiver_ids
+        self._requested_device_span = requested_device_span
+        self._compression = compression
+        self._kernel_buffers = kernel_buffers
+        self._on_finalize = on_finalize
+        self._bytes_per_sample = bytes_per_sample
+        zero_buffer_samples = max(1, _ZERO_BUFFER_BYTES // bytes_per_sample)
+        self._zero_buffer = bytes(zero_buffer_samples * bytes_per_sample)
+        self._continuity_validator = ContinuityChainValidator(
+            require_metadata=True,
+            require_generation=True,
+            validate_declared=True,
+        )
+        self._timeline = _CompressedFileWriter(
+            stream_directory / "timeline.jsonl.zst.partial",
+            level=compression.level,
+        )
+        self._current_chunk: _DeviceAxisChunkWriter | None = None
+        self._chunks: list[DeviceAxisRecordingChunkV1] = []
+        self._timeline_records: list[IqBlockMetadataV2] = []
+        self._observed_iq_digest = hashlib.sha256()
+        self._logical_iq_digest = hashlib.sha256()
+        self._observed_samples = 0
+        self._zero_fill_samples = 0
+        self._device_cursor = 0
+        self._refill_count = 0
+        self._segment_index = 0
+        self._gap_count = 0
+        self._overflow_count = 0
+        self._first_sequence: int | None = None
+        self._last_sequence: int | None = None
+        self._first_counter: int | None = None
+        self._last_counter: int | None = None
+        self._metadata_abi_version: int | None = None
+        self._closed = False
+
+    def append(self, block: IqBlock) -> None:
+        self._require_open()
+        raw = block.metadata
+        if not isinstance(raw, IqBlockMetadataV2):
+            raise ValueError("device-axis writer requires V2 IQ metadata")
+        if raw.radio_id != self._radio.radio_id:
+            raise ValueError("IQ block radio does not match its device-axis writer")
+        if raw.receiver_ids != self._receiver_ids:
+            raise ValueError("IQ block receivers changed within a device-axis stream")
+        if raw.session_sample_start != self._observed_samples:
+            raise ValueError("IQ block stored-sample coordinate is not contiguous")
+        if raw.kernel_buffers != self._kernel_buffers:
+            raise ValueError("IQ metadata kernel-buffer readback changed")
+        if (
+            self._metadata_abi_version is not None
+            and raw.metadata_abi_version != self._metadata_abi_version
+        ):
+            raise ValueError("IQ metadata ABI changed within a device-axis stream")
+
+        metadata = self._continuity_validator.observe(raw)
+        assert isinstance(metadata, IqBlockMetadataV2)
+        assert metadata.device_sample_counter is not None
+        assert metadata.source_sequence is not None
+        if metadata is not raw:
+            block = IqBlock(samples=block.samples, metadata=metadata)
+
+        if self._first_counter is None:
+            first_counter = metadata.device_sample_counter
+            if first_counter + self._requested_device_span > _MAX_COUNTER + 1:
+                raise ValueError("requested V3 device span exceeds the uint64 counter domain")
+            self._first_counter = first_counter
+            counter_offset = 0
+        else:
+            counter_offset = metadata.device_sample_counter - self._first_counter
+        if counter_offset < self._device_cursor:
+            raise ValueError("IQ block overlaps the persisted V3 device axis")
+        missing = counter_offset - self._device_cursor
+        if missing != metadata.missing_samples_before:
+            raise ValueError("IQ counter offset disagrees with validated missing samples")
+        prospective_end = counter_offset + metadata.sample_count
+        if prospective_end > self._requested_device_span:
+            raise BundleStateError("IQ block crosses the requested V3 device endpoint")
+
+        starts_new_segment = self._refill_count > 0 and (missing > 0 or metadata.overflow_observed)
+        if starts_new_segment:
+            self._finish_current_chunk()
+            if missing:
+                self._write_zero_fill(missing)
+                self._gap_count += 1
+            self._segment_index += 1
+        elif missing:
+            raise BundleStateError("the first V3 refill cannot declare a preceding gap")
+
+        payload = block.wire_bytes
+        self._observed_iq_digest.update(payload)
+        self._logical_iq_digest.update(payload)
+        self._write_payload(
+            payload,
+            sample_count=metadata.sample_count,
+            content_kind=DeviceAxisContentKind.OBSERVED,
+            continuity_segment_index=self._segment_index,
+        )
+        timeline_line = canonical_json_bytes(metadata.model_dump(mode="json")) + b"\n"
+        self._timeline.write(timeline_line)
+        self._timeline_records.append(metadata)
+        if self._first_sequence is None:
+            self._first_sequence = metadata.source_sequence
+        self._last_sequence = metadata.source_sequence
+        self._last_counter = metadata.device_sample_counter + metadata.sample_count - 1
+        self._metadata_abi_version = metadata.metadata_abi_version
+        self._observed_samples += metadata.sample_count
+        self._overflow_count += int(metadata.overflow_observed)
+        self._refill_count += 1
+
+    def finalize(
+        self,
+        *,
+        queue_telemetry: StreamQueueTelemetry,
+        terminal_gap_metadata: IqBlockMetadataV2 | None = None,
+        terminal_enqueue_failure_metadata: IqBlockMetadataV2 | None = None,
+    ) -> DeviceAxisStreamWriteReceipt:
+        """Seal only after exact counter evidence closes the requested endpoint."""
+
+        self._require_open()
+        if self._refill_count == 0:
+            raise BundleStateError("cannot finalize an empty V3 IQ stream")
+        if queue_telemetry.enqueue_failure_count or terminal_enqueue_failure_metadata is not None:
+            raise BundleStateError("V3 publication refuses every host-queue enqueue failure")
+        if self._first_counter is None or self._last_counter is None:
+            raise BundleStateError("V3 finalization lost its device-counter endpoints")
+        if self._metadata_abi_version is None:
+            raise BundleStateError("V3 finalization lost its metadata ABI")
+
+        terminal_gap = None
+        if terminal_gap_metadata is not None:
+            terminal_gap = self._close_terminal_gap(terminal_gap_metadata)
+        if self._device_cursor != self._requested_device_span:
+            raise BundleStateError("V3 endpoint is unproven; refusing a fabricated logical tail")
+
+        continuity = ContinuitySummaryV2(
+            refill_count=self._refill_count,
+            segment_count=self._segment_index + 1,
+            gap_count=self._gap_count,
+            missing_sample_count=self._zero_fill_samples,
+            overflow_count=self._overflow_count,
+            sample_loss_observable=self._continuity_validator.validated,
+            first_source_sequence=self._first_sequence,
+            last_source_sequence=self._last_sequence,
+            first_device_sample_counter=self._first_counter,
+            last_device_sample_counter=self._last_counter,
+            observed_sample_count=self._observed_samples,
+            device_span_sample_count=self._requested_device_span,
+            kernel_buffers=self._kernel_buffers,
+            metadata_abi_version=self._metadata_abi_version,
+            validated_stream_generation=self._continuity_validator.stream_generation,
+            queue_capacity_refills=queue_telemetry.capacity_refills,
+            queue_high_water_refills=queue_telemetry.high_water_refills,
+            enqueue_failure_count=0,
+            maximum_refill_service_interval_ns=(queue_telemetry.maximum_refill_service_interval_ns),
+            terminal_gap=terminal_gap,
+        )
+        self._finish_current_chunk()
+        timeline_path, _timeline_bytes, timeline_digest = self._timeline.finish()
+        gap_map = build_iq_gap_map(
+            stream_id=self._stream_id,
+            timeline_sha256=timeline_digest,
+            timeline=self._timeline_records,
+            continuity=continuity,
+        )
+        gap_map_payload = canonical_json_bytes(gap_map.model_dump(mode="json"))
+        gap_map_path = _write_immutable_file(
+            self._stream_directory / "gap-map.json",
+            gap_map_payload,
+        )
+        validity = build_validity_inventory_v1(gap_map)
+        validity_payload = canonical_json_bytes(validity.model_dump(mode="json"))
+        validity_path = _write_immutable_file(
+            self._stream_directory / "validity-inventory.json",
+            validity_payload,
+        )
+        self._closed = True
+        receipt = DeviceAxisStreamWriteReceipt(
+            stream_id=self._stream_id,
+            radio_id=self._radio.radio_id,
+            receiver_ids=self._receiver_ids,
+            requested_sample_count=self._requested_device_span,
+            logical_sample_count=self._device_cursor,
+            observed_sample_count=self._observed_samples,
+            zero_fill_sample_count=self._zero_fill_samples,
+            chunks=tuple(self._chunks),
+            observed_iq_sha256=f"sha256:{self._observed_iq_digest.hexdigest()}",
+            logical_iq_sha256=f"sha256:{self._logical_iq_digest.hexdigest()}",
+            timeline_relative_path=timeline_path.relative_to(self._session_directory).as_posix(),
+            timeline_sha256=timeline_digest,
+            gap_map_relative_path=gap_map_path.relative_to(self._session_directory).as_posix(),
+            gap_map_sha256=sha256_digest(gap_map_payload),
+            validity_inventory_relative_path=validity_path.relative_to(
+                self._session_directory
+            ).as_posix(),
+            validity_inventory_sha256=sha256_digest(validity_payload),
+            continuity=continuity,
+        )
+        self._on_finalize(receipt)
+        return receipt
+
+    def abort(self) -> None:
+        if self._closed:
+            return
+        if self._current_chunk is not None:
+            self._current_chunk.abort()
+            self._current_chunk = None
+        self._timeline.abort()
+        self._closed = True
+
+    def _close_terminal_gap(self, raw: IqBlockMetadataV2) -> TerminalGapEvidenceV1:
+        assert self._first_counter is not None
+        if raw.radio_id != self._radio.radio_id or raw.receiver_ids != self._receiver_ids:
+            raise BundleStateError("terminal V3 gap changed radio or receiver identity")
+        if raw.session_sample_start != self._observed_samples:
+            raise BundleStateError("terminal V3 gap does not follow stored observed IQ")
+        if raw.kernel_buffers != self._kernel_buffers:
+            raise BundleStateError("terminal V3 gap changed kernel-buffer readback")
+        validated = self._continuity_validator.observe(raw)
+        if (
+            not isinstance(validated, IqBlockMetadataV2)
+            or validated.continuity is not ContinuityStatus.GAP_BEFORE
+            or validated.device_sample_counter is None
+            or validated.source_sequence is None
+        ):
+            raise BundleStateError("terminal V3 metadata is not one validated positive gap")
+        in_span_missing = self._requested_device_span - self._device_cursor
+        if not 0 < in_span_missing <= validated.missing_samples_before:
+            raise BundleStateError("terminal gap does not close the requested V3 span")
+        expected_counter = validated.device_sample_counter - validated.missing_samples_before
+        if expected_counter != self._first_counter + self._device_cursor:
+            raise BundleStateError("terminal V3 gap does not begin after persisted device time")
+
+        self._finish_current_chunk()
+        self._write_zero_fill(in_span_missing)
+        self._gap_count += 1
+        self._overflow_count += int(validated.overflow_observed)
+        return TerminalGapEvidenceV1(
+            expected_device_sample_counter=expected_counter,
+            actual_device_sample_counter=validated.device_sample_counter,
+            actual_missing_sample_count=validated.missing_samples_before,
+            in_span_missing_sample_count=in_span_missing,
+            source_sequence=validated.source_sequence,
+            returned_sample_count=validated.sample_count,
+            stream_generation=validated.stream_generation,
+            metadata_abi_version=validated.metadata_abi_version,
+            metadata_flags=validated.metadata_flags,
+            overflow_observed=validated.overflow_observed,
+            hardware_metadata=validated.hardware_metadata,
+            header=validated,
+        )
+
+    def _write_zero_fill(self, sample_count: int) -> None:
+        remaining = sample_count
+        zero_buffer_samples = len(self._zero_buffer) // self._bytes_per_sample
+        while remaining:
+            count = min(remaining, zero_buffer_samples)
+            payload = memoryview(self._zero_buffer)[: count * self._bytes_per_sample]
+            self._logical_iq_digest.update(payload)
+            self._write_payload(
+                payload,
+                sample_count=count,
+                content_kind=DeviceAxisContentKind.ZERO_FILL,
+                continuity_segment_index=None,
+            )
+            self._zero_fill_samples += count
+            remaining -= count
+
+    def _write_payload(
+        self,
+        payload: bytes | bytearray | memoryview,
+        *,
+        sample_count: int,
+        content_kind: DeviceAxisContentKind,
+        continuity_segment_index: int | None,
+    ) -> None:
+        view = memoryview(payload).cast("B")
+        if len(view) != sample_count * self._bytes_per_sample:
+            raise ValueError("device-axis payload disagrees with its CI16 sample geometry")
+        offset_samples = 0
+        while offset_samples < sample_count:
+            if self._current_chunk is not None and (
+                self._current_chunk.content_kind is not content_kind
+                or self._current_chunk.continuity_segment_index != continuity_segment_index
+            ):
+                self._finish_current_chunk()
+            if self._current_chunk is None:
+                self._current_chunk = _DeviceAxisChunkWriter(
+                    self._stream_directory,
+                    chunk_index=len(self._chunks),
+                    content_kind=content_kind,
+                    continuity_segment_index=continuity_segment_index,
+                    device_sample_start=self._device_cursor,
+                    level=self._compression.level,
+                )
+            available_bytes = (
+                self._compression.target_uncompressed_bytes - self._current_chunk.uncompressed_bytes
+            )
+            capacity_samples = available_bytes // self._bytes_per_sample
+            if capacity_samples == 0:
+                self._finish_current_chunk()
+                continue
+            count = min(sample_count - offset_samples, capacity_samples)
+            byte_start = offset_samples * self._bytes_per_sample
+            byte_stop = byte_start + count * self._bytes_per_sample
+            self._current_chunk.append(view[byte_start:byte_stop], sample_count=count)
+            self._device_cursor += count
+            offset_samples += count
+            if (
+                self._current_chunk.uncompressed_bytes + self._bytes_per_sample
+                > self._compression.target_uncompressed_bytes
+            ):
+                self._finish_current_chunk()
+
+    def _finish_current_chunk(self) -> None:
+        if self._current_chunk is None:
+            return
+        self._chunks.append(self._current_chunk.finish(self._session_directory))
+        self._current_chunk = None
+
+    def _require_open(self) -> None:
+        if self._closed:
+            raise BundleStateError("V3 IQ stream writer is closed")
+
+
 class RecordingBundleWriter:
     """Own one spool directory and publish its manifest and directory atomically."""
 
@@ -522,8 +957,8 @@ class RecordingBundleWriter:
         _fsync_directory(self._spool_path.parent)
         self._lock = threading.Lock()
         self._publication_forbidden = threading.Event()
-        self._writers: dict[str, StreamBundleWriter] = {}
-        self._receipts: dict[str, StreamWriteReceipt] = {}
+        self._writers: dict[str, StreamBundleWriter | DeviceAxisStreamBundleWriter] = {}
+        self._receipts: dict[str, StreamWriteReceipt | DeviceAxisStreamWriteReceipt] = {}
         self._published_path: Path | None = None
         self._closed = False
 
@@ -602,7 +1037,59 @@ class RecordingBundleWriter:
             self._writers[stream_id] = writer
             return writer
 
-    def publish(self, manifest: RecordingManifestV1) -> PublishedBundle:
+    def open_device_axis_stream(
+        self,
+        stream_id: str,
+        radio: RadioIdentityV1,
+        receiver_ids: tuple[int, ...],
+        *,
+        requested_device_span: int,
+        kernel_buffers: int,
+    ) -> DeviceAxisStreamBundleWriter:
+        """Open an explicit V3 writer without changing the historical V1/V2 path."""
+
+        if not _IDENTIFIER.fullmatch(stream_id):
+            raise ValueError("stream ID is not one safe persisted identifier")
+        if not receiver_ids or tuple(sorted(set(receiver_ids))) != receiver_ids:
+            raise ValueError("stream receivers must be non-empty, unique, and sorted")
+        if requested_device_span <= 0:
+            raise ValueError("device-axis writer requires a positive requested span")
+        if kernel_buffers < 2:
+            raise ValueError("device-axis writer requires verified kernel buffers")
+        if self.compression.policy_id != DEVICE_AXIS_STORAGE_POLICY_V1:
+            raise ValueError("device-axis writer requires the exact V3 storage policy")
+        self._require_open()
+        with self._lock:
+            self._require_open()
+            if stream_id in self._writers or stream_id in self._receipts:
+                raise BundleStateError(f"stream already exists: {stream_id}")
+            directory_name = _radio_directory_name(radio.serial)
+            if any(
+                writer._stream_directory.name == directory_name for writer in self._writers.values()
+            ):
+                raise BundleStateError("radio serial maps to an existing stream directory")
+            stream_directory = self._spool_path / directory_name
+            stream_directory.mkdir(exist_ok=False)
+            _fsync_directory(self._spool_path)
+            self._require_open()
+            writer = DeviceAxisStreamBundleWriter(
+                self._spool_path,
+                stream_directory,
+                stream_id=stream_id,
+                radio=radio,
+                receiver_ids=receiver_ids,
+                requested_device_span=requested_device_span,
+                compression=self.compression,
+                kernel_buffers=kernel_buffers,
+                on_finalize=self._register_receipt,
+            )
+            self._writers[stream_id] = writer
+            return writer
+
+    def publish(
+        self,
+        manifest: RecordingManifestV1 | RecordingManifestV3,
+    ) -> PublishedBundle:
         with self._lock:
             self._require_open()
             if any(stream_id not in self._receipts for stream_id in self._writers):
@@ -662,7 +1149,10 @@ class RecordingBundleWriter:
                 writer.abort()
             self._closed = True
 
-    def _register_receipt(self, receipt: StreamWriteReceipt) -> None:
+    def _register_receipt(
+        self,
+        receipt: StreamWriteReceipt | DeviceAxisStreamWriteReceipt,
+    ) -> None:
         # Reject a late consumer before attempting the potentially occupied
         # bundle lock.  It can finalize files in the quarantined spool, but it
         # can never make them eligible for publication.
@@ -673,7 +1163,10 @@ class RecordingBundleWriter:
                 raise BundleStateError(f"stream already finalized: {receipt.stream_id}")
             self._receipts[receipt.stream_id] = receipt
 
-    def _validate_manifest(self, manifest: RecordingManifestV1) -> None:
+    def _validate_manifest(
+        self,
+        manifest: RecordingManifestV1 | RecordingManifestV3,
+    ) -> None:
         if manifest.session_id != self.session_id:
             raise BundleStateError("manifest session ID does not match its spool directory")
         if manifest.compression != self.compression:
@@ -683,6 +1176,13 @@ class RecordingBundleWriter:
             raise BundleStateError("manifest omits a finalized IQ stream")
         for stream in manifest.streams:
             receipt = self._receipts.get(stream.stream_id)
+            if isinstance(stream, RecordingStreamV3):
+                if not isinstance(receipt, DeviceAxisStreamWriteReceipt):
+                    raise BundleStateError("V3 manifest stream has no V3 storage receipt")
+                self._validate_device_axis_stream_receipt(stream, receipt)
+                continue
+            if isinstance(receipt, DeviceAxisStreamWriteReceipt):
+                raise BundleStateError("legacy manifest cannot publish a V3 storage receipt")
             if stream.state is StreamState.FAILED:
                 if receipt is not None:
                     raise BundleStateError("failed manifest stream has a finalized IQ receipt")
@@ -690,6 +1190,31 @@ class RecordingBundleWriter:
             if receipt is None:
                 raise BundleStateError("manifest data stream has no finalized IQ receipt")
             self._validate_stream_receipt(stream, receipt)
+
+    @staticmethod
+    def _validate_device_axis_stream_receipt(
+        stream: RecordingStreamV3,
+        receipt: DeviceAxisStreamWriteReceipt,
+    ) -> None:
+        if (
+            stream.radio.radio_id != receipt.radio_id
+            or stream.applied_settings.receiver_ids != receipt.receiver_ids
+            or stream.requested_sample_count != receipt.requested_sample_count
+            or stream.logical_sample_count != receipt.logical_sample_count
+            or stream.observed_sample_count != receipt.observed_sample_count
+            or stream.zero_fill_sample_count != receipt.zero_fill_sample_count
+            or stream.chunks != receipt.chunks
+            or stream.observed_iq_sha256 != receipt.observed_iq_sha256
+            or stream.logical_iq_sha256 != receipt.logical_iq_sha256
+            or stream.timeline_relative_path != receipt.timeline_relative_path
+            or stream.timeline_sha256 != receipt.timeline_sha256
+            or stream.gap_map_relative_path != receipt.gap_map_relative_path
+            or stream.gap_map_sha256 != receipt.gap_map_sha256
+            or stream.validity_inventory_relative_path != receipt.validity_inventory_relative_path
+            or stream.validity_inventory_sha256 != receipt.validity_inventory_sha256
+            or stream.continuity != receipt.continuity
+        ):
+            raise BundleStateError("V3 manifest stream disagrees with written device-axis IQ")
 
     @staticmethod
     def _validate_stream_receipt(

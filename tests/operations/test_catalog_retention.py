@@ -3,18 +3,25 @@ from __future__ import annotations
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from threading import Event
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from sqlalchemy import text
 
+from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.analysis.adapters import production_standard_v2_configuration
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
 from leo.artifacts import AnalysisArtifactStore
-from leo.catalog import CurrentSummary, ProductConflictError, RadioStreamRegistration
+from leo.catalog import (
+    CatalogRepository,
+    CurrentSummary,
+    ProductConflictError,
+    RadioStreamRegistration,
+)
 from leo.cli.composition import (
     CliSettings,
     CompositionHooks,
@@ -22,13 +29,20 @@ from leo.cli.composition import (
     RadioConfigurationV1,
 )
 from leo.cli.processing import LocalProcessingBackend, ProcessingServices
-from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
+from leo.contracts.profile import (
+    CaptureProfileRevisionV1,
+    CaptureProfileRevisionV2,
+    CaptureProfileV1,
+    CaptureProfileV2,
+)
 from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
     HostIdentityV1,
     ProducerV1,
     RecordingManifestV1,
+    RecordingManifestV3,
     RecordingStreamV1,
     StreamTimingV1,
     SynchronizationSummaryV1,
@@ -36,7 +50,9 @@ from leo.contracts.recording import (
 )
 from leo.contracts.states import (
     CaptureState,
+    ContinuityPolicy,
     GainMode,
+    PeerFailurePolicy,
     SourceType,
     StarlinkEdge,
     StreamState,
@@ -60,6 +76,7 @@ from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.radio.fake import FakeRadioSource
 from leo.station.authority import (
     CaptureHardwareBindingV1,
+    CaptureHardwareBindingV3,
     FixturePathAuthorityV1,
     RadioEndpointEvidenceV1,
     StationRadioTopologyV1,
@@ -90,6 +107,158 @@ def test_processing_reconcile_preserves_nonblocking_historical_report() -> None:
 
     assert result.issues == ()
     assert result.historical_incompatibilities == ("legacy manifest",)
+
+
+def test_v3_reconciliation_registers_observed_count_and_device_axis_authority(
+    tmp_path: Path,
+) -> None:
+    recordings = RecordingStore(tmp_path / "bulk")
+    profile = CaptureProfileV2(
+        name="operations-device-axis-v3-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=5_000_000,
+        bandwidth_hz=2_500_000,
+        receivers=(0,),
+        gain_mode=GainMode.MANUAL,
+        gains=(ReceiverGainV1(receiver_id=0, gain_db=30.0),),
+        sample_count=12,
+        refill_samples=4,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        kernel_buffers=8,
+        refill_queue_capacity=32,
+        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+        tags=("LIVE",),
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        ("radio-a",),
+        source_type=SourceType.LIVE,
+    )
+    coordinator = AcquisitionCoordinator(
+        recordings,
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=32,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={1: 4})},
+        session_id="operations-v3-registration",
+    )
+    assert result.bundle is not None, result.errors
+    assert isinstance(result.bundle.manifest, RecordingManifestV3)
+    manifest = result.bundle.manifest
+    stream = manifest.streams[0]
+    assert stream.observed_sample_count < stream.logical_sample_count
+
+    validity = {
+        "valid_from_utc_ns": 1_699_999_000_000_000_000,
+        "valid_until_utc_ns": 1_700_001_000_000_000_000,
+    }
+    topology = StationReceiverTopologyV1.create(
+        station_id="operations-v3-station",
+        topology_revision="operations-v3-topology-v1",
+        radios=(
+            StationRadioTopologyV1.create(
+                radio_id=stream.radio.radio_id,
+                radio_serial=stream.radio.serial,
+                endpoint_evidence=RadioEndpointEvidenceV1(
+                    transport=stream.radio.transport,
+                    endpoint=stream.radio.uri,
+                    evidence_uri="authority/operations-v3-radio.json",
+                    evidence_digest="sha256:" + "d" * 64,
+                ),
+                receiver_assignments=tuple(
+                    StationReceiverAssignmentV1(
+                        receiver_id=receiver_id,
+                        physical_receiver_id=f"operations-v3-physical-rx{receiver_id}",
+                        hardware_epoch_external_id=f"operations-v3-rx{receiver_id}-v1",
+                        valid_from_utc_ns=validity["valid_from_utc_ns"],
+                        valid_until_utc_ns=validity["valid_until_utc_ns"],
+                    )
+                    for receiver_id in (0, 1)
+                ),
+            ),
+        ),
+        **validity,
+    )
+
+    class V3AuthorityResolver:
+        def resolve(
+            self,
+            resolved_manifest: RecordingManifestV1 | RecordingManifestV3,
+            *,
+            observed_manifest_file_digest: str,
+        ) -> ResolvedCaptureAuthority:
+            if not isinstance(resolved_manifest, RecordingManifestV3):
+                raise TypeError("test resolver requires RecordingManifestV3")
+            return ResolvedCaptureAuthority(
+                topology=topology,
+                path_authority=CaptureHardwareBindingV3.create(
+                    resolved_manifest,
+                    observed_manifest_file_digest=observed_manifest_file_digest,
+                    topology=topology,
+                ),
+            )
+
+    class RecordingCatalog:
+        def __init__(self) -> None:
+            self.registered_topology: StationReceiverTopologyV1 | None = None
+            self.registration: dict[str, Any] | None = None
+
+        def register_station_topology(self, value: StationReceiverTopologyV1) -> None:
+            self.registered_topology = value
+
+        def reconcile_capture_session(self, **values: Any) -> bool:
+            self.registration = values
+            return True
+
+    catalog = RecordingCatalog()
+    service = CatalogReconciliationService(
+        cast(CatalogRepository, catalog),
+        recordings,
+        HoldReceiptStore(recordings.root),
+        authority_resolver=V3AuthorityResolver(),
+    )
+
+    report = service.run_session(manifest.session_id)
+
+    assert report.registered == (manifest.session_id,)
+    assert report.issues == ()
+    assert catalog.registered_topology == topology
+    assert catalog.registration is not None
+    assert isinstance(catalog.registration["path_authority"], CaptureHardwareBindingV3)
+    [registration] = catalog.registration["streams"]
+    assert registration.captured_sample_count == stream.observed_sample_count
+    assert registration.captured_sample_count != stream.logical_sample_count
+    assert registration.attributes == {
+        "requested_settings": stream.requested_settings.model_dump(mode="json"),
+        "applied_settings": stream.applied_settings.model_dump(mode="json"),
+        "timing": stream.timing.model_dump(mode="json"),
+        "capture_start_utc_ns": stream.timing.first_sample.earliest_utc_ns,
+        "capture_end_utc_ns": stream.timing.last_sample.latest_utc_ns + 200,
+        "continuity": stream.continuity.model_dump(mode="json"),
+        "timeline_relative_path": stream.timeline_relative_path,
+        "timeline_sha256": stream.timeline_sha256,
+        "logical_sample_count": stream.logical_sample_count,
+        "observed_sample_count": stream.observed_sample_count,
+        "zero_fill_sample_count": stream.zero_fill_sample_count,
+        "observed_iq_sha256": stream.observed_iq_sha256,
+        "logical_iq_sha256": stream.logical_iq_sha256,
+        "gap_map_relative_path": stream.gap_map_relative_path,
+        "gap_map_sha256": stream.gap_map_sha256,
+        "validity_inventory_relative_path": stream.validity_inventory_relative_path,
+        "validity_inventory_sha256": stream.validity_inventory_sha256,
+    }
+    assert tuple(chunk.sample_start for chunk in registration.chunks) == tuple(
+        chunk.device_sample_start for chunk in stream.chunks
+    )
 
 
 def _publish_bundle(
@@ -781,7 +950,7 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
     class TestLiveAuthority:
         def resolve(
             self,
-            manifest: RecordingManifestV1,
+            manifest: RecordingManifestV1 | RecordingManifestV3,
             *,
             observed_manifest_file_digest: str,
         ) -> ResolvedCaptureAuthority:
@@ -790,6 +959,10 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
                     "TEST manifest has no reviewed digest-pinned fixture authority"
                 )
             if manifest.source_type is SourceType.TEST:
+                if isinstance(manifest, RecordingManifestV3):
+                    raise UnreviewedTestFixtureAuthorityError(
+                        "V3 TEST manifests require a separately reviewed fixture authority"
+                    )
                 return ResolvedCaptureAuthority(
                     topology=None,
                     path_authority=FixturePathAuthorityV1.create(
@@ -816,7 +989,8 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
                         receiver_id=receiver_id,
                         physical_receiver_id=f"physical-rx{receiver_id}",
                         hardware_epoch_external_id=f"test-rx{receiver_id}-v1",
-                        **validity,
+                        valid_from_utc_ns=validity["valid_from_utc_ns"],
+                        valid_until_utc_ns=validity["valid_until_utc_ns"],
                     )
                     for receiver_id in (0, 1)
                 ),
@@ -829,10 +1003,18 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
             )
             return ResolvedCaptureAuthority(
                 topology=topology,
-                path_authority=CaptureHardwareBindingV1.create(
-                    manifest,
-                    observed_manifest_file_digest=observed_manifest_file_digest,
-                    topology=topology,
+                path_authority=(
+                    CaptureHardwareBindingV3.create(
+                        manifest,
+                        observed_manifest_file_digest=observed_manifest_file_digest,
+                        topology=topology,
+                    )
+                    if isinstance(manifest, RecordingManifestV3)
+                    else CaptureHardwareBindingV1.create(
+                        manifest,
+                        observed_manifest_file_digest=observed_manifest_file_digest,
+                        topology=topology,
+                    )
                 ),
             )
 

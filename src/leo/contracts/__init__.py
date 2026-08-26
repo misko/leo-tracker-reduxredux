@@ -8,6 +8,13 @@ from leo.contracts.calibration import (
 )
 from leo.contracts.continuity import IqTerminalRejectedRefillV1
 from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
+from leo.contracts.host_health import (
+    QualificationHostHealthCheckV1,
+    QualificationHostHealthEvidenceV1,
+    QualificationHostHealthPolicyV1,
+    QualificationHostHealthSnapshotV1,
+    QualificationRaidHealthV1,
+)
 from leo.contracts.kalman_tracking import (
     KalmanFrameEstimateV1,
     KalmanTrackingConfigV1,
@@ -52,13 +59,16 @@ from leo.contracts.recording import (
     CompressionSettingsV1,
     ContinuitySummaryV1,
     ContinuitySummaryV2,
+    DeviceAxisRecordingChunkV1,
     HostIdentityV1,
     ProducerV1,
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingManifestV2,
+    RecordingManifestV3,
     RecordingStreamV1,
     RecordingStreamV2,
+    RecordingStreamV3,
     StreamTimingV1,
     SynchronizationSummaryV1,
     TerminalGapEvidenceV1,
@@ -98,6 +108,12 @@ from leo.contracts.trusted_scientific import (
     TrustedMatchedRecoveryProductV2,
     TrustedMatchedRecoveryReceiptV2,
 )
+from leo.contracts.validity import (
+    ContinuitySegmentV1,
+    DeviceAxisContentKind,
+    ValidityInventoryV1,
+    ValidityRunV1,
+)
 
 __all__ = [
     "CalibrationEvidenceV1",
@@ -114,8 +130,11 @@ __all__ = [
     "CaptureProfileV1",
     "CaptureProfileV2",
     "CompressionSettingsV1",
+    "ContinuitySegmentV1",
     "ContinuitySummaryV1",
     "ContinuitySummaryV2",
+    "DeviceAxisContentKind",
+    "DeviceAxisRecordingChunkV1",
     "HostIdentityV1",
     "IqBlockMetadataV1",
     "IqBlockMetadataV2",
@@ -139,6 +158,11 @@ __all__ = [
     "NativeKnownPilotEvidenceProductV2",
     "NanosecondIntervalV1",
     "ProducerV1",
+    "QualificationHostHealthCheckV1",
+    "QualificationHostHealthEvidenceV1",
+    "QualificationHostHealthPolicyV1",
+    "QualificationHostHealthSnapshotV1",
+    "QualificationRaidHealthV1",
     "PilotDecisionStatus",
     "PilotDopplerSegmentConfigV1",
     "PilotDopplerSegmentConfigV2",
@@ -157,8 +181,10 @@ __all__ = [
     "RecordingChunkV1",
     "RecordingManifestV1",
     "RecordingManifestV2",
+    "RecordingManifestV3",
     "RecordingStreamV1",
     "RecordingStreamV2",
+    "RecordingStreamV3",
     "ReceiverFrequencyCalibrationSetV1",
     "ReceiverFrequencyCalibrationV1",
     "ReceiverPathIdentityV1",
@@ -177,6 +203,8 @@ __all__ = [
     "TrustedMatchedRecoveryCampaignReceiptV2",
     "TrustedMatchedRecoveryProductV2",
     "TrustedMatchedRecoveryReceiptV2",
+    "ValidityInventoryV1",
+    "ValidityRunV1",
     "VerifiedIqGapMapEvidenceV1",
     "canonical_digest",
     "matched_pilot_campaign_config_digest",

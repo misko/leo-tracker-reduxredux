@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import fields
 from typing import Any, cast
 
 from pydantic import JsonValue
@@ -10,14 +9,17 @@ from pydantic import JsonValue
 from leo.analysis.standard.alternate_tracks import (
     build_ranked_residual_hough_cfo_tracks,
     build_residual_hough_cfo_tracks,
-    default_alternate_cfo_config,
     default_alternate_cfo_display_config,
     render_alternate_cfo_tracks_png,
 )
 from leo.analysis.standard.codecs import decode_standard_product
+from leo.analysis.standard.configuration import (
+    parse_receiver_standard_config,
+    production_receiver_standard_stage_configuration,
+    resolve_receiver_standard_sample_rate,
+)
 from leo.analysis.standard.final_reports import reduce_paired_radios_v2, reduce_radio_v2
 from leo.analysis.standard.full_capture_glrt20ms import (
-    FullCaptureGlrt20msConfig,
     analyze_full_capture_glrt20ms,
     render_full_capture_glrt20ms_png,
 )
@@ -64,7 +66,7 @@ from leo.analysis.standard.products import (
 from leo.analysis.standard.reports import (
     PathReportInputs,
 )
-from leo.analysis.standard.runner import ReceiverStandardConfig, run_receiver_standard
+from leo.analysis.standard.runner import run_receiver_standard
 from leo.analysis.standard.source_bindings import (
     STANDARD_FINAL_SOURCE_BINDING_SPECS,
     STANDARD_SOURCE_BINDING_SPECS,
@@ -76,11 +78,6 @@ from leo.analysis.standard.trajectory_accounting import (
 )
 from leo.analysis.starlink import StarlinkEdge
 from leo.analysis.starlink.acquisition import NumericalStatus
-from leo.analysis.starlink.cfo_dealias import (
-    default_linear_cfo_dealias_config,
-    default_replay_gate_v4,
-)
-from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_doppler_segments import (
     render_standard_pilot_carrier_tracking_v2_png,
     render_standard_pilot_doppler_segments_png,
@@ -97,39 +94,23 @@ from leo.analysis.starlink.trajectories import (
     TrajectoryBankResult,
     TrajectoryFamily,
 )
-from leo.analysis.starlink.trajectory_feedback import (
-    TrajectoryFeedbackConfig,
-    validate_trajectory_feedback_config,
-)
-from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.alternate_cfo_tracks import (
     RankedCandidateResidualHoughConfigV3,
     ResidualHoughSegmentationConfigV2,
-)
-from leo.contracts.cfo_dealias import (
-    CfoDealiasConfigV2,
-    HuberLinearRefinementConfigV1,
-    ReplayGateConfigV4,
-    SeededAliasEmConfigV1,
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
     RadioStandardReportV2,
 )
-from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
-from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.pilot_doppler_segments import (
-    PilotDopplerSegmentConfigV2,
     StandardPilotDopplerSegmentsV2,
 )
 from leo.contracts.standard_pipeline import (
-    ProbeScheduleV2,
     StandardPairInputBindV2,
     StandardPathInputBindV3,
     StandardSourceBindingV1,
 )
-from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 from leo.pipeline import (
     AnalysisContext,
     AnalyzerRegistry,
@@ -561,7 +542,10 @@ class PathStandardAnalyzer:
         binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         _require_path_context(context, binding)
         _require_iq(binding, iq)
-        config = _receiver_standard_config(context.stage_config)
+        config = resolve_receiver_standard_sample_rate(
+            parse_receiver_standard_config(context.stage_config),
+            sample_rate_hz=binding.sample_rate_hz,
+        )
         schedule = build_probe_schedule(
             sample_rate_hz=binding.sample_rate_hz,
             sample_count=binding.declared_sample_count,
@@ -725,49 +709,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
     # Preserve the reviewed full-dwell visual/scientific resolution. The browser
     # renders these persisted cells directly; it must never invent resolution by
     # upscaling a smaller product.
-    configuration["path-standard"] = {
-        "waterfall": {
-            "fft_samples": 1024,
-            "frequency_bins": 256,
-            "maximum_time_bins": 512,
-        },
-        # The production Standard profile keeps ten independently scored
-        # timing/CFO alternatives.
-        # The narrow nonmaximum-suppression distances preserve adjacent coarse
-        # CFO/timing basins without paying for denser acquisition grids.
-        "feedback": {
-            "maximum_workers": 4,
-            "maximum_scored_candidates_per_probe": 10,
-            "probe_offsets_ms": [0, 25],
-            "cfo_acquisition_mode": "independent_wide_per_probe",
-            "cfo_search_min_hz": -400_000.0,
-            "cfo_search_max_hz": 400_000.0,
-            "coarse_cfo_step_hz": 80_000.0,
-            "fine_cfo_radius_hz": 80_000.0,
-            "fine_cfo_step_hz": 500.0,
-            "conditioned_cfo_radius_hz": 2_000.0,
-            "conditioned_cfo_step_hz": 100.0,
-            "retained_candidate_count": 10,
-            "candidate_epoch_separation_samples": 5,
-            "candidate_cfo_separation_hz": 10_000.0,
-            "glrt_size": 512,
-        },
-        "segmentation": default_alternate_cfo_config().model_dump(mode="json"),
-        "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
-        "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
-        "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
-        "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
-        "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
-        "pilot_doppler_segments": PilotDopplerSegmentConfigV2().model_dump(mode="json"),
-        "full_capture_glrt20ms": {
-            "enabled": True,
-            "window_ms": 20,
-            "stride_ms": 10,
-            "margin_gate": 0.025,
-            "maximum_workers": 4,
-            "line_rms_reference_hz": 75.0,
-        },
-    }
+    configuration["path-standard"] = production_receiver_standard_stage_configuration()
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_display_config().model_dump(mode="json")
     )
@@ -966,131 +908,6 @@ def _derived_binding(
             spec, document, predecessor_binding_documents=predecessors
         ),
     }
-
-
-def _positive_int(values: dict[str, JsonValue], key: str, default: int) -> int:
-    value = values.get(key, default)
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise ValueError(f"{key} must be a positive integer")
-    return value
-
-
-def _probe_offsets(values: dict[str, Any]) -> tuple[int, ...]:
-    raw = values.get("probe_offsets_ms", [0, 25])
-    if not isinstance(raw, (list, tuple)) or any(
-        isinstance(value, bool) or not isinstance(value, int) for value in raw
-    ):
-        raise ValueError("probe_offsets_ms must be an array of integers")
-    return tuple(cast(list[int] | tuple[int, ...], raw))
-
-
-def _dataclass_config(cls, values: dict[str, JsonValue]):
-    allowed = {item.name for item in fields(cls)}
-    if set(values) - allowed:
-        raise ValueError(f"unknown {cls.__name__} configuration fields")
-    return cls(**values)
-
-
-def _feedback_config(
-    values: dict[str, JsonValue], *, schedule: ProbeScheduleV2 | None = None
-) -> TrajectoryFeedbackConfig:
-    allowed = {item.name for item in fields(TrajectoryFeedbackConfig)}
-    if set(values) - allowed:
-        raise ValueError("unknown trajectory feedback configuration fields")
-    config_values: dict[str, Any] = dict(values)
-    config_values["probe_offsets_ms"] = _probe_offsets(config_values)
-    if schedule is not None:
-        expected: dict[str, Any] = {
-            "subwindow_ms": schedule.subwindow_ms,
-            "probe_ms": schedule.probe_ms,
-            "probe_offsets_ms": schedule.probe_offsets_ms,
-            "maximum_outer_windows": schedule.maximum_coarse_windows,
-        }
-        for key, value in expected.items():
-            if key in config_values and config_values[key] != value:
-                raise ValueError("pilot configuration disagrees with exact probe schedule")
-            config_values[key] = value
-    config = TrajectoryFeedbackConfig(**cast(dict[str, Any], config_values))
-    validate_trajectory_feedback_config(config)
-    return config
-
-
-def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardConfig:
-    allowed = {item.name for item in fields(ReceiverStandardConfig)}
-    if set(values) - allowed:
-        raise ValueError("unknown fused receiver Standard configuration fields")
-    scalar_values = {
-        key: value
-        for key, value in values.items()
-        if key
-        not in {
-            "waterfall",
-            "feedback",
-            "segmentation",
-            "dealias",
-            "seeded_alias_em",
-            "huber_linear",
-            "replay_gate",
-            "association",
-            "trajectory_accounting",
-            "kalman",
-            "pilot_doppler_segments",
-            "full_capture_glrt20ms",
-        }
-    }
-    waterfall_values = values.get("waterfall", {})
-    feedback_values = values.get("feedback", {})
-    segmentation_values = values.get(
-        "segmentation", default_alternate_cfo_config().model_dump(mode="json")
-    )
-    dealias_values = values.get("dealias")
-    seeded_alias_em_values = values.get("seeded_alias_em", {})
-    huber_linear_values = values.get("huber_linear", {})
-    replay_gate_values = values.get("replay_gate")
-    association_values = values.get("association", {})
-    trajectory_accounting_values = values.get("trajectory_accounting", {})
-    kalman_values = values.get("kalman", {})
-    pilot_doppler_segment_values = values.get("pilot_doppler_segments", {})
-    full_capture_glrt20ms_values = values.get("full_capture_glrt20ms", {})
-    if (
-        not isinstance(waterfall_values, dict)
-        or not isinstance(feedback_values, dict)
-        or not isinstance(segmentation_values, dict)
-        or not isinstance(dealias_values, dict)
-        or not isinstance(seeded_alias_em_values, dict)
-        or not isinstance(huber_linear_values, dict)
-        or not isinstance(replay_gate_values, dict)
-        or not isinstance(association_values, dict)
-        or not isinstance(trajectory_accounting_values, dict)
-        or not isinstance(kalman_values, dict)
-        or not isinstance(pilot_doppler_segment_values, dict)
-        or not isinstance(full_capture_glrt20ms_values, dict)
-    ):
-        raise ValueError("fused receiver nested configuration must be objects")
-    return ReceiverStandardConfig(
-        **cast(dict[str, Any], scalar_values),
-        waterfall=_dataclass_config(WaterfallConfig, cast(dict[str, JsonValue], waterfall_values)),
-        feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
-        segmentation=ResidualHoughSegmentationConfigV2.model_validate(segmentation_values),
-        dealias=CfoDealiasConfigV2.model_validate(dealias_values),
-        seeded_alias_em=SeededAliasEmConfigV1.model_validate(seeded_alias_em_values),
-        huber_linear=HuberLinearRefinementConfigV1.model_validate(huber_linear_values),
-        replay_gate=ReplayGateConfigV4.model_validate(replay_gate_values),
-        association=MultiTargetAssociationConfigV1.model_validate(association_values)
-        if association_values
-        else default_multi_target_association_config(),
-        trajectory_accounting=TrajectoryAccountingConfigV2.model_validate(
-            trajectory_accounting_values
-        ),
-        kalman=KalmanTrackingConfigV1.model_validate(kalman_values),
-        pilot_doppler_segments=PilotDopplerSegmentConfigV2.model_validate(
-            pilot_doppler_segment_values
-        ),
-        full_capture_glrt20ms=_dataclass_config(
-            FullCaptureGlrt20msConfig,
-            cast(dict[str, JsonValue], full_capture_glrt20ms_values),
-        ),
-    )
 
 
 def _pilot_detections(document: dict[str, JsonValue]) -> tuple[PilotProbeDetection, ...]:

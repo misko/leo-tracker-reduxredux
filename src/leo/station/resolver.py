@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from leo.contracts.recording import RecordingManifestV1, RecordingManifestV2
+from leo.contracts.recording import RecordingManifestV1, RecordingManifestV2, RecordingManifestV3
 from leo.contracts.states import SourceType
 from leo.station.authority import (
     CaptureHardwareBindingV1,
     CaptureHardwareBindingV2,
+    CaptureHardwareBindingV3,
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
@@ -31,7 +32,12 @@ class FixtureAuthorityFileReference:
 @dataclass(frozen=True, slots=True)
 class ResolvedCaptureAuthority:
     topology: StationReceiverTopologyV1 | None
-    path_authority: CaptureHardwareBindingV1 | CaptureHardwareBindingV2 | FixturePathAuthorityV1
+    path_authority: (
+        CaptureHardwareBindingV1
+        | CaptureHardwareBindingV2
+        | CaptureHardwareBindingV3
+        | FixturePathAuthorityV1
+    )
 
 
 class UnreviewedTestFixtureAuthorityError(ValueError):
@@ -57,11 +63,15 @@ class PinnedCaptureAuthorityResolver:
 
     def resolve(
         self,
-        manifest: RecordingManifestV1,
+        manifest: RecordingManifestV1 | RecordingManifestV3,
         *,
         observed_manifest_file_digest: str,
     ) -> ResolvedCaptureAuthority:
         if manifest.source_type is SourceType.TEST:
+            if isinstance(manifest, RecordingManifestV3):
+                raise UnreviewedTestFixtureAuthorityError(
+                    "V3 TEST manifests require a separately reviewed fixture authority"
+                )
             reference = self._fixtures.get(observed_manifest_file_digest)
             if reference is None:
                 raise UnreviewedTestFixtureAuthorityError(
@@ -82,16 +92,26 @@ class PinnedCaptureAuthorityResolver:
             self._topology.relative_path,
             expected_file_digest=self._topology.file_digest,
         )
-        binding_type = (
-            CaptureHardwareBindingV2
-            if isinstance(manifest, RecordingManifestV2)
-            else CaptureHardwareBindingV1
-        )
-        return ResolvedCaptureAuthority(
-            topology=topology,
-            path_authority=binding_type.create(
+        binding: CaptureHardwareBindingV1 | CaptureHardwareBindingV3
+        if isinstance(manifest, RecordingManifestV3):
+            binding = CaptureHardwareBindingV3.create(
                 manifest,
                 observed_manifest_file_digest=observed_manifest_file_digest,
                 topology=topology,
-            ),
+            )
+        elif isinstance(manifest, RecordingManifestV2):
+            binding = CaptureHardwareBindingV2.create(
+                manifest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
+                topology=topology,
+            )
+        else:
+            binding = CaptureHardwareBindingV1.create(
+                manifest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
+                topology=topology,
+            )
+        return ResolvedCaptureAuthority(
+            topology=topology,
+            path_authority=binding,
         )

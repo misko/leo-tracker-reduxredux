@@ -8,7 +8,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Protocol
+from typing import Any, Protocol
 
 from leo.catalog import (
     CatalogRepository,
@@ -17,7 +17,12 @@ from leo.catalog import (
     SessionState,
 )
 from leo.catalog.errors import InvalidStateError
-from leo.contracts.recording import RecordingManifestV1
+from leo.contracts.recording import (
+    RecordingManifestV1,
+    RecordingManifestV3,
+    RecordingStreamV1,
+    RecordingStreamV3,
+)
 from leo.operations.retention import (
     HoldReceipt,
     HoldReceiptStore,
@@ -38,7 +43,7 @@ FailureInjector = Callable[[str], None]
 class CaptureAuthorityResolver(Protocol):
     def resolve(
         self,
-        manifest: RecordingManifestV1,
+        manifest: RecordingManifestV1 | RecordingManifestV3,
         *,
         observed_manifest_file_digest: str,
     ) -> ResolvedCaptureAuthority: ...
@@ -465,7 +470,7 @@ def _registration_error(bundle: PublishedBundle, error: Exception) -> str:
 
 
 def _manifest_time(
-    manifest: RecordingManifestV1,
+    manifest: RecordingManifestV1 | RecordingManifestV3,
     *,
     first: bool,
 ) -> datetime | None:
@@ -487,10 +492,7 @@ def _manifest_time(
 
 def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistration, ...]:
     values: list[RadioStreamRegistration] = []
-    ordered_streams = sorted(
-        bundle.manifest.streams,
-        key=lambda item: (item.stream_id, item.radio.radio_id),
-    )
+    ordered_streams = _ordered_manifest_streams(bundle.manifest)
     for manifest_ordinal, stream in enumerate(ordered_streams):
         timing = stream.timing
         applied = stream.applied_settings
@@ -503,6 +505,63 @@ def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistrat
             applied.receiver_ids if applied is not None else stream.requested_settings.receiver_ids
         )
         sample_ns = (1_000_000_000 + sample_rate_hz - 1) // sample_rate_hz
+        attributes: dict[str, Any] = {
+            "requested_settings": stream.requested_settings.model_dump(mode="json"),
+            "applied_settings": None if applied is None else applied.model_dump(mode="json"),
+            "timing": None if timing is None else timing.model_dump(mode="json"),
+            "capture_start_utc_ns": (
+                None if timing is None else timing.first_sample.earliest_utc_ns
+            ),
+            "capture_end_utc_ns": (
+                None if timing is None else timing.last_sample.latest_utc_ns + sample_ns
+            ),
+            "continuity": stream.continuity.model_dump(mode="json"),
+            "timeline_relative_path": stream.timeline_relative_path,
+            "timeline_sha256": stream.timeline_sha256,
+        }
+        if isinstance(stream, RecordingStreamV3):
+            captured_sample_count = stream.observed_sample_count
+            attributes.update(
+                {
+                    "logical_sample_count": stream.logical_sample_count,
+                    "observed_sample_count": stream.observed_sample_count,
+                    "zero_fill_sample_count": stream.zero_fill_sample_count,
+                    "observed_iq_sha256": stream.observed_iq_sha256,
+                    "logical_iq_sha256": stream.logical_iq_sha256,
+                    "gap_map_relative_path": stream.gap_map_relative_path,
+                    "gap_map_sha256": stream.gap_map_sha256,
+                    "validity_inventory_relative_path": (stream.validity_inventory_relative_path),
+                    "validity_inventory_sha256": stream.validity_inventory_sha256,
+                }
+            )
+            chunks = tuple(
+                RecordingChunkRegistration(
+                    chunk_index=chunk.chunk_index,
+                    sample_start=chunk.device_sample_start,
+                    sample_count=chunk.sample_count,
+                    logical_uri=f"{bundle.uri.rstrip('/')}/{chunk.relative_path}",
+                    compressed_digest=chunk.compressed_sha256,
+                    uncompressed_digest=chunk.uncompressed_sha256,
+                    compressed_bytes=chunk.compressed_bytes,
+                    uncompressed_bytes=chunk.uncompressed_bytes,
+                )
+                for chunk in stream.chunks
+            )
+        else:
+            captured_sample_count = stream.captured_sample_count
+            chunks = tuple(
+                RecordingChunkRegistration(
+                    chunk_index=chunk.chunk_index,
+                    sample_start=chunk.sample_start,
+                    sample_count=chunk.sample_count,
+                    logical_uri=f"{bundle.uri.rstrip('/')}/{chunk.relative_path}",
+                    compressed_digest=chunk.compressed_sha256,
+                    uncompressed_digest=chunk.uncompressed_sha256,
+                    compressed_bytes=chunk.compressed_bytes,
+                    uncompressed_bytes=chunk.uncompressed_bytes,
+                )
+                for chunk in stream.chunks
+            )
         values.append(
             RadioStreamRegistration(
                 stream_id=stream.stream_id,
@@ -514,45 +573,36 @@ def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistrat
                 state=stream.state.value,
                 receiver_ids=receiver_ids,
                 sample_rate_hz=sample_rate_hz,
-                captured_sample_count=stream.captured_sample_count,
+                captured_sample_count=captured_sample_count,
                 observed_start_at=(
                     None if timing is None else _utc_datetime(timing.first_sample.estimate_utc_ns)
                 ),
                 observed_end_at=(
                     None if timing is None else _utc_datetime(timing.last_sample.estimate_utc_ns)
                 ),
-                attributes={
-                    "requested_settings": stream.requested_settings.model_dump(mode="json"),
-                    "applied_settings": (
-                        None if applied is None else applied.model_dump(mode="json")
-                    ),
-                    "timing": None if timing is None else timing.model_dump(mode="json"),
-                    "capture_start_utc_ns": (
-                        None if timing is None else timing.first_sample.earliest_utc_ns
-                    ),
-                    "capture_end_utc_ns": (
-                        None if timing is None else timing.last_sample.latest_utc_ns + sample_ns
-                    ),
-                    "continuity": stream.continuity.model_dump(mode="json"),
-                    "timeline_relative_path": stream.timeline_relative_path,
-                    "timeline_sha256": stream.timeline_sha256,
-                },
-                chunks=tuple(
-                    RecordingChunkRegistration(
-                        chunk_index=chunk.chunk_index,
-                        sample_start=chunk.sample_start,
-                        sample_count=chunk.sample_count,
-                        logical_uri=f"{bundle.uri.rstrip('/')}/{chunk.relative_path}",
-                        compressed_digest=chunk.compressed_sha256,
-                        uncompressed_digest=chunk.uncompressed_sha256,
-                        compressed_bytes=chunk.compressed_bytes,
-                        uncompressed_bytes=chunk.uncompressed_bytes,
-                    )
-                    for chunk in stream.chunks
-                ),
+                attributes=attributes,
+                chunks=chunks,
             )
         )
     return tuple(values)
+
+
+def _ordered_manifest_streams(
+    manifest: RecordingManifestV1 | RecordingManifestV3,
+) -> tuple[RecordingStreamV1 | RecordingStreamV3, ...]:
+    if isinstance(manifest, RecordingManifestV3):
+        return tuple(
+            sorted(
+                manifest.streams,
+                key=lambda item: (item.stream_id, item.radio.radio_id),
+            )
+        )
+    return tuple(
+        sorted(
+            manifest.streams,
+            key=lambda item: (item.stream_id, item.radio.radio_id),
+        )
+    )
 
 
 def _utc_datetime(utc_ns: int) -> datetime:

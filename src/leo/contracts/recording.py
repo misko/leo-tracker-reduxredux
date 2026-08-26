@@ -21,6 +21,7 @@ from leo.contracts.radio import IqBlockMetadataV2, RadioIdentityV1, RadioSetting
 from leo.contracts.states import (
     CaptureState,
     ContinuityStatus,
+    PeerFailurePolicy,
     SampleFormat,
     SampleLayout,
     SourceType,
@@ -29,11 +30,14 @@ from leo.contracts.states import (
     SynchronizationMode,
     TimingMethod,
 )
+from leo.contracts.validity import DeviceAxisContentKind
 
 Identifier = Annotated[
     str,
     StringConstraints(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"),
 ]
+
+DEVICE_AXIS_STORAGE_POLICY_V1 = "zstd-128m-device-axis-zero-v1"
 
 
 def _relative_bundle_path(value: str) -> str:
@@ -97,6 +101,38 @@ class RecordingChunkV1(ContractModel):
     @classmethod
     def _path_is_relative(cls, value: str) -> str:
         return _relative_bundle_path(value)
+
+
+class DeviceAxisRecordingChunkV1(ContractModel):
+    """One immutable V3 shard on the complete FPGA device-sample axis."""
+
+    schema_version: Literal[1] = 1
+    chunk_index: Annotated[int, Field(ge=0)]
+    content_kind: DeviceAxisContentKind
+    continuity_segment_index: Annotated[int, Field(ge=0)] | None = None
+    relative_path: Annotated[str, StringConstraints(min_length=1, max_length=512)]
+    device_sample_start: Annotated[int, Field(ge=0)]
+    sample_count: Annotated[int, Field(gt=0)]
+    uncompressed_bytes: Annotated[int, Field(gt=0)]
+    compressed_bytes: Annotated[int, Field(gt=0)]
+    uncompressed_sha256: Sha256Digest
+    compressed_sha256: Sha256Digest
+    sample_format: Literal[SampleFormat.CI16_LE] = SampleFormat.CI16_LE
+    sample_layout: Literal[SampleLayout.SAMPLE_RECEIVER_IQ] = SampleLayout.SAMPLE_RECEIVER_IQ
+
+    @field_validator("relative_path")
+    @classmethod
+    def _path_is_relative(cls, value: str) -> str:
+        return _relative_bundle_path(value)
+
+    @model_validator(mode="after")
+    def _content_has_truthful_segment_identity(self) -> Self:
+        observed = self.content_kind is DeviceAxisContentKind.OBSERVED
+        if observed != (self.continuity_segment_index is not None):
+            raise ValueError(
+                "observed chunks require a continuity segment; zero-fill chunks forbid one"
+            )
+        return self
 
 
 class ContinuitySummaryV1(ContractModel):
@@ -423,6 +459,128 @@ class RecordingStreamV2(RecordingStreamV1):
         return self
 
 
+class RecordingStreamV3(ContractModel):
+    """Physically complete device-axis IQ with explicit observation integrity."""
+
+    schema_version: Literal[3] = 3
+    stream_id: Identifier
+    radio: RadioIdentityV1
+    requested_settings: RadioSettingsV1
+    applied_settings: RadioSettingsV1
+    state: Literal[StreamState.COMPLETE, StreamState.PARTIAL]
+    requested_sample_count: Annotated[int, Field(gt=0)]
+    logical_sample_count: Annotated[int, Field(gt=0)]
+    observed_sample_count: Annotated[int, Field(gt=0)]
+    zero_fill_sample_count: Annotated[int, Field(ge=0)]
+    timing: StreamTimingV1
+    chunks: tuple[DeviceAxisRecordingChunkV1, ...]
+    observed_iq_sha256: Sha256Digest
+    logical_iq_sha256: Sha256Digest
+    timeline_relative_path: Annotated[str, StringConstraints(min_length=1, max_length=512)]
+    timeline_sha256: Sha256Digest
+    gap_map_relative_path: Annotated[str, StringConstraints(min_length=1, max_length=512)]
+    gap_map_sha256: Sha256Digest
+    validity_inventory_relative_path: Annotated[
+        str,
+        StringConstraints(min_length=1, max_length=512),
+    ]
+    validity_inventory_sha256: Sha256Digest
+    continuity: ContinuitySummaryV2
+    error: Annotated[str | None, StringConstraints(min_length=1, max_length=2048)] = None
+
+    @property
+    def captured_sample_count(self) -> int:
+        """Compatibility view of physically observed, never zero-filled, IQ."""
+
+        return self.observed_sample_count
+
+    @field_validator(
+        "timeline_relative_path",
+        "gap_map_relative_path",
+        "validity_inventory_relative_path",
+    )
+    @classmethod
+    def _bundle_path_is_relative(cls, value: str) -> str:
+        return _relative_bundle_path(value)
+
+    @model_validator(mode="after")
+    def _device_axis_stream_is_closed(self) -> Self:
+        if not self.chunks:
+            raise ValueError("V3 stream requires physical device-axis IQ chunks")
+        bundle_paths = (
+            *(chunk.relative_path for chunk in self.chunks),
+            self.timeline_relative_path,
+            self.gap_map_relative_path,
+            self.validity_inventory_relative_path,
+        )
+        if len(set(bundle_paths)) != len(bundle_paths):
+            raise ValueError("V3 stream bundle object paths must be unique")
+        if self.requested_settings.receiver_ids != self.applied_settings.receiver_ids:
+            raise ValueError("V3 receiver inventory changed when settings were applied")
+        receiver_count = len(self.applied_settings.receiver_ids)
+        device_cursor = 0
+        observed = 0
+        zero_fill = 0
+        previous_observed_segment = -1
+        for expected_index, chunk in enumerate(self.chunks):
+            if chunk.chunk_index != expected_index:
+                raise ValueError("V3 chunk indexes must be contiguous from zero")
+            if chunk.device_sample_start != device_cursor:
+                raise ValueError("V3 chunks must cover the device axis exactly once")
+            expected_bytes = chunk.sample_count * receiver_count * 4
+            if chunk.uncompressed_bytes != expected_bytes:
+                raise ValueError("V3 chunk byte count disagrees with CI16 sample geometry")
+            device_cursor += chunk.sample_count
+            if chunk.content_kind is DeviceAxisContentKind.OBSERVED:
+                assert chunk.continuity_segment_index is not None
+                if chunk.continuity_segment_index not in {
+                    previous_observed_segment,
+                    previous_observed_segment + 1,
+                }:
+                    raise ValueError(
+                        "V3 observed chunk continuity segments must advance one at a time"
+                    )
+                observed += chunk.sample_count
+                previous_observed_segment = chunk.continuity_segment_index
+            else:
+                zero_fill += chunk.sample_count
+        if self.logical_sample_count != self.requested_sample_count:
+            raise ValueError("V3 logical span must equal the requested device span")
+        if device_cursor != self.logical_sample_count:
+            raise ValueError("V3 logical sample count disagrees with chunk inventory")
+        if observed != self.observed_sample_count or zero_fill != self.zero_fill_sample_count:
+            raise ValueError("V3 chunk kinds disagree with observed and zero-fill counts")
+        if self.logical_sample_count != self.observed_sample_count + self.zero_fill_sample_count:
+            raise ValueError("V3 logical samples must equal observed plus zero fill")
+        if (
+            self.continuity.observed_sample_count != self.observed_sample_count
+            or self.continuity.missing_sample_count != self.zero_fill_sample_count
+            or self.continuity.device_span_sample_count != self.logical_sample_count
+        ):
+            raise ValueError("V3 continuity disagrees with its physical IQ inventory")
+        if (
+            self.continuity.enqueue_failure_count
+            or self.continuity.terminal_enqueue_failure is not None
+            or self.continuity.terminal_rejected_gap_count
+            or self.continuity.terminal_rejected_missing_sample_count
+            or self.continuity.terminal_rejected_overflow_count
+        ):
+            raise ValueError("V3 stream cannot seal after a rejected host-queue refill")
+        if previous_observed_segment + 1 != self.continuity.segment_count:
+            raise ValueError("V3 observed chunks disagree with continuity segment count")
+        integrity_loss = bool(
+            self.zero_fill_sample_count
+            or self.continuity.gap_count
+            or self.continuity.overflow_count
+        )
+        if self.state is StreamState.COMPLETE:
+            if integrity_loss or self.error is not None:
+                raise ValueError("complete V3 stream requires lossless observed IQ")
+        elif not integrity_loss or self.error is None:
+            raise ValueError("partial V3 stream requires explicit observation-integrity loss")
+        return self
+
+
 class SynchronizationSummaryV1(ContractModel):
     schema_version: Literal[1] = 1
     requested_mode: SynchronizationMode
@@ -582,8 +740,82 @@ class RecordingManifestV2(RecordingManifestV1):
     streams: tuple[RecordingStreamV2, ...]
 
 
+class RecordingManifestV3(ContractModel):
+    """Immutable device-axis-zero-filled recording bundle written last."""
+
+    schema_version: Literal[3] = 3
+    session_id: Identifier
+    state: Literal[CaptureState.COMMITTED, CaptureState.DEGRADED]
+    source_type: SourceType
+    created_utc_ns: Annotated[int, Field(ge=0)]
+    finalized_utc_ns: Annotated[int, Field(ge=0)]
+    capture_plan: CapturePlanV2
+    tags: tuple[Tag, ...]
+    streams: tuple[RecordingStreamV3, ...]
+    synchronization: SynchronizationSummaryV1
+    compression: CompressionSettingsV1
+    calibrations: tuple[CalibrationReferenceV1, ...] = ()
+    host: HostIdentityV1
+    producer: ProducerV1
+
+    @field_validator("tags")
+    @classmethod
+    def _tags_are_canonical(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if tuple(sorted(set(value))) != value:
+            raise ValueError("manifest tags must be unique and sorted")
+        return value
+
+    @model_validator(mode="after")
+    def _manifest_is_consistent(self) -> Self:
+        if self.finalized_utc_ns < self.created_utc_ns:
+            raise ValueError("manifest finalization precedes creation")
+        if self.source_type is not self.capture_plan.source_type:
+            raise ValueError("manifest source type disagrees with capture plan")
+        if not set(self.capture_plan.profile_revision.profile.tags).issubset(self.tags):
+            raise ValueError("manifest must retain every default profile tag")
+        profile_policy = self.capture_plan.profile_revision.profile.storage_policy
+        if (
+            self.compression.policy_id != DEVICE_AXIS_STORAGE_POLICY_V1
+            or profile_policy != DEVICE_AXIS_STORAGE_POLICY_V1
+        ):
+            raise ValueError("V3 manifest requires the device-axis-zero storage policy")
+        if (
+            self.capture_plan.profile_revision.profile.peer_failure_policy
+            is not PeerFailurePolicy.FAIL_SESSION
+        ):
+            raise ValueError("V3 manifest requires fail-session peer semantics")
+        if not self.streams:
+            raise ValueError("a committed or degraded V3 manifest requires stream outcomes")
+        stream_ids = tuple(stream.stream_id for stream in self.streams)
+        if len(set(stream_ids)) != len(stream_ids):
+            raise ValueError("manifest stream IDs must be unique")
+        if stream_ids != self.synchronization.stream_ids:
+            raise ValueError("synchronization stream order must match manifest streams")
+        if (
+            self.synchronization.requested_mode
+            is not self.capture_plan.requested_synchronization_mode
+            or self.synchronization.effective_mode
+            is not self.capture_plan.effective_synchronization_mode
+        ):
+            raise ValueError("synchronization summary disagrees with capture plan")
+        radio_ids = tuple(stream.radio.radio_id for stream in self.streams)
+        if radio_ids != self.capture_plan.radio_ids:
+            raise ValueError("stream radio order must match capture plan")
+        if any(
+            stream.requested_sample_count != self.capture_plan.resolved_sample_count
+            for stream in self.streams
+        ):
+            raise ValueError("V3 stream span disagrees with capture plan")
+        all_complete = all(stream.state is StreamState.COMPLETE for stream in self.streams)
+        if self.state is CaptureState.COMMITTED and not all_complete:
+            raise ValueError("committed V3 manifest requires lossless streams")
+        if self.state is CaptureState.DEGRADED and all_complete:
+            raise ValueError("degraded V3 manifest requires observation-integrity loss")
+        return self
+
+
 RecordingManifestContract = Annotated[
-    RecordingManifestV1 | RecordingManifestV2,
+    RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3,
     Field(discriminator="schema_version"),
 ]
 _RECORDING_MANIFEST_ADAPTER: TypeAdapter[RecordingManifestContract] = TypeAdapter(
@@ -591,13 +823,15 @@ _RECORDING_MANIFEST_ADAPTER: TypeAdapter[RecordingManifestContract] = TypeAdapte
 )
 
 
-def parse_recording_manifest_json(payload: bytes | str) -> RecordingManifestV1:
+def parse_recording_manifest_json(
+    payload: bytes | str,
+) -> RecordingManifestV1 | RecordingManifestV3:
     """Decode every supported immutable recording-manifest major version."""
 
     return _RECORDING_MANIFEST_ADAPTER.validate_json(payload)
 
 
-def parse_recording_manifest(value: object) -> RecordingManifestV1:
+def parse_recording_manifest(value: object) -> RecordingManifestV1 | RecordingManifestV3:
     """Validate a Python document against every supported manifest version."""
 
     return _RECORDING_MANIFEST_ADAPTER.validate_python(value)

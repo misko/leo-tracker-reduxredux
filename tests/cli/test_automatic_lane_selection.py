@@ -13,6 +13,7 @@ from leo.contracts.pipeline_lanes import (
     assign_dwell_pipeline_lane,
 )
 from leo.contracts.states import CaptureState
+from tests.pipeline.test_standard_native_topology import _manifest as native_manifest
 
 
 class _Catalog:
@@ -65,6 +66,17 @@ class _Processing:
 
     def create_expanded_run(self, **values: object) -> None:
         self.calls.append(values)
+
+
+class _NativeRecordings:
+    def __init__(self, manifest_digest: str, manifest: object) -> None:
+        self.bundle = SimpleNamespace(
+            manifest_sha256=manifest_digest,
+            manifest=manifest,
+        )
+
+    def inspect_uri(self, _uri: str):
+        return self.bundle
 
 
 def _manifest_for_lane(lane: PipelineLane) -> str:
@@ -172,3 +184,49 @@ def test_capture_only_capture_is_not_automatically_analyzed(
 
     assert LocalProcessingBackend(services)._ensure_default_run("dwell") is None
     assert processing.calls == []
+
+
+def test_v3_native_dispatch_precedes_degraded_and_capture_only_rejection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_digest = canonical_digest({"native": "gapped-capture-only"})
+    base_manifest = native_manifest("starlink-ch4-lower-5m-60s-device-axis-v3")
+    manifest = base_manifest.model_copy(
+        update={
+            "state": CaptureState.DEGRADED,
+            "tags": tuple(sorted({*base_manifest.tags, "CAPTURE_ONLY"})),
+        }
+    )
+    catalog = _Catalog(manifest_digest)
+    processing = _Processing()
+    services = SimpleNamespace(
+        catalog=catalog,
+        recordings=_NativeRecordings(manifest_digest, manifest),
+        processing=processing,
+        pipeline_release_id="1" * 40,
+        automatic_lane_selection=PRODUCTION_AUTOMATIC_LANE_SELECTION_V1,
+    )
+    plan = SimpleNamespace(
+        session_id="dwell",
+        manifest_digest=manifest_digest,
+        plan_digest=canonical_digest({"plan": "native"}),
+    )
+    monkeypatch.setattr(
+        processing_module,
+        "compile_standard_native_run_plan",
+        lambda *_args, **_kwargs: plan,
+    )
+    monkeypatch.setattr(
+        processing_module,
+        "compile_standard_run_plan",
+        lambda *_args, **_kwargs: pytest.fail("V3 reached frozen Standard planning"),
+    )
+
+    run_id = LocalProcessingBackend(services)._ensure_default_run("dwell")
+
+    assert run_id is not None and run_id.startswith("native-capture-")
+    assert len(processing.calls) == 1
+    assert processing.calls[0]["plan"] is plan
+    assert processing.calls[0]["pipeline_lane"] is PipelineLane.STANDARD
+    assert processing.calls[0]["promotion_policy"] == "current"
+    assert processing.calls[0]["trigger"] == "new_capture"

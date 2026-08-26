@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import grp
 import hashlib
+import importlib.util
 import json
+import math
 import os
 import pwd
 import re
@@ -16,7 +18,9 @@ import subprocess
 import sys
 import time
 import tomllib
+from datetime import UTC, datetime
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 QNAP = Path("/mnt/qnap01")
@@ -34,21 +38,64 @@ CONTIGUOUS_RATE_3M_PROFILE_DIGEST = (
 CONTIGUOUS_RATE_3M_PLAN_DIGEST = (
     "sha256:ddacc29f61c2d7e0b30e631ec84b91b737f7fecbe2d63015443b4ca588ca998e"
 )
+CONTIGUOUS_RATE_3M_DEVICE_AXIS_PROFILE_DIGEST = (
+    "sha256:4533ac4a3348721e0bf7bda50c5701f505e47ef579ef9a47cbc7c38b9c9b4c3e"
+)
+CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST = (
+    "sha256:9fd011c1843213d3c699cadc2cb66d0cabecd804fc01b0ad0e45f3b8026fa8eb"
+)
+CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST = (
+    "sha256:8851c20e4c6e79bc5d4cb92f8fd0e09eaf24e59b742239b92bc248fd4d09ba5d"
+)
+CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST = (
+    "sha256:22b2bbb83a10b6494b16cba6303591eedbda37d3f876f7822c1fe5d68f42ccc1"
+)
+CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS = (
+    "CAPTURE_ONLY",
+    "DEVICE_AXIS_ZERO_FILL",
+    "LIVE",
+    "RANDOM_TUNING",
+    "STANDARD_NATIVE",
+)
 CONTIGUOUS_RATE_USB_CONTROL_RADIOS = (
     ("usb_control_pluto_003a", "104000bac4950008230026001b440a003a"),
     ("usb_control_pluto_3ef2", "1040007c4a94000211000b009186843ef2"),
 )
 RATE_RECEIPT_MAXIMUM_AGE_NS = 24 * 60 * 60 * 1_000_000_000
 RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS = 5 * 60 * 1_000_000_000
+RELEASE_QUALIFICATION_SCHEMA = "org.leo.release-qualification/v2"
+RELEASE_QUALIFICATION_COMMANDS = (
+    "protected-real-corpus",
+    "standard-native-science",
+    "standard-native-postgresql",
+    "standard-native-real-corpus",
+    "production-web-build",
+    "production-chromium-e2e",
+)
+RELEASE_QUALIFICATION_CONTRACT = Path("src/leo/qualification/release_contract.py")
+RELEASE_QUALIFICATION_DATABASE = "postgresql+psycopg:///leo_qualification"
+RELEASE_QUALIFICATION_PROTECTED_CORPUS = "/srv/bulk/leo/test-corpus"
+RELEASE_QUALIFICATION_NATIVE_CORPUS = "/srv/bulk/leo/recordings/2026/08/25"
+RELEASE_QUALIFICATION_MAXIMUM_JSON_BYTES = 16 * 1024 * 1024
+EXPECTED_PROCESSING_RESOURCE_CAPACITY_ROWS = (
+    "cpu|8",
+    "heavy|2",
+    "memory|4",
+    "streaming|16",
+)
+PROCESSING_RESOURCE_CAPACITY_QUERY = (
+    "SELECT resource_class, maximum_leases "
+    "FROM public.processing_resource_capacity ORDER BY resource_class"
+)
 REVIEWED_CAPTURE_PROFILE_SHA256 = {
-    Path("profiles/starlink-ch4-lower-2p5m-60s-continuity-v2.yaml"): (
-        "70bdc8f3c91d62c905321ce4244af0ddbd2f3e3835f04ad0684035f5bf089ebd"
+    Path("profiles/starlink-ch4-lower-2p5m-60s-device-axis-v3.yaml"): (
+        "3845c71bf2ebc497fc1d605362130e3cb44317297f72af3bf4e683b9d0317c2b"
     ),
-    Path("profiles/starlink-ch4-lower-3m-60s-capture-v2.yaml"): (
-        "e9e32c13cbc97515ed05c980126671b79943ebaf6ea2c9d8915d094d149ec700"
+    Path("profiles/starlink-ch4-lower-3m-60s-device-axis-v3.yaml"): (
+        "ee58dae91024ad0cbafd8d794b9883747331f01e6d332a620fbf201ae2388af7"
     ),
-    Path("profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml"): (
-        "c7a893d5fe64483fd287269beb68f8a5722ba6c85e240f86bf7bd102d1707268"
+    Path("profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml"): (
+        "ed944adfdd42fd931cf2e7523dde97aa8b869e06365b8e656b2de218ddee2ada"
     ),
     Path("profiles/hardware-canary-3m-60s-contiguous-v2.yaml"): (
         "7cff17eef3c4fe063dbfddba65fbfe51cc948d14cd00da44c450858c6fdff4e2"
@@ -205,35 +252,500 @@ def verify_release_evidence(
     release: Path,
     revision: str,
 ) -> None:
-    root = reject_qnap(receipt_path, "release qualification receipt").parent
-    definition = root / str(receipt.get("definition_relative_path", ""))
+    root = _qualification_run_root(receipt_path)
+    persisted_receipt = _load_qualification_json(
+        receipt_path,
+        "release qualification receipt",
+        require_sealed=True,
+    )
+    if persisted_receipt != receipt:
+        raise ValueError("release qualification receipt argument differs from persisted bytes")
+    receipt = persisted_receipt
+    expected_receipt_keys = {
+        "schema",
+        "run_id",
+        "status",
+        "passed",
+        "started_utc",
+        "finished_utc",
+        "duration_seconds",
+        "git_revision",
+        "definition_relative_path",
+        "definition_sha256",
+        "commands",
+        "evidence",
+    }
+    if set(receipt) != expected_receipt_keys:
+        raise ValueError("release qualification receipt schema is not closed")
+    if (
+        receipt.get("schema") != RELEASE_QUALIFICATION_SCHEMA
+        or receipt.get("status") != "passed"
+        or receipt.get("passed") is not True
+        or receipt.get("git_revision") != revision
+    ):
+        raise ValueError("release qualification receipt is not the required V2 schema")
+    run_id = receipt.get("run_id")
+    if not _safe_run_id(run_id) or root.name != run_id:
+        raise ValueError("release qualification run ID does not bind its evidence directory")
+    if receipt.get("definition_relative_path") != "definition.json":
+        raise ValueError("release qualification definition path is not canonical")
+    definition = root / "definition.json"
     expected_definition = receipt.get("definition_sha256")
-    if not definition.is_file() or sha256(definition) != expected_definition:
+    definition_payload = _load_qualification_json(
+        definition,
+        "release qualification definition",
+        require_sealed=True,
+    )
+    if not _is_sha256(expected_definition) or sha256(definition) != expected_definition:
         raise ValueError("release qualification definition digest does not verify")
-    definition_payload = json.loads(definition.read_text(encoding="utf-8"))
-    source = definition_payload.get("source") if isinstance(definition_payload, dict) else None
-    if not isinstance(source, dict) or source.get("git_revision") != revision:
-        raise ValueError("release qualification definition does not identify staged revision")
-    if source.get("uv_lock_sha256") != sha256(release / "uv.lock"):
-        raise ValueError("qualified uv.lock does not match staged release")
-    if source.get("package_lock_sha256") != sha256(release / "web/package-lock.json"):
-        raise ValueError("qualified package-lock.json does not match staged release")
+    contract = _load_release_qualification_contract(release)
+    if definition_payload.get("schema") != RELEASE_QUALIFICATION_SCHEMA:
+        raise ValueError("release qualification definition is not the required V2 schema")
+    source = definition_payload.get("source")
+    if not isinstance(source, dict):
+        raise ValueError("release qualification definition source is malformed")
+    python_version = source.get("python")
+    platform_identity = source.get("platform")
+    if not isinstance(python_version, str) or not python_version:
+        raise ValueError("release qualification Python identity is malformed")
+    if not isinstance(platform_identity, str) or not platform_identity:
+        raise ValueError("release qualification platform identity is malformed")
+    staged_uv_digest = _staged_file_sha256(release / "uv.lock", "staged uv.lock")
+    staged_package_digest = _staged_file_sha256(
+        release / "web/package-lock.json",
+        "staged package-lock.json",
+    )
+    staged_corpus_digest = _staged_file_sha256(
+        release / "corpus/manifest.json",
+        "staged corpus manifest",
+    )
+    expected_definition_payload = contract.release_qualification_v2_definition(
+        run_id=run_id,
+        started_utc=receipt.get("started_utc"),
+        git_revision=revision,
+        python_version=python_version,
+        platform_identity=platform_identity,
+        uv_lock_sha256=staged_uv_digest,
+        package_lock_sha256=staged_package_digest,
+        corpus_manifest_sha256=staged_corpus_digest,
+        database_identity=RELEASE_QUALIFICATION_DATABASE,
+        protected_corpus_root=RELEASE_QUALIFICATION_PROTECTED_CORPUS,
+        native_rate_corpus_root=RELEASE_QUALIFICATION_NATIVE_CORPUS,
+    )
+    if definition_payload != expected_definition_payload:
+        raise ValueError(
+            "release qualification definition differs from the canonical staged V2 contract"
+        )
+    _verify_release_qualification_commands(
+        definition_payload,
+        release=release,
+        contract=contract,
+    )
+
+    started = _qualification_timestamp(receipt.get("started_utc"), "receipt started_utc")
+    finished = _qualification_timestamp(receipt.get("finished_utc"), "receipt finished_utc")
+    _require_duration(
+        receipt.get("duration_seconds"),
+        (finished - started).total_seconds(),
+        "receipt duration_seconds",
+    )
+    if finished < started:
+        raise ValueError("release qualification receipt time interval is reversed")
+
+    actual_inventory = _qualification_tree_inventory(
+        root,
+        "release qualification evidence",
+        require_sealed=True,
+        excluded_relative_paths=frozenset({"receipt.json"}),
+    )
     evidence = receipt.get("evidence")
-    if not isinstance(evidence, list) or not evidence:
-        raise ValueError("release qualification receipt has no evidence inventory")
-    for item in evidence:
-        if not isinstance(item, dict):
-            raise ValueError("release qualification evidence entry is malformed")
-        relative = Path(str(item.get("relative_path", "")))
-        if relative.is_absolute() or ".." in relative.parts:
-            raise ValueError("release qualification evidence path escapes its run")
-        path = reject_qnap(root / relative, "release qualification evidence")
-        if path.parent != root and root not in path.parents:
-            raise ValueError("release qualification evidence path escapes its run")
-        if not path.is_file() or path.stat().st_size != item.get("bytes"):
-            raise ValueError(f"release qualification evidence is missing or resized: {relative}")
-        if sha256(path) != item.get("sha256"):
-            raise ValueError(f"release qualification evidence digest mismatch: {relative}")
+    if not isinstance(evidence, list) or evidence != actual_inventory:
+        raise ValueError("release qualification evidence inventory is not exact and complete")
+    evidence_paths = {item["relative_path"] for item in actual_inventory}
+    required_paths = {
+        "definition.json",
+        *contract.RELEASE_QUALIFICATION_V2_LOG_PATHS.values(),
+        *contract.RELEASE_QUALIFICATION_V2_JUNIT_PATHS.values(),
+        *contract.RELEASE_QUALIFICATION_V2_RESULT_PATHS.values(),
+    }
+    missing = required_paths - evidence_paths
+    unexpected = {
+        path
+        for path in evidence_paths - required_paths
+        if not path.startswith("results/playwright/")
+    }
+    if missing or unexpected:
+        raise ValueError(
+            "release qualification evidence file set is not closed: "
+            f"missing={sorted(missing)!r} unexpected={sorted(unexpected)!r}"
+        )
+
+    _verify_release_qualification_outcomes(
+        receipt,
+        root=root,
+        started=started,
+        finished=finished,
+        contract=contract,
+    )
+    _verify_release_qualification_results(root, release=release, contract=contract)
+
+
+def _verify_release_qualification_commands(
+    definition: dict[str, Any],
+    *,
+    release: Path,
+    contract: ModuleType | None = None,
+) -> None:
+    authority = contract or _load_release_qualification_contract(release)
+    expected = list(authority.release_qualification_v2_command_documents())
+    if definition.get("commands") != expected:
+        raise ValueError("release qualification command inventory is not exact")
+
+
+def _qualification_run_root(receipt_path: Path) -> Path:
+    literal = receipt_path.absolute()
+    if literal.name != "receipt.json":
+        raise ValueError("release qualification receipt path is not canonical")
+    _qualification_regular_file(
+        literal,
+        "release qualification receipt",
+        require_sealed=True,
+    )
+    root = literal.parent
+    try:
+        metadata = root.lstat()
+    except OSError as error:
+        raise ValueError("release qualification run root is unavailable") from error
+    if not stat.S_ISDIR(metadata.st_mode) or root.resolve(strict=True) != root:
+        raise ValueError("release qualification run root must be a non-symlink directory")
+    if stat.S_IMODE(metadata.st_mode) & 0o222:
+        raise ValueError("release qualification run root is not sealed read-only")
+    return reject_qnap(root, "release qualification run root")
+
+
+def _qualification_regular_file(
+    path: Path,
+    label: str,
+    *,
+    require_sealed: bool,
+) -> Path:
+    literal = path.absolute()
+    try:
+        metadata = literal.lstat()
+        resolved = literal.resolve(strict=True)
+    except OSError as error:
+        raise ValueError(f"{label} is unavailable: {literal}") from error
+    if not stat.S_ISREG(metadata.st_mode) or resolved != literal:
+        raise ValueError(f"{label} must be a regular non-symlink file: {literal}")
+    if require_sealed and stat.S_IMODE(metadata.st_mode) & 0o222:
+        raise ValueError(f"{label} is not sealed read-only")
+    return reject_qnap(literal, label)
+
+
+def _load_qualification_json(
+    path: Path,
+    label: str,
+    *,
+    require_sealed: bool,
+) -> dict[str, Any]:
+    safe = _qualification_regular_file(path, label, require_sealed=require_sealed)
+    if safe.stat().st_size > RELEASE_QUALIFICATION_MAXIMUM_JSON_BYTES:
+        raise ValueError(f"{label} exceeds the 16 MiB boundary")
+    payload = safe.read_bytes()
+    if not payload or len(payload) > RELEASE_QUALIFICATION_MAXIMUM_JSON_BYTES:
+        raise ValueError(f"{label} is empty or exceeds the 16 MiB boundary")
+
+    def closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"{label} contains a duplicate JSON key: {key}")
+            result[key] = value
+        return result
+
+    def invalid_constant(value: str) -> None:
+        raise ValueError(f"{label} contains a non-finite JSON value: {value}")
+
+    try:
+        document = json.loads(
+            payload.decode("utf-8"),
+            object_pairs_hook=closed_object,
+            parse_constant=invalid_constant,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"{label} is not strict UTF-8 JSON") from error
+    if not isinstance(document, dict):
+        raise ValueError(f"{label} must contain a JSON object")
+    return document
+
+
+def _load_release_qualification_contract(release: Path) -> ModuleType:
+    source = _qualification_regular_file(
+        release / RELEASE_QUALIFICATION_CONTRACT,
+        "staged release qualification contract",
+        require_sealed=False,
+    )
+    spec = importlib.util.spec_from_file_location("_leo_staged_release_contract", source)
+    if spec is None or spec.loader is None:
+        raise ValueError("staged release qualification contract cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as error:
+        raise ValueError("staged release qualification contract cannot be evaluated") from error
+    required = (
+        "MAXIMUM_JUNIT_BYTES",
+        "RELEASE_QUALIFICATION_V2_JUNIT_PATHS",
+        "RELEASE_QUALIFICATION_V2_LOG_PATHS",
+        "RELEASE_QUALIFICATION_V2_RESULT_PATHS",
+        "release_qualification_v2_command_documents",
+        "release_qualification_v2_definition",
+        "validate_pytest_junit_summary_v1",
+    )
+    if any(not hasattr(module, name) for name in required):
+        raise ValueError("staged release qualification contract is incomplete")
+    return module
+
+
+def _staged_file_sha256(path: Path, label: str) -> str:
+    safe = _qualification_regular_file(path, label, require_sealed=False)
+    return sha256(safe)
+
+
+def _qualification_tree_inventory(
+    root: Path,
+    label: str,
+    *,
+    require_sealed: bool,
+    excluded_relative_paths: frozenset[str] = frozenset(),
+) -> list[dict[str, Any]]:
+    literal_root = root.absolute()
+    try:
+        root_metadata = literal_root.lstat()
+        resolved_root = literal_root.resolve(strict=True)
+    except OSError as error:
+        raise ValueError(f"{label} root is unavailable") from error
+    if not stat.S_ISDIR(root_metadata.st_mode) or resolved_root != literal_root:
+        raise ValueError(f"{label} root must be a non-symlink directory")
+    if require_sealed and stat.S_IMODE(root_metadata.st_mode) & 0o222:
+        raise ValueError(f"{label} root is not sealed read-only")
+    inventory: list[dict[str, Any]] = []
+    for path in sorted(literal_root.rglob("*")):
+        relative = path.relative_to(literal_root).as_posix()
+        metadata = path.lstat()
+        if stat.S_ISLNK(metadata.st_mode):
+            raise ValueError(f"{label} contains a symlink: {relative}")
+        if stat.S_ISDIR(metadata.st_mode):
+            if require_sealed and stat.S_IMODE(metadata.st_mode) & 0o222:
+                raise ValueError(f"{label} directory is not sealed read-only: {relative}")
+            continue
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError(f"{label} contains a non-regular entry: {relative}")
+        if require_sealed and stat.S_IMODE(metadata.st_mode) & 0o222:
+            raise ValueError(f"{label} file is not sealed read-only: {relative}")
+        if relative in excluded_relative_paths:
+            continue
+        inventory.append(
+            {
+                "relative_path": relative,
+                "bytes": metadata.st_size,
+                "sha256": sha256(path),
+            }
+        )
+    return inventory
+
+
+def _verify_release_qualification_outcomes(
+    receipt: dict[str, Any],
+    *,
+    root: Path,
+    started: datetime,
+    finished: datetime,
+    contract: ModuleType,
+) -> None:
+    commands = receipt.get("commands")
+    if not isinstance(commands, list) or len(commands) != len(RELEASE_QUALIFICATION_COMMANDS):
+        raise ValueError("release qualification outcome inventory is not exact")
+    outcome_keys = {
+        "name",
+        "exit_code",
+        "passed",
+        "started_utc",
+        "finished_utc",
+        "duration_seconds",
+        "log_relative_path",
+        "log_sha256",
+        "result_relative_path",
+        "result_sha256",
+        "validation_error",
+    }
+    previous_finished = started
+    for expected_name, outcome in zip(RELEASE_QUALIFICATION_COMMANDS, commands, strict=True):
+        if not isinstance(outcome, dict) or set(outcome) != outcome_keys:
+            raise ValueError("release qualification outcome schema is not closed")
+        expected_log = contract.RELEASE_QUALIFICATION_V2_LOG_PATHS[expected_name]
+        expected_result = contract.RELEASE_QUALIFICATION_V2_RESULT_PATHS[expected_name]
+        if (
+            outcome.get("name") != expected_name
+            or type(outcome.get("exit_code")) is not int
+            or outcome.get("exit_code") != 0
+            or outcome.get("passed") is not True
+            or outcome.get("validation_error") is not None
+            or outcome.get("log_relative_path") != expected_log
+            or outcome.get("result_relative_path") != expected_result
+        ):
+            raise ValueError(f"release qualification outcome did not pass exactly: {expected_name}")
+        command_started = _qualification_timestamp(
+            outcome.get("started_utc"),
+            f"{expected_name} started_utc",
+        )
+        command_finished = _qualification_timestamp(
+            outcome.get("finished_utc"),
+            f"{expected_name} finished_utc",
+        )
+        if (
+            command_started < previous_finished
+            or command_finished < command_started
+            or command_finished > finished
+        ):
+            raise ValueError(
+                f"release qualification outcome times are inconsistent: {expected_name}"
+            )
+        _require_duration(
+            outcome.get("duration_seconds"),
+            (command_finished - command_started).total_seconds(),
+            f"{expected_name} duration_seconds",
+        )
+        log_path = _qualification_regular_file(
+            root / expected_log,
+            f"{expected_name} log",
+            require_sealed=True,
+        )
+        result_path = _qualification_regular_file(
+            root / expected_result,
+            f"{expected_name} result",
+            require_sealed=True,
+        )
+        if (
+            not _is_sha256(outcome.get("log_sha256"))
+            or outcome["log_sha256"] != sha256(log_path)
+            or not _is_sha256(outcome.get("result_sha256"))
+            or outcome["result_sha256"] != sha256(result_path)
+        ):
+            raise ValueError(f"release qualification outcome digest mismatch: {expected_name}")
+        previous_finished = command_finished
+
+
+def _verify_release_qualification_results(
+    root: Path,
+    *,
+    release: Path,
+    contract: ModuleType,
+) -> None:
+    for command_name, junit_relative in contract.RELEASE_QUALIFICATION_V2_JUNIT_PATHS.items():
+        junit_path = _qualification_regular_file(
+            root / junit_relative,
+            f"{command_name} JUnit receipt",
+            require_sealed=True,
+        )
+        if junit_path.stat().st_size > contract.MAXIMUM_JUNIT_BYTES:
+            raise ValueError(f"{command_name} JUnit receipt exceeds its byte boundary")
+        summary = _load_qualification_json(
+            root / contract.RELEASE_QUALIFICATION_V2_RESULT_PATHS[command_name],
+            f"{command_name} JUnit summary",
+            require_sealed=True,
+        )
+        try:
+            contract.validate_pytest_junit_summary_v1(
+                summary,
+                junit_path.read_bytes(),
+                command_name=command_name,
+                junit_relative_path=junit_relative,
+            )
+        except ValueError as error:
+            raise ValueError(f"{command_name} JUnit result is invalid: {error}") from error
+
+    staged_web_inventory = _qualification_tree_inventory(
+        release / "web/dist",
+        "staged compiled web output",
+        require_sealed=False,
+    )
+    web_result = _load_qualification_json(
+        root / contract.RELEASE_QUALIFICATION_V2_RESULT_PATHS["production-web-build"],
+        "compiled web result",
+        require_sealed=True,
+    )
+    expected_web_result = {
+        "schema": RELEASE_QUALIFICATION_SCHEMA,
+        "kind": "compiled-web-inventory",
+        "files": staged_web_inventory,
+    }
+    if web_result != expected_web_result:
+        raise ValueError("qualified compiled web output differs from the staged release")
+
+    browser_root = root / "results/playwright"
+    try:
+        browser_root.lstat()
+    except FileNotFoundError:
+        browser_inventory: list[dict[str, Any]] = []
+    else:
+        browser_inventory = _qualification_tree_inventory(
+            browser_root,
+            "Playwright output",
+            require_sealed=True,
+        )
+    browser_result = _load_qualification_json(
+        root / contract.RELEASE_QUALIFICATION_V2_RESULT_PATHS["production-chromium-e2e"],
+        "production Chromium result",
+        require_sealed=True,
+    )
+    expected_browser_result = {
+        "schema": RELEASE_QUALIFICATION_SCHEMA,
+        "kind": "production-chromium-e2e-result",
+        "project": "production-chromium",
+        "passed": True,
+        "files": browser_inventory,
+    }
+    if browser_result != expected_browser_result:
+        raise ValueError("production Chromium result inventory is not exact")
+
+
+def _qualification_timestamp(value: object, label: str) -> datetime:
+    if not isinstance(value, str) or not value.endswith("Z"):
+        raise ValueError(f"release qualification {label} is not canonical UTC")
+    try:
+        parsed = datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
+    except ValueError as error:
+        raise ValueError(f"release qualification {label} is malformed") from error
+    canonical = parsed.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    if parsed.utcoffset() != UTC.utcoffset(parsed) or canonical != value:
+        raise ValueError(f"release qualification {label} is not canonical UTC")
+    return parsed
+
+
+def _require_duration(value: object, expected: float, label: str) -> None:
+    if (
+        type(value) not in {int, float}
+        or not math.isfinite(value)
+        or value < 0
+        or abs(value - expected) > 0.000001
+    ):
+        raise ValueError(f"release qualification {label} is inconsistent")
+
+
+def _safe_run_id(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 96
+        and all(
+            character.isascii() and (character.isalnum() or character in "._-")
+            for character in value
+        )
+    )
+
+
+def _is_sha256(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
 
 def command(*argv: str, timeout_seconds: float | None = None) -> str:
@@ -251,6 +763,42 @@ def command(*argv: str, timeout_seconds: float | None = None) -> str:
         detail = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"
         raise ValueError(f"{' '.join(argv)}: {detail}")
     return result.stdout.strip()
+
+
+def verify_processing_resource_capacity_rows(output: str) -> None:
+    """Require the exact post-migration production worker-capacity authority."""
+
+    observed = tuple(output.splitlines())
+    if observed != EXPECTED_PROCESSING_RESOURCE_CAPACITY_ROWS:
+        raise ValueError(
+            "processing resource capacity inventory is not exactly "
+            "streaming=16,cpu=8,memory=4,heavy=2"
+        )
+
+
+def probe_processing_resource_capacity() -> None:
+    """Read the production catalog through the service account while workers are stopped."""
+
+    output = command(
+        "runuser",
+        "-u",
+        "leo",
+        "--",
+        "/usr/bin/psql",
+        "--no-psqlrc",
+        "--set=ON_ERROR_STOP=1",
+        "--tuples-only",
+        "--no-align",
+        "--host=/var/run/postgresql",
+        "--port=5432",
+        "--username=leo",
+        "--no-password",
+        "--dbname=leo_tracker",
+        "--command",
+        PROCESSING_RESOURCE_CAPACITY_QUERY,
+        timeout_seconds=15.0,
+    )
+    verify_processing_resource_capacity_rows(output)
 
 
 def probe_live_station_radios(
@@ -423,13 +971,13 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         )
     if environment.get("LEO_PIPELINE_RELEASE_ID") != revision:
         raise ValueError("pipeline release ID must equal the exact staged revision")
-    if environment.get("LEO_CAPTURE_PROFILE") != "starlink-ch4-lower-2p5m-60s-continuity-v2":
+    if environment.get("LEO_CAPTURE_PROFILE") != "starlink-ch4-lower-2p5m-60s-device-axis-v3":
         raise ValueError(
             "production capture profile must be the counter-authoritative dual-RX 60-second profile"
         )
     expected_rate_profiles = {
-        "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-capture-v2",
-        "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-segmented-v2",
+        "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-device-axis-v3",
+        "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-device-axis-v3",
     }
     if any(environment.get(key) != value for key, value in expected_rate_profiles.items()):
         raise ValueError("production sample-rate profile pool is not the exact reviewed set")
@@ -618,6 +1166,235 @@ def verify_soak_receipt(receipt: dict[str, Any]) -> None:
 
 def _is_sha256_digest(value: object) -> bool:
     return isinstance(value, str) and re.fullmatch(r"sha256:[0-9a-f]{64}", value) is not None
+
+
+_QUALIFICATION_HOST_HEALTH_CHECK_ORDER = (
+    "same_host",
+    "same_boot",
+    "same_disk_path",
+    "raid_identity",
+    "raid_healthy_before",
+    "raid_healthy_after",
+    "raid_idle_before",
+    "raid_idle_after",
+    "kernel_log_complete_before",
+    "kernel_log_complete_after",
+    "no_kernel_io_errors_before",
+    "no_kernel_io_errors_after",
+    "no_oom_before",
+    "no_oom_after",
+    "no_swap_in",
+    "no_swap_out",
+    "memory_headroom_before",
+    "memory_headroom_after",
+    "disk_headroom_before",
+    "disk_headroom_after",
+)
+_EMPTY_SHA256_DIGEST = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+
+def verify_qualification_host_health_v1(
+    evidence: object,
+    *,
+    expected_host_name: str,
+    receipt_created_utc_ns: int,
+) -> None:
+    """Verify the exact read-only pre/post host-health gate bound by V4."""
+
+    evidence_keys = {
+        "schema_version",
+        "algorithm_version",
+        "policy",
+        "before",
+        "after",
+        "checks",
+        "passed",
+        "evidence_digest",
+    }
+    if (
+        not isinstance(evidence, dict)
+        or set(evidence) != evidence_keys
+        or type(evidence.get("schema_version")) is not int
+        or evidence.get("schema_version") != 1
+        or evidence.get("algorithm_version") != "qualification-host-health-pre-post-v1"
+        or evidence.get("passed") is not True
+        or not _is_sha256_digest(evidence.get("evidence_digest"))
+    ):
+        raise ValueError("V4 host-health prerequisite is not an exact passing V1 gate")
+
+    expected_policy = {
+        "schema_version": 1,
+        "raid_array_name": "md127",
+        "disk_path": "/srv/bulk",
+        "minimum_available_memory_bytes": 32 * 1024**3,
+        "minimum_free_disk_bytes": 1024**4,
+    }
+    policy = evidence.get("policy")
+    if (
+        not isinstance(policy, dict)
+        or set(policy) != set(expected_policy)
+        or any(
+            type(policy.get(key)) is not type(value) or policy.get(key) != value
+            for key, value in expected_policy.items()
+        )
+    ):
+        raise ValueError("V4 host-health prerequisite does not use the reviewed host policy")
+
+    snapshot_keys = {
+        "schema_version",
+        "algorithm_version",
+        "host_name",
+        "boot_id",
+        "observed_utc_ns",
+        "observed_monotonic_ns",
+        "raid",
+        "kernel_log_complete",
+        "kernel_io_error_count",
+        "kernel_io_error_log_digest",
+        "oom_kill_count",
+        "swap_in_pages",
+        "swap_out_pages",
+        "available_memory_bytes",
+        "disk_path",
+        "free_disk_bytes",
+        "mdstat_digest",
+        "meminfo_digest",
+        "vmstat_digest",
+        "snapshot_digest",
+    }
+    raid_keys = {
+        "schema_version",
+        "array_name",
+        "raid_level",
+        "active",
+        "expected_member_count",
+        "active_member_count",
+        "member_status",
+        "active_operation",
+        "healthy",
+    }
+    digest_fields = (
+        "kernel_io_error_log_digest",
+        "mdstat_digest",
+        "meminfo_digest",
+        "vmstat_digest",
+        "snapshot_digest",
+    )
+
+    def exact_snapshot(value: object) -> bool:
+        if not isinstance(value, dict) or set(value) != snapshot_keys:
+            return False
+        raid = value.get("raid")
+        if not isinstance(raid, dict) or set(raid) != raid_keys:
+            return False
+        expected_members = raid.get("expected_member_count")
+        snapshot_without_digest = {
+            key: item for key, item in value.items() if key != "snapshot_digest"
+        }
+        return (
+            type(value.get("schema_version")) is int
+            and value.get("schema_version") == 1
+            and value.get("algorithm_version") == "qualification-host-health-snapshot-v1"
+            and value.get("host_name") == expected_host_name
+            and isinstance(value.get("boot_id"), str)
+            and re.fullmatch(
+                r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+                value["boot_id"],
+            )
+            is not None
+            and type(value.get("observed_utc_ns")) is int
+            and value["observed_utc_ns"] > 0
+            and type(value.get("observed_monotonic_ns")) is int
+            and value["observed_monotonic_ns"] > 0
+            and value.get("kernel_log_complete") is True
+            and type(value.get("kernel_io_error_count")) is int
+            and value.get("kernel_io_error_count") == 0
+            and value.get("kernel_io_error_log_digest") == _EMPTY_SHA256_DIGEST
+            and type(value.get("oom_kill_count")) is int
+            and value.get("oom_kill_count") == 0
+            and type(value.get("swap_in_pages")) is int
+            and value["swap_in_pages"] >= 0
+            and type(value.get("swap_out_pages")) is int
+            and value["swap_out_pages"] >= 0
+            and type(value.get("available_memory_bytes")) is int
+            and value["available_memory_bytes"] >= 32 * 1024**3
+            and value.get("disk_path") == "/srv/bulk"
+            and type(value.get("free_disk_bytes")) is int
+            and value["free_disk_bytes"] >= 1024**4
+            and all(_is_sha256_digest(value.get(key)) for key in digest_fields)
+            and value.get("snapshot_digest") == canonical_json_sha256(snapshot_without_digest)
+            and type(raid.get("schema_version")) is int
+            and raid.get("schema_version") == 1
+            and raid.get("array_name") == "md127"
+            and isinstance(raid.get("raid_level"), str)
+            and bool(raid["raid_level"])
+            and raid.get("active") is True
+            and type(expected_members) is int
+            and 1 <= expected_members <= 256
+            and type(raid.get("active_member_count")) is int
+            and raid.get("active_member_count") == expected_members
+            and raid.get("member_status") == "U" * expected_members
+            and raid.get("active_operation") == "none"
+            and raid.get("healthy") is True
+        )
+
+    before = evidence.get("before")
+    after = evidence.get("after")
+    if not exact_snapshot(before) or not exact_snapshot(after):
+        raise ValueError("V4 host-health prerequisite contains a malformed or failing snapshot")
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        raise ValueError("V4 host-health prerequisite contains a malformed or failing snapshot")
+    before_raid = before["raid"]
+    after_raid = after["raid"]
+    if not isinstance(before_raid, dict) or not isinstance(after_raid, dict):
+        raise ValueError("V4 host-health prerequisite contains a malformed or failing snapshot")
+    if (
+        after["observed_utc_ns"] < before["observed_utc_ns"]
+        or after["observed_utc_ns"] > receipt_created_utc_ns
+        or after["observed_monotonic_ns"] < before["observed_monotonic_ns"]
+        or after["boot_id"] != before["boot_id"]
+        or after["disk_path"] != before["disk_path"]
+        or after["swap_in_pages"] != before["swap_in_pages"]
+        or after["swap_out_pages"] != before["swap_out_pages"]
+        or (
+            after_raid["array_name"],
+            after_raid["raid_level"],
+            after_raid["expected_member_count"],
+        )
+        != (
+            before_raid["array_name"],
+            before_raid["raid_level"],
+            before_raid["expected_member_count"],
+        )
+    ):
+        raise ValueError("V4 host-health prerequisite does not close one host run")
+
+    checks = evidence.get("checks")
+    check_keys = {"schema_version", "name", "passed"}
+    if (
+        not isinstance(checks, list)
+        or len(checks) != len(_QUALIFICATION_HOST_HEALTH_CHECK_ORDER)
+        or any(
+            not isinstance(check, dict)
+            or set(check) != check_keys
+            or type(check.get("schema_version")) is not int
+            or check.get("schema_version") != 1
+            or check.get("name") != name
+            or check.get("passed") is not True
+            for check, name in zip(
+                checks,
+                _QUALIFICATION_HOST_HEALTH_CHECK_ORDER,
+                strict=True,
+            )
+        )
+    ):
+        raise ValueError("V4 host-health prerequisite check inventory is not exact and all-pass")
+
+    evidence_without_digest = {
+        key: value for key, value in evidence.items() if key != "evidence_digest"
+    }
+    if evidence.get("evidence_digest") != canonical_json_sha256(evidence_without_digest):
+        raise ValueError("V4 host-health prerequisite digest does not bind its evidence")
 
 
 def _matches_lossless_radio_metrics(
@@ -1244,6 +2021,500 @@ def verify_contiguous_rate_3m_receipt_v3(
     )
 
 
+def verify_contiguous_rate_3m_receipt_v4(
+    receipt: dict[str, Any],
+    *,
+    revision: str,
+    release: Path,
+) -> None:
+    """Verify the V4 authority for the exact production device-axis profile."""
+
+    receipt_keys = {
+        "kind",
+        "schema_version",
+        "target",
+        "target_digest",
+        "created_utc_ns",
+        "complete",
+        "passed",
+        "checks",
+    }
+    target = receipt.get("target")
+    if (
+        set(receipt) != receipt_keys
+        or receipt.get("kind") != "contiguous_rate_qualification"
+        or type(receipt.get("schema_version")) is not int
+        or receipt.get("schema_version") != 4
+        or receipt.get("complete") is not True
+        or receipt.get("passed") is not True
+        or not isinstance(target, dict)
+    ):
+        raise ValueError("3 MS/s device-axis receipt is not a complete strict V4 pass")
+
+    created_utc_ns = receipt.get("created_utc_ns")
+    if type(created_utc_ns) is not int:
+        raise ValueError("3 MS/s V4 receipt created_utc_ns is missing or not an actual integer")
+    now_utc_ns = time.time_ns()
+    if created_utc_ns > now_utc_ns + RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS:
+        raise ValueError("3 MS/s V4 receipt creation time is more than five minutes in the future")
+    if created_utc_ns < now_utc_ns - RATE_RECEIPT_MAXIMUM_AGE_NS:
+        raise ValueError("3 MS/s V4 receipt creation time is older than 24 hours")
+
+    target_keys = {
+        "schema_version",
+        "qualification_id",
+        "profile_revision_digest",
+        "capture_plan_digest",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "requested_sample_count",
+        "expected_radios",
+        "expected_host",
+        "expected_producer",
+        "pluto_plus_utils_revision",
+        "libiio_version",
+        "libiio_library_sha256",
+        "python_iio_sha256",
+        "native_network_interface",
+        "native_source_address",
+        "prerequisites",
+        "policy",
+    }
+    expected_target_values = {
+        "schema_version": 4,
+        "qualification_id": f"native-ip-3m-{revision[:12]}",
+        "profile_revision_digest": CONTIGUOUS_RATE_3M_DEVICE_AXIS_PROFILE_DIGEST,
+        "capture_plan_digest": CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST,
+        "sample_rate_hz": 3_000_000,
+        "bandwidth_hz": 2_500_000,
+        "requested_sample_count": 180_000_000,
+        "native_network_interface": "enp132s0",
+        "native_source_address": "192.168.1.142",
+    }
+    if set(target) != target_keys or any(
+        type(target.get(key)) is not type(value) or target.get(key) != value
+        for key, value in expected_target_values.items()
+    ):
+        raise ValueError("3 MS/s V4 target differs from the deployed device-axis plan")
+
+    expected_policy = {
+        "schema_version": 1,
+        "required_trial_count": 10,
+        "minimum_overlap_fraction": 0.99,
+        "required_kernel_buffers": 8,
+        "required_queue_capacity_refills": 32,
+        "maximum_queue_high_water_fraction": 0.75,
+        "required_metadata_abi_version": 1,
+        "maximum_refill_service_interval_ns": 699_050_666,
+        "required_tags": list(CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS),
+    }
+    policy = target.get("policy")
+    if (
+        not isinstance(policy, dict)
+        or set(policy) != set(expected_policy)
+        or any(
+            type(policy.get(key)) is not type(value) or policy.get(key) != value
+            for key, value in expected_policy.items()
+        )
+    ):
+        raise ValueError("3 MS/s V4 policy differs from the deployed device-axis gate")
+
+    prerequisites = target.get("prerequisites")
+    v4_prerequisite_keys = {
+        "schema_version",
+        "radio_safety",
+        "native_ip_canaries",
+        "writer_benchmark",
+        "host_health",
+        "five_m_characterization",
+    }
+    if (
+        not isinstance(prerequisites, dict)
+        or set(prerequisites) != v4_prerequisite_keys
+        or type(prerequisites.get("schema_version")) is not int
+        or prerequisites.get("schema_version") != 4
+    ):
+        raise ValueError("3 MS/s V4 prerequisites are not the exact combined campaign")
+    verify_contiguous_rate_3m_prerequisites_v3(
+        {
+            "schema_version": 3,
+            "radio_safety": prerequisites.get("radio_safety"),
+            "native_ip_canaries": prerequisites.get("native_ip_canaries"),
+            "writer_benchmark": prerequisites.get("writer_benchmark"),
+        },
+        radio_ids=("radio_pluto_5d4d", "radio_pluto_19f2"),
+    )
+    v4_writer = prerequisites["writer_benchmark"]
+    if v4_writer["sustained_bytes_per_second"] < 100_000_000:
+        raise ValueError(
+            "V4 writer prerequisite is below the measured incompressible 100 MB/s gate"
+        )
+
+    with (release / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)
+    metadata_runtime_path = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
+    try:
+        metadata_runtime = json.loads(metadata_runtime_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("staged release metadata runtime receipt is unreadable") from error
+    if (
+        not isinstance(metadata_runtime, dict)
+        or type(metadata_runtime.get("schema_version")) is not int
+        or metadata_runtime.get("schema_version") != 1
+        or type(metadata_runtime.get("metadata_abi")) is not int
+        or metadata_runtime.get("metadata_abi") != 1
+        or not isinstance(metadata_runtime.get("libiio_version"), str)
+        or not metadata_runtime["libiio_version"]
+    ):
+        raise ValueError("staged release metadata runtime is not ABI 1")
+
+    producer = target.get("expected_producer")
+    expected_ppu = project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"]
+    if (
+        not isinstance(producer, dict)
+        or set(producer) != {"schema_version", "name", "version", "source_revision"}
+        or type(producer.get("schema_version")) is not int
+        or producer.get("schema_version") != 1
+        or producer.get("name") != "leo-acquisition"
+        or producer.get("version") != project["project"]["version"]
+        or producer.get("source_revision") != revision
+        or target.get("pluto_plus_utils_revision") != expected_ppu
+    ):
+        raise ValueError("3 MS/s V4 software identity differs from the staged release")
+    expected_runtime = {
+        "libiio_version": metadata_runtime.get("libiio_version"),
+        "libiio_library_sha256": "sha256:" + str(metadata_runtime.get("native_libiio_sha256")),
+        "python_iio_sha256": "sha256:" + str(metadata_runtime.get("pylibiio_sha256")),
+    }
+    if any(target.get(key) != value for key, value in expected_runtime.items()) or any(
+        not _is_sha256_digest(expected_runtime[key])
+        for key in ("libiio_library_sha256", "python_iio_sha256")
+    ):
+        raise ValueError("3 MS/s V4 libiio identity differs from the staged runtime")
+
+    expected_radios = (
+        (
+            "radio_pluto_5d4d",
+            "1040005e0b100007100010000bf33a5d4d",
+            "ip:192.168.1.20",
+            "iio_ip",
+        ),
+        (
+            "radio_pluto_19f2",
+            "10400056f695001322002d0010ad1719f2",
+            "ip:192.168.1.21",
+            "iio_ip",
+        ),
+    )
+    radio_keys = {
+        "schema_version",
+        "radio_id",
+        "serial",
+        "uri",
+        "transport",
+        "model",
+        "firmware_version",
+        "hardware_revision",
+    }
+    radios = target.get("expected_radios")
+    if not isinstance(radios, list) or len(radios) != 2:
+        raise ValueError("3 MS/s V4 receipt must bind exactly two radios")
+    for radio, expected in zip(radios, expected_radios, strict=True):
+        if (
+            not isinstance(radio, dict)
+            or set(radio) != radio_keys
+            or type(radio.get("schema_version")) is not int
+            or radio.get("schema_version") != 1
+            or (
+                radio.get("radio_id"),
+                radio.get("serial"),
+                radio.get("uri"),
+                radio.get("transport"),
+            )
+            != expected
+            or not isinstance(radio.get("model"), str)
+            or not radio["model"]
+            or not isinstance(radio.get("firmware_version"), str)
+            or not radio["firmware_version"]
+            or (
+                radio.get("hardware_revision") is not None
+                and (
+                    not isinstance(radio.get("hardware_revision"), str)
+                    or not radio["hardware_revision"]
+                )
+            )
+        ):
+            raise ValueError("3 MS/s V4 radio identities differ from the production pair")
+
+    host = target.get("expected_host")
+    machine_id_path = Path("/etc/machine-id")
+    if (
+        not isinstance(host, dict)
+        or set(host) != {"schema_version", "hostname", "machine_id", "operating_system"}
+        or type(host.get("schema_version")) is not int
+        or host.get("schema_version") != 1
+        or not machine_id_path.is_file()
+        or host.get("hostname") != socket.gethostname()
+        or host.get("machine_id") != machine_id_path.read_text(encoding="utf-8").strip()
+        or not host.get("operating_system")
+    ):
+        raise ValueError("3 MS/s V4 host identity differs from the deployment host")
+    verify_qualification_host_health_v1(
+        prerequisites.get("host_health"),
+        expected_host_name=host["hostname"],
+        receipt_created_utc_ns=created_utc_ns,
+    )
+
+    five_m = prerequisites.get("five_m_characterization")
+    five_m_keys = {
+        "schema_version",
+        "evidence_sha256",
+        "manifest_sha256",
+        "session_id",
+        "profile_revision_digest",
+        "capture_plan_digest",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "requested_sample_count",
+        "radios",
+        "host",
+        "producer",
+        "manifest_state",
+        "streams",
+        "bundle_verified",
+        "physical_zero_verified",
+        "validity_verified",
+        "gap_map_verified",
+        "passed",
+        "errors",
+    }
+    expected_five_m_values = {
+        "schema_version": 1,
+        "profile_revision_digest": CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST,
+        "capture_plan_digest": CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST,
+        "sample_rate_hz": 5_000_000,
+        "bandwidth_hz": 2_500_000,
+        "requested_sample_count": 300_000_000,
+        "bundle_verified": True,
+        "physical_zero_verified": True,
+        "validity_verified": True,
+        "gap_map_verified": True,
+        "passed": True,
+        "errors": [],
+    }
+    if (
+        not isinstance(five_m, dict)
+        or set(five_m) != five_m_keys
+        or any(
+            type(five_m.get(key)) is not type(value) or five_m.get(key) != value
+            for key, value in expected_five_m_values.items()
+        )
+        or not _is_sha256_digest(five_m.get("evidence_sha256"))
+        or not _is_sha256_digest(five_m.get("manifest_sha256"))
+        or not isinstance(five_m.get("session_id"), str)
+        or not five_m["session_id"].strip()
+        or five_m.get("radios") != radios
+        or five_m.get("host") != host
+        or five_m.get("producer") != producer
+    ):
+        raise ValueError("5 MS/s characterization differs from the exact combined V4 campaign")
+
+    five_m_stream_keys = {
+        "schema_version",
+        "radio_id",
+        "logical_sample_count",
+        "observed_sample_count",
+        "zero_fill_sample_count",
+        "continuity_segment_count",
+        "gap_count",
+        "missing_sample_count",
+        "overflow_count",
+        "enqueue_failure_count",
+        "terminal_rejected_gap_count",
+        "terminal_rejected_missing_sample_count",
+        "terminal_rejected_overflow_count",
+        "queue_capacity_refills",
+        "queue_high_water_refills",
+        "gap_map_segment_count",
+        "gap_map_boundary_count",
+        "validity_segment_count",
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    }
+    five_m_digest_fields = (
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    )
+    five_m_streams = five_m.get("streams")
+    if not isinstance(five_m_streams, list) or len(five_m_streams) != 2:
+        raise ValueError("5 MS/s characterization lacks exactly two stream closures")
+    any_five_m_loss = False
+    for stream, expected_radio in zip(five_m_streams, expected_radios, strict=True):
+        if not isinstance(stream, dict) or set(stream) != five_m_stream_keys:
+            raise ValueError("5 MS/s stream characterization has an unreviewed wire shape")
+        integer_fields = (
+            "logical_sample_count",
+            "observed_sample_count",
+            "zero_fill_sample_count",
+            "continuity_segment_count",
+            "gap_count",
+            "missing_sample_count",
+            "overflow_count",
+            "enqueue_failure_count",
+            "terminal_rejected_gap_count",
+            "terminal_rejected_missing_sample_count",
+            "terminal_rejected_overflow_count",
+            "queue_capacity_refills",
+            "queue_high_water_refills",
+            "gap_map_segment_count",
+            "gap_map_boundary_count",
+            "validity_segment_count",
+        )
+        if any(type(stream.get(key)) is not int for key in integer_fields):
+            raise ValueError("5 MS/s stream characterization counters are not exact integers")
+        observed = stream["observed_sample_count"]
+        zero_fill = stream["zero_fill_sample_count"]
+        gap_count = stream["gap_count"]
+        validity_segments = stream["validity_segment_count"]
+        if (
+            type(stream.get("schema_version")) is not int
+            or stream.get("schema_version") != 1
+            or stream.get("radio_id") != expected_radio[0]
+            or stream["logical_sample_count"] != 300_000_000
+            or observed <= 0
+            or zero_fill < 0
+            or observed + zero_fill != 300_000_000
+            or stream["missing_sample_count"] != zero_fill
+            or stream["overflow_count"] != 0
+            or stream["enqueue_failure_count"] != 0
+            or stream["terminal_rejected_gap_count"] != 0
+            or stream["terminal_rejected_missing_sample_count"] != 0
+            or stream["terminal_rejected_overflow_count"] != 0
+            or stream["queue_capacity_refills"] != 32
+            or not 1 <= stream["queue_high_water_refills"] <= 24
+            or gap_count < 0
+            or stream["gap_map_boundary_count"] != gap_count
+            or stream["gap_map_segment_count"] != gap_count + 1
+            or validity_segments != stream["gap_map_segment_count"]
+            or not 1 <= stream["continuity_segment_count"] <= validity_segments
+            or any(not _is_sha256_digest(stream.get(key)) for key in five_m_digest_fields)
+            or (
+                zero_fill == 0
+                and stream.get("observed_iq_sha256") != stream.get("logical_iq_sha256")
+            )
+        ):
+            raise ValueError("5 MS/s stream characterization does not close its device axis")
+        any_five_m_loss = any_five_m_loss or zero_fill > 0
+    expected_five_m_state = "degraded" if any_five_m_loss else "committed"
+    if five_m.get("manifest_state") != expected_five_m_state:
+        raise ValueError("5 MS/s manifest state disagrees with the verified device axis")
+
+    if receipt.get("target_digest") != canonical_json_sha256(target):
+        raise ValueError("3 MS/s V4 target digest does not bind the full target")
+
+    checks = receipt.get("checks")
+    if not isinstance(checks, list) or len(checks) != 10:
+        raise ValueError("3 MS/s V4 receipt does not contain exactly ten trial checks")
+    check_keys = {
+        "schema_version",
+        "trial_id",
+        "session_id",
+        "manifest_sha256",
+        "passed",
+        "errors",
+        "manifest_schema_version",
+        "stream_checks",
+    }
+    stream_check_keys = {
+        "schema_version",
+        "radio_id",
+        "logical_sample_count",
+        "observed_sample_count",
+        "zero_fill_sample_count",
+        "continuity_segment_count",
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    }
+    digest_fields = (
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    )
+    trial_ids: set[str] = set()
+    session_ids: set[str] = set()
+    manifest_digests: set[str] = set()
+    expected_radio_ids = tuple(item[0] for item in expected_radios)
+    for check in checks:
+        if (
+            not isinstance(check, dict)
+            or set(check) != check_keys
+            or type(check.get("schema_version")) is not int
+            or check.get("schema_version") != 2
+            or type(check.get("manifest_schema_version")) is not int
+            or check.get("manifest_schema_version") != 3
+            or check.get("passed") is not True
+            or check.get("errors") != []
+        ):
+            raise ValueError("3 MS/s V4 receipt contains a failed or malformed trial check")
+        trial_id = check.get("trial_id")
+        session_id = check.get("session_id")
+        manifest_digest = check.get("manifest_sha256")
+        if (
+            not isinstance(trial_id, str)
+            or not trial_id.strip()
+            or not isinstance(session_id, str)
+            or not session_id.strip()
+            or not _is_sha256_digest(manifest_digest)
+        ):
+            raise ValueError("3 MS/s V4 receipt contains a failed or malformed trial check")
+
+        stream_checks = check.get("stream_checks")
+        if not isinstance(stream_checks, list) or len(stream_checks) != 2:
+            raise ValueError("3 MS/s V4 trial does not retain exactly two stream checks")
+        for stream_check, radio_id in zip(stream_checks, expected_radio_ids, strict=True):
+            if (
+                not isinstance(stream_check, dict)
+                or set(stream_check) != stream_check_keys
+                or type(stream_check.get("schema_version")) is not int
+                or stream_check.get("schema_version") != 1
+                or stream_check.get("radio_id") != radio_id
+                or type(stream_check.get("logical_sample_count")) is not int
+                or stream_check.get("logical_sample_count") != 180_000_000
+                or type(stream_check.get("observed_sample_count")) is not int
+                or stream_check.get("observed_sample_count") != 180_000_000
+                or type(stream_check.get("zero_fill_sample_count")) is not int
+                or stream_check.get("zero_fill_sample_count") != 0
+                or type(stream_check.get("continuity_segment_count")) is not int
+                or stream_check.get("continuity_segment_count") != 1
+                or any(not _is_sha256_digest(stream_check.get(key)) for key in digest_fields)
+                or stream_check.get("observed_iq_sha256") != stream_check.get("logical_iq_sha256")
+            ):
+                raise ValueError("3 MS/s V4 stream check is not an exact lossless closure")
+
+        trial_ids.add(trial_id)
+        session_ids.add(session_id)
+        manifest_digests.add(str(manifest_digest))
+    if len(trial_ids) != 10:
+        raise ValueError("3 MS/s V4 receipt trial IDs are not independently unique")
+    if len(session_ids) != 10:
+        raise ValueError("3 MS/s V4 receipt session IDs are not independently unique")
+    if len(manifest_digests) != 10:
+        raise ValueError("3 MS/s V4 receipt manifest digests are not independently unique")
+    if five_m["session_id"] in session_ids or five_m["manifest_sha256"] in manifest_digests:
+        raise ValueError("5 MS/s characterization is not independent from the 3 MS/s trials")
+
+
 def verify(args: argparse.Namespace) -> list[str]:
     revision = args.revision
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
@@ -1271,7 +2542,11 @@ def verify(args: argparse.Namespace) -> list[str]:
     verify_staged_capture_profiles(release)
     verify_staged_acquisition_service(release)
 
-    release_receipt = load_json(args.release_receipt, "release qualification receipt")
+    release_receipt = _load_qualification_json(
+        args.release_receipt,
+        "release qualification receipt",
+        require_sealed=True,
+    )
     if release_receipt.get("passed") is not True or release_receipt.get("status") != "passed":
         raise ValueError("release qualification receipt is not a pass")
     if release_receipt.get("git_revision") != revision:
@@ -1283,14 +2558,14 @@ def verify(args: argparse.Namespace) -> list[str]:
         revision=revision,
     )
     expected_rate_receipt_path = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v3.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v4.json"
     )
     if args.rate_qualification_receipt != expected_rate_receipt_path:
         raise ValueError("3 MS/s continuity receipt path is not the revision authority")
     if sha256(args.rate_qualification_receipt) != args.rate_qualification_receipt_sha256:
         raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
     rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
-    verify_contiguous_rate_3m_receipt_v3(rate_receipt, revision=revision, release=release)
+    verify_contiguous_rate_3m_receipt_v4(rate_receipt, revision=revision, release=release)
 
     if args.standard_regression_receipt is not None:
         standard_receipt = load_json(
@@ -1352,6 +2627,7 @@ def verify(args: argparse.Namespace) -> list[str]:
     )
     if system_active:
         raise ValueError("system-scope LEO units are already active:\n" + system_active)
+    probe_processing_resource_capacity()
     probe_live_station_radios(
         release,
         expected_radios=rate_receipt["target"]["expected_radios"],
@@ -1397,12 +2673,13 @@ def verify(args: argparse.Namespace) -> list[str]:
         "four staged capture profiles match the exact reviewed bytes",
         "staged acquisition service uses the exact ordered profile and radio pool",
         "exact-revision release qualification is sealed and passed",
-        "ten-trial native-IP 3 MS/s continuity qualification is sealed and passed",
+        "combined ten-trial 3 MS/s and full-span 5 MS/s device-axis qualification is sealed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
         "scanner raw-IQ and report directories are installed and permissioned",
         "production environment is permissioned and contains no radio placeholders",
         "legacy user scope and canonical system scope have no active LEO units",
+        "processing resource capacity is exactly streaming=16,cpu=8,memory=4,heavy=2",
         "live station radio firmware and counter-authoritative ABI match qualification",
         "all canonical unit templates validate and deny QNAP",
         "external release metadata and final-path runtime validate",

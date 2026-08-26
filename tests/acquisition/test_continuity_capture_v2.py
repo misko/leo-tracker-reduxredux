@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+import queue
 import threading
 import time
+from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
 from threading import Event
@@ -29,14 +31,17 @@ from leo.contracts.profile import (
 )
 from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
     ContinuitySummaryV2,
     RecordingManifestV2,
+    RecordingManifestV3,
 )
 from leo.contracts.states import (
     CaptureState,
     ContinuityPolicy,
     GainMode,
+    PeerFailurePolicy,
     SourceType,
     StreamState,
     TimingMethod,
@@ -47,7 +52,11 @@ from leo.processing.continuity import iter_masked_device_iq
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
 from leo.storage import writer as storage_writer
-from leo.storage.writer import StreamBundleWriter
+from leo.storage.writer import (
+    DeviceAxisStreamBundleWriter,
+    RecordingBundleWriter,
+    StreamBundleWriter,
+)
 
 
 def _plan(
@@ -98,6 +107,89 @@ def _coordinator(tmp_path: Path) -> AcquisitionCoordinator:
         config=AcquisitionConfig(safety_reserve_bytes=0),
         free_bytes=lambda _path: 10**12,
     )
+
+
+def _device_axis_plan(
+    *,
+    radio_ids: tuple[str, ...] = ("radio-a",),
+    sample_count: int = 12,
+    sample_rate_hz: int = 2_500_000,
+    refill_samples: int = 4,
+    queue_capacity: int = 32,
+):
+    base = _plan(
+        radio_ids=radio_ids,
+        sample_count=sample_count,
+        sample_rate_hz=sample_rate_hz,
+        refill_samples=refill_samples,
+        queue_capacity=queue_capacity,
+    ).profile_revision.profile
+    profile = base.model_copy(
+        update={
+            "name": "continuity-device-axis-v3-test",
+            "storage_policy": DEVICE_AXIS_STORAGE_POLICY_V1,
+            "peer_failure_policy": PeerFailurePolicy.FAIL_SESSION,
+            "tags": ("CAPTURE_ONLY", "DEVICE_AXIS_ZERO_FILL", "LIVE"),
+        }
+    )
+    return compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        radio_ids,
+        source_type=SourceType.LIVE,
+    )
+
+
+def _device_axis_coordinator(tmp_path: Path) -> AcquisitionCoordinator:
+    return AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=64,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+
+
+def _record_opened_bundles(
+    coordinator: AcquisitionCoordinator,
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[RecordingBundleWriter]:
+    opened: list[RecordingBundleWriter] = []
+    original_begin = coordinator.store.begin
+
+    def begin(
+        session_id: str,
+        compression: CompressionSettingsV1,
+        *,
+        failure_injector: Callable[[str], None] | None = None,
+    ) -> RecordingBundleWriter:
+        writer = original_begin(
+            session_id,
+            compression,
+            failure_injector=failure_injector,
+        )
+        opened.append(writer)
+        return writer
+
+    monkeypatch.setattr(coordinator.store, "begin", begin)
+    return opened
+
+
+def _assert_quarantined_v3_evidence(
+    coordinator: AcquisitionCoordinator,
+    session_id: str,
+) -> Path:
+    spool = coordinator.store.spool_root / f"{session_id}.partial"
+    assert spool.is_dir()
+    assert not (spool / "manifest.json").exists()
+    assert not (spool / "manifest.json.partial").exists()
+    assert any(path.is_file() for path in spool.rglob("*"))
+    assert not list(coordinator.store.recordings_root.rglob(session_id))
+    report = coordinator.store.reconcile()
+    assert report.committed == ()
+    assert report.issues == ()
+    return spool
 
 
 def test_v2_capture_resets_buffer_attests_k_and_persists_validated_chain(
@@ -190,6 +282,266 @@ def test_v2_rate_mode_applies_one_exact_rate_to_both_radios(
         and stream.continuity.total_observed_overflow_count == 0
         for stream in result.manifest.streams
     )
+
+
+@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000))
+def test_device_axis_v3_lossless_capture_has_one_fixed_logical_iq_length(
+    tmp_path: Path,
+    sample_rate_hz: int,
+) -> None:
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=12, sample_rate_hz=sample_rate_hz),
+        {"radio-a": FakeRadioSource("radio-a")},
+        session_id=f"device-axis-lossless-{sample_rate_hz}",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert isinstance(result.manifest, RecordingManifestV3)
+    stream = result.manifest.streams[0]
+    assert stream.state is StreamState.COMPLETE
+    assert stream.logical_sample_count == stream.observed_sample_count == 12
+    assert stream.zero_fill_sample_count == 0
+    assert sum(chunk.uncompressed_bytes for chunk in stream.chunks) == 12 * 2 * 4
+    assert stream.observed_iq_sha256 == stream.logical_iq_sha256
+    assert stream.applied_settings.sample_rate_hz == sample_rate_hz
+    inspected = coordinator.store.inspect(result.session_id)
+    assert coordinator.store.verify(inspected).validity_inventory_count == 1
+    span = coordinator.store.reader(inspected, "stream-0").read_device_span(0, 12)
+    assert span.valid_samples.all()
+    assert set(span.continuity_segment_ids) == {0}
+
+
+def test_device_axis_v3_internal_gap_is_physically_zero_filled_and_masked(
+    tmp_path: Path,
+) -> None:
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=12),
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={1: 4})},
+        session_id="device-axis-internal-gap",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV3)
+    stream = result.manifest.streams[0]
+    assert stream.state is StreamState.PARTIAL
+    assert stream.logical_sample_count == 12
+    assert stream.observed_sample_count == 8
+    assert stream.zero_fill_sample_count == 4
+    assert stream.continuity.device_span_sample_count == 12
+    assert stream.continuity.missing_sample_count == 4
+    assert sum(chunk.uncompressed_bytes for chunk in stream.chunks) == 12 * 2 * 4
+    inspected = coordinator.store.inspect(result.session_id)
+    dense = coordinator.store.read_ci16(inspected, "stream-0", 0, 12)
+    assert not dense[4:8].any()
+    span = coordinator.store.reader(inspected, "stream-0").read_device_span(0, 12)
+    assert span.valid_samples.tolist() == [True] * 4 + [False] * 4 + [True] * 4
+    assert span.continuity_segment_ids.tolist() == [0] * 4 + [-1] * 4 + [1] * 4
+
+
+def test_device_axis_v3_terminal_gap_closes_iq_and_timing_at_requested_endpoint(
+    tmp_path: Path,
+) -> None:
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=6),
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={1: 4})},
+        session_id="device-axis-terminal-gap",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV3)
+    stream = result.manifest.streams[0]
+    assert stream.logical_sample_count == 6
+    assert stream.observed_sample_count == 4
+    assert stream.zero_fill_sample_count == 2
+    terminal = stream.continuity.terminal_gap
+    assert terminal is not None
+    assert terminal.in_span_missing_sample_count == 2
+    assert stream.timing.last_sample.estimate_utc_ns == (
+        stream.timing.first_sample.estimate_utc_ns + 5 * 1_000_000_000 // 2_500_000
+    )
+    inspected = coordinator.store.inspect(result.session_id)
+    reader = coordinator.store.reader(inspected, "stream-0")
+    gap_map = reader.gap_map()
+    validity = reader.validity_inventory()
+    assert stream.continuity.segment_count == 1
+    assert gap_map.segment_count == 2
+    assert len(validity.segments) == 2
+    terminal_segment = validity.segments[1]
+    assert terminal_segment.device_sample_start == terminal_segment.device_sample_stop == 6
+    assert terminal_segment.stored_sample_start == terminal_segment.stored_sample_stop == 4
+    assert terminal_segment.preceding_boundary_reason == "terminal_counter_gap"
+    span = reader.read_device_span(0, 6)
+    assert span.valid_samples.tolist() == [True] * 4 + [False] * 2
+    assert not span.samples[4:].any()
+
+
+def test_device_axis_v3_fail_session_never_publishes_an_unclosed_peer(
+    tmp_path: Path,
+) -> None:
+    clean_reads_complete = Event()
+
+    class CleanRadio(FakeRadioSource):
+        def __init__(self) -> None:
+            super().__init__("radio-a")
+            self._test_reads = 0
+
+        def read_block(self, sample_count: int) -> IqBlock:
+            block = super().read_block(sample_count)
+            self._test_reads += 1
+            if self._test_reads == 3:
+                clean_reads_complete.set()
+            return block
+
+    class FailureAfterCleanEndpoint(FakeRadioSource):
+        def __init__(self) -> None:
+            super().__init__("radio-b")
+            self._test_reads = 0
+
+        def read_block(self, sample_count: int) -> IqBlock:
+            if self._test_reads == 1:
+                assert clean_reads_complete.wait(timeout=1.0)
+                raise RuntimeError("injected peer failure after clean endpoint")
+            block = super().read_block(sample_count)
+            self._test_reads += 1
+            return block
+
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _device_axis_plan(radio_ids=("radio-a", "radio-b"), sample_count=12),
+        {
+            "radio-a": CleanRadio(),
+            "radio-b": FailureAfterCleanEndpoint(),
+        },
+        session_id="device-axis-failed-peer",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert any("peer-failure policy rejected" in error for error in result.errors)
+    with pytest.raises(Exception, match="does not exist"):
+        coordinator.store.inspect(result.session_id)
+    spool = _assert_quarantined_v3_evidence(coordinator, result.session_id)
+    assert (spool / "radio-radio-a" / "validity-inventory.json").is_file()
+    assert (spool / "radio-radio-b").is_dir()
+
+
+def test_device_axis_v3_unknown_endpoint_is_quarantined_without_a_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    coordinator = _device_axis_coordinator(tmp_path)
+    opened = _record_opened_bundles(coordinator, monkeypatch)
+
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=12),
+        {"radio-a": FakeRadioSource("radio-a", fail_after_blocks=1)},
+        session_id="device-axis-unknown-endpoint",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert result.bundle is None
+    assert any("endpoint is unproven" in error for error in result.errors)
+    assert len(opened) == 1 and opened[0].quarantined
+    _assert_quarantined_v3_evidence(coordinator, result.session_id)
+
+
+def test_device_axis_v3_inflight_cancellation_quarantines_observed_prefix(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cancel = Event()
+
+    class CancelAfterFirstRefill(FakeRadioSource):
+        def __init__(self) -> None:
+            super().__init__("radio-a")
+            self._test_reads = 0
+
+        def read_block(self, sample_count: int) -> IqBlock:
+            block = super().read_block(sample_count)
+            self._test_reads += 1
+            if self._test_reads == 1:
+                cancel.set()
+            return block
+
+    coordinator = _device_axis_coordinator(tmp_path)
+    opened = _record_opened_bundles(coordinator, monkeypatch)
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=12),
+        {"radio-a": CancelAfterFirstRefill()},
+        session_id="device-axis-inflight-cancel",
+        cancel=cancel,
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert result.bundle is None
+    assert any("capture cancelled; no manifest was published" in error for error in result.errors)
+    assert len(opened) == 1 and opened[0].quarantined
+    _assert_quarantined_v3_evidence(coordinator, result.session_id)
+
+
+def test_device_axis_v3_writer_failure_quarantines_observed_prefix(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = DeviceAxisStreamBundleWriter.append
+
+    def fail_after_observed_write(
+        self: DeviceAxisStreamBundleWriter,
+        block: IqBlock,
+    ) -> None:
+        original(self, block)
+        raise OSError("injected V3 writer failure")
+
+    monkeypatch.setattr(DeviceAxisStreamBundleWriter, "append", fail_after_observed_write)
+    coordinator = _device_axis_coordinator(tmp_path)
+    opened = _record_opened_bundles(coordinator, monkeypatch)
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=12),
+        {"radio-a": FakeRadioSource("radio-a")},
+        session_id="device-axis-writer-failure",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert result.bundle is None
+    assert any("injected V3 writer failure" in error for error in result.errors)
+    assert len(opened) == 1 and opened[0].quarantined
+    _assert_quarantined_v3_evidence(coordinator, result.session_id)
+
+
+def test_device_axis_v3_queue_failure_refuses_a_fixed_length_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = DeviceAxisStreamBundleWriter.append
+    first = True
+
+    def delayed_append(self, block):
+        nonlocal first
+        if first:
+            first = False
+            time.sleep(0.1)
+        return original(self, block)
+
+    monkeypatch.setattr(DeviceAxisStreamBundleWriter, "append", delayed_append)
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=12, queue_capacity=1),
+        {"radio-a": FakeRadioSource("radio-a")},
+        session_id="device-axis-queue-refusal",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert any("queue full" in error or "enqueue failure" in error for error in result.errors)
+    with pytest.raises(Exception, match="does not exist"):
+        coordinator.store.inspect(result.session_id)
+    _assert_quarantined_v3_evidence(coordinator, result.session_id)
 
 
 def test_legacy_live_plan_fails_closed_before_radio_prepare(tmp_path: Path) -> None:
@@ -410,9 +762,8 @@ def test_queue_capacity_cannot_be_reused_before_dequeue_accounting(
 
     consumer_dequeued = Event()
     release_consumer = Event()
-    queue_type = coordinator_module.queue.Queue
 
-    class PausedAfterGetQueue(queue_type):
+    class PausedAfterGetQueue(queue.Queue[object]):
         def get(self, block=True, timeout=None):
             item = super().get(block=block, timeout=timeout)
             if not consumer_dequeued.is_set():

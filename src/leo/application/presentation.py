@@ -21,6 +21,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.recording import (
     ContinuitySummaryV2,
     RecordingManifestV1,
+    RecordingManifestV3,
     RecordingStreamV1,
     parse_recording_manifest,
 )
@@ -374,6 +375,9 @@ class CatalogPresentationRepository:
                     and snapshot.manifest_digest != bundle.manifest_sha256
                 ):
                     return None
+                if isinstance(bundle.manifest, RecordingManifestV3):
+                    # Native V3 products use a separately versioned presentation path.
+                    return None
                 try:
                     relative = bundle.path.relative_to(self._recordings.recordings_root)
                 except ValueError:
@@ -388,7 +392,10 @@ class CatalogPresentationRepository:
             if not path.is_absolute():
                 return None
             path.resolve(strict=False).relative_to(self._bulk_root)
-            return parse_recording_manifest(tombstone), path
+            manifest = parse_recording_manifest(tombstone)
+            if isinstance(manifest, RecordingManifestV3):
+                return None
+            return manifest, path
         except (ValueError, TypeError):
             return None
 

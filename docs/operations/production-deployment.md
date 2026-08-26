@@ -349,8 +349,8 @@ sudo install -d -o root -g leo -m 0750 \
   /srv/bulk/leo/qualification/sample-rate-3m
 
 # After populating the hardware harness's required authorization and exact
-# production-radio identity environment, run its ten trials with this exact
-# staged native runtime. Isolated mode ignores PYTHON* environment variables,
+# production-radio identity environment, run its combined ten-trial 3M plus
+# one full-span 5M campaign with this exact staged native runtime. Isolated mode ignores PYTHON* environment variables,
 # so -B is the effective no-bytecode boundary that keeps the release immutable:
 sudo --preserve-env \
   /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
@@ -378,10 +378,17 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v3.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v4.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
+
+The full-cutover transaction runs any required `alembic upgrade head` while
+every LEO unit is quiescent. Before starting any worker, its cutover preflight reads
+`public.processing_resource_capacity` as `leo` with `psql --no-psqlrc` and
+requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
+`memory=4`, and `heavy=2`. A missing, duplicate, extra, malformed, or drifted
+row blocks startup.
 
 The stage-only command must precede the hardware run: its published release
 metadata seals the release-local libiio library, Python binding, and metadata
@@ -402,13 +409,27 @@ evidence binds exact IIO identity and capabilities, fail-closed TX mute/readback
 on open and close, and independent RX-settings restoration readback; it neither
 opens a device-side shell nor depends on a device password or SSH trust store.
 
-The harness shares one monotonic 30-minute RF deadline across its 3 MS/s and
-5 MS/s arms, reserves shutdown time, and relies on the pinned finite libiio
+The harness shares one monotonic 30-minute RF deadline across ten 60-second
+3 MS/s trials and one 60-second full-span 5 MS/s characterization, reserves shutdown time, and relies on the pinned finite libiio
 context timeout so a stalled refill returns through the same source-close and
 RX-setting restoration path. Production `.20`/`.21` are the only qualification
-and recorder targets. The V3 receipt contains no non-production USB control arm;
-it retains exact per-radio safety, native-IP canary, writer, runtime, and strict
-ten-trial gates.
+and recorder targets. The V4 receipt contains no non-production USB control arm;
+it binds the exact deployed 3 MS/s and 5 MS/s device-axis profiles and fixed-radio plans,
+retains exact per-radio safety, native-IP canary, writer, host-health, and runtime evidence,
+requires measured incompressible writer throughput of at least 100 MB/s,
+and records both ordered streams' V3 logical/observed closure and evidence
+digests for every one of the ten 3 MS/s trials. Its embedded 5 MS/s evidence
+requires 300,000,000 logical samples per stream, exact observed-plus-zero-fill
+closure, verified physical zeros, gap-map and validity-inventory agreement, and
+zero overflow, enqueue failures, or terminal rejected refills. It also binds an
+exact queue capacity of 32 refills and a measured high-water no greater than 24
+refills for each 5 MS/s stream. Before the writer benchmark or any RF action, the harness captures
+a bounded read-only host snapshot for `md127` and `/srv/bulk`; after both radios restore exactly
+and the paused-maintenance lease is verified and released, it captures the matching post snapshot.
+The required V4 prerequisite passes only with healthy idle RAID, complete kernel-log evidence,
+zero kernel I/O errors and OOM kills, no swap-in/out delta, at least 32 GiB available memory, and
+at least 1 TiB free disk at both boundaries. The cutover verifier closes the evidence/check keys,
+digests, timestamps, and target hostname before accepting the V4 path.
 
 Do not pre-edit the production environment to the reviewed target values: doing so
 would make a naive rollback snapshot the new configuration rather than the
@@ -542,10 +563,13 @@ sudo systemctl start leo-reconcile.service
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process retention-run --dry-run --json'
 ```
 
-Start in dependency order. Twenty worker processes bound aggregate execution to
-20 concurrent jobs on the 24-logical-CPU production host. The catalog applies
-the same ceiling independently to every resource class, so no class creates an
-artificial backlog while the process count remains the global bound:
+Start in dependency order. Twenty worker processes remain the global process
+bound on the 24-logical-CPU production host. Catalog admission is intentionally
+stricter by resource class: `streaming=16`, `cpu=8`, `memory=4`, and initially
+`heavy=2`. The two-lease HEAVY cap is the production safety boundary for native
+3/5 MS/s analysis; raise it to four only after sealed measurements prove enough
+memory and I/O headroom with healthy RAID, no OOM or swap activity, and no
+kernel storage errors:
 
 ```text
 sudo systemctl enable --now leo-reconcile.timer
@@ -574,9 +598,32 @@ sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process j
 curl --fail http://127.0.0.1:8090/api/v1/status
 ```
 
-Observe the first 60-second continuous dwell only; do not extend it into a radio
-campaign. Save its session ID, then verify registration, the exact Standard
-subject hierarchy, queue creation, worker completion, and API/UI visibility:
+The durable authority is still paused after qualification and deployment. Keep
+it paused during ordinary service startup. For each of the two direct canaries,
+stop the acquisition scheduler first, explicitly resume, run exactly one
+dual-radio one-shot, and immediately re-pause and drain before restarting the
+scheduler. This prevents the scheduler from racing the direct command. Run the
+pause command even if its preceding one-shot fails; do not restart the service
+until status again reports paused and drained.
+
+Run the exact 3 MS/s canary first:
+
+```text
+sudo systemctl stop leo-acquisition.service
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire resume --operator production-cutover \
+  --reason "bounded direct 3 MS/s post-cutover canary" --json'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire once --profile "$LEO_CAPTURE_PROFILE_3M" --json'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire pause --operator production-cutover \
+  --reason "direct 3 MS/s post-cutover canary complete" \
+  --wait --timeout-seconds 90 --json'
+sudo systemctl start leo-acquisition.service
+```
+
+Save its session ID, then verify registration, the exact Standard subject
+hierarchy, queue creation, worker completion, and API/UI visibility:
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process search --limit 5 --json'
@@ -590,19 +637,37 @@ subjects, all four RX subjects, pipeline release `$release_revision`, and a
 current completed analysis after workers drain. Confirm `NRestarts=0` and the
 expected weights/OOM adjustments.
 
-Then stop only acquisition, start one reconcile pass, and restart acquisition.
-Verify the next scheduled 60-second dwell commits and reaches the same current
-Standard/UI state. Stop and investigate if either bounded dwell fails; do not
-continue collecting to compensate. These two short observations supply the
-installed capture and restart evidence required by R-030. Retain the old user
-units until this observation passes.
+Then stop acquisition, start one reconcile pass, and restart acquisition while
+the durable authority remains paused. Verify the service reports active but
+capture remains paused. Stop acquisition again and run the exact 5 MS/s canary
+under the same explicit resume/re-pause boundary:
 
 ```text
 sudo systemctl stop leo-acquisition.service
 sudo systemctl start leo-reconcile.service
 sudo systemctl start leo-acquisition.service
 sudo systemctl show leo-acquisition.service -p ActiveState -p SubState -p MainPID -p NRestarts
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire status --json'
+sudo systemctl stop leo-acquisition.service
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire resume --operator production-cutover \
+  --reason "bounded direct 5 MS/s post-cutover canary" --json'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire once --profile "$LEO_CAPTURE_PROFILE_5M" --json'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire pause --operator production-cutover \
+  --reason "direct 5 MS/s post-cutover canary complete" \
+  --wait --timeout-seconds 90 --json'
+sudo systemctl start leo-acquisition.service
 ```
+
+Verify the 5 MS/s session reaches the same Current Standard/UI state and that
+final capture status remains paused. Stop and investigate if either bounded
+dwell fails; do not continue collecting to compensate. These two short observations,
+each 60 seconds, supply the installed capture and restart evidence required by
+R-030 without enabling continuous acquisition. Retain the old user units until
+both observations pass. Continuous acquisition requires a later, separate
+operator resume.
 
 Retain the two session IDs, CLI/API responses, `systemctl show` output, and UTC
 observation bounds beneath `/srv/bulk/leo/qualification/standard-cutover`, then
@@ -715,5 +780,6 @@ The RAID is currently rebuilding at about 50 MB/s. That degraded measurement
 does not establish final writer capacity. After resync completes, rerun the
 128-MiB-shard sustained writer benchmark and induced-backlog worker benchmark,
 then record the chosen worker count and acquisition reserve in qualification
-evidence. Until then, eight workers and the current reserve are provisional;
-do not increase concurrency based on rebuild-limited throughput.
+evidence. Keep the catalog HEAVY capacity at two until that evidence proves
+memory and I/O headroom; four is the maximum reviewed next step, not an
+automatic post-resync setting.

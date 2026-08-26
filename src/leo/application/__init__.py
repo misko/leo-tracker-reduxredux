@@ -15,6 +15,10 @@ from leo.application.research_reprocess import (
     ResearchReprocessResultV1,
     ResearchReprocessService,
 )
+from leo.application.standard_native_presentation import (
+    CatalogStandardNativePresentationRepository,
+    DefinitionDispatchedStandardPresentationRepository,
+)
 from leo.application.standard_presentation import (
     CatalogStandardPresentationRepository,
     StandardPresentationNotReady,
@@ -22,6 +26,8 @@ from leo.application.standard_presentation import (
 )
 from leo.application.standard_reprocess import (
     StandardControlStatusV1,
+    StandardNativeEvidenceReprocessor,
+    StandardNativeEvidenceResultV1,
     StandardReprocessError,
     StandardReprocessNotFound,
     StandardReprocessor,
@@ -42,6 +48,8 @@ __all__ = [
     "CaptureControlAuthorityPort",
     "CatalogPresentationRepository",
     "CatalogStandardPresentationRepository",
+    "CatalogStandardNativePresentationRepository",
+    "DefinitionDispatchedStandardPresentationRepository",
     "PostgresCalibrationCatalogAdapter",
     "OperatorCaptureControl",
     "ResolvedFrequencyCalibration",
@@ -52,6 +60,8 @@ __all__ = [
     "StandardPresentationNotReady",
     "StandardPresentationUnavailable",
     "StandardControlStatusV1",
+    "StandardNativeEvidenceReprocessor",
+    "StandardNativeEvidenceResultV1",
     "StandardReprocessError",
     "StandardReprocessNotFound",
     "StandardReprocessResultV1",
