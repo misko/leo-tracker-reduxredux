@@ -22,6 +22,11 @@ def test_frozen_measurement_bundles_load_with_expected_mixed_estimators() -> Non
     assert tracks[-1].bundle_id == "long-direct-glrt"
     assert tracks[-1].track.time_s.size >= 500
     assert all(np.isfinite(item.track.fit_cfo_hz).all() for item in tracks)
+    reduction = protocol["measurement_reduction"]
+    diagnostic = next(item for item in tracks if not item.primary)
+    support_pass, support = tool._support_disposition(diagnostic, reduction)
+    assert support_pass is False
+    assert any(int(item["evaluation_bin_count"]) < 20 for item in support)
 
 
 def test_protocol_load_fails_on_measurement_digest_drift(tmp_path: Path) -> None:

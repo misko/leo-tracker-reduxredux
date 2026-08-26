@@ -423,23 +423,13 @@ def _minimum_fit_score(
     )
 
 
-def evaluate_bundle(
+def _support_disposition(
     bound: BoundTrack,
-    catalogue: ElementSetCatalogue,
-    protocol: dict[str, Any],
-    *,
-    run_controls: bool,
-) -> tuple[dict[str, Any], CandidatePopulation, CandidateFitBank]:
-    """Score one fixed bundle under every preregistered model and control."""
-
-    reduction = protocol["measurement_reduction"]
-    model = protocol["models"]["primary_hierarchical_receiver_nuisance"]
-    evaluation_config = protocol["evaluation"]
-    observer = str(protocol["observer_and_geometry"]["observer_preset"])
+    reduction: dict[str, Any],
+) -> tuple[bool, list[dict[str, int | str]]]:
     track = bound.track
     training = chronological_mask(track.time_s, float(reduction["chronological_training_fraction"]))
-    response_available = np.isfinite(track.response_cfo_hz)
-    evaluation = ~training & response_available
+    evaluation = ~training & np.isfinite(track.response_cfo_hz)
     support_by_path: list[dict[str, int | str]] = []
     for path, path_id in enumerate(track.path_ids):
         support_by_path.append(
@@ -468,6 +458,27 @@ def evaluate_bundle(
         )
     else:
         support_pass = track.time_s.size >= int(reduction["long_track_minimum_total_bins"])
+    return support_pass, support_by_path
+
+
+def evaluate_bundle(
+    bound: BoundTrack,
+    catalogue: ElementSetCatalogue,
+    protocol: dict[str, Any],
+    *,
+    run_controls: bool,
+) -> tuple[dict[str, Any], CandidatePopulation, CandidateFitBank]:
+    """Score one fixed bundle under every preregistered model and control."""
+
+    reduction = protocol["measurement_reduction"]
+    model = protocol["models"]["primary_hierarchical_receiver_nuisance"]
+    evaluation_config = protocol["evaluation"]
+    observer = str(protocol["observer_and_geometry"]["observer_preset"])
+    track = bound.track
+    training = chronological_mask(track.time_s, float(reduction["chronological_training_fraction"]))
+    response_available = np.isfinite(track.response_cfo_hz)
+    evaluation = ~training & response_available
+    support_pass, support_by_path = _support_disposition(bound, reduction)
     if not support_pass:
         raise ValueError(f"frozen support gate failed for {bound.capture_id}/{bound.bundle_id}")
 
@@ -849,7 +860,7 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
     tle_bindings = protocol["tle_inputs"]["snapshots"]
     catalogue_cache: dict[str, ElementSetCatalogue] = {}
     text_cache: dict[str, str] = {}
-    results = []
+    results: list[dict[str, Any]] = []
     populations: dict[tuple[str, str], CandidatePopulation] = {}
     fits: dict[tuple[str, str], CandidateFitBank] = {}
     for bound in tracks:
@@ -859,6 +870,27 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             text = Path(str(binding["raw_path"])).read_text(encoding="ascii")
             text_cache[digest] = text
             catalogue_cache[digest] = parse_element_sets(text)
+        support_pass, support_by_path = _support_disposition(
+            bound, protocol["measurement_reduction"]
+        )
+        if not support_pass and not bound.primary:
+            results.append(
+                {
+                    "capture_id": bound.capture_id,
+                    "bundle_id": bound.bundle_id,
+                    "data_kind": bound.data_kind,
+                    "primary": False,
+                    "measurement_bin_count": int(bound.track.time_s.size),
+                    "path_count": len(bound.track.path_ids),
+                    "physical_radio_count": len(bound.track.radio_ids),
+                    "support_by_path": support_by_path,
+                    "support_gate_pass": False,
+                    "recovered_track": False,
+                    "candidate_evidence_pass": False,
+                    "disposition": "diagnostic bundle failed frozen primary support minima",
+                }
+            )
+            continue
         result, population, fit = evaluate_bundle(
             bound,
             catalogue_cache[digest],
@@ -869,7 +901,7 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
         populations[(bound.capture_id, bound.bundle_id)] = population
         fits[(bound.capture_id, bound.bundle_id)] = fit
 
-    primary_results = [item for item in results if item["primary"]]
+    primary_results: list[dict[str, Any]] = [item for item in results if item["primary"]]
     primary_by_capture = {item["capture_id"]: item for item in primary_results}
     long_bound = next(
         item
