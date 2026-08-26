@@ -1,0 +1,74 @@
+{
+  "schema": "org.leo.research.fixed500-calibration-corrective-analysis-amendment/v1",
+  "date_utc": "2026-08-26",
+  "original_protocol_commit": "8e6e98e4a3824723b04ef3c9bcb92df3080a7336",
+  "published_result_commit": "9bc7541f1c4bd5ca045ff33ba7c6d284db398851",
+  "audit_trigger": "independent post-result audit after the original report and all headline outcomes were visible",
+  "post_outcome_disclosure": {
+    "visible_before_this_amendment": [
+      "all original endpoint, aggregate, interval, support, and promotion results",
+      "the original 37.1757 Hz/s inclusive-current quadratic RMSE and 0.127492 ratio",
+      "a noncanonical read-only strict-past sensitivity near 35.80 Hz/s and ratio 0.123",
+      "the original maximum calibration score 25.725265 from 12 calibration groups",
+      "the fact that no frozen endpoint occurs after the 1.1 s CFO step plus the 0.5 s exclusion"
+    ],
+    "interpretation": "This is a transparent scientific correction, not a preregistered independent confirmation. The corrected rerun may repair claim validity but cannot erase post-outcome knowledge or create a new holdout."
+  },
+  "audit_findings": [
+    {
+      "severity": "high",
+      "finding": "The requested 95% split-conformal order is ceil((12+1)*0.95)=13, which is unavailable from 12 calibration groups; capping at order 12 does not provide a finite-sample 95% guarantee. The deterministic factor-balanced C/E split also does not establish exchangeability."
+    },
+    {
+      "severity": "high",
+      "finding": "The quadratic implementation included the endpoint even-Qin measurement although the frozen protocol required strict-past frames."
+    },
+    {
+      "severity": "medium",
+      "finding": "The frozen 0.5 s step-transition exclusion was not applied. Frozen endpoints at 0.5, 1.0, and 1.5 s provide two pre-step and one transition endpoint, with no post-exclusion endpoint after 1.6 s."
+    },
+    {
+      "severity": "latent",
+      "finding": "Promotion gates did not explicitly require identical evaluable scenario/endpoint identifiers for quadratic versus fixed500 or row-exact cloned point fields for the interval diagnostic."
+    }
+  ],
+  "frozen_corrections_before_rerun": {
+    "strict_past_quadratic": "For every target endpoint, fit only supported even-Qin frames with reference_time_s strictly less than the endpoint time and within the trailing 0.5 s window; evaluate the fitted derivative at the excluded endpoint time. Keep all other quadratic thresholds and robust-fit settings unchanged.",
+    "finite_sample_95_interval": "Compute required_order=ceil((n+1)*0.95). When required_order>n, formally abstain: publish no finite 95% multiplier or coverage claim. Preserve the order-n maximum-score interval only as an explicitly descriptive diagnostic, with no conformal or distribution-free interpretation.",
+    "step_diagnostic": "Label each step endpoint no_step, pre_step, transition_excluded, or post_exclusion using the frozen 1.1 s step time and 0.5 s exclusion. Report the mixed pre/transition population and the transition-only stratum separately; make no recovery inference because no post_exclusion endpoint exists.",
+    "identity_gates": "Require exact equality of primary evaluable scenario identifiers and complete endpoint identifiers before any quadratic ratio PASS. Require row-exact equality of every non-interval point/truth/status field between fixed500 and its descriptive interval clones.",
+    "decision_rule": "The original fixed500 combined status remains FAIL regardless of the rerun. The quadratic result may retain PASS only under the original 0.95 RMSE-ratio threshold and the newly explicit identical-ID gates; it must be described as a corrected post-outcome component result, not independent confirmation."
+  },
+  "retuning_forbidden": [
+    "changing scenarios, seeds, SNR, occupancy, rate, acceleration, jerk, aliases, CFO steps, or sample-clock offsets",
+    "changing supported-frame thresholds, history length, fit order, robust-fit tuning, endpoint targets, primary mask, or original numeric promotion thresholds",
+    "using odd-Qin responses for fitting, support, endpoint selection, calibration, or gates",
+    "opening holdout_foundation, newer captures, or any capture/span outside the three exact original bindings"
+  ],
+  "authorized_rerun_inputs": {
+    "dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+    "base_protocol_sha256": "sha256:b91f20418699828928156604cfe76748262709f317eb4cc12a983f1fd7bd95d4",
+    "fixed500_protocol_sha256": "sha256:e1cee914fa6ec3f7a28819e7035968e023989a19f4ccf0a32577275cf1ed559f",
+    "spans": [
+      {
+        "session_id": "cap-20260825T062228-886fe2dd9cde",
+        "sample_start": 20000000,
+        "sample_count": 5000000,
+        "span_sha256": "sha256:58c782fd304ba1522c303c89297985c393533ba74070774fc6cc8bc9d8ef76ed"
+      },
+      {
+        "session_id": "cap-20260825T105640-facdadeffb3b",
+        "sample_start": 55000000,
+        "sample_count": 5000000,
+        "span_sha256": "sha256:b42e31056c0056d2a561e8fef089bfe8083ead688a548cdec0e8fe131d5c2dd1"
+      },
+      {
+        "session_id": "cap-20260825T111222-a2d4ce2afb9a",
+        "sample_start": 90000000,
+        "sample_count": 5000000,
+        "span_sha256": "sha256:ce67d61bc8ad1be591a3b27fdcfb1eb96d54a14dd39180e3cc9cc0606cc676b7"
+      }
+    ]
+  },
+  "execution_requirement": "After implementation and focused tests are committed, freeze a separate hash-bound corrective execution authority, then rerun all 36 scenarios from a clean tree. Preserve all failures and regenerate every canonical row artifact, metric, report, and PNG."
+}

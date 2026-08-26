@@ -1,0 +1,26 @@
+{
+  "schema": "org.leo.research.fixed500-calibration-execution-amendment/v1",
+  "protocol_commit": "8e6e98e4a3824723b04ef3c9bcb92df3080a7336",
+  "failed_execution_commit": "46f93773f4a53c041e64406185247fa4622bedd3",
+  "corrected_implementation_commit": "69ce329f8243b08c5ea525aa15db3f01cd8c0d89",
+  "failure_stage": "after all 36 scientific scenario loops and artifact-table writes, before metrics.json and report publication",
+  "failure_message": "relative artifact paths were passed directly to Path.relative_to with an absolute repository root",
+  "outcome_handling_before_correction_freeze": "console support counts and lattice shifts were visible; no aggregate metric, coverage result, promotion result, report, or metrics.json was inspected because serialization failed before those products existed",
+  "correction_scope": [
+    "resolve each already-written artifact path before making it repository-relative",
+    "bind and disclose this execution amendment in the evidence receipt and generated report",
+    "make no change to input authority, scenarios, seeds, waveform, lattice, masks, parity separation, estimators, endpoints, interval calibration, metrics, gates, or figures"
+  ],
+  "rerun_requirement": "rerun all 36 scenarios from a clean committed tree; do not postprocess the failed-run ledgers as canonical evidence",
+  "implementation_sha256": {
+    "tools/run_fixed500_calibration.py": "sha256:390f706df224e56dc06f22e298e3b1ed41c377e858403f6831e068b8cef1b7a0",
+    "src/leo/analysis/research/fixed500_calibration.py": "sha256:bfbdc3d06f24d9ece934e0b97530e2d14a62321d4376e6f90c980e0f961896ea",
+    "src/leo/analysis/research/polynomial_injection.py": "sha256:9306fed69313a71e5d0ac9f45865ab33e929012325a566a6ef05ac26c161750f",
+    "src/leo/analysis/research/adaptive_frame_cfo.py": "sha256:4491478b5428f7877f5e7136a58e44c8de7729c2ada7ca2a228212836ecb0696",
+    "src/leo/analysis/qam/pilot.py": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
+    "src/leo/analysis/starlink/templates.py": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "src/leo/analysis/research/polynomial_injection_protocol.py": "sha256:f6692c61dac5b5d42188dde4d9caf03a34b5c14edc542d14913fc37f333ccb29",
+    "src/leo/analysis/research/doppler_dataset_policy.py": "sha256:0bb2e9893801d1387b6911e40c490502ebef7eb976f575e4f14037e6721f8f9f",
+    "tools/run_polynomial_qin_injection.py": "sha256:908be87e09f2343866a6244e48b71524a1752d7ad21921e728d61df990fb3864"
+  }
+}
