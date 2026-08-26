@@ -218,6 +218,21 @@ This conclusion agrees with the broader
 better rate estimation is necessary, but longer independent geometry and
 measured receiver authority are still required for secure satellite naming.
 
+## Validation receipt
+
+- 17 lane-owned protocol, fitting, runner, artifact, figure, and report tests
+  passed.
+- 90 focused TLE, Doppler, multi-radio, archive, and lane tests passed.
+- The complete non-hardware/non-real-corpus/non-PostgreSQL `tests/analysis`
+  selection passed: 904 passed, 7 deselected, with only two existing Pydantic
+  field-shadow warnings.
+- Ruff passed across `src`, `tests`, and `tools`; all 689 checked files matched
+  Ruff formatting.
+- Mypy passed all 269 source files, and strict mypy passed the new pure fitting
+  module and experiment runner.
+- Every Markdown link resolves, all three PNGs decode, and the committed
+  artifact-manifest byte counts and SHA-256 values match the files.
+
 ## Reproduction and artifacts
 
 The bounded runner is
