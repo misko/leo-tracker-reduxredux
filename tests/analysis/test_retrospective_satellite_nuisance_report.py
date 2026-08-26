@@ -31,6 +31,8 @@ def test_report_claims_match_frozen_machine_evidence() -> None:
     assert "`4 -> 4` recovered tracks" in report
     assert "**0 secure NORAD identities**" in report
     assert "1.48% worse" in report
+    assert "2ec8c62c55607dc04418675147ebaa87540ea3fe" in report
+    assert "diagnostic-only comparisons" in report
     primary = [item for item in evidence["bundle_results"] if item["primary"]]
     assert len(primary) == 4
     for item in primary:
@@ -40,8 +42,15 @@ def test_report_claims_match_frozen_machine_evidence() -> None:
             "tle_plus_unregularized_common_affine_departure",
             "independent_path_linear_null",
         }
+        assert all(
+            model["promotion_gate"] is False for model in item["diagnostic_overfit_models"].values()
+        )
         assert item["secure_provenance_pass"] is True
         assert item["secure_capture_pass"] is False
+    boundary_correction = evidence["execution_dispositions"][1]
+    assert boundary_correction["implementation_commit"].startswith("2ec8c62")
+    assert boundary_correction["candidate_gate_definition_or_threshold_change"] is False
+    assert boundary_correction["candidate_evidence_or_secure_count_change"] is False
 
 
 def test_latest_causal_tle_sensitivity_is_exact_and_invisible_only() -> None:
@@ -56,6 +65,11 @@ def test_latest_causal_tle_sensitivity_is_exact_and_invisible_only() -> None:
     assert sensitivity["changed_catalogue_norad_ids"] == [47657]
     assert sensitivity["changed_visible_norad_ids"] == []
     assert sensitivity["winner_norad_id"] == 59748
+    reconstruction = evidence["source_provenance"]["latest_tle_sensitivity_durable_reconstruction"]
+    assert reconstruction["reconstructed_source_sha256"] == (
+        "sha256:9bb59fcf68fa36ce234ae9be79a492f0b92abc23bcf4f040bb5b64b61d3e31ad"
+    )
+    assert reconstruction["historical_tmp_source_required_at_execution"] is False
 
 
 def test_report_local_links_and_pngs_resolve() -> None:
