@@ -461,14 +461,15 @@ def _interpretation(
         yield_summary["v4_numerical_complete_count"] >= yield_summary["v3_numerical_complete_count"]
     )
     ratio = fixed["v4_over_v3_anchor_equal_rms_ratio"]
-    noninferior = bool(ratio is not None and ratio <= 1.05)
+    within_bound = bool(ratio is not None and ratio <= 1.05)
     material = bool(ratio is not None and ratio <= 0.95)
     return {
         "adequate_common_support": support,
         "v4_numerical_yield_not_lower": numerical_yield,
-        "common_fixed_500_noninferior": noninferior,
+        "common_fixed_500_point_ratio_within_bound": within_bound,
+        "common_fixed_500_noninferiority_established": support and within_bound,
         "common_fixed_500_material_improvement": material,
-        "v4_acquisition_useful_gate": support and numerical_yield and noninferior,
+        "v4_acquisition_useful_gate": support and numerical_yield and within_bound,
         "standard_promotion": False,
         "primary_ratio": "anchor-equal fixed-500-ms future odd-Qin RMS, V4/V3",
         "claim": (
