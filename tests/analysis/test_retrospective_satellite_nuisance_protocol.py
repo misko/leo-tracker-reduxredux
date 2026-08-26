@@ -66,6 +66,15 @@ def test_every_tle_is_digest_bound_and_strictly_pre_measurement() -> None:
         first = datetime.fromtimestamp(int(binding["first_measurement_utc_ns"]) / 1e9, UTC)
         assert retrieved < first
 
+    sensitivity = tle_inputs["source_sensitivity"]
+    assert isinstance(sensitivity, dict)
+    latest = sensitivity["cap-20260825T150802-473cb5bbcbd6"]
+    assert isinstance(latest, dict)
+    assert _sha256(Path(str(latest["raw_path"]))) == latest["raw_sha256"]
+    collected = datetime.fromisoformat(str(latest["collected_at"]).replace("Z", "+00:00"))
+    first = datetime.fromtimestamp(int(latest["first_measurement_utc_ns"]) / 1e9, UTC)
+    assert collected < first
+
 
 def test_identity_gates_separate_track_recovery_from_secure_norad() -> None:
     document = _document()

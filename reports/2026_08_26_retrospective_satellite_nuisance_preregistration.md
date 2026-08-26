@@ -4,10 +4,11 @@ Date: 2026-08-26 UTC
 
 ## Frozen question
 
-Can calibrated single-frame CFO measurements and a lean receiver-nuisance model
-recover more catalog-ranked tracks or secure more NORAD identities than the
-existing fixed-time, free-offset TLE comparison, without letting receiver
-parameters absorb the satellite-specific Doppler shape?
+Can mixed frame-local and direct-CFO evidence, together with a lean
+receiver-nuisance model, recover more catalog-ranked tracks or secure more
+NORAD identities than the existing fixed-time, free-offset TLE comparison,
+without letting receiver parameters absorb the satellite-specific Doppler
+shape?
 
 The executable authority is
 [`retrospective-satellite-nuisance-protocol-v1.json`](../config/analysis/retrospective-satellite-nuisance-protocol-v1.json).
@@ -23,16 +24,24 @@ the polynomial hard-null backgrounds except as possible nulls, all PRE-FIX
 captures, 3/5-MS/s capture-only data, unlisted/newer recordings, and dynamic
 capture discovery.
 
-Three primary capture tracks use the digest-frozen multi-radio frame ledger.
-The 150802 primary track uses the existing 13.8 s, 550-row direct-GLRT ledger;
-its 1.5 s multi-radio episode is a within-capture diagnostic and cannot create
-an independent recurrence. All inputs were previously opened, so the result is
-retrospective development evidence rather than a fresh acquisition holdout.
+Three primary capture tracks use the digest-frozen multi-radio single-frame CFO
+ledger. The 150802 primary track instead uses the existing 13.8 s, 550-row
+direct-GLRT CFO ledger; its 1.5 s multi-radio single-frame episode is a
+within-capture diagnostic and cannot create an independent recurrence. This is
+a mixed-estimator cohort, not four primary evaluations of the new frame
+estimator. All inputs were previously opened, so the result is retrospective
+development evidence rather than a fresh acquisition holdout.
 
 ## Candidate population and TLE provenance
 
 For each capture the protocol binds an exact, locally archived Space-Track
 Starlink snapshot whose retrieval time strictly precedes the first measurement.
+For 150802, the durable 13:37 QNAP snapshot is the frozen primary source, but it
+is not called the latest causal snapshot: a hash-bound source-sensitivity must
+also use the later 14:02 `9bb59fcf...` collection already established on main.
+The established record-level difference is confined to an object expected to
+be below the horizon; any visible-population, ranking, or metric difference now
+fails the primary interpretation closed.
 The candidate population is every SGP4-usable, altitude-plausible Starlink above
 the geometric horizon at any actual measurement time. Membership is fixed at
 the exact receive UTC before any nuisance or time-sensitivity calculation.
