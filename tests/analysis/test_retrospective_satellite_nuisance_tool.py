@@ -48,3 +48,7 @@ def test_path_radio_parser_fails_closed() -> None:
 def test_floating_grid_endpoint_is_not_mistaken_for_interior() -> None:
     assert not tool._grid_value_is_interior(0.2499999999999999, -0.25, 0.25, 0.025)
     assert tool._grid_value_is_interior(0.225, -0.25, 0.25, 0.025)
+    assert tool._winner_nuisance_is_interior({"radio_rate_departures_hz_s": [149.0, -149.0]}, 150.0)
+    assert not tool._winner_nuisance_is_interior(
+        {"radio_rate_departures_hz_s": [150.0, 1.0]}, 150.0
+    )

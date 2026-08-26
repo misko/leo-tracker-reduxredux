@@ -44,6 +44,10 @@ class MeasurementTrack:
             raise ValueError("measurement fit inputs must be finite")
         if len(self.path_ids) < 1 or len(self.radio_ids) < 1:
             raise ValueError("measurement track requires path and radio identities")
+        if len(set(self.path_ids)) != len(self.path_ids) or len(set(self.radio_ids)) != len(
+            self.radio_ids
+        ):
+            raise ValueError("measurement path and radio identities must be unique")
         if np.any(self.path_index < 0) or np.any(self.path_index >= len(self.path_ids)):
             raise ValueError("path index falls outside the path inventory")
         if np.any(self.radio_index < 0) or np.any(self.radio_index >= len(self.radio_ids)):
@@ -67,12 +71,33 @@ class CandidateFitBank:
 
 
 @dataclass(frozen=True, slots=True)
+class CandidateAffineDiagnosticBank:
+    """Unregularized common-affine departure metrics for fixed candidates."""
+
+    training_rms_hz: FloatArray
+    evaluation_rms_hz: FloatArray
+    full_response_rms_hz: FloatArray
+    path_offsets_hz: FloatArray
+    common_rate_departure_hz_s: FloatArray
+
+
+@dataclass(frozen=True, slots=True)
 class NullFit:
     """One radio-only polynomial fitted without a satellite candidate."""
 
     degree: int
     coefficients_hz: tuple[float, ...]
     path_offsets_hz: tuple[float, ...]
+    training_rms_hz: float
+    evaluation_rms_hz: float
+
+
+@dataclass(frozen=True, slots=True)
+class IndependentPathLinearNullFit:
+    """Independent path lines fitted without a satellite candidate."""
+
+    path_offsets_hz: tuple[float, ...]
+    path_rates_hz_s: tuple[float, ...]
     training_rms_hz: float
     evaluation_rms_hz: float
 
@@ -240,6 +265,62 @@ def fit_hierarchical_candidates(
     )
 
 
+def fit_unregularized_common_affine_candidates(
+    track: MeasurementTrack,
+    prediction_hz: FloatArray,
+    training_mask: BoolArray,
+    evaluation_mask: BoolArray,
+) -> CandidateAffineDiagnosticBank:
+    """Fit path offsets plus one unbounded common rate departure.
+
+    This deliberately over-flexible model is diagnostic only.  It profiles the
+    same equal-path objective as the primary fits, but it has neither the
+    preregistered Gaussian rate prior nor the hard nuisance boundary.
+    """
+
+    predictions = _validate_fit_inputs(track, prediction_hz, training_mask, evaluation_mask)
+    candidate_count = predictions.shape[0]
+    path_count = len(track.path_ids)
+    reference_s = float(np.mean(track.time_s[training_mask]))
+    centered_time = track.time_s - reference_s
+    raw = track.fit_cfo_hz[None, :] - predictions
+    numerator = np.zeros(candidate_count, dtype=np.float64)
+    denominator = 0.0
+    for path in range(path_count):
+        selected = training_mask & (track.path_index == path)
+        _require_support(selected, f"training path {path}")
+        path_time = centered_time[selected]
+        centered_path_time = path_time - float(np.mean(path_time))
+        path_raw = raw[:, selected]
+        centered_path_raw = path_raw - np.mean(path_raw, axis=1, keepdims=True)
+        numerator += np.mean(centered_path_raw * centered_path_time[None, :], axis=1) / path_count
+        denominator += float(np.mean(centered_path_time**2)) / path_count
+    if not math.isfinite(denominator) or denominator <= 0.0:
+        raise ValueError("common affine diagnostic has no temporal leverage")
+    rates = numerator / denominator
+    offsets = np.zeros((candidate_count, path_count), dtype=np.float64)
+    for path in range(path_count):
+        selected = training_mask & (track.path_index == path)
+        offsets[:, path] = np.mean(
+            raw[:, selected] - rates[:, None] * centered_time[selected][None, :],
+            axis=1,
+        )
+    nuisance = offsets[:, track.path_index] + rates[:, None] * centered_time[None, :]
+    training_residual = track.fit_cfo_hz[None, :] - predictions - nuisance
+    response_residual = track.response_cfo_hz[None, :] - predictions - nuisance
+    return CandidateAffineDiagnosticBank(
+        training_rms_hz=_equal_path_rms(training_residual, track.path_index, training_mask),
+        evaluation_rms_hz=_equal_path_rms(response_residual, track.path_index, evaluation_mask),
+        full_response_rms_hz=_equal_path_rms(
+            response_residual,
+            track.path_index,
+            np.isfinite(track.response_cfo_hz),
+        ),
+        path_offsets_hz=offsets,
+        common_rate_departure_hz_s=rates,
+    )
+
+
 def fit_radio_polynomial_null(
     track: MeasurementTrack,
     training_mask: BoolArray,
@@ -275,6 +356,46 @@ def fit_radio_polynomial_null(
         degree=degree,
         coefficients_hz=tuple(float(value) for value in coefficients[len(track.path_ids) :]),
         path_offsets_hz=tuple(float(value) for value in coefficients[: len(track.path_ids)]),
+        training_rms_hz=float(
+            _equal_path_rms(training_residual[None, :], track.path_index, training_mask)[0]
+        ),
+        evaluation_rms_hz=float(
+            _equal_path_rms(response_residual[None, :], track.path_index, evaluation_mask)[0]
+        ),
+    )
+
+
+def fit_independent_path_linear_null(
+    track: MeasurementTrack,
+    training_mask: BoolArray,
+    evaluation_mask: BoolArray,
+) -> IndependentPathLinearNullFit:
+    """Fit one unregularized line per path without a satellite candidate."""
+
+    _validate_masks(track, training_mask, evaluation_mask)
+    reference_s = float(np.mean(track.time_s[training_mask]))
+    centered_time = track.time_s - reference_s
+    offsets = np.zeros(len(track.path_ids), dtype=np.float64)
+    rates = np.zeros(len(track.path_ids), dtype=np.float64)
+    for path in range(len(track.path_ids)):
+        selected = training_mask & (track.path_index == path)
+        _require_support(selected, f"training path {path}")
+        path_time = centered_time[selected]
+        path_cfo = track.fit_cfo_hz[selected]
+        local_time = path_time - float(np.mean(path_time))
+        denominator = float(np.mean(local_time**2))
+        if not math.isfinite(denominator) or denominator <= 0.0:
+            raise ValueError(f"training path {path} has no temporal leverage")
+        rates[path] = float(
+            np.mean((path_cfo - float(np.mean(path_cfo))) * local_time) / denominator
+        )
+        offsets[path] = float(np.mean(path_cfo - rates[path] * path_time))
+    predicted = offsets[track.path_index] + rates[track.path_index] * centered_time
+    training_residual = track.fit_cfo_hz - predicted
+    response_residual = track.response_cfo_hz - predicted
+    return IndependentPathLinearNullFit(
+        path_offsets_hz=tuple(float(value) for value in offsets),
+        path_rates_hz_s=tuple(float(value) for value in rates),
         training_rms_hz=float(
             _equal_path_rms(training_residual[None, :], track.path_index, training_mask)[0]
         ),

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -30,6 +31,17 @@ def test_report_claims_match_frozen_machine_evidence() -> None:
     assert "`4 -> 4` recovered tracks" in report
     assert "**0 secure NORAD identities**" in report
     assert "1.48% worse" in report
+    primary = [item for item in evidence["bundle_results"] if item["primary"]]
+    assert len(primary) == 4
+    for item in primary:
+        assert len(item["full_baseline_ranking"]) == item["visible_candidate_count"]
+        assert len(item["full_hierarchical_ranking"]) == item["visible_candidate_count"]
+        assert set(item["diagnostic_overfit_models"]) == {
+            "tle_plus_unregularized_common_affine_departure",
+            "independent_path_linear_null",
+        }
+        assert item["secure_provenance_pass"] is True
+        assert item["secure_capture_pass"] is False
 
 
 def test_latest_causal_tle_sensitivity_is_exact_and_invisible_only() -> None:
@@ -38,6 +50,8 @@ def test_latest_causal_tle_sensitivity_is_exact_and_invisible_only() -> None:
 
     assert sensitivity["visible_population_equal"] is True
     assert sensitivity["full_ranking_equal"] is True
+    assert sensitivity["hierarchical_full_ranking_equal"] is True
+    assert sensitivity["baseline_full_ranking_equal"] is True
     assert sensitivity["all_required_metrics_identical"] is True
     assert sensitivity["changed_catalogue_norad_ids"] == [47657]
     assert sensitivity["changed_visible_norad_ids"] == []
@@ -56,3 +70,10 @@ def test_report_local_links_and_pngs_resolve() -> None:
         if path.suffix == ".png":
             with Image.open(path) as image:
                 image.verify()
+
+    artifact_root = EVIDENCE.parent
+    manifest = json.loads((artifact_root / "artifact-manifest.json").read_text(encoding="utf-8"))
+    for name, receipt in manifest["artifacts"].items():
+        path = artifact_root / name
+        assert path.stat().st_size == receipt["byte_size"]
+        assert "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest() == receipt["sha256"]

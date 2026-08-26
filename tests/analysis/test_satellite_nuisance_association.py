@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -8,8 +10,10 @@ from leo.analysis.research.satellite_nuisance_association import (
     chronological_block_mask,
     chronological_mask,
     fit_hierarchical_candidates,
+    fit_independent_path_linear_null,
     fit_offset_candidates,
     fit_radio_polynomial_null,
+    fit_unregularized_common_affine_candidates,
     permute_fit_response_within_paths,
 )
 
@@ -54,6 +58,28 @@ def test_hierarchical_fit_recovers_radio_departures_and_true_candidate() -> None
     assert int(np.argmin(fit.penalized_training_rms_hz)) == 0
     assert fit.evaluation_rms_hz[0] < 0.1
     assert fit.radio_rate_departures_hz_s[0] == pytest.approx([35.0, -25.0], abs=0.1)
+    affine = fit_unregularized_common_affine_candidates(
+        track,
+        predictions,
+        train,
+        evaluation,
+    )
+    assert affine.common_rate_departure_hz_s[0] == pytest.approx(5.0, abs=0.1)
+    assert np.isfinite(affine.evaluation_rms_hz).all()
+    future_fit_changed = replace(
+        track,
+        fit_cfo_hz=np.where(evaluation, track.fit_cfo_hz + 1_000_000.0, track.fit_cfo_hz),
+    )
+    affine_after_future_change = fit_unregularized_common_affine_candidates(
+        future_fit_changed,
+        predictions,
+        train,
+        evaluation,
+    )
+    assert affine_after_future_change.common_rate_departure_hz_s == pytest.approx(
+        affine.common_rate_departure_hz_s
+    )
+    assert affine_after_future_change.path_offsets_hz == pytest.approx(affine.path_offsets_hz)
 
 
 def test_offset_baseline_cannot_absorb_receiver_rate() -> None:
@@ -80,6 +106,25 @@ def test_radio_polynomial_null_is_training_only_and_finite() -> None:
     assert fit.degree == 2
     assert len(fit.coefficients_hz) == 2
     assert np.isfinite(fit.evaluation_rms_hz)
+    independent = fit_independent_path_linear_null(track, train, ~train)
+    assert len(independent.path_rates_hz_s) == 4
+    assert np.isfinite(independent.training_rms_hz)
+    assert np.isfinite(independent.evaluation_rms_hz)
+    future_fit_changed = replace(
+        track,
+        fit_cfo_hz=np.where(~train, track.fit_cfo_hz + 1_000_000.0, track.fit_cfo_hz),
+    )
+    independent_after_future_change = fit_independent_path_linear_null(
+        future_fit_changed,
+        train,
+        ~train,
+    )
+    assert independent_after_future_change.path_offsets_hz == pytest.approx(
+        independent.path_offsets_hz
+    )
+    assert independent_after_future_change.path_rates_hz_s == pytest.approx(
+        independent.path_rates_hz_s
+    )
 
 
 def test_rolling_masks_and_permutation_are_path_local() -> None:
