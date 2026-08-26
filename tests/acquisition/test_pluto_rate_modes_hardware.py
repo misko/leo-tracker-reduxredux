@@ -49,8 +49,8 @@ from leo.acquisition import (
 )
 from leo.contracts.capture_control import CaptureDesiredState, CaptureObservedState
 from leo.contracts.host_health import (
-    QualificationHostHealthEvidenceV1,
-    QualificationHostHealthPolicyV1,
+    QualificationHostHealthEvidenceV2,
+    QualificationHostHealthPolicyV2,
 )
 from leo.contracts.profile import CapturePlanV2, CaptureProfileRevisionV2
 from leo.contracts.radio import RadioIdentityV1
@@ -72,17 +72,17 @@ from leo.contracts.states import (
 from leo.contracts.validity import DeviceAxisContentKind
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.qualification.host_health import (
-    capture_qualification_host_health_snapshot,
-    evaluate_qualification_host_health,
+    capture_qualification_host_health_snapshot_v2,
+    evaluate_qualification_host_health_v2,
 )
 from leo.qualification.rate_modes import (
     ContiguousRateDeviceAxisCharacterizationStreamV1,
     ContiguousRateDeviceAxisCharacterizationV1,
     ContiguousRateNativeIpCanaryEvidenceV1,
-    ContiguousRatePrerequisitesV4,
+    ContiguousRatePrerequisitesV5,
     ContiguousRateQualificationPolicyV1,
-    ContiguousRateQualificationReceiptV4,
-    ContiguousRateQualificationTargetV4,
+    ContiguousRateQualificationReceiptV5,
+    ContiguousRateQualificationTargetV5,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV2,
@@ -123,9 +123,10 @@ _QUEUE_CAPACITY = 32
 _MAXIMUM_QUEUE_HIGH_WATER_REFILLS = 24
 _LEGACY_WRITER_BENCHMARK_BYTES_PER_SECOND = 72_000_000
 _V4_WRITER_BENCHMARK_BYTES_PER_SECOND = 100_000_000
-_V4_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV1(
+_V5_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV2(
     raid_array_name="md127",
     disk_path="/srv/bulk",
+    required_disk_mount_source="/dev/mapper/vg_bulk-bulk",
     minimum_available_memory_bytes=32 * 1024**3,
     minimum_free_disk_bytes=1024**4,
 )
@@ -541,11 +542,12 @@ def test_v4_capacity_gates_require_exact_writer_and_queue_headroom() -> None:
         )
 
 
-def test_v4_hardware_campaign_binds_exact_host_health_lifecycle() -> None:
-    assert _V4_HOST_HEALTH_POLICY.model_dump(mode="json") == {
-        "schema_version": 1,
+def test_v5_hardware_campaign_binds_exact_scoped_host_health_lifecycle() -> None:
+    assert _V5_HOST_HEALTH_POLICY.model_dump(mode="json") == {
+        "schema_version": 2,
         "raid_array_name": "md127",
         "disk_path": "/srv/bulk",
+        "required_disk_mount_source": "/dev/mapper/vg_bulk-bulk",
         "minimum_available_memory_bytes": 32 * 1024**3,
         "minimum_free_disk_bytes": 1024**4,
     }
@@ -553,12 +555,12 @@ def test_v4_hardware_campaign_binds_exact_host_health_lifecycle() -> None:
     source = inspect.getsource(
         test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool
     )
-    before = source.index("host_health_before = capture_qualification_host_health_snapshot")
-    preflight = source.index("host_health_preflight = evaluate_qualification_host_health")
+    before = source.index("host_health_before = capture_qualification_host_health_snapshot_v2")
+    preflight = source.index("host_health_preflight = evaluate_qualification_host_health_v2")
     writer = source.index("writer_receipt, writer_receipt_sha256 = _run_writer_capacity_gate")
     restore = source.index("safety_results = _restore_radio_safety")
     release = source.index("maintenance_claim.verify_and_release()")
-    after = source.index("host_health_after = capture_qualification_host_health_snapshot")
+    after = source.index("host_health_after = capture_qualification_host_health_snapshot_v2")
     require_pass = source.index("if not host_health.passed:")
     publish = source.index("receipt = evaluate_device_axis_contiguous_rate")
 
@@ -2273,9 +2275,9 @@ def _build_prerequisites(
     native_ip: tuple[_MetadataCaptureResult, _MetadataCaptureResult],
     writer_receipt: Any,
     writer_receipt_sha256: str,
-    host_health: QualificationHostHealthEvidenceV1,
+    host_health: QualificationHostHealthEvidenceV2,
     five_m_characterization: ContiguousRateDeviceAxisCharacterizationV1,
-) -> ContiguousRatePrerequisitesV4:
+) -> ContiguousRatePrerequisitesV5:
     evidence_root = campaign_root / "prerequisites"
     evidence_root.mkdir(mode=0o700, exist_ok=True)
 
@@ -2332,7 +2334,7 @@ def _build_prerequisites(
     elapsed_ns = max(1, round(writer_receipt.elapsed_seconds * 1_000_000_000))
     sustained_bytes_per_second = writer_receipt.uncompressed_bytes * 1_000_000_000 // elapsed_ns
     _require_v4_writer_capacity(sustained_bytes_per_second)
-    return ContiguousRatePrerequisitesV4(
+    return ContiguousRatePrerequisitesV5(
         radio_safety=(safety_evidence[0], safety_evidence[1]),
         native_ip_canaries=(native_evidence[0], native_evidence[1]),
         writer_benchmark=ContiguousRateWriterBenchmarkEvidenceV1(
@@ -2353,10 +2355,10 @@ def _target(
     radios: tuple[RadioIdentityV1, RadioIdentityV1],
     host: HostIdentityV1,
     producer: ProducerV1,
-    prerequisites: ContiguousRatePrerequisitesV4,
-) -> ContiguousRateQualificationTargetV4:
-    return ContiguousRateQualificationTargetV4(
-        qualification_id=f"native-ip-3m-{config.leo_revision[:12]}",
+    prerequisites: ContiguousRatePrerequisitesV5,
+) -> ContiguousRateQualificationTargetV5:
+    return ContiguousRateQualificationTargetV5(
+        qualification_id=f"native-ip-3m-v5-{config.leo_revision[:12]}",
         profile_revision_digest=plan.profile_revision.revision_digest,
         capture_plan_digest=plan.plan_digest,
         sample_rate_hz=_SAMPLE_RATE_HZ,
@@ -2388,7 +2390,7 @@ def _target(
 
 def _atomic_write_receipt(
     path: Path,
-    receipt: ContiguousRateQualificationReceiptV4,
+    receipt: ContiguousRateQualificationReceiptV5,
 ) -> None:
     temporary = path.with_name(f".{path.name}.{os.getpid()}-{uuid4().hex}.partial")
     payload = receipt.model_dump_json(indent=2).encode("utf-8")
@@ -2777,14 +2779,14 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
     five_m_plan = _five_m_capture_plan(repository)
     host = _host_identity()
     producer = _producer(config)
-    host_health_before = capture_qualification_host_health_snapshot(_V4_HOST_HEALTH_POLICY)
+    host_health_before = capture_qualification_host_health_snapshot_v2(_V5_HOST_HEALTH_POLICY)
     safety_evidence_root.mkdir(mode=0o700, exist_ok=True)
     _atomic_write_json(
-        safety_evidence_root / "host-health-before-v1.json",
+        safety_evidence_root / "host-health-before-v2.json",
         host_health_before.model_dump(mode="json"),
     )
-    host_health_preflight = evaluate_qualification_host_health(
-        _V4_HOST_HEALTH_POLICY,
+    host_health_preflight = evaluate_qualification_host_health_v2(
+        _V5_HOST_HEALTH_POLICY,
         host_health_before,
         host_health_before,
     )
@@ -2793,7 +2795,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
             check.name for check in host_health_preflight.checks if not check.passed
         )
         raise AssertionError(
-            "V4 host-health preflight failed before writer or RF work: " + failed_host_checks
+            "V5 host-health preflight failed before writer or RF work: " + failed_host_checks
         )
     writer_receipt, writer_receipt_sha256 = _run_writer_capacity_gate(campaign_root)
     campaign_deadline = _campaign_deadline()
@@ -2910,13 +2912,13 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
             restoration_error = error
 
     maintenance_claim.verify_and_release()
-    host_health_after = capture_qualification_host_health_snapshot(_V4_HOST_HEALTH_POLICY)
-    host_health = evaluate_qualification_host_health(
-        _V4_HOST_HEALTH_POLICY,
+    host_health_after = capture_qualification_host_health_snapshot_v2(_V5_HOST_HEALTH_POLICY)
+    host_health = evaluate_qualification_host_health_v2(
+        _V5_HOST_HEALTH_POLICY,
         host_health_before,
         host_health_after,
     )
-    host_health_path = safety_evidence_root / "qualification-host-health-evidence-v1.json"
+    host_health_path = safety_evidence_root / "qualification-host-health-evidence-v2.json"
     _atomic_write_json(host_health_path, host_health.model_dump(mode="json"))
     record_property("qualification_host_health_evidence", str(host_health_path))
     if restoration_error is not None:
@@ -2928,7 +2930,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
             check.name for check in host_health.checks if not check.passed
         )
         raise AssertionError(
-            "V4 host-health prerequisite failed after radio cleanup and maintenance release: "
+            "V5 host-health prerequisite failed after radio cleanup and maintenance release: "
             + failed_host_checks
         )
     assert safety_results is not None
@@ -3003,7 +3005,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
         tuple(evidence),
         created_utc_ns=time.time_ns(),
     )
-    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v4.json"
+    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v5.json"
     _atomic_write_receipt(receipt_path, receipt)
     record_property("contiguous_rate_qualification_receipt", str(receipt_path))
     print(f"contiguous rate qualification receipt: {receipt_path}")

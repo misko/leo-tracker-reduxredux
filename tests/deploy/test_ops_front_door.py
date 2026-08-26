@@ -464,7 +464,7 @@ def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
 ) -> None:
     target = "2" * 40
     root = tmp_path / "accepted"
-    receipt = root / target / "contiguous-rate-qualification-receipt-v4.json"
+    receipt = root / target / "contiguous-rate-qualification-receipt-v5.json"
     receipt.parent.mkdir(parents=True)
     receipt.write_text('{"passed":true}\n')
     receipt.chmod(0o440)
@@ -474,7 +474,7 @@ def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
 
     assert evidence["path"] == str(receipt)
     assert len(evidence["sha256"]) == 64
-    for legacy_version in (2, 3):
+    for legacy_version in (2, 3, 4):
         legacy_receipt = (
             root / target / f"contiguous-rate-qualification-receipt-v{legacy_version}.json"
         )

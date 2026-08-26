@@ -433,7 +433,7 @@ Performance gates:
   storage or OOM events, and no swap activity.
 
 Production cutover additionally requires an additive
-`ContiguousRateQualificationReceiptV4` from ten lossless trials of the exact
+`ContiguousRateQualificationReceiptV5` from ten lossless trials of the exact
 deployed `starlink-ch4-lower-3m-60s-device-axis-v3` profile and fixed ordered
 production-radio plan. The receipt must retain both streams' 180,000,000
 logical/observed samples, zero zero fill, one continuity segment, and all V3
@@ -443,19 +443,24 @@ For each radio, its typed characterization requires 300,000,000 logical
 samples, observed plus physical zero fill equal to that span, verified bundle,
 gap-map, validity, and literal-zero evidence, and zero overflow, enqueue
 failure, or terminal rejected refill. It also binds the exact 32-refill queue
-capacity and measured high-water no greater than 24 refills. The combined V4
+capacity and measured high-water no greater than 24 refills. The combined V5
 prerequisite independently requires measured incompressible writer throughput
 of at least 100 MB/s while preserving the historical 72 MB/s meaning of the V1
 writer-evidence pass flag. It also requires passing bounded host-health evidence:
 one read-only snapshot before writer/RF work and one after exact radio restoration
-and maintenance-lease release, under the reviewed `md127`, `/srv/bulk`, 32 GiB
-available-memory, and 1 TiB free-disk policy. The closed checks prove healthy idle
-RAID, complete error-log access, no kernel I/O errors or OOM kills, and no swap
-delta; the V4 target digest binds the full evidence. Gaps remain truthful degraded
-evidence; this is not a 5 MS/s contiguous claim. The accepted V4 path is published
+and maintenance-lease release, under the reviewed `md127`, `/srv/bulk`, exact
+`/dev/mapper/vg_bulk-bulk` mount source, 32 GiB available-memory, and 1 TiB
+free-disk policy. The closed checks prove healthy idle RAID, complete error-log
+access, no production-storage or unclassified kernel I/O errors, no OOM kills,
+and no swap delta. A pre-existing error is ignored only when its device is proven
+removable and outside the `/srv/bulk` device ancestry; the complete classified
+error inventory must be byte-identical before and after, so any new error fails.
+The V5 target digest binds the full evidence. Gaps remain truthful degraded
+evidence; this is not a 5 MS/s contiguous claim. The accepted V5 path is published
 only after the host-health evidence passes. Only the sealed target-revision path
-`contiguous-rate-qualification-receipt-v4.json` is accepted; V1–V3 receipts do
-not authorize this device-axis cutover.
+`contiguous-rate-qualification-receipt-v5.json` is accepted; V1–V4 receipts do
+not authorize this device-axis cutover. Do not reboot to clear journal history:
+V5 deliberately retains and classifies the complete current-boot inventory.
 
 ## 10. Delivery sequence
 

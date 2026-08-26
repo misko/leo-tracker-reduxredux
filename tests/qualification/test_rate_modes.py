@@ -7,11 +7,15 @@ import pytest
 from pydantic import ValidationError
 
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
-from leo.contracts.digests import canonical_digest
+from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.host_health import (
+    QualificationBlockDeviceEvidenceV1,
     QualificationHostHealthEvidenceV1,
+    QualificationHostHealthEvidenceV2,
     QualificationHostHealthPolicyV1,
+    QualificationHostHealthPolicyV2,
     QualificationHostHealthSnapshotV1,
+    QualificationHostHealthSnapshotV2,
     QualificationRaidHealthV1,
 )
 from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
@@ -32,7 +36,10 @@ from leo.contracts.states import (
     SourceType,
 )
 from leo.domain.profiles import compile_capture_plan
-from leo.qualification.host_health import evaluate_qualification_host_health
+from leo.qualification.host_health import (
+    evaluate_qualification_host_health,
+    evaluate_qualification_host_health_v2,
+)
 from leo.qualification.rate_modes import (
     ContiguousRateDeviceAxisCharacterizationStreamV1,
     ContiguousRateDeviceAxisCharacterizationV1,
@@ -41,15 +48,18 @@ from leo.qualification.rate_modes import (
     ContiguousRatePrerequisitesV2,
     ContiguousRatePrerequisitesV3,
     ContiguousRatePrerequisitesV4,
+    ContiguousRatePrerequisitesV5,
     ContiguousRateQualificationPolicyV1,
     ContiguousRateQualificationReceiptV1,
     ContiguousRateQualificationReceiptV2,
     ContiguousRateQualificationReceiptV3,
     ContiguousRateQualificationReceiptV4,
+    ContiguousRateQualificationReceiptV5,
     ContiguousRateQualificationTargetV1,
     ContiguousRateQualificationTargetV2,
     ContiguousRateQualificationTargetV3,
     ContiguousRateQualificationTargetV4,
+    ContiguousRateQualificationTargetV5,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV1,
@@ -152,6 +162,59 @@ def _host_health(
         free_disk_bytes=free_disk_bytes,
     )
     return evaluate_qualification_host_health(policy, before, after)
+
+
+def _host_health_v2(
+    *,
+    host_name: str = _HOST.hostname,
+    before_utc_ns: int = 1_000,
+) -> QualificationHostHealthEvidenceV2:
+    policy = QualificationHostHealthPolicyV2(
+        raid_array_name="md127",
+        disk_path="/srv/bulk",
+        required_disk_mount_source="/dev/mapper/vg_bulk-bulk",
+        minimum_available_memory_bytes=32 * 1024**3,
+        minimum_free_disk_bytes=1024**4,
+    )
+
+    def snapshot(utc_ns: int, monotonic_ns: int) -> QualificationHostHealthSnapshotV2:
+        base_document = _host_health_snapshot(
+            host_name=host_name,
+            observed_utc_ns=utc_ns,
+            observed_monotonic_ns=monotonic_ns,
+        ).model_dump(mode="json")
+        base_document["kernel_io_error_log_digest"] = sha256_digest(b"")
+        base_document["snapshot_digest"] = canonical_digest(
+            {key: value for key, value in base_document.items() if key != "snapshot_digest"}
+        )
+        base = QualificationHostHealthSnapshotV1.model_validate(base_document)
+        devices = (
+            QualificationBlockDeviceEvidenceV1(
+                name="dm-5", major_minor="252:5", removable=False, protected=True
+            ),
+            QualificationBlockDeviceEvidenceV1(
+                name="md127", major_minor="9:127", removable=False, protected=True
+            ),
+        )
+        values = {
+            "schema_version": 2,
+            "algorithm_version": "qualification-host-health-snapshot-v2",
+            "base": base.model_dump(mode="json"),
+            "disk_mount_source": "/dev/mapper/vg_bulk-bulk",
+            "block_devices": tuple(item.model_dump(mode="json") for item in devices),
+            "kernel_io_errors": (),
+            "relevant_kernel_io_error_count": 0,
+            "ignored_removable_kernel_io_error_count": 0,
+        }
+        return QualificationHostHealthSnapshotV2.model_validate(
+            {**values, "snapshot_digest": canonical_digest(values)}
+        )
+
+    return evaluate_qualification_host_health_v2(
+        policy,
+        snapshot(before_utc_ns, 100),
+        snapshot(before_utc_ns + 1_000, 200),
+    )
 
 
 def _capture(
@@ -510,6 +573,27 @@ def _target_v4(
     )
 
 
+def _target_v5(
+    manifest: RecordingManifestV3,
+    *,
+    required_trial_count: int = 1,
+    host_health: QualificationHostHealthEvidenceV2 | None = None,
+) -> ContiguousRateQualificationTargetV5:
+    v4 = _target_v4(manifest, required_trial_count=required_trial_count)
+    prerequisites = v4.prerequisites
+    return ContiguousRateQualificationTargetV5(
+        **v4.model_dump(exclude={"schema_version", "qualification_id", "prerequisites"}),
+        qualification_id="rate-3000000-device-axis-v5",
+        prerequisites=ContiguousRatePrerequisitesV5(
+            radio_safety=prerequisites.radio_safety,
+            native_ip_canaries=prerequisites.native_ip_canaries,
+            writer_benchmark=prerequisites.writer_benchmark,
+            host_health=host_health or _host_health_v2(),
+            five_m_characterization=prerequisites.five_m_characterization,
+        ),
+    )
+
+
 def _five_m_characterization(
     manifest: RecordingManifestV3,
 ) -> ContiguousRateDeviceAxisCharacterizationV1:
@@ -782,6 +866,32 @@ def test_v4_qualifies_exact_verified_device_axis_v3_evidence(tmp_path: Path) -> 
         == receipt
     )
     with pytest.raises(TypeError, match="evaluate_device_axis_contiguous_rate"):
+        evaluate_contiguous_rate(target, (), created_utc_ns=1)
+
+
+def test_v5_adds_scoped_host_health_without_reinterpreting_v4(tmp_path: Path) -> None:
+    manifest, digest = _capture_v3(tmp_path)
+    target = _target_v5(manifest)
+
+    receipt = evaluate_device_axis_contiguous_rate(
+        target,
+        (_trial_v2(manifest, digest),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+
+    assert isinstance(receipt, ContiguousRateQualificationReceiptV5)
+    assert receipt.complete and receipt.passed
+    assert receipt.schema_version == receipt.target.schema_version == 5
+    assert receipt.target.prerequisites.host_health.schema_version == 2
+    assert (
+        receipt.target.prerequisites.host_health.policy.required_disk_mount_source
+        == "/dev/mapper/vg_bulk-bulk"
+    )
+    assert (
+        ContiguousRateQualificationReceiptV5.model_validate_json(receipt.model_dump_json())
+        == receipt
+    )
+    with pytest.raises(TypeError, match="V4/V5"):
         evaluate_contiguous_rate(target, (), created_utc_ns=1)
 
 

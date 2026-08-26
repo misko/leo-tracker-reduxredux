@@ -1190,6 +1190,31 @@ _QUALIFICATION_HOST_HEALTH_CHECK_ORDER = (
     "disk_headroom_before",
     "disk_headroom_after",
 )
+_QUALIFICATION_HOST_HEALTH_CHECK_ORDER_V2 = (
+    "same_host",
+    "same_boot",
+    "same_disk_path",
+    "same_disk_mount_source",
+    "raid_identity",
+    "raid_healthy_before",
+    "raid_healthy_after",
+    "raid_idle_before",
+    "raid_idle_after",
+    "kernel_log_complete_before",
+    "kernel_log_complete_after",
+    "block_device_inventory_unchanged",
+    "kernel_io_error_inventory_unchanged",
+    "no_relevant_kernel_io_errors_before",
+    "no_relevant_kernel_io_errors_after",
+    "no_oom_before",
+    "no_oom_after",
+    "no_swap_in",
+    "no_swap_out",
+    "memory_headroom_before",
+    "memory_headroom_after",
+    "disk_headroom_before",
+    "disk_headroom_after",
+)
 _EMPTY_SHA256_DIGEST = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 
@@ -1395,6 +1420,260 @@ def verify_qualification_host_health_v1(
     }
     if evidence.get("evidence_digest") != canonical_json_sha256(evidence_without_digest):
         raise ValueError("V4 host-health prerequisite digest does not bind its evidence")
+
+
+def verify_qualification_host_health_v2(
+    evidence: object,
+    *,
+    expected_host_name: str,
+    receipt_created_utc_ns: int,
+) -> dict[str, Any]:
+    """Verify scoped V2 host evidence without excusing new removable-device errors."""
+
+    evidence_keys = {
+        "schema_version",
+        "algorithm_version",
+        "policy",
+        "before",
+        "after",
+        "checks",
+        "passed",
+        "evidence_digest",
+    }
+    if (
+        not isinstance(evidence, dict)
+        or set(evidence) != evidence_keys
+        or type(evidence.get("schema_version")) is not int
+        or evidence.get("schema_version") != 2
+        or evidence.get("algorithm_version") != "qualification-host-health-pre-post-v2"
+        or evidence.get("passed") is not True
+        or not _is_sha256_digest(evidence.get("evidence_digest"))
+    ):
+        raise ValueError("V5 host-health prerequisite is not an exact passing V2 gate")
+    expected_policy = {
+        "schema_version": 2,
+        "raid_array_name": "md127",
+        "disk_path": "/srv/bulk",
+        "required_disk_mount_source": "/dev/mapper/vg_bulk-bulk",
+        "minimum_available_memory_bytes": 32 * 1024**3,
+        "minimum_free_disk_bytes": 1024**4,
+    }
+    policy = evidence.get("policy")
+    if (
+        not isinstance(policy, dict)
+        or set(policy) != set(expected_policy)
+        or any(
+            type(policy.get(key)) is not type(value) or policy.get(key) != value
+            for key, value in expected_policy.items()
+        )
+    ):
+        raise ValueError("V5 host-health prerequisite does not use the reviewed scoped policy")
+
+    snapshot_keys = {
+        "schema_version",
+        "algorithm_version",
+        "base",
+        "disk_mount_source",
+        "block_devices",
+        "kernel_io_errors",
+        "relevant_kernel_io_error_count",
+        "ignored_removable_kernel_io_error_count",
+        "snapshot_digest",
+    }
+    base_snapshot_keys = {
+        "schema_version",
+        "algorithm_version",
+        "host_name",
+        "boot_id",
+        "observed_utc_ns",
+        "observed_monotonic_ns",
+        "raid",
+        "kernel_log_complete",
+        "kernel_io_error_count",
+        "kernel_io_error_log_digest",
+        "oom_kill_count",
+        "swap_in_pages",
+        "swap_out_pages",
+        "available_memory_bytes",
+        "disk_path",
+        "free_disk_bytes",
+        "mdstat_digest",
+        "meminfo_digest",
+        "vmstat_digest",
+        "snapshot_digest",
+    }
+    device_keys = {"schema_version", "name", "major_minor", "removable", "protected"}
+    error_keys = {"schema_version", "line", "line_sha256", "block_devices", "disposition"}
+
+    def exact_snapshot(value: object) -> bool:
+        if not isinstance(value, dict) or set(value) != snapshot_keys:
+            return False
+        base = value.get("base")
+        devices = value.get("block_devices")
+        errors = value.get("kernel_io_errors")
+        if (
+            not isinstance(base, dict)
+            or set(base) != base_snapshot_keys
+            or not isinstance(devices, list)
+            or not devices
+            or not isinstance(errors, list)
+        ):
+            return False
+        names: list[str] = []
+        by_name: dict[str, dict[str, object]] = {}
+        for device in devices:
+            if (
+                not isinstance(device, dict)
+                or set(device) != device_keys
+                or type(device.get("schema_version")) is not int
+                or device.get("schema_version") != 1
+                or not isinstance(device.get("name"), str)
+                or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,127}", device["name"]) is None
+                or not isinstance(device.get("major_minor"), str)
+                or re.fullmatch(r"[0-9]+:[0-9]+", device["major_minor"]) is None
+                or type(device.get("removable")) is not bool
+                or type(device.get("protected")) is not bool
+                or (device["protected"] and device["removable"])
+            ):
+                return False
+            name = device["name"]
+            names.append(name)
+            by_name[name] = device
+        if names != sorted(set(names)) or not any(device["protected"] for device in devices):
+            return False
+
+        normalized_lines: list[str] = []
+        relevant = 0
+        ignored = 0
+        for error in errors:
+            if (
+                not isinstance(error, dict)
+                or set(error) != error_keys
+                or type(error.get("schema_version")) is not int
+                or error.get("schema_version") != 1
+                or not isinstance(error.get("line"), str)
+                or not 1 <= len(error["line"]) <= 4096
+                or error.get("line_sha256")
+                != "sha256:" + hashlib.sha256(error["line"].encode("utf-8")).hexdigest()
+                or not isinstance(error.get("block_devices"), list)
+                or any(not isinstance(name, str) for name in error["block_devices"])
+                or error["block_devices"] != sorted(set(error["block_devices"]))
+            ):
+                return False
+            referenced = tuple(by_name.get(name) for name in error["block_devices"])
+            safely_ignored = bool(referenced) and all(
+                item is not None and item["removable"] and not item["protected"]
+                for item in referenced
+            )
+            expected_disposition = "ignored_preexisting_removable" if safely_ignored else "relevant"
+            if error.get("disposition") != expected_disposition:
+                return False
+            relevant += expected_disposition == "relevant"
+            ignored += expected_disposition == "ignored_preexisting_removable"
+            normalized_lines.append(error["line"])
+        normalized = "\n".join(normalized_lines).encode("utf-8")
+        snapshot_without_digest = {
+            key: item for key, item in value.items() if key != "snapshot_digest"
+        }
+        base_without_digest = {key: item for key, item in base.items() if key != "snapshot_digest"}
+        return (
+            type(value.get("schema_version")) is int
+            and value.get("schema_version") == 2
+            and value.get("algorithm_version") == "qualification-host-health-snapshot-v2"
+            and value.get("disk_mount_source") == "/dev/mapper/vg_bulk-bulk"
+            and type(value.get("relevant_kernel_io_error_count")) is int
+            and value.get("relevant_kernel_io_error_count") == relevant
+            and relevant == 0
+            and type(value.get("ignored_removable_kernel_io_error_count")) is int
+            and value.get("ignored_removable_kernel_io_error_count") == ignored
+            and type(base.get("kernel_io_error_count")) is int
+            and base.get("kernel_io_error_count") == len(errors)
+            and base.get("kernel_io_error_log_digest")
+            == "sha256:" + hashlib.sha256(normalized).hexdigest()
+            and base.get("snapshot_digest") == canonical_json_sha256(base_without_digest)
+            and value.get("snapshot_digest") == canonical_json_sha256(snapshot_without_digest)
+        )
+
+    before = evidence.get("before")
+    after = evidence.get("after")
+    if not exact_snapshot(before) or not exact_snapshot(after):
+        raise ValueError("V5 host-health prerequisite contains malformed scoped evidence")
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        raise ValueError("V5 host-health prerequisite contains malformed scoped evidence")
+    before_base = before["base"]
+    after_base = after["base"]
+    if not isinstance(before_base, dict) or not isinstance(after_base, dict):
+        raise ValueError("V5 host-health prerequisite contains malformed scoped evidence")
+
+    # Reuse the frozen V1 verifier for every non-kernel host fact. The synthetic
+    # zero-error view is internal only; V2 error bytes/classification remain bound
+    # and are verified independently above and below.
+    synthetic_before = dict(before_base)
+    synthetic_after = dict(after_base)
+    for snapshot in (synthetic_before, synthetic_after):
+        snapshot["kernel_io_error_count"] = 0
+        snapshot["kernel_io_error_log_digest"] = _EMPTY_SHA256_DIGEST
+        snapshot["snapshot_digest"] = canonical_json_sha256(
+            {key: item for key, item in snapshot.items() if key != "snapshot_digest"}
+        )
+    synthetic_checks = [
+        {"schema_version": 1, "name": name, "passed": True}
+        for name in _QUALIFICATION_HOST_HEALTH_CHECK_ORDER
+    ]
+    synthetic_v1 = {
+        "schema_version": 1,
+        "algorithm_version": "qualification-host-health-pre-post-v1",
+        "policy": {
+            "schema_version": 1,
+            "raid_array_name": "md127",
+            "disk_path": "/srv/bulk",
+            "minimum_available_memory_bytes": 32 * 1024**3,
+            "minimum_free_disk_bytes": 1024**4,
+        },
+        "before": synthetic_before,
+        "after": synthetic_after,
+        "checks": synthetic_checks,
+        "passed": True,
+    }
+    synthetic_v1["evidence_digest"] = canonical_json_sha256(synthetic_v1)
+    verify_qualification_host_health_v1(
+        synthetic_v1,
+        expected_host_name=expected_host_name,
+        receipt_created_utc_ns=receipt_created_utc_ns,
+    )
+
+    if (
+        before.get("disk_mount_source") != after.get("disk_mount_source")
+        or before.get("block_devices") != after.get("block_devices")
+        or before.get("kernel_io_errors") != after.get("kernel_io_errors")
+    ):
+        raise ValueError("V5 host-health prerequisite changed storage or kernel error inventory")
+
+    checks = evidence.get("checks")
+    if (
+        not isinstance(checks, list)
+        or len(checks) != len(_QUALIFICATION_HOST_HEALTH_CHECK_ORDER_V2)
+        or any(
+            not isinstance(check, dict)
+            or set(check) != {"schema_version", "name", "passed"}
+            or type(check.get("schema_version")) is not int
+            or check.get("schema_version") != 2
+            or check.get("name") != name
+            or check.get("passed") is not True
+            for check, name in zip(
+                checks,
+                _QUALIFICATION_HOST_HEALTH_CHECK_ORDER_V2,
+                strict=True,
+            )
+        )
+    ):
+        raise ValueError("V5 host-health prerequisite check inventory is not exact and all-pass")
+    evidence_without_digest = {
+        key: value for key, value in evidence.items() if key != "evidence_digest"
+    }
+    if evidence.get("evidence_digest") != canonical_json_sha256(evidence_without_digest):
+        raise ValueError("V5 host-health prerequisite digest does not bind its evidence")
+    return synthetic_v1
 
 
 def _matches_lossless_radio_metrics(
@@ -2515,6 +2794,84 @@ def verify_contiguous_rate_3m_receipt_v4(
         raise ValueError("5 MS/s characterization is not independent from the 3 MS/s trials")
 
 
+def verify_contiguous_rate_3m_receipt_v5(
+    receipt: dict[str, Any],
+    *,
+    revision: str,
+    release: Path,
+) -> None:
+    """Verify V5 and reuse V4's unchanged device-axis/radio/runtime closure."""
+
+    target = receipt.get("target")
+    if (
+        set(receipt)
+        != {
+            "kind",
+            "schema_version",
+            "target",
+            "target_digest",
+            "created_utc_ns",
+            "complete",
+            "passed",
+            "checks",
+        }
+        or receipt.get("kind") != "contiguous_rate_qualification"
+        or type(receipt.get("schema_version")) is not int
+        or receipt.get("schema_version") != 5
+        or receipt.get("complete") is not True
+        or receipt.get("passed") is not True
+        or not isinstance(target, dict)
+        or type(target.get("schema_version")) is not int
+        or target.get("schema_version") != 5
+        or target.get("qualification_id") != f"native-ip-3m-v5-{revision[:12]}"
+        or receipt.get("target_digest") != canonical_json_sha256(target)
+    ):
+        raise ValueError("3 MS/s device-axis receipt is not a complete strict V5 pass")
+    prerequisites = target.get("prerequisites")
+    if (
+        not isinstance(prerequisites, dict)
+        or set(prerequisites)
+        != {
+            "schema_version",
+            "radio_safety",
+            "native_ip_canaries",
+            "writer_benchmark",
+            "host_health",
+            "five_m_characterization",
+        }
+        or type(prerequisites.get("schema_version")) is not int
+        or prerequisites.get("schema_version") != 5
+    ):
+        raise ValueError("3 MS/s V5 prerequisites are not the exact combined campaign")
+    host = target.get("expected_host")
+    created_utc_ns = receipt.get("created_utc_ns")
+    if (
+        not isinstance(host, dict)
+        or not isinstance(host.get("hostname"), str)
+        or type(created_utc_ns) is not int
+    ):
+        raise ValueError("3 MS/s V5 host or receipt time is malformed")
+    compatibility_host_health = verify_qualification_host_health_v2(
+        prerequisites.get("host_health"),
+        expected_host_name=host["hostname"],
+        receipt_created_utc_ns=created_utc_ns,
+    )
+
+    compatibility = json.loads(json.dumps(receipt))
+    compatibility["schema_version"] = 4
+    compatibility_target = compatibility["target"]
+    compatibility_target["schema_version"] = 4
+    compatibility_target["qualification_id"] = f"native-ip-3m-{revision[:12]}"
+    compatibility_target["prerequisites"]["schema_version"] = 4
+    compatibility_target["prerequisites"]["host_health"] = compatibility_host_health
+    compatibility["target_digest"] = canonical_json_sha256(compatibility_target)
+    verify_contiguous_rate_3m_receipt_v4(
+        compatibility,
+        revision=revision,
+        release=release,
+    )
+
+
 def verify(args: argparse.Namespace) -> list[str]:
     revision = args.revision
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
@@ -2558,14 +2915,14 @@ def verify(args: argparse.Namespace) -> list[str]:
         revision=revision,
     )
     expected_rate_receipt_path = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v4.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v5.json"
     )
     if args.rate_qualification_receipt != expected_rate_receipt_path:
         raise ValueError("3 MS/s continuity receipt path is not the revision authority")
     if sha256(args.rate_qualification_receipt) != args.rate_qualification_receipt_sha256:
         raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
     rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
-    verify_contiguous_rate_3m_receipt_v4(rate_receipt, revision=revision, release=release)
+    verify_contiguous_rate_3m_receipt_v5(rate_receipt, revision=revision, release=release)
 
     if args.standard_regression_receipt is not None:
         standard_receipt = load_json(

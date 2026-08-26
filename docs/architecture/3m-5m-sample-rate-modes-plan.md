@@ -76,8 +76,8 @@ The current promotion target is the immutable
   `STANDARD_NATIVE` tags.
 
 The older `hardware-canary-3m-60s-contiguous-v2` remains an immutable legacy
-qualification profile, but it cannot satisfy the additive V4 production gate.
-V4 qualifies the same device-axis profile that ordinary dwells will execute.
+qualification profile, but it cannot satisfy the additive V5 production gate.
+V5 qualifies the same device-axis profile that ordinary dwells will execute.
 
 The operational profile succeeds only when every stream is complete and has
 zero missing samples, gaps, overflow observations, enqueue failures, and
@@ -185,7 +185,8 @@ success policy is not strict enough to promote a continuity mode. The published
 `ContiguousRateQualificationReceiptV1` and
 `ContiguousRateQualificationReceiptV2` also remain immutable. The additive
 `ContiguousRateQualificationReceiptV3` remains immutable. The additive
-`ContiguousRateQualificationReceiptV4` qualifies the actual production pair
+`ContiguousRateQualificationReceiptV4` also remains immutable. The additive
+`ContiguousRateQualificationReceiptV5` qualifies the actual production pair
 and exact deployed device-axis profile without treating a different transport,
 firmware ABI, or non-production radio as a prerequisite. Its exact ordered
 prerequisites are per-radio safety, one-second native-IP counter canaries, a
@@ -193,8 +194,12 @@ measured incompressible writer benchmark of at least 100 MB/s, passing bounded
 pre/post host-health evidence, and one full-span 5 MS/s Recording V3
 characterization from the same maintenance-fenced campaign. Host health is
 captured before writer/RF work and after radio restoration plus lease release;
-its exact `md127`, `/srv/bulk`, 32 GiB memory, and 1 TiB disk policy and closed
-check inventory are bound by the V4 target digest.
+its exact `md127`, `/srv/bulk`, `/dev/mapper/vg_bulk-bulk`, 32 GiB memory, and
+1 TiB disk policy and closed check inventory are bound by the V5 target digest.
+Production-storage and unclassified kernel I/O errors fail. Pre-existing errors
+are ignored only for sysfs-proven removable devices outside the bulk-storage
+ancestry, and the full classified error inventory must remain identical across
+the campaign.
 The target and ten strict 3 MS/s Recording V3 trials additionally bind:
 
 - profile revision and capture-plan digests;
@@ -283,7 +288,7 @@ counts do not change. More buffering cannot fix a sustained transport deficit;
 it only covers bounded consumer stalls.
 
 The immutable V1 writer-evidence contract retains its historical 72 MB/s pass
-semantics. V4 adds a stricter combined-pool admission rule: the same measured
+semantics. V5 adds a stricter combined-pool admission rule: the same measured
 incompressible result must reach at least 100 MB/s. Transport continuity and
 queue headroom remain independent gates.
 
@@ -388,7 +393,7 @@ authorization phrase and its complete environment inventory. It accepts only
 literal native addresses in `192.168.1.0/24`; discovery cannot select a USB
 gadget address.
 
-The additive V4 promotion harness loads the exact deployed
+The additive V5 promotion harness loads the exact deployed
 `starlink-ch4-lower-3m-60s-device-axis-v3` profile, whose canonical revision
 digest is
 `sha256:4533ac4a3348721e0bf7bda50c5701f505e47ef579ef9a47cbc7c38b9c9b4c3e`.
@@ -433,13 +438,13 @@ full-span 5 MS/s characterization; the required
 
 Every run must publish a Recording V3 manifest with exactly 180,000,000
 logical and observed samples per stream, zero zero-fill samples, one continuity
-segment, complete streams, and a committed session. The V4 receipt retains the
+segment, complete streams, and a committed session. The V5 receipt retains the
 ordered streams' observed/logical IQ, timeline, gap-map, and validity-inventory
 digests and requires the observed and logical IQ digests to match. It also
 requires zero gaps, missing samples, overflow, enqueue failures, and terminal
 rejections, at least 99% two-radio overlap, queue high-water no greater than
 24/32, and maximum refill service interval no greater than 699,050,666 ns. The
-V4 writer-capacity gate requires measured incompressible throughput of at least
+V5 writer-capacity gate requires measured incompressible throughput of at least
 100 MB/s; the immutable writer-evidence V1 pass bit retains its legacy 72 MB/s
 meaning.
 
@@ -447,7 +452,7 @@ Failed and incomplete evidence remains beneath `campaigns/`. Only a complete
 strict pass is copied atomically and read-only to the canonical accepted path:
 
 ```text
-/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v4.json
+/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v5.json
 ```
 
 `<LEO_REVISION>` is the full 40-character target Git SHA. Full deployment
@@ -456,7 +461,7 @@ the target revision. Operators must pass it through the front door; omitting
 the flag fails closed:
 
 ```bash
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v4.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v5.json"
 ./ops deploy --plan --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --rate-qualification-receipt "$rate_receipt"
 ```
@@ -473,10 +478,10 @@ finite libiio context timeout at every refill. Timeout and cancellation still
 flow through both-radio close, exact RX-setting restoration, and post-campaign
 TX-safe readback.
 
-V4 safety checks, native-IP canaries, and all durable Recording V3 trials are
+V5 safety checks, native-IP canaries, and all durable Recording V3 trials are
 bound to the production `.20`/`.21` pair. A separate USB pair with a different
 metadata ABI cannot prove the production Ethernet path and is deliberately not
-a V4 prerequisite. Production-radio safety evidence comes only from the
+a V5 prerequisite. Production-radio safety evidence comes only from the
 receipt-pinned host pyadi/pylibiio adapter: exact IIO identity and capabilities,
 fail-closed TX mute/readback on open and close, and independent RX-settings
 restoration readback. Qualification has no device-side shell, password, SSH
@@ -484,14 +489,14 @@ trust-store, or USB-control dependency.
 
 ### 5 MS/s characterization
 
-The combined V4 campaign runs exactly one 60-second two-radio native-IP
+The combined V5 campaign runs exactly one 60-second two-radio native-IP
 characterization through Leo. The gate passes on truthfulness, not on an
 expectation of continuity: any gap must have
 exact counter-derived evidence, force partial streams/degraded session state,
 materialize as literal physical zeros on the device-time axis, preserve a
 verifiable gap map and validity inventory, and suppress automatic analysis.
 Overflow, enqueue failure, a terminal rejected refill, a queue capacity other
-than 32, or queue high-water above 24 refills fails V4.
+than 32, or queue high-water above 24 refills fails V5.
 
 If bounded burst support is desired, separately repeat the exact proposed
 duration on each radio and then simultaneously. Promote only the tested
