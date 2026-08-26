@@ -1,0 +1,42 @@
+publication_attempt=1
+publication_started_utc=2026-08-26T11:35:11.995204707Z
+renderer_commit=6dcb1e7d2c9fa5fc40478ed036b7797579a14cf3
+renderer_tree=728e65292121b83708ed23a328468515102d3892
+publication_command=/usr/bin/time -v uv run python tools/render_final_doppler_holdout_publication.py --score reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json --output-dir reports/figures/2026_08_26_final_doppler_holdout_publication --markdown reports/2026_08_26_final_doppler_holdout_and_starlink_association.md
+Traceback (most recent call last):
+  File "/tmp/leo-final-holdout-satellite/tools/render_final_doppler_holdout_publication.py", line 916, in <module>
+    main()
+  File "/tmp/leo-final-holdout-satellite/tools/render_final_doppler_holdout_publication.py", line 907, in main
+    render_publication(
+  File "/tmp/leo-final-holdout-satellite/tools/render_final_doppler_holdout_publication.py", line 820, in render_publication
+    "path": path.relative_to(repository_root).as_posix(),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 682, in relative_to
+    raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+ValueError: 'reports/2026_08_26_final_doppler_holdout_and_starlink_association.md' is not in the subpath of '/tmp/leo-final-holdout-satellite'
+Command exited with non-zero status 1
+	Command being timed: "uv run python tools/render_final_doppler_holdout_publication.py --score reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json --output-dir reports/figures/2026_08_26_final_doppler_holdout_publication --markdown reports/2026_08_26_final_doppler_holdout_and_starlink_association.md"
+	User time (seconds): 2.74
+	System time (seconds): 0.21
+	Percent of CPU this job got: 220%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.34
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 293920
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 138259
+	Voluntary context switches: 73
+	Involuntary context switches: 41
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 0
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1
+publication_completed_utc=2026-08-26T11:35:13.345348895Z
+publication_exit_code=1
