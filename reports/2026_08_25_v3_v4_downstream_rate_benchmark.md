@@ -30,12 +30,13 @@ On that inadequate three-anchor subset, V4 was close to but not better than V3:
 | Causal history | Common anchors / pairs | V3 anchor-equal odd-Qin RMS | V4 anchor-equal odd-Qin RMS | V4 / V3 | Frozen interpretation |
 |---|---:|---:|---:|---:|---|
 | fixed 20 ms | 3 / 33 | 402.26 Hz | 437.26 Hz | 1.087 | worse than the 1.05 noninferiority bound |
-| fixed 500 ms | 3 / 34 | 77.56 Hz | 80.00 Hz | 1.031 | noninferior on the primary metric; not a material improvement |
+| fixed 500 ms | 3 / 34 | 77.56 Hz | 80.00 Hz | 1.031 | descriptive point ratio inside the 1.05 bound; support gate failed |
 
-The fixed-500-ms line reduced the anchor-equal future error by 80.7% for the
-V3 lattice and 81.7% for the V4 lattice relative to fixed 20 ms.  This is the
-strongest actionable result: where a coherent half-second history exists, the
-stable long-history CFO line is dramatically better than a short local line.
+Across their respective available target masks (33 fixed-20-ms pairs versus 34
+fixed-500-ms pairs), the fixed-500-ms line reduced the anchor-equal future
+error by 80.7% for the V3 lattice and 81.7% for the V4 lattice.  This large
+descriptive gap supports stable half-second history where continuity is
+proven, but it is not an exact same-target comparison between history lengths.
 It does not show that V4 improves rate estimation; V4 changes acquisition and
 then delegates continuous tracking to a fresh, unchanged V3 core.
 
@@ -72,7 +73,9 @@ The experiment separates acquisition from downstream estimation:
    unchanged V3 core.
 3. Each lattice is extended for exactly one second with the 750 Hz
    `3333/3334`-sample progression.  The frozen upstream local rate is used only
-   to keep the per-frame NCO inside the fixed ±2 kHz residual basin.
+   to keep the per-frame NCO inside the fixed ±2 kHz residual basin.  A
+   null/unavailable upstream rate maps to zero; all three anchors supporting
+   the primary fixed-500-ms result had a non-null frozen rate.
 4. The public split-frame kernel estimates CFO on even and odd Qin separately.
    Even Qin alone admits frames and fits lines; odd Qin is attached only after
    a 125 ms future prediction is frozen.
@@ -197,18 +200,21 @@ magnitude; it is not a best-case example.
 - V4 did not increase the count of accepted discrete lattices relative to V3
   alignments; it was more selective.
 - On the small common subset that sustained a strong 500 ms line, V3 and V4
-  downstream errors were close.  The frozen primary noninferiority threshold
-  passed, while the material-improvement threshold did not.
+  downstream errors were close.  The descriptive point ratio fell inside the
+  frozen 1.05 numerical bound, but the support gate failed, so noninferiority
+  was not established and the material-improvement threshold was not met.
 - The preregistered support gate failed, so this cannot decide whether V4 is
   generally downstream-rate safe.
 - The large 20 ms versus 500 ms difference strengthens the case for stable
   half-second dynamics whenever continuity is proven.
 
-The next valid step is not to retune these 20 anchors.  Complete the independent
-holdout feasibility/freeze, then evaluate the already frozen candidate on its
-fixed masks.  If an additional opened-canary development study is desired,
-preregister causal reacquisition or source-supported episode boundaries from
-past/even evidence before opening responses.  Keep V4 acquisition yield,
+The next valid step is not to retune these 20 anchors.  The independently
+executed [holdout feasibility study](2026_08_25_doppler_holdout_feasibility.md)
+subsequently retained only 4/15 evaluable captures against its frozen minimum
+of 10, before any odd-Qin response or candidate estimator was run.  Candidate
+freezing and holdout scoring are therefore not authorized on that cohort.  A
+future protocol must first justify and freeze a revised source/even-support
+mask without examining held-out responses.  Keep V4 acquisition yield,
 common-mode downstream prediction, and V4-only recovered-window prediction as
 three separate gates.
 
@@ -225,9 +231,9 @@ three separate gates.
 The artifact manifest binds the result, 277-row prediction ledger, 17,227-frame
 inventory, and three Matplotlib PNGs.  Focused protocol, leakage, common-mask,
 artifact-digest, Ruff, and strict-mypy checks accompany the implementation.
-The final execution ran from implementation commit
-`74df7e95dee521a7f0d5b229c50af56b4506d523`; the result also binds the
+The corrected final execution ran from implementation commit
+`048adb6bcbd5966999d399f31fe96c57dec32c42`; the result also binds the
 benchmark tool at
-`sha256:da224811e1e57a9b2d69a8ffbb1df61a7deaeb4f7713ddc1ba469ee5228e0ecd`
+`sha256:3a3b5690a06a0e466edc751b8173a5ff2758e4a5032fc6417b36210e7a9c11b2`
 and the downstream-rate kernel at
 `sha256:47ce1ff93d52e1c25cb5975cb896f6b75185ffecf6a7c9e36a19833782bc935c`.
