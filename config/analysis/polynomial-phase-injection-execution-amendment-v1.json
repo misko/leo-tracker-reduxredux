@@ -1,0 +1,30 @@
+{
+  "schema": "org.leo.research.polynomial-injection-execution-amendment/v1",
+  "preregistration_commit": "5970769a34e40fde5d64ddf57b4be7fe2ac14d93",
+  "implementation_commit": "49b33b900e9bb65186fa014675811764245b3b22",
+  "protocol_path": "config/analysis/polynomial-phase-injection-protocol-v1.json",
+  "protocol_sha256": "sha256:b91f20418699828928156604cfe76748262709f317eb4cc12a983f1fd7bd95d4",
+  "corrections": [
+    "apply the frozen 0.5 s step-transition exclusion to every history estimator",
+    "aggregate step recovery per scenario before equal-scenario comparison",
+    "apply the frozen all-three-background requirement to rate and cubic evidence",
+    "preserve execution implementation hashes separately from postprocessing hashes",
+    "read derivative failure thresholds from the frozen protocol"
+  ],
+  "unchanged_frozen_scope": [
+    "three authorized hard-null spans",
+    "18 balanced scenarios and seeds",
+    "Qin waveform, frame lattice, occupancy, SNR, truth, masks, and thresholds",
+    "even-Qin training and odd-Qin response separation"
+  ],
+  "implementation_sha256": {
+    "tools/run_polynomial_qin_injection.py": "sha256:908be87e09f2343866a6244e48b71524a1752d7ad21921e728d61df990fb3864",
+    "src/leo/analysis/research/polynomial_injection.py": "sha256:9e5dfc653552bb4bfe0272239fb8f327af045c2b416c982ba3b7c6922ae0934b",
+    "src/leo/analysis/research/polynomial_injection_protocol.py": "sha256:f6692c61dac5b5d42188dde4d9caf03a34b5c14edc542d14913fc37f333ccb29",
+    "src/leo/analysis/qam/pilot.py": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
+    "src/leo/analysis/research/adaptive_frame_cfo.py": "sha256:4491478b5428f7877f5e7136a58e44c8de7729c2ada7ca2a228212836ecb0696",
+    "src/leo/analysis/starlink/templates.py": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "src/leo/analysis/research/doppler_dataset_policy.py": "sha256:0bb2e9893801d1387b6911e40c490502ebef7eb976f575e4f14037e6721f8f9f",
+    "src/leo/analysis/starlink/local_doppler.py": "sha256:a3a2402c784e6736a5548df01a69fbc93fea2be2d7894d18e064bb06fc3bc31a"
+  }
+}
