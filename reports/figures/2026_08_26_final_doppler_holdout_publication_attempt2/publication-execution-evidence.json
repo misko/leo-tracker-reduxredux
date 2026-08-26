@@ -1,0 +1,90 @@
+{
+  "authority": {
+    "publication_amendment": {
+      "commit": "f03e6a64509a38bf5281bb6a756b75cb77d66ac8",
+      "path": "config/analysis/final-doppler-holdout-publication-amendment-001.json",
+      "semantic_digest": "sha256:869c774d2c80c7f9c70ac85657a01b3dff134c80183cc091574a4b9e1388ccfc",
+      "sha256": "sha256:015c300d3d7d76a93bafbd1a93941eced9a26d048da07e8f51ff6b0792267c06",
+      "tree": "211de59ee83d00bfa0a8b3bc885d896c0bc50e25"
+    },
+    "renderer": {
+      "commit": "16d74aea3beb42e948d7559cd47919ddbff708cb",
+      "path": "tools/render_final_doppler_holdout_publication.py",
+      "sha256": "sha256:f8d6a9763e58e331a732a777184af7196f972fef92474daf3e3f562e80bb5c41",
+      "tree": "1f4ac9838ae87e345b96c5f3e5fd72ad5712a7e0"
+    }
+  },
+  "chronology": {
+    "attempt_number": 2,
+    "completed_utc": "2026-08-26T11:48:06.969584255Z",
+    "exact_command": "/usr/bin/time -v uv run python tools/render_final_doppler_holdout_publication.py --score reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json --output-dir reports/figures/2026_08_26_final_doppler_holdout_publication_attempt2 --markdown reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md",
+    "exit_code": 0,
+    "output_paths_absent_before_attempt": true,
+    "outputs_durable_and_hashed_before_link_or_visual_inspection": true,
+    "started_utc": "2026-08-26T11:48:05.704899654Z",
+    "stdout_stderr_separation_preserved": false
+  },
+  "created_utc": "2026-08-26T11:49:19.822316Z",
+  "evidence_manifest_digest": "sha256:7c3082029f0cbd7bcb9f023e3335484c45d8eb7b56ba887c203890fa11425f18",
+  "execution_boundary": {
+    "candidate_or_nuisance_parameters_refit": false,
+    "iq_or_recording_storage_opened": false,
+    "prediction_recomputed": false,
+    "satellite_propagation_or_ranking_recomputed": false,
+    "science_score_recomputed": false,
+    "sealed_input_or_attempt_1_artifact_mutated": false
+  },
+  "frozen_input": {
+    "path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json",
+    "semantic_digest": "sha256:3316fb28e8bb421d8bfdec00d8598e456e4a6a1d94c61026cf8e5fc51e643c31",
+    "sha256": "sha256:490f36345fec7d494261d63f3b3cf9581a249bdca46d80c8b9e63baed3471d1f"
+  },
+  "integrity_review": {
+    "artifact_links_resolve": 6,
+    "association_gate_matrix_visually_clear": true,
+    "association_rms_figure_has_one_nonoverlapping_title": true,
+    "association_rms_legend_states_full_gate_failure_and_non_evaluable_semantics": true,
+    "image_links_resolve": 4,
+    "manifest_canonical_digest_recomputed": true,
+    "manifest_output_hashes_and_sizes_recomputed": true,
+    "scientific_headline": {
+      "absolute_secure_norad": false,
+      "association_catalog_compatible_count": 0,
+      "association_evaluable_capture_count": 8,
+      "association_recovered_track_count": 8,
+      "common_accuracy_count": 3942,
+      "quadratic_promotion_passed": false,
+      "target_count": 5413
+    }
+  },
+  "outputs": {
+    "association_gate_matrix_png": {
+      "byte_size": 187709,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_publication_attempt2/association-gate-matrix.png",
+      "sha256": "sha256:baf8551522f457725c9172dbbd64a87f2a2963ef6717c153392513fc44058e06"
+    },
+    "association_heldout_rms_png": {
+      "byte_size": 94315,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_publication_attempt2/association-heldout-rms-gated.png",
+      "sha256": "sha256:1ecd3388600f7ad562dfb3c9fa776da3b87fa75267e0abdf72aeb19b2655a31c"
+    },
+    "combined_command_output": {
+      "byte_size": 1732,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout-publication-attempt2-command-output.log",
+      "sha256": "sha256:98b1d3129a43b96dfe7e541054a732409ac0b396a5f7bb2343fe8c03e3ed3519"
+    },
+    "detailed_markdown": {
+      "byte_size": 15267,
+      "path": "reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md",
+      "sha256": "sha256:e9e29363bd55c32b959e6f36490af3796565edb380554bbc2b578d5547f6f356"
+    },
+    "publication_manifest": {
+      "byte_size": 5090,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_publication_attempt2/publication-manifest.json",
+      "semantic_digest": "sha256:596655a83a85d9d5c6d42528f28d9dffa07e3e111fc9a38c2e2fde5f2f0c392c",
+      "sha256": "sha256:dc5a1635ac18456bb5a24a26a63af4b89e4fc9185134750bc0564bc6fa64fe4d"
+    }
+  },
+  "schema": "org.leo.research.final-holdout-publication-execution-evidence/v1",
+  "status": "publication_succeeded_from_immutable_score"
+}
