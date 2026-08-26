@@ -18,21 +18,25 @@ Chronology alone does not tell a reader which conclusion still governs.
 ## Solution
 
 This page maps each current scientific claim to its strongest versioned
-evidence, controls, caveats, implementation status, and next falsifier. It also
-indexes every one of the 45 versioned Markdown assets under `reports/` by role.
-Canonical concept and pipeline pages link here for provenance; reports remain
-dated, immutable receipts.
+evidence, controls, caveats, implementation status, and next falsifier. At
+commit `12b00fc`, it also indexes all 127 tracked Markdown assets under
+`reports/`: 116 top-level reports, seven documents in the post-refill
+retrospective bundle, three scanner-rendered samples, and one TLE figure
+README. Canonical concept and pipeline pages link here for provenance; reports
+remain dated receipts.
 
 ## Method
 
-The ledger was assembled by reading all 41 top-level versioned reports, three
+The original ledger synthesis read 41 top-level versioned reports, three
 versioned scanner-rendered samples, the TLE figure README, their figures and
-machine-readable results, current analysis/pipeline/application code, tests,
-contracts, and the Qin and Kozhaya primary signal-structure papers. Four local,
-unversioned draft reports were also reviewed but are explicitly excluded from
-published authority below. The latest report is not automatically preferred:
-input integrity, controls, independence, replication, and deployed contract
-status determine weight.
+machine-readable results, current code, tests, contracts, and the Qin and
+Kozhaya primary signal-structure papers. This update audits the complete
+tracked Markdown path inventory at `12b00fc` and re-audits current claims
+against the merged Doppler campaign, selector-v2, corrected calibration,
+retrospective satellite-nuisance, and TLE-durability receipts. Inventory
+inclusion alone does not promote a report to current scientific authority. The
+latest report is not automatically preferred: input integrity, controls,
+independence, replication, and deployed contract status determine weight.
 
 ## Status vocabulary
 
@@ -58,9 +62,13 @@ shadow product while its physical interpretation remains candidate-only.
 | Parallel raw CFO ridges can be one symbol-rate alias family | **Established** | [alias canonicalization](../../reports/2026_08_26_cfo_alias_canonicalization.md) | 235/236 high-gate points collapse to one quadratic; grouping does not select the correction lift | Alias map + de-aliased bank |
 | Same-IQ replay is required to choose the absolute correction lift | **Established** | [alias canonicalization](../../reports/2026_08_26_cfo_alias_canonicalization.md), [trajectory accounting](../../reports/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting.md) | Upper lift: 400/401 positives; lower representative: 1/401 in the canonicalization case | CFO-lift replay v4 + final bank |
 | Frame-local pilot phase can be coherent modulo π | **Established intermittently** | [frame-local qualification](../../reports/2026_08_22_frame_local_phase_qualification.md), [edge-pilot phase slope](../../reports/2026_08_22_edge_pilot_phase_slope.md), [pilot PNT Kalman](../../reports/2026_08_22_pilot_pnt_kalman.md) | One 80 ms case improves 1.695→0.151 rad; only 3/40 additional selected windows fully lock | Local pilot-Doppler monitor |
-| A local CFO/rate model predicts better than the frozen multi-second derivative | **Supported** | [sub-second structure](../../reports/2026_08_22_subsecond_pilot_structure.md), [piecewise pilot Doppler](../../reports/2026_08_23_piecewise_pilot_doppler_rate.md) | Local 10 ms held-out RMS 16.48 Hz near 16.16 Hz measurement uncertainty; carrier-bias steps remain unexplained | Additive 75 ms Standard product |
+| A local CFO/rate model predicts better than the frozen multi-second derivative | **Supported** | [sub-second structure](../../reports/2026_08_22_subsecond_pilot_structure.md), [piecewise pilot Doppler](../../reports/2026_08_23_piecewise_pilot_doppler_rate.md), [Doppler campaign synthesis](../../reports/2026_08_26_doppler_rate_experiment_campaign.md) | Local 10 ms held-out RMS is 16.48 Hz near 16.16 Hz measurement uncertainty; held-out-CFO prediction is not known physical-Doppler truth and carrier-bias steps remain unexplained | Additive 75 ms Standard product |
+| The response-blind holdout has a frozen >=10-capture cohort | **Operational** | [selector-v2 result](../../reports/2026_08_26_doppler_holdout_selector_v2_results.md) | 10/15 captures and 5,413 eligible targets pass even-Qin feasibility only; odd-Qin response availability and every estimator outcome remain unopened here | Frozen IDs and target-mask digests; final scoring pending |
+| Fixed 500 ms satisfies the known-truth point-accuracy and finite 95% interval gates | **Not established** | [corrected fixed-500 calibration](../../reports/2026_08_26_fixed500_calibration_results.md) | Primary RMSE is 291.5921 Hz/s versus 92.7065 Hz/s for fixed 125 ms; the combined gate fails and 12 calibration groups force a formal 95% interval abstention | Benchmark only; no interval or physical-Doppler authority |
+| The strict-past quadratic is ready for production promotion | **Not established** | [corrected fixed-500 calibration](../../reports/2026_08_26_fixed500_calibration_results.md) | 35.8038 Hz/s passes the corrected component gate, but the correction was specified after outcomes were visible and is not an independent holdout confirmation | Challenger only; response-sealed validation pending |
 | Current final banks are deployed multi-target associations | **Not established** | Current `run_receiver_standard` call graph | Multi-target code and tests exist, but the runner does not invoke it | Final bank remains residual-Hough/dealias/replay selection |
-| A radio track is securely associated with one catalogued satellite | **Not established** | [deep three-dwell tracking review](../../reports/2026_08_24_recent_three_starlink_tracking_deep_review.md), [five-dwell TLE cone](../../reports/2026_08_21_five_dwell_tle_cone.md) | The latest full-search audit has zero secure named associations; true-time orbit/line wins are common in matched wrong-time fields and no candidate clears the runner/family gates | Research-only sky comparison primitives |
+| A radio track is securely associated with one catalogued satellite | **Not established** | [retrospective nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md), [TLE replay-durability addendum](../../reports/2026_08_26_retrospective_satellite_nuisance_tle_durability_addendum.md), [deep three-dwell tracking review](../../reports/2026_08_24_recent_three_starlink_tracking_deep_review.md) | Four tracks have finite winners 62124/66811/58029/59748, but 0/4 pass candidate-evidence gates and zero identities are secure; baseline/hierarchy future RMS is 78.0226/79.1769 Hz | Research-only sky comparison primitives; final ten-capture association pending |
+| Bounded physical-radio rate nuisance improves satellite association | **Not established** | [retrospective nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md) | The hierarchy is 1.48% worse in equal-capture future RMS and changes neither four-track recovery nor the 0/4 evidence and zero-secure-ID disposition | Diagnostic option only |
 | Timing estimate is code phase, pseudorange, or absolute range | **Not established** | Phase/PNT report family and contracts | Current timing is receiver-relative and modulo a frame/sample coordinate; no transmit-time authority | No qualified navigation observable |
 | Starlink payload is decoded | **Not established** | Code and product inventory | Only published known pilot symbols are evaluated | No payload decoder |
 | Scanner captures support retune-bounded known-pilot/local-rate evidence | **Operational and supported** | [scanner Standard analysis](../../reports/2026_08_23_scanner_standard_analysis.md) | No state crosses a retune; five stored scans had 3/32 qualified segments and zero negative-control locks | Capture-first scanner pipeline |
@@ -104,22 +112,54 @@ line.
 
 ![Recorded complete-frame phase and CFO structure](../../reports/figures/2026_08_22_subsecond_pilot_structure/subsecond-pilot-structure.png)
 
+### Sealed Doppler campaign state
+
+Selector v1 admitted only 4/15 unopened captures. The feasibility-informed,
+response-blind selector v2 now admits exactly 10/15 and freezes 5,413 eligible
+future target opportunities on those ten captures. This is an operational
+cohort result only: no odd-Qin response was read or scored, and response
+missingness remains unknown until a separately frozen final pass.
+
+The corrected known-truth calibration reports primary scenario-equal RMSEs of
+92.7065, 291.5921, and 35.8038 Hz/s for fixed 125 ms, unchanged fixed 500 ms,
+and the strict-past quadratic. Fixed 500 ms fails its combined gate. Twelve
+calibration groups cannot supply the required order 13, so the formal finite
+95% interval abstains; the displayed maximum-score interval is descriptive
+only. The quadratic passes a corrected post-outcome component gate, not an
+independent confirmation or production gate.
+
+The final ten-capture odd-Qin comparison and satellite association are still
+pending at this inventory point. No estimator winner, response-availability
+count, association ranking, or secure identity from that final pass is claimed
+in this ledger.
+
 ### Orbital association
 
 Radio trajectories are repeatable, but constant rate alone is not a secure
-orbital fingerprint. The causal five-dwell analysis allowed comparable nuisance
-terms for true-time and wrong-time TLE controls and found no true-time advantage.
-Observer coordinate, LO arithmetic, and measured two-LNB drift checks did not
-explain the full rate discrepancy. Transmitter/beam steering, catalog
-incompleteness, timing uncertainty, and signal-model error remain live.
+orbital fingerprint. The current retrospective bounded-nuisance result recovers
+finite full-catalog rankings for all four primary tracks, with winners NORAD
+62124, 66811, 58029, and 59748. None clears the complete candidate-evidence
+gates and none is a secure identity. Equal-capture future RMS changes from
+78.0226 Hz for the fixed-time/free-offset baseline to 79.1769 Hz for the
+physical-radio hierarchy. The post-outcome durability amendment removes the
+mutable TLE archive index from replay authority while leaving every sealed
+ranking, metric, and gate unchanged.
 
-![Five-dwell true-time and wrong-time TLE controls](../../reports/figures/2026_08_21_five_dwell_tle_cone/five-dwell-linear-rate-null-summary.png)
+The earlier causal five-dwell analysis likewise allowed comparable nuisance
+terms for true-time and wrong-time TLE controls and found no true-time
+advantage. Observer coordinate, LO arithmetic, and measured two-LNB drift
+checks did not explain the full rate discrepancy. Transmitter/beam steering,
+catalog incompleteness, timing uncertainty, and signal-model error remain live.
+
+![Retrospective track recovery and complete identity gates](../../reports/figures/2026_08_26_retrospective_satellite_nuisance/track-recovery-and-gates.png)
 
 ## Versioned report index
 
-The index assigns each report a present role. “Supporting” means it contributes
+This path-exhaustive index covers the 127 tracked Markdown assets counted above.
+It assigns detailed present roles to the strongest sources and a compact role
+to the remaining tracked receipts. “Supporting” means a report contributes
 evidence or design context; it does not mean every historical conclusion is
-still current.
+still current. Preregistrations establish chronology and gates, not outcomes.
 
 ### Acquisition, detector, and performance studies
 
@@ -237,35 +277,141 @@ still current.
 - [Scanner Standard analysis](../../reports/2026_08_23_scanner_standard_analysis.md)
   — current stored-sweep analysis and five-scan evaluation.
 
+### Extended tracked research and protocol receipts
+
+The following groups complete the tracked top-level report inventory. The
+2026-08-23 and 2026-08-24 groups are supporting development, mechanism, and
+audit history unless the claim matrix cites them directly. A prototype report
+does not establish deployed status.
+
+#### 2026-08-23 development and audit receipts
+
+- [Full-capture 20 ms GLRT and robust slopes](../../reports/2026_08_23_140820_glrt20ms_robust_slope.md)
+- [470384 blind timing-CFO experiment](../../reports/2026_08_23_470384_blind_timing_cfo.md)
+- [470384 comprehensive blind timing-CFO analysis](../../reports/2026_08_23_470384_blind_timing_cfo_comprehensive.md)
+- [470384 boundary-mechanism investigation](../../reports/2026_08_23_470384_boundary_mechanism.md)
+- [144200 missing-track root cause](../../reports/2026_08_23_cap_144200_missing_track_rca.md)
+- [Eight-hour dwell/scanner operational audit](../../reports/2026_08_23_eight_hour_dwell_scanner_operational_agent.md)
+- [Eight-hour dwell/scanner scientific audit](../../reports/2026_08_23_eight_hour_dwell_scanner_science_agent.md)
+- [Five-dwell modulo-pi qualification audit](../../reports/2026_08_23_five_dwell_modulo_pi_qualification.md)
+- [Dense Hough downstream prototype](../../reports/2026_08_23_full_capture_hough_downstream_prototype.md)
+- [Full-capture Hough replay prototype](../../reports/2026_08_23_full_capture_hough_replay_prototype.md)
+- [Connected-support extension prototype](../../reports/2026_08_23_full_capture_support_extension_prototype.md)
+- [GLRT and short-window phase comparison](../../reports/2026_08_23_glrt_phase_segment_comparison.md)
+- [H1 replay seed-policy experiment](../../reports/2026_08_23_h1_replay_seed_policy.md)
+- [Main-report and Starlink-association synthesis](../../reports/2026_08_23_main_report_review_and_starlink_association.md)
+- [Six-hour dwell/scanner monitor](../../reports/2026_08_23_six_hour_live_dwell_scanner_monitor.md)
+- [Support-extension geometry retention](../../reports/2026_08_23_support_extension_geometry_retention.md)
+- [Fresh 13-dwell degree-one rerun](../../reports/2026_08_23_thirteen_dwell_degree1_fresh.md)
+- [Fresh 13-dwell Starlink association audit](../../reports/2026_08_23_thirteen_dwell_starlink_association_fresh.md)
+
+#### 2026-08-24 mechanism and implementation receipts
+
+- [Continuity-buffer implementation](../../reports/2026_08_24_continuity_buffer_implementation.md)
+- [d373c04a GLRT and frame-CFO study](../../reports/2026_08_24_d373c04a_glrt_frames.md)
+- [Frame-CFO estimator study](../../reports/2026_08_24_frame_cfo_estimator_study.md)
+- [Full-capture Hough end-to-end prototype](../../reports/2026_08_24_full_capture_hough_end_to_end.md)
+- [Refill-continuity loopback](../../reports/2026_08_24_refill_continuity_loopback.md)
+- [Refill-time compression sawtooth](../../reports/2026_08_24_refill_time_compression_sawtooth.md)
+- [Starlink signal and tracking guide](../../reports/2026_08_24_starlink_signal_and_tracking_guide.md)
+- [Ten-dwell raw Doppler pipeline](../../reports/2026_08_24_ten_dwell_raw_doppler_pipeline.md)
+
+The 2026-08-25 group contains the frozen campaign foundations, canary and
+transport receipts, preregistrations, development results, and retrospective
+association work. Each result retains its own disposition; protocol and plan
+documents establish scope or chronology rather than an outcome.
+
+#### 2026-08-25 campaign foundations and canary receipts
+
+- [150802 alias-aware common-orbit audit](../../reports/2026_08_25_150802_alias_aware_common_orbit.md)
+- [150802 experimental PNT Kalman V4](../../reports/2026_08_25_150802_pnt_kalman_v4_experimental.md)
+- [150802 V3 acquisition-model audit](../../reports/2026_08_25_150802_v3_acquisition_model_audit.md)
+- [150802 full-dwell V3 replay](../../reports/2026_08_25_150802_v3_full_dwell.md)
+- [150802 V3 missing-signal investigation](../../reports/2026_08_25_150802_v3_missing_signal_investigation.md)
+- [150802 V3 tracking comparison](../../reports/2026_08_25_150802_v3_tracking_comparison.md)
+- [150802 visible-Starlink TLE fit](../../reports/2026_08_25_150802_visible_starlink_tle_fit.md)
+- [3 MS/s and 5 MS/s capture deployment](../../reports/2026_08_25_3m_5m_production_capture_deployment.md)
+- [Adaptive CFO-rate change](../../reports/2026_08_25_adaptive_cfo_rate_change.md)
+- [Causal CFO/rate/acceleration result](../../reports/2026_08_25_causal_cfo_acceleration_development.md)
+- [Causal CFO/rate/acceleration preregistration](../../reports/2026_08_25_causal_cfo_acceleration_development_preregistration.md)
+- [Continuous frame-recovery prototype](../../reports/2026_08_25_continuous_frame_recovery_prototype.md)
+- [Counter-continuous frame timing and delay](../../reports/2026_08_25_counter_continuous_frame_timing_and_delay.md)
+- [Doppler experiment dataset policy](../../reports/2026_08_25_doppler_experiment_dataset_policy.md)
+- [Holdout selector-v1 feasibility](../../reports/2026_08_25_doppler_holdout_feasibility.md)
+- [Doppler-rate and satellite-linking method review](../../reports/2026_08_25_doppler_rate_and_satellite_linking_method_review.md)
+- [Five-dwell pilot-filter prototypes](../../reports/2026_08_25_five_dwell_pilot_filter_prototypes.md)
+- [Five-dwell frame-CFO prototype](../../reports/2026_08_25_frame_cfo_dwell_prototype.md)
+- [Frame-phase rate investigation](../../reports/2026_08_25_frame_phase_rate_investigation.md)
+- [Joint CFO/delay/acceleration prototype](../../reports/2026_08_25_joint_cfo_delay_acceleration_prototype.md)
+- [Multi-dwell PSS/SSS Doppler comparison](../../reports/2026_08_25_multi_dwell_pss_sss_doppler.md)
+- [Multi-radio common-rate preregistration](../../reports/2026_08_25_multi_radio_common_rate_preregistration.md)
+- [Dual-radio contiguous transport verification](../../reports/2026_08_25_pluto_dual_radio_contiguous_transport_verification.md)
+- [PNT Kalman V3 comprehensive review](../../reports/2026_08_25_pnt_kalman_v3_comprehensive_review.md)
+- [PNT Kalman V4 correction plan](../../reports/2026_08_25_pnt_kalman_v4_correction_plan.md)
+- [Polynomial injection preregistration](../../reports/2026_08_25_polynomial_injection_preregistration.md)
+- [Polynomial Qin injection result](../../reports/2026_08_25_polynomial_qin_injection_results.md)
+- [Recent adaptive CFO holdout result](../../reports/2026_08_25_recent_adaptive_cfo_holdout.md)
+- [Recent adaptive CFO holdout preregistration](../../reports/2026_08_25_recent_adaptive_cfo_holdout_preregistration.md)
+- [Recent adaptive CFO tracking](../../reports/2026_08_25_recent_adaptive_cfo_tracking.md)
+- [Recent frame-CFO rate prototype](../../reports/2026_08_25_recent_frame_cfo_rate_prototype.md)
+- [RX0 cross-receiver anchor replay](../../reports/2026_08_25_rx0_cross_receiver_anchor_replay.md)
+- [Satellite identity recovery v2](../../reports/2026_08_25_satellite_identity_recovery_v2.md)
+- [Three-dwell PNT tracking comparison](../../reports/2026_08_25_three_dwell_pnt_tracking_comparison.md)
+- [V3/V4 downstream-rate result](../../reports/2026_08_25_v3_v4_downstream_rate_benchmark.md)
+- [V3/V4 downstream-rate preregistration](../../reports/2026_08_25_v3_v4_downstream_rate_preregistration.md)
+
+#### 2026-08-26 Doppler campaign and Wave-2 receipts
+
+- [Holdout selector-v2 preregistration](../../reports/2026_08_26_doppler_holdout_selector_v2_preregistration.md) — response-blind feasibility protocol.
+- [Holdout selector-v2 result](../../reports/2026_08_26_doppler_holdout_selector_v2_results.md) — 10/15 captures and 5,413 frozen future targets; feasibility only.
+- [Doppler-rate campaign synthesis](../../reports/2026_08_26_doppler_rate_experiment_campaign.md) — current campaign-level disposition with the final sealed result marked pending.
+- [Fixed-500 calibration preregistration](../../reports/2026_08_26_fixed500_calibration_preregistration.md) — original calibration protocol; read with the disclosed corrective chronology in the result.
+- [Corrected fixed-500 calibration result](../../reports/2026_08_26_fixed500_calibration_results.md) — fixed-500 FAIL, finite 95% interval abstention, and post-outcome quadratic component PASS.
+- [Multi-radio common-rate result](../../reports/2026_08_26_multi_radio_common_rate_results.md) — dispersion/prediction tradeoff, not physical-rate truth.
+- [Retrospective satellite-nuisance preregistration](../../reports/2026_08_26_retrospective_satellite_nuisance_preregistration.md) — frozen retrospective association gates.
+- [Retrospective satellite-nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md) — four finite rankings, 0/4 evidence passes, and zero secure identities.
+- [Retrospective TLE replay-durability addendum](../../reports/2026_08_26_retrospective_satellite_nuisance_tle_durability_addendum.md) — post-outcome input-authority repair with sealed science unchanged.
+
 ### Auxiliary versioned Markdown assets
 
 - [TLE figure data README](../../reports/figures/2026_08_21_tle_doppler_alignment/README.md)
   — provenance for the TLE alignment figure bundle.
+- [Post-refill 24-hour retrospective bundle](../../reports/2026_08_25_post_refill_24h_retrospective/README.md),
+  [capture and analysis IDs](../../reports/2026_08_25_post_refill_24h_retrospective/CAPTURE_AND_ANALYSIS_IDS.md), and
+  [snapshot notes](../../reports/2026_08_25_post_refill_24h_retrospective/SNAPSHOT_NOTES.md)
+  — frozen retrospective inventory and archived-code provenance.
+- [Retrospective related-report index](../../reports/2026_08_25_post_refill_24h_retrospective/related_reports/README.md),
+  [065355 activity report](../../reports/2026_08_25_post_refill_24h_retrospective/related_reports/2026_08_25_065355_satellite_activity.md),
+  [073628/085623 activity report](../../reports/2026_08_25_post_refill_24h_retrospective/related_reports/2026_08_25_073628_raw_satellite_activity.md), and
+  [103607 activity report](../../reports/2026_08_25_post_refill_24h_retrospective/related_reports/2026_08_25_103607_raw_satellite_activity.md)
+  — supporting retrospective activity and calibration receipts, not secure
+  satellite identities.
 - [Scanner sample ee6a5829](../../reports/scanner-rendered-samples/20260821T103718Z_scan-ee6a5829b7054a1a.md),
   [sample eb189e76](../../reports/scanner-rendered-samples/20260821T121316Z_scan-eb189e7612af41d6.md), and
   [sample 8c903aa6](../../reports/scanner-rendered-samples/20260821T122805Z_scan-8c903aa6d2be496e.md)
   — concrete rendered scanner receipts, not population-level conclusions.
 
-## Local drafts reviewed but excluded from authority
+## Historical untracked drafts excluded from authority
 
-At the time of this synthesis, the working tree also contained four unversioned
-draft reports:
+The original ledger synthesis recorded four unversioned local draft reports:
 
 - `2026_08_21_0b45a2531e70_basin_recovery.md`;
 - `2026_08_21_replay_slope_distribution.md`;
 - `2026_08_22_multi_dwell_starlink_association.md`; and
 - `2026_08_22_thirteen_dwell_degree1_rerun.md`.
 
-They were read for consistency and helped identify open questions, but this
-documentation change does not stage or modify them. Their stronger basin,
-replay-slope, and multi-dwell association interpretations are not cited as
-durable project authority until their authors choose to version them with
-reviewed inputs, controls, tools, and tests.
+Those exact paths are not tracked at audited commit `12b00fc` and are not part
+of the 127-asset count or path-exhaustive index. Their stronger basin,
+replay-slope, and multi-dwell association interpretations remain excluded from
+durable project authority. Similarly named tracked follow-on reports have
+their own indexed receipts and must not be treated as publication of these
+historical local drafts.
 
 ## Known unknowns and next falsifiers
 
 | Unknown | Evidence that would materially change the ledger |
 |---|---|
+| Which estimator wins the final ten-capture holdout, and is its odd-Qin response sufficiently available? | Separately frozen scoring over all 5,413 selector-v2 targets, with missingness, no-results, identical masks, capture-level aggregation, and response-seal audit retained |
 | What causes segment carrier-bias steps? | Independent paths/dwells showing a repeatable model that predicts held-out steps and beats clock/LNB/discontinuity controls |
 | Can phase lock become common? | Higher coverage across independent verified dwells with unchanged rolled-control rejection and held-out prediction |
 | How many physical emitters are present? | Deployed multi-target association with crossing/birth/death controls, duplicate suppression, replay support, and cross-path consistency |
@@ -275,10 +421,11 @@ reviewed inputs, controls, tools, and tests.
 
 ## Maintenance
 
-When a new report lands, add it to the index and update the claim matrix only
-if its evidence changes the current synthesis. Record input-integrity
-dispositions explicitly. A canonical claim should link to the smallest set of
-strong sources that establishes it; the index preserves the full research
-trail. Follow the [Research pipeline](../pipelines/research-analysis.md) for
-experiment design and the [documentation standard](../contributing/documentation.md)
-for report and figure conventions.
+When a new report lands, update the tracked Markdown count, add its exact path
+to the index, and update the claim matrix only if its evidence changes the
+current synthesis. Record input-integrity dispositions explicitly. A canonical
+claim should link to the smallest set of strong sources that establishes it;
+the index preserves the full research trail. Follow the
+[Research pipeline](../pipelines/research-analysis.md) for experiment design
+and the [documentation standard](../contributing/documentation.md) for report
+and figure conventions.

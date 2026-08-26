@@ -1,8 +1,9 @@
-# Doppler-rate experiment campaign: frozen POST-FIX development results
+# Doppler-rate experiment campaign: frozen POST-FIX development and Wave-2 results
 
 ## Executive result
 
-Six prespecified work lanes were pursued under the deny-by-default
+Six prespecified work lanes and four bounded Wave-2 follow-ons were pursued
+under the deny-by-default
 [Doppler experiment dataset policy](2026_08_25_doppler_experiment_dataset_policy.md),
 with their launch and support gates preserved in the results.
 No capture later than `cap-20260825T150802-473cb5bbcbd6`, no ongoing or newly
@@ -10,16 +11,23 @@ collected data, no PRE-FIX recording, and no 3/5 MS/s `CAPTURE_ONLY` recording
 was used.
 
 The campaign does not support replacing the current source-bound, robust
-500 ms frame-CFO line.  It does establish several narrower results:
+500 ms frame-CFO line or naming a satellite from a radio track. It does
+establish several narrower results:
 
-1. the frozen unopened cohort was not feasible for a >=10-capture comparison:
-   only 4/15 captures passed the response-blind even-Qin support gate, so no
-   candidate estimator and no future odd-Qin response was opened;
+1. the original frozen unopened-cohort selector was not feasible for a
+   >=10-capture comparison: only 4/15 captures passed the response-blind
+   even-Qin support gate. A feasibility-informed selector v2 subsequently
+   passed 10/15 captures and froze 5,413 eligible future targets on those ten
+   captures, but this remains feasibility only: no candidate estimator and no
+   future odd-Qin response was opened;
 2. exact-Qin polynomial injection into three real POST-FIX hard-null
    backgrounds produced genuine known-truth rate errors, but the 500 ms
-   estimator's scenario-equal nominal 95% coverage was only 64.5% (pooled
-   endpoint coverage 44.0%) and the cubic evidence covered only two
-   backgrounds;
+   estimator's scenario-equal nominal 95% coverage was only
+   64.5% (pooled endpoint coverage 44.0%). The corrected calibration then
+   measured primary RMSEs of 92.7065 Hz/s for fixed 125 ms, 291.5921 Hz/s for
+   unchanged fixed 500 ms, and 35.8038 Hz/s for the strict-past quadratic.
+   Fixed 500 ms failed, the formal finite-sample 95% interval abstained, and
+   the post-outcome quadratic passed only its component gate;
 3. the lean causal `[CFO, rate, acceleration]` candidate was under-supported
    and descriptively worse than fixed 500 ms at every horizon;
 4. V4 improved numerical completion on the opened `150802` canary, but its
@@ -28,15 +36,27 @@ The campaign does not support replacing the current source-bound, robust
 5. in a disclosed post-freeze diagnostic, one shared rate across two physical
    radios roughly halved the median block-bootstrap slope dispersion, but
    slightly worsened future CFO RMS relative to separate physical-radio rates;
-   and
 6. the proposed weak-frame full-likelihood gate could not be evaluated from
-   the frozen serialized development sources and remains unit-test-only.
+   the frozen serialized development sources and remains unit-test-only;
+7. retrospective satellite nuisance fitting produced four finite catalogue
+   rankings, but 0/4 tracks passed the candidate-evidence gates and zero NORAD
+   identities were secure. The fixed-time/free-offset baseline slightly beat
+   the hierarchy in equal-capture future RMS, 78.0226 versus 79.1769 Hz; and
+8. a post-outcome TLE durability amendment removed the mutable archive index
+   from replay authority without rerunning or changing any scientific result.
 
-The practical next model is therefore conservative: keep fixed 500 ms as the
-primary local-rate estimator, repair its covariance calibration, and explore a
-hierarchical common-rate prior that permits radio-specific deviations.  Do not
-add acceleration, V4-specific rate dynamics, or full likelihood to production
-until each earns a gain on a sufficiently supported response-blind cohort.
+The final ten-capture odd-Qin comparison and its satellite-association pass are
+still pending. This report contains a clearly marked placeholder for that
+future receipt; none of the feasibility, calibration, or retrospective results
+below is substituted for the sealed outcome.
+
+The practical next model is therefore conservative: keep fixed 500 ms as a
+benchmark, not as a calibrated physical-Doppler or interval authority; carry
+the strict-past quadratic only as a promising post-outcome challenger; and
+preserve every response seal and satellite-identity gate. Do not add
+acceleration, V4-specific rate dynamics, exact cross-radio equality, or full
+likelihood to production until each earns a gain on a sufficiently supported
+response-blind cohort.
 
 ## 1. Authority and error semantics
 
@@ -65,17 +85,25 @@ an end-to-end blind acquisition claim.
 
 | requested direction | frozen data role | execution | primary output | outcome |
 |---|---|---|---|---|
-| >=10-capture unopened holdout | 15 `holdout_foundation` captures | response-blind feasibility only | 4/15 evaluable; no odd response opened | **launch gate failed** |
+| unopened holdout selector v1 | 15 `holdout_foundation` captures | response-blind feasibility only | 4/15 evaluable; no odd response opened | **launch gate failed** |
+| unopened holdout selector v2 | same 15 captures and inherited frozen sources | revised response-blind feasibility only | 10/15 evaluable; 5,413 frozen targets on passing captures; no odd response opened | **feasibility gate passed; response remains sealed** |
 | polynomial truth injection | 3 `polynomial_injection` hard-null captures | 18 exact-Qin scenarios, 27,000 frame opportunities | fixed-500 rate RMSE 163.3 Hz/s; scenario-equal coverage 64.5% (pooled 44.0%); cubic only 2 backgrounds | **failed coverage/background gates** |
 | causal `[CFO, rate, acceleration]` | 16 `rate_development` captures | 8 yielded forecasts | candidate/fixed-500 RMS 1.054 / 2.674 / 4.636 | **inconclusive and adverse** |
 | V3/V4 downstream rate | opened `150802` canary | 537 yield rows; 20 frozen extension anchors | 3 adequate common anchors; V4/V3 fixed-500 RMS 1.031 | **under-supported; no improvement** |
 | multi-radio common rate | 4 `multi_radio` captures | 4/4 evaluable, 14/15 paths | shared/radio bootstrap-sigma ratio 0.527; shared/radio prediction-RMS ratio 1.011 | **useful dispersion/prediction tradeoff** |
 | gated full likelihood | same rate-development sources | frozen feature audit + unit tests | required even likelihood surfaces/features absent | **real-data test unavailable** |
+| corrected fixed-500 calibration | same 3 digest-pinned hard-null backgrounds | 12 primary strong/smooth evaluation scenarios | fixed-125/fixed-500/quadratic RMSE 92.7065/291.5921/35.8038 Hz/s; formal 95% interval unavailable | **fixed-500 FAIL; interval ABSTAIN; post-outcome quadratic component PASS** |
+| retrospective satellite nuisance | 4 previously opened POST-FIX captures | baseline and bounded physical-radio hierarchy over complete visible Starlink fields | 4 finite rankings; 0/4 candidate-evidence passes; 0 secure identities; 78.0226/79.1769 Hz baseline/hierarchy RMS | **diagnostic only; no identity** |
+| TLE replay durability | frozen TLE bytes, metadata, and sealed result hashes | post-outcome loader maintenance; no scientific execution | mutable index removed from authority; result unchanged | **durability repair only** |
+| final ten-capture odd-Qin comparison and association | selector-v2 cohort and exact target masks | not yet reported at this integration point | pending | **PENDING; do not infer an outcome** |
 
 Every lane retains failures rather than replacing captures, branches, paths,
-or windows dynamically.
+or windows dynamically. A feasibility pass is not counted as an estimator or
+association result.
 
-## 3. Unopened holdout feasibility
+## 3. Unopened holdout feasibility: selector v1 and v2
+
+### Selector v1
 
 The
 [holdout feasibility report](2026_08_25_doppler_holdout_feasibility.md)
@@ -94,10 +122,32 @@ estimator.
 
 ![Response-blind holdout feasibility accounting](figures/2026_08_25_doppler_holdout_feasibility/feasibility-accounting.png)
 
-This is a feasibility/launch-gate failure, not evidence that the four estimators would
-or would not generalize.  Because no downstream response was opened, a future
-response-blind protocol may justify a different source/even-support selector,
-freeze it, and try again without contaminating the odd-Qin outcomes.
+This is a feasibility/launch-gate failure, not evidence that the compared
+estimators would or would not generalize.
+
+### Selector v2
+
+Because no downstream response was opened, the
+[selector-v2 preregistration](2026_08_26_doppler_holdout_selector_v2_preregistration.md)
+could make a disclosed feasibility-informed revision without using an odd-Qin
+value or candidate-estimator outcome. It inherited the exact v1 capture,
+source, alias, epoch, episode, and even-Qin evidence, then replaced the indirect
+global-density gate with target-local strict-past support gates for the 20,
+125, and 500 ms histories.
+
+The
+[selector-v2 result](2026_08_26_doppler_holdout_selector_v2_results.md)
+passed exactly 10/15 captures. Those ten captures contain 5,413 eligible future
+target opportunities; the five failing captures contain another 168 eligible
+opportunities that remain recorded but excluded. Eligibility means only that
+the current even fold and every required strictly past even-fold history pass.
+Whether an odd-Qin response exists at a target remains deliberately unknown.
+
+Selector v2 therefore passes the cohort-size feasibility gate and freezes the
+ten capture IDs and their target-mask digests. It does not compare estimators,
+open an odd-Qin response, authorize satellite naming, or guarantee response
+availability. The separately frozen scoring and association result remains
+pending in section 11.
 
 ## 4. Known-truth exact-Qin injection
 
@@ -239,30 +289,131 @@ The result motivates testing a hierarchical prior—one common rate plus
 regularized radio deviations—more strongly than it motivates an exact
 common-rate constraint.  No hierarchical model was evaluated here.
 
-## 8. Overall decision
+## 8. Corrected fixed-500 calibration
+
+The
+[corrected calibration report](2026_08_26_fixed500_calibration_results.md)
+used true sample-clock waveform and lattice resampling on the same three
+digest-pinned hard-null backgrounds. Its primary mask contains 12 strong,
+smooth evaluation scenarios, four per background, with three non-overlapping
+endpoints per scenario.
+
+| estimator | primary scenario-equal RMSE | formal disposition |
+|---|---:|---|
+| fixed 125 ms comparator | 92.7065 Hz/s | comparator only |
+| unchanged fixed 500 ms | 291.5921 Hz/s | **FAIL** combined point/interval gate |
+| corrected strict-past quadratic | 35.8038 Hz/s | **PASS** post-outcome component gate only |
+
+The requested finite-sample 95% grouped interval formally **ABSTAINS**:
+12 calibration groups supply orders 1 through 12, while 95% requires order 13.
+The capped maximum-score multiplier and its displayed 100% evaluation coverage
+are descriptive diagnostics only, not a conformal or distribution-free 95%
+guarantee.
+
+The quadratic excludes the endpoint measurement, fits only supported even-Qin
+frames strictly before it, and passes the corrected identical-scenario and
+identical-endpoint gates. The repair was specified after the original outcomes
+were visible, however. Its 35.8038 Hz/s result is a component PASS, not an
+independent confirmation, production promotion, satellite-acquisition result,
+or authority to open the sealed holdout.
+
+## 9. Retrospective satellite nuisance and association
+
+The
+[retrospective satellite nuisance report](2026_08_26_retrospective_satellite_nuisance_results.md)
+compared the fixed-time/free-path-offset baseline with a bounded hierarchy that
+adds one regularized rate departure per physical radio. It used four previously
+opened POST-FIX captures and did not open a `holdout_foundation` odd-Qin
+response.
+
+Both models produced finite full-catalog Starlink rankings for all four primary
+tracks. The hierarchy did not improve the cohort result:
+
+| capture | primary ranked winner | candidate-evidence pass | secure identity |
+|---|---|---|---|
+| `065355` | NORAD 62124 | no | no |
+| `103607` | NORAD 66811 | no | no |
+| `130425` | NORAD 58029 | no | no |
+| `150802` | NORAD 59748 | no | no |
+
+The complete disposition is four finite rankings, 0/4 candidate-evidence
+passes, and zero secure NORAD identities. Equal-capture future RMS was
+78.0226 Hz for the baseline and 79.1769 Hz for the hierarchy, so the added
+receiver-rate freedom was 1.48% worse overall. NORAD 59748 remains the leading
+conditional `150802` candidate and the only winner to pass the full wrong-time
+matched-field control, but its bounded-time optimum was on the search boundary
+and its catalogue runner margin failed. None of the four names may be attached
+to a radio track as an identity.
+
+## 10. TLE replay-durability amendment
+
+The
+[TLE replay-durability addendum](2026_08_26_retrospective_satellite_nuisance_tle_durability_addendum.md)
+records a post-outcome maintenance correction. The original runner bound the
+mutable archive-index digest used during snapshot discovery and then required
+the live index never to advance. The corrected loader treats that historical
+index as provenance-only and verifies the frozen content-addressed TLE bytes,
+timestamp-specific immutable metadata, strict pre-dwell causality, and the
+deterministic latest-source reconstruction instead.
+
+No IQ was read, no candidate was propagated or refit, and no result artifact
+was regenerated for the amendment. The sealed result remains four recoverable
+tracks, 0/4 candidate-evidence passes, and zero secure identities. The addendum
+improves replay durability; it supplies no new scientific evidence.
+
+## 11. PENDING: final ten-capture odd-Qin holdout and satellite association
+
+**Status at this integration point: PENDING.** Selector v2 has frozen exactly
+ten passing capture IDs and 5,413 eligible target opportunities, and the
+response-sealed pre-execution contracts are present. No final scoring or
+association result report is merged here, and no future odd-Qin outcome from
+this cohort is reported in this campaign synthesis.
+
+This placeholder must be replaced only from the separately frozen final
+receipt. That receipt must report, without post-response capture or mask
+replacement:
+
+- odd-Qin response availability and missingness over every frozen target;
+- each estimator's result on identical available-response masks, including all
+  no-results and capture-level aggregation;
+- the prespecified estimator decision and uncertainty disposition;
+- the satellite-association population, nuisance model, matched controls, and
+  every candidate-evidence and secure-identity gate; and
+- exact links to its protocol, machine evidence, and audit artifacts.
+
+Until that receipt exists, the selector-v2 result is feasibility only, the
+quadratic remains a post-outcome challenger, and the retrospective satellite
+result remains the current identity authority. Do not infer the pending result
+from any of them.
+
+## 12. Overall decision
 
 | candidate change | evidence | decision |
 |---|---|---|
 | replace fixed 500 ms with causal acceleration | adverse at all horizons; insufficient capture support | **do not promote** |
-| trust current fixed-500 covariance | 64.5% scenario-equal coverage (44.0% pooled) for nominal 95% intervals | **recalibrate** |
+| trust current fixed-500 covariance or a finite 95% interval | corrected fixed-500 RMSE 291.5921 Hz/s; 12 groups cannot supply the required 95% order | **do not trust; formal interval ABSTAINS** |
+| promote the strict-past quadratic | 35.8038 Hz/s and component gate PASS, but correction was post-outcome | **carry as a challenger; require independent response-sealed validation** |
 | use V4 completion as evidence of better rate | downstream support failed; point RMS slightly worse | **keep yield and rate gates separate** |
 | force one slope across radios | halves post-freeze bootstrap dispersion but worsens prediction 1.14% | **test a soft hierarchy; do not force equality** |
+| add bounded receiver-rate nuisance to satellite ranking | baseline/hierarchy RMS 78.0226/79.1769 Hz; 0/4 evidence passes | **diagnostic only; no identity** |
 | invoke full likelihood on weak frames | no frozen real-data features/surfaces | **untried on real data** |
-| score the current unopened holdout | only 4/15 feasible under frozen selector | **not authorized** |
+| score the current unopened holdout without a separately frozen final receipt | selector v2 passes 10/15 with 5,413 targets, but the odd-Qin response remains unopened here | **not authorized** |
+| treat the TLE durability fix as new evidence | loader authority changed; sealed metrics and rankings did not | **maintenance only** |
 
-The clearest genuinely promising work is now measurement and uncertainty
-quality, not a larger dynamic state:
+The remaining campaign work is bounded and response-sealed:
 
-1. recalibrate fixed-500 rate covariance on the known-truth injection corpus,
-   with scenario-level rather than frame-iid coverage accounting;
-2. expand the exact-Qin injection grid with waveform/lattice resampling for a
-   real sample-clock-offset experiment and more strong-but-contaminated rows;
-3. freeze a hierarchical multi-radio model on response-blind development data,
-   then evaluate both rate stability and odd-Qin prediction;
-4. design a revised unopened-cohort feasibility selector using only frozen
-   upstream/even evidence, and do not open odd responses until >=10 captures
-   pass; and
-5. preserve fixed 500 ms as the benchmark for every future rate estimator.
+1. bind the final estimator and association configurations to the exact
+   selector-v2 capture IDs and target-mask digests before response access;
+2. in one separately authorized pass, retain response missingness and every
+   no-result while scoring the identical frozen masks;
+3. preserve fixed 500 ms as a benchmark and test the corrected quadratic as a
+   challenger, without treating its post-outcome component PASS as promotion;
+4. preserve the full-catalog wrong-time field, bounded-time, runner-margin,
+   curvature-null, rolling-origin, provenance, and recurrence identity gates;
+5. seek additional independently frozen calibration groups before making a
+   finite 95% interval claim; and
+6. prioritize longer already-opened counter-contiguous geometry and measured
+   receiver authority for later association work.
 
-Clock/LNB calibration remains a separate experiment.  Nothing in this campaign
+Clock/LNB calibration remains a separate experiment. Nothing in this campaign
 claims that a receiver-CFO slope is calibrated physical satellite Doppler.
