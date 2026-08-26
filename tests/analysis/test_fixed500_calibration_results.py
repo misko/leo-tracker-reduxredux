@@ -47,6 +47,13 @@ def test_canonical_result_receipt_is_hash_bound_to_the_frozen_rerun() -> None:
     presentation = metrics["presentation_postprocess"]
     assert presentation["repository_head"] == "44950ccc1c9505f42d250ce191fd15422e80af47"
     assert presentation["scientific_metrics_changed"] is False
+    maintenance = metrics["source_layout_maintenance"]
+    assert maintenance["source_layout_commit"] == ("27e37f0d4df0004e31809267305f3e578908af31")
+    assert maintenance["scientific_metrics_changed"] is False
+    assert maintenance["canonical_execution_artifacts_changed"] is False
+    assert hashlib.sha256(
+        (ROOT / maintenance["amendment_path"]).read_bytes()
+    ).hexdigest() == maintenance["amendment_sha256"].removeprefix("sha256:")
 
     for relative, expected in metrics["artifact_sha256"].items():
         payload = (ROOT / relative).read_bytes()
@@ -125,6 +132,7 @@ def test_report_links_and_plain_matplotlib_pngs_resolve() -> None:
     assert "legacy residual-chi-square conditional covariance" in text
     assert "Nonzero 400-Hz step" in text and "919.17" in text
     assert "No result here authorizes opening the sealed holdout" in text
+    assert "historical polynomial-injection kernel was restored byte-for-byte" in text
 
     links = re.findall(r"\]\(([^)]+)\)", text)
     assert links

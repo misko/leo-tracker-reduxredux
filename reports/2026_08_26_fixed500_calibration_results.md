@@ -20,6 +20,8 @@ All three recording manifests, analysis manifests, compressed chunks, uncompress
 
 The first canonical attempt completed all scientific scenario scoring but failed before writing `metrics.json` or this report because a relative artifact path was resolved against an absolute repository root. The hash-bound execution amendment changes only that serialization call; the rerun preserves every scientific kernel, scenario, mask, estimator, metric, and gate.
 
+After execution, the explicit-lattice evaluator was moved into the fixed-500 component and the historical polynomial-injection kernel was restored byte-for-byte so its older sealed result remains verifiable. The hash-bound [source-layout amendment](../config/analysis/fixed500-calibration-source-layout-amendment-v1.json) records that maintenance; it changed no IQ access, execution artifact, scientific metric, figure, or decision. The implementation hashes above remain the exact execution-time receipt rather than pretending the maintained source tree produced the sealed run.
+
 ## Primary evaluation
 
 The primary mask contains 12 smooth strong evaluation scenarios (`SNR ≥ −12 dB`, occupancy ≥0.70), four per background. Each scenario contributes three non-overlapping endpoints; a scenario counts as simultaneously covered only if all three truth rates fall in their intervals.
