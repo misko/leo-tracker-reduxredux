@@ -1,0 +1,114 @@
+{
+  "artifact_move_history": [
+    {
+      "completed_utc": "2026-08-26T09:21:20.283Z",
+      "destination": "/tmp/leo-final-holdout-failed-center-rounding-attempt1",
+      "source": "reports/figures/2026_08_26_final_doppler_holdout"
+    },
+    {
+      "completed_utc": "2026-08-26T09:21:59.225Z",
+      "destination": "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1",
+      "source": "/tmp/leo-final-holdout-failed-center-rounding-attempt1"
+    }
+  ],
+  "artifacts": {
+    "association_bin_inventory": {
+      "byte_size": 210031,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/association-bin-inventory.json",
+      "semantic_digest": "sha256:ce4763244430d0a46eb1184d9c573b3fab0e6cc529c1287a7d0ea098e481857e",
+      "sha256": "sha256:cc7e64e22eba73e5f8495ba375ecfbe96bbf842fdcde17b7f5c1fdd1ae16d26a"
+    },
+    "captured_stdout": {
+      "byte_size": 4082,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/attempt-1-command-output.log",
+      "sha256": "sha256:73efe2478a83ed2e42e97884a7daa6def98782cc2ed12d0b0b397b83f40db408"
+    },
+    "prediction_ledger": {
+      "byte_size": 21148275,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/prediction-ledger.json",
+      "row_count": 5413,
+      "semantic_digest": "sha256:b6a1db7f3785eac1dd40fa6c75a90e4ced6e36730a0adedd3e7aeeb20feeeca8",
+      "sha256": "sha256:7aee33ebb11b12bc2d15d228b556c5f92fd0c80c7bad76abfac6a6ba95be8978"
+    },
+    "pre_response_rankings": {
+      "persisted": false
+    },
+    "pre_response_receipt": {
+      "persisted": false
+    }
+  },
+  "attempt": 1,
+  "chronology": {
+    "command_completed_utc": "2026-08-26T09:18:43.988Z",
+    "command_started_utc": "2026-08-26T09:18:12.807Z",
+    "implementation_commit": "986ce7a4ba12b1048bf93f0b26935b753de8820a",
+    "implementation_tree": "260668366e8f8b6286ec3772609bced580a0f7e4",
+    "protocol_commit": "19d9da26939750d5e07898d94ed860bbe2ba0924",
+    "protocol_tree": "3e77742e60670efe1b8e90e45f6bfe4a1ab79d3e"
+  },
+  "command": {
+    "argv_shell": "/usr/bin/time -v uv run python tools/run_final_doppler_holdout.py predict --protocol config/analysis/final-doppler-holdout-satellite-protocol-v1.json --output-dir reports/figures/2026_08_26_final_doppler_holdout",
+    "captured_stderr_byte_size": 0,
+    "captured_stdout_contains_time_and_traceback": true,
+    "completed_at_ms": 1787735923988,
+    "cwd": "/tmp/leo-final-holdout-satellite",
+    "event_duration_nanoseconds": 31179996572,
+    "exit_code": 1,
+    "maximum_resident_set_kbytes": 1198264,
+    "started_at_ms": 1787735892807,
+    "system_cpu_seconds": 0.42,
+    "time_reported_wall_seconds": 31.32,
+    "user_cpu_seconds": 32.33
+  },
+  "correction_boundary": {
+    "allowed_change": "Replace float64 conversion of integer UTC median with exact integer median rounded to nearest with ties to even; preflight rolling-origin controls for every evaluable inventory before TLE reader construction or any propagation/ranking.",
+    "candidate_outcomes_used_to_choose_correction": false,
+    "data_models_thresholds_controls_and_scoring_must_remain_identical": true,
+    "new_odd_or_iq_evidence_used_to_choose_correction": false,
+    "response_free": true
+  },
+  "failure": {
+    "exception_message": "association bin lies outside the full target UTC span",
+    "exception_type": "ValueError",
+    "failed_capture": "cap-20260825T050946-ab916a6d0eee",
+    "failed_stage": "rolling-origin precondition inside final evaluable capture controls",
+    "float_center_minus_exact_center_ns": 22,
+    "float_center_minus_target_span_stop_ns": 22,
+    "float_center_utc_ns": 1787634644960270848,
+    "integer_exact_center_utc_ns": 1787634644960270826,
+    "offending_bin_id": 89381732248,
+    "offending_bin_target_count": 1,
+    "root_cause": "np.median converted a nanosecond-scale integer timestamp through float64 before rounding",
+    "target_span_stop_utc_ns": 1787634644960270826
+  },
+  "inventory_summary": {
+    "association_bin_count": 307,
+    "evaluable_capture_count": 8,
+    "inventory_count": 10,
+    "non_evaluable_capture_count": 2,
+    "prediction_target_count": 5413
+  },
+  "outcome_access": {
+    "candidate_ids_inspected_by_operator_or_agent": false,
+    "candidate_matrices_inspected_by_operator_or_agent": false,
+    "candidate_rankings_inspected_by_operator_or_agent": false,
+    "candidate_results_printed": false,
+    "in_memory_candidate_propagation_function_invocations": 377,
+    "in_memory_candidate_propagation_or_ranking_occurred": true,
+    "in_memory_frozen_ranking_helper_invocations": 564,
+    "odd_iq_accessed": false,
+    "odd_response_accessed": false,
+    "process_memory_inspected": false,
+    "ranking_artifact_persisted": false,
+    "shared_rate_diagnostic_executed": false
+  },
+  "protocol": {
+    "path": "config/analysis/final-doppler-holdout-satellite-protocol-v1.json",
+    "semantic_digest": "sha256:df7e1f41e2e339af3d46773b4172a97304f518573fc55ddc4a2746a00f883a31",
+    "sha256": "sha256:8e5a62993fe2e25496cb838d3ec866fe8ccf6fbca1f6ca122e312fd32c6af58b"
+  },
+  "receipt_digest": "sha256:d16f2af3d1e463eb1d5814d36927759037e0bc7d68442704411f3bfa8ec1b2a3",
+  "rerun_authorized": false,
+  "schema": "org.leo.research.final-holdout-pre-response-failure-receipt/v1",
+  "status": "failed_closed"
+}
