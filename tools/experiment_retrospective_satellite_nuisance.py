@@ -982,6 +982,17 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             }
         )
 
+    baseline_future_rms = np.asarray(
+        [float(item["baseline_top10"][0]["heldout_rms_hz"]) for item in primary_results],
+        dtype=np.float64,
+    )
+    hierarchy_future_rms = np.asarray(
+        [float(item["hierarchical_top10"][0]["heldout_rms_hz"]) for item in primary_results],
+        dtype=np.float64,
+    )
+    baseline_equal_capture_rms = float(np.sqrt(np.mean(baseline_future_rms**2)))
+    hierarchy_equal_capture_rms = float(np.sqrt(np.mean(hierarchy_future_rms**2)))
+
     evidence: dict[str, Any] = {
         "schema": SCHEMA,
         "protocol": {
@@ -1029,6 +1040,14 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             ),
             "primary_unique_winner_count": len(
                 {int(item["hierarchical_top10"][0]["norad_id"]) for item in primary_results}
+            ),
+            "baseline_equal_capture_future_rms_hz": baseline_equal_capture_rms,
+            "hierarchy_equal_capture_future_rms_hz": hierarchy_equal_capture_rms,
+            "hierarchy_to_baseline_future_rms_ratio": (
+                hierarchy_equal_capture_rms / baseline_equal_capture_rms
+            ),
+            "hierarchy_future_rms_win_count": int(
+                np.count_nonzero(hierarchy_future_rms < baseline_future_rms)
             ),
         },
         "interpretation_limits": [
