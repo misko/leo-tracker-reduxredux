@@ -184,3 +184,102 @@ def test_aggregate_is_scenario_equal_and_retains_no_results() -> None:
     assert aggregate["no_result_scenario_count"] == 1
     assert aggregate["no_result_scenario_rate"] == 1 / 3
     assert np.isclose(aggregate["receiver_rmse"], np.sqrt(50.0))
+
+
+def test_step_aggregate_is_scenario_equal() -> None:
+    rows = []
+    for scenario_id, mse, count in (("P1", 1.0, 100), ("P2", 100.0, 1)):
+        rows.append(
+            {
+                "scenario_id": scenario_id,
+                "estimator": "fixed_500ms_linear",
+                "scope": "transition",
+                "cfo_step_hz": 300.0,
+                "receiver_count": count,
+                "receiver_mse": mse,
+                "receiver_median_absolute_error": np.sqrt(mse),
+            }
+        )
+    for estimator in ("causal_20ms_linear", "fixed_125ms_linear"):
+        for row in list(rows):
+            if row["estimator"] == "fixed_500ms_linear":
+                rows.append({**row, "estimator": estimator})
+    for estimator in (
+        "causal_20ms_linear",
+        "fixed_125ms_linear",
+        "fixed_500ms_linear",
+    ):
+        for phase in ("pre_step", "post_history"):
+            rows.append(
+                {
+                    "scenario_id": "P1",
+                    "estimator": estimator,
+                    "scope": phase,
+                    "cfo_step_hz": 300.0,
+                    "receiver_count": 0,
+                    "receiver_mse": None,
+                    "receiver_median_absolute_error": None,
+                }
+            )
+
+    aggregate = tool._aggregate_step_scenario_metrics(rows)
+    fixed_transition = next(
+        row
+        for row in aggregate
+        if row["estimator"] == "fixed_500ms_linear" and row["phase"] == "transition"
+    )
+
+    assert fixed_transition["endpoint_count"] == 101
+    assert fixed_transition["scenario_count"] == 2
+    assert fixed_transition["evaluable_scenario_count"] == 2
+    assert np.isclose(fixed_transition["receiver_rmse"], np.sqrt(50.5))
+
+
+def test_promotion_requires_cubic_evidence_from_all_backgrounds() -> None:
+    config = json.loads(
+        (ROOT / "config/analysis/polynomial-phase-injection-protocol-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    rate = [
+        {
+            "scope": "promotion",
+            "estimator": "fixed_500ms_linear",
+            "evaluable_background_count": 3,
+            "receiver_rmse": 100.0,
+            "receiver_failure_rate": 0.0,
+            "receiver_coverage_95": 0.9,
+        }
+    ]
+    cubic = [
+        {
+            "scope": "promotion",
+            "coordinate": "receiver",
+            "derivative": derivative,
+            "evaluable_background_count": 2,
+            "rmse": 10.0,
+        }
+        for derivative in ("acceleration", "jerk")
+    ]
+
+    promotion = tool._promotion(rate, cubic, config)
+
+    assert promotion["checks"]["all_three_backgrounds"] is False
+    assert promotion["status"] == "fail"
+
+
+def test_postprocess_receipt_preserves_execution_hashes() -> None:
+    result = {
+        "repository_head_at_execution": "execution-head",
+        "implementation": {
+            "tool_sha256": "sha256:" + "1" * 64,
+            "kernel_sha256": "sha256:" + "2" * 64,
+            "protocol_loader_sha256": "sha256:" + "3" * 64,
+        },
+    }
+    execution = dict(result["implementation"])
+
+    tool._attach_postprocess_receipt(result, ROOT)
+
+    assert result["implementation"] == execution
+    assert result["postprocess_implementation"]["tool_sha256"] == tool._sha256_file(TOOL_PATH)

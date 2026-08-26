@@ -508,7 +508,7 @@ def fixed_history_rate_estimates(
                     step_phase=_step_phase(
                         scenario,
                         estimate.reference_time_s,
-                        history.history_s,
+                        protocol.step_transition_exclusion_s,
                         protocol.cfo_step_time_s,
                     ),
                 )
@@ -692,14 +692,14 @@ def _failed(error: float | None, threshold: float) -> bool | None:
 def _step_phase(
     scenario: InjectionScenario,
     reference_time_s: float,
-    history_s: float,
+    transition_exclusion_s: float,
     step_time_s: float,
 ) -> str:
     if scenario.cfo_step_hz == 0.0:
         return "no_step"
     if reference_time_s < step_time_s:
         return "pre_step"
-    if reference_time_s < step_time_s + history_s:
+    if reference_time_s < step_time_s + transition_exclusion_s:
         return "transition"
     return "post_history"
 
