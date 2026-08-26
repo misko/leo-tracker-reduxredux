@@ -1,0 +1,67 @@
+{
+  "chronology": {
+    "attempt_number": 1,
+    "combined_command_output": {
+      "byte_size": 2535,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout-publication-command-output.log",
+      "sha256": "sha256:d0ef42a93c1b70c67093c108519f24edac68ad1b5bf86f3f4ab317e93fc57f4b"
+    },
+    "completed_utc": "2026-08-26T11:35:13.345348895Z",
+    "exact_command": "/usr/bin/time -v uv run python tools/render_final_doppler_holdout_publication.py --score reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json --output-dir reports/figures/2026_08_26_final_doppler_holdout_publication --markdown reports/2026_08_26_final_doppler_holdout_and_starlink_association.md",
+    "exit_code": 1,
+    "renderer_commit": "6dcb1e7d2c9fa5fc40478ed036b7797579a14cf3",
+    "renderer_tree": "728e65292121b83708ed23a328468515102d3892",
+    "started_utc": "2026-08-26T11:35:11.995204707Z",
+    "stdout_stderr_separation_preserved": false
+  },
+  "created_utc": "2026-08-26T11:37:51.144853Z",
+  "evidence_manifest_digest": "sha256:a049c9bb67e25172733bda79227d7fbe401adeb4f2ea51685a11ccc53f46868d",
+  "execution_boundary": {
+    "candidate_or_nuisance_parameters_refit": false,
+    "iq_or_recording_storage_opened": false,
+    "official_score_recomputed": false,
+    "prediction_recomputed": false,
+    "satellite_propagation_or_ranking_recomputed": false,
+    "sealed_score_read_only": true
+  },
+  "failure": {
+    "audit_summary": "relative markdown output path is not a subpath of the absolute repository root",
+    "exception_type": "ValueError",
+    "exception_message": "'reports/2026_08_26_final_doppler_holdout_and_starlink_association.md' is not in the subpath of '/tmp/leo-final-holdout-satellite'",
+    "failed_before_publication_manifest": true,
+    "presentation_only": true,
+    "source_location": "tools/render_final_doppler_holdout_publication.py:820",
+    "stage": "publication_output_manifest_path_binding"
+  },
+  "frozen_input": {
+    "path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json",
+    "semantic_digest": "sha256:3316fb28e8bb421d8bfdec00d8598e456e4a6a1d94c61026cf8e5fc51e643c31",
+    "sha256": "sha256:490f36345fec7d494261d63f3b3cf9581a249bdca46d80c8b9e63baed3471d1f"
+  },
+  "partial_outputs": {
+    "association_gate_matrix_png": {
+      "byte_size": 187709,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_publication/association-gate-matrix.png",
+      "sha256": "sha256:baf8551522f457725c9172dbbd64a87f2a2963ef6717c153392513fc44058e06"
+    },
+    "association_heldout_rms_png": {
+      "byte_size": 106037,
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_publication/association-heldout-rms-gated.png",
+      "sha256": "sha256:d638e75d27bd257494e96971357dc190f01f608e717a9389d7b4189894c8dd96"
+    },
+    "detailed_markdown": {
+      "byte_size": 15240,
+      "path": "reports/2026_08_26_final_doppler_holdout_and_starlink_association.md",
+      "sha256": "sha256:c00049c81e72451433c7f4c58c8de4a26c1f64be72e7e19c570b3e0b5c06bbd9"
+    },
+    "publication_manifest_absent": true
+  },
+  "presentation_review_after_hash_freeze": {
+    "association_figure_has_overlapping_duplicate_title_text": true,
+    "partial_outputs_are_publication_authority": false,
+    "retry_must_use_new_exclusive_paths": true,
+    "scientific_values_were_not_changed": true
+  },
+  "schema": "org.leo.research.final-holdout-publication-attempt-failure/v1",
+  "status": "failed_presentation_attempt_preserved_noncanonical"
+}
