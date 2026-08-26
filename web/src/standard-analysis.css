@@ -4,6 +4,7 @@
 .standard-heading h3 { margin: .2rem 0; }
 .standard-eligibility { display: grid; max-width: 25rem; padding: .7rem; border: 1px solid #355b64; border-radius: .5rem; }
 .standard-eligibility.test { border-color: #d0a34f; background: #342b18; }
+.standard-eligibility.partial { border-color: #d0a34f; background: #2d281a; }
 .standard-subject-table { border: 1px solid #294952; border-radius: .5rem; overflow-x: auto; }
 .standard-subject-table table { width: 100%; border-collapse: collapse; }
 .standard-subject-table th, .standard-subject-table td { padding: .65rem; border-bottom: 1px solid #294952; text-align: left; }
@@ -93,12 +94,44 @@
 .standard-image-note { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; color: var(--muted); font-size: .75rem; }
 .standard-image-note strong { color: var(--text); }
 
+.standard-native-summary, .standard-native-paths, .standard-native-waterfall, .standard-native-limitations { overflow: hidden; border: 1px solid var(--line); border-radius: .45rem; background: #071216; }
+.standard-native-summary > header, .standard-native-paths > header, .standard-native-waterfall > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1rem; background: #0b2024; }
+.standard-native-summary > header div, .standard-native-paths > header div, .standard-native-waterfall > header div { display: grid; gap: .2rem; }
+.standard-native-summary > header span, .standard-native-paths > header span, .standard-native-waterfall > header span, .standard-native-summary-grid article > span { color: #78a0a9; font: 10px "IBM Plex Mono", monospace; letter-spacing: .08em; }
+.standard-native-summary h4, .standard-native-paths h4, .standard-native-waterfall h4 { margin: 0; }
+.standard-native-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); }
+.standard-native-summary-grid article { min-width: 0; padding: .85rem 1rem; background: #091a1e; }
+.standard-native-summary-grid article > strong { display: block; margin: .3rem 0 .7rem; color: #dfe9ec; text-transform: capitalize; }
+.standard-native-summary-grid article > p { margin: .45rem 0 0; color: var(--muted); font-size: .76rem; line-height: 1.45; }
+.standard-native-summary-grid dl { display: grid; gap: .3rem; margin: 0; }
+.standard-native-summary-grid dl div { display: flex; justify-content: space-between; gap: .7rem; padding-top: .3rem; border-top: 1px solid rgba(82, 112, 120, .35); }
+.standard-native-summary-grid dt { color: var(--muted); font-size: .72rem; }
+.standard-native-summary-grid dd { margin: 0; font: 11px "IBM Plex Mono", monospace; text-align: right; }
+.standard-native-invariants { display: flex; flex-wrap: wrap; gap: .4rem; padding: .75rem 1rem; }
+.standard-native-invariants span { padding: .28rem .5rem; color: #bde6d4; border: 1px solid #376253; border-radius: 1rem; background: #102a24; font-size: .7rem; }
+.standard-native-paths > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); }
+.standard-native-paths article { display: grid; gap: .3rem; padding: .8rem; background: #091a1e; }
+.standard-native-paths article span, .standard-native-paths article small { color: var(--muted); }
+.standard-native-waterfall > p { margin: 0; padding: .75rem 1rem; color: var(--muted); font-size: .78rem; }
+.standard-native-waterfall table { width: 100%; border-collapse: collapse; font-size: .76rem; }
+.standard-native-waterfall th, .standard-native-waterfall td { padding: .55rem .7rem; border-top: 1px solid var(--line); text-align: left; }
+.standard-native-waterfall th { color: var(--muted); background: #091a1e; }
+.standard-native-waterfall tr.unavailable td { color: #e5bd69; background: #292316; }
+.standard-native-limitations { padding: .8rem 1rem; color: var(--muted); font-size: .76rem; }
+.standard-native-limitations strong { color: var(--text); }
+.standard-native-limitations ul { margin: .5rem 0 0; padding-left: 1.2rem; }
+.standard-native-limitations li + li { margin-top: .25rem; }
+.standard-native-empty, .standard-native-view-error { padding: 1rem; border: 1px solid var(--line); border-radius: .45rem; color: var(--muted); background: #071216; }
+.standard-native-view-error { color: #ff9b78; }
+
 @media (max-width: 900px) {
   .standard-image-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); position: static; }
   .standard-image-tabs button:last-child { grid-column: 1 / -1; }
   .standard-png-card figcaption { align-items: flex-start; }
   .standard-cfo-comparison > div { grid-template-columns: 1fr; }
   .standard-paired-alternate > div { grid-template-columns: 1fr; }
+  .standard-native-summary-grid { grid-template-columns: 1fr; }
+  .standard-native-paths > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .standard-table { border-top: 1px solid #294952; padding-top: .7rem; }.standard-table table { width: 100%; border-collapse: collapse; }.standard-table th, .standard-table td { padding: .45rem; border-bottom: 1px solid #294952; text-align: left; font-size: .75rem; }
 .standard-limitations { color: #cfb275; font-size: .8rem; }.standard-error { padding: 1rem; color: #ff9b78; }.standard-loading { padding: 1rem; }

@@ -8,6 +8,10 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
+from leo.contracts.host_health import (
+    QualificationHostHealthEvidenceV1,
+    QualificationHostHealthPolicyV1,
+)
 from leo.contracts.radio import RadioId, RadioIdentityV1
 from leo.contracts.recording import (
     DEVICE_AXIS_STORAGE_POLICY_V1,
@@ -25,6 +29,13 @@ QualificationId = Annotated[
 ]
 _ONE_SECOND_NS = 1_000_000_000
 _MINIMUM_WRITER_BYTES_PER_SECOND = 72_000_000
+_MINIMUM_V4_WRITER_BYTES_PER_SECOND = 100_000_000
+_V4_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV1(
+    raid_array_name="md127",
+    disk_path="/srv/bulk",
+    minimum_available_memory_bytes=32 * 1024**3,
+    minimum_free_disk_bytes=1024**4,
+)
 
 
 class ContiguousRateQualificationPolicyV1(ContractModel):
@@ -378,6 +389,8 @@ class ContiguousRateDeviceAxisCharacterizationStreamV1(ContractModel):
     terminal_rejected_gap_count: Annotated[int, Field(ge=0)]
     terminal_rejected_missing_sample_count: Annotated[int, Field(ge=0)]
     terminal_rejected_overflow_count: Annotated[int, Field(ge=0)]
+    queue_capacity_refills: Literal[32]
+    queue_high_water_refills: Annotated[int, Field(ge=1, le=24)]
     gap_map_segment_count: Annotated[int, Field(gt=0)]
     gap_map_boundary_count: Annotated[int, Field(ge=0)]
     validity_segment_count: Annotated[int, Field(gt=0)]
@@ -465,7 +478,7 @@ class ContiguousRateDeviceAxisCharacterizationV1(ContractModel):
 
 
 class ContiguousRatePrerequisitesV4(ContractModel):
-    """V4 production prerequisites including exact 5 MS/s device-axis evidence."""
+    """V4 production prerequisites with exact host and 5 MS/s evidence."""
 
     schema_version: Literal[4] = 4
     radio_safety: tuple[
@@ -477,6 +490,7 @@ class ContiguousRatePrerequisitesV4(ContractModel):
         ContiguousRateNativeIpCanaryEvidenceV1,
     ]
     writer_benchmark: ContiguousRateWriterBenchmarkEvidenceV1
+    host_health: QualificationHostHealthEvidenceV1
     five_m_characterization: ContiguousRateDeviceAxisCharacterizationV1
 
     @model_validator(mode="after")
@@ -494,8 +508,22 @@ class ContiguousRatePrerequisitesV4(ContractModel):
             raise ValueError("rate qualification requires passing per-radio safety evidence")
         if any(not canary.passed for canary in self.native_ip_canaries):
             raise ValueError("rate qualification requires passing native-IP canaries")
-        if not self.writer_benchmark.passed:
-            raise ValueError("rate qualification requires a passing 72 MB/s writer benchmark")
+        if (
+            not self.writer_benchmark.passed
+            or self.writer_benchmark.sustained_bytes_per_second
+            < _MINIMUM_V4_WRITER_BYTES_PER_SECOND
+        ):
+            raise ValueError(
+                "V4 rate qualification requires measured incompressible writer throughput "
+                "of at least 100 MB/s"
+            )
+        if self.host_health.policy != _V4_HOST_HEALTH_POLICY:
+            raise ValueError(
+                "V4 qualification requires the reviewed md127, /srv/bulk, "
+                "32 GiB memory, and 1 TiB disk host-health policy"
+            )
+        if not self.host_health.passed:
+            raise ValueError("V4 qualification requires passing pre/post host-health evidence")
         if not self.five_m_characterization.passed:
             raise ValueError("V4 qualification requires passing 5 MS/s characterization")
         return self
@@ -622,6 +650,12 @@ class ContiguousRateQualificationTargetV4(ContiguousRateQualificationTargetV3):
             raise ValueError("5 MS/s radios differ from the V4 qualification target")
         if evidence.host != self.expected_host or evidence.producer != self.expected_producer:
             raise ValueError("5 MS/s runtime identity differs from the V4 qualification target")
+        host_health = self.prerequisites.host_health
+        if (
+            host_health.before.host_name != self.expected_host.hostname
+            or host_health.after.host_name != self.expected_host.hostname
+        ):
+            raise ValueError("host-health evidence host differs from the V4 qualification target")
         return self
 
 

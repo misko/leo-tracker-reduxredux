@@ -20,7 +20,22 @@ from leo.contracts.standard_native import (
     StandardNativeSourceV1,
     StandardProbeScheduleV3,
 )
+from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
+from leo.contracts.standard_native_path_report import (
+    NativePathScientificDispositionV1,
+    StandardNativePathReportV3,
+)
 from leo.contracts.standard_native_stateful import StandardNativeStatefulPathV1
+from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
+from leo.contracts.standard_native_terminal import (
+    NativeTerminalPathEvidenceV2,
+    StandardNativePairedReportV4,
+    StandardNativeRadioReportV4,
+    aggregate_native_probe_execution_accounting,
+    aggregate_native_qam_statistics,
+    aggregate_terminal_track_accounting,
+    terminal_track_accounting,
+)
 from leo.contracts.standard_pipeline import StandardPairInputBindV2
 from leo.pipeline import AnalysisContext, ScopeKind, StageOutcome, UpstreamJsonProduct
 
@@ -99,10 +114,12 @@ def reduce_native_radio_evidence(
         ):
             raise ValueError("native path product source disagrees with reducer scope")
         outcome = _path_outcome(quality_item.outcome)
-        expected_stateful_status = (
-            "complete" if outcome == "complete" else "unavailable_global_schedule"
+        expected_stateful_statuses = (
+            {"complete"}
+            if outcome == "complete"
+            else {"partial_coverage", "unavailable_global_schedule"}
         )
-        if stateful.stateful_science_status != expected_stateful_status:
+        if stateful.stateful_science_status not in expected_stateful_statuses:
             raise ValueError("native path outcome disagrees with stateful schedule availability")
         paths.append(
             NativePathEvidenceV1(
@@ -259,6 +276,302 @@ def reduce_native_paired_evidence(
         "payload_decoded": False,
     }
     return StandardNativePairedReportV3.model_validate(
+        {**values, "report_digest": canonical_digest(values)}
+    )
+
+
+def reduce_native_radio_terminal_evidence(
+    context: AnalysisContext,
+    *,
+    quality_products: tuple[UpstreamJsonProduct, ...],
+    power_products: tuple[UpstreamJsonProduct, ...],
+    waterfall_products: tuple[UpstreamJsonProduct, ...],
+    schedule_products: tuple[UpstreamJsonProduct, ...],
+    stateful_products: tuple[UpstreamJsonProduct, ...],
+    glrt_products: tuple[UpstreamJsonProduct, ...],
+    path_report_products: tuple[UpstreamJsonProduct, ...],
+) -> StandardNativeRadioReportV4:
+    """Reduce two processing-complete path reports with exact seven-product lineage."""
+
+    scope = context.scope
+    if (
+        scope is None
+        or scope.kind is not ScopeKind.RADIO
+        or scope.stream_id is None
+        or scope.radio_id is None
+    ):
+        raise ValueError("native terminal radio reducer requires an exact radio scope")
+    inventories = (
+        quality_products,
+        power_products,
+        waterfall_products,
+        schedule_products,
+        stateful_products,
+        glrt_products,
+        path_report_products,
+    )
+    node_ids = tuple(item.producer_node_id for item in quality_products)
+    if len(node_ids) != 2 or node_ids != context.dependency_node_ids:
+        raise ValueError("native terminal radio reducer requires two authorized path nodes")
+    if any(
+        tuple(item.producer_node_id for item in inventory) != node_ids for inventory in inventories
+    ):
+        raise ValueError("native terminal product fan-in does not share one path inventory")
+
+    paths: list[NativeTerminalPathEvidenceV2] = []
+    for upstream_items in zip(*inventories, strict=True):
+        (
+            quality_item,
+            power_item,
+            waterfall_item,
+            schedule_item,
+            stateful_item,
+            glrt_item,
+            path_report_item,
+        ) = upstream_items
+        if len({item.outcome for item in upstream_items}) != 1:
+            raise ValueError("native terminal path products disagree on terminal outcome")
+        producer_scope = quality_item.producer_scope
+        if any(item.producer_scope != producer_scope for item in upstream_items):
+            raise ValueError("native terminal path products disagree on producer scope")
+        if (
+            producer_scope.kind is not ScopeKind.RECEIVER_PATH
+            or producer_scope.session_id != context.session_id
+            or producer_scope.stream_id != scope.stream_id
+            or producer_scope.receiver_id is None
+        ):
+            raise ValueError("native terminal reducer received foreign path membership")
+
+        quality = StandardNativeQualityV2.model_validate(quality_item.document)
+        power = StandardNativePowerTimelineV3.model_validate(power_item.document)
+        waterfall = StandardNativeNumericalWaterfallV3.model_validate(waterfall_item.document)
+        schedule = StandardProbeScheduleV3.model_validate(schedule_item.document)
+        stateful = StandardNativeStatefulPathV2.model_validate(stateful_item.document)
+        glrt = StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
+        path_report = StandardNativePathReportV3.model_validate(path_report_item.document)
+        source = quality.source
+        if any(
+            item != source
+            for item in (
+                power.source,
+                waterfall.source,
+                schedule.source,
+                stateful.source,
+                glrt.source,
+                path_report.source,
+            )
+        ):
+            raise ValueError("native terminal path products do not share source authority")
+        if (
+            source.session_id != context.session_id
+            or source.stream_id != scope.stream_id
+            or source.radio_id != scope.radio_id
+            or source.receiver_id != producer_scope.receiver_id
+        ):
+            raise ValueError("native terminal source disagrees with reducer scope")
+        lineage = path_report.products
+        if (
+            lineage.quality_product_digest != quality_item.product_digest
+            or lineage.power_timeline_product_digest != power_item.product_digest
+            or lineage.numerical_waterfall_product_digest != waterfall_item.product_digest
+            or lineage.probe_schedule_product_digest != schedule_item.product_digest
+            or lineage.stateful_path_product_digest != stateful_item.product_digest
+            or lineage.full_capture_glrt20ms_product_digest != glrt_item.product_digest
+            or path_report_item.product_digest
+            != canonical_digest(path_report.model_dump(mode="json"))
+        ):
+            raise ValueError("native terminal path report changed exact product lineage")
+        outcome = _path_outcome(quality_item.outcome)
+        expected_stateful_statuses = (
+            {"complete"}
+            if outcome == "complete"
+            else {"partial_coverage", "unavailable_global_schedule"}
+        )
+        if stateful.stateful_science_status not in expected_stateful_statuses:
+            raise ValueError("native terminal path outcome disagrees with stateful status")
+        paths.append(
+            NativeTerminalPathEvidenceV2(
+                source=source,
+                stage_outcome=outcome,
+                path_report_product_digest=path_report_item.product_digest,
+                full_capture_glrt20ms_product_digest=glrt_item.product_digest,
+                path_report=path_report,
+                clipping_abs_threshold=quality.clipping_abs_threshold,
+                uncovered_region_count=quality.uncovered_region_count,
+                quality=quality.receivers[0],
+                terminal_opportunities=path_report.schedule_execution.accounting,
+                qam_statistics=path_report.qam_statistics,
+                terminal_tracks=terminal_track_accounting(path_report),
+                valid_utc_intervals=valid_utc_intervals(source),
+            )
+        )
+    ordered = cast(
+        tuple[NativeTerminalPathEvidenceV2, NativeTerminalPathEvidenceV2],
+        tuple(sorted(paths, key=lambda item: item.source.receiver_id)),
+    )
+    intervals = intersect_valid_utc_intervals(
+        ordered[0].valid_utc_intervals,
+        ordered[1].valid_utc_intervals,
+    )
+    status = (
+        "insufficient_data"
+        if not intervals
+        else (
+            "complete"
+            if all(item.stage_outcome == "complete" for item in ordered)
+            else "partial_coverage"
+        )
+    )
+    scientific_disposition = _aggregate_scientific_disposition(
+        tuple(item.path_report.scientific_disposition for item in ordered)
+    )
+    values = {
+        "schema_version": 4,
+        "algorithm_version": "standard-native-radio-report-v4",
+        "session_id": context.session_id,
+        "stream_id": scope.stream_id,
+        "radio_id": scope.radio_id,
+        "manifest_digest": ordered[0].source.manifest_digest,
+        "synchronization_inventory_digest": (ordered[0].source.synchronization_inventory_digest),
+        "sample_rate_hz": ordered[0].source.sample_rate_hz,
+        "status": status,
+        "reason": _status_reason(status, subject="receiver paths"),
+        "paths": tuple(item.model_dump(mode="json") for item in ordered),
+        "aggregate_statistics": aggregate_sufficient_statistics(
+            tuple(item.quality for item in ordered)
+        ).model_dump(mode="json"),
+        "aggregate_terminal_opportunities": aggregate_native_probe_execution_accounting(
+            tuple(item.terminal_opportunities for item in ordered)
+        ).model_dump(mode="json"),
+        "aggregate_qam_statistics": aggregate_native_qam_statistics(
+            tuple(item.qam_statistics for item in ordered)
+        ).model_dump(mode="json"),
+        "aggregate_terminal_tracks": aggregate_terminal_track_accounting(
+            tuple(item.terminal_tracks for item in ordered)
+        ).model_dump(mode="json"),
+        "scientific_disposition": scientific_disposition.value,
+        "scientific_reason": _scientific_reason(scientific_disposition, subject="paths"),
+        "valid_utc_intervals": tuple(item.model_dump(mode="json") for item in intervals),
+        "native_evidence_only": True,
+        "current_eligible": False,
+        "cross_path_association_permitted": False,
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    return StandardNativeRadioReportV4.model_validate(
+        {**values, "report_digest": canonical_digest(values)}
+    )
+
+
+def reduce_native_paired_terminal_evidence(
+    context: AnalysisContext,
+    *,
+    pair_binding: StandardPairInputBindV2,
+    radio_products: tuple[UpstreamJsonProduct, ...],
+) -> StandardNativePairedReportV4:
+    """Intersect two terminal radio reports and merge only sufficient statistics."""
+
+    scope = context.scope
+    if (
+        scope is None
+        or scope.kind is not ScopeKind.PAIRED
+        or scope.synchronization_inventory_digest is None
+    ):
+        raise ValueError("native terminal paired reducer requires an exact paired scope")
+    if (
+        len(radio_products) != 2
+        or tuple(item.producer_node_id for item in radio_products) != context.dependency_node_ids
+    ):
+        raise ValueError("native terminal paired reducer requires two authorized radio nodes")
+    if (
+        pair_binding.session_id != context.session_id
+        or pair_binding.synchronization_inventory_digest != scope.synchronization_inventory_digest
+    ):
+        raise ValueError("native terminal pair binding disagrees with paired scope")
+    if any(item.producer_scope.kind is not ScopeKind.RADIO for item in radio_products):
+        raise ValueError("native terminal paired reducer received non-radio membership")
+    reports_by_identity = {
+        (report.stream_id, report.radio_id): (product, report)
+        for product in radio_products
+        for report in (StandardNativeRadioReportV4.model_validate(product.document),)
+    }
+    if len(reports_by_identity) != 2:
+        raise ValueError("native terminal paired reducer repeated a radio identity")
+    ordered_pairs = tuple(reports_by_identity[key] for key in sorted(reports_by_identity))
+    ordered = cast(
+        tuple[StandardNativeRadioReportV4, StandardNativeRadioReportV4],
+        tuple(item[1] for item in ordered_pairs),
+    )
+    for product, report in ordered_pairs:
+        product_scope = product.producer_scope
+        if (
+            product.outcome.value != report.status
+            or product.product_digest != canonical_digest(report.model_dump(mode="json"))
+            or product_scope.session_id != report.session_id
+            or product_scope.stream_id != report.stream_id
+            or product_scope.radio_id != report.radio_id
+        ):
+            raise ValueError("native terminal radio outcome, digest, or membership is inconsistent")
+    if (
+        any(item.session_id != context.session_id for item in ordered)
+        or any(item.manifest_digest != pair_binding.manifest_digest for item in ordered)
+        or any(
+            item.synchronization_inventory_digest != pair_binding.synchronization_inventory_digest
+            for item in ordered
+        )
+        or len({item.sample_rate_hz for item in ordered}) != 1
+    ):
+        raise ValueError("native terminal paired reducer received foreign radio authority")
+    intervals = intersect_valid_utc_intervals(
+        ordered[0].valid_utc_intervals,
+        ordered[1].valid_utc_intervals,
+    )
+    status = (
+        "insufficient_data"
+        if not intervals
+        else (
+            "complete" if all(item.status == "complete" for item in ordered) else "partial_coverage"
+        )
+    )
+    scientific_disposition = _aggregate_scientific_disposition(
+        tuple(item.scientific_disposition for item in ordered)
+    )
+    values = {
+        "schema_version": 4,
+        "algorithm_version": "standard-native-paired-report-v4",
+        "session_id": context.session_id,
+        "manifest_digest": pair_binding.manifest_digest,
+        "synchronization_inventory_digest": pair_binding.synchronization_inventory_digest,
+        "pair_input_binding_digest": pair_binding.binding_digest,
+        "sample_rate_hz": ordered[0].sample_rate_hz,
+        "status": status,
+        "reason": _status_reason(status, subject="radios"),
+        "radios": tuple(item.model_dump(mode="json") for item in ordered),
+        "aggregate_statistics": aggregate_sufficient_statistics(
+            tuple(item.aggregate_statistics for item in ordered)
+        ).model_dump(mode="json"),
+        "aggregate_terminal_opportunities": aggregate_native_probe_execution_accounting(
+            tuple(item.aggregate_terminal_opportunities for item in ordered)
+        ).model_dump(mode="json"),
+        "aggregate_qam_statistics": aggregate_native_qam_statistics(
+            tuple(item.aggregate_qam_statistics for item in ordered)
+        ).model_dump(mode="json"),
+        "aggregate_terminal_tracks": aggregate_terminal_track_accounting(
+            tuple(item.aggregate_terminal_tracks for item in ordered)
+        ).model_dump(mode="json"),
+        "scientific_disposition": scientific_disposition.value,
+        "scientific_reason": _scientific_reason(scientific_disposition, subject="radios"),
+        "valid_utc_intervals": tuple(item.model_dump(mode="json") for item in intervals),
+        "native_evidence_only": True,
+        "current_eligible": False,
+        "phase_coherent": False,
+        "cross_radio_association_permitted": False,
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    return StandardNativePairedReportV4.model_validate(
         {**values, "report_digest": canonical_digest(values)}
     )
 
@@ -480,6 +793,28 @@ def _status_reason(status: str, *, subject: str) -> str:
     if status == "partial_coverage":
         return f"At least one of the {subject} has gap or continuity-boundary exclusions."
     return f"The {subject} have no conservative common valid UTC interval."
+
+
+def _aggregate_scientific_disposition(
+    children: tuple[NativePathScientificDispositionV1, ...],
+) -> NativePathScientificDispositionV1:
+    if any(item is NativePathScientificDispositionV1.CANDIDATE for item in children):
+        return NativePathScientificDispositionV1.CANDIDATE
+    if any(item is NativePathScientificDispositionV1.INSUFFICIENT for item in children):
+        return NativePathScientificDispositionV1.INSUFFICIENT
+    return NativePathScientificDispositionV1.NO_CANDIDATE
+
+
+def _scientific_reason(
+    disposition: NativePathScientificDispositionV1,
+    *,
+    subject: str,
+) -> str:
+    if disposition is NativePathScientificDispositionV1.CANDIDATE:
+        return f"At least one of the {subject} retained candidate-only known-pilot evidence."
+    if disposition is NativePathScientificDispositionV1.INSUFFICIENT:
+        return f"At least one of the {subject} had scientifically insufficient probe support."
+    return f"All of the {subject} completed without a known-pilot candidate."
 
 
 def _ceil_div(numerator: int, denominator: int) -> int:

@@ -69,6 +69,7 @@ from leo.pipeline.rate_analysis import (
     rate_analysis_configuration_v1,
 )
 from leo.pipeline.registry import AnalyzerRegistry, DuplicateAnalyzerError, UnknownAnalyzerError
+from leo.pipeline.standard_native import standard_native_pipeline_definition_v1
 from leo.pipeline.subjects import SubjectBindingReader
 from leo.pipeline.topology import (
     CompiledScopeInventory,
@@ -156,4 +157,5 @@ __all__ = [
     "rate_analysis_capability",
     "rate_analysis_configuration_v1",
     "synchronization_inventory_document",
+    "standard_native_pipeline_definition_v1",
 ]

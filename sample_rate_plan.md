@@ -427,8 +427,10 @@ Performance gates:
 - no zero generation or compression on the RF refill thread;
 - no live writer after capture return and no `.partial` residue;
 - no OOM, swap activity, storage error, or RAID degradation; and
-- initial Standard-native heavy concurrency two, raised to four only after
-  measured memory and I/O headroom.
+- `processing_resource_capacity.heavy = 2` for the initial Standard-native
+  release; raise it to four only after sealed pre/post host evidence proves
+  measured memory and I/O headroom, healthy non-resyncing RAID, no new kernel
+  storage or OOM events, and no swap activity.
 
 Production cutover additionally requires an additive
 `ContiguousRateQualificationReceiptV4` from ten lossless trials of the exact
@@ -440,9 +442,18 @@ full-span capture of the exact deployed 5 MS/s device-axis profile and plan.
 For each radio, its typed characterization requires 300,000,000 logical
 samples, observed plus physical zero fill equal to that span, verified bundle,
 gap-map, validity, and literal-zero evidence, and zero overflow, enqueue
-failure, or terminal rejected refill. Gaps remain truthful degraded evidence;
-this is not a 5 MS/s contiguous claim. The accepted V4 path is published only
-after exact radio restoration and maintenance-lease release. Only the sealed target-revision path
+failure, or terminal rejected refill. It also binds the exact 32-refill queue
+capacity and measured high-water no greater than 24 refills. The combined V4
+prerequisite independently requires measured incompressible writer throughput
+of at least 100 MB/s while preserving the historical 72 MB/s meaning of the V1
+writer-evidence pass flag. It also requires passing bounded host-health evidence:
+one read-only snapshot before writer/RF work and one after exact radio restoration
+and maintenance-lease release, under the reviewed `md127`, `/srv/bulk`, 32 GiB
+available-memory, and 1 TiB free-disk policy. The closed checks prove healthy idle
+RAID, complete error-log access, no kernel I/O errors or OOM kills, and no swap
+delta; the V4 target digest binds the full evidence. Gaps remain truthful degraded
+evidence; this is not a 5 MS/s contiguous claim. The accepted V4 path is published
+only after the host-health evidence passes. Only the sealed target-revision path
 `contiguous-rate-qualification-receipt-v4.json` is accepted; V1–V3 receipts do
 not authorize this device-axis cutover.
 

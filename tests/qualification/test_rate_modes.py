@@ -8,6 +8,12 @@ from pydantic import ValidationError
 
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.contracts.digests import canonical_digest
+from leo.contracts.host_health import (
+    QualificationHostHealthEvidenceV1,
+    QualificationHostHealthPolicyV1,
+    QualificationHostHealthSnapshotV1,
+    QualificationRaidHealthV1,
+)
 from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.radio import ReceiverGainV1
 from leo.contracts.recording import (
@@ -26,6 +32,7 @@ from leo.contracts.states import (
     SourceType,
 )
 from leo.domain.profiles import compile_capture_plan
+from leo.qualification.host_health import evaluate_qualification_host_health
 from leo.qualification.rate_modes import (
     ContiguousRateDeviceAxisCharacterizationStreamV1,
     ContiguousRateDeviceAxisCharacterizationV1,
@@ -74,6 +81,77 @@ _PRODUCER = ProducerV1(
 
 def _evidence_digest(label: str) -> str:
     return canonical_digest({"evidence": label})
+
+
+def _host_health_snapshot(
+    *,
+    host_name: str,
+    observed_utc_ns: int,
+    observed_monotonic_ns: int,
+    free_disk_bytes: int = 2 * 1024**4,
+) -> QualificationHostHealthSnapshotV1:
+    raid = QualificationRaidHealthV1(
+        array_name="md127",
+        raid_level="raid6",
+        active=True,
+        expected_member_count=8,
+        active_member_count=8,
+        member_status="U" * 8,
+        active_operation="none",
+        healthy=True,
+    )
+    values = {
+        "schema_version": 1,
+        "algorithm_version": "qualification-host-health-snapshot-v1",
+        "host_name": host_name,
+        "boot_id": "01234567-89ab-cdef-0123-456789abcdef",
+        "observed_utc_ns": observed_utc_ns,
+        "observed_monotonic_ns": observed_monotonic_ns,
+        "raid": raid.model_dump(mode="json"),
+        "kernel_log_complete": True,
+        "kernel_io_error_count": 0,
+        "kernel_io_error_log_digest": _evidence_digest("empty-kernel-io-log"),
+        "oom_kill_count": 0,
+        "swap_in_pages": 10,
+        "swap_out_pages": 20,
+        "available_memory_bytes": 64 * 1024**3,
+        "disk_path": "/srv/bulk",
+        "free_disk_bytes": free_disk_bytes,
+        "mdstat_digest": _evidence_digest(f"mdstat-{observed_utc_ns}"),
+        "meminfo_digest": _evidence_digest(f"meminfo-{observed_utc_ns}"),
+        "vmstat_digest": _evidence_digest(f"vmstat-{observed_utc_ns}"),
+    }
+    return QualificationHostHealthSnapshotV1.model_validate(
+        {**values, "snapshot_digest": canonical_digest(values)}
+    )
+
+
+def _host_health(
+    *,
+    host_name: str = _HOST.hostname,
+    before_utc_ns: int = 1_000,
+    free_disk_bytes: int = 2 * 1024**4,
+    minimum_free_disk_bytes: int = 1024**4,
+) -> QualificationHostHealthEvidenceV1:
+    policy = QualificationHostHealthPolicyV1(
+        raid_array_name="md127",
+        disk_path="/srv/bulk",
+        minimum_available_memory_bytes=32 * 1024**3,
+        minimum_free_disk_bytes=minimum_free_disk_bytes,
+    )
+    before = _host_health_snapshot(
+        host_name=host_name,
+        observed_utc_ns=before_utc_ns,
+        observed_monotonic_ns=100,
+        free_disk_bytes=free_disk_bytes,
+    )
+    after = _host_health_snapshot(
+        host_name=host_name,
+        observed_utc_ns=before_utc_ns + 1_000,
+        observed_monotonic_ns=200,
+        free_disk_bytes=free_disk_bytes,
+    )
+    return evaluate_qualification_host_health(policy, before, after)
 
 
 def _capture(
@@ -385,6 +463,7 @@ def _target_v4(
     manifest: RecordingManifestV3,
     *,
     required_trial_count: int = 1,
+    host_health: QualificationHostHealthEvidenceV1 | None = None,
 ) -> ContiguousRateQualificationTargetV4:
     profile = manifest.capture_plan.profile_revision.profile
     v3_prerequisites = _prerequisites_v3(manifest)
@@ -408,7 +487,14 @@ def _target_v4(
         prerequisites=ContiguousRatePrerequisitesV4(
             radio_safety=v3_prerequisites.radio_safety,
             native_ip_canaries=v3_prerequisites.native_ip_canaries,
-            writer_benchmark=v3_prerequisites.writer_benchmark,
+            writer_benchmark=ContiguousRateWriterBenchmarkEvidenceV1(
+                evidence_sha256=_evidence_digest("v4-incompressible-writer-benchmark"),
+                uncompressed_bytes_written=200_000_000,
+                elapsed_ns=2_000_000_000,
+                sustained_bytes_per_second=100_000_000,
+                passed=True,
+            ),
+            host_health=host_health or _host_health(),
             five_m_characterization=characterization,
         ),
         policy=ContiguousRateQualificationPolicyV1(
@@ -440,6 +526,8 @@ def _five_m_characterization(
             terminal_rejected_gap_count=0,
             terminal_rejected_missing_sample_count=0,
             terminal_rejected_overflow_count=0,
+            queue_capacity_refills=32,
+            queue_high_water_refills=24,
             gap_map_segment_count=1,
             gap_map_boundary_count=0,
             validity_segment_count=1,
@@ -657,6 +745,15 @@ def test_v4_qualifies_exact_verified_device_axis_v3_evidence(tmp_path: Path) -> 
     assert receipt.complete and receipt.passed
     assert receipt.schema_version == receipt.target.schema_version == 4
     assert receipt.target_digest == contiguous_rate_qualification_target_digest(receipt.target)
+    assert receipt.target.prerequisites.host_health.passed
+    assert set(receipt.target.prerequisites.model_dump(mode="json")) == {
+        "schema_version",
+        "radio_safety",
+        "native_ip_canaries",
+        "writer_benchmark",
+        "host_health",
+        "five_m_characterization",
+    }
     assert receipt.checks[0].schema_version == 2
     assert receipt.checks[0].manifest_schema_version == 3
     assert tuple(item.radio_id for item in receipt.checks[0].stream_checks) == (
@@ -757,6 +854,101 @@ def test_v4_five_m_characterization_requires_full_verified_device_axis(
     unverified["physical_zero_verified"] = False
     with pytest.raises(ValidationError, match="pass flag disagrees"):
         ContiguousRateDeviceAxisCharacterizationV1.model_validate(unverified)
+
+
+def test_v4_requires_100_mb_s_without_changing_legacy_writer_semantics(
+    tmp_path: Path,
+) -> None:
+    manifest, _ = _capture_v3(tmp_path)
+    target = _target_v4(manifest)
+    writer = ContiguousRateWriterBenchmarkEvidenceV1(
+        evidence_sha256=_evidence_digest("v4-sub-threshold-writer"),
+        uncompressed_bytes_written=99_999_999,
+        elapsed_ns=1_000_000_000,
+        sustained_bytes_per_second=99_999_999,
+        passed=True,
+    )
+    assert writer.passed
+
+    document = target.prerequisites.model_dump(mode="json")
+    document["writer_benchmark"] = writer.model_dump(mode="json")
+    with pytest.raises(ValidationError, match="at least 100 MB/s"):
+        ContiguousRatePrerequisitesV4.model_validate(document)
+
+    legacy = _prerequisites_v3(manifest)
+    assert legacy.writer_benchmark.sustained_bytes_per_second == 72_000_000
+    assert legacy.writer_benchmark.passed
+
+
+def test_v4_requires_exact_passing_target_host_health_and_binds_its_digest(
+    tmp_path: Path,
+) -> None:
+    manifest, _ = _capture_v3(tmp_path)
+    target = _target_v4(manifest)
+    document = target.prerequisites.model_dump(mode="json")
+    document.pop("host_health")
+    with pytest.raises(ValidationError, match="Field required"):
+        ContiguousRatePrerequisitesV4.model_validate(document)
+
+    failed_health = _host_health(free_disk_bytes=1024**4 - 1)
+    with pytest.raises(ValidationError, match="passing pre/post host-health"):
+        ContiguousRatePrerequisitesV4.model_validate(
+            {
+                **target.prerequisites.model_dump(mode="json", exclude={"host_health"}),
+                "host_health": failed_health,
+            }
+        )
+
+    wrong_policy_health = _host_health(minimum_free_disk_bytes=1024**4 - 1)
+    with pytest.raises(ValidationError, match="reviewed md127"):
+        ContiguousRatePrerequisitesV4.model_validate(
+            {
+                **target.prerequisites.model_dump(mode="json", exclude={"host_health"}),
+                "host_health": wrong_policy_health,
+            }
+        )
+
+    with pytest.raises(ValidationError, match="host differs"):
+        _target_v4(manifest, host_health=_host_health(host_name="other-host"))
+
+    changed = _target_v4(manifest, host_health=_host_health(before_utc_ns=3_000))
+    assert contiguous_rate_qualification_target_digest(changed) != (
+        contiguous_rate_qualification_target_digest(target)
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("queue_capacity_refills", 31, "Input should be 32"),
+        ("queue_high_water_refills", 25, "less than or equal to 24"),
+    ),
+)
+def test_v4_five_m_characterization_binds_reviewed_queue_headroom(
+    tmp_path: Path,
+    field: str,
+    value: int,
+    message: str,
+) -> None:
+    manifest, _ = _capture_v3(tmp_path)
+    characterization = _five_m_characterization(manifest)
+    stream = characterization.streams[0]
+    assert stream.queue_capacity_refills == 32
+    assert stream.queue_high_water_refills == 24
+
+    document = stream.model_dump(mode="json")
+    document[field] = value
+    with pytest.raises(ValidationError, match=message):
+        ContiguousRateDeviceAxisCharacterizationStreamV1.model_validate(document)
+
+
+def test_v4_five_m_characterization_requires_explicit_queue_evidence(tmp_path: Path) -> None:
+    manifest, _ = _capture_v3(tmp_path)
+    document = _five_m_characterization(manifest).streams[0].model_dump(mode="json")
+    document.pop("queue_capacity_refills")
+
+    with pytest.raises(ValidationError, match="Field required"):
+        ContiguousRateDeviceAxisCharacterizationStreamV1.model_validate(document)
 
 
 def test_v1_wire_shape_and_same_radio_inventory_semantics_are_unchanged(

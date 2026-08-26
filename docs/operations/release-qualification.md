@@ -1,26 +1,38 @@
 # Protected corpus and browser qualification
 
 `leo-release-qualify` is the supported nightly/release gate for the protected
-real-IQ detector smoke, the complete production processing path, and the
-production-built Chromium UI. It runs one bounded one-path/one-second protected
-science smoke, the isolated PostgreSQL 2-radio x 2-RX Standard operational
-vertical, and the Playwright production project. It deliberately does not
-repeat the reviewed full four-path-twice scientific regression: the sealed
-Standard cutover receipt is the authority for that expensive computation.
-Missing or corrupt REQUIRED corpus bytes fail closed; J1 remains explicit,
-non-executable `UNAVAILABLE_HISTORICAL_EVIDENCE` and can never count as a
-passing lane.
+real-IQ detector smoke, the frozen Standard path, native 2.5/3/5 MS/s science,
+the native PostgreSQL operational graph, executable native-rate real IQ, and
+the production-built Chromium UI. Release-qualification V2 runs these six
+commands in exact order:
+
+1. `protected-real-corpus` — the bounded protected science smoke and frozen
+   Standard four-path operational vertical;
+2. `standard-native-science` — native-rate scientific equivalence, state-reset,
+   full-capture GLRT, QAM, and terminal path-report gates;
+3. `standard-native-postgresql` — the real PostgreSQL two-radio x two-RX native
+   operational vertical and the promoted Current native-presentation vertical;
+4. `standard-native-real-corpus` — explicit read-only 2.5/3/5 corpus admission,
+   exact 5 MS/s validity/digest closure, truncated-capture refusal, and bounded
+   production detector execution on real 3 and 5 MS/s IQ;
+5. `production-web-build` — the production web Vitest suite, TypeScript compile,
+   and Vite build through the canonical `qualify:release` script; and
+6. `production-chromium-e2e`.
+
+The four pytest commands must each produce a bounded, nonempty JUnit result with
+zero failures, errors, or skipped tests. Missing or corrupt required corpus
+bytes fail closed; J1 remains explicit, non-executable
+`UNAVAILABLE_HISTORICAL_EVIDENCE` and can never count as a passing lane.
 
 ## Isolation and safety
 
-The lane does not import corpus data and never accesses `/mnt/qnap01`. Its only
-scientific input is the already materialized, held, local TEST corpus, read-only
-at `/srv/bulk/leo/test-corpus`. The operational processing test creates and
-drops a unique PostgreSQL schema and writes its generated compressed recording
-and analysis artifacts beneath pytest's temporary directory. The browser
-composition independently creates and drops another unique schema, publishes
-generated TEST recordings beneath a temporary bulk root, and serves a compiled
-UI from a temporary build directory.
+The lane does not import corpus data and never accesses `/mnt/qnap01`. Its
+scientific inputs are the already materialized protected TEST corpus at
+`/srv/bulk/leo/test-corpus` and the reviewed native-rate corpus beneath
+`/srv/bulk/leo/recordings`; both are read-only. PostgreSQL tests create and drop
+unique test-owned schemas and write generated recordings and analysis artifacts
+beneath private temporary roots. The browser composition independently uses a
+unique schema, generated TEST recordings, and the exact compiled scratch build.
 
 The dedicated database must contain only its ordinary `public` schema at the
 start and after each database-using gate. Graceful Chromium-server shutdown
@@ -40,8 +52,10 @@ sudo install -d -o leo -g leo -m 0750 \
 ```
 
 Do not set `LEO_QUALIFICATION_DATABASE_URL` to the production catalog. The
-runner removes `LEO_DATABASE_URL`, `LEO_BULK_ROOT`, and `LEO_WEB_DIST` from all
-child environments so neither test path can inherit production locations.
+runner constructs an allowlisted child environment, a private scratch `HOME`,
+and explicit protected/native corpus roots; production database, bulk, and web
+paths cannot leak into a command. Database cleanup runs in `finally` for every
+database-using command, including failures.
 
 ## Manual release run
 
@@ -76,21 +90,36 @@ Each run has this stable layout:
 /srv/bulk/leo/qualification/release/RUN_ID/
   definition.json
   logs/01-protected-real-corpus.log
-  logs/02-production-web-build.log
-  logs/03-production-chromium-e2e.log
+  logs/02-standard-native-science.log
+  logs/03-standard-native-postgresql.log
+  logs/04-standard-native-real-corpus.log
+  logs/05-production-web-build.log
+  logs/06-production-chromium-e2e.log
   results/real-corpus.junit.xml
+  results/real-corpus.junit.summary.json
+  results/standard-native-science.junit.xml
+  results/standard-native-science.junit.summary.json
+  results/standard-native-postgresql.junit.xml
+  results/standard-native-postgresql.junit.summary.json
+  results/standard-native-real-corpus.junit.xml
+  results/standard-native-real-corpus.junit.summary.json
   results/web-build.json             # hashes of the exact compiled assets
+  results/browser-e2e.json
   results/playwright/                 # retained traces/screenshots on failure
   receipt.json
 ```
 
 `definition.json` records the Git revision, lockfile and corpus-declaration
-digests, redacted qualification database identity, exact commands, and safety
-boundaries. `receipt.json` records timing, outcome, exit codes, and SHA-256 for
-every durable evidence file. Files and the completed run directory are made
-read-only after sealing. A missing `receipt.json` means interruption and is not
-a pass. Evidence should be retained or copied to the release record without
-altering the original directory.
+digests, redacted qualification database identity, both read-only corpus roots,
+the exact six commands, and safety boundaries. `receipt.json` records one
+closed, ordered outcome per command, exact timing and exit status, semantic
+JUnit/result summaries, and SHA-256 for the complete durable evidence
+inventory. The definition, results, and evidence tree must be regular
+non-symlink paths; unexpected, missing, duplicate, or modified entries fail
+cutover. Files and the completed run directory are made read-only after
+sealing. A missing `receipt.json` means interruption and is not a pass. Evidence
+should be retained or copied to the release record without altering the
+original directory.
 
 Review a run with:
 

@@ -8,7 +8,7 @@ import pytest
 import zstandard as zstd
 
 from leo.catalog import CaptureRecordingIdentity, RunExecutionInfo
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.recording import DeviceAxisRecordingChunkV1, RecordingManifestV3
 from leo.contracts.validity import DeviceAxisContentKind
 from leo.pipeline import ScopeIdentityV1, WindowValidity
@@ -89,19 +89,34 @@ def test_v3_provider_exposes_only_verified_mandatory_validity_iq(tmp_path: Path)
         reader.read_device_span(0, 1)
 
 
-def test_v2_synthesized_and_v3_physical_views_are_bit_equivalent(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("gaps_before_blocks", "logical_sample_count"),
+    (({}, 8), ({1: 4}, 12)),
+)
+def test_v2_synthesized_and_v3_physical_views_are_bit_and_digest_equivalent(
+    tmp_path: Path,
+    gaps_before_blocks: dict[int, int],
+    logical_sample_count: int,
+) -> None:
+    suffix = "gapped" if gaps_before_blocks else "lossless"
     v3 = _prepare_v3_bundle(
         tmp_path / "v3",
-        "parity-v3",
-        requested_sample_count=12,
-        gaps_before_blocks={1: 4},
+        f"parity-v3-{suffix}",
+        requested_sample_count=logical_sample_count,
+        gaps_before_blocks=gaps_before_blocks,
     )
     v3_published = v3.writer.publish(v3.manifest)
     v2_coordinator = _coordinator(tmp_path / "v2")
     v2_result = v2_coordinator.capture_once(
-        _plan(sample_count=12, sample_rate_hz=5_000_000),
-        {"radio-a": FakeRadioSource("radio-a", seed=23, gaps_before_blocks={1: 4})},
-        session_id="parity-v2",
+        _plan(sample_count=logical_sample_count, sample_rate_hz=5_000_000),
+        {
+            "radio-a": FakeRadioSource(
+                "radio-a",
+                seed=23,
+                gaps_before_blocks=gaps_before_blocks,
+            )
+        },
+        session_id=f"parity-v2-{suffix}",
     )
     assert v2_result.bundle is not None
     v2_published = v2_result.bundle
@@ -116,6 +131,23 @@ def test_v2_synthesized_and_v3_physical_views_are_bit_equivalent(tmp_path: Path)
     )
     v2_attestation = v2_provider.verify_integrity(_identity(v2_published))
     v3_attestation = v3_provider.verify_integrity(_identity(v3_published))
+    v2_evidence = v2_provider.verified_historical_v2_native_stream_evidence(
+        v2_attestation.attestation_digest,
+        "stream-0",
+    )
+    v3_stream = v3_published.manifest.streams[0]
+    assert v2_evidence.raw_integrity_attestation_digest == v2_attestation.attestation_digest
+    assert v2_evidence.selected_stream_digest == canonical_digest(
+        v2_published.manifest.streams[0].model_dump(mode="json")
+    )
+    assert v2_evidence.uncompressed_chunk_closure_digest == (
+        v2_attestation.streams[0].uncompressed_closure_digest
+    )
+    assert v2_evidence.observed_iq_digest == v3_stream.observed_iq_sha256
+    assert v2_evidence.logical_iq_digest == v3_stream.logical_iq_sha256
+    assert (v2_evidence.observed_iq_digest == v2_evidence.logical_iq_digest) is (
+        not gaps_before_blocks
+    )
     v2_reader = v2_provider.open_validity_scope(
         _execution(v2_published, v2_attestation),
         _scope(v2_published.session_id, "stream-0"),
@@ -125,8 +157,8 @@ def test_v2_synthesized_and_v3_physical_views_are_bit_equivalent(tmp_path: Path)
         _scope(v3_published.session_id, "stream-a"),
     )
 
-    v2_span = v2_reader.read_device_span(0, 12)
-    v3_span = v3_reader.read_device_span(0, 12)
+    v2_span = v2_reader.read_device_span(0, logical_sample_count)
+    v3_span = v3_reader.read_device_span(0, logical_sample_count)
     np.testing.assert_array_equal(v3_span.samples, v2_span.samples)
     np.testing.assert_array_equal(v3_span.valid_samples, v2_span.valid_samples)
     np.testing.assert_array_equal(
@@ -173,8 +205,8 @@ def test_v2_synthesized_and_v3_physical_views_are_bit_equivalent(tmp_path: Path)
         )
         for segment in v2_reader.validity_inventory.segments
     ]
-    for start in range(12):
-        for count in range(1, 13 - start):
+    for start in range(logical_sample_count):
+        for count in range(1, logical_sample_count + 1 - start):
             assert v3_reader.classify_window(start, count) == v2_reader.classify_window(
                 start,
                 count,

@@ -84,7 +84,7 @@ from leo.contracts.pipeline_lanes import (
     PipelineLane,
     assign_dwell_pipeline_lane,
 )
-from leo.contracts.recording import RecordingManifestV3
+from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3
 from leo.importing import (
     RECORDING_INGEST_FILENAME,
     FixtureImporter,
@@ -432,11 +432,18 @@ class LocalProcessingBackend:
                 f"capture session already has an active analysis run: {active_run_id}",
                 ExitCode.CONFLICT,
             )
-        scope_keys = tuple(
-            stream.stream_id
-            for stream in bundle.manifest.streams
-            if stream.captured_sample_count > 0 and stream.chunks
-        )
+        if isinstance(bundle.manifest, RecordingManifestV3):
+            scope_keys = tuple(
+                stream.stream_id
+                for stream in bundle.manifest.streams
+                if stream.observed_sample_count > 0 and stream.chunks
+            )
+        else:
+            scope_keys = tuple(
+                stream.stream_id
+                for stream in bundle.manifest.streams
+                if stream.captured_sample_count > 0 and stream.chunks
+            )
         if not scope_keys:
             raise CliBackendError("recording has no analyzable IQ streams", ExitCode.CONFLICT)
         run_id = f"reprocess-{uuid4().hex}"
@@ -448,12 +455,18 @@ class LocalProcessingBackend:
                     plan=plan,
                     trigger="reprocess",
                     promotion_policy=(
-                        "evidence_only"
-                        if bundle.manifest.source_type.value == "test"
-                        else "current"
+                        "current"
+                        if isinstance(bundle.manifest, RecordingManifestV3)
+                        else (
+                            "evidence_only"
+                            if bundle.manifest.source_type.value == "test"
+                            else "current"
+                        )
                     ),
                 )
             except ActiveRunExistsError as error:
+                raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+            except ValueError as error:
                 raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         return ReprocessDataV1(
             session_id=session_id,
@@ -534,9 +547,9 @@ class LocalProcessingBackend:
                 "catalog and recording manifest digests disagree",
                 ExitCode.UNHEALTHY,
             )
-        if not isinstance(bundle.manifest, RecordingManifestV3):
+        if not isinstance(bundle.manifest, (RecordingManifestV2, RecordingManifestV3)):
             raise CliBackendError(
-                "native evidence requires a V3 device-axis recording",
+                "native evidence requires a reviewed V2/V3 recording",
                 ExitCode.CONFLICT,
             )
         release = self.services.catalog.pipeline_release_snapshot(pipeline_release_id)
@@ -586,39 +599,46 @@ class LocalProcessingBackend:
                 "catalog and recording manifest digests disagree",
                 ExitCode.UNHEALTHY,
             )
-        if isinstance(bundle.manifest, RecordingManifestV3):
-            raise CliBackendError(
-                "V3 recording requires the explicit native evidence-only action",
-                ExitCode.CONFLICT,
+        native_current = isinstance(bundle.manifest, RecordingManifestV3)
+        if not native_current:
+            if "CAPTURE_ONLY" in bundle.manifest.tags:
+                raise CliBackendError(
+                    "capture-only recording requires a separately versioned scientific pipeline",
+                    ExitCode.CONFLICT,
+                )
+            healthy = all(
+                stream.captured_sample_count > 0 and bool(stream.chunks)
+                for stream in bundle.manifest.streams
             )
-        if "CAPTURE_ONLY" in bundle.manifest.tags:
-            raise CliBackendError(
-                "capture-only recording requires a separately versioned scientific pipeline",
-                ExitCode.CONFLICT,
+            eligibility = standard_eligibility_v2(
+                StandardSourceTypeV2(bundle.manifest.source_type.value.upper()),
+                bundle.manifest.tags,
+                capture_committed=bundle.manifest.state.value == "committed",
+                capture_healthy=healthy,
             )
-        healthy = all(
-            stream.captured_sample_count > 0 and bool(stream.chunks)
-            for stream in bundle.manifest.streams
-        )
-        eligibility = standard_eligibility_v2(
-            StandardSourceTypeV2(bundle.manifest.source_type.value.upper()),
-            bundle.manifest.tags,
-            capture_committed=bundle.manifest.state.value == "committed",
-            capture_healthy=healthy,
-        )
-        if not eligibility.explicit_eligible:
-            raise CliBackendError(eligibility.reason, ExitCode.CONFLICT)
+            if not eligibility.explicit_eligible:
+                raise CliBackendError(eligibility.reason, ExitCode.CONFLICT)
         release = self.services.catalog.pipeline_release_snapshot(pipeline_release_id)
         if release.code_revision != pipeline_release_id:
             raise CliBackendError(
                 "configured Standard release is not exact source authority",
                 ExitCode.INVALID_CONFIGURATION,
             )
-        plan = compile_standard_run_plan(
-            bundle.manifest,
-            manifest_digest=snapshot.manifest_digest,
-            pipeline_release_id=pipeline_release_id,
-        )
+        try:
+            if isinstance(bundle.manifest, RecordingManifestV3):
+                plan = compile_standard_native_run_plan(
+                    bundle.manifest,
+                    manifest_digest=snapshot.manifest_digest,
+                    pipeline_release_id=pipeline_release_id,
+                )
+            else:
+                plan = compile_standard_run_plan(
+                    bundle.manifest,
+                    manifest_digest=snapshot.manifest_digest,
+                    pipeline_release_id=pipeline_release_id,
+                )
+        except ValueError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         return bundle, plan
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1:
@@ -903,18 +923,42 @@ class LocalProcessingBackend:
         bundle = self.services.recordings.inspect_uri(snapshot.bundle_uri)
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise ValueError("catalog and bundle manifest digests disagree")
+        if isinstance(bundle.manifest, RecordingManifestV3):
+            try:
+                plan = compile_standard_native_run_plan(
+                    bundle.manifest,
+                    manifest_digest=snapshot.manifest_digest,
+                    pipeline_release_id=self.services.pipeline_release_id,
+                )
+                run_id = f"native-capture-{uuid4().hex}"
+                self.services.processing.create_expanded_run(
+                    run_id=run_id,
+                    plan=plan,
+                    trigger="new_capture",
+                    pipeline_lane=PipelineLane.STANDARD,
+                    promotion_policy="current",
+                )
+            except ActiveRunExistsError:
+                return None
+            except ValueError as error:
+                logger.error(
+                    "automatic Standard-native promotion refused session_id=%s error=%s",
+                    session_id,
+                    error,
+                )
+                return None
+            logger.info(
+                "automatic Standard-native run queued session_id=%s plan_digest=%s",
+                session_id,
+                plan.plan_digest,
+            )
+            return run_id
         if bundle.manifest.state.value != "committed":
             logger.error(
                 "automatic Standard analysis refused continuity-degraded recording "
                 "session_id=%s capture_state=%s",
                 session_id,
                 bundle.manifest.state.value,
-            )
-            return None
-        if isinstance(bundle.manifest, RecordingManifestV3):
-            logger.info(
-                "automatic analysis skipped V3 native recording session_id=%s",
-                session_id,
             )
             return None
         if any(

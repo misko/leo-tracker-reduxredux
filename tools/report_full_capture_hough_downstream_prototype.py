@@ -27,9 +27,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from leo.analysis.robust_linear import fit_huber_linear_irls  # noqa: E402
-from leo.analysis.standard.analyzers import (  # noqa: E402
-    _receiver_standard_config,
-    production_standard_v2_configuration,
+from leo.analysis.standard.configuration import (  # noqa: E402
+    production_receiver_standard_config,
 )
 from leo.analysis.standard.full_capture_glrt20ms import (  # noqa: E402
     WindowResult,
@@ -798,7 +797,7 @@ def main() -> int:
     }
     windows = tuple(WindowResult(**item) for item in source["windows"])
     replay_detections = _window_winners(windows, require_margin_pass=False)
-    config = _receiver_standard_config(production_standard_v2_configuration()["path-standard"])
+    config = production_receiver_standard_config()
     observations, current_hough, retained = _geometry_tracks(windows, config)
     replay, aliases = _score_transport_replay(
         source=source,

@@ -6,6 +6,14 @@ from leo.analysis.standard.analyzers import (
     production_standard_v2_registry,
 )
 from leo.analysis.standard.codecs import decode_standard_product
+from leo.analysis.standard.configuration import (
+    RECEIVER_STANDARD_RATE_DERIVED_FIELDS,
+    parse_receiver_standard_config,
+    production_receiver_standard_config,
+    production_receiver_standard_stage_configuration,
+    require_receiver_standard_sample_rate,
+    resolve_receiver_standard_sample_rate,
+)
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
@@ -83,6 +91,7 @@ __all__ = [
     "QUALITY_OUTPUTS",
     "RADIO_REPORT_INPUT",
     "RADIO_REPORT_PRODUCT",
+    "RECEIVER_STANDARD_RATE_DERIVED_FIELDS",
     "NUMERICAL_WATERFALL_PRODUCT",
     "GLRT64_TRAJECTORY_TABLE_PRODUCT",
     "KALMAN_TRACKING_PRODUCT",
@@ -107,8 +116,13 @@ __all__ = [
     "reduce_radio",
     "production_standard_v2_configuration",
     "production_standard_v2_registry",
+    "parse_receiver_standard_config",
+    "production_receiver_standard_config",
+    "production_receiver_standard_stage_configuration",
+    "require_receiver_standard_sample_rate",
     "receiver_standard_configuration_digest",
     "receiver_standard_implementation_digest",
     "run_receiver_standard",
+    "resolve_receiver_standard_sample_rate",
     "verify_standard_source_bindings",
 ]

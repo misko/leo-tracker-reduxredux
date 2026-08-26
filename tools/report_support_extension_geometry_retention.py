@@ -16,9 +16,8 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from leo.analysis.standard.analyzers import (  # noqa: E402
-    _receiver_standard_config,
-    production_standard_v2_configuration,
+from leo.analysis.standard.configuration import (  # noqa: E402
+    production_receiver_standard_config,
 )
 from leo.analysis.standard.full_capture_glrt20ms import (  # noqa: E402
     WindowResult,
@@ -307,7 +306,7 @@ def main() -> int:
     policy = json.loads(args.seed_policy_json.read_text(encoding="utf-8"))
     windows = tuple(WindowResult(**item) for item in source["windows"])
     detections = _threshold_winners(windows)
-    config = _receiver_standard_config(production_standard_v2_configuration()["path-standard"])
+    config = production_receiver_standard_config()
     _, representatives = fit_residual_hough_pilot_trajectories(
         detections, config.feedback, config.segmentation
     )

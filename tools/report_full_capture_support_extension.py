@@ -27,10 +27,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from leo.analysis.cfo_lines import circular_residual_hz
 from leo.analysis.robust_linear import fit_huber_linear_irls
-from leo.analysis.standard.analyzers import (
-    _receiver_standard_config,
-    production_standard_v2_configuration,
-)
+from leo.analysis.standard.configuration import production_receiver_standard_config
 from leo.analysis.standard.full_capture_glrt20ms import (
     WindowResult,
     _threshold_winners,
@@ -702,7 +699,7 @@ def main() -> int:
     hough_detections = _threshold_winners(windows)
     replay_detections = _window_winners(windows, require_margin_pass=False)
     observations = trajectory_observations(hough_detections)
-    config = _receiver_standard_config(production_standard_v2_configuration()["path-standard"])
+    config = production_receiver_standard_config()
     _, representatives = fit_residual_hough_pilot_trajectories(
         hough_detections, config.feedback, config.segmentation
     )

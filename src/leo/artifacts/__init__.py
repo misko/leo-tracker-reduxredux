@@ -7,6 +7,9 @@ from leo.artifacts.models import (
     AnalysisRunManifest,
     AnalysisRunManifestV1,
     AnalysisRunManifestV2,
+    AnalysisRunManifestV3,
+    StandardNativePromotionAuthorityV1,
+    StandardNativeTerminalProductRefV1,
     parse_analysis_run_manifest,
 )
 from leo.artifacts.store import (
@@ -27,6 +30,7 @@ __all__ = [
     "AnalysisRunManifest",
     "AnalysisRunManifestV1",
     "AnalysisRunManifestV2",
+    "AnalysisRunManifestV3",
     "ArtifactConflictError",
     "ArtifactCorruptionError",
     "ArtifactOutputSink",
@@ -37,5 +41,7 @@ __all__ = [
     "ProductPublication",
     "PublishedRunManifest",
     "RunSealedError",
+    "StandardNativePromotionAuthorityV1",
+    "StandardNativeTerminalProductRefV1",
     "parse_analysis_run_manifest",
 ]

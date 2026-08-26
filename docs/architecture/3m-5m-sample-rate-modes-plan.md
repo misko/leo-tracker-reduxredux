@@ -188,10 +188,14 @@ success policy is not strict enough to promote a continuity mode. The published
 `ContiguousRateQualificationReceiptV4` qualifies the actual production pair
 and exact deployed device-axis profile without treating a different transport,
 firmware ABI, or non-production radio as a prerequisite. Its exact ordered
-prerequisites are per-radio safety, one-second native-IP counter canaries, and
-the incompressible writer benchmark, and one full-span 5 MS/s Recording V3
-characterization from the same maintenance-fenced campaign. The target and ten
-strict 3 MS/s Recording V3 trials additionally bind:
+prerequisites are per-radio safety, one-second native-IP counter canaries, a
+measured incompressible writer benchmark of at least 100 MB/s, passing bounded
+pre/post host-health evidence, and one full-span 5 MS/s Recording V3
+characterization from the same maintenance-fenced campaign. Host health is
+captured before writer/RF work and after radio restoration plus lease release;
+its exact `md127`, `/srv/bulk`, 32 GiB memory, and 1 TiB disk policy and closed
+check inventory are bound by the V4 target digest.
+The target and ten strict 3 MS/s Recording V3 trials additionally bind:
 
 - profile revision and capture-plan digests;
 - Leo, pluto-plus-utils, Python binding, and native libiio identities;
@@ -211,9 +215,10 @@ The 5 MS/s characterization binds the exact deployed device-axis profile and
 plan. Each radio must close a 300,000,000-sample logical span as observed plus
 physical zero-fill samples; verified chunks, gap map, and validity inventory
 must agree. Overflow, enqueue failure, and terminal rejected-refill counters
-must all be zero. Counter-proven gaps are allowed and force a degraded manifest,
-so this gate proves truthful full-span persistence rather than 5 MS/s
-contiguity.
+must all be zero; the exact queue capacity is 32 refills and measured high-water
+must not exceed 24. Counter-proven gaps are allowed and force a degraded
+manifest, so this gate proves truthful full-span persistence rather than
+5 MS/s contiguity.
 
 The strict policy is all-or-nothing: successful fraction 1.0 and every loss or
 integrity counter zero. A sustained-contiguous claim consumes an exact receipt,
@@ -277,10 +282,10 @@ The memory allocation remains about 80 MiB per radio because refill and queue
 counts do not change. More buffering cannot fix a sustained transport deficit;
 it only covers bounded consumer stalls.
 
-Require an incompressible writer benchmark of at least 72 MB/s before 3 MS/s
-promotion (1.5 times its 48 MB/s aggregate input). Treat 100 MB/s as the
-minimum characterization target for a two-radio 5 MS/s experiment; transport
-continuity is still an independent gate.
+The immutable V1 writer-evidence contract retains its historical 72 MB/s pass
+semantics. V4 adds a stricter combined-pool admission rule: the same measured
+incompressible result must reach at least 100 MB/s. Transport continuity and
+queue headroom remain independent gates.
 
 ## Portable test plan
 
@@ -434,7 +439,9 @@ digests and requires the observed and logical IQ digests to match. It also
 requires zero gaps, missing samples, overflow, enqueue failures, and terminal
 rejections, at least 99% two-radio overlap, queue high-water no greater than
 24/32, and maximum refill service interval no greater than 699,050,666 ns. The
-separate writer-capacity gate remains at least 72 MB/s.
+V4 writer-capacity gate requires measured incompressible throughput of at least
+100 MB/s; the immutable writer-evidence V1 pass bit retains its legacy 72 MB/s
+meaning.
 
 Failed and incomplete evidence remains beneath `campaigns/`. Only a complete
 strict pass is copied atomically and read-only to the canonical accepted path:
@@ -483,7 +490,8 @@ expectation of continuity: any gap must have
 exact counter-derived evidence, force partial streams/degraded session state,
 materialize as literal physical zeros on the device-time axis, preserve a
 verifiable gap map and validity inventory, and suppress automatic analysis.
-Overflow, enqueue failure, or a terminal rejected refill fails V4.
+Overflow, enqueue failure, a terminal rejected refill, a queue capacity other
+than 32, or queue high-water above 24 refills fails V4.
 
 If bounded burst support is desired, separately repeat the exact proposed
 duration on each radio and then simultaneously. Promote only the tested
