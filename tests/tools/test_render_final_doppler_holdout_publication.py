@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +80,17 @@ def test_wrong_retry_output_path_fails_before_score_load_or_render(
     poison: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    def snapshot(path: Path) -> object:
+        if not path.exists():
+            return None
+        if path.is_file():
+            return publication._sha256_tag(path)
+        return tuple(
+            (item.relative_to(path).as_posix(), publication._sha256_tag(item))
+            for item in sorted(path.rglob("*"))
+            if item.is_file()
+        )
+
     amendment = publication.verify_publication_amendment(repository_root=REPOSITORY_ROOT)
     retry = amendment["retry_authority"]
     output_dir = REPOSITORY_ROOT / retry["figure_directory"]
@@ -87,8 +99,10 @@ def test_wrong_retry_output_path_fails_before_score_load_or_render(
         output_dir = REPOSITORY_ROOT / "reports/figures/__never_write_publication_test"
     else:
         markdown_path = REPOSITORY_ROOT / "reports/__never_write_publication_test.md"
-    assert not output_dir.exists()
-    assert not markdown_path.exists()
+    wrong_path = output_dir if poison == "figure_directory" else markdown_path
+    assert not wrong_path.exists()
+    before_output = snapshot(output_dir)
+    before_markdown = snapshot(markdown_path)
 
     def forbidden(*args: object, **kwargs: object) -> None:
         raise AssertionError("score load or rendering occurred before retry-path rejection")
@@ -102,8 +116,9 @@ def test_wrong_retry_output_path_fails_before_score_load_or_render(
             markdown_path=markdown_path,
             repository_root=REPOSITORY_ROOT,
         )
-    assert not output_dir.exists()
-    assert not markdown_path.exists()
+    assert not wrong_path.exists()
+    assert snapshot(output_dir) == before_output
+    assert snapshot(markdown_path) == before_markdown
 
 
 def test_association_rows_distinguish_track_recovery_from_identity(
@@ -221,3 +236,65 @@ def test_renderer_has_no_storage_estimator_or_propagation_imports() -> None:
             "leo.sky",
         )
     )
+
+
+def test_attempt2_publication_artifacts_are_static_hash_and_link_closed() -> None:
+    evidence_path = (
+        REPOSITORY_ROOT / "reports/figures/2026_08_26_final_doppler_holdout_publication_attempt2/"
+        "publication-execution-evidence.json"
+    )
+    assert publication._sha256_tag(evidence_path) == (
+        "sha256:aeea27975d28829d35fc5a4fa3cf86c60520becaad98837a0af4559a0f2c6b44"
+    )
+    evidence = json.loads(evidence_path.read_text())
+    assert evidence["evidence_manifest_digest"] == publication.canonical_digest(
+        {key: value for key, value in evidence.items() if key != "evidence_manifest_digest"}
+    )
+    assert evidence["evidence_manifest_digest"] == (
+        "sha256:7c3082029f0cbd7bcb9f023e3335484c45d8eb7b56ba887c203890fa11425f18"
+    )
+    for item in evidence["outputs"].values():
+        path = REPOSITORY_ROOT / item["path"]
+        assert path.stat().st_size == item["byte_size"]
+        assert publication._sha256_tag(path) == item["sha256"]
+
+    manifest_item = evidence["outputs"]["publication_manifest"]
+    manifest_path = REPOSITORY_ROOT / manifest_item["path"]
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["manifest_digest"] == publication.canonical_digest(
+        {key: value for key, value in manifest.items() if key != "manifest_digest"}
+    )
+    assert manifest["manifest_digest"] == manifest_item["semantic_digest"]
+    assert manifest["renderer"]["execution_commit"] == ("16d74aea3beb42e948d7559cd47919ddbff708cb")
+    assert manifest["renderer"]["execution_tree"] == ("1f4ac9838ae87e345b96c5f3e5fd72ad5712a7e0")
+    assert manifest["publication_amendment"]["semantic_digest"] == (
+        publication.PUBLICATION_AMENDMENT_DIGEST
+    )
+
+    markdown_path = REPOSITORY_ROOT / evidence["outputs"]["detailed_markdown"]["path"]
+    markdown = markdown_path.read_text()
+    assert "0/8 passed the\nfull catalog-compatibility gate" in markdown
+    assert "no satellite was linked" in markdown
+    assert "not an identity claim" in markdown
+    assert "Fixed 125 ms linear | 57.754" in markdown
+    assert "Strict-past 500 ms quadratic | 58.170" in markdown
+    image_links = publication.markdown_image_links(markdown)
+    artifact_links = publication.markdown_artifact_links(markdown)
+    assert len(image_links) == 4
+    assert len(artifact_links) == 6
+    assert all(
+        (markdown_path.parent / link).resolve().is_file()
+        for link in (*image_links, *artifact_links)
+    )
+
+    publication.verify_frozen_source_artifacts(repository_root=REPOSITORY_ROOT)
+    amendment = publication.verify_publication_amendment(repository_root=REPOSITORY_ROOT)
+    failure = amendment["failure_attempt"]
+    failure_evidence_path = REPOSITORY_ROOT / failure["evidence_path"]
+    assert publication._sha256_tag(failure_evidence_path) == failure["evidence_sha256"]
+    failure_evidence = json.loads(failure_evidence_path.read_text())
+    for item in failure_evidence["partial_outputs"].values():
+        if isinstance(item, dict):
+            path = REPOSITORY_ROOT / item["path"]
+            assert path.stat().st_size == item["byte_size"]
+            assert publication._sha256_tag(path) == item["sha256"]
