@@ -70,8 +70,8 @@ def test_evidence_ledger_indexes_the_complete_report_markdown_inventory() -> Non
     scanner = {path for path in report_markdown if scanner_root in path.parents}
     tle_readme = {(REPORTS / "figures/2026_08_21_tle_doppler_alignment/README.md").resolve()}
 
-    assert len(report_markdown) == 130
-    assert len(top_level) == 119
+    assert len(report_markdown) == 132
+    assert len(top_level) == 121
     assert len(post_refill) == 7
     assert len(scanner) == 3
     assert tle_readme <= report_markdown

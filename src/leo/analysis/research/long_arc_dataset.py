@@ -73,6 +73,8 @@ class LongArcProvenanceV1(_ResearchModel):
     session_id: SessionId
     post_fix_classification: Literal["POST_FIX"]
     recording_manifest_schema: Literal["RecordingManifestV2"]
+    recording_manifest_state: Literal["committed"]
+    recording_stream_state: Literal["complete"]
     opened_status: Literal["opened-development-only"]
     parent_provenance_status: Literal["post_fix_counter_authoritative_opened"]
     recording_manifest_uri: str
@@ -595,7 +597,7 @@ def _verify_recording_manifest_semantics(
 ) -> None:
     if (
         document.get("session_id") != arc.provenance.session_id
-        or document.get("state") != "complete"
+        or document.get("state") != arc.provenance.recording_manifest_state
     ):
         raise ValueError("recording manifest session or state disagrees with long arc")
     streams = document.get("streams")
@@ -614,6 +616,7 @@ def _verify_recording_manifest_semantics(
     timing = _mapping(stream.get("timing"), "recording timing")
     first_sample = _mapping(timing.get("first_sample"), "recording first-sample timing")
     actual = (
+        stream.get("state"),
         radio.get("radio_id"),
         radio.get("serial"),
         settings.get("sample_rate_hz"),
@@ -629,6 +632,7 @@ def _verify_recording_manifest_semantics(
         first_sample.get("method"),
     )
     expected = (
+        arc.provenance.recording_stream_state,
         arc.path.radio_id,
         arc.path.radio_serial,
         arc.path.sample_rate_hz,

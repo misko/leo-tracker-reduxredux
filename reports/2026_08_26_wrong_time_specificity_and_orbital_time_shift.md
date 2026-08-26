@@ -84,8 +84,8 @@ into this repository's Qin edge-pilot association model.
 Hayek and Kassas, *Modeling and Compensation of Timing and Spatial Ephemeris
 Errors of Non-Cooperative LEO Satellites With Application to PNT*, IEEE TAES
 61(3), 2025, [DOI
-10.1109/TAES.2024.3513286](https://doi.org/10.1109/TAES.2024.3513286), is the
-follow-on method cited by the PNT paper. The
+10.1109/TAES.2024.3513286](https://doi.org/10.1109/TAES.2024.3513286), is a
+follow-on to the Hayek et al. (2024) method cited by the PNT paper. The
 [official author PDF](https://people.engineering.osu.edu/media/document/2025-07-23/kassas_modeling_and_compensation_of_timing_and_spatial_ephemeris_errors_of_non_cooperative_leo_satellites_with_application_to_pnt.pdf)
 models an equivalent argument-of-latitude correction jointly with a separate
 clock drift term for Doppler; it is not a bare unconstrained receive-time fit.
