@@ -10,9 +10,11 @@ verified every inventory/manifest/chunk digest before decoding CI16, and kept
 all 18 scenario outcomes. No holdout, newer capture, dynamic discovery, or
 replacement input was used.
 
+The scoring tree is the later hash-bound corrective execution described by `config/analysis/polynomial-phase-injection-execution-amendment-v1.json` at implementation commit `49b33b900e9bb65186fa014675811764245b3b22`. The correction enforces the original 500 ms step exclusion and all-background gate; it does not change the frozen scenario grid, inputs, masks, or thresholds.
+
 ## Bottom line
 
-The preregistered promotion gate failed: fixed_500ms_rate_coverage_lower. The 500 ms line met the point-error limits, but its nominal 95%
+The preregistered promotion gate failed: all_three_backgrounds, fixed_500ms_rate_coverage_lower. The 500 ms line met the point-error limits, but its nominal 95%
 interval covered only 64.5% of promotion endpoints. Its uncertainty is
 overconfident and the unchanged estimator should not be promoted. This is a
 conditional frame-CFO/rate calibration with exact timing and the correct
@@ -99,8 +101,13 @@ The 20 ms line is not competitive here: despite wide intervals giving about
 95% coverage on its two evaluable no-step rows, its 3.77 kHz/s RMSE and 82.9%
 large-error rate are unacceptable. The 125 ms line is much more stable but has
 no result outside the two -16 dB no-step rows. The 500 ms line reaches all four
-promotion rows and has the lowest point RMSE, but its frozen 50 Hz measurement
-scale does not capture its actual endpoint error.
+promotion rows and has the lowest point RMSE. Its coverage failure reflects
+both uncertainty calibration and trailing-linear-model lag under nonzero
+acceleration; it must not be attributed to the frozen 50 Hz measurement scale
+alone. Promotion metrics are conditional on completed endpoints, and the four
+evaluable scenarios contribute very unequal endpoint counts. The frozen
+protocol had no minimum aggregate endpoint-availability gate, so these metrics
+are not operational recovery probabilities.
 
 ## Acceleration and jerk diagnostic
 
@@ -140,48 +147,57 @@ resampling occurred, says nothing about clock-driven frame-boundary drift.
 
 ## CFO steps and alias labels
 
-Known ±750 Hz alias-label changes were canonicalized before training. They test
-downstream branch handling, not blind alias discovery. Physical ±300 Hz CFO
-steps remained in the signal. The transition interval for each history is kept
-out of smooth calibration and shown explicitly below.
+Known ±750 Hz alias factors were injected as real IQ frequency steps and then
+truth-canonicalized before training. They test truth-known downstream branch
+handling, not a pure bookkeeping relabel and not blind alias discovery. A frame
+straddling the change can still be distorted. Physical ±300 Hz CFO steps
+remained in the signal. The same preregistered 500 ms transition exclusion is
+used for every history and shown explicitly below.
 
 ![Step response](figures/2026_08_25_polynomial_qin_injection/04-cfo-step-response.png)
 
-The table is endpoint-pooled within step phase (not scenario-equal) and is a
-recovery diagnostic rather than smooth calibration.
+The table first computes errors inside each scenario and then gives every
+evaluable scenario equal weight, matching the frozen aggregation rule. It is a
+recovery diagnostic rather than smooth calibration; no-result scenario counts
+remain visible.
 
-| History | Phase | Endpoints | RMSE Hz/s | Median absolute error Hz/s |
-|---|---|---|---|---|
-| 20 ms | pre step | 1629 | 2449.97 | 1571.59 |
-| 20 ms | transition | 31 | 15826.28 | 15441.44 |
-| 20 ms | post history | 1254 | 2554.14 | 1751.31 |
-| 125 ms | pre step | 1915 | 203.12 | 113.12 |
-| 125 ms | transition | 224 | 2609.13 | 2695.41 |
-| 125 ms | post history | 1481 | 213.01 | 148.88 |
-| 500 ms | pre step | 1253 | 140.30 | 138.03 |
-| 500 ms | transition | 984 | 640.43 | 599.81 |
-| 500 ms | post history | 773 | 179.00 | 197.32 |
+| History | Phase | Evaluable scenarios | Endpoints | RMSE Hz/s | Mean scenario median abs. error Hz/s |
+|---|---|---|---|---|---|
+| 20 ms | pre step | 4/12 | 1629 | 2663.21 | 1723.27 |
+| 20 ms | transition | 4/12 | 720 | 4032.59 | 1599.83 |
+| 20 ms | post exclusion | 4/12 | 565 | 2862.00 | 1989.35 |
+| 125 ms | pre step | 4/12 | 1915 | 232.68 | 136.49 |
+| 125 ms | transition | 4/12 | 958 | 1264.94 | 201.40 |
+| 125 ms | post exclusion | 4/12 | 747 | 236.03 | 177.93 |
+| 500 ms | pre step | 6/12 | 1253 | 171.78 | 150.99 |
+| 500 ms | transition | 6/12 | 984 | 545.14 | 532.99 |
+| 500 ms | post exclusion | 5/12 | 773 | 192.03 | 170.86 |
 
-The fixed 500 ms line contains the step transient to 640 Hz/s RMSE and returns
-to 179 Hz/s after one full history. The 125 ms line returns to 213 Hz/s but has
-a 2.61 kHz/s transition. The 20 ms line is noisy before and after the step and
-spikes to 15.8 kHz/s in transition.
+All three histories are judged over the identical frozen 500 ms transition
+interval. The shorter histories can react before that interval ends, but the
+20 ms estimator remains noisy before, during, and after the step. The fixed
+500 ms line has the smallest transition error of the three and returns to its
+strong-signal baseline after the exclusion, while still carrying the
+curvature-lag limitation described above.
 
 ## Promotion checks
 
 | Check | Pass |
 |---|---|
-| all_three_backgrounds | True |
+| all_three_backgrounds | False |
+| fixed_500ms_rate_rmse | True |
+| fixed_500ms_rate_failure_rate | True |
 | fixed_500ms_rate_coverage_lower | False |
 | fixed_500ms_rate_coverage_upper | True |
-| fixed_500ms_rate_failure_rate | True |
-| fixed_500ms_rate_rmse | True |
 | offline_cubic_acceleration_rmse | True |
 | offline_cubic_jerk_rmse | True |
 
-The promotion subset contains smooth/no-step scenarios at SNR ≥ -24 dB and all
-three backgrounds. The cubic point-error checks are conditional on two
-complete fits; two other promotion rows are explicitly retained as no result.
+The promotion subset contains smooth/no-step scenarios at SNR ≥ -24 dB. The
+fixed-500 rate rows represent all three backgrounds, but the cubic point-error
+checks are conditional on two complete fits from only two backgrounds; two
+other promotion rows are explicitly retained as no result. The shared
+`all_three_backgrounds` check therefore fails after applying the frozen scope
+to both rate and cubic evidence.
 A failed coverage gate does not mean point error is large;
 it means the conditional covariance is not calibrated to the frozen interval
 criterion. Conversely, a point-error pass cannot establish end-to-end recovery

@@ -54,6 +54,7 @@ def test_result_retains_no_results_controls_and_failed_promotion() -> None:
     promotion = result["promotion"]
 
     assert result["status"] == "fail"
+    assert promotion["checks"]["all_three_backgrounds"] is False
     assert promotion["checks"]["fixed_500ms_rate_coverage_lower"] is False
     assert promotion["fixed_500ms"]["receiver_rmse"] == pytest.approx(163.314945788)
     assert promotion["fixed_500ms"]["receiver_coverage_95"] == pytest.approx(0.645083406497)
@@ -67,6 +68,31 @@ def test_result_retains_no_results_controls_and_failed_promotion() -> None:
     assert no_step["fixed_500ms_linear"]["no_result_scenario_count"] == 2
     assert sum(row["even_control_wins_occupied"] for row in result["frame_summaries"]) > 0
     assert sum(row["odd_control_wins_occupied"] for row in result["frame_summaries"]) > 0
+
+    step = {(row["estimator"], row["phase"]): row for row in result["step_scenario_equal_metrics"]}
+    assert step[("causal_20ms_linear", "transition")]["receiver_rmse"] == pytest.approx(4032.590282)
+    assert step[("fixed_125ms_linear", "transition")]["receiver_rmse"] == pytest.approx(
+        1264.93518254
+    )
+    assert step[("fixed_500ms_linear", "transition")]["receiver_rmse"] == pytest.approx(
+        545.144454545
+    )
+
+
+def test_result_binds_corrective_execution_without_overwriting_it() -> None:
+    result = _result()
+
+    assert result["repository_head_at_execution"] == "bdb9af106568669fb794de23e44e6008b3006fe1"
+    assert result["execution_authority"]["implementation_commit"] == (
+        "49b33b900e9bb65186fa014675811764245b3b22"
+    )
+    assert result["implementation"]["tool_sha256"] == _digest(
+        ROOT / "tools/run_polynomial_qin_injection.py"
+    )
+    assert result["implementation"]["kernel_sha256"] == _digest(
+        ROOT / "src/leo/analysis/research/polynomial_injection.py"
+    )
+    assert "postprocess_implementation" not in result
 
 
 def test_clock_factor_is_labeled_as_phase_coordinate_only() -> None:
