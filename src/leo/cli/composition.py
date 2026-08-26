@@ -65,6 +65,7 @@ from leo.cli.models import (
     HoldDataV1,
     ImportDataV1,
     JobsDataV1,
+    NativeEvidenceReprocessDataV1,
     ProfileListDataV1,
     ProfileShowDataV1,
     ProfileShowDataV2,
@@ -1066,6 +1067,19 @@ class LocalAcquisitionBackend:
 
     def reprocess(self, session_id: str, *, dry_run: bool = False) -> ReprocessDataV1:
         return self._processing().reprocess(session_id, dry_run=dry_run)
+
+    def native_evidence(
+        self,
+        session_id: str,
+        *,
+        pipeline_release_id: str,
+        dry_run: bool = False,
+    ) -> NativeEvidenceReprocessDataV1:
+        return self._processing().native_evidence(
+            session_id,
+            pipeline_release_id=pipeline_release_id,
+            dry_run=dry_run,
+        )
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1:
         return self._processing().cancel_run(run_id, reason=reason)

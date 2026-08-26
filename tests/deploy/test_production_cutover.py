@@ -13,6 +13,10 @@ from typing import Any
 
 import pytest
 
+from leo.contracts.profile import CaptureProfileRevisionV2
+from leo.contracts.states import SourceType
+from leo.domain.profiles import compile_capture_plan, load_profile_revision
+
 PROJECT_ROOT = Path(__file__).parents[2]
 SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 SCRIPT_GLOBALS = runpy.run_path(str(SCRIPT))
@@ -188,6 +192,107 @@ def _expected_rate_radios() -> list[dict[str, Any]]:
     ]
 
 
+def _expected_rate_radios_v4() -> list[dict[str, Any]]:
+    return [
+        {
+            "schema_version": 1,
+            **radio,
+            "model": "Pluto+",
+            "hardware_revision": None,
+        }
+        for radio in _expected_rate_radios()
+    ]
+
+
+def _device_axis_stream_check(
+    radio_id: str,
+    *,
+    trial_index: int,
+) -> dict[str, Any]:
+    observed_digest = (
+        "sha256:" + hashlib.sha256(f"{trial_index}:{radio_id}:observed".encode()).hexdigest()
+    )
+
+    def digest(label: str) -> str:
+        return "sha256:" + hashlib.sha256(f"{trial_index}:{radio_id}:{label}".encode()).hexdigest()
+
+    return {
+        "schema_version": 1,
+        "radio_id": radio_id,
+        "logical_sample_count": 180_000_000,
+        "observed_sample_count": 180_000_000,
+        "zero_fill_sample_count": 0,
+        "continuity_segment_count": 1,
+        "observed_iq_sha256": observed_digest,
+        "logical_iq_sha256": observed_digest,
+        "timeline_sha256": digest("timeline"),
+        "gap_map_sha256": digest("gap-map"),
+        "validity_inventory_sha256": digest("validity"),
+    }
+
+
+def _five_m_stream_check(radio_id: str, *, index: int) -> dict[str, Any]:
+    def digest(label: str) -> str:
+        return "sha256:" + hashlib.sha256(f"5m:{index}:{radio_id}:{label}".encode()).hexdigest()
+
+    return {
+        "schema_version": 1,
+        "radio_id": radio_id,
+        "logical_sample_count": 300_000_000,
+        "observed_sample_count": 299_737_856,
+        "zero_fill_sample_count": 262_144,
+        "continuity_segment_count": 2,
+        "gap_count": 1,
+        "missing_sample_count": 262_144,
+        "overflow_count": 0,
+        "enqueue_failure_count": 0,
+        "terminal_rejected_gap_count": 0,
+        "terminal_rejected_missing_sample_count": 0,
+        "terminal_rejected_overflow_count": 0,
+        "gap_map_segment_count": 2,
+        "gap_map_boundary_count": 1,
+        "validity_segment_count": 2,
+        "observed_iq_sha256": digest("observed-iq"),
+        "logical_iq_sha256": digest("logical-iq"),
+        "timeline_sha256": digest("timeline"),
+        "gap_map_sha256": digest("gap-map"),
+        "validity_inventory_sha256": digest("validity"),
+    }
+
+
+def _five_m_characterization(
+    *,
+    radios: list[dict[str, Any]],
+    host: dict[str, Any],
+    producer: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "evidence_sha256": "sha256:" + "d" * 64,
+        "manifest_sha256": "sha256:" + "e" * 64,
+        "session_id": "session-5m-characterization",
+        "profile_revision_digest": SCRIPT_GLOBALS["CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST"],
+        "capture_plan_digest": SCRIPT_GLOBALS["CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST"],
+        "sample_rate_hz": 5_000_000,
+        "bandwidth_hz": 2_500_000,
+        "requested_sample_count": 300_000_000,
+        "radios": copy.deepcopy(radios),
+        "host": copy.deepcopy(host),
+        "producer": copy.deepcopy(producer),
+        "manifest_state": "degraded",
+        "streams": [
+            _five_m_stream_check(radio["radio_id"], index=index)
+            for index, radio in enumerate(radios)
+        ],
+        "bundle_verified": True,
+        "physical_zero_verified": True,
+        "validity_verified": True,
+        "gap_map_verified": True,
+        "passed": True,
+        "errors": [],
+    }
+
+
 def _live_station_probe_payload() -> dict[str, Any]:
     return {
         "schema_version": 1,
@@ -214,8 +319,9 @@ def test_qnap_is_rejected_lexically_without_access() -> None:
     (
         ("continuity_policy: allow_segments", "continuity_policy: require_contiguous"),
         (
-            "tags: [CAPTURE_ONLY, EXPERIMENTAL, LIVE, RANDOM_TUNING]",
-            "tags: [EXPERIMENTAL, LIVE, RANDOM_TUNING]",
+            "tags: [CAPTURE_ONLY, DEVICE_AXIS_ZERO_FILL, EXPERIMENTAL, LIVE, "
+            "RANDOM_TUNING, STANDARD_NATIVE]",
+            "tags: [DEVICE_AXIS_ZERO_FILL, EXPERIMENTAL, LIVE, RANDOM_TUNING, STANDARD_NATIVE]",
         ),
     ),
 )
@@ -228,13 +334,48 @@ def test_staged_profile_bytes_reject_five_msps_policy_or_tag_tamper(
     _stage_reviewed_profiles(release)
     _call("verify_staged_capture_profiles", release)
 
-    five_msps = release / "profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml"
+    five_msps = release / "profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml"
     payload = five_msps.read_text(encoding="utf-8")
     assert reviewed in payload
     five_msps.write_text(payload.replace(reviewed, tampered), encoding="utf-8")
 
-    with pytest.raises(ValueError, match=r"digest mismatch: .*5m-60s-segmented"):
+    with pytest.raises(ValueError, match=r"digest mismatch: .*5m-60s-device-axis"):
         _call("verify_staged_capture_profiles", release)
+
+
+def test_v4_qualification_constants_bind_deployed_three_msps_profile_and_plan() -> None:
+    revision = load_profile_revision(
+        PROJECT_ROOT / "profiles/starlink-ch4-lower-3m-60s-device-axis-v3.yaml"
+    )
+    assert isinstance(revision, CaptureProfileRevisionV2)
+    plan = compile_capture_plan(
+        revision,
+        ("radio_pluto_5d4d", "radio_pluto_19f2"),
+        source_type=SourceType.LIVE,
+    )
+
+    assert (
+        revision.revision_digest == SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_DEVICE_AXIS_PROFILE_DIGEST"]
+    )
+    assert plan.plan_digest == SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST"]
+    assert (
+        tuple(revision.profile.tags)
+        == SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS"]
+    )
+    five_m_revision = load_profile_revision(
+        PROJECT_ROOT / "profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml"
+    )
+    assert isinstance(five_m_revision, CaptureProfileRevisionV2)
+    five_m_plan = compile_capture_plan(
+        five_m_revision,
+        ("radio_pluto_5d4d", "radio_pluto_19f2"),
+        source_type=SourceType.LIVE,
+    )
+    assert (
+        five_m_revision.revision_digest
+        == SCRIPT_GLOBALS["CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST"]
+    )
+    assert five_m_plan.plan_digest == SCRIPT_GLOBALS["CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST"]
 
 
 def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
@@ -373,9 +514,9 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_STATION_TOPOLOGY_FILE_DIGEST="
             "sha256:5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae",
             "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
-            "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
-            "LEO_CAPTURE_PROFILE_3M=starlink-ch4-lower-3m-60s-capture-v2",
-            "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-segmented-v2",
+            "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-device-axis-v3",
+            "LEO_CAPTURE_PROFILE_3M=starlink-ch4-lower-3m-60s-device-axis-v3",
+            "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-device-axis-v3",
             "LEO_CAPTURE_INTERVAL_SECONDS=180",
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -423,7 +564,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
         _call(
             "verify_environment_text",
             environment.replace(
-                "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
+                "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-device-axis-v3",
                 "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
             ),
             revision,
@@ -432,7 +573,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
         _call(
             "verify_environment_text",
             environment.replace(
-                "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-segmented-v2",
+                "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-device-axis-v3",
                 "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-capture-v2",
             ),
             revision,
@@ -679,6 +820,205 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
         revision=revision,
         release=release,
     )
+
+    v4_receipt = copy.deepcopy(v3_receipt)
+    v4_receipt["schema_version"] = 4
+    v4_target = v4_receipt["target"]
+    v4_target["schema_version"] = 4
+    v4_target["profile_revision_digest"] = SCRIPT_GLOBALS[
+        "CONTIGUOUS_RATE_3M_DEVICE_AXIS_PROFILE_DIGEST"
+    ]
+    v4_target["capture_plan_digest"] = SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST"]
+    v4_target["expected_radios"] = _expected_rate_radios_v4()
+    v4_target["expected_host"]["schema_version"] = 1
+    v4_target["expected_producer"]["schema_version"] = 1
+    v4_prerequisites = v4_target["prerequisites"]
+    v4_prerequisites["schema_version"] = 4
+    v4_prerequisites["five_m_characterization"] = _five_m_characterization(
+        radios=v4_target["expected_radios"],
+        host=v4_target["expected_host"],
+        producer=v4_target["expected_producer"],
+    )
+    v4_target["policy"]["required_tags"] = list(
+        SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS"]
+    )
+    v4_receipt["checks"] = [
+        {
+            "schema_version": 2,
+            "trial_id": f"trial-{index:02d}",
+            "session_id": f"session-{index:02d}",
+            "manifest_sha256": "sha256:" + f"{index:064x}",
+            "passed": True,
+            "errors": [],
+            "manifest_schema_version": 3,
+            "stream_checks": [
+                _device_axis_stream_check(
+                    radio_id,
+                    trial_index=index,
+                )
+                for radio_id in ("radio_pluto_5d4d", "radio_pluto_19f2")
+            ],
+        }
+        for index in range(10)
+    ]
+    v4_receipt["target_digest"] = _canonical_target_digest(v4_target)
+    _call(
+        "verify_contiguous_rate_3m_receipt_v4",
+        v4_receipt,
+        revision=revision,
+        release=release,
+    )
+
+    with pytest.raises(ValueError, match="complete strict V4 pass"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            v3_receipt,
+            revision=revision,
+            release=release,
+        )
+    with pytest.raises(ValueError, match="not a complete strict pass"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v3",
+            v4_receipt,
+            revision=revision,
+            release=release,
+        )
+
+    wrong_plan_v4 = copy.deepcopy(v4_receipt)
+    wrong_plan_v4["target"]["capture_plan_digest"] = SCRIPT_GLOBALS[
+        "CONTIGUOUS_RATE_3M_PLAN_DIGEST"
+    ]
+    wrong_plan_v4["target_digest"] = _canonical_target_digest(wrong_plan_v4["target"])
+    with pytest.raises(ValueError, match="deployed device-axis plan"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            wrong_plan_v4,
+            revision=revision,
+            release=release,
+        )
+
+    wrong_tags_v4 = copy.deepcopy(v4_receipt)
+    wrong_tags_v4["target"]["policy"]["required_tags"].remove("DEVICE_AXIS_ZERO_FILL")
+    wrong_tags_v4["target_digest"] = _canonical_target_digest(wrong_tags_v4["target"])
+    with pytest.raises(ValueError, match="device-axis gate"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            wrong_tags_v4,
+            revision=revision,
+            release=release,
+        )
+
+    wrong_policy_type_v4 = copy.deepcopy(v4_receipt)
+    wrong_policy_type_v4["target"]["policy"]["schema_version"] = True
+    wrong_policy_type_v4["target_digest"] = _canonical_target_digest(wrong_policy_type_v4["target"])
+    with pytest.raises(ValueError, match="device-axis gate"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            wrong_policy_type_v4,
+            revision=revision,
+            release=release,
+        )
+
+    old_check_schema_v4 = copy.deepcopy(v4_receipt)
+    old_check_schema_v4["checks"][0]["schema_version"] = 1
+    with pytest.raises(ValueError, match="failed or malformed trial check"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            old_check_schema_v4,
+            revision=revision,
+            release=release,
+        )
+
+    extra_check_field_v4 = copy.deepcopy(v4_receipt)
+    extra_check_field_v4["checks"][0]["unreviewed"] = True
+    with pytest.raises(ValueError, match="failed or malformed trial check"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            extra_check_field_v4,
+            revision=revision,
+            release=release,
+        )
+
+    zero_filled_v4 = copy.deepcopy(v4_receipt)
+    zero_filled_v4["checks"][0]["stream_checks"][0]["observed_sample_count"] -= 1
+    zero_filled_v4["checks"][0]["stream_checks"][0]["zero_fill_sample_count"] = 1
+    with pytest.raises(ValueError, match="exact lossless closure"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            zero_filled_v4,
+            revision=revision,
+            release=release,
+        )
+
+    digest_mismatch_v4 = copy.deepcopy(v4_receipt)
+    digest_mismatch_v4["checks"][0]["stream_checks"][0]["logical_iq_sha256"] = "sha256:" + "f" * 64
+    with pytest.raises(ValueError, match="exact lossless closure"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            digest_mismatch_v4,
+            revision=revision,
+            release=release,
+        )
+
+    reversed_streams_v4 = copy.deepcopy(v4_receipt)
+    reversed_streams_v4["checks"][0]["stream_checks"].reverse()
+    with pytest.raises(ValueError, match="exact lossless closure"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            reversed_streams_v4,
+            revision=revision,
+            release=release,
+        )
+
+    missing_five_m_v4 = copy.deepcopy(v4_receipt)
+    missing_five_m_v4["target"]["prerequisites"].pop("five_m_characterization")
+    missing_five_m_v4["target_digest"] = _canonical_target_digest(missing_five_m_v4["target"])
+    with pytest.raises(ValueError, match="exact combined campaign"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            missing_five_m_v4,
+            revision=revision,
+            release=release,
+        )
+
+    unverified_five_m_v4 = copy.deepcopy(v4_receipt)
+    unverified_five_m_v4["target"]["prerequisites"]["five_m_characterization"][
+        "physical_zero_verified"
+    ] = False
+    unverified_five_m_v4["target_digest"] = _canonical_target_digest(unverified_five_m_v4["target"])
+    with pytest.raises(ValueError, match="exact combined V4 campaign"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            unverified_five_m_v4,
+            revision=revision,
+            release=release,
+        )
+
+    overflow_five_m_v4 = copy.deepcopy(v4_receipt)
+    overflow_five_m_v4["target"]["prerequisites"]["five_m_characterization"]["streams"][0][
+        "overflow_count"
+    ] = 1
+    overflow_five_m_v4["target_digest"] = _canonical_target_digest(overflow_five_m_v4["target"])
+    with pytest.raises(ValueError, match="does not close its device axis"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            overflow_five_m_v4,
+            revision=revision,
+            release=release,
+        )
+
+    wrong_five_m_plan_v4 = copy.deepcopy(v4_receipt)
+    wrong_five_m_plan_v4["target"]["prerequisites"]["five_m_characterization"][
+        "capture_plan_digest"
+    ] = SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST"]
+    wrong_five_m_plan_v4["target_digest"] = _canonical_target_digest(wrong_five_m_plan_v4["target"])
+    with pytest.raises(ValueError, match="exact combined V4 campaign"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            wrong_five_m_plan_v4,
+            revision=revision,
+            release=release,
+        )
 
     v3_with_usb = copy.deepcopy(v3_receipt)
     v3_with_usb["target"]["prerequisites"]["usb_control_arm"] = copy.deepcopy(
@@ -1105,6 +1445,18 @@ def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
     assert result.returncode == 1
     assert "full lowercase 40-character SHA" in result.stderr
     assert "--soak-receipt" not in result.stderr
+
+
+def test_full_cutover_requires_canonical_v4_device_axis_rate_authority() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    verify_source = text[text.index("def verify(args:") : text.index("\ndef main()")]
+
+    assert "contiguous-rate-qualification-receipt-v4.json" in verify_source
+    assert "contiguous-rate-qualification-receipt-v3.json" not in verify_source
+    assert (
+        "verify_contiguous_rate_3m_receipt_v4(rate_receipt, revision=revision, release=release)"
+        in verify_source
+    )
 
 
 def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:

@@ -10,24 +10,43 @@ from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.contracts.digests import canonical_digest
 from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.radio import ReceiverGainV1
-from leo.contracts.recording import HostIdentityV1, ProducerV1, RecordingManifestV2
-from leo.contracts.states import ContinuityPolicy, GainMode, SourceType
+from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
+    CompressionSettingsV1,
+    HostIdentityV1,
+    ProducerV1,
+    RecordingManifestV2,
+    RecordingManifestV3,
+)
+from leo.contracts.states import (
+    CaptureState,
+    ContinuityPolicy,
+    GainMode,
+    PeerFailurePolicy,
+    SourceType,
+)
 from leo.domain.profiles import compile_capture_plan
 from leo.qualification.rate_modes import (
+    ContiguousRateDeviceAxisCharacterizationStreamV1,
+    ContiguousRateDeviceAxisCharacterizationV1,
     ContiguousRateNativeIpCanaryEvidenceV1,
     ContiguousRatePrerequisitesV1,
     ContiguousRatePrerequisitesV2,
     ContiguousRatePrerequisitesV3,
+    ContiguousRatePrerequisitesV4,
     ContiguousRateQualificationPolicyV1,
     ContiguousRateQualificationReceiptV1,
     ContiguousRateQualificationReceiptV2,
     ContiguousRateQualificationReceiptV3,
+    ContiguousRateQualificationReceiptV4,
     ContiguousRateQualificationTargetV1,
     ContiguousRateQualificationTargetV2,
     ContiguousRateQualificationTargetV3,
+    ContiguousRateQualificationTargetV4,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV1,
+    ContiguousRateTrialEvidenceV2,
     ContiguousRateUsbControlArmEvidenceV1,
     ContiguousRateUsbControlArmEvidenceV2,
     ContiguousRateUsbRadioCaptureIntervalV2,
@@ -36,6 +55,7 @@ from leo.qualification.rate_modes import (
     ContiguousRateWriterBenchmarkEvidenceV1,
     contiguous_rate_qualification_target_digest,
     evaluate_contiguous_rate,
+    evaluate_device_axis_contiguous_rate,
 )
 from leo.radio import FakeRadioSource
 from leo.storage import RecordingStore
@@ -110,6 +130,74 @@ def _capture(
     assert result.bundle is not None
     assert isinstance(result.manifest, RecordingManifestV2)
     store.verify(result.bundle)
+    return result.manifest, result.bundle.manifest_sha256
+
+
+def _capture_v3(
+    tmp_path: Path,
+    *,
+    gap_radio_a: bool = False,
+) -> tuple[RecordingManifestV3, str]:
+    profile = CaptureProfileV2(
+        name="rate-3000000-device-axis-qualification-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=3_000_000,
+        bandwidth_hz=2_500_000,
+        receivers=(0, 1),
+        gain_mode=GainMode.MANUAL,
+        gains=(
+            ReceiverGainV1(receiver_id=0, gain_db=30),
+            ReceiverGainV1(receiver_id=1, gain_db=30),
+        ),
+        sample_count=12,
+        refill_samples=4,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+        tags=(
+            "CAPTURE_ONLY",
+            "DEVICE_AXIS_ZERO_FILL",
+            "LIVE",
+            "RANDOM_TUNING",
+            "STANDARD_NATIVE",
+        ),
+        kernel_buffers=8,
+        refill_queue_capacity=32,
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        ("radio-a", "radio-b"),
+        source_type=SourceType.LIVE,
+    )
+    store = RecordingStore(tmp_path / "bulk-v3")
+    coordinator = AcquisitionCoordinator(
+        store,
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=64,
+        ),
+        host=_HOST,
+        producer=_PRODUCER,
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+    result = coordinator.capture_once(
+        plan,
+        {
+            "radio-a": FakeRadioSource(
+                "radio-a",
+                gaps_before_blocks={1: 4} if gap_radio_a else None,
+            ),
+            "radio-b": FakeRadioSource("radio-b"),
+        },
+        session_id=f"rate-3000000-device-axis-{'gap' if gap_radio_a else 'clean'}",
+    )
+    assert result.bundle is not None
+    assert isinstance(result.manifest, RecordingManifestV3)
+    report = store.verify(result.bundle)
+    assert report.validity_inventory_count == 2
     return result.manifest, result.bundle.manifest_sha256
 
 
@@ -202,7 +290,9 @@ def _usb_capture_interval(
     )
 
 
-def _prerequisites(manifest: RecordingManifestV2) -> ContiguousRatePrerequisitesV2:
+def _prerequisites(
+    manifest: RecordingManifestV2 | RecordingManifestV3,
+) -> ContiguousRatePrerequisitesV2:
     profile = manifest.capture_plan.profile_revision.profile
     radio_ids = (manifest.streams[0].radio.radio_id, manifest.streams[1].radio.radio_id)
     usb_radios = _usb_control_radios()
@@ -267,7 +357,9 @@ def _prerequisites(manifest: RecordingManifestV2) -> ContiguousRatePrerequisites
     )
 
 
-def _prerequisites_v3(manifest: RecordingManifestV2) -> ContiguousRatePrerequisitesV3:
+def _prerequisites_v3(
+    manifest: RecordingManifestV2 | RecordingManifestV3,
+) -> ContiguousRatePrerequisitesV3:
     v2 = _prerequisites(manifest)
     return ContiguousRatePrerequisitesV3(
         radio_safety=v2.radio_safety,
@@ -286,6 +378,96 @@ def _target_v3(
     return ContiguousRateQualificationTargetV3(
         **v2.model_dump(exclude={"schema_version", "prerequisites"}),
         prerequisites=prerequisites or _prerequisites_v3(manifest),
+    )
+
+
+def _target_v4(
+    manifest: RecordingManifestV3,
+    *,
+    required_trial_count: int = 1,
+) -> ContiguousRateQualificationTargetV4:
+    profile = manifest.capture_plan.profile_revision.profile
+    v3_prerequisites = _prerequisites_v3(manifest)
+    characterization = _five_m_characterization(manifest)
+    return ContiguousRateQualificationTargetV4(
+        qualification_id="rate-3000000-device-axis-v4",
+        profile_revision_digest=manifest.capture_plan.profile_revision.revision_digest,
+        capture_plan_digest=manifest.capture_plan.plan_digest,
+        sample_rate_hz=profile.sample_rate_hz,
+        bandwidth_hz=profile.bandwidth_hz,
+        requested_sample_count=manifest.capture_plan.resolved_sample_count,
+        expected_radios=(manifest.streams[0].radio, manifest.streams[1].radio),
+        expected_host=_HOST,
+        expected_producer=_PRODUCER,
+        pluto_plus_utils_revision="2" * 40,
+        libiio_version="0.25 / 6305ea1",
+        libiio_library_sha256="sha256:" + "3" * 64,
+        python_iio_sha256="sha256:" + "4" * 64,
+        native_network_interface="enp132s0",
+        native_source_address="192.168.1.142",
+        prerequisites=ContiguousRatePrerequisitesV4(
+            radio_safety=v3_prerequisites.radio_safety,
+            native_ip_canaries=v3_prerequisites.native_ip_canaries,
+            writer_benchmark=v3_prerequisites.writer_benchmark,
+            five_m_characterization=characterization,
+        ),
+        policy=ContiguousRateQualificationPolicyV1(
+            required_trial_count=required_trial_count,
+            required_tags=(
+                "CAPTURE_ONLY",
+                "DEVICE_AXIS_ZERO_FILL",
+                "LIVE",
+                "RANDOM_TUNING",
+                "STANDARD_NATIVE",
+            ),
+        ),
+    )
+
+
+def _five_m_characterization(
+    manifest: RecordingManifestV3,
+) -> ContiguousRateDeviceAxisCharacterizationV1:
+    stream_checks = tuple(
+        ContiguousRateDeviceAxisCharacterizationStreamV1(
+            radio_id=stream.radio.radio_id,
+            observed_sample_count=300_000_000,
+            zero_fill_sample_count=0,
+            continuity_segment_count=1,
+            gap_count=0,
+            missing_sample_count=0,
+            overflow_count=0,
+            enqueue_failure_count=0,
+            terminal_rejected_gap_count=0,
+            terminal_rejected_missing_sample_count=0,
+            terminal_rejected_overflow_count=0,
+            gap_map_segment_count=1,
+            gap_map_boundary_count=0,
+            validity_segment_count=1,
+            observed_iq_sha256=_evidence_digest(f"{stream.radio.radio_id}-5m-iq"),
+            logical_iq_sha256=_evidence_digest(f"{stream.radio.radio_id}-5m-iq"),
+            timeline_sha256=_evidence_digest(f"{stream.radio.radio_id}-5m-timeline"),
+            gap_map_sha256=_evidence_digest(f"{stream.radio.radio_id}-5m-gap-map"),
+            validity_inventory_sha256=_evidence_digest(f"{stream.radio.radio_id}-5m-validity"),
+        )
+        for stream in manifest.streams
+    )
+    return ContiguousRateDeviceAxisCharacterizationV1(
+        evidence_sha256=_evidence_digest("5m-characterization"),
+        manifest_sha256=_evidence_digest("5m-manifest"),
+        session_id="five-m-characterization",
+        profile_revision_digest=_evidence_digest("5m-profile"),
+        capture_plan_digest=_evidence_digest("5m-plan"),
+        radios=(manifest.streams[0].radio, manifest.streams[1].radio),
+        host=manifest.host,
+        producer=manifest.producer,
+        manifest_state=CaptureState.COMMITTED,
+        streams=(stream_checks[0], stream_checks[1]),
+        bundle_verified=True,
+        physical_zero_verified=True,
+        validity_verified=True,
+        gap_map_verified=True,
+        passed=True,
+        errors=(),
     )
 
 
@@ -344,6 +526,20 @@ def _trial(
     digest_valid: bool = True,
 ) -> ContiguousRateTrialEvidenceV1:
     return ContiguousRateTrialEvidenceV1(
+        trial_id=f"trial-{manifest.session_id}",
+        manifest_sha256=manifest_sha256,
+        digest_valid=digest_valid,
+        manifest=manifest,
+    )
+
+
+def _trial_v2(
+    manifest: RecordingManifestV3,
+    manifest_sha256: str,
+    *,
+    digest_valid: bool = True,
+) -> ContiguousRateTrialEvidenceV2:
+    return ContiguousRateTrialEvidenceV2(
         trial_id=f"trial-{manifest.session_id}",
         manifest_sha256=manifest_sha256,
         digest_valid=digest_valid,
@@ -445,6 +641,122 @@ def test_v3_qualifies_only_exact_production_native_prerequisites(
     )
     with pytest.raises(ValidationError, match="target digest does not match"):
         ContiguousRateQualificationReceiptV3.model_validate(tampered)
+
+
+def test_v4_qualifies_exact_verified_device_axis_v3_evidence(tmp_path: Path) -> None:
+    manifest, digest = _capture_v3(tmp_path)
+    target = _target_v4(manifest)
+
+    receipt = evaluate_device_axis_contiguous_rate(
+        target,
+        (_trial_v2(manifest, digest),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+
+    assert isinstance(receipt, ContiguousRateQualificationReceiptV4)
+    assert receipt.complete and receipt.passed
+    assert receipt.schema_version == receipt.target.schema_version == 4
+    assert receipt.target_digest == contiguous_rate_qualification_target_digest(receipt.target)
+    assert receipt.checks[0].schema_version == 2
+    assert receipt.checks[0].manifest_schema_version == 3
+    assert tuple(item.radio_id for item in receipt.checks[0].stream_checks) == (
+        "radio-a",
+        "radio-b",
+    )
+    assert all(
+        item.logical_sample_count == item.observed_sample_count == 12
+        and item.zero_fill_sample_count == 0
+        and item.continuity_segment_count == 1
+        and item.observed_iq_sha256 == item.logical_iq_sha256
+        for item in receipt.checks[0].stream_checks
+    )
+    assert set(receipt.model_dump(mode="json")) == {
+        "kind",
+        "schema_version",
+        "target",
+        "target_digest",
+        "created_utc_ns",
+        "complete",
+        "passed",
+        "checks",
+    }
+    assert (
+        ContiguousRateQualificationReceiptV4.model_validate_json(receipt.model_dump_json())
+        == receipt
+    )
+    with pytest.raises(TypeError, match="evaluate_device_axis_contiguous_rate"):
+        evaluate_contiguous_rate(target, (), created_utc_ns=1)
+
+
+def test_v4_rejects_gap_fill_and_unverified_device_axis_evidence(tmp_path: Path) -> None:
+    manifest, digest = _capture_v3(tmp_path, gap_radio_a=True)
+    target = _target_v4(manifest)
+
+    gap_receipt = evaluate_device_axis_contiguous_rate(
+        target,
+        (_trial_v2(manifest, digest),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+    assert gap_receipt.complete and not gap_receipt.passed
+    assert {error for error in gap_receipt.checks[0].errors if error.startswith("radio-a:")} >= {
+        "radio-a: stream state is partial, not complete",
+        "radio-a: device-axis zero-fill sample count is nonzero",
+        "radio-a: logical IQ digest differs from observed IQ digest",
+        "radio-a: continuity segment count is not exactly one",
+        "radio-a: counter gap count is nonzero",
+        "radio-a: counter-proven missing sample count is nonzero",
+    }
+
+    unverified_receipt = evaluate_device_axis_contiguous_rate(
+        target,
+        (_trial_v2(manifest, digest, digest_valid=False),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+    assert "bundle digest verification failed" in unverified_receipt.checks[0].errors
+
+
+def test_v4_trial_contract_refuses_legacy_v2_manifest(tmp_path: Path) -> None:
+    manifest, digest = _capture(tmp_path, sample_rate_hz=3_000_000)
+    with pytest.raises(ValidationError, match="schema_version"):
+        ContiguousRateTrialEvidenceV2.model_validate(
+            {
+                "schema_version": 2,
+                "trial_id": "legacy-v2",
+                "manifest_sha256": digest,
+                "digest_valid": True,
+                "manifest": manifest.model_dump(mode="json"),
+            }
+        )
+
+
+def test_v4_five_m_characterization_requires_full_verified_device_axis(
+    tmp_path: Path,
+) -> None:
+    manifest, _ = _capture_v3(tmp_path)
+    document = _five_m_characterization(manifest).model_dump(mode="json")
+    document["manifest_state"] = "degraded"
+    for stream in document["streams"]:
+        stream["observed_sample_count"] = 284_795_648
+        stream["zero_fill_sample_count"] = 15_204_352
+        stream["continuity_segment_count"] = 59
+        stream["gap_count"] = 58
+        stream["missing_sample_count"] = 15_204_352
+        stream["gap_map_segment_count"] = 59
+        stream["gap_map_boundary_count"] = 58
+        stream["validity_segment_count"] = 59
+    characterization = ContiguousRateDeviceAxisCharacterizationV1.model_validate(document)
+    assert characterization.passed
+    assert characterization.manifest_state is CaptureState.DEGRADED
+
+    overflow = characterization.model_dump(mode="json")
+    overflow["streams"][0]["overflow_count"] = 1
+    with pytest.raises(ValidationError, match="overflow or rejected refills"):
+        ContiguousRateDeviceAxisCharacterizationV1.model_validate(overflow)
+
+    unverified = characterization.model_dump(mode="json")
+    unverified["physical_zero_verified"] = False
+    with pytest.raises(ValidationError, match="pass flag disagrees"):
+        ContiguousRateDeviceAxisCharacterizationV1.model_validate(unverified)
 
 
 def test_v1_wire_shape_and_same_radio_inventory_semantics_are_unchanged(

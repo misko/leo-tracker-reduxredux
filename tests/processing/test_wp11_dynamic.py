@@ -20,6 +20,9 @@ from leo.analysis.research import (
     production_research_v1_registry,
     research_pipeline_definition_id,
 )
+from leo.analysis.standard.native_analyzers import (
+    production_standard_native_evidence_configuration,
+)
 from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.application.frequency_calibration import ImmutableDocumentRefV1
 from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
@@ -247,7 +250,12 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
     research_registry = production_research_v1_registry(research_definition_id)
     expected_configuration = {
         "pipeline_lanes": {
-            "standard": {"stages": production_standard_v2_configuration()},
+            "standard": {
+                "stages": {
+                    **production_standard_v2_configuration(),
+                    **production_standard_native_evidence_configuration(),
+                }
+            },
             "research": {"stages": research_configuration},
         },
         "pipeline": "standard-research-v2",
@@ -261,7 +269,7 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
             "standard": {
                 "stages": [
                     registry.get(stage.key).spec.model_dump(mode="json")
-                    for stage in registry.graph(defaults).plan()
+                    for stage in registry.graph(registry.keys).plan()
                 ]
             },
             "research": {

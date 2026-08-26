@@ -464,7 +464,7 @@ def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
 ) -> None:
     target = "2" * 40
     root = tmp_path / "accepted"
-    receipt = root / target / "contiguous-rate-qualification-receipt-v3.json"
+    receipt = root / target / "contiguous-rate-qualification-receipt-v4.json"
     receipt.parent.mkdir(parents=True)
     receipt.write_text('{"passed":true}\n')
     receipt.chmod(0o440)
@@ -474,11 +474,14 @@ def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
 
     assert evidence["path"] == str(receipt)
     assert len(evidence["sha256"]) == 64
-    legacy_receipt = root / target / "contiguous-rate-qualification-receipt-v2.json"
-    legacy_receipt.write_text('{"passed":true}\n')
-    legacy_receipt.chmod(0o440)
-    with pytest.raises(OPS.OpsError, match="exact target-revision authority"):
-        OPS._deployment_rate_qualification(str(legacy_receipt), target=target)
+    for legacy_version in (2, 3):
+        legacy_receipt = (
+            root / target / f"contiguous-rate-qualification-receipt-v{legacy_version}.json"
+        )
+        legacy_receipt.write_text('{"passed":true}\n')
+        legacy_receipt.chmod(0o440)
+        with pytest.raises(OPS.OpsError, match="exact target-revision authority"):
+            OPS._deployment_rate_qualification(str(legacy_receipt), target=target)
     receipt.chmod(0o640)
     with pytest.raises(OPS.OpsError, match="sealed read-only"):
         OPS._deployment_rate_qualification(str(receipt), target=target)
@@ -580,8 +583,8 @@ def test_deployment_environment_adds_new_reviewed_rate_profile_bindings(
     OPS._write_deployment_environment(environment, original, target)
 
     values = OPS._environment_values(environment.read_bytes())
-    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-capture-v2"
-    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-segmented-v2"
+    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-device-axis-v3"
+    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-device-axis-v3"
     assert values["LEO_PIPELINE_RELEASE_ID"] == target
 
 
@@ -725,7 +728,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
 
     def restore_previous(path: Path, content: bytes) -> None:
         assert OPS._environment_values(path.read_bytes())["LEO_CAPTURE_PROFILE"].endswith(
-            "continuity-v2"
+            "device-axis-v3"
         )
         assert content == old_environment
         order.append("previous-environment")

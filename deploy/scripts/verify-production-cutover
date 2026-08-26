@@ -34,6 +34,25 @@ CONTIGUOUS_RATE_3M_PROFILE_DIGEST = (
 CONTIGUOUS_RATE_3M_PLAN_DIGEST = (
     "sha256:ddacc29f61c2d7e0b30e631ec84b91b737f7fecbe2d63015443b4ca588ca998e"
 )
+CONTIGUOUS_RATE_3M_DEVICE_AXIS_PROFILE_DIGEST = (
+    "sha256:4533ac4a3348721e0bf7bda50c5701f505e47ef579ef9a47cbc7c38b9c9b4c3e"
+)
+CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST = (
+    "sha256:9fd011c1843213d3c699cadc2cb66d0cabecd804fc01b0ad0e45f3b8026fa8eb"
+)
+CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST = (
+    "sha256:8851c20e4c6e79bc5d4cb92f8fd0e09eaf24e59b742239b92bc248fd4d09ba5d"
+)
+CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST = (
+    "sha256:22b2bbb83a10b6494b16cba6303591eedbda37d3f876f7822c1fe5d68f42ccc1"
+)
+CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS = (
+    "CAPTURE_ONLY",
+    "DEVICE_AXIS_ZERO_FILL",
+    "LIVE",
+    "RANDOM_TUNING",
+    "STANDARD_NATIVE",
+)
 CONTIGUOUS_RATE_USB_CONTROL_RADIOS = (
     ("usb_control_pluto_003a", "104000bac4950008230026001b440a003a"),
     ("usb_control_pluto_3ef2", "1040007c4a94000211000b009186843ef2"),
@@ -41,14 +60,14 @@ CONTIGUOUS_RATE_USB_CONTROL_RADIOS = (
 RATE_RECEIPT_MAXIMUM_AGE_NS = 24 * 60 * 60 * 1_000_000_000
 RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS = 5 * 60 * 1_000_000_000
 REVIEWED_CAPTURE_PROFILE_SHA256 = {
-    Path("profiles/starlink-ch4-lower-2p5m-60s-continuity-v2.yaml"): (
-        "70bdc8f3c91d62c905321ce4244af0ddbd2f3e3835f04ad0684035f5bf089ebd"
+    Path("profiles/starlink-ch4-lower-2p5m-60s-device-axis-v3.yaml"): (
+        "3845c71bf2ebc497fc1d605362130e3cb44317297f72af3bf4e683b9d0317c2b"
     ),
-    Path("profiles/starlink-ch4-lower-3m-60s-capture-v2.yaml"): (
-        "e9e32c13cbc97515ed05c980126671b79943ebaf6ea2c9d8915d094d149ec700"
+    Path("profiles/starlink-ch4-lower-3m-60s-device-axis-v3.yaml"): (
+        "ee58dae91024ad0cbafd8d794b9883747331f01e6d332a620fbf201ae2388af7"
     ),
-    Path("profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml"): (
-        "c7a893d5fe64483fd287269beb68f8a5722ba6c85e240f86bf7bd102d1707268"
+    Path("profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml"): (
+        "ed944adfdd42fd931cf2e7523dde97aa8b869e06365b8e656b2de218ddee2ada"
     ),
     Path("profiles/hardware-canary-3m-60s-contiguous-v2.yaml"): (
         "7cff17eef3c4fe063dbfddba65fbfe51cc948d14cd00da44c450858c6fdff4e2"
@@ -423,13 +442,13 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         )
     if environment.get("LEO_PIPELINE_RELEASE_ID") != revision:
         raise ValueError("pipeline release ID must equal the exact staged revision")
-    if environment.get("LEO_CAPTURE_PROFILE") != "starlink-ch4-lower-2p5m-60s-continuity-v2":
+    if environment.get("LEO_CAPTURE_PROFILE") != "starlink-ch4-lower-2p5m-60s-device-axis-v3":
         raise ValueError(
             "production capture profile must be the counter-authoritative dual-RX 60-second profile"
         )
     expected_rate_profiles = {
-        "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-capture-v2",
-        "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-segmented-v2",
+        "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-device-axis-v3",
+        "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-device-axis-v3",
     }
     if any(environment.get(key) != value for key, value in expected_rate_profiles.items()):
         raise ValueError("production sample-rate profile pool is not the exact reviewed set")
@@ -1244,6 +1263,483 @@ def verify_contiguous_rate_3m_receipt_v3(
     )
 
 
+def verify_contiguous_rate_3m_receipt_v4(
+    receipt: dict[str, Any],
+    *,
+    revision: str,
+    release: Path,
+) -> None:
+    """Verify the V4 authority for the exact production device-axis profile."""
+
+    receipt_keys = {
+        "kind",
+        "schema_version",
+        "target",
+        "target_digest",
+        "created_utc_ns",
+        "complete",
+        "passed",
+        "checks",
+    }
+    target = receipt.get("target")
+    if (
+        set(receipt) != receipt_keys
+        or receipt.get("kind") != "contiguous_rate_qualification"
+        or type(receipt.get("schema_version")) is not int
+        or receipt.get("schema_version") != 4
+        or receipt.get("complete") is not True
+        or receipt.get("passed") is not True
+        or not isinstance(target, dict)
+    ):
+        raise ValueError("3 MS/s device-axis receipt is not a complete strict V4 pass")
+
+    created_utc_ns = receipt.get("created_utc_ns")
+    if type(created_utc_ns) is not int:
+        raise ValueError("3 MS/s V4 receipt created_utc_ns is missing or not an actual integer")
+    now_utc_ns = time.time_ns()
+    if created_utc_ns > now_utc_ns + RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS:
+        raise ValueError("3 MS/s V4 receipt creation time is more than five minutes in the future")
+    if created_utc_ns < now_utc_ns - RATE_RECEIPT_MAXIMUM_AGE_NS:
+        raise ValueError("3 MS/s V4 receipt creation time is older than 24 hours")
+
+    target_keys = {
+        "schema_version",
+        "qualification_id",
+        "profile_revision_digest",
+        "capture_plan_digest",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "requested_sample_count",
+        "expected_radios",
+        "expected_host",
+        "expected_producer",
+        "pluto_plus_utils_revision",
+        "libiio_version",
+        "libiio_library_sha256",
+        "python_iio_sha256",
+        "native_network_interface",
+        "native_source_address",
+        "prerequisites",
+        "policy",
+    }
+    expected_target_values = {
+        "schema_version": 4,
+        "qualification_id": f"native-ip-3m-{revision[:12]}",
+        "profile_revision_digest": CONTIGUOUS_RATE_3M_DEVICE_AXIS_PROFILE_DIGEST,
+        "capture_plan_digest": CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST,
+        "sample_rate_hz": 3_000_000,
+        "bandwidth_hz": 2_500_000,
+        "requested_sample_count": 180_000_000,
+        "native_network_interface": "enp132s0",
+        "native_source_address": "192.168.1.142",
+    }
+    if set(target) != target_keys or any(
+        type(target.get(key)) is not type(value) or target.get(key) != value
+        for key, value in expected_target_values.items()
+    ):
+        raise ValueError("3 MS/s V4 target differs from the deployed device-axis plan")
+
+    expected_policy = {
+        "schema_version": 1,
+        "required_trial_count": 10,
+        "minimum_overlap_fraction": 0.99,
+        "required_kernel_buffers": 8,
+        "required_queue_capacity_refills": 32,
+        "maximum_queue_high_water_fraction": 0.75,
+        "required_metadata_abi_version": 1,
+        "maximum_refill_service_interval_ns": 699_050_666,
+        "required_tags": list(CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS),
+    }
+    policy = target.get("policy")
+    if (
+        not isinstance(policy, dict)
+        or set(policy) != set(expected_policy)
+        or any(
+            type(policy.get(key)) is not type(value) or policy.get(key) != value
+            for key, value in expected_policy.items()
+        )
+    ):
+        raise ValueError("3 MS/s V4 policy differs from the deployed device-axis gate")
+
+    prerequisites = target.get("prerequisites")
+    v4_prerequisite_keys = {
+        "schema_version",
+        "radio_safety",
+        "native_ip_canaries",
+        "writer_benchmark",
+        "five_m_characterization",
+    }
+    if (
+        not isinstance(prerequisites, dict)
+        or set(prerequisites) != v4_prerequisite_keys
+        or type(prerequisites.get("schema_version")) is not int
+        or prerequisites.get("schema_version") != 4
+    ):
+        raise ValueError("3 MS/s V4 prerequisites are not the exact combined campaign")
+    verify_contiguous_rate_3m_prerequisites_v3(
+        {
+            "schema_version": 3,
+            "radio_safety": prerequisites.get("radio_safety"),
+            "native_ip_canaries": prerequisites.get("native_ip_canaries"),
+            "writer_benchmark": prerequisites.get("writer_benchmark"),
+        },
+        radio_ids=("radio_pluto_5d4d", "radio_pluto_19f2"),
+    )
+
+    with (release / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)
+    metadata_runtime_path = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
+    try:
+        metadata_runtime = json.loads(metadata_runtime_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("staged release metadata runtime receipt is unreadable") from error
+    if (
+        not isinstance(metadata_runtime, dict)
+        or type(metadata_runtime.get("schema_version")) is not int
+        or metadata_runtime.get("schema_version") != 1
+        or type(metadata_runtime.get("metadata_abi")) is not int
+        or metadata_runtime.get("metadata_abi") != 1
+        or not isinstance(metadata_runtime.get("libiio_version"), str)
+        or not metadata_runtime["libiio_version"]
+    ):
+        raise ValueError("staged release metadata runtime is not ABI 1")
+
+    producer = target.get("expected_producer")
+    expected_ppu = project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"]
+    if (
+        not isinstance(producer, dict)
+        or set(producer) != {"schema_version", "name", "version", "source_revision"}
+        or type(producer.get("schema_version")) is not int
+        or producer.get("schema_version") != 1
+        or producer.get("name") != "leo-acquisition"
+        or producer.get("version") != project["project"]["version"]
+        or producer.get("source_revision") != revision
+        or target.get("pluto_plus_utils_revision") != expected_ppu
+    ):
+        raise ValueError("3 MS/s V4 software identity differs from the staged release")
+    expected_runtime = {
+        "libiio_version": metadata_runtime.get("libiio_version"),
+        "libiio_library_sha256": "sha256:" + str(metadata_runtime.get("native_libiio_sha256")),
+        "python_iio_sha256": "sha256:" + str(metadata_runtime.get("pylibiio_sha256")),
+    }
+    if any(target.get(key) != value for key, value in expected_runtime.items()) or any(
+        not _is_sha256_digest(expected_runtime[key])
+        for key in ("libiio_library_sha256", "python_iio_sha256")
+    ):
+        raise ValueError("3 MS/s V4 libiio identity differs from the staged runtime")
+
+    expected_radios = (
+        (
+            "radio_pluto_5d4d",
+            "1040005e0b100007100010000bf33a5d4d",
+            "ip:192.168.1.20",
+            "iio_ip",
+        ),
+        (
+            "radio_pluto_19f2",
+            "10400056f695001322002d0010ad1719f2",
+            "ip:192.168.1.21",
+            "iio_ip",
+        ),
+    )
+    radio_keys = {
+        "schema_version",
+        "radio_id",
+        "serial",
+        "uri",
+        "transport",
+        "model",
+        "firmware_version",
+        "hardware_revision",
+    }
+    radios = target.get("expected_radios")
+    if not isinstance(radios, list) or len(radios) != 2:
+        raise ValueError("3 MS/s V4 receipt must bind exactly two radios")
+    for radio, expected in zip(radios, expected_radios, strict=True):
+        if (
+            not isinstance(radio, dict)
+            or set(radio) != radio_keys
+            or type(radio.get("schema_version")) is not int
+            or radio.get("schema_version") != 1
+            or (
+                radio.get("radio_id"),
+                radio.get("serial"),
+                radio.get("uri"),
+                radio.get("transport"),
+            )
+            != expected
+            or not isinstance(radio.get("model"), str)
+            or not radio["model"]
+            or not isinstance(radio.get("firmware_version"), str)
+            or not radio["firmware_version"]
+            or (
+                radio.get("hardware_revision") is not None
+                and (
+                    not isinstance(radio.get("hardware_revision"), str)
+                    or not radio["hardware_revision"]
+                )
+            )
+        ):
+            raise ValueError("3 MS/s V4 radio identities differ from the production pair")
+
+    host = target.get("expected_host")
+    machine_id_path = Path("/etc/machine-id")
+    if (
+        not isinstance(host, dict)
+        or set(host) != {"schema_version", "hostname", "machine_id", "operating_system"}
+        or type(host.get("schema_version")) is not int
+        or host.get("schema_version") != 1
+        or not machine_id_path.is_file()
+        or host.get("hostname") != socket.gethostname()
+        or host.get("machine_id") != machine_id_path.read_text(encoding="utf-8").strip()
+        or not host.get("operating_system")
+    ):
+        raise ValueError("3 MS/s V4 host identity differs from the deployment host")
+
+    five_m = prerequisites.get("five_m_characterization")
+    five_m_keys = {
+        "schema_version",
+        "evidence_sha256",
+        "manifest_sha256",
+        "session_id",
+        "profile_revision_digest",
+        "capture_plan_digest",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "requested_sample_count",
+        "radios",
+        "host",
+        "producer",
+        "manifest_state",
+        "streams",
+        "bundle_verified",
+        "physical_zero_verified",
+        "validity_verified",
+        "gap_map_verified",
+        "passed",
+        "errors",
+    }
+    expected_five_m_values = {
+        "schema_version": 1,
+        "profile_revision_digest": CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST,
+        "capture_plan_digest": CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST,
+        "sample_rate_hz": 5_000_000,
+        "bandwidth_hz": 2_500_000,
+        "requested_sample_count": 300_000_000,
+        "bundle_verified": True,
+        "physical_zero_verified": True,
+        "validity_verified": True,
+        "gap_map_verified": True,
+        "passed": True,
+        "errors": [],
+    }
+    if (
+        not isinstance(five_m, dict)
+        or set(five_m) != five_m_keys
+        or any(
+            type(five_m.get(key)) is not type(value) or five_m.get(key) != value
+            for key, value in expected_five_m_values.items()
+        )
+        or not _is_sha256_digest(five_m.get("evidence_sha256"))
+        or not _is_sha256_digest(five_m.get("manifest_sha256"))
+        or not isinstance(five_m.get("session_id"), str)
+        or not five_m["session_id"].strip()
+        or five_m.get("radios") != radios
+        or five_m.get("host") != host
+        or five_m.get("producer") != producer
+    ):
+        raise ValueError("5 MS/s characterization differs from the exact combined V4 campaign")
+
+    five_m_stream_keys = {
+        "schema_version",
+        "radio_id",
+        "logical_sample_count",
+        "observed_sample_count",
+        "zero_fill_sample_count",
+        "continuity_segment_count",
+        "gap_count",
+        "missing_sample_count",
+        "overflow_count",
+        "enqueue_failure_count",
+        "terminal_rejected_gap_count",
+        "terminal_rejected_missing_sample_count",
+        "terminal_rejected_overflow_count",
+        "gap_map_segment_count",
+        "gap_map_boundary_count",
+        "validity_segment_count",
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    }
+    five_m_digest_fields = (
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    )
+    five_m_streams = five_m.get("streams")
+    if not isinstance(five_m_streams, list) or len(five_m_streams) != 2:
+        raise ValueError("5 MS/s characterization lacks exactly two stream closures")
+    any_five_m_loss = False
+    for stream, expected_radio in zip(five_m_streams, expected_radios, strict=True):
+        if not isinstance(stream, dict) or set(stream) != five_m_stream_keys:
+            raise ValueError("5 MS/s stream characterization has an unreviewed wire shape")
+        integer_fields = (
+            "logical_sample_count",
+            "observed_sample_count",
+            "zero_fill_sample_count",
+            "continuity_segment_count",
+            "gap_count",
+            "missing_sample_count",
+            "overflow_count",
+            "enqueue_failure_count",
+            "terminal_rejected_gap_count",
+            "terminal_rejected_missing_sample_count",
+            "terminal_rejected_overflow_count",
+            "gap_map_segment_count",
+            "gap_map_boundary_count",
+            "validity_segment_count",
+        )
+        if any(type(stream.get(key)) is not int for key in integer_fields):
+            raise ValueError("5 MS/s stream characterization counters are not exact integers")
+        observed = stream["observed_sample_count"]
+        zero_fill = stream["zero_fill_sample_count"]
+        gap_count = stream["gap_count"]
+        validity_segments = stream["validity_segment_count"]
+        if (
+            type(stream.get("schema_version")) is not int
+            or stream.get("schema_version") != 1
+            or stream.get("radio_id") != expected_radio[0]
+            or stream["logical_sample_count"] != 300_000_000
+            or observed <= 0
+            or zero_fill < 0
+            or observed + zero_fill != 300_000_000
+            or stream["missing_sample_count"] != zero_fill
+            or stream["overflow_count"] != 0
+            or stream["enqueue_failure_count"] != 0
+            or stream["terminal_rejected_gap_count"] != 0
+            or stream["terminal_rejected_missing_sample_count"] != 0
+            or stream["terminal_rejected_overflow_count"] != 0
+            or gap_count < 0
+            or stream["gap_map_boundary_count"] != gap_count
+            or stream["gap_map_segment_count"] != gap_count + 1
+            or validity_segments != stream["gap_map_segment_count"]
+            or not 1 <= stream["continuity_segment_count"] <= validity_segments
+            or any(not _is_sha256_digest(stream.get(key)) for key in five_m_digest_fields)
+            or (
+                zero_fill == 0
+                and stream.get("observed_iq_sha256") != stream.get("logical_iq_sha256")
+            )
+        ):
+            raise ValueError("5 MS/s stream characterization does not close its device axis")
+        any_five_m_loss = any_five_m_loss or zero_fill > 0
+    expected_five_m_state = "degraded" if any_five_m_loss else "committed"
+    if five_m.get("manifest_state") != expected_five_m_state:
+        raise ValueError("5 MS/s manifest state disagrees with the verified device axis")
+
+    if receipt.get("target_digest") != canonical_json_sha256(target):
+        raise ValueError("3 MS/s V4 target digest does not bind the full target")
+
+    checks = receipt.get("checks")
+    if not isinstance(checks, list) or len(checks) != 10:
+        raise ValueError("3 MS/s V4 receipt does not contain exactly ten trial checks")
+    check_keys = {
+        "schema_version",
+        "trial_id",
+        "session_id",
+        "manifest_sha256",
+        "passed",
+        "errors",
+        "manifest_schema_version",
+        "stream_checks",
+    }
+    stream_check_keys = {
+        "schema_version",
+        "radio_id",
+        "logical_sample_count",
+        "observed_sample_count",
+        "zero_fill_sample_count",
+        "continuity_segment_count",
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    }
+    digest_fields = (
+        "observed_iq_sha256",
+        "logical_iq_sha256",
+        "timeline_sha256",
+        "gap_map_sha256",
+        "validity_inventory_sha256",
+    )
+    trial_ids: set[str] = set()
+    session_ids: set[str] = set()
+    manifest_digests: set[str] = set()
+    expected_radio_ids = tuple(item[0] for item in expected_radios)
+    for check in checks:
+        if (
+            not isinstance(check, dict)
+            or set(check) != check_keys
+            or type(check.get("schema_version")) is not int
+            or check.get("schema_version") != 2
+            or type(check.get("manifest_schema_version")) is not int
+            or check.get("manifest_schema_version") != 3
+            or check.get("passed") is not True
+            or check.get("errors") != []
+        ):
+            raise ValueError("3 MS/s V4 receipt contains a failed or malformed trial check")
+        trial_id = check.get("trial_id")
+        session_id = check.get("session_id")
+        manifest_digest = check.get("manifest_sha256")
+        if (
+            not isinstance(trial_id, str)
+            or not trial_id.strip()
+            or not isinstance(session_id, str)
+            or not session_id.strip()
+            or not _is_sha256_digest(manifest_digest)
+        ):
+            raise ValueError("3 MS/s V4 receipt contains a failed or malformed trial check")
+
+        stream_checks = check.get("stream_checks")
+        if not isinstance(stream_checks, list) or len(stream_checks) != 2:
+            raise ValueError("3 MS/s V4 trial does not retain exactly two stream checks")
+        for stream_check, radio_id in zip(stream_checks, expected_radio_ids, strict=True):
+            if (
+                not isinstance(stream_check, dict)
+                or set(stream_check) != stream_check_keys
+                or type(stream_check.get("schema_version")) is not int
+                or stream_check.get("schema_version") != 1
+                or stream_check.get("radio_id") != radio_id
+                or type(stream_check.get("logical_sample_count")) is not int
+                or stream_check.get("logical_sample_count") != 180_000_000
+                or type(stream_check.get("observed_sample_count")) is not int
+                or stream_check.get("observed_sample_count") != 180_000_000
+                or type(stream_check.get("zero_fill_sample_count")) is not int
+                or stream_check.get("zero_fill_sample_count") != 0
+                or type(stream_check.get("continuity_segment_count")) is not int
+                or stream_check.get("continuity_segment_count") != 1
+                or any(not _is_sha256_digest(stream_check.get(key)) for key in digest_fields)
+                or stream_check.get("observed_iq_sha256") != stream_check.get("logical_iq_sha256")
+            ):
+                raise ValueError("3 MS/s V4 stream check is not an exact lossless closure")
+
+        trial_ids.add(trial_id)
+        session_ids.add(session_id)
+        manifest_digests.add(str(manifest_digest))
+    if len(trial_ids) != 10:
+        raise ValueError("3 MS/s V4 receipt trial IDs are not independently unique")
+    if len(session_ids) != 10:
+        raise ValueError("3 MS/s V4 receipt session IDs are not independently unique")
+    if len(manifest_digests) != 10:
+        raise ValueError("3 MS/s V4 receipt manifest digests are not independently unique")
+    if five_m["session_id"] in session_ids or five_m["manifest_sha256"] in manifest_digests:
+        raise ValueError("5 MS/s characterization is not independent from the 3 MS/s trials")
+
+
 def verify(args: argparse.Namespace) -> list[str]:
     revision = args.revision
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
@@ -1283,14 +1779,14 @@ def verify(args: argparse.Namespace) -> list[str]:
         revision=revision,
     )
     expected_rate_receipt_path = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v3.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v4.json"
     )
     if args.rate_qualification_receipt != expected_rate_receipt_path:
         raise ValueError("3 MS/s continuity receipt path is not the revision authority")
     if sha256(args.rate_qualification_receipt) != args.rate_qualification_receipt_sha256:
         raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
     rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
-    verify_contiguous_rate_3m_receipt_v3(rate_receipt, revision=revision, release=release)
+    verify_contiguous_rate_3m_receipt_v4(rate_receipt, revision=revision, release=release)
 
     if args.standard_regression_receipt is not None:
         standard_receipt = load_json(
@@ -1397,7 +1893,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         "four staged capture profiles match the exact reviewed bytes",
         "staged acquisition service uses the exact ordered profile and radio pool",
         "exact-revision release qualification is sealed and passed",
-        "ten-trial native-IP 3 MS/s continuity qualification is sealed and passed",
+        "combined ten-trial 3 MS/s and full-span 5 MS/s device-axis qualification is sealed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
         "scanner raw-IQ and report directories are installed and permissioned",

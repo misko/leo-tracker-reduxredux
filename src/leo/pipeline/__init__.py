@@ -76,6 +76,13 @@ from leo.pipeline.topology import (
     compile_standard_run_plan,
     synchronization_inventory_document,
 )
+from leo.pipeline.validity import (
+    ContinuitySegmentIqReader,
+    DeviceIqSpan,
+    ValidityAwareIqReader,
+    WindowClassification,
+    WindowValidity,
+)
 
 __all__ = [
     "AnalysisContext",
@@ -83,10 +90,12 @@ __all__ = [
     "Analyzer",
     "AnalyzerRegistry",
     "CompiledScopeInventory",
+    "ContinuitySegmentIqReader",
     "CalibrationDerivationInputV1",
     "DerivationOutputSchemaV1",
     "DuplicateAnalyzerError",
     "DuplicateStageError",
+    "DeviceIqSpan",
     "ExpandedRunPlanV1",
     "EvidenceDerivationInputV1",
     "FIVE_M_GAP_AWARE_CAPABILITY_V1",
@@ -133,6 +142,9 @@ __all__ = [
     "UpstreamDerivationOutputV1",
     "UnknownAnalyzerError",
     "UpstreamJsonProduct",
+    "ValidityAwareIqReader",
+    "WindowClassification",
+    "WindowValidity",
     "compile_scope_inventory",
     "compile_rate_baseline_run_plan",
     "compile_standard_run_plan",

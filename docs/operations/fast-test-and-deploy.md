@@ -9,7 +9,7 @@ release_revision=$(git rev-parse origin/main)
 sudo ./ops deploy --stage-only --revision "$release_revision"
 # Run the authorized hardware qualification with
 # /opt/leo-tracker/releases/$release_revision/.venv/bin/python.
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v3.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v4.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -38,9 +38,14 @@ The available test tiers are:
 ```
 
 `./ops deploy --plan` is read-only. A full-cutover plan also requires the sealed,
-exact-revision V3 3 MS/s receipt via `--rate-qualification-receipt`. V3 binds the production-radio
-safety evidence, native-IP canaries, writer benchmark, and ten strict trials; it has no
-non-production USB control arm. The plan requires a clean worktree and an exact local
+exact-revision V4 combined-pool receipt via `--rate-qualification-receipt`. V4 binds the exact
+deployed 3 MS/s and 5 MS/s device-axis profiles and fixed two-radio plans, production-radio safety
+evidence, native-IP canaries, writer benchmark, and ten strict lossless 3 MS/s Recording V3 trials.
+The same bounded campaign must also seal one full-span 5 MS/s Recording V3 characterization: each
+radio has 300,000,000 logical samples, observed plus physical zero fill closes that span, the gap
+map and validity inventory agree, and overflow, enqueue failure, and terminal rejection remain
+zero. The accepted receipt is published only after radio restoration and maintenance-lease
+release. It has no non-production USB control arm. The plan requires a clean worktree and an exact local
 `origin/main` SHA, compares it with `/opt/leo-tracker/current`, and reports affected components,
 service restarts, migration requirements, and worker-fence requirements.
 

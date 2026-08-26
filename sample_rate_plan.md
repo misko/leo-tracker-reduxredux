@@ -430,6 +430,22 @@ Performance gates:
 - initial Standard-native heavy concurrency two, raised to four only after
   measured memory and I/O headroom.
 
+Production cutover additionally requires an additive
+`ContiguousRateQualificationReceiptV4` from ten lossless trials of the exact
+deployed `starlink-ch4-lower-3m-60s-device-axis-v3` profile and fixed ordered
+production-radio plan. The receipt must retain both streams' 180,000,000
+logical/observed samples, zero zero fill, one continuity segment, and all V3
+IQ/timeline/gap/validity digests. The same bounded campaign must also bind one
+full-span capture of the exact deployed 5 MS/s device-axis profile and plan.
+For each radio, its typed characterization requires 300,000,000 logical
+samples, observed plus physical zero fill equal to that span, verified bundle,
+gap-map, validity, and literal-zero evidence, and zero overflow, enqueue
+failure, or terminal rejected refill. Gaps remain truthful degraded evidence;
+this is not a 5 MS/s contiguous claim. The accepted V4 path is published only
+after exact radio restoration and maintenance-lease release. Only the sealed target-revision path
+`contiguous-rate-qualification-receipt-v4.json` is accepted; V1–V3 receipts do
+not authorize this device-axis cutover.
+
 ## 10. Delivery sequence
 
 1. Land contracts and the dual-format validity-aware reader dark, with no

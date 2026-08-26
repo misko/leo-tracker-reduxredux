@@ -10,11 +10,14 @@ from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.radio import RadioId, RadioIdentityV1
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     HostIdentityV1,
     ProducerV1,
     RecordingManifestV2,
+    RecordingManifestV3,
 )
 from leo.contracts.states import CaptureState, StreamState, SynchronizationGrade
+from leo.contracts.validity import DeviceAxisContentKind
 
 QualificationId = Annotated[
     str,
@@ -359,6 +362,149 @@ class ContiguousRatePrerequisitesV3(ContractModel):
         return self.radio_safety[0].radio_id, self.radio_safety[1].radio_id
 
 
+class ContiguousRateDeviceAxisCharacterizationStreamV1(ContractModel):
+    """Verified full-span 5 MS/s closure for one production stream."""
+
+    schema_version: Literal[1] = 1
+    radio_id: RadioId
+    logical_sample_count: Literal[300_000_000] = 300_000_000
+    observed_sample_count: Annotated[int, Field(gt=0, le=300_000_000)]
+    zero_fill_sample_count: Annotated[int, Field(ge=0, le=300_000_000)]
+    continuity_segment_count: Annotated[int, Field(gt=0)]
+    gap_count: Annotated[int, Field(ge=0)]
+    missing_sample_count: Annotated[int, Field(ge=0)]
+    overflow_count: Annotated[int, Field(ge=0)]
+    enqueue_failure_count: Annotated[int, Field(ge=0)]
+    terminal_rejected_gap_count: Annotated[int, Field(ge=0)]
+    terminal_rejected_missing_sample_count: Annotated[int, Field(ge=0)]
+    terminal_rejected_overflow_count: Annotated[int, Field(ge=0)]
+    gap_map_segment_count: Annotated[int, Field(gt=0)]
+    gap_map_boundary_count: Annotated[int, Field(ge=0)]
+    validity_segment_count: Annotated[int, Field(gt=0)]
+    observed_iq_sha256: Sha256Digest
+    logical_iq_sha256: Sha256Digest
+    timeline_sha256: Sha256Digest
+    gap_map_sha256: Sha256Digest
+    validity_inventory_sha256: Sha256Digest
+
+    @model_validator(mode="after")
+    def _device_axis_is_closed(self) -> Self:
+        if self.observed_sample_count + self.zero_fill_sample_count != self.logical_sample_count:
+            raise ValueError("5 MS/s logical span must equal observed plus zero fill")
+        if self.missing_sample_count != self.zero_fill_sample_count:
+            raise ValueError("5 MS/s missing samples must equal physical zero fill")
+        if self.gap_count != self.gap_map_boundary_count:
+            raise ValueError("5 MS/s gap count must equal the verified gap-map boundaries")
+        if self.gap_map_segment_count != self.validity_segment_count:
+            raise ValueError("5 MS/s gap-map and validity segment inventories differ")
+        if self.validity_segment_count != self.gap_count + 1:
+            raise ValueError("5 MS/s validity segments do not close every gap boundary")
+        if self.continuity_segment_count > self.validity_segment_count:
+            raise ValueError("5 MS/s continuity segments exceed the validity inventory")
+        if (
+            self.overflow_count
+            or self.enqueue_failure_count
+            or self.terminal_rejected_gap_count
+            or self.terminal_rejected_missing_sample_count
+            or self.terminal_rejected_overflow_count
+        ):
+            raise ValueError("5 MS/s characterization contains overflow or rejected refills")
+        if not self.zero_fill_sample_count and self.observed_iq_sha256 != self.logical_iq_sha256:
+            raise ValueError("lossless 5 MS/s logical and observed IQ digests differ")
+        return self
+
+
+class ContiguousRateDeviceAxisCharacterizationV1(ContractModel):
+    """Sealed exact-profile 5 MS/s V3 characterization required by V4 cutover."""
+
+    schema_version: Literal[1] = 1
+    evidence_sha256: Sha256Digest
+    manifest_sha256: Sha256Digest
+    session_id: QualificationId
+    profile_revision_digest: Sha256Digest
+    capture_plan_digest: Sha256Digest
+    sample_rate_hz: Literal[5_000_000] = 5_000_000
+    bandwidth_hz: Literal[2_500_000] = 2_500_000
+    requested_sample_count: Literal[300_000_000] = 300_000_000
+    radios: tuple[RadioIdentityV1, RadioIdentityV1]
+    host: HostIdentityV1
+    producer: ProducerV1
+    manifest_state: Literal[CaptureState.COMMITTED, CaptureState.DEGRADED]
+    streams: tuple[
+        ContiguousRateDeviceAxisCharacterizationStreamV1,
+        ContiguousRateDeviceAxisCharacterizationStreamV1,
+    ]
+    bundle_verified: bool
+    physical_zero_verified: bool
+    validity_verified: bool
+    gap_map_verified: bool
+    passed: bool
+    errors: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def _characterization_is_truthful(self) -> Self:
+        radio_ids = tuple(radio.radio_id for radio in self.radios)
+        if len(set(radio_ids)) != 2:
+            raise ValueError("5 MS/s characterization requires two unique radios")
+        if tuple(stream.radio_id for stream in self.streams) != radio_ids:
+            raise ValueError("5 MS/s stream evidence order differs from exact radios")
+        any_loss = any(stream.zero_fill_sample_count for stream in self.streams)
+        expected_state = CaptureState.DEGRADED if any_loss else CaptureState.COMMITTED
+        if self.manifest_state is not expected_state:
+            raise ValueError("5 MS/s manifest state disagrees with observation loss")
+        expected_pass = (
+            not self.errors
+            and self.bundle_verified
+            and self.physical_zero_verified
+            and self.validity_verified
+            and self.gap_map_verified
+        )
+        if self.passed != expected_pass:
+            raise ValueError("5 MS/s pass flag disagrees with verified characterization evidence")
+        return self
+
+
+class ContiguousRatePrerequisitesV4(ContractModel):
+    """V4 production prerequisites including exact 5 MS/s device-axis evidence."""
+
+    schema_version: Literal[4] = 4
+    radio_safety: tuple[
+        ContiguousRateRadioSafetyEvidenceV1,
+        ContiguousRateRadioSafetyEvidenceV1,
+    ]
+    native_ip_canaries: tuple[
+        ContiguousRateNativeIpCanaryEvidenceV1,
+        ContiguousRateNativeIpCanaryEvidenceV1,
+    ]
+    writer_benchmark: ContiguousRateWriterBenchmarkEvidenceV1
+    five_m_characterization: ContiguousRateDeviceAxisCharacterizationV1
+
+    @model_validator(mode="after")
+    def _production_inventory_and_characterization_are_exact(self) -> Self:
+        safety_ids = tuple(item.radio_id for item in self.radio_safety)
+        canary_ids = tuple(item.metrics.radio_id for item in self.native_ip_canaries)
+        characterization_ids = tuple(
+            radio.radio_id for radio in self.five_m_characterization.radios
+        )
+        if any(len(set(items)) != 2 for items in (safety_ids, canary_ids)):
+            raise ValueError("rate prerequisites require exactly two unique production radios")
+        if not safety_ids == canary_ids == characterization_ids:
+            raise ValueError("V4 safety, canary, and 5 MS/s radio inventories differ")
+        if any(not evidence.passed for evidence in self.radio_safety):
+            raise ValueError("rate qualification requires passing per-radio safety evidence")
+        if any(not canary.passed for canary in self.native_ip_canaries):
+            raise ValueError("rate qualification requires passing native-IP canaries")
+        if not self.writer_benchmark.passed:
+            raise ValueError("rate qualification requires a passing 72 MB/s writer benchmark")
+        if not self.five_m_characterization.passed:
+            raise ValueError("V4 qualification requires passing 5 MS/s characterization")
+        return self
+
+    @property
+    def radio_ids(self) -> tuple[str, str]:
+        return self.radio_safety[0].radio_id, self.radio_safety[1].radio_id
+
+
 class ContiguousRateQualificationTargetV1(ContractModel):
     """The exact plan, hardware, and runtime identity being qualified."""
 
@@ -463,6 +609,22 @@ class ContiguousRateQualificationTargetV3(ContiguousRateQualificationTargetV1):
         return self
 
 
+class ContiguousRateQualificationTargetV4(ContiguousRateQualificationTargetV3):
+    """V4 target for the exact production device-axis recording path."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    prerequisites: ContiguousRatePrerequisitesV4  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _five_m_identity_matches_target(self) -> Self:
+        evidence = self.prerequisites.five_m_characterization
+        if evidence.radios != self.expected_radios:
+            raise ValueError("5 MS/s radios differ from the V4 qualification target")
+        if evidence.host != self.expected_host or evidence.producer != self.expected_producer:
+            raise ValueError("5 MS/s runtime identity differs from the V4 qualification target")
+        return self
+
+
 class ContiguousRateTrialEvidenceV1(ContractModel):
     """One verified recording manifest presented to the strict evaluator."""
 
@@ -471,6 +633,16 @@ class ContiguousRateTrialEvidenceV1(ContractModel):
     manifest_sha256: Sha256Digest
     digest_valid: bool
     manifest: RecordingManifestV2
+
+
+class ContiguousRateTrialEvidenceV2(ContractModel):
+    """One verified device-axis V3 bundle presented to the V4 evaluator."""
+
+    schema_version: Literal[2] = 2
+    trial_id: QualificationId
+    manifest_sha256: Sha256Digest
+    digest_valid: bool
+    manifest: RecordingManifestV3
 
 
 class ContiguousRateTrialCheckV1(ContractModel):
@@ -486,6 +658,33 @@ class ContiguousRateTrialCheckV1(ContractModel):
         if self.passed == bool(self.errors):
             raise ValueError("trial pass flag must be true exactly when no errors exist")
         return self
+
+
+class ContiguousRateDeviceAxisStreamCheckV1(ContractModel):
+    """Receipt-retained closure evidence for one device-axis stream."""
+
+    schema_version: Literal[1] = 1
+    radio_id: RadioId
+    logical_sample_count: Annotated[int, Field(gt=0)]
+    observed_sample_count: Annotated[int, Field(gt=0)]
+    zero_fill_sample_count: Annotated[int, Field(ge=0)]
+    continuity_segment_count: Annotated[int, Field(gt=0)]
+    observed_iq_sha256: Sha256Digest
+    logical_iq_sha256: Sha256Digest
+    timeline_sha256: Sha256Digest
+    gap_map_sha256: Sha256Digest
+    validity_inventory_sha256: Sha256Digest
+
+
+class ContiguousRateTrialCheckV2(ContiguousRateTrialCheckV1):
+    """V4 trial decision retaining exact V3 stream evidence."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    manifest_schema_version: Literal[3] = 3
+    stream_checks: tuple[
+        ContiguousRateDeviceAxisStreamCheckV1,
+        ContiguousRateDeviceAxisStreamCheckV1,
+    ]
 
 
 class ContiguousRateQualificationReceiptV1(ContractModel):
@@ -540,6 +739,14 @@ class ContiguousRateQualificationReceiptV3(ContiguousRateQualificationReceiptV1)
     target: ContiguousRateQualificationTargetV3
 
 
+class ContiguousRateQualificationReceiptV4(ContiguousRateQualificationReceiptV1):
+    """V4 decision bound to exact device-axis V3 recorder evidence."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    target: ContiguousRateQualificationTargetV4
+    checks: tuple[ContiguousRateTrialCheckV2, ...]
+
+
 def contiguous_rate_qualification_target_digest(
     target: ContiguousRateQualificationTargetV1,
 ) -> str:
@@ -583,6 +790,8 @@ def evaluate_contiguous_rate(
 ) -> ContiguousRateQualificationReceiptV1:
     """Evaluate already-verified V2 manifests without touching hardware or storage."""
 
+    if isinstance(target, ContiguousRateQualificationTargetV4):
+        raise TypeError("V4 targets require evaluate_device_axis_contiguous_rate")
     trial_ids = tuple(trial.trial_id for trial in trials)
     session_ids = tuple(trial.manifest.session_id for trial in trials)
     manifest_digests = tuple(trial.manifest_sha256 for trial in trials)
@@ -611,6 +820,170 @@ def evaluate_contiguous_rate(
         complete=complete,
         passed=complete and all(check.passed for check in checks),
         checks=checks,
+    )
+
+
+def evaluate_device_axis_contiguous_rate(
+    target: ContiguousRateQualificationTargetV4,
+    trials: tuple[ContiguousRateTrialEvidenceV2, ...],
+    *,
+    created_utc_ns: int,
+) -> ContiguousRateQualificationReceiptV4:
+    """Evaluate verified V3 bundles for the exact production device-axis path."""
+
+    trial_ids = tuple(trial.trial_id for trial in trials)
+    session_ids = tuple(trial.manifest.session_id for trial in trials)
+    manifest_digests = tuple(trial.manifest_sha256 for trial in trials)
+    if len(set(trial_ids)) != len(trial_ids):
+        raise ValueError("rate qualification trial IDs must be unique")
+    if len(set(session_ids)) != len(session_ids):
+        raise ValueError("rate qualification session IDs must be unique")
+    if len(set(manifest_digests)) != len(manifest_digests):
+        raise ValueError("rate qualification manifest digests must be unique")
+    if len(trials) > target.policy.required_trial_count:
+        raise ValueError("rate qualification has more trials than the target requires")
+
+    checks = tuple(_check_device_axis_trial(target, trial) for trial in trials)
+    complete = len(checks) == target.policy.required_trial_count
+    return ContiguousRateQualificationReceiptV4(
+        target=target,
+        target_digest=contiguous_rate_qualification_target_digest(target),
+        created_utc_ns=created_utc_ns,
+        complete=complete,
+        passed=complete and all(check.passed for check in checks),
+        checks=checks,
+    )
+
+
+def _check_device_axis_trial(
+    target: ContiguousRateQualificationTargetV4,
+    trial: ContiguousRateTrialEvidenceV2,
+) -> ContiguousRateTrialCheckV2:
+    manifest = trial.manifest
+    policy = target.policy
+    errors: list[str] = []
+
+    if not trial.digest_valid:
+        errors.append("bundle digest verification failed")
+    if manifest.state is not CaptureState.COMMITTED:
+        errors.append(f"capture state is {manifest.state.value}, not committed")
+    if manifest.capture_plan.profile_revision.revision_digest != target.profile_revision_digest:
+        errors.append("profile revision digest differs from qualification target")
+    if manifest.capture_plan.plan_digest != target.capture_plan_digest:
+        errors.append("capture plan digest differs from qualification target")
+    if manifest.capture_plan.profile_revision.profile.storage_policy != (
+        DEVICE_AXIS_STORAGE_POLICY_V1
+    ):
+        errors.append("capture did not use the device-axis storage policy")
+    if manifest.compression.policy_id != DEVICE_AXIS_STORAGE_POLICY_V1:
+        errors.append("manifest compression policy is not device-axis storage")
+    if manifest.host != target.expected_host:
+        errors.append("capture host identity differs from qualification target")
+    if manifest.producer != target.expected_producer:
+        errors.append("capture producer identity differs from qualification target")
+    missing_tags = sorted(set(policy.required_tags).difference(manifest.tags))
+    if missing_tags:
+        errors.append(f"capture lacks required tags: {', '.join(missing_tags)}")
+
+    expected_radios = {radio.radio_id: radio for radio in target.expected_radios}
+    actual_radios = {stream.radio.radio_id: stream.radio for stream in manifest.streams}
+    if actual_radios != expected_radios:
+        errors.append("stream radio identities differ from qualification target")
+
+    overlap = manifest.synchronization.overlap_fraction
+    if manifest.synchronization.grade is not SynchronizationGrade.BEST_EFFORT_OBSERVED:
+        errors.append("two-radio synchronization is not best-effort observed")
+    if overlap is None or overlap < policy.minimum_overlap_fraction:
+        errors.append("two-radio overlap is below the qualification threshold")
+
+    stream_checks: list[ContiguousRateDeviceAxisStreamCheckV1] = []
+    for stream in manifest.streams:
+        prefix = f"{stream.radio.radio_id}: "
+        applied = stream.applied_settings
+        continuity = stream.continuity
+        stream_checks.append(
+            ContiguousRateDeviceAxisStreamCheckV1(
+                radio_id=stream.radio.radio_id,
+                logical_sample_count=stream.logical_sample_count,
+                observed_sample_count=stream.observed_sample_count,
+                zero_fill_sample_count=stream.zero_fill_sample_count,
+                continuity_segment_count=continuity.segment_count,
+                observed_iq_sha256=stream.observed_iq_sha256,
+                logical_iq_sha256=stream.logical_iq_sha256,
+                timeline_sha256=stream.timeline_sha256,
+                gap_map_sha256=stream.gap_map_sha256,
+                validity_inventory_sha256=stream.validity_inventory_sha256,
+            )
+        )
+        if stream.state is not StreamState.COMPLETE:
+            errors.append(prefix + f"stream state is {stream.state.value}, not complete")
+        if stream.requested_settings.sample_rate_hz != target.sample_rate_hz:
+            errors.append(prefix + "requested sample rate differs from qualification target")
+        if stream.requested_settings.bandwidth_hz != target.bandwidth_hz:
+            errors.append(prefix + "requested bandwidth differs from qualification target")
+        if applied.sample_rate_hz != target.sample_rate_hz:
+            errors.append(prefix + "applied sample rate differs from qualification target")
+        if applied.bandwidth_hz != target.bandwidth_hz:
+            errors.append(prefix + "applied bandwidth differs from qualification target")
+        if stream.requested_sample_count != target.requested_sample_count:
+            errors.append(prefix + "requested sample count differs from qualification target")
+        if not (
+            stream.logical_sample_count
+            == stream.observed_sample_count
+            == continuity.observed_sample_count
+            == continuity.device_span_sample_count
+            == target.requested_sample_count
+        ):
+            errors.append(prefix + "observed samples do not close the requested device span")
+        if stream.zero_fill_sample_count:
+            errors.append(prefix + "device-axis zero-fill sample count is nonzero")
+        if stream.observed_iq_sha256 != stream.logical_iq_sha256:
+            errors.append(prefix + "logical IQ digest differs from observed IQ digest")
+        if any(
+            chunk.content_kind is not DeviceAxisContentKind.OBSERVED
+            or chunk.continuity_segment_index != 0
+            for chunk in stream.chunks
+        ):
+            errors.append(prefix + "device-axis chunks are not one all-observed segment")
+        if continuity.segment_count != 1:
+            errors.append(prefix + "continuity segment count is not exactly one")
+        if not continuity.sample_loss_observable:
+            errors.append(prefix + "sample loss is not counter-observable")
+        if continuity.kernel_buffers != policy.required_kernel_buffers:
+            errors.append(prefix + "kernel-buffer readback differs from qualification policy")
+        if continuity.metadata_abi_version != policy.required_metadata_abi_version:
+            errors.append(prefix + "metadata ABI differs from qualification policy")
+        if continuity.queue_capacity_refills != policy.required_queue_capacity_refills:
+            errors.append(prefix + "queue capacity differs from qualification policy")
+        if (
+            continuity.queue_high_water_refills / continuity.queue_capacity_refills
+            > policy.maximum_queue_high_water_fraction
+        ):
+            errors.append(prefix + "queue high-water exceeds qualification policy")
+        if continuity.total_observed_gap_count:
+            errors.append(prefix + "counter gap count is nonzero")
+        if continuity.total_observed_missing_sample_count:
+            errors.append(prefix + "counter-proven missing sample count is nonzero")
+        if continuity.total_observed_overflow_count:
+            errors.append(prefix + "overflow count is nonzero")
+        if continuity.enqueue_failure_count:
+            errors.append(prefix + "receive-queue enqueue failure count is nonzero")
+        if (
+            policy.maximum_refill_service_interval_ns is not None
+            and continuity.maximum_refill_service_interval_ns
+            > policy.maximum_refill_service_interval_ns
+        ):
+            errors.append(prefix + "maximum refill service interval exceeds qualification policy")
+
+    if len(stream_checks) != 2:
+        raise ValueError("device-axis qualification requires exactly two stream checks")
+    return ContiguousRateTrialCheckV2(
+        trial_id=trial.trial_id,
+        session_id=manifest.session_id,
+        manifest_sha256=trial.manifest_sha256,
+        stream_checks=(stream_checks[0], stream_checks[1]),
+        passed=not errors,
+        errors=tuple(errors),
     )
 
 

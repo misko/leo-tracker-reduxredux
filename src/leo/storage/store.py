@@ -23,15 +23,23 @@ from leo.contracts.digests import sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, parse_iq_block_metadata_json
 from leo.contracts.recording import (
     CompressionSettingsV1,
+    DeviceAxisRecordingChunkV1,
     RecordingChunkV1,
     RecordingManifestV1,
+    RecordingManifestV3,
     RecordingStreamV1,
     RecordingStreamV2,
+    RecordingStreamV3,
     parse_recording_manifest_json,
 )
 from leo.contracts.states import ContinuityStatus
+from leo.contracts.validity import (
+    DeviceAxisContentKind,
+    ValidityInventoryV1,
+)
 from leo.domain.gap_map import IqContinuityEvidenceError, build_iq_gap_map
 from leo.domain.iq import IqBlock
+from leo.domain.validity import build_validity_inventory_v1
 from leo.storage.errors import (
     BundleCorruptionError,
     BundleNotFoundError,
@@ -44,6 +52,7 @@ from leo.storage.writer import FailureInjector, PublishedBundle, RecordingBundle
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 _MAX_GAP_MAP_BYTES = 16 * 1024 * 1024
+_MAX_VALIDITY_INVENTORY_BYTES = 16 * 1024 * 1024
 _VERIFY_BUFFER_BYTES = 1024 * 1024
 
 
@@ -55,6 +64,7 @@ class VerificationReport:
     uncompressed_bytes: int
     timeline_count: int
     gap_map_count: int = 0
+    validity_inventory_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -317,9 +327,18 @@ class RecordingStore:
         uncompressed_bytes = 0
         timeline_count = 0
         gap_map_count = 0
+        validity_inventory_count = 0
         for stream in inspected.manifest.streams:
+            logical_iq_digest = hashlib.sha256()
+            observed_iq_digest = hashlib.sha256()
             for chunk in stream.chunks:
-                self._decompress_chunk(inspected.path, stream, chunk, verify=True)
+                payload = self._decompress_chunk(inspected.path, stream, chunk, verify=True)
+                if isinstance(stream, RecordingStreamV3):
+                    if not isinstance(chunk, DeviceAxisRecordingChunkV1):
+                        raise BundleCorruptionError("V3 stream contains a legacy IQ chunk")
+                    logical_iq_digest.update(payload)
+                    if chunk.content_kind is DeviceAxisContentKind.OBSERVED:
+                        observed_iq_digest.update(payload)
                 chunk_count += 1
                 compressed_bytes += chunk.compressed_bytes
                 uncompressed_bytes += chunk.uncompressed_bytes
@@ -327,10 +346,30 @@ class RecordingStore:
                 timeline = _bundle_file(inspected.path, stream.timeline_relative_path)
                 _verify_file_digest(timeline, stream.timeline_sha256)
                 timeline_count += 1
-            if isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
-                gap_map = _bundle_file(inspected.path, stream.gap_map_relative_path)
-                _verify_file_digest(gap_map, stream.gap_map_sha256)
+            gap_map_relative_path = (
+                stream.gap_map_relative_path
+                if isinstance(stream, (RecordingStreamV2, RecordingStreamV3))
+                else None
+            )
+            gap_map_sha256 = (
+                stream.gap_map_sha256
+                if isinstance(stream, (RecordingStreamV2, RecordingStreamV3))
+                else None
+            )
+            if gap_map_relative_path is not None:
+                gap_map = _bundle_file(inspected.path, gap_map_relative_path)
+                _verify_file_digest(gap_map, gap_map_sha256)
                 gap_map_count += 1
+            if isinstance(stream, RecordingStreamV3):
+                if (
+                    f"sha256:{observed_iq_digest.hexdigest()}" != stream.observed_iq_sha256
+                    or f"sha256:{logical_iq_digest.hexdigest()}" != stream.logical_iq_sha256
+                ):
+                    raise BundleCorruptionError("V3 aggregate IQ digest mismatch")
+                reader = RecordingIqReader(self, inspected, stream.stream_id, verify=True)
+                validity = reader.validity_inventory()
+                _verify_device_axis_chunk_inventory(stream, validity)
+                validity_inventory_count += 1
         return VerificationReport(
             session_id=inspected.session_id,
             chunk_count=chunk_count,
@@ -338,6 +377,7 @@ class RecordingStore:
             uncompressed_bytes=uncompressed_bytes,
             timeline_count=timeline_count,
             gap_map_count=gap_map_count,
+            validity_inventory_count=validity_inventory_count,
         )
 
     def read_ci16(
@@ -355,7 +395,14 @@ class RecordingStore:
         if sample_start < 0 or sample_count < 0:
             raise ValueError("sample range cannot be negative")
         sample_end = sample_start + sample_count
-        if sample_end > stream.captured_sample_count:
+        stored_sample_count = (
+            stream.logical_sample_count
+            if isinstance(stream, RecordingStreamV3)
+            else stream.captured_sample_count
+        )
+        if sample_end > stored_sample_count:
+            if isinstance(stream, RecordingStreamV3):
+                raise ValueError("sample range exceeds the stored V3 device axis")
             raise ValueError("sample range exceeds the captured stream")
         storage_settings = stream.applied_settings or stream.requested_settings
         actual_receivers = storage_settings.receiver_ids
@@ -371,8 +418,13 @@ class RecordingStore:
 
         pieces: list[npt.NDArray[np.int16]] = []
         for chunk in stream.chunks:
-            chunk_end = chunk.sample_start + chunk.sample_count
-            overlap_start = max(sample_start, chunk.sample_start)
+            chunk_start = (
+                chunk.device_sample_start
+                if isinstance(chunk, DeviceAxisRecordingChunkV1)
+                else chunk.sample_start
+            )
+            chunk_end = chunk_start + chunk.sample_count
+            overlap_start = max(sample_start, chunk_start)
             overlap_end = min(sample_end, chunk_end)
             if overlap_start >= overlap_end:
                 continue
@@ -382,8 +434,8 @@ class RecordingStore:
                 len(actual_receivers),
                 2,
             )
-            local_start = overlap_start - chunk.sample_start
-            local_end = overlap_end - chunk.sample_start
+            local_start = overlap_start - chunk_start
+            local_end = overlap_end - chunk_start
             pieces.append(values[local_start:local_end, receiver_columns, :].copy())
         if not pieces or sum(piece.shape[0] for piece in pieces) != sample_count:
             raise BundleCorruptionError("chunk inventory did not cover the requested sample range")
@@ -441,7 +493,19 @@ class RecordingStore:
                     raise RecordingStoreInspectionError(
                         f"timeline is not a regular file: {timeline}"
                     )
-            if isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
+            if isinstance(stream, RecordingStreamV3):
+                gap_map = _bundle_file(bundle_path, stream.gap_map_relative_path)
+                if not _is_regular_file(gap_map):
+                    raise RecordingStoreInspectionError(f"gap map is not a regular file: {gap_map}")
+                validity = _bundle_file(
+                    bundle_path,
+                    stream.validity_inventory_relative_path,
+                )
+                if not _is_regular_file(validity):
+                    raise RecordingStoreInspectionError(
+                        f"validity inventory is not a regular file: {validity}"
+                    )
+            elif isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
                 gap_map = _bundle_file(bundle_path, stream.gap_map_relative_path)
                 if not _is_regular_file(gap_map):
                     raise RecordingStoreInspectionError(f"gap map is not a regular file: {gap_map}")
@@ -456,8 +520,8 @@ class RecordingStore:
     def _decompress_chunk(
         self,
         bundle_path: Path,
-        stream: RecordingStreamV1,
-        chunk: RecordingChunkV1,
+        stream: RecordingStreamV1 | RecordingStreamV3,
+        chunk: RecordingChunkV1 | DeviceAxisRecordingChunkV1,
         *,
         verify: bool,
     ) -> bytes:
@@ -481,6 +545,13 @@ class RecordingStore:
             raise BundleCorruptionError(f"uncompressed chunk size mismatch: {path}")
         if verify and sha256_digest(payload) != chunk.uncompressed_sha256:
             raise BundleCorruptionError(f"uncompressed chunk digest mismatch: {path}")
+        if (
+            verify
+            and isinstance(chunk, DeviceAxisRecordingChunkV1)
+            and chunk.content_kind is DeviceAxisContentKind.ZERO_FILL
+            and payload.count(0) != len(payload)
+        ):
+            raise BundleCorruptionError(f"V3 zero-fill chunk contains observed bytes: {path}")
         settings = stream.applied_settings
         if settings is None:
             raise BundleCorruptionError("stored IQ stream has no applied radio settings")
@@ -540,6 +611,8 @@ class RecordingIqReader:
 
     @property
     def sample_count(self) -> int:
+        if isinstance(self._stream, RecordingStreamV3):
+            return self._stream.logical_sample_count
         return self._stream.captured_sample_count
 
     @property
@@ -554,6 +627,8 @@ class RecordingIqReader:
         *,
         receiver_ids: tuple[int, ...] | None = None,
     ) -> npt.NDArray[np.int16]:
+        if isinstance(self._stream, RecordingStreamV3):
+            raise ValueError("V3 IQ requires explicit validity-aware device-axis reads")
         return self._store.read_ci16(
             self._bundle,
             self._stream.stream_id,
@@ -568,6 +643,8 @@ class RecordingIqReader:
 
         if block_samples <= 0:
             raise ValueError("block_samples must be positive")
+        if isinstance(self._stream, RecordingStreamV3):
+            raise ValueError("V3 IQ requires explicit validity-aware device-axis iteration")
         timeline = self._timeline_metadata()
         chunk_index = 0
         chunk_values: npt.NDArray[np.int16] | None = None
@@ -646,10 +723,15 @@ class RecordingIqReader:
         """
 
         gap_map = self.gap_map()
+        validity = (
+            self.validity_inventory()
+            if isinstance(self._stream, RecordingStreamV3)
+            else build_validity_inventory_v1(gap_map)
+        )
         if device_sample_start < 0 or sample_count <= 0:
             raise ValueError("device read requires a non-negative start and positive count")
         device_end = device_sample_start + sample_count
-        if device_end > gap_map.device_span_sample_count:
+        if device_end > validity.logical_sample_count:
             raise ValueError("device read exceeds the captured device-time span")
         selected = self.receiver_ids if receiver_ids is None else receiver_ids
         if not selected or len(set(selected)) != len(selected):
@@ -657,26 +739,42 @@ class RecordingIqReader:
         if any(receiver not in self.receiver_ids for receiver in selected):
             raise ValueError("device read requested an unavailable receiver")
 
-        values = np.zeros((sample_count, len(selected), 2), dtype="<i2")
+        if isinstance(self._stream, RecordingStreamV3):
+            values = self._store.read_ci16(
+                self._bundle,
+                self._stream.stream_id,
+                device_sample_start,
+                sample_count,
+                receiver_ids=selected,
+                verify=self._verify,
+            )
+        else:
+            values = np.zeros((sample_count, len(selected), 2), dtype="<i2")
         valid = np.zeros(sample_count, dtype=np.bool_)
         segment_ids = np.full(sample_count, -1, dtype=np.int32)
-        for segment_start, segment_end, stored_start, segment_index in _observed_device_segments(
-            gap_map
-        ):
-            overlap_start = max(device_sample_start, segment_start)
-            overlap_end = min(device_end, segment_end)
+        for run in validity.runs:
+            if run.content_kind is not DeviceAxisContentKind.OBSERVED:
+                continue
+            assert run.stored_sample_start is not None
+            assert run.continuity_segment_index is not None
+            overlap_start = max(device_sample_start, run.device_sample_start)
+            overlap_end = min(device_end, run.device_sample_stop)
             if overlap_start >= overlap_end:
                 continue
             count = overlap_end - overlap_start
             output_start = overlap_start - device_sample_start
-            source_start = stored_start + overlap_start - segment_start
-            values[output_start : output_start + count] = self.read(
-                source_start,
-                count,
-                receiver_ids=selected,
-            )
+            if not isinstance(self._stream, RecordingStreamV3):
+                source_start = run.stored_sample_start + overlap_start - run.device_sample_start
+                values[output_start : output_start + count] = self._store.read_ci16(
+                    self._bundle,
+                    self._stream.stream_id,
+                    source_start,
+                    count,
+                    receiver_ids=selected,
+                    verify=self._verify,
+                )
             valid[output_start : output_start + count] = True
-            segment_ids[output_start : output_start + count] = segment_index
+            segment_ids[output_start : output_start + count] = run.continuity_segment_index
         return DeviceIqSpan(
             samples=values,
             valid_samples=valid,
@@ -689,7 +787,7 @@ class RecordingIqReader:
         """Return and independently rebuild the stream's digest-bound gap map."""
 
         stream = self._stream
-        if not isinstance(stream, RecordingStreamV2):
+        if not isinstance(stream, (RecordingStreamV2, RecordingStreamV3)):
             raise ValueError("legacy recording has no counter-authoritative gap map")
         relative_path = stream.gap_map_relative_path
         expected_digest = stream.gap_map_sha256
@@ -720,6 +818,41 @@ class RecordingIqReader:
             raise BundleCorruptionError("persisted gap map disagrees with its verified timeline")
         return stored
 
+    def validity_inventory(self) -> ValidityInventoryV1:
+        """Return V3 validity only after rebuilding it from verified counter evidence."""
+
+        stream = self._stream
+        if not isinstance(stream, RecordingStreamV3):
+            raise ValueError("only V3 recordings persist a validity inventory")
+        path = _bundle_file(self._bundle.path, stream.validity_inventory_relative_path)
+        try:
+            size = path.stat().st_size
+            if not 0 < size <= _MAX_VALIDITY_INVENTORY_BYTES:
+                raise BundleCorruptionError("validity-inventory size is invalid")
+            payload = path.read_bytes()
+        except OSError as error:
+            raise BundleCorruptionError(
+                f"cannot read validity inventory {path}: {error}"
+            ) from error
+        if self._verify and sha256_digest(payload) != stream.validity_inventory_sha256:
+            raise BundleCorruptionError("validity-inventory digest mismatch")
+        try:
+            stored = ValidityInventoryV1.model_validate_json(payload)
+            rebuilt = build_validity_inventory_v1(self.gap_map())
+        except (ValidationError, IqContinuityEvidenceError) as error:
+            raise BundleCorruptionError(f"validity inventory is invalid: {error}") from error
+        if stored != rebuilt:
+            raise BundleCorruptionError(
+                "persisted validity inventory disagrees with verified counter evidence"
+            )
+        if (
+            stored.logical_sample_count != stream.logical_sample_count
+            or stored.observed_sample_count != stream.observed_sample_count
+            or stored.missing_sample_count != stream.zero_fill_sample_count
+        ):
+            raise BundleCorruptionError("V3 validity counts disagree with its manifest stream")
+        return stored
+
     def _timeline_metadata(self) -> Iterator[IqBlockMetadataV1]:
         relative_path = self._stream.timeline_relative_path
         if relative_path is None:
@@ -748,42 +881,50 @@ class RecordingIqReader:
             raise BundleCorruptionError(f"cannot read timeline {path}: {error}") from error
 
 
-def _manifest_stream(manifest: RecordingManifestV1, stream_id: str) -> RecordingStreamV1:
+def _manifest_stream(
+    manifest: RecordingManifestV1 | RecordingManifestV3,
+    stream_id: str,
+) -> RecordingStreamV1 | RecordingStreamV3:
     matches = tuple(stream for stream in manifest.streams if stream.stream_id == stream_id)
     if len(matches) != 1:
         raise BundleNotFoundError(f"manifest has no unique stream {stream_id!r}")
     return matches[0]
 
 
-def _observed_device_segments(
-    gap_map: IqGapMapV1,
-) -> tuple[tuple[int, int, int, int], ...]:
-    """Return (device start/end, stored start, segment index) for observed IQ."""
+def _verify_device_axis_chunk_inventory(
+    stream: RecordingStreamV3,
+    validity: ValidityInventoryV1,
+) -> None:
+    """Close physical chunk partitions against canonical semantic validity runs."""
 
-    segments: list[tuple[int, int, int, int]] = []
-    stored_cursor = 0
+    run_index = 0
     device_cursor = 0
-    segment_index = 0
-    for boundary in gap_map.boundaries:
-        observed_count = boundary.stored_sample_offset - stored_cursor
-        if boundary.device_sample_offset != device_cursor + observed_count:
-            raise BundleCorruptionError("gap-map stored and device coordinates disagree")
-        if observed_count:
-            segments.append(
-                (device_cursor, boundary.device_sample_offset, stored_cursor, segment_index)
-            )
-        stored_cursor = boundary.stored_sample_offset
-        device_cursor = boundary.device_sample_offset + boundary.missing_sample_count
-        segment_index = boundary.segment_index
-    observed_count = gap_map.observed_sample_count - stored_cursor
-    if observed_count:
-        segments.append(
-            (device_cursor, device_cursor + observed_count, stored_cursor, segment_index)
-        )
-        device_cursor += observed_count
-    if device_cursor != gap_map.device_span_sample_count:
-        raise BundleCorruptionError("gap-map device span does not close")
-    return tuple(segments)
+    for chunk in stream.chunks:
+        while (
+            run_index < len(validity.runs)
+            and device_cursor == validity.runs[run_index].device_sample_stop
+        ):
+            run_index += 1
+        if run_index >= len(validity.runs):
+            raise BundleCorruptionError("V3 chunk inventory extends beyond validity evidence")
+        run = validity.runs[run_index]
+        chunk_stop = chunk.device_sample_start + chunk.sample_count
+        if (
+            chunk.device_sample_start != device_cursor
+            or chunk.device_sample_start < run.device_sample_start
+            or chunk_stop > run.device_sample_stop
+            or chunk.content_kind is not run.content_kind
+            or chunk.continuity_segment_index != run.continuity_segment_index
+        ):
+            raise BundleCorruptionError("V3 chunk inventory disagrees with validity runs")
+        device_cursor = chunk_stop
+    while (
+        run_index < len(validity.runs)
+        and device_cursor == validity.runs[run_index].device_sample_stop
+    ):
+        run_index += 1
+    if run_index != len(validity.runs) or device_cursor != validity.logical_sample_count:
+        raise BundleCorruptionError("V3 chunks do not close the validity inventory")
 
 
 def _slice_metadata(

@@ -12,6 +12,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.pipeline_lanes import PipelineLane
 from leo.processing import ProcessingService
 from leo.storage import RecordingStore
+from tests.pipeline.test_standard_native_topology import _manifest as native_manifest
 from tests.rate_analysis_examples import rate_manifest
 
 _RELEASE = "1" * 40
@@ -127,3 +128,60 @@ def test_manual_research_action_queues_only_evidence_rate_baseline(
     assert processing.values["promotion_policy"] == "evidence_only"
     plan = processing.values["plan"]
     assert {job.stage_key for job in plan.jobs} == {"rate-continuity-baseline"}
+
+
+class _NativeCatalog:
+    def __init__(self, session_id: str, manifest_digest: str) -> None:
+        self.session_id = session_id
+        self.manifest_digest = manifest_digest
+
+    def presentation_snapshot(self, session_id: str):
+        assert session_id == self.session_id
+        return SimpleNamespace(
+            bundle_uri=f"bulk://{session_id}",
+            manifest_digest=self.manifest_digest,
+        )
+
+    def active_run_id(self, session_id: str):
+        assert session_id == self.session_id
+        return None
+
+    def pipeline_release_snapshot(self, release_id: str):
+        assert release_id == _RELEASE
+        return SimpleNamespace(code_revision=_RELEASE)
+
+    def current_run_id(self, session_id: str):
+        assert session_id == self.session_id
+        return "frozen-standard-current"
+
+
+def test_manual_native_action_is_explicit_and_evidence_only() -> None:
+    manifest = native_manifest("starlink-ch4-lower-5m-60s-device-axis-v3")
+    manifest_digest = canonical_digest({"native": manifest.session_id})
+    processing = _RateProcessing()
+    service = StandardReprocessService(
+        catalog=cast(CatalogRepository, _NativeCatalog(manifest.session_id, manifest_digest)),
+        recordings=cast(RecordingStore, _RateRecordings(manifest, manifest_digest)),
+        processing=cast(ProcessingService, processing),
+        pipeline_release_id=_RELEASE,
+    )
+
+    with pytest.raises(StandardReprocessError, match="explicit native evidence-only"):
+        service.queue(manifest.session_id)
+
+    result = service.queue_native_evidence(manifest.session_id)
+
+    assert result.pipeline_family == "standard-native-evidence-v1"
+    assert result.promotion_policy == "evidence_only"
+    assert result.previous_current_run_id == "frozen-standard-current"
+    assert result.queued_job_count == 12
+    assert processing.values is not None
+    assert processing.values["promotion_policy"] == "evidence_only"
+    plan = processing.values["plan"]
+    assert {job.stage_key for job in plan.jobs} == {
+        "path-standard-native",
+        "path-alternate-tracks-native",
+        "radio-scientific-report-native",
+        "paired-scientific-report-native",
+        "paired-presentation-native",
+    }

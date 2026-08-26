@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Literal, Self
 
@@ -16,8 +17,9 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.recording import Identifier, RecordingManifestV1
+from leo.contracts.recording import Identifier, RecordingManifestV1, RecordingManifestV3
 from leo.contracts.states import StarlinkEdge
+from leo.contracts.validity import ValidityInventoryV1
 
 BoundedText = Annotated[str, StringConstraints(min_length=1, max_length=1024)]
 MethodName = Annotated[
@@ -465,6 +467,69 @@ class StandardPathInputBindV3(_StandardPathInputBindBase):
     starlink_tuning_evidence_source: Literal["per_stream_manifest_tag", "capture_profile"]
 
 
+class StandardPathInputBindV4(_StandardPathInputBindBase):
+    """Native-rate path authority over the complete logical device-time span.
+
+    V4 is additive: V2/V3 continue to bind their historical packed-IQ source
+    semantics.  The embedded validity inventory is the sole authority for
+    observed, missing, and continuity-segment coordinates in Standard-native.
+    """
+
+    schema_version: Literal[4] = 4
+    algorithm_version: Literal["standard-path-input-bind-v4"]
+    starlink_channel: Annotated[int, Field(ge=1, le=8)]
+    starlink_edge: StarlinkEdge
+    starlink_tuning_evidence_source: Literal["per_stream_manifest_tag", "capture_profile"]
+    rf_bandwidth_hz: Annotated[int, Field(gt=0)]
+    requested_sample_count: Annotated[int, Field(gt=0)]
+    requested_duration_seconds: Annotated[Decimal, Field(gt=0)]
+    logical_sample_count: Annotated[int, Field(gt=0)]
+    observed_sample_count: Annotated[int, Field(gt=0)]
+    missing_sample_count: Annotated[int, Field(ge=0)]
+    observed_iq_digest: Sha256Digest
+    logical_iq_digest: Sha256Digest
+    timeline_sha256: Sha256Digest
+    gap_map_sha256: Sha256Digest
+    gap_map_content_digest: Sha256Digest
+    validity_inventory_sha256: Sha256Digest
+    first_device_sample_counter: Annotated[int, Field(ge=0)]
+    last_device_sample_counter_inclusive: Annotated[int, Field(ge=0)]
+    validity_inventory: ValidityInventoryV1
+
+    @model_validator(mode="after")
+    def _native_device_axis_is_closed(self) -> Self:
+        if self.sample_rate_hz not in {2_500_000, 3_000_000, 5_000_000}:
+            raise ValueError("Standard-native sample rate is not reviewed")
+        if not (
+            self.declared_sample_count == self.requested_sample_count == self.logical_sample_count
+        ):
+            raise ValueError("Standard-native declared, requested, and logical counts differ")
+        if self.logical_sample_count != self.observed_sample_count + self.missing_sample_count:
+            raise ValueError("Standard-native logical count does not close observed and missing IQ")
+        expected_duration = Decimal(self.requested_sample_count) / Decimal(self.sample_rate_hz)
+        if self.requested_duration_seconds != expected_duration:
+            raise ValueError("Standard-native requested duration disagrees with sample geometry")
+        if (
+            self.last_device_sample_counter_inclusive - self.first_device_sample_counter + 1
+            != self.logical_sample_count
+        ):
+            raise ValueError("Standard-native counter span disagrees with logical sample count")
+
+        validity = self.validity_inventory
+        if (
+            validity.stream_id != self.stream_id
+            or validity.timeline_sha256 != self.timeline_sha256
+            or validity.gap_map_content_digest != self.gap_map_content_digest
+            or validity.first_device_sample_counter != self.first_device_sample_counter
+            or validity.logical_sample_count != self.logical_sample_count
+            or validity.observed_sample_count != self.observed_sample_count
+            or validity.missing_sample_count != self.missing_sample_count
+            or validity.inventory_digest != self.validity_inventory_sha256
+        ):
+            raise ValueError("Standard-native path facts disagree with the validity inventory")
+        return self
+
+
 @dataclass(frozen=True, slots=True)
 class ManifestStarlinkTuningIntent:
     channel: int
@@ -473,7 +538,7 @@ class ManifestStarlinkTuningIntent:
 
 
 def resolve_manifest_starlink_tuning(
-    manifest: RecordingManifestV1,
+    manifest: RecordingManifestV1 | RecordingManifestV3,
 ) -> dict[str, ManifestStarlinkTuningIntent]:
     """Resolve explicit per-stream Starlink intent without frequency inference."""
 

@@ -349,8 +349,8 @@ sudo install -d -o root -g leo -m 0750 \
   /srv/bulk/leo/qualification/sample-rate-3m
 
 # After populating the hardware harness's required authorization and exact
-# production-radio identity environment, run its ten trials with this exact
-# staged native runtime. Isolated mode ignores PYTHON* environment variables,
+# production-radio identity environment, run its combined ten-trial 3M plus
+# one full-span 5M campaign with this exact staged native runtime. Isolated mode ignores PYTHON* environment variables,
 # so -B is the effective no-bytecode boundary that keeps the release immutable:
 sudo --preserve-env \
   /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
@@ -378,7 +378,7 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v3.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v4.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -402,13 +402,20 @@ evidence binds exact IIO identity and capabilities, fail-closed TX mute/readback
 on open and close, and independent RX-settings restoration readback; it neither
 opens a device-side shell nor depends on a device password or SSH trust store.
 
-The harness shares one monotonic 30-minute RF deadline across its 3 MS/s and
-5 MS/s arms, reserves shutdown time, and relies on the pinned finite libiio
+The harness shares one monotonic 30-minute RF deadline across ten 60-second
+3 MS/s trials and one 60-second full-span 5 MS/s characterization, reserves shutdown time, and relies on the pinned finite libiio
 context timeout so a stalled refill returns through the same source-close and
 RX-setting restoration path. Production `.20`/`.21` are the only qualification
-and recorder targets. The V3 receipt contains no non-production USB control arm;
-it retains exact per-radio safety, native-IP canary, writer, runtime, and strict
-ten-trial gates.
+and recorder targets. The V4 receipt contains no non-production USB control arm;
+it binds the exact deployed 3 MS/s and 5 MS/s device-axis profiles and fixed-radio plans,
+retains exact per-radio safety, native-IP canary, writer, and runtime evidence,
+and records both ordered streams' V3 logical/observed closure and evidence
+digests for every one of the ten 3 MS/s trials. Its embedded 5 MS/s evidence
+requires 300,000,000 logical samples per stream, exact observed-plus-zero-fill
+closure, verified physical zeros, gap-map and validity-inventory agreement, and
+zero overflow, enqueue failures, or terminal rejected refills. The harness
+publishes the accepted V4 path only after both radios restore exactly and the
+paused-maintenance lease is verified and released.
 
 Do not pre-edit the production environment to the reviewed target values: doing so
 would make a naive rollback snapshot the new configuration rather than the
