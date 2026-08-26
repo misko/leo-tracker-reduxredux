@@ -133,6 +133,7 @@ def test_report_links_and_plain_matplotlib_pngs_resolve() -> None:
     assert "Nonzero 400-Hz step" in text and "919.17" in text
     assert "No result here authorizes opening the sealed holdout" in text
     assert "historical polynomial-injection kernel was restored byte-for-byte" in text
+    assert "Component and adjacent provenance/DSP suite: **95 passed**" in text
 
     links = re.findall(r"\]\(([^)]+)\)", text)
     assert links
