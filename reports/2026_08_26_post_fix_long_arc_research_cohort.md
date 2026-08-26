@@ -27,11 +27,12 @@ field as null rather than deriving and presenting a new result.
 
 ## Why both are after the refill fix
 
-Both recordings use `RecordingManifestV2`, retain device sample counters, and
-report `sample_loss_observable=true`. On the selected `stream-1` path, observed
-sample count equals device-counter span, there is one continuity segment, and
-missing samples, gaps, overflow evidence, clipping, enqueue failures, and
-terminal rejected loss are all zero. Their first-sample times are explicitly
+Both recordings use committed `RecordingManifestV2` manifests whose selected
+`stream-1` records are complete. They retain device sample counters and report
+`sample_loss_observable=true`. On the selected path, observed sample count
+equals device-counter span, there is one continuity segment, and missing
+samples, gaps, overflow evidence, clipping, enqueue failures, and terminal
+rejected loss are all zero. Their first-sample times are explicitly
 `device_counter_anchored`.
 
 That is the repository's POST-FIX definition. It is stronger than a recording

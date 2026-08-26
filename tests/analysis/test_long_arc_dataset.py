@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -8,6 +9,7 @@ import pytest
 
 from leo.analysis.research.long_arc_dataset import (
     LongArcAccessRequestV1,
+    PostFixLongArcCohortV1,
     authorize_long_arc_request,
     load_post_fix_long_arc_cohort,
     verify_external_manifest_binding,
@@ -38,6 +40,83 @@ def _write_registry(tmp_path: Path, document: dict[str, object]) -> Path:
     return path
 
 
+def _sha256(path: Path) -> str:
+    return f"sha256:{hashlib.sha256(path.read_bytes()).hexdigest()}"
+
+
+def _external_manifest_fixture(
+    tmp_path: Path,
+    cohort: PostFixLongArcCohortV1,
+    arc_id: str,
+    *,
+    manifest_state: str = "committed",
+) -> tuple[PostFixLongArcCohortV1, Path, Path]:
+    arc = cohort.arc(arc_id)
+    recording = tmp_path / f"{arc_id}-recording.json"
+    analysis = tmp_path / f"{arc_id}-analysis.json"
+    continuity = arc.continuity
+    recording_document = {
+        "session_id": arc.provenance.session_id,
+        "state": manifest_state,
+        "streams": [
+            {
+                "stream_id": arc.path.stream_id,
+                "state": arc.provenance.recording_stream_state,
+                "captured_sample_count": continuity.observed_sample_count,
+                "gap_map_sha256": continuity.gap_map_sha256,
+                "timeline_sha256": continuity.timeline_sha256,
+                "radio": {
+                    "radio_id": arc.path.radio_id,
+                    "serial": arc.path.radio_serial,
+                },
+                "applied_settings": {
+                    "sample_rate_hz": arc.path.sample_rate_hz,
+                    "bandwidth_hz": arc.path.bandwidth_hz,
+                    "center_frequency_hz": arc.path.applied_if_hz,
+                    "receiver_ids": [arc.path.receiver_id],
+                },
+                "timing": {
+                    "first_sample": {
+                        "earliest_utc_ns": arc.span.first_sample_earliest_utc_ns,
+                        "estimate_utc_ns": arc.span.first_sample_estimate_utc_ns,
+                        "latest_utc_ns": arc.span.first_sample_latest_utc_ns,
+                        "method": "device_counter_anchored",
+                    }
+                },
+                "continuity": {
+                    "sample_loss_observable": continuity.sample_loss_observable,
+                    "observed_sample_count": continuity.observed_sample_count,
+                    "device_span_sample_count": continuity.device_span_sample_count,
+                    "segment_count": continuity.segment_count,
+                    "missing_sample_count": continuity.missing_sample_count,
+                    "overflow_count": continuity.overflow_count,
+                    "gap_count": continuity.gap_count,
+                    "clipped_sample_count": continuity.clipped_sample_count,
+                    "refill_count": continuity.full_capture_refill_count,
+                },
+            }
+        ],
+    }
+    recording.write_text(json.dumps(recording_document, sort_keys=True), encoding="utf-8")
+    recording_digest = _sha256(recording)
+    analysis_document = {
+        "session_id": arc.provenance.session_id,
+        "run_id": arc.provenance.analysis_run_id,
+        "pipeline_lane": arc.provenance.pipeline_lane,
+        "input_manifest_digest": recording_digest,
+    }
+    analysis.write_text(json.dumps(analysis_document, sort_keys=True), encoding="utf-8")
+    rebound_provenance = arc.provenance.model_copy(
+        update={
+            "recording_manifest_sha256": recording_digest,
+            "analysis_manifest_sha256": _sha256(analysis),
+        }
+    )
+    rebound_arc = arc.model_copy(update={"provenance": rebound_provenance})
+    rebound_arcs = tuple(rebound_arc if item.arc_id == arc_id else item for item in cohort.arcs)
+    return cohort.model_copy(update={"arcs": rebound_arcs}), recording, analysis
+
+
 def _request(arc: object) -> LongArcAccessRequestV1:
     return LongArcAccessRequestV1(
         arc_id=arc.arc_id,
@@ -66,6 +145,8 @@ def test_committed_registry_contains_only_the_two_reviewed_post_fix_arcs() -> No
 
     arc_9981 = cohort.arc(ARC_9981)
     assert arc_9981.provenance.session_id == "cap-20260824T192252-9981b9c27853"
+    assert arc_9981.provenance.recording_manifest_state == "committed"
+    assert arc_9981.provenance.recording_stream_state == "complete"
     assert (arc_9981.span.sample_start, arc_9981.span.sample_stop_exclusive) == (
         0,
         75_000_000,
@@ -206,6 +287,46 @@ def test_external_manifest_verifier_fails_before_any_iq_access(tmp_path: Path) -
         )
 
 
+@pytest.mark.parametrize("arc_id", [ARC_9981, ARC_150802])
+def test_external_manifest_verifier_accepts_committed_metadata_only_fixture(
+    tmp_path: Path,
+    arc_id: str,
+) -> None:
+    cohort, recording, analysis = _external_manifest_fixture(
+        tmp_path,
+        load_post_fix_long_arc_cohort(REGISTRY_PATH),
+        arc_id,
+    )
+
+    verified = verify_external_manifest_binding(
+        cohort,
+        arc_id=arc_id,
+        recording_manifest_path=recording,
+        analysis_manifest_path=analysis,
+    )
+
+    assert verified.arc_id == arc_id
+
+
+def test_external_manifest_verifier_rejects_non_authoritative_root_state(
+    tmp_path: Path,
+) -> None:
+    cohort, recording, analysis = _external_manifest_fixture(
+        tmp_path,
+        load_post_fix_long_arc_cohort(REGISTRY_PATH),
+        ARC_9981,
+        manifest_state="complete",
+    )
+
+    with pytest.raises(ValueError, match="session or state"):
+        verify_external_manifest_binding(
+            cohort,
+            arc_id=ARC_9981,
+            recording_manifest_path=recording,
+            analysis_manifest_path=analysis,
+        )
+
+
 def test_reports_resolve_local_links_and_state_the_scientific_limits() -> None:
     for report_path in (REPORT_PATH, TIME_ADDENDUM_PATH):
         report = report_path.read_text(encoding="utf-8")
@@ -221,6 +342,7 @@ def test_reports_resolve_local_links_and_state_the_scientific_limits() -> None:
     assert "no new\nexperiment run" in cohort_report
     assert "573` value is the refill count for each complete 60-second recording" in cohort_report
     assert "132 refill handoffs inside this arc" in cohort_report
+    assert "committed `RecordingManifestV2` manifests" in cohort_report
     assert "PRE-FIX data\nremain excluded" in cohort_report
 
     addendum = TIME_ADDENDUM_PATH.read_text(encoding="utf-8")
