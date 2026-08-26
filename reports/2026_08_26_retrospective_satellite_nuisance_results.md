@@ -69,6 +69,16 @@ before publishing artifacts. The corrected runner retained the bundle as
 non-evaluable; it did not drop or replace the path, relax a threshold, change a
 primary input, or alter an identity gate.
 
+A separate post-outcome implementation audit then found that NumPy serialized
+the positive `0.25 s` grid endpoint as `0.2499999999999999`. The original raw
+strict comparison incorrectly marked that endpoint as interior for 065355 and
+130425. Commit `2ec8c62c55607dc04418675147ebaa87540ea3fe` corrected the
+implementation to classify values within half a frozen grid step of either
+endpoint as boundary points, matching the preregistered fail-closed rule. This
+changed those two individual bounded-time gate entries from pass to fail. It
+did not change the frozen gate definition or threshold, any candidate, any
+other metric, the `0/4` candidate-evidence count, or the zero secure-ID result.
+
 ## Exact model and scoring
 
 For each exact receive UTC, the experiment propagated every usable,
@@ -106,6 +116,13 @@ wrong-time fields controlled candidate multiplicity (`p_min=1/41`), while 20
 within-path permutations tested whether smooth temporal order mattered
 (`p_min=1/21`).
 
+The two preregistered overfit diagnostics were evaluated after fixing each
+primary hierarchy winner: TLE Doppler plus path offsets and one unregularized
+common affine rate departure, and a satellite-free unregularized line for each
+path. They used training rows only and were scored on the same future response.
+They are diagnostic fields only: neither model selects a candidate, enters a
+promotion gate, or changes the primary fit.
+
 ## Capture-level results
 
 ![Catalog candidates and nulls](figures/2026_08_26_retrospective_satellite_nuisance/candidate-ranking-and-nulls.png)
@@ -128,6 +145,17 @@ frozen reduction. It is not numerically identical to the earlier bidirectional
 `54.45 Hz` fixed-time score in the
 [single-arc TLE report](2026_08_25_150802_visible_starlink_tle_fit.md), although
 both select 59748 and support the same conditional-candidate interpretation.
+
+| Capture | TLE + common-affine future RMS | Common affine rate | Independent-path-line future RMS |
+|---|---:|---:|---:|
+| 065355 | 33.21 Hz | +15.12 Hz/s | 37.62 Hz |
+| 103607 | 24.97 | -42.07 | 20.02 |
+| 130425 | 139.05 | -11.27 | 137.17 |
+| 150802 | 63.54 | +4.48 | 238.69 |
+
+These are the two diagnostic-only comparisons for the already selected winner,
+not alternative candidate scores. Their flexibility sometimes lowers RMS and
+sometimes worsens future prediction; it supplies no missing identity gate.
 
 ![Baseline, hierarchy, and controls](figures/2026_08_26_retrospective_satellite_nuisance/baseline-hierarchy-and-controls.png)
 
@@ -156,17 +184,35 @@ conditional 150802 candidate, consistent with the earlier
 [identity recovery audit](2026_08_25_satellite_identity_recovery_v2.md), not a
 secure association.
 
+Every explicit provenance gate passed for the four primary winners: the bound
+TLE digest was causal, the observer preset resolved, RF frequency and
+path/radio identities were valid, and all winning receiver-rate terms were
+strictly inside the nuisance boundary. The 150802 latest-causal source
+sensitivity also passed. Secure recurrence now counts only captures that pass
+both these provenance gates and every candidate-evidence gate. Since no capture
+passed the latter, every secure-capture flag is false and recurrence remains
+zero.
+
 ## Mandatory 150802 TLE-source sensitivity
 
 The durable 13:37 QNAP snapshot `ac79e846...` was the frozen primary source,
 but it was not the latest causal source. The mandatory sensitivity used the
-14:02 `9bb59fcf...` snapshot established on main. The two catalogs changed only
+14:02 `9bb59fcf...` snapshot established on main. Its historical temporary path
+is no longer required at execution: the exact 1,752,307 source bytes are
+deterministically reconstructed from the durable digest-bound `ac79e846...`
+QNAP catalog plus the committed NORAD 47657 replacement record. The
+[reconstruction authority](../config/analysis/retrospective-satellite-nuisance-latest-tle-reconstruction-v1.json)
+has SHA-256 `7748e159...`; the
+[replacement record](../config/analysis/retrospective-satellite-nuisance-latest-tle-replacement-47657.tle)
+has SHA-256 `7dc3afac...`; and reconstruction is required to reproduce the exact
+`9bb59fcf...` source digest and all 10,972 records. The two catalogs changed only
 NORAD 47657, which was outside the 561-object visible population.
 
-The exact visible population, all 561 candidate rankings, every penalized
-training RMS, every held-out RMS, and the 59748 winner were byte-numerically
-identical: both reported maximum metric difference `0.0 Hz`. The source gate
-therefore passed without describing the older snapshot as latest.
+The exact visible population, complete 561-row baseline and hierarchy rankings,
+every penalized training RMS, every held-out RMS, and the 59748 winner were
+byte-numerically identical: both reported maximum metric difference `0.0 Hz`.
+The source gate therefore passed without describing the older snapshot as
+latest.
 
 ## What improved Doppler did and did not buy
 
@@ -239,7 +285,9 @@ The bounded runner is
 [`experiment_retrospective_satellite_nuisance.py`](../tools/experiment_retrospective_satellite_nuisance.py),
 with pure nuisance fitting in
 [`satellite_nuisance_association.py`](../src/leo/analysis/research/satellite_nuisance_association.py).
-Run from the repository root with the exact frozen local TLE paths available:
+Run from the repository root with the exact frozen QNAP TLE paths available;
+the later 150802 sensitivity source is reconstructed from repository-bound
+bytes and does not require its historical temporary path:
 
 ```bash
 uv run python tools/experiment_retrospective_satellite_nuisance.py
@@ -247,6 +295,8 @@ uv run python tools/experiment_retrospective_satellite_nuisance.py
 
 Machine evidence is in
 [`retrospective-satellite-nuisance-evidence.json`](figures/2026_08_26_retrospective_satellite_nuisance/retrospective-satellite-nuisance-evidence.json),
-and byte receipts are in the
+including complete baseline and hierarchy rankings, both affine diagnostics,
+explicit provenance/secure-capture gates, and the correction chronology. Byte
+receipts are in the
 [`artifact manifest`](figures/2026_08_26_retrospective_satellite_nuisance/artifact-manifest.json).
 All visualizations are static Matplotlib PNGs.
