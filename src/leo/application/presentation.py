@@ -23,6 +23,7 @@ from leo.contracts.recording import (
     RecordingManifestV1,
     RecordingManifestV3,
     RecordingStreamV1,
+    RecordingStreamV3,
     parse_recording_manifest,
 )
 from leo.contracts.states import CaptureState, StreamState
@@ -283,6 +284,10 @@ class CatalogPresentationRepository:
         if manifest_and_root is None:
             return None
         manifest, recording_root = manifest_and_root
+        streams = cast(
+            tuple[RecordingStreamV1 | RecordingStreamV3, ...],
+            manifest.streams,
+        )
         profile = manifest.capture_plan.profile_revision.profile
         dwell_seconds = manifest.capture_plan.resolved_sample_count / profile.sample_rate_hz
         storage_state = (
@@ -312,7 +317,7 @@ class CatalogPresentationRepository:
                 ),
                 is_primary=index == 0,
             )
-            for index, stream in enumerate(manifest.streams)
+            for index, stream in enumerate(streams)
         )
         primary_analysis = stream_analyses[0]
         analysis_root = _analysis_root(snapshot.analysis, self._artifacts, self._bulk_root)
@@ -340,7 +345,7 @@ class CatalogPresentationRepository:
                 receiver_count_per_radio=len(profile.receivers),
             ),
             radios=tuple(
-                _radio_stream(stream, recording_root, storage_state) for stream in manifest.streams
+                _radio_stream(stream, recording_root, storage_state) for stream in streams
             ),
             synchronization=_synchronization(manifest),
             paths=RecordingPathsV1(
@@ -363,7 +368,7 @@ class CatalogPresentationRepository:
 
     def _manifest(
         self, snapshot: CatalogSessionReadSnapshot
-    ) -> tuple[RecordingManifestV1, Path] | None:
+    ) -> tuple[RecordingManifestV1 | RecordingManifestV3, Path] | None:
         if snapshot.bundle_uri is not None:
             try:
                 bundle = self._recordings.inspect_uri(snapshot.bundle_uri)
@@ -374,9 +379,6 @@ class CatalogPresentationRepository:
                     snapshot.manifest_digest is not None
                     and snapshot.manifest_digest != bundle.manifest_sha256
                 ):
-                    return None
-                if isinstance(bundle.manifest, RecordingManifestV3):
-                    # Native V3 products use a separately versioned presentation path.
                     return None
                 try:
                     relative = bundle.path.relative_to(self._recordings.recordings_root)
@@ -393,8 +395,6 @@ class CatalogPresentationRepository:
                 return None
             path.resolve(strict=False).relative_to(self._bulk_root)
             manifest = parse_recording_manifest(tombstone)
-            if isinstance(manifest, RecordingManifestV3):
-                return None
             return manifest, path
         except (ValueError, TypeError):
             return None
@@ -684,14 +684,14 @@ def _coverage(value: float | None, dwell_seconds: float) -> CoverageV1 | None:
     )
 
 
-def _capture_health(manifest: RecordingManifestV1) -> CaptureHealthV1:
+def _capture_health(manifest: RecordingManifestV1 | RecordingManifestV3) -> CaptureHealthV1:
     if manifest.state is CaptureState.COMMITTED:
         return CaptureHealthV1.COMPLETE
     return CaptureHealthV1.PARTIAL
 
 
 def _radio_stream(
-    stream: RecordingStreamV1,
+    stream: RecordingStreamV1 | RecordingStreamV3,
     recording_root: Path,
     storage_state: StorageStateV1,
 ) -> RadioStreamV1:
@@ -764,9 +764,15 @@ _STREAM_TUNING_TAG = re.compile(
 )
 
 
-def _radio_setups(manifest: RecordingManifestV1) -> tuple[RadioSetupV2, ...]:
+def _radio_setups(
+    manifest: RecordingManifestV1 | RecordingManifestV3,
+) -> tuple[RadioSetupV2, ...]:
     """Project immutable manifest settings into a bounded per-radio display contract."""
 
+    streams = cast(
+        tuple[RecordingStreamV1 | RecordingStreamV3, ...],
+        manifest.streams,
+    )
     tuning_by_index: dict[int, tuple[str, Literal["lower", "upper"]]] = {}
     tuning_tags_present = False
     for tag in manifest.tags:
@@ -777,7 +783,7 @@ def _radio_setups(manifest: RecordingManifestV1) -> tuple[RadioSetupV2, ...]:
         if match is None:
             raise ValueError(f"invalid per-stream tuning tag: {tag}")
         index = int(match.group("index"))
-        if index >= len(manifest.streams):
+        if index >= len(streams):
             raise ValueError(f"tuning tag refers to absent stream {index}")
         if index in tuning_by_index:
             raise ValueError(f"multiple tuning tags for stream {index}")
@@ -785,7 +791,7 @@ def _radio_setups(manifest: RecordingManifestV1) -> tuple[RadioSetupV2, ...]:
             match.group("channel"),
             cast(Literal["lower", "upper"], match.group("edge")),
         )
-    if tuning_tags_present and len(tuning_by_index) != len(manifest.streams):
+    if tuning_tags_present and len(tuning_by_index) != len(streams):
         raise ValueError("per-stream tuning tags must cover every recording stream")
 
     profile = manifest.capture_plan.profile_revision.profile
@@ -798,7 +804,7 @@ def _radio_setups(manifest: RecordingManifestV1) -> tuple[RadioSetupV2, ...]:
         )
     )
     setups = []
-    for index, stream in enumerate(manifest.streams):
+    for index, stream in enumerate(streams):
         settings = stream.applied_settings
         channel_edge = tuning_by_index.get(index, fallback_intent)
         setups.append(
@@ -824,7 +830,7 @@ def _radio_setups(manifest: RecordingManifestV1) -> tuple[RadioSetupV2, ...]:
     return tuple(setups)
 
 
-def _synchronization(manifest: RecordingManifestV1) -> SynchronizationV1:
+def _synchronization(manifest: RecordingManifestV1 | RecordingManifestV3) -> SynchronizationV1:
     summary = manifest.synchronization
     grade = {
         "not_requested": "not_requested",
@@ -865,7 +871,7 @@ def _quality_summary(
     run: CatalogRunReadSnapshot | None,
     products: tuple[AnalysisProductV1, ...],
     documents: dict[str, dict[str, Any] | None],
-    manifest: RecordingManifestV1,
+    manifest: RecordingManifestV1 | RecordingManifestV3,
 ) -> QualitySummaryV1:
     quality_products = tuple(item for item in products if item.kind == "quality")
     if not quality_products:
