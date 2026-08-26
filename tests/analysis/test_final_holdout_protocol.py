@@ -14,6 +14,9 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 FROZEN_PROTOCOL = (
     REPOSITORY_ROOT / "config/analysis/final-doppler-holdout-satellite-protocol-v1.json"
 )
+ACTIVE_PROTOCOL_V2 = (
+    REPOSITORY_ROOT / "config/analysis/final-doppler-holdout-satellite-protocol-v2.json"
+)
 FAILED_ATTEMPT_DIR = (
     REPOSITORY_ROOT / "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1"
 )
@@ -168,6 +171,73 @@ def test_frozen_final_protocol_validates_against_exact_commit_and_authorities() 
             FROZEN_PROTOCOL,
             repository_root=REPOSITORY_ROOT,
         )
+
+
+def test_superseding_v2_protocol_preserves_science_and_binds_exact_correction() -> None:
+    document = protocol.load_and_validate_final_protocol(
+        ACTIVE_PROTOCOL_V2,
+        repository_root=REPOSITORY_ROOT,
+    )
+    base = protocol.load_and_validate_historical_final_protocol_v1(
+        FROZEN_PROTOCOL,
+        repository_root=REPOSITORY_ROOT,
+    )
+
+    assert sha256(ACTIVE_PROTOCOL_V2.read_bytes()).hexdigest() == (
+        "529ca7dd76aabb5b02e63b57112893db62e8f3c6d0dfab5afe76af3fa6035532"
+    )
+    assert document["protocol_digest"] == (
+        "sha256:f781d18cb2917b6cfd01fe0d72f9db62b80a36d6f6979ca525c55c45b718f86d"
+    )
+    assert all(document[key] == base[key] for key in protocol._SCIENTIFIC_KEYS)
+    assert document["chronology"]["implementation_commit"] == (
+        "5d4535f366f5ca3e0f8f430e5b2aa5d58b72ce3e"
+    )
+    correction = document["supersession"]["response_free_correction"]
+    assert correction["corrected_bin_center_change_count"] == 307
+    assert correction["corrected_minus_attempt_1_min_ns"] == -197
+    assert correction["corrected_minus_attempt_1_max_ns"] == 173
+    assert correction["expected_corrected_bins_digest"] == (
+        "sha256:a01e53e917ea33295273778f23412629b83c78ee63ef4c8eafcd761e8f2d5c53"
+    )
+    assert document["supersession"]["attempt_1"]["stdout_stderr_separation_preserved"] is False
+
+
+@pytest.mark.parametrize(
+    ("poison", "message"),
+    (
+        ("science", "scientific field differs"),
+        ("supersession", "supersession authority"),
+        ("implementation", "implementation digest"),
+        ("chronology", "chronology flags"),
+    ),
+)
+def test_resigned_v2_protocol_poison_fails_closed(
+    poison: str,
+    message: str,
+    tmp_path: Path,
+) -> None:
+    document = json.loads(ACTIVE_PROTOCOL_V2.read_text())
+    if poison == "science":
+        document["association"]["minimum_claim_heldout_odd_bins"] = 9
+    elif poison == "supersession":
+        document["supersession"]["response_free_correction"]["expected_corrected_bins_digest"] = (
+            "sha256:" + "0" * 64
+        )
+    elif poison == "implementation":
+        document["implementation_sha256"]["src/leo/analysis/research/final_doppler_holdout.py"] = (
+            "sha256:" + "0" * 64
+        )
+    else:
+        document["chronology"]["corrected_candidate_propagation_or_ranking_before_v2_freeze"] = True
+    document["protocol_digest"] = canonical_digest(
+        {key: value for key, value in document.items() if key != "protocol_digest"}
+    )
+    path = tmp_path / "poisoned-v2.json"
+    path.write_text(json.dumps(document, indent=2, sort_keys=True))
+
+    with pytest.raises(ValueError, match=message):
+        protocol.load_and_validate_final_protocol(path, repository_root=REPOSITORY_ROOT)
 
 
 def test_failed_attempt_receipt_binds_exact_fail_closed_evidence() -> None:
