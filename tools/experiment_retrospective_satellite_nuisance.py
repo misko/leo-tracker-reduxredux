@@ -8,6 +8,7 @@ import gzip
 import hashlib
 import json
 import math
+import subprocess
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -100,6 +101,17 @@ def _iso_utc(utc_ns: int) -> str:
     seconds, nanoseconds = divmod(utc_ns, 1_000_000_000)
     prefix = datetime.fromtimestamp(seconds, UTC).strftime("%Y-%m-%dT%H:%M:%S")
     return f"{prefix}.{nanoseconds:09d}Z"
+
+
+def _git_head() -> str:
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
 
 
 def load_protocol(path: Path) -> dict[str, Any]:
@@ -995,6 +1007,15 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
 
     evidence: dict[str, Any] = {
         "schema": SCHEMA,
+        "implementation": {
+            "repository_head_at_execution": _git_head(),
+            "runner_path": str(Path(__file__).resolve().relative_to(ROOT)),
+            "runner_sha256": _sha256(Path(__file__).resolve()),
+            "core_path": "src/leo/analysis/research/satellite_nuisance_association.py",
+            "core_sha256": _sha256(
+                ROOT / "src/leo/analysis/research/satellite_nuisance_association.py"
+            ),
+        },
         "protocol": {
             "path": str(protocol_path.relative_to(ROOT)),
             "sha256": _sha256(protocol_path),
