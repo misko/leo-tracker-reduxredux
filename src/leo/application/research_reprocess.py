@@ -15,6 +15,7 @@ from leo.application.standard_reprocess import (
 )
 from leo.catalog import ActiveRunExistsError, CatalogRepository, IdenticalRunExistsError
 from leo.contracts.pipeline_lanes import PipelineLane
+from leo.contracts.recording import RecordingManifestV3
 from leo.pipeline import compile_rate_baseline_run_plan, compile_standard_run_plan
 from leo.presentation.standard_pipeline import StandardSourceTypeV2, standard_eligibility_v2
 from leo.processing import ProcessingService
@@ -86,6 +87,10 @@ class ResearchReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
+        if isinstance(bundle.manifest, RecordingManifestV3):
+            raise StandardReprocessError(
+                "V3 recording requires the explicit Standard-native evidence-only action"
+            )
         capture_only = "CAPTURE_ONLY" in bundle.manifest.tags
         if capture_only:
             try:

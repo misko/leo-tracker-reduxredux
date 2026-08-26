@@ -23,6 +23,7 @@ from leo.cli.models import (
     HoldDataV1,
     ImportDataV1,
     JobsDataV1,
+    NativeEvidenceReprocessDataV1,
     ProcessHelpDataV1,
     ProfileListDataV1,
     ProfileShowDataV1,
@@ -317,6 +318,14 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
         console.print(f"planned run: {payload.run_id}")
         console.print(f"previous current: {payload.previous_current_run_id or 'none'}")
         console.print(f"pipeline release: {payload.pipeline_release_id}")
+        console.print(f"scopes: {', '.join(payload.queued_scope_keys)}")
+    elif isinstance(payload, NativeEvidenceReprocessDataV1):
+        console.print(f"session: {payload.session_id}")
+        console.print(f"state: {payload.state}")
+        console.print(f"planned run: {payload.run_id}")
+        console.print("promotion: evidence_only (never CURRENT)")
+        console.print(f"pipeline release: {payload.pipeline_release_id}")
+        console.print(f"jobs: {payload.queued_job_count}")
         console.print(f"scopes: {', '.join(payload.queued_scope_keys)}")
     elif isinstance(payload, CancelRunDataV1):
         console.print(

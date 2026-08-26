@@ -14,8 +14,8 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
-from leo.contracts.profile import CaptureProfileRevisionV1
-from leo.contracts.recording import RecordingStreamV1
+from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileRevisionV2
+from leo.contracts.recording import RecordingManifestV3, RecordingStreamV1
 from leo.contracts.states import (
     CaptureState,
     GainMode,
@@ -114,7 +114,7 @@ class CaptureModeExpectationV1(ContractModel):
     @classmethod
     def from_profile_revision(
         cls,
-        revision: CaptureProfileRevisionV1,
+        revision: CaptureProfileRevisionV1 | CaptureProfileRevisionV2,
         radio_ids: tuple[str, str],
         *,
         source_type: SourceType = SourceType.LIVE,
@@ -161,7 +161,7 @@ class CaptureModeExpectationV1(ContractModel):
     @classmethod
     def from_hardware_profile_revision(
         cls,
-        revision: CaptureProfileRevisionV1,
+        revision: CaptureProfileRevisionV1 | CaptureProfileRevisionV2,
         radio_ids: tuple[str, str],
     ) -> Self:
         if revision.profile.duration_seconds != 60 or revision.profile.sample_count is not None:
@@ -664,6 +664,20 @@ class CaptureModeAcceptanceHarness:
             errors.append(f"bundle verification failed: {type(error).__name__}: {error}")
 
         manifest = bundle.manifest
+        if isinstance(manifest, RecordingManifestV3):
+            errors.append(
+                "capture-mode acceptance V1 does not support device-axis RecordingManifestV3"
+            )
+            return CaptureModeSessionCheckV1(
+                role=role,
+                session_id=session_id,
+                expected_radio_ids=expected_radios,
+                bundle_uri=bundle.uri,
+                manifest_session_id=manifest.session_id,
+                manifest_sha256=bundle.manifest_sha256,
+                digest_valid=digest_valid,
+                errors=tuple(dict.fromkeys(errors)),
+            )
         plan = manifest.capture_plan
         profile = plan.profile_revision.profile
         streams = manifest.streams

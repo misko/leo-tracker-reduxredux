@@ -63,20 +63,21 @@ policy.
 
 ### 3 MS/s qualification and capture-only dwell
 
-The implementation adds two immutable profiles:
+The current promotion target is the immutable
+`starlink-ch4-lower-3m-60s-device-axis-v3` profile:
 
-1. `hardware-canary-3m-60s-contiguous-v2`
-   - `sample_rate_hz: 3000000`
-   - dual RX, 262,144-sample refills, K=8, queue=32
-   - device metadata required
-   - `continuity_policy: require_contiguous`
-   - `QUALIFICATION` tag so it cannot create an automatic science run
-2. `starlink-ch4-lower-3m-60s-capture-v2`
-   - the same receive-buffer geometry
-   - `continuity_policy: allow_segments`, so an unexpected gap is preserved
-     and reported rather than discarding the rest of the dwell
-   - `CAPTURE_ONLY` until a 3 MS/s science path is separately qualified
-   - participates in the reviewed ordinary-dwell production pool
+- `sample_rate_hz: 3000000`;
+- dual RX, 262,144-sample refills, K=8, queue=32;
+- device metadata required;
+- `continuity_policy: allow_segments` and
+  `peer_failure_policy: fail_session`;
+- `zstd-128m-device-axis-zero-v1` storage; and
+- exact `CAPTURE_ONLY`, `DEVICE_AXIS_ZERO_FILL`, `LIVE`, `RANDOM_TUNING`, and
+  `STANDARD_NATIVE` tags.
+
+The older `hardware-canary-3m-60s-contiguous-v2` remains an immutable legacy
+qualification profile, but it cannot satisfy the additive V4 production gate.
+V4 qualifies the same device-axis profile that ordinary dwells will execute.
 
 The operational profile succeeds only when every stream is complete and has
 zero missing samples, gaps, overflow observations, enqueue failures, and
@@ -86,18 +87,23 @@ degraded.
 
 ### Experimental 5 MS/s segmented capture
 
-The implementation adds `starlink-ch4-lower-5m-60s-segmented-v2` with:
+The implementation adds `starlink-ch4-lower-5m-60s-device-axis-v3` with:
 
 - `sample_rate_hz: 5000000`;
 - dual RX, 262,144-sample refills, K=8, queue=32;
 - device metadata required;
 - `continuity_policy: allow_segments`;
-- `EXPERIMENTAL` and `CAPTURE_ONLY` tags; and
+- device-axis zero-fill storage;
+- `EXPERIMENTAL`, `CAPTURE_ONLY`, `DEVICE_AXIS_ZERO_FILL`, `LIVE`,
+  `RANDOM_TUNING`, and `STANDARD_NATIVE` tags; and
 - membership in the reviewed ordinary-dwell production pool only as this exact
   segmented profile identity.
 
-This mode is useful because loss is exact and reviewable. It is not a promise
-that 300,000,000 adjacent device sample instants will reach storage.
+This mode is useful because loss is exact and reviewable. Its Recording V3 IQ
+is always 300,000,000 logical samples long; counter-proven missing intervals
+are literal CI16 zeros and a digest-bound validity inventory distinguishes them
+from observed IQ. Fixed logical length is not a promise that all 300,000,000
+sample instants were observed.
 
 ### Optional 5 MS/s bounded burst
 
@@ -124,9 +130,9 @@ scientific observation.
 
 The exact ordered production pool is:
 
-1. `starlink-ch4-lower-2p5m-60s-continuity-v2`
-2. `starlink-ch4-lower-3m-60s-capture-v2`
-3. `starlink-ch4-lower-5m-60s-segmented-v2`
+1. `starlink-ch4-lower-2p5m-60s-device-axis-v3`
+2. `starlink-ch4-lower-3m-60s-device-axis-v3`
+3. `starlink-ch4-lower-5m-60s-device-axis-v3`
 
 The runner validates every member before starting, chooses each member with
 probability 1/3 for a new ordinary dual-radio dwell, and then compiles and
@@ -152,8 +158,8 @@ scanner run neither selects from nor changes the recording profile pool.
 
 ### 1. Profiles and dwell selection are implemented
 
-- The new V2 YAML documents compile through the existing profile directory;
-  every 2.5 MS/s profile remains byte-for-byte intact with its pinned digest.
+- The additive device-axis YAML documents compile through the existing V2
+  profile contract; published older profile documents remain immutable.
 - The scheduled acquisition service emits one repeated exact `--profile`
   argument for each member of the ordered three-profile pool above.
 - Qualification, canary, soak, and explicit one-shot entry points remain
@@ -164,14 +170,13 @@ scanner run neither selects from nor changes the recording profile pool.
 
 ### 2. Capture-only intent fails closed
 
-Automatic processing excludes qualification, calibration, acceptance, and
-`CAPTURE_ONLY` captures and refuses degraded manifests. A clear diagnostic
-prevents a committed 3 MS/s or gapless experimental 5 MS/s recording from
-entering a pipeline whose published acceptance contracts are frozen at
-2.5 MS/s.
+Automatic current-product processing excludes qualification, calibration,
+acceptance, and `CAPTURE_ONLY` captures. A clear diagnostic prevents a clean
+3 MS/s or 5 MS/s recording from entering the frozen Standard pipeline.
 
-Keep explicit offline research possible. Standard/WP11 promotion remains
-unavailable until the input rate is supported by a versioned scientific path.
+Explicit manual `evidence_only` Standard-native processing accepts verified
+Recording V3 inputs through the validity-aware path. It never promotes Current
+analysis or makes a scientific-eligibility claim.
 
 ### 3. Strict rate qualification is implemented
 
@@ -179,11 +184,14 @@ Do not weaken or mutate `AcquisitionQualificationReceiptV1`; its general 95%
 success policy is not strict enough to promote a continuity mode. The published
 `ContiguousRateQualificationReceiptV1` and
 `ContiguousRateQualificationReceiptV2` also remain immutable. The additive
-`ContiguousRateQualificationReceiptV3` qualifies the actual production pair
-without treating a different transport, firmware ABI, or non-production radio
-as a prerequisite. Its exact ordered prerequisites are per-radio safety,
-one-second native-IP counter canaries, and the incompressible writer benchmark.
-The target and ten strict trials additionally bind:
+`ContiguousRateQualificationReceiptV3` remains immutable. The additive
+`ContiguousRateQualificationReceiptV4` qualifies the actual production pair
+and exact deployed device-axis profile without treating a different transport,
+firmware ABI, or non-production radio as a prerequisite. Its exact ordered
+prerequisites are per-radio safety, one-second native-IP counter canaries, and
+the incompressible writer benchmark, and one full-span 5 MS/s Recording V3
+characterization from the same maintenance-fenced campaign. The target and ten
+strict 3 MS/s Recording V3 trials additionally bind:
 
 - profile revision and capture-plan digests;
 - Leo, pluto-plus-utils, Python binding, and native libiio identities;
@@ -193,8 +201,19 @@ The target and ten strict trials additionally bind:
 - receiver count, refill samples, K, and queue capacity;
 - requested, observed, and device-span sample counts;
 - gap map, missing samples, overflow, enqueue failures, terminal rejection,
-  queue high-water, and maximum refill service interval; and
-- recording manifest, chunk, and continuity-evidence digests.
+  queue high-water, and maximum refill service interval;
+- recording manifest, chunk, and continuity-evidence digests; and
+- each ordered stream's 180,000,000 logical and observed samples, zero zero
+  fill, one segment, and observed/logical IQ, timeline, gap-map, and validity
+  digests.
+
+The 5 MS/s characterization binds the exact deployed device-axis profile and
+plan. Each radio must close a 300,000,000-sample logical span as observed plus
+physical zero-fill samples; verified chunks, gap map, and validity inventory
+must agree. Overflow, enqueue failure, and terminal rejected-refill counters
+must all be zero. Counter-proven gaps are allowed and force a degraded manifest,
+so this gate proves truthful full-span persistence rather than 5 MS/s
+contiguity.
 
 The strict policy is all-or-nothing: successful fraction 1.0 and every loss or
 integrity counter zero. A sustained-contiguous claim consumes an exact receipt,
@@ -211,9 +230,9 @@ truthful degraded evidence and can never satisfy a contiguous receipt.
   qualification receipt for the deployed host, radios, software, profile, and
   transport. It remains `CAPTURE_ONLY` regardless of a clean transport result.
 - The verifier accepts 5 MS/s only as
-  `starlink-ch4-lower-5m-60s-segmented-v2` with `allow_segments`, 2.5 MHz
-  analog bandwidth, and `CAPTURE_ONLY`/`EXPERIMENTAL` tags. It rejects 5 MS/s
-  as a sole default, contiguous mode, or science-eligible profile.
+  `starlink-ch4-lower-5m-60s-device-axis-v3` with `allow_segments`, 2.5 MHz
+  analog bandwidth, device-axis storage, and the exact reviewed tags. It
+  rejects 5 MS/s as a sole default or observationally contiguous mode.
 - Do not silently broaden the pool to “any V2 profile.” Pool membership and
   its cutover evidence are exact, reviewed production configuration.
 
@@ -364,12 +383,15 @@ authorization phrase and its complete environment inventory. It accepts only
 literal native addresses in `192.168.1.0/24`; discovery cannot select a USB
 gadget address.
 
-The harness loads the committed
-`hardware-canary-3m-60s-contiguous-v2` profile, whose reviewed revision digest
-is `sha256:03d31584df57dc6361f067018cc609c5b3380fbafeab26563cdd2ace6d233c97`.
+The additive V4 promotion harness loads the exact deployed
+`starlink-ch4-lower-3m-60s-device-axis-v3` profile, whose canonical revision
+digest is
+`sha256:4533ac4a3348721e0bf7bda50c5701f505e47ef579ef9a47cbc7c38b9c9b4c3e`.
 For the fixed ordered production radio IDs `radio_pluto_5d4d` and
 `radio_pluto_19f2`, it compiles plan digest
-`sha256:ddacc29f61c2d7e0b30e631ec84b91b737f7fecbe2d63015443b4ca588ca998e`.
+`sha256:9fd011c1843213d3c699cadc2cb66d0cabecd804fc01b0ad0e45f3b8026fa8eb`.
+The policy requires the exact sorted tag set `CAPTURE_ONLY`,
+`DEVICE_AXIS_ZERO_FILL`, `LIVE`, `RANDOM_TUNING`, and `STANDARD_NATIVE`.
 The production cutover verifier additionally binds those IDs to the exact
 serial/URI pairs:
 
@@ -387,31 +409,38 @@ and broad-root targets fail closed.
 
 ### 3 MS/s promotion campaign
 
-The implemented harness performs exactly ten trials; the required
+The implemented combined harness performs exactly ten 3 MS/s trials and one
+full-span 5 MS/s characterization; the required
 `LEO_PLUTO_RATE_TRIAL_COUNT` value is the literal `10`, not a tunable minimum:
 
 1. Attest the clean committed source revision, pinned dependencies, native
    runtime, host, routes, and fixed production radio pair.
-2. Compile the exact committed 60-second canary profile for both fixed radio
-   IDs.
+2. Compile the exact deployed 60-second device-axis profile for both fixed
+   radio IDs.
 3. Run exactly ten simultaneous two-radio, 60-second native-IP captures through
    the complete Leo recorder with K=8, queue=32, production compression, and
    local target storage.
-4. Verify every recording, evaluate all ten unique trial checks, and seal the
-   deterministic rate-qualification receipt.
+4. Capture one exact deployed 60-second 5 MS/s Recording V3 bundle and verify
+   its physical zero-fill, gap-map, validity, and full logical-span closure.
+5. Restore both radios exactly, verify and release the maintenance lease, then
+   evaluate all ten unique 3 MS/s trial checks and seal the deterministic
+   combined-pool rate-qualification receipt.
 
-Every run must contain exactly 180,000,000 observed and device-span samples
-per stream, complete both streams, commit the session, validate every digest,
-and report zero gaps, missing samples, overflow, enqueue failures, and terminal
-rejections. The receipt requires at least 99% two-radio overlap, queue high-water
-no greater than 24/32, and maximum refill service interval no greater than
-699,050,666 ns. The separate writer-capacity gate remains at least 72 MB/s.
+Every run must publish a Recording V3 manifest with exactly 180,000,000
+logical and observed samples per stream, zero zero-fill samples, one continuity
+segment, complete streams, and a committed session. The V4 receipt retains the
+ordered streams' observed/logical IQ, timeline, gap-map, and validity-inventory
+digests and requires the observed and logical IQ digests to match. It also
+requires zero gaps, missing samples, overflow, enqueue failures, and terminal
+rejections, at least 99% two-radio overlap, queue high-water no greater than
+24/32, and maximum refill service interval no greater than 699,050,666 ns. The
+separate writer-capacity gate remains at least 72 MB/s.
 
 Failed and incomplete evidence remains beneath `campaigns/`. Only a complete
 strict pass is copied atomically and read-only to the canonical accepted path:
 
 ```text
-/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v3.json
+/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v4.json
 ```
 
 `<LEO_REVISION>` is the full 40-character target Git SHA. Full deployment
@@ -420,12 +449,13 @@ the target revision. Operators must pass it through the front door; omitting
 the flag fails closed:
 
 ```bash
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v3.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v4.json"
 ./ops deploy --plan --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --rate-qualification-receipt "$rate_receipt"
 ```
 
-The ten recorded minutes remain within the repository's 30-minute RF limit. A
+The eleven simultaneous two-radio recorded minutes remain within the
+repository's 30-minute RF limit. A
 longer production soak is a separate promotion step and needs explicit
 authorization consistent with repository policy.
 
@@ -436,10 +466,10 @@ finite libiio context timeout at every refill. Timeout and cancellation still
 flow through both-radio close, exact RX-setting restoration, and post-campaign
 TX-safe readback.
 
-V3 safety checks, native-IP canaries, and all durable recorder trials are bound
-to the production `.20`/`.21` pair. A separate USB pair with a different
+V4 safety checks, native-IP canaries, and all durable Recording V3 trials are
+bound to the production `.20`/`.21` pair. A separate USB pair with a different
 metadata ABI cannot prove the production Ethernet path and is deliberately not
-a V3 prerequisite. Production-radio safety evidence comes only from the
+a V4 prerequisite. Production-radio safety evidence comes only from the
 receipt-pinned host pyadi/pylibiio adapter: exact IIO identity and capabilities,
 fail-closed TX mute/readback on open and close, and independent RX-settings
 restoration readback. Qualification has no device-side shell, password, SSH
@@ -447,10 +477,13 @@ trust-store, or USB-control dependency.
 
 ### 5 MS/s characterization
 
-Run at most one 60-second two-radio native-IP diagnostic through Leo. The test
-passes on truthfulness, not on an expectation of continuity: any gap must have
+The combined V4 campaign runs exactly one 60-second two-radio native-IP
+characterization through Leo. The gate passes on truthfulness, not on an
+expectation of continuity: any gap must have
 exact counter-derived evidence, force partial streams/degraded session state,
-preserve a verifiable bundle, and suppress automatic analysis.
+materialize as literal physical zeros on the device-time axis, preserve a
+verifiable gap map and validity inventory, and suppress automatic analysis.
+Overflow, enqueue failure, or a terminal rejected refill fails V4.
 
 If bounded burst support is desired, separately repeat the exact proposed
 duration on each radio and then simultaneously. Promote only the tested
@@ -472,10 +505,11 @@ uv run --extra hardware pytest -ra -s \
    strict receipt contract, hardware harness, and cutover verification exist.
    Portable gates must remain green; all 2.5 MS/s identities and scanner
    behavior remain unchanged.
-2. **Qualify 3 MS/s transport — pending hardware:** the exact ten-trial
-   full-recorder campaign must pass 100% and publish its immutable receipt at
-   the canonical accepted target-revision path. This does not enable automatic
-   science.
+2. **Qualify the deployed 3M/5M capture pool — pending hardware:** the exact
+   combined campaign must pass ten lossless 3 MS/s full-recorder trials and one
+   truthful full-span 5 MS/s V3 characterization, then publish its immutable
+   receipt at the canonical accepted target-revision path after restoration and
+   maintenance release. This does not enable automatic science.
 3. **Activate the production pool — pending reviewed cutover:** the operator
    must supply the canonical receipt with
    `./ops deploy --rate-qualification-receipt`. The cutover binds the exact
@@ -498,8 +532,9 @@ uv run --extra hardware pytest -ra -s \
    retry affinity.
 2. **Implemented:** strict rate-qualification receipt, exact opt-in hardware
    harness, canonical accepted path, and deployment verifier.
-3. **Pending:** bounded ten-trial 3 MS/s campaign and exact production-pool
-   cutover using `--rate-qualification-receipt`.
+3. **Pending:** bounded combined ten-trial 3 MS/s plus one full-span 5 MS/s
+   campaign and exact production-pool cutover using
+   `--rate-qualification-receipt`.
 4. Separate scientific-rate ADR and normalized or wideband analysis lane.
 5. Optional bounded 5 MS/s burst work only if that use case is required.
 

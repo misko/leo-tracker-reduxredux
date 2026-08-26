@@ -10,6 +10,7 @@ from leo.contracts.states import SourceType
 from leo.station.authority import (
     CaptureHardwareBindingV1,
     CaptureHardwareBindingV2,
+    CaptureHardwareBindingV3,
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
@@ -27,6 +28,7 @@ from leo.station.resolver import (
 from .manifest_examples import (
     manifest_example,
     manifest_example_v2,
+    manifest_example_v3,
     topology_for_manifest,
     verified_digest,
 )
@@ -127,6 +129,41 @@ def test_v2_import_authority_uses_the_v2_manifest_binding(tmp_path: Path) -> Non
     assert resolved.path_authority.verified_manifest_snapshot.recording_manifest.model_dump(
         mode="json"
     ) == manifest.model_dump(mode="json")
+
+
+def test_v3_import_authority_uses_the_device_axis_manifest_binding(tmp_path: Path) -> None:
+    root = tmp_path / "authority"
+    root.mkdir()
+    manifest = manifest_example_v3(
+        radio_count=1,
+        applied_receiver_ids=(0, 1),
+        source_type=SourceType.IMPORT,
+    )
+    topology = topology_for_manifest(manifest)
+    topology_file_digest = _publish(
+        root,
+        "station/topology.json",
+        topology.model_dump(mode="json"),
+    )
+    loader = _loader(root)
+    try:
+        resolver = PinnedCaptureAuthorityResolver(
+            PinnedStationAuthorityReader(loader),
+            topology=AuthorityFileReference(
+                relative_path="station/topology.json",
+                file_digest=topology_file_digest,
+            ),
+        )
+        resolved = resolver.resolve(
+            manifest,
+            observed_manifest_file_digest=verified_digest(manifest),
+        )
+    finally:
+        loader.close()
+
+    assert resolved.topology == topology
+    assert isinstance(resolved.path_authority, CaptureHardwareBindingV3)
+    assert resolved.path_authority.verified_manifest_snapshot.recording_manifest == manifest
 
 
 def test_deployed_gauss_four_path_authority_has_the_reviewed_pinned_digest() -> None:

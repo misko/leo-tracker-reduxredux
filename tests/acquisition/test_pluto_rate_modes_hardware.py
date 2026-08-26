@@ -50,31 +50,35 @@ from leo.contracts.capture_control import CaptureDesiredState, CaptureObservedSt
 from leo.contracts.profile import CapturePlanV2, CaptureProfileRevisionV2
 from leo.contracts.radio import RadioIdentityV1
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
-    ContinuitySummaryV2,
     HostIdentityV1,
     ProducerV1,
-    RecordingManifestV2,
+    RecordingManifestV3,
 )
 from leo.contracts.states import (
     CaptureState,
     ContinuityPolicy,
+    PeerFailurePolicy,
     SourceType,
     StreamState,
     SynchronizationGrade,
 )
+from leo.contracts.validity import DeviceAxisContentKind
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.qualification.rate_modes import (
+    ContiguousRateDeviceAxisCharacterizationStreamV1,
+    ContiguousRateDeviceAxisCharacterizationV1,
     ContiguousRateNativeIpCanaryEvidenceV1,
-    ContiguousRatePrerequisitesV3,
+    ContiguousRatePrerequisitesV4,
     ContiguousRateQualificationPolicyV1,
-    ContiguousRateQualificationReceiptV3,
-    ContiguousRateQualificationTargetV3,
+    ContiguousRateQualificationReceiptV4,
+    ContiguousRateQualificationTargetV4,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
-    ContiguousRateTrialEvidenceV1,
+    ContiguousRateTrialEvidenceV2,
     ContiguousRateWriterBenchmarkEvidenceV1,
-    evaluate_contiguous_rate,
+    evaluate_device_axis_contiguous_rate,
 )
 from leo.radio import PlutoIioRadioSource
 from leo.storage import RecordingStore
@@ -496,6 +500,30 @@ def _conservative_radio_seconds() -> float:
 
 def test_bounded_hardware_campaign_fits_authorized_rf_budget() -> None:
     assert _conservative_radio_seconds() <= _AUTHORIZED_RF_BUDGET_SECONDS
+
+
+def test_hardware_campaign_uses_exact_deployed_device_axis_profiles() -> None:
+    repository = Path(__file__).resolve().parents[2]
+    three_m = _capture_plan(repository)
+    five_m = _five_m_capture_plan(repository)
+
+    assert three_m.profile_revision.revision_digest == (
+        "sha256:4533ac4a3348721e0bf7bda50c5701f505e47ef579ef9a47cbc7c38b9c9b4c3e"
+    )
+    assert three_m.plan_digest == (
+        "sha256:9fd011c1843213d3c699cadc2cb66d0cabecd804fc01b0ad0e45f3b8026fa8eb"
+    )
+    assert five_m.profile_revision.revision_digest == (
+        "sha256:8851c20e4c6e79bc5d4cb92f8fd0e09eaf24e59b742239b92bc248fd4d09ba5d"
+    )
+    assert five_m.plan_digest == (
+        "sha256:22b2bbb83a10b6494b16cba6303591eedbda37d3f876f7822c1fe5d68f42ccc1"
+    )
+    assert all(
+        plan.profile_revision.profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
+        and plan.profile_revision.profile.peer_failure_policy is PeerFailurePolicy.FAIL_SESSION
+        for plan in (three_m, five_m)
+    )
 
 
 def test_v3_hardware_inventory_contains_only_the_production_pair() -> None:
@@ -2052,7 +2080,7 @@ def _preflight_radios(config: _HardwareConfig) -> tuple[RadioIdentityV1, RadioId
 
 def _capture_plan(repository: Path) -> CapturePlanV2:
     revision = load_profile_revision(
-        repository / "profiles" / "hardware-canary-3m-60s-contiguous-v2.yaml"
+        repository / "profiles" / "starlink-ch4-lower-3m-60s-device-axis-v3.yaml"
     )
     assert isinstance(revision, CaptureProfileRevisionV2)
     profile = revision.profile
@@ -2061,7 +2089,16 @@ def _capture_plan(repository: Path) -> CapturePlanV2:
     assert profile.refill_samples == _REFILL_SAMPLES
     assert profile.kernel_buffers == _KERNEL_BUFFERS
     assert profile.refill_queue_capacity == _QUEUE_CAPACITY
-    assert profile.continuity_policy is ContinuityPolicy.REQUIRE_CONTIGUOUS
+    assert profile.continuity_policy is ContinuityPolicy.ALLOW_SEGMENTS
+    assert profile.peer_failure_policy is PeerFailurePolicy.FAIL_SESSION
+    assert profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
+    assert {
+        "CAPTURE_ONLY",
+        "DEVICE_AXIS_ZERO_FILL",
+        "LIVE",
+        "RANDOM_TUNING",
+        "STANDARD_NATIVE",
+    }.issubset(profile.tags)
     plan = compile_capture_plan(
         revision,
         _RADIO_IDS,
@@ -2074,7 +2111,7 @@ def _capture_plan(repository: Path) -> CapturePlanV2:
 
 def _five_m_capture_plan(repository: Path) -> CapturePlanV2:
     revision = load_profile_revision(
-        repository / "profiles" / "starlink-ch4-lower-5m-60s-segmented-v2.yaml"
+        repository / "profiles" / "starlink-ch4-lower-5m-60s-device-axis-v3.yaml"
     )
     assert isinstance(revision, CaptureProfileRevisionV2)
     profile = revision.profile
@@ -2084,6 +2121,8 @@ def _five_m_capture_plan(repository: Path) -> CapturePlanV2:
     assert profile.kernel_buffers == _KERNEL_BUFFERS
     assert profile.refill_queue_capacity == _QUEUE_CAPACITY
     assert profile.continuity_policy is ContinuityPolicy.ALLOW_SEGMENTS
+    assert profile.peer_failure_policy is PeerFailurePolicy.FAIL_SESSION
+    assert profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
     assert {"CAPTURE_ONLY", "EXPERIMENTAL"}.issubset(profile.tags)
     plan = compile_capture_plan(revision, _RADIO_IDS, source_type=SourceType.LIVE)
     assert isinstance(plan, CapturePlanV2)
@@ -2152,7 +2191,8 @@ def _build_prerequisites(
     native_ip: tuple[_MetadataCaptureResult, _MetadataCaptureResult],
     writer_receipt: Any,
     writer_receipt_sha256: str,
-) -> ContiguousRatePrerequisitesV3:
+    five_m_characterization: ContiguousRateDeviceAxisCharacterizationV1,
+) -> ContiguousRatePrerequisitesV4:
     evidence_root = campaign_root / "prerequisites"
     evidence_root.mkdir(mode=0o700, exist_ok=True)
 
@@ -2208,7 +2248,7 @@ def _build_prerequisites(
 
     elapsed_ns = max(1, round(writer_receipt.elapsed_seconds * 1_000_000_000))
     sustained_bytes_per_second = writer_receipt.uncompressed_bytes * 1_000_000_000 // elapsed_ns
-    return ContiguousRatePrerequisitesV3(
+    return ContiguousRatePrerequisitesV4(
         radio_safety=(safety_evidence[0], safety_evidence[1]),
         native_ip_canaries=(native_evidence[0], native_evidence[1]),
         writer_benchmark=ContiguousRateWriterBenchmarkEvidenceV1(
@@ -2218,6 +2258,7 @@ def _build_prerequisites(
             sustained_bytes_per_second=sustained_bytes_per_second,
             passed=sustained_bytes_per_second >= 72_000_000,
         ),
+        five_m_characterization=five_m_characterization,
     )
 
 
@@ -2227,9 +2268,9 @@ def _target(
     radios: tuple[RadioIdentityV1, RadioIdentityV1],
     host: HostIdentityV1,
     producer: ProducerV1,
-    prerequisites: ContiguousRatePrerequisitesV3,
-) -> ContiguousRateQualificationTargetV3:
-    return ContiguousRateQualificationTargetV3(
+    prerequisites: ContiguousRatePrerequisitesV4,
+) -> ContiguousRateQualificationTargetV4:
+    return ContiguousRateQualificationTargetV4(
         qualification_id=f"native-ip-3m-{config.leo_revision[:12]}",
         profile_revision_digest=plan.profile_revision.revision_digest,
         capture_plan_digest=plan.plan_digest,
@@ -2249,14 +2290,20 @@ def _target(
         policy=ContiguousRateQualificationPolicyV1(
             required_trial_count=config.trial_count,
             maximum_refill_service_interval_ns=_MAXIMUM_SERVICE_INTERVAL_NS,
-            required_tags=("QUALIFICATION",),
+            required_tags=(
+                "CAPTURE_ONLY",
+                "DEVICE_AXIS_ZERO_FILL",
+                "LIVE",
+                "RANDOM_TUNING",
+                "STANDARD_NATIVE",
+            ),
         ),
     )
 
 
 def _atomic_write_receipt(
     path: Path,
-    receipt: ContiguousRateQualificationReceiptV3,
+    receipt: ContiguousRateQualificationReceiptV4,
 ) -> None:
     temporary = path.with_name(f".{path.name}.{os.getpid()}-{uuid4().hex}.partial")
     payload = receipt.model_dump_json(indent=2).encode("utf-8")
@@ -2344,19 +2391,22 @@ def _write_5m_failed_run_evidence(
         or result.bundle is None
         or not isinstance(
             result.manifest,
-            RecordingManifestV2,
+            RecordingManifestV3,
         )
     ):
-        raise AssertionError("cannot seal 5 MS/s failed-run evidence without a V2 manifest")
+        raise AssertionError("cannot seal 5 MS/s failed-run evidence without a V3 manifest")
     streams = [
         {
             "radio_id": stream.radio.radio_id,
             "state": stream.state.value,
             "requested_sample_count": stream.requested_sample_count,
-            "captured_sample_count": stream.captured_sample_count,
-            "continuity": (
-                None if stream.continuity is None else stream.continuity.model_dump(mode="json")
-            ),
+            "logical_sample_count": stream.logical_sample_count,
+            "observed_sample_count": stream.observed_sample_count,
+            "zero_fill_sample_count": stream.zero_fill_sample_count,
+            "logical_iq_sha256": stream.logical_iq_sha256,
+            "observed_iq_sha256": stream.observed_iq_sha256,
+            "validity_inventory_sha256": stream.validity_inventory_sha256,
+            "continuity": stream.continuity.model_dump(mode="json"),
         }
         for stream in result.manifest.streams
     ]
@@ -2377,8 +2427,8 @@ def _write_5m_failed_run_evidence(
             }
         )
     payload = {
-        "kind": "segmented_rate_5m_failed_run_evidence",
-        "schema_version": 2,
+        "kind": "device_axis_rate_5m_failed_run_evidence",
+        "schema_version": 3,
         "leo_revision": config.leo_revision,
         "session_id": campaign_id,
         "manifest_uri": result.bundle.uri.rstrip("/") + "/manifest.json",
@@ -2389,13 +2439,220 @@ def _write_5m_failed_run_evidence(
         "errors": errors,
         "passed": False,
     }
-    path = campaign_root / "segmented-rate-5m-failed-run-evidence-v2.json"
+    path = campaign_root / "device-axis-rate-5m-failed-run-evidence-v3.json"
     _atomic_write_json(path, payload)
     return path
 
 
+def _seal_5m_device_axis_characterization(
+    campaign_root: Path,
+    *,
+    config: _HardwareConfig,
+    campaign_id: str,
+    plan: CapturePlanV2,
+    store: RecordingStore,
+    result: Any,
+    safety_results: tuple[_RadioSafetyResult, _RadioSafetyResult],
+) -> tuple[ContiguousRateDeviceAxisCharacterizationV1, Path]:
+    if result.bundle is None or not isinstance(result.manifest, RecordingManifestV3):
+        raise AssertionError("5 MS/s characterization did not publish a V3 device-axis bundle")
+    manifest = result.manifest
+    expected_integrity_errors = tuple(
+        f"{stream.radio.radio_id}: {stream.error}"
+        for stream in manifest.streams
+        if stream.error is not None
+    )
+    if result.errors != expected_integrity_errors:
+        raise AssertionError("5 MS/s result contains errors beyond exact stream integrity loss")
+    if manifest.capture_plan != plan:
+        raise AssertionError("5 MS/s characterization manifest differs from the exact plan")
+    if tuple(stream.radio.radio_id for stream in manifest.streams) != _RADIO_IDS:
+        raise AssertionError("5 MS/s characterization radio order changed")
+    verification = store.verify(result.bundle)
+    if (
+        verification.timeline_count != 2
+        or verification.gap_map_count != 2
+        or verification.validity_inventory_count != 2
+    ):
+        raise AssertionError("5 MS/s V3 bundle lacks complete timeline/gap/validity evidence")
+
+    stream_checks: list[ContiguousRateDeviceAxisCharacterizationStreamV1] = []
+    stream_facts: list[dict[str, Any]] = []
+    for stream in manifest.streams:
+        continuity = stream.continuity
+        if stream.requested_sample_count != _FIVE_M_REQUESTED_SAMPLE_COUNT:
+            raise AssertionError("5 MS/s stream request differs from the full 60-second span")
+        if stream.logical_sample_count != _FIVE_M_REQUESTED_SAMPLE_COUNT:
+            raise AssertionError("5 MS/s logical IQ does not cover the requested device axis")
+        if stream.observed_sample_count + stream.zero_fill_sample_count != (
+            stream.logical_sample_count
+        ):
+            raise AssertionError("5 MS/s observed and zero-fill counts do not close logical IQ")
+        if (
+            continuity.observed_sample_count != stream.observed_sample_count
+            or continuity.missing_sample_count != stream.zero_fill_sample_count
+            or continuity.device_span_sample_count != stream.logical_sample_count
+        ):
+            raise AssertionError("5 MS/s continuity counts disagree with V3 physical IQ")
+        if (
+            continuity.overflow_count
+            or continuity.enqueue_failure_count
+            or continuity.terminal_rejected_gap_count
+            or continuity.terminal_rejected_missing_sample_count
+            or continuity.terminal_rejected_overflow_count
+        ):
+            raise AssertionError("5 MS/s characterization observed overflow or rejected refills")
+        if not continuity.sample_loss_observable:
+            raise AssertionError("5 MS/s characterization lacks counter-authoritative continuity")
+        if (
+            continuity.kernel_buffers != _KERNEL_BUFFERS
+            or continuity.queue_capacity_refills != _QUEUE_CAPACITY
+            or not 1 <= continuity.queue_high_water_refills <= _QUEUE_CAPACITY
+            or continuity.metadata_abi_version != 1
+            or not continuity.validated_stream_generation
+        ):
+            raise AssertionError("5 MS/s recorder telemetry differs from the reviewed geometry")
+
+        reader = store.reader(result.bundle, stream.stream_id)
+        gap_map = reader.gap_map()
+        validity = reader.validity_inventory()
+        if (
+            gap_map.timeline_sha256 != stream.timeline_sha256
+            or gap_map.observed_sample_count != stream.observed_sample_count
+            or gap_map.device_span_sample_count != stream.logical_sample_count
+            or gap_map.missing_sample_count != stream.zero_fill_sample_count
+            or len(gap_map.boundaries) != continuity.gap_count
+            or validity.timeline_sha256 != stream.timeline_sha256
+            or validity.logical_sample_count != stream.logical_sample_count
+            or validity.observed_sample_count != stream.observed_sample_count
+            or validity.missing_sample_count != stream.zero_fill_sample_count
+            or validity.continuity_boundary_count != len(gap_map.boundaries)
+            or len(validity.segments) != gap_map.segment_count
+        ):
+            raise AssertionError("5 MS/s gap-map and validity evidence do not close")
+        zero_chunk_samples = sum(
+            chunk.sample_count
+            for chunk in stream.chunks
+            if chunk.content_kind is DeviceAxisContentKind.ZERO_FILL
+        )
+        zero_run_samples = sum(
+            run.sample_count
+            for run in validity.runs
+            if run.content_kind is DeviceAxisContentKind.ZERO_FILL
+        )
+        if zero_chunk_samples != stream.zero_fill_sample_count or zero_run_samples != (
+            stream.zero_fill_sample_count
+        ):
+            raise AssertionError("5 MS/s physical zero chunks disagree with validity evidence")
+        expected_stream_state = (
+            StreamState.PARTIAL if stream.zero_fill_sample_count else StreamState.COMPLETE
+        )
+        if stream.state is not expected_stream_state:
+            raise AssertionError("5 MS/s stream state disagrees with observation loss")
+
+        stream_checks.append(
+            ContiguousRateDeviceAxisCharacterizationStreamV1(
+                radio_id=stream.radio.radio_id,
+                observed_sample_count=stream.observed_sample_count,
+                zero_fill_sample_count=stream.zero_fill_sample_count,
+                continuity_segment_count=continuity.segment_count,
+                gap_count=continuity.gap_count,
+                missing_sample_count=continuity.missing_sample_count,
+                overflow_count=continuity.overflow_count,
+                enqueue_failure_count=continuity.enqueue_failure_count,
+                terminal_rejected_gap_count=continuity.terminal_rejected_gap_count,
+                terminal_rejected_missing_sample_count=(
+                    continuity.terminal_rejected_missing_sample_count
+                ),
+                terminal_rejected_overflow_count=continuity.terminal_rejected_overflow_count,
+                gap_map_segment_count=gap_map.segment_count,
+                gap_map_boundary_count=len(gap_map.boundaries),
+                validity_segment_count=len(validity.segments),
+                observed_iq_sha256=stream.observed_iq_sha256,
+                logical_iq_sha256=stream.logical_iq_sha256,
+                timeline_sha256=stream.timeline_sha256,
+                gap_map_sha256=stream.gap_map_sha256,
+                validity_inventory_sha256=stream.validity_inventory_sha256,
+            )
+        )
+        stream_facts.append(
+            {
+                "radio_id": stream.radio.radio_id,
+                "state": stream.state.value,
+                "logical_sample_count": stream.logical_sample_count,
+                "observed_sample_count": stream.observed_sample_count,
+                "zero_fill_sample_count": stream.zero_fill_sample_count,
+                "logical_iq_sha256": stream.logical_iq_sha256,
+                "observed_iq_sha256": stream.observed_iq_sha256,
+                "continuity": continuity.model_dump(mode="json"),
+                "gap_map_sha256": stream.gap_map_sha256,
+                "validity_inventory_sha256": stream.validity_inventory_sha256,
+            }
+        )
+
+    any_loss = any(stream.zero_fill_sample_count for stream in manifest.streams)
+    expected_state = CaptureState.DEGRADED if any_loss else CaptureState.COMMITTED
+    expected_grade = (
+        SynchronizationGrade.DEGRADED if any_loss else SynchronizationGrade.BEST_EFFORT_OBSERVED
+    )
+    if manifest.state is not expected_state or manifest.synchronization.grade is not expected_grade:
+        raise AssertionError("5 MS/s session state disagrees with stream validity")
+
+    report_payload = {
+        "kind": "device_axis_rate_5m_characterization",
+        "schema_version": 2,
+        "leo_revision": config.leo_revision,
+        "manifest_sha256": result.bundle.manifest_sha256,
+        "session_id": campaign_id,
+        "profile_revision_digest": plan.profile_revision.revision_digest,
+        "capture_plan_digest": plan.plan_digest,
+        "state": manifest.state.value,
+        "streams": stream_facts,
+        "bundle_verified": True,
+        "physical_zero_verified": True,
+        "validity_verified": True,
+        "gap_map_verified": True,
+        "radio_safety": [
+            {
+                "radio_id": item.context.radio_id,
+                "settings_restored": item.settings_restored,
+                "apply_readback": item.apply_readback.model_dump(mode="json"),
+                "independent_readback": item.restored_settings.model_dump(mode="json"),
+                "pre_safety_evidence_path": str(item.context.pre_evidence_path),
+                "pre_safety_evidence_sha256": item.context.pre_evidence_sha256,
+                "post_safety_evidence_path": str(item.post_evidence_path),
+                "post_safety_evidence_sha256": item.post_evidence_sha256,
+                "pre_host_iio_safety": asdict(item.context.pre_safety),
+                "post_host_iio_safety": asdict(item.post_safety),
+            }
+            for item in safety_results
+        ],
+    }
+    report_path = campaign_root / "device-axis-rate-5m-characterization-v2.json"
+    _atomic_write_json(report_path, report_payload)
+    characterization = ContiguousRateDeviceAxisCharacterizationV1(
+        evidence_sha256=_file_sha256(report_path),
+        manifest_sha256=result.bundle.manifest_sha256,
+        session_id=campaign_id,
+        profile_revision_digest=plan.profile_revision.revision_digest,
+        capture_plan_digest=plan.plan_digest,
+        radios=(manifest.streams[0].radio, manifest.streams[1].radio),
+        host=manifest.host,
+        producer=manifest.producer,
+        manifest_state=manifest.state,
+        streams=(stream_checks[0], stream_checks[1]),
+        bundle_verified=True,
+        physical_zero_verified=True,
+        validity_verified=True,
+        gap_map_verified=True,
+        passed=True,
+        errors=(),
+    )
+    return characterization, report_path
+
+
 @pytest.mark.hardware
-def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
+def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
     request: pytest.FixtureRequest,
     record_property: Any,
 ) -> None:
@@ -2412,7 +2669,10 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     campaign_root = campaigns_root / campaign_id
     campaign_root.mkdir(mode=0o700)
     safety_evidence_root = campaign_root / "prerequisites"
-    raw_campaign_bytes = _REQUESTED_SAMPLE_COUNT * 2 * 4 * 2 * config.trial_count
+    raw_campaign_bytes = (
+        _REQUESTED_SAMPLE_COUNT * 2 * 4 * 2 * config.trial_count
+        + _FIVE_M_REQUESTED_SAMPLE_COUNT * 2 * 4 * 2
+    )
     required_free_bytes = raw_campaign_bytes + 1 * 1024 * 1024 * 1024
     available_free_bytes = shutil.disk_usage(campaign_root).free
     if available_free_bytes < required_free_bytes:
@@ -2425,6 +2685,7 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     maintenance_claim = _claim_paused_campaign_authority(config, task_id=campaign_id)
     request.addfinalizer(maintenance_claim.verify_and_release)
     plan = _capture_plan(repository)
+    five_m_plan = _five_m_capture_plan(repository)
     host = _host_identity()
     producer = _producer(config)
     writer_receipt, writer_receipt_sha256 = _run_writer_capacity_gate(campaign_root)
@@ -2433,19 +2694,21 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
         config,
         evidence_root=safety_evidence_root,
     )
-    evidence: list[ContiguousRateTrialEvidenceV1] = []
+    evidence: list[ContiguousRateTrialEvidenceV2] = []
     campaign_errors: list[str] = []
     operation_error: BaseException | None = None
     restoration_error: BaseException | None = None
     safety_results: tuple[_RadioSafetyResult, _RadioSafetyResult] | None = None
+    five_m_result: Any = None
+    five_m_errors: list[str] = []
+    store = RecordingStore(campaign_root / "bulk")
     try:
         radios = _preflight_radios(config)
         native_ip_canaries = _run_individual_ip_canaries(config, campaign_deadline)
-        store = RecordingStore(campaign_root / "bulk")
         coordinator = AcquisitionCoordinator(
             store,
             compression=CompressionSettingsV1(
-                policy_id="zstd-128m-v1",
+                policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
                 codec="zstd",
                 level=3,
                 target_uncompressed_bytes=128 * 1024 * 1024,
@@ -2482,25 +2745,51 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
                 continue
             if result.errors:
                 campaign_errors.append(session_id + ": " + "; ".join(result.errors))
-            if result.bundle is None or not isinstance(result.manifest, RecordingManifestV2):
-                campaign_errors.append(session_id + " did not publish a V2 bundle")
+            if result.bundle is None or not isinstance(result.manifest, RecordingManifestV3):
+                campaign_errors.append(session_id + " did not publish a V3 device-axis bundle")
                 continue
             digest_valid = not result.errors and not close_errors
             try:
-                store.verify(result.bundle)
+                verification = store.verify(result.bundle)
+                if verification.validity_inventory_count != 2:
+                    raise AssertionError("verified V3 trial lacks exactly two validity inventories")
             except Exception as error:  # pragma: no cover - real evidence failure
                 digest_valid = False
                 campaign_errors.append(
                     f"{session_id} bundle verification failed: {type(error).__name__}: {error}"
                 )
             evidence.append(
-                ContiguousRateTrialEvidenceV1(
+                ContiguousRateTrialEvidenceV2(
                     trial_id=f"trial-{index:02d}",
                     manifest_sha256=result.bundle.manifest_sha256,
                     digest_valid=digest_valid,
                     manifest=result.manifest,
                 )
             )
+
+        five_m_session_id = f"{campaign_id}-5m-characterization"
+        five_m_sources = _new_sources(config)
+        five_m_close_errors: tuple[str, ...] = ()
+        try:
+            try:
+                five_m_result = _capture_with_campaign_deadline(
+                    coordinator,
+                    five_m_plan,
+                    five_m_sources,
+                    session_id=five_m_session_id,
+                    campaign_deadline=campaign_deadline,
+                )
+            except Exception as error:  # pragma: no cover - real hardware failure evidence
+                five_m_errors.append(
+                    f"{five_m_session_id} capture raised: {type(error).__name__}: {error}"
+                )
+        finally:
+            five_m_close_errors = _close_sources(five_m_sources)
+        five_m_errors.extend(
+            f"{five_m_session_id} source close failed: {error}" for error in five_m_close_errors
+        )
+        if five_m_result is None:
+            five_m_errors.append(five_m_session_id + " returned no capture result")
     except BaseException as error:  # pragma: no cover - real hardware failure path
         operation_error = error
     finally:
@@ -2519,12 +2808,61 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     if operation_error is not None:
         raise operation_error
     assert safety_results is not None
+    if five_m_errors:
+        failure_path = None
+        if (
+            five_m_result is not None
+            and five_m_result.bundle is not None
+            and isinstance(five_m_result.manifest, RecordingManifestV3)
+        ):
+            failure_path = _write_5m_failed_run_evidence(
+                campaign_root,
+                config=config,
+                campaign_id=f"{campaign_id}-5m-characterization",
+                result=five_m_result,
+                safety_snapshots=safety_snapshots,
+                errors=tuple(five_m_errors),
+            )
+            record_property("device_axis_rate_5m_failed_run_evidence", str(failure_path))
+        preserved = "" if failure_path is None else f"; evidence preserved at {failure_path}"
+        raise AssertionError(" | ".join(five_m_errors) + preserved)
+    try:
+        five_m_characterization, five_m_report_path = _seal_5m_device_axis_characterization(
+            campaign_root,
+            config=config,
+            campaign_id=f"{campaign_id}-5m-characterization",
+            plan=five_m_plan,
+            store=store,
+            result=five_m_result,
+            safety_results=safety_results,
+        )
+    except BaseException as error:
+        failure_path = None
+        if (
+            five_m_result is not None
+            and five_m_result.bundle is not None
+            and isinstance(five_m_result.manifest, RecordingManifestV3)
+        ):
+            failure_path = _write_5m_failed_run_evidence(
+                campaign_root,
+                config=config,
+                campaign_id=f"{campaign_id}-5m-characterization",
+                result=five_m_result,
+                safety_snapshots=safety_snapshots,
+                errors=(f"{type(error).__name__}: {error}",),
+            )
+            record_property("device_axis_rate_5m_failed_run_evidence", str(failure_path))
+        preserved = "" if failure_path is None else f"; evidence preserved at {failure_path}"
+        raise AssertionError("5 MS/s characterization failed" + preserved) from error
+    record_property("device_axis_rate_5m_characterization", str(five_m_report_path))
+    print(f"device-axis 5 MS/s characterization: {five_m_report_path}")
     prerequisites = _build_prerequisites(
         campaign_root,
         safety=safety_results,
         native_ip=native_ip_canaries,
         writer_receipt=writer_receipt,
         writer_receipt_sha256=writer_receipt_sha256,
+        five_m_characterization=five_m_characterization,
     )
     target = _target(
         config,
@@ -2535,12 +2873,12 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
         prerequisites,
     )
 
-    receipt = evaluate_contiguous_rate(
+    receipt = evaluate_device_axis_contiguous_rate(
         target,
         tuple(evidence),
         created_utc_ns=time.time_ns(),
     )
-    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v3.json"
+    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v4.json"
     _atomic_write_receipt(receipt_path, receipt)
     record_property("contiguous_rate_qualification_receipt", str(receipt_path))
     print(f"contiguous rate qualification receipt: {receipt_path}")
@@ -2564,242 +2902,3 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     _atomic_write_receipt(accepted_receipt_path, receipt)
     record_property("accepted_contiguous_rate_qualification_receipt", str(accepted_receipt_path))
     print(f"accepted contiguous rate qualification receipt: {accepted_receipt_path}")
-
-
-@pytest.mark.hardware
-def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder(
-    request: pytest.FixtureRequest,
-    record_property: Any,
-) -> None:
-    repository = Path(__file__).resolve().parents[2]
-    config = _hardware_config(repository)
-    _attest_production_radio_owners_quiescent()
-    _attest_source_tree(repository, config)
-    _attest_libiio(config)
-    _attest_native_routes(config)
-
-    campaign_id = f"rate-5m-{time.time_ns()}-{uuid4().hex[:8]}"
-    campaign_root = config.output_root / "campaigns" / campaign_id
-    campaign_root.mkdir(mode=0o700, parents=True)
-    safety_evidence_root = campaign_root / "prerequisites"
-    required_free_bytes = _FIVE_M_REQUESTED_SAMPLE_COUNT * 2 * 4 * 2 + 1024**3
-    if shutil.disk_usage(campaign_root).free < required_free_bytes:
-        pytest.fail(
-            f"insufficient storage for 5 MS/s characterization; preserved {campaign_root}",
-            pytrace=False,
-        )
-
-    maintenance_claim = _claim_paused_campaign_authority(config, task_id=campaign_id)
-    request.addfinalizer(maintenance_claim.verify_and_release)
-    plan = _five_m_capture_plan(repository)
-    host = _host_identity()
-    producer = _producer(config)
-    campaign_deadline = _campaign_deadline()
-    safety_snapshots = _snapshot_radio_safety(
-        config,
-        evidence_root=safety_evidence_root,
-    )
-    sources = _new_sources(config)
-    result = None
-    close_errors: tuple[str, ...] = ()
-    operation_error: BaseException | None = None
-    restoration_error: BaseException | None = None
-    safety_results: tuple[_RadioSafetyResult, _RadioSafetyResult] | None = None
-    store = RecordingStore(campaign_root / "bulk")
-    try:
-        coordinator = AcquisitionCoordinator(
-            store,
-            compression=CompressionSettingsV1(
-                policy_id="zstd-128m-v1",
-                codec="zstd",
-                level=3,
-                target_uncompressed_bytes=128 * 1024 * 1024,
-            ),
-            host=host,
-            producer=producer,
-        )
-        result = _capture_with_campaign_deadline(
-            coordinator,
-            plan,
-            sources,
-            session_id=campaign_id,
-            campaign_deadline=campaign_deadline,
-        )
-    except BaseException as error:  # pragma: no cover - real hardware failure path
-        operation_error = error
-    finally:
-        close_errors = _close_sources(sources)
-        try:
-            safety_results = _restore_radio_safety(
-                config,
-                safety_snapshots,
-                evidence_root=safety_evidence_root,
-            )
-        except BaseException as error:  # pragma: no cover - real hardware cleanup path
-            restoration_error = error
-
-    maintenance_claim.verify_and_release()
-    run_errors: list[str] = []
-    if operation_error is not None:
-        run_errors.append(f"capture raised {type(operation_error).__name__}: {operation_error}")
-    run_errors.extend(f"source close failed: {error}" for error in close_errors)
-    if restoration_error is not None:
-        run_errors.append(
-            f"restoration raised {type(restoration_error).__name__}: {restoration_error}"
-        )
-    failure_path: Path | None = None
-    if (
-        run_errors
-        and result is not None
-        and result.bundle is not None
-        and isinstance(
-            result.manifest,
-            RecordingManifestV2,
-        )
-    ):
-        failure_path = _write_5m_failed_run_evidence(
-            campaign_root,
-            config=config,
-            campaign_id=campaign_id,
-            result=result,
-            safety_snapshots=safety_snapshots,
-            errors=tuple(run_errors),
-        )
-        record_property("segmented_rate_5m_failed_run_evidence", str(failure_path))
-        print(f"segmented 5 MS/s failed-run evidence: {failure_path}")
-    preserved = "" if failure_path is None else f"; evidence preserved at {failure_path}"
-    if restoration_error is not None:
-        raise AssertionError(f"5 MS/s radio restoration failed{preserved}") from restoration_error
-    if operation_error is not None:
-        raise AssertionError(f"5 MS/s capture failed{preserved}") from operation_error
-    if close_errors:
-        raise AssertionError("; ".join(close_errors) + preserved)
-    assert safety_results is not None
-    assert result is not None
-    assert result.bundle is not None
-    assert isinstance(result.manifest, RecordingManifestV2)
-    manifest = result.manifest
-    assert result.bundle.manifest == manifest
-    assert manifest.capture_plan == plan
-    assert tuple(stream.radio.radio_id for stream in manifest.streams) == _RADIO_IDS
-    assert len(manifest.streams) == 2
-    verification = store.verify(result.bundle)
-    assert verification.session_id == campaign_id
-    assert verification.timeline_count == verification.gap_map_count == 2
-
-    stream_facts: list[dict[str, Any]] = []
-    for stream in manifest.streams:
-        continuity = stream.continuity
-        assert isinstance(continuity, ContinuitySummaryV2)
-        assert stream.state is not StreamState.FAILED
-        assert stream.requested_sample_count == _FIVE_M_REQUESTED_SAMPLE_COUNT
-        assert stream.captured_sample_count == continuity.observed_sample_count
-        assert continuity.device_span_sample_count == _FIVE_M_REQUESTED_SAMPLE_COUNT
-        assert (
-            continuity.observed_sample_count + continuity.missing_sample_count
-            == _FIVE_M_REQUESTED_SAMPLE_COUNT
-        )
-        assert sum(chunk.sample_count for chunk in stream.chunks) == stream.captured_sample_count
-        assert sum(chunk.uncompressed_bytes for chunk in stream.chunks) == (
-            stream.captured_sample_count * 2 * 4
-        )
-        assert continuity.sample_loss_observable is True
-        assert continuity.kernel_buffers == _KERNEL_BUFFERS
-        assert continuity.queue_capacity_refills == _QUEUE_CAPACITY
-        assert 1 <= continuity.queue_high_water_refills <= _QUEUE_CAPACITY
-        assert continuity.metadata_abi_version == 1
-        assert continuity.validated_stream_generation
-        assert continuity.enqueue_failure_count == 0
-        assert continuity.terminal_enqueue_failure is None
-        assert continuity.terminal_rejected_gap_count == 0
-        assert continuity.terminal_rejected_missing_sample_count == 0
-        assert continuity.terminal_rejected_overflow_count == 0
-        assert continuity.first_device_sample_counter is not None
-        assert continuity.last_device_sample_counter is not None
-        terminal_missing = (
-            continuity.terminal_gap.in_span_missing_sample_count
-            if continuity.terminal_gap is not None
-            else 0
-        )
-        assert (
-            continuity.last_device_sample_counter
-            - continuity.first_device_sample_counter
-            + 1
-            + terminal_missing
-            == _FIVE_M_REQUESTED_SAMPLE_COUNT
-        )
-
-        reader = store.reader(result.bundle, stream.stream_id)
-        gap_map = reader.gap_map()
-        assert gap_map.timeline_sha256 == stream.timeline_sha256
-        assert gap_map.observed_sample_count == continuity.observed_sample_count
-        assert gap_map.device_span_sample_count == _FIVE_M_REQUESTED_SAMPLE_COUNT
-        assert gap_map.missing_sample_count == continuity.missing_sample_count
-        # A terminal gap closes the requested device span without adding a
-        # stored IQ segment. The gap map represents that terminal region as
-        # one additional logical segment and boundary.
-        assert gap_map.segment_count == continuity.segment_count + int(
-            continuity.terminal_gap is not None
-        )
-        assert (
-            sum(boundary.missing_sample_count for boundary in gap_map.boundaries)
-            == continuity.missing_sample_count
-        )
-        assert (
-            sum(boundary.missing_sample_count > 0 for boundary in gap_map.boundaries)
-            == continuity.gap_count
-        )
-
-        integrity_loss = bool(
-            continuity.gap_count
-            or continuity.overflow_count
-            or continuity.enqueue_failure_count
-            or continuity.device_span_sample_count != _FIVE_M_REQUESTED_SAMPLE_COUNT
-        )
-        assert stream.state is (StreamState.PARTIAL if integrity_loss else StreamState.COMPLETE)
-        assert (stream.error is not None) is integrity_loss
-        stream_facts.append(
-            {
-                "radio_id": stream.radio.radio_id,
-                "state": stream.state.value,
-                "captured_sample_count": stream.captured_sample_count,
-                "continuity": continuity.model_dump(mode="json"),
-                "gap_map_sha256": stream.gap_map_sha256,
-            }
-        )
-
-    any_loss = any(stream.state is StreamState.PARTIAL for stream in manifest.streams)
-    expected_state = CaptureState.DEGRADED if any_loss else CaptureState.COMMITTED
-    expected_grade = (
-        SynchronizationGrade.DEGRADED if any_loss else SynchronizationGrade.BEST_EFFORT_OBSERVED
-    )
-    assert result.state is manifest.state is expected_state
-    assert manifest.synchronization.grade is expected_grade
-    report_payload = {
-        "kind": "segmented_rate_5m_characterization",
-        "schema_version": 1,
-        "leo_revision": config.leo_revision,
-        "manifest_sha256": result.bundle.manifest_sha256,
-        "session_id": campaign_id,
-        "state": manifest.state.value,
-        "streams": stream_facts,
-        "radio_safety": [
-            {
-                "radio_id": item.context.radio_id,
-                "settings_restored": item.settings_restored,
-                "apply_readback": item.apply_readback.model_dump(mode="json"),
-                "independent_readback": item.restored_settings.model_dump(mode="json"),
-                "pre_safety_evidence_path": str(item.context.pre_evidence_path),
-                "pre_safety_evidence_sha256": item.context.pre_evidence_sha256,
-                "post_safety_evidence_path": str(item.post_evidence_path),
-                "post_safety_evidence_sha256": item.post_evidence_sha256,
-                "pre_host_iio_safety": asdict(item.context.pre_safety),
-                "post_host_iio_safety": asdict(item.post_safety),
-            }
-            for item in safety_results
-        ],
-    }
-    report_path = campaign_root / "segmented-rate-5m-characterization-v1.json"
-    _atomic_write_json(report_path, report_payload)
-    record_property("segmented_rate_5m_characterization", str(report_path))
-    print(f"segmented 5 MS/s characterization: {report_path}")

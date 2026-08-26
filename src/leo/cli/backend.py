@@ -24,6 +24,7 @@ from leo.cli.models import (
     HoldDataV1,
     ImportDataV1,
     JobsDataV1,
+    NativeEvidenceReprocessDataV1,
     ProfileListDataV1,
     ProfileShowDataV1,
     ProfileShowDataV2,
@@ -244,6 +245,14 @@ class ProcessingCliBackend(Protocol):
     def session_paths(self, session_id: str) -> SessionPathsDataV1: ...
 
     def reprocess(self, session_id: str, *, dry_run: bool = False) -> ReprocessDataV1: ...
+
+    def native_evidence(
+        self,
+        session_id: str,
+        *,
+        pipeline_release_id: str,
+        dry_run: bool = False,
+    ) -> NativeEvidenceReprocessDataV1: ...
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1: ...
 

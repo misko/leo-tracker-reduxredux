@@ -18,6 +18,7 @@ from leo.cli.models import (
     ImportDataV1,
     ImportFixtureDataV1,
     JobsDataV1,
+    NativeEvidenceReprocessDataV1,
     PathItemDataV1,
     ReconcileDataV1,
     ReprocessDataV1,
@@ -107,6 +108,33 @@ class FakeProcessBackend:
             pipeline_release_id="baseline-v1",
             previous_current_run_id="run-old",
             queued_scope_keys=("stream-a",),
+            state="dry_run" if dry_run else "queued",
+        )
+
+    def native_evidence(
+        self,
+        session_id: str,
+        *,
+        pipeline_release_id: str,
+        dry_run: bool = False,
+    ) -> NativeEvidenceReprocessDataV1:
+        self.calls.append(
+            (
+                "native_evidence",
+                {
+                    "session_id": session_id,
+                    "pipeline_release_id": pipeline_release_id,
+                    "dry_run": dry_run,
+                },
+            )
+        )
+        return NativeEvidenceReprocessDataV1(
+            session_id=session_id,
+            run_id=f"native-evidence-{'a' * 32}",
+            pipeline_release_id=pipeline_release_id,
+            previous_current_run_id="run-old",
+            queued_scope_keys=("stream-a", "stream-b"),
+            queued_job_count=12,
             state="dry_run" if dry_run else "queued",
         )
 
@@ -251,6 +279,17 @@ def test_all_processing_data_commands_route_to_one_typed_backend() -> None:
         (["process", "show", "session-a", "--json"], "session_detail"),
         (["process", "paths", "session-a", "--json"], "session_paths"),
         (["process", "reprocess", "session-a", "--json"], "reprocess"),
+        (
+            [
+                "process",
+                "native-evidence",
+                "session-a",
+                "--release",
+                "a" * 40,
+                "--json",
+            ],
+            "native_evidence_reprocess",
+        ),
         (
             [
                 "process",

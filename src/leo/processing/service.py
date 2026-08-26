@@ -15,6 +15,7 @@ from collections.abc import Callable, Iterable
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -48,11 +49,12 @@ from leo.catalog import (
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.pipeline_lanes import PipelineLane
-from leo.contracts.recording import RecordingManifestV1
+from leo.contracts.recording import RecordingManifestV1, RecordingManifestV3
 from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     StandardPairInputBindV2,
     StandardPathInputBindV3,
+    StandardPathInputBindV4,
     StreamTimingEvidenceV1,
     resolve_manifest_starlink_tuning,
 )
@@ -68,11 +70,21 @@ from leo.pipeline import (
     RawIntegrityAttestationV1,
     StageOutcome,
     StageResult,
+    ValidityAwareIqReader,
     compile_rate_baseline_run_plan,
     compile_standard_run_plan,
 )
+from leo.pipeline.standard_native import (
+    STANDARD_NATIVE_STAGE_KEYS,
+    compile_standard_native_run_plan,
+    compile_standard_native_scope_inventory,
+)
 from leo.pipeline.topology import compile_scope_inventory
-from leo.processing.adapters import CatalogArtifactProductReader, IqReaderProvider
+from leo.processing.adapters import (
+    CatalogArtifactProductReader,
+    IqReaderProvider,
+    ValidityAwareIqReaderProvider,
+)
 from leo.processing.authority import LoadedWorkerRelease
 from leo.storage import PinnedLocalRoot
 
@@ -752,12 +764,18 @@ class ProcessingService:
                     lease.stage_key,
                 ),
             )
-            reader: IqReader
+            reader: IqReader | ValidityAwareIqReader
             self._require_live_worker_authority(claim_authority)
             if lease.iq_access == "none":
                 reader = _NoIqReader()
             elif lease.scope is not None:
-                reader = self.iq_readers.open_scope(execution, lease.scope)
+                reader = (
+                    cast(ValidityAwareIqReaderProvider, self.iq_readers).open_validity_scope(
+                        execution, lease.scope
+                    )
+                    if lease.stage_key == "path-standard-native"
+                    else self.iq_readers.open_scope(execution, lease.scope)
+                )
             else:
                 reader = self.iq_readers.open(execution, lease.scope_key)
             self._inject("execution:after_iq_reader_open")
@@ -814,7 +832,7 @@ class ProcessingService:
                         result, staged, consumed_product_ids = _run_analyzer_isolated(
                             analyzer=analyzer,
                             context=context,
-                            reader=reader,
+                            reader=cast(IqReader, reader),
                             products=products,
                             outputs=staged_outputs,
                             timeout_seconds=wall_limit,
@@ -830,7 +848,12 @@ class ProcessingService:
                             outputs,
                         )
                 else:
-                    result = analyzer.analyze(context, reader, products, outputs)
+                    result = analyzer.analyze(
+                        context,
+                        cast(IqReader, reader),
+                        products,
+                        outputs,
+                    )
                     publications = outputs.publications
                     consumed_product_ids = products.consumed_product_ids
                     _validate_result(analyzer, result, publications)
@@ -1044,25 +1067,53 @@ class ProcessingService:
         ):
             raise ValueError("integrity authority returned evidence for different raw bytes")
         manifest = self.iq_readers.verified_manifest(integrity.attestation_digest)
+        stage_keys = {job.stage_key for job in plan.jobs}
         rate_baseline = canonical_lane is PipelineLane.RESEARCH and {
             job.stage_key for job in plan.jobs
         } == {RATE_CONTINUITY_BASELINE_STAGE_KEY}
-        if rate_baseline:
+        native_evidence = bool(stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS))
+        if native_evidence:
+            if (
+                canonical_lane is not PipelineLane.STANDARD
+                or canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY
+                or trigger != "reprocess"
+                or not isinstance(manifest, RecordingManifestV3)
+                or not stage_keys.issubset(STANDARD_NATIVE_STAGE_KEYS)
+            ):
+                raise ValueError(
+                    "Standard-native requires a manual Standard-lane evidence-only V3 run"
+                )
+            expected_plan = compile_standard_native_run_plan(
+                manifest,
+                manifest_digest=plan.manifest_digest,
+                pipeline_release_id=plan.pipeline_release_id,
+            )
+        elif rate_baseline:
             if canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY:
                 raise ValueError("rate baseline requires evidence-only promotion policy")
+            if not isinstance(manifest, RecordingManifestV1):
+                raise ValueError("rate baseline accepts only V1/V2 recording manifests")
             expected_plan = compile_rate_baseline_run_plan(
                 manifest,
                 manifest_digest=plan.manifest_digest,
                 pipeline_release_id=plan.pipeline_release_id,
             )
         else:
+            if not isinstance(manifest, RecordingManifestV1):
+                raise ValueError("frozen Standard accepts only V1/V2 recording manifests")
             expected_plan = compile_standard_run_plan(
                 manifest,
                 manifest_digest=plan.manifest_digest,
                 pipeline_release_id=plan.pipeline_release_id,
             )
         if plan != expected_plan:
-            lane_name = "rate-baseline" if rate_baseline else "Standard"
+            lane_name = (
+                "Standard-native"
+                if native_evidence
+                else "rate-baseline"
+                if rate_baseline
+                else "Standard"
+            )
             raise ValueError(
                 f"expanded plan differs from the manifest-authoritative {lane_name} DAG"
             )
@@ -1117,6 +1168,7 @@ class ProcessingService:
             require_integrity_prerequisite=True,
             subject_bindings=_compile_subject_binding_registrations(
                 catalog=self.catalog,
+                iq_readers=self.iq_readers,
                 manifest=manifest,
                 integrity=integrity,
                 plan=plan,
@@ -1315,11 +1367,37 @@ def _validate_result(
 def _compile_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
-    manifest: RecordingManifestV1,
+    iq_readers: IqReaderProvider,
+    manifest: RecordingManifestV1 | RecordingManifestV3,
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
     """Freeze every manifest-derived path/pair fact before the run can exist."""
+
+    if isinstance(manifest, RecordingManifestV3):
+        return _compile_native_subject_binding_registrations(
+            catalog=catalog,
+            iq_readers=iq_readers,
+            manifest=manifest,
+            integrity=integrity,
+            plan=plan,
+        )
+    return _compile_legacy_subject_binding_registrations(
+        catalog=catalog,
+        manifest=manifest,
+        integrity=integrity,
+        plan=plan,
+    )
+
+
+def _compile_legacy_subject_binding_registrations(
+    *,
+    catalog: CatalogRepository,
+    manifest: RecordingManifestV1,
+    integrity: RawIntegrityAttestationV1,
+    plan: ExpandedRunPlanV1,
+) -> tuple[RunSubjectBindingRegistration, ...]:
+    """Preserve the frozen V1/V2 subject binding semantics exactly."""
 
     release = catalog.pipeline_release_snapshot(plan.pipeline_release_id)
     topology = compile_scope_inventory(manifest)
@@ -1421,6 +1499,165 @@ def _compile_subject_binding_registrations(
                 timing.first_sample.estimate_utc_ns for timing in stream_timings
             ),
             union_end_utc_ns=max(timing.last_sample.estimate_utc_ns for timing in stream_timings),
+            estimated_overlap_start_utc_ns=cast(int, required[2]),
+            estimated_overlap_end_utc_ns=cast(int, required[3]),
+            estimated_start_skew_ns=cast(int, required[0]),
+            start_skew_uncertainty_ns=cast(int, required[1]),
+            guaranteed_overlap_ns=cast(int, required[4]),
+            synchronization_grade=synchronization.grade.value,
+        )
+        values = {
+            "schema_version": 2,
+            "algorithm_version": "standard-pair-input-bind-v2",
+            "session_id": manifest.session_id,
+            "manifest_digest": plan.manifest_digest,
+            "synchronization_inventory_digest": topology.synchronization_inventory_digest,
+            "raw_integrity_attestation_digests": [integrity.attestation_digest],
+            "timing": pair_timing.model_dump(mode="json"),
+        }
+        pair_binding = StandardPairInputBindV2.model_validate(
+            {**values, "binding_digest": canonical_digest(values)}
+        )
+        registrations.append(
+            RunSubjectBindingRegistration(
+                scope=topology.paired,
+                document=pair_binding.model_dump(mode="json"),
+            )
+        )
+    return tuple(sorted(registrations, key=lambda item: item.scope.canonical_digest))
+
+
+def _compile_native_subject_binding_registrations(
+    *,
+    catalog: CatalogRepository,
+    iq_readers: IqReaderProvider,
+    manifest: RecordingManifestV3,
+    integrity: RawIntegrityAttestationV1,
+    plan: ExpandedRunPlanV1,
+) -> tuple[RunSubjectBindingRegistration, ...]:
+    """Freeze V3 logical-IQ and validity authority for every native path."""
+
+    release = catalog.pipeline_release_snapshot(plan.pipeline_release_id)
+    topology = compile_standard_native_scope_inventory(manifest)
+    starlink_tuning = resolve_manifest_starlink_tuning(manifest)
+    streams = {item.stream_id: item for item in manifest.streams}
+    raw_streams = {item.stream_id: item for item in integrity.streams}
+    registrations: list[RunSubjectBindingRegistration] = []
+    for scope in topology.receiver_paths:
+        assert scope.stream_id is not None and scope.receiver_id is not None
+        stream = streams[scope.stream_id]
+        settings = stream.applied_settings
+        raw = raw_streams.get(stream.stream_id)
+        if raw is None:
+            raise ValueError("native receiver path lacks verified chunk closure")
+        validity = iq_readers.verified_validity_inventory(
+            integrity.attestation_digest,
+            stream.stream_id,
+        )
+        tuning_intent = starlink_tuning[stream.stream_id]
+        capture_binding = catalog.capture_receiver_binding(scope)
+        if (
+            capture_binding.radio_id != stream.radio.radio_id
+            or capture_binding.radio_serial != stream.radio.serial
+            or capture_binding.manifest_digest != plan.manifest_digest
+            or capture_binding.profile_revision_digest
+            != manifest.capture_plan.profile_revision.revision_digest
+        ):
+            raise ValueError("native manifest and catalog receiver authority disagree")
+        timing = StreamTimingEvidenceV1(
+            first_estimate_utc_ns=stream.timing.first_sample.estimate_utc_ns,
+            first_earliest_utc_ns=stream.timing.first_sample.earliest_utc_ns,
+            first_latest_utc_ns=stream.timing.first_sample.latest_utc_ns,
+            last_estimate_utc_ns=stream.timing.last_sample.estimate_utc_ns,
+            last_earliest_utc_ns=stream.timing.last_sample.earliest_utc_ns,
+            last_latest_utc_ns=stream.timing.last_sample.latest_utc_ns,
+        )
+        frequency_reference = catalog.capture_frequency_reference(
+            scope,
+            tuned_center_frequency_hz=settings.center_frequency_hz,
+        )
+        requested_duration = Decimal(stream.requested_sample_count) / Decimal(
+            settings.sample_rate_hz
+        )
+        values: dict[str, Any] = {
+            "schema_version": 4,
+            "algorithm_version": "standard-path-input-bind-v4",
+            "session_id": manifest.session_id,
+            "stream_id": stream.stream_id,
+            "radio_id": stream.radio.radio_id,
+            "receiver_id": scope.receiver_id,
+            "manifest_digest": plan.manifest_digest,
+            "raw_integrity_attestation_digest": integrity.attestation_digest,
+            "selected_stream_digest": canonical_digest(stream.model_dump(mode="json")),
+            "compressed_chunk_closure_digest": raw.compressed_closure_digest,
+            "uncompressed_chunk_closure_digest": raw.uncompressed_closure_digest,
+            "synchronization_inventory_digest": topology.synchronization_inventory_digest,
+            "profile_revision_digest": capture_binding.profile_revision_digest,
+            "capture_plan_digest": manifest.capture_plan.plan_digest,
+            "receiver_settings_digest": canonical_digest(settings.model_dump(mode="json")),
+            "science_configuration_digest": release.configuration_digest,
+            "science_implementation_digest": release.executable_digest,
+            "capture_lineage_resolution": capture_binding.lineage_resolution,
+            "physical_receiver_id": capture_binding.physical_receiver_id,
+            "hardware_epoch_id": capture_binding.hardware_epoch_id,
+            "tuned_center_frequency_hz": settings.center_frequency_hz,
+            "sample_rate_hz": settings.sample_rate_hz,
+            "declared_sample_count": stream.logical_sample_count,
+            "starlink_channel": tuning_intent.channel,
+            "starlink_edge": tuning_intent.edge.value,
+            "starlink_tuning_evidence_source": tuning_intent.evidence_source,
+            "rf_bandwidth_hz": settings.bandwidth_hz,
+            "requested_sample_count": stream.requested_sample_count,
+            "requested_duration_seconds": str(requested_duration),
+            "logical_sample_count": stream.logical_sample_count,
+            "observed_sample_count": stream.observed_sample_count,
+            "missing_sample_count": stream.zero_fill_sample_count,
+            "observed_iq_digest": stream.observed_iq_sha256,
+            "logical_iq_digest": stream.logical_iq_sha256,
+            "timeline_sha256": stream.timeline_sha256,
+            "gap_map_sha256": stream.gap_map_sha256,
+            "gap_map_content_digest": validity.gap_map_content_digest,
+            "validity_inventory_sha256": stream.validity_inventory_sha256,
+            "first_device_sample_counter": validity.first_device_sample_counter,
+            "last_device_sample_counter_inclusive": (
+                validity.first_device_sample_counter + stream.logical_sample_count - 1
+            ),
+            "validity_inventory": validity.model_dump(mode="json"),
+            "timing": timing.model_dump(mode="json"),
+            "frequency_reference": frequency_reference.model_dump(mode="json"),
+        }
+        path_binding = StandardPathInputBindV4.model_validate(
+            {**values, "binding_digest": canonical_digest(values)}
+        )
+        registrations.append(
+            RunSubjectBindingRegistration(
+                scope=scope,
+                document=path_binding.model_dump(mode="json"),
+            )
+        )
+
+    pair_is_planned = topology.paired is not None and any(
+        job.scope == topology.paired for job in plan.jobs
+    )
+    if topology.paired is not None and pair_is_planned:
+        synchronization = manifest.synchronization
+        required = (
+            synchronization.estimated_start_skew_ns,
+            synchronization.start_skew_uncertainty_ns,
+            synchronization.estimated_overlap_start_utc_ns,
+            synchronization.estimated_overlap_end_utc_ns,
+            synchronization.guaranteed_overlap_ns,
+        )
+        if any(value is None for value in required):
+            raise ValueError("paired native run lacks authoritative overlap timing")
+        pair_timing = PairTimingEvidenceV1(
+            synchronization_inventory_digest=topology.synchronization_inventory_digest,
+            union_start_utc_ns=min(
+                stream.timing.first_sample.estimate_utc_ns for stream in manifest.streams
+            ),
+            union_end_utc_ns=max(
+                stream.timing.last_sample.estimate_utc_ns for stream in manifest.streams
+            ),
             estimated_overlap_start_utc_ns=cast(int, required[2]),
             estimated_overlap_end_utc_ns=cast(int, required[3]),
             estimated_start_skew_ns=cast(int, required[0]),

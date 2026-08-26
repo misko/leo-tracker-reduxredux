@@ -383,9 +383,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     }
     assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
-    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-continuity-v2"
-    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-capture-v2"
-    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-segmented-v2"
+    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-device-axis-v3"
+    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-device-axis-v3"
+    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-device-axis-v3"
     assert values["LEO_QUALIFICATION_PROFILE"] == (
         "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"
     )

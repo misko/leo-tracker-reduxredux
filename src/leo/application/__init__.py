@@ -22,6 +22,8 @@ from leo.application.standard_presentation import (
 )
 from leo.application.standard_reprocess import (
     StandardControlStatusV1,
+    StandardNativeEvidenceReprocessor,
+    StandardNativeEvidenceResultV1,
     StandardReprocessError,
     StandardReprocessNotFound,
     StandardReprocessor,
@@ -52,6 +54,8 @@ __all__ = [
     "StandardPresentationNotReady",
     "StandardPresentationUnavailable",
     "StandardControlStatusV1",
+    "StandardNativeEvidenceReprocessor",
+    "StandardNativeEvidenceResultV1",
     "StandardReprocessError",
     "StandardReprocessNotFound",
     "StandardReprocessResultV1",

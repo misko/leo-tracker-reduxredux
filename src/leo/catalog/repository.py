@@ -138,12 +138,13 @@ from leo.catalog.types import (
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pipeline_lanes import PipelineLane
-from leo.contracts.recording import RecordingManifestV1
+from leo.contracts.recording import RecordingManifestV1, RecordingManifestV3, RecordingStreamV3
 from leo.contracts.standard_pipeline import (
     FrequencyReference,
     ReceiverFrequencyReferenceV1,
     StandardPairInputBindV2,
     StandardPathInputBindV3,
+    StandardPathInputBindV4,
     resolve_manifest_starlink_tuning,
 )
 from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
@@ -151,6 +152,7 @@ from leo.pipeline.planning import RawIntegrityAttestationV1
 from leo.station.authority import (
     CaptureHardwareBindingV1,
     CaptureHardwareBindingV2,
+    CaptureHardwareBindingV3,
     FixturePathAuthorityV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -161,7 +163,9 @@ from leo.station.authority import (
 _ZERO_DIGEST = "sha256:" + "0" * 64
 _ACQUISITION_CADENCE_KINDS = frozenset({"scheduled_recording", "scanner_sweep"})
 _ACQUISITION_CADENCE_LOCK_KEY = "acquisition-cadence-coalescing-v1"
-type StationCaptureHardwareBinding = CaptureHardwareBindingV1 | CaptureHardwareBindingV2
+type StationCaptureHardwareBinding = (
+    CaptureHardwareBindingV1 | CaptureHardwareBindingV2 | CaptureHardwareBindingV3
+)
 type CapturePathAuthorityContract = StationCaptureHardwareBinding | FixturePathAuthorityV1
 
 
@@ -4066,7 +4070,15 @@ def _validate_subject_binding_document(
     if run is None or release is None:
         raise InvalidStateError("subject snapshot run release is absent")
     if scope.kind.value == "receiver_path":
-        path_binding = StandardPathInputBindV3.model_validate(document)
+        binding_schema_version = document.get("schema_version")
+        if binding_schema_version == 3:
+            path_binding: StandardPathInputBindV3 | StandardPathInputBindV4 = (
+                StandardPathInputBindV3.model_validate(document)
+            )
+        elif binding_schema_version == 4:
+            path_binding = StandardPathInputBindV4.model_validate(document)
+        else:
+            raise InvalidStateError("receiver-path snapshot schema version is unsupported")
         lineage = session.get(
             CaptureReceiverLineage,
             (scope.session_id, scope.stream_id, scope.receiver_id),
@@ -4091,7 +4103,7 @@ def _validate_subject_binding_document(
         authority = session.get(CapturePathAuthority, scope.session_id)
         bounds = None if stream is None else _stream_observed_bounds_ns(stream.attributes)
         authority_contract: CapturePathAuthorityContract | None = None
-        authority_manifest: RecordingManifestV1 | None = None
+        authority_manifest: RecordingManifestV1 | RecordingManifestV3 | None = None
         manifest_stream = None
         if authority is not None:
             authority_contract = (
@@ -4132,6 +4144,54 @@ def _validate_subject_binding_document(
                 capture_end_utc_ns=bounds[1],
             )
         )
+        if isinstance(path_binding, StandardPathInputBindV4):
+            if not isinstance(authority_manifest, RecordingManifestV3) or not isinstance(
+                manifest_stream, RecordingStreamV3
+            ):
+                path_geometry_disagrees = True
+            else:
+                manifest_timing = manifest_stream.timing
+                manifest_settings = manifest_stream.applied_settings
+                path_geometry_disagrees = (
+                    path_binding.sample_rate_hz != manifest_settings.sample_rate_hz
+                    or path_binding.rf_bandwidth_hz != manifest_settings.bandwidth_hz
+                    or path_binding.declared_sample_count != manifest_stream.logical_sample_count
+                    or path_binding.requested_sample_count != manifest_stream.requested_sample_count
+                    or path_binding.logical_sample_count != manifest_stream.logical_sample_count
+                    or path_binding.observed_sample_count != manifest_stream.observed_sample_count
+                    or path_binding.missing_sample_count != manifest_stream.zero_fill_sample_count
+                    or path_binding.observed_iq_digest != manifest_stream.observed_iq_sha256
+                    or path_binding.logical_iq_digest != manifest_stream.logical_iq_sha256
+                    or path_binding.timeline_sha256 != manifest_stream.timeline_sha256
+                    or path_binding.gap_map_sha256 != manifest_stream.gap_map_sha256
+                    or path_binding.validity_inventory_sha256
+                    != manifest_stream.validity_inventory_sha256
+                    or path_binding.first_device_sample_counter
+                    != manifest_stream.continuity.first_device_sample_counter
+                    or stream is None
+                    or stream.captured_sample_count != manifest_stream.observed_sample_count
+                    or path_binding.timing.first_estimate_utc_ns
+                    != manifest_timing.first_sample.estimate_utc_ns
+                    or path_binding.timing.first_earliest_utc_ns
+                    != manifest_timing.first_sample.earliest_utc_ns
+                    or path_binding.timing.first_latest_utc_ns
+                    != manifest_timing.first_sample.latest_utc_ns
+                    or path_binding.timing.last_estimate_utc_ns
+                    != manifest_timing.last_sample.estimate_utc_ns
+                    or path_binding.timing.last_earliest_utc_ns
+                    != manifest_timing.last_sample.earliest_utc_ns
+                    or path_binding.timing.last_latest_utc_ns
+                    != manifest_timing.last_sample.latest_utc_ns
+                )
+        else:
+            # V3 keeps the historical packed-observed-IQ count semantics and
+            # cannot be used to reinterpret a V3 device-axis recording.
+            path_geometry_disagrees = (
+                isinstance(authority_manifest, RecordingManifestV3)
+                or isinstance(manifest_stream, RecordingStreamV3)
+                or stream is None
+                or path_binding.declared_sample_count != stream.captured_sample_count
+            )
         if (
             path_binding.session_id != scope.session_id
             or path_binding.stream_id != scope.stream_id
@@ -4168,7 +4228,7 @@ def _validate_subject_binding_document(
             or path_binding.tuned_center_frequency_hz
             != manifest_stream.applied_settings.center_frequency_hz
             or path_binding.sample_rate_hz != stream.sample_rate_hz
-            or path_binding.declared_sample_count != stream.captured_sample_count
+            or path_geometry_disagrees
             or path_binding.frequency_reference != expected_frequency
             or path_binding.science_configuration_digest != release.configuration_digest
             or path_binding.science_implementation_digest != release.executable_digest
@@ -5693,7 +5753,10 @@ def _validate_capture_authority_registration(
         or snapshot.source_type.value != source_type
     ):
         raise InvalidStateError("capture authority disagrees with capture identity")
-    if isinstance(authority, (CaptureHardwareBindingV1, CaptureHardwareBindingV2)):
+    if isinstance(
+        authority,
+        (CaptureHardwareBindingV1, CaptureHardwareBindingV2, CaptureHardwareBindingV3),
+    ):
         if source_type not in {"live", "import"}:
             raise InvalidStateError("station hardware authority cannot authorize TEST input")
     elif source_type != "test":
@@ -5757,10 +5820,43 @@ def _validate_capture_authority_registration(
             raise ProductConflictError(
                 "capture stream metadata differs from exact applied manifest inventory"
             )
+        if isinstance(manifest_stream, RecordingStreamV3):
+            sample_ns = (1_000_000_000 + applied.sample_rate_hz - 1) // applied.sample_rate_hz
+            expected_attributes = {
+                "requested_settings": manifest_stream.requested_settings.model_dump(mode="json"),
+                "applied_settings": applied.model_dump(mode="json"),
+                "timing": manifest_stream.timing.model_dump(mode="json"),
+                "capture_start_utc_ns": manifest_stream.timing.first_sample.earliest_utc_ns,
+                "capture_end_utc_ns": (
+                    manifest_stream.timing.last_sample.latest_utc_ns + sample_ns
+                ),
+                "continuity": manifest_stream.continuity.model_dump(mode="json"),
+                "timeline_relative_path": manifest_stream.timeline_relative_path,
+                "timeline_sha256": manifest_stream.timeline_sha256,
+                "logical_sample_count": manifest_stream.logical_sample_count,
+                "observed_sample_count": manifest_stream.observed_sample_count,
+                "zero_fill_sample_count": manifest_stream.zero_fill_sample_count,
+                "observed_iq_sha256": manifest_stream.observed_iq_sha256,
+                "logical_iq_sha256": manifest_stream.logical_iq_sha256,
+                "gap_map_relative_path": manifest_stream.gap_map_relative_path,
+                "gap_map_sha256": manifest_stream.gap_map_sha256,
+                "validity_inventory_relative_path": (
+                    manifest_stream.validity_inventory_relative_path
+                ),
+                "validity_inventory_sha256": manifest_stream.validity_inventory_sha256,
+            }
+            if registration.attributes != expected_attributes:
+                raise ProductConflictError(
+                    "V3 capture registration differs from exact device-axis authority"
+                )
         expected_chunks = tuple(
             (
                 item.chunk_index,
-                item.sample_start,
+                (
+                    item.device_sample_start
+                    if isinstance(manifest_stream, RecordingStreamV3)
+                    else item.sample_start
+                ),
                 item.sample_count,
                 item.compressed_sha256,
                 item.uncompressed_sha256,
@@ -5785,7 +5881,10 @@ def _validate_capture_authority_registration(
             raise ProductConflictError("capture chunks differ from verified manifest")
 
 
-def _reconcile_manifest_profile_revision(session: Session, manifest: RecordingManifestV1) -> int:
+def _reconcile_manifest_profile_revision(
+    session: Session,
+    manifest: RecordingManifestV1 | RecordingManifestV3,
+) -> int:
     revision = manifest.capture_plan.profile_revision
     profile = revision.profile
     session.execute(
@@ -5824,7 +5923,10 @@ def _reconcile_capture_path_authority(
     capture: CaptureSession,
     authority: CapturePathAuthorityContract,
 ) -> CapturePathAuthority:
-    if isinstance(authority, (CaptureHardwareBindingV1, CaptureHardwareBindingV2)):
+    if isinstance(
+        authority,
+        (CaptureHardwareBindingV1, CaptureHardwareBindingV2, CaptureHardwareBindingV3),
+    ):
         topology_row = session.get(StationTopology, authority.topology_digest)
         if topology_row is None or not topology_row.assignment_sealed:
             raise InvalidStateError("capture station topology is not registered and sealed")
@@ -6011,7 +6113,11 @@ def _reconcile_radio_streams(
                 path_authority
                 if isinstance(
                     path_authority,
-                    (CaptureHardwareBindingV1, CaptureHardwareBindingV2),
+                    (
+                        CaptureHardwareBindingV1,
+                        CaptureHardwareBindingV2,
+                        CaptureHardwareBindingV3,
+                    ),
                 )
                 else None
             )

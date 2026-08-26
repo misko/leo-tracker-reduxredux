@@ -15,7 +15,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
-from typing import Literal
+from typing import Literal, cast
 
 from leo.acquisition.clock import AcquisitionClock, SystemAcquisitionClock
 from leo.acquisition.errors import (
@@ -37,6 +37,7 @@ from leo.contracts.radio import (
     RadioSettingsV1,
 )
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
     ContinuitySummaryV1,
     ContinuitySummaryV2,
@@ -45,8 +46,10 @@ from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingManifestV2,
+    RecordingManifestV3,
     RecordingStreamV1,
     RecordingStreamV2,
+    RecordingStreamV3,
     StreamTimingV1,
     SynchronizationSummaryV1,
     TimingEstimateV1,
@@ -67,8 +70,11 @@ from leo.domain.iq import IqBlock
 from leo.radio.ports import RadioSource
 from leo.storage import RecordingStore
 from leo.storage.writer import (
+    DeviceAxisStreamBundleWriter,
+    DeviceAxisStreamWriteReceipt,
     PublishedBundle,
     RecordingBundleWriter,
+    StreamBundleWriter,
     StreamQueueTelemetry,
     StreamWriteReceipt,
 )
@@ -98,7 +104,7 @@ class _StreamOutcome:
     applied_settings: RadioSettingsV1 | None
     state: StreamState
     captured_sample_count: int
-    receipt: StreamWriteReceipt | None
+    receipt: StreamWriteReceipt | DeviceAxisStreamWriteReceipt | None
     timing: StreamTimingV1 | None
     error: str | None
     storage_fatal: bool = False
@@ -294,6 +300,9 @@ class AcquisitionCoordinator:
                 *closed.errors,
             )
 
+        device_axis_capture = (
+            plan.profile_revision.profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
+        )
         session_cancel = Event()
         gate = _ReadinessGate(len(prepared))
         capture_futures: dict[int, Future[_StreamOutcome]] = {}
@@ -362,26 +371,35 @@ class AcquisitionCoordinator:
             if outcome.timed_out_consumer is not None
         )
         if timed_out_consumers and plan.source_type is SourceType.LIVE:
-            bundle_writer.close()
+            _preserve_failed_bundle(bundle_writer, quarantine=device_axis_capture)
             raise AcquisitionSupervisorPoisoned(
                 session_id=session_id,
                 consumer_threads=timed_out_consumers,
                 errors=_canonical_errors(errors),
             )
         if lifecycle_interruption is not None:
-            bundle_writer.close()
+            _preserve_failed_bundle(bundle_writer, quarantine=device_axis_capture)
             raise lifecycle_interruption
         any_storage_fatal = any(outcome.storage_fatal for outcome in ordered_outcomes)
         any_data = any(outcome.captured_sample_count for outcome in ordered_outcomes)
         capture_failed = any(
             outcome.state is not StreamState.COMPLETE for outcome in ordered_outcomes
         )
+        peer_failure_rejected = fail_whole and (
+            any(
+                outcome.state is StreamState.FAILED
+                or not isinstance(outcome.receipt, DeviceAxisStreamWriteReceipt)
+                for outcome in ordered_outcomes
+            )
+            if device_axis_capture
+            else capture_failed
+        )
         cancelled = external_cancel.is_set()
-        if any_storage_fatal or not any_data or cancelled or (fail_whole and capture_failed):
-            bundle_writer.close()
+        if any_storage_fatal or not any_data or cancelled or peer_failure_rejected:
+            _preserve_failed_bundle(bundle_writer, quarantine=device_axis_capture)
             if cancelled:
                 errors.append("capture cancelled; no manifest was published")
-            if fail_whole and capture_failed:
+            if peer_failure_rejected:
                 errors.append("peer-failure policy rejected a partial paired capture")
             return CaptureSessionResult(
                 session_id=session_id,
@@ -399,21 +417,61 @@ class AcquisitionCoordinator:
                 else CaptureState.DEGRADED
             )
             synchronization = _synchronization_summary(plan, streams, release_target)
-            manifest_type = RecordingManifestV2 if plan.schema_version == 2 else RecordingManifestV1
-            manifest = manifest_type(
-                session_id=session_id,
-                state=state,
-                source_type=plan.source_type,
-                created_utc_ns=created_utc_ns,
-                finalized_utc_ns=max(created_utc_ns, self.clock.utc_ns()),
-                capture_plan=plan,
-                tags=tuple(sorted(set(plan.profile_revision.profile.tags) | set(extra_tags))),
-                streams=streams,
-                synchronization=synchronization,
-                compression=compression,
-                host=self._host,
-                producer=self._producer,
-            )
+            finalized_utc_ns = max(created_utc_ns, self.clock.utc_ns())
+            tags = tuple(sorted(set(plan.profile_revision.profile.tags) | set(extra_tags)))
+            if device_axis_capture:
+                if not isinstance(plan, CapturePlanV2) or not all(
+                    isinstance(stream, RecordingStreamV3) for stream in streams
+                ):
+                    raise AcquisitionError("V3 capture did not produce an exact V3 bundle")
+                manifest: RecordingManifestV1 | RecordingManifestV3 = RecordingManifestV3(
+                    session_id=session_id,
+                    state=state,
+                    source_type=plan.source_type,
+                    created_utc_ns=created_utc_ns,
+                    finalized_utc_ns=finalized_utc_ns,
+                    capture_plan=plan,
+                    tags=tags,
+                    streams=cast(tuple[RecordingStreamV3, ...], streams),
+                    synchronization=synchronization,
+                    compression=compression,
+                    host=self._host,
+                    producer=self._producer,
+                )
+            elif isinstance(plan, CapturePlanV2):
+                if any(isinstance(stream, RecordingStreamV3) for stream in streams):
+                    raise AcquisitionError("legacy V2 capture produced a V3 stream")
+                manifest = RecordingManifestV2(
+                    session_id=session_id,
+                    state=state,
+                    source_type=plan.source_type,
+                    created_utc_ns=created_utc_ns,
+                    finalized_utc_ns=finalized_utc_ns,
+                    capture_plan=plan,
+                    tags=tags,
+                    streams=cast(tuple[RecordingStreamV2, ...], streams),
+                    synchronization=synchronization,
+                    compression=compression,
+                    host=self._host,
+                    producer=self._producer,
+                )
+            else:
+                if any(isinstance(stream, RecordingStreamV3) for stream in streams):
+                    raise AcquisitionError("legacy V1 capture produced a V3 stream")
+                manifest = RecordingManifestV1(
+                    session_id=session_id,
+                    state=state,
+                    source_type=plan.source_type,
+                    created_utc_ns=created_utc_ns,
+                    finalized_utc_ns=finalized_utc_ns,
+                    capture_plan=plan,
+                    tags=tags,
+                    streams=cast(tuple[RecordingStreamV1, ...], streams),
+                    synchronization=synchronization,
+                    compression=compression,
+                    host=self._host,
+                    producer=self._producer,
+                )
             published = self._publish_or_recover(bundle_writer, manifest, errors)
             return CaptureSessionResult(
                 session_id=session_id,
@@ -425,7 +483,7 @@ class AcquisitionCoordinator:
                 errors=_canonical_errors(errors),
             )
         except BaseException as error:
-            bundle_writer.close()
+            _preserve_failed_bundle(bundle_writer, quarantine=device_axis_capture)
             if not isinstance(error, Exception):
                 raise
             errors.append(_error_text(error))
@@ -707,13 +765,16 @@ class AcquisitionCoordinator:
         """Drain RF without waiting for compression; duration follows the device axis."""
 
         profile = plan.profile_revision.profile
-        if item.kernel_buffers != profile.kernel_buffers:
+        device_axis_capture = profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
+        kernel_buffers = item.kernel_buffers
+        if kernel_buffers != profile.kernel_buffers:
             return _failed_outcome(item, "verified kernel-buffer readback is unavailable")
+        assert kernel_buffers is not None
         pending: queue.Queue[IqBlock | object] = queue.Queue(maxsize=profile.refill_queue_capacity)
         stop = object()
         consumer_failed = Event()
         consumer_error: list[str] = []
-        receipt_holder: list[StreamWriteReceipt] = []
+        receipt_holder: list[StreamWriteReceipt | DeviceAxisStreamWriteReceipt] = []
         queue_depth_lock = threading.Lock()
         consumer_phase_lock = threading.Lock()
         queue_slots = threading.BoundedSemaphore(profile.refill_queue_capacity)
@@ -740,7 +801,7 @@ class AcquisitionCoordinator:
 
         def consume() -> None:
             nonlocal queued_refills
-            stream_writer = None
+            stream_writer: StreamBundleWriter | DeviceAxisStreamBundleWriter | None = None
             try:
                 while True:
                     set_consumer_phase("waiting")
@@ -759,13 +820,22 @@ class AcquisitionCoordinator:
                         assert isinstance(queued, IqBlock)
                         set_consumer_phase("writing")
                         if stream_writer is None:
-                            stream_writer = bundle.open_stream(
-                                item.stream_id,
-                                item.identity,
-                                item.applied_settings.receiver_ids,
-                                counter_authoritative=True,
-                                kernel_buffers=item.kernel_buffers,
-                            )
+                            if device_axis_capture:
+                                stream_writer = bundle.open_device_axis_stream(
+                                    item.stream_id,
+                                    item.identity,
+                                    item.applied_settings.receiver_ids,
+                                    requested_device_span=plan.resolved_sample_count,
+                                    kernel_buffers=kernel_buffers,
+                                )
+                            else:
+                                stream_writer = bundle.open_stream(
+                                    item.stream_id,
+                                    item.identity,
+                                    item.applied_settings.receiver_ids,
+                                    counter_authoritative=True,
+                                    kernel_buffers=kernel_buffers,
+                                )
                         stream_writer.append(queued)
                     except Exception as error:
                         consumer_error.append(_error_text(error))
@@ -774,19 +844,33 @@ class AcquisitionCoordinator:
                         pending.task_done()
                 if stream_writer is not None and not consumer_failed.is_set():
                     set_consumer_phase("finalizing")
-                    receipt_holder.append(
-                        stream_writer.finalize(
-                            queue_telemetry=StreamQueueTelemetry(
-                                capacity_refills=profile.refill_queue_capacity,
-                                high_water_refills=queue_high_water,
-                                enqueue_failure_count=enqueue_failures,
-                                maximum_refill_service_interval_ns=maximum_service_ns,
-                            ),
-                            terminal_gap_metadata=terminal_gap_metadata,
-                            terminal_enqueue_failure_metadata=(terminal_enqueue_failure_metadata),
-                            requested_device_span=plan.resolved_sample_count,
-                        )
+                    queue_telemetry = StreamQueueTelemetry(
+                        capacity_refills=profile.refill_queue_capacity,
+                        high_water_refills=queue_high_water,
+                        enqueue_failure_count=enqueue_failures,
+                        maximum_refill_service_interval_ns=maximum_service_ns,
                     )
+                    if isinstance(stream_writer, DeviceAxisStreamBundleWriter):
+                        receipt_holder.append(
+                            stream_writer.finalize(
+                                queue_telemetry=queue_telemetry,
+                                terminal_gap_metadata=terminal_gap_metadata,
+                                terminal_enqueue_failure_metadata=(
+                                    terminal_enqueue_failure_metadata
+                                ),
+                            )
+                        )
+                    else:
+                        receipt_holder.append(
+                            stream_writer.finalize(
+                                queue_telemetry=queue_telemetry,
+                                terminal_gap_metadata=terminal_gap_metadata,
+                                terminal_enqueue_failure_metadata=(
+                                    terminal_enqueue_failure_metadata
+                                ),
+                                requested_device_span=plan.resolved_sample_count,
+                            )
+                        )
                 elif stream_writer is not None:
                     set_consumer_phase("aborting")
                     stream_writer.abort()
@@ -994,6 +1078,9 @@ class AcquisitionCoordinator:
                 captured,
                 release_target,
                 release_observed,
+                device_axis_sample_count=(
+                    plan.resolved_sample_count if device_axis_capture else None
+                ),
             )
         complete = (
             error_text is None
@@ -1013,7 +1100,11 @@ class AcquisitionCoordinator:
             requested_settings=item.requested_settings,
             applied_settings=item.applied_settings,
             state=state,
-            captured_sample_count=(receipt.captured_sample_count if receipt is not None else 0),
+            captured_sample_count=(
+                receipt.observed_sample_count
+                if isinstance(receipt, DeviceAxisStreamWriteReceipt)
+                else (receipt.captured_sample_count if receipt is not None else 0)
+            ),
             receipt=receipt,
             timing=timing if receipt is not None else None,
             error=error_text or (None if complete else "capture produced no publishable IQ"),
@@ -1025,7 +1116,7 @@ class AcquisitionCoordinator:
     def _publish_or_recover(
         self,
         writer: RecordingBundleWriter,
-        manifest: RecordingManifestV1,
+        manifest: RecordingManifestV1 | RecordingManifestV3,
         errors: list[str],
     ) -> PublishedBundle:
         try:
@@ -1051,6 +1142,20 @@ class AcquisitionCoordinator:
             admission=admission,
             errors=_canonical_errors(errors),
         )
+
+
+def _preserve_failed_bundle(
+    writer: RecordingBundleWriter,
+    *,
+    quarantine: bool,
+) -> None:
+    """Close partial writers before permanently fencing V3 publication."""
+
+    try:
+        writer.close()
+    finally:
+        if quarantine and not writer.quarantined:
+            writer.quarantine()
 
 
 def _settings_from_plan(plan: CapturePlanV1) -> RadioSettingsV1:
@@ -1157,6 +1262,8 @@ def _stream_timing(
     captured_sample_count: int,
     release_target: int,
     release_observed: int,
+    *,
+    device_axis_sample_count: int | None = None,
 ) -> StreamTimingV1:
     if (
         isinstance(first, IqBlockMetadataV2)
@@ -1166,12 +1273,18 @@ def _stream_timing(
     ):
         sample_period_ns = max(1, 1_000_000_000 // sample_rate_hz)
         first_estimate = first.sample_time_realtime_ns.lower_ns
-        last_estimate = max(
-            first_estimate,
-            last.sample_time_realtime_ns.upper_ns - sample_period_ns,
-        )
         first_uncertainty = first.sample_time_uncertainty_ns or 0
         last_uncertainty = last.sample_time_uncertainty_ns or 0
+        if device_axis_sample_count is None:
+            last_estimate = max(
+                first_estimate,
+                last.sample_time_realtime_ns.upper_ns - sample_period_ns,
+            )
+        else:
+            last_estimate = first_estimate + (
+                (device_axis_sample_count - 1) * 1_000_000_000 // sample_rate_hz
+            )
+            last_uncertainty = max(first_uncertainty, last_uncertainty)
         return StreamTimingV1(
             release_target_monotonic_ns=release_target,
             release_observed_monotonic_ns=release_observed,
@@ -1191,14 +1304,16 @@ def _stream_timing(
     first_interval = first.host_request_utc_ns
     last_interval = last.host_request_utc_ns
     first_estimate = (first_interval.lower_ns + first_interval.upper_ns) // 2
-    nominal_duration_ns = (captured_sample_count - 1) * 1_000_000_000 // sample_rate_hz
+    timing_sample_count = device_axis_sample_count or captured_sample_count
+    nominal_duration_ns = (timing_sample_count - 1) * 1_000_000_000 // sample_rate_hz
     first_block_duration_ns = first.sample_count * 1_000_000_000 // sample_rate_hz
     if first.device_sample_counter is not None and last.device_sample_counter is not None:
-        counter_duration_ns = (
-            (last.device_sample_counter + last.sample_count - 1 - first.device_sample_counter)
-            * 1_000_000_000
-            // sample_rate_hz
+        counter_sample_count = (
+            device_axis_sample_count
+            if device_axis_sample_count is not None
+            else last.device_sample_counter + last.sample_count - first.device_sample_counter
         )
+        counter_duration_ns = (counter_sample_count - 1) * 1_000_000_000 // sample_rate_hz
         last_estimate = first_estimate + counter_duration_ns
         last_earliest = max(0, first_interval.lower_ns + counter_duration_ns)
         last_latest = first_interval.upper_ns + counter_duration_ns
@@ -1235,8 +1350,47 @@ def _stream_timing(
     )
 
 
-def _recording_stream(plan: CapturePlanV1, outcome: _StreamOutcome) -> RecordingStreamV1:
+def _recording_stream(
+    plan: CapturePlanV1,
+    outcome: _StreamOutcome,
+) -> RecordingStreamV1 | RecordingStreamV3:
     receipt = outcome.receipt
+    if plan.profile_revision.profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1:
+        if not isinstance(plan, CapturePlanV2):
+            raise AcquisitionError("device-axis storage requires a V2 capture plan")
+        if not isinstance(receipt, DeviceAxisStreamWriteReceipt):
+            raise AcquisitionError("device-axis capture has no finalized V3 storage receipt")
+        if outcome.applied_settings is None or outcome.timing is None:
+            raise AcquisitionError("device-axis capture lacks applied settings or timing")
+        if outcome.state is StreamState.FAILED:
+            raise AcquisitionError("failed device-axis stream cannot be published")
+        return RecordingStreamV3(
+            stream_id=outcome.stream_id,
+            radio=outcome.identity,
+            requested_settings=outcome.requested_settings,
+            applied_settings=outcome.applied_settings,
+            state=cast(Literal[StreamState.COMPLETE, StreamState.PARTIAL], outcome.state),
+            requested_sample_count=receipt.requested_sample_count,
+            logical_sample_count=receipt.logical_sample_count,
+            observed_sample_count=receipt.observed_sample_count,
+            zero_fill_sample_count=receipt.zero_fill_sample_count,
+            timing=outcome.timing,
+            chunks=receipt.chunks,
+            observed_iq_sha256=receipt.observed_iq_sha256,
+            logical_iq_sha256=receipt.logical_iq_sha256,
+            timeline_relative_path=receipt.timeline_relative_path,
+            timeline_sha256=receipt.timeline_sha256,
+            gap_map_relative_path=receipt.gap_map_relative_path,
+            gap_map_sha256=receipt.gap_map_sha256,
+            validity_inventory_relative_path=receipt.validity_inventory_relative_path,
+            validity_inventory_sha256=receipt.validity_inventory_sha256,
+            continuity=receipt.continuity,
+            error=(
+                None
+                if outcome.state is StreamState.COMPLETE
+                else (outcome.error or "capture observation integrity degraded")[:2048]
+            ),
+        )
     chunks: tuple[RecordingChunkV1, ...]
     if outcome.state is StreamState.FAILED:
         if plan.schema_version == 2:
@@ -1258,6 +1412,8 @@ def _recording_stream(plan: CapturePlanV1, outcome: _StreamOutcome) -> Recording
     else:
         if receipt is None:
             raise AcquisitionError("captured stream has no finalized storage receipt")
+        if not isinstance(receipt, StreamWriteReceipt):
+            raise AcquisitionError("legacy capture has an incompatible storage receipt")
         continuity = receipt.continuity
         if plan.schema_version == 2 and not isinstance(continuity, ContinuitySummaryV2):
             raise AcquisitionError("V2 capture has no V2 storage continuity receipt")
@@ -1298,7 +1454,7 @@ def _recording_stream(plan: CapturePlanV1, outcome: _StreamOutcome) -> Recording
 
 def _synchronization_summary(
     plan: CapturePlanV1,
-    streams: tuple[RecordingStreamV1, ...],
+    streams: tuple[RecordingStreamV1 | RecordingStreamV3, ...],
     release_target: int | None,
 ) -> SynchronizationSummaryV1:
     stream_ids = tuple(stream.stream_id for stream in streams)
@@ -1320,16 +1476,20 @@ def _synchronization_summary(
             release_target_monotonic_ns=release_target,
         )
     first_a, first_b = (stream.timing.first_sample for stream in timed if stream.timing)
-    duration_a, duration_b = (
-        (
-            stream.continuity.device_span_sample_count
-            if isinstance(stream.continuity, ContinuitySummaryV2)
-            else stream.captured_sample_count
+    durations: list[int] = []
+    for stream in timed:
+        if isinstance(stream, RecordingStreamV3):
+            span_samples = stream.logical_sample_count
+        elif isinstance(stream.continuity, ContinuitySummaryV2):
+            span_samples = stream.continuity.device_span_sample_count
+        else:
+            span_samples = stream.captured_sample_count
+        durations.append(
+            span_samples
+            * 1_000_000_000
+            // (stream.applied_settings or stream.requested_settings).sample_rate_hz
         )
-        * 1_000_000_000
-        // (stream.applied_settings or stream.requested_settings).sample_rate_hz
-        for stream in timed
-    )
+    duration_a, duration_b = durations
     overlap_start = max(first_a.estimate_utc_ns, first_b.estimate_utc_ns)
     overlap_end = max(
         overlap_start,

@@ -19,9 +19,14 @@ from leo.contracts.profile import (
     CaptureProfileV2,
 )
 from leo.contracts.radio import ReceiverGainV1
-from leo.contracts.recording import CompressionSettingsV1
+from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
+    CompressionSettingsV1,
+    RecordingManifestV3,
+)
 from leo.contracts.states import (
     GainMode,
+    PeerFailurePolicy,
     SourceType,
     StarlinkEdge,
     SynchronizationGrade,
@@ -97,6 +102,17 @@ def _revision_v2(*, sample_count: int = 16) -> CaptureProfileRevisionV2:
     return CaptureProfileRevisionV2.from_profile(profile)
 
 
+def _revision_v3(*, sample_count: int = 16) -> CaptureProfileRevisionV2:
+    profile = _revision_v2(sample_count=sample_count).profile.model_copy(
+        update={
+            "name": "ch4-lower-single-rx1-device-axis-test",
+            "storage_policy": DEVICE_AXIS_STORAGE_POLICY_V1,
+            "peer_failure_policy": PeerFailurePolicy.FAIL_SESSION,
+        }
+    )
+    return CaptureProfileRevisionV2.from_profile(profile)
+
+
 def _three_sessions(
     store: RecordingStore,
     revision: CaptureProfileRevisionV1 | CaptureProfileRevisionV2,
@@ -107,7 +123,7 @@ def _three_sessions(
     coordinator = AcquisitionCoordinator(
         store,
         compression=CompressionSettingsV1(
-            policy_id="capture-mode-test-v1",
+            policy_id=revision.profile.storage_policy,
             target_uncompressed_bytes=16,
         ),
         clock=_ImmediateClock(),
@@ -297,6 +313,36 @@ def test_capture_mode_harness_accepts_exact_three_session_geometry(tmp_path: Pat
             synchronized_pair_session_id="capture-mode-synchronized",
             receipt_path=receipt_path,
         )
+
+
+def test_capture_mode_harness_fails_closed_on_device_axis_v3(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = _revision_v3()
+    _three_sessions(store, revision)
+    inspected = store.inspect("capture-mode-independent-a")
+    assert isinstance(inspected.manifest, RecordingManifestV3)
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+
+    receipt = CaptureModeAcceptanceHarness(store).run(
+        expectation,
+        acceptance_id="capture-modes-v3-fail-closed",
+        independent_radio_a_session_id="capture-mode-independent-a",
+        independent_radio_b_session_id="capture-mode-independent-b",
+        synchronized_pair_session_id="capture-mode-synchronized",
+    )
+
+    assert not receipt.accepted
+    assert all(check.digest_valid and not check.passed for check in receipt.checks)
+    assert all(
+        check.errors
+        == ("capture-mode acceptance V1 does not support device-axis RecordingManifestV3",)
+        for check in receipt.checks
+    )
+    assert all(check.observed_sample_counts == () for check in receipt.checks)
 
 
 def test_live_capture_mode_requires_acceptance_not_calibration_tag(tmp_path: Path) -> None:

@@ -11,16 +11,20 @@ from leo.contracts.profile import (
 )
 from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
     ContinuitySummaryV1,
     ContinuitySummaryV2,
+    DeviceAxisRecordingChunkV1,
     HostIdentityV1,
     ProducerV1,
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingManifestV2,
+    RecordingManifestV3,
     RecordingStreamV1,
     RecordingStreamV2,
+    RecordingStreamV3,
     StreamTimingV1,
     SynchronizationSummaryV1,
     TimingEstimateV1,
@@ -28,6 +32,7 @@ from leo.contracts.recording import (
 from leo.contracts.states import (
     CaptureState,
     GainMode,
+    PeerFailurePolicy,
     RadioTransport,
     SourceType,
     StreamState,
@@ -35,6 +40,7 @@ from leo.contracts.states import (
     SynchronizationMode,
     TimingMethod,
 )
+from leo.contracts.validity import DeviceAxisContentKind
 from leo.domain.profiles import compile_capture_plan
 from leo.station.authority import (
     RadioEndpointEvidenceV1,
@@ -246,8 +252,97 @@ def manifest_example_v2(
     )
 
 
+def manifest_example_v3(
+    *,
+    radio_count: int,
+    applied_receiver_ids: tuple[int, ...],
+    source_type: SourceType = SourceType.IMPORT,
+) -> RecordingManifestV3:
+    """Small lossless V3 manifest with digest-significant device-axis fields."""
+
+    base = manifest_example_v2(
+        radio_count=radio_count,
+        applied_receiver_ids=applied_receiver_ids,
+        source_type=source_type,
+    )
+    profile = base.capture_plan.profile_revision.profile.model_copy(
+        update={
+            "storage_policy": DEVICE_AXIS_STORAGE_POLICY_V1,
+            "peer_failure_policy": PeerFailurePolicy.FAIL_SESSION,
+        }
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        base.capture_plan.radio_ids,
+        source_type=source_type,
+    )
+    assert isinstance(plan, CapturePlanV2)
+    streams: list[RecordingStreamV3] = []
+    for stream in base.streams:
+        assert stream.applied_settings is not None
+        assert stream.timing is not None
+        assert stream.timeline_relative_path is not None
+        assert stream.timeline_sha256 is not None
+        assert stream.gap_map_relative_path is not None
+        assert stream.gap_map_sha256 is not None
+        old_chunk = stream.chunks[0]
+        streams.append(
+            RecordingStreamV3(
+                stream_id=stream.stream_id,
+                radio=stream.radio,
+                requested_settings=stream.requested_settings,
+                applied_settings=stream.applied_settings,
+                state=StreamState.COMPLETE,
+                requested_sample_count=1,
+                logical_sample_count=1,
+                observed_sample_count=1,
+                zero_fill_sample_count=0,
+                timing=stream.timing,
+                chunks=(
+                    DeviceAxisRecordingChunkV1(
+                        chunk_index=0,
+                        relative_path=old_chunk.relative_path,
+                        device_sample_start=0,
+                        sample_count=1,
+                        content_kind=DeviceAxisContentKind.OBSERVED,
+                        continuity_segment_index=0,
+                        uncompressed_bytes=old_chunk.uncompressed_bytes,
+                        compressed_bytes=old_chunk.compressed_bytes,
+                        uncompressed_sha256=old_chunk.uncompressed_sha256,
+                        compressed_sha256=old_chunk.compressed_sha256,
+                    ),
+                ),
+                observed_iq_sha256=old_chunk.uncompressed_sha256,
+                logical_iq_sha256=old_chunk.uncompressed_sha256,
+                timeline_relative_path=stream.timeline_relative_path,
+                timeline_sha256=stream.timeline_sha256,
+                gap_map_relative_path=stream.gap_map_relative_path,
+                gap_map_sha256=stream.gap_map_sha256,
+                validity_inventory_relative_path=(
+                    f"streams/{stream.stream_id}/validity-inventory.json"
+                ),
+                validity_inventory_sha256=_DIGEST,
+                continuity=stream.continuity,
+            )
+        )
+    return RecordingManifestV3(
+        session_id=f"session-v3-{radio_count}r-{len(applied_receiver_ids)}rx",
+        state=CaptureState.COMMITTED,
+        source_type=source_type,
+        created_utc_ns=base.created_utc_ns,
+        finalized_utc_ns=base.finalized_utc_ns,
+        capture_plan=plan,
+        tags=base.tags,
+        streams=tuple(streams),
+        synchronization=base.synchronization,
+        compression=CompressionSettingsV1(policy_id=DEVICE_AXIS_STORAGE_POLICY_V1),
+        host=base.host,
+        producer=ProducerV1(name="station-authority-test", version="3"),
+    )
+
+
 def topology_for_manifest(
-    manifest: RecordingManifestV1 | RecordingManifestV2,
+    manifest: RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3,
 ) -> StationReceiverTopologyV1:
     radios = tuple(
         StationRadioTopologyV1.create(
@@ -283,5 +378,7 @@ def topology_for_manifest(
     )
 
 
-def verified_digest(manifest: RecordingManifestV1 | RecordingManifestV2) -> str:
+def verified_digest(
+    manifest: RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3,
+) -> str:
     return recording_manifest_canonical_digest(manifest)

@@ -11,7 +11,13 @@ from leo.contracts.profile import (
     CaptureProfileRevisionV2,
     CaptureProfileV1,
 )
-from leo.contracts.states import ContinuityPolicy, SourceType, SynchronizationMode
+from leo.contracts.recording import DEVICE_AXIS_STORAGE_POLICY_V1
+from leo.contracts.states import (
+    ContinuityPolicy,
+    PeerFailurePolicy,
+    SourceType,
+    SynchronizationMode,
+)
 from leo.domain.profiles import (
     ProfileDocumentError,
     compile_capture_plan,
@@ -205,6 +211,44 @@ def test_sample_rate_mode_profiles_have_unique_immutable_revisions() -> None:
 
     assert all(isinstance(revision, CaptureProfileRevisionV2) for revision in revisions)
     assert len({revision.revision_digest for revision in revisions}) == len(paths)
+
+
+@pytest.mark.parametrize(
+    ("rate_name", "sample_rate_hz", "resolved_sample_count", "experimental"),
+    (
+        ("2p5m", 2_500_000, 150_000_000, False),
+        ("3m", 3_000_000, 180_000_000, False),
+        ("5m", 5_000_000, 300_000_000, True),
+    ),
+)
+def test_device_axis_profiles_are_fail_closed_native_rate_candidates(
+    rate_name: str,
+    sample_rate_hz: int,
+    resolved_sample_count: int,
+    experimental: bool,
+) -> None:
+    path = (
+        Path(__file__).parents[2]
+        / "profiles"
+        / f"starlink-ch4-lower-{rate_name}-60s-device-axis-v3.yaml"
+    )
+    revision = load_profile_revision(path)
+    assert isinstance(revision, CaptureProfileRevisionV2)
+
+    profile = revision.profile
+    plan = compile_capture_plan(revision, ["pluto-a", "pluto-b"])
+
+    assert isinstance(plan, CapturePlanV2)
+    assert profile.name == path.stem
+    assert profile.sample_rate_hz == sample_rate_hz
+    assert profile.bandwidth_hz == 2_500_000
+    assert profile.continuity_policy is ContinuityPolicy.ALLOW_SEGMENTS
+    assert profile.peer_failure_policy is PeerFailurePolicy.FAIL_SESSION
+    assert profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
+    assert profile.require_device_metadata is True
+    assert {"CAPTURE_ONLY", "DEVICE_AXIS_ZERO_FILL", "STANDARD_NATIVE"}.issubset(profile.tags)
+    assert ("EXPERIMENTAL" in profile.tags) is experimental
+    assert plan.resolved_sample_count == resolved_sample_count
 
 
 @pytest.mark.parametrize(
