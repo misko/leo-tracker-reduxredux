@@ -174,7 +174,7 @@ def test_frozen_final_protocol_validates_against_exact_commit_and_authorities() 
 
 
 def test_superseding_v2_protocol_preserves_science_and_binds_exact_correction() -> None:
-    document = protocol.load_and_validate_final_protocol(
+    document = protocol.load_and_validate_historical_final_protocol_v2(
         ACTIVE_PROTOCOL_V2,
         repository_root=REPOSITORY_ROOT,
     )
@@ -201,6 +201,28 @@ def test_superseding_v2_protocol_preserves_science_and_binds_exact_correction() 
         "sha256:a01e53e917ea33295273778f23412629b83c78ee63ef4c8eafcd761e8f2d5c53"
     )
     assert document["supersession"]["attempt_1"]["stdout_stderr_separation_preserved"] is False
+
+    with pytest.raises(ValueError, match="v2 attachment authority is retired"):
+        protocol.load_and_validate_final_protocol(
+            ACTIVE_PROTOCOL_V2,
+            repository_root=REPOSITORY_ROOT,
+        )
+
+
+def test_v3_attachment_correction_binds_all_response_free_evidence() -> None:
+    correction = protocol._expected_attachment_correction_v3()
+    protocol._validate_attachment_correction_v3(
+        correction,
+        repository_root=REPOSITORY_ROOT,
+    )
+
+    poisoned = json.loads(json.dumps(correction))
+    poisoned["chunk_authority_correction"]["active_chunk_count"] = 9
+    with pytest.raises(ValueError, match="attachment correction authority"):
+        protocol._validate_attachment_correction_v3(
+            poisoned,
+            repository_root=REPOSITORY_ROOT,
+        )
 
 
 @pytest.mark.parametrize(
@@ -237,7 +259,10 @@ def test_resigned_v2_protocol_poison_fails_closed(
     path.write_text(json.dumps(document, indent=2, sort_keys=True))
 
     with pytest.raises(ValueError, match=message):
-        protocol.load_and_validate_final_protocol(path, repository_root=REPOSITORY_ROOT)
+        protocol.load_and_validate_historical_final_protocol_v2(
+            path,
+            repository_root=REPOSITORY_ROOT,
+        )
 
 
 def test_failed_attempt_receipt_binds_exact_fail_closed_evidence() -> None:

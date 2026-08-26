@@ -23,6 +23,7 @@ from leo.contracts.digests import canonical_digest
 
 SCHEMA_V1 = "org.leo.research.final-doppler-holdout-satellite/v1"
 SCHEMA_V2 = "org.leo.research.final-doppler-holdout-satellite/v2"
+SCHEMA_V3 = "org.leo.research.final-doppler-holdout-satellite/v3"
 SCHEMA = SCHEMA_V1
 BASE_PROTOCOL_PATH = "config/analysis/final-doppler-holdout-satellite-protocol-v1.json"
 BASE_PROTOCOL_SHA256 = "sha256:8e5a62993fe2e25496cb838d3ec866fe8ccf6fbca1f6ca122e312fd32c6af58b"
@@ -64,6 +65,72 @@ ATTEMPT_1_BINS_SHA256 = "sha256:cc7e64e22eba73e5f8495ba375ecfbe96bbf842fdcde17b7
 ATTEMPT_1_BINS_DIGEST = "sha256:ce4763244430d0a46eb1184d9c573b3fab0e6cc529c1287a7d0ea098e481857e"
 CORRECTED_BINS_SHA256 = "sha256:81c909befea20f8291e5e6606e9fe48c8889e051283a4a8051c29c1ab05d7d1e"
 CORRECTED_BINS_DIGEST = "sha256:a01e53e917ea33295273778f23412629b83c78ee63ef4c8eafcd761e8f2d5c53"
+V2_PROTOCOL_PATH = "config/analysis/final-doppler-holdout-satellite-protocol-v2.json"
+V2_PROTOCOL_SHA256 = "sha256:529ca7dd76aabb5b02e63b57112893db62e8f3c6d0dfab5afe76af3fa6035532"
+V2_PROTOCOL_DIGEST = "sha256:f781d18cb2917b6cfd01fe0d72f9db62b80a36d6f6979ca525c55c45b718f86d"
+V2_PROTOCOL_COMMIT = "baf5f3f874fd4827883fe9578577ecf57bc3b2da"
+V2_PROTOCOL_TREE = "9abca3d9ed602855e61fb662083f1497b5e0c71d"
+PRE_RESPONSE_FREEZE_COMMIT = "5f255659b284f631639ff6bfef0ffad6cb4bfe31"
+PRE_RESPONSE_FREEZE_TREE = "ca3adf831c503e853013f366ff99f089925e7a7a"
+PRE_RESPONSE_DIRECTORY = "reports/figures/2026_08_26_final_doppler_holdout_attempt2"
+PRE_RESPONSE_PREDICTION_PATH = f"{PRE_RESPONSE_DIRECTORY}/prediction-ledger.json"
+PRE_RESPONSE_PREDICTION_SHA256 = ATTEMPT_1_PREDICTION_SHA256
+PRE_RESPONSE_PREDICTION_DIGEST = ATTEMPT_1_PREDICTION_DIGEST
+PRE_RESPONSE_BINS_PATH = f"{PRE_RESPONSE_DIRECTORY}/association-bin-inventory.json"
+PRE_RESPONSE_BINS_SHA256 = CORRECTED_BINS_SHA256
+PRE_RESPONSE_BINS_DIGEST = CORRECTED_BINS_DIGEST
+PRE_RESPONSE_RANKINGS_PATH = f"{PRE_RESPONSE_DIRECTORY}/pre-response-rankings.json"
+PRE_RESPONSE_RANKINGS_SHA256 = (
+    "sha256:fbc9248c41cc6f64f9e8c51a8fcd36987a07ba1d44b25909700da54542f18094"
+)
+PRE_RESPONSE_RANKINGS_DIGEST = (
+    "sha256:31115cc456c791686d240528ce65d9f0a4b923dddcabebaa1a67c9ff1cd44242"
+)
+PRE_RESPONSE_RECEIPT_PATH = f"{PRE_RESPONSE_DIRECTORY}/pre-response-receipt.json"
+PRE_RESPONSE_RECEIPT_SHA256 = (
+    "sha256:420cad03d0c7bbd35169fd5b98c877323ea87b9499244fc4e2f9a42e020a994d"
+)
+PRE_RESPONSE_RECEIPT_DIGEST = (
+    "sha256:68919074a4e10cfc0780197d17904f063b7aac6a84c0aee427996cbdf29f6039"
+)
+PRE_RESPONSE_PACKAGE_MANIFEST_PATH = (
+    f"{PRE_RESPONSE_DIRECTORY}/pre-response-packaging-manifest.json"
+)
+PRE_RESPONSE_PACKAGE_MANIFEST_SHA256 = (
+    "sha256:6bb02d00e1f8712e0ddb55d774466b4ba001fc7f13154430c7596e88e3568880"
+)
+PRE_RESPONSE_PACKAGE_MANIFEST_DIGEST = (
+    "sha256:8cf3811b9b24becb82a49073bdf2f0f8dc58d04f53dc9fad13bd2db813583fd6"
+)
+PRE_RESPONSE_RANKINGS_PACKAGE_PATH = f"{PRE_RESPONSE_DIRECTORY}/pre-response-rankings.json.zst"
+PRE_RESPONSE_RANKINGS_PACKAGE_SHA256 = (
+    "sha256:b8cca43df3fe6994055230c885b36167e82efa2710cf2a4fbeb77f56c6a59f65"
+)
+ATTACH_FAILURE_EVIDENCE_COMMIT = "388bd30e6bb55bbd49895f12f9c2e21f4efa3507"
+ATTACH_FAILURE_EVIDENCE_TREE = "dc9328dcbe6fa11d618ecbbf868e8333199d50cc"
+ATTACH_FAILURE_RECEIPT_PATH = (
+    "reports/figures/2026_08_26_final_doppler_holdout_attempt2_odd_attachment/"
+    "attach-attempt-1-failure-receipt.json"
+)
+ATTACH_FAILURE_RECEIPT_SHA256 = (
+    "sha256:8b0fece5fcb690c210d482843854e311993eef47c46f25b8ba945904d1a63e00"
+)
+ATTACH_FAILURE_RECEIPT_DIGEST = (
+    "sha256:ea02d448c38d4816e786942d4e2fad3a97d52ee56b9c0eda5a964d7bac71593c"
+)
+ATTACH_FAILURE_OUTPUT_PATH = (
+    "reports/figures/2026_08_26_final_doppler_holdout_attempt2-attach-odd-command-output.log"
+)
+ATTACH_FAILURE_OUTPUT_SHA256 = (
+    "sha256:34aa86d412f25be882f9f4ccd3f8b16e2185493a730ba353340a24c3ad36ad3c"
+)
+ATTACH_AMENDMENT_PATH = (
+    "config/analysis/final-doppler-holdout-satellite-protocol-v2-amendment-001.json"
+)
+ATTACH_AMENDMENT_SHA256 = "sha256:7ed355990579ea900a83b76e4e272892d6b90577bee1ca6731490a078f69f38b"
+ATTACH_AMENDMENT_DIGEST = "sha256:cb9f0233fb1ba817b30bf42f08afa2668e81a001553103f5f8da5710a34d3d18"
+ATTACH_AMENDMENT_COMMIT = "fe6dd1e0dd51775e2986d8845032327376eea77c"
+ATTACH_AMENDMENT_TREE = "558526eaf8f88b919eb8ac599c609bd6e1ba3a07"
 SELECTOR_PATH = "reports/figures/2026_08_26_doppler_holdout_selector_v2/derived-manifest-v2.json"
 SELECTOR_FILE_SHA256 = "sha256:aa1116aeb69181ec631be20500d35449457db830dccb454245a36f646763556a"
 SELECTOR_SEMANTIC_DIGEST = "sha256:99a914335caa8501745325c265b67b68c22317fa399e6c6a03e27fe64400627b"
@@ -251,7 +318,7 @@ _SNAPSHOTS = {
     ),
 }
 
-_EXPECTED_CHUNKS = (
+_EXPECTED_CHUNKS_V1_V2 = (
     (
         CAPTURE_IDS[0],
         "stream-0",
@@ -341,6 +408,19 @@ _EXPECTED_CHUNKS = (
         "sha256:ce49f228bc2967f505afdb9c7e933ea4f85a6bd7e902b8ccbc39b8cab2cbc6d9",
     ),
 )
+_REMOVED_UNUSED_CHUNK = _EXPECTED_CHUNKS_V1_V2[-2]
+_EXPECTED_CHUNKS_V3 = tuple(
+    item for item in _EXPECTED_CHUNKS_V1_V2 if item != _REMOVED_UNUSED_CHUNK
+)
+# Retained for historical tests and external audit helpers that named the v1/v2
+# inventory before v3 existed.
+_EXPECTED_CHUNKS = _EXPECTED_CHUNKS_V1_V2
+V2_CHUNK_INVENTORY_DIGEST = (
+    "sha256:f86a9cf8177d22ba6cf8507a24d9cdc723c2325dc97c34eabded642ebda2111e"
+)
+V3_CHUNK_INVENTORY_DIGEST = (
+    "sha256:ff8a776f7f07f17bede7ab2fcb7e8cfa0e144771c571380db7a2b690c195a4cb"
+)
 
 _IMPLEMENTATION_KEYS = {
     "src/leo/analysis/qam/__init__.py",
@@ -387,6 +467,7 @@ _TOP_LEVEL_KEYS = {
     "protocol_digest",
 }
 _TOP_LEVEL_KEYS_V2 = _TOP_LEVEL_KEYS | {"supersession"}
+_TOP_LEVEL_KEYS_V3 = _TOP_LEVEL_KEYS_V2 | {"attachment_correction"}
 _SCIENTIFIC_KEYS = {
     "dataset_policy",
     "selector_v2",
@@ -587,20 +668,30 @@ def _load_and_validate_protocol_v1(
     return cast(dict[str, Any], document)
 
 
-def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> dict[str, Any]:
-    """Load only the active v2 execution authority; v1 is audit-only."""
+def load_and_validate_historical_final_protocol_v2(
+    path: Path,
+    *,
+    repository_root: Path,
+) -> dict[str, Any]:
+    """Verify retired v2 against its historical implementation, never execute it."""
+
+    return _load_and_validate_protocol_v2(
+        path,
+        repository_root=repository_root,
+        require_current_implementation=False,
+    )
+
+
+def _load_and_validate_protocol_v2(
+    path: Path,
+    *,
+    repository_root: Path,
+    require_current_implementation: bool,
+) -> dict[str, Any]:
+    """Load v2 with historical or now-retired execution semantics."""
 
     document = _load_json_without_duplicate_keys(path)
-    if not isinstance(document, dict):
-        raise ValueError("unsupported final holdout protocol")
-    if document.get("schema") == SCHEMA_V1:
-        _load_and_validate_protocol_v1(
-            path,
-            repository_root=repository_root,
-            require_current_implementation=False,
-        )
-        raise ValueError("final holdout protocol v1 is retired after failed attempt 1")
-    if document.get("schema") != SCHEMA_V2:
+    if not isinstance(document, dict) or document.get("schema") != SCHEMA_V2:
         raise ValueError("unsupported final holdout protocol")
     _require_exact_keys(document, _TOP_LEVEL_KEYS_V2, "protocol v2")
     if document.get("status") != "frozen_after_attempt_1_failure_before_corrected_rerun":
@@ -642,7 +733,7 @@ def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> di
         repository_root,
         commit=commit,
         expected_tree=tree,
-        require_current_source=True,
+        require_current_source=require_current_implementation,
     )
 
     base_path = repository_root / BASE_PROTOCOL_PATH
@@ -663,7 +754,16 @@ def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> di
     if set(implementation) != _IMPLEMENTATION_KEYS:
         raise ValueError("implementation binding key set drifted")
     for relative, expected in implementation.items():
-        if not isinstance(expected, str) or _sha256_tag(repository_root / relative) != expected:
+        observed = (
+            _sha256_tag(repository_root / relative)
+            if require_current_implementation
+            else _sha256_tag_at_commit(
+                repository_root,
+                commit=commit,
+                relative_path=relative,
+            )
+        )
+        if not isinstance(expected, str) or observed != expected:
             raise ValueError(f"implementation digest drifted: {relative}")
     if implementation["src/leo/analysis/qam/pilot.py"] != (
         "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6"
@@ -674,6 +774,319 @@ def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> di
     ):
         raise ValueError("final protocol canonical digest disagrees")
     return cast(dict[str, Any], document)
+
+
+def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> dict[str, Any]:
+    """Load only active v3; verify retired v1/v2 before rejecting execution."""
+
+    document = _load_json_without_duplicate_keys(path)
+    if not isinstance(document, dict):
+        raise ValueError("unsupported final holdout protocol")
+    schema = document.get("schema")
+    if schema == SCHEMA_V1:
+        load_and_validate_historical_final_protocol_v1(
+            path,
+            repository_root=repository_root,
+        )
+        raise ValueError("final holdout protocol v1 is retired after failed attempt 1")
+    if schema == SCHEMA_V2:
+        load_and_validate_historical_final_protocol_v2(
+            path,
+            repository_root=repository_root,
+        )
+        raise ValueError("final holdout protocol v2 attachment authority is retired")
+    if schema != SCHEMA_V3:
+        raise ValueError("unsupported final holdout protocol")
+    return _load_and_validate_protocol_v3(path, repository_root=repository_root)
+
+
+def _load_and_validate_protocol_v3(
+    path: Path,
+    *,
+    repository_root: Path,
+) -> dict[str, Any]:
+    """Validate the response-only v3 authority and its exact historical bridge."""
+
+    document = _load_json_without_duplicate_keys(path)
+    if not isinstance(document, dict) or document.get("schema") != SCHEMA_V3:
+        raise ValueError("unsupported final holdout protocol")
+    _require_exact_keys(document, _TOP_LEVEL_KEYS_V3, "protocol v3")
+    if document.get("status") != "frozen_response_authority_after_attach_attempt_1_failure":
+        raise ValueError("final holdout v3 chronology is not frozen")
+    chronology = _mapping(document.get("chronology"), "chronology v3")
+    _require_exact_keys(
+        chronology,
+        {
+            "implementation_commit",
+            "implementation_tree",
+            "working_tree_clean_at_code_commit",
+            "v1_and_v2_execution_retired",
+            "pre_response_artifacts_generated_under_v2",
+            "pre_response_candidate_results_inspected_before_v3",
+            "pre_response_candidate_propagation_or_ranking_rerun_before_v3",
+            "attach_attempt_1_failed_before_iq_or_odd_measurement",
+            "odd_iq_opened_before_v3_freeze",
+            "odd_responses_opened_before_v3_freeze",
+            "chunk_correction_chosen_without_odd_iq_or_responses",
+        },
+        "chronology v3",
+    )
+    expected_flags = {
+        "working_tree_clean_at_code_commit": True,
+        "v1_and_v2_execution_retired": True,
+        "pre_response_artifacts_generated_under_v2": True,
+        "pre_response_candidate_results_inspected_before_v3": True,
+        "pre_response_candidate_propagation_or_ranking_rerun_before_v3": False,
+        "attach_attempt_1_failed_before_iq_or_odd_measurement": True,
+        "odd_iq_opened_before_v3_freeze": False,
+        "odd_responses_opened_before_v3_freeze": False,
+        "chunk_correction_chosen_without_odd_iq_or_responses": True,
+    }
+    if any(chronology.get(key) is not value for key, value in expected_flags.items()):
+        raise ValueError("final holdout v3 chronology flags drifted")
+    commit = str(chronology.get("implementation_commit"))
+    tree = str(chronology.get("implementation_tree"))
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("implementation commit binding is malformed")
+    _validate_git_implementation_commit(
+        repository_root,
+        commit=commit,
+        expected_tree=tree,
+        require_current_source=True,
+    )
+
+    v2_path = repository_root / V2_PROTOCOL_PATH
+    if _sha256_tag(v2_path) != V2_PROTOCOL_SHA256:
+        raise ValueError("retired v2 protocol bytes drifted")
+    v2 = load_and_validate_historical_final_protocol_v2(
+        v2_path,
+        repository_root=repository_root,
+    )
+    if v2["protocol_digest"] != V2_PROTOCOL_DIGEST:
+        raise ValueError("retired v2 protocol digest drifted")
+    changed_keys = {
+        "schema",
+        "status",
+        "chronology",
+        "authorized_odd_chunks",
+        "implementation_sha256",
+        "protocol_digest",
+        "attachment_correction",
+    }
+    for key in _TOP_LEVEL_KEYS_V3 - changed_keys:
+        if document.get(key) != v2.get(key):
+            raise ValueError(f"v3 non-chunk field differs from frozen v2: {key}")
+    _validate_chunks(
+        document.get("authorized_odd_chunks"),
+        expected=_EXPECTED_CHUNKS_V3,
+    )
+    if canonical_digest(document["authorized_odd_chunks"]) != V3_CHUNK_INVENTORY_DIGEST:
+        raise ValueError("v3 authorized odd chunk digest drifted")
+    _validate_attachment_correction_v3(
+        document.get("attachment_correction"),
+        repository_root=repository_root,
+    )
+
+    implementation = _mapping(document.get("implementation_sha256"), "implementation_sha256")
+    if set(implementation) != _IMPLEMENTATION_KEYS:
+        raise ValueError("implementation binding key set drifted")
+    permitted_source_changes = {
+        "src/leo/analysis/research/doppler_holdout_odd_adapter.py",
+        "src/leo/analysis/research/final_holdout_protocol.py",
+        "tools/run_final_doppler_holdout.py",
+    }
+    for relative, expected in implementation.items():
+        if not isinstance(expected, str) or _sha256_tag(repository_root / relative) != expected:
+            raise ValueError(f"implementation digest drifted: {relative}")
+        if (
+            relative not in permitted_source_changes
+            and expected != v2["implementation_sha256"][relative]
+        ):
+            raise ValueError(f"v3 changed non-bridge implementation: {relative}")
+    if implementation["src/leo/analysis/qam/pilot.py"] != (
+        "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6"
+    ):
+        raise ValueError("historical pilot implementation drifted")
+    if document.get("protocol_digest") != canonical_digest(
+        {key: value for key, value in document.items() if key != "protocol_digest"}
+    ):
+        raise ValueError("final protocol canonical digest disagrees")
+    return cast(dict[str, Any], document)
+
+
+def _expected_attachment_correction_v3() -> dict[str, Any]:
+    """Return the exact response-free v3 bridge/correction authority."""
+
+    removed = {
+        "session_id": _REMOVED_UNUSED_CHUNK[0],
+        "stream_id": _REMOVED_UNUSED_CHUNK[1],
+        "relative_path": _REMOVED_UNUSED_CHUNK[2],
+        "sample_start": _REMOVED_UNUSED_CHUNK[3],
+        "sample_count": _REMOVED_UNUSED_CHUNK[4],
+        "compressed_sha256": _REMOVED_UNUSED_CHUNK[5],
+    }
+    return {
+        "historical_v2_protocol": {
+            "path": V2_PROTOCOL_PATH,
+            "commit": V2_PROTOCOL_COMMIT,
+            "tree": V2_PROTOCOL_TREE,
+            "sha256": V2_PROTOCOL_SHA256,
+            "semantic_digest": V2_PROTOCOL_DIGEST,
+            "execution_retired": True,
+            "pre_response_authority_only": True,
+        },
+        "pre_response_bridge": {
+            "freeze_commit": PRE_RESPONSE_FREEZE_COMMIT,
+            "freeze_tree": PRE_RESPONSE_FREEZE_TREE,
+            "prediction_ledger_path": PRE_RESPONSE_PREDICTION_PATH,
+            "prediction_ledger_sha256": PRE_RESPONSE_PREDICTION_SHA256,
+            "prediction_ledger_digest": PRE_RESPONSE_PREDICTION_DIGEST,
+            "association_bins_path": PRE_RESPONSE_BINS_PATH,
+            "association_bins_sha256": PRE_RESPONSE_BINS_SHA256,
+            "association_bins_digest": PRE_RESPONSE_BINS_DIGEST,
+            "rankings_raw_path": PRE_RESPONSE_RANKINGS_PATH,
+            "rankings_raw_sha256": PRE_RESPONSE_RANKINGS_SHA256,
+            "rankings_raw_digest": PRE_RESPONSE_RANKINGS_DIGEST,
+            "pre_response_receipt_path": PRE_RESPONSE_RECEIPT_PATH,
+            "pre_response_receipt_sha256": PRE_RESPONSE_RECEIPT_SHA256,
+            "pre_response_receipt_digest": PRE_RESPONSE_RECEIPT_DIGEST,
+            "package_manifest_path": PRE_RESPONSE_PACKAGE_MANIFEST_PATH,
+            "package_manifest_sha256": PRE_RESPONSE_PACKAGE_MANIFEST_SHA256,
+            "package_manifest_digest": PRE_RESPONSE_PACKAGE_MANIFEST_DIGEST,
+            "rankings_package_path": PRE_RESPONSE_RANKINGS_PACKAGE_PATH,
+            "rankings_package_sha256": PRE_RESPONSE_RANKINGS_PACKAGE_SHA256,
+            "all_pre_response_artifacts_byte_identical": True,
+            "pre_response_recomputation_permitted": False,
+        },
+        "failed_attachment": {
+            "evidence_commit": ATTACH_FAILURE_EVIDENCE_COMMIT,
+            "evidence_tree": ATTACH_FAILURE_EVIDENCE_TREE,
+            "failure_receipt_path": ATTACH_FAILURE_RECEIPT_PATH,
+            "failure_receipt_sha256": ATTACH_FAILURE_RECEIPT_SHA256,
+            "failure_receipt_digest": ATTACH_FAILURE_RECEIPT_DIGEST,
+            "combined_command_output_path": ATTACH_FAILURE_OUTPUT_PATH,
+            "combined_command_output_sha256": ATTACH_FAILURE_OUTPUT_SHA256,
+            "status": "failed_closed_before_odd_measurement",
+            "recording_store_opened": True,
+            "recording_store_inspect_call_count": 0,
+            "recording_store_reader_call_count": 0,
+            "recording_reader_read_call_count": 0,
+            "iq_byte_count": 0,
+            "odd_measurement_count": 0,
+            "attachment_or_receipt_written": False,
+        },
+        "retirement_amendment": {
+            "path": ATTACH_AMENDMENT_PATH,
+            "commit": ATTACH_AMENDMENT_COMMIT,
+            "tree": ATTACH_AMENDMENT_TREE,
+            "sha256": ATTACH_AMENDMENT_SHA256,
+            "semantic_digest": ATTACH_AMENDMENT_DIGEST,
+        },
+        "chunk_authority_correction": {
+            "original_chunk_count": 11,
+            "original_chunk_inventory_digest": V2_CHUNK_INVENTORY_DIGEST,
+            "active_chunk_count": 10,
+            "active_chunk_inventory_digest": V3_CHUNK_INVENTORY_DIGEST,
+            "removed_chunk": removed,
+            "removed_chunk_guarded_window_use_count": 0,
+            "target_count": TARGET_COUNT,
+            "guarded_window_coverage_failures": 0,
+            "all_retained_chunks_used": True,
+            "unused_chunk_fail_closed_guard_retained": True,
+            "pre_storage_sufficiency_and_minimality_preflight_required": True,
+            "reader_and_estimator_implementation_unchanged": True,
+            "new_iq_or_odd_response_evidence_used": False,
+        },
+        "execution": {
+            "predict_permitted": False,
+            "attach_odd_permitted": True,
+            "report_permitted": True,
+            "historical_v2_verifies_pre_response_only": True,
+            "active_v3_supplies_response_authority_only": True,
+            "successful_attachment_receipt_schema": (
+                "org.leo.research.final-holdout-odd-attachment-receipt/v2"
+            ),
+        },
+    }
+
+
+def _validate_attachment_correction_v3(value: object, *, repository_root: Path) -> None:
+    correction = _mapping(value, "attachment_correction")
+    if correction != _expected_attachment_correction_v3():
+        raise ValueError("final holdout v3 attachment correction authority drifted")
+
+    current_files = (
+        (V2_PROTOCOL_PATH, V2_PROTOCOL_SHA256),
+        (PRE_RESPONSE_PREDICTION_PATH, PRE_RESPONSE_PREDICTION_SHA256),
+        (PRE_RESPONSE_BINS_PATH, PRE_RESPONSE_BINS_SHA256),
+        (PRE_RESPONSE_RECEIPT_PATH, PRE_RESPONSE_RECEIPT_SHA256),
+        (PRE_RESPONSE_PACKAGE_MANIFEST_PATH, PRE_RESPONSE_PACKAGE_MANIFEST_SHA256),
+        (PRE_RESPONSE_RANKINGS_PACKAGE_PATH, PRE_RESPONSE_RANKINGS_PACKAGE_SHA256),
+        (ATTACH_FAILURE_RECEIPT_PATH, ATTACH_FAILURE_RECEIPT_SHA256),
+        (ATTACH_FAILURE_OUTPUT_PATH, ATTACH_FAILURE_OUTPUT_SHA256),
+        (ATTACH_AMENDMENT_PATH, ATTACH_AMENDMENT_SHA256),
+    )
+    for relative, digest in current_files:
+        if _sha256_tag(repository_root / relative) != digest:
+            raise ValueError(f"final holdout v3 correction bytes drifted: {relative}")
+    _validate_git_implementation_commit(
+        repository_root,
+        commit=V2_PROTOCOL_COMMIT,
+        expected_tree=V2_PROTOCOL_TREE,
+        require_current_source=False,
+    )
+    _validate_git_implementation_commit(
+        repository_root,
+        commit=PRE_RESPONSE_FREEZE_COMMIT,
+        expected_tree=PRE_RESPONSE_FREEZE_TREE,
+        require_current_source=False,
+    )
+    _validate_git_implementation_commit(
+        repository_root,
+        commit=ATTACH_FAILURE_EVIDENCE_COMMIT,
+        expected_tree=ATTACH_FAILURE_EVIDENCE_TREE,
+        require_current_source=False,
+    )
+    _validate_git_implementation_commit(
+        repository_root,
+        commit=ATTACH_AMENDMENT_COMMIT,
+        expected_tree=ATTACH_AMENDMENT_TREE,
+        require_current_source=False,
+    )
+    historical_files = (
+        (V2_PROTOCOL_COMMIT, V2_PROTOCOL_PATH, V2_PROTOCOL_SHA256),
+        (PRE_RESPONSE_FREEZE_COMMIT, PRE_RESPONSE_PREDICTION_PATH, PRE_RESPONSE_PREDICTION_SHA256),
+        (PRE_RESPONSE_FREEZE_COMMIT, PRE_RESPONSE_BINS_PATH, PRE_RESPONSE_BINS_SHA256),
+        (PRE_RESPONSE_FREEZE_COMMIT, PRE_RESPONSE_RECEIPT_PATH, PRE_RESPONSE_RECEIPT_SHA256),
+        (
+            PRE_RESPONSE_FREEZE_COMMIT,
+            PRE_RESPONSE_PACKAGE_MANIFEST_PATH,
+            PRE_RESPONSE_PACKAGE_MANIFEST_SHA256,
+        ),
+        (
+            PRE_RESPONSE_FREEZE_COMMIT,
+            PRE_RESPONSE_RANKINGS_PACKAGE_PATH,
+            PRE_RESPONSE_RANKINGS_PACKAGE_SHA256,
+        ),
+        (
+            ATTACH_FAILURE_EVIDENCE_COMMIT,
+            ATTACH_FAILURE_RECEIPT_PATH,
+            ATTACH_FAILURE_RECEIPT_SHA256,
+        ),
+        (
+            ATTACH_FAILURE_EVIDENCE_COMMIT,
+            ATTACH_FAILURE_OUTPUT_PATH,
+            ATTACH_FAILURE_OUTPUT_SHA256,
+        ),
+        (ATTACH_AMENDMENT_COMMIT, ATTACH_AMENDMENT_PATH, ATTACH_AMENDMENT_SHA256),
+    )
+    for historical_commit, relative, digest in historical_files:
+        _validate_historical_file(
+            repository_root,
+            commit=historical_commit,
+            relative_path=relative,
+            expected_sha256=digest,
+        )
 
 
 def _validate_supersession_v2(value: object, *, repository_root: Path) -> None:
@@ -1035,8 +1448,12 @@ def _validate_snapshot(item: dict[str, Any]) -> None:
         raise ValueError("immutable legacy TLE snapshot binding drifted")
 
 
-def _validate_chunks(value: object) -> None:
-    if not isinstance(value, list) or len(value) != 11:
+def _validate_chunks(
+    value: object,
+    *,
+    expected: tuple[tuple[object, ...], ...] = _EXPECTED_CHUNKS_V1_V2,
+) -> None:
+    if not isinstance(value, list) or len(value) != len(expected):
         raise ValueError("authorized odd chunk inventory drifted")
     if any(
         not isinstance(item, dict)
@@ -1063,7 +1480,7 @@ def _validate_chunks(value: object) -> None:
         )
         for item in value
     )
-    if observed != _EXPECTED_CHUNKS:
+    if observed != expected:
         raise ValueError("authorized odd chunk geometry/digest drifted")
 
 

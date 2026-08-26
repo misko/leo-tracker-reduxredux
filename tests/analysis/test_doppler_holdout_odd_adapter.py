@@ -12,6 +12,8 @@ from leo.analysis.research.doppler_holdout_odd_adapter import (
     OddChunkReadReceipt,
     OddQinFrameReadRequest,
     OddQinFrameUnavailable,
+    preflight_exact_authorized_odd_chunks,
+    resolve_authorized_odd_chunks_by_target,
 )
 from leo.analysis.research.doppler_holdout_pre_response import (
     ForecastTargetKeyV1,
@@ -274,3 +276,137 @@ def test_chunk_gap_overlap_wrong_stream_and_unused_inventory_fail_before_source(
                 authorized_chunks=chunks,
                 source=ForbiddenSource(),
             )
+
+
+def test_pure_chunk_resolver_uses_exact_half_open_one_sample_guards() -> None:
+    frame_start = 10_000
+    frame_content = round(302 * RATE_HZ * OFDM_SYMBOL_DURATION_S)
+    read_start = frame_start - 1
+    read_stop = frame_start + frame_content + 1
+    split = read_start + 101
+    target = _target().model_copy(
+        update={
+            "frame_start_sample": frame_start,
+            "reference_sample": float(frame_start + frame_content // 2),
+        }
+    )
+    authority = _authority().model_copy(update={"target": target})
+    before = replace(
+        _chunk(),
+        relative_path="radio-a/before.ci16.zst",
+        sample_start=0,
+        sample_count=read_start,
+    )
+    left = replace(
+        _chunk(),
+        relative_path="radio-a/left.ci16.zst",
+        sample_start=read_start,
+        sample_count=split - read_start,
+    )
+    right = replace(
+        _chunk(),
+        relative_path="radio-a/right.ci16.zst",
+        sample_start=split,
+        sample_count=read_stop - split,
+    )
+    after = replace(
+        _chunk(),
+        relative_path="radio-a/after.ci16.zst",
+        sample_start=read_stop,
+        sample_count=100,
+    )
+
+    resolved = resolve_authorized_odd_chunks_by_target(
+        authorities=(authority,),
+        sample_rate_hz_by_session={"capture-a": RATE_HZ},
+        authorized_chunks=(after, right, before, left),
+    )
+
+    assert read_stop - read_start == frame_content + 2 == 3_324
+    assert resolved == ((left, right),)
+    assert before.sample_start + before.sample_count == read_start
+    assert after.sample_start == read_stop
+
+
+def test_pure_chunk_preflight_rejects_unused_and_each_required_removal() -> None:
+    frame_start = 10_000
+    frame_content = round(302 * RATE_HZ * OFDM_SYMBOL_DURATION_S)
+    read_start = frame_start - 1
+    read_stop = frame_start + frame_content + 1
+    split = read_start + 101
+    target = _target().model_copy(
+        update={
+            "frame_start_sample": frame_start,
+            "reference_sample": float(frame_start + frame_content // 2),
+        }
+    )
+    authority = _authority().model_copy(update={"target": target})
+    required = (
+        replace(
+            _chunk(),
+            relative_path="radio-a/left.ci16.zst",
+            sample_start=read_start,
+            sample_count=split - read_start,
+        ),
+        replace(
+            _chunk(),
+            relative_path="radio-a/right.ci16.zst",
+            sample_start=split,
+            sample_count=read_stop - split,
+        ),
+    )
+    unused = replace(
+        _chunk(),
+        relative_path="radio-a/unused.ci16.zst",
+        sample_start=read_stop,
+        sample_count=100,
+    )
+
+    assert preflight_exact_authorized_odd_chunks(
+        authorities=(authority,),
+        sample_rate_hz_by_session={"capture-a": RATE_HZ},
+        authorized_chunks=required,
+    ) == (required,)
+    with pytest.raises(ValueError, match="unused chunk"):
+        preflight_exact_authorized_odd_chunks(
+            authorities=(authority,),
+            sample_rate_hz_by_session={"capture-a": RATE_HZ},
+            authorized_chunks=required + (unused,),
+        )
+    for removed in required:
+        with pytest.raises(ValueError, match="cover"):
+            preflight_exact_authorized_odd_chunks(
+                authorities=(authority,),
+                sample_rate_hz_by_session={"capture-a": RATE_HZ},
+                authorized_chunks=tuple(chunk for chunk in required if chunk != removed),
+            )
+
+
+def test_adapter_retains_unused_chunk_guard_without_source_access() -> None:
+    authority = _authority()
+
+    class ForbiddenSource:
+        calls = 0
+
+        def read_guarded_odd_qin_frame(self, request: OddQinFrameReadRequest) -> GuardedOddQinFrame:
+            self.calls += 1
+            raise AssertionError("source must not be called")
+
+    source = ForbiddenSource()
+    unused = replace(
+        _chunk(),
+        relative_path="radio-a/unused.ci16.zst",
+        sample_start=3_000_000,
+    )
+
+    with pytest.raises(ValueError, match="unused chunk"):
+        DigestPinnedOddQinAdapter(
+            prediction_ledger_digest=DIGEST,
+            authorities=(authority,),
+            recording_manifest_sha256_by_session={"capture-a": DIGEST},
+            sample_rate_hz_by_session={"capture-a": RATE_HZ},
+            authorized_chunks=(_chunk(), unused),
+            source=source,
+        )
+
+    assert source.calls == 0

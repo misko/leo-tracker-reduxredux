@@ -75,6 +75,99 @@ class OddQinGuardedFrameSource(Protocol):
         """Read the exact source-bound target frame."""
 
 
+def resolve_authorized_odd_chunks_by_target(
+    *,
+    authorities: tuple[OddQinTargetAuthorityV1, ...],
+    sample_rate_hz_by_session: dict[str, int],
+    authorized_chunks: tuple[AuthorizedOddChunk, ...],
+) -> tuple[tuple[AuthorizedOddChunk, ...], ...]:
+    """Resolve each guarded target window without requiring a minimal inventory."""
+
+    authority_keys = tuple(item.target.identity() for item in authorities)
+    if not authority_keys or len(set(authority_keys)) != len(authority_keys):
+        raise ValueError("odd adapter authorities must be nonempty and unique")
+    sessions = {item.target.session_id for item in authorities}
+    if set(sample_rate_hz_by_session) != sessions:
+        raise ValueError("odd adapter sample-rate authorities disagree")
+    if any(value <= 0 for value in sample_rate_hz_by_session.values()):
+        raise ValueError("odd adapter sample rate must be positive")
+    chunk_keys = {
+        (item.session_id, item.stream_id, item.relative_path) for item in authorized_chunks
+    }
+    if not authorized_chunks or len(chunk_keys) != len(authorized_chunks):
+        raise ValueError("authorized odd chunk inventory is empty or duplicated")
+    if {item.session_id for item in authorized_chunks} != sessions:
+        raise ValueError("authorized odd chunks do not cover exactly the frozen sessions")
+    by_stream: dict[tuple[str, str], list[AuthorizedOddChunk]] = {}
+    for item in authorized_chunks:
+        path = PurePosixPath(item.relative_path)
+        if (
+            path.is_absolute()
+            or ".." in path.parts
+            or item.sample_start < 0
+            or item.sample_count <= 0
+        ):
+            raise ValueError("authorized odd chunk geometry or path is invalid")
+        by_stream.setdefault((item.session_id, item.stream_id), []).append(item)
+    for items in by_stream.values():
+        ordered = sorted(items, key=lambda item: item.sample_start)
+        if any(
+            left.sample_start + left.sample_count > right.sample_start
+            for left, right in zip(ordered, ordered[1:], strict=False)
+        ):
+            raise ValueError("authorized odd chunks overlap")
+
+    resolved: list[tuple[AuthorizedOddChunk, ...]] = []
+    for authority in authorities:
+        session_id = authority.target.session_id
+        frame_content = round(302 * sample_rate_hz_by_session[session_id] * 4.4e-6)
+        read_start = authority.target.frame_start_sample - 1
+        read_stop = authority.target.frame_start_sample + frame_content + 1
+        expected = tuple(
+            sorted(
+                (
+                    item
+                    for item in authorized_chunks
+                    if item.session_id == session_id
+                    and item.stream_id == authority.stream_id
+                    and item.sample_start < read_stop
+                    and item.sample_start + item.sample_count > read_start
+                ),
+                key=lambda item: item.sample_start,
+            )
+        )
+        if not expected:
+            raise ValueError("target is outside the authorized odd chunk inventory")
+        cursor = read_start
+        for chunk in expected:
+            if chunk.sample_start > cursor:
+                raise ValueError("authorized odd chunks do not cover the guarded frame")
+            cursor = max(cursor, chunk.sample_start + chunk.sample_count)
+        if cursor < read_stop:
+            raise ValueError("authorized odd chunks do not cover the guarded frame")
+        resolved.append(expected)
+    return tuple(resolved)
+
+
+def preflight_exact_authorized_odd_chunks(
+    *,
+    authorities: tuple[OddQinTargetAuthorityV1, ...],
+    sample_rate_hz_by_session: dict[str, int],
+    authorized_chunks: tuple[AuthorizedOddChunk, ...],
+) -> tuple[tuple[AuthorizedOddChunk, ...], ...]:
+    """Fail unless every guarded target is covered and every chunk is used."""
+
+    resolved = resolve_authorized_odd_chunks_by_target(
+        authorities=authorities,
+        sample_rate_hz_by_session=sample_rate_hz_by_session,
+        authorized_chunks=authorized_chunks,
+    )
+    used_chunks = {chunk for target_chunks in resolved for chunk in target_chunks}
+    if used_chunks != set(authorized_chunks):
+        raise ValueError("authorized odd chunk inventory contains an unused chunk")
+    return resolved
+
+
 class DigestPinnedOddQinAdapter:
     """Concrete response port sealed to one prediction ledger and authority set."""
 
@@ -107,42 +200,18 @@ class DigestPinnedOddQinAdapter:
             minimum_exact_coherence=minimum_exact_coherence,
             minimum_coherence_margin=minimum_coherence_margin,
         )
-        chunk_keys = {
-            (item.session_id, item.stream_id, item.relative_path) for item in authorized_chunks
-        }
-        if not authorized_chunks or len(chunk_keys) != len(authorized_chunks):
-            raise ValueError("authorized odd chunk inventory is empty or duplicated")
-        if {item.session_id for item in authorized_chunks} != sessions:
-            raise ValueError("authorized odd chunks do not cover exactly the frozen sessions")
-        by_stream: dict[tuple[str, str], list[AuthorizedOddChunk]] = {}
-        for item in authorized_chunks:
-            path = PurePosixPath(item.relative_path)
-            if (
-                path.is_absolute()
-                or ".." in path.parts
-                or item.sample_start < 0
-                or item.sample_count <= 0
-            ):
-                raise ValueError("authorized odd chunk geometry or path is invalid")
-            by_stream.setdefault((item.session_id, item.stream_id), []).append(item)
-        for items in by_stream.values():
-            ordered = sorted(items, key=lambda item: item.sample_start)
-            if any(
-                left.sample_start + left.sample_count > right.sample_start
-                for left, right in zip(ordered, ordered[1:], strict=False)
-            ):
-                raise ValueError("authorized odd chunks overlap")
+        resolved_chunks = preflight_exact_authorized_odd_chunks(
+            authorities=authorities,
+            sample_rate_hz_by_session=sample_rate_hz_by_session,
+            authorized_chunks=authorized_chunks,
+        )
         self._recording_manifest_sha256 = dict(recording_manifest_sha256_by_session)
         self._sample_rate_hz = dict(sample_rate_hz_by_session)
-        self._chunks = authorized_chunks
+        authority_keys = tuple(item.target.identity() for item in authorities)
+        self._chunks_by_target = dict(zip(authority_keys, resolved_chunks, strict=True))
         self._source = source
         self._minimum_exact_coherence = minimum_exact_coherence
         self._minimum_coherence_margin = minimum_coherence_margin
-        used_chunks: set[AuthorizedOddChunk] = set()
-        for authority in authorities:
-            used_chunks.update(self._expected_chunks(authority))
-        if used_chunks != set(authorized_chunks):
-            raise ValueError("authorized odd chunk inventory contains an unused chunk")
 
     def measure_odd_qin(
         self,
@@ -158,7 +227,7 @@ class DigestPinnedOddQinAdapter:
         session_id = request.authority.target.session_id
         expected_rate = self._sample_rate_hz[session_id]
         expected_manifest = self._recording_manifest_sha256[session_id]
-        expected_chunks = self._expected_chunks(request.authority)
+        expected_chunks = self._chunks_by_target[request.authority.target.identity()]
         try:
             guarded = self._source.read_guarded_odd_qin_frame(
                 OddQinFrameReadRequest(
@@ -244,33 +313,3 @@ class DigestPinnedOddQinAdapter:
         return OddQinResponseMeasurementV2.model_validate(
             {**common, "status": "finite", "accuracy_disposition": "eligible"}
         )
-
-    def _expected_chunks(
-        self,
-        authority: OddQinTargetAuthorityV1,
-    ) -> tuple[AuthorizedOddChunk, ...]:
-        session_id = authority.target.session_id
-        if session_id not in self._sample_rate_hz:
-            raise ValueError("target session is outside odd authority")
-        frame_content = round(302 * self._sample_rate_hz[session_id] * 4.4e-6)
-        read_start = authority.target.frame_start_sample - 1
-        read_stop = authority.target.frame_start_sample + frame_content + 1
-        expected = tuple(
-            item
-            for item in self._chunks
-            if item.session_id == session_id
-            and item.stream_id == authority.stream_id
-            and item.sample_start < read_stop
-            and item.sample_start + item.sample_count > read_start
-        )
-        expected = tuple(sorted(expected, key=lambda item: item.sample_start))
-        if not expected:
-            raise ValueError("target is outside the authorized odd chunk inventory")
-        cursor = read_start
-        for chunk in expected:
-            if chunk.sample_start > cursor:
-                raise ValueError("authorized odd chunks do not cover the guarded frame")
-            cursor = max(cursor, chunk.sample_start + chunk.sample_count)
-        if cursor < read_stop:
-            raise ValueError("authorized odd chunks do not cover the guarded frame")
-        return expected

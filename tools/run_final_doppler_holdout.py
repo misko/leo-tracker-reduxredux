@@ -33,6 +33,7 @@ from leo.analysis.research.doppler_holdout_odd_adapter import (  # noqa: E402
     GuardedOddQinFrame,
     OddChunkReadReceipt,
     OddQinFrameReadRequest,
+    preflight_exact_authorized_odd_chunks,
 )
 from leo.analysis.research.doppler_holdout_pre_response import (  # noqa: E402
     DopplerHoldoutPredictionLedgerV1,
@@ -69,10 +70,15 @@ from leo.analysis.research.final_doppler_holdout import (  # noqa: E402
 )
 from leo.analysis.research.final_holdout_protocol import (  # noqa: E402
     CAPTURE_IDS,
+    SCHEMA_V3,
     SELECTOR_FILE_SHA256,
     SELECTOR_SEMANTIC_DIGEST,
     TARGET_COUNT,
+    V2_PROTOCOL_DIGEST,
+    V2_PROTOCOL_PATH,
+    V2_PROTOCOL_SHA256,
     load_and_validate_final_protocol,
+    load_and_validate_historical_final_protocol_v2,
 )
 from leo.analysis.research.final_holdout_satellite import (  # noqa: E402
     StarlinkCandidatePopulation,
@@ -226,6 +232,63 @@ def _load_manifest(path: Path, protocol: dict[str, Any]) -> DopplerHoldoutDerive
         ):
             raise ValueError("protocol capture authority differs from selector-v2")
     return manifest
+
+
+def _load_historical_pre_response_protocol(
+    active_protocol: dict[str, Any],
+) -> tuple[Path, dict[str, Any]]:
+    """Resolve the fixed v2 authority used only to verify pre-response bytes."""
+
+    correction = active_protocol.get("attachment_correction")
+    if not isinstance(correction, dict):
+        raise ValueError("active protocol has no attachment correction bridge")
+    binding = correction.get("historical_v2_protocol")
+    if not isinstance(binding, dict):
+        raise ValueError("active protocol has no historical v2 binding")
+    if (
+        binding.get("path") != V2_PROTOCOL_PATH
+        or binding.get("sha256") != V2_PROTOCOL_SHA256
+        or binding.get("semantic_digest") != V2_PROTOCOL_DIGEST
+        or binding.get("pre_response_authority_only") is not True
+        or binding.get("execution_retired") is not True
+    ):
+        raise ValueError("historical v2 pre-response bridge authority disagrees")
+    path = _REPOSITORY_ROOT / V2_PROTOCOL_PATH
+    protocol = load_and_validate_historical_final_protocol_v2(
+        path,
+        repository_root=_REPOSITORY_ROOT,
+    )
+    if "sha256:" + _sha256(path) != V2_PROTOCOL_SHA256 or binding.get(
+        "semantic_digest"
+    ) != protocol.get("protocol_digest"):
+        raise ValueError("historical v2 pre-response bridge authority disagrees")
+    return path, protocol
+
+
+def _validate_pre_response_bridge_paths(
+    active_protocol: dict[str, Any],
+    *,
+    prediction_path: Path,
+    bins_path: Path,
+    rankings_path: Path,
+    receipt_path: Path,
+) -> None:
+    """Require the exact response-free artifact paths frozen by v3."""
+
+    correction = active_protocol.get("attachment_correction")
+    bridge = correction.get("pre_response_bridge") if isinstance(correction, dict) else None
+    if not isinstance(bridge, dict):
+        raise ValueError("active protocol has no pre-response artifact bridge")
+    observed = {
+        "prediction_ledger_path": prediction_path,
+        "association_bins_path": bins_path,
+        "rankings_raw_path": rankings_path,
+        "pre_response_receipt_path": receipt_path,
+    }
+    for key, path in observed.items():
+        expected = _REPOSITORY_ROOT / str(bridge.get(key))
+        if path.resolve(strict=False) != expected.resolve(strict=False):
+            raise ValueError(f"pre-response bridge path disagrees: {key}")
 
 
 def _load_catalogue(
@@ -554,6 +617,8 @@ def _predict(arguments: argparse.Namespace) -> None:
         protocol_path,
         repository_root=_REPOSITORY_ROOT,
     )
+    if protocol.get("schema") == SCHEMA_V3:
+        raise ValueError("protocol v3 is attachment/report-only; pre-response rerun forbidden")
     deadline_monotonic = started_monotonic + float(
         protocol["association"]["maximum_pre_response_compute_seconds"]
     )
@@ -1354,20 +1419,34 @@ def _load_pre_response_authority(
 
 
 def _attach_odd(arguments: argparse.Namespace) -> None:
-    protocol_path = Path(arguments.protocol)
-    protocol = load_and_validate_final_protocol(
-        protocol_path,
+    active_protocol_path = Path(arguments.protocol)
+    active_protocol = load_and_validate_final_protocol(
+        active_protocol_path,
         repository_root=_REPOSITORY_ROOT,
     )
-    manifest_path = _REPOSITORY_ROOT / protocol["selector_v2"]["path"]
-    manifest = _load_manifest(manifest_path, protocol)
+    output = Path(arguments.output)
+    output_receipt = output.with_suffix(".receipt.json")
+    if output.exists() or output_receipt.exists():
+        raise FileExistsError("odd attachment output or receipt already exists")
+    historical_protocol_path, historical_protocol = _load_historical_pre_response_protocol(
+        active_protocol
+    )
+    manifest_path = _REPOSITORY_ROOT / historical_protocol["selector_v2"]["path"]
+    manifest = _load_manifest(manifest_path, historical_protocol)
     prediction_path = Path(arguments.prediction_ledger)
     bins_path = Path(arguments.association_bins)
     rankings_path = Path(arguments.rankings)
     receipt_path = Path(arguments.pre_response_receipt)
+    _validate_pre_response_bridge_paths(
+        active_protocol,
+        prediction_path=prediction_path,
+        bins_path=bins_path,
+        rankings_path=rankings_path,
+        receipt_path=receipt_path,
+    )
     prediction = _load_pre_response_authority(
-        protocol_path=protocol_path,
-        protocol=protocol,
+        protocol_path=historical_protocol_path,
+        protocol=historical_protocol,
         prediction_path=prediction_path,
         bins_path=bins_path,
         rankings_path=rankings_path,
@@ -1376,9 +1455,14 @@ def _attach_odd(arguments: argparse.Namespace) -> None:
     authorities = build_odd_qin_target_authorities(
         manifest,
         prediction,
-        residual_half_width_hz=float(protocol["odd_response"]["residual_half_width_hz"]),
+        residual_half_width_hz=float(active_protocol["odd_response"]["residual_half_width_hz"]),
     )
-    captures = {item["session_id"]: item for item in protocol["captures"]}
+    if (
+        len(authorities) != TARGET_COUNT
+        or len({authority.target.identity() for authority in authorities}) != TARGET_COUNT
+    ):
+        raise ValueError("odd response authority does not contain exactly 5,413 unique targets")
+    captures = {item["session_id"]: item for item in active_protocol["captures"]}
     chunks = tuple(
         AuthorizedOddChunk(
             session_id=item["session_id"],
@@ -1388,8 +1472,18 @@ def _attach_odd(arguments: argparse.Namespace) -> None:
             sample_count=int(item["sample_count"]),
             compressed_sha256=item["compressed_sha256"],
         )
-        for item in protocol["authorized_odd_chunks"]
+        for item in active_protocol["authorized_odd_chunks"]
     )
+    sample_rates = {session: int(item["sample_rate_hz"]) for session, item in captures.items()}
+    resolved_chunks = preflight_exact_authorized_odd_chunks(
+        authorities=authorities,
+        sample_rate_hz_by_session=sample_rates,
+        authorized_chunks=chunks,
+    )
+    if len(resolved_chunks) != TARGET_COUNT:
+        raise ValueError("odd chunk preflight did not retain all 5,413 targets")
+    # Storage construction is deliberately below every immutable authority,
+    # historical bridge, target, and exact-minimal-chunk check above.
     pin = PinnedLocalRoot(Path(arguments.bulk_root))
     store: RecordingStore | None = None
     try:
@@ -1401,13 +1495,15 @@ def _attach_odd(arguments: argparse.Namespace) -> None:
             recording_manifest_sha256_by_session={
                 session: item["recording_manifest_sha256"] for session, item in captures.items()
             },
-            sample_rate_hz_by_session={
-                session: int(item["sample_rate_hz"]) for session, item in captures.items()
-            },
+            sample_rate_hz_by_session=sample_rates,
             authorized_chunks=chunks,
             source=source,
-            minimum_exact_coherence=float(protocol["odd_response"]["minimum_exact_coherence"]),
-            minimum_coherence_margin=float(protocol["odd_response"]["minimum_coherence_margin"]),
+            minimum_exact_coherence=float(
+                active_protocol["odd_response"]["minimum_exact_coherence"]
+            ),
+            minimum_coherence_margin=float(
+                active_protocol["odd_response"]["minimum_coherence_margin"]
+            ),
         )
         attachment = attach_odd_qin_responses_v2(prediction, authorities, adapter)
     finally:
@@ -1422,19 +1518,26 @@ def _attach_odd(arguments: argparse.Namespace) -> None:
         + attachment.no_support_response_count
         + attachment.missing_response_count
         != TARGET_COUNT
+        or attachment.finite_response_count
+        != attachment.accuracy_eligible_count
+        + attachment.boundary_response_count
+        + attachment.no_support_response_count
     ):
         raise ValueError("odd attachment status denominator does not close")
-    output = Path(arguments.output)
-    output.write_text(attachment.model_dump_json(indent=2) + "\n")
+    attachment_json = attachment.model_dump_json(indent=2) + "\n"
+    attachment_sha256 = "sha256:" + hashlib.sha256(attachment_json.encode()).hexdigest()
+    pre_response_receipt = _load_json_file(receipt_path)
     receipt_document = {
-        "schema": "org.leo.research.final-holdout-odd-attachment-receipt/v1",
-        "protocol_sha256": "sha256:" + _sha256(protocol_path),
-        "protocol_digest": protocol["protocol_digest"],
+        "schema": "org.leo.research.final-holdout-odd-attachment-receipt/v2",
+        "active_attachment_protocol_sha256": "sha256:" + _sha256(active_protocol_path),
+        "active_attachment_protocol_digest": active_protocol["protocol_digest"],
+        "historical_pre_response_protocol_sha256": ("sha256:" + _sha256(historical_protocol_path)),
+        "historical_pre_response_protocol_digest": historical_protocol["protocol_digest"],
         "pre_response_receipt_sha256": "sha256:" + _sha256(receipt_path),
-        "pre_response_receipt_digest": _load_json_file(receipt_path)["receipt_digest"],
+        "pre_response_receipt_digest": pre_response_receipt["receipt_digest"],
         "prediction_ledger_digest": prediction.ledger_digest,
         "attachment_digest": attachment.attachment_digest,
-        "attachment_sha256": "sha256:" + _sha256(output),
+        "attachment_sha256": attachment_sha256,
         "target_count": attachment.target_count,
         "response_status_counts": {
             "measured_nonmissing": attachment.finite_response_count,
@@ -1443,7 +1546,12 @@ def _attach_odd(arguments: argparse.Namespace) -> None:
             "no_support": attachment.no_support_response_count,
             "missing": attachment.missing_response_count,
         },
-        "authorized_odd_chunks_digest": canonical_digest(protocol["authorized_odd_chunks"]),
+        "active_authorized_odd_chunks_digest": canonical_digest(
+            active_protocol["authorized_odd_chunks"]
+        ),
+        "historical_authorized_odd_chunks_digest": canonical_digest(
+            historical_protocol["authorized_odd_chunks"]
+        ),
         "recording_manifest_authority": {
             session: item["recording_manifest_sha256"] for session, item in captures.items()
         },
@@ -1452,10 +1560,25 @@ def _attach_odd(arguments: argparse.Namespace) -> None:
         },
         "odd_adapter_sha256": "sha256:"
         + _sha256(_REPOSITORY_ROOT / "src/leo/analysis/research/doppler_holdout_odd_adapter.py"),
+        "pre_response_artifacts_recomputed_or_mutated": False,
         "prediction_membership_or_values_mutated": False,
     }
     receipt_document["receipt_digest"] = canonical_digest(receipt_document)
-    _write_json(output.with_suffix(".receipt.json"), receipt_document)
+    _validate_attachment_receipt_v2(
+        receipt_document,
+        active_protocol_path=active_protocol_path,
+        active_protocol=active_protocol,
+        historical_protocol_path=historical_protocol_path,
+        historical_protocol=historical_protocol,
+        pre_response_receipt_path=receipt_path,
+        pre_response_receipt=pre_response_receipt,
+        prediction=prediction,
+        attachment_sha256=attachment_sha256,
+        attachment=attachment,
+    )
+    with output.open("x") as handle:
+        handle.write(attachment_json)
+    _write_json_exclusive(output_receipt, receipt_document)
 
 
 def _score_control_entry(
@@ -1619,19 +1742,129 @@ def _association_gate(
     }
 
 
+def _validate_attachment_receipt_v2(
+    receipt: object,
+    *,
+    active_protocol_path: Path,
+    active_protocol: dict[str, Any],
+    historical_protocol_path: Path,
+    historical_protocol: dict[str, Any],
+    pre_response_receipt_path: Path,
+    pre_response_receipt: dict[str, Any],
+    prediction: DopplerHoldoutPredictionLedgerV1,
+    attachment_sha256: str,
+    attachment: OddQinAttachmentLedgerV2,
+) -> None:
+    """Verify the immutable dual-protocol response receipt before scoring."""
+
+    expected_keys = {
+        "schema",
+        "active_attachment_protocol_sha256",
+        "active_attachment_protocol_digest",
+        "historical_pre_response_protocol_sha256",
+        "historical_pre_response_protocol_digest",
+        "pre_response_receipt_sha256",
+        "pre_response_receipt_digest",
+        "prediction_ledger_digest",
+        "attachment_digest",
+        "attachment_sha256",
+        "target_count",
+        "response_status_counts",
+        "active_authorized_odd_chunks_digest",
+        "historical_authorized_odd_chunks_digest",
+        "recording_manifest_authority",
+        "sample_rate_authority_hz",
+        "odd_adapter_sha256",
+        "pre_response_artifacts_recomputed_or_mutated",
+        "prediction_membership_or_values_mutated",
+        "receipt_digest",
+    }
+    capture_authority = {item["session_id"]: item for item in active_protocol["captures"]}
+    attachment_status_closed = (
+        attachment.accuracy_eligible_count
+        + attachment.boundary_response_count
+        + attachment.no_support_response_count
+        + attachment.missing_response_count
+        == TARGET_COUNT
+        and attachment.finite_response_count
+        == attachment.accuracy_eligible_count
+        + attachment.boundary_response_count
+        + attachment.no_support_response_count
+    )
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != expected_keys
+        or receipt.get("schema") != "org.leo.research.final-holdout-odd-attachment-receipt/v2"
+        or receipt.get("receipt_digest")
+        != canonical_digest(
+            {key: value for key, value in receipt.items() if key != "receipt_digest"}
+        )
+        or receipt.get("active_attachment_protocol_sha256")
+        != "sha256:" + _sha256(active_protocol_path)
+        or receipt.get("active_attachment_protocol_digest") != active_protocol["protocol_digest"]
+        or receipt.get("historical_pre_response_protocol_sha256")
+        != "sha256:" + _sha256(historical_protocol_path)
+        or receipt.get("historical_pre_response_protocol_digest")
+        != historical_protocol["protocol_digest"]
+        or receipt.get("pre_response_receipt_sha256")
+        != "sha256:" + _sha256(pre_response_receipt_path)
+        or receipt.get("pre_response_receipt_digest") != pre_response_receipt["receipt_digest"]
+        or attachment.target_count != TARGET_COUNT
+        or attachment.prediction_ledger_digest != prediction.ledger_digest
+        or not attachment_status_closed
+        or receipt.get("prediction_ledger_digest") != prediction.ledger_digest
+        or receipt.get("attachment_digest") != attachment.attachment_digest
+        or receipt.get("attachment_sha256") != attachment_sha256
+        or receipt.get("target_count") != TARGET_COUNT
+        or receipt.get("response_status_counts")
+        != {
+            "measured_nonmissing": attachment.finite_response_count,
+            "accuracy_eligible": attachment.accuracy_eligible_count,
+            "boundary": attachment.boundary_response_count,
+            "no_support": attachment.no_support_response_count,
+            "missing": attachment.missing_response_count,
+        }
+        or receipt.get("active_authorized_odd_chunks_digest")
+        != canonical_digest(active_protocol["authorized_odd_chunks"])
+        or receipt.get("historical_authorized_odd_chunks_digest")
+        != canonical_digest(historical_protocol["authorized_odd_chunks"])
+        or receipt.get("recording_manifest_authority")
+        != {
+            session: item["recording_manifest_sha256"]
+            for session, item in capture_authority.items()
+        }
+        or receipt.get("sample_rate_authority_hz")
+        != {session: item["sample_rate_hz"] for session, item in capture_authority.items()}
+        or receipt.get("odd_adapter_sha256")
+        != "sha256:"
+        + _sha256(_REPOSITORY_ROOT / "src/leo/analysis/research/doppler_holdout_odd_adapter.py")
+        or receipt.get("pre_response_artifacts_recomputed_or_mutated") is not False
+        or receipt.get("prediction_membership_or_values_mutated") is not False
+    ):
+        raise ValueError("odd attachment receipt authority disagrees")
+
+
 def _report(arguments: argparse.Namespace) -> None:
-    protocol_path = Path(arguments.protocol)
+    active_protocol_path = Path(arguments.protocol)
     protocol = load_and_validate_final_protocol(
-        protocol_path,
+        active_protocol_path,
         repository_root=_REPOSITORY_ROOT,
     )
+    historical_protocol_path, historical_protocol = _load_historical_pre_response_protocol(protocol)
     prediction_path = Path(arguments.prediction_ledger)
     bins_path = Path(arguments.association_bins)
     rankings_path = Path(arguments.rankings)
     pre_response_receipt_path = Path(arguments.pre_response_receipt)
+    _validate_pre_response_bridge_paths(
+        protocol,
+        prediction_path=prediction_path,
+        bins_path=bins_path,
+        rankings_path=rankings_path,
+        receipt_path=pre_response_receipt_path,
+    )
     prediction = _load_pre_response_authority(
-        protocol_path=protocol_path,
-        protocol=protocol,
+        protocol_path=historical_protocol_path,
+        protocol=historical_protocol,
         prediction_path=prediction_path,
         bins_path=bins_path,
         rankings_path=rankings_path,
@@ -1641,68 +1874,19 @@ def _report(arguments: argparse.Namespace) -> None:
     attachment = OddQinAttachmentLedgerV2.model_validate(_load_json_file(attachment_path))
     attachment_receipt_path = Path(arguments.attachment_receipt)
     attachment_receipt = _load_json_file(attachment_receipt_path)
-    capture_authority = {item["session_id"]: item for item in protocol["captures"]}
-    expected_attachment_receipt_keys = {
-        "schema",
-        "protocol_sha256",
-        "protocol_digest",
-        "pre_response_receipt_sha256",
-        "pre_response_receipt_digest",
-        "prediction_ledger_digest",
-        "attachment_digest",
-        "attachment_sha256",
-        "target_count",
-        "response_status_counts",
-        "authorized_odd_chunks_digest",
-        "recording_manifest_authority",
-        "sample_rate_authority_hz",
-        "odd_adapter_sha256",
-        "prediction_membership_or_values_mutated",
-        "receipt_digest",
-    }
     pre_response_receipt = _load_json_file(pre_response_receipt_path)
-    if (
-        not isinstance(attachment_receipt, dict)
-        or set(attachment_receipt) != expected_attachment_receipt_keys
-        or attachment_receipt.get("schema")
-        != "org.leo.research.final-holdout-odd-attachment-receipt/v1"
-        or attachment_receipt.get("receipt_digest")
-        != canonical_digest(
-            {key: value for key, value in attachment_receipt.items() if key != "receipt_digest"}
-        )
-        or attachment_receipt.get("protocol_sha256") != "sha256:" + _sha256(protocol_path)
-        or attachment_receipt.get("protocol_digest") != protocol["protocol_digest"]
-        or attachment_receipt.get("pre_response_receipt_sha256")
-        != "sha256:" + _sha256(pre_response_receipt_path)
-        or attachment_receipt.get("pre_response_receipt_digest")
-        != pre_response_receipt["receipt_digest"]
-        or attachment_receipt.get("prediction_ledger_digest") != prediction.ledger_digest
-        or attachment_receipt.get("attachment_digest") != attachment.attachment_digest
-        or attachment_receipt.get("attachment_sha256") != "sha256:" + _sha256(attachment_path)
-        or attachment_receipt.get("target_count") != TARGET_COUNT
-        or attachment_receipt.get("response_status_counts")
-        != {
-            "measured_nonmissing": attachment.finite_response_count,
-            "accuracy_eligible": attachment.accuracy_eligible_count,
-            "boundary": attachment.boundary_response_count,
-            "no_support": attachment.no_support_response_count,
-            "missing": attachment.missing_response_count,
-        }
-        or attachment_receipt.get("authorized_odd_chunks_digest")
-        != canonical_digest(protocol["authorized_odd_chunks"])
-        or attachment_receipt.get("recording_manifest_authority")
-        != {
-            session: item["recording_manifest_sha256"]
-            for session, item in capture_authority.items()
-        }
-        or attachment_receipt.get("sample_rate_authority_hz")
-        != {session: item["sample_rate_hz"] for session, item in capture_authority.items()}
-        or attachment_receipt.get("odd_adapter_sha256")
-        != "sha256:"
-        + _sha256(_REPOSITORY_ROOT / "src/leo/analysis/research/doppler_holdout_odd_adapter.py")
-        or attachment_receipt.get("prediction_membership_or_values_mutated") is not False
-    ):
-        raise ValueError("odd attachment receipt authority disagrees")
+    _validate_attachment_receipt_v2(
+        attachment_receipt,
+        active_protocol_path=active_protocol_path,
+        active_protocol=protocol,
+        historical_protocol_path=historical_protocol_path,
+        historical_protocol=historical_protocol,
+        pre_response_receipt_path=pre_response_receipt_path,
+        pre_response_receipt=pre_response_receipt,
+        prediction=prediction,
+        attachment_sha256="sha256:" + _sha256(attachment_path),
+        attachment=attachment,
+    )
     scores = score_forecasts(prediction, attachment)
     gate = quadratic_promotion_gate(scores)
     denominator_captures: list[dict[str, Any]] = [
@@ -1836,8 +2020,12 @@ def _report(arguments: argparse.Namespace) -> None:
             )
         },
         "provenance": {
-            "protocol_sha256": "sha256:" + _sha256(protocol_path),
-            "protocol_digest": protocol["protocol_digest"],
+            "active_attachment_protocol_sha256": "sha256:" + _sha256(active_protocol_path),
+            "active_attachment_protocol_digest": protocol["protocol_digest"],
+            "historical_pre_response_protocol_sha256": (
+                "sha256:" + _sha256(historical_protocol_path)
+            ),
+            "historical_pre_response_protocol_digest": historical_protocol["protocol_digest"],
             "pre_response_receipt_sha256": "sha256:" + _sha256(pre_response_receipt_path),
             "pre_response_receipt_digest": pre_response_receipt["receipt_digest"],
             "attachment_receipt_sha256": "sha256:" + _sha256(attachment_receipt_path),
@@ -1870,7 +2058,7 @@ def _report(arguments: argparse.Namespace) -> None:
         figure_dir=Path(arguments.figure_dir),
         markdown_path=Path(arguments.markdown),
         score_path=score_path,
-        protocol_path=protocol_path,
+        protocol_path=active_protocol_path,
     )
 
 
@@ -2077,6 +2265,11 @@ def _jsonable(value: object) -> object:
 
 def _write_json(path: Path, document: object) -> None:
     path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
+
+
+def _write_json_exclusive(path: Path, document: object) -> None:
+    with path.open("x") as handle:
+        handle.write(json.dumps(document, indent=2, sort_keys=True) + "\n")
 
 
 def _write_predict_failure_status(

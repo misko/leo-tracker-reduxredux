@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from leo.analysis.research import final_holdout_protocol as holdout_protocol
 from leo.analysis.research.doppler_holdout_odd_adapter import (
     AuthorizedOddChunk,
     OddQinFrameReadRequest,
@@ -221,6 +222,15 @@ def test_invalid_pre_response_receipt_fails_before_storage_open(
         },
     )
     monkeypatch.setattr(runner, "_load_manifest", lambda *_args, **_kwargs: object())
+    monkeypatch.setattr(
+        runner,
+        "_load_historical_pre_response_protocol",
+        lambda *_args, **_kwargs: (
+            protocol_path,
+            {"association": {}, "selector_v2": {"path": "selector.json"}},
+        ),
+    )
+    monkeypatch.setattr(runner, "_validate_pre_response_bridge_paths", lambda *_a, **_k: None)
 
     def forbidden_pin(_path: Path) -> object:
         raise AssertionError("storage must not open before receipt validation")
@@ -238,6 +248,317 @@ def test_invalid_pre_response_receipt_fails_before_storage_open(
 
     with pytest.raises(ValueError, match="receipt schema"):
         runner._attach_odd(arguments)
+
+
+def test_exact_chunk_preflight_fails_before_storage_construction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    protocol_path = tmp_path / "v3.json"
+    protocol_path.write_text("{}\n")
+    historical_path = tmp_path / "v2.json"
+    historical_path.write_text("{}\n")
+    output = tmp_path / "attachment.json"
+    chunk = _chunk()
+    active = {
+        "odd_response": {
+            "residual_half_width_hz": 2_000.0,
+            "minimum_exact_coherence": 0.02,
+            "minimum_coherence_margin": 0.0,
+        },
+        "captures": [
+            {
+                "session_id": "capture-a",
+                "recording_manifest_sha256": DIGEST,
+                "sample_rate_hz": 2_500_000,
+            }
+        ],
+        "authorized_odd_chunks": [
+            {
+                "session_id": chunk.session_id,
+                "stream_id": chunk.stream_id,
+                "relative_path": chunk.relative_path,
+                "sample_start": chunk.sample_start,
+                "sample_count": chunk.sample_count,
+                "compressed_sha256": chunk.compressed_sha256,
+            }
+        ],
+    }
+    historical = {"selector_v2": {"path": "selector.json"}}
+    monkeypatch.setattr(runner, "load_and_validate_final_protocol", lambda *_a, **_k: active)
+    monkeypatch.setattr(
+        runner,
+        "_load_historical_pre_response_protocol",
+        lambda *_a, **_k: (historical_path, historical),
+    )
+    monkeypatch.setattr(runner, "_load_manifest", lambda *_a, **_k: object())
+    monkeypatch.setattr(runner, "_validate_pre_response_bridge_paths", lambda *_a, **_k: None)
+    prediction = _synthetic_prediction()
+    monkeypatch.setattr(runner, "_load_pre_response_authority", lambda **_k: prediction)
+    monkeypatch.setattr(
+        runner,
+        "build_odd_qin_target_authorities",
+        lambda *_a, **_k: (_authority(),),
+    )
+    monkeypatch.setattr(runner, "TARGET_COUNT", 1)
+    monkeypatch.setattr(
+        runner,
+        "preflight_exact_authorized_odd_chunks",
+        lambda **_k: (_ for _ in ()).throw(ValueError("unused chunk")),
+    )
+
+    def forbidden_storage(_path: Path) -> object:
+        raise AssertionError("storage must not be constructed before chunk preflight")
+
+    monkeypatch.setattr(runner, "PinnedLocalRoot", forbidden_storage)
+    arguments = Namespace(
+        protocol=str(protocol_path),
+        prediction_ledger=str(tmp_path / "prediction.json"),
+        association_bins=str(tmp_path / "bins.json"),
+        rankings=str(tmp_path / "rankings.json"),
+        pre_response_receipt=str(tmp_path / "pre-response-receipt.json"),
+        bulk_root=str(tmp_path / "bulk"),
+        output=str(output),
+    )
+
+    with pytest.raises(ValueError, match="unused chunk"):
+        runner._attach_odd(arguments)
+
+    assert not output.exists()
+    assert not output.with_suffix(".receipt.json").exists()
+
+
+def test_preexisting_attachment_output_is_untouched_before_bridge_or_storage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    protocol_path = tmp_path / "v3.json"
+    protocol_path.write_text("{}\n")
+    output = tmp_path / "attachment.json"
+    output.write_bytes(b"preexisting attachment\x00")
+    before = output.read_bytes()
+    monkeypatch.setattr(runner, "load_and_validate_final_protocol", lambda *_a, **_k: {})
+
+    def forbidden(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("bridge/storage must not run for a preexisting output")
+
+    monkeypatch.setattr(runner, "_load_historical_pre_response_protocol", forbidden)
+    monkeypatch.setattr(runner, "PinnedLocalRoot", forbidden)
+    arguments = Namespace(protocol=str(protocol_path), output=str(output))
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        runner._attach_odd(arguments)
+
+    assert output.read_bytes() == before
+    assert not output.with_suffix(".receipt.json").exists()
+
+
+def test_v3_predict_is_forbidden_before_output_or_candidate_work(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    protocol_path = tmp_path / "v3.json"
+    protocol_path.write_text("{}\n")
+    output = tmp_path / "forbidden-predict"
+    monkeypatch.setattr(
+        runner,
+        "load_and_validate_final_protocol",
+        lambda *_a, **_k: {"schema": holdout_protocol.SCHEMA_V3},
+    )
+
+    with pytest.raises(ValueError, match="attachment/report-only"):
+        runner._predict(Namespace(protocol=str(protocol_path), output_dir=str(output)))
+
+    assert not output.exists()
+
+
+def test_historical_pre_response_bridge_loads_exact_retired_v2() -> None:
+    binding = holdout_protocol._expected_attachment_correction_v3()["historical_v2_protocol"]
+    path, document = runner._load_historical_pre_response_protocol(
+        {"attachment_correction": {"historical_v2_protocol": binding}}
+    )
+
+    assert path == runner._REPOSITORY_ROOT / holdout_protocol.V2_PROTOCOL_PATH
+    assert document["protocol_digest"] == holdout_protocol.V2_PROTOCOL_DIGEST
+
+
+def test_pre_response_bridge_requires_exact_frozen_artifact_paths(tmp_path: Path) -> None:
+    correction = holdout_protocol._expected_attachment_correction_v3()
+    active = {"attachment_correction": correction}
+    bridge = correction["pre_response_bridge"]
+    exact = {
+        "prediction_path": runner._REPOSITORY_ROOT / bridge["prediction_ledger_path"],
+        "bins_path": runner._REPOSITORY_ROOT / bridge["association_bins_path"],
+        "rankings_path": runner._REPOSITORY_ROOT / bridge["rankings_raw_path"],
+        "receipt_path": runner._REPOSITORY_ROOT / bridge["pre_response_receipt_path"],
+    }
+    runner._validate_pre_response_bridge_paths(active, **exact)
+
+    with pytest.raises(ValueError, match="prediction_ledger_path"):
+        runner._validate_pre_response_bridge_paths(
+            active,
+            **{**exact, "prediction_path": tmp_path / "byte-identical-copy.json"},
+        )
+
+
+@pytest.mark.parametrize(
+    "poison",
+    (
+        "active_protocol",
+        "historical_protocol",
+        "pre_response_receipt",
+        "prediction",
+        "attachment",
+        "status_counts",
+        "active_chunks",
+        "historical_chunks",
+        "recording_manifest",
+        "sample_rate",
+        "adapter",
+        "recomputation",
+        "membership",
+        "attachment_target_count",
+        "attachment_prediction",
+        "attachment_accounting",
+    ),
+)
+def test_attachment_receipt_v2_rejects_resigned_authority_poison(
+    poison: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    active_path = tmp_path / "v3.json"
+    historical_path = tmp_path / "v2.json"
+    pre_response_path = tmp_path / "pre-response-receipt.json"
+    attachment_path = tmp_path / "attachment.json"
+    active_path.write_text("active-v3\n")
+    historical_path.write_text("historical-v2\n")
+    pre_response_path.write_text("pre-response\n")
+    attachment_path.write_text("attachment\n")
+    active = {
+        "protocol_digest": DIGEST,
+        "authorized_odd_chunks": ["active-chunk"],
+        "captures": [
+            {
+                "session_id": "capture-a",
+                "recording_manifest_sha256": DIGEST,
+                "sample_rate_hz": 2_500_000,
+            }
+        ],
+    }
+    historical = {
+        "protocol_digest": "sha256:" + "2" * 64,
+        "authorized_odd_chunks": ["historical-chunk"],
+    }
+    pre_response = {"receipt_digest": "sha256:" + "3" * 64}
+    prediction = _synthetic_prediction()
+    attachment = SimpleNamespace(
+        attachment_digest="sha256:" + "4" * 64,
+        target_count=1,
+        prediction_ledger_digest=prediction.ledger_digest,
+        finite_response_count=0,
+        accuracy_eligible_count=0,
+        boundary_response_count=0,
+        no_support_response_count=0,
+        missing_response_count=1,
+    )
+    monkeypatch.setattr(runner, "TARGET_COUNT", 1)
+    receipt = {
+        "schema": "org.leo.research.final-holdout-odd-attachment-receipt/v2",
+        "active_attachment_protocol_sha256": "sha256:" + runner._sha256(active_path),
+        "active_attachment_protocol_digest": active["protocol_digest"],
+        "historical_pre_response_protocol_sha256": ("sha256:" + runner._sha256(historical_path)),
+        "historical_pre_response_protocol_digest": historical["protocol_digest"],
+        "pre_response_receipt_sha256": "sha256:" + runner._sha256(pre_response_path),
+        "pre_response_receipt_digest": pre_response["receipt_digest"],
+        "prediction_ledger_digest": prediction.ledger_digest,
+        "attachment_digest": attachment.attachment_digest,
+        "attachment_sha256": "sha256:" + runner._sha256(attachment_path),
+        "target_count": 1,
+        "response_status_counts": {
+            "measured_nonmissing": 0,
+            "accuracy_eligible": 0,
+            "boundary": 0,
+            "no_support": 0,
+            "missing": 1,
+        },
+        "active_authorized_odd_chunks_digest": canonical_digest(active["authorized_odd_chunks"]),
+        "historical_authorized_odd_chunks_digest": canonical_digest(
+            historical["authorized_odd_chunks"]
+        ),
+        "recording_manifest_authority": {"capture-a": DIGEST},
+        "sample_rate_authority_hz": {"capture-a": 2_500_000},
+        "odd_adapter_sha256": "sha256:"
+        + runner._sha256(
+            runner._REPOSITORY_ROOT / "src/leo/analysis/research/doppler_holdout_odd_adapter.py"
+        ),
+        "pre_response_artifacts_recomputed_or_mutated": False,
+        "prediction_membership_or_values_mutated": False,
+    }
+    receipt["receipt_digest"] = canonical_digest(receipt)
+    runner._validate_attachment_receipt_v2(
+        receipt,
+        active_protocol_path=active_path,
+        active_protocol=active,
+        historical_protocol_path=historical_path,
+        historical_protocol=historical,
+        pre_response_receipt_path=pre_response_path,
+        pre_response_receipt=pre_response,
+        prediction=prediction,
+        attachment_sha256="sha256:" + runner._sha256(attachment_path),
+        attachment=attachment,
+    )
+
+    poisoned = json.loads(json.dumps(receipt))
+    if poison == "active_protocol":
+        poisoned["active_attachment_protocol_digest"] = "sha256:" + "0" * 64
+    elif poison == "historical_protocol":
+        poisoned["historical_pre_response_protocol_sha256"] = "sha256:" + "0" * 64
+    elif poison == "pre_response_receipt":
+        poisoned["pre_response_receipt_digest"] = "sha256:" + "0" * 64
+    elif poison == "prediction":
+        poisoned["prediction_ledger_digest"] = "sha256:" + "0" * 64
+    elif poison == "attachment":
+        poisoned["attachment_sha256"] = "sha256:" + "0" * 64
+    elif poison == "status_counts":
+        poisoned["response_status_counts"]["missing"] = 0
+    elif poison == "active_chunks":
+        poisoned["active_authorized_odd_chunks_digest"] = "sha256:" + "0" * 64
+    elif poison == "historical_chunks":
+        poisoned["historical_authorized_odd_chunks_digest"] = "sha256:" + "0" * 64
+    elif poison == "recording_manifest":
+        poisoned["recording_manifest_authority"]["capture-a"] = "sha256:" + "0" * 64
+    elif poison == "sample_rate":
+        poisoned["sample_rate_authority_hz"]["capture-a"] = 1
+    elif poison == "adapter":
+        poisoned["odd_adapter_sha256"] = "sha256:" + "0" * 64
+    elif poison == "recomputation":
+        poisoned["pre_response_artifacts_recomputed_or_mutated"] = True
+    elif poison == "membership":
+        poisoned["prediction_membership_or_values_mutated"] = True
+    elif poison == "attachment_target_count":
+        attachment.target_count = 0
+    elif poison == "attachment_prediction":
+        attachment.prediction_ledger_digest = "sha256:" + "0" * 64
+    else:
+        attachment.missing_response_count = 0
+    poisoned["receipt_digest"] = canonical_digest(
+        {key: value for key, value in poisoned.items() if key != "receipt_digest"}
+    )
+
+    with pytest.raises(ValueError, match="attachment receipt authority"):
+        runner._validate_attachment_receipt_v2(
+            poisoned,
+            active_protocol_path=active_path,
+            active_protocol=active,
+            historical_protocol_path=historical_path,
+            historical_protocol=historical,
+            pre_response_receipt_path=pre_response_path,
+            pre_response_receipt=pre_response,
+            prediction=prediction,
+            attachment_sha256="sha256:" + runner._sha256(attachment_path),
+            attachment=attachment,
+        )
 
 
 @pytest.mark.parametrize(
