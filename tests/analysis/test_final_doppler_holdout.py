@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 import math
-from dataclasses import replace
+from dataclasses import asdict, replace
+from hashlib import sha256
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -34,6 +37,7 @@ from leo.analysis.research.final_doppler_holdout import (
     freeze_within_track_permutation_controls,
     frozen_wrong_time_offsets_s,
     quadratic_promotion_gate,
+    rounded_integer_median,
     score_forecasts,
     score_frozen_candidate_ranking,
     validate_frozen_candidate_ranking,
@@ -43,6 +47,22 @@ from leo.contracts.digests import canonical_digest
 DIGEST = "sha256:" + "1" * 64
 OTHER_DIGEST = "sha256:" + "2" * 64
 RATE_HZ = 1_000
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_integer_median_preserves_nanosecond_endpoints_and_ties_to_even() -> None:
+    base = 1_800_000_000_000_000_000
+    assert rounded_integer_median((base + 9,)) == base + 9
+    assert rounded_integer_median((base - 7, base, base + 11)) == base
+    assert rounded_integer_median((base, base + 1)) == base
+    assert rounded_integer_median((base + 1, base + 2)) == base + 2
+    assert rounded_integer_median((base, base + 2)) == base + 1
+    assert rounded_integer_median((base, base + 4)) == base + 2
+    assert rounded_integer_median((-2, -1)) == -2
+    assert rounded_integer_median((-1, 0)) == 0
+    assert rounded_integer_median((1_787_634_644_960_270_826,)) == (1_787_634_644_960_270_826)
+    with pytest.raises(ValueError, match="at least one"):
+        rounded_integer_median(())
 
 
 def _forecast(
@@ -215,6 +235,140 @@ def test_split_is_frozen_from_all_targets_before_prediction_filtering() -> None:
     assert sum(item.split == "training" for item in inventory.bins) == 6
     assert sum(item.split == "evaluation" for item in inventory.bins) == 6
     assert inventory.evaluable
+
+
+def test_real_final_bin_center_stays_on_exact_target_span_endpoint() -> None:
+    endpoint_utc_ns = 1_787_634_644_960_270_826
+    ledger = _ledger({"capture-a": 10})
+    last_reference_sample = ledger.rows[-1].target.reference_sample
+    origin_utc_ns = endpoint_utc_ns - round(last_reference_sample * 1_000_000_000 / RATE_HZ)
+
+    inventory = freeze_association_bins(
+        ledger,
+        first_sample_utc_ns={"capture-a": origin_utc_ns},
+        sample_rate_hz={"capture-a": RATE_HZ},
+    )[0]
+
+    assert inventory.bins[-1].target_count == 1
+    assert inventory.bins[-1].center_utc_ns == endpoint_utc_ns
+    assert inventory.bins[-1].center_utc_ns <= endpoint_utc_ns
+
+
+def test_failed_attempt_replay_changes_only_utc_centers_and_closes_span() -> None:
+    failed_dir = (
+        REPOSITORY_ROOT / "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1"
+    )
+    prediction_path = failed_dir / "prediction-ledger.json"
+    prediction_bytes = prediction_path.read_bytes()
+    assert sha256(prediction_bytes).hexdigest() == (
+        "7aee33ebb11b12bc2d15d228b556c5f92fd0c80c7bad76abfac6a6ba95be8978"
+    )
+    prediction = DopplerHoldoutPredictionLedgerV1.model_validate_json(prediction_bytes)
+    assert prediction.ledger_digest == (
+        "sha256:b6a1db7f3785eac1dd40fa6c75a90e4ced6e36730a0adedd3e7aeeb20feeeca8"
+    )
+    old_document = json.loads((failed_dir / "association-bin-inventory.json").read_text())
+    old_by_session = {item["session_id"]: item for item in old_document["inventories"]}
+    protocol_document = json.loads(
+        (
+            REPOSITORY_ROOT / "config/analysis/final-doppler-holdout-satellite-protocol-v1.json"
+        ).read_text()
+    )
+    capture_by_session = {item["session_id"]: item for item in protocol_document["captures"]}
+    corrected = freeze_association_bins(
+        prediction,
+        first_sample_utc_ns={
+            session_id: int(capture["first_sample_estimate_utc_ns"])
+            for session_id, capture in capture_by_session.items()
+        },
+        sample_rate_hz={
+            session_id: int(capture["sample_rate_hz"])
+            for session_id, capture in capture_by_session.items()
+        },
+    )
+    rows_by_session = {
+        session_id: tuple(row for row in prediction.rows if row.target.session_id == session_id)
+        for session_id in capture_by_session
+    }
+    center_deltas_ns: list[int] = []
+    for inventory in corrected:
+        capture = capture_by_session[inventory.session_id]
+        origin = int(capture["first_sample_estimate_utc_ns"])
+        rate = int(capture["sample_rate_hz"])
+        target_utc_by_frame = {
+            row.target.frame_start_sample: origin
+            + round(row.target.reference_sample * 1_000_000_000 / rate)
+            for row in rows_by_session[inventory.session_id]
+        }
+        full_span = (min(target_utc_by_frame.values()), max(target_utc_by_frame.values()))
+        old_bins = old_by_session[inventory.session_id]["bins"]
+        assert len(old_bins) == len(inventory.bins)
+        for old, new in zip(old_bins, inventory.bins, strict=True):
+            center_deltas_ns.append(new.center_utc_ns - int(old["center_utc_ns"]))
+            assert (
+                old["bin_id"],
+                tuple(old["target_frame_start_samples"]),
+                old["target_count"],
+                old["primary_cfo_hz"],
+                old["baseline_cfo_hz"],
+                old["split"],
+            ) == (
+                new.bin_id,
+                new.target_frame_start_samples,
+                new.target_count,
+                new.primary_cfo_hz,
+                new.baseline_cfo_hz,
+                new.split,
+            )
+            member_times = tuple(
+                target_utc_by_frame[frame] for frame in new.target_frame_start_samples
+            )
+            assert min(member_times) <= new.center_utc_ns <= max(member_times)
+            assert full_span[0] <= new.center_utc_ns <= full_span[1]
+    assert prediction_path.read_bytes() == prediction_bytes
+    assert len(center_deltas_ns) == 307
+    assert sum(delta != 0 for delta in center_deltas_ns) == 307
+    assert min(center_deltas_ns) == -197
+    assert max(center_deltas_ns) == 173
+    assert max(abs(delta) for delta in center_deltas_ns) == 197
+    final = corrected[-1].bins[-1]
+    assert final.center_utc_ns == 1_787_634_644_960_270_826
+    assert center_deltas_ns[-1] == -22
+    corrected_document = {
+        "schema": "org.leo.research.final-holdout-association-bins/v1",
+        "prediction_ledger_digest": prediction.ledger_digest,
+        "response_accessed": False,
+        "inventories": json.loads(json.dumps([asdict(item) for item in corrected])),
+    }
+    corrected_document["bins_digest"] = canonical_digest(corrected_document)
+    assert corrected_document["bins_digest"] == (
+        "sha256:a01e53e917ea33295273778f23412629b83c78ee63ef4c8eafcd761e8f2d5c53"
+    )
+    corrected_bytes = (json.dumps(corrected_document, indent=2, sort_keys=True) + "\n").encode()
+    assert sha256(corrected_bytes).hexdigest() == (
+        "81c909befea20f8291e5e6606e9fe48c8889e051283a4a8051c29c1ab05d7d1e"
+    )
+
+
+def test_low_magnitude_integer_center_preserves_previous_float_result_and_split() -> None:
+    ledger = _ledger({"capture-a": 15})
+    inventory = freeze_association_bins(
+        ledger,
+        first_sample_utc_ns={"capture-a": 1_000_000_000},
+        sample_rate_hz={"capture-a": RATE_HZ},
+    )[0]
+    target_utc = {
+        row.target.frame_start_sample: 1_000_000_000
+        + round(row.target.reference_sample * 1_000_000_000 / RATE_HZ)
+        for row in ledger.rows
+    }
+    for item in inventory.bins:
+        old_float_center = round(
+            float(np.median([target_utc[frame] for frame in item.target_frame_start_samples]))
+        )
+        assert item.center_utc_ns == old_float_center
+    assert sum(item.split == "training" for item in inventory.bins) == 9
+    assert sum(item.split == "evaluation" for item in inventory.bins) == 6
 
 
 def test_wrong_time_control_family_is_exact_and_excludes_positive_test() -> None:

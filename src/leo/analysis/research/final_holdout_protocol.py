@@ -21,7 +21,49 @@ from leo.analysis.research.doppler_holdout_pre_response import (
 )
 from leo.contracts.digests import canonical_digest
 
-SCHEMA = "org.leo.research.final-doppler-holdout-satellite/v1"
+SCHEMA_V1 = "org.leo.research.final-doppler-holdout-satellite/v1"
+SCHEMA_V2 = "org.leo.research.final-doppler-holdout-satellite/v2"
+SCHEMA = SCHEMA_V1
+BASE_PROTOCOL_PATH = "config/analysis/final-doppler-holdout-satellite-protocol-v1.json"
+BASE_PROTOCOL_SHA256 = "sha256:8e5a62993fe2e25496cb838d3ec866fe8ccf6fbca1f6ca122e312fd32c6af58b"
+BASE_PROTOCOL_DIGEST = "sha256:df7e1f41e2e339af3d46773b4172a97304f518573fc55ddc4a2746a00f883a31"
+BASE_PROTOCOL_COMMIT = "19d9da26939750d5e07898d94ed860bbe2ba0924"
+FAILURE_EVIDENCE_COMMIT = "94e9c8b6d765e01da228705c1c167eb2398cab30"
+FAILURE_EVIDENCE_TREE = "e199a7b5b042aa44f896c707188f192ce89583b6"
+FAILURE_AMENDMENT_PATH = (
+    "config/analysis/final-doppler-holdout-satellite-protocol-v1-amendment-001.json"
+)
+FAILURE_AMENDMENT_SHA256 = "sha256:3df8649c0b58e0286877370c965d28d7456aa216606c78093ea35c3ffae88bca"
+FAILURE_AMENDMENT_DIGEST = "sha256:03b273bb806c98c4ee7e6e89907af0ba7c58c2650e9698a84878ac1ddca494e2"
+FAILURE_RECEIPT_PATH = (
+    "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/"
+    "attempt-1-failure-receipt.json"
+)
+FAILURE_RECEIPT_SHA256 = "sha256:996b9a428847beb582d33c23e85ec3e7813ec56c640441a300ef20a85c2035ed"
+FAILURE_RECEIPT_DIGEST = "sha256:d16f2af3d1e463eb1d5814d36927759037e0bc7d68442704411f3bfa8ec1b2a3"
+FAILURE_COMBINED_OUTPUT_PATH = (
+    "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/attempt-1-command-output.log"
+)
+FAILURE_COMBINED_OUTPUT_SHA256 = (
+    "sha256:73efe2478a83ed2e42e97884a7daa6def98782cc2ed12d0b0b397b83f40db408"
+)
+ATTEMPT_1_PREDICTION_PATH = (
+    "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/prediction-ledger.json"
+)
+ATTEMPT_1_PREDICTION_SHA256 = (
+    "sha256:7aee33ebb11b12bc2d15d228b556c5f92fd0c80c7bad76abfac6a6ba95be8978"
+)
+ATTEMPT_1_PREDICTION_DIGEST = (
+    "sha256:b6a1db7f3785eac1dd40fa6c75a90e4ced6e36730a0adedd3e7aeeb20feeeca8"
+)
+ATTEMPT_1_BINS_PATH = (
+    "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/"
+    "association-bin-inventory.json"
+)
+ATTEMPT_1_BINS_SHA256 = "sha256:cc7e64e22eba73e5f8495ba375ecfbe96bbf842fdcde17b7f5c1fdd1ae16d26a"
+ATTEMPT_1_BINS_DIGEST = "sha256:ce4763244430d0a46eb1184d9c573b3fab0e6cc529c1287a7d0ea098e481857e"
+CORRECTED_BINS_SHA256 = "sha256:81c909befea20f8291e5e6606e9fe48c8889e051283a4a8051c29c1ab05d7d1e"
+CORRECTED_BINS_DIGEST = "sha256:a01e53e917ea33295273778f23412629b83c78ee63ef4c8eafcd761e8f2d5c53"
 SELECTOR_PATH = "reports/figures/2026_08_26_doppler_holdout_selector_v2/derived-manifest-v2.json"
 SELECTOR_FILE_SHA256 = "sha256:aa1116aeb69181ec631be20500d35449457db830dccb454245a36f646763556a"
 SELECTOR_SEMANTIC_DIGEST = "sha256:99a914335caa8501745325c265b67b68c22317fa399e6c6a03e27fe64400627b"
@@ -344,13 +386,48 @@ _TOP_LEVEL_KEYS = {
     "implementation_sha256",
     "protocol_digest",
 }
+_TOP_LEVEL_KEYS_V2 = _TOP_LEVEL_KEYS | {"supersession"}
+_SCIENTIFIC_KEYS = {
+    "dataset_policy",
+    "selector_v2",
+    "upstream_conditioning",
+    "captures",
+    "site",
+    "tle_authority",
+    "authorized_odd_chunks",
+    "strict_past_estimators",
+    "odd_response",
+    "scoring",
+    "association",
+    "corrected_fixed500",
+    "calibrated_intervals",
+}
 
 
-def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> dict[str, Any]:
-    """Load one protocol and independently verify every execution binding."""
+def load_and_validate_historical_final_protocol_v1(
+    path: Path,
+    *,
+    repository_root: Path,
+) -> dict[str, Any]:
+    """Verify retired v1 against its historical implementation, never execute it."""
+
+    return _load_and_validate_protocol_v1(
+        path,
+        repository_root=repository_root,
+        require_current_implementation=False,
+    )
+
+
+def _load_and_validate_protocol_v1(
+    path: Path,
+    *,
+    repository_root: Path,
+    require_current_implementation: bool,
+) -> dict[str, Any]:
+    """Load v1 with either historical or now-retired execution semantics."""
 
     document = _load_json_without_duplicate_keys(path)
-    if not isinstance(document, dict) or document.get("schema") != SCHEMA:
+    if not isinstance(document, dict) or document.get("schema") != SCHEMA_V1:
         raise ValueError("unsupported final holdout protocol")
     _require_exact_keys(document, _TOP_LEVEL_KEYS, "protocol")
     if document.get("status") != "frozen_before_propagation_ranking_and_odd_access":
@@ -386,6 +463,7 @@ def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> di
         repository_root,
         commit=str(chronology["implementation_commit"]),
         expected_tree=str(chronology["implementation_tree"]),
+        require_current_source=require_current_implementation,
     )
 
     policy = _mapping(document.get("dataset_policy"), "dataset_policy")
@@ -486,7 +564,16 @@ def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> di
     if set(implementation) != _IMPLEMENTATION_KEYS:
         raise ValueError("implementation binding key set drifted")
     for relative, expected in implementation.items():
-        if not isinstance(expected, str) or _sha256_tag(repository_root / relative) != expected:
+        observed = (
+            _sha256_tag(repository_root / relative)
+            if require_current_implementation
+            else _sha256_tag_at_commit(
+                repository_root,
+                commit=str(chronology["implementation_commit"]),
+                relative_path=relative,
+            )
+        )
+        if not isinstance(expected, str) or observed != expected:
             raise ValueError(f"implementation digest drifted: {relative}")
     if implementation["src/leo/analysis/qam/pilot.py"] != (
         "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6"
@@ -498,6 +585,228 @@ def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> di
     ):
         raise ValueError("final protocol canonical digest disagrees")
     return cast(dict[str, Any], document)
+
+
+def load_and_validate_final_protocol(path: Path, *, repository_root: Path) -> dict[str, Any]:
+    """Load only the active v2 execution authority; v1 is audit-only."""
+
+    document = _load_json_without_duplicate_keys(path)
+    if not isinstance(document, dict):
+        raise ValueError("unsupported final holdout protocol")
+    if document.get("schema") == SCHEMA_V1:
+        _load_and_validate_protocol_v1(
+            path,
+            repository_root=repository_root,
+            require_current_implementation=False,
+        )
+        raise ValueError("final holdout protocol v1 is retired after failed attempt 1")
+    if document.get("schema") != SCHEMA_V2:
+        raise ValueError("unsupported final holdout protocol")
+    _require_exact_keys(document, _TOP_LEVEL_KEYS_V2, "protocol v2")
+    if document.get("status") != "frozen_after_attempt_1_failure_before_corrected_rerun":
+        raise ValueError("final holdout v2 chronology is not frozen")
+    chronology = _mapping(document.get("chronology"), "chronology")
+    _require_exact_keys(
+        chronology,
+        {
+            "implementation_commit",
+            "implementation_tree",
+            "working_tree_clean_at_code_commit",
+            "base_v1_frozen_before_attempt_1",
+            "attempt_1_candidate_propagation_or_ranking_occurred",
+            "attempt_1_candidate_results_printed_or_inspected",
+            "odd_iq_opened_before_v2_freeze",
+            "odd_responses_opened_before_v2_freeze",
+            "correction_chosen_without_candidate_results_or_odd_responses",
+            "corrected_candidate_propagation_or_ranking_before_v2_freeze",
+        },
+        "chronology v2",
+    )
+    expected_flags = {
+        "working_tree_clean_at_code_commit": True,
+        "base_v1_frozen_before_attempt_1": True,
+        "attempt_1_candidate_propagation_or_ranking_occurred": True,
+        "attempt_1_candidate_results_printed_or_inspected": False,
+        "odd_iq_opened_before_v2_freeze": False,
+        "odd_responses_opened_before_v2_freeze": False,
+        "correction_chosen_without_candidate_results_or_odd_responses": True,
+        "corrected_candidate_propagation_or_ranking_before_v2_freeze": False,
+    }
+    if any(chronology.get(key) is not value for key, value in expected_flags.items()):
+        raise ValueError("final holdout v2 chronology flags drifted")
+    commit = str(chronology.get("implementation_commit"))
+    tree = str(chronology.get("implementation_tree"))
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("implementation commit binding is malformed")
+    _validate_git_implementation_commit(
+        repository_root,
+        commit=commit,
+        expected_tree=tree,
+        require_current_source=True,
+    )
+
+    base_path = repository_root / BASE_PROTOCOL_PATH
+    if _sha256_tag(base_path) != BASE_PROTOCOL_SHA256:
+        raise ValueError("retired v1 protocol bytes drifted")
+    base = load_and_validate_historical_final_protocol_v1(
+        base_path,
+        repository_root=repository_root,
+    )
+    if base["protocol_digest"] != BASE_PROTOCOL_DIGEST:
+        raise ValueError("retired v1 protocol digest drifted")
+    for key in _SCIENTIFIC_KEYS:
+        if document.get(key) != base.get(key):
+            raise ValueError(f"v2 scientific field differs from frozen v1: {key}")
+    _validate_supersession_v2(document.get("supersession"), repository_root=repository_root)
+
+    implementation = _mapping(document.get("implementation_sha256"), "implementation_sha256")
+    if set(implementation) != _IMPLEMENTATION_KEYS:
+        raise ValueError("implementation binding key set drifted")
+    for relative, expected in implementation.items():
+        if not isinstance(expected, str) or _sha256_tag(repository_root / relative) != expected:
+            raise ValueError(f"implementation digest drifted: {relative}")
+    if implementation["src/leo/analysis/qam/pilot.py"] != (
+        "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6"
+    ):
+        raise ValueError("historical pilot implementation drifted")
+    if document.get("protocol_digest") != canonical_digest(
+        {key: value for key, value in document.items() if key != "protocol_digest"}
+    ):
+        raise ValueError("final protocol canonical digest disagrees")
+    return cast(dict[str, Any], document)
+
+
+def _validate_supersession_v2(value: object, *, repository_root: Path) -> None:
+    supersession = _mapping(value, "supersession")
+    expected = {
+        "base_protocol": {
+            "path": BASE_PROTOCOL_PATH,
+            "sha256": BASE_PROTOCOL_SHA256,
+            "semantic_digest": BASE_PROTOCOL_DIGEST,
+            "commit": BASE_PROTOCOL_COMMIT,
+        },
+        "failure_evidence": {
+            "commit": FAILURE_EVIDENCE_COMMIT,
+            "tree": FAILURE_EVIDENCE_TREE,
+            "amendment_path": FAILURE_AMENDMENT_PATH,
+            "amendment_sha256": FAILURE_AMENDMENT_SHA256,
+            "amendment_digest": FAILURE_AMENDMENT_DIGEST,
+            "receipt_path": FAILURE_RECEIPT_PATH,
+            "receipt_sha256": FAILURE_RECEIPT_SHA256,
+            "receipt_digest": FAILURE_RECEIPT_DIGEST,
+        },
+        "attempt_1": {
+            "status": "failed_closed",
+            "candidate_propagation_function_invocations": 377,
+            "frozen_ranking_helper_invocations": 564,
+            "candidate_results_printed": False,
+            "candidate_results_inspected": False,
+            "candidate_results_persisted": False,
+            "process_memory_inspected": False,
+            "odd_iq_accessed": False,
+            "odd_responses_accessed": False,
+            "shared_rate_diagnostic_executed": False,
+            "pre_response_rankings_persisted": False,
+            "pre_response_receipt_persisted": False,
+            "combined_command_output_path": FAILURE_COMBINED_OUTPUT_PATH,
+            "combined_command_output_sha256": FAILURE_COMBINED_OUTPUT_SHA256,
+            "stdout_stderr_separation_preserved": False,
+            "separate_stdout_byte_size": None,
+            "separate_stderr_byte_size": None,
+            "prediction_ledger_path": ATTEMPT_1_PREDICTION_PATH,
+            "prediction_ledger_sha256": ATTEMPT_1_PREDICTION_SHA256,
+            "prediction_ledger_digest": ATTEMPT_1_PREDICTION_DIGEST,
+            "association_bins_path": ATTEMPT_1_BINS_PATH,
+            "association_bins_sha256": ATTEMPT_1_BINS_SHA256,
+            "association_bins_digest": ATTEMPT_1_BINS_DIGEST,
+        },
+        "response_free_correction": {
+            "integer_utc_median_rule": (
+                "sort integer nanoseconds; odd selects the middle value; even averages "
+                "the two middle integers with round-to-nearest/ties-to-even using "
+                "quotient-and-remainder arithmetic"
+            ),
+            "attempt_1_bin_center_count": 307,
+            "corrected_bin_center_change_count": 307,
+            "corrected_minus_attempt_1_min_ns": -197,
+            "corrected_minus_attempt_1_max_ns": 173,
+            "corrected_maximum_absolute_change_ns": 197,
+            "final_bin_change_ns": -22,
+            "membership_cfo_medians_splits_and_support_unchanged": True,
+            "rolling_controls_preflighted_before_tle_reader_and_candidate_work": True,
+            "candidate_outcomes_used": False,
+            "odd_iq_or_responses_used": False,
+            "prediction_model_changed": False,
+            "association_model_or_controls_changed": False,
+            "thresholds_or_claim_gates_changed": False,
+            "expected_prediction_ledger_sha256": ATTEMPT_1_PREDICTION_SHA256,
+            "expected_prediction_ledger_digest": ATTEMPT_1_PREDICTION_DIGEST,
+            "expected_corrected_bins_sha256": CORRECTED_BINS_SHA256,
+            "expected_corrected_bins_digest": CORRECTED_BINS_DIGEST,
+        },
+        "execution": {
+            "v1_retired": True,
+            "v2_required": True,
+            "future_failure_status_schema": (
+                "org.leo.research.final-holdout-pre-response-failure-status/v1"
+            ),
+            "future_failure_status_basename": "pre-response-failure-status.json",
+        },
+    }
+    if supersession != expected:
+        raise ValueError("final holdout v2 supersession authority drifted")
+    for path, digest in (
+        (BASE_PROTOCOL_PATH, BASE_PROTOCOL_SHA256),
+        (FAILURE_AMENDMENT_PATH, FAILURE_AMENDMENT_SHA256),
+        (FAILURE_RECEIPT_PATH, FAILURE_RECEIPT_SHA256),
+        (FAILURE_COMBINED_OUTPUT_PATH, FAILURE_COMBINED_OUTPUT_SHA256),
+        (ATTEMPT_1_PREDICTION_PATH, ATTEMPT_1_PREDICTION_SHA256),
+        (ATTEMPT_1_BINS_PATH, ATTEMPT_1_BINS_SHA256),
+    ):
+        if _sha256_tag(repository_root / path) != digest:
+            raise ValueError(f"final holdout v2 supersession bytes drifted: {path}")
+    _validate_historical_file(
+        repository_root,
+        commit=BASE_PROTOCOL_COMMIT,
+        relative_path=BASE_PROTOCOL_PATH,
+        expected_sha256=BASE_PROTOCOL_SHA256,
+    )
+    _validate_git_implementation_commit(
+        repository_root,
+        commit=FAILURE_EVIDENCE_COMMIT,
+        expected_tree=FAILURE_EVIDENCE_TREE,
+        require_current_source=False,
+    )
+    _validate_historical_file(
+        repository_root,
+        commit=FAILURE_EVIDENCE_COMMIT,
+        relative_path=FAILURE_AMENDMENT_PATH,
+        expected_sha256=FAILURE_AMENDMENT_SHA256,
+    )
+    _validate_historical_file(
+        repository_root,
+        commit=FAILURE_EVIDENCE_COMMIT,
+        relative_path=FAILURE_RECEIPT_PATH,
+        expected_sha256=FAILURE_RECEIPT_SHA256,
+    )
+    _validate_historical_file(
+        repository_root,
+        commit=FAILURE_EVIDENCE_COMMIT,
+        relative_path=FAILURE_COMBINED_OUTPUT_PATH,
+        expected_sha256=FAILURE_COMBINED_OUTPUT_SHA256,
+    )
+    _validate_historical_file(
+        repository_root,
+        commit=FAILURE_EVIDENCE_COMMIT,
+        relative_path=ATTEMPT_1_PREDICTION_PATH,
+        expected_sha256=ATTEMPT_1_PREDICTION_SHA256,
+    )
+    _validate_historical_file(
+        repository_root,
+        commit=FAILURE_EVIDENCE_COMMIT,
+        relative_path=ATTEMPT_1_BINS_PATH,
+        expected_sha256=ATTEMPT_1_BINS_SHA256,
+    )
 
 
 def _validate_capture(
@@ -946,6 +1255,7 @@ def _validate_git_implementation_commit(
     *,
     commit: str,
     expected_tree: str,
+    require_current_source: bool,
 ) -> None:
     if not re.fullmatch(r"[0-9a-f]{40}", expected_tree):
         raise ValueError("implementation tree binding is malformed")
@@ -968,6 +1278,8 @@ def _validate_git_implementation_commit(
         raise ValueError("implementation commit is unavailable") from error
     if resolved_commit != commit or resolved_tree != expected_tree:
         raise ValueError("implementation commit/tree binding drifted")
+    if not require_current_source:
+        return
     try:
         tree_diff = subprocess.run(
             [
@@ -1007,6 +1319,24 @@ def _validate_git_implementation_commit(
             raise ValueError(f"implementation path is unavailable: {relative}") from error
         if current != committed:
             raise ValueError(f"implementation path is not from the frozen commit: {relative}")
+
+
+def _sha256_tag_at_commit(
+    repository_root: Path,
+    *,
+    commit: str,
+    relative_path: str,
+) -> str:
+    try:
+        payload = subprocess.run(
+            ["git", "show", f"{commit}:{relative_path}"],
+            cwd=repository_root,
+            check=True,
+            capture_output=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise ValueError(f"historical implementation is unavailable: {relative_path}") from error
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
 
 
 def _validate_historical_file(

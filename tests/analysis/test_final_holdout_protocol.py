@@ -15,8 +15,7 @@ FROZEN_PROTOCOL = (
     REPOSITORY_ROOT / "config/analysis/final-doppler-holdout-satellite-protocol-v1.json"
 )
 FAILED_ATTEMPT_DIR = (
-    REPOSITORY_ROOT
-    / "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1"
+    REPOSITORY_ROOT / "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1"
 )
 FAILED_ATTEMPT_RECEIPT = FAILED_ATTEMPT_DIR / "attempt-1-failure-receipt.json"
 V1_FAILURE_AMENDMENT = (
@@ -150,7 +149,7 @@ def test_association_protocol_freezes_coordinates_and_availability() -> None:
 
 
 def test_frozen_final_protocol_validates_against_exact_commit_and_authorities() -> None:
-    document = protocol.load_and_validate_final_protocol(
+    document = protocol.load_and_validate_historical_final_protocol_v1(
         FROZEN_PROTOCOL,
         repository_root=REPOSITORY_ROOT,
     )
@@ -163,6 +162,12 @@ def test_frozen_final_protocol_validates_against_exact_commit_and_authorities() 
     assert len(document["authorized_odd_chunks"]) == 11
     assert document["site"]["absolute_secure_norad_permitted"] is False
     assert document["upstream_conditioning"]["end_to_end_odd_independent"] is False
+
+    with pytest.raises(ValueError, match="v1 is retired"):
+        protocol.load_and_validate_final_protocol(
+            FROZEN_PROTOCOL,
+            repository_root=REPOSITORY_ROOT,
+        )
 
 
 def test_failed_attempt_receipt_binds_exact_fail_closed_evidence() -> None:
@@ -261,4 +266,7 @@ def test_resigned_protocol_authority_poison_fails_independent_validation(
     path.write_text(json.dumps(document, indent=2, sort_keys=True))
 
     with pytest.raises(ValueError, match=message):
-        protocol.load_and_validate_final_protocol(path, repository_root=REPOSITORY_ROOT)
+        protocol.load_and_validate_historical_final_protocol_v1(
+            path,
+            repository_root=REPOSITORY_ROOT,
+        )
