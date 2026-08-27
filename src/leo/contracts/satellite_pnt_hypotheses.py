@@ -127,9 +127,7 @@ class SatelliteCorrectionHypothesisSetV1(ContractModel):
         if len(set(product_digests)) != len(product_digests):
             raise ValueError("joint correction source slots repeat a product")
         mode_digests = tuple(
-            mode.mode_digest
-            for slot in slots
-            for mode in slot.correction_product.modes
+            mode.mode_digest for slot in slots for mode in slot.correction_product.modes
         )
         if len(set(mode_digests)) != len(mode_digests):
             raise ValueError(
