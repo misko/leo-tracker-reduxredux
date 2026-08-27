@@ -117,6 +117,12 @@ The two exact opened POST-FIX long arcs now have a digest-bound, fail-closed
 development protocol, but it is deliberately frozen as `not executed` until a
 qualified response-free long-arc adapter, an equal-opportunity radio-only
 polynomial null, and a separately audited execution amendment exist.
+An exact evidence-to-episode adapter now reproduces the two registered graphs
+and immediately projects them through the response-free prediction-support
+port. A training-frozen support-integrated line/quadratic/cubic radio null is
+also qualified on synthetic data. Full geometric Starlink population
+selection remains pending, and neither component has been used to propagate a
+catalogue or score the opened arcs.
 Response-free geometric population selection, calibrated ephemeris covariance,
 equal-opportunity radio/polynomial nulls, full fixed-lag smoothing and ECM,
 joint `K=2` correction representation, broad-prior particle navigation, joint
@@ -145,8 +151,10 @@ or RF collection has occurred or is authorized by this document.
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
 | Local Doppler-position poisons | DONE for current synthetic local-prior scope | 8 focused tests cover sub-metre synthetic recovery, analytic-vs-finite-difference Jacobians, correlated satellite-frequency uncertainty, equal-mode ambiguity, truth-free source/import boundary, stale nested evidence, frozen tau binding, observation and dense-covariance work caps, candidate-bank provenance, broad-prior rejection, and explicitly partial unknown-identity output. |
 | Opened long-arc development protocol | FROZEN, NOT EXECUTED | [`satellite-pnt-long-arc-development-protocol-v1.json`](../config/analysis/satellite-pnt-long-arc-development-protocol-v1.json), [`satellite_pnt_long_arc_protocol.py`](../src/leo/analysis/research/satellite_pnt_long_arc_protocol.py), and [`test_satellite_pnt_long_arc_protocol.py`](../tests/analysis/test_satellite_pnt_long_arc_protocol.py) bind exactly the registered 30 s `9981` and 13.825 s `150802` arcs, evidence hashes, support-centred timing rules, causal TLE snapshots, reviewed site preset, `tau=0` plus `[-5,+5] s`, observe-only `delta=±500 s`, chronological masks, radio-polynomial comparators, and claim denials. Fourteen focused tests, Ruff, and strict MyPy pass. No IQ, propagation, or response scoring occurred. |
-| Current null and evidence scope | RESTRICTED synthetic baseline | Posterior odds are conditional on the complete frozen response-free candidate universe. `K=0` currently uses the declared zero-curve component-offset/hardware-drift Gaussian baseline; the equal-opportunity polynomial/radio-only likelihood required by WP2 is not yet implemented. |
-| Real opened long arcs | PROTOCOL FROZEN; EXECUTION BLOCKED | The protocol exists, but its execution boundary remains closed pending the response-free adapter, equal-opportunity radio-polynomial null, and audited code-hash amendment. |
+| Registered long-arc graph and response-free support adapter | DONE, no association execution | [`long_arc_catalogue_adapter.py`](../src/leo/analysis/research/long_arc_catalogue_adapter.py) authenticates the frozen report bytes, reconstructs the exact 881-row and 550-row support-centred physical graphs, and emits a narrow support port with no CFO, receiver-path, source-binding, or uncertainty response fields. Seven focused tests pin both graph/support/receipt digests and reject evidence or nested-authority mutations. IQ, TLE propagation, candidate selection, and association scoring are absent. |
+| Equal-opportunity radio-polynomial null | DONE, synthetic qualification only | [`radio_polynomial_null.py`](../src/leo/analysis/research/radio_polynomial_null.py) fits support-integrated line/quadratic/cubic models on an explicit training prefix and scores one identical future suffix with coefficient uncertainty propagated. Six tests cover exact support moments, curvature discrimination, future-response isolation, dense-Gaussian equality, partitions/work caps, and stale graph poison. It produces no identity probability, threshold, or gate. |
+| Current null and evidence scope | RESTRICTED synthetic baseline | Exact-association posterior odds remain conditional on the complete frozen response-free candidate universe, and its internal `K=0` still uses the declared zero-curve component-offset/hardware-drift Gaussian baseline. The polynomial null is a separate future-prediction comparator, not yet part of posterior normalization. |
+| Real opened long arcs | GRAPH REPRODUCTION QUALIFIED; EXECUTION BLOCKED | The exact response graphs have been reproduced from already-opened committed reports, but no candidate population, TLE propagation, polynomial future score, or association score was run. The execution boundary remains closed pending geometric population selection and an audited code-hash amendment. |
 
 ## North-star milestone
 
@@ -788,6 +796,15 @@ public contracts or accepted as current identity evidence.
   All numerical scientific thresholds remain unset. Its three explicit
   execution blockers must be closed by an additive audited amendment before
   any TLE propagation or response scoring.
+- **2026-08-27:** exact long-arc graph reconstruction and the
+  equal-opportunity polynomial-null kernel were implemented. The adapter pins
+  both registered response graphs and then exposes only response-free support
+  geometry to catalogue prediction. The null uses the same support kernels,
+  uncertainty, and chronological masks for degrees one through three, fits on
+  training only, and propagates fit covariance to one future score. The
+  qualification opened no IQ and ran no catalogue propagation or real-data
+  score; response-free geometric population selection and an execution
+  amendment remain required.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
