@@ -118,7 +118,7 @@ about 1.03x nominal headroom and is not production-qualified by configuration al
 
 ### Measured remote-IP result (2026-08-27)
 
-Pinned Pluto+ Utils `41dc53b948f096702abbdbec0d397c024ba679fb` tested paired RX on only
+Pinned Pluto+ Utils `29ca61443a2d578d853355db56225e3941ffbf1c` tested paired RX on only
 `192.168.1.20` and `192.168.1.21`, with 262,144 samples/channel, 24 timed frames, two warmups,
 and eight kernel buffers. Original settings were restored on both radios.
 
@@ -147,10 +147,19 @@ failure must not be hidden by dropping a receiver, decimating, or resampling.
 Maximum safe refills also require a duration-aware metadata I/O timeout. A fixed five-second
 timeout, originally sized for 262,144-sample refills, deterministically timed out the first
 4,194,304-sample metadata refill on both radios even though the ordinary transport ladder kept
-pace. Pluto+ Utils issue #42 and revision `41dc53b948f096702abbdbec0d397c024ba679fb`
+pace. Pluto+ Utils issue #42 and revision `29ca61443a2d578d853355db56225e3941ffbf1c`
 resolve the timeout as `clamp(8 * ceil(refill_samples / sample_rate), 5s, 30s)` before metadata
 priming. The timeout remains finite and fail-closed; qualification must bind that exact utility
 revision and prove the maximum-buffer metadata path, not only ordinary libiio throughput.
+
+That exact metadata canary then exposed a distinct control-plane stall: a synchronous FPGA-counter
+register read after each refill took about 2.95 seconds on both remote IP Plutos. At 2.5 MS/s the
+4,194,304-sample refill itself spans about 1.678 seconds, so the next READBUFM arrived after two
+device buffers had already been skipped even though the host queue high-water was only 1/32.
+Revision `29ca61443a2d578d853355db56225e3941ffbf1c` removes counter-register reads from the DMA hot
+loop, retains the bounded startup clock fit, and truthfully increases extrapolation uncertainty.
+Qualification must reject any maximum-buffer rung that reports a positive counter gap; ordinary
+mask-blind throughput is not sufficient.
 
 The same pinned utility then tested its maximum supported paired-RX frame size, 4,194,304
 samples/channel, with four kernel buffers and six timed frames per rung. At 5 MS/s, `.20` delivered
