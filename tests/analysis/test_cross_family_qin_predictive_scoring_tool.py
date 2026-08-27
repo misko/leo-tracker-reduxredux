@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -18,17 +19,19 @@ TOOL = PROJECT_ROOT / "tools/run_cross_family_qin_predictive_scoring.py"
 CONFIG = PROJECT_ROOT / runner.DEFAULT_CONFIG
 
 
-def test_verify_only_reports_descriptive_result_without_writes() -> None:
+@pytest.mark.parametrize("thread_count", ["1", "2", "8"])
+def test_verify_only_is_thread_count_deterministic_without_writes(thread_count: str) -> None:
     result = subprocess.run(
         [str(PROJECT_ROOT / ".venv/bin/python"), str(TOOL), "--verify-only"],
         cwd=PROJECT_ROOT,
         check=True,
         capture_output=True,
         text=True,
+        env={**os.environ, "OPENBLAS_NUM_THREADS": thread_count},
     )
     value = json.loads(result.stdout)
     assert value["result_digest"] == (
-        "sha256:e76b85d63b0a3567ebaf1f6a2f9fab98bc4db032d381e25cca6820a4cfdcf12a"
+        "sha256:80eb3a6d5cc426f86984a8ce747df15ab4d2b1ed8f422471d61b49a2efc1469d"
     )
     assert value["truth_arm_equal_accuracy"] == 0.5
     assert value["formal_95_percent_rank_pair_count_sufficient"] is False

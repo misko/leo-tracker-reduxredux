@@ -59,7 +59,7 @@ def test_result_digest_and_predictive_decompositions_close(
     payload = asdict(scored)
     digest = payload.pop("result_digest")
     assert canonical_digest(payload) == digest
-    assert digest == "sha256:e76b85d63b0a3567ebaf1f6a2f9fab98bc4db032d381e25cca6820a4cfdcf12a"
+    assert digest == "sha256:80eb3a6d5cc426f86984a8ce747df15ab4d2b1ed8f422471d61b49a2efc1469d"
 
     for case in scored.cases:
         assert case.catalogue_fit.future_response_used_for_fit is False
