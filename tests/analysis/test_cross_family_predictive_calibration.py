@@ -119,7 +119,7 @@ def _cases() -> tuple[CrossFamilyKnownTruthCase, ...]:
             result.append(
                 CrossFamilyKnownTruthCase(
                     case_id=f"paired-{prefix}-{index}",
-                    scenario_id=f"scenario-{prefix}-{index}",
+                    scenario_id=f"scenario-{index}",
                     evidence_digest=canonical_digest({"paired-evidence": (prefix, index)}),
                     truth_digest=canonical_digest({"paired-truth": (prefix, index)}),
                     truth_model_family=truth,  # type: ignore[arg-type]
@@ -160,6 +160,7 @@ def test_known_truth_families_are_compared_after_independent_scaling() -> None:
 
     assert audit.catalogue_truth_scenario_count == 3
     assert audit.radio_truth_scenario_count == 3
+    assert audit.independent_paired_scenario_count == 3
     assert audit.correct_scenario_count == 6
     assert audit.tied_scenario_count == 0
     assert audit.scenario_equal_accuracy == 1.0
@@ -191,9 +192,13 @@ def test_cases_are_averaged_within_scenario_before_accuracy() -> None:
 
 
 def test_too_few_scenarios_in_one_truth_family_is_refused() -> None:
-    cases = tuple(item for item in _cases() if item.scenario_id != "scenario-radio-2")
+    cases = tuple(
+        item
+        for item in _cases()
+        if not (item.scenario_id == "scenario-2" and item.truth_model_family == "radio-polynomial")
+    )
 
-    with pytest.raises(CrossFamilyCalibrationInputError, match="too few"):
+    with pytest.raises(CrossFamilyCalibrationInputError, match="both paired truth arms"):
         _run(cases)
 
 
@@ -206,7 +211,7 @@ def test_truth_authority_cannot_change_within_one_scenario() -> None:
         truth_digest=canonical_digest({"paired-truth": "different"}),
     )
 
-    with pytest.raises(CrossFamilyCalibrationInputError, match="mixes truth"):
+    with pytest.raises(CrossFamilyCalibrationInputError, match="mixes truth authorities"):
         _run((cases[0], conflicting, *cases[1:]))
 
 
