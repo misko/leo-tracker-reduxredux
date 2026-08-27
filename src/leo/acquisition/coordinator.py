@@ -630,13 +630,19 @@ class AcquisitionCoordinator:
             if counter_authoritative:
                 source.reset_receive_buffer()
             profile = _profile_for_radio(plan, expected_radio_id)
-            actual = source.configure(requested_settings)
+            exact_rf_geometry = (
+                isinstance(plan, CapturePlanV3) or "NATIVE_BANDWIDTH" in profile.tags
+            )
+            configure_exact = getattr(source, "configure_exact", None)
+            actual = (
+                configure_exact(requested_settings)
+                if exact_rf_geometry and callable(configure_exact)
+                else source.configure(requested_settings)
+            )
             _validate_settings_readback(
                 requested_settings,
                 actual,
-                exact_rf_geometry=(
-                    isinstance(plan, CapturePlanV3) or "NATIVE_BANDWIDTH" in profile.tags
-                ),
+                exact_rf_geometry=exact_rf_geometry,
             )
             self.clock.sleep(float(profile.settle_seconds), cancel)
             for _ in range(profile.prime_refills):

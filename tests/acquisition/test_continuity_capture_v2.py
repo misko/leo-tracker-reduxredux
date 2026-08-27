@@ -1379,6 +1379,31 @@ def test_mixed_rate_capture_publishes_exact_per_radio_device_axes(
     assert coordinator.store.verify(f"mixed-{high_rate_hz}").validity_inventory_count == 2
 
 
+def test_native_bandwidth_capture_selects_exact_radio_configuration(tmp_path: Path) -> None:
+    class ExactConfigurationRadio(FakeRadioSource):
+        def configure(self, settings: RadioSettingsV1) -> RadioSettingsV1:
+            raise AssertionError("ordinary configuration must not serve exact RF geometry")
+
+        def configure_exact(self, settings: RadioSettingsV1) -> RadioSettingsV1:
+            self.lifecycle.append("configure_exact")
+            return super().configure(settings)
+
+    coordinator = _device_axis_coordinator(tmp_path)
+    radios = {
+        "radio-a": ExactConfigurationRadio("radio-a"),
+        "radio-b": ExactConfigurationRadio("radio-b"),
+    }
+
+    result = coordinator.capture_once(
+        _mixed_rate_plan(5_000_000),
+        radios,
+        session_id="mixed-exact-rf-configuration",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert all("configure_exact" in radio.lifecycle for radio in radios.values())
+
+
 def test_mixed_rate_capture_rejects_even_one_hz_of_rf_readback_drift(
     tmp_path: Path,
 ) -> None:
