@@ -1,0 +1,219 @@
+{
+  "amendment_digest": "sha256:a3efbcd49a44a0b60fdcd41fc930cad9d7c771ec6c7f667f3af6a22657c3c25f",
+  "amendment_id": "2026-08-27-satellite-tracking-checkpoints-opened-arcs-attempt1",
+  "base_protocol": {
+    "path": "config/analysis/satellite-pnt-long-arc-development-protocol-v1.json",
+    "protocol_digest": "sha256:2db143ac0a380ab4d673167bda9a88851eca26681123624c29ab7f64b1f64ecb",
+    "sha256": "sha256:5959b3bbfef944576fc187ef132663ff653bb23d6b3d2b5f0980c654a183bce0"
+  },
+  "calibration_authority": {
+    "c2_complete": false,
+    "covariance_calibrated": false,
+    "formal_95_percent_rank_minimum_pairs": 19,
+    "formal_95_percent_rank_pair_count_sufficient": false,
+    "independent_background_pair_count": 3,
+    "protocol": {
+      "path": "config/analysis/satellite-pnt-cross-family-predictive-scoring-v2.json",
+      "sha256": "sha256:e8b3f60e968e006a41bbdf1d9894d4b21571d0964cfdd16898101bbbd4256a9c"
+    },
+    "sealed_result": {
+      "path": "reports/figures/2026_08_27_satellite_pnt_cross_family_predictive_scoring_attempt2.json",
+      "result_digest": "sha256:1b857b6620ca4de26374f68c9024e4386250de649aace81c12c8d850ef8fec67",
+      "sha256": "sha256:02a430d186945b08e37e1b3f5b1925db6342ec59c4ef2f2d51135da69eb06b24"
+    }
+  },
+  "chronology": "Frozen after the implementation commit and before the first C1/C2/C3 opened-arc execution.",
+  "claim_boundary": {
+    "c2_complete": false,
+    "covariance_calibrated": false,
+    "identity_claimed": false,
+    "new_iq_read_authorized": false,
+    "new_rf_collection_authorized": false,
+    "numerical_thresholds_are_set": false,
+    "opened_development_only": true,
+    "positioning_validation_permitted": false,
+    "posterior_probability_calibrated": false,
+    "secure_norad_permitted": false,
+    "wrong_epoch_is_gate": false,
+    "wrong_epoch_is_null_distribution": false
+  },
+  "execution": {
+    "attempt_number": 1,
+    "authorized": true,
+    "maximum_attempt_count": 1,
+    "new_iq_read_authorized": false,
+    "new_rf_collection_authorized": false,
+    "outputs_must_not_exist_before_execution": true
+  },
+  "implementation": {
+    "commit": "2a7a793999173f420394a59017a10dc744053b9b",
+    "file_sha256": {
+      "src/leo/analysis/catalogue_observability.py": "sha256:930885d61c8348f9050e125c61d74475b4e78c7bb06358160c5ed48c24c4ab10",
+      "src/leo/analysis/catalogue_prediction.py": "sha256:d4343f81b880743bf4abc205b1d8bbb9ddacf1d4c935946278c38f791f5b4087",
+      "src/leo/analysis/catalogue_prediction_array_view.py": "sha256:996a90d71f702833d41b21a4f97faee6510bd7f299ef410056e4e9cdd391c27a",
+      "src/leo/analysis/research/block_predictive_evidence.py": "sha256:9f01684683e6523c2fee0823ecf2189754fd7a4c49d2bb54bfc04dbae3d06070",
+      "src/leo/analysis/research/catalogue_observability_figures.py": "sha256:0255a86d0be6bf9041a310cf48d27ffc9598899907136eba5d564f9ca5e85e88",
+      "src/leo/analysis/research/compact_catalogue_prediction_bank.py": "sha256:8268b86ce6abca0cfaf48c6a19eab4f772af279ac653e6d633d0dbfa4b7ad893",
+      "src/leo/analysis/research/long_arc_catalogue_adapter.py": "sha256:384e9058264de41cfff8efbde0290bb47ee5c0a4e051f71885d1df1304a4c604",
+      "src/leo/analysis/research/long_arc_hypothesis_closure.py": "sha256:e4b2e846962540e1664305ea10e49510375a301c7cf599b03fb1d16ecc620d77",
+      "src/leo/analysis/research/long_arc_observability_rebuild.py": "sha256:69bf6f6b5a135bd128921ec3f8c0c03d8d3d74af9de1609eead63c31c5e80f32",
+      "src/leo/analysis/research/satellite_pnt_long_arc_protocol.py": "sha256:532696110e6217b5bb89a10e5e48a9dea8729c3b2b783d6b252e103b2d9d4960",
+      "src/leo/analysis/research/satellite_tracking_checkpoint_runner.py": "sha256:62ed72c17b640128faa887732eb2642d71869fe50809ad2b0246df6bcdb23f06",
+      "src/leo/contracts/catalogue_association.py": "sha256:1e395116fa719fc5f7bdbd92d9b2d59a63733aa40719b3795dbac11f12867957",
+      "src/leo/contracts/digests.py": "sha256:9cf74423dd2eb0e2b66d5b3b955e438d28260d6b22e53281ae2e1481da9dd9b9",
+      "src/leo/contracts/sky.py": "sha256:3ece9325660308c87528d9982cccc837b0985f16a3f2c61214fdcd63e1e5f66d",
+      "tools/run_satellite_tracking_checkpoints.py": "sha256:95dbb037c079da8b0d6a2b1cdd2091d44dcfb64d602d7752c0480461ea5ad4c6"
+    },
+    "runtime_environment": {
+      "package_versions": {
+        "matplotlib": "3.11.1",
+        "numpy": "2.5.2",
+        "pydantic": "2.13.4",
+        "sgp4": "2.27",
+        "zstandard": "0.25.0"
+      },
+      "python_version": "3.13.15",
+      "uv_lock_sha256": "sha256:55698a721b6b61b74c4e43935aa9e4af381e51419c13a0953e4c2460723e1872"
+    },
+    "tree": "2b6f0d9f8e245126b4fa8f74ae7c89c6c0ef2fcf"
+  },
+  "numerical_controls": {
+    "c1": {
+      "close_pair_neighbours_per_candidate": 4,
+      "drift_prior_sigma_hz_per_s": 20.0,
+      "drift_reference_measurement_sigma_hz": 50.0,
+      "maximum_candidates_per_field": 1024,
+      "maximum_close_pair_count": 8192,
+      "maximum_observations": 2048,
+      "maximum_pair_prefix_evaluations": 1500000000,
+      "maximum_profiled_tau_pair_observation_evaluations": 200000000000,
+      "maximum_rendered_pair_curves": 12,
+      "maximum_tau_prediction_cells": 100000000,
+      "maximum_tau_states": 41,
+      "measurement_floor_overlays": [
+        {
+          "calibrated": false,
+          "floor_hz": 61.7472930318272,
+          "history_ms": 20.0,
+          "source_digest": "sha256:490f36345fec7d494261d63f3b3cf9581a249bdca46d80c8b9e63baed3471d1f"
+        },
+        {
+          "calibrated": false,
+          "floor_hz": 57.75380979657822,
+          "history_ms": 125.0,
+          "source_digest": "sha256:490f36345fec7d494261d63f3b3cf9581a249bdca46d80c8b9e63baed3471d1f"
+        },
+        {
+          "calibrated": false,
+          "floor_hz": 60.28885387873705,
+          "history_ms": 500.0,
+          "source_digest": "sha256:490f36345fec7d494261d63f3b3cf9581a249bdca46d80c8b9e63baed3471d1f"
+        }
+      ],
+      "measurement_floor_source": {
+        "path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json",
+        "sha256": "sha256:490f36345fec7d494261d63f3b3cf9581a249bdca46d80c8b9e63baed3471d1f"
+      },
+      "numerical_negative_tolerance_hz2": 1e-06
+    },
+    "c2": {
+      "block_common_variance_hz2": 2500.0,
+      "calendar_block_duration_ns": 1000000000,
+      "covariance_calibrated": false,
+      "family_log_weights": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "independent_variance_floor_hz2": 0.0,
+      "maximum_hypothesis_count": 25000,
+      "maximum_state_observation_evaluations": 30000000,
+      "measurement_variance_scale": 1.0,
+      "minimum_evaluation_block_coverage": 1.0,
+      "minimum_evaluation_observation_coverage": 1.0,
+      "minimum_usable_evaluation_blocks": 2,
+      "minimum_usable_evaluation_observations": 2,
+      "radio_structural_parameter_prior_sigmas": [
+        20000.0,
+        2000.0,
+        200.0
+      ],
+      "receiver_drift_prior_sigma_hz_per_s": 20.0,
+      "receiver_offset_prior_sigma_hz": 1000000.0,
+      "training_block_fraction": 0.6
+    },
+    "c3": {
+      "credible_neighborhood_probability": 0.95,
+      "maximum_blocks": 4096,
+      "maximum_hypotheses": 25000,
+      "maximum_outside_prior_mass_for_resolved_outcome": 0.0,
+      "maximum_score_cells": 1000000,
+      "minimum_candidate_posterior_probability": 0.5,
+      "prior_normalization_tolerance": 1e-12,
+      "singleton_minimum_within_candidate_probability": 0.95
+    },
+    "compact_rebuild": {
+      "candidate_chunk_size": 8,
+      "maximum_array_storage_bytes_per_field": 2000000000,
+      "maximum_array_storage_bytes_total": 6000000000,
+      "maximum_candidate_count": 1024,
+      "maximum_observation_count": 2048,
+      "maximum_prediction_cells_per_field": 100000000,
+      "maximum_tau_count": 41
+    },
+    "persistence": {
+      "zstandard_level": 10,
+      "zstandard_threads": 0
+    },
+    "prediction": {
+      "element_age_growth_hz_per_day": 0.0,
+      "fit_residual_multiplier": 1.0,
+      "maximum_propagated_states": 250000000,
+      "standard_uncertainty_floor_hz": 1.0,
+      "support_integration_sample_count": 5,
+      "tau_lower_s": -5.0,
+      "tau_state_count": 41,
+      "tau_step_s": 0.25,
+      "tau_upper_s": 5.0
+    }
+  },
+  "outputs": {
+    "artifact_directory": "reports/figures/2026_08_27_satellite_tracking_checkpoints_v1",
+    "attempt_receipt_path": "reports/figures/2026_08_27_satellite_tracking_checkpoints_v1-execution-receipt.json",
+    "report_path": "reports/2026_08_27_satellite_tracking_checkpoint_results.md"
+  },
+  "raw_tle_inputs": [
+    {
+      "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+      "collected_utc_ns": 1787594647459418079,
+      "object_count": 10972,
+      "path": "/var/lib/leo/tle/archive/space-track/1787594647459418079-ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee.tle",
+      "sha256": "sha256:ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee"
+    },
+    {
+      "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+      "collected_utc_ns": 1787666532658586719,
+      "object_count": 10972,
+      "path": "/var/lib/leo/tle/archive/space-track/1787666532658586719-9bb59fcf68fa36ce234ae9be79a492f0b92abc23bcf4f040bb5b64b61d3e31ad.tle",
+      "sha256": "sha256:9bb59fcf68fa36ce234ae9be79a492f0b92abc23bcf4f040bb5b64b61d3e31ad"
+    }
+  ],
+  "roadmap": {
+    "path": "plans/satellite-tracking-next-checkpoints.md",
+    "sha256": "sha256:7372c64de2194294f716af5f5da70d754efe48415894a300339fd8daf28db278"
+  },
+  "schema": "org.leo.research.satellite-tracking-checkpoint-execution-amendment/v1",
+  "sealed_results": [
+    {
+      "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+      "path": "reports/figures/2026_08_27_satellite_pnt_long_arc_development_attempt2/9981-result.json.zst",
+      "sha256": "sha256:ff7a442e241dc40081dda818942502a87e00049f3f2000bdd580a011448397bb"
+    },
+    {
+      "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+      "path": "reports/figures/2026_08_27_satellite_pnt_long_arc_development_attempt2/150802-result.json.zst",
+      "sha256": "sha256:f63ea3b18fda0c34f5249a6db3da4b654c91ed6443d20c03dc132dae13361d02"
+    }
+  ],
+  "status": "frozen-authority-for-one-opened-development-c1-c2-c3-attempt"
+}
