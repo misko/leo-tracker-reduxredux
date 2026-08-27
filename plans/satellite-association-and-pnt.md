@@ -135,6 +135,12 @@ It retains externally calibrated cross-satellite frequency covariance while
 keeping the association's receiver/LNB/component nuisance marginalized and
 opaque. A frequency-gauge authority is required per non-null mode; unresolved
 gauges cannot become navigation-eligible.
+A known-position Gaussian batch calibrator now supplies that covariance in the
+synthetic lane. Conditional on each association mode, it jointly fits one
+bias/drift state per active satellite plus externally calibrated
+continuity-component offsets and one linear drift per hardware epoch, then
+marginalizes the receiver columns. It intentionally does not yet model a
+cross-dwell receiver random walk or update the discrete association posterior.
 The two exact opened POST-FIX long arcs now have a digest-bound, fail-closed
 development protocol and one completed authorized execution. Attempt 1 failed
 closed at the response-free population work cap before response scoring; the
@@ -179,7 +185,8 @@ committed amendments; it is not confirmation data.
 | Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
 | Causal multi-dwell catalogue filter | DONE, synthetic forward-filter foundation | [`multi_dwell_catalogue_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_smoothing.py) and [`test_multi_dwell_catalogue_smoothing.py`](../tests/analysis/test_multi_dwell_catalogue_smoothing.py); one source state per dwell, at most two distinct NORADs per retained history, explicit `NULL`, normalized family priors, receiver-local drift resets, proper dwell-offset marginalization, and score-before-assimilation rolling receipts. This is not yet a simultaneous-emitter solver, ECM, or backward smoother. |
 | Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). The published V1 product still fails closed on coexisting `K=2`; the additive joint product below carries those semantics instead. |
-| Native `K=0,1,2` joint calibration product | DONE, synthetic contract and builder | [`satellite_pnt_joint_calibration.py`](../src/leo/contracts/satellite_pnt_joint_calibration.py) and [`satellite_correction_joint_replay.py`](../src/leo/analysis/satellite_correction_joint_replay.py) preserve every reported exact-association mode and its probability, bind exact episode assignments and TLE members, and retain a PSD cross-satellite bias/drift covariance supplied by a separate known-position calibration authority. Association component offsets and hardware drift affect mode evidence but are never exported. Unresolved receiver/satellite frequency gauge, tau boundary, stale TLE, incomplete mode coverage, indefinite covariance, or missing source authority makes a mode ineligible or fails closed. This does not yet estimate the satellite-side covariance or feed it into the joint positioning lane. |
+| Native `K=0,1,2` joint calibration product | DONE, synthetic contract and builder | [`satellite_pnt_joint_calibration.py`](../src/leo/contracts/satellite_pnt_joint_calibration.py) and [`satellite_correction_joint_replay.py`](../src/leo/analysis/satellite_correction_joint_replay.py) preserve every reported exact-association mode and its probability, bind exact episode assignments and TLE members, and retain a PSD cross-satellite bias/drift covariance supplied by a separate known-position calibration authority. Association component offsets and hardware drift affect mode evidence but are never exported. Unresolved receiver/satellite frequency gauge, tau boundary, stale TLE, incomplete mode coverage, indefinite covariance, or missing source authority makes a mode ineligible or fails closed. The product is not yet consumed by the joint positioning lane. |
+| Known-position joint frequency batch calibration | DONE, conditional synthetic first slice | [`joint_frequency_calibration.py`](../src/leo/analysis/joint_frequency_calibration.py) fits satellite bias/drift jointly with proper externally supplied priors for continuity offsets and hardware-epoch drift, then returns only the satellite marginal and its cross-satellite covariance. Receiver-local posterior bytes remain behind opaque digests. Exact graph/bank/association joins, full component/hardware prior coverage, conditioning, work caps, minimum per-satellite duration/counts, and unresolved-gauge abstention are tested in [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). V1 uses one linear receiver drift per hardware epoch; time-local random-walk/change-point calibration and association-posterior feedback remain pending. |
 | Synthetic mixtures and exact-association poisons | DONE for current exact-solver scope | 31 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, stale-contract inputs, and tamper cases. |
 | SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 33 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, field-receipt binding, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
 | Multi-dwell filter and numerical poisons | DONE for current synthetic scope | 27 focused tests cover handoff/null histories, candidate-family mass invariance, `K<=2` history semantics, drift/reset behavior, causal future-value isolation, pruning and tie abstention, stable mixture predictive evidence, fail-closed extreme arithmetic, row/extension work caps, and dense-Gaussian equivalence. An independent 5,000-case Woodbury comparison found no high/medium blocker. |
@@ -930,6 +937,16 @@ public contracts or accepted as current identity evidence.
   covariance; cross-satellite terms are retained and validated as PSD. This is
   the truthful handoff boundary for a future known-position batch calibrator,
   not yet that calibrator or a navigation solve.
+- **2026-08-27:** the first conditional known-position joint-frequency batch
+  calibrator now fills that handoff on synthetic data. For each retained
+  association mode it solves satellite bias/drift together with proper
+  receiver component-offset and hardware-drift priors, and exports only the
+  satellite marginal covariance. Shared receiver uncertainty therefore creates
+  retained cross-satellite covariance instead of false independent certainty.
+  The external receiver-frequency authority is what resolves the otherwise
+  unidentifiable gauge. This first version uses one linear drift per hardware
+  epoch, does not model a cross-dwell random walk, and does not revise the
+  association probabilities.
 - **2026-08-27:** the shared truth-free position-evidence envelope was tightened
   so every identity hypothesis must consume byte-identical observation IDs,
   support times, measured CFO values, and measurement uncertainties. Candidate
