@@ -782,6 +782,7 @@ def _calibrate_joint_frequency(
     *,
     gauge_resolved: bool = True,
     hardware_drift_sigma_hz_s: float = 2.0,
+    hardware_random_walk_sigma_hz_s_per_sqrt_s: float | None = None,
 ):
     component_priors = tuple(
         ReceiverComponentOffsetPrior(
@@ -816,7 +817,11 @@ def _calibrate_joint_frequency(
             "receiver-frequency-authority", "test"
         ),
         receiver_frequency_gauge_resolved=gauge_resolved,
-        config=JointFrequencyCalibrationConfig(),
+        config=JointFrequencyCalibrationConfig(
+            hardware_drift_random_walk_sigma_hz_s_per_sqrt_s=(
+                hardware_random_walk_sigma_hz_s_per_sqrt_s
+            )
+        ),
     )
 
 
@@ -988,6 +993,35 @@ def test_shared_hardware_uncertainty_increases_cross_satellite_covariance() -> N
     loose_k2 = next(item for item in loose.frequency_estimates if len(item.states) == 2)
 
     assert abs(loose_k2.frequency_covariance[1][3]) > abs(tight_k2.frequency_covariance[1][3])
+
+
+def test_time_local_hardware_random_walk_reduces_forced_cross_dwell_coupling() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+        satellite_bias_hz=10.0,
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+
+    nearly_shared = _calibrate_joint_frequency(
+        graph,
+        bank,
+        association,
+        hardware_random_walk_sigma_hz_s_per_sqrt_s=0.001,
+    )
+    time_local = _calibrate_joint_frequency(
+        graph,
+        bank,
+        association,
+        hardware_random_walk_sigma_hz_s_per_sqrt_s=10.0,
+    )
+    shared_k2 = next(item for item in nearly_shared.frequency_estimates if len(item.states) == 2)
+    local_k2 = next(item for item in time_local.frequency_estimates if len(item.states) == 2)
+
+    assert nearly_shared.receiver_drift_model == "dwell-local-hardware-drift-random-walk-v1"
+    assert nearly_shared.cross_dwell_random_walk_modeled is True
+    assert abs(local_k2.frequency_covariance[1][3]) < abs(shared_k2.frequency_covariance[1][3])
 
 
 def test_batch_calibration_feeds_joint_product_without_exporting_receiver_state() -> None:
