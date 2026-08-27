@@ -1,0 +1,353 @@
+{
+  "schema": "org.leo.report.native-sample-rate-production-retrospective/v1",
+  "generated_from_revision": "5400c930059c0aa1a8aeb409593220b5801ca107",
+  "as_of_utc": "2026-08-27T15:38:00Z",
+  "identities": {
+    "leo_revision": "5400c930059c0aa1a8aeb409593220b5801ca107",
+    "pluto_plus_utils_revision": "c955bca13250800bc707ee9f3a6b29bb8bc7c570",
+    "host": "gauss",
+    "network_interface": "enp132s0",
+    "source_address": "192.168.1.142",
+    "radios": [
+      {
+        "radio_id": "radio_pluto_5d4d",
+        "endpoint": "192.168.1.20",
+        "serial": "1040005e0b100007100010000bf33a5d4d"
+      },
+      {
+        "radio_id": "radio_pluto_19f2",
+        "endpoint": "192.168.1.21",
+        "serial": "10400056f695001322002d0010ad1719f2"
+      }
+    ]
+  },
+  "native_rates": [
+    {
+      "label": "2.5 MS/s",
+      "sample_rate_hz": 2500000,
+      "rf_bandwidth_hz": 2500000,
+      "logical_samples_60s": 150000000,
+      "dual_rx_bytes_per_radio_60s": 1200000000,
+      "production_enabled": true
+    },
+    {
+      "label": "3 MS/s",
+      "sample_rate_hz": 3000000,
+      "rf_bandwidth_hz": 3000000,
+      "logical_samples_60s": 180000000,
+      "dual_rx_bytes_per_radio_60s": 1440000000,
+      "production_enabled": true
+    },
+    {
+      "label": "5 MS/s",
+      "sample_rate_hz": 5000000,
+      "rf_bandwidth_hz": 5000000,
+      "logical_samples_60s": 300000000,
+      "dual_rx_bytes_per_radio_60s": 2400000000,
+      "production_enabled": true
+    }
+  ],
+  "transport": {
+    "writer_benchmark_bytes_per_second": 111394524,
+    "writer_gate_bytes_per_second": 100000000,
+    "modes": [
+      {
+        "label": "dual 2.5",
+        "aggregate_raw_bytes_per_second": 40000000,
+        "enabled": true
+      },
+      {
+        "label": "dual 3",
+        "aggregate_raw_bytes_per_second": 48000000,
+        "enabled": true
+      },
+      {
+        "label": "2.5 + 5",
+        "aggregate_raw_bytes_per_second": 60000000,
+        "enabled": true
+      },
+      {
+        "label": "dual 5",
+        "aggregate_raw_bytes_per_second": 80000000,
+        "enabled": true
+      },
+      {
+        "label": "2.5 + 10",
+        "aggregate_raw_bytes_per_second": 100000000,
+        "enabled": false
+      },
+      {
+        "label": "2.5 + 15",
+        "aggregate_raw_bytes_per_second": 140000000,
+        "enabled": false
+      }
+    ]
+  },
+  "qualification_captures": [
+    {
+      "label": "qual 2.5",
+      "session_id": "native-bandwidth-1787833430165480559-3e114c16-ordinary_2p5",
+      "state": "committed",
+      "rates_hz": [2500000, 2500000],
+      "logical_samples": [150000000, 150000000],
+      "observed_samples": [150000000, 150000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [1, 2]
+    },
+    {
+      "label": "qual 3",
+      "session_id": "native-bandwidth-1787833430165480559-3e114c16-ordinary_3",
+      "state": "committed",
+      "rates_hz": [3000000, 3000000],
+      "logical_samples": [180000000, 180000000],
+      "observed_samples": [180000000, 180000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [2, 2]
+    },
+    {
+      "label": "qual 5",
+      "session_id": "native-bandwidth-1787833430165480559-3e114c16-ordinary_5",
+      "state": "committed",
+      "rates_hz": [5000000, 5000000],
+      "logical_samples": [300000000, 300000000],
+      "observed_samples": [300000000, 300000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [4, 4]
+    },
+    {
+      "label": "qual mixed A",
+      "session_id": "native-bandwidth-1787833430165480559-3e114c16-mixed_2p5_5_high_first",
+      "state": "degraded",
+      "rates_hz": [5000000, 2500000],
+      "logical_samples": [300000000, 150000000],
+      "observed_samples": [298951424, 150000000],
+      "missing_samples": [1048576, 0],
+      "gap_counts": [1, 0],
+      "queue_high_water_refills": [3, 2]
+    },
+    {
+      "label": "qual mixed B",
+      "session_id": "native-bandwidth-1787833430165480559-3e114c16-mixed_2p5_5_high_second",
+      "state": "committed",
+      "rates_hz": [2500000, 5000000],
+      "logical_samples": [150000000, 300000000],
+      "observed_samples": [150000000, 300000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [1, 3]
+    }
+  ],
+  "live_canaries": [
+    {
+      "label": "live 2.5",
+      "session_id": "cap-20260827T114600-2p5-native-canary",
+      "state": "committed",
+      "manifest_schema_version": 3,
+      "rates_hz": [2500000, 2500000],
+      "bandwidths_hz": [2500000, 2500000],
+      "centers_hz": [1440312500, 1190312500],
+      "logical_samples": [150000000, 150000000],
+      "observed_samples": [150000000, 150000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [3, 3],
+      "analysis_run_id": "native-capture-936bbf85eb714c89ac3b5e870ef508f7",
+      "analysis_duration_seconds": 918.943577,
+      "analysis_jobs": 12,
+      "catalog_products": 98
+    },
+    {
+      "label": "live 3",
+      "session_id": "cap-20260827T125003-0b28a3a23a4d",
+      "state": "degraded",
+      "manifest_schema_version": 3,
+      "rates_hz": [3000000, 3000000],
+      "bandwidths_hz": [3000000, 3000000],
+      "centers_hz": [1690312500, 1709687500],
+      "logical_samples": [180000000, 180000000],
+      "observed_samples": [180000000, 178951424],
+      "missing_samples": [0, 1048576],
+      "gap_counts": [0, 1],
+      "queue_high_water_refills": [2, 1],
+      "analysis_run_id": "native-capture-f3b7dd57d1df4d448567e8c90769411e",
+      "analysis_duration_seconds": 1432.981638,
+      "analysis_jobs": 12,
+      "catalog_products": 98
+    },
+    {
+      "label": "live 5",
+      "session_id": "cap-20260827T131841-ff07c4208a8f",
+      "state": "committed",
+      "manifest_schema_version": 3,
+      "rates_hz": [5000000, 5000000],
+      "bandwidths_hz": [5000000, 5000000],
+      "centers_hz": [1209687500, 1209687500],
+      "logical_samples": [300000000, 300000000],
+      "observed_samples": [300000000, 300000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [4, 5],
+      "analysis_run_id": "native-capture-4982871869794d0e82180d516ed972d1",
+      "analysis_duration_seconds": 1833.655541,
+      "analysis_jobs": 12,
+      "catalog_products": 98
+    },
+    {
+      "label": "live mixed",
+      "session_id": "cap-20260827T140554-a5bfc026cfde",
+      "state": "committed",
+      "manifest_schema_version": 4,
+      "rates_hz": [5000000, 2500000],
+      "bandwidths_hz": [5000000, 2500000],
+      "centers_hz": [1440312500, 1440312500],
+      "logical_samples": [300000000, 150000000],
+      "observed_samples": [300000000, 150000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [2, 1],
+      "analysis_run_id": "native-capture-b0e7699128924767ac7e901dd41beec8",
+      "analysis_duration_seconds": 1163.970308,
+      "analysis_jobs": 12,
+      "catalog_products": 98
+    },
+    {
+      "label": "live mixed reverse",
+      "session_id": "cap-20260827T143509-51b7bc0515e3",
+      "state": "committed",
+      "manifest_schema_version": 4,
+      "rates_hz": [2500000, 5000000],
+      "bandwidths_hz": [2500000, 5000000],
+      "centers_hz": [1440312500, 1440312500],
+      "logical_samples": [150000000, 300000000],
+      "observed_samples": [150000000, 300000000],
+      "missing_samples": [0, 0],
+      "gap_counts": [0, 0],
+      "queue_high_water_refills": [1, 5],
+      "analysis_run_id": "native-capture-86eafcbc621e4a8aac6252ddc60e7c6e",
+      "analysis_duration_seconds": null,
+      "analysis_jobs": 12,
+      "catalog_products": 98
+    }
+  ],
+  "http_artifact_checks": [
+    {
+      "label": "2.5 MS/s",
+      "session_id": "cap-20260827T114600-2p5-native-canary",
+      "subject_count": 7,
+      "artifact_count": 59,
+      "total_bytes": 63886629,
+      "elapsed_seconds": 0.7720470970000406,
+      "bytes_per_second": 82749652.51245111,
+      "concurrency": 4
+    },
+    {
+      "label": "3 MS/s",
+      "session_id": "cap-20260827T125003-0b28a3a23a4d",
+      "subject_count": 7,
+      "artifact_count": 59,
+      "total_bytes": 68558739,
+      "elapsed_seconds": 0.9089302369975485,
+      "bytes_per_second": 75427943.98222326,
+      "concurrency": 16
+    },
+    {
+      "label": "5 MS/s",
+      "session_id": "cap-20260827T131841-ff07c4208a8f",
+      "subject_count": 7,
+      "artifact_count": 59,
+      "total_bytes": 70570606,
+      "elapsed_seconds": 1.209680177969858,
+      "bytes_per_second": 58338234.58894309,
+      "concurrency": 16
+    },
+    {
+      "label": "mixed 2.5/5",
+      "session_id": "cap-20260827T140554-a5bfc026cfde",
+      "subject_count": 7,
+      "artifact_count": 59,
+      "total_bytes": 66490061,
+      "elapsed_seconds": 0.8882848679786548,
+      "bytes_per_second": 74852182.4437943,
+      "concurrency": 16
+    }
+  ],
+  "artifact_inventory": [
+    {"name": "waterfall", "count": 7},
+    {"name": "pilot-methods", "count": 7},
+    {"name": "cfo-raw", "count": 7},
+    {"name": "cfo-dealiased", "count": 7},
+    {"name": "cfo-final", "count": 7},
+    {"name": "cfo-alternate", "count": 4},
+    {"name": "trajectory-accounting", "count": 4},
+    {"name": "full-capture-glrt20ms", "count": 4},
+    {"name": "pilot-doppler", "count": 4},
+    {"name": "pilot-carrier-tracking", "count": 4},
+    {"name": "pilot-segment-rates", "count": 4}
+  ],
+  "timeline": [
+    {"label": "Release V2 start", "utc": "2026-08-27T12:14:56.982770Z", "category": "gate"},
+    {"label": "Release V2 passed", "utc": "2026-08-27T12:20:54.091417Z", "category": "gate"},
+    {"label": "Native bandwidth V2 accepted", "utc": "2026-08-27T12:34:05.979123Z", "category": "gate"},
+    {"label": "3M/5M V6 accepted", "utc": "2026-08-27T12:47:50.735127Z", "category": "gate"},
+    {"label": "Deployment completed", "utc": "2026-08-27T12:49:16Z", "category": "deploy"},
+    {"label": "Live 3M capture", "utc": "2026-08-27T12:50:11.951437Z", "category": "capture"},
+    {"label": "Live 5M capture", "utc": "2026-08-27T13:18:50.103325Z", "category": "capture"},
+    {"label": "Live mixed capture", "utc": "2026-08-27T14:05:57.609777Z", "category": "capture"},
+    {"label": "Reverse mixed capture", "utc": "2026-08-27T14:35:13.716233Z", "category": "capture"},
+    {"label": "API auto-restart", "utc": "2026-08-27T15:36:24Z", "category": "incident"}
+  ],
+  "runtime": {
+    "capture_policy_id": "mixed-native-rates-16-safe-v1",
+    "cycle_length": 16,
+    "mixed_2p5_5_slots": 6,
+    "ordinary_pool_slots": 10,
+    "ordinary_pool_rates_hz": [2500000, 3000000, 5000000],
+    "kernel_buffers": 4,
+    "refill_samples": 1048576,
+    "queue_capacity_refills": 32,
+    "heavy_concurrency": 2,
+    "worker_count": 20,
+    "blas_threads": 4,
+    "acquisition_control_generation": 58,
+    "acquisition_control_state": "running"
+  },
+  "incidents": [
+    {
+      "id": "exact-lo-readback",
+      "summary": "The first live 3 MS/s attempt read back a center frequency two hertz from the requested exact IF.",
+      "resolution": "pluto-plus-utils revision c955bca added deterministic exact-setting retries; Leo revision 5400c930 pins it and exact readback then passed."
+    },
+    {
+      "id": "production-3m-retry",
+      "summary": "Two path jobs for cap-20260827T143234-0a14cb168c78 reached the 35-minute lease ceiling on their first attempts.",
+      "resolution": "Both attempts expired fail-closed; retries sealed in about eleven minutes and the 12-job, 98-product run succeeded. Cadence backpressure prevented RF pile-up."
+    },
+    {
+      "id": "api-segv",
+      "summary": "leo-api exited with SIGSEGV once at 2026-08-27T15:36:24Z while report-time 2.5 MS/s HTTP evidence was being collected; temporal correlation is not causation.",
+      "resolution": "systemd restarted it in six seconds. A bounded retry downloaded and verified all 59 PNGs in 0.772 seconds; NRestarts remained one. Root cause is unresolved."
+    }
+  ],
+  "evidence": {
+    "release_receipt": {
+      "path": "/srv/bulk/leo/qualification/release/release-5400c93-exact-lo-v1/receipt.json",
+      "sha256": "42d298c49b95880c5b92868505a1d23e5d35d169ec5af4787cc7ff3e534674fb"
+    },
+    "native_bandwidth_receipt": {
+      "path": "/srv/bulk/leo/qualification/native-bandwidth/accepted/5400c930059c0aa1a8aeb409593220b5801ca107/native-bandwidth-qualification-receipt-v2.json",
+      "sha256": "e5e88bb4a4019a9fe26369caca56efa0f3888a6991f5c956c5d8368916211a3e"
+    },
+    "rate_receipt": {
+      "path": "/srv/bulk/leo/qualification/sample-rate-3m/accepted/5400c930059c0aa1a8aeb409593220b5801ca107/contiguous-rate-qualification-receipt-v6.json",
+      "sha256": "51d0a7d82a09a8b9cf7c5be6c832dcc5bf4211637877edf2d137d95390d79534"
+    },
+    "deployment_receipt": {
+      "path": "/srv/bulk/leo/qualification/deployment/deploy-20260827T124857Z-5400c930059c0aa1a8aeb409593220b5801ca107.json",
+      "sha256": "7e34be57b8fb4f6e3733bd4378b134c926ab25d931c03da5eb764580e1794506"
+    },
+    "standard_cutover_root": "/srv/bulk/leo/qualification/standard-cutover/5400c930059c0aa1a8aeb409593220b5801ca107"
+  }
+}
