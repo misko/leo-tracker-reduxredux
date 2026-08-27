@@ -1032,6 +1032,54 @@ def test_tau_prior_is_normalized_within_candidate_hypothesis() -> None:
     assert probability_by_tau[5.0] / conditional_total == pytest.approx(0.1, abs=1e-12)
 
 
+def test_log_weight_normalization_is_translation_stable_and_fails_on_overflow() -> None:
+    expected = -math.log(3.0)
+
+    normalized = association_module._normalized_log_weights((1e308, 1e308, 1e308))
+    assert all(item == pytest.approx(expected) for item in normalized)
+    with pytest.raises(ValueError, match="dynamic range"):
+        association_module._normalized_log_weights((-1e308, 1e308))
+
+
+def test_association_revalidates_graph_bank_and_config_before_scoring(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    graph = _graph((10001,))
+    bank = _bank(graph, candidate_numbers=(10001,))
+    config = _config(maximum_active_satellites=1)
+
+    def forbidden_evidence(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("invalid contracts must fail before evidence scoring")
+
+    monkeypatch.setattr(association_module, "_marginal_evidence", forbidden_evidence)
+
+    poisoned_observation = graph.observations[0].model_copy(
+        update={"measured_cfo_hz": graph.observations[0].measured_cfo_hz + 1.0}
+    )
+    poisoned_graph = graph.model_copy(
+        update={"observations": (poisoned_observation,) + graph.observations[1:]}
+    )
+    with pytest.raises(ValueError, match="closed V1"):
+        associate_catalogue_hypotheses(poisoned_graph, bank, config=config)
+
+    candidate = bank.candidates[0]
+    state = candidate.tau_states[0]
+    poisoned_prediction = state.predictions[0].model_copy(
+        update={"predicted_cfo_hz": state.predictions[0].predicted_cfo_hz + 1.0}
+    )
+    poisoned_state = state.model_copy(
+        update={"predictions": (poisoned_prediction,) + state.predictions[1:]}
+    )
+    poisoned_candidate = candidate.model_copy(update={"tau_states": (poisoned_state,)})
+    poisoned_bank = bank.model_copy(update={"candidates": (poisoned_candidate,)})
+    with pytest.raises(ValueError, match="closed V1"):
+        associate_catalogue_hypotheses(graph, poisoned_bank, config=config)
+
+    poisoned_config = config.model_copy(update={"component_offset_prior_sigma_hz": -1.0})
+    with pytest.raises(ValueError, match="closed V1"):
+        associate_catalogue_hypotheses(graph, bank, config=poisoned_config)
+
+
 def test_prediction_uncertainty_determinant_penalizes_vague_candidate() -> None:
     graph = _graph((10001,), hardware_drift_hz_per_s=0.0)
     bank = _bank(

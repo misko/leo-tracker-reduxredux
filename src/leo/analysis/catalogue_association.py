@@ -128,6 +128,11 @@ def associate_catalogue_hypotheses(
 ) -> CatalogueAssociationResultV1:
     """Enumerate and normalize the complete bounded K=0,1,2 hypothesis family."""
 
+    graph, prediction_bank, config = _revalidate_association_inputs(
+        graph=graph,
+        prediction_bank=prediction_bank,
+        config=config,
+    )
     expected_support = CataloguePredictionSupportV1.from_graph(graph)
     if prediction_bank.support.content_digest != expected_support.content_digest:
         raise ValueError("prediction bank does not bind the supplied response-free support")
@@ -405,6 +410,31 @@ def associate_catalogue_hypotheses(
     )
 
 
+def _revalidate_association_inputs(
+    *,
+    graph: PhysicalEpisodeGraphV1,
+    prediction_bank: CataloguePredictionBankV1,
+    config: CatalogueAssociationConfigV1,
+) -> tuple[
+    PhysicalEpisodeGraphV1,
+    CataloguePredictionBankV1,
+    CatalogueAssociationConfigV1,
+]:
+    """Close Pydantic ``model_copy`` validator bypasses before scoring."""
+
+    try:
+        validated_graph = PhysicalEpisodeGraphV1.model_validate(graph.model_dump(mode="json"))
+        validated_bank = CataloguePredictionBankV1.model_validate(
+            prediction_bank.model_dump(mode="json")
+        )
+        validated_config = CatalogueAssociationConfigV1.model_validate(
+            config.model_dump(mode="json")
+        )
+    except (AttributeError, TypeError, ValueError) as error:
+        raise ValueError("association inputs must be valid, closed V1 documents") from error
+    return validated_graph, validated_bank, validated_config
+
+
 def _validate_prediction_coverage(
     *,
     graph: PhysicalEpisodeGraphV1,
@@ -435,8 +465,14 @@ def _normalized_log_weights(values: tuple[float, ...]) -> tuple[float, ...]:
     if not values:
         raise ValueError("cannot normalize an empty log-weight inventory")
     maximum = max(values)
-    normalizer = maximum + math.log(sum(math.exp(item - maximum) for item in values))
-    return tuple(item - normalizer for item in values)
+    shifted = tuple(item - maximum for item in values)
+    if any(not math.isfinite(item) for item in shifted):
+        raise ValueError("log-weight dynamic range is not representable")
+    shifted_normalizer = math.log(math.fsum(math.exp(item) for item in shifted))
+    normalized = tuple(item - shifted_normalizer for item in shifted)
+    if any(not math.isfinite(item) for item in normalized):
+        raise ValueError("normalized log weights are not finite")
+    return normalized
 
 
 def _iter_active_sets(
