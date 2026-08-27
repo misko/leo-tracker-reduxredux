@@ -13,8 +13,7 @@ Latest opened-development execution:
 - [complete one-attempt receipt](../reports/figures/2026_08_27_satellite_tracking_checkpoints_v1-execution-receipt.json)
 - Implementation commit `2a7a793999173f420394a59017a10dc744053b9b`;
   execution-authority commit `c4d3810cf25ed7f259978a2c10b88578eb1917a4`.
-- Result publication commit: **pending local publication; replace with the exact
-  commit before remote-main handoff**.
+- Result publication commit `e4b8f4d8dbd0c20a450ca8d1387ec74f1bdf8f32`.
 
 ## Purpose and claim boundary
 
