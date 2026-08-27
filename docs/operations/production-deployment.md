@@ -592,13 +592,15 @@ sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process r
 Start in dependency order. Twenty worker processes remain the global process
 bound on the 24-logical-CPU production host. Catalog admission is intentionally
 stricter by resource class: `streaming=16`, `cpu=8`, `memory=4`, and initially
-`heavy=2`. Each worker forces OpenBLAS, OpenMP, and MKL to at most four threads
+`heavy=2`. Each worker forces OpenBLAS, OpenMP, and MKL to at most ten threads
 at the exec boundary, after environment-file composition. The two-lease HEAVY
 cap therefore permits at most two independent native path jobs and roughly
-eight numerical-library threads at once. It remains the production safety
-boundary for native 3/5 MS/s analysis; raise it to four only after sealed
-measurements prove enough memory and I/O headroom with healthy RAID, no OOM or
-swap activity, and no kernel storage errors:
+twenty numerical-library threads at once, leaving four CPUs for acquisition,
+PostgreSQL, the API, and the host. It remains the production safety boundary
+for native 3/5 MS/s analysis. Do not raise the HEAVY lease cap on this 24-CPU
+host without first reducing the per-job numerical thread limit and proving the
+new combination with sealed CPU, memory, I/O, capture-continuity, RAID, OOM,
+swap, and kernel-storage evidence:
 
 ```text
 sudo systemctl enable --now leo-reconcile.timer
