@@ -118,7 +118,7 @@ about 1.03x nominal headroom and is not production-qualified by configuration al
 
 ### Measured remote-IP result (2026-08-27)
 
-Pinned Pluto+ Utils `80d806bdf7dada27a1d83692f35645c9d3414594` tested paired RX on only
+Pinned Pluto+ Utils `41dc53b948f096702abbdbec0d397c024ba679fb` tested paired RX on only
 `192.168.1.20` and `192.168.1.21`, with 262,144 samples/channel, 24 timed frames, two warmups,
 and eight kernel buffers. Original settings were restored on both radios.
 
@@ -143,6 +143,14 @@ keep-pace floor. Evidence is retained at
 2.5/10 scheduler weight remains zero, and no 10M production capture is allowed on this IP path.
 Software support remains dark so it can be requalified after a transport/firmware change; the
 failure must not be hidden by dropping a receiver, decimating, or resampling.
+
+Maximum safe refills also require a duration-aware metadata I/O timeout. A fixed five-second
+timeout, originally sized for 262,144-sample refills, deterministically timed out the first
+4,194,304-sample metadata refill on both radios even though the ordinary transport ladder kept
+pace. Pluto+ Utils issue #42 and revision `41dc53b948f096702abbdbec0d397c024ba679fb`
+resolve the timeout as `clamp(8 * ceil(refill_samples / sample_rate), 5s, 30s)` before metadata
+priming. The timeout remains finite and fail-closed; qualification must bind that exact utility
+revision and prove the maximum-buffer metadata path, not only ordinary libiio throughput.
 
 The same pinned utility then tested its maximum supported paired-RX frame size, 4,194,304
 samples/channel, with four kernel buffers and six timed frames per rung. At 5 MS/s, `.20` delivered
