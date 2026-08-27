@@ -357,15 +357,17 @@ def test_reports_resolve_local_links_and_state_the_scientific_limits() -> None:
     assert "**far-time catalogue null**" in addendum
 
 
-def test_evidence_ledger_inventory_includes_both_new_reports() -> None:
+def test_evidence_ledger_inventory_includes_long_arc_reports() -> None:
     ledger = LEDGER_PATH.read_text(encoding="utf-8")
     report_paths = tuple((ROOT / "reports").rglob("*.md"))
     top_level_paths = tuple((ROOT / "reports").glob("*.md"))
 
-    assert len(report_paths) == 133
-    assert len(top_level_paths) == 122
-    assert "all 133 tracked Markdown assets" in ledger
-    assert "122 top-level reports" in ledger
+    assert len(report_paths) == 135
+    assert len(top_level_paths) == 124
+    assert "all 135 tracked Markdown assets" in ledger
+    assert "124 top-level reports" in ledger
     assert "2026_08_26_post_fix_long_arc_research_cohort.md" in ledger
     assert "2026_08_26_wrong_time_specificity_and_orbital_time_shift.md" in ledger
     assert "2026_08_27_post_refill_edge_switching.md" in ledger
+    assert "2026_08_27_satellite_pnt_long_arc_development_results_attempt2.md" in ledger
+    assert "2026_08_27_satellite_pnt_long_arc_development_audit.md" in ledger
