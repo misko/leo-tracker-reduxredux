@@ -19,8 +19,8 @@ Chronology alone does not tell a reader which conclusion still governs.
 
 This page maps each current scientific claim to its strongest versioned
 evidence, controls, caveats, implementation status, and next falsifier. In the
-campaign-finalization tree, it also indexes all 135 tracked Markdown assets
-under `reports/`: 124 top-level reports, seven documents in the post-refill
+campaign-finalization tree, it also indexes all 141 tracked Markdown assets
+under `reports/`: 130 top-level reports, seven documents in the post-refill
 retrospective bundle, three scanner-rendered samples, and one TLE figure
 README. Canonical concept and pipeline pages link here for provenance; reports
 remain dated receipts.
@@ -410,6 +410,12 @@ documents establish scope or chronology rather than an outcome.
 - [Post-refill edge-switching evaluation](../../reports/2026_08_27_post_refill_edge_switching.md) — receiver-local virtual switching feasibility; no actual Fast Lock, coherent wideband TOA, or satellite identity claim.
 - [Opened long-arc development result](../../reports/2026_08_27_satellite_pnt_long_arc_development_results_attempt2.md) — sealed attempt-2 summary for the exact `9981` and `150802` arcs; opened development only.
 - [Opened long-arc association audit](../../reports/2026_08_27_satellite_pnt_long_arc_development_audit.md) — hash/archive closure and detailed interpretation of candidate stability, wrong-epoch observations, and orbit-versus-radio model disagreement.
+- [Paired Qin injection attempt-1 result](../../reports/2026_08_27_satellite_pnt_cross_family_injection_results.md) — completed execution whose outer file hashes close, but whose arm-level semantic digests do not reproduce after post-digest float quantization; noncanonical.
+- [Paired Qin injection attempt-1 digest audit](../../reports/2026_08_27_satellite_pnt_cross_family_injection_attempt1_digest_audit.md) — exact NO-GO receipt preserving all six semantic-digest failures and prohibiting downstream use.
+- [Paired Qin injection attempt-2 result](../../reports/2026_08_27_satellite_pnt_cross_family_injection_attempt2_results.md) — corrected 9,000-row paired evidence with all six arm and three pair digests closed; front-end measurement evidence only.
+- [Cross-family predictive scoring attempt 1](../../reports/2026_08_27_satellite_pnt_cross_family_predictive_scoring.md) — scientifically stable 3/6 diagnostic but noncanonical because last-bit result digests depend on BLAS thread count.
+- [Cross-family predictive scoring attempt-1 determinism audit](../../reports/2026_08_27_satellite_pnt_cross_family_predictive_scoring_attempt1_determinism_audit.md) — exact NO-GO receipt for the dense-covariance reproducibility defect.
+- [Cross-family predictive scoring attempt 2](../../reports/2026_08_27_satellite_pnt_cross_family_predictive_scoring_attempt2.md) — deterministic diagonal-plus-low-rank result, identical digest at 1/2/8 BLAS threads and only 3/6 truth arms correct; insufficient for a threshold or identity gate.
 
 ### Auxiliary versioned Markdown assets
 
@@ -440,7 +446,7 @@ The original ledger synthesis recorded four unversioned local draft reports:
 - `2026_08_22_thirteen_dwell_degree1_rerun.md`.
 
 Those exact paths are not tracked in the campaign-finalization tree and are not
-part of the 133-asset count or path-exhaustive index. Their stronger basin,
+part of the 141-asset count or path-exhaustive index. Their stronger basin,
 replay-slope, and multi-dwell association interpretations remain excluded from
 durable project authority. Similarly named tracked follow-on reports have
 their own indexed receipts and must not be treated as publication of these

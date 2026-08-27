@@ -23,6 +23,17 @@ AUDIT = PROJECT_ROOT / (
     "2026_08_27_satellite_pnt_cross_family_predictive_scoring_"
     "attempt1-determinism-audit.json"
 )
+RESULT2 = (
+    PROJECT_ROOT
+    / "reports/figures/2026_08_27_satellite_pnt_cross_family_predictive_scoring_attempt2.json"
+)
+REPORT2 = (
+    PROJECT_ROOT / "reports/2026_08_27_satellite_pnt_cross_family_predictive_scoring_attempt2.md"
+)
+CONFIG2 = PROJECT_ROOT / "config/analysis/satellite-pnt-cross-family-predictive-scoring-v2.json"
+AUDIT2 = PROJECT_ROOT / (
+    "reports/figures/2026_08_27_satellite_pnt_cross_family_predictive_scoring_attempt2-audit.json"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -82,3 +93,37 @@ def test_attempt1_result_is_superseded_but_retains_its_claim_boundary() -> None:
     assert persisted["positioning_validated"] is False
     assert len(persisted["cases"]) == 6
     assert len(persisted["leave_one_pair_out_diagnostics"]) == 6
+
+
+def test_attempt2_result_is_deterministic_and_recomputes_exactly() -> None:
+    wrapper = _load(RESULT2)
+    persisted = wrapper["result"]
+    execution = wrapper["execution"]
+    audit = _load(AUDIT2)
+    payload = dict(persisted)
+    digest = payload.pop("result_digest")
+    config = load_cross_family_qin_scoring_config(CONFIG2)
+    recomputed = score_cross_family_qin_evidence(
+        (PROJECT_ROOT / config.evidence_path).read_bytes(),
+        (PROJECT_ROOT / config.protocol_path).read_bytes(),
+        config,
+    )
+
+    assert canonical_digest(payload) == digest
+    assert digest == recomputed.result_digest
+    assert digest == "sha256:1b857b6620ca4de26374f68c9024e4386250de649aace81c12c8d850ef8fec67"
+    assert _sha256(RESULT2) == (
+        "sha256:02a430d186945b08e37e1b3f5b1925db6342ec59c4ef2f2d51135da69eb06b24"
+    )
+    assert _sha256(REPORT2) == execution["report_sha256"]
+    assert execution["new_iq_read"] is False
+    assert execution["new_rf_collection"] is False
+    assert len(set(audit["openblas_thread_count_digests"].values())) == 1
+    assert audit["result_digest"] == digest
+    for relative, expected in audit["sealed_files"].items():
+        assert _sha256(PROJECT_ROOT / relative) == expected
+    assert persisted["correct_truth_arm_count"] == 3
+    assert persisted["truth_arm_equal_accuracy"] == 0.5
+    assert persisted["formal_95_percent_rank_pair_count_sufficient"] is False
+    assert persisted["threshold_fitted"] is False
+    assert persisted["identity_claimed"] is False
