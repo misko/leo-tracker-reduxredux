@@ -19,8 +19,8 @@ Chronology alone does not tell a reader which conclusion still governs.
 
 This page maps each current scientific claim to its strongest versioned
 evidence, controls, caveats, implementation status, and next falsifier. In the
-campaign-finalization tree, it also indexes all 141 tracked Markdown assets
-under `reports/`: 130 top-level reports, seven documents in the post-refill
+campaign-finalization tree, it also indexes all 142 tracked Markdown assets
+under `reports/`: 131 top-level reports, seven documents in the post-refill
 retrospective bundle, three scanner-rendered samples, and one TLE figure
 README. Canonical concept and pipeline pages link here for provenance; reports
 remain dated receipts.
@@ -407,6 +407,7 @@ documents establish scope or chronology rather than an outcome.
 
 #### 2026-08-27 satellite-association and PNT milestone
 
+- [Satellite tracking, association, and Doppler-PNT synthesis](../../reports/2026_08_27_satellite_tracking_association_and_pnt_synthesis.md) — integrated methods, per-dwell gate/candidate matrix, long-arc results, positioning implications, and explicit denial of secure identity or real-data positioning validation.
 - [Post-refill edge-switching evaluation](../../reports/2026_08_27_post_refill_edge_switching.md) — receiver-local virtual switching feasibility; no actual Fast Lock, coherent wideband TOA, or satellite identity claim.
 - [Opened long-arc development result](../../reports/2026_08_27_satellite_pnt_long_arc_development_results_attempt2.md) — sealed attempt-2 summary for the exact `9981` and `150802` arcs; opened development only.
 - [Opened long-arc association audit](../../reports/2026_08_27_satellite_pnt_long_arc_development_audit.md) — hash/archive closure and detailed interpretation of candidate stability, wrong-epoch observations, and orbit-versus-radio model disagreement.
@@ -446,7 +447,7 @@ The original ledger synthesis recorded four unversioned local draft reports:
 - `2026_08_22_thirteen_dwell_degree1_rerun.md`.
 
 Those exact paths are not tracked in the campaign-finalization tree and are not
-part of the 141-asset count or path-exhaustive index. Their stronger basin,
+part of the 142-asset count or path-exhaustive index. Their stronger basin,
 replay-slope, and multi-dwell association interpretations remain excluded from
 durable project authority. Similarly named tracked follow-on reports have
 their own indexed receipts and must not be treated as publication of these
