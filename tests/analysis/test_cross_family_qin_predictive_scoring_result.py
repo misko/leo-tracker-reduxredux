@@ -18,6 +18,11 @@ RESULT = (
 )
 REPORT = PROJECT_ROOT / "reports/2026_08_27_satellite_pnt_cross_family_predictive_scoring.md"
 CONFIG = PROJECT_ROOT / "config/analysis/satellite-pnt-cross-family-predictive-scoring-v1.json"
+AUDIT = PROJECT_ROOT / (
+    "reports/figures/"
+    "2026_08_27_satellite_pnt_cross_family_predictive_scoring_"
+    "attempt1-determinism-audit.json"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -50,9 +55,10 @@ def test_persisted_predictive_result_and_report_close() -> None:
     assert execution["new_rf_collection"] is False
 
 
-def test_persisted_result_matches_recomputation_and_retains_claim_boundary() -> None:
+def test_attempt1_result_is_superseded_but_retains_its_claim_boundary() -> None:
     wrapper = _load(RESULT)
     persisted = wrapper["result"]
+    audit = _load(AUDIT)
     config = load_cross_family_qin_scoring_config(CONFIG)
     recomputed = score_cross_family_qin_evidence(
         (PROJECT_ROOT / config.evidence_path).read_bytes(),
@@ -60,7 +66,11 @@ def test_persisted_result_matches_recomputation_and_retains_claim_boundary() -> 
         config,
     )
 
-    assert persisted["result_digest"] == recomputed.result_digest
+    assert persisted["result_digest"] != recomputed.result_digest
+    assert recomputed.result_digest == (
+        "sha256:80eb3a6d5cc426f86984a8ce747df15ab4d2b1ed8f422471d61b49a2efc1469d"
+    )
+    assert audit["disposition"] == "no-go-for-canonical-predictive-result"
     assert persisted["correct_truth_arm_count"] == 3
     assert persisted["truth_arm_count"] == 6
     assert persisted["truth_arm_equal_accuracy"] == 0.5

@@ -22,9 +22,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal, cast
 
-import numpy as np
-import numpy.typing as npt
-
 from leo.analysis.research.predictive_evidence_diagnostics import (
     CatalogueRadioPredictiveEvidenceAudit,
     CatalogueRadioPredictiveEvidenceComparison,
@@ -524,64 +521,129 @@ def _fit_and_score(
     base_prediction_by_frame: dict[int, float] | None,
     variance_floor_hz2: float,
 ) -> ModelFitReceipt:
-    training_time = _vector(training, "reference_time_s")
-    future_time = _vector(future, "reference_time_s")
-    training_y = _vector(training, "measured_cfo_hz")
-    future_y = _vector(future, "measured_cfo_hz")
-    training_sigma = _positive_vector(training, "standard_uncertainty_hz")
-    future_sigma = _positive_vector(future, "standard_uncertainty_hz")
-    reference = float(np.mean(training_time))
+    training_time = _values(training, "reference_time_s")
+    future_time = _values(future, "reference_time_s")
+    training_y = _values(training, "measured_cfo_hz")
+    future_y = _values(future, "measured_cfo_hz")
+    training_sigma = _positive_values(training, "standard_uncertainty_hz")
+    future_sigma = _positive_values(future, "standard_uncertainty_hz")
+    reference = math.fsum(training_time) / len(training_time)
+    training_design: tuple[tuple[float, ...], ...]
+    future_design: tuple[tuple[float, ...], ...]
+    training_target: tuple[float, ...]
+    future_base: tuple[float, ...]
     if model_kind == "catalogue-orbit":
         if degree != 0 or base_prediction_by_frame is None:
             raise CrossFamilyQinScoringInputError("catalogue fit needs a fixed curve and offset")
-        training_base = np.asarray(
-            [base_prediction_by_frame[int(item["frame_index"])] for item in training],
-            dtype=np.float64,
+        training_base = tuple(
+            base_prediction_by_frame[int(item["frame_index"])] for item in training
         )
-        future_base = np.asarray(
-            [base_prediction_by_frame[int(item["frame_index"])] for item in future],
-            dtype=np.float64,
+        future_base = tuple(base_prediction_by_frame[int(item["frame_index"])] for item in future)
+        training_design = tuple((1.0,) for _ in training)
+        future_design = tuple((1.0,) for _ in future)
+        training_target = tuple(
+            observed - base for observed, base in zip(training_y, training_base, strict=True)
         )
-        training_design = np.ones((len(training), 1), dtype=np.float64)
-        future_design = np.ones((len(future), 1), dtype=np.float64)
-        training_target = training_y - training_base
     else:
         if degree not in (1, 2, 3) or base_prediction_by_frame is not None:
             raise CrossFamilyQinScoringInputError("radio fit needs a frozen polynomial degree")
-        training_design = _polynomial_design(training_time - reference, degree)
-        future_design = _polynomial_design(future_time - reference, degree)
+        training_design = tuple(_polynomial_row(time - reference, degree) for time in training_time)
+        future_design = tuple(_polynomial_row(time - reference, degree) for time in future_time)
         training_target = training_y
-        future_base = np.zeros(len(future), dtype=np.float64)
-    variance = training_sigma * training_sigma + variance_floor_hz2
-    precision = 1.0 / variance
-    normal = (training_design.T * precision) @ training_design
-    rhs = (training_design.T * precision) @ training_target
-    try:
-        normal_cholesky = np.linalg.cholesky(normal)
-        coefficients = np.linalg.solve(normal_cholesky.T, np.linalg.solve(normal_cholesky, rhs))
-        identity = np.eye(normal.shape[0], dtype=np.float64)
-        coefficient_covariance = np.linalg.solve(
-            normal_cholesky.T,
-            np.linalg.solve(normal_cholesky, identity),
+        future_base = tuple(0.0 for _ in future)
+    training_variance = tuple(sigma * sigma + variance_floor_hz2 for sigma in training_sigma)
+    future_variance = tuple(sigma * sigma + variance_floor_hz2 for sigma in future_sigma)
+    if min((*training_variance, *future_variance)) <= 0.0:
+        raise CrossFamilyQinScoringInputError("predictive variance must be positive")
+    parameter_count = degree + 1
+    normal = tuple(
+        tuple(
+            math.fsum(
+                row[left] * row[right] / variance
+                for row, variance in zip(training_design, training_variance, strict=True)
+            )
+            for right in range(parameter_count)
         )
-    except np.linalg.LinAlgError as error:
-        raise CrossFamilyQinScoringNumericalError("training normal matrix is not SPD") from error
-    prediction = future_base + future_design @ coefficients
-    residual = future_y - prediction
-    future_covariance = np.diag(future_sigma * future_sigma + variance_floor_hz2)
-    future_covariance += future_design @ coefficient_covariance @ future_design.T
-    try:
-        predictive_cholesky = np.linalg.cholesky(future_covariance)
-        whitened = np.linalg.solve(predictive_cholesky, residual)
-    except np.linalg.LinAlgError as error:
-        raise CrossFamilyQinScoringNumericalError(
-            "future predictive covariance is not SPD"
-        ) from error
-    mahalanobis = float(whitened @ whitened)
-    logdet = float(2.0 * np.sum(np.log(np.diag(predictive_cholesky))))
+        for left in range(parameter_count)
+    )
+    rhs = tuple(
+        math.fsum(
+            row[column] * target / variance
+            for row, target, variance in zip(
+                training_design,
+                training_target,
+                training_variance,
+                strict=True,
+            )
+        )
+        for column in range(parameter_count)
+    )
+    normal_cholesky = _cholesky(normal, "training normal matrix")
+    coefficients = _solve_cholesky(normal_cholesky, rhs)
+    coefficient_covariance = _inverse_from_cholesky(normal_cholesky)
+    prediction = tuple(
+        base
+        + math.fsum(
+            value * coefficient for value, coefficient in zip(row, coefficients, strict=True)
+        )
+        for base, row in zip(future_base, future_design, strict=True)
+    )
+    residual = tuple(
+        observed - predicted for observed, predicted in zip(future_y, prediction, strict=True)
+    )
+    future_information = tuple(
+        tuple(
+            math.fsum(
+                row[left] * row[right] / variance
+                for row, variance in zip(future_design, future_variance, strict=True)
+            )
+            for right in range(parameter_count)
+        )
+        for left in range(parameter_count)
+    )
+    predictive_precision = tuple(
+        tuple(
+            normal[row][column] + future_information[row][column]
+            for column in range(parameter_count)
+        )
+        for row in range(parameter_count)
+    )
+    predictive_cholesky = _cholesky(
+        predictive_precision,
+        "predictive information matrix",
+    )
+    projected_residual = tuple(
+        math.fsum(
+            row[column] * value / variance
+            for row, value, variance in zip(
+                future_design,
+                residual,
+                future_variance,
+                strict=True,
+            )
+        )
+        for column in range(parameter_count)
+    )
+    posterior_shift = _solve_cholesky(predictive_cholesky, projected_residual)
+    conditional_residual = tuple(
+        value
+        - math.fsum(
+            coefficient * shift for coefficient, shift in zip(row, posterior_shift, strict=True)
+        )
+        for row, value in zip(future_design, residual, strict=True)
+    )
+    mahalanobis = math.fsum(
+        value * value / variance
+        for value, variance in zip(conditional_residual, future_variance, strict=True)
+    ) + _quadratic(normal, posterior_shift)
+    if mahalanobis < 0.0 or not math.isfinite(mahalanobis):
+        raise CrossFamilyQinScoringNumericalError("predictive quadratic is invalid")
+    logdet = math.fsum(math.log(value) for value in future_variance)
+    logdet -= _logdet_from_cholesky(normal_cholesky)
+    logdet += _logdet_from_cholesky(predictive_cholesky)
     n = len(future)
     nll = 0.5 * math.fsum((mahalanobis, logdet, n * math.log(2.0 * math.pi)))
-    rms = float(math.sqrt(float(np.mean(residual * residual))))
+    rms = math.sqrt(math.fsum(value * value for value in residual) / n)
     summary = _summary(
         model_kind=model_kind,
         model_label="true-causal-tle-tau0-plus-offset" if degree == 0 else f"degree-{degree}",
@@ -596,10 +658,8 @@ def _fit_and_score(
         model_kind=model_kind,
         degree=degree,
         reference_time_s=reference,
-        coefficients_hz=tuple(float(item) for item in coefficients),
-        coefficient_covariance=tuple(
-            tuple(float(item) for item in row) for row in coefficient_covariance
-        ),
+        coefficients_hz=coefficients,
+        coefficient_covariance=coefficient_covariance,
         training_observation_count=len(training),
         future_observation_count=n,
         summary=summary,
@@ -897,19 +957,107 @@ def _revalidate_config(value: CrossFamilyQinScoringConfig) -> CrossFamilyQinScor
     return copied
 
 
-def _vector(rows: list[dict[str, Any]], key: str) -> npt.NDArray[np.float64]:
-    return np.asarray([_finite_float(item.get(key), key) for item in rows], dtype=np.float64)
+def _values(rows: list[dict[str, Any]], key: str) -> tuple[float, ...]:
+    return tuple(_finite_float(item.get(key), key) for item in rows)
 
 
-def _positive_vector(rows: list[dict[str, Any]], key: str) -> npt.NDArray[np.float64]:
-    values = _vector(rows, key)
-    if np.any(values <= 0.0):
+def _positive_values(rows: list[dict[str, Any]], key: str) -> tuple[float, ...]:
+    values = _values(rows, key)
+    if min(values) <= 0.0:
         raise CrossFamilyQinScoringInputError(f"{key} must be positive")
     return values
 
 
-def _polynomial_design(offsets_s: npt.NDArray[np.float64], degree: int) -> npt.NDArray[np.float64]:
-    return np.column_stack(tuple(offsets_s**power for power in range(degree + 1)))
+def _polynomial_row(offset_s: float, degree: int) -> tuple[float, ...]:
+    return tuple(offset_s**power for power in range(degree + 1))
+
+
+def _cholesky(
+    matrix: tuple[tuple[float, ...], ...],
+    label: str,
+) -> tuple[tuple[float, ...], ...]:
+    size = len(matrix)
+    if size < 1 or any(len(row) != size for row in matrix):
+        raise CrossFamilyQinScoringNumericalError(f"{label} is not square")
+    lower = [[0.0 for _ in range(size)] for _ in range(size)]
+    for row in range(size):
+        for column in range(row + 1):
+            remainder = matrix[row][column] - math.fsum(
+                lower[row][index] * lower[column][index] for index in range(column)
+            )
+            if row == column:
+                if not math.isfinite(remainder) or remainder <= 0.0:
+                    raise CrossFamilyQinScoringNumericalError(f"{label} is not SPD")
+                lower[row][column] = math.sqrt(remainder)
+            else:
+                value = remainder / lower[column][column]
+                if not math.isfinite(value):
+                    raise CrossFamilyQinScoringNumericalError(f"{label} is not finite")
+                lower[row][column] = value
+    return tuple(tuple(item for item in row) for row in lower)
+
+
+def _solve_cholesky(
+    lower: tuple[tuple[float, ...], ...],
+    right_hand_side: tuple[float, ...],
+) -> tuple[float, ...]:
+    size = len(lower)
+    if len(right_hand_side) != size:
+        raise CrossFamilyQinScoringNumericalError("linear solve dimensions differ")
+    forward: list[float] = []
+    for row in range(size):
+        value = (
+            right_hand_side[row]
+            - math.fsum(lower[row][column] * forward[column] for column in range(row))
+        ) / lower[row][row]
+        if not math.isfinite(value):
+            raise CrossFamilyQinScoringNumericalError("forward solve is not finite")
+        forward.append(value)
+    result = [0.0 for _ in range(size)]
+    for row in range(size - 1, -1, -1):
+        value = (
+            forward[row]
+            - math.fsum(lower[column][row] * result[column] for column in range(row + 1, size))
+        ) / lower[row][row]
+        if not math.isfinite(value):
+            raise CrossFamilyQinScoringNumericalError("back solve is not finite")
+        result[row] = value
+    return tuple(result)
+
+
+def _inverse_from_cholesky(
+    lower: tuple[tuple[float, ...], ...],
+) -> tuple[tuple[float, ...], ...]:
+    size = len(lower)
+    columns = tuple(
+        _solve_cholesky(
+            lower,
+            tuple(1.0 if row == column else 0.0 for row in range(size)),
+        )
+        for column in range(size)
+    )
+    return tuple(
+        tuple(0.5 * (columns[column][row] + columns[row][column]) for column in range(size))
+        for row in range(size)
+    )
+
+
+def _quadratic(
+    matrix: tuple[tuple[float, ...], ...],
+    vector: tuple[float, ...],
+) -> float:
+    return math.fsum(
+        vector[row]
+        * math.fsum(matrix[row][column] * vector[column] for column in range(len(vector)))
+        for row in range(len(vector))
+    )
+
+
+def _logdet_from_cholesky(lower: tuple[tuple[float, ...], ...]) -> float:
+    value = 2.0 * math.fsum(math.log(lower[index][index]) for index in range(len(lower)))
+    if not math.isfinite(value):
+        raise CrossFamilyQinScoringNumericalError("matrix log determinant is not finite")
+    return value
 
 
 def _observation_id(arm_digest: str, row: dict[str, Any]) -> str:
