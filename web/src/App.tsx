@@ -617,16 +617,22 @@ function QueueView() {
           <td>{operation.attempt_count}</td>
         </tr>)}</tbody>
       </table></div> : null}
+      <p className="queue-note">
+        Active means a worker owns an unexpired lease. Lease activity advances with the worker heartbeat.
+      </p>
       {queue?.truncated ? <p className="queue-warning">Showing the first 200 jobs.</p> : null}
       {queue && queue.items.length === 0 ? <p className="queue-empty">The processing queue is empty.</p> : null}
-      {queue && queue.items.length > 0 ? <div className="queue-table-scroll"><table className="queue-table">
-        <thead><tr><th>State</th><th>Work</th><th>Recording</th><th>Radio / receiver</th><th>Worker</th><th>Resource</th><th>Release</th></tr></thead>
+      {queue && queue.items.length > 0 ? <div className="queue-table-scroll"><table className="queue-table" aria-label="Processing jobs">
+        <thead><tr><th>State</th><th>Work</th><th>Recording</th><th>Radio / receiver</th><th>Worker</th><th>Activity</th><th>Resource</th><th>Release</th></tr></thead>
         <tbody>{queue.items.map((job) => <tr key={job.job_id}>
           <td><StatusBadge value={job.state === "leased" ? "running" : "queued"} /></td>
           <td><strong>{job.stage_key}</strong><small>{job.description}</small></td>
           <td><code>{job.session_id}</code><small>{job.run_id}</small></td>
           <td>{job.radio_id ?? (job.scope_kind === "paired" ? "Both radios" : "—")}<small>{job.stream_id ?? ""}{job.receiver_id === null ? "" : ` · RX${job.receiver_id}`}</small></td>
           <td>{job.worker_id ?? "Waiting"}</td>
+          <td><time dateTime={job.updated_at} title={formatDateTime(job.updated_at)}>
+            {job.state === "leased" ? "Heartbeat" : "Queued for"} {formatElapsed(new Date(queue.generated_at).getTime() - new Date(job.updated_at).getTime())}{job.state === "leased" ? " ago" : ""}
+          </time></td>
           <td>{job.resource_class}</td>
           <td><code>{job.pipeline_release_id.slice(0, 12)}…</code></td>
         </tr>)}</tbody>
