@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from threading import Lock
 from typing import Any, Literal
 from urllib.parse import quote
 
@@ -134,6 +135,8 @@ class CatalogStandardNativePresentationRepository:
     def __init__(self, catalog: CatalogRepository, artifacts: AnalysisArtifactStore) -> None:
         self._catalog = catalog
         self._artifacts = artifacts
+        self._projection_lock = Lock()
+        self._cached_projection: _NativeProjection | None = None
 
     def recognizes_native_current(self, session_id: str) -> bool:
         """Return whether the selected Standard run declares manifest schema V3.
@@ -492,8 +495,21 @@ class CatalogStandardNativePresentationRepository:
         return matches[0] if matches else None
 
     def _load(self, session_id: str) -> _NativeProjection | None:
+        snapshot = self._catalog.presentation_snapshot(session_id)
+        with self._projection_lock:
+            cached = self._cached_projection
+            if cached is not None and cached.snapshot == snapshot:
+                return cached
+            loaded = self._load_uncached(session_id, snapshot)
+            self._cached_projection = loaded
+            return loaded
+
+    def _load_uncached(
+        self,
+        session_id: str,
+        snapshot: CatalogSessionReadSnapshot | None,
+    ) -> _NativeProjection | None:
         try:
-            snapshot = self._catalog.presentation_snapshot(session_id)
             if snapshot is None or snapshot.analysis is None:
                 return None
             analysis = snapshot.analysis
