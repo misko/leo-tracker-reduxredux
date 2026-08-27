@@ -49,7 +49,8 @@ from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 DEFAULT_AMENDMENT = Path(
     "config/analysis/satellite-pnt-long-arc-development-execution-amendment-v1.json"
 )
-_SCHEMA = "org.leo.research.satellite-pnt-long-arc-execution-amendment/v1"
+_SCHEMA_V1 = "org.leo.research.satellite-pnt-long-arc-execution-amendment/v1"
+_SCHEMA_V2 = "org.leo.research.satellite-pnt-long-arc-execution-amendment/v2"
 _IMPLEMENTATION_FILES = (
     "src/leo/analysis/catalogue_population.py",
     "src/leo/analysis/catalogue_prediction.py",
@@ -83,7 +84,7 @@ def validate_execution_amendment(
     root = repository_root.resolve()
     path = _resolve_input(root, amendment_path)
     amendment = _load_json_object(path)
-    expected_keys = {
+    common_keys = {
         "schema",
         "amendment_id",
         "status",
@@ -97,29 +98,28 @@ def validate_execution_amendment(
         "claim_boundary",
         "amendment_digest",
     }
-    if set(amendment) != expected_keys or amendment.get("schema") != _SCHEMA:
+    schema = amendment.get("schema")
+    expected_keys = (
+        common_keys
+        if schema == _SCHEMA_V1
+        else common_keys | {"predecessor_attempt", "work_cap_amendment"}
+    )
+    if set(amendment) != expected_keys or schema not in {_SCHEMA_V1, _SCHEMA_V2}:
         raise LongArcExecutionAuthorityError("execution amendment schema is not exact")
     digest = canonical_digest(
         {key: value for key, value in amendment.items() if key != "amendment_digest"}
     )
     if amendment.get("amendment_digest") != digest:
         raise LongArcExecutionAuthorityError("execution amendment semantic digest drifted")
-    if amendment.get(
-        "status"
-    ) != "frozen-authority-for-one-opened-development-execution" or amendment.get("execution") != {
-        "authorized": True,
-        "maximum_attempt_count": 1,
-        "attempt_number": 1,
-        "outputs_must_not_exist_before_execution": True,
-        "response_scoring_before_this_amendment": False,
-        "new_rf_collection_authorized": False,
-    }:
-        raise LongArcExecutionAuthorityError("execution authority or attempt count differs")
+    _validate_execution_authority(amendment)
     _validate_claim_boundary(amendment["claim_boundary"])
     _validate_base_protocol(root, amendment["base_protocol"])
     _validate_implementation(root, amendment["implementation"])
     _validate_raw_tle_inputs(amendment["raw_tle_inputs"])
-    _validate_numerical_controls(amendment["numerical_controls"])
+    _validate_numerical_controls(amendment["numerical_controls"], schema=schema)
+    if schema == _SCHEMA_V2:
+        _validate_predecessor_attempt(root, amendment["predecessor_attempt"])
+        _validate_work_cap_amendment(amendment["work_cap_amendment"])
     _validate_output_paths(root, amendment["outputs"])
     return amendment
 
@@ -144,7 +144,7 @@ def execute_authorized_development_run(
         "repository_head_at_start": _git(root, "rev-parse", "HEAD"),
         "repository_tree_at_start": _git(root, "rev-parse", "HEAD^{tree}"),
         "started_utc": started_utc,
-        "attempt_number": 1,
+        "attempt_number": amendment["execution"]["attempt_number"],
     }
     _write_json_exclusive(receipt_path, {**receipt_base, "status": "running"})
     try:
@@ -536,7 +536,130 @@ def _validate_raw_tle_inputs(value: object) -> None:
             raise LongArcExecutionAuthorityError("raw TLE digest or inventory differs")
 
 
-def _validate_numerical_controls(value: object) -> None:
+def _validate_execution_authority(amendment: dict[str, Any]) -> None:
+    schema = amendment["schema"]
+    if schema == _SCHEMA_V1:
+        expected_status = "frozen-authority-for-one-opened-development-execution"
+        expected_execution = {
+            "authorized": True,
+            "maximum_attempt_count": 1,
+            "attempt_number": 1,
+            "outputs_must_not_exist_before_execution": True,
+            "response_scoring_before_this_amendment": False,
+            "new_rf_collection_authorized": False,
+        }
+    else:
+        expected_status = "frozen-authority-for-one-opened-development-retry-after-work-cap-failure"
+        expected_execution = {
+            "authorized": True,
+            "maximum_attempt_count": 2,
+            "attempt_number": 2,
+            "outputs_must_not_exist_before_execution": True,
+            "response_scoring_before_this_amendment": True,
+            "new_rf_collection_authorized": False,
+        }
+    if (
+        amendment.get("status") != expected_status
+        or amendment.get("execution") != expected_execution
+    ):
+        raise LongArcExecutionAuthorityError("execution authority or attempt count differs")
+
+
+def _validate_predecessor_attempt(root: Path, value: object) -> None:
+    if not isinstance(value, dict) or set(value) != {
+        "path",
+        "sha256",
+        "attempt_number",
+        "status",
+        "exception_type",
+        "exception_message",
+        "prior_amendment_digest",
+    }:
+        raise LongArcExecutionAuthorityError("predecessor attempt binding is malformed")
+    if value["path"] != (
+        "reports/figures/"
+        "2026_08_27_satellite_pnt_long_arc_development_attempt1-execution-receipt.json"
+    ) or value["prior_amendment_digest"] != (
+        "sha256:5f90039ae688027978fe23284cd7b64bb8a1ba7082ae1fc4f08f2d707f8c43ce"
+    ):
+        raise LongArcExecutionAuthorityError("predecessor attempt authority differs")
+    path = _resolve_input(root, Path(value["path"]))
+    if _sha256_file(path) != value["sha256"]:
+        raise LongArcExecutionAuthorityError("predecessor attempt receipt bytes drifted")
+    receipt = _load_json_object(path)
+    expected = {
+        "attempt_number": 1,
+        "status": "failed",
+        "exception_type": "CataloguePopulationWorkLimitError",
+        "exception_message": "exact Starlink population exceeds the declared propagation cap",
+        "amendment_digest": value["prior_amendment_digest"],
+    }
+    if any(receipt.get(key) != item for key, item in expected.items()) or any(
+        value.get(key) != item for key, item in expected.items() if key != "amendment_digest"
+    ):
+        raise LongArcExecutionAuthorityError("predecessor attempt outcome differs")
+
+
+def _validate_work_cap_amendment(value: object) -> None:
+    expected = {
+        "failure_layer": "response-free-field-population-work-cap",
+        "failing_arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+        "failing_field_delta_s": -500,
+        "previous_maximum_exact_propagated_states": 20000000,
+        "response_free_diagnostic_counts": [
+            {
+                "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+                "field_delta_s": -500,
+                "exact_time_count": 4701,
+                "coarse_candidate_count": 510,
+                "exact_work": 2397510,
+            },
+            {
+                "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+                "field_delta_s": 0,
+                "exact_time_count": 4701,
+                "coarse_candidate_count": 490,
+                "exact_work": 2303490,
+            },
+            {
+                "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+                "field_delta_s": 500,
+                "exact_time_count": 4701,
+                "coarse_candidate_count": 504,
+                "exact_work": 2369304,
+            },
+            {
+                "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+                "field_delta_s": -500,
+                "exact_time_count": 50361,
+                "coarse_candidate_count": 576,
+                "exact_work": 29007936,
+            },
+            {
+                "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+                "field_delta_s": 0,
+                "exact_time_count": 50361,
+                "coarse_candidate_count": 579,
+                "exact_work": 29159019,
+            },
+            {
+                "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+                "field_delta_s": 500,
+                "exact_time_count": 50361,
+                "coarse_candidate_count": 578,
+                "exact_work": 29108658,
+            },
+        ],
+        "maximum_observed_exact_work": 29159019,
+        "replacement_maximum_exact_propagated_states": 30000000,
+        "scientific_model_changed": False,
+        "response_scores_used_for_diagnosis": False,
+    }
+    if value != expected:
+        raise LongArcExecutionAuthorityError("work-cap-only amendment differs")
+
+
+def _validate_numerical_controls(value: object, *, schema: object) -> None:
     expected = {
         "tau_lower_s": -5.0,
         "tau_upper_s": 5.0,
@@ -551,7 +674,9 @@ def _validate_numerical_controls(value: object) -> None:
         "population_maximum_coarse_time_count": 10000,
         "population_maximum_exact_time_count": 200000,
         "population_maximum_coarse_propagated_states": 10000000,
-        "population_maximum_exact_propagated_states": 20000000,
+        "population_maximum_exact_propagated_states": (
+            20000000 if schema == _SCHEMA_V1 else 30000000
+        ),
         "maximum_candidate_count": 10000,
         "partition_rounding": "nearest-integer-half-up-v1",
     }
