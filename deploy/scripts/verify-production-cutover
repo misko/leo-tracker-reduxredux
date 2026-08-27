@@ -90,16 +90,16 @@ PROCESSING_RESOURCE_CAPACITY_QUERY = (
 )
 REVIEWED_CAPTURE_PROFILE_SHA256 = {
     Path("profiles/starlink-ch4-lower-2p5m-60s-native-bandwidth-v4.yaml"): (
-        "2c64cd3c67c032ec1bf9fc10ab072e25aeda3e9d7c8e0f562534f4c2f0680a45"
+        "2f9292572ac90333d5e1f4119b6e7ee2570786f498f452f7e3c302df83caa096"
     ),
     Path("profiles/starlink-ch4-lower-3m-60s-native-bandwidth-v4.yaml"): (
-        "739bcb7b701c9c098178dc92d6aa041f8c3dd515b68912e04b8bdc5d45b78f6e"
+        "740dda3e849ebbf797ca536b3f6fbfb8f155630458a67c6a96809b0a30382252"
     ),
     Path("profiles/starlink-ch4-lower-5m-60s-native-bandwidth-v4.yaml"): (
-        "c4e94f3cdeac866c9407ea863fedc0d7ba3d65582bfb81ce55aecc7ea5516cf1"
+        "86e294f0ed176039422679ff646c5dbd1211765b1135906d67f8201a48204731"
     ),
     Path("profiles/starlink-ch4-lower-10m-60s-native-bandwidth-v4.yaml"): (
-        "c6c1f395bcc205c3c73d2fd5f45f3ead2021fcb8d8b97c5753df2d8d65a2d0b1"
+        "a15b62c3600ac51daebc5863d5cb4cf7438986a41cdbf3fc3183c0f546b70099"
     ),
     Path("profiles/starlink-ch4-lower-2p5m-60s-device-axis-v3.yaml"): (
         "3845c71bf2ebc497fc1d605362130e3cb44317297f72af3bf4e683b9d0317c2b"
@@ -114,16 +114,16 @@ REVIEWED_CAPTURE_PROFILE_SHA256 = {
         "1b2ddf77c5e319b5255cf8c7d3b575160d7a6dda6e9b74d7b8a2389d5af42e22"
     ),
     Path("profiles/starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4.yaml"): (
-        "38d6f31818cf15a0efde0bb3a6ab1c896a410af75f06cc0eb864a2057241f486"
+        "759bf7c52ae88c2c6f88c764ddff8937dd5563ca0b4d8693ffbaa47dbf0f9d6b"
     ),
     Path("profiles/starlink-ch4-lower-5m-60s-mixed-device-axis-v4.yaml"): (
-        "5f17d3a7a74dc12ee1b29278d7b3addb2201361e57b46c33c50e759335dd5d33"
+        "07c74bc1a87542c8902a1f71762af46e49e7f08871de456b06ac5103b9d1a951"
     ),
     Path("profiles/starlink-ch4-lower-10m-60s-mixed-device-axis-v4.yaml"): (
-        "436369c5af1299173991e2ddd2bb2ce53b27825baeaa67cca82ea011a6aa241a"
+        "1b1262ce285eed6cbe1cde9c5196b86e2106e3ba3a67bed94554fc4227668154"
     ),
     Path("profiles/starlink-ch4-lower-15m-60s-mixed-device-axis-v4.yaml"): (
-        "bf1de1b18d94fae7fb1538a9d617decc8e0532b009138f7b9e9c15eb263dac77"
+        "33eebd9d5feccadfee6851a16bb5bb12245d7ffd23bfb3e19acaa0595463ce77"
     ),
     Path("profiles/hardware-canary-3m-60s-contiguous-v2.yaml"): (
         "7cff17eef3c4fe063dbfddba65fbfe51cc948d14cd00da44c450858c6fdff4e2"
@@ -190,6 +190,41 @@ print(json.dumps({
     "pluto_plus_utils_revision": receipt.pluto_plus_utils_revision,
     "created_utc_ns": receipt.created_utc_ns,
     "modes": [item.mode.value for item in receipt.captures],
+}, sort_keys=True, separators=(",", ":")))
+""".strip()
+NATIVE_BANDWIDTH_RECEIPT_V2_PROGRAM = """
+import json
+import sys
+from pathlib import Path
+
+from leo.qualification.native_bandwidth import NativeBandwidthQualificationReceiptV2
+
+receipt = NativeBandwidthQualificationReceiptV2.model_validate_json(
+    Path(sys.argv[1]).read_text(encoding="utf-8")
+)
+print(json.dumps({
+    "target_revision": receipt.target_revision,
+    "host": receipt.host.model_dump(mode="json"),
+    "radios": [item.model_dump(mode="json") for item in receipt.radios],
+    "pluto_plus_utils_revision": receipt.pluto_plus_utils_revision,
+    "created_utc_ns": receipt.created_utc_ns,
+    "modes": [item.mode.value for item in receipt.captures],
+    "metadata_rate_inventory": [
+        [ladder.sample_rate_hz for ladder in item.ladders]
+        for item in receipt.transport_evidence
+    ],
+    "largest_passing_refill_inventory": [
+        [ladder.largest_passing_samples_per_channel for ladder in item.ladders]
+        for item in receipt.transport_evidence
+    ],
+    "exact_rf_readback_inventory": [
+        [
+            ladder.readback_verified
+            and ladder.rf_bandwidth_hz == ladder.sample_rate_hz
+            for ladder in item.ladders
+        ]
+        for item in receipt.transport_evidence
+    ],
 }, sort_keys=True, separators=(",", ":")))
 """.strip()
 STATION_TOPOLOGY_RELATIVE_PATH = "gauss-four-path-postreboot-20260816-v1.json"
@@ -2983,6 +3018,65 @@ def verify_native_bandwidth_receipt_v1(
         raise ValueError("native-bandwidth receipt is stale or future-dated")
 
 
+def verify_native_bandwidth_receipt_v2(
+    path: Path,
+    *,
+    revision: str,
+    release: Path,
+    rate_target: dict[str, Any],
+) -> None:
+    """Require counter-proven refill selection and exact native RF readback."""
+
+    expected_path = (
+        NATIVE_BANDWIDTH_RECEIPT_ROOT / revision / "native-bandwidth-qualification-receipt-v2.json"
+    )
+    if path != expected_path:
+        raise ValueError("native-bandwidth V2 receipt path is not the revision authority")
+    load_json(path, "native-bandwidth V2 qualification receipt")
+    output = command(
+        "runuser",
+        "-u",
+        "leo",
+        "--",
+        str(release / ".venv/bin/python"),
+        "-I",
+        "-B",
+        "-c",
+        NATIVE_BANDWIDTH_RECEIPT_V2_PROGRAM,
+        str(path),
+    )
+    summary = json.loads(output)
+    expected_summary = {
+        "target_revision": revision,
+        "host": rate_target.get("expected_host"),
+        "radios": rate_target.get("expected_radios"),
+        "pluto_plus_utils_revision": rate_target.get("pluto_plus_utils_revision"),
+        "created_utc_ns": summary.get("created_utc_ns"),
+        "modes": [
+            "ordinary_2p5",
+            "ordinary_3",
+            "ordinary_5",
+            "mixed_2p5_5_high_first",
+            "mixed_2p5_5_high_second",
+        ],
+        "metadata_rate_inventory": [[2_500_000, 3_000_000, 5_000_000]] * 2,
+        "largest_passing_refill_inventory": [[1_048_576] * 3] * 2,
+        "exact_rf_readback_inventory": [[True] * 3] * 2,
+    }
+    if summary != expected_summary:
+        raise ValueError(
+            "native-bandwidth V2 receipt differs from the counter, RF, or V5 authority"
+        )
+    created_utc_ns = summary.get("created_utc_ns")
+    now_ns = time.time_ns()
+    if type(created_utc_ns) is not int or not (
+        now_ns - RATE_RECEIPT_MAXIMUM_AGE_NS
+        <= created_utc_ns
+        <= now_ns + RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS
+    ):
+        raise ValueError("native-bandwidth V2 receipt is stale or future-dated")
+
+
 def verify(args: argparse.Namespace) -> list[str]:
     revision = args.revision
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
@@ -3034,8 +3128,8 @@ def verify(args: argparse.Namespace) -> list[str]:
         raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
     rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
     verify_contiguous_rate_3m_receipt_v5(rate_receipt, revision=revision, release=release)
-    verify_native_bandwidth_receipt_v1(
-        NATIVE_BANDWIDTH_RECEIPT_ROOT / revision / "native-bandwidth-qualification-receipt-v1.json",
+    verify_native_bandwidth_receipt_v2(
+        NATIVE_BANDWIDTH_RECEIPT_ROOT / revision / "native-bandwidth-qualification-receipt-v2.json",
         revision=revision,
         release=release,
         rate_target=rate_receipt["target"],

@@ -1036,6 +1036,86 @@ def test_processing_resource_capacity_probe_is_exact_read_only_and_service_scope
     assert SCRIPT_GLOBALS["PROCESSING_RESOURCE_CAPACITY_QUERY"].startswith("SELECT ")
 
 
+def test_native_bandwidth_v2_receipt_requires_counter_refill_and_exact_rf_readback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    revision = "a" * 40
+    release = tmp_path / "release"
+    root = tmp_path / "native-bandwidth"
+    receipt = root / revision / "native-bandwidth-qualification-receipt-v2.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text("{}\n", encoding="utf-8")
+    receipt.chmod(0o440)
+    created_utc_ns = time.time_ns()
+    host = {
+        "schema_version": 1,
+        "hostname": "gauss",
+        "machine_id": "machine-id",
+        "operating_system": "test-linux",
+    }
+    radios = _expected_rate_radios_v4()
+    ppu_revision = "8" * 40
+    summary = {
+        "target_revision": revision,
+        "host": host,
+        "radios": radios,
+        "pluto_plus_utils_revision": ppu_revision,
+        "created_utc_ns": created_utc_ns,
+        "modes": [
+            "ordinary_2p5",
+            "ordinary_3",
+            "ordinary_5",
+            "mixed_2p5_5_high_first",
+            "mixed_2p5_5_high_second",
+        ],
+        "metadata_rate_inventory": [[2_500_000, 3_000_000, 5_000_000]] * 2,
+        "largest_passing_refill_inventory": [[1_048_576] * 3] * 2,
+        "exact_rf_readback_inventory": [[True] * 3] * 2,
+    }
+    calls: list[tuple[str, ...]] = []
+
+    def fake_command(*argv: str, timeout_seconds: float | None = None) -> str:
+        assert timeout_seconds is None
+        calls.append(argv)
+        return json.dumps(summary)
+
+    function = SCRIPT_GLOBALS["verify_native_bandwidth_receipt_v2"]
+    monkeypatch.setitem(function.__globals__, "NATIVE_BANDWIDTH_RECEIPT_ROOT", root)
+    monkeypatch.setitem(function.__globals__, "command", fake_command)
+    rate_target = {
+        "expected_host": host,
+        "expected_radios": radios,
+        "pluto_plus_utils_revision": ppu_revision,
+    }
+
+    _call(
+        "verify_native_bandwidth_receipt_v2",
+        receipt,
+        revision=revision,
+        release=release,
+        rate_target=rate_target,
+    )
+    assert "NativeBandwidthQualificationReceiptV2.model_validate_json" in calls[0][8]
+
+    for key, value in (
+        ("largest_passing_refill_inventory", [[2_097_152] * 3] * 2),
+        ("exact_rf_readback_inventory", [[False] * 3] * 2),
+        ("metadata_rate_inventory", [[2_500_000, 3_000_000]] * 2),
+    ):
+        original = summary[key]
+        summary[key] = value
+        with pytest.raises(ValueError, match="counter, RF, or V5"):
+            _call(
+                "verify_native_bandwidth_receipt_v2",
+                receipt,
+                revision=revision,
+                release=release,
+                rate_target=rate_target,
+            )
+        summary[key] = original
+
+
 @pytest.mark.parametrize(
     "inventory",
     (
@@ -2560,8 +2640,8 @@ def test_full_cutover_requires_canonical_v5_device_axis_rate_authority() -> None
         "verify_contiguous_rate_3m_receipt_v5(rate_receipt, revision=revision, release=release)"
         in verify_source
     )
-    assert "native-bandwidth-qualification-receipt-v1.json" in verify_source
-    assert "verify_native_bandwidth_receipt_v1(" in verify_source
+    assert "native-bandwidth-qualification-receipt-v2.json" in verify_source
+    assert "verify_native_bandwidth_receipt_v2(" in verify_source
 
 
 def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Literal, Self
+from typing import Annotated, ClassVar, Literal, Self
 
 from pydantic import Field, StringConstraints, model_validator
 
@@ -20,13 +20,15 @@ from leo.contracts.starlink_frequency import (
 )
 from leo.contracts.states import CaptureState, StarlinkEdge
 
-_REFILL_SAMPLES = 4_194_304
+_V1_REFILL_SAMPLES = 4_194_304
+_V2_REFILL_SAMPLES = 1_048_576
+_METADATA_LADDER_SAMPLES = (4_194_304, 2_097_152, 1_048_576, 524_288)
 _KERNEL_BUFFERS = 4
 _QUEUE_CAPACITY_REFILLS = 32
 _MAXIMUM_QUEUE_HIGH_WATER_REFILLS = 24
 _MINIMUM_OBSERVED_PERCENT = 95
 
-_ORDINARY_PROFILE_AUTHORITY = {
+_ORDINARY_PROFILE_AUTHORITY_V1 = {
     2_500_000: (
         "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
         "sha256:fd7ebe29c1ed6bb9b85da0d35e2ce348af3f1a885dd53546e68a5f530dac9cba",
@@ -40,7 +42,7 @@ _ORDINARY_PROFILE_AUTHORITY = {
         "sha256:37c144b63573556c70fd06bcc5a394a33a7070d6c99b519154b750bcdbd0dcd4",
     ),
 }
-_MIXED_PROFILE_AUTHORITY = {
+_MIXED_PROFILE_AUTHORITY_V1 = {
     2_500_000: (
         "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
         "sha256:df2a9d8c76f03a8f5e062b6ff62d5fb5650213b5738828b8fa5ae72fef3ee2d2",
@@ -48,6 +50,30 @@ _MIXED_PROFILE_AUTHORITY = {
     5_000_000: (
         "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
         "sha256:ff8cc094a9f692352b354619fe479fd6f0e970304123706f409ff1a4af55d404",
+    ),
+}
+_ORDINARY_PROFILE_AUTHORITY_V2 = {
+    2_500_000: (
+        "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+        "sha256:140d4f834fd27b94754ea9017f2be45da21af2662dfef8ec97c4487fbf15bc89",
+    ),
+    3_000_000: (
+        "starlink-ch4-lower-3m-60s-native-bandwidth-v4",
+        "sha256:523402d005564d97177ee139f1a616c01b6b65d9a6c4ad11a0564c074216865c",
+    ),
+    5_000_000: (
+        "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+        "sha256:6f8ec4a5dec0f6b18d09c0f464c22c143ac363f2088242db830b0757a6316294",
+    ),
+}
+_MIXED_PROFILE_AUTHORITY_V2 = {
+    2_500_000: (
+        "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+        "sha256:e5f088ba153a893eb5f5324c6c411ebe189acc9de5bfa68211a841edc9bbdb44",
+    ),
+    5_000_000: (
+        "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
+        "sha256:e5d593c1711ddb65be6adeb2f3fe620afe99948aed2881dabc142b5737e81afc",
     ),
 }
 
@@ -96,13 +122,15 @@ class NativeBandwidthLadderCellV1(ContractModel):
 class NativeBandwidthTransportEvidenceV1(ContractModel):
     """Exact PPU ladder evidence for one production IP radio."""
 
+    EXPECTED_REFILL_SAMPLES: ClassVar[int] = _V1_REFILL_SAMPLES
+
     schema_version: Literal[1] = 1
     radio_id: RadioId
     endpoint: Literal["192.168.1.20", "192.168.1.21"]
     serial: Annotated[str, StringConstraints(min_length=1, max_length=128)]
     evidence_sha256: Sha256Digest
     pluto_plus_utils_revision: GitRevision
-    samples_per_channel: Annotated[int, Field(gt=0)] = _REFILL_SAMPLES
+    samples_per_channel: Annotated[int, Field(gt=0)] = _V1_REFILL_SAMPLES
     frames: Annotated[int, Field(ge=1)]
     warmup_frames: Annotated[int, Field(ge=1)]
     kernel_buffers: Annotated[int, Field(ge=1)] = _KERNEL_BUFFERS
@@ -116,7 +144,10 @@ class NativeBandwidthTransportEvidenceV1(ContractModel):
 
     @model_validator(mode="after")
     def _ladder_inventory_is_exact(self) -> Self:
-        if self.samples_per_channel != _REFILL_SAMPLES or self.kernel_buffers != _KERNEL_BUFFERS:
+        if (
+            self.samples_per_channel != self.EXPECTED_REFILL_SAMPLES
+            or self.kernel_buffers != _KERNEL_BUFFERS
+        ):
             raise ValueError("PPU ladder must use maximum refill and four kernel buffers")
         if tuple(cell.sample_rate_hz for cell in self.cells) != (
             2_500_000,
@@ -127,8 +158,102 @@ class NativeBandwidthTransportEvidenceV1(ContractModel):
         return self
 
 
+class NativeBandwidthMetadataContinuityCellV1(ContractModel):
+    """Counter-authoritative result for one refill-size rung."""
+
+    schema_version: Literal[1] = 1
+    samples_per_channel: Annotated[int, Field(gt=0)]
+    requested_frames: Annotated[int, Field(ge=2)]
+    observed_frames: Annotated[int, Field(ge=2)]
+    observed_sample_count: Annotated[int, Field(gt=0)]
+    device_span_sample_count: Annotated[int, Field(gt=0)]
+    missing_sample_count: Annotated[int, Field(ge=0)]
+    gap_count: Annotated[int, Field(ge=0)]
+    overflow_count: Annotated[int, Field(ge=0)]
+    observed_fraction: Annotated[float, Field(ge=0, le=1)]
+    passed: bool
+
+    @model_validator(mode="after")
+    def _counter_closure_is_exact(self) -> Self:
+        if self.observed_frames != self.requested_frames:
+            raise ValueError("metadata ladder did not return every requested frame")
+        if self.observed_sample_count != self.observed_frames * self.samples_per_channel:
+            raise ValueError("metadata ladder observed sample count does not close")
+        if self.device_span_sample_count != (
+            self.observed_sample_count + self.missing_sample_count
+        ):
+            raise ValueError("metadata ladder device span does not close")
+        expected_fraction = self.observed_sample_count / self.device_span_sample_count
+        if abs(self.observed_fraction - expected_fraction) > 1e-12:
+            raise ValueError("metadata ladder observed fraction does not close")
+        expected_pass = self.observed_fraction >= 0.95 and self.overflow_count == 0
+        if self.passed is not expected_pass:
+            raise ValueError("metadata ladder pass result is non-canonical")
+        return self
+
+
+class NativeBandwidthMetadataLadderEvidenceV1(ContractModel):
+    """One rate-specific PPU metadata-continuity ladder and its raw report digest."""
+
+    schema_version: Literal[1] = 1
+    report_sha256: Sha256Digest
+    metadata_abi: Literal[1] = 1
+    sample_rate_hz: Literal[2_500_000, 3_000_000, 5_000_000]
+    rf_bandwidth_hz: Literal[2_500_000, 3_000_000, 5_000_000]
+    kernel_buffers: Literal[4] = 4
+    minimum_observed_fraction: Annotated[float, Field(ge=0.95, le=0.95)] = 0.95
+    largest_passing_samples_per_channel: Literal[1_048_576] = 1_048_576
+    original_settings_restored: Literal[True] = True
+    readback_verified: Literal[True] = True
+    failure_count: Literal[0] = 0
+    cells: tuple[
+        NativeBandwidthMetadataContinuityCellV1,
+        NativeBandwidthMetadataContinuityCellV1,
+        NativeBandwidthMetadataContinuityCellV1,
+        NativeBandwidthMetadataContinuityCellV1,
+    ]
+
+    @model_validator(mode="after")
+    def _rate_bandwidth_and_ladder_are_exact(self) -> Self:
+        if self.rf_bandwidth_hz != self.sample_rate_hz:
+            raise ValueError("PPU metadata ladder RF bandwidth must equal native sample rate")
+        if tuple(item.samples_per_channel for item in self.cells) != _METADATA_LADDER_SAMPLES:
+            raise ValueError("PPU metadata ladder refill inventory is not exact")
+        largest = next((item.samples_per_channel for item in self.cells if item.passed), None)
+        if largest != self.largest_passing_samples_per_channel:
+            raise ValueError("PPU metadata ladder largest passing refill is not canonical")
+        return self
+
+
+class NativeBandwidthTransportEvidenceV2(ContractModel):
+    """Counter-authoritative PPU evidence for one exact production IP radio."""
+
+    schema_version: Literal[2] = 2
+    radio_id: RadioId
+    endpoint: Literal["192.168.1.20", "192.168.1.21"]
+    serial: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    pluto_plus_utils_revision: GitRevision
+    ladders: tuple[
+        NativeBandwidthMetadataLadderEvidenceV1,
+        NativeBandwidthMetadataLadderEvidenceV1,
+        NativeBandwidthMetadataLadderEvidenceV1,
+    ]
+
+    @model_validator(mode="after")
+    def _rate_inventory_is_exact(self) -> Self:
+        if tuple(item.sample_rate_hz for item in self.ladders) != (
+            2_500_000,
+            3_000_000,
+            5_000_000,
+        ):
+            raise ValueError("PPU metadata ladder rate inventory is not exact")
+        return self
+
+
 class NativeBandwidthStreamEvidenceV1(ContractModel):
     """Verified RF, device-axis, and queue closure for one captured stream."""
+
+    EXPECTED_REFILL_SAMPLES: ClassVar[int] = _V1_REFILL_SAMPLES
 
     schema_version: Literal[1] = 1
     radio: RadioIdentityV1
@@ -148,7 +273,7 @@ class NativeBandwidthStreamEvidenceV1(ContractModel):
     logical_sample_count: Annotated[int, Field(gt=0)]
     observed_sample_count: Annotated[int, Field(gt=0)]
     zero_fill_sample_count: Annotated[int, Field(ge=0)]
-    refill_samples: Annotated[int, Field(gt=0)] = _REFILL_SAMPLES
+    refill_samples: Annotated[int, Field(gt=0)] = _V1_REFILL_SAMPLES
     kernel_buffers: Annotated[int, Field(ge=1)] = _KERNEL_BUFFERS
     queue_capacity_refills: Annotated[int, Field(ge=1)] = _QUEUE_CAPACITY_REFILLS
     queue_high_water_refills: Annotated[int, Field(ge=0, le=24)]
@@ -171,7 +296,7 @@ class NativeBandwidthStreamEvidenceV1(ContractModel):
         if self.rf_bandwidth_hz != self.sample_rate_hz:
             raise ValueError("RF analog bandwidth must equal native sample rate")
         if (
-            self.refill_samples != _REFILL_SAMPLES
+            self.refill_samples != self.EXPECTED_REFILL_SAMPLES
             or self.kernel_buffers != _KERNEL_BUFFERS
             or self.queue_capacity_refills != _QUEUE_CAPACITY_REFILLS
             or self.queue_high_water_refills > _MAXIMUM_QUEUE_HIGH_WATER_REFILLS
@@ -219,8 +344,21 @@ class NativeBandwidthStreamEvidenceV1(ContractModel):
         return self
 
 
+class NativeBandwidthStreamEvidenceV2(NativeBandwidthStreamEvidenceV1):
+    """V2 stream evidence pinned to the counter-proven production refill."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    EXPECTED_REFILL_SAMPLES: ClassVar[int] = _V2_REFILL_SAMPLES
+    refill_samples: Annotated[int, Field(gt=0)] = _V2_REFILL_SAMPLES
+
+
 class NativeBandwidthCaptureEvidenceV1(ContractModel):
     """One exact verified ordinary or mixed production capture."""
+
+    ORDINARY_PROFILE_AUTHORITY: ClassVar[dict[int, tuple[str, str]]] = (
+        _ORDINARY_PROFILE_AUTHORITY_V1
+    )
+    MIXED_PROFILE_AUTHORITY: ClassVar[dict[int, tuple[str, str]]] = _MIXED_PROFILE_AUTHORITY_V1
 
     schema_version: Literal[1] = 1
     mode: NativeBandwidthCaptureModeV1
@@ -246,7 +384,7 @@ class NativeBandwidthCaptureEvidenceV1(ContractModel):
         tuning = {(stream.starlink_channel, stream.starlink_edge) for stream in self.streams}
         if len(tuning) != 1:
             raise ValueError("qualification capture radios must share one channel and edge")
-        authority = _ORDINARY_PROFILE_AUTHORITY if ordinary else _MIXED_PROFILE_AUTHORITY
+        authority = self.ORDINARY_PROFILE_AUTHORITY if ordinary else self.MIXED_PROFILE_AUTHORITY
         if any(
             (stream.profile_name, stream.profile_revision_digest)
             != authority[stream.sample_rate_hz]
@@ -254,6 +392,17 @@ class NativeBandwidthCaptureEvidenceV1(ContractModel):
         ):
             raise ValueError("qualification capture profile identity is not reviewed")
         return self
+
+
+class NativeBandwidthCaptureEvidenceV2(NativeBandwidthCaptureEvidenceV1):
+    """V2 capture evidence bound to V2 stream and profile authorities."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    ORDINARY_PROFILE_AUTHORITY: ClassVar[dict[int, tuple[str, str]]] = (
+        _ORDINARY_PROFILE_AUTHORITY_V2
+    )
+    MIXED_PROFILE_AUTHORITY: ClassVar[dict[int, tuple[str, str]]] = _MIXED_PROFILE_AUTHORITY_V2
+    streams: tuple[NativeBandwidthStreamEvidenceV2, NativeBandwidthStreamEvidenceV2]  # type: ignore[assignment]
 
 
 class NativeBandwidthQualificationReceiptV1(ContractModel):
@@ -313,8 +462,25 @@ class NativeBandwidthQualificationReceiptV1(ContractModel):
         return self
 
 
+class NativeBandwidthQualificationReceiptV2(NativeBandwidthQualificationReceiptV1):
+    """Accepted authority using counter-proven refills and exact RF readback."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    transport_evidence: tuple[
+        NativeBandwidthTransportEvidenceV2,
+        NativeBandwidthTransportEvidenceV2,
+    ]  # type: ignore[assignment]
+    captures: tuple[
+        NativeBandwidthCaptureEvidenceV2,
+        NativeBandwidthCaptureEvidenceV2,
+        NativeBandwidthCaptureEvidenceV2,
+        NativeBandwidthCaptureEvidenceV2,
+        NativeBandwidthCaptureEvidenceV2,
+    ]  # type: ignore[assignment]
+
+
 def native_bandwidth_qualification_receipt_digest(
-    receipt: NativeBandwidthQualificationReceiptV1,
+    receipt: NativeBandwidthQualificationReceiptV1 | NativeBandwidthQualificationReceiptV2,
 ) -> str:
     """Address the complete receipt without its self digest."""
 
@@ -329,13 +495,54 @@ def build_native_bandwidth_capture_evidence_v1(
 ) -> NativeBandwidthCaptureEvidenceV1:
     """Project one already storage-verified V3/V4 manifest into qualification evidence."""
 
+    documents = _native_bandwidth_stream_evidence_documents(manifest)
+    return NativeBandwidthCaptureEvidenceV1(
+        mode=mode,
+        session_id=manifest.session_id,
+        manifest_schema_version=manifest.schema_version,
+        manifest_sha256=manifest_sha256,
+        capture_state=manifest.state,
+        streams=(
+            NativeBandwidthStreamEvidenceV1.model_validate(documents[0]),
+            NativeBandwidthStreamEvidenceV1.model_validate(documents[1]),
+        ),
+    )
+
+
+def build_native_bandwidth_capture_evidence_v2(
+    manifest: RecordingManifestV3 | RecordingManifestV4,
+    *,
+    mode: NativeBandwidthCaptureModeV1,
+    manifest_sha256: str,
+) -> NativeBandwidthCaptureEvidenceV2:
+    """Project a verified V3/V4 manifest using the counter-proven refill authority."""
+
+    documents = _native_bandwidth_stream_evidence_documents(manifest)
+    return NativeBandwidthCaptureEvidenceV2(
+        mode=mode,
+        session_id=manifest.session_id,
+        manifest_schema_version=manifest.schema_version,
+        manifest_sha256=manifest_sha256,
+        capture_state=manifest.state,
+        streams=(
+            NativeBandwidthStreamEvidenceV2.model_validate({**documents[0], "schema_version": 2}),
+            NativeBandwidthStreamEvidenceV2.model_validate({**documents[1], "schema_version": 2}),
+        ),
+    )
+
+
+def _native_bandwidth_stream_evidence_documents(
+    manifest: RecordingManifestV3 | RecordingManifestV4,
+) -> tuple[dict[str, object], dict[str, object]]:
+    """Return storage-verified stream facts shared by immutable V1 and additive V2."""
+
     tuning = resolve_manifest_starlink_tuning(manifest)
     leg_by_radio = (
         {leg.radio_id: leg for leg in manifest.capture_plan.radio_plans}
         if isinstance(manifest, RecordingManifestV4)
         else {}
     )
-    stream_evidence: list[NativeBandwidthStreamEvidenceV1] = []
+    stream_evidence: list[dict[str, object]] = []
     for stream in manifest.streams:
         intent = tuning[stream.stream_id]
         if isinstance(manifest, RecordingManifestV4):
@@ -350,48 +557,43 @@ def build_native_bandwidth_capture_evidence_v1(
         channel_start, channel_stop = starlink_channel_if_bounds_hz(intent.channel)
         pilot = starlink_edge_if_center_frequency_hz(intent.channel, intent.edge)
         stream_evidence.append(
-            NativeBandwidthStreamEvidenceV1(
-                radio=stream.radio,
-                profile_name=profile.name,
-                profile_revision_digest=revision.revision_digest,
-                sample_rate_hz=applied.sample_rate_hz,
-                rf_bandwidth_hz=bandwidth,
-                center_frequency_hz=center,
-                starlink_channel=intent.channel,
-                starlink_edge=intent.edge,
-                pilot_if_center_frequency_hz=pilot,
-                channel_if_start_hz=channel_start,
-                channel_if_stop_hz=channel_stop,
-                captured_if_start_hz=center - bandwidth // 2,
-                captured_if_stop_hz=center + bandwidth // 2,
-                requested_sample_count=stream.requested_sample_count,
-                logical_sample_count=stream.logical_sample_count,
-                observed_sample_count=stream.observed_sample_count,
-                zero_fill_sample_count=stream.zero_fill_sample_count,
-                refill_samples=profile.refill_samples,
-                kernel_buffers=continuity.kernel_buffers,
-                queue_capacity_refills=continuity.queue_capacity_refills,
-                queue_high_water_refills=continuity.queue_high_water_refills,
-                gap_count=continuity.gap_count,
-                overflow_count=continuity.overflow_count,
-                enqueue_failure_count=continuity.enqueue_failure_count,
-                terminal_rejected_gap_count=continuity.terminal_rejected_gap_count,
-                terminal_rejected_missing_sample_count=(
+            {
+                "radio": stream.radio,
+                "profile_name": profile.name,
+                "profile_revision_digest": revision.revision_digest,
+                "sample_rate_hz": applied.sample_rate_hz,
+                "rf_bandwidth_hz": bandwidth,
+                "center_frequency_hz": center,
+                "starlink_channel": intent.channel,
+                "starlink_edge": intent.edge,
+                "pilot_if_center_frequency_hz": pilot,
+                "channel_if_start_hz": channel_start,
+                "channel_if_stop_hz": channel_stop,
+                "captured_if_start_hz": center - bandwidth // 2,
+                "captured_if_stop_hz": center + bandwidth // 2,
+                "requested_sample_count": stream.requested_sample_count,
+                "logical_sample_count": stream.logical_sample_count,
+                "observed_sample_count": stream.observed_sample_count,
+                "zero_fill_sample_count": stream.zero_fill_sample_count,
+                "refill_samples": profile.refill_samples,
+                "kernel_buffers": continuity.kernel_buffers,
+                "queue_capacity_refills": continuity.queue_capacity_refills,
+                "queue_high_water_refills": continuity.queue_high_water_refills,
+                "gap_count": continuity.gap_count,
+                "overflow_count": continuity.overflow_count,
+                "enqueue_failure_count": continuity.enqueue_failure_count,
+                "terminal_rejected_gap_count": continuity.terminal_rejected_gap_count,
+                "terminal_rejected_missing_sample_count": (
                     continuity.terminal_rejected_missing_sample_count
                 ),
-                terminal_rejected_overflow_count=continuity.terminal_rejected_overflow_count,
-                observed_iq_sha256=stream.observed_iq_sha256,
-                logical_iq_sha256=stream.logical_iq_sha256,
-                timeline_sha256=stream.timeline_sha256,
-                gap_map_sha256=stream.gap_map_sha256,
-                validity_inventory_sha256=stream.validity_inventory_sha256,
-            )
+                "terminal_rejected_overflow_count": continuity.terminal_rejected_overflow_count,
+                "observed_iq_sha256": stream.observed_iq_sha256,
+                "logical_iq_sha256": stream.logical_iq_sha256,
+                "timeline_sha256": stream.timeline_sha256,
+                "gap_map_sha256": stream.gap_map_sha256,
+                "validity_inventory_sha256": stream.validity_inventory_sha256,
+            }
         )
-    return NativeBandwidthCaptureEvidenceV1(
-        mode=mode,
-        session_id=manifest.session_id,
-        manifest_schema_version=manifest.schema_version,
-        manifest_sha256=manifest_sha256,
-        capture_state=manifest.state,
-        streams=(stream_evidence[0], stream_evidence[1]),
-    )
+    if len(stream_evidence) != 2:
+        raise ValueError("native-bandwidth qualification requires exactly two streams")
+    return stream_evidence[0], stream_evidence[1]

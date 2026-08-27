@@ -389,7 +389,7 @@ def test_native_topology_admits_exact_maximum_bandwidth_profiles(
     )
 
     assert profile.sample_rate_hz == profile.bandwidth_hz == expected_rate_hz
-    assert profile.refill_samples == 4_194_304
+    assert profile.refill_samples == 1_048_576
     assert profile.kernel_buffers == 4
     assert len(plan.jobs) == 12
 
