@@ -196,6 +196,7 @@ def _challenge(
     observation_count: int,
     oracle: bool = True,
     prior: LocalEcefGaussianPriorV1 | BoundedGeodeticPriorV1 | None = None,
+    truth_commitment_digest: str | None = None,
 ) -> BlindedPositionChallengeV1:
     observation = _observation_ref(observation_count)
     target_evidence_digest = canonical_digest((observation.model_dump(mode="json"),))
@@ -230,7 +231,11 @@ def _challenge(
         "challenge_group_id": "synthetic-position-group",
         "protocol_digest": _digest("position-protocol"),
         "created_utc_ns": _TARGET_END + 1,
-        "truth_commitment_digest": _digest("inaccessible-salted-truth"),
+        "truth_commitment_digest": (
+            _digest("inaccessible-salted-truth")
+            if truth_commitment_digest is None
+            else truth_commitment_digest
+        ),
         "target_evidence_digest": target_evidence_digest,
         "source_fingerprint_authority_digest": _digest("source-authority"),
         "observations": (observation,),
