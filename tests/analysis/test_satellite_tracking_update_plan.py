@@ -8,6 +8,7 @@ from typing import Any
 
 ROOT = Path(__file__).parents[2]
 PLAN = ROOT / "satellite_tracking_update_plan.md"
+CHECKPOINT_PLAN = ROOT / "plans/satellite-tracking-next-checkpoints.md"
 FINAL_PROTOCOL = ROOT / "config/analysis/final-doppler-holdout-satellite-protocol-v3.json"
 FINAL_SCORE = ROOT / "reports/figures/2026_08_26_final_doppler_holdout_attempt2-score.json"
 FINAL_BIN_INVENTORY = (
@@ -93,7 +94,6 @@ def test_satellite_tracking_update_plan_links_and_current_decisions() -> None:
 
     assert targets
     assert all((PLAN.parent / target).resolve().is_file() for target in targets)
-
     required = (
         "status: living working plan",
         "8/8 response tracks were recovered",
@@ -106,6 +106,32 @@ def test_satellite_tracking_update_plan_links_and_current_decisions() -> None:
     )
     assert all(item in plain for item in required)
     assert "observe only" in plain or "observe-only" in plain
+
+
+def test_satellite_tracking_checkpoint_plan_links_and_execution_boundary() -> None:
+    text = CHECKPOINT_PLAN.read_text(encoding="utf-8")
+    plain = _plain(text)
+    targets = re.findall(r"\]\(([^)#]+)(?:#[^)]+)?\)", text)
+
+    assert targets
+    assert all((CHECKPOINT_PLAN.parent / target).resolve().is_file() for target in targets)
+
+    required = (
+        "status: active operational roadmap",
+        "8/8 evaluable cfo response tracks recovered",
+        "complete catalogue compatibility 0/8",
+        "candidate observability atlas",
+        "common calibrated evidence scale",
+        "real long-arc multi-hypothesis closure",
+        "score dwell d+1 before assimilating it",
+        "unresolved model family",
+        "no new rf collection is authorized by this plan",
+        "at most 30 minutes",
+        "explicit collection authorization",
+    )
+    assert all(item in plain for item in required)
+    assert "150802" in plain
+    assert "9981" in plain
 
 
 def test_final_v3_gate_inventory_is_derived_from_sealed_artifacts() -> None:
