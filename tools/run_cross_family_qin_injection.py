@@ -40,7 +40,6 @@ from leo.analysis.research.doppler_dataset_policy import (
     verify_policy_inventory,
 )
 from leo.analysis.research.polynomial_injection_protocol import BackgroundSpan
-from leo.analysis.starlink.local_doppler import stable_measurement_floats
 
 DEFAULT_POLICY = Path("config/analysis/doppler-experiment-dataset-policy-v1.json")
 DEFAULT_PROTOCOL = Path("config/analysis/satellite-pnt-cross-family-injection-protocol-v1.json")
@@ -90,7 +89,7 @@ def _canonical_complex_sha256(values: np.ndarray) -> str:
 def _json_bytes(value: object) -> bytes:
     return (
         json.dumps(
-            stable_measurement_floats(value),
+            value,
             allow_nan=False,
             indent=2,
             sort_keys=True,

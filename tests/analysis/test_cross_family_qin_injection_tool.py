@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import ast
+import json
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from leo.contracts.digests import canonical_digest
 from tools import run_cross_family_qin_injection as runner
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -40,18 +42,15 @@ def test_missing_execution_amendment_fails_before_protocol_or_iq(tmp_path: Path)
         )
 
 
-def test_frozen_execution_amendment_binds_committed_implementation() -> None:
-    authority = runner._validate_execution_authority(  # noqa: SLF001
-        PROJECT_ROOT,
-        AMENDMENT,
-        protocol_path=PROTOCOL,
-        output_root=OUTPUT_ROOT,
-        report_path=REPORT,
-    )
-    assert authority["implementation_commit"] == ("2166a28c649dd05d6a9d4c0e9d230b3cfcb71769")
-    assert authority["sha256"] == (
-        "sha256:f2d64d99a41ae8882c93c8b56791ab93c81f1ad94781eff10fb887dde378452d"
-    )
+def test_attempt1_authority_rejects_corrected_implementation_bytes() -> None:
+    with pytest.raises(ValueError, match="hash differs: tools/run_cross_family_qin_injection.py"):
+        runner._validate_execution_authority(  # noqa: SLF001
+            PROJECT_ROOT,
+            AMENDMENT,
+            protocol_path=PROTOCOL,
+            output_root=OUTPUT_ROOT,
+            report_path=REPORT,
+        )
 
 
 def test_tool_has_no_database_http_or_storage_imports() -> None:
@@ -77,3 +76,19 @@ def test_canonical_outputs_are_exclusive(tmp_path: Path) -> None:
             evidence={"pair_summaries": []},
             execution={},
         )
+
+
+def test_persisted_json_preserves_semantic_digest_inputs() -> None:
+    payload = {
+        "diagnostics": {"background_power": 3.513155020770348e-08},
+        "rows": [
+            {
+                "measured_cfo_hz": 69_866.16012345678,
+                "standard_uncertainty_hz": 12.345678901234567,
+            }
+        ],
+    }
+
+    persisted = json.loads(runner._json_bytes(payload))  # noqa: SLF001
+
+    assert canonical_digest(persisted) == canonical_digest(payload)
