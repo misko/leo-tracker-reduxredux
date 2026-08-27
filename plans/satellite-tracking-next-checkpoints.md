@@ -2,10 +2,19 @@
 
 Date: 2026-08-27 UTC
 
-Remote baseline: origin/main at
+Remote baseline before checkpoint publication: origin/main at
 9ff5cd3c8f2fd52f3289a4e3a5b7dc82bfc4d372
 
 Status: **ACTIVE operational roadmap**
+
+Latest opened-development execution:
+
+- [C1/C2/C3 report](../reports/2026_08_27_satellite_tracking_checkpoint_results.md)
+- [complete one-attempt receipt](../reports/figures/2026_08_27_satellite_tracking_checkpoints_v1-execution-receipt.json)
+- Implementation commit `2a7a793999173f420394a59017a10dc744053b9b`;
+  execution-authority commit `c4d3810cf25ed7f259978a2c10b88578eb1917a4`.
+- Result publication commit: **pending local publication; replace with the exact
+  commit before remote-main handoff**.
 
 ## Purpose and claim boundary
 
@@ -74,13 +83,37 @@ start a new receiver stack.
 | Checkpoint | Status | Required outcome |
 |---|---|---|
 | C0 — Evidence and physical authority | **DONE for registered arcs; ongoing operational invariant** | Exact inputs, POST-FIX counter authority, causal TLE bytes, response-free candidate populations, and nonduplicated physical observations |
-| C1 — Candidate observability atlas | **NEXT; implementation candidate under validation** | Prefix-by-prefix nuisance-projected connected neighborhoods and time-to-separation for 150802 and 9981 |
-| C2 — Common calibrated evidence scale | **NEXT; implementation candidate, calibration incomplete (3/19)** | Catalogue and radio-only hypotheses scored on identical blocks with calibrated covariance and explicit abstention |
-| C3 — Real long-arc hypothesis closure | **PENDING C1/C2; implementation candidate under validation** | Honest singleton, connected ambiguity set, handoff/multi-emitter, radio-only, or unresolved outcome for each arc |
-| C4 — Causal multi-dwell prediction | **Synthetic foundation done; real evidence pending C3** | Better next-dwell prediction from physically scoped shared state without false identity concentration |
+| C1 — Candidate observability atlas | **OPENED RUN EXECUTED; provisional and incomplete** | Final all-tau candidate graph and tau=0 prefix atlas reported; covariance-weighted and prefix-by-prefix all-tau promotion remain open |
+| C2 — Common calibrated evidence scale | **EXECUTED; BLOCKED at 3/19 calibration pairs** | Common blocks and abstention work, but covariance and the detector-opportunity inventory are incomplete |
+| C3 — Real long-arc hypothesis closure | **EXECUTED; UNRESOLVED on both arcs** | 9981 retains a response-supported four-satellite set; 150802 retains a 571-satellite set; neither promotes identity |
+| C4 — Causal multi-dwell prediction | **Synthetic foundation done; real promotion held behind C2/C3** | Better next-dwell prediction from physically scoped shared state without false identity concentration |
 | C5 — Frozen known-site correction replay | **Contracts/synthetic lane done; real replay pending C4** | Satellite-only correction predicts a later known-site observation without refitting |
 | C6 — Blinded positioning | **Synthetic numerical lanes done/partial; real evaluation pending C5** | Sealed oracle, uncertain-identity, joint, and radio-only comparison with unresolved mass preserved |
 | C7 — Untouched confirmation | **Requires frozen method and explicit collection authorization** | Independent recurrence or a quantified, reproducible observability limit |
+
+## Opened-arc checkpoint result — 2026-08-27
+
+The one authorized attempt ran from 18:46:00 to 20:15:29 UTC. It read no IQ,
+collected no RF, and completed with a hash-closed report, manifest, two full
+compressed results, and ten figures.
+
+| Arc | C1 all-tau 125 ms graph | Response-supported C3 set | Honest outcome |
+|---|---|---|---|
+| 9981 | 488 candidates; 10 components; largest 466; five singletons | `{54758, 59523, 64746, 67930}`; provisional mass concentrates on 67930 around tau = -1 s | **Unresolved**: opportunity inventory incomplete; covariance and posterior masses uncalibrated |
+| 150802 | 573 candidates; 3 components; largest 571; two singletons | 59748 and the early-origin 65438 are in the same 571-candidate component | **Unresolved**: geometry is non-identifying at all three descriptive floors, and C2 remains incomplete |
+
+The 20/125/500 ms all-tau overlays tell the same qualitative story. For 9981,
+the largest components contain 469/466/466 candidates; for 150802 they contain
+571/571/571. The longer curvature-bearing arc therefore does not by itself
+solve catalogue identity after independently allowed tau and receiver drift
+are profiled. This is a useful geometry-limit result, not a tracking failure or
+permission to widen the nuisance model.
+
+C2 conditionally favors the catalogue family on both opened arcs, and its top
+states are 67930 for 9981 and 59748 for 150802. Those values are development
+diagnostics only: the opportunity universe is incomplete, only 3 of the
+required 19 independent calibration pairs exist, and all posterior-like masses
+remain uncalibrated.
 
 ## C0 — Evidence and physical authority
 
@@ -364,14 +397,22 @@ well-calibrated abstention that quantifies the Doppler-only observability limit.
 
 ## Immediate execution queue
 
-1. Finish adversarial review, freeze the implementation commit, and commit the
-   canonical one-attempt execution amendment.
-2. Execute and render C1/C2/C3 once on the already registered 150802 and 9981
-   inputs; record the receipt, report, figures, and exact commit here.
-3. Expand C2 known-truth calibration beyond 3 independent pairs and reconcile
-   the current RMS/NLL model reversal using independent block covariance.
-4. Use the C3 decision table to choose C4, the bounded measurement-headroom
-   branch, or an explicit Doppler-equivalence result.
+1. Expand C2 known-truth calibration from 3 to at least 19 independent pairs,
+   freeze a covariance authority, and construct a complete detector-opportunity
+   inventory. Reconcile the current RMS/NLL family reversal before interpreting
+   another posterior-like mass.
+2. Promote C1 from detached homoscedastic floors to the same calibrated
+   covariance metric used by C2. Add prefix-by-prefix all-tau profiling only if
+   it changes a decision; the final exact profile already establishes severe
+   150802 Doppler equivalence.
+3. Implement genuinely distinct rolling-origin refits and future scores. The
+   current cumulative prefixes of one fixed partition are not that experiment.
+4. Inventory the existing corpus for causal multi-dwell recurrence and an
+   orthogonal observable—frame/symbol rate, disciplined frequency, DOA, or a
+   synchronized second receiver—before considering any new collection.
+5. Run C4 on real sequential dwells only after steps 1–3 are frozen. Advance to
+   C5 no-refit correction replay only if next-dwell score improves without false
+   identity concentration.
 
 These tasks use the existing corpus and require no new RF campaign.
 
