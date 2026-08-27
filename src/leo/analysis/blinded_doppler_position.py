@@ -165,6 +165,23 @@ class BlindedDopplerPositionEvidence:
             raise BlindedDopplerPositionInputError(
                 "every position hypothesis must score the identical observation inventory"
             )
+        response_inventories = {
+            tuple(
+                (
+                    item.observation_product_digest,
+                    item.observation_id,
+                    item.support_utc_ns,
+                    item.measured_cfo_hz,
+                    item.measurement_standard_uncertainty_hz,
+                )
+                for item in hypothesis.observations
+            )
+            for hypothesis in self.hypotheses
+        }
+        if len(response_inventories) != 1:
+            raise BlindedDopplerPositionInputError(
+                "every position hypothesis must consume identical measured response rows"
+            )
         object.__setattr__(self, "content_digest", canonical_digest(self._digest_payload()))
 
     def _digest_payload(self) -> dict[str, object]:

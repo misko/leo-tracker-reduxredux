@@ -125,8 +125,10 @@ An exact bounded joint-correction hypothesis builder now combines several
 frozen single-emitter posteriors, retains each slot's unassigned choice,
 enforces simultaneous-NORAD exclusivity, and preserves every feasible joint
 hypothesis. It is explicitly conditional on an independent-slot approximation;
-shared calibration nuisance is not yet jointly modeled, and the joint family
-is not yet consumed by the blinded position solver.
+shared calibration nuisance is not yet jointly modeled. An additive partial
+unknown-identity navigation lane now consumes every fully assigned, valid
+four-satellite hypothesis on identical target response rows, reweights those
+modes by target likelihood, and preserves all other prior mass as unresolved.
 The two exact opened POST-FIX long arcs now have a digest-bound, fail-closed
 development protocol and one completed authorized execution. Attempt 1 failed
 closed at the response-free population work cap before response scoring; the
@@ -150,8 +152,8 @@ nulls. These components were first qualified on synthetic data and then used
 only by the exact authorized attempt-2 runner on the two registered opened
 arcs. No IQ was reopened during the execution.
 Calibrated ephemeris covariance, full fixed-lag smoothing and ECM,
-unknown-identity joint `K=2` correction representation, the oracle
-correction-set joint-position adapter, broad-prior particle navigation, joint
+shared-nuisance unknown-identity correction modeling, broad-prior particle
+navigation, joint
 identity/correction refinement, radio-only positioning, and four-lane blinded
 evaluation remain pending. This document authorizes no additional IQ access,
 catalogue rerun, data selection, or RF collection. The one catalogue run now
@@ -176,7 +178,7 @@ committed amendments; it is not confirmation data.
 | Multi-dwell filter and numerical poisons | DONE for current synthetic scope | 27 focused tests cover handoff/null histories, candidate-family mass invariance, `K<=2` history semantics, drift/reset behavior, causal future-value isolation, pruning and tie abstention, stable mixture predictive evidence, fail-closed extreme arithmetic, row/extension work caps, and dense-Gaussian equivalence. An independent 5,000-case Woodbury comparison found no high/medium blocker. |
 | Correction projection and replay poisons | DONE for current synthetic `K<=1` scope | 9 focused tests cover solver-safe/site-private projection, ambiguity-mode closure, bounded-tau uncertainty, `K=2` refusal, complete satellite-frequency inventory, exact observer/TLE/association binding, future validity, stale-contract rejection, receiver-local-field poison, and dense-Gaussian replay evidence. Replay is conditioned on an assigned mode and scores no radio-only/null alternative, so it makes no identity or navigation claim. |
 | Simultaneous oracle correction set | DONE, additive contract and synthetic V2 navigation lane | [`satellite_pnt_sets.py`](../src/leo/contracts/satellite_pnt_sets.py) and [`test_satellite_pnt_sets.py`](../tests/contracts/test_satellite_pnt_sets.py) preserve each selected satellite's complete single-emitter product and local probability semantics, require distinct eligible NORADs and a common validity interval, and contain no calibration site or receiver-local state. [`satellite_pnt_challenge_v2.py`](../src/leo/contracts/satellite_pnt_challenge_v2.py), [`blinded_doppler_position_sets.py`](../src/leo/analysis/blinded_doppler_position_sets.py), and the reveal-only V2 boundary consume four selected products without renormalizing their within-emitter probabilities. Six focused tests recover synthetic position and reject overlap, expiry, incomplete-set, stale-challenge, and nested-estimate poisons. This remains an oracle/precommitted selection lane; it does not encode unknown-identity joint hypotheses. |
-| Joint frozen-correction hypotheses | DONE, exact synthetic builder; position adapter pending | [`satellite_pnt_hypotheses.py`](../src/leo/contracts/satellite_pnt_hypotheses.py), [`satellite_correction_hypotheses.py`](../src/leo/analysis/satellite_correction_hypotheses.py), and four focused tests enumerate the complete bounded product of per-slot mode/unassigned probabilities, reject repeated simultaneous NORADs, preserve exact posterior closure, canonicalize slot order, reject truncation/stale products, and fail before an excessive Cartesian family is materialized. The artifact persists `slot_posterior_independence_assumed=true`, `shared_calibration_nuisance_jointly_modeled=false`, and `identity_claimed=false`; it is not yet a joint position posterior. |
+| Joint frozen-correction hypotheses and partial positioning | DONE, exact synthetic builder plus conditional joint lane | [`satellite_pnt_hypotheses.py`](../src/leo/contracts/satellite_pnt_hypotheses.py), [`satellite_correction_hypotheses.py`](../src/leo/analysis/satellite_correction_hypotheses.py), and focused tests enumerate the complete bounded product of per-slot mode/unassigned probabilities, reject repeated simultaneous NORADs, preserve exact posterior closure, canonicalize slot order, reject truncation/stale products, and fail before an excessive Cartesian family is materialized. [`satellite_pnt_joint_challenge.py`](../src/leo/contracts/satellite_pnt_joint_challenge.py), [`blinded_doppler_position_joint.py`](../src/leo/analysis/blinded_doppler_position_joint.py), and the reveal-only joint evaluator compare every fully assigned valid four-satellite mode on identical target response rows. Unevaluable prior mass remains unresolved and is explicitly not compared through a fabricated target likelihood. The lane is always `PARTIAL`, with `slot_posterior_independence_assumed=true`, `shared_calibration_nuisance_jointly_modeled=false`, and `identity_claimed=false`. |
 | Truth-isolated local Doppler positioning | DONE for the first synthetic oracle/frozen-identity slice | [`blinded_doppler_position.py`](../src/leo/analysis/blinded_doppler_position.py) and [`test_blinded_doppler_position.py`](../tests/analysis/test_blinded_doppler_position.py) implement local ECEF Gaussian-prior MAP positioning with a shared receiver CFO state, frozen per-satellite frequency corrections, correlated correction uncertainty, exact consumed-mode lineage, dense-covariance/work bounds, and no truth/reveal import or argument. Oracle output may be complete; unknown frozen-identity output remains explicitly partial because no radio/null alternative is scored. |
 | Reveal-only position evaluation | DONE for the first synthetic lane | [`blinded_position_evaluation.py`](../src/leo/analysis/blinded_position_evaluation.py) and [`test_blinded_position_evaluation.py`](../tests/analysis/test_blinded_position_evaluation.py) revalidate the exact challenge/estimate/truth receipt after sealing, recompute WGS84 ECEF and ENU error, preserve ambiguity mass, and report rank-one/conditional error plus semidefinite-safe NEES and 95% covariance diagnostics. The evaluator cannot alter or refit the sealed estimate. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
@@ -903,9 +905,20 @@ public contracts or accepted as current identity evidence.
   ownership, and validates every probability against the originating slot
   products. The first version deliberately assumes the slot posteriors are
   independent and does not reconstruct their shared receiver/calibration
-  nuisance covariance. It therefore remains candidate-only and cannot support
-  a secure identity or blinded-position claim until the joint position lane and
-  a shared-nuisance calibration model are added.
+  nuisance covariance. A partial joint position lane now evaluates every fully
+  assigned, valid four-satellite hypothesis, preserves the association prior
+  mass of null/expired/under-supported hypotheses as unresolved, and reveals
+  truth only after sealing. Target likelihood is never compared to that
+  unresolved mass. This advances ambiguity-preserving blinded evaluation but
+  remains candidate-only and cannot support a secure identity claim until a
+  shared-nuisance calibration model and equal-opportunity null positioning lane
+  are added.
+- **2026-08-27:** the shared truth-free position-evidence envelope was tightened
+  so every identity hypothesis must consume byte-identical observation IDs,
+  support times, measured CFO values, and measurement uncertainties. Candidate
+  satellite state, correction identity, tau, and prediction uncertainty may
+  differ; measured response may not. This closes a hypothesis-specific response
+  injection path before the joint lane is used beyond synthetic tests.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
