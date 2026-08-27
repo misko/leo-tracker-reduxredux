@@ -114,9 +114,14 @@ A separate reveal-only evaluator now revalidates the exact post-seal receipt
 and recomputes ECEF/ENU errors and covariance-consistency diagnostics without
 refitting the estimate.
 The two exact opened POST-FIX long arcs now have a digest-bound, fail-closed
-development protocol, but it is deliberately frozen as `not executed` until a
-qualified response-free long-arc adapter, an equal-opportunity radio-only
-polynomial null, and a separately audited execution amendment exist.
+development protocol and one completed authorized execution. Attempt 1 failed
+closed at the response-free population work cap before response scoring; the
+failure receipt was preserved. A work-cap-only amendment authorized attempt 2,
+which completed the full `delta=-500,0,+500 s` populations, training-frozen
+catalogue rankings, rolling future scores, and equal-mask polynomial-null
+comparisons. The sealed report and additive audit classify `9981` as a stable
+conditional candidate with incomplete true-time specificity, and `150802` as a
+strongly true-time-specific candidate with one early rolling-origin label flip.
 An exact evidence-to-episode adapter now reproduces the two registered graphs
 and immediately projects them through the response-free prediction-support
 port. A training-frozen support-integrated line/quadratic/cubic radio null is
@@ -127,13 +132,16 @@ unranked candidate universe independently for each predeclared
 propagation. A fail-closed development runner now builds all three banks before
 response scoring, retains every training-only tau profile, and evaluates the
 main and rolling future partitions against equal-calendar-block polynomial
-nulls. None of these components has been used to propagate a real catalogue or
-score the opened arcs.
+nulls. These components were first qualified on synthetic data and then used
+only by the exact authorized attempt-2 runner on the two registered opened
+arcs. No IQ was reopened during the execution.
 Calibrated ephemeris covariance, full fixed-lag smoothing and ECM,
 joint `K=2` correction representation, broad-prior particle navigation, joint
 identity/correction refinement, radio-only positioning, and four-lane blinded
-evaluation remain pending. No IQ access, catalogue rerun, new data selection,
-or RF collection has occurred or is authorized by this document.
+evaluation remain pending. This document authorizes no additional IQ access,
+catalogue rerun, data selection, or RF collection. The one catalogue run now
+recorded was the exact opened-development execution authorized by the two
+committed amendments; it is not confirmation data.
 
 ### Implementation checkpoint — 2026-08-27
 
@@ -144,7 +152,7 @@ or RF collection has occurred or is authorized by this document.
 | Exact bounded `K=0,1,2` association with normalized feasible-family priors | DONE, synthetic baseline | [`catalogue_association.py`](../src/leo/analysis/catalogue_association.py); input contracts are revalidated before scoring and extreme log-prior translations are normalized in the shifted domain. |
 | Proper Gaussian marginalization of continuity offsets and hardware-epoch drift | DONE, synthetic baseline | Direct covariance-form equality and recovery tests in [`test_catalogue_association.py`](../tests/analysis/test_catalogue_association.py) |
 | Response-free raw-TLE-to-bank SGP4 adapter | DONE for a frozen synthetic candidate universe | [`catalogue_prediction.py`](../src/leo/analysis/catalogue_prediction.py) and [`test_catalogue_prediction.py`](../tests/analysis/test_catalogue_prediction.py); exact snapshot bytes and selected element pairs are digest-bound before propagation, support kernels are integrated, and tau is canonical at 1 ns. The diagonal uncertainty floor/age/residual model is declared, not calibrated orbit covariance. |
-| Response-free full-Starlink field population | DONE, synthetic qualification only | [`catalogue_population.py`](../src/leo/analysis/catalogue_population.py) and six focused tests in [`test_catalogue_population.py`](../tests/analysis/test_catalogue_population.py) authenticate exact TLE bytes, filter Starlink by name and complete geometric horizon support, bind support/site/tau/field policy, and emit no rank or truncation. The `delta=-500,0,+500 s` population receipt must match the SGP4 field exactly; propagation failures are explicit and make the population unsuitable for association. No opened-arc population has been computed. |
+| Response-free full-Starlink field population | DONE, synthetic qualification plus authorized opened-development execution | [`catalogue_population.py`](../src/leo/analysis/catalogue_population.py) and six focused tests in [`test_catalogue_population.py`](../tests/analysis/test_catalogue_population.py) authenticate exact TLE bytes, filter Starlink by name and complete geometric horizon support, bind support/site/tau/field policy, and emit no rank or truncation. Attempt 2 completed all six opened-arc fields: candidate counts were 503/488/501 for `9981` and 572/573/576 for `150802` at `delta=-500/0/+500 s`. |
 | Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
 | Causal multi-dwell catalogue filter | DONE, synthetic forward-filter foundation | [`multi_dwell_catalogue_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_smoothing.py) and [`test_multi_dwell_catalogue_smoothing.py`](../tests/analysis/test_multi_dwell_catalogue_smoothing.py); one source state per dwell, at most two distinct NORADs per retained history, explicit `NULL`, normalized family priors, receiver-local drift resets, proper dwell-offset marginalization, and score-before-assimilation rolling receipts. This is not yet a simultaneous-emitter solver, ECM, or backward smoother. |
 | Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). Coexisting `K=2` corrections fail closed pending an additive joint-mode contract. |
@@ -156,12 +164,12 @@ or RF collection has occurred or is authorized by this document.
 | Reveal-only position evaluation | DONE for the first synthetic lane | [`blinded_position_evaluation.py`](../src/leo/analysis/blinded_position_evaluation.py) and [`test_blinded_position_evaluation.py`](../tests/analysis/test_blinded_position_evaluation.py) revalidate the exact challenge/estimate/truth receipt after sealing, recompute WGS84 ECEF and ENU error, preserve ambiguity mass, and report rank-one/conditional error plus semidefinite-safe NEES and 95% covariance diagnostics. The evaluator cannot alter or refit the sealed estimate. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
 | Local Doppler-position poisons | DONE for current synthetic local-prior scope | 8 focused tests cover sub-metre synthetic recovery, analytic-vs-finite-difference Jacobians, correlated satellite-frequency uncertainty, equal-mode ambiguity, truth-free source/import boundary, stale nested evidence, frozen tau binding, observation and dense-covariance work caps, candidate-bank provenance, broad-prior rejection, and explicitly partial unknown-identity output. |
-| Opened long-arc development protocol | FROZEN, NOT EXECUTED | [`satellite-pnt-long-arc-development-protocol-v1.json`](../config/analysis/satellite-pnt-long-arc-development-protocol-v1.json), [`satellite_pnt_long_arc_protocol.py`](../src/leo/analysis/research/satellite_pnt_long_arc_protocol.py), and [`test_satellite_pnt_long_arc_protocol.py`](../tests/analysis/test_satellite_pnt_long_arc_protocol.py) bind exactly the registered 30 s `9981` and 13.825 s `150802` arcs, evidence hashes, support-centred timing rules, causal TLE snapshots, reviewed site preset, `tau=0` plus `[-5,+5] s`, observe-only `delta=±500 s`, chronological masks, radio-polynomial comparators, and claim denials. Fourteen focused tests, Ruff, and strict MyPy pass. No IQ, propagation, or response scoring occurred. |
+| Opened long-arc development protocol | FROZEN; ATTEMPT 2 EXECUTED | [`satellite-pnt-long-arc-development-protocol-v1.json`](../config/analysis/satellite-pnt-long-arc-development-protocol-v1.json), the two additive execution amendments, and the [execution receipt](../reports/figures/2026_08_27_satellite_pnt_long_arc_development_attempt2-execution-receipt.json) bind exactly the registered 30 s `9981` and 13.825 s `150802` arcs, evidence hashes, support-centred timing rules, causal TLE snapshots, reviewed site preset, `tau=0` plus `[-5,+5] s`, observe-only `delta=±500 s`, chronological masks, radio-polynomial comparators, and claim denials. Attempt 1 failed closed at the work cap; attempt 2 completed without reopening IQ. |
 | Registered long-arc graph and response-free support adapter | DONE, no association execution | [`long_arc_catalogue_adapter.py`](../src/leo/analysis/research/long_arc_catalogue_adapter.py) authenticates the frozen report bytes, reconstructs the exact 881-row and 550-row support-centred physical graphs, and emits a narrow support port with no CFO, receiver-path, source-binding, or uncertainty response fields. Seven focused tests pin both graph/support/receipt digests and reject evidence or nested-authority mutations. IQ, TLE propagation, candidate selection, and association scoring are absent. |
 | Equal-opportunity radio-polynomial null | DONE, synthetic qualification only | [`radio_polynomial_null.py`](../src/leo/analysis/research/radio_polynomial_null.py) fits support-integrated line/quadratic/cubic models on an explicit training prefix and scores one identical future suffix with coefficient uncertainty propagated. Six tests cover exact support moments, curvature discrimination, future-response isolation, dense-Gaussian equality, partitions/work caps, and stale graph poison. It produces no identity probability, threshold, or gate. |
-| Opened-long-arc development runner | DONE, synthetic qualification only | [`long_arc_satellite_pnt_runner.py`](../src/leo/analysis/research/long_arc_satellite_pnt_runner.py) builds all `delta=-500,0,+500 s` response-free populations/banks before any response score, preserves all 41 training-only tau scores, evaluates the 60/40 plus three rolling partitions, reports pooled/equal-calendar-block future RMS and line/quadratic/cubic null comparisons, and keeps wrong-epoch fields observation-only. Five focused tests cover complete partitions, future-response isolation, stale authorities, exact design semantics, full-result digest closure, and runtime-boundary exclusions. |
+| Opened-long-arc development runner | DONE; synthetic qualification plus one authorized real execution | [`long_arc_satellite_pnt_runner.py`](../src/leo/analysis/research/long_arc_satellite_pnt_runner.py) builds all `delta=-500,0,+500 s` response-free populations/banks before any response score, preserves all 41 training-only tau scores, evaluates the 60/40 plus three rolling partitions, reports pooled/equal-calendar-block future RMS and line/quadratic/cubic null comparisons, and keeps wrong-epoch fields observation-only. The sealed [results](../reports/2026_08_27_satellite_pnt_long_arc_development_results_attempt2.md) and [independent audit](../reports/2026_08_27_satellite_pnt_long_arc_development_audit.md) now exercise that path on both exact registered arcs. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Exact-association posterior odds remain conditional on the complete frozen response-free candidate universe, and its internal `K=0` still uses the declared zero-curve component-offset/hardware-drift Gaussian baseline. The polynomial null is a separate future-prediction comparator, not yet part of posterior normalization. |
-| Real opened long arcs | RUNNER QUALIFIED; EXECUTION BLOCKED | Graph reconstruction, response-free field population selection, field-bound SGP4 prediction, training-frozen catalogue ranking, rolling scoring, and equal-mask polynomial-null components are qualified on synthetic inputs. No opened-arc candidate population, TLE propagation, polynomial future score, or association score was run. The execution boundary remains closed pending an audited code-hash amendment. |
+| Real opened long arcs | OPENED-DEVELOPMENT EXECUTION COMPLETE; IDENTITY UNRESOLVED | The 30 s `9981` arc keeps NORAD 67930 at all rolling origins but loses to the `-500 s` field on two future comparisons. The 13.825 s `150802` arc strongly beats both wrong-epoch fields but selects 65438 rather than future-best 59748 at the earliest rolling origin. Both main orbit curves beat the cubic radio null in RMS, while the current Gaussian likelihood favors the cubic, so cross-model calibration remains pending. No secure NORAD, recurrence, correction, or PNT claim is made. |
 
 ## North-star milestone
 
@@ -829,6 +837,21 @@ public contracts or accepted as current identity evidence.
   radio-polynomial degrees. Its complete output is digest-closed. This still
   does not authorize execution; the additive amendment must pin the exact code,
   raw TLE assets, numerical work bounds, and exclusive output paths first.
+- **2026-08-27:** execution attempt 1 was authorized against exact committed
+  code and failed closed before response scoring because the response-free
+  `150802` population exceeded the 20-million propagation-work cap. Its failure
+  receipt remains immutable. No partial result was promoted.
+- **2026-08-27:** a second amendment changed only the response-free propagation
+  work cap to 30 million and authorized one retry to new exclusive paths.
+  Attempt 2 completed all six field populations and the eight main/rolling
+  future evaluations. The sealed result report, manifest, execution receipt,
+  byte-exact compressed result archives, machine audit evidence, and static
+  integrity test are linked from the
+  [opened long-arc audit](../reports/2026_08_27_satellite_pnt_long_arc_development_audit.md).
+  `9981` is a rolling-stable conditional candidate but not consistently
+  true-time-specific; `150802` is strongly true-time-specific but has one early
+  rolling-origin candidate flip. The orbit-versus-radio RMS/likelihood
+  disagreement keeps model calibration and secure identity unresolved.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
