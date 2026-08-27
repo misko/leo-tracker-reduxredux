@@ -185,8 +185,8 @@ only by the exact authorized attempt-2 runner on the two registered opened
 arcs. No IQ was reopened during the execution.
 Calibrated ephemeris covariance, continuous-state fixed-lag smoothing and ECM,
 association-posterior feedback from the known-position batch, globally
-covering particle generation, radio-only positioning, and four-lane blinded
-evaluation remain pending. A truth-isolated particle scorer now handles a
+covering particle generation, equal-row radio-only predictive comparison, and
+four-lane blinded evaluation remain pending. A truth-isolated particle scorer now handles a
 precommitted response-free geodetic bank under the bounded prior, but its first
 synthetic bank deliberately makes no global-coverage claim. This document
 authorizes no additional IQ access,
@@ -220,6 +220,7 @@ committed amendments; it is not confirmation data.
 | Native joint calibration to blinded position | DONE, conditional synthetic first slice | [`satellite_pnt_native_joint_challenge.py`](../src/leo/contracts/satellite_pnt_native_joint_challenge.py), [`blinded_doppler_position_native_joint.py`](../src/leo/analysis/blinded_doppler_position_native_joint.py), and the reveal-only native-joint boundary consume the exact shared-nuisance `K=0,1,2` calibration posterior. Two-satellite modes are target-evaluable only with a rank-four time-diverse data Jacobian; their full bias/drift cross-covariance enters the observation covariance. The synthetic ideal lane recovers position to about 5.4 m, while rank-deficient geometry abstains. The null and every ineligible/unevaluable mode remain unresolved, target likelihood is not compared to that mass, and no identity or navigation-fix claim is made. |
 | Truth-isolated local Doppler positioning | DONE for the first synthetic oracle/frozen-identity slice | [`blinded_doppler_position.py`](../src/leo/analysis/blinded_doppler_position.py) and [`test_blinded_doppler_position.py`](../tests/analysis/test_blinded_doppler_position.py) implement local ECEF Gaussian-prior MAP positioning with a shared receiver CFO state, frozen per-satellite frequency corrections, correlated correction uncertainty, exact consumed-mode lineage, dense-covariance/work bounds, and no truth/reveal import or argument. Oracle output may be complete; unknown frozen-identity output remains explicitly partial because no radio/null alternative is scored. |
 | Broad-prior particle positioning | DONE for a conditional synthetic oracle-identity bank | [`satellite_pnt_particles.py`](../src/leo/contracts/satellite_pnt_particles.py), [`blinded_doppler_position_particles.py`](../src/leo/analysis/blinded_doppler_position_particles.py), and [`test_blinded_doppler_position_particles.py`](../tests/analysis/test_blinded_doppler_position_particles.py) score every precommitted response-free geodetic particle with the same frozen Doppler evidence and a properly marginalized receiver CFO state. The bank is frozen before target response, bound to the declared broad-prior provenance, makes no global-coverage claim, and cannot produce a complete navigation result. The existing reveal boundary evaluates its rank-one particle only after sealing. Global/continental particle generation, local refinement, unknown-identity mixtures, and a radio-only comparison remain pending. |
+| Structural radio-only position control | DONE, truth-isolated negative-control boundary | [`blinded_radio_only_position.py`](../src/leo/analysis/blinded_radio_only_position.py) and [`test_blinded_radio_only_position.py`](../tests/analysis/test_blinded_radio_only_position.py) validate the exact radio-only challenge and seal `NO_RESULT` with all position mass unresolved. The control does not invent a prior-shaped position mode: receiver-relative CFO without orbit, direction, range, or range-rate geometry contains no map to geographic position. This closes the fourth lane's structural boundary only; the equal-row TLE-blind radio-polynomial versus orbit predictive-likelihood comparison remains pending. |
 | Reveal-only position evaluation | DONE for the first synthetic lane | [`blinded_position_evaluation.py`](../src/leo/analysis/blinded_position_evaluation.py) and [`test_blinded_position_evaluation.py`](../tests/analysis/test_blinded_position_evaluation.py) revalidate the exact challenge/estimate/truth receipt after sealing, recompute WGS84 ECEF and ENU error, preserve ambiguity mass, and report rank-one/conditional error plus semidefinite-safe NEES and 95% covariance diagnostics. The evaluator cannot alter or refit the sealed estimate. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
 | Local Doppler-position poisons | DONE for current synthetic local-prior scope | 8 focused tests cover sub-metre synthetic recovery, analytic-vs-finite-difference Jacobians, correlated satellite-frequency uncertainty, equal-mode ambiguity, truth-free source/import boundary, stale nested evidence, frozen tau binding, observation and dense-covariance work caps, candidate-bank provenance, broad-prior rejection, and explicitly partial unknown-identity output. |
@@ -604,8 +605,10 @@ rank-deficient prior mass remains unresolved. Unknown-identity results remain
 `PARTIAL` because they have no equal-opportunity radio/null target likelihood.
 Reveal-only evaluators exist for these slices. The 10 km/100 km/global
 initialization ladder beyond this conditional particle scorer, a globally
-covering response-free particle generator, radio-only control, association
-feedback, and complete four-lane blinded comparison remain future work.
+covering response-free particle generator, equal-row radio-only predictive
+comparison, association feedback, and complete quantitative four-lane blinded
+comparison remain future work. The structural fourth lane already returns a
+truthful no-position result.
 
 **Lanes:**
 
@@ -997,8 +1000,17 @@ public contracts or accepted as current identity evidence.
   distant particles are reported as truncated modes rather than assigned
   invented probability. The synthetic bank explicitly claims neither global
   coverage nor a global navigation solution, so particle generation across the
-  full prior, local refinement, unknown-identity coupling, and the radio-only
-  control remain WP9 work.
+  full prior, local refinement, unknown-identity coupling, and the equal-row
+  radio-only predictive comparison remain WP9 work.
+- **2026-08-27:** the fourth blinded-navigation lane now has a structural
+  radio-only negative control. Because its frozen model has no orbit, direction,
+  range, or range-rate map, it truthfully seals `NO_RESULT` with one hundred
+  percent unresolved position mass rather than returning the declared prior as
+  if it were a measurement update. The solver imports no truth/reveal artifact
+  and binds the exact radio-only model digest. This is not yet the
+  equal-opportunity likelihood comparison: that next step must use a
+  response-frozen TLE-blind physical-episode inventory and identical future
+  rows for the orbit and polynomial families.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
