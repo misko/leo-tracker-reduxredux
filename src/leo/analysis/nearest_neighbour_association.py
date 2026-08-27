@@ -154,10 +154,24 @@ class GaussianInnovationScore:
     marginal_innovation_standard_uncertainties_hz: tuple[float, ...]
     offset_prior_mean_hz: float
     offset_prior_standard_uncertainty_hz: float
+    prior_centered_innovation_rms_hz: float
+    posterior_centered_innovation_rms_hz: float
     mahalanobis_squared: float
     mean_normalized_innovation_squared: float
     log_determinant_covariance: float
     marginal_negative_log_likelihood: float
+    offset_posterior_mean_hz: float
+    offset_posterior_standard_uncertainty_hz: float
+
+
+@dataclass(frozen=True, slots=True)
+class NearestNeighbourTauProfilePoint:
+    """One training-only tau score retained without future-response access."""
+
+    tau_s: float
+    tau_negative_log_prior: float
+    training_marginal_negative_log_likelihood: float
+    training_total_negative_log_score: float
     offset_posterior_mean_hz: float
     offset_posterior_standard_uncertainty_hz: float
 
@@ -182,6 +196,7 @@ class NearestNeighbourHypothesisScore:
     tau_profile_tied_values_s: tuple[float, ...]
     tau_profile_boundary_tie: bool
     profiled_tau_state_count: int
+    tau_profile_training_scores: tuple[NearestNeighbourTauProfilePoint, ...]
     tau_negative_log_prior: float
     training_total_negative_log_score: float
     training_innovation: GaussianInnovationScore
@@ -286,6 +301,7 @@ class _TrainingProfile:
     tau_profile_tied_values_s: tuple[float, ...]
     tau_profile_boundary_tie: bool
     profiled_tau_state_count: int
+    tau_profile_training_scores: tuple[NearestNeighbourTauProfilePoint, ...]
     tau_negative_log_prior: float
     training_total_negative_log_score: float
     training_innovation: GaussianInnovationScore
@@ -395,6 +411,15 @@ def gaussian_innovation_score(
     posterior_delta = posterior_variance * weighted_residual
     posterior_mean = offset_prior_mean_hz + posterior_delta
     try:
+        prior_centered_rms = math.sqrt(
+            math.fsum(item * item for item in centered_residuals) / len(centered_residuals)
+        )
+        posterior_centered_rms = math.sqrt(
+            math.fsum(
+                (item - posterior_delta) * (item - posterior_delta) for item in centered_residuals
+            )
+            / len(centered_residuals)
+        )
         quadratic = (
             math.fsum(
                 (residual - posterior_delta) ** 2 * inverse_variance
@@ -417,6 +442,8 @@ def gaussian_innovation_score(
     values = (
         posterior_variance,
         posterior_mean,
+        prior_centered_rms,
+        posterior_centered_rms,
         quadratic,
         log_determinant,
         negative_log_likelihood,
@@ -438,6 +465,8 @@ def gaussian_innovation_score(
         marginal_innovation_standard_uncertainties_hz=marginal_sigmas,
         offset_prior_mean_hz=offset_prior_mean_hz,
         offset_prior_standard_uncertainty_hz=offset_prior_standard_uncertainty_hz,
+        prior_centered_innovation_rms_hz=prior_centered_rms,
+        posterior_centered_innovation_rms_hz=posterior_centered_rms,
         mahalanobis_squared=quadratic,
         mean_normalized_innovation_squared=quadratic / len(residuals),
         log_determinant_covariance=log_determinant,
@@ -525,6 +554,7 @@ def associate_single_episode_nearest_neighbour(
             tau_profile_tied_values_s=profile.tau_profile_tied_values_s,
             tau_profile_boundary_tie=profile.tau_profile_boundary_tie,
             profiled_tau_state_count=profile.profiled_tau_state_count,
+            tau_profile_training_scores=profile.tau_profile_training_scores,
             tau_negative_log_prior=profile.tau_negative_log_prior,
             training_total_negative_log_score=profile.training_total_negative_log_score,
             training_innovation=profile.training_innovation,
@@ -734,6 +764,7 @@ def _fit_restricted_null(
         tau_profile_tied_values_s=(),
         tau_profile_boundary_tie=False,
         profiled_tau_state_count=tau_state_count,
+        tau_profile_training_scores=(),
         tau_negative_log_prior=tau_negative_log_prior,
         training_total_negative_log_score=(
             innovation.marginal_negative_log_likelihood + tau_negative_log_prior
@@ -776,6 +807,7 @@ def _fit_candidate(
                 tau_profile_tied_values_s=(),
                 tau_profile_boundary_tie=False,
                 profiled_tau_state_count=len(candidate.tau_states),
+                tau_profile_training_scores=(),
                 tau_negative_log_prior=penalty,
                 training_total_negative_log_score=(
                     innovation.marginal_negative_log_likelihood + penalty
@@ -785,6 +817,21 @@ def _fit_candidate(
             )
         )
     ordered = tuple(sorted(profiles, key=_training_state_sort_key))
+    profile_points = tuple(
+        NearestNeighbourTauProfilePoint(
+            tau_s=_required_candidate_tau(item),
+            tau_negative_log_prior=item.tau_negative_log_prior,
+            training_marginal_negative_log_likelihood=(
+                item.training_innovation.marginal_negative_log_likelihood
+            ),
+            training_total_negative_log_score=item.training_total_negative_log_score,
+            offset_posterior_mean_hz=item.training_innovation.offset_posterior_mean_hz,
+            offset_posterior_standard_uncertainty_hz=(
+                item.training_innovation.offset_posterior_standard_uncertainty_hz
+            ),
+        )
+        for item in sorted(profiles, key=_required_candidate_tau)
+    )
     best_score = ordered[0].training_total_negative_log_score
     tied = tuple(
         item
@@ -793,7 +840,7 @@ def _fit_candidate(
         <= _score_tie_tolerance(item.training_total_negative_log_score, best_score)
     )
     if len(tied) == 1:
-        return tied[0]
+        return replace(tied[0], tau_profile_training_scores=profile_points)
     selected = min(tied, key=_tau_state_tie_break_key)
     tied_values = tuple(
         sorted(item.selected_tau_s for item in tied if item.selected_tau_s is not None)
@@ -803,6 +850,7 @@ def _fit_candidate(
     )
     return replace(
         selected,
+        tau_profile_training_scores=profile_points,
         tau_profile_exact_tie=True,
         tau_profile_exact_tie_tolerance=tie_tolerance,
         tau_profile_tied_values_s=tied_values,
@@ -810,6 +858,12 @@ def _fit_candidate(
             math.isclose(abs(item), 5.0, rel_tol=0.0, abs_tol=1e-12) for item in tied_values
         ),
     )
+
+
+def _required_candidate_tau(profile: _TrainingProfile) -> float:
+    if profile.selected_tau_s is None:
+        raise NearestNeighbourInputError("catalogue candidate tau profile is missing tau")
+    return profile.selected_tau_s
 
 
 def _score_frozen_profile(

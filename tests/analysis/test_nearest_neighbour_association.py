@@ -478,6 +478,18 @@ def test_tau_boundary_is_retained_as_structural_abstention_diagnostic() -> None:
     assert result.tau_boundary_diagnostic is True
     assert result.profiled_tau_state_count == 3
     assert all(item.profiled_tau_state_count == 3 for item in result.scores)
+    assert tuple(item.tau_s for item in result.scores[0].tau_profile_training_scores) == (
+        -5.0,
+        0.0,
+        5.0,
+    )
+    assert all(
+        item.training_total_negative_log_score
+        == pytest.approx(
+            item.training_marginal_negative_log_likelihood + item.tau_negative_log_prior
+        )
+        for item in result.scores[0].tau_profile_training_scores
+    )
     assert result.abstention_recommended is True
     assert "tau-boundary" in result.abstention_diagnostics
 
