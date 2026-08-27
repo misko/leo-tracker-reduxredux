@@ -29,7 +29,7 @@ from leo.qualification.native_bandwidth import (
 
 _ROOT = Path(__file__).parents[2]
 _REVISION = "a" * 40
-_PPU_REVISION = "41dc53b948f096702abbdbec0d397c024ba679fb"
+_PPU_REVISION = "29ca61443a2d578d853355db56225e3941ffbf1c"
 _PROFILE_AUTHORITY = {
     (False, 2_500_000): (
         "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
