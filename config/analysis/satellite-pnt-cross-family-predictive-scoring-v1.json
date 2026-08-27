@@ -1,0 +1,59 @@
+{
+  "schema": "org.leo.research.satellite-pnt-cross-family-predictive-scoring/v1",
+  "status": "frozen-opened-development",
+  "input": {
+    "evidence_path": "reports/figures/2026_08_27_satellite_pnt_cross_family_injection_attempt2/evidence.json",
+    "evidence_sha256": "sha256:f3b16d11c2e45f3f9547d34e60e8b773fa1635f6b02cf9276c98c0e9099c4dbe",
+    "protocol_path": "config/analysis/satellite-pnt-cross-family-injection-protocol-v1.json",
+    "protocol_sha256": "sha256:919cff36f99e8d40dae01806fc618fe30b417b02e3ba61a35d09a66ae708003c",
+    "independent_background_pair_count": 3,
+    "truth_arm_count": 6
+  },
+  "partition": {
+    "training": "first-60-percent-even-qin",
+    "future": "final-40-percent-odd-qin",
+    "selection_or_fit_uses_future_response": false,
+    "identical_future_rows_across_model_families": true,
+    "no_result_rows_retained": true
+  },
+  "catalogue_model": {
+    "curve": "frozen-true-causal-tle-orbit-trajectory",
+    "tau_s": 0.0,
+    "candidate_search_count": 1,
+    "training_nuisance": "one-constant-cfo-offset",
+    "candidate_specific_rate_or_acceleration_forbidden": true
+  },
+  "radio_model": {
+    "family": "support-time-polynomial",
+    "primary_degree": 1,
+    "diagnostic_degrees": [2, 3],
+    "training_only_fit": true
+  },
+  "predictive_likelihood": {
+    "family": "gaussian-training-posterior-predictive",
+    "measurement_variance": "persisted-qin-standard-uncertainty-squared",
+    "parameter_covariance": "weighted-least-squares-normal-matrix-inverse",
+    "future_covariance": "measurement-diagonal-plus-parameter-covariance",
+    "additional_variance_floor_hz2": 0.0,
+    "row_weighting": "one-per-usable-frame"
+  },
+  "calibration": {
+    "method": "leave-one-background-pair-out-uniform-variance-scale",
+    "scenario_weighting": "background-pair-equal",
+    "truth_arms_jointly_define_each_scenario_scale": true,
+    "minimum_independent_pairs": 3,
+    "formal_95_percent_rank_minimum_pairs": 19,
+    "formal_coverage_claimed": false
+  },
+  "outputs": {
+    "result_path": "reports/figures/2026_08_27_satellite_pnt_cross_family_predictive_scoring_v1.json",
+    "report_path": "reports/2026_08_27_satellite_pnt_cross_family_predictive_scoring.md"
+  },
+  "claims": {
+    "threshold_fitted": false,
+    "posterior_odds_produced": false,
+    "full_catalogue_multiplicity_modeled": false,
+    "satellite_identity_claimed": false,
+    "positioning_validated": false
+  }
+}
