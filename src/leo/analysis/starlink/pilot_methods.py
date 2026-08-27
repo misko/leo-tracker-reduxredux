@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
@@ -553,6 +553,218 @@ def conditioned_glrt64_score(
         control_score,
         residual_cfo_hz,
         acquired_cfo_hz,
+    )
+
+
+def conditioned_glrt64_scores(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    *,
+    epoch_samples: Sequence[int],
+    acquired_cfo_hz: Sequence[float],
+    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    glrt_size: int = _GLRT_SIZE,
+) -> tuple[PilotMethodScore, ...]:
+    """Evaluate GLRT-64 for several acquired candidates in one exact batch.
+
+    The candidate dimension is only an execution detail: every returned score
+    uses the same per-candidate frames, pilot/control definitions, and GLRT grid
+    as :func:`conditioned_glrt64_score`. Unsupported symbol geometry falls back
+    to that scalar oracle.
+    """
+
+    values = np.asarray(samples, dtype=np.complex128)
+    epochs = np.asarray(epoch_samples)
+    frequencies = np.asarray(acquired_cfo_hz, dtype=float)
+    if values.ndim != 1 or not values.size:
+        raise ValueError("conditioned pilot samples must be a nonempty vector")
+    if epochs.ndim != 1 or frequencies.ndim != 1 or len(epochs) != len(frequencies):
+        raise ValueError("candidate epochs and CFOs must be equally sized vectors")
+    if not len(epochs):
+        return ()
+    if not np.issubdtype(epochs.dtype, np.integer):
+        raise ValueError("candidate epochs must be integers")
+    if np.any(epochs < 0):
+        raise ValueError("candidate epochs must be nonnegative")
+    if not np.all(np.isfinite(frequencies)):
+        raise ValueError("acquired CFOs must be finite")
+    if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
+        raise ValueError("sample rate must be finite and positive")
+    if isinstance(glrt_size, bool) or not isinstance(glrt_size, int) or glrt_size < 2:
+        raise ValueError("GLRT size must be an integer of at least two")
+
+    selected_edge = StarlinkEdge(edge)
+    symbols = np.arange(2, 66)
+    symbol_period = sample_rate_hz * OFDM_SYMBOL_DURATION_S
+    local_starts = np.rint(symbols * symbol_period).astype(int)
+    local_stops = np.rint((symbols + 1) * symbol_period).astype(int)
+    exact_template = np.asarray(
+        qin_edge_pilot_frame(sample_rate_hz, selected_edge), np.complex128
+    )
+    local_stops = np.minimum(local_stops, len(exact_template))
+    counts = local_stops - local_starts
+    symbol_times_s = (local_starts + (counts - 1) / 2) / sample_rate_hz
+    symbol_step_s = float(np.median(np.diff(symbol_times_s)))
+    expected_times_s = symbol_times_s[0] + np.arange(len(symbols)) * symbol_step_s
+    if (
+        np.any(counts < 2)
+        or len(symbols) > glrt_size
+        or 2 * len(symbols) - 1 > glrt_size
+        or not np.allclose(symbol_times_s, expected_times_s, rtol=0.0, atol=1e-15)
+    ):
+        return tuple(
+            conditioned_glrt64_score(
+                values,
+                sample_rate_hz,
+                epoch_sample=int(epoch),
+                acquired_cfo_hz=float(frequency),
+                edge=selected_edge,
+                glrt_size=glrt_size,
+            )
+            for epoch, frequency in zip(epochs, frequencies, strict=True)
+        )
+
+    control_template = np.asarray(
+        qin_edge_pilot_frame(
+            sample_rate_hz,
+            selected_edge,
+            symbol_roll=CONTROL_SYMBOL_ROLL,
+        ),
+        np.complex128,
+    )
+    frame_period = sample_rate_hz / FRAME_RATE_HZ
+    frame_starts_by_candidate: list[np.ndarray] = []
+    for epoch in epochs:
+        starts: list[int] = []
+        frame = 0
+        while True:
+            frame_start = int(epoch) + round(frame * frame_period)
+            if frame_start + int(local_stops[-1]) > len(values):
+                break
+            starts.append(frame_start)
+            frame += 1
+        frame_starts_by_candidate.append(np.asarray(starts, dtype=int))
+    maximum_frames = max((len(starts) for starts in frame_starts_by_candidate), default=0)
+    if not maximum_frames:
+        return tuple(
+            _score(PilotMethod.GLRT64, 0.0, 0.0, 0.0, float(frequency))
+            for frequency in frequencies
+        )
+
+    candidate_count = len(epochs)
+    symbol_count = len(symbols)
+    exact_values = np.zeros(
+        (candidate_count, maximum_frames, symbol_count), dtype=np.complex128
+    )
+    control_values = np.zeros_like(exact_values)
+    for count in np.unique(counts):
+        positions = np.flatnonzero(counts == count)
+        relative = local_starts[positions, None] + np.arange(int(count))[None, :]
+        exact_reference = exact_template[relative]
+        control_reference = control_template[relative]
+        rotations = np.exp(
+            -2j
+            * np.pi
+            * frequencies[:, None, None]
+            * relative[None, :, :]
+            / sample_rate_hz
+        )
+        for frame_index in range(maximum_frames):
+            active_indexes = np.asarray(
+                [
+                    index
+                    for index, starts in enumerate(frame_starts_by_candidate)
+                    if frame_index < len(starts)
+                ],
+                dtype=int,
+            )
+            if not active_indexes.size:
+                continue
+            frame_starts = np.asarray(
+                [
+                    frame_starts_by_candidate[index][frame_index]
+                    for index in active_indexes
+                ],
+                dtype=int,
+            )
+            absolute = frame_starts[:, None, None] + relative[None, :, :]
+            corrected = values[absolute] * rotations[active_indexes]
+            exact_values[
+                active_indexes[:, None], frame_index, positions[None, :]
+            ] = np.sum(
+                np.conj(exact_reference)[None, :, :] * corrected,
+                axis=2,
+            )
+            control_values[
+                active_indexes[:, None], frame_index, positions[None, :]
+            ] = np.sum(
+                np.conj(control_reference)[None, :, :] * corrected,
+                axis=2,
+            )
+
+    short_size = 1 << (2 * symbol_count - 2).bit_length()
+
+    def evaluate(correlations: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        transformed = np.fft.fft(correlations, n=short_size, axis=2)
+        autocorrelation = np.fft.ifft(np.sum(np.abs(transformed) ** 2, axis=1), axis=1)
+        packed = np.zeros((candidate_count, glrt_size), dtype=np.complex128)
+        packed[:, :symbol_count] = autocorrelation[:, :symbol_count]
+        packed[:, -(symbol_count - 1) :] = autocorrelation[:, -(symbol_count - 1) :]
+        spectrum = np.fft.fft(packed, axis=1).real
+        ceiling = np.sum(np.sum(np.abs(correlations), axis=2) ** 2, axis=1)
+        normalized = np.divide(
+            spectrum,
+            ceiling[:, None],
+            out=np.zeros_like(spectrum),
+            where=ceiling[:, None] > 0,
+        )
+        best = np.argmax(normalized, axis=1)
+        return normalized[np.arange(candidate_count), best], best
+
+    exact_scores, best_indexes = evaluate(exact_values)
+    control_scores, _ = evaluate(control_values)
+    candidate_symbol_steps = tuple(
+        (
+            float(
+                np.median(
+                    np.diff(
+                        (
+                            starts[:, None]
+                            + local_starts[None, :]
+                            + (counts[None, :] - 1) / 2
+                        )
+                        / sample_rate_hz,
+                        axis=1,
+                    )
+                )
+            )
+            if len(starts)
+            else None
+        )
+        for starts in frame_starts_by_candidate
+    )
+    residual_cfo_hz = np.asarray(
+        [
+            0.0 if step is None else float(np.fft.fftfreq(glrt_size, d=step)[best])
+            for step, best in zip(candidate_symbol_steps, best_indexes, strict=True)
+        ],
+        dtype=float,
+    )
+    return tuple(
+        _score(
+            PilotMethod.GLRT64,
+            float(exact_score),
+            float(control_score),
+            float(residual),
+            float(acquired),
+        )
+        for exact_score, control_score, residual, acquired in zip(
+            exact_scores,
+            control_scores,
+            residual_cfo_hz,
+            frequencies,
+            strict=True,
+        )
     )
 
 
