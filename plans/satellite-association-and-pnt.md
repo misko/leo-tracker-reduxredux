@@ -98,12 +98,13 @@ validation, frozen satellite corrections, and blinded-position evaluation.
 **Current cut line:** WP0 is complete. Additive V1 physical-episode,
 catalogue-prediction, exact `K=0,1,2` hypothesis, transferable-correction, and
 blinded-evaluation contracts now exist, together with the first pure synthetic
-Rao-Blackwellized exact solver. The polynomial support-integration helper and a
-response-free prediction port exist; a production TLE adapter, covariance-aware
-nearest-neighbour baseline, rolling multi-dwell smoother, correction-product
-generator/replay, and navigation solver remain pending. No IQ access, catalogue
-rerun, new data selection, or RF collection has occurred or is authorized by
-this document.
+Rao-Blackwellized exact solver. A response-free raw-snapshot-bound SGP4 bank
+adapter and a causal, covariance-aware, single-episode nearest-neighbour
+diagnostic now exist. Response-free geometric population selection, calibrated
+ephemeris covariance, equal-opportunity radio/polynomial nulls, an EKF,
+rolling multi-dwell smoothing, correction-product generation/replay, and a
+navigation solver remain pending. No IQ access, catalogue rerun, new data
+selection, or RF collection has occurred or is authorized by this document.
 
 ### Implementation checkpoint — 2026-08-27
 
@@ -111,10 +112,13 @@ this document.
 |---|---|---|
 | WP0 collision and reusable-oracle audit | DONE | New work is isolated from the existing TLE-blind `multi_target` tracker and user-owned Research prototypes. |
 | Physical observation/episode and response-free candidate bank contracts | DONE, synthetic boundary | Support moments, stable raw-source authority, non-overlap, chronological episode order, causal snapshot, verified element membership, frozen candidate universe, and exact tau-grid policy in [`catalogue_association.py`](../src/leo/contracts/catalogue_association.py) |
-| Exact bounded `K=0,1,2` association with normalized feasible-family priors | DONE, synthetic baseline | [`catalogue_association.py`](../src/leo/analysis/catalogue_association.py) |
+| Exact bounded `K=0,1,2` association with normalized feasible-family priors | DONE, synthetic baseline | [`catalogue_association.py`](../src/leo/analysis/catalogue_association.py); input contracts are revalidated before scoring and extreme log-prior translations are normalized in the shifted domain. |
 | Proper Gaussian marginalization of continuity offsets and hardware-epoch drift | DONE, synthetic baseline | Direct covariance-form equality and recovery tests in [`test_catalogue_association.py`](../tests/analysis/test_catalogue_association.py) |
+| Response-free raw-TLE-to-bank SGP4 adapter | DONE for a frozen synthetic candidate universe | [`catalogue_prediction.py`](../src/leo/analysis/catalogue_prediction.py) and [`test_catalogue_prediction.py`](../tests/analysis/test_catalogue_prediction.py); exact snapshot bytes and selected element pairs are digest-bound before propagation, support kernels are integrated, and tau is canonical at 1 ns. The diagonal uncertainty floor/age/residual model is declared, not calibrated orbit covariance. |
+| Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
 | Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract only | [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py) |
-| Synthetic mixtures and association poisons | DONE for current exact-solver scope | 29 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, and tamper cases. |
+| Synthetic mixtures and exact-association poisons | DONE for current exact-solver scope | 31 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, stale-contract inputs, and tamper cases. |
+| SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 27 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Posterior odds are conditional on the complete frozen response-free candidate universe. `K=0` currently uses the declared zero-curve component-offset/hardware-drift Gaussian baseline; the equal-opportunity polynomial/radio-only likelihood required by WP2 is not yet implemented. |
 | Real opened long arcs | NOT STARTED | Requires a separate frozen development protocol after this slice is independently audited. |
@@ -683,12 +687,12 @@ The goal is complete when:
 ## Repository evidence and reusable building blocks
 
 - [Seeded alias EM](../reports/2026_08_21_seeded_alias_em_d6a.md)
-- [Historical multi-dwell Starlink association](../reports/2026_08_22_multi_dwell_starlink_association.md)
+- [Historical multi-dwell Starlink association evidence](../reports/figures/2026_08_23_thirteen_dwell_starlink_association_fresh/multi-dwell-starlink-association.json)
 - [Fresh thirteen-dwell association](../reports/2026_08_23_thirteen_dwell_starlink_association_fresh.md)
 - [Ten-dwell raw Doppler pipeline](../reports/2026_08_24_ten_dwell_raw_doppler_pipeline.md)
 - [Post-refill retrospective synthesis](../reports/2026_08_25_post_refill_24h_retrospective/README.md)
-- [`satellite_assignment` research implementation](../src/leo/analysis/research/satellite_assignment.py)
-- [`cross_dwell_shared_norad` reducer](../src/leo/analysis/research/cross_dwell_shared_norad.py)
+- [`satellite_assignment` archived research implementation](../reports/2026_08_25_post_refill_24h_retrospective/code/snapshot/repository/src/leo/analysis/research/satellite_assignment.py)
+- [`cross_dwell_shared_norad` archived reducer](../reports/2026_08_25_post_refill_24h_retrospective/code/snapshot/repository/src/leo/analysis/research/cross_dwell_shared_norad.py)
 - [Evidence ledger](../docs/research/evidence-ledger.md)
 
 These existing implementations and reports are references, regressions, or
