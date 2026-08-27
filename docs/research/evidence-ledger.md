@@ -19,8 +19,8 @@ Chronology alone does not tell a reader which conclusion still governs.
 
 This page maps each current scientific claim to its strongest versioned
 evidence, controls, caveats, implementation status, and next falsifier. In the
-campaign-finalization tree, it also indexes all 143 tracked Markdown assets
-under `reports/`: 132 top-level reports, seven documents in the post-refill
+campaign-finalization tree, it also indexes all 146 tracked Markdown assets
+under `reports/`: 135 top-level reports, seven documents in the post-refill
 retrospective bundle, three scanner-rendered samples, and one TLE figure
 README. Canonical concept and pipeline pages link here for provenance; reports
 remain dated receipts.
@@ -407,7 +407,10 @@ documents establish scope or chronology rather than an outcome.
 
 #### 2026-08-27 satellite-association and PNT milestone
 
+- [Capture quality and receiver-relative frame timing](../../reports/2026_08_27_170330_capture_quality.md) — complete 5 MS/s transport evidence and receiver-relative timing repeatability for the `170330` capture; no absolute timing or satellite-identity authority.
 - [Native sample-rate production deployment retrospective](../../reports/2026_08_27_native_sample_rate_production_deployment_retrospective.md) — integrated transport, RF-bandwidth, continuity, queue, Standard-analysis, and browser-delivery deployment evidence.
+- [Satellite tracking timing audit](../../reports/2026_08_27_satellite_tracking_timing_audit.md) — timing-accounting audit for the satellite-tracking evidence; preserves the receiver-relative, candidate-only claim boundary.
+- [Satellite tracking C1/C2/C3 checkpoint results](../../reports/2026_08_27_satellite_tracking_checkpoint_results.md) — opened-arc observability, common-block prediction, and connected-neighborhood diagnostics; incomplete opportunity coverage forces abstention and supplies no identity authority.
 - [Satellite tracking, association, and Doppler-PNT synthesis](../../reports/2026_08_27_satellite_tracking_association_and_pnt_synthesis.md) — integrated methods, per-dwell gate/candidate matrix, long-arc results, positioning implications, and explicit denial of secure identity or real-data positioning validation.
 - [Post-refill edge-switching evaluation](../../reports/2026_08_27_post_refill_edge_switching.md) — receiver-local virtual switching feasibility; no actual Fast Lock, coherent wideband TOA, or satellite identity claim.
 - [Opened long-arc development result](../../reports/2026_08_27_satellite_pnt_long_arc_development_results_attempt2.md) — sealed attempt-2 summary for the exact `9981` and `150802` arcs; opened development only.
