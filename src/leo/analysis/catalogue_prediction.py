@@ -168,6 +168,7 @@ class FrozenResponseFreeCandidateUniverse:
     selection_protocol_digest: Sha256Digest
     selection_policy_digest: Sha256Digest
     tle_membership_authority_digest: Sha256Digest
+    catalogue_field_delta_s: int = 0
     response_fields_excluded: Literal[True] = True
 
     def __post_init__(self) -> None:
@@ -179,6 +180,14 @@ class FrozenResponseFreeCandidateUniverse:
             self.tle_membership_authority_digest,
             "TLE membership authority digest",
         )
+        if (
+            not isinstance(self.catalogue_field_delta_s, int)
+            or isinstance(self.catalogue_field_delta_s, bool)
+            or self.catalogue_field_delta_s not in (-500, 0, 500)
+        ):
+            raise CataloguePredictionInputError(
+                "candidate-universe field delta must equal -500, 0, or +500 seconds"
+            )
         candidates = tuple(sorted(self.candidates, key=lambda item: item.catalog_number))
         numbers = tuple(item.catalog_number for item in candidates)
         if len(set(numbers)) != len(numbers):
@@ -381,6 +390,7 @@ def _revalidate_adapter_inputs(
             selection_protocol_digest=candidate_universe.selection_protocol_digest,
             selection_policy_digest=candidate_universe.selection_policy_digest,
             tle_membership_authority_digest=(candidate_universe.tle_membership_authority_digest),
+            catalogue_field_delta_s=candidate_universe.catalogue_field_delta_s,
             response_fields_excluded=candidate_universe.response_fields_excluded,
         )
         validated_tau = ExactTauPolicy(
@@ -457,14 +467,29 @@ def build_sgp4_catalogue_prediction_bank(
     verified_tle_members: tuple[CatalogueVerifiedTleMemberV1, ...],
     tau_policy: ExactTauPolicy,
     prediction_policy: Sgp4SupportPredictionPolicy | None = None,
+    catalogue_field_delta_s: int = 0,
 ) -> CataloguePredictionBankV1:
     """Predict the complete frozen candidate universe without response access.
 
     All structural, chronology, membership, and work-bound checks finish before
     the first SGP4 state is materialized.  The function never builds or changes
     candidate membership; ``source_candidate_count`` therefore equals the
-    returned count and truncation is always zero.
+    returned count and truncation is always zero.  ``catalogue_field_delta_s``
+    shifts only the propagated catalogue time while retaining the original
+    observation identities/support contract, enabling predeclared wrong-epoch
+    challenge fields.  Its response-free selection-policy digest must be bound
+    by the caller; use of an arbitrary post-response shift is outside V1.
     """
+
+    if (
+        not isinstance(catalogue_field_delta_s, int)
+        or isinstance(catalogue_field_delta_s, bool)
+        or catalogue_field_delta_s not in (-500, 0, 500)
+    ):
+        raise CataloguePredictionInputError(
+            "catalogue field delta must equal exactly -500, 0, or +500 seconds"
+        )
+    catalogue_field_delta_ns = catalogue_field_delta_s * _NS_PER_S
 
     support, tle_snapshot, verified_tle_members = _revalidate_contract_inputs(
         support=support,
@@ -477,6 +502,10 @@ def build_sgp4_catalogue_prediction_bank(
         tau_policy=tau_policy,
         prediction_policy=prediction_policy,
     )
+    if catalogue_field_delta_s != candidate_universe.catalogue_field_delta_s:
+        raise CataloguePredictionInputError(
+            "catalogue field delta disagrees with the frozen candidate universe"
+        )
     catalogue, selected_element_digests = _authenticate_and_parse_snapshot(
         snapshot_payload=snapshot_payload,
         tle_snapshot=tle_snapshot,
@@ -501,6 +530,7 @@ def build_sgp4_catalogue_prediction_bank(
         candidate_universe=candidate_universe,
         observations_by_episode=observations_by_episode,
         tau_policy=tau_policy,
+        catalogue_field_delta_ns=catalogue_field_delta_ns,
     )
     _preflight_work_bound(
         candidate_universe=candidate_universe,
@@ -528,6 +558,7 @@ def build_sgp4_catalogue_prediction_bank(
                 nominal_rf_hz=site_rf_authority.nominal_rf_hz,
                 observer_site=site_rf_authority.observer_site,
                 prediction_policy=policy,
+                catalogue_field_delta_ns=catalogue_field_delta_ns,
             )
             for point in tau_policy.points
         )
@@ -551,6 +582,7 @@ def build_sgp4_catalogue_prediction_bank(
             "algorithm_version": "sgp4-wgs72-local-cubic-diagonal-v1",
             "site_rf_authority_digest": site_rf_authority.content_digest,
             "prediction_policy_digest": policy.digest,
+            "catalogue_field_delta_s": catalogue_field_delta_s,
         }
     )
     propagation_model = (
@@ -703,6 +735,7 @@ def _preflight_shifted_instants(
     candidate_universe: FrozenResponseFreeCandidateUniverse,
     observations_by_episode: dict[str, tuple[CataloguePredictionSupportObservationV1, ...]],
     tau_policy: ExactTauPolicy,
+    catalogue_field_delta_ns: int,
 ) -> None:
     selected_episodes = {
         episode_id
@@ -716,11 +749,15 @@ def _preflight_shifted_instants(
         for episode_id in selected_episodes
         for observation in observations_by_episode[episode_id]
     )
-    earliest_shifted = min(item.support_start_utc_ns for item in observations) + min(
-        item.tau_ns for item in tau_policy.points
+    earliest_shifted = (
+        min(item.support_start_utc_ns for item in observations)
+        + catalogue_field_delta_ns
+        + min(item.tau_ns for item in tau_policy.points)
     )
-    latest_shifted = max(item.support_end_utc_ns for item in observations) + max(
-        item.tau_ns for item in tau_policy.points
+    latest_shifted = (
+        max(item.support_end_utc_ns for item in observations)
+        + catalogue_field_delta_ns
+        + max(item.tau_ns for item in tau_policy.points)
     )
     if earliest_shifted <= 0 or latest_shifted > np.iinfo(np.int64).max:
         raise CataloguePredictionInputError(
@@ -776,10 +813,11 @@ def _predict_candidate_tau_state(
     nominal_rf_hz: float,
     observer_site: ObserverSiteV1,
     prediction_policy: Sgp4SupportPredictionPolicy,
+    catalogue_field_delta_ns: int,
 ) -> CandidateTauStateV1:
     knots_by_observation = {
         item.observation_id: tuple(
-            instant + tau_point.tau_ns
+            instant + catalogue_field_delta_ns + tau_point.tau_ns
             for instant in _integration_knots(
                 item,
                 prediction_policy.integration_sample_count,
@@ -802,7 +840,11 @@ def _predict_candidate_tau_state(
         for left, right in zip(ordered_instants, ordered_instants[1:], strict=False)
         if right > left
     )
-    shifted_reference = min(item.support_center_utc_ns for item in observations) + tau_point.tau_ns
+    shifted_reference = (
+        min(item.support_center_utc_ns for item in observations)
+        + catalogue_field_delta_ns
+        + tau_point.tau_ns
+    )
     grid = SamplingGrid(
         utc_ns=ordered_instants,
         anchor_index=ordered_instants.index(shifted_reference),
@@ -824,7 +866,9 @@ def _predict_candidate_tau_state(
     predictions: list[CandidateObservationPredictionV1] = []
     for observation in observations:
         knots = knots_by_observation[observation.observation_id]
-        reference_utc_ns = observation.support_center_utc_ns + tau_point.tau_ns
+        reference_utc_ns = (
+            observation.support_center_utc_ns + catalogue_field_delta_ns + tau_point.tau_ns
+        )
         offsets_s = np.asarray(
             [(instant - reference_utc_ns) / _NS_PER_S for instant in knots],
             dtype=np.float64,
