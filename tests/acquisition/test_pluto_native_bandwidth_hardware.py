@@ -14,6 +14,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 from threading import Event, Timer
@@ -68,7 +69,7 @@ from tests.acquisition.test_pluto_rate_modes_hardware import (
 
 _NATIVE_BANDWIDTH_ROOT = Path("/srv/bulk/leo/qualification/native-bandwidth")
 _PPU_ROOT = Path("/home/mouse9911/gits/pluto-plus-utils")
-_PPU_EXECUTABLE = _PPU_ROOT / ".venv/bin/pluto"
+_PPU_EXECUTABLE = Path(sys.executable).parent / "pluto"
 _PPU_RATES = (2_500_000, 3_000_000, 5_000_000)
 _PPU_REFILL_LADDER = (4_194_304, 2_097_152, 1_048_576, 524_288)
 _REFILL_SAMPLES = 1_048_576
@@ -387,6 +388,7 @@ def _logical_raw_bytes(plan: CapturePlanV2 | CapturePlanV3) -> int:
 def test_native_bandwidth_campaign_is_bounded_and_uses_maximum_buffers() -> None:
     assert _conservative_campaign_wall_seconds() < _CAMPAIGN_BUDGET_SECONDS
     argv = _ppu_ladder_argv("192.168.1.20", "serial", 5_000_000)
+    assert argv[0] == str(Path(sys.executable).parent / "pluto")
     assert argv[argv.index("--samples") + 1] == "4194304,2097152,1048576,524288"
     assert argv[argv.index("--kernel-buffers") + 1] == "4"
     assert argv[argv.index("--sample-rate-hz") + 1] == "5000000"
