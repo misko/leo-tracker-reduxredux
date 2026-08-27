@@ -9,6 +9,10 @@ import pytest
 from pydantic import ValidationError
 
 from leo.analysis.catalogue_association import associate_catalogue_hypotheses
+from leo.analysis.satellite_correction_joint_replay import (
+    JointSatelliteFrequencyCalibrationEstimate,
+    build_joint_known_position_correction,
+)
 from leo.analysis.satellite_correction_replay import (
     SatelliteCorrectionInputError,
     SatelliteFrequencyCalibrationEstimate,
@@ -34,6 +38,9 @@ from leo.contracts.satellite_pnt import (
     CorrectionEvidenceClass,
     KnownPositionCalibrationReceiptV1,
     SatelliteFrequencyScope,
+)
+from leo.contracts.satellite_pnt_joint_calibration import (
+    JointSatelliteCorrectionProductV1,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.contracts.standard_pipeline import StandardScientificStatus
@@ -234,6 +241,27 @@ def _association(
         reported_hypothesis_limit=10_000,
     )
     return associate_catalogue_hypotheses(graph=graph, prediction_bank=bank, config=config)
+
+
+def _joint_association(
+    graph: PhysicalEpisodeGraphV1, bank: CataloguePredictionBankV1
+) -> CatalogueAssociationResultV1:
+    return associate_catalogue_hypotheses(
+        graph=graph,
+        prediction_bank=bank,
+        config=CatalogueAssociationConfigV1(
+            maximum_active_satellites=2,
+            active_count_log_weights=(-20.0, -5.0, 0.0),
+            assigned_episode_log_weight=0.0,
+            unassigned_episode_log_weight=-4.0,
+            same_state_log_weight=0.0,
+            handoff_log_weight=-0.5,
+            component_offset_prior_sigma_hz=20_000.0,
+            hardware_drift_prior_sigma_hz_per_s=20.0,
+            maximum_evaluated_hypotheses=1_000_000,
+            reported_hypothesis_limit=10_000,
+        ),
+    )
 
 
 def _source_span(graph: PhysicalEpisodeGraphV1) -> CalibrationSourceSpanV1:
@@ -662,3 +690,195 @@ def test_frequency_calibration_contract_rejects_receiver_like_poison_and_bad_cov
             drift_variance_hz2_s2=0.0,
             bias_drift_covariance_hz2_s=1.0,
         )
+
+
+def _joint_frequency_estimates(
+    association: CatalogueAssociationResultV1,
+    *,
+    reference_utc_ns: int,
+    gauge_resolved: bool = True,
+) -> tuple[JointSatelliteFrequencyCalibrationEstimate, ...]:
+    estimates: list[JointSatelliteFrequencyCalibrationEstimate] = []
+    for mode in association.hypotheses:
+        if not mode.active_catalog_numbers:
+            continue
+        states = tuple(
+            SatelliteFrequencyCalibrationEstimate(
+                catalog_number=number,
+                activity_epoch_id=f"activity-{number}",
+                scope=SatelliteFrequencyScope.SATELLITE,
+                beam_channel_id=None,
+                reference_utc_ns=reference_utc_ns,
+                bias_hz=10.0 + index,
+                drift_hz_s=0.1 * index,
+                bias_variance_hz2=4.0,
+                drift_variance_hz2_s2=1.0,
+                bias_drift_covariance_hz2_s=0.2,
+                calibration_evidence_eligible=True,
+            )
+            for index, number in enumerate(mode.active_catalog_numbers)
+        )
+        covariance = (
+            ((4.0, 0.2), (0.2, 1.0))
+            if len(states) == 1
+            else (
+                (4.0, 0.2, 1.0, 0.0),
+                (0.2, 1.0, 0.0, 0.25),
+                (1.0, 0.0, 4.0, 0.2),
+                (0.0, 0.25, 0.2, 1.0),
+            )
+        )
+        estimates.append(
+            JointSatelliteFrequencyCalibrationEstimate(
+                association_mode_digest=canonical_digest(mode.model_dump(mode="json")),
+                states=states,
+                frequency_covariance=covariance,
+                receiver_frequency_gauge_resolved=gauge_resolved,
+                calibration_evidence_eligible=True,
+            )
+        )
+    return tuple(estimates)
+
+
+def _joint_receipt(
+    graph: PhysicalEpisodeGraphV1,
+    bank: CataloguePredictionBankV1,
+    *,
+    gauge_resolved: bool = True,
+):
+    association = _joint_association(graph, bank)
+    span = _source_span(graph)
+    produced = span.end_utc_ns + 1
+    return build_joint_known_position_correction(
+        association=association,
+        prediction_bank=bank,
+        frequency_estimates=_joint_frequency_estimates(
+            association,
+            reference_utc_ns=(span.start_utc_ns + span.end_utc_ns) // 2,
+            gauge_resolved=gauge_resolved,
+        ),
+        calibration_source_spans=(span,),
+        calibration_site=bank.observer_site,
+        calibration_site_authority_digest=_digest("joint-site-authority", "test"),
+        calibration_protocol_digest=_digest("joint-protocol", "test"),
+        frequency_calibration_authority_digest=_digest("frequency-authority", "test"),
+        full_joint_state_digest=_digest("full-joint-state", "joint-test"),
+        receiver_local_state_digest=_digest("receiver-local", "joint-test"),
+        produced_utc_ns=produced,
+        sealed_utc_ns=produced + 1,
+    )
+
+
+def test_joint_correction_preserves_k0_k1_k2_modes_and_cross_covariance() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+
+    receipt = _joint_receipt(graph, bank)
+    product = receipt.joint_correction_product
+
+    assert product.association_result_digest == association.content_digest
+    assert len(product.modes) == len(association.hypotheses)
+    assert {len(item.active_catalog_numbers) for item in product.modes} == {0, 1, 2}
+    assert math.isclose(
+        math.fsum(item.posterior_probability for item in product.modes),
+        1.0,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    )
+    k2 = next(item for item in product.modes if len(item.active_catalog_numbers) == 2)
+    assert k2.frequency_covariance[0][2] == 1.0
+    assert k2.frequency_covariance[1][3] == 0.25
+    assert product.receiver_local_state_excluded is True
+    assert product.association_nuisance_treatment == (
+        "marginalized-in-mode-evidence-not-exported-v1"
+    )
+    solver_safe = json.dumps(product.model_dump(mode="json"), sort_keys=True).lower()
+    assert "component_offset" not in solver_safe
+    assert "hardware_drift" not in solver_safe
+    assert "lnb" not in solver_safe
+    assert "latitude_deg" not in solver_safe
+
+
+def test_joint_correction_requires_resolved_frequency_gauge_for_navigation() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+
+    receipt = _joint_receipt(graph, bank, gauge_resolved=False)
+
+    assert receipt.joint_correction_product.status is StandardScientificStatus.PARTIAL
+    assert not any(item.navigation_eligible for item in receipt.joint_correction_product.modes)
+    assert all(
+        not item.receiver_frequency_gauge_resolved
+        for item in receipt.joint_correction_product.modes
+        if item.active_catalog_numbers
+    )
+
+
+def test_joint_correction_rejects_missing_mode_and_indefinite_cross_covariance() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+    span = _source_span(graph)
+    estimates = _joint_frequency_estimates(
+        association,
+        reference_utc_ns=(span.start_utc_ns + span.end_utc_ns) // 2,
+    )
+    common = {
+        "association": association,
+        "prediction_bank": bank,
+        "calibration_source_spans": (span,),
+        "calibration_site": bank.observer_site,
+        "calibration_site_authority_digest": _digest("site", "joint-negative"),
+        "calibration_protocol_digest": _digest("protocol", "joint-negative"),
+        "frequency_calibration_authority_digest": _digest("frequency", "joint-negative"),
+        "full_joint_state_digest": _digest("joint", "joint-negative"),
+        "receiver_local_state_digest": _digest("local", "joint-negative"),
+        "produced_utc_ns": span.end_utc_ns + 1,
+        "sealed_utc_ns": span.end_utc_ns + 2,
+    }
+    with pytest.raises(SatelliteCorrectionInputError, match="exactly cover"):
+        build_joint_known_position_correction(
+            **common,
+            frequency_estimates=estimates[:-1],
+        )
+
+    k2_index = next(index for index, item in enumerate(estimates) if len(item.states) == 2)
+    poisoned = replace(
+        estimates[k2_index],
+        frequency_covariance=(
+            (4.0, 0.2, 10.0, 0.0),
+            (0.2, 1.0, 0.0, 0.25),
+            (10.0, 0.0, 4.0, 0.2),
+            (0.0, 0.25, 0.2, 1.0),
+        ),
+    )
+    bad_estimates = estimates[:k2_index] + (poisoned,) + estimates[k2_index + 1 :]
+    with pytest.raises(ValidationError, match="positive semidefinite"):
+        build_joint_known_position_correction(
+            **common,
+            frequency_estimates=bad_estimates,
+        )
+
+
+def test_joint_correction_contract_rejects_receiver_local_poison() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    product = _joint_receipt(graph, bank).joint_correction_product
+
+    payload = product.model_dump(mode="json")
+    payload["receiver_lnb_drift_hz_s"] = 1.0
+    with pytest.raises(ValidationError):
+        JointSatelliteCorrectionProductV1.model_validate(payload)
