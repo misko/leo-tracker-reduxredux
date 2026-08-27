@@ -36,12 +36,13 @@ from leo.contracts.states import SourceType, StarlinkEdge
 from leo.domain.mixed_rate_capture import compile_mixed_rate_capture_plan_v3
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.qualification.native_bandwidth import (
-    NativeBandwidthCaptureEvidenceV1,
+    NativeBandwidthCaptureEvidenceV2,
     NativeBandwidthCaptureModeV1,
-    NativeBandwidthLadderCellV1,
-    NativeBandwidthQualificationReceiptV1,
-    NativeBandwidthTransportEvidenceV1,
-    build_native_bandwidth_capture_evidence_v1,
+    NativeBandwidthMetadataContinuityCellV1,
+    NativeBandwidthMetadataLadderEvidenceV1,
+    NativeBandwidthQualificationReceiptV2,
+    NativeBandwidthTransportEvidenceV2,
+    build_native_bandwidth_capture_evidence_v2,
     native_bandwidth_qualification_receipt_digest,
 )
 from leo.storage import RecordingStore
@@ -69,37 +70,37 @@ _NATIVE_BANDWIDTH_ROOT = Path("/srv/bulk/leo/qualification/native-bandwidth")
 _PPU_ROOT = Path("/home/mouse9911/gits/pluto-plus-utils")
 _PPU_EXECUTABLE = _PPU_ROOT / ".venv/bin/pluto"
 _PPU_RATES = (2_500_000, 3_000_000, 5_000_000)
-_PPU_RATE_ARGUMENT = "2.5M,3M,5M"
-_REFILL_SAMPLES = 4_194_304
+_PPU_REFILL_LADDER = (4_194_304, 2_097_152, 1_048_576, 524_288)
+_REFILL_SAMPLES = 1_048_576
 _KERNEL_BUFFERS = 4
 _QUEUE_CAPACITY = 32
 _DURATION_SECONDS = 60
-_CAMPAIGN_BUDGET_SECONDS = 10 * 60
+_CAMPAIGN_BUDGET_SECONDS = 15 * 60
 _MODES = tuple(NativeBandwidthCaptureModeV1)
 
 
-def _ppu_ladder_argv(host: str, serial: str) -> tuple[str, ...]:
+def _ppu_ladder_argv(host: str, serial: str, rate_hz: int) -> tuple[str, ...]:
     return (
         str(_PPU_EXECUTABLE),
         "radio",
-        "ladder",
+        "metadata-ladder",
         host,
         "--transport",
         "ip",
         "--expect-serial",
         serial,
-        "--rates",
-        _PPU_RATE_ARGUMENT,
+        "--metadata-abi",
+        "1",
+        "--sample-rate-hz",
+        str(rate_hz),
+        "--rf-bandwidth-hz",
+        str(rate_hz),
         "--frames",
         "6",
-        "--warmup-frames",
-        "2",
         "--samples",
-        str(_REFILL_SAMPLES),
+        ",".join(str(item) for item in _PPU_REFILL_LADDER),
         "--kernel-buffers",
         str(_KERNEL_BUFFERS),
-        "--format",
-        "json",
     )
 
 
@@ -146,79 +147,107 @@ def _run_ppu_ladder(
     ppu_revision: str,
     evidence_root: Path,
     campaign_deadline: float,
-) -> NativeBandwidthTransportEvidenceV1:
+) -> NativeBandwidthTransportEvidenceV2:
     _require_campaign_time(
         campaign_deadline,
         phase=f"{radio_id} PPU native-bandwidth ladder",
         minimum_remaining_seconds=120 + _RF_SHUTDOWN_RESERVE_SECONDS,
     )
-    completed = subprocess.run(
-        _ppu_ladder_argv(host, serial),
-        cwd=_PPU_ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=300,
-    )
-    failure_path = evidence_root / f"{radio_id}-ppu-ladder-process-v1.json"
-    _atomic_write_json(
-        failure_path,
-        {
-            "argv": list(_ppu_ladder_argv(host, serial)),
-            "returncode": completed.returncode,
-            "stdout": completed.stdout,
-            "stderr": completed.stderr,
-        },
-    )
-    if completed.returncode != 0:
-        raise AssertionError(
-            f"{radio_id} PPU ladder failed; process evidence preserved at {failure_path}"
+    ladders: list[NativeBandwidthMetadataLadderEvidenceV1] = []
+    for rate_hz in _PPU_RATES:
+        argv = _ppu_ladder_argv(host, serial, rate_hz)
+        completed = subprocess.run(
+            argv,
+            cwd=_PPU_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
-    try:
-        report = json.loads(completed.stdout)
-    except json.JSONDecodeError as error:
-        raise AssertionError(
-            f"{radio_id} PPU ladder returned malformed JSON; evidence at {failure_path}"
-        ) from error
-    report_path = evidence_root / f"{radio_id}-ppu-native-bandwidth-ladder-v1.json"
-    _atomic_write_json(report_path, report)
-    if (
-        report.get("serial") != serial
-        or report.get("uri") != f"ip:{host}"
-        or report.get("transport") != "iio_ip"
-        or report.get("kernel_buffers") != _KERNEL_BUFFERS
-        or report.get("warmup_frames") != 2
-        or report.get("original_settings_restored") is not True
-        or report.get("failures") != []
-    ):
-        raise AssertionError(f"{radio_id} PPU ladder identity or restoration is not exact")
-    cells = report.get("cells")
-    if not isinstance(cells, list) or tuple(item.get("sample_rate_hz") for item in cells) != (
-        _PPU_RATES
-    ):
-        raise AssertionError(f"{radio_id} PPU ladder rate inventory is not exact")
-    return NativeBandwidthTransportEvidenceV1(
-        radio_id=radio_id,
-        endpoint=host,
-        serial=serial,
-        evidence_sha256=_sha256_digest(report_path),
-        pluto_plus_utils_revision=ppu_revision,
-        samples_per_channel=_REFILL_SAMPLES,
-        frames=6,
-        warmup_frames=2,
-        kernel_buffers=_KERNEL_BUFFERS,
-        kernel_buffer_configuration_basis=report["kernel_buffer_configuration_basis"],
-        original_settings_restored=True,
-        cells=tuple(
-            NativeBandwidthLadderCellV1(
-                sample_rate_hz=item["sample_rate_hz"],
-                actual_sample_rate_hz=item["actual_sample_rate_hz"],
-                delivery_fraction=item["delivery_fraction"],
-                achieved_payload_mbps=item["achieved_payload_mbps"],
-                kept_pace=item["kept_pace"],
+        process_path = evidence_root / f"{radio_id}-ppu-{rate_hz}-process-v2.json"
+        _atomic_write_json(
+            process_path,
+            {
+                "argv": list(argv),
+                "returncode": completed.returncode,
+                "stdout": completed.stdout,
+                "stderr": completed.stderr,
+            },
+        )
+        if completed.returncode != 0:
+            raise AssertionError(
+                f"{radio_id} {rate_hz} Hz PPU metadata ladder failed; "
+                f"process evidence preserved at {process_path}"
             )
-            for item in cells
-        ),
+        try:
+            report = json.loads(completed.stdout)
+        except json.JSONDecodeError as error:
+            raise AssertionError(
+                f"{radio_id} PPU metadata ladder returned malformed JSON; "
+                f"evidence at {process_path}"
+            ) from error
+        report_path = evidence_root / f"{radio_id}-ppu-{rate_hz}-metadata-ladder-v1.json"
+        _atomic_write_json(report_path, report)
+        if (
+            report.get("serial") != serial
+            or report.get("uri") != f"ip:{host}"
+            or report.get("transport") != "iio_ip"
+            or report.get("metadata_abi") != 1
+            or report.get("sample_rate_hz") != rate_hz
+            or report.get("rf_bandwidth_hz") != rate_hz
+            or report.get("kernel_buffers") != _KERNEL_BUFFERS
+            or report.get("minimum_observed_fraction") != 0.95
+            or report.get("largest_passing_samples_per_channel") != _REFILL_SAMPLES
+            or report.get("original_settings_restored") is not True
+            or report.get("failures") != []
+        ):
+            raise AssertionError(
+                f"{radio_id} PPU metadata ladder identity, RF readback, or restoration is not exact"
+            )
+        cells = report.get("cells")
+        if (
+            not isinstance(cells, list)
+            or tuple(item.get("samples_per_channel") for item in cells) != _PPU_REFILL_LADDER
+        ):
+            raise AssertionError(f"{radio_id} PPU metadata refill inventory is not exact")
+        ladders.append(
+            NativeBandwidthMetadataLadderEvidenceV1.model_validate(
+                {
+                    "report_sha256": _sha256_digest(report_path),
+                    "metadata_abi": 1,
+                    "sample_rate_hz": rate_hz,
+                    "rf_bandwidth_hz": rate_hz,
+                    "kernel_buffers": _KERNEL_BUFFERS,
+                    "largest_passing_samples_per_channel": _REFILL_SAMPLES,
+                    "original_settings_restored": True,
+                    "readback_verified": True,
+                    "failure_count": 0,
+                    "cells": tuple(
+                        NativeBandwidthMetadataContinuityCellV1(
+                            samples_per_channel=item["samples_per_channel"],
+                            requested_frames=item["requested_frames"],
+                            observed_frames=item["observed_frames"],
+                            observed_sample_count=item["observed_sample_count"],
+                            device_span_sample_count=item["device_span_sample_count"],
+                            missing_sample_count=item["missing_sample_count"],
+                            gap_count=item["gap_count"],
+                            overflow_count=item["overflow_count"],
+                            observed_fraction=item["observed_fraction"],
+                            passed=item["passed"],
+                        )
+                        for item in cells
+                    ),
+                }
+            )
+        )
+    return NativeBandwidthTransportEvidenceV2.model_validate(
+        {
+            "radio_id": radio_id,
+            "endpoint": host,
+            "serial": serial,
+            "pluto_plus_utils_revision": ppu_revision,
+            "ladders": tuple(ladders),
+        }
     )
 
 
@@ -341,7 +370,7 @@ def _capture_with_deadline(
 
 
 def _conservative_campaign_wall_seconds() -> float:
-    ppu_seconds = sum(2 * (6 + 2) * _REFILL_SAMPLES / rate / 0.9 for rate in _PPU_RATES)
+    ppu_seconds = sum(2 * 6 * sum(_PPU_REFILL_LADDER) / rate / 0.9 for rate in _PPU_RATES)
     capture_seconds = len(_MODES) * (_DURATION_SECONDS + 2.0)
     return ppu_seconds + capture_seconds + 60.0
 
@@ -357,10 +386,11 @@ def _logical_raw_bytes(plan: CapturePlanV2 | CapturePlanV3) -> int:
 
 def test_native_bandwidth_campaign_is_bounded_and_uses_maximum_buffers() -> None:
     assert _conservative_campaign_wall_seconds() < _CAMPAIGN_BUDGET_SECONDS
-    argv = _ppu_ladder_argv("192.168.1.20", "serial")
-    assert argv[argv.index("--samples") + 1] == "4194304"
+    argv = _ppu_ladder_argv("192.168.1.20", "serial", 5_000_000)
+    assert argv[argv.index("--samples") + 1] == "4194304,2097152,1048576,524288"
     assert argv[argv.index("--kernel-buffers") + 1] == "4"
-    assert argv[argv.index("--rates") + 1] == "2.5M,3M,5M"
+    assert argv[argv.index("--sample-rate-hz") + 1] == "5000000"
+    assert argv[argv.index("--rf-bandwidth-hz") + 1] == "5000000"
 
 
 def test_enabled_hardware_plan_inventory_has_exact_native_rf_geometry() -> None:
@@ -368,18 +398,17 @@ def test_enabled_hardware_plan_inventory_has_exact_native_rf_geometry() -> None:
     assert tuple(mode for mode, _plan in inventory) == _MODES
     for _mode, plan in inventory:
         if isinstance(plan, CapturePlanV3):
-            legs = plan.radio_plans
+            for leg in plan.radio_plans:
+                profile = leg.profile_revision.profile
+                assert profile.bandwidth_hz == profile.sample_rate_hz
+                assert profile.refill_samples == _REFILL_SAMPLES
+                assert profile.kernel_buffers == _KERNEL_BUFFERS
+                assert leg.requested_settings.bandwidth_hz == leg.requested_settings.sample_rate_hz
         else:
             profile = plan.profile_revision.profile
-            legs = (profile, profile)
-        for leg in legs:
-            settings = leg.requested_settings if isinstance(plan, CapturePlanV3) else None
-            profile = leg.profile_revision.profile if isinstance(plan, CapturePlanV3) else leg
             assert profile.bandwidth_hz == profile.sample_rate_hz
             assert profile.refill_samples == _REFILL_SAMPLES
             assert profile.kernel_buffers == _KERNEL_BUFFERS
-            if settings is not None:
-                assert settings.bandwidth_hz == settings.sample_rate_hz
 
 
 @pytest.mark.hardware
@@ -438,8 +467,8 @@ def test_native_ip_plutos_qualify_enabled_native_bandwidth_pool(
         host=host,
         producer=producer,
     )
-    transport: list[NativeBandwidthTransportEvidenceV1] = []
-    captures: list[NativeBandwidthCaptureEvidenceV1] = []
+    transport: list[NativeBandwidthTransportEvidenceV2] = []
+    captures: list[NativeBandwidthCaptureEvidenceV2] = []
     operation_error: BaseException | None = None
     restoration_error: BaseException | None = None
     try:
@@ -491,7 +520,7 @@ def test_native_ip_plutos_qualify_enabled_native_bandwidth_pool(
             ):
                 raise AssertionError(f"{session_id} lacks physical-zero validity closure")
             captures.append(
-                build_native_bandwidth_capture_evidence_v1(
+                build_native_bandwidth_capture_evidence_v2(
                     result.manifest,
                     mode=mode,
                     manifest_sha256=result.bundle.manifest_sha256,
@@ -513,26 +542,23 @@ def test_native_ip_plutos_qualify_enabled_native_bandwidth_pool(
     if len(transport) != 2 or len(captures) != len(_MODES):
         raise AssertionError("native-bandwidth campaign evidence inventory is incomplete")
 
-    values = {
-        "target_revision": config.leo_revision,
-        "host": host,
-        "radios": radios,
-        "pluto_plus_utils_revision": config.ppu_revision,
-        "transport_evidence": tuple(transport),
-        "captures": tuple(captures),
-        "created_utc_ns": time.time_ns(),
-    }
-    candidate = NativeBandwidthQualificationReceiptV1.model_construct(
-        **values,
+    candidate = NativeBandwidthQualificationReceiptV2.model_construct(
+        target_revision=config.leo_revision,
+        host=host,
+        radios=radios,
+        pluto_plus_utils_revision=config.ppu_revision,
+        transport_evidence=(transport[0], transport[1]),
+        captures=(captures[0], captures[1], captures[2], captures[3], captures[4]),
+        created_utc_ns=time.time_ns(),
         receipt_digest="sha256:" + "0" * 64,
     )
-    receipt = NativeBandwidthQualificationReceiptV1.model_validate(
+    receipt = NativeBandwidthQualificationReceiptV2.model_validate(
         {
             **candidate.model_dump(mode="json"),
             "receipt_digest": native_bandwidth_qualification_receipt_digest(candidate),
         }
     )
-    receipt_path = campaign_root / "native-bandwidth-qualification-receipt-v1.json"
+    receipt_path = campaign_root / "native-bandwidth-qualification-receipt-v2.json"
     _atomic_write_json(receipt_path, receipt.model_dump(mode="json"))
     accepted_root = _NATIVE_BANDWIDTH_ROOT / "accepted" / config.leo_revision
     accepted_root.mkdir(mode=0o750, parents=True, exist_ok=False)

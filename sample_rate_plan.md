@@ -48,6 +48,10 @@ hardware-evidence boundaries remain authoritative.
 8. A complete computation over partial observations reports
    `PARTIAL_COVERAGE`, not capture continuity and not an analysis failure.
 9. The existing frozen Standard pipeline remains available for rollback.
+10. Every native-rate dwell requests and exactly reads back analog RF bandwidth
+    equal to its sample rate. Its IF center is the canonical maximum-coverage
+    in-channel center for the selected Starlink channel and upper/lower edge;
+    any rate, bandwidth, or center-frequency drift fails capture admission.
 
 ## Target geometry
 
@@ -63,8 +67,12 @@ eight bytes per sample instant per radio.
 These are exact logical/decompressed sizes. Compressed `.zst` bytes vary with
 RF content and zero-run length and are not required to match.
 
-The initial profiles retain the reviewed 2.5 MHz analog bandwidth. Higher
-sample rate means greater oversampling, not wider qualified RF bandwidth.
+The native profiles use analog RF bandwidth equal to their exact sample rate:
+2.5, 3, or 5 MHz. The IF center is derived from the randomly selected Starlink
+channel and upper/lower edge so that the complete passband stays in-channel,
+retains the selected edge pilot, and captures the maximum available channel
+span. Requested settings, applied/read-back settings, and the derived channel,
+pilot, and captured-IF bounds are persisted and must agree exactly.
 
 ## Architecture
 
@@ -421,6 +429,11 @@ two-radio valid-time intersection.
 
 Performance gates:
 
+- exactly four kernel buffers and a 1,048,576-sample/channel refill for every
+  enabled 2.5/3/5 MS/s ordinary or mixed leg. This is the largest refill that
+  achieved 100% FPGA-counter coverage on both production radios at all three
+  rates; 2,097,152 and 4,194,304 are explicitly rejected despite reporting no
+  overflow;
 - two-radio 5 MS/s writer throughput at least 100 MB/s;
 - zero enqueue failures and terminal rejected refills;
 - userspace queue high-water no greater than 24/32;

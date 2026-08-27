@@ -412,13 +412,16 @@ serial/URI pairs:
 
 The additive native-bandwidth hardware gate is
 `tests/acquisition/test_pluto_native_bandwidth_hardware.py`. It separately seals
-`/srv/bulk/leo/qualification/native-bandwidth/accepted/<LEO_REVISION>/native-bandwidth-qualification-receipt-v1.json`
-after PPU 2.5/3/5 MS/s keep-pace ladders on both production radios and five
+`/srv/bulk/leo/qualification/native-bandwidth/accepted/<LEO_REVISION>/native-bandwidth-qualification-receipt-v2.json`
+after PPU 2.5/3/5 MS/s metadata-continuity ladders on both production radios and five
 full 60-second recorder captures: ordinary 2.5/3/5 plus mixed 2.5/5 with each
-radio taking the high-rate role. Every stream must use a 4,194,304-sample
-refill, four kernel buffers, `bandwidth_hz == sample_rate_hz`, and the exact IF
+radio taking the high-rate role. The additive V2 authority replaces the
+historical mask-blind V1 gate for cutover. It runs counter-authoritative refill ladders at each enabled
+rate on both radios and requires the largest passing refill to be exactly
+1,048,576 samples/channel with four kernel buffers. Every stream must use that
+refill, `bandwidth_hz == sample_rate_hz`, and the exact requested/applied IF
 center that maximizes captured in-channel bandwidth while retaining the
-selected edge pilot. Cutover requires this receipt in addition to V5; 10 and
+selected edge pilot. Cutover requires V2 in addition to V5; 10 and
 15 MS/s remain disabled after their measured transport failures.
 
 Preflight verifies those identities and firmware, the exact Leo and

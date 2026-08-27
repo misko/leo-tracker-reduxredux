@@ -18,12 +18,18 @@ from leo.contracts.states import CaptureState, GainMode, RadioTransport, Starlin
 from leo.domain.profiles import load_profile_revision
 from leo.qualification.native_bandwidth import (
     NativeBandwidthCaptureEvidenceV1,
+    NativeBandwidthCaptureEvidenceV2,
     NativeBandwidthCaptureModeV1,
     NativeBandwidthLadderCellV1,
+    NativeBandwidthMetadataContinuityCellV1,
+    NativeBandwidthMetadataLadderEvidenceV1,
     NativeBandwidthQualificationReceiptV1,
+    NativeBandwidthQualificationReceiptV2,
     NativeBandwidthStreamEvidenceV1,
+    NativeBandwidthStreamEvidenceV2,
     NativeBandwidthTransportEvidenceV1,
-    build_native_bandwidth_capture_evidence_v1,
+    NativeBandwidthTransportEvidenceV2,
+    build_native_bandwidth_capture_evidence_v2,
     native_bandwidth_qualification_receipt_digest,
 )
 
@@ -50,6 +56,28 @@ _PROFILE_AUTHORITY = {
     (True, 5_000_000): (
         "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
         "sha256:ff8cc094a9f692352b354619fe479fd6f0e970304123706f409ff1a4af55d404",
+    ),
+}
+_PROFILE_AUTHORITY_V2 = {
+    (False, 2_500_000): (
+        "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+        "sha256:140d4f834fd27b94754ea9017f2be45da21af2662dfef8ec97c4487fbf15bc89",
+    ),
+    (False, 3_000_000): (
+        "starlink-ch4-lower-3m-60s-native-bandwidth-v4",
+        "sha256:523402d005564d97177ee139f1a616c01b6b65d9a6c4ad11a0564c074216865c",
+    ),
+    (False, 5_000_000): (
+        "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+        "sha256:6f8ec4a5dec0f6b18d09c0f464c22c143ac363f2088242db830b0757a6316294",
+    ),
+    (True, 2_500_000): (
+        "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+        "sha256:e5f088ba153a893eb5f5324c6c411ebe189acc9de5bfa68211a841edc9bbdb44",
+    ),
+    (True, 5_000_000): (
+        "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
+        "sha256:e5d593c1711ddb65be6adeb2f3fe620afe99948aed2881dabc142b5737e81afc",
     ),
 }
 
@@ -121,6 +149,23 @@ def _stream(
     )
 
 
+def _stream_v2(
+    rate_hz: int,
+    radio: RadioIdentityV1,
+    *,
+    mixed: bool,
+) -> NativeBandwidthStreamEvidenceV2:
+    document = _stream(rate_hz, radio, mixed=mixed).model_dump(mode="json")
+    profile_name, profile_revision = _PROFILE_AUTHORITY_V2[(mixed, rate_hz)]
+    document.update(
+        schema_version=2,
+        profile_name=profile_name,
+        profile_revision_digest=profile_revision,
+        refill_samples=1_048_576,
+    )
+    return NativeBandwidthStreamEvidenceV2.model_validate(document)
+
+
 def _capture(mode: NativeBandwidthCaptureModeV1) -> NativeBandwidthCaptureEvidenceV1:
     rates = {
         NativeBandwidthCaptureModeV1.ORDINARY_2P5: (2_500_000, 2_500_000),
@@ -140,6 +185,29 @@ def _capture(mode: NativeBandwidthCaptureModeV1) -> NativeBandwidthCaptureEviden
         streams=(
             _stream(rates[0], radios[0], mixed=mixed),
             _stream(rates[1], radios[1], mixed=mixed),
+        ),
+    )
+
+
+def _capture_v2(mode: NativeBandwidthCaptureModeV1) -> NativeBandwidthCaptureEvidenceV2:
+    rates = {
+        NativeBandwidthCaptureModeV1.ORDINARY_2P5: (2_500_000, 2_500_000),
+        NativeBandwidthCaptureModeV1.ORDINARY_3: (3_000_000, 3_000_000),
+        NativeBandwidthCaptureModeV1.ORDINARY_5: (5_000_000, 5_000_000),
+        NativeBandwidthCaptureModeV1.MIXED_2P5_5_HIGH_FIRST: (5_000_000, 2_500_000),
+        NativeBandwidthCaptureModeV1.MIXED_2P5_5_HIGH_SECOND: (2_500_000, 5_000_000),
+    }[mode]
+    radios = _radios()
+    mixed = mode.value.startswith("mixed_")
+    return NativeBandwidthCaptureEvidenceV2(
+        mode=mode,
+        session_id=f"native-bandwidth-v2-{mode.value}",
+        manifest_schema_version=4 if mixed else 3,
+        manifest_sha256=_digest(f"manifest-v2-{mode.value}"),
+        capture_state=CaptureState.COMMITTED,
+        streams=(
+            _stream_v2(rates[0], radios[0], mixed=mixed),
+            _stream_v2(rates[1], radios[1], mixed=mixed),
         ),
     )
 
@@ -171,6 +239,85 @@ def _transport(
     )
 
 
+def _metadata_cells() -> tuple[
+    NativeBandwidthMetadataContinuityCellV1,
+    NativeBandwidthMetadataContinuityCellV1,
+    NativeBandwidthMetadataContinuityCellV1,
+    NativeBandwidthMetadataContinuityCellV1,
+]:
+    return (
+        NativeBandwidthMetadataContinuityCellV1(
+            samples_per_channel=4_194_304,
+            requested_frames=6,
+            observed_frames=6,
+            observed_sample_count=25_165_824,
+            device_span_sample_count=67_108_864,
+            missing_sample_count=41_943_040,
+            gap_count=5,
+            overflow_count=0,
+            observed_fraction=0.375,
+            passed=False,
+        ),
+        NativeBandwidthMetadataContinuityCellV1(
+            samples_per_channel=2_097_152,
+            requested_frames=6,
+            observed_frames=6,
+            observed_sample_count=12_582_912,
+            device_span_sample_count=23_068_672,
+            missing_sample_count=10_485_760,
+            gap_count=5,
+            overflow_count=0,
+            observed_fraction=12_582_912 / 23_068_672,
+            passed=False,
+        ),
+        NativeBandwidthMetadataContinuityCellV1(
+            samples_per_channel=1_048_576,
+            requested_frames=6,
+            observed_frames=6,
+            observed_sample_count=6_291_456,
+            device_span_sample_count=6_291_456,
+            missing_sample_count=0,
+            gap_count=0,
+            overflow_count=0,
+            observed_fraction=1.0,
+            passed=True,
+        ),
+        NativeBandwidthMetadataContinuityCellV1(
+            samples_per_channel=524_288,
+            requested_frames=6,
+            observed_frames=6,
+            observed_sample_count=3_145_728,
+            device_span_sample_count=3_145_728,
+            missing_sample_count=0,
+            gap_count=0,
+            overflow_count=0,
+            observed_fraction=1.0,
+            passed=True,
+        ),
+    )
+
+
+def _transport_v2(
+    radio: RadioIdentityV1,
+    endpoint: str,
+) -> NativeBandwidthTransportEvidenceV2:
+    return NativeBandwidthTransportEvidenceV2(
+        radio_id=radio.radio_id,
+        endpoint=endpoint,
+        serial=radio.serial,
+        pluto_plus_utils_revision=_PPU_REVISION,
+        ladders=tuple(
+            NativeBandwidthMetadataLadderEvidenceV1(
+                report_sha256=_digest(f"metadata-{radio.radio_id}-{rate}"),
+                sample_rate_hz=rate,
+                rf_bandwidth_hz=rate,
+                cells=_metadata_cells(),
+            )
+            for rate in (2_500_000, 3_000_000, 5_000_000)
+        ),
+    )
+
+
 def _receipt() -> NativeBandwidthQualificationReceiptV1:
     radios = _radios()
     values = {
@@ -197,6 +344,32 @@ def _receipt() -> NativeBandwidthQualificationReceiptV1:
     )
 
 
+def _receipt_v2() -> NativeBandwidthQualificationReceiptV2:
+    radios = _radios()
+    values = {
+        "target_revision": _REVISION,
+        "host": HostIdentityV1(hostname="gauss", machine_id="machine"),
+        "radios": radios,
+        "pluto_plus_utils_revision": _PPU_REVISION,
+        "transport_evidence": (
+            _transport_v2(radios[0], "192.168.1.20"),
+            _transport_v2(radios[1], "192.168.1.21"),
+        ),
+        "captures": tuple(_capture_v2(mode) for mode in NativeBandwidthCaptureModeV1),
+        "created_utc_ns": 1,
+    }
+    candidate = NativeBandwidthQualificationReceiptV2.model_construct(
+        **values,
+        receipt_digest="sha256:" + "0" * 64,
+    )
+    return NativeBandwidthQualificationReceiptV2.model_validate(
+        {
+            **candidate.model_dump(mode="json"),
+            "receipt_digest": native_bandwidth_qualification_receipt_digest(candidate),
+        }
+    )
+
+
 def test_native_bandwidth_receipt_is_closed_and_round_trips() -> None:
     receipt = _receipt()
 
@@ -206,6 +379,43 @@ def test_native_bandwidth_receipt_is_closed_and_round_trips() -> None:
         NativeBandwidthQualificationReceiptV1.model_validate_json(receipt.model_dump_json())
         == receipt
     )
+
+
+def test_native_bandwidth_receipt_v2_binds_counter_proven_refill_and_rf_readback() -> None:
+    receipt = _receipt_v2()
+
+    assert receipt.passed is True
+    assert all(
+        ladder.largest_passing_samples_per_channel == 1_048_576
+        and ladder.rf_bandwidth_hz == ladder.sample_rate_hz
+        and ladder.readback_verified is True
+        for item in receipt.transport_evidence
+        for ladder in item.ladders
+    )
+    assert all(
+        stream.refill_samples == 1_048_576 and stream.rf_bandwidth_hz == stream.sample_rate_hz
+        for capture in receipt.captures
+        for stream in capture.streams
+    )
+    assert (
+        NativeBandwidthQualificationReceiptV2.model_validate_json(receipt.model_dump_json())
+        == receipt
+    )
+
+
+def test_native_bandwidth_receipt_v2_rejects_larger_refill_and_bandwidth_drift() -> None:
+    receipt = _receipt_v2()
+    document = receipt.model_dump(mode="json")
+    document["transport_evidence"][0]["ladders"][0]["largest_passing_samples_per_channel"] = (
+        2_097_152
+    )
+    with pytest.raises(ValidationError):
+        NativeBandwidthQualificationReceiptV2.model_validate(document)
+
+    document = receipt.model_dump(mode="json")
+    document["transport_evidence"][0]["ladders"][0]["rf_bandwidth_hz"] = 3_000_000
+    with pytest.raises(ValidationError, match="bandwidth must equal"):
+        NativeBandwidthQualificationReceiptV2.model_validate(document)
 
 
 @pytest.mark.parametrize(
@@ -267,7 +477,7 @@ def test_native_bandwidth_transport_rejects_sub_keep_pace_delivery() -> None:
         NativeBandwidthTransportEvidenceV1.model_validate(document)
 
 
-def test_builder_projects_exact_v3_rf_and_device_axis_authority() -> None:
+def test_builder_v2_projects_exact_v3_rf_and_device_axis_authority() -> None:
     revision = load_profile_revision(
         _ROOT / "profiles/starlink-ch4-lower-5m-60s-native-bandwidth-v4.yaml"
     )
@@ -320,7 +530,7 @@ def test_builder_projects_exact_v3_rf_and_device_axis_authority() -> None:
         capture_plan=SimpleNamespace(profile_revision=revision),
     )
 
-    evidence = build_native_bandwidth_capture_evidence_v1(
+    evidence = build_native_bandwidth_capture_evidence_v2(
         manifest,
         mode=NativeBandwidthCaptureModeV1.ORDINARY_5,
         manifest_sha256=_digest("builder-manifest"),
@@ -330,3 +540,4 @@ def test_builder_projects_exact_v3_rf_and_device_axis_authority() -> None:
     assert all(
         stream.rf_bandwidth_hz == stream.sample_rate_hz == rate for stream in evidence.streams
     )
+    assert all(stream.refill_samples == 1_048_576 for stream in evidence.streams)

@@ -75,6 +75,10 @@ decimate, resample, or reconstruct the underlying IQ.
   literal zero bytes at every invalid device-axis interval.
 - No FFT, pilot, symbol, frame, GLRT, QAM, CFO, Doppler, trajectory, Hough, or
   Kalman operation crosses a continuity boundary.
+- Analog RF bandwidth equals the bound native sample rate at 2.5, 3, and
+  5 MS/s. The requested and applied/read-back IF center must equal the
+  canonical maximum-coverage center for the selected channel and upper/lower
+  edge while retaining the edge pilot; drift fails closed before analysis.
 - Stateful algorithms reset for every authoritative segment.
 - Power, quality, and QAM use valid-sample sufficient statistics, never simple
   averages of already-derived ratios or dB values.
