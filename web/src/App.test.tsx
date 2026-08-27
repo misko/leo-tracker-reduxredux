@@ -549,6 +549,10 @@ describe("Observation Console", () => {
     expect(screen.getByText("stream-0 · RX1")).toBeInTheDocument();
     expect(screen.getByText("Both radios")).toBeInTheDocument();
     expect(screen.getByText("Search GLRT64, Symbolwise, and Anchor-8 pilot responses")).toBeInTheDocument();
+    expect(screen.getByText("Active means a worker owns an unexpired lease. Lease activity advances with the worker heartbeat.")).toBeInTheDocument();
+    const processing = screen.getByRole("table", { name: "Processing jobs" });
+    expect(processing).toHaveTextContent("Heartbeat 0s ago");
+    expect(processing).toHaveTextContent("Queued for 1m 0s");
   });
 
   it("shows scanner history and selects an exact report", async () => {
