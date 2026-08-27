@@ -9,6 +9,12 @@ import pytest
 from pydantic import ValidationError
 
 from leo.analysis.catalogue_association import associate_catalogue_hypotheses
+from leo.analysis.joint_frequency_calibration import (
+    JointFrequencyCalibrationConfig,
+    ReceiverComponentOffsetPrior,
+    ReceiverHardwareDriftPrior,
+    calibrate_joint_satellite_frequency,
+)
 from leo.analysis.satellite_correction_joint_replay import (
     JointSatelliteFrequencyCalibrationEstimate,
     build_joint_known_position_correction,
@@ -769,6 +775,51 @@ def _joint_receipt(
     )
 
 
+def _calibrate_joint_frequency(
+    graph: PhysicalEpisodeGraphV1,
+    bank: CataloguePredictionBankV1,
+    association: CatalogueAssociationResultV1,
+    *,
+    gauge_resolved: bool = True,
+    hardware_drift_sigma_hz_s: float = 2.0,
+):
+    component_priors = tuple(
+        ReceiverComponentOffsetPrior(
+            continuity_component_id=item.continuity_component_id,
+            mean_hz=10_000.0,
+            standard_uncertainty_hz=0.25,
+        )
+        for item in graph.episodes
+    )
+    hardware_ids = tuple(sorted({item.hardware_epoch_id for item in graph.observations}))
+    hardware_priors = tuple(
+        ReceiverHardwareDriftPrior(
+            hardware_epoch_id=item,
+            reference_utc_ns=sum(
+                row.support_center_utc_ns
+                for row in graph.observations
+                if row.hardware_epoch_id == item
+            )
+            // sum(1 for row in graph.observations if row.hardware_epoch_id == item),
+            mean_hz_s=0.0,
+            standard_uncertainty_hz_s=hardware_drift_sigma_hz_s,
+        )
+        for item in hardware_ids
+    )
+    return calibrate_joint_satellite_frequency(
+        graph=graph,
+        prediction_bank=bank,
+        association=association,
+        component_priors=component_priors,
+        hardware_priors=hardware_priors,
+        receiver_frequency_reference_authority_digest=_digest(
+            "receiver-frequency-authority", "test"
+        ),
+        receiver_frequency_gauge_resolved=gauge_resolved,
+        config=JointFrequencyCalibrationConfig(),
+    )
+
+
 def test_joint_correction_preserves_k0_k1_k2_modes_and_cross_covariance() -> None:
     graph = _graph(
         start_utc_ns=_BASE_UTC_NS,
@@ -882,3 +933,143 @@ def test_joint_correction_contract_rejects_receiver_local_poison() -> None:
     payload["receiver_lnb_drift_hz_s"] = 1.0
     with pytest.raises(ValidationError):
         JointSatelliteCorrectionProductV1.model_validate(payload)
+
+
+def test_known_position_batch_calibration_retains_cross_satellite_covariance() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+        satellite_bias_hz=10.0,
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+
+    result = _calibrate_joint_frequency(graph, bank, association)
+
+    assert result.receiver_frequency_gauge_resolved is True
+    assert result.receiver_local_state_exportable is False
+    assert result.receiver_drift_model == "one-linear-state-per-hardware-epoch-v1"
+    assert result.cross_dwell_random_walk_modeled is False
+    assert result.receiver_local_priors_externally_supplied is True
+    assert result.known_position_used is True
+    assert result.identity_claimed is False
+    assert len(result.frequency_estimates) == sum(
+        bool(item.active_catalog_numbers) for item in association.hypotheses
+    )
+    k2 = next(item for item in result.frequency_estimates if len(item.states) == 2)
+    assert len(k2.frequency_covariance) == 4
+    assert abs(k2.frequency_covariance[0][2]) > 1e-9
+    assert abs(k2.frequency_covariance[1][3]) > 1e-9
+    assert all(item.calibration_evidence_eligible for item in result.frequency_estimates)
+
+
+def test_shared_hardware_uncertainty_increases_cross_satellite_covariance() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+        satellite_bias_hz=10.0,
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+
+    tight = _calibrate_joint_frequency(
+        graph,
+        bank,
+        association,
+        hardware_drift_sigma_hz_s=0.01,
+    )
+    loose = _calibrate_joint_frequency(
+        graph,
+        bank,
+        association,
+        hardware_drift_sigma_hz_s=10.0,
+    )
+    tight_k2 = next(item for item in tight.frequency_estimates if len(item.states) == 2)
+    loose_k2 = next(item for item in loose.frequency_estimates if len(item.states) == 2)
+
+    assert abs(loose_k2.frequency_covariance[1][3]) > abs(tight_k2.frequency_covariance[1][3])
+
+
+def test_batch_calibration_feeds_joint_product_without_exporting_receiver_state() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+        satellite_bias_hz=10.0,
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+    calibration = _calibrate_joint_frequency(graph, bank, association)
+    span = _source_span(graph)
+    produced = span.end_utc_ns + 1
+
+    receipt = build_joint_known_position_correction(
+        association=association,
+        prediction_bank=bank,
+        frequency_estimates=calibration.frequency_estimates,
+        calibration_source_spans=(span,),
+        calibration_site=bank.observer_site,
+        calibration_site_authority_digest=_digest("site", "batch"),
+        calibration_protocol_digest=_digest("protocol", "batch"),
+        frequency_calibration_authority_digest=(
+            calibration.receiver_frequency_reference_authority_digest
+        ),
+        full_joint_state_digest=calibration.full_joint_state_digest,
+        receiver_local_state_digest=calibration.receiver_local_state_digest,
+        produced_utc_ns=produced,
+        sealed_utc_ns=produced + 1,
+    )
+
+    product = receipt.joint_correction_product
+    assert product.status is StandardScientificStatus.COMPLETE
+    serialized = json.dumps(product.model_dump(mode="json"), sort_keys=True).lower()
+    assert calibration.receiver_local_state_digest not in serialized
+    assert "receiver_local_state_digest" not in serialized
+    assert "component_offset" not in serialized
+    assert "hardware_drift" not in serialized
+
+
+def test_unresolved_batch_frequency_gauge_cannot_become_navigation_eligible() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+        satellite_bias_hz=10.0,
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+
+    result = _calibrate_joint_frequency(
+        graph,
+        bank,
+        association,
+        gauge_resolved=False,
+    )
+
+    assert not any(item.calibration_evidence_eligible for item in result.frequency_estimates)
+    assert all(not item.receiver_frequency_gauge_resolved for item in result.frequency_estimates)
+
+
+def test_batch_frequency_calibration_rejects_incomplete_receiver_authority() -> None:
+    graph = _graph(
+        start_utc_ns=_BASE_UTC_NS,
+        labels=(_CATALOG_ONE, _CATALOG_TWO),
+    )
+    bank = _bank(graph, candidate_numbers=(_CATALOG_ONE, _CATALOG_TWO))
+    association = _joint_association(graph, bank)
+
+    with pytest.raises(SatelliteCorrectionInputError, match="exactly cover"):
+        calibrate_joint_satellite_frequency(
+            graph=graph,
+            prediction_bank=bank,
+            association=association,
+            component_priors=(),
+            hardware_priors=(
+                ReceiverHardwareDriftPrior(
+                    hardware_epoch_id="receiver-a",
+                    reference_utc_ns=_BASE_UTC_NS,
+                    mean_hz_s=0.0,
+                    standard_uncertainty_hz_s=1.0,
+                ),
+            ),
+            receiver_frequency_reference_authority_digest=_digest("authority", "missing"),
+            receiver_frequency_gauge_resolved=True,
+        )
