@@ -186,6 +186,7 @@ def _universe(
     numbers: tuple[int, ...],
     *,
     eligible_by_number: dict[int, tuple[str, ...]] | None = None,
+    catalogue_field_delta_s: int = 0,
 ) -> FrozenResponseFreeCandidateUniverse:
     eligible_by_number = {} if eligible_by_number is None else eligible_by_number
     return FrozenResponseFreeCandidateUniverse(
@@ -202,6 +203,7 @@ def _universe(
             "tle-membership-authority",
             "externally-verified-snapshot-members-v1",
         ),
+        catalogue_field_delta_s=catalogue_field_delta_s,
     )
 
 
@@ -238,6 +240,7 @@ def _build(
     snapshot: TleSnapshotRefV1 | None = None,
     tau_policy: ExactTauPolicy | None = None,
     prediction_policy: Sgp4SupportPredictionPolicy | None = None,
+    catalogue_field_delta_s: int = 0,
 ) -> CataloguePredictionBankV1:
     snapshot_payload = _as_snapshot_payload(snapshot_source)
     return build_sgp4_catalogue_prediction_bank(
@@ -245,10 +248,19 @@ def _build(
         snapshot_payload,
         tle_snapshot=(_snapshot(snapshot_payload, support) if snapshot is None else snapshot),
         site_rf_authority=_site_rf_authority(),
-        candidate_universe=_universe(support, numbers) if universe is None else universe,
+        candidate_universe=(
+            _universe(
+                support,
+                numbers,
+                catalogue_field_delta_s=catalogue_field_delta_s,
+            )
+            if universe is None
+            else universe
+        ),
         verified_tle_members=(_members(snapshot_payload, numbers) if members is None else members),
         tau_policy=ExactTauPolicy.fixed_zero() if tau_policy is None else tau_policy,
         prediction_policy=prediction_policy,
+        catalogue_field_delta_s=catalogue_field_delta_s,
     )
 
 
@@ -271,6 +283,61 @@ def test_real_sgp4_adapter_returns_complete_response_free_diagonal_bank() -> Non
         assert tuple(item.observation_id for item in predictions) == expected_observations
         assert all(math.isfinite(item.predicted_cfo_hz) for item in predictions)
         assert all(item.standard_uncertainty_hz >= 1.0 for item in predictions)
+
+
+def test_predeclared_catalogue_field_shift_changes_only_response_free_predictions() -> None:
+    catalogue = _catalogue()
+    support = _support(catalogue)
+    true_time = _build(catalogue, support, numbers=(44714,))
+    shifted = _build(
+        catalogue,
+        support,
+        numbers=(44714,),
+        catalogue_field_delta_s=500,
+    )
+
+    assert shifted.support.content_digest == true_time.support.content_digest
+    assert shifted.propagation_model != true_time.propagation_model
+    true_values = tuple(
+        item.predicted_cfo_hz for item in true_time.candidates[0].tau_states[0].predictions
+    )
+    shifted_values = tuple(
+        item.predicted_cfo_hz for item in shifted.candidates[0].tau_states[0].predictions
+    )
+    assert shifted_values != true_values
+    assert shifted.response_accessed is False
+
+
+def test_catalogue_field_must_match_response_free_universe_receipt() -> None:
+    catalogue = _catalogue()
+    support = _support(catalogue)
+
+    with pytest.raises(CataloguePredictionInputError, match="frozen candidate universe"):
+        _build(
+            catalogue,
+            support,
+            numbers=(44714,),
+            universe=_universe(support, (44714,), catalogue_field_delta_s=0),
+            catalogue_field_delta_s=500,
+        )
+
+
+@pytest.mark.parametrize("value", (False, -1, 30, 501))
+def test_catalogue_field_shift_is_exact_and_bounded(value: object) -> None:
+    catalogue = _catalogue()
+    support = _support(catalogue)
+
+    with pytest.raises(CataloguePredictionInputError, match="field delta"):
+        build_sgp4_catalogue_prediction_bank(
+            support,
+            _snapshot_payload(),
+            tle_snapshot=_snapshot(_snapshot_payload(), support),
+            site_rf_authority=_site_rf_authority(),
+            candidate_universe=_universe(support, (44714,)),
+            verified_tle_members=_members(_snapshot_payload(), (44714,)),
+            tau_policy=ExactTauPolicy.fixed_zero(),
+            catalogue_field_delta_s=value,  # type: ignore[arg-type]
+        )
 
 
 def test_exact_ascii_snapshot_bytes_are_accepted_without_a_detached_catalogue() -> None:

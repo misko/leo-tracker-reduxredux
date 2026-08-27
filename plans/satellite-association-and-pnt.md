@@ -120,11 +120,13 @@ polynomial null, and a separately audited execution amendment exist.
 An exact evidence-to-episode adapter now reproduces the two registered graphs
 and immediately projects them through the response-free prediction-support
 port. A training-frozen support-integrated line/quadratic/cubic radio null is
-also qualified on synthetic data. Full geometric Starlink population
-selection remains pending, and neither component has been used to propagate a
+also qualified on synthetic data. A response-free full-Starlink geometric
+horizon selector now authenticates exact TLE bytes and freezes a complete,
+unranked candidate universe independently for each predeclared
+`delta=-500,0,+500 s` field. The SGP4 bank binds that field receipt before
+propagation. None of these components has been used to propagate a real
 catalogue or score the opened arcs.
-Response-free geometric population selection, calibrated ephemeris covariance,
-equal-opportunity radio/polynomial nulls, full fixed-lag smoothing and ECM,
+Calibrated ephemeris covariance, full fixed-lag smoothing and ECM,
 joint `K=2` correction representation, broad-prior particle navigation, joint
 identity/correction refinement, radio-only positioning, and four-lane blinded
 evaluation remain pending. No IQ access, catalogue rerun, new data selection,
@@ -139,11 +141,12 @@ or RF collection has occurred or is authorized by this document.
 | Exact bounded `K=0,1,2` association with normalized feasible-family priors | DONE, synthetic baseline | [`catalogue_association.py`](../src/leo/analysis/catalogue_association.py); input contracts are revalidated before scoring and extreme log-prior translations are normalized in the shifted domain. |
 | Proper Gaussian marginalization of continuity offsets and hardware-epoch drift | DONE, synthetic baseline | Direct covariance-form equality and recovery tests in [`test_catalogue_association.py`](../tests/analysis/test_catalogue_association.py) |
 | Response-free raw-TLE-to-bank SGP4 adapter | DONE for a frozen synthetic candidate universe | [`catalogue_prediction.py`](../src/leo/analysis/catalogue_prediction.py) and [`test_catalogue_prediction.py`](../tests/analysis/test_catalogue_prediction.py); exact snapshot bytes and selected element pairs are digest-bound before propagation, support kernels are integrated, and tau is canonical at 1 ns. The diagonal uncertainty floor/age/residual model is declared, not calibrated orbit covariance. |
+| Response-free full-Starlink field population | DONE, synthetic qualification only | [`catalogue_population.py`](../src/leo/analysis/catalogue_population.py) and six focused tests in [`test_catalogue_population.py`](../tests/analysis/test_catalogue_population.py) authenticate exact TLE bytes, filter Starlink by name and complete geometric horizon support, bind support/site/tau/field policy, and emit no rank or truncation. The `delta=-500,0,+500 s` population receipt must match the SGP4 field exactly; propagation failures are explicit and make the population unsuitable for association. No opened-arc population has been computed. |
 | Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
 | Causal multi-dwell catalogue filter | DONE, synthetic forward-filter foundation | [`multi_dwell_catalogue_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_smoothing.py) and [`test_multi_dwell_catalogue_smoothing.py`](../tests/analysis/test_multi_dwell_catalogue_smoothing.py); one source state per dwell, at most two distinct NORADs per retained history, explicit `NULL`, normalized family priors, receiver-local drift resets, proper dwell-offset marginalization, and score-before-assimilation rolling receipts. This is not yet a simultaneous-emitter solver, ECM, or backward smoother. |
 | Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). Coexisting `K=2` corrections fail closed pending an additive joint-mode contract. |
 | Synthetic mixtures and exact-association poisons | DONE for current exact-solver scope | 31 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, stale-contract inputs, and tamper cases. |
-| SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 27 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
+| SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 33 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, field-receipt binding, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
 | Multi-dwell filter and numerical poisons | DONE for current synthetic scope | 27 focused tests cover handoff/null histories, candidate-family mass invariance, `K<=2` history semantics, drift/reset behavior, causal future-value isolation, pruning and tie abstention, stable mixture predictive evidence, fail-closed extreme arithmetic, row/extension work caps, and dense-Gaussian equivalence. An independent 5,000-case Woodbury comparison found no high/medium blocker. |
 | Correction projection and replay poisons | DONE for current synthetic `K<=1` scope | 9 focused tests cover solver-safe/site-private projection, ambiguity-mode closure, bounded-tau uncertainty, `K=2` refusal, complete satellite-frequency inventory, exact observer/TLE/association binding, future validity, stale-contract rejection, receiver-local-field poison, and dense-Gaussian replay evidence. Replay is conditioned on an assigned mode and scores no radio-only/null alternative, so it makes no identity or navigation claim. |
 | Truth-isolated local Doppler positioning | DONE for the first synthetic oracle/frozen-identity slice | [`blinded_doppler_position.py`](../src/leo/analysis/blinded_doppler_position.py) and [`test_blinded_doppler_position.py`](../tests/analysis/test_blinded_doppler_position.py) implement local ECEF Gaussian-prior MAP positioning with a shared receiver CFO state, frozen per-satellite frequency corrections, correlated correction uncertainty, exact consumed-mode lineage, dense-covariance/work bounds, and no truth/reveal import or argument. Oracle output may be complete; unknown frozen-identity output remains explicitly partial because no radio/null alternative is scored. |
@@ -154,7 +157,7 @@ or RF collection has occurred or is authorized by this document.
 | Registered long-arc graph and response-free support adapter | DONE, no association execution | [`long_arc_catalogue_adapter.py`](../src/leo/analysis/research/long_arc_catalogue_adapter.py) authenticates the frozen report bytes, reconstructs the exact 881-row and 550-row support-centred physical graphs, and emits a narrow support port with no CFO, receiver-path, source-binding, or uncertainty response fields. Seven focused tests pin both graph/support/receipt digests and reject evidence or nested-authority mutations. IQ, TLE propagation, candidate selection, and association scoring are absent. |
 | Equal-opportunity radio-polynomial null | DONE, synthetic qualification only | [`radio_polynomial_null.py`](../src/leo/analysis/research/radio_polynomial_null.py) fits support-integrated line/quadratic/cubic models on an explicit training prefix and scores one identical future suffix with coefficient uncertainty propagated. Six tests cover exact support moments, curvature discrimination, future-response isolation, dense-Gaussian equality, partitions/work caps, and stale graph poison. It produces no identity probability, threshold, or gate. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Exact-association posterior odds remain conditional on the complete frozen response-free candidate universe, and its internal `K=0` still uses the declared zero-curve component-offset/hardware-drift Gaussian baseline. The polynomial null is a separate future-prediction comparator, not yet part of posterior normalization. |
-| Real opened long arcs | GRAPH REPRODUCTION QUALIFIED; EXECUTION BLOCKED | The exact response graphs have been reproduced from already-opened committed reports, but no candidate population, TLE propagation, polynomial future score, or association score was run. The execution boundary remains closed pending geometric population selection and an audited code-hash amendment. |
+| Real opened long arcs | INPUT PIPELINE QUALIFIED; EXECUTION BLOCKED | Graph reconstruction, response-free field population selection, field-bound SGP4 prediction, and equal-mask polynomial-null components are qualified on synthetic inputs. No opened-arc candidate population, TLE propagation, polynomial future score, or association score was run. The execution boundary remains closed pending an audited code-hash amendment and a fail-closed runner. |
 
 ## North-star milestone
 
@@ -805,6 +808,15 @@ public contracts or accepted as current identity evidence.
   qualification opened no IQ and ran no catalogue propagation or real-data
   score; response-free geometric population selection and an execution
   amendment remain required.
+- **2026-08-27:** response-free full-Starlink field population selection was
+  implemented and qualified on authenticated synthetic snapshots. It freezes
+  a complete unranked horizon-union population over the observation supports
+  and bounded tau grid separately for `delta=-500,0,+500 s`, records all
+  propagation failures, and binds each receipt to the matching SGP4 field.
+  Work caps fail before propagation or large time-grid materialization. This
+  closes the geometric-selection implementation blocker but does not authorize
+  or perform the opened-arc run; an additive code-hash amendment and audited
+  runner remain required.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
