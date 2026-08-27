@@ -472,7 +472,10 @@ def test_native_ip_plutos_qualify_enabled_native_bandwidth_pool(
                 RecordingManifestV4 if isinstance(plan, CapturePlanV3) else RecordingManifestV3
             )
             if result.bundle is None or not isinstance(result.manifest, expected_manifest_type):
-                raise AssertionError(f"{session_id} did not publish its exact manifest major")
+                raise AssertionError(
+                    f"{session_id} did not publish its exact manifest major: "
+                    f"state={result.state.value}; errors={result.errors!r}"
+                )
             expected_errors = tuple(
                 f"{stream.radio.radio_id}: {stream.error}"
                 for stream in result.manifest.streams
