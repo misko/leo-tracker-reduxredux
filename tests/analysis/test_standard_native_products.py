@@ -84,7 +84,7 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         PATH_REPORT_V3_PRODUCT,
     )
     assert registry.get("path-standard-native").spec.algorithm_version == (
-        "standard-native-evidence-v7"
+        "standard-native-evidence-v8"
     )
     assert registry.get("path-standard-native").spec.configuration_schema == (
         "path-standard-native.evidence.v6"

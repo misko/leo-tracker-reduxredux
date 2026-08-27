@@ -382,6 +382,10 @@ without a line, fit, FFT, or state transition crossing a gap.
   same logical CI16 byte length, and verify zero-fill bytes at exact gap
   offsets.
 - Prove no matplotlib primitive connects points with different segment IDs.
+- Prove a global coarse window split across multiple continuity segments is
+  charged once per segment membership against the valid-probe-derived execution
+  bound, without changing the reviewed global schedule cap or rejecting a
+  truthful full-span recording.
 - Prove waterfall gaps become blank/NaN regions and never dark measured RF.
 - Prove empty but valid scientific results publish deterministic
   `NO_RESULT`/`INSUFFICIENT_DATA` placeholder PNGs.

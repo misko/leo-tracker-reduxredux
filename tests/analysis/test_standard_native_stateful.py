@@ -598,6 +598,76 @@ def test_gapped_stateful_uses_exact_global_probes_and_resets_fits_per_segment(
     )
 
 
+def test_global_probe_membership_bound_does_not_double_charge_one_coarse_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A gap can split one coarse window into two truthful segment memberships."""
+
+    from tests.analysis.test_standard_native_observability import (
+        _binding as gap_binding,
+    )
+    from tests.analysis.test_standard_native_observability import (
+        _inventory as gap_inventory,
+    )
+    from tests.analysis.test_standard_native_observability import (
+        _Reader as GapReader,
+    )
+
+    inventory = gap_inventory()
+    binding = gap_binding(inventory)
+    reader = GapReader(inventory)
+    base = _rate_config(reader.sample_rate_hz)
+    config = replace(base, feedback=replace(base.feedback, maximum_outer_windows=1))
+    schedule = build_standard_native_probe_schedule(
+        reader,
+        binding,
+        subwindow_ms=config.feedback.subwindow_ms,
+        probe_ms=config.feedback.probe_ms,
+        probe_offsets_ms=config.feedback.probe_offsets_ms,
+        maximum_coarse_windows=config.feedback.maximum_outer_windows,
+    )
+
+    def no_result_probe(item, feedback, edge):
+        del feedback, edge
+        return PilotProbeDetection(
+            NumericalStatus.NO_RESULT,
+            item.segment_local_sample_start,
+            item.segment_local_sample_start / reader.sample_rate_hz,
+            None,
+            None,
+            (),
+            None,
+            None,
+            "test split coarse-window membership",
+        )
+
+    result = StandardNativeStatefulRunner(
+        config,
+        probe_detector=no_result_probe,
+    ).run_global_probe_schedule(
+        reader,
+        binding,
+        schedule,
+        edge=StarlinkEdge.LOWER,
+    )
+    product = build_standard_native_stateful_path_v2(
+        result,
+        binding,
+        config,
+        edge=StarlinkEdge.LOWER,
+        schedule=schedule,
+    )
+
+    assert schedule.maximum_coarse_windows == 1
+    assert schedule.accounting.valid_count == 39
+    assert product.analyzed_outer_window_count == 2
+    assert product.maximum_outer_window_count == schedule.accounting.valid_count
+    assert tuple(item.disposition.value for item in product.segments) == (
+        "analyzed",
+        "analyzed",
+    )
+
+
 @pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000))
 def test_global_probe_geometry_marks_short_segment_without_valid_opportunity(
     sample_rate_hz: int,
