@@ -1,0 +1,402 @@
+{
+  "schema": "org.leo.report.capture-170330-quality-comparison/v1",
+  "analysis_scope": {
+    "description": "Selected lower-edge RX1 path on radio_pluto_19f2; both captures are 60 s at 5 MS/s",
+    "comparison_kind": "observational, non-causal",
+    "new_capture_id": "cap-20260827T170330-a555a5cf5306",
+    "prior_capture_id": "cap-20260826T182310-f2c5b2a92b71"
+  },
+  "source_artifacts": [
+    {
+      "role": "new capture manifest",
+      "path": "/srv/bulk/leo/recordings/2026/08/27/cap-20260827T170330-a555a5cf5306/manifest.json",
+      "sha256": "d9440be246e34c24dae1338ffa4c20c81674635ccc9e96a54120e3886cfb1d7d"
+    },
+    {
+      "role": "prior capture manifest",
+      "path": "/srv/bulk/leo/recordings/2026/08/26/cap-20260826T182310-f2c5b2a92b71/manifest.json",
+      "sha256": "1805c62b8cb858dc7e59423cd99fd051c1b09bc01d9e82df2356f6a436ec6fc0"
+    },
+    {
+      "role": "new selected-path GLRT",
+      "path": "/srv/bulk/leo/analysis/cap-20260827T170330-a555a5cf5306/native-capture-a3a6f5f2e91a4f9597eb5d8b9efb276c/scientific/path-standard-native/sha256:2d560b89049f4fffea0dc8c836ac26ad854f04a10c77a0c1146f9d9fc05d6e52/standard.full-capture-glrt20ms.v1.json",
+      "sha256": "0088dfdc47fc2c6bd71c75c2b010c9be54b2c7aa2f7db9a061c8bb612069b9a4"
+    },
+    {
+      "role": "prior selected-path GLRT",
+      "path": "/srv/bulk/leo/analysis/cap-20260826T182310-f2c5b2a92b71/native-capture-70d0bbb837f9482f99a31aabaa079609/scientific/path-standard-native/sha256:996dc2ec2cedb8cfc1c741be310969da0d53b9e2aa7a397145f8fccf506ce3e9/standard.full-capture-glrt20ms.v1.json",
+      "sha256": "df980135e5a8889d802641a7ca546cda265b73a32bdf8ade2e994c8b50bc3f7c"
+    },
+    {
+      "role": "new selected-path report",
+      "path": "/srv/bulk/leo/analysis/cap-20260827T170330-a555a5cf5306/native-capture-a3a6f5f2e91a4f9597eb5d8b9efb276c/scientific/path-standard-native/sha256:2d560b89049f4fffea0dc8c836ac26ad854f04a10c77a0c1146f9d9fc05d6e52/standard.path-report.v3.json",
+      "sha256": "cec5c5b8755b8a2560239852199c14378dd025fd094a6d7680fcd34cdce69eb6"
+    },
+    {
+      "role": "prior selected-path report",
+      "path": "/srv/bulk/leo/analysis/cap-20260826T182310-f2c5b2a92b71/native-capture-70d0bbb837f9482f99a31aabaa079609/scientific/path-standard-native/sha256:996dc2ec2cedb8cfc1c741be310969da0d53b9e2aa7a397145f8fccf506ce3e9/standard.path-report.v3.json",
+      "sha256": "eb8911274bed5d34947edde3f65597116a89ab04114c167d826482db1f5c643b"
+    },
+    {
+      "role": "authoritative timing evaluation",
+      "path": "reports/figures/2026_08_27_170330_capture_quality/timing-evaluation-results.json",
+      "sha256": "af4dba52f6593bf652966b4f270caf7ec6c34e1b11796d4ef21511673dcec50d"
+    }
+  ],
+  "captures": {
+    "prior": {
+      "label": "Prior 5 MS/s · 182310",
+      "capture_id": "cap-20260826T182310-f2c5b2a92b71",
+      "stream_id": "stream-1",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_id": 1,
+      "starlink_channel": "CH3",
+      "starlink_edge": "lower",
+      "center_frequency_hz": 1459687498,
+      "sample_rate_hz": 5000000,
+      "rf_bandwidth_hz": 2500000,
+      "gain_mode": "slow_attack",
+      "gain_db": null,
+      "duration_s": 60.0,
+      "refill_samples": 262144,
+      "kernel_buffers": 8,
+      "refill_count": 1084,
+      "queue_high_water_refills": 23,
+      "missing_samples": 15990784,
+      "gap_count": 61,
+      "segment_count": 62,
+      "longest_contiguous_s": 4.1418752,
+      "observed_samples": 284009216,
+      "glrt": {
+        "scheduled_windows": 5999,
+        "valid_windows": 5560,
+        "passing_windows": 4949,
+        "pass_fraction_of_valid": 0.8901079136690647,
+        "passing_median_exact_score": 0.49647391665310897,
+        "passing_median_control_score": 0.03808639345166103,
+        "passing_median_margin": 0.45867460182126124
+      },
+      "known_pilot_hard_symbol_accuracy": 0.4843670268647756
+    },
+    "new": {
+      "label": "New 5 MS/s · 170330",
+      "capture_id": "cap-20260827T170330-a555a5cf5306",
+      "stream_id": "stream-1",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_id": 1,
+      "starlink_channel": "CH4",
+      "starlink_edge": "lower",
+      "center_frequency_hz": 1709687500,
+      "sample_rate_hz": 5000000,
+      "rf_bandwidth_hz": 5000000,
+      "gain_mode": "manual",
+      "gain_db": 30.0,
+      "duration_s": 60.0,
+      "refill_samples": 1048576,
+      "kernel_buffers": 4,
+      "refill_count": 287,
+      "queue_high_water_refills": 8,
+      "missing_samples": 0,
+      "gap_count": 0,
+      "segment_count": 1,
+      "longest_contiguous_s": 60.0,
+      "observed_samples": 300000000,
+      "glrt": {
+        "scheduled_windows": 5999,
+        "valid_windows": 5999,
+        "passing_windows": 5987,
+        "pass_fraction_of_valid": 0.9979996666111018,
+        "passing_median_exact_score": 0.6517836842865087,
+        "passing_median_control_score": 0.04071909303407167,
+        "passing_median_margin": 0.6118355459302016
+      },
+      "known_pilot_hard_symbol_accuracy": 0.7064774305555556
+    }
+  },
+  "new_capture_path_inventory": {
+    "description": "All four standard-native paths in cap-20260827T170330-a555a5cf5306; medians are over margin-passing windows and QAM statistics use known Qin pilot symbols only",
+    "qam_algorithm": "known-qin-primary-qam-sufficient-statistics-v1",
+    "paths": [
+      {
+        "scope_key": "sha256:2d560b89049f4fffea0dc8c836ac26ad854f04a10c77a0c1146f9d9fc05d6e52",
+        "stream_id": "stream-1",
+        "radio_id": "radio_pluto_19f2",
+        "receiver_id": 1,
+        "starlink_channel": "CH4",
+        "starlink_edge": "lower",
+        "center_frequency_hz": 1709687500,
+        "selected_timing_case": true,
+        "scheduled_windows": 5999,
+        "valid_windows": 5999,
+        "passing_windows": 5987,
+        "pass_fraction_of_valid": 0.9979996666111018,
+        "passing_median_exact_score": 0.6517836842865087,
+        "passing_median_control_score": 0.04071909303407167,
+        "passing_median_margin": 0.6118355459302016,
+        "known_pilot_symbol_count": 5760000,
+        "known_pilot_hard_symbol_accuracy": 0.7064774305555556,
+        "known_pilot_rms_evm": 4.542201741465506,
+        "glrt_file_sha256": "0088dfdc47fc2c6bd71c75c2b010c9be54b2c7aa2f7db9a061c8bb612069b9a4",
+        "path_report_file_sha256": "cec5c5b8755b8a2560239852199c14378dd025fd094a6d7680fcd34cdce69eb6"
+      },
+      {
+        "scope_key": "sha256:339d860a3d64757d93d22d4ea74a2edda84d714277e44234948a2a09211b7d15",
+        "stream_id": "stream-1",
+        "radio_id": "radio_pluto_19f2",
+        "receiver_id": 0,
+        "starlink_channel": "CH4",
+        "starlink_edge": "lower",
+        "center_frequency_hz": 1709687500,
+        "selected_timing_case": false,
+        "scheduled_windows": 5999,
+        "valid_windows": 5999,
+        "passing_windows": 5649,
+        "pass_fraction_of_valid": 0.941656942823804,
+        "passing_median_exact_score": 0.40104784018474915,
+        "passing_median_control_score": 0.03972483312934221,
+        "passing_median_margin": 0.3594786950754182,
+        "known_pilot_symbol_count": 5760000,
+        "known_pilot_hard_symbol_accuracy": 0.3538522569444444,
+        "known_pilot_rms_evm": 26.657705414541428,
+        "glrt_file_sha256": "1dc4f482a5a62cc1a482cd1494b5747f11839c7521f66e4e646533147b37bbcf",
+        "path_report_file_sha256": "ebc4f20c35ba4542a276755f2bf851cf43c7d94c52d2b763ca233a85e81855f0"
+      },
+      {
+        "scope_key": "sha256:4b133ebbf70c1a3a5d18eed4550149ab39a5ad12f410511f5085947904e98268",
+        "stream_id": "stream-0",
+        "radio_id": "radio_pluto_5d4d",
+        "receiver_id": 0,
+        "starlink_channel": "CH2",
+        "starlink_edge": "upper",
+        "center_frequency_hz": 1440312500,
+        "selected_timing_case": false,
+        "scheduled_windows": 5999,
+        "valid_windows": 5999,
+        "passing_windows": 330,
+        "pass_fraction_of_valid": 0.055009168194699115,
+        "passing_median_exact_score": 0.2215181068509947,
+        "passing_median_control_score": 0.036319722884051886,
+        "passing_median_margin": 0.1853875567159567,
+        "known_pilot_symbol_count": 5760000,
+        "known_pilot_hard_symbol_accuracy": 0.27346163194444445,
+        "known_pilot_rms_evm": 32.63898194654176,
+        "glrt_file_sha256": "31771c9029220f65c0f8920e17458cc7702ce4350a051c71a4d874decff4ec6e",
+        "path_report_file_sha256": "d289b7f2ea91d48b9289b3e5d75fbce05de235bd3a4686bb665de8e182cb320d"
+      },
+      {
+        "scope_key": "sha256:8c4d860766da253f3f5f2e184aba6413985d5e7c5ba930e992277a3f57f4bafe",
+        "stream_id": "stream-0",
+        "radio_id": "radio_pluto_5d4d",
+        "receiver_id": 1,
+        "starlink_channel": "CH2",
+        "starlink_edge": "upper",
+        "center_frequency_hz": 1440312500,
+        "selected_timing_case": false,
+        "scheduled_windows": 5999,
+        "valid_windows": 5999,
+        "passing_windows": 542,
+        "pass_fraction_of_valid": 0.09034839139856643,
+        "passing_median_exact_score": 0.24666041352761736,
+        "passing_median_control_score": 0.0367643895103993,
+        "passing_median_margin": 0.20813170352388966,
+        "known_pilot_symbol_count": 5760000,
+        "known_pilot_hard_symbol_accuracy": 0.2776329861111111,
+        "known_pilot_rms_evm": 35.289624679166965,
+        "glrt_file_sha256": "12f61fe5dc779560715fe6563a3b6404f3d277c9663f7c3e2a7a385a1097e874",
+        "path_report_file_sha256": "6d09ef2941871be72162afca6c66ba78489802ea5dd033d5d52c254b423daf08"
+      }
+    ]
+  },
+  "phase_tracking_comparison": {
+    "description": "Local 75 ms pilot-Doppler segment qualification; this is distinct from GLRT detection and does not resolve absolute carrier phase",
+    "model_version": "piecewise-modulo-pi-pilot-doppler-v2",
+    "segment_duration_s": 0.075,
+    "candidate_only": true,
+    "absolute_carrier_phase_resolved": false,
+    "new_lower_rx1": {
+      "scope_key": "sha256:2d560b89049f4fffea0dc8c836ac26ad854f04a10c77a0c1146f9d9fc05d6e52",
+      "glrt_passing_windows": 5987,
+      "glrt_valid_windows": 5999,
+      "candidate_segment_count": 256,
+      "phase_qualified_segment_count": 0,
+      "used_for_timing_replay": true,
+      "stateful_path_file_sha256": "8ec010c86fdeab1e48c0e9c3305a73838f84de1acdbb33958f98034efea8e0f1"
+    },
+    "new_lower_rx0": {
+      "scope_key": "sha256:339d860a3d64757d93d22d4ea74a2edda84d714277e44234948a2a09211b7d15",
+      "glrt_passing_windows": 5649,
+      "glrt_valid_windows": 5999,
+      "candidate_segment_count": 224,
+      "phase_qualified_segment_count": 10,
+      "used_for_timing_replay": false,
+      "stateful_path_file_sha256": "acbc6f2b46e1c60bc4bd60a419a2ccdd4d108ba895a65771870c1f16e5d8b548"
+    },
+    "best_new_qualified_segment": {
+      "path": "CH4 lower RX0",
+      "start_time_s": 41.75,
+      "end_time_s": 41.825,
+      "lattice_frame_count": 55,
+      "supported_frame_count": 55,
+      "phase_update_count": 44,
+      "phase_ambiguity_transition_count": 0,
+      "phase_innovation_rms_rad": 0.0636907721836,
+      "frequency_line_rms_hz": 12.1391589008,
+      "held_out_frequency_rms_hz": 12.8673102104
+    },
+    "best_prior_qualified_segment": {
+      "path": "CH3 upper RX1",
+      "scope_key": "sha256:1307f26a61c88f160c513f5aee60631ef3e402a5ba722cfe916800d2428c361b",
+      "phase_innovation_rms_rad": 0.151054394445,
+      "frequency_line_rms_hz": 32.6331503895,
+      "held_out_frequency_rms_hz": 35.2535623723,
+      "stateful_path_file_sha256": "8e10f4d6f5219d1e68538259298a0bcc6fbbf58ac11febaba668a6b0fffb0d26"
+    }
+  },
+  "glrt_time_bins": {
+    "description": "Two-second bins over valid 20 ms windows; exact-score quantiles include both passing and failing valid windows",
+    "columns": [
+      "center_time_s",
+      "exact_score_median",
+      "exact_score_p10",
+      "exact_score_p90",
+      "margin_median",
+      "pass_fraction",
+      "valid_window_count"
+    ],
+    "new": [
+      [1, 0.6327, 0.5801, 0.6753, 0.5920, 1.0000, 199],
+      [3, 0.5895, 0.5535, 0.6494, 0.5487, 1.0000, 200],
+      [5, 0.6058, 0.5705, 0.6383, 0.5671, 1.0000, 200],
+      [7, 0.5698, 0.5030, 0.6230, 0.5289, 0.9900, 200],
+      [9, 0.8236, 0.7991, 0.8512, 0.7761, 1.0000, 200],
+      [11, 0.8368, 0.8121, 0.8541, 0.7874, 1.0000, 200],
+      [13, 0.8358, 0.8229, 0.8537, 0.7880, 1.0000, 200],
+      [15, 0.8430, 0.8126, 0.8629, 0.7911, 1.0000, 200],
+      [17, 0.8315, 0.8147, 0.8484, 0.7826, 1.0000, 200],
+      [19, 0.8305, 0.8082, 0.8450, 0.7810, 1.0000, 200],
+      [21, 0.7980, 0.7632, 0.8298, 0.7510, 1.0000, 200],
+      [23, 0.7062, 0.6289, 0.8277, 0.6651, 0.9900, 200],
+      [25, 0.6849, 0.6298, 0.7208, 0.6432, 1.0000, 200],
+      [27, 0.7119, 0.6436, 0.7510, 0.6697, 1.0000, 200],
+      [29, 0.6382, 0.5578, 0.6838, 0.5972, 0.9850, 200],
+      [31, 0.6396, 0.5832, 0.6807, 0.5997, 1.0000, 200],
+      [33, 0.6194, 0.5385, 0.6787, 0.5817, 1.0000, 200],
+      [35, 0.6305, 0.5502, 0.6828, 0.5888, 1.0000, 200],
+      [37, 0.5881, 0.5023, 0.6415, 0.5496, 0.9850, 200],
+      [39, 0.6755, 0.6212, 0.7093, 0.6336, 1.0000, 200],
+      [41, 0.6182, 0.5834, 0.6810, 0.5787, 1.0000, 200],
+      [43, 0.6332, 0.5780, 0.6840, 0.5945, 1.0000, 200],
+      [45, 0.6086, 0.5722, 0.6743, 0.5674, 1.0000, 200],
+      [47, 0.6000, 0.5500, 0.6760, 0.5612, 1.0000, 200],
+      [49, 0.5606, 0.5137, 0.6006, 0.5202, 1.0000, 200],
+      [51, 0.5714, 0.5395, 0.6019, 0.5336, 1.0000, 200],
+      [53, 0.6294, 0.5875, 0.6710, 0.5908, 0.9900, 200],
+      [55, 0.6169, 0.5676, 0.6631, 0.5794, 1.0000, 200],
+      [57, 0.6532, 0.5929, 0.7161, 0.6155, 1.0000, 200],
+      [59, 0.6735, 0.6457, 0.6969, 0.6340, 1.0000, 200]
+    ],
+    "prior": [
+      [1, 0.4413, 0.2403, 0.5296, 0.4050, 0.9146, 199],
+      [3, 0.3922, 0.0484, 0.4637, 0.3556, 0.8900, 200],
+      [5, 0.3681, 0.0412, 0.4347, 0.3345, 0.7527, 186],
+      [7, 0.3748, 0.2436, 0.4366, 0.3343, 0.9247, 186],
+      [9, 0.2862, 0.0397, 0.3947, 0.2513, 0.6154, 182],
+      [11, 0.0501, 0.0389, 0.2989, 0.0148, 0.4842, 190],
+      [13, 0.0527, 0.0383, 0.3334, 0.0166, 0.4839, 186],
+      [15, 0.2875, 0.0398, 0.3527, 0.2503, 0.5860, 186],
+      [17, 0.3355, 0.0415, 0.4123, 0.2989, 0.7337, 184],
+      [19, 0.3651, 0.0423, 0.4182, 0.3293, 0.8232, 181],
+      [21, 0.3498, 0.0417, 0.4205, 0.3119, 0.8065, 186],
+      [23, 0.3491, 0.0411, 0.3867, 0.3113, 0.7838, 185],
+      [25, 0.4097, 0.3191, 0.4488, 0.3713, 0.9402, 184],
+      [27, 0.4591, 0.4122, 0.4973, 0.4197, 1.0000, 185],
+      [29, 0.4732, 0.4312, 0.5107, 0.4345, 1.0000, 185],
+      [31, 0.4875, 0.4467, 0.5202, 0.4498, 1.0000, 186],
+      [33, 0.5127, 0.4798, 0.5455, 0.4763, 1.0000, 185],
+      [35, 0.5043, 0.4710, 0.5364, 0.4652, 1.0000, 186],
+      [37, 0.5089, 0.4723, 0.5470, 0.4685, 1.0000, 186],
+      [39, 0.5449, 0.4792, 0.5816, 0.5046, 0.9892, 186],
+      [41, 0.5266, 0.4791, 0.5728, 0.4875, 1.0000, 186],
+      [43, 0.5609, 0.5276, 0.5989, 0.5206, 1.0000, 185],
+      [45, 0.5530, 0.4927, 0.6021, 0.5109, 1.0000, 185],
+      [47, 0.6126, 0.5589, 0.6590, 0.5699, 1.0000, 186],
+      [49, 0.6272, 0.5934, 0.6598, 0.5885, 1.0000, 186],
+      [51, 0.6687, 0.6365, 0.6950, 0.6267, 1.0000, 178],
+      [53, 0.6815, 0.6507, 0.7017, 0.6383, 1.0000, 186],
+      [55, 0.7373, 0.6826, 0.7624, 0.6944, 0.9944, 179],
+      [57, 0.7436, 0.7198, 0.7674, 0.7020, 1.0000, 177],
+      [59, 0.7687, 0.7255, 0.8089, 0.7265, 1.0000, 178]
+    ]
+  },
+  "timing_evaluation": {
+    "authoritative_input": "timing-evaluation-results.json",
+    "schema": "org.leo.research.capture-170330-relative-timing/v1",
+    "method": {
+      "evaluation_interval_s": [0.01, 4.13],
+      "window_ms": 20,
+      "stride_ms": 10,
+      "known_pilot_tone_count": 8,
+      "known_pilot_symbol_count": 300,
+      "known_pilot_span_hz": 1640625.0,
+      "branch_selection": "post-hoc folded-epoch interval",
+      "subsample_refinement": "three-point parabolic peak",
+      "track_model": "degree-two folded frame epoch versus elapsed time",
+      "matched_opportunity_count": 290,
+      "windows_overlap_fraction": 0.5,
+      "residual_evaluation": "in-sample",
+      "correlation_lobe_measurement": {
+        "window": "first selected 20 ms window",
+        "grid_sample_min": -12,
+        "grid_sample_max": 12,
+        "width_definition": "half prominence relative to median grid score"
+      }
+    },
+    "prior": {
+      "integer_epoch_rms_ns": 76.1426633451725,
+      "integer_epoch_p90_ns": 129.13671961072404,
+      "matched_pilot_refined_rms_ns": 21.06636749929977,
+      "matched_pilot_refined_p90_ns": 33.98273014960978,
+      "half_prominence_lobe_width_ns": 608.9458004058672,
+      "disjoint_pilot_half_std_ns": 15.122374890872875,
+      "first_window_peak_score": 0.1299969676366511
+    },
+    "new": {
+      "integer_epoch_rms_ns": 61.62998801441758,
+      "integer_epoch_p90_ns": 95.01835433337874,
+      "matched_pilot_refined_rms_ns": 4.827888219353558,
+      "matched_pilot_refined_p90_ns": 8.033280552290307,
+      "half_prominence_lobe_width_ns": 598.9429569248337,
+      "disjoint_pilot_half_std_ns": 6.50988227262578,
+      "first_window_peak_score": 0.20611257115549678
+    },
+    "prior_to_new_matched_rms_ratio": 4.363474575664576
+  },
+  "claim_boundary": {
+    "supported": [
+      "The selected new path is gap-free for the full 60 s device span.",
+      "Known-pilot GLRT pass fraction and hard-symbol accuracy are higher on the selected new path.",
+      "Post-hoc, branch-conditioned receiver-relative timing residuals are smaller over matched first-4.13-s opportunities.",
+      "The approximately 600 ns correlation-lobe width is essentially unchanged."
+    ],
+    "not_established": [
+      "That 5 MHz RF bandwidth caused the quality increase.",
+      "Blind end-to-end frame acquisition performance.",
+      "Absolute TOA accuracy or pseudorange.",
+      "Cross-radio carrier-phase coherence or upper/lower fusion.",
+      "A same-channel or same-satellite paired comparison."
+    ],
+    "changed_variables": [
+      "channel and observation time",
+      "RF bandwidth: 2.5 to 5 MHz",
+      "gain: slow_attack to manual 30 dB",
+      "refill size: 262144 to 1048576 samples",
+      "kernel buffers: 8 to 4",
+      "acquisition software/source revision"
+    ],
+    "absolute_toa_accuracy_measured": false,
+    "blind_end_to_end": false,
+    "same_channel_capture_pair": false,
+    "bandwidth_causality_claimed": false,
+    "receiver_relative_repeatability_only": true
+  }
+}
