@@ -112,7 +112,11 @@ A digest-closed multi-dwell posterior now persists the positive retained
 history modes, per-dwell smoothed identity marginals, response/prediction/config
 lineage, and pruning status. Receiver drift and dwell offsets are deliberately
 excluded and marked non-transferable, establishing the narrow input boundary
-for a later multi-dwell known-position calibration adapter.
+for multi-dwell known-position calibration. A separate calibrator now consumes
+that boundary without relabelling sequential histories as the one-shot exact
+association contract. It fits satellite bias/drift per retained history with
+proper receiver-local priors and keeps every receiver state opaque; projecting
+handoff histories into a transferable correction schema remains pending.
 An exact contract adapter now joins chronological TLE-blind physical graphs to
 their authenticated response-free per-dwell catalogue banks and emits the
 bounded filter inputs without response ranking. Its V1 scope requires one
@@ -215,6 +219,7 @@ committed amendments; it is not confirmation data.
 | Retained-history identity smoothing | DONE, synthetic discrete fixed-interval slice | [`multi_dwell_catalogue_backward_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_backward_smoothing.py) and its focused tests exactly marginalize final retained path probabilities onto earlier dwell identities. Future geometry can revise an earlier tie without mutating causal receipts. The output states that later response was used retrospectively, remains conditioned on the retained beam, abstains on pruning or exact ties, and neither re-scores response nor smooths receiver nuisance. Continuous-state backward smoothing and online fixed-lag operation remain pending. |
 | Persisted multi-dwell history posterior | DONE, synthetic contract and builder | [`multi_dwell_catalogue.py`](../src/leo/contracts/multi_dwell_catalogue.py) and [`multi_dwell_catalogue_persistence.py`](../src/leo/analysis/multi_dwell_catalogue_persistence.py) seal complete dwell assignments, positive retained path probabilities, smoothed per-dwell identity marginals, response/prediction/config lineage, zero-probability mode accounting, and beam-pruning scope. Receiver/LNB drift and dwell offsets are absent and explicitly non-transferable. A pruned family remains conditional and cannot silently become a complete association posterior. The adapter into joint satellite-frequency calibration remains pending. |
 | Contract-level multi-dwell filter adapter | DONE, restrictive first bridge | [`multi_dwell_catalogue_adapter.py`](../src/leo/analysis/multi_dwell_catalogue_adapter.py) and [`test_multi_dwell_catalogue_adapter.py`](../tests/analysis/test_multi_dwell_catalogue_adapter.py) revalidate each measured physical graph and response-free prediction bank, bind their exact support, preserve chronological measured response separately from catalogue predictions, and emit the bounded causal-filter dataclasses. The adapter requires one episode per dwell, a fixed `tau=0` state, identical complete candidate inventories, common site/RF/model authority, and bounded row work. It rejects truncation, changed support, overlapping chronology, tau profiling, and simultaneous/missing-candidate cases rather than synthesizing evidence. |
+| Sequential-history known-position frequency calibration | DONE, conditional synthetic first bridge | [`multi_dwell_joint_frequency_calibration.py`](../src/leo/analysis/multi_dwell_joint_frequency_calibration.py) and [`test_multi_dwell_joint_frequency_calibration.py`](../tests/analysis/test_multi_dwell_joint_frequency_calibration.py) validate the persisted history posterior against the exact graph/bank adapter lineage, merge only a common authenticated TLE member inventory, and reuse the Gaussian batch kernel per positive retained history. Satellite bias/drift means and joint covariance remain keyed to the original history-mode digest; null histories remain explicit, receiver-local offsets/drift stay opaque, and an unresolved frequency gauge makes every mode ineligible. The slice sets `association_result_relabelled=false` and `transferable_correction_emitted=false`; a correction schema that truthfully represents sequential handoffs is still pending. |
 | Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). The published V1 product still fails closed on coexisting `K=2`; the additive joint product below carries those semantics instead. |
 | Native `K=0,1,2` joint calibration product | DONE, synthetic contract and builder | [`satellite_pnt_joint_calibration.py`](../src/leo/contracts/satellite_pnt_joint_calibration.py) and [`satellite_correction_joint_replay.py`](../src/leo/analysis/satellite_correction_joint_replay.py) preserve every reported exact-association mode and its probability, bind exact episode assignments and TLE members, and retain a PSD cross-satellite bias/drift covariance supplied by a separate known-position calibration authority. Association component offsets and hardware drift affect mode evidence but are never exported. Unresolved receiver/satellite frequency gauge, tau boundary, stale TLE, incomplete mode coverage, indefinite covariance, or missing source authority makes a mode ineligible or fails closed. The native-joint positioning lane below now consumes this product without independent-slot projection. |
 | Known-position joint frequency batch calibration | DONE, conditional synthetic first slice | [`joint_frequency_calibration.py`](../src/leo/analysis/joint_frequency_calibration.py) fits satellite bias/drift jointly with proper externally supplied priors for continuity offsets and hardware drift, then returns only the satellite marginal and its cross-satellite covariance. Receiver-local posterior bytes remain behind opaque digests. Exact graph/bank/association joins, full component/hardware prior coverage, conditioning, work caps, minimum per-satellite duration/counts, and unresolved-gauge abstention are tested in [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). The default uses one linear receiver drift per hardware epoch; an optional time-local model uses dwell-specific slopes coupled by a calibrated random walk, preventing forced equality across long gaps. Change-point calibration and association-posterior feedback remain pending. |
@@ -1025,8 +1030,19 @@ public contracts or accepted as current identity evidence.
   during adaptation. V1 intentionally requires a common complete catalogue
   universe and fixed `tau=0`; it does not encode candidate birth/death,
   simultaneous emitters, or profiled epoch correction. This closes the basic
-  graph/bank-to-filter seam while leaving the persisted-history-to-joint-
-  calibration bridge pending.
+  graph/bank-to-filter seam while leaving sequential-history correction
+  projection pending.
+- **2026-08-27:** a known-position calibration bridge now consumes the
+  digest-closed sequential history posterior without pretending it is the
+  one-shot exact association result. For every positive retained history it
+  fits satellite bias/drift jointly with proper continuity-offset and hardware-
+  drift priors, exports only the satellite marginal covariance, and keys the
+  estimate to the original history-mode digest. Null histories are retained as
+  null, receiver-local states remain opaque, and unresolved frequency gauge
+  prevents calibration eligibility. The result intentionally emits no
+  transferable correction yet: histories with sequential handoffs require a
+  schema that distinguishes time-local source identity from simultaneous
+  active satellites.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
