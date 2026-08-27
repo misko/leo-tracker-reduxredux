@@ -179,6 +179,18 @@ canary must still prove counter closure, queue telemetry, and zero-fill integrit
 
 ### Native-rate RF/IF coverage authority
 
+Live 3 MS/s cutover canary evidence on 2026-08-27 showed that an AD9361 may
+read back `1,209,687,498 Hz` after the canonical maximum-coverage request of
+`1,209,687,500 Hz`. Leo correctly rejected that dwell before streaming or
+publication. Pluto+ Utils revision
+`c955bca13250800bc707ee9f3a6b29bb8bc7c570` adds a bounded exact-settings
+application: only the low-level LO request may search within the fixed nearby
+range, while independent readback must equal the canonical requested IF,
+sample rate, analog RF bandwidth, gain, and receiver geometry exactly. Leo
+uses that path for every native-bandwidth or mixed-rate capture and retains its
+one-hertz fail-closed RF/IF admission. This is hardware representation, not a
+frequency tolerance or a change to the maximum-coverage center.
+
 All newly scheduled native-rate legs use analog `bandwidth_hz == sample_rate_hz`: 2.5, 3, 5, and
 10 MHz. Historical ordinary profile revisions keep their immutable 2.5 MHz
 bandwidth for provenance and reanalysis only; additive `native-bandwidth-v4` profiles replace them
