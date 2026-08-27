@@ -604,6 +604,15 @@ class StandardNativeStatefulRunner:
         )
         if len(detected) != schedule.accounting.valid_count:
             raise ValueError("global stateful detection did not close valid opportunity accounting")
+        # One canonical coarse window can contribute valid probes to more than one
+        # continuity segment.  The segment-local science rows therefore account
+        # *memberships*, not distinct global coarse windows.  Their closed upper
+        # bound is the number of valid persisted probe opportunities: every
+        # nonempty (segment, coarse-window) membership contains at least one such
+        # probe.  Keep the scientific schedule capped by the reviewed feedback
+        # policy while using this independently derived bound for V2 membership
+        # accounting.
+        segment_membership_limit = max(1, schedule.accounting.valid_count)
         detected_by_segment: dict[int, list[NativeScheduledProbeDetection]] = {}
         for item in detected:
             detected_by_segment.setdefault(item.continuity_segment_index, []).append(item)
@@ -623,9 +632,9 @@ class StandardNativeStatefulRunner:
                 local_science = None
             else:
                 outer_window_count = len({item.coarse_window_index for item in selected})
-                if analyzed + outer_window_count > self._config.feedback.maximum_outer_windows:
+                if analyzed + outer_window_count > segment_membership_limit:
                     raise ValueError(
-                        "global schedule segment memberships exceed the stateful outer-window bound"
+                        "global schedule segment memberships exceed valid probe authority"
                     )
                 local_science = _run_segment_global_probe_science(
                     segment_input,
@@ -654,7 +663,7 @@ class StandardNativeStatefulRunner:
             validity_inventory_digest=binding.validity_inventory.inventory_digest,
             sample_rate_hz=binding.sample_rate_hz,
             logical_sample_count=binding.logical_sample_count,
-            maximum_outer_window_count=self._config.feedback.maximum_outer_windows,
+            maximum_outer_window_count=segment_membership_limit,
             analyzed_outer_window_count=analyzed,
             segments=tuple(results),
             schedule_authority=NativeStatefulScheduleAuthority.GLOBAL_PROBE_SCHEDULE_V3,
