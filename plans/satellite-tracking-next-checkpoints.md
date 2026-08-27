@@ -15,6 +15,7 @@ Latest opened-development execution:
 - Implementation commit `2a7a793999173f420394a59017a10dc744053b9b`;
   execution-authority commit `c4d3810cf25ed7f259978a2c10b88578eb1917a4`.
 - Result publication commit `e4b8f4dd154f7a0a9b3a0710f33ca8aefe19946a`.
+- Timing-authority audit commit `8d88d5b3130487b00e2c1104b45a40f5874a73ca`.
 
 ## Purpose and claim boundary
 
