@@ -1,0 +1,26 @@
+{
+  "schema": "org.leo.research.satellite-pnt-cross-family-predictive-determinism-audit/v1",
+  "audited_utc": "2026-08-27T11:15:53Z",
+  "repository_head": "9446ec08988bc1539fd6bba3a011f40196e31b14",
+  "repository_tree": "8b621aafa17620f486987b623ffb392a8a1827b2",
+  "sealed_files": {
+    "reports/2026_08_27_satellite_pnt_cross_family_predictive_scoring.md": "sha256:e75338c2dcaf3c3438174dfa1257513d3f8b0fcd6abfdb850c130c86d1cbb420",
+    "reports/figures/2026_08_27_satellite_pnt_cross_family_predictive_scoring_v1.json": "sha256:6ffcad950e0f1f79202b2538a6cca754f3691da0c1671a345b0d7a7a0e3c3b9e"
+  },
+  "config_sha256": "sha256:1b45154dfb09e3a5b339065e3d41a6e33549dbff5c141c90e92119d9e039ae8e",
+  "implementation_sha256": {
+    "tools/run_cross_family_qin_predictive_scoring.py": "sha256:f093195d24a6105088ef554aeb0193c646c72977d8b0057f90bf363d7ceab7c2",
+    "src/leo/analysis/research/cross_family_qin_predictive_scoring.py": "sha256:66967f44267c226559526bb011f72ebe2995c631659fbc72ef87b756293fe390"
+  },
+  "displayed_truth_arm_accuracy_stable": 0.5,
+  "result_digest_by_openblas_thread_count": {
+    "1": "sha256:d04654e0aa23297cee4a82f6110b67f4aa45d31852bc43c6217bdc0e6d49757f",
+    "2": "sha256:f0aadc512c971c14d386f2d81e2911beac3cad5dac47e6742d0ba37b3bed7d4e",
+    "8": "sha256:f5b5027fc350cd1361396de255f89b27541f17185cadb10905a83cea5e11d392"
+  },
+  "persisted_result_digest": "sha256:e76b85d63b0a3567ebaf1f6a2f9fab98bc4db032d381e25cca6820a4cfdcf12a",
+  "root_cause": "Dense BLAS reductions made the last floating bits of predictive covariance scores thread-count dependent.",
+  "disposition": "no-go-for-canonical-predictive-result",
+  "new_iq_read": false,
+  "scientific_design_changed": false
+}
