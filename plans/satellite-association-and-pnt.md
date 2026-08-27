@@ -103,11 +103,14 @@ adapter and a causal, covariance-aware, single-episode nearest-neighbour
 diagnostic now exist. A synthetic causal multi-dwell forward filter now carries
 `NULL`/NORAD histories, a receiver-local drift random walk, proper dwell-local
 CFO-offset marginalization, and score-before-assimilation next-dwell evidence.
+A synthetic single-emitter projection now builds the solver-safe correction
+product and replays it conditionally on later known-position observations while
+fitting a fresh target-local offset.
 Response-free geometric population selection, calibrated ephemeris covariance,
 equal-opportunity radio/polynomial nulls, full fixed-lag smoothing and ECM,
-correction-product generation/replay, and a navigation solver remain pending.
-No IQ access, catalogue rerun, new data selection, or RF collection has
-occurred or is authorized by this document.
+joint `K=2` correction representation, blinded correction replay, and a
+navigation solver remain pending. No IQ access, catalogue rerun, new data
+selection, or RF collection has occurred or is authorized by this document.
 
 ### Implementation checkpoint — 2026-08-27
 
@@ -120,10 +123,11 @@ occurred or is authorized by this document.
 | Response-free raw-TLE-to-bank SGP4 adapter | DONE for a frozen synthetic candidate universe | [`catalogue_prediction.py`](../src/leo/analysis/catalogue_prediction.py) and [`test_catalogue_prediction.py`](../tests/analysis/test_catalogue_prediction.py); exact snapshot bytes and selected element pairs are digest-bound before propagation, support kernels are integrated, and tau is canonical at 1 ns. The diagonal uncertainty floor/age/residual model is declared, not calibrated orbit covariance. |
 | Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
 | Causal multi-dwell catalogue filter | DONE, synthetic forward-filter foundation | [`multi_dwell_catalogue_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_smoothing.py) and [`test_multi_dwell_catalogue_smoothing.py`](../tests/analysis/test_multi_dwell_catalogue_smoothing.py); one source state per dwell, at most two distinct NORADs per retained history, explicit `NULL`, normalized family priors, receiver-local drift resets, proper dwell-offset marginalization, and score-before-assimilation rolling receipts. This is not yet a simultaneous-emitter solver, ECM, or backward smoother. |
-| Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract only | [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py) |
+| Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). Coexisting `K=2` corrections fail closed pending an additive joint-mode contract. |
 | Synthetic mixtures and exact-association poisons | DONE for current exact-solver scope | 31 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, stale-contract inputs, and tamper cases. |
 | SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 27 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
 | Multi-dwell filter and numerical poisons | DONE for current synthetic scope | 27 focused tests cover handoff/null histories, candidate-family mass invariance, `K<=2` history semantics, drift/reset behavior, causal future-value isolation, pruning and tie abstention, stable mixture predictive evidence, fail-closed extreme arithmetic, row/extension work caps, and dense-Gaussian equivalence. An independent 5,000-case Woodbury comparison found no high/medium blocker. |
+| Correction projection and replay poisons | DONE for current synthetic `K<=1` scope | 9 focused tests cover solver-safe/site-private projection, ambiguity-mode closure, bounded-tau uncertainty, `K=2` refusal, complete satellite-frequency inventory, exact observer/TLE/association binding, future validity, stale-contract rejection, receiver-local-field poison, and dense-Gaussian replay evidence. Replay is conditioned on an assigned mode and scores no radio-only/null alternative, so it makes no identity or navigation claim. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Posterior odds are conditional on the complete frozen response-free candidate universe. `K=0` currently uses the declared zero-curve component-offset/hardware-drift Gaussian baseline; the equal-opportunity polynomial/radio-only likelihood required by WP2 is not yet implemented. |
 | Real opened long arcs | NOT STARTED | Requires a separate frozen development protocol after this slice is independently audited. |
@@ -726,6 +730,15 @@ public contracts or accepted as current identity evidence.
   The slice advances WP4/WP7 infrastructure but does not claim full smoothing,
   ECM, simultaneous multi-emitter inference, real-data association, or a
   transferable satellite correction.
+- **2026-08-27:** synthetic single-emitter correction projection and
+  known-position future replay implemented. The projection consumes a fully
+  reported `K<=1` association posterior, derives bounded tau moments, joins an
+  explicitly satellite-side frequency calibration, and excludes receiver/LNB/
+  path nuisance from the transferable product. It rejects coexisting `K=2`
+  posteriors rather than misrepresenting their event probabilities. Replay
+  applies the frozen product to a later exact TLE/prediction bank, marginalizes
+  fresh target-local offsets, and remains conditional because it has no
+  radio-only/null likelihood and makes no identity or navigation claim.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
