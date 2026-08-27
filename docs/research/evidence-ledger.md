@@ -407,6 +407,7 @@ documents establish scope or chronology rather than an outcome.
 
 #### 2026-08-27 satellite-association and PNT milestone
 
+- [Post-refill edge-switching evaluation](../../reports/2026_08_27_post_refill_edge_switching.md) — receiver-local virtual switching feasibility; no actual Fast Lock, coherent wideband TOA, or satellite identity claim.
 - [Opened long-arc development result](../../reports/2026_08_27_satellite_pnt_long_arc_development_results_attempt2.md) — sealed attempt-2 summary for the exact `9981` and `150802` arcs; opened development only.
 - [Opened long-arc association audit](../../reports/2026_08_27_satellite_pnt_long_arc_development_audit.md) — hash/archive closure and detailed interpretation of candidate stability, wrong-epoch observations, and orbit-versus-radio model disagreement.
 
