@@ -94,6 +94,10 @@ def release_qualification_v2_command_documents() -> tuple[dict[str, Any], ...]:
                 "tests/processing/test_standard_native_presentation_vertical.py::"
                 "test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partial"
             ),
+            (
+                "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
+                "test_real_postgres_mixed_capture_standard_png_and_browser_vertical"
+            ),
         ),
         pytest_command(
             "standard-native-real-corpus",

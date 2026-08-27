@@ -165,6 +165,10 @@ def test_release_lane_seals_reproducible_pass_receipt_and_isolates_environment(
         "test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partial" in item
         for item in definition["commands"][2]["argv"]
     )
+    assert any(
+        "test_real_postgres_mixed_capture_standard_png_and_browser_vertical" in item
+        for item in definition["commands"][2]["argv"]
+    )
     assert definition["commands"][3]["name"] == "standard-native-real-corpus"
     assert "real_corpus" in definition["commands"][3]["argv"]
     build_argv = definition["commands"][4]["argv"]

@@ -17,7 +17,12 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.recording import Identifier, RecordingManifestV1, RecordingManifestV3
+from leo.contracts.recording import (
+    Identifier,
+    RecordingManifestV1,
+    RecordingManifestV3,
+    RecordingManifestV4,
+)
 from leo.contracts.states import StarlinkEdge
 from leo.contracts.validity import ValidityInventoryV1
 
@@ -498,7 +503,7 @@ class StandardPathInputBindV4(_StandardPathInputBindBase):
 
     @model_validator(mode="after")
     def _native_device_axis_is_closed(self) -> Self:
-        if self.sample_rate_hz not in {2_500_000, 3_000_000, 5_000_000}:
+        if self.sample_rate_hz not in {2_500_000, 3_000_000, 5_000_000, 10_000_000}:
             raise ValueError("Standard-native sample rate is not reviewed")
         if not (
             self.declared_sample_count == self.requested_sample_count == self.logical_sample_count
@@ -538,7 +543,7 @@ class ManifestStarlinkTuningIntent:
 
 
 def resolve_manifest_starlink_tuning(
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
 ) -> dict[str, ManifestStarlinkTuningIntent]:
     """Resolve explicit per-stream Starlink intent without frequency inference."""
 
@@ -571,6 +576,16 @@ def resolve_manifest_starlink_tuning(
         if set(resolved) != stream_ids:
             raise ValueError("per-stream Starlink tuning tags must cover every manifest stream")
         return resolved
+
+    if isinstance(manifest, RecordingManifestV4):
+        return {
+            stream_id: ManifestStarlinkTuningIntent(
+                channel=manifest.capture_plan.starlink_channel,
+                edge=manifest.capture_plan.starlink_edge,
+                evidence_source="capture_profile",
+            )
+            for stream_id in stream_ids
+        }
 
     profile = manifest.capture_plan.profile_revision.profile
     channel = channel_by_value.get(profile.starlink_channel or "")

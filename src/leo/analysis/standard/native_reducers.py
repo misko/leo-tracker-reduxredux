@@ -29,7 +29,7 @@ from leo.contracts.standard_native_stateful import StandardNativeStatefulPathV1
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
 from leo.contracts.standard_native_terminal import (
     NativeTerminalPathEvidenceV2,
-    StandardNativePairedReportV4,
+    StandardNativePairedReportV5,
     StandardNativeRadioReportV4,
     aggregate_native_probe_execution_accounting,
     aggregate_native_qam_statistics,
@@ -469,7 +469,7 @@ def reduce_native_paired_terminal_evidence(
     *,
     pair_binding: StandardPairInputBindV2,
     radio_products: tuple[UpstreamJsonProduct, ...],
-) -> StandardNativePairedReportV4:
+) -> StandardNativePairedReportV5:
     """Intersect two terminal radio reports and merge only sufficient statistics."""
 
     scope = context.scope
@@ -520,7 +520,6 @@ def reduce_native_paired_terminal_evidence(
             item.synchronization_inventory_digest != pair_binding.synchronization_inventory_digest
             for item in ordered
         )
-        or len({item.sample_rate_hz for item in ordered}) != 1
     ):
         raise ValueError("native terminal paired reducer received foreign radio authority")
     intervals = intersect_valid_utc_intervals(
@@ -538,13 +537,13 @@ def reduce_native_paired_terminal_evidence(
         tuple(item.scientific_disposition for item in ordered)
     )
     values = {
-        "schema_version": 4,
-        "algorithm_version": "standard-native-paired-report-v4",
+        "schema_version": 5,
+        "algorithm_version": "standard-native-paired-report-v5",
         "session_id": context.session_id,
         "manifest_digest": pair_binding.manifest_digest,
         "synchronization_inventory_digest": pair_binding.synchronization_inventory_digest,
         "pair_input_binding_digest": pair_binding.binding_digest,
-        "sample_rate_hz": ordered[0].sample_rate_hz,
+        "radio_sample_rates_hz": tuple(item.sample_rate_hz for item in ordered),
         "status": status,
         "reason": _status_reason(status, subject="radios"),
         "radios": tuple(item.model_dump(mode="json") for item in ordered),
@@ -567,11 +566,12 @@ def reduce_native_paired_terminal_evidence(
         "current_eligible": False,
         "phase_coherent": False,
         "cross_radio_association_permitted": False,
+        "resampling_permitted": False,
         "candidate_only": True,
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardNativePairedReportV4.model_validate(
+    return StandardNativePairedReportV5.model_validate(
         {**values, "report_digest": canonical_digest(values)}
     )
 
@@ -739,7 +739,6 @@ def native_paired_waterfall_source(
         len({(item.stream_id, item.receiver_id) for item in sources}) != 4
         or len({item.manifest_digest for item in sources}) != 1
         or len({item.synchronization_inventory_digest for item in sources}) != 1
-        or len({item.sample_rate_hz for item in sources}) != 1
     ):
         raise ValueError("native paired waterfall source inventory is inconsistent")
     origin_utc_ns = min(item.timing.first_estimate_utc_ns for item in sources)

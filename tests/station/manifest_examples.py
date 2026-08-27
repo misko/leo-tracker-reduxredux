@@ -22,6 +22,7 @@ from leo.contracts.recording import (
     RecordingManifestV1,
     RecordingManifestV2,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV1,
     RecordingStreamV2,
     RecordingStreamV3,
@@ -342,8 +343,21 @@ def manifest_example_v3(
 
 
 def topology_for_manifest(
-    manifest: RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3,
+    manifest: (
+        RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4
+    ),
 ) -> StationReceiverTopologyV1:
+    valid_until_utc_ns = max(
+        1_000_000,
+        max(
+            stream.timing.last_sample.latest_utc_ns
+            + (1_000_000_000 + stream.applied_settings.sample_rate_hz - 1)
+            // stream.applied_settings.sample_rate_hz
+            + 1
+            for stream in manifest.streams
+            if stream.timing is not None and stream.applied_settings is not None
+        ),
+    )
     radios = tuple(
         StationRadioTopologyV1.create(
             radio_id=stream.radio.radio_id,
@@ -362,7 +376,7 @@ def topology_for_manifest(
                         f"hardware-{stream.radio.radio_id}-rx{receiver_id}-v1"
                     ),
                     valid_from_utc_ns=0,
-                    valid_until_utc_ns=1_000_000,
+                    valid_until_utc_ns=valid_until_utc_ns,
                 )
                 for receiver_id in (0, 1)
             ),
@@ -373,12 +387,14 @@ def topology_for_manifest(
         station_id="station-gauss",
         topology_revision="gauss-receiver-map-v1",
         valid_from_utc_ns=0,
-        valid_until_utc_ns=1_000_000,
+        valid_until_utc_ns=valid_until_utc_ns,
         radios=radios,
     )
 
 
 def verified_digest(
-    manifest: RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3,
+    manifest: (
+        RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4
+    ),
 ) -> str:
     return recording_manifest_canonical_digest(manifest)

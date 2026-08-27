@@ -9,6 +9,8 @@ from leo.contracts.digests import canonical_digest
 from leo.pipeline import ScopeIdentityV1
 from leo.presentation.standard_native_pipeline import (
     StandardNativeEligibilityV3,
+    StandardNativeEligibilityV4,
+    StandardNativeMixedLegV4,
     StandardNativePipelineReleaseV3,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectSummaryV3,
@@ -174,3 +176,60 @@ def test_native_waterfall_keeps_missing_global_cell_explicitly_invalid() -> None
     tampered["power_dbfs"][1] = -42.0
     with pytest.raises(ValidationError, match="explicitly invalid"):
         StandardNativeWaterfallTileV3.model_validate(tampered)
+
+
+def test_mixed_native_eligibility_preserves_each_rate_and_exact_rf_passband() -> None:
+    legs = (
+        StandardNativeMixedLegV4(
+            stream_id="stream-0",
+            radio_id="radio-0",
+            profile_name="starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+            profile_revision_digest=canonical_digest({"profile": "2p5"}),
+            starlink_channel=1,
+            starlink_edge="lower",
+            sample_rate_hz=2_500_000,
+            rf_bandwidth_hz=2_500_000,
+            tuned_center_frequency_hz=959_687_500,
+            pilot_if_center_frequency_hz=959_687_500,
+            channel_if_start_hz=955_000_000,
+            channel_if_stop_hz=1_195_000_000,
+            captured_if_start_hz=958_437_500,
+            captured_if_stop_hz=960_937_500,
+        ),
+        StandardNativeMixedLegV4(
+            stream_id="stream-1",
+            radio_id="radio-1",
+            profile_name="starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
+            profile_revision_digest=canonical_digest({"profile": "5"}),
+            starlink_channel=1,
+            starlink_edge="lower",
+            sample_rate_hz=5_000_000,
+            rf_bandwidth_hz=5_000_000,
+            tuned_center_frequency_hz=959_687_500,
+            pilot_if_center_frequency_hz=959_687_500,
+            channel_if_start_hz=955_000_000,
+            channel_if_stop_hz=1_195_000_000,
+            captured_if_start_hz=957_187_500,
+            captured_if_stop_hz=962_187_500,
+        ),
+    )
+    eligibility = StandardNativeEligibilityV4(
+        capture_state="degraded",
+        capture_committed=False,
+        dwell_class="mixed_2p5_5",
+        legs=legs,
+        pipeline_definition_id=canonical_digest({"definition": "mixed-native"}),
+        promotion_authority_digest=canonical_digest({"authority": "mixed-current"}),
+        reason=(
+            "Promoted reviewed mixed Standard-native capture is Current with partial "
+            "validity coverage"
+        ),
+    )
+
+    assert tuple(item.sample_rate_hz for item in eligibility.legs) == (2_500_000, 5_000_000)
+    assert all(item.rf_bandwidth_hz == item.sample_rate_hz for item in eligibility.legs)
+    assert eligibility.resampled is False
+    changed = eligibility.model_dump(mode="json")
+    changed["legs"][1]["rf_bandwidth_hz"] = 2_500_000
+    with pytest.raises(ValidationError, match="RF/passband"):
+        StandardNativeEligibilityV4.model_validate(changed)

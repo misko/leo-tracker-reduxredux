@@ -142,6 +142,7 @@ from leo.contracts.recording import (
     RecordingManifestV1,
     RecordingManifestV2,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV2,
     RecordingStreamV3,
 )
@@ -159,6 +160,7 @@ from leo.station.authority import (
     CaptureHardwareBindingV1,
     CaptureHardwareBindingV2,
     CaptureHardwareBindingV3,
+    CaptureHardwareBindingV4,
     FixturePathAuthorityV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -170,7 +172,10 @@ _ZERO_DIGEST = "sha256:" + "0" * 64
 _ACQUISITION_CADENCE_KINDS = frozenset({"scheduled_recording", "scanner_sweep"})
 _ACQUISITION_CADENCE_LOCK_KEY = "acquisition-cadence-coalescing-v1"
 type StationCaptureHardwareBinding = (
-    CaptureHardwareBindingV1 | CaptureHardwareBindingV2 | CaptureHardwareBindingV3
+    CaptureHardwareBindingV1
+    | CaptureHardwareBindingV2
+    | CaptureHardwareBindingV3
+    | CaptureHardwareBindingV4
 )
 type CapturePathAuthorityContract = StationCaptureHardwareBinding | FixturePathAuthorityV1
 
@@ -4109,7 +4114,9 @@ def _validate_subject_binding_document(
         authority = session.get(CapturePathAuthority, scope.session_id)
         bounds = None if stream is None else _stream_observed_bounds_ns(stream.attributes)
         authority_contract: CapturePathAuthorityContract | None = None
-        authority_manifest: RecordingManifestV1 | RecordingManifestV3 | None = None
+        authority_manifest: (
+            RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | None
+        ) = None
         manifest_stream = None
         if authority is not None:
             authority_contract = (
@@ -4136,6 +4143,16 @@ def _validate_subject_binding_document(
             if authority_manifest is None or scope.stream_id is None
             else resolve_manifest_starlink_tuning(authority_manifest).get(scope.stream_id)
         )
+        expected_profile_revision_digest = None if profile is None else profile.digest
+        if isinstance(authority_manifest, RecordingManifestV4) and manifest_stream is not None:
+            expected_profile_revision_digest = next(
+                (
+                    leg.profile_revision.revision_digest
+                    for leg in authority_manifest.capture_plan.radio_plans
+                    if leg.radio_id == manifest_stream.radio.radio_id
+                ),
+                None,
+            )
         expected_frequency = (
             None
             if lineage is None or bounds is None or manifest_stream is None
@@ -4151,9 +4168,10 @@ def _validate_subject_binding_document(
             )
         )
         if isinstance(path_binding, StandardPathInputBindV4):
-            if isinstance(authority_manifest, RecordingManifestV3) and isinstance(
-                manifest_stream, RecordingStreamV3
-            ):
+            if isinstance(
+                authority_manifest,
+                (RecordingManifestV3, RecordingManifestV4),
+            ) and isinstance(manifest_stream, RecordingStreamV3):
                 manifest_timing = manifest_stream.timing
                 manifest_settings = manifest_stream.applied_settings
                 path_geometry_disagrees = (
@@ -4243,7 +4261,7 @@ def _validate_subject_binding_document(
             # V3 keeps the historical packed-observed-IQ count semantics and
             # cannot be used to reinterpret a V3 device-axis recording.
             path_geometry_disagrees = (
-                isinstance(authority_manifest, RecordingManifestV3)
+                isinstance(authority_manifest, (RecordingManifestV3, RecordingManifestV4))
                 or isinstance(manifest_stream, RecordingStreamV3)
                 or stream is None
                 or path_binding.declared_sample_count != stream.captured_sample_count
@@ -4269,7 +4287,7 @@ def _validate_subject_binding_document(
             or path_binding.radio_id != lineage.radio_id
             or path_binding.physical_receiver_id != lineage.physical_receiver_id
             or path_binding.hardware_epoch_id != lineage.hardware_epoch_external_id
-            or path_binding.profile_revision_digest != profile.digest
+            or path_binding.profile_revision_digest != expected_profile_revision_digest
             or path_binding.capture_plan_digest != authority_manifest.capture_plan.plan_digest
             or expected_starlink_tuning is None
             or path_binding.starlink_channel != expected_starlink_tuning.channel
@@ -5860,7 +5878,12 @@ def _validate_capture_authority_registration(
         raise InvalidStateError("capture authority disagrees with capture identity")
     if isinstance(
         authority,
-        (CaptureHardwareBindingV1, CaptureHardwareBindingV2, CaptureHardwareBindingV3),
+        (
+            CaptureHardwareBindingV1,
+            CaptureHardwareBindingV2,
+            CaptureHardwareBindingV3,
+            CaptureHardwareBindingV4,
+        ),
     ):
         if source_type not in {"live", "import"}:
             raise InvalidStateError("station hardware authority cannot authorize TEST input")
@@ -5988,24 +6011,30 @@ def _validate_capture_authority_registration(
 
 def _reconcile_manifest_profile_revision(
     session: Session,
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
 ) -> int:
-    revision = manifest.capture_plan.profile_revision
-    profile = revision.profile
+    if isinstance(manifest, RecordingManifestV4):
+        profile_id = manifest.capture_plan.dwell_class.value
+        revision_digest = manifest.capture_plan.plan_digest
+        document = manifest.capture_plan.model_dump(mode="json")
+    else:
+        revision = manifest.capture_plan.profile_revision
+        profile_id = revision.profile.name
+        revision_digest = revision.revision_digest
+        document = revision.model_dump(mode="json")
     session.execute(
-        insert(CaptureProfile).values(id=profile.name, name=profile.name).on_conflict_do_nothing()
+        insert(CaptureProfile).values(id=profile_id, name=profile_id).on_conflict_do_nothing()
     )
-    stored_profile = session.get(CaptureProfile, profile.name)
-    if stored_profile is None or stored_profile.name != profile.name:
+    stored_profile = session.get(CaptureProfile, profile_id)
+    if stored_profile is None or stored_profile.name != profile_id:
         raise ProductConflictError("capture profile identity conflicts")
-    revision_number = int(revision.revision_digest.removeprefix("sha256:")[:7], 16)
-    document = revision.model_dump(mode="json")
+    revision_number = int(revision_digest.removeprefix("sha256:")[:7], 16)
     session.execute(
         insert(CaptureProfileRevision)
         .values(
-            profile_id=profile.name,
+            profile_id=profile_id,
             revision_number=revision_number,
-            digest=revision.revision_digest,
+            digest=revision_digest,
             document=document,
         )
         .on_conflict_do_nothing()
@@ -6013,8 +6042,8 @@ def _reconcile_manifest_profile_revision(
     stored = session.execute(
         select(CaptureProfileRevision)
         .where(
-            CaptureProfileRevision.profile_id == profile.name,
-            CaptureProfileRevision.digest == revision.revision_digest,
+            CaptureProfileRevision.profile_id == profile_id,
+            CaptureProfileRevision.digest == revision_digest,
         )
         .with_for_update()
     ).scalar_one_or_none()
@@ -6030,7 +6059,12 @@ def _reconcile_capture_path_authority(
 ) -> CapturePathAuthority:
     if isinstance(
         authority,
-        (CaptureHardwareBindingV1, CaptureHardwareBindingV2, CaptureHardwareBindingV3),
+        (
+            CaptureHardwareBindingV1,
+            CaptureHardwareBindingV2,
+            CaptureHardwareBindingV3,
+            CaptureHardwareBindingV4,
+        ),
     ):
         topology_row = session.get(StationTopology, authority.topology_digest)
         if topology_row is None or not topology_row.assignment_sealed:
@@ -6222,6 +6256,7 @@ def _reconcile_radio_streams(
                         CaptureHardwareBindingV1,
                         CaptureHardwareBindingV2,
                         CaptureHardwareBindingV3,
+                        CaptureHardwareBindingV4,
                     ),
                 )
                 else None

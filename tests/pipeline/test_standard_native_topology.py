@@ -7,11 +7,18 @@ from types import SimpleNamespace
 import pytest
 
 from leo.contracts.digests import canonical_digest
+from leo.contracts.mixed_rate_schedule import ProductionDwellClass
 from leo.contracts.profile import CapturePlanV2
-from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3, RecordingStreamV2
-from leo.contracts.states import CaptureState, SourceType
+from leo.contracts.recording import (
+    RecordingManifestV2,
+    RecordingManifestV3,
+    RecordingManifestV4,
+    RecordingStreamV2,
+)
+from leo.contracts.states import CaptureState, SourceType, StarlinkEdge
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.pipeline.standard_native import (
+    STANDARD_NATIVE_MIXED_PROFILE_NAMES,
     STANDARD_NATIVE_PROFILE_REVISION_DIGESTS,
     STANDARD_NATIVE_STAGE_KEYS,
     STANDARD_NATIVE_V2_PROFILE_ADMISSIONS,
@@ -204,6 +211,77 @@ def _reviewed_v2_manifest(sample_rate_hz: int) -> RecordingManifestV2:
     )
 
 
+def _mixed_manifest(
+    dwell_class: ProductionDwellClass = ProductionDwellClass.MIXED_2P5_5,
+) -> RecordingManifestV4:
+    high_rate_hz = {
+        ProductionDwellClass.MIXED_2P5_5: 5_000_000,
+        ProductionDwellClass.MIXED_2P5_10: 10_000_000,
+        ProductionDwellClass.MIXED_2P5_15: 15_000_000,
+    }[dwell_class]
+    rates = (2_500_000, high_rate_hz)
+    revisions = tuple(
+        load_profile_revision(
+            _ROOT
+            / "profiles"
+            / (
+                f"{STANDARD_NATIVE_MIXED_PROFILE_NAMES[rate]}.yaml"
+                if rate in STANDARD_NATIVE_MIXED_PROFILE_NAMES
+                else "starlink-ch4-lower-15m-60s-mixed-device-axis-v4.yaml"
+            )
+        )
+        for rate in rates
+    )
+    radio_plans = tuple(
+        SimpleNamespace(
+            radio_id=f"radio-{index}",
+            profile_revision=revision,
+            resolved_sample_count=rate * 60,
+            requested_settings=_Settings(
+                (0, 1),
+                rate,
+                revision.profile.bandwidth_hz,
+                revision.profile.center_frequency_hz,
+            ),
+        )
+        for index, (rate, revision) in enumerate(zip(rates, revisions, strict=True))
+    )
+    streams = tuple(
+        SimpleNamespace(
+            stream_id=f"stream-{index}",
+            radio=SimpleNamespace(
+                radio_id=leg.radio_id,
+                serial=f"serial-{index}",
+                uri=f"ip:radio-{index}",
+                transport=_Value("ethernet"),
+            ),
+            applied_settings=leg.requested_settings,
+            requested_settings=leg.requested_settings,
+            requested_sample_count=leg.resolved_sample_count,
+            logical_sample_count=leg.resolved_sample_count,
+            observed_sample_count=leg.resolved_sample_count,
+            timing=_Timing(),
+            state=_Value("complete"),
+        )
+        for index, leg in enumerate(radio_plans)
+    )
+    plan = SimpleNamespace(
+        dwell_class=dwell_class,
+        radio_plans=radio_plans,
+        duration_seconds=revisions[0].profile.duration_seconds,
+        starlink_channel=4,
+        starlink_edge=StarlinkEdge.LOWER,
+    )
+    return RecordingManifestV4.model_construct(
+        session_id="mixed-native-session",
+        state=CaptureState.COMMITTED,
+        source_type=SourceType.LIVE,
+        streams=streams,
+        tags=tuple(sorted({tag for revision in revisions for tag in revision.profile.tags})),
+        capture_plan=plan,
+    )
+
+
 @pytest.mark.parametrize(
     "profile_name",
     tuple(STANDARD_NATIVE_PROFILE_REVISION_DIGESTS),
@@ -215,7 +293,6 @@ def test_native_topology_accepts_only_reviewed_profile_capabilities(profile_name
         manifest_digest=canonical_digest({"manifest": profile_name}),
         pipeline_release_id=_RELEASE,
     )
-
     assert len(plan.jobs) == 12
     assert len(plan.edges) == 15
     assert {job.stage_key for job in plan.jobs} == set(STANDARD_NATIVE_STAGE_KEYS)
@@ -225,6 +302,37 @@ def test_native_topology_accepts_only_reviewed_profile_capabilities(profile_name
         for job in plan.jobs
         if job.stage_key != "path-standard-native"
     )
+
+
+@pytest.mark.parametrize(
+    "dwell_class",
+    (ProductionDwellClass.MIXED_2P5_5, ProductionDwellClass.MIXED_2P5_10),
+)
+def test_native_topology_accepts_reviewed_mixed_without_resampling(
+    dwell_class: ProductionDwellClass,
+) -> None:
+    manifest = _mixed_manifest(dwell_class)
+
+    plan = compile_standard_native_run_plan(
+        manifest,
+        manifest_digest=canonical_digest({"manifest": dwell_class.value}),
+        pipeline_release_id=_RELEASE,
+    )
+
+    assert len(plan.jobs) == 12
+    assert len(plan.edges) == 15
+    assert sum(job.stage_key == "path-standard-native" for job in plan.jobs) == 4
+    topology = compile_standard_native_scope_inventory(manifest)
+    assert topology.paired is not None
+
+
+def test_native_topology_rejects_unqualified_mixed_2p5_15() -> None:
+    with pytest.raises(ValueError, match="2.5/15 remains disabled"):
+        compile_standard_native_run_plan(
+            _mixed_manifest(ProductionDwellClass.MIXED_2P5_15),
+            manifest_digest=canonical_digest({"manifest": "mixed-2p5-15"}),
+            pipeline_release_id=_RELEASE,
+        )
 
 
 def test_native_topology_is_disjoint_from_frozen_standard_stage_ids() -> None:
@@ -256,6 +364,48 @@ def test_native_topology_accepts_two_radio_random_tuning_centers() -> None:
     )
 
     assert len(plan.jobs) == 12
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "expected_rate_hz"),
+    (
+        ("starlink-ch4-lower-2p5m-60s-native-bandwidth-v4", 2_500_000),
+        ("starlink-ch4-lower-3m-60s-native-bandwidth-v4", 3_000_000),
+        ("starlink-ch4-lower-5m-60s-native-bandwidth-v4", 5_000_000),
+        ("starlink-ch4-lower-10m-60s-native-bandwidth-v4", 10_000_000),
+    ),
+)
+def test_native_topology_admits_exact_maximum_bandwidth_profiles(
+    profile_name: str,
+    expected_rate_hz: int,
+) -> None:
+    manifest = _manifest(profile_name)
+    profile = manifest.capture_plan.profile_revision.profile
+
+    plan = compile_standard_native_run_plan(
+        manifest,
+        manifest_digest=canonical_digest({"manifest": profile_name}),
+        pipeline_release_id=_RELEASE,
+    )
+
+    assert profile.sample_rate_hz == profile.bandwidth_hz == expected_rate_hz
+    assert profile.refill_samples == 4_194_304
+    assert profile.kernel_buffers == 4
+    assert len(plan.jobs) == 12
+
+
+def test_native_topology_rejects_nonoptimal_wideband_center_even_with_matching_readback() -> None:
+    manifest = _manifest(
+        "starlink-ch4-lower-10m-60s-native-bandwidth-v4",
+        requested_centers_hz=(1_709_687_500, 1_709_687_500),
+    )
+
+    with pytest.raises(ValueError, match="does not maximize in-channel coverage"):
+        compile_standard_native_run_plan(
+            manifest,
+            manifest_digest=canonical_digest({"manifest": "shifted-wideband"}),
+            pipeline_release_id=_RELEASE,
+        )
 
 
 def test_historical_v2_native_admission_table_is_closed_and_exact() -> None:
@@ -485,7 +635,7 @@ def test_native_topology_rejects_profile_revision_substitution() -> None:
 
 
 def test_native_topology_rejects_unreviewed_manifest_schema() -> None:
-    with pytest.raises(ValueError, match="reviewed V2 or V3"):
+    with pytest.raises(ValueError, match="reviewed V2, V3, or V4"):
         compile_standard_native_run_plan(
             SimpleNamespace(session_id="old", streams=()),  # type: ignore[arg-type]
             manifest_digest=canonical_digest({"manifest": "old"}),

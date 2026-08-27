@@ -84,7 +84,7 @@ from leo.contracts.pipeline_lanes import (
     PipelineLane,
     assign_dwell_pipeline_lane,
 )
-from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3
+from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3, RecordingManifestV4
 from leo.importing import (
     RECORDING_INGEST_FILENAME,
     FixtureImporter,
@@ -432,7 +432,7 @@ class LocalProcessingBackend:
                 f"capture session already has an active analysis run: {active_run_id}",
                 ExitCode.CONFLICT,
             )
-        if isinstance(bundle.manifest, RecordingManifestV3):
+        if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
             scope_keys = tuple(
                 stream.stream_id
                 for stream in bundle.manifest.streams
@@ -456,7 +456,7 @@ class LocalProcessingBackend:
                     trigger="reprocess",
                     promotion_policy=(
                         "current"
-                        if isinstance(bundle.manifest, RecordingManifestV3)
+                        if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4))
                         else (
                             "evidence_only"
                             if bundle.manifest.source_type.value == "test"
@@ -547,9 +547,12 @@ class LocalProcessingBackend:
                 "catalog and recording manifest digests disagree",
                 ExitCode.UNHEALTHY,
             )
-        if not isinstance(bundle.manifest, (RecordingManifestV2, RecordingManifestV3)):
+        if not isinstance(
+            bundle.manifest,
+            (RecordingManifestV2, RecordingManifestV3, RecordingManifestV4),
+        ):
             raise CliBackendError(
-                "native evidence requires a reviewed V2/V3 recording",
+                "native evidence requires a reviewed V2/V3/V4 recording",
                 ExitCode.CONFLICT,
             )
         release = self.services.catalog.pipeline_release_snapshot(pipeline_release_id)
@@ -599,7 +602,7 @@ class LocalProcessingBackend:
                 "catalog and recording manifest digests disagree",
                 ExitCode.UNHEALTHY,
             )
-        native_current = isinstance(bundle.manifest, RecordingManifestV3)
+        native_current = isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4))
         if not native_current:
             if "CAPTURE_ONLY" in bundle.manifest.tags:
                 raise CliBackendError(
@@ -625,7 +628,7 @@ class LocalProcessingBackend:
                 ExitCode.INVALID_CONFIGURATION,
             )
         try:
-            if isinstance(bundle.manifest, RecordingManifestV3):
+            if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
                 plan = compile_standard_native_run_plan(
                     bundle.manifest,
                     manifest_digest=snapshot.manifest_digest,
@@ -923,7 +926,7 @@ class LocalProcessingBackend:
         bundle = self.services.recordings.inspect_uri(snapshot.bundle_uri)
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise ValueError("catalog and bundle manifest digests disagree")
-        if isinstance(bundle.manifest, RecordingManifestV3):
+        if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
             try:
                 plan = compile_standard_native_run_plan(
                     bundle.manifest,

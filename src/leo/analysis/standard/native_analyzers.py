@@ -37,7 +37,7 @@ from leo.analysis.standard.native_products import (
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
-    PAIRED_REPORT_V4_PRODUCT,
+    PAIRED_REPORT_V5_PRODUCT,
     PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
     PATH_REPORT_V3_PRODUCT,
     PATH_STANDARD_NATIVE_OUTPUTS,
@@ -72,7 +72,7 @@ from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
 from leo.contracts.standard_native_path_report import StandardNativePathReportV3
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
-from leo.contracts.standard_native_terminal import StandardNativePairedReportV4
+from leo.contracts.standard_native_terminal import StandardNativePairedReportV5
 from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV4
 from leo.pipeline import (
     AnalysisContext,
@@ -605,13 +605,13 @@ class PairedStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="paired-scientific-report-native",
-        algorithm_version="standard-native-paired-report-v5",
-        configuration_schema="paired-scientific-report-native.evidence.v3",
+        algorithm_version="standard-native-paired-report-v6",
+        configuration_schema="paired-scientific-report-native.evidence.v4",
         dependencies=("radio-scientific-report-native",),
         input_products=(
             _require_native_product(RADIO_REPORT_V4_PRODUCT, "radio-scientific-report-native"),
         ),
-        output_products=(PAIRED_REPORT_V4_PRODUCT,),
+        output_products=(PAIRED_REPORT_V5_PRODUCT,),
         resource_class=ResourceClass.CPU,
         accepted_outcomes=_NATIVE_OUTCOMES,
     )
@@ -635,7 +635,7 @@ class PairedStandardNativeEvidenceAnalyzer:
             radio_products=upstream,
         )
         published = outputs.publish_json(
-            PAIRED_REPORT_V4_PRODUCT,
+            PAIRED_REPORT_V5_PRODUCT,
             cast(dict[str, JsonValue], report.model_dump(mode="json")),
         )
         return StageResult(
@@ -671,15 +671,15 @@ class PairedStandardNativeWaterfallAnalyzer:
 
     spec = StageSpec(
         key="paired-presentation-native",
-        algorithm_version="standard-native-paired-presentation-v3",
-        configuration_schema="paired-presentation-native.evidence.v2",
+        algorithm_version="standard-native-paired-presentation-v4",
+        configuration_schema="paired-presentation-native.evidence.v3",
         dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
             _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
             _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
             _require_native_product(
-                PAIRED_REPORT_V4_PRODUCT,
+                PAIRED_REPORT_V5_PRODUCT,
                 "paired-scientific-report-native",
             ),
         ),
@@ -706,7 +706,7 @@ class PairedStandardNativeWaterfallAnalyzer:
         if len(upstream[3]) != 1:
             raise ValueError("native paired presentation requires one exact paired report")
         paired_item = upstream[3][0]
-        paired = StandardNativePairedReportV4.model_validate(paired_item.document)
+        paired = StandardNativePairedReportV5.model_validate(paired_item.document)
         if (
             context.scope is None
             or context.scope.kind is not ScopeKind.PAIRED
@@ -718,7 +718,17 @@ class PairedStandardNativeWaterfallAnalyzer:
             raise ValueError("native paired presentation report authority does not close")
         if not upstream[1]:
             raise ValueError("native paired presentation has no stateful path source")
-        stateful = StandardNativeStatefulPathV2.model_validate(upstream[1][0].document)
+        stateful_documents = tuple(
+            StandardNativeStatefulPathV2.model_validate(item.document) for item in upstream[1]
+        )
+        stateful = stateful_documents[0]
+        configurations = {
+            item.source.sample_rate_hz: require_receiver_standard_sample_rate(
+                production_receiver_standard_config(sample_rate_hz=item.source.sample_rate_hz),
+                sample_rate_hz=item.source.sample_rate_hz,
+            )
+            for item in stateful_documents
+        }
         config = require_receiver_standard_sample_rate(
             production_receiver_standard_config(sample_rate_hz=stateful.source.sample_rate_hz),
             sample_rate_hz=stateful.source.sample_rate_hz,
@@ -729,6 +739,7 @@ class PairedStandardNativeWaterfallAnalyzer:
             stateful_products=upstream[1],
             path_report_products=upstream[2],
             config=config,
+            configs_by_sample_rate_hz=configurations,
             valid_utc_intervals=tuple(
                 (item.start_utc_ns, item.stop_utc_ns) for item in paired.valid_utc_intervals
             ),

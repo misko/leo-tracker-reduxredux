@@ -23,6 +23,7 @@ from leo.application.frequency_calibration import NativeReleaseCalibrationEviden
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, PromotionPolicy
 from leo.contracts.calibration import ReceiverFrequencyCalibrationV1, ReceiverPathIdentityV1
+from leo.contracts.recording import RecordingManifestV4
 from leo.contracts.scientific import (
     LegacyExecutionEnvelopeV1,
     MatchedPilotAcceptanceConfigV1,
@@ -208,6 +209,8 @@ class PostgresAuthoritativeCalibrationScope:
         if len(streams) != 1:
             raise ValueError("native evidence scope is absent or ambiguous in recording manifest")
         stream = streams[0]
+        if isinstance(bundle.manifest, RecordingManifestV4):
+            raise ValueError("trusted recovery does not accept mixed-rate manifests")
         if (
             type(iq) is not RecordingIqReader
             or iq.session_id != bundle.session_id

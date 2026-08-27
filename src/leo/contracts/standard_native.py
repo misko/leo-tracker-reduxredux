@@ -51,7 +51,7 @@ class StandardNativeSourceV1(ContractModel):
 
     @model_validator(mode="after")
     def _source_is_closed(self) -> Self:
-        if self.sample_rate_hz not in {2_500_000, 3_000_000, 5_000_000}:
+        if self.sample_rate_hz not in {2_500_000, 3_000_000, 5_000_000, 10_000_000}:
             raise ValueError("native product source sample rate is not reviewed")
         if self.logical_sample_count != self.observed_sample_count + self.missing_sample_count:
             raise ValueError("native product source counts do not close")

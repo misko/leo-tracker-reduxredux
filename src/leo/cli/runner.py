@@ -24,6 +24,7 @@ from leo.acquisition import (
     AcquisitionSupervisorPoisoned,
     CaptureTaskKind,
 )
+from leo.acquisition.mixed_rate_schedule import compile_production_dwell_intent_v1
 from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
@@ -41,10 +42,24 @@ from leo.contracts.capture_control import (
     CaptureDesiredState,
     CaptureObservedState,
 )
+from leo.contracts.mixed_rate_schedule import (
+    MIXED_RATE_10M_SCHEDULE_POLICY_V1,
+    MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
+    MIXED_RATE_SCHEDULE_POLICY_V1,
+    ProductionDwellClass,
+    ProductionDwellIntentV1,
+)
 from leo.contracts.states import CaptureState
 from leo.scanner import ScannerCaptureBurstReportLike
 
 logger = logging.getLogger(__name__)
+_MIXED_RATE_POLICIES = frozenset(
+    {
+        MIXED_RATE_SCHEDULE_POLICY_V1,
+        MIXED_RATE_10M_SCHEDULE_POLICY_V1,
+        MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
+    }
+)
 ProfileSelector = Callable[[tuple[str, ...], str], str]
 RunData = RunDataV1 | RunDataV2
 
@@ -114,11 +129,16 @@ class ContinuousAcquisitionRunner:
         interval_seconds: float,
         maximum_captures: int | None,
         cancel: Event,
+        mixed_rate_policy: str | None = None,
     ) -> RunData:
         if interval_seconds < 0:
             raise ValueError("capture interval cannot be negative")
         if maximum_captures is not None and maximum_captures <= 0:
             raise ValueError("maximum captures must be positive")
+        if mixed_rate_policy is not None and mixed_rate_policy not in _MIXED_RATE_POLICIES:
+            raise ValueError("unsupported mixed-rate dwell policy")
+        if mixed_rate_policy is not None and interval_seconds <= 0:
+            raise ValueError("mixed-rate dwell policy requires a positive cadence interval")
         profile_names = _profile_pool(profile_name)
         resolved_radio_ids = tuple(radio_ids)
         if len(profile_names) > 1 and not resolved_radio_ids:
@@ -139,7 +159,10 @@ class ContinuousAcquisitionRunner:
                 maximum_captures=maximum_captures,
                 cancel=cancel,
                 scanner=scanner,
+                mixed_rate_policy=mixed_rate_policy,
             )
+        if mixed_rate_policy is not None:
+            raise ValueError("mixed-rate dwell policy requires the durable acquisition queue")
         control_reader = getattr(self.backend, "capture_control_snapshot", None)
         if scanner is None and not callable(control_reader):
             return self._run_capture_only(
@@ -170,6 +193,7 @@ class ContinuousAcquisitionRunner:
         maximum_captures: int | None,
         cancel: Event,
         scanner: ScheduledScannerPort,
+        mixed_rate_policy: str | None,
     ) -> RunData:
         """Persist cadence ticks before admission and dispatch one global lease."""
 
@@ -182,35 +206,56 @@ class ContinuousAcquisitionRunner:
         count = committed = degraded = failed = 0
         last: CaptureDataV1 | None = None
         next_due = _cadence_floor(self._utc_now(), interval_seconds)
+        rate_profile_authority = (
+            None if mixed_rate_policy is None else self.backend.mixed_rate_profile_authority()
+        )
 
         queue.reclaim_expired_acquisition_operations()
         with cancellation_signals(cancel):
             while not cancel.is_set():
                 now_utc = self._utc_now()
                 if now_utc >= next_due:
-                    key = _scheduled_dwell_key(profile_names, next_due, interval_seconds)
-                    selected_profile = self._select_profile(
-                        profile_names,
-                        selection_key=key,
+                    key_profiles = (
+                        profile_names
+                        if mixed_rate_policy is None
+                        else (*profile_names, mixed_rate_policy)
                     )
-                    dwell_payload = ScheduledDwellPayloadV1(
-                        profile_name=selected_profile,
-                        profile_names=profile_names,
-                        selection_policy=(
-                            "single" if len(profile_names) == 1 else "uniform_per_dwell"
-                        ),
-                        radio_ids=tuple(radio_ids),
-                        extra_tags=extra_tags,
-                    )
-                    serialized_payload = dwell_payload.model_dump(mode="json")
-                    if len(profile_names) == 1:
-                        # Keep the existing durable single-profile payload shape;
-                        # the typed reader supplies the new defaults.
-                        serialized_payload = {
-                            "profile_name": selected_profile,
-                            "radio_ids": list(radio_ids),
-                            "extra_tags": list(extra_tags),
-                        }
+                    key = _scheduled_dwell_key(key_profiles, next_due, interval_seconds)
+                    if mixed_rate_policy is None:
+                        selected_profile = self._select_profile(
+                            profile_names,
+                            selection_key=key,
+                        )
+                        dwell_payload = ScheduledDwellPayloadV1(
+                            profile_name=selected_profile,
+                            profile_names=profile_names,
+                            selection_policy=(
+                                "single" if len(profile_names) == 1 else "uniform_per_dwell"
+                            ),
+                            radio_ids=tuple(radio_ids),
+                            extra_tags=extra_tags,
+                        )
+                        serialized_payload = dwell_payload.model_dump(mode="json")
+                        if len(profile_names) == 1:
+                            # Keep the existing durable single-profile payload shape;
+                            # the typed reader supplies the new defaults.
+                            serialized_payload = {
+                                "profile_name": selected_profile,
+                                "radio_ids": list(radio_ids),
+                                "extra_tags": list(extra_tags),
+                            }
+                    else:
+                        assert rate_profile_authority is not None
+                        intent = compile_production_dwell_intent_v1(
+                            operation_key=key,
+                            cadence_ordinal=_cadence_ordinal(next_due, interval_seconds),
+                            ordinary_profile_names=profile_names,
+                            radio_ids=radio_ids,
+                            rate_profile_authority=rate_profile_authority,
+                            policy_id=mixed_rate_policy,
+                            extra_tags=extra_tags,
+                        )
+                        serialized_payload = intent.model_dump(mode="json")
                     queue.enqueue_acquisition_operation(
                         operation_key=key,
                         kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
@@ -257,15 +302,35 @@ class ContinuousAcquisitionRunner:
                     continue
                 try:
                     if lease.kind == CaptureTaskKind.SCHEDULED_RECORDING.value:
-                        payload = ScheduledDwellPayloadV1.model_validate(lease.payload)
-                        last = self.backend.capture_once(
-                            payload.profile_name,
-                            radio_ids=payload.radio_ids,
-                            session_id=None,
-                            extra_tags=payload.extra_tags,
-                            cancel=cancel,
-                            task_kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
-                        )
+                        if lease.payload.get("policy_id") in _MIXED_RATE_POLICIES:
+                            intent = ProductionDwellIntentV1.model_validate(lease.payload)
+                            if intent.dwell_class is ProductionDwellClass.ORDINARY_POOL:
+                                assert intent.ordinary_profile_name is not None
+                                last = self.backend.capture_once(
+                                    intent.ordinary_profile_name,
+                                    radio_ids=intent.radio_ids,
+                                    session_id=None,
+                                    extra_tags=intent.extra_tags,
+                                    cancel=cancel,
+                                    task_kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
+                                )
+                            else:
+                                last = self.backend.capture_mixed_once(
+                                    intent,
+                                    session_id=None,
+                                    cancel=cancel,
+                                    task_kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
+                                )
+                        else:
+                            payload = ScheduledDwellPayloadV1.model_validate(lease.payload)
+                            last = self.backend.capture_once(
+                                payload.profile_name,
+                                radio_ids=payload.radio_ids,
+                                session_id=None,
+                                extra_tags=payload.extra_tags,
+                                cancel=cancel,
+                                task_kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
+                            )
                         count, committed, degraded, failed = _record_capture_result(
                             last,
                             count=count,
@@ -737,6 +802,14 @@ def _cadence_floor(now: datetime, interval_seconds: float) -> datetime:
         return canonical
     slot = int(canonical.timestamp() // interval_seconds)
     return datetime.fromtimestamp(slot * interval_seconds, tz=UTC)
+
+
+def _cadence_ordinal(scheduled_for: datetime, interval_seconds: float) -> int:
+    if interval_seconds <= 0:
+        raise ValueError("cadence ordinal requires a positive interval")
+    if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
+        raise ValueError("cadence scheduling clock must be timezone-aware")
+    return int(scheduled_for.astimezone(UTC).timestamp() // interval_seconds)
 
 
 def _profile_pool(profile_name: str | Sequence[str]) -> tuple[str, ...]:

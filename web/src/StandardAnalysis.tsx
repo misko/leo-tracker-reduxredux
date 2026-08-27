@@ -16,8 +16,11 @@ import type { StandardInvestigationGalleryV1 } from "./standard-api";
 import type { AnalysisLane } from "./standard-api";
 import type {
   StandardNativeSubjectDetailV3,
+  StandardNativeSubjectDetailV4,
   StandardNativePngArtifactInventoryV4,
+  StandardNativePngArtifactInventoryV5,
   StandardNativeSubjectSummaryV3,
+  StandardNativeSubjectSummaryV4,
   StandardSubjectDetail,
   StandardSubjectDetailV2,
   StandardReplayAuditV1,
@@ -29,6 +32,11 @@ import type {
   StandardViewKindV2,
 } from "./standard-contracts";
 import "./standard-analysis.css";
+
+type StandardNativeDetail = StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4;
+type StandardNativeInventory =
+  | StandardNativePngArtifactInventoryV4
+  | StandardNativePngArtifactInventoryV5;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
@@ -64,7 +72,7 @@ export function StandardAnalysis({
   const [replayAudit, setReplayAudit] = useState<StandardReplayAuditV1 | null>(null);
   const [trackGateAudit, setTrackGateAudit] = useState<StandardTrackGateAuditV1 | null>(null);
   const [nativePngInventory, setNativePngInventory] = useState<
-    StandardNativePngArtifactInventoryV4 | null
+    StandardNativeInventory | null
   >(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,7 +119,7 @@ export function StandardAnalysis({
         assertMatchingStandardMajor(hierarchy, result);
         validateDetailTruth(result);
         setDetail(result);
-        if (result.schema_version === 3) {
+        if (result.schema_version !== 2) {
           setTabs((current) => {
             const subjects = new Map(
               [...current, ...result.receiver_path_expansions, ...hierarchy.rows]
@@ -133,7 +141,7 @@ export function StandardAnalysis({
           setTabs((current) => current.length === 0 ? [result.subject] : current);
         }
         setError(null);
-        if (result.schema_version === 3 && lane === "standard") {
+        if (result.schema_version !== 2 && lane === "standard") {
           getStandardNativePngArtifactInventory(
             sessionId,
             result.subject.subject_id,
@@ -141,12 +149,7 @@ export function StandardAnalysis({
             controller.signal,
           )
             .then((inventory) => {
-              if (inventory !== null && (
-                inventory.session_id !== result.subject.session_id
-                || inventory.subject_id !== result.subject.subject_id
-                || inventory.subject_kind !== result.subject.subject_kind
-                || inventory.sample_rate_hz !== result.subject.eligibility.sample_rate_hz
-              )) {
+              if (inventory !== null && !nativeInventoryMatchesDetail(inventory, result)) {
                 throw new Error("Standard native PNG inventory crossed its selected subject");
               }
               setNativePngInventory(inventory);
@@ -183,19 +186,17 @@ export function StandardAnalysis({
   return (
     <section className="standard-analysis standard-image-analysis" aria-label="Standard analysis image artifacts">
       <header className="standard-heading">
-        <div><span>{hierarchy.schema_version === 3
-          ? `STANDARD · NATIVE · ${(hierarchy.eligibility.sample_rate_hz / 1_000_000).toFixed(1)} MS/s`
-          : lane === "standard" ? "STANDARD · 2×20 MS / 50 MS" : "RESEARCH · 3×20 MS / 50 MS"}</span><h3>{hierarchy.schema_version === 3 ? "Standard native analysis" : `${lane === "standard" ? "Standard" : "Research"} analysis image artifacts`}</h3></div>
+        <div><span>{nativeRateLabel(hierarchy, lane)}</span><h3>{hierarchy.schema_version !== 2 ? "Standard native analysis" : `${lane === "standard" ? "Standard" : "Research"} analysis image artifacts`}</h3></div>
         <EvidenceBadge hierarchy={hierarchy} />
       </header>
       <p className="standard-image-intro">
-        {hierarchy.schema_version === 3
+        {hierarchy.schema_version !== 2
           ? "Native-rate evidence keeps the full device-time axis. Invalid zero-filled samples remain explicitly unavailable and no stateful operation crosses a continuity boundary."
           : "Each receiver path is analyzed independently. The combined tab aligns all four paths on one shared time domain."}
       </p>
       <SubjectTabs tabs={tabs} selectedId={selectedId} onSelect={setSelectedId} />
       {!detail ? <p>Loading image gallery…</p> : (
-        detail.schema_version === 3 ? (
+        detail.schema_version !== 2 ? (
           <NativeAnalysisDetail
             sessionId={sessionId}
             detail={detail}
@@ -224,8 +225,8 @@ function NativeAnalysisDetail({
   pngInventory,
 }: {
   sessionId: string;
-  detail: StandardNativeSubjectDetailV3;
-  pngInventory: StandardNativePngArtifactInventoryV4 | null;
+  detail: StandardNativeDetail;
+  pngInventory: StandardNativeInventory | null;
 }) {
   const terminal = detail.subject.terminal;
   const statistics = terminal.sufficient_statistics;
@@ -308,6 +309,9 @@ function NativeAnalysisDetail({
           <span>Reducers merge sufficient statistics</span>
         </div>
       </section>
+      {detail.schema_version === 4 ? (
+        <MixedRfAuthority detail={detail} />
+      ) : null}
       <NativePathCoverage evidence={detail.receiver_path_evidence} />
       <NativePngGallery
         detail={detail}
@@ -322,10 +326,39 @@ function NativeAnalysisDetail({
   );
 }
 
+function MixedRfAuthority({ detail }: { detail: StandardNativeSubjectDetailV4 }) {
+  return (
+    <section className="standard-native-paths" aria-label="Mixed-rate RF coverage authority">
+      <header>
+        <div>
+          <span>SEALED RF / IF AUTHORITY</span>
+          <h4>
+            Same Starlink channel and edge · independent native-rate passbands · no resampling
+          </h4>
+        </div>
+      </header>
+      <div>{detail.subject.eligibility.legs.map((leg) => (
+        <article key={`${leg.stream_id}:${leg.radio_id}`}>
+          <strong>{leg.radio_id} · {(leg.sample_rate_hz / 1_000_000).toFixed(1)} MS/s</strong>
+          <span>
+            Channel {leg.starlink_channel} {leg.starlink_edge} · analog BW {formatMhz(leg.rf_bandwidth_hz)}
+          </span>
+          <small>
+            Tune {formatMhz(leg.tuned_center_frequency_hz)} IF · pilot {formatMhz(leg.pilot_if_center_frequency_hz)} IF
+          </small>
+          <small>
+            Captured {formatMhz(leg.captured_if_start_hz)}–{formatMhz(leg.captured_if_stop_hz)} IF inside {formatMhz(leg.channel_if_start_hz)}–{formatMhz(leg.channel_if_stop_hz)} channel
+          </small>
+        </article>
+      ))}</div>
+    </section>
+  );
+}
+
 function NativePathCoverage({
   evidence,
 }: {
-  evidence: StandardNativeSubjectDetailV3["receiver_path_evidence"];
+  evidence: StandardNativeDetail["receiver_path_evidence"];
 }) {
   return (
     <section className="standard-native-paths" aria-label="Receiver-path continuity coverage">
@@ -347,9 +380,9 @@ function NativePngGallery({
   sessionId,
   inventory,
 }: {
-  detail: StandardNativeSubjectDetailV3;
+  detail: StandardNativeDetail;
   sessionId: string;
-  inventory: StandardNativePngArtifactInventoryV4 | null;
+  inventory: StandardNativeInventory | null;
 }) {
   if (inventory !== null) {
     return (
@@ -694,7 +727,7 @@ function formatSignedDerivative(value: number, order: 2 | 3) {
 }
 
 function EvidenceBadge({ hierarchy }: { hierarchy: StandardSubjectHierarchy }) {
-  if (hierarchy.schema_version === 3) {
+  if (hierarchy.schema_version !== 2) {
     const coverage = hierarchy.rows.some((row) => row.coverage_status !== "complete")
       ? "partial coverage"
       : "complete coverage";
@@ -747,8 +780,8 @@ function SubjectTabs({
 
 function isNativeSubject(
   subject: StandardSubjectSummary,
-): subject is StandardNativeSubjectSummaryV3 {
-  return "schema_version" in subject && subject.schema_version === 3;
+): subject is StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4 {
+  return "coverage_status" in subject;
 }
 
 function PngGallery({
@@ -950,8 +983,52 @@ function axisDescription(kind: StandardViewKindV2, legacyPolynomial = false) {
   return "elapsed time → · response ↑";
 }
 
-function validateHierarchyTruth(hierarchy: StandardSubjectHierarchy) {
+function nativeRateLabel(hierarchy: StandardSubjectHierarchy, lane: AnalysisLane): string {
   if (hierarchy.schema_version === 3) {
+    return `STANDARD · NATIVE · ${(hierarchy.eligibility.sample_rate_hz / 1_000_000).toFixed(1)} MS/s`;
+  }
+  if (hierarchy.schema_version === 4) {
+    const rates = [...new Set(hierarchy.eligibility.legs.map((leg) => leg.sample_rate_hz))]
+      .sort((left, right) => left - right)
+      .map((rate) => (rate / 1_000_000).toFixed(1))
+      .join(" + ");
+    return `STANDARD · NATIVE · MIXED ${rates} MS/s`;
+  }
+  return lane === "standard" ? "STANDARD · 2×20 MS / 50 MS" : "RESEARCH · 3×20 MS / 50 MS";
+}
+
+function nativeInventoryMatchesDetail(
+  inventory: StandardNativeInventory,
+  detail: StandardNativeDetail,
+): boolean {
+  if (inventory.session_id !== detail.subject.session_id
+    || inventory.subject_id !== detail.subject.subject_id
+    || inventory.subject_kind !== detail.subject.subject_kind) {
+    return false;
+  }
+  if (detail.schema_version === 3) {
+    return inventory.schema_version === 4
+      && inventory.sample_rate_hz === detail.subject.eligibility.sample_rate_hz;
+  }
+  if (inventory.schema_version !== 5) return false;
+  const streamIds = new Set(
+    detail.subject.receiver_paths.map((path) => path.scope.stream_id),
+  );
+  const expectedRates = [...new Set(
+    detail.subject.eligibility.legs
+      .filter((leg) => streamIds.has(leg.stream_id))
+      .map((leg) => leg.sample_rate_hz),
+  )].sort((left, right) => left - right);
+  return expectedRates.length === inventory.sample_rates_hz.length
+    && expectedRates.every((rate, index) => rate === inventory.sample_rates_hz[index]);
+}
+
+function formatMhz(valueHz: number): string {
+  return `${(valueHz / 1_000_000).toFixed(4)} MHz`;
+}
+
+function validateHierarchyTruth(hierarchy: StandardSubjectHierarchy) {
+  if (hierarchy.schema_version !== 2) {
     if (hierarchy.source_type !== "LIVE" || hierarchy.eligibility.source_type !== "LIVE") {
       throw new Error("Standard native Current presentation must describe a LIVE capture");
     }
@@ -959,8 +1036,8 @@ function validateHierarchyTruth(hierarchy: StandardSubjectHierarchy) {
       if (row.state !== "current" || !row.ordinary_current) {
         throw new Error("Standard native promoted subject is not Current");
       }
-      if (row.eligibility.sample_rate_hz !== hierarchy.eligibility.sample_rate_hz) {
-        throw new Error("Standard native subject sample rate differs from hierarchy authority");
+      if (JSON.stringify(row.eligibility) !== JSON.stringify(hierarchy.eligibility)) {
+        throw new Error("Standard native subject eligibility differs from hierarchy authority");
       }
       if (row.coverage_status !== row.terminal.coverage_status
         || row.scientific_disposition !== row.terminal.scientific_disposition) {
@@ -980,7 +1057,7 @@ function validateHierarchyTruth(hierarchy: StandardSubjectHierarchy) {
 }
 
 function validateDetailTruth(detail: StandardSubjectDetail) {
-  if (detail.schema_version === 3) {
+  if (detail.schema_version !== 2) {
     const expectedPaths = detail.subject.receiver_paths.map((path) => path.path_id);
     const expandedPaths = detail.receiver_path_expansions.map(
       (subject) => subject.receiver_paths[0]?.path_id,

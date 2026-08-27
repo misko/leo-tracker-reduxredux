@@ -410,6 +410,17 @@ serial/URI pairs:
 | `radio_pluto_5d4d` | `1040005e0b100007100010000bf33a5d4d` | `ip:192.168.1.20` |
 | `radio_pluto_19f2` | `10400056f695001322002d0010ad1719f2` | `ip:192.168.1.21` |
 
+The additive native-bandwidth hardware gate is
+`tests/acquisition/test_pluto_native_bandwidth_hardware.py`. It separately seals
+`/srv/bulk/leo/qualification/native-bandwidth/accepted/<LEO_REVISION>/native-bandwidth-qualification-receipt-v1.json`
+after PPU 2.5/3/5 MS/s keep-pace ladders on both production radios and five
+full 60-second recorder captures: ordinary 2.5/3/5 plus mixed 2.5/5 with each
+radio taking the high-rate role. Every stream must use a 4,194,304-sample
+refill, four kernel buffers, `bandwidth_hz == sample_rate_hz`, and the exact IF
+center that maximizes captured in-channel bandwidth while retaining the
+selected edge pilot. Cutover requires this receipt in addition to V5; 10 and
+15 MS/s remain disabled after their measured transport failures.
+
 Preflight verifies those identities and firmware, the exact Leo and
 pluto-plus-utils revisions, loaded Python/native libiio identities, native
 route/interface/source address, metadata capability, available disk, and

@@ -25,7 +25,7 @@ from leo.contracts.recording import (
     CompressionSettingsV1,
 )
 from leo.contracts.standard_native import StandardNativeNumericalWaterfallV3
-from leo.contracts.standard_native_terminal import StandardNativePairedReportV4
+from leo.contracts.standard_native_terminal import StandardNativePairedReportV5
 from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
@@ -177,7 +177,7 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
         paired_product = next(
             product for product in seal.products if product.kind == "standard.paired-report"
         )
-        paired_report = StandardNativePairedReportV4.model_validate(
+        paired_report = StandardNativePairedReportV5.model_validate(
             artifacts.read_json(paired_product.logical_uri, paired_product.digest)
         )
         expected_samples = sum(

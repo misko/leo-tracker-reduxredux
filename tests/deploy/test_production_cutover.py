@@ -807,6 +807,7 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     profile_5m = "--profile ${LEO_CAPTURE_PROFILE_5M} "
     radio_a = "--radio radio_pluto_5d4d "
     radio_b = "--radio radio_pluto_19f2 "
+    mixed_policy = "--mixed-rate-policy ${LEO_MIXED_RATE_POLICY}"
     tampered_commands = (
         expected.replace("PYTHONDONTWRITEBYTECODE=1 ", ""),
         expected.replace(profile_3m + profile_5m, profile_5m + profile_3m),
@@ -815,6 +816,8 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
         expected.replace(radio_a + radio_b, radio_b + radio_a),
         expected.replace(radio_b, ""),
         expected.replace(radio_b, radio_b + "--radio unexpected-radio "),
+        expected.replace(mixed_policy, ""),
+        expected.replace(mixed_policy, "--mixed-rate-policy mixed-native-rates-16-v1"),
     )
     assert len(set(tampered_commands)) == len(tampered_commands)
     for command in tampered_commands:
@@ -885,6 +888,110 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
             "probe_live_station_radios",
             release,
             expected_radios=_expected_rate_radios(),
+        )
+
+
+def test_native_bandwidth_receipt_uses_staged_contract_and_exact_v5_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    revision = "a" * 40
+    release = tmp_path / "release"
+    root = tmp_path / "native-bandwidth"
+    receipt = root / revision / "native-bandwidth-qualification-receipt-v1.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text("{}\n", encoding="utf-8")
+    receipt.chmod(0o440)
+    created_utc_ns = time.time_ns()
+    host = {
+        "schema_version": 1,
+        "hostname": "gauss",
+        "machine_id": "machine-id",
+        "operating_system": "test-linux",
+    }
+    radios = _expected_rate_radios_v4()
+    ppu_revision = "8" * 40
+    summary = {
+        "target_revision": revision,
+        "host": host,
+        "radios": radios,
+        "pluto_plus_utils_revision": ppu_revision,
+        "created_utc_ns": created_utc_ns,
+        "modes": [
+            "ordinary_2p5",
+            "ordinary_3",
+            "ordinary_5",
+            "mixed_2p5_5_high_first",
+            "mixed_2p5_5_high_second",
+        ],
+    }
+    calls: list[tuple[str, ...]] = []
+
+    def fake_command(*argv: str, timeout_seconds: float | None = None) -> str:
+        assert timeout_seconds is None
+        calls.append(argv)
+        return json.dumps(summary)
+
+    function = SCRIPT_GLOBALS["verify_native_bandwidth_receipt_v1"]
+    monkeypatch.setitem(function.__globals__, "NATIVE_BANDWIDTH_RECEIPT_ROOT", root)
+    monkeypatch.setitem(function.__globals__, "command", fake_command)
+    rate_target = {
+        "expected_host": host,
+        "expected_radios": radios,
+        "pluto_plus_utils_revision": ppu_revision,
+    }
+
+    _call(
+        "verify_native_bandwidth_receipt_v1",
+        receipt,
+        revision=revision,
+        release=release,
+        rate_target=rate_target,
+    )
+
+    assert len(calls) == 1
+    argv = calls[0]
+    assert argv[:4] == ("runuser", "-u", "leo", "--")
+    assert argv[4:8] == (str(release / ".venv/bin/python"), "-I", "-B", "-c")
+    assert "NativeBandwidthQualificationReceiptV1.model_validate_json" in argv[8]
+    assert argv[9] == str(receipt)
+
+    for key, value in (
+        ("target_revision", "b" * 40),
+        ("host", {**host, "hostname": "other-host"}),
+        ("radios", list(reversed(radios))),
+        ("pluto_plus_utils_revision", "9" * 40),
+        ("modes", summary["modes"][:-1]),
+    ):
+        original = summary[key]
+        summary[key] = value
+        with pytest.raises(ValueError, match="differs from the V5"):
+            _call(
+                "verify_native_bandwidth_receipt_v1",
+                receipt,
+                revision=revision,
+                release=release,
+                rate_target=rate_target,
+            )
+        summary[key] = original
+
+    summary["created_utc_ns"] = time.time_ns() - SCRIPT_GLOBALS["RATE_RECEIPT_MAXIMUM_AGE_NS"] - 1
+    with pytest.raises(ValueError, match="stale or future-dated"):
+        _call(
+            "verify_native_bandwidth_receipt_v1",
+            receipt,
+            revision=revision,
+            release=release,
+            rate_target=rate_target,
+        )
+
+    with pytest.raises(ValueError, match="path is not the revision authority"):
+        _call(
+            "verify_native_bandwidth_receipt_v1",
+            tmp_path / "alias.json",
+            revision=revision,
+            release=release,
+            rate_target=rate_target,
         )
 
 
@@ -984,9 +1091,10 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_STATION_TOPOLOGY_FILE_DIGEST="
             "sha256:5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae",
             "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
-            "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-device-axis-v3",
-            "LEO_CAPTURE_PROFILE_3M=starlink-ch4-lower-3m-60s-device-axis-v3",
-            "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-device-axis-v3",
+            "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+            "LEO_CAPTURE_PROFILE_3M=starlink-ch4-lower-3m-60s-native-bandwidth-v4",
+            "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+            "LEO_MIXED_RATE_POLICY=mixed-native-rates-16-safe-v1",
             "LEO_CAPTURE_INTERVAL_SECONDS=180",
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -1034,7 +1142,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
         _call(
             "verify_environment_text",
             environment.replace(
-                "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-device-axis-v3",
+                "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
                 "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
             ),
             revision,
@@ -1043,7 +1151,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
         _call(
             "verify_environment_text",
             environment.replace(
-                "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-device-axis-v3",
+                "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-native-bandwidth-v4",
                 "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-capture-v2",
             ),
             revision,
@@ -2083,6 +2191,18 @@ def test_release_qualification_v2_requires_exact_native_gate_inventory() -> None
             release=PROJECT_ROOT,
         )
 
+    mixed_weakened = copy.deepcopy(definition)
+    mixed_weakened["commands"][2]["argv"].remove(
+        "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
+        "test_real_postgres_mixed_capture_standard_png_and_browser_vertical"
+    )
+    with pytest.raises(ValueError, match="command inventory"):
+        _call(
+            "_verify_release_qualification_commands",
+            mixed_weakened,
+            release=PROJECT_ROOT,
+        )
+
 
 @pytest.mark.parametrize(
     ("command_index", "mutation"),
@@ -2440,6 +2560,8 @@ def test_full_cutover_requires_canonical_v5_device_axis_rate_authority() -> None
         "verify_contiguous_rate_3m_receipt_v5(rate_receipt, revision=revision, release=release)"
         in verify_source
     )
+    assert "native-bandwidth-qualification-receipt-v1.json" in verify_source
+    assert "verify_native_bandwidth_receipt_v1(" in verify_source
 
 
 def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:

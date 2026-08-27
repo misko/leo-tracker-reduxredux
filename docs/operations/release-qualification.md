@@ -10,8 +10,11 @@ commands in exact order:
    Standard four-path operational vertical;
 2. `standard-native-science` — native-rate scientific equivalence, state-reset,
    full-capture GLRT, QAM, and terminal path-report gates;
-3. `standard-native-postgresql` — the real PostgreSQL two-radio x two-RX native
-   operational vertical and the promoted Current native-presentation vertical;
+3. `standard-native-postgresql` — the real PostgreSQL common-rate and mixed
+   2.5/5 MS/s two-radio x two-RX native operational verticals plus the promoted
+   Current native-presentation vertical. The mixed gate proves exact per-leg RF
+   bandwidth/IF authority, no resampling, 98 sealed products, all 59 PNGs, and
+   HTTP/browser artifact delivery;
 4. `standard-native-real-corpus` — explicit read-only 2.5/3/5 corpus admission,
    exact 5 MS/s validity/digest closure, truncated-capture refusal, and bounded
    production detector execution on real 3 and 5 MS/s IQ;

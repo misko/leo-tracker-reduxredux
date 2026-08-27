@@ -35,6 +35,7 @@ from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV1,
     RecordingStreamV2,
     RecordingStreamV3,
@@ -105,7 +106,7 @@ class IqReaderProvider(Protocol):
 
     def verified_manifest(
         self, attestation_digest: str
-    ) -> RecordingManifestV1 | RecordingManifestV3: ...
+    ) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4: ...
 
     def verified_validity_inventory(
         self, attestation_digest: str, stream_id: str
@@ -288,7 +289,7 @@ class RecordingIqReaderProvider:
 
     def verified_manifest(
         self, attestation_digest: str
-    ) -> RecordingManifestV1 | RecordingManifestV3:
+    ) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4:
         key = self._attestation_keys.get(attestation_digest)
         capability = None if key is None else self._capabilities.get(key)
         if capability is None:
@@ -1443,7 +1444,7 @@ def _chunk_axis_start(chunk: RecordingChunkV1 | DeviceAxisRecordingChunkV1) -> i
 
 
 def _recording_streams(
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
 ) -> tuple[RecordingStreamV1 | RecordingStreamV3, ...]:
     return cast(tuple[RecordingStreamV1 | RecordingStreamV3, ...], manifest.streams)
 

@@ -15,7 +15,7 @@ from leo.analysis.standard.native_products import (
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
-    PAIRED_REPORT_V4_PRODUCT,
+    PAIRED_REPORT_V5_PRODUCT,
     PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
     PATH_INPUT_BIND_V4_PRODUCT,
     PATH_REPORT_V3_PRODUCT,
@@ -94,7 +94,7 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         == RADIO_SCIENTIFIC_NATIVE_OUTPUTS
     )
     assert registry.get("paired-scientific-report-native").spec.output_products == (
-        PAIRED_REPORT_V4_PRODUCT,
+        PAIRED_REPORT_V5_PRODUCT,
     )
     assert (
         registry.get("paired-presentation-native").spec.output_products

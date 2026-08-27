@@ -18,10 +18,17 @@ from leo.catalog import (
     RecordingListRow,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.profile import (
+    CaptureProfileV1 as CaptureContractProfileV1,
+)
+from leo.contracts.profile import (
+    CaptureProfileV2 as CaptureContractProfileV2,
+)
 from leo.contracts.recording import (
     ContinuitySummaryV2,
     RecordingManifestV1,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV1,
     RecordingStreamV3,
     parse_recording_manifest,
@@ -288,8 +295,9 @@ class CatalogPresentationRepository:
             tuple[RecordingStreamV1 | RecordingStreamV3, ...],
             manifest.streams,
         )
-        profile = manifest.capture_plan.profile_revision.profile
-        dwell_seconds = manifest.capture_plan.resolved_sample_count / profile.sample_rate_hz
+        profile_revision_digest, profile, dwell_seconds, title, profile_name = _display_profile(
+            manifest
+        )
         storage_state = (
             StorageStateV1.PURGED if snapshot.state == "purged" else StorageStateV1.AVAILABLE
         )
@@ -323,7 +331,7 @@ class CatalogPresentationRepository:
         analysis_root = _analysis_root(snapshot.analysis, self._artifacts, self._bulk_root)
         return RecordingDetailV1(
             session_id=snapshot.session_id,
-            title=profile.description or profile.name,
+            title=title,
             started_at=datetime.fromtimestamp(manifest.created_utc_ns / 1_000_000_000, UTC),
             duration_seconds=dwell_seconds,
             source_type=SourceTypeV1(snapshot.source_type.upper()),
@@ -335,8 +343,8 @@ class CatalogPresentationRepository:
             capture_health=_capture_health(manifest),
             storage_state=storage_state,
             profile=CaptureProfileV1(
-                profile_id=manifest.capture_plan.profile_revision.revision_digest,
-                name=profile.name,
+                profile_id=profile_revision_digest,
+                name=profile_name,
                 revision=1,
                 sample_rate_hz=profile.sample_rate_hz,
                 bandwidth_hz=profile.bandwidth_hz,
@@ -368,7 +376,7 @@ class CatalogPresentationRepository:
 
     def _manifest(
         self, snapshot: CatalogSessionReadSnapshot
-    ) -> tuple[RecordingManifestV1 | RecordingManifestV3, Path] | None:
+    ) -> tuple[RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4, Path] | None:
         if snapshot.bundle_uri is not None:
             try:
                 bundle = self._recordings.inspect_uri(snapshot.bundle_uri)
@@ -684,7 +692,9 @@ def _coverage(value: float | None, dwell_seconds: float) -> CoverageV1 | None:
     )
 
 
-def _capture_health(manifest: RecordingManifestV1 | RecordingManifestV3) -> CaptureHealthV1:
+def _capture_health(
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+) -> CaptureHealthV1:
     if manifest.state is CaptureState.COMMITTED:
         return CaptureHealthV1.COMPLETE
     return CaptureHealthV1.PARTIAL
@@ -765,7 +775,7 @@ _STREAM_TUNING_TAG = re.compile(
 
 
 def _radio_setups(
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
 ) -> tuple[RadioSetupV2, ...]:
     """Project immutable manifest settings into a bounded per-radio display contract."""
 
@@ -794,17 +804,29 @@ def _radio_setups(
     if tuning_tags_present and len(tuning_by_index) != len(streams):
         raise ValueError("per-stream tuning tags must cover every recording stream")
 
-    profile = manifest.capture_plan.profile_revision.profile
-    fallback_intent = (
-        None
-        if profile.starlink_channel is None or profile.starlink_edge is None
-        else (
-            profile.starlink_channel,
-            cast(Literal["lower", "upper"], profile.starlink_edge.value),
+    if isinstance(manifest, RecordingManifestV4):
+        profiles_by_radio: dict[str, CaptureContractProfileV1 | CaptureContractProfileV2] = {
+            item.radio_id: item.profile_revision.profile
+            for item in manifest.capture_plan.radio_plans
+        }
+        fallback_intent: tuple[str, Literal["lower", "upper"]] | None = (
+            f"ch{manifest.capture_plan.starlink_channel}",
+            cast(Literal["lower", "upper"], manifest.capture_plan.starlink_edge.value),
         )
-    )
+    else:
+        profile = manifest.capture_plan.profile_revision.profile
+        profiles_by_radio = {stream.radio.radio_id: profile for stream in streams}
+        fallback_intent = (
+            None
+            if profile.starlink_channel is None or profile.starlink_edge is None
+            else (
+                profile.starlink_channel,
+                cast(Literal["lower", "upper"], profile.starlink_edge.value),
+            )
+        )
     setups = []
     for index, stream in enumerate(streams):
+        profile = profiles_by_radio[stream.radio.radio_id]
         settings = stream.applied_settings
         channel_edge = tuning_by_index.get(index, fallback_intent)
         setups.append(
@@ -830,7 +852,47 @@ def _radio_setups(
     return tuple(setups)
 
 
-def _synchronization(manifest: RecordingManifestV1 | RecordingManifestV3) -> SynchronizationV1:
+def _display_profile(
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+) -> tuple[
+    str,
+    CaptureContractProfileV1 | CaptureContractProfileV2,
+    float,
+    str,
+    str,
+]:
+    if isinstance(manifest, RecordingManifestV4):
+        ordered = tuple(
+            sorted(
+                manifest.capture_plan.radio_plans,
+                key=lambda item: item.requested_settings.sample_rate_hz,
+            )
+        )
+        display_revision = ordered[-1].profile_revision
+        rates = "/".join(
+            f"{item.requested_settings.sample_rate_hz / 1_000_000:g}M" for item in ordered
+        )
+        return (
+            manifest.capture_plan.plan_digest,
+            display_revision.profile,
+            float(manifest.capture_plan.duration_seconds),
+            f"Mixed-rate {rates} native dwell",
+            manifest.capture_plan.dwell_class.value,
+        )
+    revision = manifest.capture_plan.profile_revision
+    profile = revision.profile
+    return (
+        revision.revision_digest,
+        profile,
+        manifest.capture_plan.resolved_sample_count / profile.sample_rate_hz,
+        profile.description or profile.name,
+        profile.name,
+    )
+
+
+def _synchronization(
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+) -> SynchronizationV1:
     summary = manifest.synchronization
     grade = {
         "not_requested": "not_requested",
@@ -871,7 +933,7 @@ def _quality_summary(
     run: CatalogRunReadSnapshot | None,
     products: tuple[AnalysisProductV1, ...],
     documents: dict[str, dict[str, Any] | None],
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
 ) -> QualitySummaryV1:
     quality_products = tuple(item for item in products if item.kind == "quality")
     if not quality_products:

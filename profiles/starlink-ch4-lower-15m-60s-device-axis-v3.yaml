@@ -1,0 +1,32 @@
+schema_version: 2
+name: starlink-ch4-lower-15m-60s-device-axis-v3
+description: 60-second dual-RX 15 MS/s native Standard candidate with fixed device-axis IQ
+center_frequency_hz: 1709687500
+rf_center_frequency_hz: 11459687500
+lnb_lo_hz: 9750000000
+starlink_channel: ch4
+starlink_edge: lower
+sample_rate_hz: 15000000
+bandwidth_hz: 2500000
+receivers: [0, 1]
+gain_mode: manual
+gains:
+  - schema_version: 1
+    receiver_id: 0
+    gain_db: 30.0
+  - schema_version: 1
+    receiver_id: 1
+    gain_db: 30.0
+duration_seconds: 60
+refill_samples: 262144
+settle_seconds: 0.5
+prime_refills: 1
+continuity_policy: allow_segments
+synchronization_mode: best_effort
+peer_failure_policy: fail_session
+kernel_buffers: 8
+refill_queue_capacity: 32
+require_device_metadata: true
+storage_policy: zstd-128m-device-axis-zero-v1
+campaign: native-standard
+tags: [CAPTURE_ONLY, DEVICE_AXIS_ZERO_FILL, EXPERIMENTAL, LIVE, MIXED_RATE, RANDOM_TUNING, STANDARD_NATIVE]

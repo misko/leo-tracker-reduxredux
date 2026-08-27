@@ -245,7 +245,7 @@ def _binding(sample_rate_hz: int, inventory: ValidityInventoryV1) -> StandardPat
     )
 
 
-@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000))
+@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000, 10_000_000))
 def test_direct_native_tone_observability_agrees_in_physical_units(
     sample_rate_hz: int,
 ) -> None:

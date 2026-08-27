@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from leo.contracts.recording import RecordingManifestV1, RecordingManifestV2, RecordingManifestV3
+from leo.contracts.recording import (
+    RecordingManifestV1,
+    RecordingManifestV2,
+    RecordingManifestV3,
+    RecordingManifestV4,
+)
 from leo.contracts.states import SourceType
 from leo.station.authority import (
     CaptureHardwareBindingV1,
     CaptureHardwareBindingV2,
     CaptureHardwareBindingV3,
+    CaptureHardwareBindingV4,
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
@@ -36,6 +42,7 @@ class ResolvedCaptureAuthority:
         CaptureHardwareBindingV1
         | CaptureHardwareBindingV2
         | CaptureHardwareBindingV3
+        | CaptureHardwareBindingV4
         | FixturePathAuthorityV1
     )
 
@@ -63,12 +70,12 @@ class PinnedCaptureAuthorityResolver:
 
     def resolve(
         self,
-        manifest: RecordingManifestV1 | RecordingManifestV3,
+        manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
         *,
         observed_manifest_file_digest: str,
     ) -> ResolvedCaptureAuthority:
         if manifest.source_type is SourceType.TEST:
-            if isinstance(manifest, RecordingManifestV3):
+            if isinstance(manifest, (RecordingManifestV3, RecordingManifestV4)):
                 raise UnreviewedTestFixtureAuthorityError(
                     "V3 TEST manifests require a separately reviewed fixture authority"
                 )
@@ -92,8 +99,14 @@ class PinnedCaptureAuthorityResolver:
             self._topology.relative_path,
             expected_file_digest=self._topology.file_digest,
         )
-        binding: CaptureHardwareBindingV1 | CaptureHardwareBindingV3
-        if isinstance(manifest, RecordingManifestV3):
+        binding: CaptureHardwareBindingV1 | CaptureHardwareBindingV3 | CaptureHardwareBindingV4
+        if isinstance(manifest, RecordingManifestV4):
+            binding = CaptureHardwareBindingV4.create(
+                manifest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
+                topology=topology,
+            )
+        elif isinstance(manifest, RecordingManifestV3):
             binding = CaptureHardwareBindingV3.create(
                 manifest,
                 observed_manifest_file_digest=observed_manifest_file_digest,

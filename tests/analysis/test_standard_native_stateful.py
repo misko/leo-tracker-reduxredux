@@ -668,7 +668,7 @@ def test_global_probe_membership_bound_does_not_double_charge_one_coarse_window(
     )
 
 
-@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000))
+@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000, 10_000_000))
 def test_global_probe_geometry_marks_short_segment_without_valid_opportunity(
     sample_rate_hz: int,
 ) -> None:
@@ -892,7 +892,7 @@ def test_global_probe_geometry_marks_short_segment_without_valid_opportunity(
     assert product.source.sample_rate_hz == sample_rate_hz
 
 
-@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000))
+@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000, 10_000_000))
 def test_lossless_stateful_product_is_typed_and_rate_native(
     sample_rate_hz: int,
     monkeypatch: pytest.MonkeyPatch,
@@ -932,6 +932,7 @@ def test_lossless_stateful_product_is_typed_and_rate_native(
             2_500_000: "sha256:150c6b64bf3a0f5853eb51b581020ba11950aee791b72292b8776c598b1d4a2e",
             3_000_000: "sha256:be54fc7349bfd85f44632abb828feeb7719c30a3826af53679a03ca5d858cc08",
             5_000_000: "sha256:fdc5a90199b3ccc43fc410cc5f2b6d436eb744f359e0d40441fa14cbef274c32",
+            10_000_000: "sha256:2488da02b359a083d4fedf595a354a720aa5dfafb406b1dc53b5cf020223ca26",
         }[sample_rate_hz]
     )
     assert product.source.sample_rate_hz == sample_rate_hz

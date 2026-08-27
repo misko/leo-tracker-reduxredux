@@ -12,7 +12,10 @@ from leo.artifacts import (
     AnalysisRunManifestV1,
     AnalysisRunManifestV2,
     AnalysisRunManifestV3,
+    AnalysisRunManifestV4,
+    StandardNativeMixedStreamAuthorityV1,
     StandardNativePromotionAuthorityV1,
+    StandardNativePromotionAuthorityV2,
     StandardNativeTerminalProductRefV1,
     parse_analysis_run_manifest,
 )
@@ -217,6 +220,136 @@ def _redigest(document: dict[str, object]) -> None:
     document["content_digest"] = canonical_digest(
         {key: value for key, value in document.items() if key != "content_digest"}
     )
+
+
+def _mixed_manifest() -> AnalysisRunManifestV4:
+    definition = _pipeline_definition()
+    terminal_products = tuple(
+        _terminal_ref(product) for product in (_products()[0], *_products()[2:])
+    )
+    streams = tuple(
+        StandardNativeMixedStreamAuthorityV1(
+            stream_id=f"stream-{index}",
+            radio_id=f"radio-{index}",
+            profile_name=f"mixed-{rate}",
+            profile_revision_digest=_digest(f"profile-{rate}"),
+            starlink_channel=1,
+            starlink_edge="lower",
+            sample_rate_hz=rate,
+            rf_bandwidth_hz=rate,
+            tuned_center_frequency_hz=959_687_500,
+            pilot_if_center_frequency_hz=959_687_500,
+            channel_if_start_hz=955_000_000,
+            channel_if_stop_hz=1_195_000_000,
+            captured_if_start_hz=959_687_500 - rate // 2,
+            captured_if_stop_hz=959_687_500 + rate // 2,
+            logical_sample_count=rate * 60,
+            validity_inventory_digest=_digest(f"validity-{rate}"),
+        )
+        for index, rate in enumerate((2_500_000, 5_000_000))
+    )
+    authority_values = {
+        "schema_version": 2,
+        "source_manifest_schema_version": 4,
+        "source_manifest_digest": _digest("manifest"),
+        "pipeline_definition": definition.model_dump(mode="json"),
+        "pipeline_definition_id": definition.definition_id,
+        "session_id": "session-a",
+        "run_id": "run-a",
+        "input_manifest_digest": _digest("manifest"),
+        "pipeline_release_id": _RELEASE,
+        "expanded_plan_digest": _digest("expanded-plan"),
+        "raw_integrity_attestation_digest": _digest("raw-integrity"),
+        "release_authority_digest": _digest("release-authority"),
+        "subject_binding_inventory_digest": _digest("subject-bindings"),
+        "terminal_products": tuple(item.model_dump(mode="json") for item in terminal_products),
+        "terminal_product_inventory_digest": canonical_digest(
+            tuple(item.model_dump(mode="json") for item in terminal_products)
+        ),
+        "dwell_class": "mixed_2p5_5",
+        "stream_authorities": tuple(item.model_dump(mode="json") for item in streams),
+        "capture_plan_digest": _digest("capture-plan"),
+        "capture_hardware_binding_digest": _digest("capture-hardware-binding"),
+        "trigger": "new_capture",
+        "promotion_policy": "current",
+        "processing_status": "succeeded",
+    }
+    authority = StandardNativePromotionAuthorityV2.model_validate(
+        {**authority_values, "content_digest": canonical_digest(authority_values)}
+    )
+    values = {
+        "schema_version": 4,
+        "session_id": "session-a",
+        "run_id": "run-a",
+        "pipeline_release_id": _RELEASE,
+        "input_manifest_digest": _digest("manifest"),
+        "trigger": "new_capture",
+        "pipeline_lane": "standard",
+        "promotion_policy": "current",
+        "processing_status": "succeeded",
+        "jobs": tuple(item.model_dump(mode="json") for item in _jobs()),
+        "products": tuple(item.model_dump(mode="json") for item in _products()),
+        "promotion_authority": authority.model_dump(mode="json"),
+    }
+    return AnalysisRunManifestV4.model_validate(
+        {**values, "content_digest": canonical_digest(values)}
+    )
+
+
+def test_mixed_promotion_manifest_round_trips_exact_per_stream_rf_authority() -> None:
+    manifest = _mixed_manifest()
+    parsed = parse_analysis_run_manifest(manifest.model_dump(mode="json"))
+
+    assert parsed == manifest
+    assert isinstance(parsed, AnalysisRunManifestV4)
+    assert tuple(item.sample_rate_hz for item in parsed.promotion_authority.stream_authorities) == (
+        2_500_000,
+        5_000_000,
+    )
+    assert all(
+        item.rf_bandwidth_hz == item.sample_rate_hz
+        for item in parsed.promotion_authority.stream_authorities
+    )
+
+
+def test_mixed_promotion_rejects_rate_or_rf_passband_tamper() -> None:
+    document = _mixed_manifest().model_dump(mode="json")
+    authority = dict(document["promotion_authority"])
+    streams = [dict(item) for item in authority["stream_authorities"]]
+    streams[1]["rf_bandwidth_hz"] = 2_500_000
+    authority["stream_authorities"] = streams
+    _redigest(authority)
+    document["promotion_authority"] = authority
+    _redigest(document)
+
+    with pytest.raises(ValueError, match="RF/IF authority"):
+        AnalysisRunManifestV4.model_validate(document)
+
+    document = _mixed_manifest().model_dump(mode="json")
+    authority = dict(document["promotion_authority"])
+    streams = [dict(item) for item in authority["stream_authorities"]]
+    streams[1]["tuned_center_frequency_hz"] += 1
+    streams[1]["captured_if_start_hz"] += 1
+    streams[1]["captured_if_stop_hz"] += 1
+    authority["stream_authorities"] = streams
+    _redigest(authority)
+    document["promotion_authority"] = authority
+    _redigest(document)
+
+    with pytest.raises(ValueError, match="RF/IF authority"):
+        AnalysisRunManifestV4.model_validate(document)
+
+    document = _mixed_manifest().model_dump(mode="json")
+    authority = dict(document["promotion_authority"])
+    streams = [dict(item) for item in authority["stream_authorities"]]
+    streams[1]["starlink_channel"] = 2
+    authority["stream_authorities"] = streams
+    _redigest(authority)
+    document["promotion_authority"] = authority
+    _redigest(document)
+
+    with pytest.raises(ValueError, match="RF/IF authority"):
+        AnalysisRunManifestV4.model_validate(document)
 
 
 def test_promotion_manifest_round_trips_and_binds_only_terminal_subset() -> None:

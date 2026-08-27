@@ -281,6 +281,102 @@ class StandardNativePairedReportV4(ContractModel):
         return self
 
 
+class StandardNativePairedReportV5(ContractModel):
+    """Terminal two-radio reduction for equal- or mixed-native-rate inputs.
+
+    V4 remains the immutable common-rate contract.  V5 retains each radio's
+    native rate explicitly and still authorizes paired evidence only over the
+    conservative UTC intersection, so no sample-axis equivalence or resampling
+    is implied.
+    """
+
+    schema_version: Literal[5] = 5
+    algorithm_version: Literal["standard-native-paired-report-v5"] = (
+        "standard-native-paired-report-v5"
+    )
+    session_id: Identifier
+    manifest_digest: Sha256Digest
+    synchronization_inventory_digest: Sha256Digest
+    pair_input_binding_digest: Sha256Digest
+    radio_sample_rates_hz: tuple[
+        Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000],
+        Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000],
+    ]
+    status: Literal["complete", "partial_coverage", "insufficient_data"]
+    reason: BoundedText
+    radios: tuple[StandardNativeRadioReportV4, StandardNativeRadioReportV4]
+    aggregate_statistics: NativeSufficientStatisticsV1
+    aggregate_terminal_opportunities: NativeProbeExecutionAccountingV1
+    aggregate_qam_statistics: NativeQamSufficientStatisticsV1
+    aggregate_terminal_tracks: NativeTerminalTrackAccountingV1
+    scientific_disposition: NativePathScientificDispositionV1
+    scientific_reason: BoundedText
+    valid_utc_intervals: tuple[NativeValidUtcIntervalV1, ...]
+    report_digest: Sha256Digest
+    native_evidence_only: Literal[True] = True
+    current_eligible: Literal[False] = False
+    phase_coherent: Literal[False] = False
+    cross_radio_association_permitted: Literal[False] = False
+    resampling_permitted: Literal[False] = False
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _paired_report_closes(self) -> Self:
+        radio_keys = tuple((item.stream_id, item.radio_id) for item in self.radios)
+        if radio_keys != tuple(sorted(set(radio_keys))) or len(radio_keys) != 2:
+            raise ValueError("native terminal paired radio inventory is not exact")
+        if self.radio_sample_rates_hz != tuple(item.sample_rate_hz for item in self.radios):
+            raise ValueError("native terminal paired rate inventory is not exact")
+        for item in self.radios:
+            if (
+                item.session_id != self.session_id
+                or item.manifest_digest != self.manifest_digest
+                or item.synchronization_inventory_digest != self.synchronization_inventory_digest
+            ):
+                raise ValueError("native terminal paired report contains a foreign radio")
+        _require_statistics(
+            self.aggregate_statistics,
+            tuple(item.aggregate_statistics for item in self.radios),
+        )
+        if (
+            self.aggregate_terminal_opportunities
+            != aggregate_native_probe_execution_accounting(
+                tuple(item.aggregate_terminal_opportunities for item in self.radios)
+            )
+            or self.aggregate_qam_statistics
+            != aggregate_native_qam_statistics(
+                tuple(item.aggregate_qam_statistics for item in self.radios)
+            )
+            or self.aggregate_terminal_tracks
+            != aggregate_terminal_track_accounting(
+                tuple(item.aggregate_terminal_tracks for item in self.radios)
+            )
+        ):
+            raise ValueError("native terminal paired sufficient statistics do not close")
+        expected_intervals = _intersect_utc_interval_sets(
+            self.radios[0].valid_utc_intervals,
+            self.radios[1].valid_utc_intervals,
+        )
+        expected_status = _processing_status(
+            expected_intervals,
+            tuple(item.status for item in self.radios),
+        )
+        if self.valid_utc_intervals != expected_intervals or self.status != expected_status:
+            raise ValueError("native terminal paired support or status is inconsistent")
+        expected_scientific = _scientific_disposition(
+            tuple(item.scientific_disposition for item in self.radios)
+        )
+        if self.scientific_disposition is not expected_scientific:
+            raise ValueError("native terminal paired scientific disposition is inconsistent")
+        if self.report_digest != canonical_digest(
+            self.model_dump(mode="json", exclude={"report_digest"})
+        ):
+            raise ValueError("native terminal paired report digest does not match content")
+        return self
+
+
 def terminal_track_accounting(
     report: StandardNativePathReportV3,
 ) -> NativeTerminalTrackAccountingV1:

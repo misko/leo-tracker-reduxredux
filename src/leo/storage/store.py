@@ -27,6 +27,7 @@ from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV1,
     RecordingStreamV2,
     RecordingStreamV3,
@@ -882,7 +883,7 @@ class RecordingIqReader:
 
 
 def _manifest_stream(
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
     stream_id: str,
 ) -> RecordingStreamV1 | RecordingStreamV3:
     matches = tuple(stream for stream in manifest.streams if stream.stream_id == stream_id)
