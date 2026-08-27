@@ -676,6 +676,8 @@ def _solve_mode(
     prior_precision: NDArray[np.float64],
     downlink_frequency_hz: float,
     config: BlindedDopplerPositionConfig,
+    joint_frequency_catalog_numbers: tuple[int, ...] | None = None,
+    joint_frequency_covariance: NDArray[np.float64] | None = None,
 ) -> _SolvedMode:
     state = np.zeros(4, dtype=np.float64)
     state[:3] = prior_mean
@@ -692,6 +694,8 @@ def _solve_mode(
         hypothesis=hypothesis,
         correction_by_digest=correction_by_digest,
         maximum_condition=config.maximum_normal_condition_number,
+        joint_frequency_catalog_numbers=joint_frequency_catalog_numbers,
+        joint_frequency_covariance=joint_frequency_covariance,
     )
 
     converged = False
@@ -789,6 +793,8 @@ def _build_observation_noise_model(
     hypothesis: FrozenDopplerPositionHypothesis,
     correction_by_digest: dict[Sha256Digest, SatelliteCorrectionModeV1],
     maximum_condition: float,
+    joint_frequency_catalog_numbers: tuple[int, ...] | None = None,
+    joint_frequency_covariance: NDArray[np.float64] | None = None,
 ) -> _ObservationNoiseModel:
     """Build the complete covariance, retaining shared correction uncertainty."""
 
@@ -807,37 +813,52 @@ def _build_observation_noise_model(
         covariance[index, index] = independent_variance
         rows_by_mode.setdefault(observation.correction_mode_digest, []).append(index)
 
-    for mode_digest, indices in rows_by_mode.items():
-        correction = correction_by_digest[mode_digest]
-        frequency_covariance = np.asarray(
-            (
-                (
-                    correction.frequency.bias_variance_hz2,
-                    correction.frequency.bias_drift_covariance_hz2_s,
-                ),
-                (
-                    correction.frequency.bias_drift_covariance_hz2_s,
-                    correction.frequency.drift_variance_hz2_s2,
-                ),
-            ),
-            dtype=np.float64,
+    if (joint_frequency_catalog_numbers is None) != (joint_frequency_covariance is None):
+        raise BlindedDopplerPositionInputError(
+            "joint frequency covariance requires its exact catalogue order"
         )
-        design = np.asarray(
-            [
+    if joint_frequency_covariance is None:
+        for mode_digest, indices in rows_by_mode.items():
+            correction = correction_by_digest[mode_digest]
+            frequency_covariance = np.asarray(
                 (
-                    1.0,
                     (
-                        hypothesis.observations[index].support_utc_ns
-                        - correction.frequency.reference_utc_ns
+                        correction.frequency.bias_variance_hz2,
+                        correction.frequency.bias_drift_covariance_hz2_s,
+                    ),
+                    (
+                        correction.frequency.bias_drift_covariance_hz2_s,
+                        correction.frequency.drift_variance_hz2_s2,
+                    ),
+                ),
+                dtype=np.float64,
+            )
+            design = np.asarray(
+                [
+                    (
+                        1.0,
+                        (
+                            hypothesis.observations[index].support_utc_ns
+                            - correction.frequency.reference_utc_ns
+                        )
+                        / 1e9,
                     )
-                    / 1e9,
-                )
-                for index in indices
-            ],
-            dtype=np.float64,
+                    for index in indices
+                ],
+                dtype=np.float64,
+            )
+            shared_covariance = design @ frequency_covariance @ design.T
+            covariance[np.ix_(indices, indices)] += shared_covariance
+    else:
+        if joint_frequency_catalog_numbers is None:
+            raise AssertionError("joint frequency catalogue order was not narrowed")
+        _add_joint_frequency_covariance(
+            covariance=covariance,
+            hypothesis=hypothesis,
+            correction_by_digest=correction_by_digest,
+            catalogue_numbers=joint_frequency_catalog_numbers,
+            frequency_covariance=joint_frequency_covariance,
         )
-        shared_covariance = design @ frequency_covariance @ design.T
-        covariance[np.ix_(indices, indices)] += shared_covariance
 
     covariance = 0.5 * (covariance + covariance.T)
     if not np.all(np.isfinite(covariance)):
@@ -863,6 +884,75 @@ def _build_observation_noise_model(
         precision=precision,
         log_determinant=log_determinant,
     )
+
+
+def _add_joint_frequency_covariance(
+    *,
+    covariance: NDArray[np.float64],
+    hypothesis: FrozenDopplerPositionHypothesis,
+    correction_by_digest: dict[Sha256Digest, SatelliteCorrectionModeV1],
+    catalogue_numbers: tuple[int, ...],
+    frequency_covariance: NDArray[np.float64],
+) -> None:
+    if catalogue_numbers != tuple(sorted(set(catalogue_numbers))):
+        raise BlindedDopplerPositionInputError(
+            "joint frequency catalogue order must be unique and canonical"
+        )
+    correction_by_catalogue = {item.catalog_number: item for item in correction_by_digest.values()}
+    if len(correction_by_catalogue) != len(correction_by_digest) or set(
+        correction_by_catalogue
+    ) != set(catalogue_numbers):
+        raise BlindedDopplerPositionInputError(
+            "joint frequency covariance does not match the correction inventory"
+        )
+    dimension = 2 * len(catalogue_numbers)
+    if frequency_covariance.shape != (dimension, dimension) or np.any(
+        ~np.isfinite(frequency_covariance)
+    ):
+        raise BlindedDopplerPositionInputError(
+            "joint frequency covariance has invalid dimensions or values"
+        )
+    if not np.allclose(
+        frequency_covariance,
+        frequency_covariance.T,
+        rtol=1e-12,
+        atol=1e-15,
+    ):
+        raise BlindedDopplerPositionInputError("joint frequency covariance is not symmetric")
+    catalogue_index = {number: index for index, number in enumerate(catalogue_numbers)}
+    design = np.zeros((len(hypothesis.observations), dimension), dtype=np.float64)
+    for row, observation in enumerate(hypothesis.observations):
+        correction = correction_by_digest[observation.correction_mode_digest]
+        index = catalogue_index[correction.catalog_number]
+        design[row, 2 * index] = 1.0
+        design[row, 2 * index + 1] = (
+            observation.support_utc_ns - correction.frequency.reference_utc_ns
+        ) / 1e9
+    for index, number in enumerate(catalogue_numbers):
+        correction = correction_by_catalogue[number]
+        expected = np.asarray(
+            (
+                (
+                    correction.frequency.bias_variance_hz2,
+                    correction.frequency.bias_drift_covariance_hz2_s,
+                ),
+                (
+                    correction.frequency.bias_drift_covariance_hz2_s,
+                    correction.frequency.drift_variance_hz2_s2,
+                ),
+            ),
+            dtype=np.float64,
+        )
+        if not np.allclose(
+            frequency_covariance[2 * index : 2 * index + 2, 2 * index : 2 * index + 2],
+            expected,
+            rtol=1e-12,
+            atol=1e-15,
+        ):
+            raise BlindedDopplerPositionInputError(
+                "joint covariance diagonal block disagrees with correction state"
+            )
+    covariance += design @ frequency_covariance @ design.T
 
 
 def _objective_and_linearization(

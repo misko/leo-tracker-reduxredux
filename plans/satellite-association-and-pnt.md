@@ -143,6 +143,14 @@ marginalizes the receiver columns. An optional time-local version uses one
 drift state per dwell with a calibrated random-walk covariance within each
 hardware epoch. It intentionally does not update the discrete association
 posterior.
+An additive native-joint blinded navigation lane now consumes those exact
+`K=0,1,2` modes without projecting them into independent single-emitter
+products. Positive navigation-eligible two-satellite modes retain their full
+cross-satellite frequency covariance; target Doppler is evaluated only when
+the data Jacobian has rank four. Null, ineligible, and rank-deficient prior
+mass remains unresolved rather than receiving a fabricated target likelihood.
+The estimate is always partial, seals before truth is accessible, and has a
+separate reveal-only evaluator.
 The two exact opened POST-FIX long arcs now have a digest-bound, fail-closed
 development protocol and one completed authorized execution. Attempt 1 failed
 closed at the response-free population work cap before response scoring; the
@@ -166,10 +174,9 @@ nulls. These components were first qualified on synthetic data and then used
 only by the exact authorized attempt-2 runner on the two registered opened
 arcs. No IQ was reopened during the execution.
 Calibrated ephemeris covariance, full fixed-lag smoothing and ECM,
-direct estimation of gauge-resolved satellite frequency covariance from the
-known-position batch, broad-prior particle navigation, joint
-identity/correction refinement, radio-only positioning, and four-lane blinded
-evaluation remain pending. This document authorizes no additional IQ access,
+association-posterior feedback from the known-position batch, broad-prior
+particle navigation, radio-only positioning, and four-lane blinded evaluation
+remain pending. This document authorizes no additional IQ access,
 catalogue rerun, data selection, or RF collection. The one catalogue run now
 recorded was the exact opened-development execution authorized by the two
 committed amendments; it is not confirmation data.
@@ -187,7 +194,7 @@ committed amendments; it is not confirmation data.
 | Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
 | Causal multi-dwell catalogue filter | DONE, synthetic forward-filter foundation | [`multi_dwell_catalogue_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_smoothing.py) and [`test_multi_dwell_catalogue_smoothing.py`](../tests/analysis/test_multi_dwell_catalogue_smoothing.py); one source state per dwell, at most two distinct NORADs per retained history, explicit `NULL`, normalized family priors, receiver-local drift resets, proper dwell-offset marginalization, and score-before-assimilation rolling receipts. This is not yet a simultaneous-emitter solver, ECM, or backward smoother. |
 | Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). The published V1 product still fails closed on coexisting `K=2`; the additive joint product below carries those semantics instead. |
-| Native `K=0,1,2` joint calibration product | DONE, synthetic contract and builder | [`satellite_pnt_joint_calibration.py`](../src/leo/contracts/satellite_pnt_joint_calibration.py) and [`satellite_correction_joint_replay.py`](../src/leo/analysis/satellite_correction_joint_replay.py) preserve every reported exact-association mode and its probability, bind exact episode assignments and TLE members, and retain a PSD cross-satellite bias/drift covariance supplied by a separate known-position calibration authority. Association component offsets and hardware drift affect mode evidence but are never exported. Unresolved receiver/satellite frequency gauge, tau boundary, stale TLE, incomplete mode coverage, indefinite covariance, or missing source authority makes a mode ineligible or fails closed. The product is not yet consumed by the joint positioning lane. |
+| Native `K=0,1,2` joint calibration product | DONE, synthetic contract and builder | [`satellite_pnt_joint_calibration.py`](../src/leo/contracts/satellite_pnt_joint_calibration.py) and [`satellite_correction_joint_replay.py`](../src/leo/analysis/satellite_correction_joint_replay.py) preserve every reported exact-association mode and its probability, bind exact episode assignments and TLE members, and retain a PSD cross-satellite bias/drift covariance supplied by a separate known-position calibration authority. Association component offsets and hardware drift affect mode evidence but are never exported. Unresolved receiver/satellite frequency gauge, tau boundary, stale TLE, incomplete mode coverage, indefinite covariance, or missing source authority makes a mode ineligible or fails closed. The native-joint positioning lane below now consumes this product without independent-slot projection. |
 | Known-position joint frequency batch calibration | DONE, conditional synthetic first slice | [`joint_frequency_calibration.py`](../src/leo/analysis/joint_frequency_calibration.py) fits satellite bias/drift jointly with proper externally supplied priors for continuity offsets and hardware drift, then returns only the satellite marginal and its cross-satellite covariance. Receiver-local posterior bytes remain behind opaque digests. Exact graph/bank/association joins, full component/hardware prior coverage, conditioning, work caps, minimum per-satellite duration/counts, and unresolved-gauge abstention are tested in [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). The default uses one linear receiver drift per hardware epoch; an optional time-local model uses dwell-specific slopes coupled by a calibrated random walk, preventing forced equality across long gaps. Change-point calibration and association-posterior feedback remain pending. |
 | Synthetic mixtures and exact-association poisons | DONE for current exact-solver scope | 31 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, stale-contract inputs, and tamper cases. |
 | SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 33 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, field-receipt binding, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
@@ -195,6 +202,7 @@ committed amendments; it is not confirmation data.
 | Correction projection and replay poisons | DONE for current synthetic `K<=1` scope | 9 focused tests cover solver-safe/site-private projection, ambiguity-mode closure, bounded-tau uncertainty, `K=2` refusal, complete satellite-frequency inventory, exact observer/TLE/association binding, future validity, stale-contract rejection, receiver-local-field poison, and dense-Gaussian replay evidence. Replay is conditioned on an assigned mode and scores no radio-only/null alternative, so it makes no identity or navigation claim. |
 | Simultaneous oracle correction set | DONE, additive contract and synthetic V2 navigation lane | [`satellite_pnt_sets.py`](../src/leo/contracts/satellite_pnt_sets.py) and [`test_satellite_pnt_sets.py`](../tests/contracts/test_satellite_pnt_sets.py) preserve each selected satellite's complete single-emitter product and local probability semantics, require distinct eligible NORADs and a common validity interval, and contain no calibration site or receiver-local state. [`satellite_pnt_challenge_v2.py`](../src/leo/contracts/satellite_pnt_challenge_v2.py), [`blinded_doppler_position_sets.py`](../src/leo/analysis/blinded_doppler_position_sets.py), and the reveal-only V2 boundary consume four selected products without renormalizing their within-emitter probabilities. Six focused tests recover synthetic position and reject overlap, expiry, incomplete-set, stale-challenge, and nested-estimate poisons. This remains an oracle/precommitted selection lane; it does not encode unknown-identity joint hypotheses. |
 | Joint frozen-correction hypotheses and partial positioning | DONE, exact synthetic builder plus conditional joint lane | [`satellite_pnt_hypotheses.py`](../src/leo/contracts/satellite_pnt_hypotheses.py), [`satellite_correction_hypotheses.py`](../src/leo/analysis/satellite_correction_hypotheses.py), and focused tests enumerate the complete bounded product of per-slot mode/unassigned probabilities, reject repeated simultaneous NORADs, preserve exact posterior closure, canonicalize slot order, reject truncation/stale products, and fail before an excessive Cartesian family is materialized. [`satellite_pnt_joint_challenge.py`](../src/leo/contracts/satellite_pnt_joint_challenge.py), [`blinded_doppler_position_joint.py`](../src/leo/analysis/blinded_doppler_position_joint.py), and the reveal-only joint evaluator compare every fully assigned valid four-satellite mode on identical target response rows. Unevaluable prior mass remains unresolved and is explicitly not compared through a fabricated target likelihood. The lane is always `PARTIAL`, with `slot_posterior_independence_assumed=true`, `shared_calibration_nuisance_jointly_modeled=false`, and `identity_claimed=false`. |
+| Native joint calibration to blinded position | DONE, conditional synthetic first slice | [`satellite_pnt_native_joint_challenge.py`](../src/leo/contracts/satellite_pnt_native_joint_challenge.py), [`blinded_doppler_position_native_joint.py`](../src/leo/analysis/blinded_doppler_position_native_joint.py), and the reveal-only native-joint boundary consume the exact shared-nuisance `K=0,1,2` calibration posterior. Two-satellite modes are target-evaluable only with a rank-four time-diverse data Jacobian; their full bias/drift cross-covariance enters the observation covariance. The synthetic ideal lane recovers position to about 5.4 m, while rank-deficient geometry abstains. The null and every ineligible/unevaluable mode remain unresolved, target likelihood is not compared to that mass, and no identity or navigation-fix claim is made. |
 | Truth-isolated local Doppler positioning | DONE for the first synthetic oracle/frozen-identity slice | [`blinded_doppler_position.py`](../src/leo/analysis/blinded_doppler_position.py) and [`test_blinded_doppler_position.py`](../tests/analysis/test_blinded_doppler_position.py) implement local ECEF Gaussian-prior MAP positioning with a shared receiver CFO state, frozen per-satellite frequency corrections, correlated correction uncertainty, exact consumed-mode lineage, dense-covariance/work bounds, and no truth/reveal import or argument. Oracle output may be complete; unknown frozen-identity output remains explicitly partial because no radio/null alternative is scored. |
 | Reveal-only position evaluation | DONE for the first synthetic lane | [`blinded_position_evaluation.py`](../src/leo/analysis/blinded_position_evaluation.py) and [`test_blinded_position_evaluation.py`](../tests/analysis/test_blinded_position_evaluation.py) revalidate the exact challenge/estimate/truth receipt after sealing, recompute WGS84 ECEF and ENU error, preserve ambiguity mass, and report rank-one/conditional error plus semidefinite-safe NEES and 95% covariance diagnostics. The evaluator cannot alter or refit the sealed estimate. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
@@ -565,15 +573,19 @@ predicts a later known-site observation within its frozen uncertainty.
 **Purpose:** measure whether associated/corrected signals actually determine
 receiver position.
 
-**Current implementation:** the first local-prior numerical slice exists for
-lanes 1 and 2. It keeps multiple frozen correction hypotheses separate, solves
-time-diverse Doppler plus one receiver-CFO state, propagates shared
-satellite-frequency correction covariance, and seals the estimate before any
-truth port exists. Lane 2 remains `PARTIAL`: its modes are conditional on the
-frozen candidate bank and it has no equal-opportunity radio/null likelihood.
-The reveal-only evaluator exists for this slice. The 10 km/100 km/global
-initialization ladder, particles, joint correction, radio-only control, and
-four-lane blinded comparison remain future work.
+**Current implementation:** local-prior numerical slices exist for lanes 1 and
+2, plus a conditional native-joint lane-3 first slice. They keep discrete
+correction hypotheses separate, solve time-diverse Doppler plus one receiver
+CFO state, propagate shared satellite-frequency uncertainty, and seal the
+estimate before any truth port exists. The native-joint slice consumes the
+exact `K=0,1,2` shared-nuisance calibration posterior and its full
+cross-satellite bias/drift covariance. A two-satellite mode is evaluated only
+when the target data Jacobian has rank four; all null, ineligible, and
+rank-deficient prior mass remains unresolved. Unknown-identity results remain
+`PARTIAL` because they have no equal-opportunity radio/null target likelihood.
+Reveal-only evaluators exist for these slices. The 10 km/100 km/global
+initialization ladder, particles, radio-only control, association feedback,
+and complete four-lane blinded comparison remain future work.
 
 **Lanes:**
 
