@@ -51,10 +51,30 @@ CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST = (
 CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST = (
     "sha256:22b2bbb83a10b6494b16cba6303591eedbda37d3f876f7822c1fe5d68f42ccc1"
 )
+CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_PROFILE_DIGEST = (
+    "sha256:523402d005564d97177ee139f1a616c01b6b65d9a6c4ad11a0564c074216865c"
+)
+CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_PLAN_DIGEST = (
+    "sha256:3433d59a81dac88ab292f2eb19801915d0b91380dfea3df54acc41be6c36e2df"
+)
+CONTIGUOUS_RATE_5M_NATIVE_BANDWIDTH_PROFILE_DIGEST = (
+    "sha256:6f8ec4a5dec0f6b18d09c0f464c22c143ac363f2088242db830b0757a6316294"
+)
+CONTIGUOUS_RATE_5M_NATIVE_BANDWIDTH_PLAN_DIGEST = (
+    "sha256:dc63257696bf73ed4316ba258a2b430acfe62dda53e836cd5e67039da4204cb3"
+)
 CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS = (
     "CAPTURE_ONLY",
     "DEVICE_AXIS_ZERO_FILL",
     "LIVE",
+    "RANDOM_TUNING",
+    "STANDARD_NATIVE",
+)
+CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_REQUIRED_TAGS = (
+    "CAPTURE_ONLY",
+    "DEVICE_AXIS_ZERO_FILL",
+    "LIVE",
+    "NATIVE_BANDWIDTH",
     "RANDOM_TUNING",
     "STANDARD_NATIVE",
 )
@@ -2962,6 +2982,162 @@ def verify_contiguous_rate_3m_receipt_v5(
     )
 
 
+def verify_contiguous_rate_3m_receipt_v6(
+    receipt: dict[str, Any],
+    *,
+    revision: str,
+    release: Path,
+) -> None:
+    """Verify full native-bandwidth V6, then reuse the frozen V5 closure."""
+
+    target = receipt.get("target")
+    receipt_keys = {
+        "kind",
+        "schema_version",
+        "target",
+        "target_digest",
+        "created_utc_ns",
+        "complete",
+        "passed",
+        "checks",
+    }
+    if (
+        set(receipt) != receipt_keys
+        or receipt.get("kind") != "contiguous_rate_qualification"
+        or type(receipt.get("schema_version")) is not int
+        or receipt.get("schema_version") != 6
+        or receipt.get("complete") is not True
+        or receipt.get("passed") is not True
+        or not isinstance(target, dict)
+        or type(target.get("schema_version")) is not int
+        or target.get("schema_version") != 6
+        or target.get("qualification_id") != f"native-ip-3m-v6-{revision[:12]}"
+        or receipt.get("target_digest") != canonical_json_sha256(target)
+    ):
+        raise ValueError("3 MS/s native-bandwidth receipt is not a complete strict V6 pass")
+
+    expected_target = {
+        "profile_revision_digest": CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_PROFILE_DIGEST,
+        "capture_plan_digest": CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_PLAN_DIGEST,
+        "sample_rate_hz": 3_000_000,
+        "bandwidth_hz": 3_000_000,
+        "requested_sample_count": 180_000_000,
+        "native_network_interface": "enp132s0",
+        "native_source_address": "192.168.1.142",
+    }
+    if any(
+        type(target.get(key)) is not type(value) or target.get(key) != value
+        for key, value in expected_target.items()
+    ):
+        raise ValueError("3 MS/s V6 target does not use the exact native RF bandwidth plan")
+
+    expected_policy = {
+        "schema_version": 1,
+        "required_trial_count": 10,
+        "minimum_overlap_fraction": 0.99,
+        "required_kernel_buffers": 4,
+        "required_queue_capacity_refills": 32,
+        "maximum_queue_high_water_fraction": 0.75,
+        "required_metadata_abi_version": 1,
+        "maximum_refill_service_interval_ns": 1_398_101_333,
+        "required_tags": list(CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_REQUIRED_TAGS),
+    }
+    policy = target.get("policy")
+    if not isinstance(policy, dict) or policy != expected_policy:
+        raise ValueError("3 MS/s V6 policy is not the four-buffer maximum-refill policy")
+
+    prerequisites = target.get("prerequisites")
+    if (
+        not isinstance(prerequisites, dict)
+        or set(prerequisites)
+        != {
+            "schema_version",
+            "radio_safety",
+            "native_ip_canaries",
+            "writer_benchmark",
+            "host_health",
+            "five_m_characterization",
+        }
+        or type(prerequisites.get("schema_version")) is not int
+        or prerequisites.get("schema_version") != 6
+    ):
+        raise ValueError("3 MS/s V6 prerequisites are not the exact combined campaign")
+    canaries = prerequisites.get("native_ip_canaries")
+    if (
+        not isinstance(canaries, list)
+        or len(canaries) != 2
+        or any(
+            not isinstance(canary, dict)
+            or canary.get("sample_rate_hz") != 3_000_000
+            or canary.get("bandwidth_hz") != 3_000_000
+            or canary.get("passed") is not True
+            for canary in canaries
+        )
+    ):
+        raise ValueError("V6 native-IP canaries are not exact full-bandwidth 3 MS/s passes")
+    five_m = prerequisites.get("five_m_characterization")
+    expected_five_m = {
+        "schema_version": 2,
+        "profile_revision_digest": CONTIGUOUS_RATE_5M_NATIVE_BANDWIDTH_PROFILE_DIGEST,
+        "capture_plan_digest": CONTIGUOUS_RATE_5M_NATIVE_BANDWIDTH_PLAN_DIGEST,
+        "sample_rate_hz": 5_000_000,
+        "bandwidth_hz": 5_000_000,
+        "requested_sample_count": 300_000_000,
+        "bundle_verified": True,
+        "physical_zero_verified": True,
+        "validity_verified": True,
+        "gap_map_verified": True,
+        "passed": True,
+        "errors": [],
+    }
+    if not isinstance(five_m, dict) or any(
+        type(five_m.get(key)) is not type(value) or five_m.get(key) != value
+        for key, value in expected_five_m.items()
+    ):
+        raise ValueError("V6 5 MS/s characterization is not the exact native-bandwidth pass")
+
+    # V1-V5 remain immutable. Normalize only a private deep copy back to the
+    # frozen V5 authority so its exhaustive host/radio/runtime/digest and stream
+    # closure validation can be reused without weakening either generation.
+    compatibility = json.loads(json.dumps(receipt))
+    compatibility["schema_version"] = 5
+    compatibility_target = compatibility["target"]
+    compatibility_target.update(
+        {
+            "schema_version": 5,
+            "qualification_id": f"native-ip-3m-v5-{revision[:12]}",
+            "profile_revision_digest": CONTIGUOUS_RATE_3M_DEVICE_AXIS_PROFILE_DIGEST,
+            "capture_plan_digest": CONTIGUOUS_RATE_3M_DEVICE_AXIS_PLAN_DIGEST,
+            "bandwidth_hz": 2_500_000,
+        }
+    )
+    compatibility_prerequisites = compatibility_target["prerequisites"]
+    compatibility_prerequisites["schema_version"] = 5
+    for canary in compatibility_prerequisites["native_ip_canaries"]:
+        canary["bandwidth_hz"] = 2_500_000
+    compatibility_five_m = compatibility_prerequisites["five_m_characterization"]
+    compatibility_five_m.update(
+        {
+            "schema_version": 1,
+            "profile_revision_digest": CONTIGUOUS_RATE_5M_DEVICE_AXIS_PROFILE_DIGEST,
+            "capture_plan_digest": CONTIGUOUS_RATE_5M_DEVICE_AXIS_PLAN_DIGEST,
+            "bandwidth_hz": 2_500_000,
+        }
+    )
+    compatibility_target["policy"] = {
+        **expected_policy,
+        "required_kernel_buffers": 8,
+        "maximum_refill_service_interval_ns": 699_050_666,
+        "required_tags": list(CONTIGUOUS_RATE_3M_DEVICE_AXIS_REQUIRED_TAGS),
+    }
+    compatibility["target_digest"] = canonical_json_sha256(compatibility_target)
+    verify_contiguous_rate_3m_receipt_v5(
+        compatibility,
+        revision=revision,
+        release=release,
+    )
+
+
 def verify_native_bandwidth_receipt_v1(
     path: Path,
     *,
@@ -3120,14 +3296,14 @@ def verify(args: argparse.Namespace) -> list[str]:
         revision=revision,
     )
     expected_rate_receipt_path = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v5.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v6.json"
     )
     if args.rate_qualification_receipt != expected_rate_receipt_path:
         raise ValueError("3 MS/s continuity receipt path is not the revision authority")
     if sha256(args.rate_qualification_receipt) != args.rate_qualification_receipt_sha256:
         raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
     rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
-    verify_contiguous_rate_3m_receipt_v5(rate_receipt, revision=revision, release=release)
+    verify_contiguous_rate_3m_receipt_v6(rate_receipt, revision=revision, release=release)
     verify_native_bandwidth_receipt_v2(
         NATIVE_BANDWIDTH_RECEIPT_ROOT / revision / "native-bandwidth-qualification-receipt-v2.json",
         revision=revision,

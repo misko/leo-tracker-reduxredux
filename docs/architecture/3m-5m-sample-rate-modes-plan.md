@@ -61,23 +61,25 @@ contracts: they already persist rate, bandwidth, duration/sample count, refill
 geometry, K, userspace queue capacity, metadata requirement, and continuity
 policy.
 
-### 3 MS/s qualification and capture-only dwell
+### 3 MS/s production native-bandwidth dwell
 
 The current promotion target is the immutable
-`starlink-ch4-lower-3m-60s-device-axis-v3` profile:
+`starlink-ch4-lower-3m-60s-native-bandwidth-v4` profile:
 
 - `sample_rate_hz: 3000000`;
-- dual RX, 262,144-sample refills, K=8, queue=32;
+- `bandwidth_hz: 3000000`, with the maximum-coverage IF center derived from
+  the selected channel/edge;
+- dual RX, 1,048,576-sample refills, K=4, queue=32;
 - device metadata required;
 - `continuity_policy: allow_segments` and
   `peer_failure_policy: fail_session`;
 - `zstd-128m-device-axis-zero-v1` storage; and
-- exact `CAPTURE_ONLY`, `DEVICE_AXIS_ZERO_FILL`, `LIVE`, `RANDOM_TUNING`, and
-  `STANDARD_NATIVE` tags.
+- exact `CAPTURE_ONLY`, `DEVICE_AXIS_ZERO_FILL`, `LIVE`, `NATIVE_BANDWIDTH`,
+  `RANDOM_TUNING`, and `STANDARD_NATIVE` tags.
 
 The older `hardware-canary-3m-60s-contiguous-v2` remains an immutable legacy
-qualification profile, but it cannot satisfy the additive V5 production gate.
-V5 qualifies the same device-axis profile that ordinary dwells will execute.
+qualification profile, but it cannot satisfy the additive V6 production gate.
+V6 qualifies the same native-bandwidth device-axis profile that ordinary dwells execute.
 
 The operational profile succeeds only when every stream is complete and has
 zero missing samples, gaps, overflow observations, enqueue failures, and
@@ -85,16 +87,18 @@ terminal rejected refills. `allow_segments` changes salvage behavior, not the
 definition of success: a gapped stream remains partial and its session remains
 degraded.
 
-### Experimental 5 MS/s segmented capture
+### 5 MS/s native-bandwidth segmented capture
 
-The implementation adds `starlink-ch4-lower-5m-60s-device-axis-v3` with:
+The implementation uses `starlink-ch4-lower-5m-60s-native-bandwidth-v4` with:
 
 - `sample_rate_hz: 5000000`;
-- dual RX, 262,144-sample refills, K=8, queue=32;
+- `bandwidth_hz: 5000000`, with the maximum-coverage IF center derived from
+  the selected channel/edge;
+- dual RX, 1,048,576-sample refills, K=4, queue=32;
 - device metadata required;
 - `continuity_policy: allow_segments`;
 - device-axis zero-fill storage;
-- `EXPERIMENTAL`, `CAPTURE_ONLY`, `DEVICE_AXIS_ZERO_FILL`, `LIVE`,
+- `CAPTURE_ONLY`, `DEVICE_AXIS_ZERO_FILL`, `LIVE`, `NATIVE_BANDWIDTH`,
   `RANDOM_TUNING`, and `STANDARD_NATIVE` tags; and
 - membership in the reviewed ordinary-dwell production pool only as this exact
   segmented profile identity.
@@ -117,22 +121,23 @@ The qualified statement must include maximum duration, radio count, receiver
 count, transport, refill geometry, host, and exact radio identities. A short
 single-radio result must never unlock sustained or simultaneous two-radio use.
 
-### Bandwidth is independent
+### Native RF/IF geometry is an admission invariant
 
-Do not derive `bandwidth_hz` from `sample_rate_hz`. The first recorder canary
-should retain the existing 2.5 MHz analog bandwidth to isolate transport and
-storage behavior. Rate-matched 3 MHz or 5 MHz bandwidths should be separate
-profile revisions and require RF passband, aliasing, and scientific recovery
-tests. This prevents a transport change from silently becoming a different
-scientific observation.
+The historical V1-V5 evidence retains its original 2.5 MHz analog bandwidth.
+V6 is a separate authority and requires `bandwidth_hz == sample_rate_hz` at
+2.5, 3, and 5 MS/s. For every random channel/edge, the requested IF center is
+the closest center to the selected edge pilot whose complete analog passband
+remains inside the 240 MHz occupied channel. Requested, applied, and independent
+readback rate/bandwidth/center must agree exactly. This captures the maximum
+in-channel spectrum available at the native rate without changing old evidence.
 
 ### Ordinary production dwell selection
 
 The exact ordered production pool is:
 
-1. `starlink-ch4-lower-2p5m-60s-device-axis-v3`
-2. `starlink-ch4-lower-3m-60s-device-axis-v3`
-3. `starlink-ch4-lower-5m-60s-device-axis-v3`
+1. `starlink-ch4-lower-2p5m-60s-native-bandwidth-v4`
+2. `starlink-ch4-lower-3m-60s-native-bandwidth-v4`
+3. `starlink-ch4-lower-5m-60s-native-bandwidth-v4`
 
 The runner validates every member before starting, chooses each member with
 probability 1/3 for a new ordinary dual-radio dwell, and then compiles and
@@ -186,7 +191,7 @@ success policy is not strict enough to promote a continuity mode. The published
 `ContiguousRateQualificationReceiptV2` also remain immutable. The additive
 `ContiguousRateQualificationReceiptV3` remains immutable. The additive
 `ContiguousRateQualificationReceiptV4` also remains immutable. The additive
-`ContiguousRateQualificationReceiptV5` qualifies the actual production pair
+`ContiguousRateQualificationReceiptV6` qualifies the actual production pair
 and exact deployed device-axis profile without treating a different transport,
 firmware ABI, or non-production radio as a prerequisite. Its exact ordered
 prerequisites are per-radio safety, one-second native-IP counter canaries, a
@@ -195,7 +200,7 @@ pre/post host-health evidence, and one full-span 5 MS/s Recording V3
 characterization from the same maintenance-fenced campaign. Host health is
 captured before writer/RF work and after radio restoration plus lease release;
 its exact `md127`, `/srv/bulk`, `/dev/mapper/vg_bulk-bulk`, 32 GiB memory, and
-1 TiB disk policy and closed check inventory are bound by the V5 target digest.
+1 TiB disk policy and closed check inventory are bound by the V6 target digest.
 Production-storage and unclassified kernel I/O errors fail. Pre-existing errors
 are ignored only for sysfs-proven removable devices outside the bulk-storage
 ancestry, and the full classified error inventory must remain identical across
@@ -240,7 +245,7 @@ truthful degraded evidence and can never satisfy a contiguous receipt.
   qualification receipt for the deployed host, radios, software, profile, and
   transport. It remains `CAPTURE_ONLY` regardless of a clean transport result.
 - The verifier accepts 5 MS/s only as
-  `starlink-ch4-lower-5m-60s-device-axis-v3` with `allow_segments`, 2.5 MHz
+  `starlink-ch4-lower-5m-60s-native-bandwidth-v4` with `allow_segments`, 5 MHz
   analog bandwidth, device-axis storage, and the exact reviewed tags. It
   rejects 5 MS/s as a sole default or observationally contiguous mode.
 - Do not silently broaden the pool to “any V2 profile.” Pool membership and
@@ -276,19 +281,19 @@ Paired CI16 RX is 8 bytes per sample instant per radio.
 |---|---:|---:|
 | Payload per radio | 24 MB/s | 40 MB/s |
 | Payload for two radios | 48 MB/s | 80 MB/s |
-| Refill period at 262,144 samples | 87.381 ms | 52.429 ms |
-| K=8 RF-time cushion | 0.699 s | 0.419 s |
-| Queue=32 RF-time horizon | 2.796 s | 1.678 s |
+| Refill period at 1,048,576 samples | 349.525 ms | 209.715 ms |
+| K=4 RF-time cushion | 1.398 s | 0.839 s |
+| Queue=32 RF-time horizon | 11.185 s | 6.711 s |
 | Raw bytes, two radios, 60 s | 2.88 GB | 4.80 GB |
-| Refills per radio, 60 s | 687 | 1,145 |
-| Metadata reserve, two radios at 4,096 B/refill | 5,627,904 B | 9,379,840 B |
+| Refills per radio, 60 s | 172 | 287 |
+| Metadata reserve, two radios at 4,096 B/refill | 1,409,024 B | 2,351,104 B |
 
-The memory allocation remains about 80 MiB per radio because refill and queue
-counts do not change. More buffering cannot fix a sustained transport deficit;
-it only covers bounded consumer stalls.
+The reviewed maximum-refill geometry reserves about 288 MiB per radio for the
+32-refill userspace queue plus four kernel buffers. More buffering cannot fix a
+sustained transport deficit; it only covers bounded consumer stalls.
 
 The immutable V1 writer-evidence contract retains its historical 72 MB/s pass
-semantics. V5 adds a stricter combined-pool admission rule: the same measured
+semantics. V6 adds a stricter combined-pool admission rule: the same measured
 incompressible result must reach at least 100 MB/s. Transport continuity and
 queue headroom remain independent gates.
 
@@ -299,7 +304,7 @@ queue headroom remain independent gates.
 - Load all new YAMLs as `CaptureProfileV2` and assert unique revision digests.
 - Resolve 60 seconds to exactly 180,000,000 samples at 3 MS/s and 300,000,000
   at 5 MS/s.
-- Assert dual RX, 262,144 refill samples, K=8, queue=32, metadata required,
+- Assert dual RX, 1,048,576 refill samples, K=4, queue=32, metadata required,
   explicit bandwidth, and the intended continuity policy/tags.
 - Assert all existing 2.5 MS/s profile digests and manifest round trips remain
   unchanged.
@@ -393,15 +398,16 @@ authorization phrase and its complete environment inventory. It accepts only
 literal native addresses in `192.168.1.0/24`; discovery cannot select a USB
 gadget address.
 
-The additive V5 promotion harness loads the exact deployed
-`starlink-ch4-lower-3m-60s-device-axis-v3` profile, whose canonical revision
+The additive V6 promotion harness loads the exact deployed
+`starlink-ch4-lower-3m-60s-native-bandwidth-v4` profile, whose canonical revision
 digest is
-`sha256:4533ac4a3348721e0bf7bda50c5701f505e47ef579ef9a47cbc7c38b9c9b4c3e`.
+`sha256:523402d005564d97177ee139f1a616c01b6b65d9a6c4ad11a0564c074216865c`.
 For the fixed ordered production radio IDs `radio_pluto_5d4d` and
 `radio_pluto_19f2`, it compiles plan digest
-`sha256:9fd011c1843213d3c699cadc2cb66d0cabecd804fc01b0ad0e45f3b8026fa8eb`.
+`sha256:3433d59a81dac88ab292f2eb19801915d0b91380dfea3df54acc41be6c36e2df`.
 The policy requires the exact sorted tag set `CAPTURE_ONLY`,
-`DEVICE_AXIS_ZERO_FILL`, `LIVE`, `RANDOM_TUNING`, and `STANDARD_NATIVE`.
+`DEVICE_AXIS_ZERO_FILL`, `LIVE`, `NATIVE_BANDWIDTH`, `RANDOM_TUNING`, and
+`STANDARD_NATIVE`.
 The production cutover verifier additionally binds those IDs to the exact
 serial/URI pairs:
 
@@ -421,7 +427,7 @@ rate on both radios and requires the largest passing refill to be exactly
 1,048,576 samples/channel with four kernel buffers. Every stream must use that
 refill, `bandwidth_hz == sample_rate_hz`, and the exact requested/applied IF
 center that maximizes captured in-channel bandwidth while retaining the
-selected edge pilot. Cutover requires V2 in addition to V5; 10 and
+selected edge pilot. Cutover requires V2 in addition to V6; 10 and
 15 MS/s remain disabled after their measured transport failures.
 
 Preflight verifies those identities and firmware, the exact Leo and
@@ -442,7 +448,7 @@ full-span 5 MS/s characterization; the required
 2. Compile the exact deployed 60-second device-axis profile for both fixed
    radio IDs.
 3. Run exactly ten simultaneous two-radio, 60-second native-IP captures through
-   the complete Leo recorder with K=8, queue=32, production compression, and
+   the complete Leo recorder with K=4, queue=32, production compression, and
    local target storage.
 4. Capture one exact deployed 60-second 5 MS/s Recording V3 bundle and verify
    its physical zero-fill, gap-map, validity, and full logical-span closure.
@@ -452,13 +458,13 @@ full-span 5 MS/s characterization; the required
 
 Every run must publish a Recording V3 manifest with exactly 180,000,000
 logical and observed samples per stream, zero zero-fill samples, one continuity
-segment, complete streams, and a committed session. The V5 receipt retains the
+segment, complete streams, and a committed session. The V6 receipt retains the
 ordered streams' observed/logical IQ, timeline, gap-map, and validity-inventory
 digests and requires the observed and logical IQ digests to match. It also
 requires zero gaps, missing samples, overflow, enqueue failures, and terminal
 rejections, at least 99% two-radio overlap, queue high-water no greater than
-24/32, and maximum refill service interval no greater than 699,050,666 ns. The
-V5 writer-capacity gate requires measured incompressible throughput of at least
+24/32, and maximum refill service interval no greater than 1,398,101,333 ns. The
+V6 writer-capacity gate requires measured incompressible throughput of at least
 100 MB/s; the immutable writer-evidence V1 pass bit retains its legacy 72 MB/s
 meaning.
 
@@ -466,7 +472,7 @@ Failed and incomplete evidence remains beneath `campaigns/`. Only a complete
 strict pass is copied atomically and read-only to the canonical accepted path:
 
 ```text
-/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v5.json
+/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v6.json
 ```
 
 `<LEO_REVISION>` is the full 40-character target Git SHA. Full deployment
@@ -475,7 +481,7 @@ the target revision. Operators must pass it through the front door; omitting
 the flag fails closed:
 
 ```bash
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v5.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v6.json"
 ./ops deploy --plan --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --rate-qualification-receipt "$rate_receipt"
 ```
@@ -492,10 +498,10 @@ finite libiio context timeout at every refill. Timeout and cancellation still
 flow through both-radio close, exact RX-setting restoration, and post-campaign
 TX-safe readback.
 
-V5 safety checks, native-IP canaries, and all durable Recording V3 trials are
+V6 safety checks, native-IP canaries, and all durable Recording V3 trials are
 bound to the production `.20`/`.21` pair. A separate USB pair with a different
 metadata ABI cannot prove the production Ethernet path and is deliberately not
-a V5 prerequisite. Production-radio safety evidence comes only from the
+a V6 prerequisite. Production-radio safety evidence comes only from the
 receipt-pinned host pyadi/pylibiio adapter: exact IIO identity and capabilities,
 fail-closed TX mute/readback on open and close, and independent RX-settings
 restoration readback. Qualification has no device-side shell, password, SSH
@@ -503,14 +509,14 @@ trust-store, or USB-control dependency.
 
 ### 5 MS/s characterization
 
-The combined V5 campaign runs exactly one 60-second two-radio native-IP
+The combined V6 campaign runs exactly one 60-second two-radio native-IP
 characterization through Leo. The gate passes on truthfulness, not on an
 expectation of continuity: any gap must have
 exact counter-derived evidence, force partial streams/degraded session state,
 materialize as literal physical zeros on the device-time axis, preserve a
 verifiable gap map and validity inventory, and suppress automatic analysis.
 Overflow, enqueue failure, a terminal rejected refill, a queue capacity other
-than 32, or queue high-water above 24 refills fails V5.
+than 32, or queue high-water above 24 refills fails V6.
 
 If bounded burst support is desired, separately repeat the exact proposed
 duration on each radio and then simultaneously. Promote only the tested

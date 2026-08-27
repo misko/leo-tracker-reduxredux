@@ -464,7 +464,7 @@ def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
 ) -> None:
     target = "2" * 40
     root = tmp_path / "accepted"
-    receipt = root / target / "contiguous-rate-qualification-receipt-v5.json"
+    receipt = root / target / "contiguous-rate-qualification-receipt-v6.json"
     receipt.parent.mkdir(parents=True)
     receipt.write_text('{"passed":true}\n')
     receipt.chmod(0o440)

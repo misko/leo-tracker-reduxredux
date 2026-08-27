@@ -1560,6 +1560,78 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
         release=release,
     )
 
+    v6_receipt = copy.deepcopy(v5_receipt)
+    v6_receipt["schema_version"] = 6
+    v6_target = v6_receipt["target"]
+    v6_target.update(
+        {
+            "schema_version": 6,
+            "qualification_id": f"native-ip-3m-v6-{revision[:12]}",
+            "profile_revision_digest": SCRIPT_GLOBALS[
+                "CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_PROFILE_DIGEST"
+            ],
+            "capture_plan_digest": SCRIPT_GLOBALS[
+                "CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_PLAN_DIGEST"
+            ],
+            "bandwidth_hz": 3_000_000,
+        }
+    )
+    v6_prerequisites = v6_target["prerequisites"]
+    v6_prerequisites["schema_version"] = 6
+    for canary in v6_prerequisites["native_ip_canaries"]:
+        canary["bandwidth_hz"] = 3_000_000
+    v6_five_m = v6_prerequisites["five_m_characterization"]
+    v6_five_m.update(
+        {
+            "schema_version": 2,
+            "profile_revision_digest": SCRIPT_GLOBALS[
+                "CONTIGUOUS_RATE_5M_NATIVE_BANDWIDTH_PROFILE_DIGEST"
+            ],
+            "capture_plan_digest": SCRIPT_GLOBALS[
+                "CONTIGUOUS_RATE_5M_NATIVE_BANDWIDTH_PLAN_DIGEST"
+            ],
+            "bandwidth_hz": 5_000_000,
+        }
+    )
+    v6_target["policy"].update(
+        {
+            "required_kernel_buffers": 4,
+            "maximum_refill_service_interval_ns": 1_398_101_333,
+            "required_tags": list(
+                SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_NATIVE_BANDWIDTH_REQUIRED_TAGS"]
+            ),
+        }
+    )
+    v6_receipt["target_digest"] = _canonical_target_digest(v6_target)
+    _call(
+        "verify_contiguous_rate_3m_receipt_v6",
+        v6_receipt,
+        revision=revision,
+        release=release,
+    )
+
+    narrow_v6 = copy.deepcopy(v6_receipt)
+    narrow_v6["target"]["bandwidth_hz"] = 2_500_000
+    narrow_v6["target_digest"] = _canonical_target_digest(narrow_v6["target"])
+    with pytest.raises(ValueError, match="native RF bandwidth plan"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v6",
+            narrow_v6,
+            revision=revision,
+            release=release,
+        )
+
+    narrow_five_m = copy.deepcopy(v6_receipt)
+    narrow_five_m["target"]["prerequisites"]["five_m_characterization"]["bandwidth_hz"] = 2_500_000
+    narrow_five_m["target_digest"] = _canonical_target_digest(narrow_five_m["target"])
+    with pytest.raises(ValueError, match="5 MS/s characterization"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v6",
+            narrow_five_m,
+            revision=revision,
+            release=release,
+        )
+
     new_removable_error = copy.deepcopy(v5_receipt)
     after_health = new_removable_error["target"]["prerequisites"]["host_health"]["after"]
     line = "I/O error, dev sdf, sector 266 op 0x0:(READ)"
@@ -2629,15 +2701,16 @@ def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
     assert "--soak-receipt" not in result.stderr
 
 
-def test_full_cutover_requires_canonical_v5_device_axis_rate_authority() -> None:
+def test_full_cutover_requires_canonical_v6_native_bandwidth_rate_authority() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     verify_source = text[text.index("def verify(args:") : text.index("\ndef main()")]
 
-    assert "contiguous-rate-qualification-receipt-v5.json" in verify_source
+    assert "contiguous-rate-qualification-receipt-v6.json" in verify_source
+    assert "contiguous-rate-qualification-receipt-v5.json" not in verify_source
     assert "contiguous-rate-qualification-receipt-v4.json" not in verify_source
     assert "contiguous-rate-qualification-receipt-v3.json" not in verify_source
     assert (
-        "verify_contiguous_rate_3m_receipt_v5(rate_receipt, revision=revision, release=release)"
+        "verify_contiguous_rate_3m_receipt_v6(rate_receipt, revision=revision, release=release)"
         in verify_source
     )
     assert "native-bandwidth-qualification-receipt-v2.json" in verify_source

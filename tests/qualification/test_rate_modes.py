@@ -43,23 +43,27 @@ from leo.qualification.host_health import (
 from leo.qualification.rate_modes import (
     ContiguousRateDeviceAxisCharacterizationStreamV1,
     ContiguousRateDeviceAxisCharacterizationV1,
+    ContiguousRateDeviceAxisCharacterizationV2,
     ContiguousRateNativeIpCanaryEvidenceV1,
     ContiguousRatePrerequisitesV1,
     ContiguousRatePrerequisitesV2,
     ContiguousRatePrerequisitesV3,
     ContiguousRatePrerequisitesV4,
     ContiguousRatePrerequisitesV5,
+    ContiguousRatePrerequisitesV6,
     ContiguousRateQualificationPolicyV1,
     ContiguousRateQualificationReceiptV1,
     ContiguousRateQualificationReceiptV2,
     ContiguousRateQualificationReceiptV3,
     ContiguousRateQualificationReceiptV4,
     ContiguousRateQualificationReceiptV5,
+    ContiguousRateQualificationReceiptV6,
     ContiguousRateQualificationTargetV1,
     ContiguousRateQualificationTargetV2,
     ContiguousRateQualificationTargetV3,
     ContiguousRateQualificationTargetV4,
     ContiguousRateQualificationTargetV5,
+    ContiguousRateQualificationTargetV6,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV1,
@@ -278,12 +282,13 @@ def _capture_v3(
     tmp_path: Path,
     *,
     gap_radio_a: bool = False,
+    native_bandwidth: bool = False,
 ) -> tuple[RecordingManifestV3, str]:
     profile = CaptureProfileV2(
         name="rate-3000000-device-axis-qualification-test",
         center_frequency_hz=1_700_000_000,
         sample_rate_hz=3_000_000,
-        bandwidth_hz=2_500_000,
+        bandwidth_hz=3_000_000 if native_bandwidth else 2_500_000,
         receivers=(0, 1),
         gain_mode=GainMode.MANUAL,
         gains=(
@@ -301,10 +306,11 @@ def _capture_v3(
             "CAPTURE_ONLY",
             "DEVICE_AXIS_ZERO_FILL",
             "LIVE",
+            *(("NATIVE_BANDWIDTH",) if native_bandwidth else ()),
             "RANDOM_TUNING",
             "STANDARD_NATIVE",
         ),
-        kernel_buffers=8,
+        kernel_buffers=4 if native_bandwidth else 8,
         refill_queue_capacity=32,
     )
     plan = compile_capture_plan(
@@ -590,6 +596,43 @@ def _target_v5(
             writer_benchmark=prerequisites.writer_benchmark,
             host_health=host_health or _host_health_v2(),
             five_m_characterization=prerequisites.five_m_characterization,
+        ),
+    )
+
+
+def _target_v6(
+    manifest: RecordingManifestV3,
+    *,
+    required_trial_count: int = 1,
+) -> ContiguousRateQualificationTargetV6:
+    v4 = _target_v4(manifest, required_trial_count=required_trial_count)
+    prerequisites = v4.prerequisites
+    characterization_document = prerequisites.five_m_characterization.model_dump(mode="json")
+    characterization_document.update({"schema_version": 2, "bandwidth_hz": 5_000_000})
+    characterization = ContiguousRateDeviceAxisCharacterizationV2.model_validate(
+        characterization_document
+    )
+    return ContiguousRateQualificationTargetV6(
+        **v4.model_dump(exclude={"schema_version", "qualification_id", "prerequisites", "policy"}),
+        qualification_id="rate-3000000-device-axis-v6",
+        prerequisites=ContiguousRatePrerequisitesV6(
+            radio_safety=prerequisites.radio_safety,
+            native_ip_canaries=prerequisites.native_ip_canaries,
+            writer_benchmark=prerequisites.writer_benchmark,
+            host_health=_host_health_v2(),
+            five_m_characterization=characterization,
+        ),
+        policy=ContiguousRateQualificationPolicyV1(
+            required_trial_count=required_trial_count,
+            required_kernel_buffers=4,
+            required_tags=(
+                "CAPTURE_ONLY",
+                "DEVICE_AXIS_ZERO_FILL",
+                "LIVE",
+                "NATIVE_BANDWIDTH",
+                "RANDOM_TUNING",
+                "STANDARD_NATIVE",
+            ),
         ),
     )
 
@@ -893,6 +936,67 @@ def test_v5_adds_scoped_host_health_without_reinterpreting_v4(tmp_path: Path) ->
     )
     with pytest.raises(TypeError, match="V4/V5"):
         evaluate_contiguous_rate(target, (), created_utc_ns=1)
+
+
+def test_v6_binds_full_native_bandwidth_without_reinterpreting_v5(tmp_path: Path) -> None:
+    manifest, digest = _capture_v3(tmp_path, native_bandwidth=True)
+    target = _target_v6(manifest)
+
+    receipt = evaluate_device_axis_contiguous_rate(
+        target,
+        (_trial_v2(manifest, digest),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+
+    assert isinstance(receipt, ContiguousRateQualificationReceiptV6)
+    assert receipt.complete and receipt.passed
+    assert receipt.schema_version == receipt.target.schema_version == 6
+    assert receipt.target.bandwidth_hz == receipt.target.sample_rate_hz == 3_000_000
+    assert receipt.target.policy.required_kernel_buffers == 4
+    assert receipt.target.prerequisites.five_m_characterization.bandwidth_hz == 5_000_000
+    assert (
+        ContiguousRateQualificationReceiptV6.model_validate_json(receipt.model_dump_json())
+        == receipt
+    )
+    with pytest.raises(TypeError, match="V4/V5/V6"):
+        evaluate_contiguous_rate(target, (), created_utc_ns=1)
+
+    requested = receipt.checks[0]
+    assert requested.passed
+
+
+def test_v6_rejects_narrow_or_nonidentical_rf_settings(tmp_path: Path) -> None:
+    manifest, digest = _capture_v3(tmp_path, native_bandwidth=True)
+    target = _target_v6(manifest)
+
+    document = target.model_dump(mode="json")
+    document["bandwidth_hz"] = 2_500_000
+    with pytest.raises(ValidationError, match="canary settings differ|RF bandwidth equal"):
+        ContiguousRateQualificationTargetV6.model_validate(document)
+
+    altered_manifest = manifest.model_copy(
+        update={
+            "streams": (
+                manifest.streams[0].model_copy(
+                    update={
+                        "applied_settings": manifest.streams[0].applied_settings.model_copy(
+                            update={"center_frequency_hz": 1_700_000_001}
+                        )
+                    }
+                ),
+                manifest.streams[1],
+            )
+        }
+    )
+    receipt = evaluate_device_axis_contiguous_rate(
+        target,
+        (_trial_v2(altered_manifest, digest),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+    assert not receipt.passed
+    assert "radio-a: applied radio settings differ from exact requested settings" in (
+        receipt.checks[0].errors
+    )
 
 
 def test_v4_rejects_gap_fill_and_unverified_device_axis_evidence(tmp_path: Path) -> None:
