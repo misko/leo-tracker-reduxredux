@@ -37,7 +37,7 @@ from leo.contracts.validity import ContinuitySegmentV1, ValidityInventoryV1
 from leo.domain.iq import IqBlock
 from leo.pipeline.validity import DeviceIqSpan, WindowClassification, WindowValidity
 
-_RATES_HZ = (2_500_000, 3_000_000, 5_000_000)
+_RATES_HZ = (2_500_000, 3_000_000, 5_000_000, 10_000_000)
 _CENTER_HZ = 959_687_500
 _PILOT_EPOCH_S = 0.0002
 _CFO_INTERCEPT_HZ = 40_000.0
@@ -57,7 +57,10 @@ _TRAJECTORY_CFO_TOLERANCE_HZ = 35.0
 _TRAJECTORY_RATE_TOLERANCE_HZ_S = 75.0
 _PHASE_TOLERANCE_RAD = 0.08
 _QAM_ACCURACY_TOLERANCE = Decimal("0.001")
-_QAM_EVM_TOLERANCE = Decimal("0.11")
+# Direct 2.5M and 10M grids use 11 versus 44 samples per 4.4 us symbol.
+# The same demodulator therefore has a bounded, expected interpolation/quantization
+# spread without changing the physical signal or resampling either input.
+_QAM_EVM_TOLERANCE = Decimal("0.125")
 
 
 @dataclass(frozen=True, slots=True)

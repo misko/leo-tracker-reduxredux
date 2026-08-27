@@ -15,7 +15,7 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileRevisionV2
-from leo.contracts.recording import RecordingManifestV3, RecordingStreamV1
+from leo.contracts.recording import RecordingManifestV3, RecordingManifestV4, RecordingStreamV1
 from leo.contracts.states import (
     CaptureState,
     GainMode,
@@ -664,9 +664,9 @@ class CaptureModeAcceptanceHarness:
             errors.append(f"bundle verification failed: {type(error).__name__}: {error}")
 
         manifest = bundle.manifest
-        if isinstance(manifest, RecordingManifestV3):
+        if isinstance(manifest, (RecordingManifestV3, RecordingManifestV4)):
             errors.append(
-                "capture-mode acceptance V1 does not support device-axis RecordingManifestV3"
+                "capture-mode acceptance V1 does not support device-axis recording manifests"
             )
             return CaptureModeSessionCheckV1(
                 role=role,

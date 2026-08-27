@@ -23,6 +23,7 @@ from leo.acquisition import (
     RadioBusyError,
     RadioResource,
 )
+from leo.contracts.mixed_rate_schedule import ProductionDwellClass
 from leo.contracts.profile import (
     CaptureProfileRevisionV1,
     CaptureProfileRevisionV2,
@@ -36,6 +37,7 @@ from leo.contracts.recording import (
     ContinuitySummaryV2,
     RecordingManifestV2,
     RecordingManifestV3,
+    RecordingManifestV4,
 )
 from leo.contracts.states import (
     CaptureState,
@@ -43,10 +45,12 @@ from leo.contracts.states import (
     GainMode,
     PeerFailurePolicy,
     SourceType,
+    StarlinkEdge,
     StreamState,
     TimingMethod,
 )
 from leo.domain.iq import IqBlock
+from leo.domain.mixed_rate_capture import compile_mixed_rate_capture_plan_v3
 from leo.domain.profiles import compile_capture_plan
 from leo.processing.continuity import iter_masked_device_iq
 from leo.radio.fake import FakeRadioSource
@@ -116,6 +120,7 @@ def _device_axis_plan(
     sample_rate_hz: int = 2_500_000,
     refill_samples: int = 4,
     queue_capacity: int = 32,
+    native_bandwidth: bool = False,
 ):
     base = _plan(
         radio_ids=radio_ids,
@@ -129,7 +134,12 @@ def _device_axis_plan(
             "name": "continuity-device-axis-v3-test",
             "storage_policy": DEVICE_AXIS_STORAGE_POLICY_V1,
             "peer_failure_policy": PeerFailurePolicy.FAIL_SESSION,
-            "tags": ("CAPTURE_ONLY", "DEVICE_AXIS_ZERO_FILL", "LIVE"),
+            "tags": (
+                "CAPTURE_ONLY",
+                "DEVICE_AXIS_ZERO_FILL",
+                "LIVE",
+                *(("NATIVE_BANDWIDTH",) if native_bandwidth else ()),
+            ),
         }
     )
     return compile_capture_plan(
@@ -148,6 +158,54 @@ def _device_axis_coordinator(tmp_path: Path) -> AcquisitionCoordinator:
         ),
         config=AcquisitionConfig(safety_reserve_bytes=0),
         free_bytes=lambda _path: 10**12,
+    )
+
+
+def _mixed_rate_plan(high_rate_hz: int):
+    duration = Decimal("0.000004")
+
+    def revision(rate_hz: int) -> CaptureProfileRevisionV2:
+        return CaptureProfileRevisionV2.from_profile(
+            CaptureProfileV2(
+                name=f"mixed-{rate_hz}-test",
+                center_frequency_hz=1_700_000_000,
+                sample_rate_hz=rate_hz,
+                bandwidth_hz=rate_hz,
+                receivers=(0, 1),
+                gain_mode=GainMode.MANUAL,
+                gains=(
+                    ReceiverGainV1(receiver_id=0, gain_db=30.0),
+                    ReceiverGainV1(receiver_id=1, gain_db=30.0),
+                ),
+                duration_seconds=duration,
+                refill_samples=4,
+                settle_seconds=Decimal(0),
+                prime_refills=0,
+                kernel_buffers=8,
+                refill_queue_capacity=32,
+                continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+                synchronization_mode="best_effort",
+                peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+                storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+                tags=("CAPTURE_ONLY", "DEVICE_AXIS_ZERO_FILL", "LIVE", "MIXED_RATE"),
+            )
+        )
+
+    dwell_class = {
+        5_000_000: ProductionDwellClass.MIXED_2P5_5,
+        10_000_000: ProductionDwellClass.MIXED_2P5_10,
+        15_000_000: ProductionDwellClass.MIXED_2P5_15,
+    }[high_rate_hz]
+    return compile_mixed_rate_capture_plan_v3(
+        dwell_class=dwell_class,
+        radio_ids=("radio-a", "radio-b"),
+        profile_revisions_by_radio={
+            "radio-a": revision(2_500_000),
+            "radio-b": revision(high_rate_hz),
+        },
+        starlink_channel=3,
+        starlink_edge=StarlinkEdge.UPPER,
+        source_type=SourceType.LIVE,
     )
 
 
@@ -284,7 +342,7 @@ def test_v2_rate_mode_applies_one_exact_rate_to_both_radios(
     )
 
 
-@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000))
+@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000, 10_000_000))
 def test_device_axis_v3_lossless_capture_has_one_fixed_logical_iq_length(
     tmp_path: Path,
     sample_rate_hz: int,
@@ -310,6 +368,31 @@ def test_device_axis_v3_lossless_capture_has_one_fixed_logical_iq_length(
     span = coordinator.store.reader(inspected, "stream-0").read_device_span(0, 12)
     assert span.valid_samples.all()
     assert set(span.continuity_segment_ids) == {0}
+
+
+def test_native_bandwidth_v3_rejects_even_one_hz_of_bandwidth_readback_drift(
+    tmp_path: Path,
+) -> None:
+    class ShiftedReadbackRadio(FakeRadioSource):
+        def configure(self, settings: RadioSettingsV1) -> RadioSettingsV1:
+            super().configure(settings)
+            return settings.model_copy(update={"bandwidth_hz": settings.bandwidth_hz - 1})
+
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _device_axis_plan(
+            sample_count=12,
+            sample_rate_hz=10_000_000,
+            native_bandwidth=True,
+        ),
+        {"radio-a": ShiftedReadbackRadio("radio-a")},
+        session_id="native-bandwidth-rf-readback-drift",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.bundle is None
+    assert any("bandwidth_hz readback mismatch" in error for error in result.errors)
+    assert not coordinator.store.reconcile().committed
 
 
 def test_device_axis_v3_internal_gap_is_physically_zero_filled_and_masked(
@@ -1263,3 +1346,60 @@ def test_storage_writer_independently_rejects_false_contiguous_declaration(
     stream.abort()
     bundle.close()
     radio.close()
+
+
+@pytest.mark.parametrize("high_rate_hz", (5_000_000, 10_000_000, 15_000_000))
+def test_mixed_rate_capture_publishes_exact_per_radio_device_axes(
+    tmp_path: Path,
+    high_rate_hz: int,
+) -> None:
+    plan = _mixed_rate_plan(high_rate_hz)
+    coordinator = _device_axis_coordinator(tmp_path)
+
+    result = coordinator.capture_once(
+        plan,
+        {
+            "radio-a": FakeRadioSource("radio-a", seed=1),
+            "radio-b": FakeRadioSource("radio-b", seed=2),
+        },
+        session_id=f"mixed-{high_rate_hz}",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert isinstance(result.manifest, RecordingManifestV4)
+    assert tuple(stream.applied_settings.sample_rate_hz for stream in result.manifest.streams) == (
+        2_500_000,
+        high_rate_hz,
+    )
+    assert tuple(stream.logical_sample_count for stream in result.manifest.streams) == (
+        10,
+        high_rate_hz * 4 // 1_000_000,
+    )
+    assert result.manifest.synchronization.stream_ids == ("stream-0", "stream-1")
+    assert coordinator.store.verify(f"mixed-{high_rate_hz}").validity_inventory_count == 2
+
+
+def test_mixed_rate_capture_rejects_even_one_hz_of_rf_readback_drift(
+    tmp_path: Path,
+) -> None:
+    class ShiftedReadbackRadio(FakeRadioSource):
+        def configure(self, settings: RadioSettingsV1) -> RadioSettingsV1:
+            super().configure(settings)
+            return settings.model_copy(
+                update={"center_frequency_hz": settings.center_frequency_hz + 1}
+            )
+
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _mixed_rate_plan(10_000_000),
+        {
+            "radio-a": FakeRadioSource("radio-a"),
+            "radio-b": ShiftedReadbackRadio("radio-b"),
+        },
+        session_id="mixed-rf-readback-drift",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.bundle is None
+    assert any("center_frequency_hz readback mismatch" in error for error in result.errors)
+    assert not coordinator.store.reconcile().committed

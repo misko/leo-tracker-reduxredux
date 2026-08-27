@@ -1,6 +1,7 @@
 import type {
   StandardReplayAuditV1,
   StandardNativePngArtifactInventoryV4,
+  StandardNativePngArtifactInventoryV5,
   StandardTrackGateAuditV1,
   StandardPlotView,
   StandardSubjectDetail,
@@ -123,7 +124,7 @@ export async function getStandardNativePngArtifactInventory(
   subjectId: string,
   includeTest: boolean,
   signal?: AbortSignal,
-): Promise<StandardNativePngArtifactInventoryV4 | null> {
+): Promise<StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | null> {
   const params = new URLSearchParams({ include_test: String(includeTest) });
   const response = await fetch(
     `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/artifacts?${params}`,

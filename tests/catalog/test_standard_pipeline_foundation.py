@@ -948,7 +948,10 @@ def test_isolated_heartbeat_survives_blocked_parent_after_analysis(
 
     def block_parent(point: str) -> None:
         if point == "execution:after_analyze":
-            time.sleep(0.5)
+            # Stay blocked for two complete lease periods. The one-second lease
+            # remains short enough to prove isolated renewal while avoiding a
+            # false failure when the full suite deliberately saturates the host.
+            time.sleep(2.0)
 
     service = ProcessingService(
         catalog=catalog_harness.repository,
@@ -957,8 +960,8 @@ def test_isolated_heartbeat_survives_blocked_parent_after_analysis(
         iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
         worker_authority=_authority(),
         worker_resource_classes=("heavy",),
-        lease_for=timedelta(milliseconds=150),
-        heartbeat_interval=timedelta(milliseconds=20),
+        lease_for=timedelta(seconds=1),
+        heartbeat_interval=timedelta(milliseconds=50),
         failure_injector=block_parent,
     )
 

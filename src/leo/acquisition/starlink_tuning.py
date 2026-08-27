@@ -7,21 +7,29 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
+import leo.contracts.starlink_frequency as _starlink_frequency
 from leo.contracts.profile import CaptureProfileV1
 from leo.contracts.radio import RadioSettingsV1
 from leo.contracts.states import GainMode, StarlinkEdge
 
 RandBelow = Callable[[int], int]
 
-# Complete Qin/Starlink Ku downlink channel authority. Live acquisition remains
-# deliberately bounded to the separately named capture subset until channels
-# 5-8 are enabled against the supported RF hardware.
-SUPPORTED_STARLINK_CHANNELS = tuple(range(1, 9))
+# Compatibility exports keep the existing acquisition import surface while the
+# contract and compiler now share one canonical frequency authority.
+STARLINK_CHANNEL_OCCUPIED_BANDWIDTH_HZ = _starlink_frequency.STARLINK_CHANNEL_OCCUPIED_BANDWIDTH_HZ
+STARLINK_CHANNEL_SPACING_HZ = _starlink_frequency.STARLINK_CHANNEL_SPACING_HZ
+STARLINK_LNB_LO_HZ = _starlink_frequency.STARLINK_LNB_LO_HZ
+SUPPORTED_STARLINK_CHANNELS = _starlink_frequency.SUPPORTED_STARLINK_CHANNELS
+starlink_channel_if_bounds_hz = _starlink_frequency.starlink_channel_if_bounds_hz
+starlink_edge_if_center_frequency_hz = _starlink_frequency.starlink_edge_if_center_frequency_hz
+starlink_edge_rf_center_frequency_hz = _starlink_frequency.starlink_edge_rf_center_frequency_hz
+starlink_maximum_coverage_if_center_frequency_hz = (
+    _starlink_frequency.starlink_maximum_coverage_if_center_frequency_hz
+)
+
+# Live acquisition remains deliberately bounded to the separately named capture
+# subset until channels 5-8 are enabled against the supported RF hardware.
 CAPTURE_STARLINK_CHANNELS = tuple(range(1, 5))
-STARLINK_LNB_LO_HZ = 9_750_000_000
-STARLINK_CHANNEL_SPACING_HZ = 250_000_000
-_FIRST_LOWER_EDGE_RF_CENTER_HZ = 10_709_687_500
-_FIRST_UPPER_EDGE_RF_CENTER_HZ = 10_940_312_500
 
 
 class PairedTuningBranch(StrEnum):
@@ -60,7 +68,11 @@ class PairedStarlinkTuning:
         gain_modes = dict(self.radio_gain_modes)
         return {
             radio_id: RadioSettingsV1(
-                center_frequency_hz=tuning.center_frequency_hz,
+                center_frequency_hz=starlink_maximum_coverage_if_center_frequency_hz(
+                    tuning.channel,
+                    tuning.edge,
+                    bandwidth_hz=profile.bandwidth_hz,
+                ),
                 sample_rate_hz=profile.sample_rate_hz,
                 bandwidth_hz=profile.bandwidth_hz,
                 receiver_ids=profile.receivers,
@@ -69,31 +81,6 @@ class PairedStarlinkTuning:
             )
             for radio_id, tuning in self.radio_tunings
         }
-
-
-def starlink_edge_rf_center_frequency_hz(
-    channel: int,
-    edge: StarlinkEdge | str,
-) -> int:
-    """Return the RF center of one published eight-tone edge-pilot band."""
-
-    _validate_channel(channel)
-    selected_edge = StarlinkEdge(edge)
-    first_hz = (
-        _FIRST_LOWER_EDGE_RF_CENTER_HZ
-        if selected_edge is StarlinkEdge.LOWER
-        else _FIRST_UPPER_EDGE_RF_CENTER_HZ
-    )
-    return first_hz + (channel - 1) * STARLINK_CHANNEL_SPACING_HZ
-
-
-def starlink_edge_if_center_frequency_hz(
-    channel: int,
-    edge: StarlinkEdge | str,
-) -> int:
-    """Return the IF center after the repository's documented 9.75 GHz LO."""
-
-    return starlink_edge_rf_center_frequency_hz(channel, edge) - STARLINK_LNB_LO_HZ
 
 
 def sample_paired_starlink_tuning(
@@ -151,15 +138,6 @@ def _tuning(channel: int, edge: StarlinkEdge) -> StarlinkTuning:
         edge=edge,
         center_frequency_hz=starlink_edge_if_center_frequency_hz(channel, edge),
     )
-
-
-def _validate_channel(channel: int) -> None:
-    if isinstance(channel, bool) or not isinstance(channel, int):
-        raise TypeError("Starlink channel must be an integer")
-    if channel not in SUPPORTED_STARLINK_CHANNELS:
-        raise ValueError(
-            f"Starlink channel must be one of {SUPPORTED_STARLINK_CHANNELS}; got {channel}"
-        )
 
 
 def _opposite(edge: StarlinkEdge) -> StarlinkEdge:

@@ -339,7 +339,7 @@ def test_capture_mode_harness_fails_closed_on_device_axis_v3(tmp_path: Path) -> 
     assert all(check.digest_valid and not check.passed for check in receipt.checks)
     assert all(
         check.errors
-        == ("capture-mode acceptance V1 does not support device-axis RecordingManifestV3",)
+        == ("capture-mode acceptance V1 does not support device-axis recording manifests",)
         for check in receipt.checks
     )
     assert all(check.observed_sample_counts == () for check in receipt.checks)

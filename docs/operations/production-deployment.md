@@ -346,7 +346,8 @@ systemctl show --no-pager -p Id -p LoadState -p ActiveState -p SubState \
 # The qualification boundary is the staged release's receipt-pinned
 # pyadi/pylibiio adapter. It does not require or permit device-side shell access.
 sudo install -d -o root -g leo -m 0750 \
-  /srv/bulk/leo/qualification/sample-rate-3m
+  /srv/bulk/leo/qualification/sample-rate-3m \
+  /srv/bulk/leo/qualification/native-bandwidth
 
 # After populating the hardware harness's required authorization and exact
 # production-radio identity environment, run its combined ten-trial 3M plus
@@ -358,6 +359,19 @@ sudo --preserve-env \
   "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -B -m pytest \
   -ra -s -p no:cacheprovider \
   "/opt/leo-tracker/releases/$release_revision/tests/acquisition/test_pluto_rate_modes_hardware.py"
+
+# Run the separate bounded native-bandwidth campaign. It uses the maximum
+# 4,194,304-sample paired-RX refill, exactly four kernel buffers, and only
+# 192.168.1.20/.21. It qualifies ordinary 2.5/3/5 MS/s and mixed 2.5/5 MS/s
+# with each radio taking the 5 MS/s role once. The exact RF bandwidth equals
+# native sample rate and the IF center maximizes in-channel coverage while
+# retaining the selected edge pilot.
+sudo --preserve-env \
+  /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
+  -u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1 \
+  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -B -m pytest \
+  -ra -s -p no:cacheprovider \
+  "/opt/leo-tracker/releases/$release_revision/tests/acquisition/test_pluto_native_bandwidth_hardware.py::test_native_ip_plutos_qualify_enabled_native_bandwidth_pool"
 
 required_keys=(
   LEO_DATABASE_URL LEO_PIPELINE_RELEASE_ID LEO_CAPTURE_PROFILE
@@ -379,6 +393,8 @@ sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
 rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v5.json"
+native_bandwidth_receipt="/srv/bulk/leo/qualification/native-bandwidth/accepted/$release_revision/native-bandwidth-qualification-receipt-v1.json"
+sudo test -r "$native_bandwidth_receipt"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```

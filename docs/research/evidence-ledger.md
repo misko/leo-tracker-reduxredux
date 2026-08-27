@@ -19,8 +19,8 @@ Chronology alone does not tell a reader which conclusion still governs.
 
 This page maps each current scientific claim to its strongest versioned
 evidence, controls, caveats, implementation status, and next falsifier. In the
-campaign-finalization tree, it also indexes all 132 tracked Markdown assets
-under `reports/`: 121 top-level reports, seven documents in the post-refill
+campaign-finalization tree, it also indexes all 133 tracked Markdown assets
+under `reports/`: 122 top-level reports, seven documents in the post-refill
 retrospective bundle, three scanner-rendered samples, and one TLE figure
 README. Canonical concept and pipeline pages link here for provenance; reports
 remain dated receipts.
@@ -179,7 +179,7 @@ catalog incompleteness, timing uncertainty, and signal-model error remain live.
 
 ## Versioned report index
 
-This path-exhaustive index covers the 132 tracked Markdown assets counted above.
+This path-exhaustive index covers the 133 tracked Markdown assets counted above.
 It assigns detailed present roles to the strongest sources and a compact role
 to the remaining tracked receipts. “Supporting” means a report contributes
 evidence or design context; it does not mean every historical conclusion is
@@ -401,6 +401,10 @@ documents establish scope or chronology rather than an outcome.
 - [Retrospective satellite-nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md) — four finite rankings, 0/4 evidence passes, and zero secure identities.
 - [Retrospective TLE replay-durability addendum](../../reports/2026_08_26_retrospective_satellite_nuisance_tle_durability_addendum.md) — post-outcome input-authority repair with sealed science unchanged.
 
+#### 2026-08-27 post-refill switching receipt
+
+- [Post-refill upper/lower switching replay](../../reports/2026_08_27_post_refill_edge_switching.md) — conditional fixed-radio product-availability replay and explicit plan for a bounded held-out switching test; not a Fast Lock or satellite-identity result.
+
 ### Auxiliary versioned Markdown assets
 
 - [TLE figure data README](../../reports/figures/2026_08_21_tle_doppler_alignment/README.md)
@@ -430,7 +434,7 @@ The original ledger synthesis recorded four unversioned local draft reports:
 - `2026_08_22_thirteen_dwell_degree1_rerun.md`.
 
 Those exact paths are not tracked in the campaign-finalization tree and are not
-part of the 132-asset count or path-exhaustive index. Their stronger basin,
+part of the 133-asset count or path-exhaustive index. Their stronger basin,
 replay-slope, and multi-dwell association interpretations remain excluded from
 durable project authority. Similarly named tracked follow-on reports have
 their own indexed receipts and must not be treated as publication of these

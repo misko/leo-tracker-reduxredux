@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from leo.acquisition import AcquisitionApplication, AdmissionEstimate, CaptureSessionResult
 from leo.contracts.profile import CapturePlanV1
-from leo.contracts.recording import RecordingManifestV1, RecordingManifestV3
+from leo.contracts.recording import RecordingManifestV1, RecordingManifestV3, RecordingManifestV4
 from leo.contracts.states import CaptureState, StreamState
 from leo.radio import RadioSource
 from leo.storage import BundleNotFoundError, PublishedBundle, RecordingStore
@@ -608,6 +608,8 @@ class AcquisitionSoakHarness:
         result_errors: tuple[str, ...],
     ) -> SoakTrialEvidenceV1:
         manifest = bundle.manifest
+        if isinstance(manifest, RecordingManifestV4):
+            raise TypeError("legacy acquisition soak does not accept mixed-rate manifests")
         verification_error = None
         try:
             self.store.verify(bundle)

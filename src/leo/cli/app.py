@@ -271,6 +271,13 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             int | None,
             typer.Option("--max-captures", min=1, help="Stop after N captures."),
         ] = None,
+        mixed_rate_policy: Annotated[
+            str,
+            typer.Option(
+                "--mixed-rate-policy",
+                help="Durable mixed-rate dwell policy ID, or disabled.",
+            ),
+        ] = "disabled",
         json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
     ) -> None:
         cancel = Event()
@@ -291,6 +298,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 interval_seconds=interval_seconds,
                 maximum_captures=maximum_captures,
                 cancel=cancel,
+                mixed_rate_policy=(None if mixed_rate_policy == "disabled" else mixed_rate_policy),
             )
 
         _execute(

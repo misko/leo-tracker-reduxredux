@@ -5,20 +5,28 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from leo.contracts.digests import canonical_digest
+from leo.contracts.mixed_rate_schedule import ProductionDwellClass
 from leo.contracts.pipeline_lanes import PipelineDefinitionV1, PipelineLane
-from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3
+from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3, RecordingManifestV4
 from leo.contracts.standard_pipeline import resolve_manifest_starlink_tuning
+from leo.contracts.starlink_frequency import (
+    starlink_maximum_coverage_if_center_frequency_hz,
+)
 from leo.contracts.states import CaptureState, GainMode, SourceType, StarlinkEdge, StreamState
 from leo.pipeline.contracts import ResourceClass
 from leo.pipeline.planning import ExpandedRunPlanV1, IqAccess, JobDependencyRefV1, JobNodeV1
 from leo.pipeline.scopes import ScopeIdentityV1
 from leo.pipeline.topology import CompiledScopeInventory, compile_scope_inventory
 
-STANDARD_NATIVE_SAMPLE_RATES_HZ = (2_500_000, 3_000_000, 5_000_000)
+STANDARD_NATIVE_SAMPLE_RATES_HZ = (2_500_000, 3_000_000, 5_000_000, 10_000_000)
 STANDARD_NATIVE_PROFILE_RATE_HZ = {
     "starlink-ch4-lower-2p5m-60s-device-axis-v3": 2_500_000,
     "starlink-ch4-lower-3m-60s-device-axis-v3": 3_000_000,
     "starlink-ch4-lower-5m-60s-device-axis-v3": 5_000_000,
+    "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4": 2_500_000,
+    "starlink-ch4-lower-3m-60s-native-bandwidth-v4": 3_000_000,
+    "starlink-ch4-lower-5m-60s-native-bandwidth-v4": 5_000_000,
+    "starlink-ch4-lower-10m-60s-native-bandwidth-v4": 10_000_000,
 }
 STANDARD_NATIVE_PROFILE_REVISION_DIGESTS = {
     "starlink-ch4-lower-2p5m-60s-device-axis-v3": (
@@ -30,6 +38,31 @@ STANDARD_NATIVE_PROFILE_REVISION_DIGESTS = {
     "starlink-ch4-lower-5m-60s-device-axis-v3": (
         "sha256:8851c20e4c6e79bc5d4cb92f8fd0e09eaf24e59b742239b92bc248fd4d09ba5d"
     ),
+    "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4": (
+        "sha256:fd7ebe29c1ed6bb9b85da0d35e2ce348af3f1a885dd53546e68a5f530dac9cba"
+    ),
+    "starlink-ch4-lower-3m-60s-native-bandwidth-v4": (
+        "sha256:3964c526cdd6fc6228bedc3f2b066bd0b7aac14d03d9f699e79fb52a0cab4907"
+    ),
+    "starlink-ch4-lower-5m-60s-native-bandwidth-v4": (
+        "sha256:37c144b63573556c70fd06bcc5a394a33a7070d6c99b519154b750bcdbd0dcd4"
+    ),
+    "starlink-ch4-lower-10m-60s-native-bandwidth-v4": (
+        "sha256:95b4638d612774fc2c743fceb9e6225f70331bff4fe835b6f2cef352987925bb"
+    ),
+}
+STANDARD_NATIVE_MIXED_PROFILE_REVISION_DIGESTS = {
+    2_500_000: "sha256:df2a9d8c76f03a8f5e062b6ff62d5fb5650213b5738828b8fa5ae72fef3ee2d2",
+    5_000_000: "sha256:ff8cc094a9f692352b354619fe479fd6f0e970304123706f409ff1a4af55d404",
+    10_000_000: "sha256:4a5614b3bbbe6fb0912858489a49b2326bacfca3466a73c619d75f554b0719c8",
+}
+STANDARD_NATIVE_MIXED_REFILL_SAMPLES = 4_194_304
+STANDARD_NATIVE_MIXED_KERNEL_BUFFERS = 4
+STANDARD_NATIVE_MIXED_QUEUE_CAPACITY = 32
+STANDARD_NATIVE_MIXED_PROFILE_NAMES = {
+    2_500_000: "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+    5_000_000: "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
+    10_000_000: "starlink-ch4-lower-10m-60s-mixed-device-axis-v4",
 }
 
 
@@ -108,7 +141,7 @@ def standard_native_pipeline_definition_v1(
 
 
 def compile_standard_native_run_plan(
-    manifest: RecordingManifestV2 | RecordingManifestV3,
+    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4,
     *,
     manifest_digest: str,
     pipeline_release_id: str,
@@ -231,14 +264,16 @@ def compile_standard_native_run_plan(
 
 
 def compile_standard_native_scope_inventory(
-    manifest: RecordingManifestV2 | RecordingManifestV3,
+    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4,
 ) -> CompiledScopeInventory:
     """Build native scopes while preserving historical V2 synchronization identity."""
 
     if isinstance(manifest, RecordingManifestV2):
         return compile_scope_inventory(manifest)
-    if not isinstance(manifest, RecordingManifestV3):
-        raise ValueError("Standard-native scope inventory requires a reviewed V2 or V3 recording")
+    if not isinstance(manifest, (RecordingManifestV3, RecordingManifestV4)):
+        raise ValueError(
+            "Standard-native scope inventory requires a reviewed V2, V3, or V4 recording"
+        )
     ordered = tuple(
         sorted(manifest.streams, key=lambda item: (item.stream_id, item.radio.radio_id))
     )
@@ -303,13 +338,16 @@ def compile_standard_native_scope_inventory(
 
 
 def _require_reviewed_native_geometry(
-    manifest: RecordingManifestV2 | RecordingManifestV3,
+    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4,
 ) -> None:
     if isinstance(manifest, RecordingManifestV2):
         _require_reviewed_historical_v2_geometry(manifest)
         return
+    if isinstance(manifest, RecordingManifestV4):
+        _require_reviewed_mixed_v4_geometry(manifest)
+        return
     if not isinstance(manifest, RecordingManifestV3):
-        raise ValueError("Standard-native expanded runs require a reviewed V2 or V3 recording")
+        raise ValueError("Standard-native expanded runs require a reviewed V2, V3, or V4 recording")
     if not manifest.streams:
         raise ValueError("Standard-native requires at least one recorded stream")
     revision = manifest.capture_plan.profile_revision
@@ -335,6 +373,13 @@ def _require_reviewed_native_geometry(
         or not required_tags.issubset(manifest.tags)
     ):
         raise ValueError("Standard-native capture profile capability is incomplete")
+    if "NATIVE_BANDWIDTH" in profile.tags and (
+        profile.bandwidth_hz != profile.sample_rate_hz
+        or profile.refill_samples != STANDARD_NATIVE_MIXED_REFILL_SAMPLES
+        or profile.kernel_buffers != STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
+        or profile.refill_queue_capacity != STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
+    ):
+        raise ValueError("Standard-native native-bandwidth capture geometry is incomplete")
     rates = {
         (stream.applied_settings or stream.requested_settings).sample_rate_hz
         for stream in manifest.streams
@@ -362,6 +407,83 @@ def _require_reviewed_native_geometry(
         for stream in manifest.streams
     ):
         raise ValueError("Standard-native requires the reviewed dual-receiver geometry")
+    tuning_by_stream = resolve_manifest_starlink_tuning(manifest)
+    if "NATIVE_BANDWIDTH" in profile.tags:
+        for stream in manifest.streams:
+            tuning = tuning_by_stream[stream.stream_id]
+            expected_center_hz = starlink_maximum_coverage_if_center_frequency_hz(
+                tuning.channel,
+                tuning.edge,
+                bandwidth_hz=profile.bandwidth_hz,
+            )
+            if (
+                stream.requested_settings.center_frequency_hz != expected_center_hz
+                or stream.applied_settings.center_frequency_hz != expected_center_hz
+            ):
+                raise ValueError("Standard-native RF center does not maximize in-channel coverage")
+
+
+def _require_reviewed_mixed_v4_geometry(manifest: RecordingManifestV4) -> None:
+    """Admit only exact reviewed unequal-rate V4 capabilities."""
+
+    plan = manifest.capture_plan
+    if plan.dwell_class not in {
+        ProductionDwellClass.MIXED_2P5_5,
+        ProductionDwellClass.MIXED_2P5_10,
+    }:
+        raise ValueError("Standard-native mixed 2.5/15 remains disabled by hardware qualification")
+    if manifest.source_type is not SourceType.LIVE or len(manifest.streams) != 2:
+        raise ValueError("Standard-native mixed capture requires exactly two LIVE streams")
+    expected_rates = {
+        ProductionDwellClass.MIXED_2P5_5: {2_500_000, 5_000_000},
+        ProductionDwellClass.MIXED_2P5_10: {2_500_000, 10_000_000},
+    }[plan.dwell_class]
+    if {item.requested_settings.sample_rate_hz for item in plan.radio_plans} != expected_rates:
+        raise ValueError("Standard-native mixed capture rates disagree with the reviewed class")
+    required_tags = {
+        "CAPTURE_ONLY",
+        "DEVICE_AXIS_ZERO_FILL",
+        "LIVE",
+        "MIXED_RATE",
+        "NATIVE_BANDWIDTH",
+        "RANDOM_TUNING",
+        "STANDARD_NATIVE",
+    }
+    if not required_tags.issubset(manifest.tags):
+        raise ValueError("Standard-native mixed manifest capability is incomplete")
+
+    for stream, leg in zip(manifest.streams, plan.radio_plans, strict=True):
+        profile = leg.profile_revision.profile
+        rate = leg.requested_settings.sample_rate_hz
+        if (
+            profile.name != STANDARD_NATIVE_MIXED_PROFILE_NAMES.get(rate)
+            or leg.profile_revision.revision_digest
+            != STANDARD_NATIVE_MIXED_PROFILE_REVISION_DIGESTS.get(rate)
+            or profile.sample_rate_hz != rate
+            or profile.bandwidth_hz != rate
+            or profile.duration_seconds != plan.duration_seconds
+            or profile.refill_samples != STANDARD_NATIVE_MIXED_REFILL_SAMPLES
+            or profile.kernel_buffers != STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
+            or profile.refill_queue_capacity != STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
+            or profile.storage_policy != "zstd-128m-device-axis-zero-v1"
+            or profile.continuity_policy.value != "allow_segments"
+            or profile.peer_failure_policy.value != "fail_session"
+            or tuple(profile.receivers) != (0, 1)
+            or not required_tags.issubset(profile.tags)
+        ):
+            raise ValueError("Standard-native mixed profile identity or capability is not reviewed")
+        settings = stream.applied_settings
+        if (
+            stream.radio.radio_id != leg.radio_id
+            or stream.requested_sample_count != leg.resolved_sample_count
+            or stream.logical_sample_count != leg.resolved_sample_count
+            or stream.requested_settings != leg.requested_settings
+            or settings.sample_rate_hz != rate
+            or settings.bandwidth_hz != profile.bandwidth_hz
+            or tuple(settings.receiver_ids) != (0, 1)
+            or settings.center_frequency_hz != leg.requested_settings.center_frequency_hz
+        ):
+            raise ValueError("Standard-native mixed stream geometry differs from its plan leg")
     resolve_manifest_starlink_tuning(manifest)
 
 

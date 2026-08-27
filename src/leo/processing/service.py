@@ -27,9 +27,12 @@ from leo.artifacts import (
     AnalysisProductReceiptV1,
     AnalysisRunManifestV2,
     AnalysisRunManifestV3,
+    AnalysisRunManifestV4,
     ProductPublication,
     PublishedRunManifest,
+    StandardNativeMixedStreamAuthorityV1,
     StandardNativePromotionAuthorityV1,
+    StandardNativePromotionAuthorityV2,
     StandardNativeTerminalProductRefV1,
 )
 from leo.artifacts.store import ArtifactOutputSink
@@ -57,6 +60,7 @@ from leo.contracts.recording import (
     RecordingManifestV1,
     RecordingManifestV2,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV2,
     RecordingStreamV3,
 )
@@ -108,7 +112,7 @@ RESEARCH_JOB_PRIORITY = -100
 _STANDARD_NATIVE_TERMINAL_PRODUCT_SCHEMAS = {
     "path-standard-native": ("standard.path-report", 3),
     "radio-scientific-report-native": ("standard.radio-report", 4),
-    "paired-scientific-report-native": ("standard.paired-report", 4),
+    "paired-scientific-report-native": ("standard.paired-report", 5),
 }
 _DEFAULT_OUTPUT_LIMITS = {
     "streaming": 512 * 1024 * 1024,
@@ -1117,8 +1121,22 @@ class ProcessingService:
                     )
                 else:  # pragma: no cover - finite enum, retained as a corruption boundary
                     raise ValueError("Standard-native promotion policy is unsupported")
+            elif isinstance(manifest, RecordingManifestV4):
+                if canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY:
+                    if trigger != "reprocess":
+                        raise ValueError(
+                            "Standard-native mixed V4 evidence requires manual reprocess"
+                        )
+                elif canonical_promotion_policy is PromotionPolicy.CURRENT:
+                    _require_native_station_promotion_authority(
+                        capture_authority,
+                        manifest=manifest,
+                        manifest_digest=plan.manifest_digest,
+                    )
+                else:  # pragma: no cover - finite enum
+                    raise ValueError("Standard-native mixed promotion policy is unsupported")
             else:
-                raise ValueError("Standard-native requires a reviewed V2/V3 recording")
+                raise ValueError("Standard-native requires a reviewed V2/V3/V4 recording")
             expected_plan = compile_standard_native_run_plan(
                 manifest,
                 manifest_digest=plan.manifest_digest,
@@ -1233,7 +1251,9 @@ class ProcessingService:
             raise RunNotReadyError(f"analysis run has {len(unfinished)} unfinished jobs")
         self._validate_terminal_outcomes(snapshot)
 
-        promotion_authority = None
+        promotion_authority: (
+            StandardNativePromotionAuthorityV1 | StandardNativePromotionAuthorityV2 | None
+        ) = None
         if snapshot.execution.promotion_policy == PromotionPolicy.CURRENT.value and any(
             job.stage_key in STANDARD_NATIVE_STAGE_KEYS for job in snapshot.jobs
         ):
@@ -1256,7 +1276,7 @@ class ProcessingService:
     def _standard_native_promotion_authority(
         self,
         snapshot: RunSealSnapshot,
-    ) -> StandardNativePromotionAuthorityV1:
+    ) -> StandardNativePromotionAuthorityV1 | StandardNativePromotionAuthorityV2:
         execution = snapshot.execution
         if (
             execution.pipeline_lane != PipelineLane.STANDARD.value
@@ -1277,8 +1297,8 @@ class ProcessingService:
         ):
             raise RunRejectedError("native promotion raw-integrity authority changed")
         source = self.iq_readers.verified_manifest(integrity.attestation_digest)
-        if not isinstance(source, RecordingManifestV3):
-            raise RunRejectedError("native Current promotion requires an exact V3 source")
+        if not isinstance(source, (RecordingManifestV3, RecordingManifestV4)):
+            raise RunRejectedError("native Current promotion requires an exact V3/V4 source")
 
         capture_authority = self.catalog.capture_path_authority(execution.session_id)
         try:
@@ -1337,6 +1357,77 @@ class ProcessingService:
             graph_digest=execution.graph_digest,
             configuration_digest=execution.configuration_digest,
         )
+        if isinstance(source, RecordingManifestV4):
+            leg_by_radio = {item.radio_id: item for item in source.capture_plan.radio_plans}
+            stream_authorities = tuple(
+                StandardNativeMixedStreamAuthorityV1(
+                    stream_id=stream.stream_id,
+                    radio_id=stream.radio.radio_id,
+                    profile_name=leg_by_radio[stream.radio.radio_id].profile_revision.profile.name,
+                    profile_revision_digest=(
+                        leg_by_radio[stream.radio.radio_id].profile_revision.revision_digest
+                    ),
+                    starlink_channel=source.capture_plan.starlink_channel,
+                    starlink_edge=source.capture_plan.starlink_edge.value,
+                    sample_rate_hz=cast(
+                        Literal[2_500_000, 5_000_000, 10_000_000],
+                        stream.applied_settings.sample_rate_hz,
+                    ),
+                    rf_bandwidth_hz=stream.applied_settings.bandwidth_hz,
+                    tuned_center_frequency_hz=stream.applied_settings.center_frequency_hz,
+                    pilot_if_center_frequency_hz=(
+                        leg_by_radio[stream.radio.radio_id].pilot_if_center_frequency_hz
+                    ),
+                    channel_if_start_hz=(leg_by_radio[stream.radio.radio_id].channel_if_start_hz),
+                    channel_if_stop_hz=(leg_by_radio[stream.radio.radio_id].channel_if_stop_hz),
+                    captured_if_start_hz=(leg_by_radio[stream.radio.radio_id].captured_if_start_hz),
+                    captured_if_stop_hz=(leg_by_radio[stream.radio.radio_id].captured_if_stop_hz),
+                    logical_sample_count=stream.logical_sample_count,
+                    validity_inventory_digest=stream.validity_inventory_sha256,
+                )
+                for stream in sorted(
+                    source.streams,
+                    key=lambda item: (item.stream_id, item.radio.radio_id),
+                )
+            )
+            values_v2 = {
+                "schema_version": 2,
+                "source_manifest_schema_version": 4,
+                "source_manifest_digest": execution.input_manifest_digest,
+                "pipeline_definition": definition,
+                "pipeline_definition_id": definition.definition_id,
+                "session_id": execution.session_id,
+                "run_id": execution.run_id,
+                "input_manifest_digest": execution.input_manifest_digest,
+                "pipeline_release_id": execution.pipeline_release_id,
+                "expanded_plan_digest": execution.expanded_plan_digest,
+                "raw_integrity_attestation_digest": integrity.attestation_digest,
+                "release_authority_digest": release_authority_digest,
+                "subject_binding_inventory_digest": subject_binding_inventory_digest,
+                "terminal_products": terminal_products,
+                "terminal_product_inventory_digest": terminal_product_inventory_digest,
+                "dwell_class": source.capture_plan.dwell_class.value,
+                "stream_authorities": stream_authorities,
+                "capture_plan_digest": source.capture_plan.plan_digest,
+                "capture_hardware_binding_digest": capture_authority.authority_digest,
+                "trigger": execution.trigger,
+                "promotion_policy": "current",
+                "processing_status": "succeeded",
+            }
+            digest_values_v2 = {
+                **values_v2,
+                "pipeline_definition": definition.model_dump(mode="json"),
+                "terminal_products": tuple(
+                    item.model_dump(mode="json") for item in terminal_products
+                ),
+                "stream_authorities": tuple(
+                    item.model_dump(mode="json") for item in stream_authorities
+                ),
+            }
+            return StandardNativePromotionAuthorityV2.model_validate(
+                {**values_v2, "content_digest": canonical_digest(digest_values_v2)}
+            )
+
         rates = {stream.applied_settings.sample_rate_hz for stream in source.streams}
         if len(rates) != 1:
             raise RunRejectedError("native promotion source rates disagree")
@@ -1533,7 +1624,7 @@ def _compile_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
     iq_readers: IqReaderProvider,
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
@@ -1541,8 +1632,11 @@ def _compile_subject_binding_registrations(
 
     stage_keys = {job.stage_key for job in plan.jobs}
     if stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS):
-        if not isinstance(manifest, (RecordingManifestV2, RecordingManifestV3)):
-            raise ValueError("Standard-native subject bindings require a reviewed V2/V3 input")
+        if not isinstance(
+            manifest,
+            (RecordingManifestV2, RecordingManifestV3, RecordingManifestV4),
+        ):
+            raise ValueError("Standard-native subject bindings require a reviewed V2/V3/V4 input")
         return _compile_native_subject_binding_registrations(
             catalog=catalog,
             iq_readers=iq_readers,
@@ -1550,8 +1644,8 @@ def _compile_subject_binding_registrations(
             integrity=integrity,
             plan=plan,
         )
-    if isinstance(manifest, RecordingManifestV3):
-        raise ValueError("V3 device-axis recordings require the Standard-native graph")
+    if isinstance(manifest, (RecordingManifestV3, RecordingManifestV4)):
+        raise ValueError("device-axis recordings require the Standard-native graph")
     return _compile_legacy_subject_binding_registrations(
         catalog=catalog,
         manifest=manifest,
@@ -1701,7 +1795,7 @@ def _compile_native_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
     iq_readers: IqReaderProvider,
-    manifest: RecordingManifestV2 | RecordingManifestV3,
+    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4,
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
@@ -1768,12 +1862,23 @@ def _compile_native_subject_binding_registrations(
             raise ValueError("native receiver path lacks counter evidence digests")
         tuning_intent = starlink_tuning[stream.stream_id]
         capture_binding = catalog.capture_receiver_binding(scope)
+        expected_profile_revision_digest = (
+            next(
+                leg.profile_revision.revision_digest
+                for leg in manifest.capture_plan.radio_plans
+                if leg.radio_id == stream.radio.radio_id
+            )
+            if isinstance(manifest, RecordingManifestV4)
+            else manifest.capture_plan.profile_revision.revision_digest
+        )
         if (
             capture_binding.radio_id != stream.radio.radio_id
             or capture_binding.radio_serial != stream.radio.serial
             or capture_binding.manifest_digest != plan.manifest_digest
-            or capture_binding.profile_revision_digest
-            != manifest.capture_plan.profile_revision.revision_digest
+            or (
+                not isinstance(manifest, RecordingManifestV4)
+                and capture_binding.profile_revision_digest != expected_profile_revision_digest
+            )
         ):
             raise ValueError("native manifest and catalog receiver authority disagree")
         timing = StreamTimingEvidenceV1(
@@ -1804,7 +1909,7 @@ def _compile_native_subject_binding_registrations(
             "compressed_chunk_closure_digest": raw.compressed_closure_digest,
             "uncompressed_chunk_closure_digest": raw.uncompressed_closure_digest,
             "synchronization_inventory_digest": topology.synchronization_inventory_digest,
-            "profile_revision_digest": capture_binding.profile_revision_digest,
+            "profile_revision_digest": expected_profile_revision_digest,
             "capture_plan_digest": manifest.capture_plan.plan_digest,
             "receiver_settings_digest": canonical_digest(settings.model_dump(mode="json")),
             "science_configuration_digest": release.configuration_digest,
@@ -1999,7 +2104,7 @@ def _native_terminal_product_refs(
 def _require_native_station_promotion_authority(
     authority: CapturePathAuthorityRecord,
     *,
-    manifest: RecordingManifestV3,
+    manifest: RecordingManifestV3 | RecordingManifestV4,
     manifest_digest: str,
 ) -> None:
     """Require the immutable station gate before a native run may be Current."""
@@ -2024,8 +2129,10 @@ def _require_native_station_promotion_authority(
 def _manifest_from_snapshot(
     snapshot: RunSealSnapshot,
     *,
-    promotion_authority: StandardNativePromotionAuthorityV1 | None = None,
-) -> AnalysisRunManifestV2 | AnalysisRunManifestV3:
+    promotion_authority: (
+        StandardNativePromotionAuthorityV1 | StandardNativePromotionAuthorityV2 | None
+    ) = None,
+) -> AnalysisRunManifestV2 | AnalysisRunManifestV3 | AnalysisRunManifestV4:
     jobs = tuple(
         AnalysisJobReceiptV1(
             job_id=job.job_id,
@@ -2063,8 +2170,9 @@ def _manifest_from_snapshot(
             jobs=jobs,
             products=products,
         )
+    schema_version = 4 if isinstance(promotion_authority, StandardNativePromotionAuthorityV2) else 3
     values = {
-        "schema_version": 3,
+        "schema_version": schema_version,
         "session_id": snapshot.execution.session_id,
         "run_id": snapshot.execution.run_id,
         "pipeline_release_id": snapshot.execution.pipeline_release_id,
@@ -2083,9 +2191,10 @@ def _manifest_from_snapshot(
         "products": tuple(item.model_dump(mode="json") for item in products),
         "promotion_authority": promotion_authority.model_dump(mode="json"),
     }
-    return AnalysisRunManifestV3.model_validate(
-        {**values, "content_digest": canonical_digest(digest_values)}
-    )
+    document = {**values, "content_digest": canonical_digest(digest_values)}
+    if isinstance(promotion_authority, StandardNativePromotionAuthorityV2):
+        return AnalysisRunManifestV4.model_validate(document)
+    return AnalysisRunManifestV3.model_validate(document)
 
 
 def _current_summary(

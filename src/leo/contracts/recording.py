@@ -16,6 +16,7 @@ from pydantic import (
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
+from leo.contracts.mixed_rate_capture import CapturePlanV3
 from leo.contracts.profile import CapturePlanV1, CapturePlanV2, Tag
 from leo.contracts.radio import IqBlockMetadataV2, RadioIdentityV1, RadioSettingsV1
 from leo.contracts.states import (
@@ -814,8 +815,89 @@ class RecordingManifestV3(ContractModel):
         return self
 
 
+class RecordingManifestV4(ContractModel):
+    """Immutable device-axis bundle for a paired unequal-rate capture plan."""
+
+    schema_version: Literal[4] = 4
+    session_id: Identifier
+    state: Literal[CaptureState.COMMITTED, CaptureState.DEGRADED]
+    source_type: SourceType
+    created_utc_ns: Annotated[int, Field(ge=0)]
+    finalized_utc_ns: Annotated[int, Field(ge=0)]
+    capture_plan: CapturePlanV3
+    tags: tuple[Tag, ...]
+    streams: tuple[RecordingStreamV3, RecordingStreamV3]
+    synchronization: SynchronizationSummaryV1
+    compression: CompressionSettingsV1
+    calibrations: tuple[CalibrationReferenceV1, ...] = ()
+    host: HostIdentityV1
+    producer: ProducerV1
+
+    @field_validator("tags")
+    @classmethod
+    def _tags_are_canonical(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if tuple(sorted(set(value))) != value:
+            raise ValueError("manifest tags must be unique and sorted")
+        return value
+
+    @model_validator(mode="after")
+    def _manifest_is_consistent(self) -> Self:
+        if self.finalized_utc_ns < self.created_utc_ns:
+            raise ValueError("manifest finalization precedes creation")
+        if self.source_type is not self.capture_plan.source_type:
+            raise ValueError("manifest source type disagrees with capture plan")
+        required_tags = {
+            tag
+            for leg in self.capture_plan.radio_plans
+            for tag in leg.profile_revision.profile.tags
+        }
+        required_tags.update(
+            {
+                "MIXED_RATE",
+                f"mixed_rate_class:{self.capture_plan.dwell_class.value}",
+                f"tuning_policy:same:{self.capture_plan.starlink_channel}:"
+                f"{self.capture_plan.starlink_edge.value}",
+            }
+        )
+        if not required_tags.issubset(self.tags):
+            raise ValueError("mixed-rate manifest must retain profile, rate, and tuning tags")
+        if self.compression.policy_id != DEVICE_AXIS_STORAGE_POLICY_V1:
+            raise ValueError("V4 manifest requires device-axis-zero storage")
+        stream_ids = tuple(stream.stream_id for stream in self.streams)
+        if stream_ids != self.synchronization.stream_ids:
+            raise ValueError("synchronization stream order must match manifest streams")
+        if (
+            self.synchronization.requested_mode
+            is not self.capture_plan.requested_synchronization_mode
+            or self.synchronization.effective_mode
+            is not self.capture_plan.effective_synchronization_mode
+        ):
+            raise ValueError("synchronization summary disagrees with mixed-rate capture plan")
+        radio_ids = tuple(stream.radio.radio_id for stream in self.streams)
+        if radio_ids != self.capture_plan.radio_ids:
+            raise ValueError("stream radio order must match mixed-rate capture plan")
+        for stream, leg in zip(self.streams, self.capture_plan.radio_plans, strict=True):
+            if stream.requested_sample_count != leg.resolved_sample_count:
+                raise ValueError("V4 stream span disagrees with its per-radio plan")
+            if stream.requested_settings != leg.requested_settings:
+                raise ValueError("V4 stream requested settings disagree with its per-radio plan")
+            if any(
+                getattr(stream.applied_settings, field) != getattr(leg.requested_settings, field)
+                for field in ("center_frequency_hz", "sample_rate_hz", "bandwidth_hz")
+            ):
+                raise ValueError(
+                    "V4 stream applied RF/IF geometry disagrees with its per-radio plan"
+                )
+        all_complete = all(stream.state is StreamState.COMPLETE for stream in self.streams)
+        if self.state is CaptureState.COMMITTED and not all_complete:
+            raise ValueError("committed V4 manifest requires lossless streams")
+        if self.state is CaptureState.DEGRADED and all_complete:
+            raise ValueError("degraded V4 manifest requires observation-integrity loss")
+        return self
+
+
 RecordingManifestContract = Annotated[
-    RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3,
+    RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4,
     Field(discriminator="schema_version"),
 ]
 _RECORDING_MANIFEST_ADAPTER: TypeAdapter[RecordingManifestContract] = TypeAdapter(
@@ -825,13 +907,15 @@ _RECORDING_MANIFEST_ADAPTER: TypeAdapter[RecordingManifestContract] = TypeAdapte
 
 def parse_recording_manifest_json(
     payload: bytes | str,
-) -> RecordingManifestV1 | RecordingManifestV3:
+) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4:
     """Decode every supported immutable recording-manifest major version."""
 
     return _RECORDING_MANIFEST_ADAPTER.validate_json(payload)
 
 
-def parse_recording_manifest(value: object) -> RecordingManifestV1 | RecordingManifestV3:
+def parse_recording_manifest(
+    value: object,
+) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4:
     """Validate a Python document against every supported manifest version."""
 
     return _RECORDING_MANIFEST_ADAPTER.validate_python(value)

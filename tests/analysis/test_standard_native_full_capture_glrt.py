@@ -351,7 +351,7 @@ def _empty_segment_fit(rows: tuple[WindowResult, ...]):
     )
 
 
-@pytest.mark.parametrize("rate", [2_500_000, 3_000_000, 5_000_000])
+@pytest.mark.parametrize("rate", [2_500_000, 3_000_000, 5_000_000, 10_000_000])
 def test_global_20ms_geometry_is_exact_at_every_native_rate(rate: int) -> None:
     logical = rate * 40 // 1_000
     inventory = _inventory(((0, logical, None),))

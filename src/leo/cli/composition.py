@@ -97,8 +97,11 @@ from leo.cli.scanner import (
     write_scanner_report,
 )
 from leo.cli.wp11 import WP11CliBackend
+from leo.contracts.mixed_rate_schedule import ProductionDwellIntentV1
+from leo.contracts.profile import CaptureProfileRevisionV2
 from leo.contracts.recording import ProducerV1
 from leo.contracts.states import SourceType
+from leo.domain.mixed_rate_capture import compile_mixed_rate_capture_plan_v3
 from leo.domain.profiles import compile_capture_plan
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
@@ -573,6 +576,125 @@ class LocalAcquisitionBackend:
         except Exception as error:
             raise CliBackendError(
                 f"capture setup failed: {type(error).__name__}: {error}",
+                ExitCode.CAPTURE_FAILED,
+            ) from error
+
+    def mixed_rate_profile_authority(self) -> dict[int, tuple[str, str]]:
+        profile_names = {
+            2_500_000: "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+            5_000_000: "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
+            10_000_000: "starlink-ch4-lower-10m-60s-mixed-device-axis-v4",
+            15_000_000: "starlink-ch4-lower-15m-60s-mixed-device-axis-v4",
+        }
+        authority: dict[int, tuple[str, str]] = {}
+        for rate, profile_name in profile_names.items():
+            shown = self.profiles.show(profile_name)
+            if not isinstance(shown.revision, CaptureProfileRevisionV2):
+                raise CliBackendError(
+                    f"mixed-rate profile {profile_name} is not CaptureProfileV2",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            if shown.revision.profile.sample_rate_hz != rate:
+                raise CliBackendError(
+                    f"mixed-rate profile {profile_name} rate disagrees with authority",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            authority[rate] = (profile_name, shown.revision.revision_digest)
+        return authority
+
+    def capture_mixed_once(
+        self,
+        intent: ProductionDwellIntentV1,
+        *,
+        session_id: str | None,
+        cancel: Event,
+        task_kind: str = CaptureTaskKind.OPERATOR_ONCE.value,
+    ) -> CaptureDataV1:
+        if intent.ordinary_profile_name is not None:
+            raise CliBackendError(
+                "ordinary scheduled intent cannot use mixed-rate capture",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        configured = {radio.radio_id: radio for radio in self.settings.radios}
+        selected_ids = tuple(item.radio_id for item in intent.radio_rates)
+        if set(selected_ids) != set(configured) or len(selected_ids) != 2:
+            raise CliBackendError(
+                "mixed-rate capture requires the exact configured two-radio station",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        authority = self.mixed_rate_profile_authority()
+        revisions: dict[str, CaptureProfileRevisionV2] = {}
+        for assignment in intent.radio_rates:
+            expected = authority[assignment.sample_rate_hz]
+            if (assignment.profile_name, assignment.profile_revision_digest) != expected:
+                raise CliBackendError(
+                    "persisted mixed-rate profile authority differs from this release",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            shown = self.profiles.show(assignment.profile_name)
+            if not isinstance(shown.revision, CaptureProfileRevisionV2):
+                raise CliBackendError(
+                    "mixed-rate capture requires CaptureProfileV2 revisions",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            revisions[assignment.radio_id] = shown.revision
+        try:
+            source_type = (
+                SourceType.TEST if self.settings.radio_backend == "fake" else SourceType.LIVE
+            )
+            if intent.starlink_channel is None or intent.starlink_edge is None:
+                raise ValueError("mixed-rate capture intent lacks common tuning")
+            plan = compile_mixed_rate_capture_plan_v3(
+                dwell_class=intent.dwell_class,
+                radio_ids=selected_ids,
+                profile_revisions_by_radio=revisions,
+                starlink_channel=intent.starlink_channel,
+                starlink_edge=intent.starlink_edge,
+                source_type=source_type,
+            )
+            coordinator = AcquisitionCoordinator(
+                self._recording_store(),
+                producer=self._acquisition_producer(),
+                config=AcquisitionConfig(
+                    safety_reserve_bytes=self.settings.safety_reserve_bytes,
+                ),
+                storage_admission=self._capture_storage_admission,
+            )
+            resolved_task_kind = CaptureTaskKind(task_kind)
+            application = AuthorizedAcquisitionApplication(
+                AcquisitionApplication(coordinator),
+                self._authority(),
+                resolved_task_kind,
+            )
+            sources = {
+                radio_id: self._radio_source(configured[radio_id]) for radio_id in selected_ids
+            }
+            tags = set(intent.extra_tags)
+            if source_type is SourceType.TEST:
+                tags.add("TEST")
+            result = application.once(
+                plan,
+                sources,
+                session_id=session_id,
+                cancel=cancel,
+                extra_tags=tuple(sorted(tags)),
+            )
+            self.hooks.capture_observer(result)
+            label = intent.dwell_class.value
+            data = _capture_data(label, plan.radio_ids, result)
+            if result.bundle is not None:
+                warning = self._post_commit_registration(result.bundle.session_id)
+                if warning is not None:
+                    data = data.model_copy(update={"errors": (*data.errors, warning)})
+            self._write_last_capture(data)
+            return data
+        except CaptureAuthorityError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        except CliBackendError:
+            raise
+        except Exception as error:
+            raise CliBackendError(
+                f"mixed-rate capture setup failed: {type(error).__name__}: {error}",
                 ExitCode.CAPTURE_FAILED,
             ) from error
 

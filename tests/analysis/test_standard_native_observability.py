@@ -675,7 +675,7 @@ class _ObservabilityPolicyCaptured(Exception):
     pass
 
 
-@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000))
+@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000, 10_000_000))
 def test_native_evidence_analyzer_uses_the_resolved_production_feedback_policy(
     monkeypatch: pytest.MonkeyPatch,
     sample_rate_hz: int,

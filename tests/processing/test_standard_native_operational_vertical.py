@@ -47,7 +47,7 @@ from leo.contracts.standard_native_stateful_v2 import (
     StandardNativeStatefulPathV2,
 )
 from leo.contracts.standard_native_terminal import (
-    StandardNativePairedReportV4,
+    StandardNativePairedReportV5,
     StandardNativeRadioReportV4,
 )
 from leo.contracts.standard_pipeline import StandardPathInputBindV4
@@ -313,7 +313,7 @@ def _assert_native_products(
         ),
         "standard.path-report": StandardNativePathReportV3,
         "standard.radio-report": StandardNativeRadioReportV4,
-        "standard.paired-report": StandardNativePairedReportV4,
+        "standard.paired-report": StandardNativePairedReportV5,
     }
     streams = {stream.radio.radio_id: stream for stream in manifest.streams}
     stateful_documents: list[StandardNativeStatefulPathV2] = []
@@ -454,7 +454,7 @@ def _assert_native_products(
             assert document.native_evidence_only is True
             assert document.current_eligible is False
             assert document.cross_segment_association_permitted is False
-        if isinstance(document, (StandardNativeRadioReportV4, StandardNativePairedReportV4)):
+        if isinstance(document, (StandardNativeRadioReportV4, StandardNativePairedReportV5)):
             assert document.native_evidence_only is True
             assert document.current_eligible is False
             assert document.aggregate_qam_statistics.qam_result_count == 0

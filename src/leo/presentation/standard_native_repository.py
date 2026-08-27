@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from leo.presentation.standard_native_artifacts import StandardNativePngArtifactInventoryV4
+from leo.presentation.standard_native_artifacts import (
+    StandardNativePngArtifactInventoryV4,
+    StandardNativePngArtifactInventoryV5,
+)
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
+    StandardNativePlotViewV4,
     StandardNativeSourceProofV3,
     StandardNativeSubjectDetailV3,
+    StandardNativeSubjectDetailV4,
     StandardNativeSubjectHierarchyV3,
+    StandardNativeSubjectHierarchyV4,
 )
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
@@ -25,11 +31,21 @@ from leo.presentation.standard_pipeline import (
 class DefinitionDispatchedStandardPresentationPort(Protocol):
     def subject_hierarchy(
         self, session_id: str
-    ) -> StandardSubjectHierarchyV2 | StandardNativeSubjectHierarchyV3 | None: ...
+    ) -> (
+        StandardSubjectHierarchyV2
+        | StandardNativeSubjectHierarchyV3
+        | StandardNativeSubjectHierarchyV4
+        | None
+    ): ...
 
     def subject_detail(
         self, session_id: str, subject_id: str
-    ) -> StandardSubjectDetailV2 | StandardNativeSubjectDetailV3 | None: ...
+    ) -> (
+        StandardSubjectDetailV2
+        | StandardNativeSubjectDetailV3
+        | StandardNativeSubjectDetailV4
+        | None
+    ): ...
 
     def subject_replay_audit(
         self, session_id: str, subject_id: str
@@ -46,7 +62,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         view_kind: StandardViewKindV2,
         *,
         maximum_points: int,
-    ) -> StandardPlotViewV2 | StandardNativePlotViewV3 | None: ...
+    ) -> StandardPlotViewV2 | StandardNativePlotViewV3 | StandardNativePlotViewV4 | None: ...
 
     def verify_source_extrema(
         self,
@@ -75,7 +91,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         self,
         session_id: str,
         subject_id: str,
-    ) -> StandardNativePngArtifactInventoryV4 | None: ...
+    ) -> StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | None: ...
 
     def subject_named_png_artifact(
         self,

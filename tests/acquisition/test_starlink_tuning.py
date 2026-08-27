@@ -11,8 +11,10 @@ from leo.acquisition.starlink_tuning import (
     SUPPORTED_STARLINK_CHANNELS,
     PairedTuningBranch,
     sample_paired_starlink_tuning,
+    starlink_channel_if_bounds_hz,
     starlink_edge_if_center_frequency_hz,
     starlink_edge_rf_center_frequency_hz,
+    starlink_maximum_coverage_if_center_frequency_hz,
 )
 from leo.contracts.profile import CaptureProfileV1
 from leo.contracts.radio import ReceiverGainV1
@@ -51,6 +53,50 @@ def test_complete_eight_channel_frequency_authority_matches_qin_plan() -> None:
         assert starlink_edge_if_center_frequency_hz(channel, StarlinkEdge.UPPER) == (
             upper_rf_hz - STARLINK_LNB_LO_HZ
         )
+
+
+def test_native_rate_passbands_maximize_occupied_channel_coverage() -> None:
+    assert starlink_channel_if_bounds_hz(1) == (955_000_000, 1_195_000_000)
+    assert (
+        starlink_maximum_coverage_if_center_frequency_hz(
+            1, StarlinkEdge.LOWER, bandwidth_hz=2_500_000
+        )
+        == 959_687_500
+    )
+    assert (
+        starlink_maximum_coverage_if_center_frequency_hz(
+            1, StarlinkEdge.LOWER, bandwidth_hz=5_000_000
+        )
+        == 959_687_500
+    )
+    assert (
+        starlink_maximum_coverage_if_center_frequency_hz(
+            1, StarlinkEdge.LOWER, bandwidth_hz=15_000_000
+        )
+        == 962_500_000
+    )
+    assert (
+        starlink_maximum_coverage_if_center_frequency_hz(
+            1, StarlinkEdge.UPPER, bandwidth_hz=15_000_000
+        )
+        == 1_187_500_000
+    )
+
+    for channel in range(1, 5):
+        channel_start, channel_stop = starlink_channel_if_bounds_hz(channel)
+        for edge in StarlinkEdge:
+            pilot = starlink_edge_if_center_frequency_hz(channel, edge)
+            for bandwidth in (2_500_000, 3_000_000, 5_000_000, 10_000_000, 15_000_000):
+                center = starlink_maximum_coverage_if_center_frequency_hz(
+                    channel, edge, bandwidth_hz=bandwidth
+                )
+                assert channel_start <= center - bandwidth // 2
+                assert center + bandwidth // 2 <= channel_stop
+                assert center - bandwidth // 2 <= pilot <= center + bandwidth // 2
+                assert center == min(
+                    max(pilot, channel_start + bandwidth // 2),
+                    channel_stop - bandwidth // 2,
+                )
 
 
 @pytest.mark.parametrize("channel", (0, 9, True, "4"))
@@ -151,6 +197,26 @@ def test_slow_attack_omits_manual_gain_values_per_radio() -> None:
     )
     assert settings["radio-a"].gains == ()
     assert settings["radio-b"].gains == _profile().gains
+
+
+def test_requested_settings_shift_wide_passband_inward_without_losing_edge_pilot() -> None:
+    selection = sample_paired_starlink_tuning(
+        ("radio-a", "radio-b"), randbelow=Draws(0, 0, 0, 0, 0)
+    )
+    wide_profile = CaptureProfileV1.model_validate(
+        {
+            **_profile().model_dump(mode="python"),
+            "sample_rate_hz": 10_000_000,
+            "bandwidth_hz": 10_000_000,
+        }
+    )
+
+    settings = selection.requested_settings(wide_profile)
+
+    assert selection.radio_tunings[0][1].center_frequency_hz == 959_687_500
+    assert settings["radio-a"].center_frequency_hz == 960_000_000
+    assert settings["radio-b"].center_frequency_hz == 960_000_000
+    assert settings["radio-a"].bandwidth_hz == settings["radio-a"].sample_rate_hz
 
 
 def test_seeded_distribution_is_uniform_with_requested_mixture() -> None:

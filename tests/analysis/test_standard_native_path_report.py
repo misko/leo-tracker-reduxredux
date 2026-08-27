@@ -160,6 +160,7 @@ def _binding(
     stream_id: str = "stream-0",
     radio_id: str = "radio-0",
     receiver_id: int = 0,
+    sample_rate_hz: int = _RATE,
 ) -> StandardPathInputBindV4:
     inventory = _inventory(gapped=gapped, stream_id=stream_id)
     return StandardPathInputBindV4.model_construct(
@@ -171,7 +172,7 @@ def _binding(
         synchronization_inventory_digest=_digest("synchronization"),
         binding_digest=_digest(f"path-binding-{stream_id}-{radio_id}-{receiver_id}"),
         tuned_center_frequency_hz=959_687_500,
-        sample_rate_hz=_RATE,
+        sample_rate_hz=sample_rate_hz,
         logical_sample_count=_LOGICAL,
         observed_sample_count=inventory.observed_sample_count,
         missing_sample_count=inventory.missing_sample_count,
@@ -338,6 +339,7 @@ def _stateful(
     gapped: bool,
     detection_statuses: tuple[Literal["complete", "no_result", "insufficient"], ...],
     forced_detection_qam_metrics: tuple[float | None, float | None] | None = None,
+    include_tracks: bool = True,
 ) -> StandardNativeStatefulPathV2:
     valid_starts = (0, 100_000) if gapped else (0, 50_000, 100_000)
     detections_by_segment: dict[int, list[NativePilotProbeDetectionV1]] = {}
@@ -357,7 +359,7 @@ def _stateful(
     segments: list[NativeStatefulSegmentV2] = []
     for authority in source.continuity_segments:
         detections = tuple(detections_by_segment[authority.segment_index])
-        track = (_track(),) if authority.segment_index == 0 else ()
+        track = (_track(),) if include_tracks and authority.segment_index == 0 else ()
         bank = type("_Bank", (), {})()
         bank.content_digest = _digest(f"final-bank-{authority.segment_index}")
         bank.status = (
@@ -474,13 +476,16 @@ def _build(
     stream_id: str = "stream-0",
     radio_id: str = "radio-0",
     receiver_id: int = 0,
+    sample_rate_hz: int = _RATE,
     forced_detection_qam_metrics: tuple[float | None, float | None] | None = None,
+    include_tracks: bool = True,
 ) -> StandardNativePathReportV3:
     binding = _binding(
         gapped=gapped,
         stream_id=stream_id,
         radio_id=radio_id,
         receiver_id=receiver_id,
+        sample_rate_hz=sample_rate_hz,
     )
     source = StandardNativeSourceV1.from_path_binding(binding)
     schedule = _schedule(source, gapped=gapped)
@@ -489,6 +494,7 @@ def _build(
         gapped=gapped,
         detection_statuses=detection_statuses,
         forced_detection_qam_metrics=forced_detection_qam_metrics,
+        include_tracks=include_tracks,
     )
     quality = StandardNativeQualityV2.model_construct(source=source)
     power = StandardNativePowerTimelineV3.model_construct(source=source)

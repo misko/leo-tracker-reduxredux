@@ -20,6 +20,7 @@ from leo.catalog.errors import InvalidStateError
 from leo.contracts.recording import (
     RecordingManifestV1,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV1,
     RecordingStreamV3,
 )
@@ -43,7 +44,7 @@ FailureInjector = Callable[[str], None]
 class CaptureAuthorityResolver(Protocol):
     def resolve(
         self,
-        manifest: RecordingManifestV1 | RecordingManifestV3,
+        manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
         *,
         observed_manifest_file_digest: str,
     ) -> ResolvedCaptureAuthority: ...
@@ -439,17 +440,7 @@ class CatalogReconciliationService:
                 allocated_bytes=allocated_bytes(bundle.path),
                 attributes={
                     "reconciled": True,
-                    "presentation": {
-                        "title": (
-                            manifest.capture_plan.profile_revision.profile.description
-                            or manifest.capture_plan.profile_revision.profile.name
-                        ),
-                        "profile_name": manifest.capture_plan.profile_revision.profile.name,
-                        "duration_seconds": (
-                            manifest.capture_plan.resolved_sample_count
-                            / manifest.capture_plan.profile_revision.profile.sample_rate_hz
-                        ),
-                    },
+                    "presentation": _manifest_presentation(manifest),
                 },
                 tags=manifest.tags,
                 observed_start_at=_manifest_time(manifest, first=True),
@@ -470,7 +461,7 @@ def _registration_error(bundle: PublishedBundle, error: Exception) -> str:
 
 
 def _manifest_time(
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
     *,
     first: bool,
 ) -> datetime | None:
@@ -588,9 +579,9 @@ def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistrat
 
 
 def _ordered_manifest_streams(
-    manifest: RecordingManifestV1 | RecordingManifestV3,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
 ) -> tuple[RecordingStreamV1 | RecordingStreamV3, ...]:
-    if isinstance(manifest, RecordingManifestV3):
+    if isinstance(manifest, (RecordingManifestV3, RecordingManifestV4)):
         return tuple(
             sorted(
                 manifest.streams,
@@ -603,6 +594,25 @@ def _ordered_manifest_streams(
             key=lambda item: (item.stream_id, item.radio.radio_id),
         )
     )
+
+
+def _manifest_presentation(
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+) -> dict[str, object]:
+    if isinstance(manifest, RecordingManifestV4):
+        rates = tuple(item.requested_settings.sample_rate_hz for item in manifest.streams)
+        rate_label = "/".join(f"{rate / 1_000_000:g}M" for rate in rates)
+        return {
+            "title": f"Mixed-rate {rate_label} native dwell",
+            "profile_name": manifest.capture_plan.dwell_class.value,
+            "duration_seconds": float(manifest.capture_plan.duration_seconds),
+        }
+    profile = manifest.capture_plan.profile_revision.profile
+    return {
+        "title": profile.description or profile.name,
+        "profile_name": profile.name,
+        "duration_seconds": manifest.capture_plan.resolved_sample_count / profile.sample_rate_hz,
+    }
 
 
 def _utc_datetime(utc_ns: int) -> datetime:

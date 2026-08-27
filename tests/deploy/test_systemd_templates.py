@@ -120,7 +120,8 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
         "--profile ${LEO_CAPTURE_PROFILE_3M} "
         "--profile ${LEO_CAPTURE_PROFILE_5M} "
         "--radio radio_pluto_5d4d --radio radio_pluto_19f2 "
-        "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS}"
+        "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS} "
+        "--mixed-rate-policy ${LEO_MIXED_RATE_POLICY}"
     )
     assert "leo process worker --worker-id worker-%i" in worker["ExecStart"]
     assert reconcile["ExecStart"].endswith("leo process reconcile --json")
@@ -352,6 +353,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_CAPTURE_PROFILE",
         "LEO_CAPTURE_PROFILE_3M",
         "LEO_CAPTURE_PROFILE_5M",
+        "LEO_MIXED_RATE_POLICY",
         "LEO_CAPTURE_INTERVAL_SECONDS",
         "LEO_ACQUISITION_RESERVE_BYTES",
         "LEO_SCANNER_ENABLED",
@@ -395,9 +397,10 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     }
     assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
-    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-device-axis-v3"
-    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-device-axis-v3"
-    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-device-axis-v3"
+    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4"
+    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-native-bandwidth-v4"
+    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-native-bandwidth-v4"
+    assert values["LEO_MIXED_RATE_POLICY"] == "mixed-native-rates-16-safe-v1"
     assert values["LEO_QUALIFICATION_PROFILE"] == (
         "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"
     )

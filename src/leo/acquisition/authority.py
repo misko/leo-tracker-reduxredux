@@ -22,6 +22,7 @@ from leo.contracts.capture_control import (
     CaptureDesiredState,
     CaptureObservedState,
 )
+from leo.contracts.mixed_rate_capture import CapturePlanV3
 from leo.contracts.profile import CapturePlanV1
 from leo.contracts.radio import RadioSettingsV1
 from leo.radio.ports import RadioSource
@@ -408,12 +409,12 @@ class AuthorizedAcquisitionApplication(AcquisitionApplication):
         self._authority = authority
         self._task_kind = task_kind
 
-    def estimate(self, plan: CapturePlanV1):
+    def estimate(self, plan: CapturePlanV1 | CapturePlanV3):
         return self._delegate.estimate(plan)
 
     def once(
         self,
-        plan: CapturePlanV1,
+        plan: CapturePlanV1 | CapturePlanV3,
         sources: Mapping[str, RadioSource],
         *,
         session_id: str | None = None,

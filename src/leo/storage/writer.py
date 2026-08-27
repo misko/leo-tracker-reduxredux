@@ -25,6 +25,7 @@ from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingManifestV3,
+    RecordingManifestV4,
     RecordingStreamV1,
     RecordingStreamV2,
     RecordingStreamV3,
@@ -101,7 +102,7 @@ class PublishedBundle:
     session_id: str
     path: Path
     uri: str
-    manifest: RecordingManifestV1 | RecordingManifestV3
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4
     manifest_sha256: str
 
 
@@ -1088,7 +1089,7 @@ class RecordingBundleWriter:
 
     def publish(
         self,
-        manifest: RecordingManifestV1 | RecordingManifestV3,
+        manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
     ) -> PublishedBundle:
         with self._lock:
             self._require_open()
@@ -1165,7 +1166,7 @@ class RecordingBundleWriter:
 
     def _validate_manifest(
         self,
-        manifest: RecordingManifestV1 | RecordingManifestV3,
+        manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
     ) -> None:
         if manifest.session_id != self.session_id:
             raise BundleStateError("manifest session ID does not match its spool directory")

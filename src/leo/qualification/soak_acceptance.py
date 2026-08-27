@@ -20,6 +20,7 @@ from sqlalchemy import bindparam, text
 
 from leo.analysis.graphs import ComputeTier, long_dwell_stage_specs
 from leo.catalog import create_catalog_engine
+from leo.contracts.recording import RecordingManifestV4
 from leo.contracts.states import CaptureState
 from leo.qualification.soak import (
     SoakDefinitionV1,
@@ -830,6 +831,8 @@ class FinalSoakAcceptanceAuditor:
                 if bundle.manifest_sha256 != trial.manifest_sha256:
                     raise ValueError("manifest digest does not match trial")
                 manifest = bundle.manifest
+                if isinstance(manifest, RecordingManifestV4):
+                    raise ValueError("legacy soak acceptance does not accept mixed-rate manifests")
                 if manifest.state is not trial.state:
                     raise ValueError("manifest capture state does not match trial")
                 plan = manifest.capture_plan

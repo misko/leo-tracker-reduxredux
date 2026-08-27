@@ -163,7 +163,7 @@ class StandardNativePngArtifactInventoryV4(ContractModel):
     subject_kind: StandardSubjectKindV2
     run_id: Identifier
     run_manifest_digest: Sha256Digest
-    sample_rate_hz: Literal[2_500_000, 3_000_000, 5_000_000]
+    sample_rate_hz: Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000]
     coverage_status: Literal["complete", "partial_coverage", "insufficient_data"]
     artifacts: tuple[StandardNativePngArtifactV4, ...] = Field(min_length=5, max_length=11)
     content_digest: Sha256Digest
@@ -211,4 +211,69 @@ class StandardNativePngArtifactInventoryV4(ContractModel):
         }
         if self.content_digest != canonical_digest(values):
             raise ValueError("native PNG artifact inventory digest does not match")
+        return self
+
+
+class StandardNativePngArtifactInventoryV5(ContractModel):
+    """Exact PNG inventory for one subject in an unequal-rate Current run."""
+
+    schema_version: Literal[5] = 5
+    session_id: Identifier
+    subject_id: Identifier
+    subject_kind: StandardSubjectKindV2
+    run_id: Identifier
+    run_manifest_digest: Sha256Digest
+    sample_rates_hz: tuple[Literal[2_500_000, 5_000_000, 10_000_000], ...] = Field(
+        min_length=1,
+        max_length=2,
+    )
+    coverage_status: Literal["complete", "partial_coverage", "insufficient_data"]
+    artifacts: tuple[StandardNativePngArtifactV4, ...] = Field(min_length=5, max_length=11)
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _inventory_is_exact(self) -> Self:
+        if self.sample_rates_hz != tuple(sorted(set(self.sample_rates_hz))):
+            raise ValueError("mixed native PNG rates must be unique and ordered")
+        expected_names = (
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4
+            if self.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
+            else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
+        )
+        if tuple(item.name for item in self.artifacts) != expected_names:
+            raise ValueError("mixed native PNG artifact inventory is not the exact scope set")
+        base = (
+            f"/api/v2/recordings/{quote(self.session_id, safe='')}/standard-subjects/"
+            f"{quote(self.subject_id, safe='')}"
+        )
+        for item in self.artifacts:
+            label, description, kind, schema_version, view_name = (
+                STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4[item.name]
+            )
+            expected_href = (
+                f"{base}/views/{view_name}.png"
+                if view_name is not None
+                else f"{base}/artifacts/{item.name}.png"
+            )
+            if (
+                item.label != label
+                or item.description != description
+                or item.catalog_kind != kind
+                or item.product_schema_version != schema_version
+                or item.href != expected_href
+            ):
+                raise ValueError("mixed native PNG descriptor differs from its closed identity")
+        values = {
+            "schema_version": self.schema_version,
+            "session_id": self.session_id,
+            "subject_id": self.subject_id,
+            "subject_kind": self.subject_kind.value,
+            "run_id": self.run_id,
+            "run_manifest_digest": self.run_manifest_digest,
+            "sample_rates_hz": self.sample_rates_hz,
+            "coverage_status": self.coverage_status,
+            "artifacts": tuple(item.model_dump(mode="json") for item in self.artifacts),
+        }
+        if self.content_digest != canonical_digest(values):
+            raise ValueError("mixed native PNG artifact inventory digest does not match")
         return self

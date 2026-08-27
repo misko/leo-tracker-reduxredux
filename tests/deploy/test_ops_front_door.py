@@ -583,8 +583,9 @@ def test_deployment_environment_adds_new_reviewed_rate_profile_bindings(
     OPS._write_deployment_environment(environment, original, target)
 
     values = OPS._environment_values(environment.read_bytes())
-    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-device-axis-v3"
-    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-device-axis-v3"
+    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-native-bandwidth-v4"
+    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-native-bandwidth-v4"
+    assert values["LEO_MIXED_RATE_POLICY"] == "mixed-native-rates-16-safe-v1"
     assert values["LEO_PIPELINE_RELEASE_ID"] == target
 
 
@@ -728,7 +729,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
 
     def restore_previous(path: Path, content: bytes) -> None:
         assert OPS._environment_values(path.read_bytes())["LEO_CAPTURE_PROFILE"].endswith(
-            "device-axis-v3"
+            "native-bandwidth-v4"
         )
         assert content == old_environment
         order.append("previous-environment")

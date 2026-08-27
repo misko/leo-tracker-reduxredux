@@ -34,7 +34,7 @@ from leo.catalog import (
 from leo.contracts.base import ContractModel
 from leo.contracts.calibration import ReceiverFrequencyCalibrationV1, ReceiverPathIdentityV1
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.recording import Identifier
+from leo.contracts.recording import Identifier, RecordingManifestV4
 from leo.contracts.scientific import (
     DetectorPipelineBindingV1,
     LegacyExecutionEnvelopeV1,
@@ -726,6 +726,8 @@ class TrustedCampaignFinalizer:
         if len(recording_streams) != 1:
             raise ValueError("trusted recording stream is absent or ambiguous")
         recording_stream = recording_streams[0]
+        if isinstance(bundle.manifest, RecordingManifestV4):
+            raise ValueError("trusted campaign does not accept mixed-rate manifests")
         settings = recording_stream.applied_settings
         timing = recording_stream.timing
         if (

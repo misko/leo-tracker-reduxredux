@@ -19,6 +19,7 @@ from leo.contracts.standard_native_path_report import (
 from leo.contracts.standard_native_terminal import (
     NativeTerminalPathEvidenceV2,
     StandardNativePairedReportV4,
+    StandardNativePairedReportV5,
     StandardNativeRadioReportV4,
     aggregate_native_probe_execution_accounting,
     aggregate_native_qam_statistics,
@@ -64,15 +65,12 @@ def _radio_report(
     stream_id: str,
     radio_id: str,
     gapped: bool,
+    sample_rate_hz: int = 3_000_000,
 ) -> StandardNativeRadioReportV4:
     statuses = (
-        ("complete", "no_result")
-        if gapped
-        else (
-            "complete",
-            "no_result",
-            "complete",
-        )
+        (("complete", "no_result") if gapped else ("complete", "no_result", "complete"))
+        if sample_rate_hz == 3_000_000
+        else (("no_result", "no_result") if gapped else ("no_result",) * 3)
     )
     paths = tuple(
         _terminal_path(
@@ -82,6 +80,8 @@ def _radio_report(
                 stream_id=stream_id,
                 radio_id=radio_id,
                 receiver_id=receiver_id,
+                sample_rate_hz=sample_rate_hz,
+                include_tracks=sample_rate_hz == 3_000_000,
             )
         )
         for receiver_id in (0, 1)
@@ -89,6 +89,14 @@ def _radio_report(
     intervals = intersect_valid_utc_intervals(
         paths[0].valid_utc_intervals,
         paths[1].valid_utc_intervals,
+    )
+    scientific_disposition = (
+        NativePathScientificDispositionV1.CANDIDATE
+        if any(
+            item.path_report.scientific_disposition is NativePathScientificDispositionV1.CANDIDATE
+            for item in paths
+        )
+        else NativePathScientificDispositionV1.NO_CANDIDATE
     )
     values = {
         "schema_version": 4,
@@ -114,7 +122,7 @@ def _radio_report(
         "aggregate_terminal_tracks": aggregate_terminal_track_accounting(
             tuple(item.terminal_tracks for item in paths)
         ).model_dump(mode="json"),
-        "scientific_disposition": NativePathScientificDispositionV1.CANDIDATE.value,
+        "scientific_disposition": scientific_disposition.value,
         "scientific_reason": "candidate-only terminal test evidence",
         "valid_utc_intervals": tuple(item.model_dump(mode="json") for item in intervals),
         "native_evidence_only": True,
@@ -199,6 +207,68 @@ def test_terminal_paired_report_aggregates_counts_without_cross_radio_associatio
     assert paired.aggregate_statistics.receiver_path_count == 4
     assert paired.cross_radio_association_permitted is False
     assert paired.phase_coherent is False
+
+
+def test_terminal_paired_v5_preserves_unequal_native_rates_without_resampling() -> None:
+    left = _radio_report(
+        stream_id="stream-0", radio_id="radio-0", gapped=False, sample_rate_hz=2_500_000
+    )
+    right = _radio_report(
+        stream_id="stream-1", radio_id="radio-1", gapped=True, sample_rate_hz=5_000_000
+    )
+    radios = (left, right)
+    intervals = intersect_valid_utc_intervals(
+        left.valid_utc_intervals,
+        right.valid_utc_intervals,
+    )
+    values = {
+        "schema_version": 5,
+        "algorithm_version": "standard-native-paired-report-v5",
+        "session_id": left.session_id,
+        "manifest_digest": left.manifest_digest,
+        "synchronization_inventory_digest": left.synchronization_inventory_digest,
+        "pair_input_binding_digest": canonical_digest({"pair": "mixed-terminal"}),
+        "radio_sample_rates_hz": (left.sample_rate_hz, right.sample_rate_hz),
+        "status": "partial_coverage",
+        "reason": "mixed terminal test paired report",
+        "radios": tuple(item.model_dump(mode="json") for item in radios),
+        "aggregate_statistics": aggregate_sufficient_statistics(
+            tuple(item.aggregate_statistics for item in radios)
+        ).model_dump(mode="json"),
+        "aggregate_terminal_opportunities": aggregate_native_probe_execution_accounting(
+            tuple(item.aggregate_terminal_opportunities for item in radios)
+        ).model_dump(mode="json"),
+        "aggregate_qam_statistics": aggregate_native_qam_statistics(
+            tuple(item.aggregate_qam_statistics for item in radios)
+        ).model_dump(mode="json"),
+        "aggregate_terminal_tracks": aggregate_terminal_track_accounting(
+            tuple(item.aggregate_terminal_tracks for item in radios)
+        ).model_dump(mode="json"),
+        "scientific_disposition": "no_candidate",
+        "scientific_reason": "candidate-only terminal test evidence",
+        "valid_utc_intervals": tuple(item.model_dump(mode="json") for item in intervals),
+        "native_evidence_only": True,
+        "current_eligible": False,
+        "phase_coherent": False,
+        "cross_radio_association_permitted": False,
+        "resampling_permitted": False,
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    paired = StandardNativePairedReportV5.model_validate(
+        {**values, "report_digest": canonical_digest(values)}
+    )
+
+    assert paired.radio_sample_rates_hz == (2_500_000, 5_000_000)
+    assert paired.resampling_permitted is False
+    changed = paired.model_dump(mode="json")
+    changed["radio_sample_rates_hz"] = [5_000_000, 2_500_000]
+    changed["report_digest"] = canonical_digest(
+        {key: value for key, value in changed.items() if key != "report_digest"}
+    )
+    with pytest.raises(ValidationError, match="rate inventory"):
+        StandardNativePairedReportV5.model_validate(changed)
 
 
 def test_terminal_path_rejects_changed_report_digest_and_qam_aggregate_tamper() -> None:

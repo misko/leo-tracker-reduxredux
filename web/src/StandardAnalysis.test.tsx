@@ -5,11 +5,16 @@ import { StandardAnalysis } from "./StandardAnalysis";
 import { parseStandardPlotView, parseStandardSubjectHierarchy } from "./standard-contract-validation";
 import type {
   StandardNativeEligibilityV3,
+  StandardNativeEligibilityV4,
   StandardNativePngArtifactInventoryV4,
+  StandardNativePngArtifactInventoryV5,
   StandardNativePlotViewV3,
   StandardNativeSubjectDetailV3,
+  StandardNativeSubjectDetailV4,
   StandardNativeSubjectHierarchyV3,
+  StandardNativeSubjectHierarchyV4,
   StandardNativeSubjectSummaryV3,
+  StandardNativeSubjectSummaryV4,
   StandardNativeTerminalSummaryV3,
   StandardPlotViewV2,
   StandardSubjectDetailV2,
@@ -430,6 +435,158 @@ function nativeArtifactInventory(
     content_digest: `sha256:${"e".repeat(64)}`,
   };
 }
+
+const mixedEligibility: StandardNativeEligibilityV4 = {
+  schema_version: 4,
+  source_type: "LIVE",
+  source_manifest_schema_version: 4,
+  capture_state: "degraded",
+  capture_committed: false,
+  capture_healthy: true,
+  full_device_span: true,
+  validity_aware: true,
+  automatic_eligible: true,
+  explicit_eligible: true,
+  promotion_allowed: true,
+  evidence_only: false,
+  dwell_class: "mixed_2p5_5",
+  legs: [{
+    schema_version: 4,
+    stream_id: "stream-0",
+    radio_id: "radio0",
+    profile_name: "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+    profile_revision_digest: `sha256:${"1".repeat(64)}`,
+    starlink_channel: 3,
+    starlink_edge: "lower",
+    sample_rate_hz: 2_500_000,
+    rf_bandwidth_hz: 2_500_000,
+    tuned_center_frequency_hz: 1_459_687_500,
+    pilot_if_center_frequency_hz: 1_459_687_500,
+    channel_if_start_hz: 1_455_000_000,
+    channel_if_stop_hz: 1_695_000_000,
+    captured_if_start_hz: 1_458_437_500,
+    captured_if_stop_hz: 1_460_937_500,
+  }, {
+    schema_version: 4,
+    stream_id: "stream-1",
+    radio_id: "radio1",
+    profile_name: "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
+    profile_revision_digest: `sha256:${"2".repeat(64)}`,
+    starlink_channel: 3,
+    starlink_edge: "lower",
+    sample_rate_hz: 5_000_000,
+    rf_bandwidth_hz: 5_000_000,
+    tuned_center_frequency_hz: 1_459_687_500,
+    pilot_if_center_frequency_hz: 1_459_687_500,
+    channel_if_start_hz: 1_455_000_000,
+    channel_if_stop_hz: 1_695_000_000,
+    captured_if_start_hz: 1_457_187_500,
+    captured_if_stop_hz: 1_462_187_500,
+  }],
+  pipeline_definition_id: nativeRelease.pipeline_definition_id,
+  promotion_authority_digest: `sha256:${"6".repeat(64)}`,
+  resampled: false,
+  reason: (
+    "Promoted reviewed mixed Standard-native capture is Current with partial validity coverage"
+  ),
+};
+
+function mixedSubject(
+  base: StandardNativeSubjectSummaryV3,
+): StandardNativeSubjectSummaryV4 {
+  return {
+    ...base,
+    schema_version: 4,
+    eligibility: mixedEligibility,
+  };
+}
+
+const mixedPathSubjects = paths.map((path, index) => mixedSubject(nativeSubject(
+  path.subject_id,
+  `${path.radio_label} ${path.receiver_label}`,
+  "receiver_path",
+  [path],
+  nativeTerminal(index < 2 ? 150 : 300, index < 2 ? 145 : 285, 1, 4),
+)));
+const mixedRadio0 = mixedSubject(nativeSubject(
+  "radio:radio0",
+  "Radio0",
+  "radio",
+  paths.slice(0, 2),
+  nativeTerminal(300, 290, 2, 8),
+));
+const mixedRadio1 = mixedSubject(nativeSubject(
+  "radio:radio1",
+  "Radio1",
+  "radio",
+  paths.slice(2),
+  nativeTerminal(600, 570, 2, 8),
+));
+const mixedPair: StandardNativeSubjectSummaryV4 = {
+  ...mixedSubject(nativeSubject(
+    "pair:radio0:radio1",
+    "Paired Radio0 + Radio1",
+    "radio",
+    paths,
+    nativeTerminal(900, 850, 4, 16),
+  )),
+  subject_kind: "paired",
+  child_subject_ids: [mixedRadio0.subject_id, mixedRadio1.subject_id],
+};
+const mixedEvidence = mixedPathSubjects.map((path) => ({
+  schema_version: 3 as const,
+  receiver_path: path.receiver_paths[0],
+  terminal: path.terminal,
+  declared_seconds: 60,
+  valid_seconds: 60 * path.terminal.coverage_fraction,
+  continuity_segment_count: 2,
+  continuity_boundary_count: 1,
+  invalid_zero_fill_excluded: true as const,
+}));
+const mixedHierarchy: StandardNativeSubjectHierarchyV4 = {
+  schema_version: 4,
+  session_id: "T1",
+  source_type: "LIVE",
+  eligibility: mixedEligibility,
+  generated_at: "2026-08-27T06:00:00Z",
+  rows: [mixedPair, mixedRadio0, mixedRadio1],
+};
+const mixedDetail: StandardNativeSubjectDetailV4 = {
+  ...nativeDetail,
+  schema_version: 4,
+  subject: mixedPair,
+  receiver_path_expansions: mixedPathSubjects,
+  receiver_path_evidence: mixedEvidence,
+};
+
+function mixedArtifactInventory(): StandardNativePngArtifactInventoryV5 {
+  const path = `/api/v2/recordings/T1/standard-subjects/${encodeURIComponent(mixedPair.subject_id)}`;
+  return {
+    schema_version: 5,
+    session_id: "T1",
+    subject_id: mixedPair.subject_id,
+    subject_kind: "paired",
+    run_id: "run-mixed-current",
+    run_manifest_digest: `sha256:${"d".repeat(64)}`,
+    sample_rates_hz: [2_500_000, 5_000_000],
+    coverage_status: mixedPair.coverage_status,
+    artifacts: nativeArtifactRows.slice(0, 5).map(([
+      name, label, description, catalog_kind, product_schema_version, suffix,
+    ], index) => ({
+      schema_version: 4,
+      name,
+      label,
+      description,
+      href: `${path}/${suffix}`,
+      catalog_kind,
+      product_schema_version,
+      digest: `sha256:${String(index + 1).repeat(64)}`,
+      byte_size: 2000 + index,
+      media_type: "image/png",
+    })),
+    content_digest: `sha256:${"e".repeat(64)}`,
+  };
+}
 const nativeWaterfall: StandardNativePlotViewV3 = {
   schema_version: 3,
   session_id: "T1",
@@ -630,6 +787,54 @@ test("renders native Current and registered PNGs without a waterfall cell table"
   expect(screen.getByRole("img", { name: /Pilot Doppler qualification overview/ }))
     .toBeInTheDocument();
   expect(screen.getByRole("img", { name: /Doppler rates across/ })).toBeInTheDocument();
+});
+
+test("renders mixed 2.5/5 Current with sealed same-channel RF passbands and paired PNGs", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/artifacts?")) {
+      return new Response(JSON.stringify(mixedArtifactInventory()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(mixedPair.subject_id))) {
+      return new Response(JSON.stringify(mixedDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(mixedHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  expect(await screen.findByText("Standard native analysis")).toBeInTheDocument();
+  expect(screen.getByText("STANDARD · NATIVE · MIXED 2.5 + 5.0 MS/s")).toBeInTheDocument();
+  const authority = await screen.findByRole("region", { name: "Mixed-rate RF coverage authority" });
+  expect(within(authority).getAllByText(/Channel 3 lower/)).toHaveLength(2);
+  expect(within(authority).getByText(/analog BW 2.5000 MHz/)).toBeInTheDocument();
+  expect(within(authority).getByText(/analog BW 5.0000 MHz/)).toBeInTheDocument();
+  expect(within(authority).getAllByText(/pilot 1459.6875 MHz IF/)).toHaveLength(2);
+  expect(within(authority).getByText(/1458.4375 MHz–1460.9375 MHz IF/)).toBeInTheDocument();
+  expect(within(authority).getByText(/1457.1875 MHz–1462.1875 MHz IF/)).toBeInTheDocument();
+  const gallery = await screen.findByRole("region", { name: "Registered native image artifacts" });
+  await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(5));
+  expect(screen.queryByRole("region", { name: "Native waterfall validity" }))
+    .not.toBeInTheDocument();
+});
+
+test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {
+  const crossed = structuredClone(mixedHierarchy) as unknown as Record<string, unknown>;
+  const eligibility = crossed.eligibility as Record<string, unknown>;
+  const legs = eligibility.legs as Array<Record<string, unknown>>;
+  legs[1].rf_bandwidth_hz = 2_500_000;
+  expect(() => parseStandardSubjectHierarchy(crossed)).toThrow(
+    /RF bandwidth differs from native sample rate/,
+  );
 });
 
 test("keeps both radio subjects reachable beside all paths and the paired subject", async () => {

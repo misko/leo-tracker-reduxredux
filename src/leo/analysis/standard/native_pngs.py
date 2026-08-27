@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any, cast
 
@@ -391,6 +392,7 @@ def native_standard_png_source(
     stateful_products: tuple[UpstreamJsonProduct, ...],
     path_report_products: tuple[UpstreamJsonProduct, ...],
     config: ReceiverStandardConfig,
+    configs_by_sample_rate_hz: Mapping[int, ReceiverStandardConfig] | None = None,
     valid_utc_intervals: tuple[tuple[int, int], ...] | None = None,
 ) -> StandardPngSource:
     """Build one legacy-compatible plot source from exact sealed native path products."""
@@ -414,6 +416,10 @@ def native_standard_png_source(
     ):
         raise ValueError("native PNG projection path inventory is not exact")
     validated = []
+    configurations = {
+        config.replay_gate.sample_rate_hz: config,
+        **({} if configs_by_sample_rate_hz is None else configs_by_sample_rate_hz),
+    }
     for waterfall_item, stateful_item, report_item in zip(*inventories, strict=True):
         if not (
             waterfall_item.producer_scope
@@ -426,6 +432,7 @@ def native_standard_png_source(
         stateful = StandardNativeStatefulPathV2.model_validate(stateful_item.document)
         report = StandardNativePathReportV3.model_validate(report_item.document)
         source = stateful.source
+        path_config = configurations.get(source.sample_rate_hz)
         if (
             waterfall.source != source
             or report.source != source
@@ -435,22 +442,22 @@ def native_standard_png_source(
             or producer_scope.session_id != context.session_id
             or (producer_scope.stream_id, producer_scope.receiver_id)
             != (source.stream_id, source.receiver_id)
+            or path_config is None
             or stateful.science_configuration_digest
-            != receiver_standard_configuration_digest(config)
+            != receiver_standard_configuration_digest(path_config)
         ):
             raise ValueError("native PNG source authority does not close")
         if context.scope.kind is ScopeKind.RADIO and (
             source.stream_id != context.scope.stream_id or source.radio_id != context.scope.radio_id
         ):
             raise ValueError("native radio PNG received foreign path")
-        validated.append((waterfall, stateful, report))
+        validated.append((waterfall, stateful, report, path_config))
     validated.sort(key=lambda item: (item[1].source.stream_id, item[1].source.receiver_id))
     sources = tuple(item[1].source for item in validated)
     if (
         len({item.path_input_binding_digest for item in sources}) != len(sources)
         or len({item.manifest_digest for item in sources}) != 1
         or len({item.synchronization_inventory_digest for item in sources}) != 1
-        or len({item.sample_rate_hz for item in sources}) != 1
     ):
         raise ValueError("native PNG source inventory is inconsistent")
     origin_utc_ns = min(item.timing.first_estimate_utc_ns for item in sources)
@@ -459,10 +466,10 @@ def native_standard_png_source(
             waterfall,
             stateful,
             report,
-            config=config,
+            config=path_config,
             origin_utc_ns=origin_utc_ns,
         )
-        for waterfall, stateful, report in validated
+        for waterfall, stateful, report, path_config in validated
     )
     if valid_utc_intervals is not None:
         relative_intervals = tuple(

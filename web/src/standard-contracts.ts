@@ -311,7 +311,20 @@ export interface StandardNativePngArtifactInventoryV4 {
   subject_kind: "receiver_path" | "radio" | "paired";
   run_id: string;
   run_manifest_digest: string;
-  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000;
+  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000 | 10_000_000;
+  coverage_status: StandardNativeCoverageStatusV3;
+  artifacts: StandardNativePngArtifactV4[];
+  content_digest: string;
+}
+
+export interface StandardNativePngArtifactInventoryV5 {
+  schema_version: 5;
+  session_id: string;
+  subject_id: string;
+  subject_kind: "receiver_path" | "radio" | "paired";
+  run_id: string;
+  run_manifest_digest: string;
+  sample_rates_hz: Array<2_500_000 | 5_000_000 | 10_000_000>;
   coverage_status: StandardNativeCoverageStatusV3;
   artifacts: StandardNativePngArtifactV4[];
   content_digest: string;
@@ -342,12 +355,53 @@ export interface StandardNativeEligibilityV3 {
   promotion_allowed: true;
   evidence_only: false;
   profile_revision_digest: string;
-  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000;
+  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000 | 10_000_000;
   pipeline_definition_id: string;
   promotion_authority_digest: string;
   reason:
     | "Promoted reviewed V3 Standard-native capture is Current"
     | "Promoted reviewed V3 Standard-native capture is Current with partial validity coverage";
+}
+
+export interface StandardNativeMixedLegV4 {
+  schema_version: 4;
+  stream_id: string;
+  radio_id: string;
+  profile_name: string;
+  profile_revision_digest: string;
+  starlink_channel: 1 | 2 | 3 | 4;
+  starlink_edge: "lower" | "upper";
+  sample_rate_hz: 2_500_000 | 5_000_000 | 10_000_000;
+  rf_bandwidth_hz: 2_500_000 | 5_000_000 | 10_000_000;
+  tuned_center_frequency_hz: number;
+  pilot_if_center_frequency_hz: number;
+  channel_if_start_hz: number;
+  channel_if_stop_hz: number;
+  captured_if_start_hz: number;
+  captured_if_stop_hz: number;
+}
+
+export interface StandardNativeEligibilityV4 {
+  schema_version: 4;
+  source_type: "LIVE";
+  source_manifest_schema_version: 4;
+  capture_state: "committed" | "degraded";
+  capture_committed: boolean;
+  capture_healthy: true;
+  full_device_span: true;
+  validity_aware: true;
+  automatic_eligible: true;
+  explicit_eligible: true;
+  promotion_allowed: true;
+  evidence_only: false;
+  dwell_class: "mixed_2p5_5" | "mixed_2p5_10";
+  legs: [StandardNativeMixedLegV4, StandardNativeMixedLegV4];
+  pipeline_definition_id: string;
+  promotion_authority_digest: string;
+  resampled: false;
+  reason:
+    | "Promoted reviewed mixed Standard-native capture is Current"
+    | "Promoted reviewed mixed Standard-native capture is Current with partial validity coverage";
 }
 
 export interface StandardNativeSufficientStatisticsV1 {
@@ -467,6 +521,21 @@ export interface StandardNativeSubjectHierarchyV3 {
   rows: StandardNativeSubjectSummaryV3[];
 }
 
+export interface StandardNativeSubjectSummaryV4
+  extends Omit<StandardNativeSubjectSummaryV3, "schema_version" | "eligibility"> {
+  schema_version: 4;
+  eligibility: StandardNativeEligibilityV4;
+}
+
+export interface StandardNativeSubjectHierarchyV4 {
+  schema_version: 4;
+  session_id: string;
+  source_type: "LIVE";
+  eligibility: StandardNativeEligibilityV4;
+  generated_at: string;
+  rows: StandardNativeSubjectSummaryV4[];
+}
+
 export interface StandardNativePathEvidenceV3 {
   schema_version: 3;
   receiver_path: StandardReceiverPathRefV2;
@@ -520,6 +589,16 @@ export interface StandardNativeSubjectDetailV3 {
   views: StandardNativeViewDescriptorV3[];
   available_artifacts: StandardNativeArtifactNameV3[];
   limitations: string[];
+}
+
+export interface StandardNativeSubjectDetailV4
+  extends Omit<
+    StandardNativeSubjectDetailV3,
+    "schema_version" | "subject" | "receiver_path_expansions"
+  > {
+  schema_version: 4;
+  subject: StandardNativeSubjectSummaryV4;
+  receiver_path_expansions: StandardNativeSubjectSummaryV4[];
 }
 
 export interface StandardNativePresentationProductRefV3 {
@@ -577,7 +656,7 @@ export interface StandardNativePlotViewV3 {
   state: "available" | "partial" | "unavailable";
   time_domain: StandardTimeDomainV2;
   receiver_path_ids: string[];
-  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000;
+  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000 | 10_000_000;
   source_proof: StandardNativeSourceProofV3;
   source_point_count: number;
   returned_point_count: number;
@@ -590,12 +669,49 @@ export interface StandardNativePlotViewV3 {
   projection_digest: string;
 }
 
+export interface StandardNativeFrequencyAxisV4 {
+  schema_version: 4;
+  receiver_path_id: string;
+  frequency_bin_centers_hz: number[];
+}
+
+export interface StandardNativePlotViewV4 {
+  schema_version: 4;
+  session_id: string;
+  subject_id: string;
+  view_kind: StandardViewKindV2;
+  state: "available" | "partial" | "unavailable";
+  time_domain: StandardTimeDomainV2;
+  receiver_path_ids: string[];
+  sample_rates_hz: Array<2_500_000 | 5_000_000 | 10_000_000>;
+  source_proof: StandardNativeSourceProofV3;
+  source_point_count: number;
+  returned_point_count: number;
+  truncated: boolean;
+  metric_series: StandardNativeMetricSeriesV3[];
+  frequency_axes: StandardNativeFrequencyAxisV4[];
+  waterfall_tiles: StandardNativeWaterfallTileV3[];
+  trajectories: StandardNativeTrajectoryV3[];
+  reason: string;
+  projection_digest: string;
+}
+
 export type StandardSubjectHierarchy =
   | StandardSubjectHierarchyV2
-  | StandardNativeSubjectHierarchyV3;
-export type StandardSubjectDetail = StandardSubjectDetailV2 | StandardNativeSubjectDetailV3;
-export type StandardSubjectSummary = StandardSubjectSummaryV2 | StandardNativeSubjectSummaryV3;
-export type StandardPlotView = StandardPlotViewV2 | StandardNativePlotViewV3;
+  | StandardNativeSubjectHierarchyV3
+  | StandardNativeSubjectHierarchyV4;
+export type StandardSubjectDetail =
+  | StandardSubjectDetailV2
+  | StandardNativeSubjectDetailV3
+  | StandardNativeSubjectDetailV4;
+export type StandardSubjectSummary =
+  | StandardSubjectSummaryV2
+  | StandardNativeSubjectSummaryV3
+  | StandardNativeSubjectSummaryV4;
+export type StandardPlotView =
+  | StandardPlotViewV2
+  | StandardNativePlotViewV3
+  | StandardNativePlotViewV4;
 
 export interface StandardReplayAuditRowV1 {
   receiver_path_id: string;

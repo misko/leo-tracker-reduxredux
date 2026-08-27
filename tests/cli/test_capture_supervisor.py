@@ -21,6 +21,12 @@ from leo.contracts.capture_control import (
     CaptureDesiredState,
     CaptureObservedState,
 )
+from leo.contracts.mixed_rate_schedule import (
+    MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
+    MIXED_RATE_SCHEDULE_POLICY_V1,
+    ProductionDwellClass,
+    ProductionDwellIntentV1,
+)
 from leo.contracts.states import CaptureState
 from leo.scanner import ScannerBurstReportV1
 
@@ -213,6 +219,100 @@ class _DurableSupervisorBackend(_SupervisorBackend):
 
     def reclaim_expired_acquisition_operations(self):
         return ()
+
+
+class _MixedRateDurableBackend(_DurableSupervisorBackend):
+    def mixed_rate_profile_authority(self) -> dict[int, tuple[str, str]]:
+        return {
+            2_500_000: ("rate-2p5", "sha256:" + "2" * 64),
+            5_000_000: ("rate-5", "sha256:" + "5" * 64),
+            15_000_000: ("rate-15", "sha256:" + "f" * 64),
+        }
+
+    def capture_mixed_once(
+        self,
+        intent: ProductionDwellIntentV1,
+        **_kwargs,
+    ) -> CaptureDataV1:
+        return self.capture_once(
+            intent.dwell_class.value,
+            radio_ids=intent.radio_ids,
+        )
+
+
+def test_durable_mixed_rate_policy_persists_exact_balanced_six_two_eight_cycle() -> None:
+    clock = _Clock()
+    backend = _MixedRateDurableBackend(clock)
+    backend.analyzed.set()
+    start = datetime.fromtimestamp(0, tz=UTC)
+    profiles = ("ordinary-2p5", "ordinary-3", "ordinary-5")
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        profiles,
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("production",),
+        interval_seconds=10.0,
+        maximum_captures=16,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        mixed_rate_policy=MIXED_RATE_SCHEDULE_POLICY_V1,
+    )
+
+    assert summary.capture_count == 16
+    intents = tuple(
+        ProductionDwellIntentV1.model_validate(item.payload)
+        for item in backend.operations
+        if item.kind == "scheduled_recording"
+    )
+    assert len(intents) == 16
+    assert [intent.cadence_ordinal for intent in intents] == list(range(16))
+    assert sum(intent.dwell_class is ProductionDwellClass.MIXED_2P5_5 for intent in intents) == 6
+    assert sum(intent.dwell_class is ProductionDwellClass.MIXED_2P5_15 for intent in intents) == 2
+    assert sum(intent.dwell_class is ProductionDwellClass.ORDINARY_POOL for intent in intents) == 8
+    for dwell_class, high_rate in (
+        (ProductionDwellClass.MIXED_2P5_5, 5_000_000),
+        (ProductionDwellClass.MIXED_2P5_15, 15_000_000),
+    ):
+        high_radios = [
+            next(item.radio_id for item in intent.radio_rates if item.sample_rate_hz == high_rate)
+            for intent in intents
+            if intent.dwell_class is dwell_class
+        ]
+        assert high_radios.count("radio-a") == high_radios.count("radio-b")
+
+
+def test_durable_safe_policy_never_enqueues_unqualified_fifteen_m() -> None:
+    clock = _Clock()
+    backend = _MixedRateDurableBackend(clock)
+    backend.analyzed.set()
+    start = datetime.fromtimestamp(0, tz=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        ("ordinary-2p5", "ordinary-3", "ordinary-5"),
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("production",),
+        interval_seconds=10.0,
+        maximum_captures=16,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        mixed_rate_policy=MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
+    )
+
+    assert summary.capture_count == 16
+    intents = tuple(
+        ProductionDwellIntentV1.model_validate(item.payload)
+        for item in backend.operations
+        if item.kind == "scheduled_recording"
+    )
+    assert sum(item.dwell_class is ProductionDwellClass.MIXED_2P5_5 for item in intents) == 6
+    assert sum(item.dwell_class is ProductionDwellClass.ORDINARY_POOL for item in intents) == 10
+    assert all(rate.sample_rate_hz != 15_000_000 for item in intents for rate in item.radio_rates)
 
 
 def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis() -> None:

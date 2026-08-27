@@ -9,7 +9,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field
 
 from leo.catalog import ActiveRunExistsError, CatalogRepository, IdenticalRunExistsError
-from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3
+from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3, RecordingManifestV4
 from leo.pipeline import compile_standard_run_plan
 from leo.pipeline.standard_native import compile_standard_native_run_plan
 from leo.presentation.standard_pipeline import StandardSourceTypeV2, standard_eligibility_v2
@@ -122,7 +122,7 @@ class StandardReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
-        native_current = isinstance(bundle.manifest, RecordingManifestV3)
+        native_current = isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4))
         if not native_current:
             if "CAPTURE_ONLY" in bundle.manifest.tags:
                 raise StandardReprocessError(
@@ -152,7 +152,7 @@ class StandardReprocessService:
             )
 
         try:
-            if isinstance(bundle.manifest, RecordingManifestV3):
+            if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
                 plan = compile_standard_native_run_plan(
                     bundle.manifest,
                     manifest_digest=snapshot.manifest_digest,
@@ -216,9 +216,12 @@ class StandardReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
-        if not isinstance(bundle.manifest, (RecordingManifestV2, RecordingManifestV3)):
+        if not isinstance(
+            bundle.manifest,
+            (RecordingManifestV2, RecordingManifestV3, RecordingManifestV4),
+        ):
             raise StandardReprocessError(
-                "native evidence action requires a reviewed V2/V3 recording"
+                "native evidence action requires a reviewed V2/V3/V4 recording"
             )
         try:
             release = self._catalog.pipeline_release_snapshot(self._pipeline_release_id)

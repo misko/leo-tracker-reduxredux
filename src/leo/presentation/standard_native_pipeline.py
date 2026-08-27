@@ -81,7 +81,7 @@ class StandardNativeEligibilityV3(ContractModel):
     promotion_allowed: Literal[True] = True
     evidence_only: Literal[False] = False
     profile_revision_digest: Sha256Digest
-    sample_rate_hz: Literal[2_500_000, 3_000_000, 5_000_000]
+    sample_rate_hz: Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000]
     pipeline_definition_id: Sha256Digest
     promotion_authority_digest: Sha256Digest
     reason: Literal[
@@ -104,6 +104,97 @@ class StandardNativeEligibilityV3(ContractModel):
         )
         if self.reason != expected_reason:
             raise ValueError("native eligibility reason disagrees with capture state")
+        return self
+
+
+class StandardNativeMixedLegV4(ContractModel):
+    """One exact RF/passband and native-rate leg shown for a mixed dwell."""
+
+    schema_version: Literal[4] = 4
+    stream_id: Identifier
+    radio_id: Identifier
+    profile_name: Identifier
+    profile_revision_digest: Sha256Digest
+    starlink_channel: Annotated[int, Field(ge=1, le=4)]
+    starlink_edge: Literal["lower", "upper"]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 10_000_000]
+    rf_bandwidth_hz: Literal[2_500_000, 5_000_000, 10_000_000]
+    tuned_center_frequency_hz: Annotated[int, Field(gt=0)]
+    pilot_if_center_frequency_hz: Annotated[int, Field(gt=0)]
+    channel_if_start_hz: Annotated[int, Field(gt=0)]
+    channel_if_stop_hz: Annotated[int, Field(gt=0)]
+    captured_if_start_hz: Annotated[int, Field(gt=0)]
+    captured_if_stop_hz: Annotated[int, Field(gt=0)]
+
+    @model_validator(mode="after")
+    def _rf_passband_closes(self) -> Self:
+        if (
+            self.rf_bandwidth_hz != self.sample_rate_hz
+            or self.captured_if_stop_hz - self.captured_if_start_hz != self.rf_bandwidth_hz
+            or 2 * self.tuned_center_frequency_hz
+            != self.captured_if_start_hz + self.captured_if_stop_hz
+            or self.channel_if_stop_hz <= self.channel_if_start_hz
+            or self.captured_if_start_hz < self.channel_if_start_hz
+            or self.captured_if_stop_hz > self.channel_if_stop_hz
+            or not (
+                self.captured_if_start_hz
+                <= self.pilot_if_center_frequency_hz
+                <= self.captured_if_stop_hz
+            )
+        ):
+            raise ValueError("mixed native presentation RF/passband authority is invalid")
+        return self
+
+
+class StandardNativeEligibilityV4(ContractModel):
+    """Promotion truth for one reviewed unequal-rate RecordingManifestV4."""
+
+    schema_version: Literal[4] = 4
+    source_type: Literal["LIVE"] = "LIVE"
+    source_manifest_schema_version: Literal[4] = 4
+    capture_state: Literal["committed", "degraded"]
+    capture_committed: bool
+    capture_healthy: Literal[True] = True
+    full_device_span: Literal[True] = True
+    validity_aware: Literal[True] = True
+    automatic_eligible: Literal[True] = True
+    explicit_eligible: Literal[True] = True
+    promotion_allowed: Literal[True] = True
+    evidence_only: Literal[False] = False
+    dwell_class: Literal["mixed_2p5_5", "mixed_2p5_10"]
+    legs: tuple[StandardNativeMixedLegV4, StandardNativeMixedLegV4]
+    pipeline_definition_id: Sha256Digest
+    promotion_authority_digest: Sha256Digest
+    resampled: Literal[False] = False
+    reason: Literal[
+        "Promoted reviewed mixed Standard-native capture is Current",
+        "Promoted reviewed mixed Standard-native capture is Current with partial validity coverage",
+    ]
+
+    @model_validator(mode="after")
+    def _eligibility_is_exact(self) -> Self:
+        committed = self.capture_state == "committed"
+        if self.capture_committed != committed:
+            raise ValueError("mixed native eligibility committed flag disagrees with capture state")
+        identities = tuple((item.stream_id, item.radio_id) for item in self.legs)
+        if identities != tuple(sorted(identities)) or len(set(identities)) != 2:
+            raise ValueError("mixed native presentation leg inventory is not exact")
+        expected_rates = {
+            "mixed_2p5_5": {2_500_000, 5_000_000},
+            "mixed_2p5_10": {2_500_000, 10_000_000},
+        }[self.dwell_class]
+        if {item.sample_rate_hz for item in self.legs} != expected_rates:
+            raise ValueError("mixed native presentation rate pair disagrees with its dwell class")
+        expected_reason = (
+            "Promoted reviewed mixed Standard-native capture is Current"
+            if committed
+            else (
+                "Promoted reviewed mixed Standard-native capture is Current with partial "
+                "validity coverage"
+            )
+        )
+        if self.reason != expected_reason:
+            raise ValueError("mixed native eligibility reason disagrees with capture state")
         return self
 
 
@@ -216,6 +307,13 @@ class StandardNativeSubjectSummaryV3(ContractModel):
         return self
 
 
+class StandardNativeSubjectSummaryV4(StandardNativeSubjectSummaryV3):
+    """Mixed-rate subject summary with run-level V4 promotion truth."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    eligibility: StandardNativeEligibilityV4  # type: ignore[assignment]
+
+
 class StandardNativeSubjectHierarchyV3(ContractModel):
     schema_version: Literal[3] = 3
     session_id: Identifier
@@ -249,6 +347,41 @@ class StandardNativeSubjectHierarchyV3(ContractModel):
                 raise ValueError("native paired paths differ from the radio union")
         elif len(radios) != 1 or pairs or len(self.rows) != 1:
             raise ValueError("native hierarchy requires one radio or an exact radio pair")
+        return self
+
+
+class StandardNativeSubjectHierarchyV4(ContractModel):
+    """Exact pair/radio hierarchy for a mixed-rate Current run."""
+
+    schema_version: Literal[4] = 4
+    session_id: Identifier
+    source_type: Literal["LIVE"] = "LIVE"
+    eligibility: StandardNativeEligibilityV4
+    generated_at: datetime
+    rows: tuple[StandardNativeSubjectSummaryV4, ...] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def _hierarchy_is_exact(self) -> Self:
+        if any(item.session_id != self.session_id for item in self.rows):
+            raise ValueError("mixed native hierarchy contains a foreign subject")
+        if any(item.eligibility != self.eligibility for item in self.rows):
+            raise ValueError("mixed native hierarchy eligibility is crossed")
+        if len({item.subject_id for item in self.rows}) != len(self.rows):
+            raise ValueError("mixed native hierarchy repeats a subject")
+        paired = tuple(
+            item for item in self.rows if item.subject_kind is StandardSubjectKindV2.PAIRED
+        )
+        radios = tuple(
+            item for item in self.rows if item.subject_kind is StandardSubjectKindV2.RADIO
+        )
+        if len(paired) != 1 or len(radios) != 2 or self.rows[0] is not paired[0]:
+            raise ValueError("mixed native hierarchy requires pair then two radios")
+        if paired[0].child_subject_ids != tuple(item.subject_id for item in radios):
+            raise ValueError("mixed native paired children differ from radio rows")
+        if paired[0].receiver_paths != tuple(
+            path for radio in radios for path in radio.receiver_paths
+        ):
+            raise ValueError("mixed native paired paths differ from the radio union")
         return self
 
 
@@ -383,6 +516,16 @@ class StandardNativeSubjectDetailV3(ContractModel):
         return self
 
 
+class StandardNativeSubjectDetailV4(StandardNativeSubjectDetailV3):
+    """Mixed-rate detail; evidence rows remain the same per-path native contracts."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    subject: StandardNativeSubjectSummaryV4
+    receiver_path_expansions: tuple[StandardNativeSubjectSummaryV4, ...] = Field(
+        min_length=1, max_length=4
+    )
+
+
 class StandardNativePresentationProductRefV3(ContractModel):
     schema_version: Literal[3] = 3
     product_id: Annotated[int, Field(gt=0)]
@@ -505,7 +648,7 @@ class StandardNativePlotViewV3(ContractModel):
     state: StandardViewStateV2
     time_domain: StandardTimeDomainV2
     receiver_path_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=4)
-    sample_rate_hz: Literal[2_500_000, 3_000_000, 5_000_000]
+    sample_rate_hz: Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000]
     source_proof: StandardNativeSourceProofV3
     source_point_count: Annotated[int, Field(ge=0)]
     returned_point_count: Annotated[int, Field(ge=0, le=8192)]
@@ -566,9 +709,101 @@ class StandardNativePlotViewV3(ContractModel):
         return self
 
 
-type StandardHierarchy = StandardNativeSubjectHierarchyV3
-type StandardDetail = StandardNativeSubjectDetailV3
-type StandardPlot = StandardNativePlotViewV3
+class StandardNativeFrequencyAxisV4(ContractModel):
+    schema_version: Literal[4] = 4
+    receiver_path_id: Identifier
+    frequency_bin_centers_hz: tuple[float, ...] = Field(min_length=1, max_length=1024)
+
+    @field_validator("frequency_bin_centers_hz")
+    @classmethod
+    def _frequencies_are_finite(cls, value: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not math.isfinite(item) for item in value):
+            raise ValueError("mixed native waterfall frequency axis must be finite")
+        return value
+
+
+class StandardNativePlotViewV4(ContractModel):
+    """Mixed-rate plot projection retaining every source path's native axis."""
+
+    schema_version: Literal[4] = 4
+    session_id: Identifier
+    subject_id: Identifier
+    view_kind: StandardViewKindV2
+    state: StandardViewStateV2
+    time_domain: StandardTimeDomainV2
+    receiver_path_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=4)
+    sample_rates_hz: tuple[Literal[2_500_000, 5_000_000, 10_000_000], ...] = Field(
+        min_length=1,
+        max_length=2,
+    )
+    source_proof: StandardNativeSourceProofV3
+    source_point_count: Annotated[int, Field(ge=0)]
+    returned_point_count: Annotated[int, Field(ge=0, le=8192)]
+    truncated: bool
+    metric_series: tuple[StandardNativeMetricSeriesV3, ...] = Field(default=(), max_length=32)
+    frequency_axes: tuple[StandardNativeFrequencyAxisV4, ...] = Field(default=(), max_length=4)
+    waterfall_tiles: tuple[StandardNativeWaterfallTileV3, ...] = Field(default=(), max_length=2048)
+    trajectories: tuple[StandardNativeTrajectoryV3, ...] = Field(default=(), max_length=256)
+    reason: BoundedText
+    projection_digest: Sha256Digest
+
+    @field_validator("sample_rates_hz")
+    @classmethod
+    def _rate_inventory_is_canonical(
+        cls, value: tuple[Literal[2_500_000, 5_000_000, 10_000_000], ...]
+    ) -> tuple[Literal[2_500_000, 5_000_000, 10_000_000], ...]:
+        if value != tuple(sorted(set(value))):
+            raise ValueError("mixed native plot rates must be unique and ordered")
+        return value
+
+    @model_validator(mode="after")
+    def _plot_is_closed(self) -> Self:
+        returned = (
+            sum(len(item.points) for item in self.metric_series)
+            + len(self.waterfall_tiles)
+            + len(self.trajectories)
+        )
+        if (
+            self.returned_point_count != returned
+            or self.source_point_count < returned
+            or self.truncated != (self.source_point_count > returned)
+        ):
+            raise ValueError("mixed native plot source/returned counts are inconsistent")
+        lanes = {
+            *[item.receiver_path_id for item in self.metric_series],
+            *[item.receiver_path_id for item in self.waterfall_tiles],
+            *[item.receiver_path_id for item in self.trajectories],
+        }
+        if not lanes <= set(self.receiver_path_ids):
+            raise ValueError("mixed native plot contains a foreign receiver path")
+        if self.view_kind is StandardViewKindV2.WATERFALL:
+            axes = {
+                item.receiver_path_id: item.frequency_bin_centers_hz for item in self.frequency_axes
+            }
+            if self.metric_series or self.trajectories or set(axes) != set(self.receiver_path_ids):
+                raise ValueError("mixed native waterfall plot payload shape is invalid")
+            if any(
+                len(item.power_dbfs) != len(axes[item.receiver_path_id])
+                for item in self.waterfall_tiles
+            ):
+                raise ValueError("mixed native waterfall tile differs from its path axis")
+        elif self.view_kind is StandardViewKindV2.CFO_TRAJECTORY:
+            if self.metric_series or self.waterfall_tiles or self.frequency_axes:
+                raise ValueError("mixed native trajectory plot payload shape is invalid")
+        elif self.waterfall_tiles or self.trajectories or self.frequency_axes:
+            raise ValueError("mixed native metric plot payload shape is invalid")
+        if self.state is StandardViewStateV2.UNAVAILABLE and returned:
+            raise ValueError("unavailable mixed native plot carries evidence")
+        if self.projection_digest != canonical_digest(
+            self.model_dump(mode="json", exclude={"projection_digest"})
+        ):
+            raise ValueError("mixed native plot projection digest does not match")
+        return self
+
+
+type StandardHierarchy = StandardNativeSubjectHierarchyV3 | StandardNativeSubjectHierarchyV4
+type StandardDetail = StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4
+type StandardPlot = StandardNativePlotViewV3 | StandardNativePlotViewV4
 
 
 def native_stage_status_v3(
