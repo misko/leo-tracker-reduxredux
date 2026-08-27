@@ -126,6 +126,15 @@ class SatelliteCorrectionHypothesisSetV1(ContractModel):
         product_digests = tuple(item.correction_product.content_digest for item in slots)
         if len(set(product_digests)) != len(product_digests):
             raise ValueError("joint correction source slots repeat a product")
+        mode_digests = tuple(
+            mode.mode_digest
+            for slot in slots
+            for mode in slot.correction_product.modes
+        )
+        if len(set(mode_digests)) != len(mode_digests):
+            raise ValueError(
+                "joint correction source products require globally unique mode digests"
+            )
 
         expected = _derive_exact_hypotheses(slots)
         if self.source_hypothesis_count != len(expected):

@@ -536,6 +536,44 @@ def test_unknown_identity_keeps_equal_catalogue_modes_ambiguous() -> None:
     }
 
 
+def test_identity_hypotheses_cannot_receive_different_response_values() -> None:
+    product = _product((20_001, 20_002), oracle=False)
+    challenge = _challenge(product, observation_count=4, oracle=False)
+    assert isinstance(challenge.lane_inputs, UnknownIdentityFrozenCorrectionLaneV1)
+    first, second = product.modes
+    all_rows = _evidence_rows(challenge, product)
+    first_rows = tuple(
+        item for item in all_rows if item.correction_mode_digest == first.mode_digest
+    )
+    poisoned_rows = tuple(
+        replace(
+            item,
+            correction_mode_digest=second.mode_digest,
+            measured_cfo_hz=item.measured_cfo_hz + 1.0,
+        )
+        for item in first_rows
+    )
+    hypotheses = tuple(
+        sorted(
+            (
+                FrozenDopplerPositionHypothesis(
+                    correction_mode_digests=(first.mode_digest,), observations=first_rows
+                ),
+                FrozenDopplerPositionHypothesis(
+                    correction_mode_digests=(second.mode_digest,), observations=poisoned_rows
+                ),
+            ),
+            key=lambda item: item.correction_mode_digests,
+        )
+    )
+    with pytest.raises(BlindedDopplerPositionInputError, match="identical measured response"):
+        BlindedDopplerPositionEvidence(
+            challenge_content_digest=challenge.content_digest,
+            state_provider_digest=challenge.lane_inputs.candidate_likelihood_bank_digest,
+            hypotheses=hypotheses,
+        )
+
+
 def test_solver_rejects_stale_evidence_tau_count_provider_and_work_poison() -> None:
     product = _product()
     challenge = _challenge(product, observation_count=16, oracle=True)
