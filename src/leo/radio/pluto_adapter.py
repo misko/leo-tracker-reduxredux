@@ -28,6 +28,7 @@ from leo.domain.iq import IqBlock, receiver_major_complex_to_ci16
 
 DeviceFactory = Callable[..., Any]
 SettingsFactory = Callable[..., Any]
+ExactSettingsApplier = Callable[[Any, Any], Any]
 _EXPECTED_METADATA_ABI = 1
 
 
@@ -50,6 +51,7 @@ class PlutoIioRadioSource:
         radio_id: str | None = None,
         device_factory: DeviceFactory | None = None,
         settings_factory: SettingsFactory | None = None,
+        exact_settings_applier: ExactSettingsApplier | None = None,
         utc_ns: Callable[[], int] = time.time_ns,
         monotonic_ns: Callable[[], int] = time.monotonic_ns,
     ) -> None:
@@ -62,6 +64,7 @@ class PlutoIioRadioSource:
         self._radio_id = radio_id or expected_serial
         self._device_factory = device_factory
         self._settings_factory = settings_factory
+        self._exact_settings_applier = exact_settings_applier
         self._utc_ns = utc_ns
         self._monotonic_ns = monotonic_ns
         self._device: Any | None = None
@@ -128,6 +131,19 @@ class PlutoIioRadioSource:
             raise PlutoAdapterError(f"Pluto open failed: {error}") from error
 
     def configure(self, settings: RadioSettingsV1) -> RadioSettingsV1:
+        return self._configure(settings, exact_readback=False)
+
+    def configure_exact(self, settings: RadioSettingsV1) -> RadioSettingsV1:
+        """Apply settings through PPU's bounded exact-readback LO search."""
+
+        return self._configure(settings, exact_readback=True)
+
+    def _configure(
+        self,
+        settings: RadioSettingsV1,
+        *,
+        exact_readback: bool,
+    ) -> RadioSettingsV1:
         device = self._require_device()
         if any(
             receiver not in self.capabilities.receiver_ids for receiver in settings.receiver_ids
@@ -150,7 +166,17 @@ class PlutoIioRadioSource:
                 gain_db=gain_db,
                 channels=settings.receiver_ids,
             )
-            actual = _map_settings(device.apply_settings(upstream))
+            if exact_readback:
+                applier = self._exact_settings_applier or _load_exact_settings_applier()
+                application = applier(device, upstream)
+                applied = getattr(application, "applied", None)
+                if applied is None:
+                    raise PlutoAdapterError(
+                        "pluto-plus-utils exact settings result omits applied readback"
+                    )
+                actual = _map_settings(applied)
+            else:
+                actual = _map_settings(device.apply_settings(upstream))
             _validate_readback(settings, actual)
         except PlutoAdapterError:
             raise
@@ -435,6 +461,21 @@ def _load_settings_factory() -> SettingsFactory:
     if not callable(factory):
         raise PlutoDependencyError("pluto-plus-utils does not expose RadioSettings")
     return factory
+
+
+def _load_exact_settings_applier() -> ExactSettingsApplier:
+    try:
+        module = importlib.import_module("pluto_plus.hardware")
+    except ImportError as error:
+        raise PlutoDependencyError(
+            "exact Pluto tuning requires the pinned pluto-plus-utils hardware API"
+        ) from error
+    applier = getattr(module, "apply_settings_exact", None)
+    if not callable(applier):
+        raise PlutoDependencyError(
+            "pinned pluto-plus-utils does not expose exact settings application"
+        )
+    return applier
 
 
 def _map_identity(value: Any, *, radio_id: str) -> RadioIdentityV1:

@@ -622,6 +622,7 @@ def test_hardware_campaign_uses_exact_deployed_native_bandwidth_profiles() -> No
         and plan.profile_revision.profile.kernel_buffers == 4
         for plan in (three_m, five_m)
     )
+    assert "required_kernel_buffers=_KERNEL_BUFFERS" in inspect.getsource(_target)
 
 
 def test_v3_hardware_inventory_contains_only_the_production_pair() -> None:
@@ -2433,6 +2434,7 @@ def _target(
         prerequisites=prerequisites,
         policy=ContiguousRateQualificationPolicyV1(
             required_trial_count=config.trial_count,
+            required_kernel_buffers=_KERNEL_BUFFERS,
             maximum_refill_service_interval_ns=_MAXIMUM_SERVICE_INTERVAL_NS,
             required_tags=(
                 "CAPTURE_ONLY",

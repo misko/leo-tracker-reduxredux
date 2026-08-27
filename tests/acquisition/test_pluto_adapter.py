@@ -37,6 +37,9 @@ class StubDevice:
         self.settings = settings
         return settings
 
+    def read_settings(self):
+        return self.settings
+
     def read_block(self, sample_count: int):
         receivers = len(self.settings.channels)
         values = np.empty((receivers, sample_count), dtype=np.complex64)
@@ -214,6 +217,45 @@ def test_adapter_rejects_rate_mode_readback_coercion() -> None:
 
     with pytest.raises(PlutoAdapterError, match="sample_rate_hz readback mismatch"):
         adapter.configure(_settings((0, 1), sample_rate_hz=3_000_000))
+
+
+def test_adapter_exact_configuration_uses_bounded_ppu_lo_search() -> None:
+    class QuantizedDevice(StubDevice):
+        def __init__(self, uri: str, *, serial: str, radio_id: str) -> None:
+            super().__init__(uri, serial=serial, radio_id=radio_id)
+            self.requests: list[int] = []
+
+        def apply_settings(self, settings):
+            request = round(settings.center_frequency_hz)
+            self.requests.append(request)
+            desired = 1_700_000_000
+            if request == desired:
+                readback = desired - 2
+            elif request == desired + 2:
+                readback = desired
+            else:
+                readback = request + 100
+            self.settings = settings.model_copy(update={"center_frequency_hz": float(readback)})
+            return self.settings
+
+    device = QuantizedDevice("ip:192.168.1.20", serial="serial-123", radio_id="radio-a")
+    adapter = PlutoIioRadioSource(
+        "192.168.1.20",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+    )
+    adapter.open()
+
+    actual = adapter.configure_exact(_settings((0, 1)))
+
+    assert actual.center_frequency_hz == 1_700_000_000
+    assert device.requests == [
+        1_700_000_000,
+        1_700_000_001,
+        1_699_999_999,
+        1_700_000_002,
+    ]
 
 
 def test_adapter_closes_device_when_serial_attestation_disagrees() -> None:
