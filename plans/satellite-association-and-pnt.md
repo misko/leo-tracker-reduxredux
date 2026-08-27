@@ -124,8 +124,11 @@ also qualified on synthetic data. A response-free full-Starlink geometric
 horizon selector now authenticates exact TLE bytes and freezes a complete,
 unranked candidate universe independently for each predeclared
 `delta=-500,0,+500 s` field. The SGP4 bank binds that field receipt before
-propagation. None of these components has been used to propagate a real
-catalogue or score the opened arcs.
+propagation. A fail-closed development runner now builds all three banks before
+response scoring, retains every training-only tau profile, and evaluates the
+main and rolling future partitions against equal-calendar-block polynomial
+nulls. None of these components has been used to propagate a real catalogue or
+score the opened arcs.
 Calibrated ephemeris covariance, full fixed-lag smoothing and ECM,
 joint `K=2` correction representation, broad-prior particle navigation, joint
 identity/correction refinement, radio-only positioning, and four-lane blinded
@@ -156,8 +159,9 @@ or RF collection has occurred or is authorized by this document.
 | Opened long-arc development protocol | FROZEN, NOT EXECUTED | [`satellite-pnt-long-arc-development-protocol-v1.json`](../config/analysis/satellite-pnt-long-arc-development-protocol-v1.json), [`satellite_pnt_long_arc_protocol.py`](../src/leo/analysis/research/satellite_pnt_long_arc_protocol.py), and [`test_satellite_pnt_long_arc_protocol.py`](../tests/analysis/test_satellite_pnt_long_arc_protocol.py) bind exactly the registered 30 s `9981` and 13.825 s `150802` arcs, evidence hashes, support-centred timing rules, causal TLE snapshots, reviewed site preset, `tau=0` plus `[-5,+5] s`, observe-only `delta=±500 s`, chronological masks, radio-polynomial comparators, and claim denials. Fourteen focused tests, Ruff, and strict MyPy pass. No IQ, propagation, or response scoring occurred. |
 | Registered long-arc graph and response-free support adapter | DONE, no association execution | [`long_arc_catalogue_adapter.py`](../src/leo/analysis/research/long_arc_catalogue_adapter.py) authenticates the frozen report bytes, reconstructs the exact 881-row and 550-row support-centred physical graphs, and emits a narrow support port with no CFO, receiver-path, source-binding, or uncertainty response fields. Seven focused tests pin both graph/support/receipt digests and reject evidence or nested-authority mutations. IQ, TLE propagation, candidate selection, and association scoring are absent. |
 | Equal-opportunity radio-polynomial null | DONE, synthetic qualification only | [`radio_polynomial_null.py`](../src/leo/analysis/research/radio_polynomial_null.py) fits support-integrated line/quadratic/cubic models on an explicit training prefix and scores one identical future suffix with coefficient uncertainty propagated. Six tests cover exact support moments, curvature discrimination, future-response isolation, dense-Gaussian equality, partitions/work caps, and stale graph poison. It produces no identity probability, threshold, or gate. |
+| Opened-long-arc development runner | DONE, synthetic qualification only | [`long_arc_satellite_pnt_runner.py`](../src/leo/analysis/research/long_arc_satellite_pnt_runner.py) builds all `delta=-500,0,+500 s` response-free populations/banks before any response score, preserves all 41 training-only tau scores, evaluates the 60/40 plus three rolling partitions, reports pooled/equal-calendar-block future RMS and line/quadratic/cubic null comparisons, and keeps wrong-epoch fields observation-only. Five focused tests cover complete partitions, future-response isolation, stale authorities, exact design semantics, full-result digest closure, and runtime-boundary exclusions. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Exact-association posterior odds remain conditional on the complete frozen response-free candidate universe, and its internal `K=0` still uses the declared zero-curve component-offset/hardware-drift Gaussian baseline. The polynomial null is a separate future-prediction comparator, not yet part of posterior normalization. |
-| Real opened long arcs | INPUT PIPELINE QUALIFIED; EXECUTION BLOCKED | Graph reconstruction, response-free field population selection, field-bound SGP4 prediction, and equal-mask polynomial-null components are qualified on synthetic inputs. No opened-arc candidate population, TLE propagation, polynomial future score, or association score was run. The execution boundary remains closed pending an audited code-hash amendment and a fail-closed runner. |
+| Real opened long arcs | RUNNER QUALIFIED; EXECUTION BLOCKED | Graph reconstruction, response-free field population selection, field-bound SGP4 prediction, training-frozen catalogue ranking, rolling scoring, and equal-mask polynomial-null components are qualified on synthetic inputs. No opened-arc candidate population, TLE propagation, polynomial future score, or association score was run. The execution boundary remains closed pending an audited code-hash amendment. |
 
 ## North-star milestone
 
@@ -817,6 +821,14 @@ public contracts or accepted as current identity evidence.
   closes the geometric-selection implementation blocker but does not authorize
   or perform the opened-arc run; an additive code-hash amendment and audited
   runner remain required.
+- **2026-08-27:** the opened-long-arc development runner and complete tau-profile
+  reporting were implemented and qualified on synthetic data. The runner
+  constructs every response-free field bank before scoring, fits candidate,
+  tau, and CFO offset on training only, freezes them for one future score, and
+  reports both pooled and equal-calendar-block residuals against the three
+  radio-polynomial degrees. Its complete output is digest-closed. This still
+  does not authorize execution; the additive amendment must pin the exact code,
+  raw TLE assets, numerical work bounds, and exclusive output paths first.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
