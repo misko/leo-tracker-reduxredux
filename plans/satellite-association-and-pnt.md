@@ -100,11 +100,14 @@ catalogue-prediction, exact `K=0,1,2` hypothesis, transferable-correction, and
 blinded-evaluation contracts now exist, together with the first pure synthetic
 Rao-Blackwellized exact solver. A response-free raw-snapshot-bound SGP4 bank
 adapter and a causal, covariance-aware, single-episode nearest-neighbour
-diagnostic now exist. Response-free geometric population selection, calibrated
-ephemeris covariance, equal-opportunity radio/polynomial nulls, an EKF,
-rolling multi-dwell smoothing, correction-product generation/replay, and a
-navigation solver remain pending. No IQ access, catalogue rerun, new data
-selection, or RF collection has occurred or is authorized by this document.
+diagnostic now exist. A synthetic causal multi-dwell forward filter now carries
+`NULL`/NORAD histories, a receiver-local drift random walk, proper dwell-local
+CFO-offset marginalization, and score-before-assimilation next-dwell evidence.
+Response-free geometric population selection, calibrated ephemeris covariance,
+equal-opportunity radio/polynomial nulls, full fixed-lag smoothing and ECM,
+correction-product generation/replay, and a navigation solver remain pending.
+No IQ access, catalogue rerun, new data selection, or RF collection has
+occurred or is authorized by this document.
 
 ### Implementation checkpoint — 2026-08-27
 
@@ -116,9 +119,11 @@ selection, or RF collection has occurred or is authorized by this document.
 | Proper Gaussian marginalization of continuity offsets and hardware-epoch drift | DONE, synthetic baseline | Direct covariance-form equality and recovery tests in [`test_catalogue_association.py`](../tests/analysis/test_catalogue_association.py) |
 | Response-free raw-TLE-to-bank SGP4 adapter | DONE for a frozen synthetic candidate universe | [`catalogue_prediction.py`](../src/leo/analysis/catalogue_prediction.py) and [`test_catalogue_prediction.py`](../tests/analysis/test_catalogue_prediction.py); exact snapshot bytes and selected element pairs are digest-bound before propagation, support kernels are integrated, and tau is canonical at 1 ns. The diagonal uncertainty floor/age/residual model is declared, not calibrated orbit covariance. |
 | Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
+| Causal multi-dwell catalogue filter | DONE, synthetic forward-filter foundation | [`multi_dwell_catalogue_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_smoothing.py) and [`test_multi_dwell_catalogue_smoothing.py`](../tests/analysis/test_multi_dwell_catalogue_smoothing.py); one source state per dwell, at most two distinct NORADs per retained history, explicit `NULL`, normalized family priors, receiver-local drift resets, proper dwell-offset marginalization, and score-before-assimilation rolling receipts. This is not yet a simultaneous-emitter solver, ECM, or backward smoother. |
 | Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract only | [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py) |
 | Synthetic mixtures and exact-association poisons | DONE for current exact-solver scope | 31 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, stale-contract inputs, and tamper cases. |
 | SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 27 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
+| Multi-dwell filter and numerical poisons | DONE for current synthetic scope | 27 focused tests cover handoff/null histories, candidate-family mass invariance, `K<=2` history semantics, drift/reset behavior, causal future-value isolation, pruning and tie abstention, stable mixture predictive evidence, fail-closed extreme arithmetic, row/extension work caps, and dense-Gaussian equivalence. An independent 5,000-case Woodbury comparison found no high/medium blocker. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Posterior odds are conditional on the complete frozen response-free candidate universe. `K=0` currently uses the declared zero-curve component-offset/hardware-drift Gaussian baseline; the equal-opportunity polynomial/radio-only likelihood required by WP2 is not yet implemented. |
 | Real opened long arcs | NOT STARTED | Requires a separate frozen development protocol after this slice is independently audited. |
@@ -647,7 +652,10 @@ demonstration; it should not immediately reopen real IQ:
 3. Implement exact/brute-force `K=0,1,2` assignment on small candidate banks,
    with unassigned state and equal nuisance opportunity.
 4. Implement the conditional linear nuisance solver under an explicit gauge.
-5. Verify 10/0, 8/2, 5/5, handoff, alias, drift, and close-rate cases.
+5. Implement a causal multi-dwell forward-filter foundation and verify handoff,
+   null, drift, reset, pruning, and future-poison cases. Simultaneous 8/2 and
+   5/5 mixtures remain the exact within-dwell solver's responsibility until a
+   common multi-dwell episode adapter exists.
 6. Freeze the long-arc development protocol only after the synthetic and poison
    tests pass and an independent audit verifies data authority and leakage
    boundaries.
@@ -709,6 +717,15 @@ public contracts or accepted as current identity evidence.
   correction/blinded-position artifact boundary. This checkpoint is
   model-conditional and synthetic; it neither opens real data nor completes
   WP2, WP4, WP7, WP8, or WP9.
+- **2026-08-27:** causal multi-dwell filter foundation implemented and
+  independently audited. It preserves `NULL`/NORAD history modes, limits each
+  retained history to at most two distinct NORADs, marginalizes proper
+  dwell-local offsets, propagates receiver-local drift only inside declared
+  hardware continuity, scores each dwell before assimilation, and abstains on
+  pruning, exact ambiguity, null dominance, or numerical/work-bound failure.
+  The slice advances WP4/WP7 infrastructure but does not claim full smoothing,
+  ECM, simultaneous multi-emitter inference, real-data association, or a
+  transferable satellite correction.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
