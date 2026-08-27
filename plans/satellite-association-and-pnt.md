@@ -129,6 +129,12 @@ shared calibration nuisance is not yet jointly modeled. An additive partial
 unknown-identity navigation lane now consumes every fully assigned, valid
 four-satellite hypothesis on identical target response rows, reweights those
 modes by target likelihood, and preserves all other prior mass as unresolved.
+Separately, an additive exact-association joint-calibration product now
+preserves the native `K=0,1,2` modes from one shared-nuisance association fit.
+It retains externally calibrated cross-satellite frequency covariance while
+keeping the association's receiver/LNB/component nuisance marginalized and
+opaque. A frequency-gauge authority is required per non-null mode; unresolved
+gauges cannot become navigation-eligible.
 The two exact opened POST-FIX long arcs now have a digest-bound, fail-closed
 development protocol and one completed authorized execution. Attempt 1 failed
 closed at the response-free population work cap before response scoring; the
@@ -152,8 +158,8 @@ nulls. These components were first qualified on synthetic data and then used
 only by the exact authorized attempt-2 runner on the two registered opened
 arcs. No IQ was reopened during the execution.
 Calibrated ephemeris covariance, full fixed-lag smoothing and ECM,
-shared-nuisance unknown-identity correction modeling, broad-prior particle
-navigation, joint
+direct estimation of gauge-resolved satellite frequency covariance from the
+known-position batch, broad-prior particle navigation, joint
 identity/correction refinement, radio-only positioning, and four-lane blinded
 evaluation remain pending. This document authorizes no additional IQ access,
 catalogue rerun, data selection, or RF collection. The one catalogue run now
@@ -172,7 +178,8 @@ committed amendments; it is not confirmation data.
 | Response-free full-Starlink field population | DONE, synthetic qualification plus authorized opened-development execution | [`catalogue_population.py`](../src/leo/analysis/catalogue_population.py) and six focused tests in [`test_catalogue_population.py`](../tests/analysis/test_catalogue_population.py) authenticate exact TLE bytes, filter Starlink by name and complete geometric horizon support, bind support/site/tau/field policy, and emit no rank or truncation. Attempt 2 completed all six opened-arc fields: candidate counts were 503/488/501 for `9981` and 572/573/576 for `150802` at `delta=-500/0/+500 s`. |
 | Training-frozen covariance-aware nearest-neighbour baseline | DONE, single-episode synthetic diagnostic | [`nearest_neighbour_association.py`](../src/leo/analysis/nearest_neighbour_association.py) and [`test_nearest_neighbour_association.py`](../tests/analysis/test_nearest_neighbour_association.py); candidate/tau/offset selection uses the training prefix and every frozen hypothesis is scored once on the same future suffix. Exact candidate, heldout, and tau-profile ties remain abstentions. |
 | Causal multi-dwell catalogue filter | DONE, synthetic forward-filter foundation | [`multi_dwell_catalogue_smoothing.py`](../src/leo/analysis/multi_dwell_catalogue_smoothing.py) and [`test_multi_dwell_catalogue_smoothing.py`](../tests/analysis/test_multi_dwell_catalogue_smoothing.py); one source state per dwell, at most two distinct NORADs per retained history, explicit `NULL`, normalized family priors, receiver-local drift resets, proper dwell-offset marginalization, and score-before-assimilation rolling receipts. This is not yet a simultaneous-emitter solver, ECM, or backward smoother. |
-| Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). Coexisting `K=2` corrections fail closed pending an additive joint-mode contract. |
+| Solver-safe corrections and blinded truth/estimate/reveal boundary | DONE, contract plus single-emitter synthetic builder | Contracts and boundary poisons are in [`satellite_pnt.py`](../src/leo/contracts/satellite_pnt.py) and [`test_satellite_pnt.py`](../tests/contracts/test_satellite_pnt.py). The `K<=1` known-position projection and conditional future replay are in [`satellite_correction_replay.py`](../src/leo/analysis/satellite_correction_replay.py) and [`test_satellite_correction_replay.py`](../tests/analysis/test_satellite_correction_replay.py). The published V1 product still fails closed on coexisting `K=2`; the additive joint product below carries those semantics instead. |
+| Native `K=0,1,2` joint calibration product | DONE, synthetic contract and builder | [`satellite_pnt_joint_calibration.py`](../src/leo/contracts/satellite_pnt_joint_calibration.py) and [`satellite_correction_joint_replay.py`](../src/leo/analysis/satellite_correction_joint_replay.py) preserve every reported exact-association mode and its probability, bind exact episode assignments and TLE members, and retain a PSD cross-satellite bias/drift covariance supplied by a separate known-position calibration authority. Association component offsets and hardware drift affect mode evidence but are never exported. Unresolved receiver/satellite frequency gauge, tau boundary, stale TLE, incomplete mode coverage, indefinite covariance, or missing source authority makes a mode ineligible or fails closed. This does not yet estimate the satellite-side covariance or feed it into the joint positioning lane. |
 | Synthetic mixtures and exact-association poisons | DONE for current exact-solver scope | 31 focused tests cover K=0, 10/0, 8/2, 5/5, ambiguity, unassigned, replica/exclusion, enumeration, work caps, normalized priors, covariance, time-grid boundaries, posterior closure, source re-wrapping/chronology, stale-contract inputs, and tamper cases. |
 | SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 33 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, field-receipt binding, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
 | Multi-dwell filter and numerical poisons | DONE for current synthetic scope | 27 focused tests cover handoff/null histories, candidate-family mass invariance, `K<=2` history semantics, drift/reset behavior, causal future-value isolation, pruning and tie abstention, stable mixture predictive evidence, fail-closed extreme arithmetic, row/extension work caps, and dense-Gaussian equivalence. An independent 5,000-case Woodbury comparison found no high/medium blocker. |
@@ -913,6 +920,16 @@ public contracts or accepted as current identity evidence.
   remains candidate-only and cannot support a secure identity claim until a
   shared-nuisance calibration model and equal-opportunity null positioning lane
   are added.
+- **2026-08-27:** a second, non-independent-slot route now projects one exact
+  catalogue association directly into a joint correction product. It preserves
+  every native `K=0,1,2` mode and its episode assignments, so the association's
+  shared continuity-offset/hardware-drift nuisance has already been integrated
+  consistently into the discrete mode evidence. Those receiver-local states
+  remain absent from the solver product. Each non-null mode instead requires a
+  separately authorized, gauge-resolved satellite-frequency mean and joint
+  covariance; cross-satellite terms are retained and validated as PSD. This is
+  the truthful handoff boundary for a future known-position batch calibrator,
+  not yet that calibrator or a navigation solve.
 - **2026-08-27:** the shared truth-free position-evidence envelope was tightened
   so every identity hypothesis must consume byte-identical observation IDs,
   support times, measured CFO values, and measurement uncertainties. Candidate
