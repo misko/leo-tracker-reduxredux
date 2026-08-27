@@ -1,0 +1,175 @@
+{
+  "schema": "org.leo.research.satellite-tracking-timing-audit/v1",
+  "audit_id": "2026-08-27-satellite-tracking-timing-audit",
+  "created_utc": "2026-08-27T20:34:23Z",
+  "access": {
+    "new_rf_collected": false,
+    "iq_read": false,
+    "qnap_mode": "read-only-manifest-and-timeline"
+  },
+  "decision": {
+    "software_timezone_conversion_error_found": false,
+    "tle_registered_attempt_start_precedes_support": true,
+    "tle_receipt_completion_timestamp_persisted": false,
+    "device_counter_continuity_passed": true,
+    "visible_host_clock_step_found": false,
+    "sample_to_host_clock_bounded": true,
+    "host_clock_to_true_utc_bounded": false,
+    "association_publication_blocked": false,
+    "absolute_time_pnt_blocked": true,
+    "tau_is_receiver_clock_correction": false
+  },
+  "timezone_replay": {
+    "zones": [
+      "UTC",
+      "America/Los_Angeles",
+      "Asia/Tokyo"
+    ],
+    "graph_digests_identical": true,
+    "graph_timestamps_identical": true,
+    "tle_epochs_identical": true
+  },
+  "host": {
+    "hostname": "gauss",
+    "timezone": "Etc/UTC",
+    "local_rtc": false,
+    "chrony_active_across_captures": true,
+    "selected_ntp_source_across_captures": true,
+    "clock_step_logged_during_captures": false,
+    "historical_tracking_offset_persisted": false,
+    "pps_active": false,
+    "ptp_discipline_active": false,
+    "absolute_utc_numeric_bound_available": false
+  },
+  "timing_model": {
+    "sample_rate_hz": 2500000,
+    "nominal_sample_period_ns": 400,
+    "graph_rule": "manifest-first-sample-estimate-plus-nominal-sample-coordinate-v1",
+    "refreshed_audit_rule": "per-refill-device-counter-to-host-clock-fit-v1",
+    "evaluated_point_set": "every-observation-support-start-center-and-end",
+    "time_axis_bound_formula": "max(abs(graph-time-minus-refill-interpolated-point-time)+refill-sample-time-uncertainty)",
+    "bound_reference": "host-CLOCK_REALTIME-not-independent-true-UTC"
+  },
+  "arcs": [
+    {
+      "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+      "session_id": "cap-20260824T192252-9981b9c27853",
+      "manifest_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853/manifest.json",
+      "manifest_sha256": "sha256:afaecccd1130c09d4604bdebc99ff8fbb4089c9dd031602b117312739be094e3",
+      "stream_id": "stream-1",
+      "radio_serial": "10400056f695001322002d0010ad1719f2",
+      "timeline_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853/radio-10400056f695001322002d0010ad1719f2/timeline.jsonl.zst",
+      "timeline_sha256": "sha256:490409f4d483c5afda669f03c5a0f2def70f41159c52c747358adc9754f30ec8",
+      "first_device_sample_counter": 660899093157,
+      "last_device_sample_counter": 661049093156,
+      "full_capture_sample_count": 150000000,
+      "refill_count": 573,
+      "gap_count": 0,
+      "missing_sample_count": 0,
+      "overflow_count": 0,
+      "first_sample": {
+        "earliest_utc_ns": 1787599375411848873,
+        "estimate_utc_ns": 1787599375412378614,
+        "latest_utc_ns": 1787599375412908355,
+        "counter_to_host_half_width_ns": 529741
+      },
+      "registered_span": {
+        "sample_start": 0,
+        "sample_end_exclusive": 75000000,
+        "duration_s": 30.0,
+        "observation_count": 881,
+        "first_support_center_utc_ns": 1787599375422378414,
+        "last_support_center_utc_ns": 1787599405397378414
+      },
+      "sample_clock_audit": {
+        "ols_device_samples_per_host_second": 2499998.407,
+        "central_rate_error_ppm": -0.6371,
+        "central_accumulated_drift_us": 19.1,
+        "conservative_rate_error_ppm_lower": -47.841,
+        "conservative_rate_error_ppm_upper": 49.928,
+        "max_point_estimate_difference_us": 86.536,
+        "max_absolute_time_axis_bound_us": 1183.166,
+        "host_realtime_minus_monotonic_range_us": 3.501,
+        "host_realtime_minus_monotonic_endpoint_change_us": 0.031
+      },
+      "buffering": {
+        "read_start_minus_block_start_median_ms": 48.033,
+        "read_start_minus_block_start_max_ms": 95.946,
+        "read_completion_minus_block_end_median_ms": 44.49
+      },
+      "tle_snapshot": {
+        "collected_utc_ns": 1787594647459418079,
+        "sha256": "sha256:ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee",
+        "object_count": 10972,
+        "collection_lead_to_sample_zero_s": 4727.952960535,
+        "collection_lead_to_first_support_start_s": 4727.952960535,
+        "all_element_epochs_predate_collection": true
+      }
+    },
+    {
+      "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+      "session_id": "cap-20260825T150802-473cb5bbcbd6",
+      "manifest_path": "/srv/bulk/leo/recordings/2026/08/25/cap-20260825T150802-473cb5bbcbd6/manifest.json",
+      "manifest_sha256": "sha256:ab55917851a9cd37af94b6145cc719f7b8d9d0809f2202a2dcd1ac38c3e7a31e",
+      "stream_id": "stream-1",
+      "radio_serial": "10400056f695001322002d0010ad1719f2",
+      "timeline_path": "/srv/bulk/leo/recordings/2026/08/25/cap-20260825T150802-473cb5bbcbd6/radio-10400056f695001322002d0010ad1719f2/timeline.jsonl.zst",
+      "timeline_sha256": "sha256:5bb681374533535e568ba0afca46a39dd4129bdfa33f85c0efccd6d0d17d5a8b",
+      "first_device_sample_counter": 838916038826,
+      "last_device_sample_counter": 839066038825,
+      "full_capture_sample_count": 150000000,
+      "refill_count": 573,
+      "gap_count": 0,
+      "missing_sample_count": 0,
+      "overflow_count": 0,
+      "first_sample": {
+        "earliest_utc_ns": 1787670485579614894,
+        "estimate_utc_ns": 1787670485580127359,
+        "latest_utc_ns": 1787670485580639824,
+        "counter_to_host_half_width_ns": 512465
+      },
+      "registered_span": {
+        "sample_start": 93937500,
+        "sample_end_exclusive": 128500000,
+        "duration_s": 13.825,
+        "observation_count": 550,
+        "first_support_center_utc_ns": 1787670523165078492,
+        "last_support_center_utc_ns": 1787670536965091292
+      },
+      "sample_clock_audit": {
+        "ols_device_samples_per_host_second": 2499995.992,
+        "central_rate_error_ppm": -1.6031,
+        "central_accumulated_drift_us": 22.2,
+        "conservative_rate_error_ppm_lower": -100.354,
+        "conservative_rate_error_ppm_upper": 98.805,
+        "max_point_estimate_difference_us": 30.472,
+        "max_absolute_time_axis_bound_us": 750.506,
+        "host_realtime_minus_monotonic_range_us": 0.324,
+        "host_realtime_minus_monotonic_endpoint_change_us": 0.001
+      },
+      "buffering": {
+        "read_start_minus_block_start_median_ms": 48.624,
+        "read_start_minus_block_start_max_ms": 202.642,
+        "read_completion_minus_block_end_median_ms": 45.08
+      },
+      "tle_snapshot": {
+        "collected_utc_ns": 1787666532658586719,
+        "sha256": "sha256:9bb59fcf68fa36ce234ae9be79a492f0b92abc23bcf4f040bb5b64b61d3e31ad",
+        "object_count": 10972,
+        "collection_lead_to_sample_zero_s": 3952.921540640,
+        "collection_lead_to_first_support_start_s": 3990.497017840,
+        "all_element_epochs_predate_collection": true
+      }
+    }
+  ],
+  "modeling_caveats": {
+    "tle_collection_timestamp_semantics": "attempt-start-before-http-fetch",
+    "tle_request_timeout_s": 30,
+    "tle_epoch_exact_conversion_max_difference_ns": 256,
+    "tle_epoch_field_resolution_ns": 864000,
+    "ut1_approximated_as_utc": true,
+    "ut1_minus_utc_documented_bound_s": 0.9,
+    "support_contract_carries_timestamp_uncertainty": false,
+    "manifest_producer_source_revision_bound": false
+  }
+}

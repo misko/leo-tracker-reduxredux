@@ -10,10 +10,11 @@ Status: **ACTIVE operational roadmap**
 Latest opened-development execution:
 
 - [C1/C2/C3 report](../reports/2026_08_27_satellite_tracking_checkpoint_results.md)
+- [UTC and capture-clock timing audit](../reports/2026_08_27_satellite_tracking_timing_audit.md)
 - [complete one-attempt receipt](../reports/figures/2026_08_27_satellite_tracking_checkpoints_v1-execution-receipt.json)
 - Implementation commit `2a7a793999173f420394a59017a10dc744053b9b`;
   execution-authority commit `c4d3810cf25ed7f259978a2c10b88578eb1917a4`.
-- Result publication commit `e4b8f4d8dbd0c20a450ca8d1387ec74f1bdf8f32`.
+- Result publication commit `e4b8f4dd154f7a0a9b3a0710f33ca8aefe19946a`.
 
 ## Purpose and claim boundary
 
@@ -46,6 +47,7 @@ The north-star question for the next phase is:
 | Long arc 150802 | 13.825 s, 550 points; conditional 59748; 55.06 Hz future RMS; strong wrong-epoch separation | Earliest rolling origin selects 65438 |
 | Long arc 9981 | 30.000 s, 881 points; conditional 67930 stable across rolling origins | A minus-500-second catalogue field predicts better in two of four comparisons |
 | Shared nuisance study | All four primary tracks recovered | Shared physical-radio-rate model was 1.48% worse; candidate evidence 0/4 |
+| Timing authority | No software timezone-conversion defect; exact counters with zero gaps; selected-arc sample-to-host bounds are 1.184/0.751 ms | Historical host offset to true UTC was not retained; absolute-time PNT remains gated |
 | Implementation | Exact K=0,1,2 association, NULL, causal filtering, identity smoothing, known-site calibration, correction contracts, and positioning lanes exist | Most end-to-end qualification remains synthetic or conditional |
 | Likelihood calibration | Reproducible paired truth infrastructure exists | Only 3/6 truth arms classified correctly on three independent backgrounds; thresholds are not frozen |
 
@@ -81,7 +83,7 @@ start a new receiver stack.
 
 | Checkpoint | Status | Required outcome |
 |---|---|---|
-| C0 — Evidence and physical authority | **DONE for registered arcs; ongoing operational invariant** | Exact inputs, POST-FIX counter authority, causal TLE bytes, response-free candidate populations, and nonduplicated physical observations |
+| C0 — Evidence and physical authority | **DONE for registered association arcs; ongoing operational invariant** | Exact inputs, POST-FIX counter authority, causal TLE bytes, response-free candidate populations, and nonduplicated physical observations; externally calibrated UTC remains a C6/PNT prerequisite |
 | C1 — Candidate observability atlas | **OPENED RUN EXECUTED; provisional and incomplete** | Final all-tau candidate graph and tau=0 prefix atlas reported; covariance-weighted and prefix-by-prefix all-tau promotion remain open |
 | C2 — Common calibrated evidence scale | **EXECUTED; BLOCKED at 3/19 calibration pairs** | Common blocks and abstention work, but covariance and the detector-opportunity inventory are incomplete |
 | C3 — Real long-arc hypothesis closure | **EXECUTED; UNRESOLVED on both arcs** | 9981 retains a response-supported four-satellite set; 150802 retains a 571-satellite set; neither promotes identity |
@@ -129,6 +131,8 @@ remain uncalibrated.
 - Preserve genuinely incompatible simultaneous tracks.
 - Count each physical observation once.
 - Build complete candidate populations without response ranking.
+- Preserve per-refill counter-to-clock estimates and their uncertainty; never
+  reinterpret catalogue `tau` or radio/LNB drift as a receiver-clock estimate.
 - Fail closed on stale, incomplete, substituted, or unbound authority.
 
 **Exit evidence**
@@ -406,10 +410,14 @@ well-calibrated abstention that quantifies the Doppler-only observability limit.
    150802 Doppler equivalence.
 3. Implement genuinely distinct rolling-origin refits and future scores. The
    current cumulative prefixes of one fixed partition are not that experiment.
-4. Inventory the existing corpus for causal multi-dwell recurrence and an
+4. Promote timing from association-grade to PNT-grade: propagate per-refill
+   timestamp uncertainty, persist capture-time chrony offset/dispersion and
+   source revision, bind frozen IERS EOP/DUT1, and require a disciplined
+   PPS/PTP/GNSS reference before any absolute-time positioning claim.
+5. Inventory the existing corpus for causal multi-dwell recurrence and an
    orthogonal observable—frame/symbol rate, disciplined frequency, DOA, or a
    synchronized second receiver—before considering any new collection.
-5. Run C4 on real sequential dwells only after steps 1–3 are frozen. Advance to
+6. Run C4 on real sequential dwells only after steps 1–3 are frozen. Advance to
    C5 no-refit correction replay only if next-dwell score improves without false
    identity concentration.
 
