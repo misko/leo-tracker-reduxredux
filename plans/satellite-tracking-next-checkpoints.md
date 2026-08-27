@@ -3,7 +3,7 @@
 Date: 2026-08-27 UTC
 
 Remote baseline: origin/main at
-38b87139811117f5c39981bf618dd68f533d422f
+9ff5cd3c8f2fd52f3289a4e3a5b7dc82bfc4d372
 
 Status: **ACTIVE operational roadmap**
 
@@ -74,9 +74,9 @@ start a new receiver stack.
 | Checkpoint | Status | Required outcome |
 |---|---|---|
 | C0 — Evidence and physical authority | **DONE for registered arcs; ongoing operational invariant** | Exact inputs, POST-FIX counter authority, causal TLE bytes, response-free candidate populations, and nonduplicated physical observations |
-| C1 — Candidate observability atlas | **NEXT** | Prefix-by-prefix nuisance-projected candidate equivalence classes and time-to-separation for 150802 and 9981 |
-| C2 — Common calibrated evidence scale | **NEXT, parallel with C1** | Catalogue and radio-only hypotheses scored on identical blocks with calibrated covariance and explicit abstention |
-| C3 — Real long-arc hypothesis closure | **PENDING C1/C2** | Honest singleton, equivalence set, handoff/multi-emitter, radio-only, or unresolved outcome for each arc |
+| C1 — Candidate observability atlas | **NEXT; implementation candidate under validation** | Prefix-by-prefix nuisance-projected connected neighborhoods and time-to-separation for 150802 and 9981 |
+| C2 — Common calibrated evidence scale | **NEXT; implementation candidate, calibration incomplete (3/19)** | Catalogue and radio-only hypotheses scored on identical blocks with calibrated covariance and explicit abstention |
+| C3 — Real long-arc hypothesis closure | **PENDING C1/C2; implementation candidate under validation** | Honest singleton, connected ambiguity set, handoff/multi-emitter, radio-only, or unresolved outcome for each arc |
 | C4 — Causal multi-dwell prediction | **Synthetic foundation done; real evidence pending C3** | Better next-dwell prediction from physically scoped shared state without false identity concentration |
 | C5 — Frozen known-site correction replay | **Contracts/synthetic lane done; real replay pending C4** | Satellite-only correction predicts a later known-site observation without refitting |
 | C6 — Blinded positioning | **Synthetic numerical lanes done/partial; real evaluation pending C5** | Sealed oracle, uncertain-identity, joint, and radio-only comparison with unresolved mass preserved |
@@ -121,14 +121,41 @@ Here, B contains only declared physical nuisance terms such as a path offset or
 a verified receiver-drift state. It must not contain a hidden candidate-specific
 slope, acceleration, or per-fragment time shift.
 
+The calibrated target is the covariance-weighted expression above. The first
+opened-development atlas deliberately reports a separately labeled
+`homoscedastic-identity-rms-v1` lane because the C2 covariance has not passed
+calibration. Its 20/125/500 ms RMS floors are detached descriptive overlays,
+not a substitute for Sigma and not a gate. A covariance-weighted C1 promotion
+must wait for C2 covariance calibration so that geometry and evidence use the
+same frozen noise authority.
+
 **Deliverables**
 
-- Response-free equivalence classes by prefix duration.
+- Response-free tau=0 threshold-graph connected neighborhoods by prefix
+  duration, plus the exact all-tau profile at final duration. Prefix-by-prefix
+  all-tau profiling remains a C1 completion item rather than being inferred
+  from the tau=0 curves.
+- The C3 identity handoff uses the 125 ms connected neighborhoods from the
+  offset-plus-ridge-drift lane, matching the receiver offset/drift nuisance
+  basis marginalized by C2 without implying covariance-metric identity. The
+  offset-only atlas remains a reported sensitivity view and is never
+  substituted for that handoff. Candidate-identity edges are profiled over the
+  complete cross-product of independently allowed tau states: an edge exists
+  when any allowed tau pair falls below the floor, and the resulting candidate
+  component label is then carried by every tau state for that candidate. A
+  tau=0-only atlas remains a labeled sensitivity view and cannot authorize the
+  C3 handoff.
+  These are single-linkage components, not pairwise-equivalent cliques; chained
+  endpoints remain explicitly marked.
 - Effective candidate count rather than only rank one.
 - Candidate-pair time-to-separation curves.
+- The displayed close-pair inventory is the response-free union of nearest
+  pairs selected independently under offset-only and offset-plus-ridge-drift;
+  neither lane is allowed to hide the other lane's nearest competitors.
 - Sensitivity to 20, 125, and 500 ms measurement histories.
 - Separate same-NORAD tau sensitivity from full-catalogue delta = ±500 s
-  specificity.
+  specificity. The first wrong-field lane is explicitly fixed at tau = 0 in
+  both fields; it is not operational-tau-profiled and is not a null test.
 
 **Exit decision**
 
@@ -181,7 +208,8 @@ Run a Rao-Blackwellized, multiple-hypothesis model on the registered arcs:
 - K=2: only where the TLE-blind physical graph contains two incompatible
   simultaneous sources.
 
-Discrete identity, null, handoff, and emitter-count branches remain separate.
+Discrete identity, H0 radio-only/unassigned, handoff, and emitter-count branches
+remain separate.
 Continuous receiver, satellite-frequency, and bounded equivalent-epoch states
 are marginalized within each branch. An EM/ECM update may refine those
 continuous states, but it may not erase competing identity branches or use
@@ -336,12 +364,12 @@ well-calibrated abstention that quantifies the Doppler-only observability limit.
 
 ## Immediate execution queue
 
-1. Implement and render the C1 observability atlas from the already sealed
-   prediction banks for 150802 and 9981.
-2. Expand C2 known-truth calibration and reconcile the current RMS/NLL model
-   reversal using independent block covariance.
-3. Bridge the registered long-arc graphs into the exact real K=0,1,2 engine and
-   execute C3 only after C1/C2 outputs are frozen.
+1. Finish adversarial review, freeze the implementation commit, and commit the
+   canonical one-attempt execution amendment.
+2. Execute and render C1/C2/C3 once on the already registered 150802 and 9981
+   inputs; record the receipt, report, figures, and exact commit here.
+3. Expand C2 known-truth calibration beyond 3 independent pairs and reconcile
+   the current RMS/NLL model reversal using independent block covariance.
 4. Use the C3 decision table to choose C4, the bounded measurement-headroom
    branch, or an explicit Doppler-equivalence result.
 
