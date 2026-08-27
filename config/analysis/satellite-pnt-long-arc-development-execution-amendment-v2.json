@@ -1,0 +1,144 @@
+{
+  "schema": "org.leo.research.satellite-pnt-long-arc-execution-amendment/v2",
+  "amendment_id": "satellite-pnt-long-arc-development-attempt2-2026-08-27",
+  "status": "frozen-authority-for-one-opened-development-retry-after-work-cap-failure",
+  "chronology": "Frozen after failed attempt 1 receipt cbce069 and implementation commit fff1786, before retry execution. Only the response-free exact-population work cap and exclusive output paths change; both registered arcs remain opened development data.",
+  "base_protocol": {
+    "path": "config/analysis/satellite-pnt-long-arc-development-protocol-v1.json",
+    "sha256": "sha256:5959b3bbfef944576fc187ef132663ff653bb23d6b3d2b5f0980c654a183bce0",
+    "protocol_digest": "sha256:2db143ac0a380ab4d673167bda9a88851eca26681123624c29ab7f64b1f64ecb"
+  },
+  "implementation": {
+    "commit": "fff1786fc029d4e0c818cccc2317327f6aa3cf3c",
+    "tree": "3715a8058b730ccb99022613c42bb48cf8de3c81",
+    "file_sha256": {
+      "src/leo/analysis/catalogue_population.py": "sha256:3af35df67d3edc7070da24b7a7a5a436d8eadb44eefff30a4db12deb091b50a7",
+      "src/leo/analysis/catalogue_prediction.py": "sha256:d4343f81b880743bf4abc205b1d8bbb9ddacf1d4c935946278c38f791f5b4087",
+      "src/leo/analysis/nearest_neighbour_association.py": "sha256:fcd2a57d0ebe35efcef8335271aadc5dbd41d8005650bd020398c4e984b268c5",
+      "src/leo/analysis/research/long_arc_catalogue_adapter.py": "sha256:384e9058264de41cfff8efbde0290bb47ee5c0a4e051f71885d1df1304a4c604",
+      "src/leo/analysis/research/long_arc_satellite_pnt_runner.py": "sha256:33cd0273f3e5bd056185f8074f0f65c9cb21ed6b1e0eb37dfd2344663a60193d",
+      "src/leo/analysis/research/radio_polynomial_null.py": "sha256:ff7b3a8a5eb983fb94eec3f2ca06a108dbe76273196df64e6c0d13545ba23c4c",
+      "src/leo/analysis/research/satellite_pnt_long_arc_protocol.py": "sha256:532696110e6217b5bb89a10e5e48a9dea8729c3b2b783d6b252e103b2d9d4960",
+      "src/leo/contracts/catalogue_association.py": "sha256:1e395116fa719fc5f7bdbd92d9b2d59a63733aa40719b3795dbac11f12867957",
+      "tools/run_satellite_pnt_long_arc_development.py": "sha256:c63c7419796ac00819756b8998eabbbbade06e6abbf2e221ece2e0ec66038d4e"
+    }
+  },
+  "raw_tle_inputs": [
+    {
+      "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+      "path": "/tmp/cap-20260824-space-track-causal.tle",
+      "sha256": "sha256:ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee",
+      "object_count": 10972
+    },
+    {
+      "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+      "path": "/tmp/cap-20260825-space-track-causal.tle",
+      "sha256": "sha256:9bb59fcf68fa36ce234ae9be79a492f0b92abc23bcf4f040bb5b64b61d3e31ad",
+      "object_count": 10972
+    }
+  ],
+  "numerical_controls": {
+    "tau_lower_s": -5.0,
+    "tau_upper_s": 5.0,
+    "tau_step_s": 0.25,
+    "tau_state_count": 41,
+    "support_integration_sample_count": 5,
+    "prediction_uncertainty_floor_hz": 1.0,
+    "prediction_element_age_growth_hz_per_day": 0.0,
+    "prediction_fit_residual_multiplier": 1.0,
+    "prediction_maximum_propagated_states": 250000000,
+    "population_coarse_spacing_s": 0.1,
+    "population_maximum_coarse_time_count": 10000,
+    "population_maximum_exact_time_count": 200000,
+    "population_maximum_coarse_propagated_states": 10000000,
+    "population_maximum_exact_propagated_states": 30000000,
+    "maximum_candidate_count": 10000,
+    "partition_rounding": "nearest-integer-half-up-v1"
+  },
+  "outputs": {
+    "artifact_directory": "reports/figures/2026_08_27_satellite_pnt_long_arc_development_attempt2",
+    "attempt_receipt_path": "reports/figures/2026_08_27_satellite_pnt_long_arc_development_attempt2-execution-receipt.json",
+    "report_path": "reports/2026_08_27_satellite_pnt_long_arc_development_results_attempt2.md"
+  },
+  "execution": {
+    "authorized": true,
+    "maximum_attempt_count": 2,
+    "attempt_number": 2,
+    "outputs_must_not_exist_before_execution": true,
+    "response_scoring_before_this_amendment": true,
+    "new_rf_collection_authorized": false
+  },
+  "claim_boundary": {
+    "opened_development_only": true,
+    "secure_norad_permitted": false,
+    "positioning_validation_permitted": false,
+    "wrong_epoch_is_null_distribution": false,
+    "wrong_epoch_is_gate": false,
+    "numerical_thresholds_are_set": false,
+    "new_rf_collection_authorized": false
+  },
+  "predecessor_attempt": {
+    "path": "reports/figures/2026_08_27_satellite_pnt_long_arc_development_attempt1-execution-receipt.json",
+    "sha256": "sha256:0f3c87ea116c14b968ea8188723a672bad5bde0e7f387e2871ee83952e373bb2",
+    "attempt_number": 1,
+    "status": "failed",
+    "exception_type": "CataloguePopulationWorkLimitError",
+    "exception_message": "exact Starlink population exceeds the declared propagation cap",
+    "prior_amendment_digest": "sha256:5f90039ae688027978fe23284cd7b64bb8a1ba7082ae1fc4f08f2d707f8c43ce"
+  },
+  "work_cap_amendment": {
+    "failure_layer": "response-free-field-population-work-cap",
+    "failing_arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+    "failing_field_delta_s": -500,
+    "previous_maximum_exact_propagated_states": 20000000,
+    "response_free_diagnostic_counts": [
+      {
+        "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+        "field_delta_s": -500,
+        "exact_time_count": 4701,
+        "coarse_candidate_count": 510,
+        "exact_work": 2397510
+      },
+      {
+        "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+        "field_delta_s": 0,
+        "exact_time_count": 4701,
+        "coarse_candidate_count": 490,
+        "exact_work": 2303490
+      },
+      {
+        "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+        "field_delta_s": 500,
+        "exact_time_count": 4701,
+        "coarse_candidate_count": 504,
+        "exact_work": 2369304
+      },
+      {
+        "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+        "field_delta_s": -500,
+        "exact_time_count": 50361,
+        "coarse_candidate_count": 576,
+        "exact_work": 29007936
+      },
+      {
+        "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+        "field_delta_s": 0,
+        "exact_time_count": 50361,
+        "coarse_candidate_count": 579,
+        "exact_work": 29159019
+      },
+      {
+        "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+        "field_delta_s": 500,
+        "exact_time_count": 50361,
+        "coarse_candidate_count": 578,
+        "exact_work": 29108658
+      }
+    ],
+    "maximum_observed_exact_work": 29159019,
+    "replacement_maximum_exact_propagated_states": 30000000,
+    "scientific_model_changed": false,
+    "response_scores_used_for_diagnosis": false
+  },
+  "amendment_digest": "sha256:02bd4bd74a62478015aff6d22f89e9cae5a92fad3ac7fa24c0f0327fbaf61ec7"
+}
