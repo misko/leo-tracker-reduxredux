@@ -448,8 +448,8 @@ Performance gates:
   no new kernel storage or OOM events, and no swap activity.
 
 Production cutover additionally requires an additive
-`ContiguousRateQualificationReceiptV5` from ten lossless trials of the exact
-deployed `starlink-ch4-lower-3m-60s-device-axis-v3` profile and fixed ordered
+`ContiguousRateQualificationReceiptV6` from ten lossless trials of the exact
+deployed `starlink-ch4-lower-3m-60s-native-bandwidth-v4` profile and fixed ordered
 production-radio plan. The receipt must retain both streams' 180,000,000
 logical/observed samples, zero zero fill, one continuity segment, and all V3
 IQ/timeline/gap/validity digests. The same bounded campaign must also bind one
@@ -458,7 +458,7 @@ For each radio, its typed characterization requires 300,000,000 logical
 samples, observed plus physical zero fill equal to that span, verified bundle,
 gap-map, validity, and literal-zero evidence, and zero overflow, enqueue
 failure, or terminal rejected refill. It also binds the exact 32-refill queue
-capacity and measured high-water no greater than 24 refills. The combined V5
+capacity and measured high-water no greater than 24 refills. The combined V6
 prerequisite independently requires measured incompressible writer throughput
 of at least 100 MB/s while preserving the historical 72 MB/s meaning of the V1
 writer-evidence pass flag. It also requires passing bounded host-health evidence:
@@ -470,12 +470,12 @@ access, no production-storage or unclassified kernel I/O errors, no OOM kills,
 and no swap delta. A pre-existing error is ignored only when its device is proven
 removable and outside the `/srv/bulk` device ancestry; the complete classified
 error inventory must be byte-identical before and after, so any new error fails.
-The V5 target digest binds the full evidence. Gaps remain truthful degraded
-evidence; this is not a 5 MS/s contiguous claim. The accepted V5 path is published
+The V6 target digest binds the full evidence. Gaps remain truthful degraded
+evidence; this is not a 5 MS/s contiguous claim. The accepted V6 path is published
 only after the host-health evidence passes. Only the sealed target-revision path
-`contiguous-rate-qualification-receipt-v5.json` is accepted; V1–V4 receipts do
+`contiguous-rate-qualification-receipt-v6.json` is accepted; V1–V5 receipts do
 not authorize this device-axis cutover. Do not reboot to clear journal history:
-V5 deliberately retains and classifies the complete current-boot inventory.
+V6 deliberately retains and classifies the complete current-boot inventory.
 
 ## 10. Delivery sequence
 

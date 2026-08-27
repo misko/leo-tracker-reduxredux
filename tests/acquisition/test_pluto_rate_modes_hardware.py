@@ -61,6 +61,10 @@ from leo.contracts.recording import (
     ProducerV1,
     RecordingManifestV3,
 )
+from leo.contracts.starlink_frequency import (
+    STARLINK_LNB_LO_HZ,
+    starlink_maximum_coverage_if_center_frequency_hz,
+)
 from leo.contracts.states import (
     CaptureState,
     ContinuityPolicy,
@@ -77,12 +81,12 @@ from leo.qualification.host_health import (
 )
 from leo.qualification.rate_modes import (
     ContiguousRateDeviceAxisCharacterizationStreamV1,
-    ContiguousRateDeviceAxisCharacterizationV1,
+    ContiguousRateDeviceAxisCharacterizationV2,
     ContiguousRateNativeIpCanaryEvidenceV1,
-    ContiguousRatePrerequisitesV5,
+    ContiguousRatePrerequisitesV6,
     ContiguousRateQualificationPolicyV1,
-    ContiguousRateQualificationReceiptV5,
-    ContiguousRateQualificationTargetV5,
+    ContiguousRateQualificationReceiptV6,
+    ContiguousRateQualificationTargetV6,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV2,
@@ -113,17 +117,18 @@ _REQUIRED_ENV = (
 
 _SAMPLE_RATE_HZ = 3_000_000
 _FIVE_M_SAMPLE_RATE_HZ = 5_000_000
-_BANDWIDTH_HZ = 2_500_000
+_BANDWIDTH_HZ = _SAMPLE_RATE_HZ
+_FIVE_M_BANDWIDTH_HZ = _FIVE_M_SAMPLE_RATE_HZ
 _DURATION_SECONDS = 60
 _REQUESTED_SAMPLE_COUNT = _SAMPLE_RATE_HZ * _DURATION_SECONDS
 _FIVE_M_REQUESTED_SAMPLE_COUNT = _FIVE_M_SAMPLE_RATE_HZ * _DURATION_SECONDS
-_REFILL_SAMPLES = 262_144
-_KERNEL_BUFFERS = 8
+_REFILL_SAMPLES = 1_048_576
+_KERNEL_BUFFERS = 4
 _QUEUE_CAPACITY = 32
 _MAXIMUM_QUEUE_HIGH_WATER_REFILLS = 24
 _LEGACY_WRITER_BENCHMARK_BYTES_PER_SECOND = 72_000_000
 _V4_WRITER_BENCHMARK_BYTES_PER_SECOND = 100_000_000
-_V5_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV2(
+_V6_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV2(
     raid_array_name="md127",
     disk_path="/srv/bulk",
     required_disk_mount_source="/dev/mapper/vg_bulk-bulk",
@@ -566,8 +571,8 @@ def test_v4_capacity_gates_require_exact_writer_and_queue_headroom() -> None:
         )
 
 
-def test_v5_hardware_campaign_binds_exact_scoped_host_health_lifecycle() -> None:
-    assert _V5_HOST_HEALTH_POLICY.model_dump(mode="json") == {
+def test_v6_hardware_campaign_binds_exact_scoped_host_health_lifecycle() -> None:
+    assert _V6_HOST_HEALTH_POLICY.model_dump(mode="json") == {
         "schema_version": 2,
         "raid_array_name": "md127",
         "disk_path": "/srv/bulk",
@@ -591,26 +596,30 @@ def test_v5_hardware_campaign_binds_exact_scoped_host_health_lifecycle() -> None
     assert before < preflight < writer < restore < release < after < require_pass < publish
 
 
-def test_hardware_campaign_uses_exact_deployed_device_axis_profiles() -> None:
+def test_hardware_campaign_uses_exact_deployed_native_bandwidth_profiles() -> None:
     repository = Path(__file__).resolve().parents[2]
     three_m = _capture_plan(repository)
     five_m = _five_m_capture_plan(repository)
 
     assert three_m.profile_revision.revision_digest == (
-        "sha256:4533ac4a3348721e0bf7bda50c5701f505e47ef579ef9a47cbc7c38b9c9b4c3e"
+        "sha256:523402d005564d97177ee139f1a616c01b6b65d9a6c4ad11a0564c074216865c"
     )
     assert three_m.plan_digest == (
-        "sha256:9fd011c1843213d3c699cadc2cb66d0cabecd804fc01b0ad0e45f3b8026fa8eb"
+        "sha256:3433d59a81dac88ab292f2eb19801915d0b91380dfea3df54acc41be6c36e2df"
     )
     assert five_m.profile_revision.revision_digest == (
-        "sha256:8851c20e4c6e79bc5d4cb92f8fd0e09eaf24e59b742239b92bc248fd4d09ba5d"
+        "sha256:6f8ec4a5dec0f6b18d09c0f464c22c143ac363f2088242db830b0757a6316294"
     )
     assert five_m.plan_digest == (
-        "sha256:22b2bbb83a10b6494b16cba6303591eedbda37d3f876f7822c1fe5d68f42ccc1"
+        "sha256:dc63257696bf73ed4316ba258a2b430acfe62dda53e836cd5e67039da4204cb3"
     )
     assert all(
         plan.profile_revision.profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
         and plan.profile_revision.profile.peer_failure_policy is PeerFailurePolicy.FAIL_SESSION
+        and plan.profile_revision.profile.bandwidth_hz
+        == plan.profile_revision.profile.sample_rate_hz
+        and plan.profile_revision.profile.refill_samples == 1_048_576
+        and plan.profile_revision.profile.kernel_buffers == 4
         for plan in (three_m, five_m)
     )
 
@@ -2188,12 +2197,20 @@ def _preflight_radios(config: _HardwareConfig) -> tuple[RadioIdentityV1, RadioId
 
 def _capture_plan(repository: Path) -> CapturePlanV2:
     revision = load_profile_revision(
-        repository / "profiles" / "starlink-ch4-lower-3m-60s-device-axis-v3.yaml"
+        repository / "profiles" / "starlink-ch4-lower-3m-60s-native-bandwidth-v4.yaml"
     )
     assert isinstance(revision, CaptureProfileRevisionV2)
     profile = revision.profile
     assert profile.sample_rate_hz == _SAMPLE_RATE_HZ
     assert profile.bandwidth_hz == _BANDWIDTH_HZ
+    assert profile.bandwidth_hz == profile.sample_rate_hz
+    expected_center_hz = starlink_maximum_coverage_if_center_frequency_hz(
+        4,
+        "lower",
+        bandwidth_hz=profile.bandwidth_hz,
+    )
+    assert profile.center_frequency_hz == expected_center_hz
+    assert profile.rf_center_frequency_hz == expected_center_hz + STARLINK_LNB_LO_HZ
     assert profile.refill_samples == _REFILL_SAMPLES
     assert profile.kernel_buffers == _KERNEL_BUFFERS
     assert profile.refill_queue_capacity == _QUEUE_CAPACITY
@@ -2204,6 +2221,7 @@ def _capture_plan(repository: Path) -> CapturePlanV2:
         "CAPTURE_ONLY",
         "DEVICE_AXIS_ZERO_FILL",
         "LIVE",
+        "NATIVE_BANDWIDTH",
         "RANDOM_TUNING",
         "STANDARD_NATIVE",
     }.issubset(profile.tags)
@@ -2219,19 +2237,34 @@ def _capture_plan(repository: Path) -> CapturePlanV2:
 
 def _five_m_capture_plan(repository: Path) -> CapturePlanV2:
     revision = load_profile_revision(
-        repository / "profiles" / "starlink-ch4-lower-5m-60s-device-axis-v3.yaml"
+        repository / "profiles" / "starlink-ch4-lower-5m-60s-native-bandwidth-v4.yaml"
     )
     assert isinstance(revision, CaptureProfileRevisionV2)
     profile = revision.profile
     assert profile.sample_rate_hz == _FIVE_M_SAMPLE_RATE_HZ
-    assert profile.bandwidth_hz == _BANDWIDTH_HZ
+    assert profile.bandwidth_hz == _FIVE_M_BANDWIDTH_HZ
+    assert profile.bandwidth_hz == profile.sample_rate_hz
+    expected_center_hz = starlink_maximum_coverage_if_center_frequency_hz(
+        4,
+        "lower",
+        bandwidth_hz=profile.bandwidth_hz,
+    )
+    assert profile.center_frequency_hz == expected_center_hz
+    assert profile.rf_center_frequency_hz == expected_center_hz + STARLINK_LNB_LO_HZ
     assert profile.refill_samples == _REFILL_SAMPLES
     assert profile.kernel_buffers == _KERNEL_BUFFERS
     assert profile.refill_queue_capacity == _QUEUE_CAPACITY
     assert profile.continuity_policy is ContinuityPolicy.ALLOW_SEGMENTS
     assert profile.peer_failure_policy is PeerFailurePolicy.FAIL_SESSION
     assert profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
-    assert {"CAPTURE_ONLY", "EXPERIMENTAL"}.issubset(profile.tags)
+    assert {
+        "CAPTURE_ONLY",
+        "DEVICE_AXIS_ZERO_FILL",
+        "LIVE",
+        "NATIVE_BANDWIDTH",
+        "RANDOM_TUNING",
+        "STANDARD_NATIVE",
+    }.issubset(profile.tags)
     plan = compile_capture_plan(revision, _RADIO_IDS, source_type=SourceType.LIVE)
     assert isinstance(plan, CapturePlanV2)
     assert plan.resolved_sample_count == _FIVE_M_REQUESTED_SAMPLE_COUNT
@@ -2300,8 +2333,8 @@ def _build_prerequisites(
     writer_receipt: Any,
     writer_receipt_sha256: str,
     host_health: QualificationHostHealthEvidenceV2,
-    five_m_characterization: ContiguousRateDeviceAxisCharacterizationV1,
-) -> ContiguousRatePrerequisitesV5:
+    five_m_characterization: ContiguousRateDeviceAxisCharacterizationV2,
+) -> ContiguousRatePrerequisitesV6:
     evidence_root = campaign_root / "prerequisites"
     evidence_root.mkdir(mode=0o700, exist_ok=True)
 
@@ -2358,7 +2391,7 @@ def _build_prerequisites(
     elapsed_ns = max(1, round(writer_receipt.elapsed_seconds * 1_000_000_000))
     sustained_bytes_per_second = writer_receipt.uncompressed_bytes * 1_000_000_000 // elapsed_ns
     _require_v4_writer_capacity(sustained_bytes_per_second)
-    return ContiguousRatePrerequisitesV5(
+    return ContiguousRatePrerequisitesV6(
         radio_safety=(safety_evidence[0], safety_evidence[1]),
         native_ip_canaries=(native_evidence[0], native_evidence[1]),
         writer_benchmark=ContiguousRateWriterBenchmarkEvidenceV1(
@@ -2379,10 +2412,10 @@ def _target(
     radios: tuple[RadioIdentityV1, RadioIdentityV1],
     host: HostIdentityV1,
     producer: ProducerV1,
-    prerequisites: ContiguousRatePrerequisitesV5,
-) -> ContiguousRateQualificationTargetV5:
-    return ContiguousRateQualificationTargetV5(
-        qualification_id=f"native-ip-3m-v5-{config.leo_revision[:12]}",
+    prerequisites: ContiguousRatePrerequisitesV6,
+) -> ContiguousRateQualificationTargetV6:
+    return ContiguousRateQualificationTargetV6(
+        qualification_id=f"native-ip-3m-v6-{config.leo_revision[:12]}",
         profile_revision_digest=plan.profile_revision.revision_digest,
         capture_plan_digest=plan.plan_digest,
         sample_rate_hz=_SAMPLE_RATE_HZ,
@@ -2405,6 +2438,7 @@ def _target(
                 "CAPTURE_ONLY",
                 "DEVICE_AXIS_ZERO_FILL",
                 "LIVE",
+                "NATIVE_BANDWIDTH",
                 "RANDOM_TUNING",
                 "STANDARD_NATIVE",
             ),
@@ -2414,7 +2448,7 @@ def _target(
 
 def _atomic_write_receipt(
     path: Path,
-    receipt: ContiguousRateQualificationReceiptV5,
+    receipt: ContiguousRateQualificationReceiptV6,
 ) -> None:
     temporary = path.with_name(f".{path.name}.{os.getpid()}-{uuid4().hex}.partial")
     payload = receipt.model_dump_json(indent=2).encode("utf-8")
@@ -2564,7 +2598,7 @@ def _seal_5m_device_axis_characterization(
     store: RecordingStore,
     result: Any,
     safety_results: tuple[_RadioSafetyResult, _RadioSafetyResult],
-) -> tuple[ContiguousRateDeviceAxisCharacterizationV1, Path]:
+) -> tuple[ContiguousRateDeviceAxisCharacterizationV2, Path]:
     if result.bundle is None or not isinstance(result.manifest, RecordingManifestV3):
         raise AssertionError("5 MS/s characterization did not publish a V3 device-axis bundle")
     manifest = result.manifest
@@ -2745,7 +2779,7 @@ def _seal_5m_device_axis_characterization(
     }
     report_path = campaign_root / "device-axis-rate-5m-characterization-v2.json"
     _atomic_write_json(report_path, report_payload)
-    characterization = ContiguousRateDeviceAxisCharacterizationV1(
+    characterization = ContiguousRateDeviceAxisCharacterizationV2(
         evidence_sha256=_file_sha256(report_path),
         manifest_sha256=result.bundle.manifest_sha256,
         session_id=campaign_id,
@@ -2803,14 +2837,14 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
     five_m_plan = _five_m_capture_plan(repository)
     host = _host_identity()
     producer = _producer(config)
-    host_health_before = capture_qualification_host_health_snapshot_v2(_V5_HOST_HEALTH_POLICY)
+    host_health_before = capture_qualification_host_health_snapshot_v2(_V6_HOST_HEALTH_POLICY)
     safety_evidence_root.mkdir(mode=0o700, exist_ok=True)
     _atomic_write_json(
         safety_evidence_root / "host-health-before-v2.json",
         host_health_before.model_dump(mode="json"),
     )
     host_health_preflight = evaluate_qualification_host_health_v2(
-        _V5_HOST_HEALTH_POLICY,
+        _V6_HOST_HEALTH_POLICY,
         host_health_before,
         host_health_before,
     )
@@ -2819,7 +2853,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
             check.name for check in host_health_preflight.checks if not check.passed
         )
         raise AssertionError(
-            "V5 host-health preflight failed before writer or RF work: " + failed_host_checks
+            "V6 host-health preflight failed before writer or RF work: " + failed_host_checks
         )
     writer_receipt, writer_receipt_sha256 = _run_writer_capacity_gate(campaign_root)
     campaign_deadline = _campaign_deadline()
@@ -2946,9 +2980,9 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
             restoration_error = error
 
     maintenance_claim.verify_and_release()
-    host_health_after = capture_qualification_host_health_snapshot_v2(_V5_HOST_HEALTH_POLICY)
+    host_health_after = capture_qualification_host_health_snapshot_v2(_V6_HOST_HEALTH_POLICY)
     host_health = evaluate_qualification_host_health_v2(
-        _V5_HOST_HEALTH_POLICY,
+        _V6_HOST_HEALTH_POLICY,
         host_health_before,
         host_health_after,
     )
@@ -2964,7 +2998,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
             check.name for check in host_health.checks if not check.passed
         )
         raise AssertionError(
-            "V5 host-health prerequisite failed after radio cleanup and maintenance release: "
+            "V6 host-health prerequisite failed after radio cleanup and maintenance release: "
             + failed_host_checks
         )
     assert safety_results is not None
@@ -3039,7 +3073,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
         tuple(evidence),
         created_utc_ns=time.time_ns(),
     )
-    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v5.json"
+    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v6.json"
     _atomic_write_receipt(receipt_path, receipt)
     record_property("contiguous_rate_qualification_receipt", str(receipt_path))
     print(f"contiguous rate qualification receipt: {receipt_path}")

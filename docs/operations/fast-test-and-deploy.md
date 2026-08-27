@@ -9,7 +9,7 @@ release_revision=$(git rev-parse origin/main)
 sudo ./ops deploy --stage-only --revision "$release_revision"
 # Run the authorized hardware qualification with
 # /opt/leo-tracker/releases/$release_revision/.venv/bin/python.
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v5.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v6.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -38,7 +38,7 @@ The available test tiers are:
 ```
 
 `./ops deploy --plan` is read-only. A full-cutover plan also requires the sealed,
-exact-revision V5 combined-pool receipt via `--rate-qualification-receipt`. V5 binds the exact
+exact-revision V6 combined-pool receipt via `--rate-qualification-receipt`. V6 binds the exact
 deployed 3 MS/s and 5 MS/s device-axis profiles and fixed two-radio plans, production-radio safety
 evidence, native-IP canaries, a measured incompressible writer benchmark of at least 100 MB/s, and
 ten strict lossless 3 MS/s Recording V3 trials. It also binds the exact passing V2 pre/post
@@ -60,11 +60,11 @@ activity, and sufficient free memory and disk before and after the bounded quali
 `capture_qualification_host_health_snapshot_v2` is read-only and bounded; capture one snapshot
 before the first writer benchmark or RF action, then capture the second only after exact radio
 restoration and maintenance-lease release. Seal them with
-`evaluate_qualification_host_health_v2`. V5 requires this evidence to pass under the reviewed
+`evaluate_qualification_host_health_v2`. V6 requires this evidence to pass under the reviewed
 `md127`, `/srv/bulk`, `/dev/mapper/vg_bulk-bulk`, 32 GiB available-memory, and 1 TiB free-disk
 policy. It rejects production-storage and unclassified I/O errors, and permits prior removable
 device errors only when the full classified journal inventory is unchanged. The evidence is a
-required V5 prerequisite and therefore part of the rate target digest. V1–V4 rate receipts remain
+required V6 prerequisite and therefore part of the rate target digest. V1–V5 rate receipts remain
 unchanged.
 
 `sudo ./ops deploy --stage-only --revision FULL_SHA` is the pre-qualification half of a full

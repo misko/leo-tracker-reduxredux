@@ -395,7 +395,7 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v5.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v6.json"
 native_bandwidth_receipt="/srv/bulk/leo/qualification/native-bandwidth/accepted/$release_revision/native-bandwidth-qualification-receipt-v2.json"
 sudo test -r "$native_bandwidth_receipt"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
@@ -432,7 +432,7 @@ The harness shares one monotonic 30-minute RF deadline across ten 60-second
 3 MS/s trials and one 60-second full-span 5 MS/s characterization, reserves shutdown time, and relies on the pinned finite libiio
 context timeout so a stalled refill returns through the same source-close and
 RX-setting restoration path. Production `.20`/`.21` are the only qualification
-and recorder targets. The V5 receipt contains no non-production USB control arm;
+and recorder targets. The V6 receipt contains no non-production USB control arm;
 it binds the exact deployed 3 MS/s and 5 MS/s device-axis profiles and fixed-radio plans,
 retains exact per-radio safety, native-IP canary, writer, host-health, and runtime evidence,
 requires measured incompressible writer throughput of at least 100 MB/s,
@@ -445,15 +445,15 @@ exact queue capacity of 32 refills and a measured high-water no greater than 24
 refills for each 5 MS/s stream. Before the writer benchmark or any RF action, the harness captures
 a bounded read-only host snapshot for `md127` and `/srv/bulk`; after both radios restore exactly
 and the paused-maintenance lease is verified and released, it captures the matching post snapshot.
-The required V5 prerequisite passes only with healthy idle RAID, complete kernel-log evidence,
+The required V6 prerequisite passes only with healthy idle RAID, complete kernel-log evidence,
 zero production-storage or unclassified kernel I/O errors and OOM kills, no swap-in/out delta,
 at least 32 GiB available memory, and at least 1 TiB free disk at both boundaries. Historical
 errors may be retained only for sysfs-proven removable devices outside the `/srv/bulk` ancestry,
 and their complete classified inventory must be identical before and after. The cutover verifier
 closes the evidence/check keys, digests, timestamps, mount/device identity, and target hostname
-before accepting the V5 path.
+before accepting the V6 path.
 
-Do not reboot merely to clear historical kernel messages. V5 is designed to retain the current
+Do not reboot merely to clear historical kernel messages. V6 is designed to retain the current
 boot journal, distinguish proven removable-device history from production-storage risk, and fail
 if any error is added during qualification.
 
