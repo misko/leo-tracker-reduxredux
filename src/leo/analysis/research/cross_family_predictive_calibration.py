@@ -33,6 +33,10 @@ type CalibratedPreference = Literal["catalogue-orbit", "radio-polynomial", "exac
 _INDEPENDENCE_ATTESTATION = "scenario-groups-frozen-response-free-and-independent-v1"
 _SHA256_PREFIX = "sha256:"
 _SHA256_HEX_LENGTH = 64
+_TRUTH_FAMILIES: tuple[TruthModelFamily, TruthModelFamily] = (
+    "catalogue-orbit",
+    "radio-polynomial",
+)
 
 
 class CrossFamilyCalibrationInputError(ValueError):
@@ -62,8 +66,8 @@ class CrossFamilyCalibrationConfig:
     catalogue_model_configuration_digest: str
     radio_model_configuration_digest: str
     independence_attestation: Literal["scenario-groups-frozen-response-free-and-independent-v1"]
-    minimum_scenarios_per_truth_family: int = 3
-    formal_95_percent_rank_minimum_scenarios_per_truth_family: int = 19
+    minimum_paired_scenarios: int = 3
+    formal_95_percent_rank_minimum_paired_scenarios: int = 19
 
     def __post_init__(self) -> None:
         if not self.expected_case_ids or len(set(self.expected_case_ids)) != len(
@@ -82,13 +86,13 @@ class CrossFamilyCalibrationConfig:
             raise CrossFamilyCalibrationInputError(
                 "paired scenarios need the frozen independence attestation"
             )
-        if self.minimum_scenarios_per_truth_family < 3:
+        if self.minimum_paired_scenarios < 3:
             raise CrossFamilyCalibrationInputError(
-                "paired calibration needs at least three scenarios per truth family"
+                "paired calibration needs at least three independent paired scenarios"
             )
-        if self.formal_95_percent_rank_minimum_scenarios_per_truth_family < 19:
+        if self.formal_95_percent_rank_minimum_paired_scenarios < 19:
             raise CrossFamilyCalibrationInputError(
-                "finite 95 percent rank summaries need at least 19 scenarios per family"
+                "finite 95 percent rank summaries need at least 19 paired scenarios"
             )
 
 
@@ -126,10 +130,11 @@ class CrossFamilyPredictiveCalibrationAudit:
     scenario_diagnostics: tuple[CrossFamilyScenarioDiagnostic, ...]
     catalogue_truth_scenario_count: int
     radio_truth_scenario_count: int
+    independent_paired_scenario_count: int
     correct_scenario_count: int
     tied_scenario_count: int
     scenario_equal_accuracy: float
-    formal_95_percent_rank_minimum_scenarios_per_truth_family: int
+    formal_95_percent_rank_minimum_paired_scenarios: int
     formal_95_percent_rank_scenario_count_sufficient: bool
     algorithm_version: Literal["known-truth-cross-family-predictive-audit-v1"] = field(
         default="known-truth-cross-family-predictive-audit-v1", init=False
@@ -175,22 +180,21 @@ def audit_known_truth_cross_family_prediction(
         by_scenario.setdefault(case.scenario_id, []).append(case)
     scenario_ids = tuple(sorted(by_scenario))
     for scenario_id, scenario_cases in by_scenario.items():
-        if (
-            len({item.truth_model_family for item in scenario_cases}) != 1
-            or len({item.truth_digest for item in scenario_cases}) != 1
-        ):
+        families = {item.truth_model_family for item in scenario_cases}
+        if families != {"catalogue-orbit", "radio-polynomial"}:
             raise CrossFamilyCalibrationInputError(
-                f"scenario {scenario_id} mixes truth authorities or model families"
+                f"scenario {scenario_id} must contain both paired truth arms"
             )
-    scenario_family = {
-        scenario_id: by_scenario[scenario_id][0].truth_model_family for scenario_id in scenario_ids
-    }
-    catalogue_scenarios = sum(family == "catalogue-orbit" for family in scenario_family.values())
-    radio_scenarios = sum(family == "radio-polynomial" for family in scenario_family.values())
-    if min(catalogue_scenarios, radio_scenarios) < config.minimum_scenarios_per_truth_family:
-        raise CrossFamilyCalibrationInputError(
-            "too few independent scenarios for one truth model family"
-        )
+        for family in families:
+            truth_digests = {
+                item.truth_digest for item in scenario_cases if item.truth_model_family == family
+            }
+            if len(truth_digests) != 1:
+                raise CrossFamilyCalibrationInputError(
+                    f"scenario {scenario_id} mixes truth authorities within one arm"
+                )
+    if len(scenario_ids) < config.minimum_paired_scenarios:
+        raise CrossFamilyCalibrationInputError("too few independent paired scenarios")
 
     case_scores = tuple(
         _score_case(
@@ -203,17 +207,18 @@ def audit_known_truth_cross_family_prediction(
         )
         for case in cases
     )
-    scores_by_scenario = {
-        scenario_id: tuple(item for item in case_scores if item.scenario_id == scenario_id)
-        for scenario_id in scenario_ids
-    }
     scenario_diagnostics = tuple(
         _scenario_diagnostic(
             scenario_id,
-            scenario_family[scenario_id],
-            scores_by_scenario[scenario_id],
+            family,
+            tuple(
+                item
+                for item in case_scores
+                if item.scenario_id == scenario_id and item.truth_model_family == family
+            ),
         )
         for scenario_id in scenario_ids
+        for family in _TRUTH_FAMILIES
     )
     correct = sum(item.preference_matches_truth for item in scenario_diagnostics)
     tied = sum(item.calibrated_preference == "exact-tie" for item in scenario_diagnostics)
@@ -226,17 +231,17 @@ def audit_known_truth_cross_family_prediction(
         truth_digests=tuple(item.truth_digest for item in cases),
         case_scores=case_scores,
         scenario_diagnostics=scenario_diagnostics,
-        catalogue_truth_scenario_count=catalogue_scenarios,
-        radio_truth_scenario_count=radio_scenarios,
+        catalogue_truth_scenario_count=len(scenario_ids),
+        radio_truth_scenario_count=len(scenario_ids),
+        independent_paired_scenario_count=len(scenario_ids),
         correct_scenario_count=correct,
         tied_scenario_count=tied,
         scenario_equal_accuracy=correct / len(scenario_diagnostics),
-        formal_95_percent_rank_minimum_scenarios_per_truth_family=(
-            config.formal_95_percent_rank_minimum_scenarios_per_truth_family
+        formal_95_percent_rank_minimum_paired_scenarios=(
+            config.formal_95_percent_rank_minimum_paired_scenarios
         ),
         formal_95_percent_rank_scenario_count_sufficient=(
-            min(catalogue_scenarios, radio_scenarios)
-            >= config.formal_95_percent_rank_minimum_scenarios_per_truth_family
+            len(scenario_ids) >= config.formal_95_percent_rank_minimum_paired_scenarios
         ),
     )
 
@@ -495,9 +500,9 @@ def _revalidate_config(value: CrossFamilyCalibrationConfig) -> CrossFamilyCalibr
             catalogue_model_configuration_digest=value.catalogue_model_configuration_digest,
             radio_model_configuration_digest=value.radio_model_configuration_digest,
             independence_attestation=value.independence_attestation,
-            minimum_scenarios_per_truth_family=value.minimum_scenarios_per_truth_family,
-            formal_95_percent_rank_minimum_scenarios_per_truth_family=(
-                value.formal_95_percent_rank_minimum_scenarios_per_truth_family
+            minimum_paired_scenarios=value.minimum_paired_scenarios,
+            formal_95_percent_rank_minimum_paired_scenarios=(
+                value.formal_95_percent_rank_minimum_paired_scenarios
             ),
         )
     except (AttributeError, TypeError, ValueError) as error:
