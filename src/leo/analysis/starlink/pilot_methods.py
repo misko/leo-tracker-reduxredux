@@ -598,9 +598,7 @@ def conditioned_glrt64_scores(
     symbol_period = sample_rate_hz * OFDM_SYMBOL_DURATION_S
     local_starts = np.rint(symbols * symbol_period).astype(int)
     local_stops = np.rint((symbols + 1) * symbol_period).astype(int)
-    exact_template = np.asarray(
-        qin_edge_pilot_frame(sample_rate_hz, selected_edge), np.complex128
-    )
+    exact_template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, selected_edge), np.complex128)
     local_stops = np.minimum(local_stops, len(exact_template))
     counts = local_stops - local_starts
     symbol_times_s = (local_starts + (counts - 1) / 2) / sample_rate_hz
@@ -647,15 +645,12 @@ def conditioned_glrt64_scores(
     maximum_frames = max((len(starts) for starts in frame_starts_by_candidate), default=0)
     if not maximum_frames:
         return tuple(
-            _score(PilotMethod.GLRT64, 0.0, 0.0, 0.0, float(frequency))
-            for frequency in frequencies
+            _score(PilotMethod.GLRT64, 0.0, 0.0, 0.0, float(frequency)) for frequency in frequencies
         )
 
     candidate_count = len(epochs)
     symbol_count = len(symbols)
-    exact_values = np.zeros(
-        (candidate_count, maximum_frames, symbol_count), dtype=np.complex128
-    )
+    exact_values = np.zeros((candidate_count, maximum_frames, symbol_count), dtype=np.complex128)
     control_values = np.zeros_like(exact_values)
     for count in np.unique(counts):
         positions = np.flatnonzero(counts == count)
@@ -663,11 +658,7 @@ def conditioned_glrt64_scores(
         exact_reference = exact_template[relative]
         control_reference = control_template[relative]
         rotations = np.exp(
-            -2j
-            * np.pi
-            * frequencies[:, None, None]
-            * relative[None, :, :]
-            / sample_rate_hz
+            -2j * np.pi * frequencies[:, None, None] * relative[None, :, :] / sample_rate_hz
         )
         for frame_index in range(maximum_frames):
             active_indexes = np.asarray(
@@ -681,23 +672,16 @@ def conditioned_glrt64_scores(
             if not active_indexes.size:
                 continue
             frame_starts = np.asarray(
-                [
-                    frame_starts_by_candidate[index][frame_index]
-                    for index in active_indexes
-                ],
+                [frame_starts_by_candidate[index][frame_index] for index in active_indexes],
                 dtype=int,
             )
             absolute = frame_starts[:, None, None] + relative[None, :, :]
             corrected = values[absolute] * rotations[active_indexes]
-            exact_values[
-                active_indexes[:, None], frame_index, positions[None, :]
-            ] = np.sum(
+            exact_values[active_indexes[:, None], frame_index, positions[None, :]] = np.sum(
                 np.conj(exact_reference)[None, :, :] * corrected,
                 axis=2,
             )
-            control_values[
-                active_indexes[:, None], frame_index, positions[None, :]
-            ] = np.sum(
+            control_values[active_indexes[:, None], frame_index, positions[None, :]] = np.sum(
                 np.conj(control_reference)[None, :, :] * corrected,
                 axis=2,
             )
@@ -728,11 +712,7 @@ def conditioned_glrt64_scores(
             float(
                 np.median(
                     np.diff(
-                        (
-                            starts[:, None]
-                            + local_starts[None, :]
-                            + (counts[None, :] - 1) / 2
-                        )
+                        (starts[:, None] + local_starts[None, :] + (counts[None, :] - 1) / 2)
                         / sample_rate_hz,
                         axis=1,
                     )

@@ -65,9 +65,7 @@ def test_batch_matches_scalar_at_each_native_rate_and_edge(
     samples = generator.normal(size=sample_count) + 1j * generator.normal(size=sample_count)
     epoch_limit = round(sample_rate_hz / FRAME_RATE_HZ)
     epochs = tuple(int(value) for value in generator.integers(0, epoch_limit, size=10))
-    frequencies = tuple(
-        float(value) for value in generator.uniform(-500_000, 500_000, size=10)
-    )
+    frequencies = tuple(float(value) for value in generator.uniform(-500_000, 500_000, size=10))
 
     scalar = _scalar_scores(
         samples,
@@ -145,12 +143,15 @@ def test_nonuniform_3m_geometry_uses_scalar_fallback() -> None:
 
 
 def test_batch_preserves_empty_zero_duplicate_and_permuted_inventories() -> None:
-    assert conditioned_glrt64_scores(
-        np.ones(15_000, dtype=np.complex128),
-        5_000_000,
-        epoch_samples=(),
-        acquired_cfo_hz=(),
-    ) == ()
+    assert (
+        conditioned_glrt64_scores(
+            np.ones(15_000, dtype=np.complex128),
+            5_000_000,
+            epoch_samples=(),
+            acquired_cfo_hz=(),
+        )
+        == ()
+    )
 
     samples = np.zeros(15_000, dtype=np.complex128)
     epochs = (1_700, 12, 1_700, len(samples) + 100)
@@ -349,9 +350,7 @@ def test_production_window_matches_original_scalar_implementation(
     samples += 0.02 * (
         generator.normal(size=len(samples)) + 1j * generator.normal(size=len(samples))
     )
-    acquisition = full_capture._acquisition_config(
-        len(samples), TrajectoryFeedbackConfig()
-    )
+    acquisition = full_capture._acquisition_config(len(samples), TrajectoryFeedbackConfig())
 
     batch_result = full_capture._analyze_window(
         7,
