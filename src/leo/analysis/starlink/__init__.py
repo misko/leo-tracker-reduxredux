@@ -65,6 +65,7 @@ from leo.analysis.starlink.pilot_methods import (
     PilotMethodScore,
     PilotProbeDetection,
     conditioned_glrt64_score,
+    conditioned_glrt64_scores,
     conditioned_pilot_method_scores,
     detect_pilot_methods,
 )
@@ -191,6 +192,7 @@ __all__ = [
     "canonicalize_cfo_alias",
     "conditioned_frame_score",
     "conditioned_glrt64_score",
+    "conditioned_glrt64_scores",
     "conditioned_pilot_method_scores",
     "correct_polynomial_cfo",
     "default_trajectory_bank_config",

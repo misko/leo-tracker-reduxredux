@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import io
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from threading import RLock
@@ -22,7 +22,11 @@ from leo.analysis.starlink import (
     StarlinkEdge,
     SymbolwiseAcquisitionConfig,
 )
-from leo.analysis.starlink.acquisition import NumericalStatus, acquire_symbolwise
+from leo.analysis.starlink.acquisition import (
+    AcquisitionCandidate,
+    NumericalStatus,
+    acquire_symbolwise,
+)
 from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
     fit_huber_linear_dealiased_trajectories,
@@ -38,6 +42,7 @@ from leo.analysis.starlink.pilot_methods import (
     PilotMethodScore,
     PilotProbeDetection,
     conditioned_glrt64_score,
+    conditioned_glrt64_scores,
 )
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
@@ -55,6 +60,7 @@ from leo.pipeline import IqReader
 
 _ZERO_CALIBRATION_SHA256 = "0" * 64
 _RENDER_LOCK = RLock()
+_GLRT_BATCH_TIE_GUARD = 1e-10
 
 _BLUE = "#2678a8"
 _ORANGE = "#f28e2b"
@@ -200,6 +206,50 @@ def _optional_float(value: float | int | bool | None) -> float | None:
     return None if value is None else float(value)
 
 
+def _winning_candidate_glrt64(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    candidates: Sequence[AcquisitionCandidate],
+    *,
+    edge: StarlinkEdge,
+    glrt_size: int,
+) -> tuple[AcquisitionCandidate, PilotMethodScore]:
+    """Batch-rank candidates while publishing the exact scalar winner score."""
+
+    candidate_scores = conditioned_glrt64_scores(
+        samples,
+        sample_rate_hz,
+        epoch_samples=tuple(item.refined_epoch_sample for item in candidates),
+        acquired_cfo_hz=tuple(item.absolute_cfo_hz for item in candidates),
+        edge=edge,
+        glrt_size=glrt_size,
+    )
+    scored = tuple(zip(candidates, candidate_scores, strict=True))
+    maximum_batch_margin = max(item[1].margin for item in scored)
+    contenders = tuple(
+        item
+        for item in scored
+        if maximum_batch_margin - item[1].margin <= _GLRT_BATCH_TIE_GUARD
+    )
+    scalar_by_geometry: dict[tuple[int, float], PilotMethodScore] = {}
+    scalar_scored: list[tuple[AcquisitionCandidate, PilotMethodScore]] = []
+    for candidate, _batch_score in contenders:
+        geometry = (candidate.refined_epoch_sample, candidate.absolute_cfo_hz)
+        score = scalar_by_geometry.get(geometry)
+        if score is None:
+            score = conditioned_glrt64_score(
+                samples,
+                sample_rate_hz,
+                epoch_sample=candidate.refined_epoch_sample,
+                acquired_cfo_hz=candidate.absolute_cfo_hz,
+                edge=edge,
+                glrt_size=glrt_size,
+            )
+            scalar_by_geometry[geometry] = score
+        scalar_scored.append((candidate, score))
+    return max(scalar_scored, key=lambda item: (item[1].margin, -item[0].rank))
+
+
 def _analyze_window(
     probe_index: int,
     sample_start: int,
@@ -258,21 +308,13 @@ def _analyze_window(
             robust_converged=None,
             reason=acquired.reason,
         )
-    scored = tuple(
-        (
-            candidate,
-            conditioned_glrt64_score(
-                samples,
-                sample_rate_hz,
-                epoch_sample=candidate.refined_epoch_sample,
-                acquired_cfo_hz=candidate.absolute_cfo_hz,
-                edge=edge,
-                glrt_size=glrt_size,
-            ),
-        )
-        for candidate in acquired.candidates
+    candidate, score = _winning_candidate_glrt64(
+        samples,
+        sample_rate_hz,
+        acquired.candidates,
+        edge=edge,
+        glrt_size=glrt_size,
     )
-    candidate, score = max(scored, key=lambda item: (item[1].margin, -item[0].rank))
     frame_result = analyze_pilot_phase_slope(
         samples,
         sample_rate_hz,
