@@ -197,7 +197,7 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert api["ReadWritePaths"] == "/srv/bulk/leo/control"
 
 
-def test_worker_allows_four_numerical_threads_at_the_exec_boundary() -> None:
+def test_worker_allows_ten_numerical_threads_at_the_exec_boundary() -> None:
     worker_text = (UNIT_ROOT / "leo-worker@.service").read_text()
     worker = _unit("leo-worker@.service")["Service"]
     command = shlex.split(worker["ExecStart"])
@@ -206,9 +206,9 @@ def test_worker_allows_four_numerical_threads_at_the_exec_boundary() -> None:
     )
 
     for assignment in (
-        "OPENBLAS_NUM_THREADS=4",
-        "OMP_NUM_THREADS=4",
-        "MKL_NUM_THREADS=4",
+        "OPENBLAS_NUM_THREADS=10",
+        "OMP_NUM_THREADS=10",
+        "MKL_NUM_THREADS=10",
     ):
         assert command.count(assignment) == 1
         assert command.index(assignment) < executable_index
