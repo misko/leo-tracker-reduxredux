@@ -618,7 +618,7 @@ test("renders native Current and registered PNGs without a waterfall cell table"
     && !url.includes("replay-audit")
     && !url.includes("standard-investigations"))).toBe(true);
 
-  const tabs = screen.getByRole("navigation", { name: "Receiver path image tabs" });
+  const tabs = await screen.findByRole("navigation", { name: "Receiver path image tabs" });
   fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));
   const alternate = await screen.findByRole("img", { name: /Alternate Hough CFO candidates/ });
   expect(alternate).toHaveAttribute(
@@ -630,6 +630,105 @@ test("renders native Current and registered PNGs without a waterfall cell table"
   expect(screen.getByRole("img", { name: /Pilot Doppler qualification overview/ }))
     .toBeInTheDocument();
   expect(screen.getByRole("img", { name: /Doppler rates across/ })).toBeInTheDocument();
+});
+
+test("keeps both radio subjects reachable beside all paths and the paired subject", async () => {
+  const allPathSubjects = paths.map((path, index) => nativeSubject(
+    path.subject_id,
+    `${path.radio_label} ${path.receiver_label}`,
+    "receiver_path",
+    [path],
+    nativeTerminal(50, 45, 1, index + 2),
+  ));
+  const radio1 = nativeSubject(
+    "radio:radio1",
+    "Radio1",
+    "radio",
+    paths.slice(2),
+    nativeTerminal(100, 90, 2, 4),
+  );
+  const paired: StandardNativeSubjectSummaryV3 = {
+    ...nativeRadio,
+    subject_id: "pair:radio0:radio1",
+    subject_kind: "paired",
+    label: "Paired Radio0 + Radio1",
+    receiver_paths: paths,
+    expected_path_count: 4,
+    completed_path_count: 4,
+    child_subject_ids: [nativeRadio.subject_id, radio1.subject_id],
+    terminal: nativeTerminal(200, 180, 4, 8),
+  };
+  const allEvidence = allPathSubjects.map((subject) => ({
+    ...nativeEvidence[0],
+    receiver_path: subject.receiver_paths[0],
+    terminal: subject.terminal,
+  }));
+  const pairedDetail: StandardNativeSubjectDetailV3 = {
+    ...nativeDetail,
+    subject: paired,
+    receiver_path_expansions: allPathSubjects,
+    receiver_path_evidence: allEvidence,
+  };
+  const radio1Detail: StandardNativeSubjectDetailV3 = {
+    ...nativeDetail,
+    subject: radio1,
+    receiver_path_expansions: allPathSubjects.slice(2),
+    receiver_path_evidence: allEvidence.slice(2),
+  };
+  const completeHierarchy: StandardNativeSubjectHierarchyV3 = {
+    ...nativeHierarchy,
+    rows: [paired, nativeRadio, radio1],
+  };
+  const details = new Map<string, StandardNativeSubjectDetailV3>([
+    [paired.subject_id, pairedDetail],
+    [nativeRadio.subject_id, nativeDetail],
+    [radio1.subject_id, radio1Detail],
+    ...allPathSubjects.map((subject, index): [string, StandardNativeSubjectDetailV3] => [
+      subject.subject_id,
+      {
+        ...nativeDetail,
+        subject,
+        receiver_path_expansions: [subject],
+        receiver_path_evidence: [allEvidence[index]],
+      },
+    ]),
+  ]);
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const selected = [...details.entries()].find(([subjectId]) =>
+      url.includes(encodeURIComponent(subjectId)))?.[1];
+    if (url.includes("/artifacts?")) {
+      if (!selected) return new Response(null, { status: 404 });
+      return new Response(JSON.stringify(nativeArtifactInventory(selected)), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (selected) {
+      return new Response(JSON.stringify(selected), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(completeHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  expect(await screen.findByText("Standard native analysis")).toBeInTheDocument();
+  const tabs = await screen.findByRole("navigation", { name: "Receiver path image tabs" });
+  await waitFor(() => expect(within(tabs).getAllByRole("button")).toHaveLength(7));
+  expect(within(tabs).getByRole("button", { name: /Radio0 current/ })).toBeInTheDocument();
+  expect(within(tabs).getByRole("button", { name: /Radio1 current/ })).toBeInTheDocument();
+  expect(within(tabs).getByRole("button", { name: /Combined 4-path/ })).toBeInTheDocument();
+
+  fireEvent.click(within(tabs).getByRole("button", { name: /Radio1 current/ }));
+  const gallery = await screen.findByRole("region", { name: "Registered native image artifacts" });
+  await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(5));
+  expect(within(tabs).getAllByRole("button")).toHaveLength(7);
 });
 
 test("strictly rejects crossed V3-only fields and measured values in a gap tile", () => {

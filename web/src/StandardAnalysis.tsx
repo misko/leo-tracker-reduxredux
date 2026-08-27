@@ -111,11 +111,19 @@ export function StandardAnalysis({
         assertMatchingStandardMajor(hierarchy, result);
         validateDetailTruth(result);
         setDetail(result);
-        if (result.schema_version === 3 && result.subject.subject_kind !== "receiver_path") {
-          setTabs([...result.receiver_path_expansions, {
-            ...result.subject,
-            label: `Combined ${result.receiver_path_expansions.length}-path`,
-          }]);
+        if (result.schema_version === 3) {
+          setTabs((current) => {
+            const subjects = new Map(
+              [...current, ...result.receiver_path_expansions, ...hierarchy.rows]
+                .map((subject) => [subject.subject_id, subject]),
+            );
+            const ordered = [...subjects.values()];
+            return [
+              ...ordered.filter((subject) => subject.subject_kind === "receiver_path"),
+              ...ordered.filter((subject) => subject.subject_kind === "radio"),
+              ...ordered.filter((subject) => subject.subject_kind === "paired"),
+            ];
+          });
         } else if (result.subject.subject_kind === "paired") {
           setTabs([...result.receiver_path_expansions, {
             ...result.subject,
