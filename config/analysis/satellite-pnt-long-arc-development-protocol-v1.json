@@ -1,0 +1,169 @@
+{
+  "schema": "org.leo.research.satellite-pnt-long-arc-development/v1",
+  "protocol_id": "satellite-pnt-long-arc-development-v1",
+  "status": "frozen-development-protocol-no-execution",
+  "registry": {
+    "path": "config/analysis/post-fix-long-arc-research-cohort-v1.json",
+    "sha256": "sha256:5371f970ecd98db9d4bc2b54e859b910167f863acd0d3f1a265e8b2e22ac0ca4"
+  },
+  "tracking_plan": {
+    "path": "satellite_tracking_update_plan.md",
+    "sha256": "sha256:9cdeb384a6c851208dcb19802b3b449f552cb7285329634b2470918c6a078062"
+  },
+  "expected_arc_ids": [
+    "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+    "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s"
+  ],
+  "dynamic_discovery_forbidden": true,
+  "capture_or_span_substitution_forbidden": true,
+  "observations": [
+    {
+      "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+      "expected_observation_count": 881,
+      "cfo_evidence": {
+        "path": "reports/figures/2026_08_24_9981b9c27853_cubic_cfo_tle_comparison/evidence.json",
+        "sha256": "sha256:280ac2a7d8e75aa2bd7c12d994fe80dd01431a35d7ea3553243f29df076b8337"
+      },
+      "timing_authority": {
+        "path": "reports/figures/2026_08_24_9981b9c27853_cubic_cfo_tle_comparison/evidence.json",
+        "sha256": "sha256:280ac2a7d8e75aa2bd7c12d994fe80dd01431a35d7ea3553243f29df076b8337"
+      },
+      "cfo_json_pointer": "/glrt/unique_observations",
+      "cfo_time_rule": "probe-start-plus-uniform-50000-sample-center-v1",
+      "window_sample_count": 50000,
+      "sample_rate_hz": 2500000,
+      "retain_historical_probe_start_as_sensitivity": true,
+      "tle_snapshot": {
+        "provider": "space-track",
+        "collected_utc_ns": 1787594647459418079,
+        "raw_sha256": "sha256:ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee",
+        "object_count": 10972,
+        "raw_bytes_required_before_propagation": true,
+        "dynamic_snapshot_selection_forbidden": true
+      },
+      "previously_examined_catalog_number": 67930
+    },
+    {
+      "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+      "expected_observation_count": 550,
+      "cfo_evidence": {
+        "path": "reports/figures/2026_08_25_counter_continuous_frame_timing/epoch-doppler-curvature.json",
+        "sha256": "sha256:24bf59d774c2ca20dd896dd090fdafe146abca5218c54f161c1e07c3ac203f7d"
+      },
+      "timing_authority": {
+        "path": "reports/figures/2026_08_25_joint_cfo_delay_acceleration/joint-cfo-delay-acceleration-evidence.json",
+        "sha256": "sha256:45d31ac36f71d45bb792c5dd4be84b36b71cee97865ed0c33b073f90e3f64208"
+      },
+      "cfo_json_pointer": "/detections/*/(tracking_cfo_hz,detection_sample_start,local_epoch_sample)",
+      "cfo_time_rule": "supported-symbol-centre-mean-v1",
+      "window_sample_count": 50000,
+      "sample_rate_hz": 2500000,
+      "retain_historical_probe_start_as_sensitivity": false,
+      "tle_snapshot": {
+        "provider": "space-track",
+        "collected_utc_ns": 1787666532658586719,
+        "raw_sha256": "sha256:9bb59fcf68fa36ce234ae9be79a492f0b92abc23bcf4f040bb5b64b61d3e31ad",
+        "object_count": 10972,
+        "raw_bytes_required_before_propagation": true,
+        "dynamic_snapshot_selection_forbidden": true
+      },
+      "previously_examined_catalog_number": 59748
+    }
+  ],
+  "observer": {
+    "name": "spinnaker-sausalito",
+    "latitude_deg": 37.858988,
+    "longitude_deg": -122.478103,
+    "altitude_m": -29.0,
+    "position_uncertainty_m": 50.0,
+    "capture_bound": false,
+    "antenna_boresight_known": false
+  },
+  "candidate_population": {
+    "object_class": "STARLINK",
+    "source": "complete-checksum-valid-causal-snapshot",
+    "population_rule": "field-specific-horizon-union-over-delta-plus-tau-support-v1",
+    "minimum_elevation_deg": 0.0,
+    "fields_s": [-500, 0, 500],
+    "response_accessed": false,
+    "equal_tau_opportunity_required": true,
+    "population_frozen_before_response": true,
+    "candidate_truncation_forbidden": true
+  },
+  "time_treatment": {
+    "primary_tau_s": 0.0,
+    "sensitivity_lower_s": -5.0,
+    "sensitivity_upper_s": 5.0,
+    "sensitivity_step_s": 0.25,
+    "expected_tau_state_count": 41,
+    "boundary_disposition": "report-abstain-no-widen",
+    "wrong_epoch_fields_s": [-500, 500],
+    "wrong_epoch_policy": "observe-only-no-p-value-no-threshold-no-veto",
+    "same_tau_support_for_every_field": true,
+    "tau_reoptimized_on_future_response": false
+  },
+  "split_and_scoring": {
+    "main_training_fraction": 0.6,
+    "main_future_fraction": 0.4,
+    "rolling_training_fractions": [0.4, 0.6, 0.8],
+    "rolling_next_block_fraction": 0.2,
+    "calendar_block_duration_s": 1.0,
+    "split_basis": "chronological-support-centred-observation-order",
+    "selection_lane": "training-only",
+    "future_lane": "freeze-candidate-tau-offset-then-score-once",
+    "masks_identical_across_candidates_fields_and_models": true,
+    "primary_summary": "equal-calendar-block-rms-hz",
+    "pooled_rms_reported": true,
+    "overlapping_origins_are_independent_trials": false
+  },
+  "models": {
+    "orbit_model": "sgp4-received-minus-transmitted-doppler",
+    "nominal_rf_hz": 11440312498.0,
+    "primary_orbit_nuisance": "one-training-fit-cfo-constant-per-continuity-component",
+    "candidate_specific_rate_acceleration_jerk_scale_forbidden": true,
+    "primary_receiver_rate_sigma_hz_s": 0.0,
+    "diagnostic_receiver_rate_sigma_hz_s": 20.0,
+    "diagnostic_rate_may_change_identity": false,
+    "radio_only_polynomial_degrees": [1, 2, 3],
+    "radio_only_same_training_future_masks": true,
+    "observation_sigma_hz": 50.0,
+    "observation_error_model": "conditional-diagonal-gaussian-after-source-collapse-v1",
+    "component_offset_prior_sigma_hz": 1000000.0,
+    "numerical_scientific_thresholds": "unset-development-reporting-only"
+  },
+  "required_output": {
+    "complete_candidate_inventory": true,
+    "winner_runner_element_epoch_and_age": true,
+    "tau_profiles_and_boundary_flags": true,
+    "training_future_and_rolling_scores": true,
+    "radio_only_comparison": true,
+    "wrong_epoch_winners_differences_and_ratios": true,
+    "block_level_uncertainty_and_effective_units": true,
+    "failure_ledger": true,
+    "machine_readable_evidence_and_manifest": true,
+    "matplotlib_figures": true
+  },
+  "claim_boundary": {
+    "opened_development_only": true,
+    "secure_norad_permitted": false,
+    "positioning_validation_permitted": false,
+    "historical_final_holdout_reinterpretation_permitted": false,
+    "wrong_epoch_is_null_distribution": false,
+    "tau_is_receiver_clock_correction": false,
+    "receiver_relative_cfo_is_physical_doppler_truth": false,
+    "new_rf_collection_authorized": false
+  },
+  "execution": {
+    "status": "frozen-not-executed",
+    "execution_authorized": false,
+    "iq_accessed_during_protocol_freeze": false,
+    "tle_propagation_run_during_protocol_freeze": false,
+    "response_scored_during_protocol_freeze": false,
+    "blockers": [
+      "qualified-response-free-long-arc-adapter",
+      "equal-opportunity-radio-polynomial-null",
+      "audited-execution-amendment-with-code-hashes"
+    ]
+  },
+  "protocol_digest": "sha256:2db143ac0a380ab4d673167bda9a88851eca26681123624c29ab7f64b1f64ecb"
+}

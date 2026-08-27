@@ -113,6 +113,10 @@ unknown-identity position posterior without a truth/reveal input port.
 A separate reveal-only evaluator now revalidates the exact post-seal receipt
 and recomputes ECEF/ENU errors and covariance-consistency diagnostics without
 refitting the estimate.
+The two exact opened POST-FIX long arcs now have a digest-bound, fail-closed
+development protocol, but it is deliberately frozen as `not executed` until a
+qualified response-free long-arc adapter, an equal-opportunity radio-only
+polynomial null, and a separately audited execution amendment exist.
 Response-free geometric population selection, calibrated ephemeris covariance,
 equal-opportunity radio/polynomial nulls, full fixed-lag smoothing and ECM,
 joint `K=2` correction representation, broad-prior particle navigation, joint
@@ -140,8 +144,9 @@ or RF collection has occurred or is authorized by this document.
 | Reveal-only position evaluation | DONE for the first synthetic lane | [`blinded_position_evaluation.py`](../src/leo/analysis/blinded_position_evaluation.py) and [`test_blinded_position_evaluation.py`](../tests/analysis/test_blinded_position_evaluation.py) revalidate the exact challenge/estimate/truth receipt after sealing, recompute WGS84 ECEF and ENU error, preserve ambiguity mass, and report rank-one/conditional error plus semidefinite-safe NEES and 95% covariance diagnostics. The evaluator cannot alter or refit the sealed estimate. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
 | Local Doppler-position poisons | DONE for current synthetic local-prior scope | 8 focused tests cover sub-metre synthetic recovery, analytic-vs-finite-difference Jacobians, correlated satellite-frequency uncertainty, equal-mode ambiguity, truth-free source/import boundary, stale nested evidence, frozen tau binding, observation and dense-covariance work caps, candidate-bank provenance, broad-prior rejection, and explicitly partial unknown-identity output. |
+| Opened long-arc development protocol | FROZEN, NOT EXECUTED | [`satellite-pnt-long-arc-development-protocol-v1.json`](../config/analysis/satellite-pnt-long-arc-development-protocol-v1.json), [`satellite_pnt_long_arc_protocol.py`](../src/leo/analysis/research/satellite_pnt_long_arc_protocol.py), and [`test_satellite_pnt_long_arc_protocol.py`](../tests/analysis/test_satellite_pnt_long_arc_protocol.py) bind exactly the registered 30 s `9981` and 13.825 s `150802` arcs, evidence hashes, support-centred timing rules, causal TLE snapshots, reviewed site preset, `tau=0` plus `[-5,+5] s`, observe-only `delta=±500 s`, chronological masks, radio-polynomial comparators, and claim denials. Fourteen focused tests, Ruff, and strict MyPy pass. No IQ, propagation, or response scoring occurred. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Posterior odds are conditional on the complete frozen response-free candidate universe. `K=0` currently uses the declared zero-curve component-offset/hardware-drift Gaussian baseline; the equal-opportunity polynomial/radio-only likelihood required by WP2 is not yet implemented. |
-| Real opened long arcs | NOT STARTED | Requires a separate frozen development protocol after this slice is independently audited. |
+| Real opened long arcs | PROTOCOL FROZEN; EXECUTION BLOCKED | The protocol exists, but its execution boundary remains closed pending the response-free adapter, equal-opportunity radio-polynomial null, and audited code-hash amendment. |
 
 ## North-star milestone
 
@@ -774,6 +779,15 @@ public contracts or accepted as current identity evidence.
   never feeds truth or derived error back into the solver. It qualifies the
   artifact boundary on synthetic data but does not constitute a blinded
   real-observation PNT result.
+- **2026-08-27:** the exact two-arc opened-development protocol was frozen
+  without execution. It binds the registry and evidence bytes for `9981` and
+  `150802`, distinguishes support-centred timing from the historical
+  probe-start sensitivity, uses the exact causal TLE snapshots and reviewed
+  preset-only observer, keeps `tau=0` primary with bounded `[-5,+5] s`
+  sensitivity, and treats `delta=-500,+500 s` as observation-only challenges.
+  All numerical scientific thresholds remain unset. Its three explicit
+  execution blockers must be closed by an additive audited amendment before
+  any TLE propagation or response scoring.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
