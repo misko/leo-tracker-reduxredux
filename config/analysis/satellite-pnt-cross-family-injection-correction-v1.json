@@ -1,0 +1,24 @@
+{
+  "schema": "org.leo.research.satellite-pnt-cross-family-injection-correction/v1",
+  "base_commit": "dac6c70e507c0f226ca556123574cc5288248db2",
+  "base_tree": "d4be2378802fa60b873dbc6d01c05ba8bc5d563f",
+  "attempt1_execution_amendment_sha256": "sha256:f2d64d99a41ae8882c93c8b56791ab93c81f1ad94781eff10fb887dde378452d",
+  "attempt1_evidence_sha256": "sha256:723510c025165ef3cffc6514008debae79039db915ee57edad7ca84ce3e6e1ce",
+  "attempt1_digest_audit_sha256": "sha256:2a39230483638894629520c90144a51ededc13330f52b664111d365d88d12ccd",
+  "failure_class": "persisted-semantic-digest-closure",
+  "permitted_code_change": {
+    "path": "tools/run_cross_family_qin_injection.py",
+    "operation": "persist JSON float values without post-digest quantization",
+    "scientific_computation_may_change": false,
+    "measurement_rows_may_change": false,
+    "truth_or_protocol_may_change": false
+  },
+  "required_static_test": "all arm and pair semantic digests reproduce from persisted attempt-2 payloads",
+  "attempt2_exclusive_outputs": {
+    "output_root": "reports/figures/2026_08_27_satellite_pnt_cross_family_injection_attempt2",
+    "report": "reports/2026_08_27_satellite_pnt_cross_family_injection_attempt2_results.md"
+  },
+  "attempt1_files_must_remain_byte_identical": true,
+  "single_corrective_retry_permitted": true,
+  "downstream_scoring_before_attempt2_closure_forbidden": true
+}
