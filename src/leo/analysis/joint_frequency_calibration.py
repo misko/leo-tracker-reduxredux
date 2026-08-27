@@ -28,7 +28,9 @@ from leo.contracts.catalogue_association import (
     CatalogueAssociationResultV1,
     CataloguePredictionBankV1,
     CataloguePredictionSupportV1,
+    PhysicalCfoEpisodeV1,
     PhysicalEpisodeGraphV1,
+    SupportIntegratedCfoObservationV1,
 )
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.satellite_pnt import SatelliteFrequencyScope
@@ -84,6 +86,7 @@ class JointFrequencyCalibrationConfig:
     satellite_drift_prior_sigma_hz_s: float = 100.0
     minimum_observations_per_satellite: int = 4
     minimum_span_s_per_satellite: float = 1.0
+    hardware_drift_random_walk_sigma_hz_s_per_sqrt_s: float | None = None
     maximum_condition_number: float = 1e14
     maximum_mode_observation_evaluations: int = 1_000_000
 
@@ -97,6 +100,13 @@ class JointFrequencyCalibrationConfig:
         if any(not math.isfinite(item) or item <= 0.0 for item in positive):
             raise SatelliteCorrectionInputError(
                 "joint frequency calibration scales must be finite and positive"
+            )
+        if self.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s is not None and (
+            not math.isfinite(self.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s)
+            or self.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s <= 0.0
+        ):
+            raise SatelliteCorrectionInputError(
+                "hardware-drift random-walk scale must be finite and positive"
             )
         if (
             isinstance(self.minimum_observations_per_satellite, bool)
@@ -179,6 +189,9 @@ def calibrate_joint_satellite_frequency(
         satellite_drift_prior_sigma_hz_s=supplied_config.satellite_drift_prior_sigma_hz_s,
         minimum_observations_per_satellite=supplied_config.minimum_observations_per_satellite,
         minimum_span_s_per_satellite=supplied_config.minimum_span_s_per_satellite,
+        hardware_drift_random_walk_sigma_hz_s_per_sqrt_s=(
+            supplied_config.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s
+        ),
         maximum_condition_number=supplied_config.maximum_condition_number,
         maximum_mode_observation_evaluations=(supplied_config.maximum_mode_observation_evaluations),
     )
@@ -290,8 +303,14 @@ def calibrate_joint_satellite_frequency(
         full_joint_state_digest=canonical_digest(tuple(full_state_digests)),
         receiver_local_state_digest=canonical_digest(tuple(receiver_state_digests)),
         receiver_local_state_exportable=False,
-        receiver_drift_model="one-linear-state-per-hardware-epoch-v1",
-        cross_dwell_random_walk_modeled=False,
+        receiver_drift_model=(
+            "dwell-local-hardware-drift-random-walk-v1"
+            if config.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s is not None
+            else "one-linear-state-per-hardware-epoch-v1"
+        ),
+        cross_dwell_random_walk_modeled=(
+            config.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s is not None
+        ),
         receiver_local_priors_externally_supplied=True,
         known_position_used=True,
         identity_claimed=False,
@@ -325,15 +344,22 @@ def _solve_mode(
     used_components = tuple(
         sorted({episode_by_id[item.episode_id].continuity_component_id for item in rows})
     )
-    used_hardware = tuple(sorted({item.hardware_epoch_id for item in rows}))
+    hardware_state_keys, hardware_references, hardware_prior_covariance = (
+        _hardware_drift_state_prior(
+            rows=rows,
+            episode_by_id=episode_by_id,
+            hardware_by_id=hardware_by_id,
+            random_walk_sigma=config.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s,
+        )
+    )
     satellite_count = len(mode.active_catalog_numbers)
     satellite_dimension = 2 * satellite_count
     component_start = satellite_dimension
     hardware_start = component_start + len(used_components)
-    dimension = hardware_start + len(used_hardware)
+    dimension = hardware_start + len(hardware_state_keys)
     satellite_index = {item: index for index, item in enumerate(mode.active_catalog_numbers)}
     component_index = {item: index for index, item in enumerate(used_components)}
-    hardware_index = {item: index for index, item in enumerate(used_hardware)}
+    hardware_index = {item: index for index, item in enumerate(hardware_state_keys)}
     design = np.zeros((len(rows), dimension), dtype=np.float64)
     residual = np.zeros(len(rows), dtype=np.float64)
     variance = np.zeros(len(rows), dtype=np.float64)
@@ -355,16 +381,22 @@ def _solve_mode(
         ) / 1e9
         component_id = episode_by_id[observation.episode_id].continuity_component_id
         design[row_index, component_start + component_index[component_id]] = 1.0
-        hardware = hardware_by_id[observation.hardware_epoch_id]
-        design[row_index, hardware_start + hardware_index[observation.hardware_epoch_id]] = (
-            observation.support_center_utc_ns - hardware.reference_utc_ns
+        hardware_key = _hardware_state_key(
+            observation.hardware_epoch_id,
+            episode_by_id[observation.episode_id].dwell_id,
+            random_walk_enabled=(
+                config.hardware_drift_random_walk_sigma_hz_s_per_sqrt_s is not None
+            ),
+        )
+        design[row_index, hardware_start + hardware_index[hardware_key]] = (
+            observation.support_center_utc_ns - hardware_references[hardware_key]
         ) / 1e9
         residual[row_index] = observation.measured_cfo_hz - prediction.predicted_cfo_hz
         variance[row_index] = (
             observation.standard_uncertainty_hz**2 + prediction.standard_uncertainty_hz**2
         )
     prior_mean = np.zeros(dimension, dtype=np.float64)
-    prior_variance = np.asarray(
+    diagonal_prior_variance = np.asarray(
         [
             value
             for _ in mode.active_catalog_numbers
@@ -373,17 +405,28 @@ def _solve_mode(
                 config.satellite_drift_prior_sigma_hz_s**2,
             )
         ]
-        + [component_by_id[item].standard_uncertainty_hz ** 2 for item in used_components]
-        + [hardware_by_id[item].standard_uncertainty_hz_s ** 2 for item in used_hardware],
+        + [component_by_id[item].standard_uncertainty_hz ** 2 for item in used_components],
         dtype=np.float64,
     )
+    prior_covariance = np.zeros((dimension, dimension), dtype=np.float64)
+    prior_covariance[:hardware_start, :hardware_start] = np.diag(diagonal_prior_variance)
+    prior_covariance[hardware_start:, hardware_start:] = hardware_prior_covariance
     for index, component_id in enumerate(used_components):
         prior_mean[component_start + index] = component_by_id[component_id].mean_hz
-    for index, hardware_id in enumerate(used_hardware):
-        prior_mean[hardware_start + index] = hardware_by_id[hardware_id].mean_hz_s
+    for index, hardware_key in enumerate(hardware_state_keys):
+        prior_mean[hardware_start + index] = hardware_by_id[hardware_key[0]].mean_hz_s
     inverse_variance = 1.0 / variance
-    prior_precision = 1.0 / prior_variance
-    normal = np.diag(prior_precision) + design.T @ (inverse_variance[:, np.newaxis] * design)
+    try:
+        prior_cholesky = np.linalg.cholesky(prior_covariance)
+    except np.linalg.LinAlgError as error:
+        raise SatelliteCorrectionNumericalError(
+            "joint frequency calibration prior covariance is not positive definite"
+        ) from error
+    prior_precision = np.linalg.solve(
+        prior_cholesky.T,
+        np.linalg.solve(prior_cholesky, np.eye(dimension, dtype=np.float64)),
+    )
+    normal = prior_precision + design.T @ (inverse_variance[:, np.newaxis] * design)
     condition_number = float(np.linalg.cond(normal))
     if not math.isfinite(condition_number) or condition_number > config.maximum_condition_number:
         raise SatelliteCorrectionNumericalError(
@@ -395,7 +438,7 @@ def _solve_mode(
         raise SatelliteCorrectionNumericalError(
             "joint frequency calibration normal matrix is not positive definite"
         ) from error
-    information = prior_precision * prior_mean + design.T @ (inverse_variance * residual)
+    information = prior_precision @ prior_mean + design.T @ (inverse_variance * residual)
     mean = np.linalg.solve(cholesky.T, np.linalg.solve(cholesky, information))
     covariance = np.linalg.solve(
         cholesky.T,
@@ -454,6 +497,62 @@ def _mode_reference_utc_ns(
     if not times:
         raise SatelliteCorrectionInputError("non-null mode has no calibration reference")
     return sum(times) // len(times)
+
+
+def _hardware_state_key(
+    hardware_epoch_id: str,
+    dwell_id: Sha256Digest,
+    *,
+    random_walk_enabled: bool,
+) -> tuple[str, Sha256Digest | None]:
+    return (hardware_epoch_id, dwell_id if random_walk_enabled else None)
+
+
+def _hardware_drift_state_prior(
+    *,
+    rows: tuple[SupportIntegratedCfoObservationV1, ...],
+    episode_by_id: dict[Sha256Digest, PhysicalCfoEpisodeV1],
+    hardware_by_id: dict[str, ReceiverHardwareDriftPrior],
+    random_walk_sigma: float | None,
+) -> tuple[
+    tuple[tuple[str, Sha256Digest | None], ...],
+    dict[tuple[str, Sha256Digest | None], int],
+    np.ndarray,
+]:
+    random_walk_enabled = random_walk_sigma is not None
+    rows_by_key: dict[tuple[str, Sha256Digest | None], list[SupportIntegratedCfoObservationV1]] = {}
+    for row in rows:
+        key = _hardware_state_key(
+            row.hardware_epoch_id,
+            episode_by_id[row.episode_id].dwell_id,
+            random_walk_enabled=random_walk_enabled,
+        )
+        rows_by_key.setdefault(key, []).append(row)
+    references = {
+        key: sum(item.support_center_utc_ns for item in group) // len(group)
+        if random_walk_enabled
+        else hardware_by_id[key[0]].reference_utc_ns
+        for key, group in rows_by_key.items()
+    }
+    keys = tuple(sorted(rows_by_key, key=lambda item: (item[0], references[item], item[1] or "")))
+    covariance = np.zeros((len(keys), len(keys)), dtype=np.float64)
+    index = {key: offset for offset, key in enumerate(keys)}
+    for hardware_id in sorted({item[0] for item in keys}):
+        group = tuple(item for item in keys if item[0] == hardware_id)
+        initial_variance = hardware_by_id[hardware_id].standard_uncertainty_hz_s ** 2
+        first_reference = min(references[item] for item in group)
+        for left in group:
+            for right in group:
+                process_variance = 0.0
+                if random_walk_sigma is not None:
+                    elapsed_s = (min(references[left], references[right]) - first_reference) / 1e9
+                    if elapsed_s < 0.0:
+                        raise SatelliteCorrectionNumericalError(
+                            "hardware random-walk chronology is invalid"
+                        )
+                    process_variance = random_walk_sigma**2 * elapsed_s
+                covariance[index[left], index[right]] = initial_variance + process_variance
+    return keys, references, covariance
 
 
 def _exact_component_priors(
