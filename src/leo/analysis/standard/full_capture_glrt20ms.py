@@ -227,9 +227,7 @@ def _winning_candidate_glrt64(
     scored = tuple(zip(candidates, candidate_scores, strict=True))
     maximum_batch_margin = max(item[1].margin for item in scored)
     contenders = tuple(
-        item
-        for item in scored
-        if maximum_batch_margin - item[1].margin <= _GLRT_BATCH_TIE_GUARD
+        item for item in scored if maximum_batch_margin - item[1].margin <= _GLRT_BATCH_TIE_GUARD
     )
     scalar_by_geometry: dict[tuple[int, float], PilotMethodScore] = {}
     scalar_scored: list[tuple[AcquisitionCandidate, PilotMethodScore]] = []
