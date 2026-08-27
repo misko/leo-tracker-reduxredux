@@ -105,12 +105,17 @@ diagnostic now exist. A synthetic causal multi-dwell forward filter now carries
 CFO-offset marginalization, and score-before-assimilation next-dwell evidence.
 A synthetic single-emitter projection now builds the solver-safe correction
 product and replays it conditionally on later known-position observations while
-fitting a fresh target-local offset.
+fitting a fresh target-local offset. A truth-isolated local Doppler MAP solver
+now consumes frozen correction modes, time-diverse satellite states, and a
+precommitted local ECEF prior; it retains shared satellite-frequency
+uncertainty across observations and seals an oracle or conditional
+unknown-identity position posterior without a truth/reveal input port.
 Response-free geometric population selection, calibrated ephemeris covariance,
 equal-opportunity radio/polynomial nulls, full fixed-lag smoothing and ECM,
-joint `K=2` correction representation, blinded correction replay, and a
-navigation solver remain pending. No IQ access, catalogue rerun, new data
-selection, or RF collection has occurred or is authorized by this document.
+joint `K=2` correction representation, broad-prior particle navigation, joint
+identity/correction refinement, radio-only positioning, and reveal-time
+evaluation remain pending. No IQ access, catalogue rerun, new data selection,
+or RF collection has occurred or is authorized by this document.
 
 ### Implementation checkpoint — 2026-08-27
 
@@ -128,7 +133,9 @@ selection, or RF collection has occurred or is authorized by this document.
 | SGP4 adapter and nearest-neighbour poisons | DONE for current synthetic scope | 27 adapter tests and 18 nearest-neighbour tests cover raw snapshot/element mutations, causality, response exclusion, work caps, tau aliases/extreme priors, covariance, train/future isolation, stale contracts, null selection, and exact ambiguity. |
 | Multi-dwell filter and numerical poisons | DONE for current synthetic scope | 27 focused tests cover handoff/null histories, candidate-family mass invariance, `K<=2` history semantics, drift/reset behavior, causal future-value isolation, pruning and tie abstention, stable mixture predictive evidence, fail-closed extreme arithmetic, row/extension work caps, and dense-Gaussian equivalence. An independent 5,000-case Woodbury comparison found no high/medium blocker. |
 | Correction projection and replay poisons | DONE for current synthetic `K<=1` scope | 9 focused tests cover solver-safe/site-private projection, ambiguity-mode closure, bounded-tau uncertainty, `K=2` refusal, complete satellite-frequency inventory, exact observer/TLE/association binding, future validity, stale-contract rejection, receiver-local-field poison, and dense-Gaussian replay evidence. Replay is conditioned on an assigned mode and scores no radio-only/null alternative, so it makes no identity or navigation claim. |
+| Truth-isolated local Doppler positioning | DONE for the first synthetic oracle/frozen-identity slice | [`blinded_doppler_position.py`](../src/leo/analysis/blinded_doppler_position.py) and [`test_blinded_doppler_position.py`](../tests/analysis/test_blinded_doppler_position.py) implement local ECEF Gaussian-prior MAP positioning with a shared receiver CFO state, frozen per-satellite frequency corrections, correlated correction uncertainty, exact consumed-mode lineage, dense-covariance/work bounds, and no truth/reveal import or argument. Oracle output may be complete; unknown frozen-identity output remains explicitly partial because no radio/null alternative is scored. |
 | Correction/blinded-boundary poisons | DONE for contract scope | 14 focused tests and all 52 repository contract tests cover covariance, chronology, source-span disjointness, freshness/expiry, lane separation, prior breadth, truth commitment, and reveal closure. |
+| Local Doppler-position poisons | DONE for current synthetic local-prior scope | 8 focused tests cover sub-metre synthetic recovery, analytic-vs-finite-difference Jacobians, correlated satellite-frequency uncertainty, equal-mode ambiguity, truth-free source/import boundary, stale nested evidence, frozen tau binding, observation and dense-covariance work caps, candidate-bank provenance, broad-prior rejection, and explicitly partial unknown-identity output. |
 | Current null and evidence scope | RESTRICTED synthetic baseline | Posterior odds are conditional on the complete frozen response-free candidate universe. `K=0` currently uses the declared zero-curve component-offset/hardware-drift Gaussian baseline; the equal-opportunity polynomial/radio-only likelihood required by WP2 is not yet implemented. |
 | Real opened long arcs | NOT STARTED | Requires a separate frozen development protocol after this slice is independently audited. |
 
@@ -489,6 +496,15 @@ predicts a later known-site observation within its frozen uncertainty.
 **Purpose:** measure whether associated/corrected signals actually determine
 receiver position.
 
+**Current implementation:** the first local-prior numerical slice exists for
+lanes 1 and 2. It keeps multiple frozen correction hypotheses separate, solves
+time-diverse Doppler plus one receiver-CFO state, propagates shared
+satellite-frequency correction covariance, and seals the estimate before any
+truth port exists. Lane 2 remains `PARTIAL`: its modes are conditional on the
+frozen candidate bank and it has no equal-opportunity radio/null likelihood.
+The 10 km/100 km/global initialization ladder, particles, joint correction,
+radio-only control, and reveal evaluator remain future work.
+
 **Lanes:**
 
 1. oracle identity and oracle/frozen correction;
@@ -739,6 +755,14 @@ public contracts or accepted as current identity evidence.
   applies the frozen product to a later exact TLE/prediction bank, marginalizes
   fresh target-local offsets, and remains conditional because it has no
   radio-only/null likelihood and makes no identity or navigation claim.
+- **2026-08-27:** first truth-isolated Doppler navigation slice implemented.
+  It consumes only a blinded challenge plus digest-bound observation/satellite
+  states, supports the oracle and unknown-frozen lanes under a declared local
+  ECEF prior, models one shared receiver CFO, retains per-satellite correction
+  covariance across repeated observations, and seals a multimode estimate
+  without importing or accepting truth/reveal artifacts. It does not yet
+  establish global initialization, unknown-identity correctness, a radio-only
+  comparison, joint correction refinement, or blinded positioning accuracy.
 - Prospective changes to data, masks, state scope, tau support, candidate
   population, scoring, or thresholds require a versioned protocol/config and a
   decision-log entry before affected response is opened.
