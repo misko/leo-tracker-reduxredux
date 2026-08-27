@@ -18,6 +18,7 @@ import sys
 import time
 from pathlib import Path
 from threading import Event, Timer
+from types import SimpleNamespace
 from typing import Any
 from uuid import uuid4
 
@@ -105,28 +106,28 @@ def _ppu_ladder_argv(host: str, serial: str, rate_hz: int) -> tuple[str, ...]:
     )
 
 
-def _attest_ppu_checkout(expected_revision: str) -> None:
-    if not _PPU_EXECUTABLE.is_file():
-        raise AssertionError(f"exact PPU executable is missing: {_PPU_EXECUTABLE}")
-    head = subprocess.run(
-        ("git", "-C", str(_PPU_ROOT), "rev-parse", "HEAD"),
+def _attest_ppu_checkout(
+    expected_revision: str,
+    *,
+    executable: Path = _PPU_EXECUTABLE,
+    root: Path = _PPU_ROOT,
+    runner: Any = subprocess.run,
+) -> None:
+    if not executable.is_file():
+        raise AssertionError(f"exact PPU executable is missing: {executable}")
+    head = runner(
+        ("git", "-C", str(root), "rev-parse", "HEAD"),
         check=True,
         capture_output=True,
         text=True,
     ).stdout.strip()
-    upstream = subprocess.run(
-        ("git", "-C", str(_PPU_ROOT), "rev-parse", "origin/main"),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    dirty = subprocess.run(
+    dirty = runner(
         (
             "env",
             "GIT_OPTIONAL_LOCKS=0",
             "git",
             "-C",
-            str(_PPU_ROOT),
+            str(root),
             "status",
             "--porcelain",
         ),
@@ -134,9 +135,10 @@ def _attest_ppu_checkout(expected_revision: str) -> None:
         capture_output=True,
         text=True,
     ).stdout
-    if head != expected_revision or upstream != expected_revision or dirty:
+    if head != expected_revision or dirty:
         raise AssertionError(
-            "pluto-plus-utils must be clean and exactly pinned to origin/main before RF work"
+            "pluto-plus-utils must be clean and exactly match the release-pinned revision "
+            "before RF work"
         )
 
 
@@ -411,6 +413,40 @@ def test_enabled_hardware_plan_inventory_has_exact_native_rf_geometry() -> None:
             assert profile.bandwidth_hz == profile.sample_rate_hz
             assert profile.refill_samples == _REFILL_SAMPLES
             assert profile.kernel_buffers == _KERNEL_BUFFERS
+
+
+def test_ppu_attestation_binds_clean_head_without_mutable_remote_ref(tmp_path: Path) -> None:
+    expected = "a" * 40
+    executable = tmp_path / "pluto"
+    executable.write_text("pinned executable\n", encoding="utf-8")
+    calls: list[tuple[str, ...]] = []
+
+    def runner(arguments: tuple[str, ...], **_kwargs: Any) -> Any:
+        calls.append(arguments)
+        return SimpleNamespace(
+            stdout=expected + "\n" if arguments[-2:] == ("rev-parse", "HEAD") else ""
+        )
+
+    _attest_ppu_checkout(
+        expected,
+        executable=executable,
+        root=tmp_path,
+        runner=runner,
+    )
+
+    assert calls == [
+        ("git", "-C", str(tmp_path), "rev-parse", "HEAD"),
+        (
+            "env",
+            "GIT_OPTIONAL_LOCKS=0",
+            "git",
+            "-C",
+            str(tmp_path),
+            "status",
+            "--porcelain",
+        ),
+    ]
+    assert all("origin/main" not in arguments for arguments in calls)
 
 
 @pytest.mark.hardware
