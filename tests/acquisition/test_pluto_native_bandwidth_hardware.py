@@ -1,6 +1,6 @@
 """Bounded hardware qualification for the enabled native-bandwidth capture pool.
 
-This campaign is deliberately separate from the contiguous-rate V5 campaign. It
+This campaign is deliberately separate from the contiguous-rate V6 campaign. It
 uses only the two production native-IP radios, never enables TX, restores both
 radios before publishing evidence, and is inert without the authorization and
 identity environment required by ``test_pluto_rate_modes_hardware``.
