@@ -17,6 +17,9 @@ TOOL_PATH = ROOT / "tools/run_satellite_pnt_long_arc_development.py"
 PROTOCOL_PATH = ROOT / "config/analysis/satellite-pnt-long-arc-development-protocol-v1.json"
 TLE_9981 = Path("/tmp/cap-20260824-space-track-causal.tle")
 TLE_150802 = Path("/tmp/cap-20260825-space-track-causal.tle")
+FAILED_RECEIPT = ROOT / (
+    "reports/figures/2026_08_27_satellite_pnt_long_arc_development_attempt1-execution-receipt.json"
+)
 
 
 def _load_tool() -> ModuleType:
@@ -133,6 +136,103 @@ def _write(tmp_path: Path, document: dict[str, Any]) -> Path:
     return path
 
 
+def _retry_document() -> dict[str, Any]:
+    payload = _document()
+    payload.pop("amendment_digest")
+    payload.update(
+        {
+            "schema": "org.leo.research.satellite-pnt-long-arc-execution-amendment/v2",
+            "amendment_id": "synthetic-retry-validation-only",
+            "status": ("frozen-authority-for-one-opened-development-retry-after-work-cap-failure"),
+            "chronology": "test-only retry authority; no execution",
+            "predecessor_attempt": {
+                "path": FAILED_RECEIPT.relative_to(ROOT).as_posix(),
+                "sha256": _sha256(FAILED_RECEIPT),
+                "attempt_number": 1,
+                "status": "failed",
+                "exception_type": "CataloguePopulationWorkLimitError",
+                "exception_message": (
+                    "exact Starlink population exceeds the declared propagation cap"
+                ),
+                "prior_amendment_digest": (
+                    "sha256:5f90039ae688027978fe23284cd7b64bb8a1ba7082ae1fc4f08f2d707f8c43ce"
+                ),
+            },
+            "work_cap_amendment": {
+                "failure_layer": "response-free-field-population-work-cap",
+                "failing_arc_id": ("long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s"),
+                "failing_field_delta_s": -500,
+                "previous_maximum_exact_propagated_states": 20000000,
+                "response_free_diagnostic_counts": [
+                    {
+                        "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+                        "field_delta_s": -500,
+                        "exact_time_count": 4701,
+                        "coarse_candidate_count": 510,
+                        "exact_work": 2397510,
+                    },
+                    {
+                        "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+                        "field_delta_s": 0,
+                        "exact_time_count": 4701,
+                        "coarse_candidate_count": 490,
+                        "exact_work": 2303490,
+                    },
+                    {
+                        "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+                        "field_delta_s": 500,
+                        "exact_time_count": 4701,
+                        "coarse_candidate_count": 504,
+                        "exact_work": 2369304,
+                    },
+                    {
+                        "arc_id": ("long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s"),
+                        "field_delta_s": -500,
+                        "exact_time_count": 50361,
+                        "coarse_candidate_count": 576,
+                        "exact_work": 29007936,
+                    },
+                    {
+                        "arc_id": ("long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s"),
+                        "field_delta_s": 0,
+                        "exact_time_count": 50361,
+                        "coarse_candidate_count": 579,
+                        "exact_work": 29159019,
+                    },
+                    {
+                        "arc_id": ("long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s"),
+                        "field_delta_s": 500,
+                        "exact_time_count": 50361,
+                        "coarse_candidate_count": 578,
+                        "exact_work": 29108658,
+                    },
+                ],
+                "maximum_observed_exact_work": 29159019,
+                "replacement_maximum_exact_propagated_states": 30000000,
+                "scientific_model_changed": False,
+                "response_scores_used_for_diagnosis": False,
+            },
+        }
+    )
+    payload["numerical_controls"]["population_maximum_exact_propagated_states"] = 30000000
+    payload["outputs"] = {
+        "artifact_directory": "reports/figures/__satellite_pnt_retry_test_absent__",
+        "attempt_receipt_path": (
+            "reports/figures/__satellite_pnt_retry_test_absent_receipt__.json"
+        ),
+        "report_path": "reports/__satellite_pnt_retry_test_absent__.md",
+    }
+    payload["execution"] = {
+        "authorized": True,
+        "maximum_attempt_count": 2,
+        "attempt_number": 2,
+        "outputs_must_not_exist_before_execution": True,
+        "response_scoring_before_this_amendment": True,
+        "new_rf_collection_authorized": False,
+    }
+    return {**payload, "amendment_digest": canonical_digest(payload)}
+
+
 def test_amendment_validation_closes_protocol_code_tles_and_outputs(
     tmp_path: Path,
 ) -> None:
@@ -155,6 +255,25 @@ def test_amendment_rejects_code_or_output_substitution(
     hashes[first] = "sha256:" + "0" * 64
     payload = {key: value for key, value in document.items() if key != "amendment_digest"}
     with pytest.raises(tool.LongArcExecutionAuthorityError, match="implementation file drifted"):
+        tool.validate_execution_amendment(
+            ROOT,
+            _write(tmp_path, {**payload, "amendment_digest": canonical_digest(payload)}),
+        )
+
+
+def test_retry_amendment_binds_failure_and_changes_only_the_work_cap(
+    tmp_path: Path,
+) -> None:
+    document = _retry_document()
+
+    validated = tool.validate_execution_amendment(ROOT, _write(tmp_path, document))
+    assert validated["execution"]["attempt_number"] == 2
+    assert validated["work_cap_amendment"]["maximum_observed_exact_work"] == 29159019
+    assert validated["numerical_controls"]["population_maximum_exact_propagated_states"] == 30000000
+
+    document["work_cap_amendment"]["scientific_model_changed"] = True
+    payload = {key: value for key, value in document.items() if key != "amendment_digest"}
+    with pytest.raises(tool.LongArcExecutionAuthorityError, match="work-cap-only"):
         tool.validate_execution_amendment(
             ROOT,
             _write(tmp_path, {**payload, "amendment_digest": canonical_digest(payload)}),
