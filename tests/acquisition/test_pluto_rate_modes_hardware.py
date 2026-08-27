@@ -975,6 +975,76 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
         assert json.loads(evidence_path.read_text(encoding="utf-8"))["passed"] is False
 
 
+def test_radio_safety_restore_uses_exact_settings_restorer(tmp_path: Path) -> None:
+    config = _unit_hardware_config(tmp_path)
+    original = _metadata_settings().model_copy(update={"center_frequency_hz": 1_700_000_000})
+    devices: list[_TestRadioSafetyDevice] = []
+
+    def device_factory(
+        uri: str,
+        *,
+        radio_id: str,
+        serial: str,
+        **_kwargs: Any,
+    ) -> _TestRadioSafetyDevice:
+        device = _TestRadioSafetyDevice(
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+            initial_settings=original.model_copy(update={"center_frequency_hz": 1_699_999_998}),
+        )
+        devices.append(device)
+        return device
+
+    snapshots = tuple(
+        _RadioSafetyContext(
+            radio_id=radio_id,
+            serial=serial,
+            host=host,
+            original_settings=original,
+            pre_safety=_HostRadioSafetyObservation(
+                identity={"radio_id": radio_id, "serial": serial, "uri": f"ip:{host}"},
+                diagnostics={"buffer_metadata_abi": 1},
+                capabilities={
+                    "supports_device_sample_counter": True,
+                    "supports_continuity_sequence": True,
+                },
+                open_succeeded=True,
+                close_succeeded=True,
+            ),
+            pre_evidence_path=tmp_path / f"{radio_id}-pre.json",
+            pre_evidence_sha256="sha256:" + f"{index + 1:x}" * 64,
+        )
+        for index, (radio_id, serial, host) in enumerate(
+            zip(_RADIO_IDS, config.serials, config.hosts, strict=True)
+        )
+    )
+    requests: list[float] = []
+
+    def restore_exact(device: _TestRadioSafetyDevice, settings: Any) -> Any:
+        requests.append(settings.center_frequency_hz)
+        device.current_settings = settings
+        return SimpleNamespace(restored=settings)
+
+    results = _restore_radio_safety(
+        config,
+        snapshots,
+        evidence_root=tmp_path,
+        device_factory=device_factory,
+        settings_restorer=restore_exact,
+    )
+
+    assert requests == [original.center_frequency_hz, original.center_frequency_hz]
+    assert all(result.settings_restored for result in results)
+    assert all(device.current_settings == original for device in devices)
+    assert all(
+        json.loads(
+            _safety_evidence_path(tmp_path, radio_id, "restoration").read_text(encoding="utf-8")
+        )["passed"]
+        for radio_id in _RADIO_IDS
+    )
+
+
 def test_radio_safety_snapshot_rejects_unstable_round_trip_before_rf(
     tmp_path: Path,
 ) -> None:
@@ -1768,11 +1838,14 @@ def _restore_radio_safety(
     *,
     evidence_root: Path,
     device_factory: Callable[..., Any] | None = None,
+    settings_restorer: Callable[[Any, Any], Any] | None = None,
 ) -> tuple[_RadioSafetyResult, _RadioSafetyResult]:
     if device_factory is None:
+        from pluto_plus.hardware.base import restore_settings_exact
         from pluto_plus.hardware.iio import IioRadioDevice
 
         device_factory = IioRadioDevice
+        settings_restorer = restore_settings_exact
     evidence_root.mkdir(mode=0o700, parents=True, exist_ok=True)
     restored: list[_RadioSafetyResult] = []
     errors: list[str] = []
@@ -1802,7 +1875,13 @@ def _restore_radio_safety(
                 serial=snapshot.serial,
                 uri=f"ip:{snapshot.host}",
             )
-            apply_readback = device.apply_settings(snapshot.original_settings)
+            if settings_restorer is None:
+                apply_readback = device.apply_settings(snapshot.original_settings)
+            else:
+                apply_readback = settings_restorer(
+                    device,
+                    snapshot.original_settings,
+                ).restored
             restored_settings = device.read_settings()
             settings_restored = (
                 apply_readback == snapshot.original_settings
