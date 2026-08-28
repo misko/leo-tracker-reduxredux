@@ -279,9 +279,68 @@ def test_forced_avx2_fma_coarse_grid_matches_portable(probe: np.ndarray) -> None
         epoch_count,
         backend="avx2_fma",
     )
+    automatic = _folded_anchor_score_grid_native(
+        probe,
+        template,
+        _RATE,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+    )
 
     np.testing.assert_allclose(avx2_fma, portable, rtol=1e-12, atol=1e-12)
+    np.testing.assert_array_equal(automatic, avx2_fma)
     assert tuple(int(np.argmax(row)) for row in avx2_fma) == tuple(
+        int(np.argmax(row)) for row in portable
+    )
+
+
+@pytest.mark.hardware
+@pytest.mark.skipif(
+    _folded_anchor_score_grid_backend() != "avx2_fma",
+    reason="register-accumulation prototype requires an AVX2/FMA CPU",
+)
+@pytest.mark.parametrize("sample_rate_hz", [2_500_000, 5_000_000])
+def test_register_accumulation_coarse_grid_matches_portable(sample_rate_hz: int) -> None:
+    generator = np.random.default_rng(0xA11CE + sample_rate_hz)
+    sample_count = round(sample_rate_hz * 0.020)
+    values = np.asarray(
+        generator.normal(size=sample_count) + 1j * generator.normal(size=sample_count),
+        np.complex128,
+    )
+    template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, "lower"), np.complex128)
+    grid = tuple(float(value) for value in range(-400_000, 400_001, 80_000))
+    epoch_count = round(sample_rate_hz / 750.0)
+    portable = _folded_anchor_score_grid_native(
+        values,
+        template,
+        sample_rate_hz,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+        backend="portable",
+    )
+    prototype = _folded_anchor_score_grid_native(
+        values,
+        template,
+        sample_rate_hz,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+        backend="avx2_fma_register",
+    )
+    automatic = _folded_anchor_score_grid_native(
+        values,
+        template,
+        sample_rate_hz,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+    )
+
+    np.testing.assert_allclose(prototype, portable, rtol=1e-12, atol=1e-12)
+    np.testing.assert_array_equal(automatic, prototype)
+    assert tuple(int(np.argmax(row)) for row in prototype) == tuple(
         int(np.argmax(row)) for row in portable
     )
 

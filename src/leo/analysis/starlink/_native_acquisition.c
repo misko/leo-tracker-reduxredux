@@ -6,12 +6,16 @@
 #include <float.h>
 #include <math.h>
 #include <numpy/arrayobject.h>
+#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+#include <immintrin.h>
+#endif
 
 
 typedef enum {
     GRID_BACKEND_AUTO = 0,
     GRID_BACKEND_PORTABLE = 1,
     GRID_BACKEND_AVX2_FMA = 2,
+    GRID_BACKEND_AVX2_FMA_REGISTER_ACCUMULATION = 3,
 } GridBackend;
 
 
@@ -53,6 +57,13 @@ typedef struct {
 #define LEO_GRID_FUNCTION folded_anchor_grid_avx2_fma
 #define LEO_GRID_TARGET __attribute__((target("avx2,fma,tune=haswell")))
 #include "_native_acquisition_grid.inc"
+#undef LEO_GRID_FUNCTION
+#undef LEO_GRID_TARGET
+#define LEO_GRID_FUNCTION folded_anchor_grid_avx2_fma_register_accumulation
+#define LEO_GRID_TARGET __attribute__((target("avx2,fma,tune=haswell")))
+#define LEO_GRID_AVX2_12_REGISTER_ACCUMULATION 1
+#include "_native_acquisition_grid.inc"
+#undef LEO_GRID_AVX2_12_REGISTER_ACCUMULATION
 #undef LEO_GRID_FUNCTION
 #undef LEO_GRID_TARGET
 #else
@@ -257,7 +268,9 @@ static PyObject *folded_anchor_score_grid_with_backend(
     int epoch_count;
     (void)self;
 
-    if (backend == GRID_BACKEND_AVX2_FMA && !avx2_fma_available()) {
+    if ((backend == GRID_BACKEND_AVX2_FMA ||
+         backend == GRID_BACKEND_AVX2_FMA_REGISTER_ACCUMULATION) &&
+        !avx2_fma_available()) {
         PyErr_SetString(PyExc_RuntimeError, "AVX2/FMA native acquisition is unavailable");
         return NULL;
     }
@@ -460,9 +473,13 @@ static PyObject *folded_anchor_score_grid_with_backend(
         .invalid_geometry = 0,
     };
 
+    const int avx2_fma_supported = avx2_fma_available();
+    const int use_register_accumulation =
+        backend == GRID_BACKEND_AVX2_FMA_REGISTER_ACCUMULATION ||
+        (backend == GRID_BACKEND_AUTO && avx2_fma_supported && cfo_count == 12);
     const int use_avx2_fma =
         backend == GRID_BACKEND_AVX2_FMA ||
-        (backend == GRID_BACKEND_AUTO && avx2_fma_available());
+        (backend == GRID_BACKEND_AUTO && avx2_fma_supported);
     Py_BEGIN_ALLOW_THREADS
     double maximum_sample_component = 0.0;
     double maximum_reference_component = 0.0;
@@ -482,12 +499,15 @@ static PyObject *folded_anchor_score_grid_with_backend(
     kernel.fast_magnitude =
         isfinite(correlation_bound) && correlation_bound <= sqrt(DBL_MAX / 2.0);
 #if LEO_HAS_AVX2_FMA_TARGET
-    if (use_avx2_fma) {
+    if (use_register_accumulation) {
+        folded_anchor_grid_avx2_fma_register_accumulation(&kernel);
+    } else if (use_avx2_fma) {
         folded_anchor_grid_avx2_fma(&kernel);
     } else {
         folded_anchor_grid_portable(&kernel);
     }
 #else
+    (void)use_register_accumulation;
     (void)use_avx2_fma;
     folded_anchor_grid_portable(&kernel);
 #endif
@@ -530,6 +550,16 @@ static PyObject *folded_anchor_score_grid_avx2_fma_py(PyObject *self, PyObject *
 }
 
 
+static PyObject *folded_anchor_score_grid_avx2_fma_register_accumulation_py(
+        PyObject *self,
+        PyObject *args) {
+    return folded_anchor_score_grid_with_backend(
+        self,
+        args,
+        GRID_BACKEND_AVX2_FMA_REGISTER_ACCUMULATION);
+}
+
+
 static PyObject *folded_anchor_score_grid_backend(PyObject *self, PyObject *args) {
     (void)self;
     if (!PyArg_ParseTuple(args, "")) {
@@ -563,6 +593,12 @@ static PyMethodDef module_methods[] = {
         folded_anchor_score_grid_avx2_fma_py,
         METH_VARARGS,
         "Compute a complete folded-anchor CFO grid with the AVX2/FMA kernel.",
+    },
+    {
+        "folded_anchor_score_grid_avx2_fma_register_accumulation",
+        folded_anchor_score_grid_avx2_fma_register_accumulation_py,
+        METH_VARARGS,
+        "Compute the AVX2/FMA grid with 12-lane register accumulation.",
     },
     {
         "folded_anchor_score_grid_backend",

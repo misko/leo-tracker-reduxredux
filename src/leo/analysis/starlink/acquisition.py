@@ -1295,12 +1295,13 @@ def _folded_anchor_score_grid_native(
         "auto": "folded_anchor_score_grid",
         "portable": "folded_anchor_score_grid_portable",
         "avx2_fma": "folded_anchor_score_grid_avx2_fma",
+        "avx2_fma_register": "folded_anchor_score_grid_avx2_fma_register_accumulation",
     }
     try:
         function_name = backend_functions[backend]
     except KeyError as error:
         raise ValueError(
-            "native acquisition backend must be auto, portable, or avx2_fma"
+            "native acquisition backend must be auto, portable, avx2_fma, or avx2_fma_register"
         ) from error
     native_grid = getattr(_native_acquisition, function_name, None)
     if native_grid is None:
