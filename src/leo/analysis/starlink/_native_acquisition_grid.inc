@@ -54,6 +54,70 @@ LEO_GRID_TARGET static void LEO_GRID_FUNCTION(FoldedAnchorGridKernel *kernel) {
             }
             for (npy_intp epoch = 0; epoch < valid_epochs; ++epoch) {
                 const npy_intp position = base + epoch;
+#if defined(LEO_GRID_AVX2_12_REGISTER_ACCUMULATION)
+                if (kernel->cfo_count == 12) {
+                    __m256d correlation_real_0 = _mm256_setzero_pd();
+                    __m256d correlation_real_1 = _mm256_setzero_pd();
+                    __m256d correlation_real_2 = _mm256_setzero_pd();
+                    __m256d correlation_imag_0 = _mm256_setzero_pd();
+                    __m256d correlation_imag_1 = _mm256_setzero_pd();
+                    __m256d correlation_imag_2 = _mm256_setzero_pd();
+                    for (npy_intp index = 0; index < reference_count; ++index) {
+                        const npy_cdouble received = samples[position + index];
+                        const __m256d received_real = _mm256_set1_pd(creal(received));
+                        const __m256d received_imag = _mm256_set1_pd(cimag(received));
+                        const npy_intp rotated_base = index * 12;
+                        const __m256d reference_real_0 =
+                            _mm256_loadu_pd(rotated_real + rotated_base);
+                        const __m256d reference_real_1 =
+                            _mm256_loadu_pd(rotated_real + rotated_base + 4);
+                        const __m256d reference_real_2 =
+                            _mm256_loadu_pd(rotated_real + rotated_base + 8);
+                        const __m256d reference_imag_0 =
+                            _mm256_loadu_pd(rotated_imag + rotated_base);
+                        const __m256d reference_imag_1 =
+                            _mm256_loadu_pd(rotated_imag + rotated_base + 4);
+                        const __m256d reference_imag_2 =
+                            _mm256_loadu_pd(rotated_imag + rotated_base + 8);
+                        __m256d real_term_0 =
+                            _mm256_mul_pd(received_real, reference_real_0);
+                        __m256d real_term_1 =
+                            _mm256_mul_pd(received_real, reference_real_1);
+                        __m256d real_term_2 =
+                            _mm256_mul_pd(received_real, reference_real_2);
+                        real_term_0 = _mm256_fmadd_pd(
+                            received_imag, reference_imag_0, real_term_0);
+                        real_term_1 = _mm256_fmadd_pd(
+                            received_imag, reference_imag_1, real_term_1);
+                        real_term_2 = _mm256_fmadd_pd(
+                            received_imag, reference_imag_2, real_term_2);
+                        correlation_real_0 = _mm256_add_pd(correlation_real_0, real_term_0);
+                        correlation_real_1 = _mm256_add_pd(correlation_real_1, real_term_1);
+                        correlation_real_2 = _mm256_add_pd(correlation_real_2, real_term_2);
+                        __m256d imag_term_0 =
+                            _mm256_mul_pd(received_imag, reference_real_0);
+                        __m256d imag_term_1 =
+                            _mm256_mul_pd(received_imag, reference_real_1);
+                        __m256d imag_term_2 =
+                            _mm256_mul_pd(received_imag, reference_real_2);
+                        imag_term_0 = _mm256_fnmadd_pd(
+                            received_real, reference_imag_0, imag_term_0);
+                        imag_term_1 = _mm256_fnmadd_pd(
+                            received_real, reference_imag_1, imag_term_1);
+                        imag_term_2 = _mm256_fnmadd_pd(
+                            received_real, reference_imag_2, imag_term_2);
+                        correlation_imag_0 = _mm256_add_pd(correlation_imag_0, imag_term_0);
+                        correlation_imag_1 = _mm256_add_pd(correlation_imag_1, imag_term_1);
+                        correlation_imag_2 = _mm256_add_pd(correlation_imag_2, imag_term_2);
+                    }
+                    _mm256_storeu_pd(correlation_real, correlation_real_0);
+                    _mm256_storeu_pd(correlation_real + 4, correlation_real_1);
+                    _mm256_storeu_pd(correlation_real + 8, correlation_real_2);
+                    _mm256_storeu_pd(correlation_imag, correlation_imag_0);
+                    _mm256_storeu_pd(correlation_imag + 4, correlation_imag_1);
+                    _mm256_storeu_pd(correlation_imag + 8, correlation_imag_2);
+                } else {
+#endif
                 for (npy_intp frequency = 0; frequency < kernel->cfo_count; ++frequency) {
                     correlation_real[frequency] = 0.0;
                     correlation_imag[frequency] = 0.0;
@@ -77,6 +141,9 @@ LEO_GRID_TARGET static void LEO_GRID_FUNCTION(FoldedAnchorGridKernel *kernel) {
                             received_real * reference_imag;
                     }
                 }
+#if defined(LEO_GRID_AVX2_12_REGISTER_ACCUMULATION)
+                }
+#endif
                 double received_energy =
                     prefix[position + reference_count] - prefix[position];
                 if (received_energy < 0.0) {

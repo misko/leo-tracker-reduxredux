@@ -137,7 +137,7 @@ def receiver_standard_implementation_digest() -> str:
             "waterfall": "standard-numerical-waterfall-v2/bounded-waterfall-v1",
             "probe_schedule": "standard-probe-schedule-v1",
             "pilot_scan": (
-                "standard-pilot-scan-v4/coarse-folded-anchor-runtime-avx2-v2/"
+                "standard-pilot-scan-v4/coarse-folded-anchor-runtime-avx2-register12-v3/"
                 "glrt64-summed-autocorrelation-v2/fine-cfo-geometry-dispatch-v2"
             ),
             "trajectory_bank": "standard-trajectory-bank-v3/residual-hough",
