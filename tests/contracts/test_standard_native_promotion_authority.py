@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import sys
 from pathlib import Path
 
 import pytest
@@ -508,7 +509,18 @@ def test_v1_v2_manifest_ast_and_serialization_remain_frozen() -> None:
         node = next(
             item for item in module.body if isinstance(item, ast.ClassDef) and item.name == name
         )
-        payload = ast.dump(node, annotate_fields=True, include_attributes=False).encode()
+        # Python 3.13 made empty AST fields optional in ``ast.dump`` output.
+        # Retain the complete pre-3.13 representation used by these frozen hashes.
+        payload = (
+            ast.dump(
+                node,
+                annotate_fields=True,
+                include_attributes=False,
+                show_empty=True,
+            )
+            if sys.version_info >= (3, 13)
+            else ast.dump(node, annotate_fields=True, include_attributes=False)
+        ).encode()
         assert f"sha256:{hashlib.sha256(payload).hexdigest()}" == expected
 
     job = AnalysisJobReceiptV1(
