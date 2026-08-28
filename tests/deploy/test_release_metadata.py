@@ -48,7 +48,7 @@ def _published(
             {
                 "schema_version": 1,
                 "metadata_abi": 3,
-                "source_commit": "c26258bfa33098c2b215e19cf85d448e89499b1a",
+                "source_commit": "f72a72602e4ac0173bc7dd5842d831007baa3582",
                 "native_libiio_path": str(native),
                 "pylibiio_path": str(binding),
             }
