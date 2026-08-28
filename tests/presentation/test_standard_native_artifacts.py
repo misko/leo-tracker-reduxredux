@@ -11,6 +11,7 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     StandardNativePngArtifactInventoryV4,
+    StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactV4,
 )
 from leo.presentation.standard_pipeline import StandardSubjectKindV2
@@ -112,3 +113,17 @@ def test_native_png_inventory_rejects_incomplete_or_crossed_rows(mutation: str) 
 
     with pytest.raises(ValidationError):
         StandardNativePngArtifactInventoryV4.model_validate(document)
+
+
+def test_production_png_inventory_accepts_twenty_msps_without_weakening_v5() -> None:
+    source = _inventory(StandardSubjectKindV2.PAIRED)
+    values = source.model_dump(mode="json", exclude={"schema_version", "sample_rate_hz"})
+    values["schema_version"] = 6
+    values["sample_rates_hz"] = (2_500_000, 20_000_000)
+    values["content_digest"] = canonical_digest(
+        {key: value for key, value in values.items() if key != "content_digest"}
+    )
+
+    inventory = StandardNativePngArtifactInventoryV6.model_validate(values)
+
+    assert inventory.sample_rates_hz == (2_500_000, 20_000_000)

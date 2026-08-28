@@ -97,11 +97,14 @@ from leo.cli.scanner import (
     write_scanner_report,
 )
 from leo.cli.wp11 import WP11CliBackend
-from leo.contracts.mixed_rate_schedule import ProductionDwellIntentV1
+from leo.contracts.mixed_rate_schedule import ProductionDwellIntentV1, ProductionDwellIntentV2
 from leo.contracts.profile import CaptureProfileRevisionV2
 from leo.contracts.recording import ProducerV1
 from leo.contracts.states import SourceType
-from leo.domain.mixed_rate_capture import compile_mixed_rate_capture_plan_v3
+from leo.domain.mixed_rate_capture import (
+    compile_mixed_rate_capture_plan_v3,
+    compile_production_capture_plan_v4,
+)
 from leo.domain.profiles import compile_capture_plan
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
@@ -580,7 +583,7 @@ class LocalAcquisitionBackend:
             ) from error
 
     def mixed_rate_profile_authority(self) -> dict[int, tuple[str, str]]:
-        profile_names = {
+        profile_names: dict[int, str] = {
             2_500_000: "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
             5_000_000: "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
             10_000_000: "starlink-ch4-lower-10m-60s-mixed-device-axis-v4",
@@ -600,6 +603,44 @@ class LocalAcquisitionBackend:
                     ExitCode.INVALID_CONFIGURATION,
                 )
             authority[rate] = (profile_name, shown.revision.revision_digest)
+        return authority
+
+    def production_profile_authority(
+        self,
+    ) -> dict[tuple[int, tuple[int, ...], bool], tuple[str, str, int]]:
+        profile_names: dict[tuple[int, tuple[int, ...], bool], str] = {
+            (2_500_000, (0, 1), False): "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+            (5_000_000, (0, 1), False): "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+            (2_500_000, (0, 1), True): "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+            (5_000_000, (0, 1), True): "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
+            **{
+                (rate, (receiver,), True): (
+                    f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-production-v5"
+                )
+                for rate in (10_000_000, 15_000_000, 20_000_000)
+                for receiver in (0, 1)
+            },
+        }
+        authority: dict[tuple[int, tuple[int, ...], bool], tuple[str, str, int]] = {}
+        for key, profile_name in profile_names.items():
+            shown = self.profiles.show(profile_name)
+            if not isinstance(shown.revision, CaptureProfileRevisionV2):
+                raise CliBackendError(
+                    f"production profile {profile_name} is not CaptureProfileV2",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            rate, receivers, _mixed = key
+            profile = shown.revision.profile
+            if profile.sample_rate_hz != rate or profile.receivers != receivers:
+                raise CliBackendError(
+                    f"production profile {profile_name} geometry disagrees with authority",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            authority[key] = (
+                profile_name,
+                shown.revision.revision_digest,
+                profile.refill_samples,
+            )
         return authority
 
     def capture_mixed_once(
@@ -695,6 +736,85 @@ class LocalAcquisitionBackend:
         except Exception as error:
             raise CliBackendError(
                 f"mixed-rate capture setup failed: {type(error).__name__}: {error}",
+                ExitCode.CAPTURE_FAILED,
+            ) from error
+
+    def capture_production_once(
+        self,
+        intent: ProductionDwellIntentV2,
+        *,
+        session_id: str | None,
+        cancel: Event,
+        task_kind: str = CaptureTaskKind.OPERATOR_ONCE.value,
+    ) -> CaptureDataV1:
+        configured = {radio.radio_id: radio for radio in self.settings.radios}
+        if set(intent.radio_ids) != set(configured) or len(intent.radio_ids) != 2:
+            raise CliBackendError(
+                "production capture requires the exact configured two-radio station",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        authority = self.production_profile_authority()
+        revisions: dict[str, CaptureProfileRevisionV2] = {}
+        is_mixed = intent.dwell_class.value.startswith("mixed_")
+        for assignment in intent.radio_legs:
+            key = (assignment.sample_rate_hz, assignment.receiver_ids, is_mixed)
+            expected = authority[key]
+            if (assignment.profile_name, assignment.profile_revision_digest) != expected[:2]:
+                raise CliBackendError(
+                    "persisted production profile authority differs from this release",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            shown = self.profiles.show(assignment.profile_name)
+            assert isinstance(shown.revision, CaptureProfileRevisionV2)
+            revisions[assignment.radio_id] = shown.revision
+        try:
+            source_type = (
+                SourceType.TEST if self.settings.radio_backend == "fake" else SourceType.LIVE
+            )
+            plan = compile_production_capture_plan_v4(
+                intent=intent,
+                profile_revisions_by_radio=revisions,
+                source_type=source_type,
+            )
+            coordinator = AcquisitionCoordinator(
+                self._recording_store(),
+                producer=self._acquisition_producer(),
+                config=AcquisitionConfig(safety_reserve_bytes=self.settings.safety_reserve_bytes),
+                storage_admission=self._capture_storage_admission,
+            )
+            application = AuthorizedAcquisitionApplication(
+                AcquisitionApplication(coordinator),
+                self._authority(),
+                CaptureTaskKind(task_kind),
+            )
+            sources = {
+                radio_id: self._radio_source(configured[radio_id]) for radio_id in intent.radio_ids
+            }
+            tags = set(intent.extra_tags)
+            if source_type is SourceType.TEST:
+                tags.add("TEST")
+            result = application.once(
+                plan,
+                sources,
+                session_id=session_id,
+                cancel=cancel,
+                extra_tags=tuple(sorted(tags)),
+            )
+            self.hooks.capture_observer(result)
+            data = _capture_data(intent.dwell_class.value, plan.radio_ids, result)
+            if result.bundle is not None:
+                warning = self._post_commit_registration(result.bundle.session_id)
+                if warning is not None:
+                    data = data.model_copy(update={"errors": (*data.errors, warning)})
+            self._write_last_capture(data)
+            return data
+        except CaptureAuthorityError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        except CliBackendError:
+            raise
+        except Exception as error:
+            raise CliBackendError(
+                f"production capture setup failed: {type(error).__name__}: {error}",
                 ExitCode.CAPTURE_FAILED,
             ) from error
 

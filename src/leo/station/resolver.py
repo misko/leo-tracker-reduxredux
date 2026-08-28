@@ -9,6 +9,7 @@ from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
 )
 from leo.contracts.states import SourceType
 from leo.station.authority import (
@@ -16,6 +17,7 @@ from leo.station.authority import (
     CaptureHardwareBindingV2,
     CaptureHardwareBindingV3,
     CaptureHardwareBindingV4,
+    CaptureHardwareBindingV5,
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
@@ -43,6 +45,7 @@ class ResolvedCaptureAuthority:
         | CaptureHardwareBindingV2
         | CaptureHardwareBindingV3
         | CaptureHardwareBindingV4
+        | CaptureHardwareBindingV5
         | FixturePathAuthorityV1
     )
 
@@ -70,7 +73,10 @@ class PinnedCaptureAuthorityResolver:
 
     def resolve(
         self,
-        manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+        manifest: RecordingManifestV1
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5,
         *,
         observed_manifest_file_digest: str,
     ) -> ResolvedCaptureAuthority:
@@ -99,8 +105,19 @@ class PinnedCaptureAuthorityResolver:
             self._topology.relative_path,
             expected_file_digest=self._topology.file_digest,
         )
-        binding: CaptureHardwareBindingV1 | CaptureHardwareBindingV3 | CaptureHardwareBindingV4
-        if isinstance(manifest, RecordingManifestV4):
+        binding: (
+            CaptureHardwareBindingV1
+            | CaptureHardwareBindingV3
+            | CaptureHardwareBindingV4
+            | CaptureHardwareBindingV5
+        )
+        if type(manifest) is RecordingManifestV5:
+            binding = CaptureHardwareBindingV5.create(
+                manifest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
+                topology=topology,
+            )
+        elif isinstance(manifest, RecordingManifestV4):
             binding = CaptureHardwareBindingV4.create(
                 manifest,
                 observed_manifest_file_digest=observed_manifest_file_digest,

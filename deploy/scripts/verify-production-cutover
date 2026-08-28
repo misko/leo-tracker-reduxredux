@@ -121,6 +121,24 @@ REVIEWED_CAPTURE_PROFILE_SHA256 = {
     Path("profiles/starlink-ch4-lower-10m-60s-native-bandwidth-v4.yaml"): (
         "a15b62c3600ac51daebc5863d5cb4cf7438986a41cdbf3fc3183c0f546b70099"
     ),
+    Path("profiles/starlink-ch4-lower-10m-60s-rx0-production-v5.yaml"): (
+        "184c2ec94c6ce5e27162a8bbaa04b3e477992bbad283026525484c8541b9efea"
+    ),
+    Path("profiles/starlink-ch4-lower-10m-60s-rx1-production-v5.yaml"): (
+        "d3090672dcedc253fc38080bd99729d8969e06af16bbe0c90ed44f42d5407692"
+    ),
+    Path("profiles/starlink-ch4-lower-15m-60s-rx0-production-v5.yaml"): (
+        "459c92c4776a4cc86ba26c497a7585d0b636cd3ff2f749bf15a1a1403c6829d3"
+    ),
+    Path("profiles/starlink-ch4-lower-15m-60s-rx1-production-v5.yaml"): (
+        "0660139aacb4255aa3af26895cf1aa44290c28bfdbe2bfd5848f3d5ee9dde479"
+    ),
+    Path("profiles/starlink-ch4-lower-20m-60s-rx0-production-v5.yaml"): (
+        "75dd8f83d00a4c168035c033b1c83d834cd1f91e17a982d9dd96ad5ac79f5e64"
+    ),
+    Path("profiles/starlink-ch4-lower-20m-60s-rx1-production-v5.yaml"): (
+        "0eb8507624cbdca8b192126adcd8a4ec59466b792696e2c1abcfede206dcc474"
+    ),
     Path("profiles/starlink-ch4-lower-2p5m-60s-device-axis-v3.yaml"): (
         "3845c71bf2ebc497fc1d605362130e3cb44317297f72af3bf4e683b9d0317c2b"
     ),
@@ -154,7 +172,6 @@ EXPECTED_ACQUISITION_EXEC_START = (
     "/usr/bin/env PYTHONDONTWRITEBYTECODE=1 "
     "/opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
     "--profile ${LEO_CAPTURE_PROFILE} "
-    "--profile ${LEO_CAPTURE_PROFILE_3M} "
     "--profile ${LEO_CAPTURE_PROFILE_5M} "
     "--radio radio_pluto_5d4d "
     "--radio radio_pluto_19f2 "
@@ -184,7 +201,7 @@ for radio_id, host, serial in targets:
                 "uri": identity.uri,
                 "transport": identity.transport.value,
                 "firmware_version": identity.firmware_version,
-                "metadata_abi_version": 1,
+                "metadata_abi_version": 3,
                 "supports_device_sample_counter": capabilities.supports_device_sample_counter,
                 "supports_continuity_sequence": capabilities.supports_continuity_sequence,
             }
@@ -911,8 +928,6 @@ def probe_processing_resource_capacity() -> None:
 
 def probe_live_station_radios(
     release: Path,
-    *,
-    expected_radios: object,
 ) -> dict[str, Any]:
     """Read exact live identities through the staged Leo Pluto adapter."""
 
@@ -938,8 +953,6 @@ def probe_live_station_radios(
         or payload.get("schema_version") != 1
         or not isinstance(payload.get("radios"), list)
         or len(payload["radios"]) != 2
-        or not isinstance(expected_radios, list)
-        or len(expected_radios) != 2
     ):
         raise ValueError("live station radio probe returned a malformed inventory")
 
@@ -968,13 +981,9 @@ def probe_live_station_radios(
             "iio_ip",
         ),
     )
-    for observed, expected, identity in zip(
-        payload["radios"], expected_radios, frozen, strict=True
-    ):
+    for observed, identity in zip(payload["radios"], frozen, strict=True):
         if not isinstance(observed, dict) or set(observed) != radio_keys:
             raise ValueError("live station radio probe returned a malformed radio")
-        if not isinstance(expected, dict):
-            raise ValueError("qualification receipt radio inventory is malformed")
         if (
             type(observed.get("schema_version")) is not int
             or observed.get("schema_version") != 1
@@ -988,17 +997,13 @@ def probe_live_station_radios(
         ):
             raise ValueError("live station radio identity differs from the frozen station pair")
         firmware = observed.get("firmware_version")
-        if (
-            not isinstance(firmware, str)
-            or not firmware
-            or firmware != expected.get("firmware_version")
-        ):
-            raise ValueError("live station radio firmware differs from qualification receipt")
+        if not isinstance(firmware, str) or not firmware:
+            raise ValueError("live station radio firmware identity is unavailable")
         if (
             type(observed.get("metadata_abi_version")) is not int
-            or observed.get("metadata_abi_version") != 1
+            or observed.get("metadata_abi_version") != 3
         ):
-            raise ValueError("live station radio metadata ABI is not exactly 1")
+            raise ValueError("live station radio metadata ABI is not exactly 3")
         if (
             observed.get("supports_device_sample_counter") is not True
             or observed.get("supports_continuity_sequence") is not True
@@ -1084,15 +1089,14 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
             "production capture profile must be the counter-authoritative dual-RX 60-second profile"
         )
     expected_rate_profiles = {
-        "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-native-bandwidth-v4",
         "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
     }
     if any(environment.get(key) != value for key, value in expected_rate_profiles.items()):
         raise ValueError("production sample-rate profile pool is not the exact reviewed set")
     if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
         raise ValueError("production capture interval must be a 180-second start period")
-    if environment.get("LEO_MIXED_RATE_POLICY") != "mixed-native-rates-16-safe-v1":
-        raise ValueError("production mixed-rate policy must exclude unqualified 15M dwells")
+    if environment.get("LEO_MIXED_RATE_POLICY") != "production-native-rates-8-v2":
+        raise ValueError("production rate policy must be the exact reviewed 8-dwell policy")
     expected_capture_modes = {
         "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
         "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -3295,22 +3299,6 @@ def verify(args: argparse.Namespace) -> list[str]:
         release=release,
         revision=revision,
     )
-    expected_rate_receipt_path = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v6.json"
-    )
-    if args.rate_qualification_receipt != expected_rate_receipt_path:
-        raise ValueError("3 MS/s continuity receipt path is not the revision authority")
-    if sha256(args.rate_qualification_receipt) != args.rate_qualification_receipt_sha256:
-        raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
-    rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
-    verify_contiguous_rate_3m_receipt_v6(rate_receipt, revision=revision, release=release)
-    verify_native_bandwidth_receipt_v2(
-        NATIVE_BANDWIDTH_RECEIPT_ROOT / revision / "native-bandwidth-qualification-receipt-v2.json",
-        revision=revision,
-        release=release,
-        rate_target=rate_receipt["target"],
-    )
-
     if args.standard_regression_receipt is not None:
         standard_receipt = load_json(
             args.standard_regression_receipt,
@@ -3372,10 +3360,7 @@ def verify(args: argparse.Namespace) -> list[str]:
     if system_active:
         raise ValueError("system-scope LEO units are already active:\n" + system_active)
     probe_processing_resource_capacity()
-    probe_live_station_radios(
-        release,
-        expected_radios=rate_receipt["target"]["expected_radios"],
-    )
+    probe_live_station_radios(release)
 
     metadata = Path("/opt/leo-tracker/release-metadata") / f"{revision}.txt"
     metadata_validator = release / "deploy/scripts/validate-release-metadata"
@@ -3414,18 +3399,17 @@ def verify(args: argparse.Namespace) -> list[str]:
 
     return [
         f"release {revision} is immutable and built",
-        "four staged capture profiles match the exact reviewed bytes",
+        "production and retained qualification profiles match the exact reviewed bytes",
         "staged acquisition service uses the exact ordered profile and radio pool",
         "exact-revision release qualification is sealed and passed",
-        "combined ten-trial 3 MS/s and full-span 5 MS/s device-axis qualification is sealed",
-        "native-bandwidth 2.5/3/5 and mixed 2.5/5 RF/IF qualification is sealed",
+        "production-native-rates-8-v2 policy and exact staged service are sealed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
         "scanner raw-IQ and report directories are installed and permissioned",
         "production environment is permissioned and contains no radio placeholders",
         "legacy user scope and canonical system scope have no active LEO units",
         "processing resource capacity is exactly streaming=16,cpu=8,memory=4,heavy=2",
-        "live station radio firmware and counter-authoritative ABI match qualification",
+        "live station radios expose firmware identity and counter-authoritative ABI 3",
         "all canonical unit templates validate and deny QNAP",
         "external release metadata and final-path runtime validate",
     ]
@@ -3435,8 +3419,6 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--revision", required=True)
     parser.add_argument("--release-receipt", required=True, type=Path)
-    parser.add_argument("--rate-qualification-receipt", required=True, type=Path)
-    parser.add_argument("--rate-qualification-receipt-sha256", required=True)
     authority = parser.add_mutually_exclusive_group(required=True)
     authority.add_argument("--standard-regression-receipt", type=Path)
     authority.add_argument("--soak-receipt", type=Path)

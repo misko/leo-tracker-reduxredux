@@ -16,7 +16,7 @@ from leo.scanner.models import ScannerConfigurationV2
 from leo.scanner.ports import ScanRadioBlockV2, ScanRadioIdentity
 
 _LO_READBACK_TOLERANCE_HZ = 10
-_EXPECTED_METADATA_ABI = 1
+_EXPECTED_METADATA_ABI = 3
 
 DeviceFactory = Callable[..., Any]
 SettingsFactory = Callable[..., Any]
@@ -158,6 +158,7 @@ class PlutoSequentialScanRadio:
             with device.begin_metadata_capture(
                 sample_count,
                 kernel_buffers=configuration.kernel_buffers,
+                tandem_request=_scanner_tandem_hold_request(sample_count),
             ) as capture:
                 kernel_buffers_readback = int(capture.kernel_buffers)
                 if kernel_buffers_readback != configuration.kernel_buffers:
@@ -311,6 +312,20 @@ def _required_stream_generation(upstream: Any) -> int:
     if stream_generation != stream_id:
         raise PlutoScannerError("metadata stream generation disagrees with raw stream ID")
     return stream_generation
+
+
+def _scanner_tandem_hold_request(sample_count: int) -> Any:
+    """Keep scanner gain fixed while satisfying ABI3's explicit ownership boundary."""
+
+    try:
+        module = importlib.import_module("pluto_plus.tandem")
+        request = module.TandemSessionRequestV1(mode=module.TandemMode.HOLD)
+        request.pack(sample_count)
+        return request
+    except (AttributeError, ImportError) as error:
+        raise PlutoScannerError(
+            "pinned pluto-plus-utils lacks an ABI3 tandem HOLD request"
+        ) from error
 
 
 def _required_interval(upstream: Any, lower_name: str, upper_name: str) -> tuple[int, int]:

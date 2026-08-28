@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from leo.contracts.gain_control import GainControllerPolicyV1
 from leo.contracts.radio import RadioCapabilitiesV1, RadioIdentityV1, RadioSettingsV1
 from leo.domain.iq import IqBlock
 
@@ -21,7 +22,13 @@ class RadioSource(Protocol):
 
     def reset_receive_buffer(self) -> None: ...
 
-    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int) -> int: ...
+    def begin_metadata_capture(
+        self,
+        sample_count: int,
+        *,
+        kernel_buffers: int,
+        gain_controller: GainControllerPolicyV1 | None = None,
+    ) -> int: ...
 
     def read_block(self, sample_count: int) -> IqBlock: ...
 

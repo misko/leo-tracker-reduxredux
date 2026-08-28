@@ -23,7 +23,8 @@ from leo.acquisition import (
     RadioBusyError,
     RadioResource,
 )
-from leo.contracts.mixed_rate_schedule import ProductionDwellClass
+from leo.acquisition.mixed_rate_schedule import compile_production_dwell_intent_v2
+from leo.contracts.mixed_rate_schedule import ProductionDwellClass, ProductionDwellClassV2
 from leo.contracts.profile import (
     CaptureProfileRevisionV1,
     CaptureProfileRevisionV2,
@@ -38,6 +39,7 @@ from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
 )
 from leo.contracts.states import (
     CaptureState,
@@ -50,7 +52,10 @@ from leo.contracts.states import (
     TimingMethod,
 )
 from leo.domain.iq import IqBlock
-from leo.domain.mixed_rate_capture import compile_mixed_rate_capture_plan_v3
+from leo.domain.mixed_rate_capture import (
+    compile_mixed_rate_capture_plan_v3,
+    compile_production_capture_plan_v4,
+)
 from leo.domain.profiles import compile_capture_plan
 from leo.processing.continuity import iter_masked_device_iq
 from leo.radio.fake import FakeRadioSource
@@ -205,6 +210,75 @@ def _mixed_rate_plan(high_rate_hz: int):
         },
         starlink_channel=3,
         starlink_edge=StarlinkEdge.UPPER,
+        source_type=SourceType.LIVE,
+    )
+
+
+def _production_plan():
+    duration = Decimal("0.000004")
+    revisions: dict[tuple[int, tuple[int, ...], bool], CaptureProfileRevisionV2] = {}
+    for rate, receivers, mixed in (
+        (2_500_000, (0, 1), False),
+        (5_000_000, (0, 1), False),
+        (2_500_000, (0, 1), True),
+        (5_000_000, (0, 1), True),
+        *(
+            (rate, (receiver,), True)
+            for rate in (10_000_000, 15_000_000, 20_000_000)
+            for receiver in (0, 1)
+        ),
+    ):
+        revisions[(rate, receivers, mixed)] = CaptureProfileRevisionV2.from_profile(
+            CaptureProfileV2(
+                name=f"production-{rate}-rx{''.join(map(str, receivers))}-{int(mixed)}-test",
+                center_frequency_hz=1_700_000_000,
+                sample_rate_hz=rate,
+                bandwidth_hz=rate,
+                receivers=receivers,
+                gain_mode=GainMode.MANUAL,
+                gains=tuple(
+                    ReceiverGainV1(receiver_id=receiver, gain_db=30.0) for receiver in receivers
+                ),
+                duration_seconds=duration,
+                refill_samples=4,
+                settle_seconds=Decimal(0),
+                prime_refills=0,
+                kernel_buffers=8,
+                refill_queue_capacity=32,
+                continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+                synchronization_mode="best_effort",
+                peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+                storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+                tags=("CAPTURE_ONLY", "DEVICE_AXIS_ZERO_FILL", "LIVE", "PRODUCTION_RATE"),
+            )
+        )
+    authority = {
+        key: (revision.profile.name, revision.revision_digest, revision.profile.refill_samples)
+        for key, revision in revisions.items()
+    }
+    intent = next(
+        compile_production_dwell_intent_v2(
+            operation_key=f"production-test:{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=("radio-a", "radio-b"),
+            profile_authority=authority,
+        )
+        for ordinal in range(8)
+        if compile_production_dwell_intent_v2(
+            operation_key=f"production-test:{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=("radio-a", "radio-b"),
+            profile_authority=authority,
+        ).dwell_class
+        is ProductionDwellClassV2.MIXED_2P5_20
+    )
+    selected = {
+        leg.radio_id: revisions[(leg.sample_rate_hz, leg.receiver_ids, True)]
+        for leg in intent.radio_legs
+    }
+    return compile_production_capture_plan_v4(
+        intent=intent,
+        profile_revisions_by_radio=selected,
         source_type=SourceType.LIVE,
     )
 
@@ -1377,6 +1451,35 @@ def test_mixed_rate_capture_publishes_exact_per_radio_device_axes(
     )
     assert result.manifest.synchronization.stream_ids == ("stream-0", "stream-1")
     assert coordinator.store.verify(f"mixed-{high_rate_hz}").validity_inventory_count == 2
+
+
+def test_production_capture_persists_single_rx_tandem_evidence_and_v5_plan(
+    tmp_path: Path,
+) -> None:
+    plan = _production_plan()
+    coordinator = _device_axis_coordinator(tmp_path)
+
+    result = coordinator.capture_once(
+        plan,
+        {
+            "radio-a": FakeRadioSource("radio-a", seed=1),
+            "radio-b": FakeRadioSource("radio-b", seed=2),
+        },
+        session_id="production-v5-single-rx",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert type(result.manifest) is RecordingManifestV5
+    assert result.manifest.capture_plan == plan
+    high_stream = next(
+        stream
+        for stream in result.manifest.streams
+        if stream.applied_settings.sample_rate_hz == 20_000_000
+    )
+    assert len(high_stream.applied_settings.receiver_ids) == 1
+    assert high_stream.continuity.metadata_abi_version == 3
+    assert high_stream.timeline_sha256 is not None
+    assert coordinator.store.verify("production-v5-single-rx").validity_inventory_count == 2
 
 
 def test_native_bandwidth_capture_selects_exact_radio_configuration(tmp_path: Path) -> None:

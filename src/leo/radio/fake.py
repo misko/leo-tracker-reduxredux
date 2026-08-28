@@ -6,9 +6,15 @@ from collections.abc import Iterable, Mapping
 
 import numpy as np
 
+from leo.contracts.gain_control import (
+    GainControllerMode,
+    GainControllerPolicyV1,
+    TandemBlockEvidenceV1,
+)
 from leo.contracts.radio import (
     IqBlockMetadataV1,
     IqBlockMetadataV2,
+    IqBlockMetadataV3,
     NanosecondIntervalV1,
     RadioCapabilitiesV1,
     RadioIdentityV1,
@@ -82,6 +88,7 @@ class FakeRadioSource:
         self._metadata_sequence = 0
         self._kernel_buffers: int | None = None
         self._metadata_refill_samples: int | None = None
+        self._gain_controller: GainControllerPolicyV1 | None = None
         self.lifecycle: list[str] = []
 
     @property
@@ -118,6 +125,7 @@ class FakeRadioSource:
         self._metadata_capture = False
         self._kernel_buffers = None
         self._metadata_refill_samples = None
+        self._gain_controller = None
         self.lifecycle.append("configure")
         return settings
 
@@ -126,9 +134,16 @@ class FakeRadioSource:
         self._metadata_capture = False
         self._kernel_buffers = None
         self._metadata_refill_samples = None
+        self._gain_controller = None
         self.lifecycle.append("reset_receive_buffer")
 
-    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int) -> int:
+    def begin_metadata_capture(
+        self,
+        sample_count: int,
+        *,
+        kernel_buffers: int,
+        gain_controller: GainControllerPolicyV1 | None = None,
+    ) -> int:
         self._require_open()
         if self._settings is None:
             raise FakeRadioError("fake radio must be configured before metadata capture")
@@ -139,8 +154,10 @@ class FakeRadioSource:
         self._metadata_sequence = 0
         self._kernel_buffers = kernel_buffers
         self._metadata_refill_samples = sample_count
+        self._gain_controller = gain_controller
         self._session_sample_cursor = 0
-        self.lifecycle.append(f"begin_metadata_capture:{sample_count}:{kernel_buffers}")
+        suffix = "" if gain_controller is None else f":{gain_controller.mode.value}"
+        self.lifecycle.append(f"begin_metadata_capture:{sample_count}:{kernel_buffers}{suffix}")
         return kernel_buffers
 
     def read_block(self, sample_count: int) -> IqBlock:
@@ -207,33 +224,59 @@ class FakeRadioSource:
                 self._device_sample_counter * 1_000_000_000 // settings.sample_rate_hz
             )
             sample_duration_ns = sample_count * 1_000_000_000 // settings.sample_rate_hz
-            metadata: IqBlockMetadataV1 = IqBlockMetadataV2.model_validate(
-                {
-                    **common,
-                    "timing_method": TimingMethod.DEVICE_COUNTER_ANCHORED,
-                    "stream_generation": f"fake-generation-{self._metadata_generation}",
-                    "metadata_abi_version": 1,
-                    "metadata_flags": 2 if overflow else 0,
-                    "kernel_buffers": self._kernel_buffers,
-                    "sample_time_realtime_ns": NanosecondIntervalV1(
-                        lower_ns=self._utc_origin_ns + sample_start_offset_ns,
-                        upper_ns=(
-                            self._utc_origin_ns + sample_start_offset_ns + sample_duration_ns
-                        ),
+            metadata_document = {
+                **common,
+                "timing_method": TimingMethod.DEVICE_COUNTER_ANCHORED,
+                "stream_generation": f"fake-generation-{self._metadata_generation}",
+                "metadata_abi_version": 3 if self._gain_controller is not None else 1,
+                "metadata_flags": 2 if overflow else 0,
+                "kernel_buffers": self._kernel_buffers,
+                "sample_time_realtime_ns": NanosecondIntervalV1(
+                    lower_ns=self._utc_origin_ns + sample_start_offset_ns,
+                    upper_ns=(self._utc_origin_ns + sample_start_offset_ns + sample_duration_ns),
+                ),
+                "sample_time_monotonic_ns": NanosecondIntervalV1(
+                    lower_ns=self._monotonic_origin_ns + sample_start_offset_ns,
+                    upper_ns=(
+                        self._monotonic_origin_ns + sample_start_offset_ns + sample_duration_ns
                     ),
-                    "sample_time_monotonic_ns": NanosecondIntervalV1(
-                        lower_ns=self._monotonic_origin_ns + sample_start_offset_ns,
-                        upper_ns=(
-                            self._monotonic_origin_ns + sample_start_offset_ns + sample_duration_ns
+                ),
+                "sample_time_uncertainty_ns": 11,
+                "hardware_metadata": {
+                    "fake_seed": self._seed,
+                    "fake_metadata": True,
+                },
+            }
+            if self._gain_controller is None:
+                metadata: IqBlockMetadataV1 = IqBlockMetadataV2.model_validate(metadata_document)
+            else:
+                controller = self._gain_controller
+                metadata = IqBlockMetadataV3.model_validate(
+                    {
+                        **metadata_document,
+                        "tandem": TandemBlockEvidenceV1(
+                            request_digest=controller.request_digest,
+                            mode=controller.mode,
+                            ownership_epoch=self._metadata_generation,
+                            tandem_state=(
+                                "armed_hold"
+                                if controller.mode is GainControllerMode.TANDEM_HOLD
+                                else "armed_auto"
+                            ),
+                            tandem_fault_flags=0,
+                            tandem_transition_count=0,
+                            gain_table_id=2,
+                            threshold_provenance=1,
+                            minimum_gain_db=controller.minimum_gain_db,
+                            maximum_gain_db=controller.maximum_gain_db,
+                            initial_gain_db=controller.initial_gain_db,
+                            minimum_gain_index=0,
+                            maximum_gain_index=62,
+                            rx0_gain_index=30,
+                            rx1_gain_index=30,
                         ),
-                    ),
-                    "sample_time_uncertainty_ns": 11,
-                    "hardware_metadata": {
-                        "fake_seed": self._seed,
-                        "fake_metadata": True,
-                    },
-                }
-            )
+                    }
+                )
         else:
             metadata = IqBlockMetadataV1.model_validate(
                 {
@@ -255,6 +298,7 @@ class FakeRadioSource:
         self._metadata_capture = False
         self._kernel_buffers = None
         self._metadata_refill_samples = None
+        self._gain_controller = None
         self.lifecycle.append("close")
 
     def _samples(self, sample_count: int, receiver_ids: tuple[int, ...]) -> np.ndarray:

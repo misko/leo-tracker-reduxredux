@@ -16,7 +16,7 @@ from pydantic import (
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
-from leo.contracts.mixed_rate_capture import CapturePlanV3
+from leo.contracts.mixed_rate_capture import CapturePlanV3, CapturePlanV4
 from leo.contracts.profile import CapturePlanV1, CapturePlanV2, Tag
 from leo.contracts.radio import IqBlockMetadataV2, RadioIdentityV1, RadioSettingsV1
 from leo.contracts.states import (
@@ -896,8 +896,85 @@ class RecordingManifestV4(ContractModel):
         return self
 
 
+class RecordingManifestV5(RecordingManifestV4):
+    """Production-policy bundle with asymmetric RX and tandem-controller authority."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    capture_plan: CapturePlanV4  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _manifest_is_consistent(self) -> Self:
+        if self.finalized_utc_ns < self.created_utc_ns:
+            raise ValueError("manifest finalization precedes creation")
+        if self.source_type is not self.capture_plan.source_type:
+            raise ValueError("manifest source type disagrees with capture plan")
+        required_tags = {
+            tag
+            for leg in self.capture_plan.radio_plans
+            for tag in leg.profile_revision.profile.tags
+        }
+        required_tags.update(
+            {
+                "PRODUCTION_NATIVE_RATES_V2",
+                f"production_dwell_class:{self.capture_plan.dwell_class.value}",
+                f"tuning_policy:{self.capture_plan.tuning_branch.value}",
+            }
+        )
+        for index, leg in enumerate(self.capture_plan.radio_plans):
+            required_tags.update(
+                {
+                    f"gain_controller:stream-{index}:{leg.gain_controller.mode.value}",
+                    f"tuning:stream-{index}:ch{leg.starlink_channel}:{leg.starlink_edge.value}",
+                }
+            )
+        if not required_tags.issubset(self.tags):
+            raise ValueError(
+                "production manifest must retain profile, policy, tuning, and gain tags"
+            )
+        if self.compression.policy_id != DEVICE_AXIS_STORAGE_POLICY_V1:
+            raise ValueError("V5 manifest requires device-axis-zero storage")
+        stream_ids = tuple(stream.stream_id for stream in self.streams)
+        if stream_ids != self.synchronization.stream_ids:
+            raise ValueError("synchronization stream order must match manifest streams")
+        if (
+            self.synchronization.requested_mode
+            is not self.capture_plan.requested_synchronization_mode
+            or self.synchronization.effective_mode
+            is not self.capture_plan.effective_synchronization_mode
+        ):
+            raise ValueError("synchronization summary disagrees with production capture plan")
+        radio_ids = tuple(stream.radio.radio_id for stream in self.streams)
+        if radio_ids != self.capture_plan.radio_ids:
+            raise ValueError("stream radio order must match production capture plan")
+        for stream, leg in zip(self.streams, self.capture_plan.radio_plans, strict=True):
+            if stream.requested_sample_count != leg.resolved_sample_count:
+                raise ValueError("V5 stream span disagrees with its per-radio plan")
+            if stream.requested_settings != leg.requested_settings:
+                raise ValueError("V5 stream requested settings disagree with its per-radio plan")
+            if any(
+                getattr(stream.applied_settings, field) != getattr(leg.requested_settings, field)
+                for field in (
+                    "center_frequency_hz",
+                    "sample_rate_hz",
+                    "bandwidth_hz",
+                    "receiver_ids",
+                )
+            ):
+                raise ValueError("V5 stream applied geometry disagrees with its per-radio plan")
+        all_complete = all(stream.state is StreamState.COMPLETE for stream in self.streams)
+        if self.state is CaptureState.COMMITTED and not all_complete:
+            raise ValueError("committed V5 manifest requires lossless streams")
+        if self.state is CaptureState.DEGRADED and all_complete:
+            raise ValueError("degraded V5 manifest requires observation-integrity loss")
+        return self
+
+
 RecordingManifestContract = Annotated[
-    RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4,
+    RecordingManifestV1
+    | RecordingManifestV2
+    | RecordingManifestV3
+    | RecordingManifestV4
+    | RecordingManifestV5,
     Field(discriminator="schema_version"),
 ]
 _RECORDING_MANIFEST_ADAPTER: TypeAdapter[RecordingManifestContract] = TypeAdapter(
@@ -907,7 +984,7 @@ _RECORDING_MANIFEST_ADAPTER: TypeAdapter[RecordingManifestContract] = TypeAdapte
 
 def parse_recording_manifest_json(
     payload: bytes | str,
-) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4:
+) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5:
     """Decode every supported immutable recording-manifest major version."""
 
     return _RECORDING_MANIFEST_ADAPTER.validate_json(payload)
@@ -915,7 +992,7 @@ def parse_recording_manifest_json(
 
 def parse_recording_manifest(
     value: object,
-) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4:
+) -> RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5:
     """Validate a Python document against every supported manifest version."""
 
     return _RECORDING_MANIFEST_ADAPTER.validate_python(value)

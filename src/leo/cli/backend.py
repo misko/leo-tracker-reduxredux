@@ -46,7 +46,7 @@ from leo.cli.models import (
     WP11ShowDataV1,
 )
 from leo.contracts.capture_control import CaptureControlStateV1
-from leo.contracts.mixed_rate_schedule import ProductionDwellIntentV1
+from leo.contracts.mixed_rate_schedule import ProductionDwellIntentV1, ProductionDwellIntentV2
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
@@ -124,9 +124,22 @@ class AcquisitionCliBackend(Protocol):
 
     def mixed_rate_profile_authority(self) -> dict[int, tuple[str, str]]: ...
 
+    def production_profile_authority(
+        self,
+    ) -> dict[tuple[int, tuple[int, ...], bool], tuple[str, str, int]]: ...
+
     def capture_mixed_once(
         self,
         intent: ProductionDwellIntentV1,
+        *,
+        session_id: str | None,
+        cancel: Event,
+        task_kind: str = "operator_once",
+    ) -> CaptureDataV1: ...
+
+    def capture_production_once(
+        self,
+        intent: ProductionDwellIntentV2,
         *,
         session_id: str | None,
         cancel: Event,

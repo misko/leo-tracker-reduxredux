@@ -709,7 +709,7 @@ def _live_station_probe_payload() -> dict[str, Any]:
             {
                 "schema_version": 1,
                 **radio,
-                "metadata_abi_version": 1,
+                "metadata_abi_version": 3,
                 "supports_device_sample_counter": True,
                 "supports_continuity_sequence": True,
             }
@@ -803,21 +803,19 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     service.write_text(f"[Service]\nExecStart={expected}\n", encoding="utf-8")
     _call("verify_staged_acquisition_service", release)
 
-    profile_3m = "--profile ${LEO_CAPTURE_PROFILE_3M} "
     profile_5m = "--profile ${LEO_CAPTURE_PROFILE_5M} "
     radio_a = "--radio radio_pluto_5d4d "
     radio_b = "--radio radio_pluto_19f2 "
     mixed_policy = "--mixed-rate-policy ${LEO_MIXED_RATE_POLICY}"
     tampered_commands = (
         expected.replace("PYTHONDONTWRITEBYTECODE=1 ", ""),
-        expected.replace(profile_3m + profile_5m, profile_5m + profile_3m),
         expected.replace(profile_5m, ""),
         expected.replace(profile_5m, profile_5m + profile_5m),
         expected.replace(radio_a + radio_b, radio_b + radio_a),
         expected.replace(radio_b, ""),
         expected.replace(radio_b, radio_b + "--radio unexpected-radio "),
         expected.replace(mixed_policy, ""),
-        expected.replace(mixed_policy, "--mixed-rate-policy mixed-native-rates-16-v1"),
+        expected.replace(mixed_policy, "--mixed-rate-policy mixed-native-rates-16-safe-v1"),
     )
     assert len(set(tampered_commands)) == len(tampered_commands)
     for command in tampered_commands:
@@ -840,14 +838,7 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
 
     function = SCRIPT_GLOBALS["probe_live_station_radios"]
     monkeypatch.setitem(function.__globals__, "command", fake_command)
-    assert (
-        _call(
-            "probe_live_station_radios",
-            release,
-            expected_radios=_expected_rate_radios(),
-        )
-        == payload
-    )
+    assert _call("probe_live_station_radios", release) == payload
     argv, timeout_seconds = calls[-1]
     assert argv[:4] == ("runuser", "-u", "leo", "--")
     assert argv[4:7] == (str(release / ".venv/bin/python"), "-I", "-c")
@@ -855,40 +846,24 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
     assert timeout_seconds == 30.0
 
     payload = _live_station_probe_payload()
-    payload["radios"][0]["firmware_version"] = "v0.39"
-    with pytest.raises(ValueError, match="firmware differs"):
-        _call(
-            "probe_live_station_radios",
-            release,
-            expected_radios=_expected_rate_radios(),
-        )
+    payload["radios"][0]["firmware_version"] = ""
+    with pytest.raises(ValueError, match="firmware identity"):
+        _call("probe_live_station_radios", release)
 
     payload = _live_station_probe_payload()
     payload["radios"][1]["serial"] = "different-serial"
     with pytest.raises(ValueError, match="identity differs"):
-        _call(
-            "probe_live_station_radios",
-            release,
-            expected_radios=_expected_rate_radios(),
-        )
+        _call("probe_live_station_radios", release)
 
     payload = _live_station_probe_payload()
     payload["radios"][0]["metadata_abi_version"] = 2
     with pytest.raises(ValueError, match="metadata ABI"):
-        _call(
-            "probe_live_station_radios",
-            release,
-            expected_radios=_expected_rate_radios(),
-        )
+        _call("probe_live_station_radios", release)
 
     payload = _live_station_probe_payload()
     payload["radios"][0]["supports_device_sample_counter"] = False
     with pytest.raises(ValueError, match="counter-authoritative capabilities"):
-        _call(
-            "probe_live_station_radios",
-            release,
-            expected_radios=_expected_rate_radios(),
-        )
+        _call("probe_live_station_radios", release)
 
 
 def test_native_bandwidth_receipt_uses_staged_contract_and_exact_v5_authority(
@@ -1172,9 +1147,8 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "sha256:5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae",
             "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
             "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
-            "LEO_CAPTURE_PROFILE_3M=starlink-ch4-lower-3m-60s-native-bandwidth-v4",
             "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-native-bandwidth-v4",
-            "LEO_MIXED_RATE_POLICY=mixed-native-rates-16-safe-v1",
+            "LEO_MIXED_RATE_POLICY=production-native-rates-8-v2",
             "LEO_CAPTURE_INTERVAL_SECONDS=180",
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -2683,10 +2657,6 @@ def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
             "mouse9911",
             "--release-receipt",
             "/does/not/exist",
-            "--rate-qualification-receipt",
-            "/does/not/exist",
-            "--rate-qualification-receipt-sha256",
-            "0" * 64,
             "--standard-regression-receipt",
             "/does/not/exist",
         ),
@@ -2701,20 +2671,14 @@ def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
     assert "--soak-receipt" not in result.stderr
 
 
-def test_full_cutover_requires_canonical_v6_native_bandwidth_rate_authority() -> None:
+def test_full_cutover_uses_release_and_production_policy_without_obsolete_3m_gate() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     verify_source = text[text.index("def verify(args:") : text.index("\ndef main()")]
 
-    assert "contiguous-rate-qualification-receipt-v6.json" in verify_source
-    assert "contiguous-rate-qualification-receipt-v5.json" not in verify_source
-    assert "contiguous-rate-qualification-receipt-v4.json" not in verify_source
-    assert "contiguous-rate-qualification-receipt-v3.json" not in verify_source
-    assert (
-        "verify_contiguous_rate_3m_receipt_v6(rate_receipt, revision=revision, release=release)"
-        in verify_source
-    )
-    assert "native-bandwidth-qualification-receipt-v2.json" in verify_source
-    assert "verify_native_bandwidth_receipt_v2(" in verify_source
+    assert "rate_qualification_receipt" not in verify_source
+    assert "verify_contiguous_rate_3m_receipt" not in verify_source
+    assert "verify_native_bandwidth_receipt" not in verify_source
+    assert "production-native-rates-8-v2" in verify_source
 
 
 def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:

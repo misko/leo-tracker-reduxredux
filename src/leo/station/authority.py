@@ -25,6 +25,7 @@ from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
     StreamTimingV1,
 )
 from leo.contracts.states import RadioTransport, SourceType
@@ -319,7 +320,7 @@ class VerifiedManifestStreamInventoryV1(ContractModel):
 
 
 def _derive_verified_manifest_streams(
-    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
 ) -> tuple[VerifiedManifestStreamInventoryV1, ...]:
     streams: list[VerifiedManifestStreamInventoryV1] = []
     rows: tuple[
@@ -614,6 +615,57 @@ class VerifiedRecordingManifestSnapshotV4(VerifiedRecordingManifestSnapshotV1):
         digest_values = {
             "schema_version": 4,
             "verification_basis": "canonical-recording-manifest-v4",
+            "recording_manifest": manifest.model_dump(mode="json"),
+            "session_id": manifest.session_id,
+            "manifest_digest": canonical_manifest_digest,
+            "source_type": manifest.source_type.value,
+            "capture_start_utc_ns": start,
+            "capture_end_utc_ns": end,
+            "streams": tuple(item.model_dump(mode="json") for item in ordered),
+        }
+        return cls(
+            recording_manifest=manifest,
+            session_id=manifest.session_id,
+            manifest_digest=canonical_manifest_digest,
+            source_type=manifest.source_type,
+            capture_start_utc_ns=start,
+            capture_end_utc_ns=end,
+            streams=ordered,
+            snapshot_digest=canonical_digest(digest_values),
+        )
+
+
+class VerifiedRecordingManifestSnapshotV5(VerifiedRecordingManifestSnapshotV1):
+    """Complete digest-bound snapshot of a production RecordingManifestV5."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    verification_basis: Literal["canonical-recording-manifest-v5"] = (
+        "canonical-recording-manifest-v5"  # type: ignore[assignment]
+    )
+    recording_manifest: RecordingManifestV5  # type: ignore[assignment]
+
+    @classmethod
+    def from_verified_manifest(
+        cls,
+        manifest: (
+            RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5
+        ),
+        *,
+        observed_manifest_file_digest: str,
+    ) -> VerifiedRecordingManifestSnapshotV5:
+        if type(manifest) is not RecordingManifestV5:
+            raise TypeError("VerifiedRecordingManifestSnapshotV5 requires RecordingManifestV5")
+        canonical_manifest_digest = recording_manifest_canonical_digest(manifest)
+        if observed_manifest_file_digest != canonical_manifest_digest:
+            raise ValueError(
+                "observed manifest-file digest does not match canonical RecordingManifestV5"
+            )
+        ordered = _derive_verified_manifest_streams(manifest)
+        start = min(item.capture_start_utc_ns for item in ordered)
+        end = max(item.capture_end_utc_ns for item in ordered)
+        digest_values = {
+            "schema_version": 5,
+            "verification_basis": "canonical-recording-manifest-v5",
             "recording_manifest": manifest.model_dump(mode="json"),
             "session_id": manifest.session_id,
             "manifest_digest": canonical_manifest_digest,
@@ -1021,11 +1073,56 @@ class CaptureHardwareBindingV4(CaptureHardwareBindingV1):
         )
 
 
+class CaptureHardwareBindingV5(CaptureHardwareBindingV1):
+    """Station binding rooted in one complete production V5 manifest snapshot."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV5
+
+    @classmethod
+    def _from_verified_snapshot(
+        cls,
+        *,
+        verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1,
+        topology: StationReceiverTopologyV1,
+    ) -> CaptureHardwareBindingV5:
+        if not isinstance(verified_manifest_snapshot, VerifiedRecordingManifestSnapshotV5):
+            raise TypeError("CaptureHardwareBindingV5 requires a V5 manifest snapshot")
+        return cast(
+            CaptureHardwareBindingV5,
+            super()._from_verified_snapshot(
+                verified_manifest_snapshot=verified_manifest_snapshot,
+                topology=topology,
+            ),
+        )
+
+    @classmethod
+    def create(
+        cls,
+        manifest: (
+            RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5
+        ),
+        *,
+        observed_manifest_file_digest: str,
+        topology: StationReceiverTopologyV1,
+    ) -> CaptureHardwareBindingV5:
+        if type(manifest) is not RecordingManifestV5:
+            raise TypeError("CaptureHardwareBindingV5 requires RecordingManifestV5")
+        return cls._from_verified_snapshot(
+            verified_manifest_snapshot=VerifiedRecordingManifestSnapshotV5.from_verified_manifest(
+                manifest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
+            ),
+            topology=topology,
+        )
+
+
 CaptureHardwareBindingContract = Annotated[
     CaptureHardwareBindingV1
     | CaptureHardwareBindingV2
     | CaptureHardwareBindingV3
-    | CaptureHardwareBindingV4,
+    | CaptureHardwareBindingV4
+    | CaptureHardwareBindingV5,
     Field(discriminator="schema_version"),
 ]
 _CAPTURE_HARDWARE_BINDING_ADAPTER: TypeAdapter[CaptureHardwareBindingContract] = TypeAdapter(
@@ -1040,6 +1137,7 @@ def parse_capture_hardware_binding(
     | CaptureHardwareBindingV2
     | CaptureHardwareBindingV3
     | CaptureHardwareBindingV4
+    | CaptureHardwareBindingV5
 ):
     """Validate a station binding against every supported major version."""
 
@@ -1053,6 +1151,7 @@ def parse_capture_hardware_binding_json(
     | CaptureHardwareBindingV2
     | CaptureHardwareBindingV3
     | CaptureHardwareBindingV4
+    | CaptureHardwareBindingV5
 ):
     """Decode every supported immutable station-binding major version."""
 
@@ -1240,6 +1339,7 @@ def capture_hardware_binding_digest(
         | CaptureHardwareBindingV2
         | CaptureHardwareBindingV3
         | CaptureHardwareBindingV4
+        | CaptureHardwareBindingV5
     ),
 ) -> str:
     return canonical_digest(value.model_dump(mode="json", exclude={"binding_digest"}))
@@ -1255,12 +1355,13 @@ def verified_recording_manifest_snapshot_digest(
         | VerifiedRecordingManifestSnapshotV2
         | VerifiedRecordingManifestSnapshotV3
         | VerifiedRecordingManifestSnapshotV4
+        | VerifiedRecordingManifestSnapshotV5
     ),
 ) -> str:
     return canonical_digest(value.model_dump(mode="json", exclude={"snapshot_digest"}))
 
 
 def recording_manifest_canonical_digest(
-    value: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+    value: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
 ) -> str:
     return sha256_digest(canonical_json_bytes(value.model_dump(mode="json")))

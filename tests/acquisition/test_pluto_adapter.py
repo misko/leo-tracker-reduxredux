@@ -6,7 +6,8 @@ from typing import Any
 import numpy as np
 import pytest
 
-from leo.contracts.radio import IqBlockMetadataV2, RadioSettingsV1, ReceiverGainV1
+from leo.contracts.gain_control import GainControllerMode, GainControllerPolicyV1
+from leo.contracts.radio import IqBlockMetadataV3, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.states import ContinuityStatus, GainMode, RadioTransport
 from leo.radio.pluto_adapter import PlutoAdapterError, PlutoIioRadioSource
 
@@ -60,9 +61,11 @@ class StubMetadataSession:
         self.device = device
         self.sample_count = sample_count
         self.kernel_buffers = kernel_buffers
-        self.metadata_abi = 1
+        self.metadata_abi = 3
         self.index = 0
         self.closed = False
+        self.tandem_state_name = "ARMED_HOLD"
+        self.tandem_fault_flags = 0
 
     def read_block(self):
         samples = self.device.read_block(self.sample_count).samples
@@ -75,7 +78,7 @@ class StubMetadataSession:
             stream_generation="generation-77",
             buffer_sequence=(0, 2)[self.index],
             first_sample_sequence=starts[self.index],
-            metadata_abi=1,
+            metadata_abi=3,
             metadata_flags=5,
             overflow_observed=False,
             sample_time_realtime_start_ns=10_000 + self.index,
@@ -83,6 +86,23 @@ class StubMetadataSession:
             sample_time_monotonic_start_ns=30_000 + self.index,
             sample_time_monotonic_end_ns=40_000 + self.index,
             sample_time_uncertainty_ns=7,
+            tandem_metadata=SimpleNamespace(
+                tandem_state=SimpleNamespace(name=self.tandem_state_name),
+                tandem_fault_flags=self.tandem_fault_flags,
+                gain_events=(),
+                ownership_epoch=9,
+                tandem_transition_count=0,
+                gain_table_id=2,
+                threshold_provenance=0x30313A14,
+                minimum_gain_db=0,
+                maximum_gain_db=62,
+                initial_gain_db=30,
+                minimum_gain_index=0,
+                maximum_gain_index=76,
+                rx1_gain_index=30,
+                rx2_gain_index=30,
+                ad9361_temperature_mdeg_c=43_000,
+            ),
         )
         self.index += 1
         return result
@@ -98,11 +118,13 @@ class StubMetadataDevice(StubDevice):
         self.capabilities.supports_continuity_sequence = True
         self.reset_count = 0
         self.session: StubMetadataSession | None = None
+        self.tandem_request = None
 
     def reset_receive_buffer(self) -> None:
         self.reset_count += 1
 
-    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int):
+    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int, tandem_request):
+        self.tandem_request = tandem_request
         self.session = StubMetadataSession(self, sample_count, kernel_buffers)
         return self.session
 
@@ -167,7 +189,7 @@ def test_adapter_maps_one_or_two_rx_without_leaking_upstream_models(receiver_ids
         "serial-123",
         "radio-a",
     )
-    assert expected_metadata_abis == [1]
+    assert expected_metadata_abis == [3]
     assert isinstance(actual, RadioSettingsV1)
     assert block.samples.shape == (4, len(receiver_ids), 2)
     assert block.samples.dtype == np.dtype("<i2")
@@ -349,14 +371,18 @@ def test_metadata_session_maps_exact_header_and_derives_gap() -> None:
     first = adapter.read_block(4)
     second = adapter.read_block(4)
 
-    assert isinstance(first.metadata, IqBlockMetadataV2)
+    assert isinstance(first.metadata, IqBlockMetadataV3)
     assert first.metadata.device_sample_counter == 100
     assert first.metadata.source_sequence == 0
     assert first.metadata.stream_generation == "generation-77"
-    assert first.metadata.metadata_abi_version == 1
+    assert first.metadata.metadata_abi_version == 3
     assert first.metadata.metadata_flags == 5
     assert first.metadata.kernel_buffers == 8
     assert first.metadata.continuity is ContinuityStatus.CONTIGUOUS
+    assert first.metadata.tandem.tandem_state == "armed_hold"
+    assert first.metadata.tandem.ownership_epoch == 9
+    assert device.tandem_request is not None
+    assert device.tandem_request.mode.name == "HOLD"
     assert second.metadata.continuity is ContinuityStatus.GAP_BEFORE
     assert second.metadata.missing_samples_before == 4
     assert second.metadata.hardware_metadata["stream_id"] == 77
@@ -381,3 +407,32 @@ def test_metadata_capture_fails_closed_without_capability_attestation() -> None:
 
     with pytest.raises(PlutoAdapterError, match="does not attest"):
         adapter.begin_metadata_capture(4, kernel_buffers=8)
+
+
+def test_metadata_session_maps_explicit_auto_controller_and_rejects_faults() -> None:
+    device = StubMetadataDevice("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.reset_receive_buffer()
+    adapter.configure(_settings((0, 1)))
+    controller = GainControllerPolicyV1.create(
+        GainControllerMode.TANDEM_AUTO,
+        sample_count=4,
+    )
+
+    adapter.begin_metadata_capture(4, kernel_buffers=8, gain_controller=controller)
+    assert device.session is not None
+    device.session.tandem_state_name = "ARMED_AUTO"
+    block = adapter.read_block(4)
+
+    assert block.metadata.tandem.mode is GainControllerMode.TANDEM_AUTO
+    assert device.tandem_request.mode.name == "AUTO"
+    device.session.tandem_fault_flags = 1
+    with pytest.raises(PlutoAdapterError, match="fault"):
+        adapter.read_block(4)

@@ -110,7 +110,7 @@ def test_metadata_runtime_validation_scrubs_ambient_loader_state(
 
     command, environment = observed[0]
     assert command[:4] == (str(python), "-I", "-B", "-c")
-    assert "expected_abi=1" in command[4]
+    assert "expected_abi=3" in command[4]
     assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
     assert "LD_LIBRARY_PATH" not in environment
     assert "PYTHONPATH" not in environment

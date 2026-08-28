@@ -69,7 +69,7 @@ class StubDevice:
         self,
         *,
         serial: str = "serial",
-        metadata_abi: int | None = 1,
+        metadata_abi: int | None = 3,
         kernel_readback: int | None = None,
         missing: int = 0,
         overflow: bool = False,
@@ -113,9 +113,9 @@ class StubDevice:
         self.events.append(("tune", round(value)))
         return value + self.tune_offset_hz
 
-    def begin_metadata_capture(self, sample_count, *, kernel_buffers):
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers, tandem_request):
         self.session_count += 1
-        self.events.append(("begin", sample_count, kernel_buffers))
+        self.events.append(("begin", sample_count, kernel_buffers, tandem_request.mode.name))
         return MetadataSession(
             self,
             sample_count,
@@ -152,7 +152,7 @@ def radio_for(device: StubDevice, sleeps: list[float]) -> PlutoSequentialScanRad
 
 
 def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_target() -> None:
-    device = StubDevice(metadata_abi=1)
+    device = StubDevice(metadata_abi=3)
     sleeps: list[float] = []
     radio = radio_for(device, sleeps)
     configuration = ScannerConfigurationV2(targets=current_low_band_targets())
@@ -163,13 +163,13 @@ def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_targe
     second = radio.tune_and_read(1_190_312_500, configuration.dwell_samples)
     radio.close()
 
-    assert first.metadata_abi_version == 1
+    assert first.metadata_abi_version == 3
     assert device.factory_arguments == (
         ("ip:192.168.1.20",),
         {
             "serial": "serial",
             "radio_id": "scanner-pluto",
-            "expected_metadata_abi": 1,
+            "expected_metadata_abi": 3,
         },
     )
     assert first.kernel_buffers_requested == first.kernel_buffers_readback == 8
@@ -186,13 +186,13 @@ def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_targe
         "reset",
         "reset",
         ("tune", 959_687_500),
-        ("begin", 300_000, 8),
+        ("begin", 300_000, 8, "HOLD"),
         ("session-enter", 8),
         ("read", 300_000),
         "session-close",
         "reset",
         ("tune", 1_190_312_500),
-        ("begin", 300_000, 8),
+        ("begin", 300_000, 8, "HOLD"),
         ("session-enter", 8),
         ("read", 300_000),
         "session-close",
@@ -201,7 +201,7 @@ def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_targe
     ]
 
 
-@pytest.mark.parametrize("metadata_abi", [None, 0, 2, 3])
+@pytest.mark.parametrize("metadata_abi", [None, 0, 1, 2])
 def test_pluto_scanner_fails_closed_without_supported_metadata_abi(metadata_abi) -> None:
     device = StubDevice(metadata_abi=metadata_abi)
     radio = radio_for(device, [])

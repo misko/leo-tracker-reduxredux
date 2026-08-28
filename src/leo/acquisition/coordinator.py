@@ -29,7 +29,7 @@ from leo.acquisition.models import (
     CaptureSessionResult,
     StorageAdmissionDecision,
 )
-from leo.contracts.mixed_rate_capture import CapturePlanV3
+from leo.contracts.mixed_rate_capture import CapturePlanV3, CapturePlanV4
 from leo.contracts.profile import (
     CapturePlanV1,
     CapturePlanV2,
@@ -54,6 +54,7 @@ from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
     RecordingStreamV1,
     RecordingStreamV2,
     RecordingStreamV3,
@@ -88,7 +89,7 @@ from leo.storage.writer import (
 
 FreeBytes = Callable[[Path], int]
 StorageAdmission = Callable[[Path], StorageAdmissionDecision]
-CapturePlan = CapturePlanV1 | CapturePlanV3
+CapturePlan = CapturePlanV1 | CapturePlanV3 | CapturePlanV4
 _LOG = logging.getLogger(__name__)
 
 
@@ -429,22 +430,40 @@ class AcquisitionCoordinator:
             if device_axis_capture:
                 if not all(isinstance(stream, RecordingStreamV3) for stream in streams):
                     raise AcquisitionError("device-axis capture did not produce exact streams")
-                if isinstance(plan, CapturePlanV3):
-                    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 = (
-                        RecordingManifestV4(
-                            session_id=session_id,
-                            state=state,
-                            source_type=plan.source_type,
-                            created_utc_ns=created_utc_ns,
-                            finalized_utc_ns=finalized_utc_ns,
-                            capture_plan=plan,
-                            tags=tags,
-                            streams=cast(tuple[RecordingStreamV3, RecordingStreamV3], streams),
-                            synchronization=synchronization,
-                            compression=compression,
-                            host=self._host,
-                            producer=self._producer,
-                        )
+                if isinstance(plan, CapturePlanV4):
+                    manifest: (
+                        RecordingManifestV1
+                        | RecordingManifestV3
+                        | RecordingManifestV4
+                        | RecordingManifestV5
+                    ) = RecordingManifestV5(
+                        session_id=session_id,
+                        state=state,
+                        source_type=plan.source_type,
+                        created_utc_ns=created_utc_ns,
+                        finalized_utc_ns=finalized_utc_ns,
+                        capture_plan=plan,
+                        tags=tags,
+                        streams=cast(tuple[RecordingStreamV3, RecordingStreamV3], streams),
+                        synchronization=synchronization,
+                        compression=compression,
+                        host=self._host,
+                        producer=self._producer,
+                    )
+                elif isinstance(plan, CapturePlanV3):
+                    manifest = RecordingManifestV4(
+                        session_id=session_id,
+                        state=state,
+                        source_type=plan.source_type,
+                        created_utc_ns=created_utc_ns,
+                        finalized_utc_ns=finalized_utc_ns,
+                        capture_plan=plan,
+                        tags=tags,
+                        streams=cast(tuple[RecordingStreamV3, RecordingStreamV3], streams),
+                        synchronization=synchronization,
+                        compression=compression,
+                        host=self._host,
+                        producer=self._producer,
                     )
                 elif isinstance(plan, CapturePlanV2):
                     manifest = RecordingManifestV3(
@@ -481,7 +500,7 @@ class AcquisitionCoordinator:
                     producer=self._producer,
                 )
             else:
-                if isinstance(plan, CapturePlanV3):
+                if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
                     raise AcquisitionError("mixed-rate plan requires device-axis storage")
                 if any(isinstance(stream, RecordingStreamV3) for stream in streams):
                     raise AcquisitionError("legacy V1 capture produced a V3 stream")
@@ -543,8 +562,10 @@ class AcquisitionCoordinator:
         plan: CapturePlan,
         sources: Mapping[str, RadioSource],
     ) -> tuple[RadioSource, ...]:
-        if plan.source_type is SourceType.LIVE and plan.schema_version not in {2, 3}:
-            raise ValueError("new live capture requires counter-authoritative CapturePlanV2 or V3")
+        if plan.source_type is SourceType.LIVE and plan.schema_version not in {2, 3, 4}:
+            raise ValueError(
+                "new live capture requires counter-authoritative CapturePlanV2, V3, or V4"
+            )
         expected = set(plan.radio_ids)
         if set(sources) != expected:
             missing = sorted(expected - set(sources))
@@ -608,7 +629,7 @@ class AcquisitionCoordinator:
                     "opened radio identity does not match its attested plan slot"
                 )
             capabilities = source.capabilities
-            counter_authoritative = plan.schema_version in {2, 3}
+            counter_authoritative = plan.schema_version in {2, 3, 4}
             if counter_authoritative and not (
                 capabilities.supports_device_sample_counter
                 and capabilities.supports_continuity_sequence
@@ -631,7 +652,8 @@ class AcquisitionCoordinator:
                 source.reset_receive_buffer()
             profile = _profile_for_radio(plan, expected_radio_id)
             exact_rf_geometry = (
-                isinstance(plan, CapturePlanV3) or "NATIVE_BANDWIDTH" in profile.tags
+                isinstance(plan, (CapturePlanV3, CapturePlanV4))
+                or "NATIVE_BANDWIDTH" in profile.tags
             )
             configure_exact = getattr(source, "configure_exact", None)
             actual = (
@@ -651,15 +673,23 @@ class AcquisitionCoordinator:
                 source.read_block(profile.refill_samples)
             kernel_buffers = None
             if counter_authoritative:
-                if not isinstance(plan, (CapturePlanV2, CapturePlanV3)):
+                if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4)):
                     raise AcquisitionError("counter-authoritative plan type is unsupported")
                 if not isinstance(profile, CaptureProfileV2):
                     raise AcquisitionError("counter-authoritative profile type is unsupported")
                 source.reset_receive_buffer()
-                kernel_buffers = source.begin_metadata_capture(
-                    profile.refill_samples,
-                    kernel_buffers=profile.kernel_buffers,
-                )
+                controller = _gain_controller_for_radio(plan, expected_radio_id)
+                if controller is None:
+                    kernel_buffers = source.begin_metadata_capture(
+                        profile.refill_samples,
+                        kernel_buffers=profile.kernel_buffers,
+                    )
+                else:
+                    kernel_buffers = source.begin_metadata_capture(
+                        profile.refill_samples,
+                        kernel_buffers=profile.kernel_buffers,
+                        gain_controller=controller,
+                    )
                 if kernel_buffers != profile.kernel_buffers:
                     raise AcquisitionError(
                         "radio kernel-buffer readback disagrees with CaptureProfileV2"
@@ -694,8 +724,8 @@ class AcquisitionCoordinator:
         session_cancel: Event,
         fail_whole: bool,
     ) -> _StreamOutcome:
-        if plan.schema_version in {2, 3}:
-            if not isinstance(plan, (CapturePlanV2, CapturePlanV3)):
+        if plan.schema_version in {2, 3, 4}:
+            if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4)):
                 raise AcquisitionError("counter-authoritative plan type is unsupported")
             return self._capture_radio_v2(
                 item,
@@ -805,7 +835,7 @@ class AcquisitionCoordinator:
     def _capture_radio_v2(
         self,
         item: _PreparedRadio,
-        plan: CapturePlanV2 | CapturePlanV3,
+        plan: CapturePlanV2 | CapturePlanV3 | CapturePlanV4,
         bundle: RecordingBundleWriter,
         gate: _ReadinessGate,
         external_cancel: Event,
@@ -1166,7 +1196,9 @@ class AcquisitionCoordinator:
     def _publish_or_recover(
         self,
         writer: RecordingBundleWriter,
-        manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+        manifest: (
+            RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5
+        ),
         errors: list[str],
     ) -> PublishedBundle:
         try:
@@ -1223,7 +1255,7 @@ def _requested_settings_by_radio(
     plan: CapturePlan,
     overrides: Mapping[str, RadioSettingsV1] | None,
 ) -> dict[str, RadioSettingsV1]:
-    if isinstance(plan, CapturePlanV3):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
         planned = {item.radio_id: item.requested_settings for item in plan.radio_plans}
         if overrides is not None and dict(overrides) != planned:
             raise ValueError("mixed-rate per-radio settings are immutable plan authority")
@@ -1247,7 +1279,7 @@ def _requested_settings_by_radio(
 
 
 def _profile_for_radio(plan: CapturePlan, radio_id: str) -> CaptureProfileV1 | CaptureProfileV2:
-    if isinstance(plan, CapturePlanV3):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
         matches = tuple(
             item.profile_revision.profile for item in plan.radio_plans if item.radio_id == radio_id
         )
@@ -1264,7 +1296,7 @@ def _radio_geometry(
     radio_id: str,
 ) -> tuple[CaptureProfileV1 | CaptureProfileV2, int, RadioSettingsV1]:
     profile = _profile_for_radio(plan, radio_id)
-    if isinstance(plan, CapturePlanV3):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
         leg = next(item for item in plan.radio_plans if item.radio_id == radio_id)
         return profile, leg.resolved_sample_count, leg.requested_settings
     return profile, plan.resolved_sample_count, _settings_from_profile(profile)
@@ -1286,6 +1318,15 @@ def _device_axis_capture(plan: CapturePlan) -> bool:
     return next(iter(policies)) == DEVICE_AXIS_STORAGE_POLICY_V1
 
 
+def _gain_controller_for_radio(plan: CapturePlan, radio_id: str):
+    if not isinstance(plan, CapturePlanV4):
+        return None
+    matches = tuple(item.gain_controller for item in plan.radio_plans if item.radio_id == radio_id)
+    if len(matches) != 1:
+        raise ValueError(f"production plan has no unique gain controller for {radio_id!r}")
+    return matches[0]
+
+
 def _plan_tags(plan: CapturePlan) -> set[str]:
     tags = {tag for radio_id in plan.radio_ids for tag in _profile_for_radio(plan, radio_id).tags}
     if isinstance(plan, CapturePlanV3):
@@ -1296,6 +1337,21 @@ def _plan_tags(plan: CapturePlan) -> set[str]:
                 f"tuning_policy:same:{plan.starlink_channel}:{plan.starlink_edge.value}",
             }
         )
+    elif isinstance(plan, CapturePlanV4):
+        tags.update(
+            {
+                "PRODUCTION_NATIVE_RATES_V2",
+                f"production_dwell_class:{plan.dwell_class.value}",
+                f"tuning_policy:{plan.tuning_branch.value}",
+            }
+        )
+        for index, leg in enumerate(plan.radio_plans):
+            tags.update(
+                {
+                    f"gain_controller:stream-{index}:{leg.gain_controller.mode.value}",
+                    f"tuning:stream-{index}:ch{leg.starlink_channel}:{leg.starlink_edge.value}",
+                }
+            )
     return tags
 
 
@@ -1466,7 +1522,7 @@ def _recording_stream(
 ) -> RecordingStreamV1 | RecordingStreamV3:
     receipt = outcome.receipt
     if _device_axis_capture(plan):
-        if not isinstance(plan, (CapturePlanV2, CapturePlanV3)):
+        if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4)):
             raise AcquisitionError("device-axis storage requires CapturePlanV2 or V3")
         if not isinstance(receipt, DeviceAxisStreamWriteReceipt):
             raise AcquisitionError("device-axis capture has no finalized V3 storage receipt")
@@ -1501,7 +1557,7 @@ def _recording_stream(
                 else (outcome.error or "capture observation integrity degraded")[:2048]
             ),
         )
-    if isinstance(plan, CapturePlanV3):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
         raise AcquisitionError("mixed-rate capture cannot publish legacy stream storage")
     chunks: tuple[RecordingChunkV1, ...]
     if outcome.state is StreamState.FAILED:

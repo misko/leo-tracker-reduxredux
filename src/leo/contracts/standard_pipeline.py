@@ -22,6 +22,7 @@ from leo.contracts.recording import (
     RecordingManifestV1,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
 )
 from leo.contracts.states import StarlinkEdge
 from leo.contracts.validity import ValidityInventoryV1
@@ -543,7 +544,7 @@ class ManifestStarlinkTuningIntent:
 
 
 def resolve_manifest_starlink_tuning(
-    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
 ) -> dict[str, ManifestStarlinkTuningIntent]:
     """Resolve explicit per-stream Starlink intent without frequency inference."""
 
@@ -577,6 +578,8 @@ def resolve_manifest_starlink_tuning(
             raise ValueError("per-stream Starlink tuning tags must cover every manifest stream")
         return resolved
 
+    if type(manifest) is RecordingManifestV5:
+        raise ValueError("production V5 manifest requires complete per-stream tuning tags")
     if isinstance(manifest, RecordingManifestV4):
         return {
             stream_id: ManifestStarlinkTuningIntent(

@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 QNAP = Path("/mnt/qnap01")
-PRODUCTION_METADATA_ABI = 1
+PRODUCTION_METADATA_ABI = 3
 
 
 def _safe_absolute(path: Path, label: str) -> Path:
@@ -69,7 +69,7 @@ def validate_release_uv(release: Path) -> str:
 
 
 def validate_metadata_runtime(python: Path) -> None:
-    """Verify ABI 1 from a fresh process before any pyadi-capable entrypoint."""
+    """Verify ABI 3 from a fresh process before any pyadi-capable entrypoint."""
 
     environment = dict(os.environ)
     for name in ("LD_LIBRARY_PATH", "PYTHONPATH", "PLUTO_LIBIIO_LIBRARY"):

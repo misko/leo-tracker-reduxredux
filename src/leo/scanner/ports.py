@@ -82,7 +82,7 @@ class ScanRadioBlockV2(ScanRadioBlock):
         ):
             if not isinstance(getattr(self, name), int) or getattr(self, name) < 0:
                 raise ValueError(f"scanner {name} must be a nonnegative integer")
-        if self.metadata_abi_version not in (1, 2):
+        if self.metadata_abi_version not in (1, 2, 3):
             raise ValueError("scanner metadata ABI must be one supported version")
         if self.stream_id == 0 or self.reset_episode == 0:
             raise ValueError("scanner stream and reset episode must be nonzero")

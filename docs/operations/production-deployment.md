@@ -33,14 +33,13 @@ CPU/IO weights `1000/1000` and OOM score adjustment `200`; API is
 `200/200/400`; workers are `100/100/500`; reconcile and retention are lower.
 This preserves acquisition before API, workers, and maintenance under pressure.
 
-The production acquisition service supplies three repeated `--profile`
-arguments from `LEO_CAPTURE_PROFILE`, `LEO_CAPTURE_PROFILE_3M`, and
-`LEO_CAPTURE_PROFILE_5M`. It chooses one profile uniformly for each ordinary
-dwell and persists that exact choice before opening either radio, so both radios
-share one rate and a retry cannot redraw it. The reviewed 60-second profiles and
-180-second start period begin one dwell every three minutes. The runner subtracts
-capture, durable publication, and reconciliation time from the following wait,
-preventing cadence drift.
+The production acquisition service supplies the reviewed dual-RX 2.5 and 5 MS/s
+profiles. Its exact eight-dwell policy persists a digest-bound, permuted bag with
+two both-2.5 dwells, two both-5 dwells, and one 2.5/high mixed dwell for each of
+5, 10, 15, and 20 MS/s. Mixed high-radio order, high-rate RX, tuning, and tandem
+HOLD/AUTO mode are deterministic random selections bound before either radio is
+opened, so retries cannot redraw them. The reviewed 60-second profiles and
+180-second start period begin one dwell every three minutes.
 
 ## Stage 0 — freeze the cutover inputs
 
@@ -332,53 +331,9 @@ test -z "$(git status --porcelain)"
 LEO_TEST_DATABASE_URL=postgresql+psycopg:///leo_qualification ./ops test --release
 sudo ./ops deploy --stage-only --revision "$release_revision"
 
-# Fence new radio work, wait for any existing owner to drain, then stop every
-# installed production radio-owning unit before qualification. The hardware
-# harness additionally holds Leo's global and exact-radio kernel leases.
-sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
-  /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire pause \
-  --reason "bounded 3M/5M release qualification" --wait --timeout-seconds 90 --json'
-sudo systemctl stop \
-  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
-systemctl show --no-pager -p Id -p LoadState -p ActiveState -p SubState \
-  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
-
-# The qualification boundary is the staged release's receipt-pinned
-# pyadi/pylibiio adapter. It does not require or permit device-side shell access.
-sudo install -d -o root -g leo -m 0750 \
-  /srv/bulk/leo/qualification/sample-rate-3m \
-  /srv/bulk/leo/qualification/native-bandwidth
-
-# After populating the hardware harness's required authorization and exact
-# production-radio identity environment, run its combined ten-trial 3M plus
-# one full-span 5M campaign with this exact staged native runtime. Isolated mode ignores PYTHON* environment variables,
-# so -B is the effective no-bytecode boundary that keeps the release immutable:
-sudo --preserve-env \
-  /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
-  -u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1 \
-  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -B -m pytest \
-  -ra -s -p no:cacheprovider \
-  "/opt/leo-tracker/releases/$release_revision/tests/acquisition/test_pluto_rate_modes_hardware.py"
-
-# Run the separate bounded native-bandwidth campaign. It proves and uses the
-# maximum counter-continuous 1,048,576-sample paired-RX refill, exactly four
-# kernel buffers, and only
-# 192.168.1.20/.21. It qualifies ordinary 2.5/3/5 MS/s and mixed 2.5/5 MS/s
-# with each radio taking the 5 MS/s role once. The exact RF bandwidth equals
-# native sample rate and the IF center maximizes in-channel coverage while
-# retaining the selected edge pilot.
-# The campaign has one shared 15-minute monotonic deadline and restores both
-# radios before it can publish the V2 authority.
-sudo --preserve-env \
-  /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
-  -u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1 \
-  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -B -m pytest \
-  -ra -s -p no:cacheprovider \
-  "/opt/leo-tracker/releases/$release_revision/tests/acquisition/test_pluto_native_bandwidth_hardware.py::test_native_ip_plutos_qualify_enabled_native_bandwidth_pool"
-
 required_keys=(
   LEO_DATABASE_URL LEO_PIPELINE_RELEASE_ID LEO_CAPTURE_PROFILE
-  LEO_CAPTURE_PROFILE_3M LEO_CAPTURE_PROFILE_5M
+  LEO_CAPTURE_PROFILE_5M LEO_MIXED_RATE_POLICY
   LEO_CAPTURE_INTERVAL_SECONDS LEO_QUALIFICATION_PROFILE LEO_SOAK_PROFILE
   LEO_SCANNER_ENABLED LEO_SCANNER_RADIO_ID LEO_SCANNER_INTERVAL_SECONDS
   LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_DWELL_MS
@@ -395,11 +350,8 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v6.json"
-native_bandwidth_receipt="/srv/bulk/leo/qualification/native-bandwidth/accepted/$release_revision/native-bandwidth-qualification-receipt-v2.json"
-sudo test -r "$native_bandwidth_receipt"
-./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
-sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
+./ops deploy --plan --revision "$release_revision"
+sudo ./ops deploy --full --revision "$release_revision"
 ```
 
 The full-cutover transaction runs any required `alembic upgrade head` while
@@ -409,53 +361,25 @@ requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
 `memory=4`, and `heavy=2`. A missing, duplicate, extra, malformed, or drifted
 row blocks startup.
 
-The stage-only command must precede the hardware run: its published release
-metadata seals the release-local libiio library, Python binding, and metadata
-runtime receipt that the hardware harness attests. It does not read or require
-the rate receipt. The final full deploy still requires that exact target-bound,
-read-only receipt and idempotently revalidates the staged release before any
-cutover mutation.
+The historical target-bound 3 MS/s qualification receipt is not a cutover gate:
+3 MS/s is absent from `production-native-rates-8-v2`. The transaction instead
+checks the exact staged profile bytes and service command, the exact-revision
+release qualification, the reviewed Standard regression authority, and both
+live radios through the ABI-3 counter-authoritative adapter before starting any
+runtime unit. A bounded post-start cycle verifies policy behavior. Failures of
+experimental 10/15/20 MS/s legs are recorded as firmware evidence and do not
+renormalize or silently replace the scheduled dwell.
 
-Keep all three radio-owning units stopped throughout the hardware run. The
-paused-generation-bound maintenance lease prevents any other composed Leo
-capture or scanner process from acquiring a radio even if one appears while the
-campaign is running. If qualification aborts, restart the previous
-`leo-acquisition.service`; the durable capture state remains paused until an
-operator separately authorizes resume.
+The current Standard-native scientific product family is reviewed through
+10 MS/s. A successful 15 or 20 MS/s capture remains durably cataloged, but
+automatic Standard analysis refuses it with the explicit unreviewed-rate error
+until an additive path/source product major is qualified; published contracts
+are not widened in place. The 10 MS/s single-RX branch is covered by the
+radio-report V5 and paired-report V6 three-path operational vertical.
 
-The harness uses only the receipt-pinned host pyadi/pylibiio adapter. Its safety
-evidence binds exact IIO identity and capabilities, fail-closed TX mute/readback
-on open and close, and independent RX-settings restoration readback; it neither
-opens a device-side shell nor depends on a device password or SSH trust store.
-
-The harness shares one monotonic 30-minute RF deadline across ten 60-second
-3 MS/s trials and one 60-second full-span 5 MS/s characterization, reserves shutdown time, and relies on the pinned finite libiio
-context timeout so a stalled refill returns through the same source-close and
-RX-setting restoration path. Production `.20`/`.21` are the only qualification
-and recorder targets. The V6 receipt contains no non-production USB control arm;
-it binds the exact deployed 3 MS/s and 5 MS/s device-axis profiles and fixed-radio plans,
-retains exact per-radio safety, native-IP canary, writer, host-health, and runtime evidence,
-requires measured incompressible writer throughput of at least 100 MB/s,
-and records both ordered streams' V3 logical/observed closure and evidence
-digests for every one of the ten 3 MS/s trials. Its embedded 5 MS/s evidence
-requires 300,000,000 logical samples per stream, exact observed-plus-zero-fill
-closure, verified physical zeros, gap-map and validity-inventory agreement, and
-zero overflow, enqueue failures, or terminal rejected refills. It also binds an
-exact queue capacity of 32 refills and a measured high-water no greater than 24
-refills for each 5 MS/s stream. Before the writer benchmark or any RF action, the harness captures
-a bounded read-only host snapshot for `md127` and `/srv/bulk`; after both radios restore exactly
-and the paused-maintenance lease is verified and released, it captures the matching post snapshot.
-The required V6 prerequisite passes only with healthy idle RAID, complete kernel-log evidence,
-zero production-storage or unclassified kernel I/O errors and OOM kills, no swap-in/out delta,
-at least 32 GiB available memory, and at least 1 TiB free disk at both boundaries. Historical
-errors may be retained only for sysfs-proven removable devices outside the `/srv/bulk` ancestry,
-and their complete classified inventory must be identical before and after. The cutover verifier
-closes the evidence/check keys, digests, timestamps, mount/device identity, and target hostname
-before accepting the V6 path.
-
-Do not reboot merely to clear historical kernel messages. V6 is designed to retain the current
-boot journal, distinguish proven removable-device history from production-storage risk, and fail
-if any error is added during qualification.
+Legacy V6 3 MS/s and native-bandwidth receipts remain immutable historical
+evidence, but the current deployment path neither regenerates nor consumes
+them. Do not run those retired RF campaigns as part of this cutover.
 
 Do not pre-edit the production environment to the reviewed target values: doing so
 would make a naive rollback snapshot the new configuration rather than the
@@ -637,18 +561,18 @@ scheduler. This prevents the scheduler from racing the direct command. Run the
 pause command even if its preceding one-shot fails; do not restart the service
 until status again reports paused and drained.
 
-Run the exact 3 MS/s canary first:
+Run the exact 2.5 MS/s canary first:
 
 ```text
 sudo systemctl stop leo-acquisition.service
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
   leo acquire resume --operator production-cutover \
-  --reason "bounded direct 3 MS/s post-cutover canary" --json'
+  --reason "bounded direct 2.5 MS/s post-cutover canary" --json'
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
-  leo acquire once --profile "$LEO_CAPTURE_PROFILE_3M" --json'
+  leo acquire once --profile "$LEO_CAPTURE_PROFILE" --json'
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
   leo acquire pause --operator production-cutover \
-  --reason "direct 3 MS/s post-cutover canary complete" \
+  --reason "direct 2.5 MS/s post-cutover canary complete" \
   --wait --timeout-seconds 90 --json'
 sudo systemctl start leo-acquisition.service
 ```

@@ -18,6 +18,7 @@ from leo.analysis.standard.native_products import (
     NUMERICAL_WATERFALL_V3_PRODUCT,
     PAIRED_REPORT_V4_PRODUCT,
     PAIRED_REPORT_V5_PRODUCT,
+    PAIRED_REPORT_V6_PRODUCT,
     PATH_REPORT_V3_PRODUCT,
     PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
@@ -25,6 +26,7 @@ from leo.analysis.standard.native_products import (
     PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
     POWER_TIMELINE_V3_PRODUCT,
     RADIO_REPORT_V4_PRODUCT,
+    RADIO_REPORT_V5_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
     WATERFALL_PNG_V2_PRODUCT,
 )
@@ -32,6 +34,7 @@ from leo.artifacts import (
     AnalysisArtifactStore,
     AnalysisRunManifestV3,
     AnalysisRunManifestV4,
+    AnalysisRunManifestV5,
     parse_analysis_run_manifest,
 )
 from leo.catalog import CatalogRepository
@@ -49,7 +52,9 @@ from leo.contracts.standard_native_terminal import (
     NativeTerminalPathEvidenceV2,
     StandardNativePairedReportV4,
     StandardNativePairedReportV5,
+    StandardNativePairedReportV6,
     StandardNativeRadioReportV4,
+    StandardNativeRadioReportV5,
     terminal_track_accounting,
 )
 from leo.contracts.standard_pipeline import StandardPathInputBindV4
@@ -61,12 +66,14 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV5,
+    StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactV4,
 )
 from leo.presentation.standard_native_pipeline import (
     NativeArtifactNameV3,
     StandardNativeEligibilityV3,
     StandardNativeEligibilityV4,
+    StandardNativeEligibilityV5,
     StandardNativeFrequencyAxisV4,
     StandardNativeMetricPointV3,
     StandardNativeMetricSeriesV3,
@@ -75,14 +82,19 @@ from leo.presentation.standard_native_pipeline import (
     StandardNativePipelineReleaseV3,
     StandardNativePlotViewV3,
     StandardNativePlotViewV4,
+    StandardNativePlotViewV5,
     StandardNativePresentationProductRefV3,
+    StandardNativeProductionLegV5,
     StandardNativeSourceProofV3,
     StandardNativeSubjectDetailV3,
     StandardNativeSubjectDetailV4,
+    StandardNativeSubjectDetailV5,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectHierarchyV4,
+    StandardNativeSubjectHierarchyV5,
     StandardNativeSubjectSummaryV3,
     StandardNativeSubjectSummaryV4,
+    StandardNativeSubjectSummaryV5,
     StandardNativeTerminalSummaryV3,
     StandardNativeTrajectoryV3,
     StandardNativeViewDescriptorV3,
@@ -111,6 +123,11 @@ from .standard_presentation import (
     StandardPresentationUnavailable,
 )
 
+_TerminalRadioReport = StandardNativeRadioReportV4 | StandardNativeRadioReportV5
+_TerminalPairedReport = (
+    StandardNativePairedReportV4 | StandardNativePairedReportV5 | StandardNativePairedReportV6
+)
+
 
 @dataclass(frozen=True, slots=True)
 class _NativePath:
@@ -132,22 +149,27 @@ class _NativeProjection:
     snapshot: CatalogSessionReadSnapshot
     run_id: str
     manifest_digest: str
-    manifest: AnalysisRunManifestV3 | AnalysisRunManifestV4
+    manifest: AnalysisRunManifestV3 | AnalysisRunManifestV4 | AnalysisRunManifestV5
     release: StandardNativePipelineReleaseV3
-    eligibility: StandardNativeEligibilityV3 | StandardNativeEligibilityV4
-    paths: tuple[_NativePath, ...]
-    radios: tuple[tuple[CatalogProductRecord, StandardNativeRadioReportV4], ...]
-    paired: (
-        tuple[
-            CatalogProductRecord,
-            StandardNativePairedReportV4 | StandardNativePairedReportV5,
-        ]
-        | None
+    eligibility: (
+        StandardNativeEligibilityV3 | StandardNativeEligibilityV4 | StandardNativeEligibilityV5
     )
+    paths: tuple[_NativePath, ...]
+    radios: tuple[tuple[CatalogProductRecord, _TerminalRadioReport], ...]
+    paired: tuple[CatalogProductRecord, _TerminalPairedReport] | None
     jobs: tuple[CatalogJobRecord, ...]
     products: tuple[CatalogProductRecord, ...]
-    hierarchy: StandardNativeSubjectHierarchyV3 | StandardNativeSubjectHierarchyV4
-    subjects: dict[str, StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4]
+    hierarchy: (
+        StandardNativeSubjectHierarchyV3
+        | StandardNativeSubjectHierarchyV4
+        | StandardNativeSubjectHierarchyV5
+    )
+    subjects: dict[
+        str,
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5,
+    ]
 
 
 class CatalogStandardNativePresentationRepository:
@@ -181,17 +203,27 @@ class CatalogStandardNativePresentationRepository:
             raise StandardPresentationUnavailable(
                 "Standard-native run manifest is unavailable"
             ) from error
-        return document.get("schema_version") in {3, 4}
+        return document.get("schema_version") in {3, 4, 5}
 
     def subject_hierarchy(
         self, session_id: str
-    ) -> StandardNativeSubjectHierarchyV3 | StandardNativeSubjectHierarchyV4 | None:
+    ) -> (
+        StandardNativeSubjectHierarchyV3
+        | StandardNativeSubjectHierarchyV4
+        | StandardNativeSubjectHierarchyV5
+        | None
+    ):
         loaded = self._load(session_id)
         return None if loaded is None else loaded.hierarchy
 
     def subject_detail(
         self, session_id: str, subject_id: str
-    ) -> StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4 | None:
+    ) -> (
+        StandardNativeSubjectDetailV3
+        | StandardNativeSubjectDetailV4
+        | StandardNativeSubjectDetailV5
+        | None
+    ):
         loaded = self._load(session_id)
         if loaded is None or subject_id not in loaded.subjects:
             return None
@@ -239,6 +271,18 @@ class CatalogStandardNativePresentationRepository:
                 "Paired-radio support is the intersection of valid UTC intervals",
             ),
         }
+        if isinstance(subject, StandardNativeSubjectSummaryV5):
+            expansions_v5 = cast(
+                tuple[StandardNativeSubjectSummaryV5, ...],
+                tuple(loaded.subjects[path.reference.subject_id] for path in paths),
+            )
+            return StandardNativeSubjectDetailV5.model_validate(
+                {
+                    "subject": subject,
+                    "receiver_path_expansions": expansions_v5,
+                    **common,
+                }
+            )
         if isinstance(subject, StandardNativeSubjectSummaryV4):
             expansions_v4 = cast(
                 tuple[StandardNativeSubjectSummaryV4, ...],
@@ -271,7 +315,12 @@ class CatalogStandardNativePresentationRepository:
         self,
         session_id: str,
         subject_id: str,
-    ) -> StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | None:
+    ) -> (
+        StandardNativePngArtifactInventoryV4
+        | StandardNativePngArtifactInventoryV5
+        | StandardNativePngArtifactInventoryV6
+        | None
+    ):
         """Return the complete sealed 11/5/5 artifact inventory, if present."""
 
         loaded = self._load(session_id)
@@ -335,6 +384,37 @@ class CatalogStandardNativePresentationRepository:
             "coverage_status": subject.coverage_status,
             "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
         }
+        if isinstance(subject, StandardNativeSubjectSummaryV5):
+            production_sample_rates_hz = cast(
+                tuple[
+                    Literal[2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000],
+                    ...,
+                ],
+                tuple(
+                    sorted(
+                        {
+                            path.report.source.sample_rate_hz
+                            for path in self._subject_paths(loaded, subject)
+                        }
+                    )
+                ),
+            )
+            content_values_v6 = {
+                "schema_version": 6,
+                **common_values,
+                "sample_rates_hz": production_sample_rates_hz,
+            }
+            return StandardNativePngArtifactInventoryV6(
+                session_id=session_id,
+                subject_id=subject.subject_id,
+                subject_kind=subject.subject_kind,
+                run_id=loaded.run_id,
+                run_manifest_digest=loaded.manifest_digest,
+                sample_rates_hz=production_sample_rates_hz,
+                coverage_status=subject.coverage_status,
+                artifacts=tuple(artifacts),
+                content_digest=canonical_digest(content_values_v6),
+            )
         if isinstance(subject, StandardNativeSubjectSummaryV4):
             sample_rates_hz = cast(
                 tuple[Literal[2_500_000, 5_000_000, 10_000_000], ...],
@@ -391,7 +471,7 @@ class CatalogStandardNativePresentationRepository:
         view_kind: StandardViewKindV2,
         *,
         maximum_points: int,
-    ) -> StandardNativePlotViewV3 | StandardNativePlotViewV4 | None:
+    ) -> StandardNativePlotViewV3 | StandardNativePlotViewV4 | StandardNativePlotViewV5 | None:
         loaded = self._load(session_id)
         if loaded is None or subject_id not in loaded.subjects:
             return None
@@ -492,7 +572,11 @@ class CatalogStandardNativePresentationRepository:
     @staticmethod
     def _subject_paths(
         loaded: _NativeProjection,
-        subject: StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4,
+        subject: (
+            StandardNativeSubjectSummaryV3
+            | StandardNativeSubjectSummaryV4
+            | StandardNativeSubjectSummaryV5
+        ),
     ) -> tuple[_NativePath, ...]:
         wanted = {item.path_id for item in subject.receiver_paths}
         return tuple(item for item in loaded.paths if item.reference.path_id in wanted)
@@ -500,7 +584,11 @@ class CatalogStandardNativePresentationRepository:
     def _view_descriptor(
         self,
         loaded: _NativeProjection,
-        subject: StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4,
+        subject: (
+            StandardNativeSubjectSummaryV3
+            | StandardNativeSubjectSummaryV4
+            | StandardNativeSubjectSummaryV5
+        ),
         paths: tuple[_NativePath, ...],
         kind: StandardViewKindV2,
     ) -> StandardNativeViewDescriptorV3:
@@ -546,7 +634,11 @@ class CatalogStandardNativePresentationRepository:
     @staticmethod
     def _png_product(
         loaded: _NativeProjection,
-        subject: StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4,
+        subject: (
+            StandardNativeSubjectSummaryV3
+            | StandardNativeSubjectSummaryV4
+            | StandardNativeSubjectSummaryV5
+        ),
         kind: str,
         schema_version: int,
     ) -> CatalogProductRecord | None:
@@ -620,7 +712,10 @@ class CatalogStandardNativePresentationRepository:
             parsed = parse_analysis_run_manifest(
                 self._artifacts.read_json(reference.logical_uri, reference.digest)
             )
-            if not isinstance(parsed, (AnalysisRunManifestV3, AnalysisRunManifestV4)):
+            if not isinstance(
+                parsed,
+                (AnalysisRunManifestV3, AnalysisRunManifestV4, AnalysisRunManifestV5),
+            ):
                 return None
             execution = self._catalog.run_execution_info(analysis.run_id)
             seal = self._catalog.run_seal_snapshot(analysis.run_id)
@@ -663,10 +758,17 @@ class CatalogStandardNativePresentationRepository:
                 PATH_REPORT_V3_PRODUCT.kind,
                 PATH_REPORT_V3_PRODUCT.schema_version,
             )
-            radio_products = _products_of(
-                terminal_products,
-                RADIO_REPORT_V4_PRODUCT.kind,
-                RADIO_REPORT_V4_PRODUCT.schema_version,
+            radio_products = (
+                *_products_of(
+                    terminal_products,
+                    RADIO_REPORT_V4_PRODUCT.kind,
+                    RADIO_REPORT_V4_PRODUCT.schema_version,
+                ),
+                *_products_of(
+                    terminal_products,
+                    RADIO_REPORT_V5_PRODUCT.kind,
+                    RADIO_REPORT_V5_PRODUCT.schema_version,
+                ),
             )
             paired_products = (
                 *_products_of(
@@ -679,6 +781,11 @@ class CatalogStandardNativePresentationRepository:
                     PAIRED_REPORT_V5_PRODUCT.kind,
                     PAIRED_REPORT_V5_PRODUCT.schema_version,
                 ),
+                *_products_of(
+                    terminal_products,
+                    PAIRED_REPORT_V6_PRODUCT.kind,
+                    PAIRED_REPORT_V6_PRODUCT.schema_version,
+                ),
             )
             if not path_products or not radio_products or len(paired_products) > 1:
                 raise StandardPresentationUnavailable(
@@ -689,8 +796,9 @@ class CatalogStandardNativePresentationRepository:
                     (
                         (
                             product,
-                            StandardNativeRadioReportV4.model_validate(
-                                self._artifacts.read_json(product.logical_uri, product.digest)
+                            _load_terminal_radio_report(
+                                product,
+                                self._artifacts.read_json(product.logical_uri, product.digest),
                             ),
                         )
                         for product in radio_products
@@ -704,17 +812,26 @@ class CatalogStandardNativePresentationRepository:
                 else (
                     paired_products[0],
                     (
-                        StandardNativePairedReportV5.model_validate(
+                        StandardNativePairedReportV6.model_validate(
                             self._artifacts.read_json(
                                 paired_products[0].logical_uri,
                                 paired_products[0].digest,
                             )
                         )
-                        if paired_products[0].schema_version == 5
-                        else StandardNativePairedReportV4.model_validate(
-                            self._artifacts.read_json(
-                                paired_products[0].logical_uri,
-                                paired_products[0].digest,
+                        if paired_products[0].schema_version == 6
+                        else (
+                            StandardNativePairedReportV5.model_validate(
+                                self._artifacts.read_json(
+                                    paired_products[0].logical_uri,
+                                    paired_products[0].digest,
+                                )
+                            )
+                            if paired_products[0].schema_version == 5
+                            else StandardNativePairedReportV4.model_validate(
+                                self._artifacts.read_json(
+                                    paired_products[0].logical_uri,
+                                    paired_products[0].digest,
+                                )
                             )
                         )
                     ),
@@ -742,7 +859,45 @@ class CatalogStandardNativePresentationRepository:
                 if any(item.report.source.missing_sample_count for item in paths)
                 else "committed"
             )
-            if isinstance(parsed, AnalysisRunManifestV4):
+            if isinstance(parsed, AnalysisRunManifestV5):
+                authority_v3 = parsed.promotion_authority
+                production_legs = cast(
+                    tuple[StandardNativeProductionLegV5, StandardNativeProductionLegV5],
+                    tuple(
+                        StandardNativeProductionLegV5.model_validate(
+                            {
+                                "schema_version": 5,
+                                **item.model_dump(mode="json", exclude={"schema_version"}),
+                            }
+                        )
+                        for item in authority_v3.stream_authorities
+                    ),
+                )
+                eligibility: (
+                    StandardNativeEligibilityV3
+                    | StandardNativeEligibilityV4
+                    | StandardNativeEligibilityV5
+                ) = StandardNativeEligibilityV5(
+                    capture_state=capture_state,
+                    capture_committed=capture_state == "committed",
+                    dwell_class=authority_v3.dwell_class,
+                    tuning_branch=authority_v3.tuning_branch,
+                    legs=production_legs,
+                    scheduled_intent_digest=authority_v3.scheduled_intent_digest,
+                    capture_plan_digest=authority_v3.capture_plan_digest,
+                    capture_hardware_binding_digest=authority_v3.capture_hardware_binding_digest,
+                    pipeline_definition_id=definition.definition_id,
+                    promotion_authority_digest=authority_v3.content_digest,
+                    reason=(
+                        "Promoted reviewed production Standard-native capture is Current"
+                        if capture_state == "committed"
+                        else (
+                            "Promoted reviewed production Standard-native capture is Current "
+                            "with partial validity coverage"
+                        )
+                    ),
+                )
+            elif isinstance(parsed, AnalysisRunManifestV4):
                 authority_v2 = parsed.promotion_authority
                 mixed_legs = cast(
                     tuple[StandardNativeMixedLegV4, StandardNativeMixedLegV4],
@@ -769,23 +924,21 @@ class CatalogStandardNativePresentationRepository:
                         for item in authority_v2.stream_authorities
                     ),
                 )
-                eligibility: StandardNativeEligibilityV3 | StandardNativeEligibilityV4 = (
-                    StandardNativeEligibilityV4(
-                        capture_state=capture_state,
-                        capture_committed=capture_state == "committed",
-                        dwell_class=authority_v2.dwell_class,
-                        legs=mixed_legs,
-                        pipeline_definition_id=definition.definition_id,
-                        promotion_authority_digest=authority_v2.content_digest,
-                        reason=(
-                            "Promoted reviewed mixed Standard-native capture is Current"
-                            if capture_state == "committed"
-                            else (
-                                "Promoted reviewed mixed Standard-native capture is Current "
-                                "with partial validity coverage"
-                            )
-                        ),
-                    )
+                eligibility = StandardNativeEligibilityV4(
+                    capture_state=capture_state,
+                    capture_committed=capture_state == "committed",
+                    dwell_class=authority_v2.dwell_class,
+                    legs=mixed_legs,
+                    pipeline_definition_id=definition.definition_id,
+                    promotion_authority_digest=authority_v2.content_digest,
+                    reason=(
+                        "Promoted reviewed mixed Standard-native capture is Current"
+                        if capture_state == "committed"
+                        else (
+                            "Promoted reviewed mixed Standard-native capture is Current "
+                            "with partial validity coverage"
+                        )
+                    ),
                 )
             else:
                 authority_v1 = parsed.promotion_authority
@@ -842,7 +995,7 @@ class CatalogStandardNativePresentationRepository:
         run_id: str,
         product: CatalogProductRecord,
         products: tuple[CatalogProductRecord, ...],
-        radios: tuple[tuple[CatalogProductRecord, StandardNativeRadioReportV4], ...],
+        radios: tuple[tuple[CatalogProductRecord, _TerminalRadioReport], ...],
     ) -> _NativePath:
         scope = product.scope
         if scope is None or scope.kind is not ScopeKind.RECEIVER_PATH:
@@ -939,7 +1092,7 @@ class CatalogStandardNativePresentationRepository:
 
 
 def _require_seal_inventory(
-    manifest: AnalysisRunManifestV3 | AnalysisRunManifestV4,
+    manifest: AnalysisRunManifestV3 | AnalysisRunManifestV4 | AnalysisRunManifestV5,
     jobs: tuple[CatalogJobRecord, ...],
     products: tuple[CatalogProductRecord, ...],
 ) -> None:
@@ -1000,6 +1153,17 @@ def _products_of(
     )
 
 
+def _load_terminal_radio_report(
+    product: CatalogProductRecord,
+    document: dict[str, Any],
+) -> _TerminalRadioReport:
+    if product.schema_version == RADIO_REPORT_V5_PRODUCT.schema_version:
+        return StandardNativeRadioReportV5.model_validate(document)
+    if product.schema_version == RADIO_REPORT_V4_PRODUCT.schema_version:
+        return StandardNativeRadioReportV4.model_validate(document)
+    raise StandardPresentationUnavailable("unsupported Standard-native radio report schema")
+
+
 def _one_scoped_product(
     products: tuple[CatalogProductRecord, ...],
     scope: ScopeIdentityV1,
@@ -1024,12 +1188,8 @@ def _one_scoped_product(
 
 def _require_terminal_topology(
     paths: tuple[_NativePath, ...],
-    radios: tuple[tuple[CatalogProductRecord, StandardNativeRadioReportV4], ...],
-    paired: tuple[
-        CatalogProductRecord,
-        StandardNativePairedReportV4 | StandardNativePairedReportV5,
-    ]
-    | None,
+    radios: tuple[tuple[CatalogProductRecord, _TerminalRadioReport], ...],
+    paired: tuple[CatalogProductRecord, _TerminalPairedReport] | None,
 ) -> None:
     if len(paths) != len({item.binding.binding_digest for item in paths}) or len(paths) > 4:
         raise StandardPresentationUnavailable("native path inventory is duplicated or unbounded")
@@ -1047,17 +1207,22 @@ def _hierarchy(
     snapshot: CatalogSessionReadSnapshot,
     generated_at: datetime,
     release: StandardNativePipelineReleaseV3,
-    eligibility: StandardNativeEligibilityV3 | StandardNativeEligibilityV4,
+    eligibility: (
+        StandardNativeEligibilityV3 | StandardNativeEligibilityV4 | StandardNativeEligibilityV5
+    ),
     paths: tuple[_NativePath, ...],
-    radio_documents: tuple[tuple[CatalogProductRecord, StandardNativeRadioReportV4], ...],
-    paired: tuple[
-        CatalogProductRecord,
-        StandardNativePairedReportV4 | StandardNativePairedReportV5,
-    ]
-    | None,
+    radio_documents: tuple[tuple[CatalogProductRecord, _TerminalRadioReport], ...],
+    paired: tuple[CatalogProductRecord, _TerminalPairedReport] | None,
 ) -> tuple[
-    StandardNativeSubjectHierarchyV3 | StandardNativeSubjectHierarchyV4,
-    dict[str, StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4],
+    StandardNativeSubjectHierarchyV3
+    | StandardNativeSubjectHierarchyV4
+    | StandardNativeSubjectHierarchyV5,
+    dict[
+        str,
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5,
+    ],
 ]:
     streams = tuple(sorted({item.binding.stream_id for item in paths}))
     labels = {stream: f"Radio{index}" for index, stream in enumerate(streams)}
@@ -1070,7 +1235,11 @@ def _hierarchy(
         selected: tuple[_NativePath, ...],
         children: tuple[str, ...],
         terminal: StandardNativeTerminalSummaryV3,
-    ) -> StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4:
+    ) -> (
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5
+    ):
         values = dict(
             subject_id=subject_id,
             session_id=snapshot.session_id,
@@ -1093,6 +1262,10 @@ def _hierarchy(
             ),
             terminal=terminal,
         )
+        if isinstance(eligibility, StandardNativeEligibilityV5):
+            return StandardNativeSubjectSummaryV5.model_validate(
+                {"eligibility": eligibility, **values}
+            )
         if isinstance(eligibility, StandardNativeEligibilityV4):
             return StandardNativeSubjectSummaryV4.model_validate(
                 {"eligibility": eligibility, **values}
@@ -1125,11 +1298,21 @@ def _hierarchy(
         )
         for _, report in radio_documents
     )
-    subjects: tuple[StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4, ...] = (
+    subjects: tuple[
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5,
+        ...,
+    ] = (
         *path_subjects,
         *radio_subjects,
     )
-    rows: tuple[StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4, ...]
+    rows: tuple[
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5,
+        ...,
+    ]
     if paired is not None:
         pair_report = paired[1]
         pair = summary(
@@ -1144,8 +1327,19 @@ def _hierarchy(
         subjects = (*subjects, pair)
     else:
         rows = radio_subjects
-    hierarchy: StandardNativeSubjectHierarchyV3 | StandardNativeSubjectHierarchyV4
-    if isinstance(eligibility, StandardNativeEligibilityV4):
+    hierarchy: (
+        StandardNativeSubjectHierarchyV3
+        | StandardNativeSubjectHierarchyV4
+        | StandardNativeSubjectHierarchyV5
+    )
+    if isinstance(eligibility, StandardNativeEligibilityV5):
+        hierarchy = StandardNativeSubjectHierarchyV5(
+            session_id=snapshot.session_id,
+            eligibility=eligibility,
+            generated_at=generated_at,
+            rows=cast(tuple[StandardNativeSubjectSummaryV5, ...], rows),
+        )
+    elif isinstance(eligibility, StandardNativeEligibilityV4):
         hierarchy = StandardNativeSubjectHierarchyV4(
             session_id=snapshot.session_id,
             eligibility=eligibility,
@@ -1203,13 +1397,11 @@ def _path_terminal_summary(path: _NativePath) -> StandardNativeTerminalSummaryV3
 
 
 def _aggregate_terminal_summary(
-    report: (
-        StandardNativeRadioReportV4 | StandardNativePairedReportV4 | StandardNativePairedReportV5
-    ),
+    report: _TerminalRadioReport | _TerminalPairedReport,
 ) -> StandardNativeTerminalSummaryV3:
     sources = (
         tuple(item.source for item in report.paths)
-        if isinstance(report, StandardNativeRadioReportV4)
+        if isinstance(report, (StandardNativeRadioReportV4, StandardNativeRadioReportV5))
         else tuple(path.source for radio in report.radios for path in radio.paths)
     )
     expected = sum(item.logical_sample_count for item in sources)
@@ -1320,7 +1512,11 @@ def _path_trajectories(
 
 def _stage_rows(
     loaded: _NativeProjection,
-    subject: StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4,
+    subject: (
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5
+    ),
     paths: tuple[_NativePath, ...],
 ) -> tuple[StandardStageStatusV2, ...]:
     path_scopes = {item.reference.scope.canonical_digest for item in paths}
@@ -1422,12 +1618,16 @@ def _source_proof(
 
 def _build_view(
     loaded: _NativeProjection,
-    subject: StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4,
+    subject: (
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5
+    ),
     paths: tuple[_NativePath, ...],
     kind: StandardViewKindV2,
     *,
     maximum_points: int,
-) -> StandardNativePlotViewV3 | StandardNativePlotViewV4:
+) -> StandardNativePlotViewV3 | StandardNativePlotViewV4 | StandardNativePlotViewV5:
     source_count = _source_count(paths, kind)
     state = (
         StandardViewStateV2.UNAVAILABLE
@@ -1444,7 +1644,10 @@ def _build_view(
     tiles: tuple[StandardNativeWaterfallTileV3, ...] = ()
     trajectories: tuple[StandardNativeTrajectoryV3, ...] = ()
     if kind is StandardViewKindV2.WATERFALL:
-        if isinstance(subject, StandardNativeSubjectSummaryV4):
+        if isinstance(
+            subject,
+            (StandardNativeSubjectSummaryV4, StandardNativeSubjectSummaryV5),
+        ):
             frequency_axes, tiles = _mixed_waterfall_payload(paths)
         else:
             frequencies, tiles = _waterfall_payload(paths)
@@ -1476,6 +1679,16 @@ def _build_view(
             else "Validity-aware native evidence projected without resampling"
         ),
     }
+    if isinstance(subject, StandardNativeSubjectSummaryV5):
+        values_v5: dict[str, Any] = {
+            "schema_version": 5,
+            **common_values,
+            "sample_rates_hz": tuple(sorted({item.report.source.sample_rate_hz for item in paths})),
+            "frequency_axes": tuple(item.model_dump(mode="json") for item in frequency_axes),
+        }
+        return StandardNativePlotViewV5.model_validate(
+            {**values_v5, "projection_digest": canonical_digest(values_v5)}
+        )
     if isinstance(subject, StandardNativeSubjectSummaryV4):
         values_v4: dict[str, Any] = {
             "schema_version": 4,
@@ -1680,7 +1893,11 @@ def _evenly_spaced[ValueT](values: tuple[ValueT, ...], maximum: int) -> tuple[Va
 
 
 def _scope_matches_subject(
-    subject: StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4,
+    subject: (
+        StandardNativeSubjectSummaryV3
+        | StandardNativeSubjectSummaryV4
+        | StandardNativeSubjectSummaryV5
+    ),
     scope: ScopeIdentityV1,
 ) -> bool:
     if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH:
@@ -1693,8 +1910,12 @@ def _scope_matches_subject(
 
 
 def validate_standard_native_view_binding(
-    detail: StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4,
-    view: StandardNativePlotViewV3 | StandardNativePlotViewV4,
+    detail: (
+        StandardNativeSubjectDetailV3
+        | StandardNativeSubjectDetailV4
+        | StandardNativeSubjectDetailV5
+    ),
+    view: StandardNativePlotViewV3 | StandardNativePlotViewV4 | StandardNativePlotViewV5,
 ) -> None:
     expected_lanes = tuple(item.path_id for item in detail.subject.receiver_paths)
     if (
@@ -1704,7 +1925,22 @@ def validate_standard_native_view_binding(
         or view.time_domain != detail.time_domain
     ):
         raise ValueError("native plot does not match its selected subject detail")
-    if isinstance(detail, StandardNativeSubjectDetailV4):
+    if isinstance(detail, StandardNativeSubjectDetailV5):
+        if not isinstance(view, StandardNativePlotViewV5):
+            raise ValueError("production native plot schema does not match its detail")
+        streams = {item.scope.stream_id for item in detail.subject.receiver_paths}
+        expected_rates = tuple(
+            sorted(
+                {
+                    item.sample_rate_hz
+                    for item in detail.subject.eligibility.legs
+                    if item.stream_id in streams
+                }
+            )
+        )
+        if view.sample_rates_hz != expected_rates:
+            raise ValueError("production native plot rates do not match its detail")
+    elif isinstance(detail, StandardNativeSubjectDetailV4):
         if not isinstance(view, StandardNativePlotViewV4):
             raise ValueError("mixed native plot schema does not match its detail")
         streams = {item.scope.stream_id for item in detail.subject.receiver_paths}
@@ -1746,6 +1982,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         StandardSubjectHierarchyV2
         | StandardNativeSubjectHierarchyV3
         | StandardNativeSubjectHierarchyV4
+        | StandardNativeSubjectHierarchyV5
         | None
     ):
         if self._native(session_id):
@@ -1758,6 +1995,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         StandardSubjectDetailV2
         | StandardNativeSubjectDetailV3
         | StandardNativeSubjectDetailV4
+        | StandardNativeSubjectDetailV5
         | None
     ):
         if self._native(session_id):
@@ -1785,7 +2023,13 @@ class DefinitionDispatchedStandardPresentationRepository:
         view_kind: StandardViewKindV2,
         *,
         maximum_points: int,
-    ) -> StandardPlotViewV2 | StandardNativePlotViewV3 | StandardNativePlotViewV4 | None:
+    ) -> (
+        StandardPlotViewV2
+        | StandardNativePlotViewV3
+        | StandardNativePlotViewV4
+        | StandardNativePlotViewV5
+        | None
+    ):
         target = self._standard_native_v3 if self._native(session_id) else self._standard_v2
         return target.subject_view(
             session_id,
@@ -1831,7 +2075,12 @@ class DefinitionDispatchedStandardPresentationRepository:
         self,
         session_id: str,
         subject_id: str,
-    ) -> StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | None:
+    ) -> (
+        StandardNativePngArtifactInventoryV4
+        | StandardNativePngArtifactInventoryV5
+        | StandardNativePngArtifactInventoryV6
+        | None
+    ):
         if not self._native(session_id):
             return None
         return self._standard_native_v3.subject_png_inventory(session_id, subject_id)
