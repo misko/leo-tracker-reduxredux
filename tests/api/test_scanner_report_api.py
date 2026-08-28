@@ -18,6 +18,7 @@ from leo.scanner import (
     ScannerReport,
     ScannerReportV2,
     ScannerReportV3,
+    ScannerReportV4,
     current_low_band_targets,
 )
 
@@ -140,6 +141,25 @@ def _failed_report_v3(scan_id: str) -> ScannerReportV3:
             )
             for target in configuration.targets
         ),
+    )
+
+
+def _report_v4(scan_id: str) -> ScannerReportV4:
+    base = _report_v2(scan_id)
+    return ScannerReportV4.model_validate(
+        {
+            **base.model_dump(mode="json"),
+            "schema_version": 4,
+            "kind": "starlink_scanner_report_v4",
+            "continuity_evidence": tuple(
+                {
+                    **item.model_dump(mode="json"),
+                    "schema_version": 2,
+                    "metadata_abi_version": 3,
+                }
+                for item in base.continuity_evidence
+            ),
+        }
     )
 
 
@@ -295,6 +315,30 @@ def test_v3_scanner_api_exposes_all_target_and_terminal_close_failures(tmp_path:
     ]
 
 
+def test_current_scanner_api_exposes_abi3_v4_while_legacy_projections_stay_stable(
+    tmp_path: Path,
+) -> None:
+    report_root = tmp_path / "scanner-reports"
+    report_root.mkdir()
+    (report_root / "starlink-scan-20260821T010000Z.json").write_text(
+        _report_v2("scan-v2-compatible").model_dump_json()
+    )
+    (report_root / "starlink-scan-20260821T020000Z.json").write_text(
+        _report_v4("scan-abi3").model_dump_json()
+    )
+    client = _client(tmp_path, report_root)
+
+    current = client.get("/api/v3/scanner/latest")
+    legacy = client.get("/api/v2/scanner/latest")
+
+    assert current.status_code == 200
+    assert current.json()["schema_version"] == 4
+    assert current.json()["continuity_evidence"][0]["schema_version"] == 2
+    assert current.json()["continuity_evidence"][0]["metadata_abi_version"] == 3
+    assert legacy.status_code == 200
+    assert legacy.json()["scan_id"] == "scan-v2-compatible"
+
+
 def test_scanner_report_v2_canonical_contract_is_unchanged() -> None:
     report = _report_v2("scan-v2-golden")
 
@@ -325,7 +369,7 @@ def test_corrupt_or_symlinked_latest_scanner_report_fails_closed(tmp_path: Path)
 
 
 def test_v1_scanner_projection_does_not_hide_malformed_newer_contracts(tmp_path: Path) -> None:
-    for schema_version in (2, 3):
+    for schema_version in (2, 3, 4):
         case_root = tmp_path / f"schema-{schema_version}"
         report_root = case_root / "scanner-reports"
         report_root.mkdir(parents=True)

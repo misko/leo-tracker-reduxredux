@@ -19,6 +19,7 @@ from leo.scanner import (
     ScannerReportLike,
     ScannerReportV2,
     ScannerReportV3,
+    ScannerReportV4,
 )
 
 _REPORT_GLOB = "starlink-scan-*.json"
@@ -125,7 +126,7 @@ class ScannerReportStore:
 
         for path in self._ordered_reports():
             payload = self._read_regular(path)
-            if self._schema_version(payload) == 3:
+            if self._schema_version(payload) in (3, 4):
                 self._parse_current(payload)
                 continue
             return self._parse_versioned(payload)
@@ -175,12 +176,12 @@ class ScannerReportStore:
             try:
                 payload = self._read_regular(path)
                 schema_version = self._schema_version(payload)
-                if schema_version in (2, 3):
+                if schema_version in (2, 3, 4):
                     self._parse_current(payload)
             except (OSError, ValueError):
                 visible.append(path)
                 continue
-            if schema_version not in (2, 3):
+            if schema_version not in (2, 3, 4):
                 visible.append(path)
         return visible
 
@@ -192,7 +193,7 @@ class ScannerReportStore:
         reports: list[tuple[Path, bytes]] = []
         for path in self._ordered_reports():
             payload = self._read_regular(path)
-            if self._schema_version(payload) == 3:
+            if self._schema_version(payload) in (3, 4):
                 self._parse_current(payload)
                 continue
             reports.append((path, payload))
@@ -272,6 +273,8 @@ class ScannerReportStore:
             return ScannerReportV2.model_validate(document)
         if schema_version == 3:
             return ScannerReportV3.model_validate(document)
+        if schema_version == 4:
+            return ScannerReportV4.model_validate(document)
         raise ValueError(f"unsupported scanner report schema {schema_version!r}")
 
     def _ordered_reports(self) -> list[Path]:

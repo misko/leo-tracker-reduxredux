@@ -25,9 +25,11 @@ from leo.scanner.models import (
     ScannerIqBundleManifestLike,
     ScannerIqBundleManifestV1,
     ScannerIqBundleManifestV2,
+    ScannerIqBundleManifestV3,
     ScannerIqCaptureFailureV1,
     ScannerIqFrameV1,
     ScannerIqFrameV2,
+    ScannerIqFrameV3,
 )
 from leo.scanner.ports import ScanRadioBlockV2
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError
@@ -107,7 +109,7 @@ class ScannerIqStore:
             level=selected_compression.level,
         )
         uncompressed_digest = hashlib.sha256()
-        frames: list[ScannerIqFrameV1 | ScannerIqFrameV2] = []
+        frames: list[ScannerIqFrameV1 | ScannerIqFrameV2 | ScannerIqFrameV3] = []
         sample_start = 0
         try:
             for frame_index, (target_index, ci16) in enumerate(prepared):
@@ -141,8 +143,11 @@ class ScannerIqStore:
                 if isinstance(captured.configuration, ScannerConfigurationV2):
                     if not isinstance(block, ScanRadioBlockV2):
                         raise ValueError("scanner V2 capture omitted metadata-attested IQ")
+                    frame_type = (
+                        ScannerIqFrameV3 if block.metadata_abi_version == 3 else ScannerIqFrameV2
+                    )
                     frames.append(
-                        ScannerIqFrameV2.model_validate(
+                        frame_type.model_validate(
                             {
                                 **common,
                                 "metadata_abi_version": block.metadata_abi_version,
@@ -212,7 +217,14 @@ class ScannerIqStore:
             "compression": selected_compression,
         }
         manifest: ScannerIqBundleManifestLike
-        if isinstance(captured.configuration, ScannerConfigurationV2):
+        if any(isinstance(frame, ScannerIqFrameV3) for frame in frames):
+            manifest = ScannerIqBundleManifestV3.model_validate(
+                {
+                    **manifest_common,
+                    "retune_boundary_count": max(0, len(frames) - 1),
+                }
+            )
+        elif isinstance(captured.configuration, ScannerConfigurationV2):
             manifest = ScannerIqBundleManifestV2.model_validate(
                 {
                     **manifest_common,
@@ -271,6 +283,8 @@ class ScannerIqStore:
                 manifest = ScannerIqBundleManifestV1.model_validate(document)
             elif schema_version == 2:
                 manifest = ScannerIqBundleManifestV2.model_validate(document)
+            elif schema_version == 3:
+                manifest = ScannerIqBundleManifestV3.model_validate(document)
             else:
                 raise ValueError(f"unsupported scanner IQ manifest schema {schema_version!r}")
         except Exception as error:

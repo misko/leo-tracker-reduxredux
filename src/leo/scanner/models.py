@@ -271,10 +271,22 @@ class ScannerFrameContinuityEvidenceV1(ScannerModel):
         return self
 
 
+class ScannerFrameContinuityEvidenceV2(ScannerFrameContinuityEvidenceV1):
+    """Additive continuity evidence for counter-authoritative metadata ABI 3."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    metadata_abi_version: Literal[3] | None = None  # type: ignore[assignment]
+
+
+ScannerFrameContinuityEvidenceLike = (
+    ScannerFrameContinuityEvidenceV1 | ScannerFrameContinuityEvidenceV2
+)
+
+
 def _validate_continuity_report(
     configuration: ScannerConfigurationV2,
     results: tuple[ScanEdgeResult, ...],
-    continuity_evidence: tuple[ScannerFrameContinuityEvidenceV1, ...],
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceLike, ...],
     *,
     continuity_observable: bool,
 ) -> None:
@@ -371,6 +383,44 @@ class ScannerReportV3(ScannerModel):
         )
         if self.continuity_observable and self.close_failure is None:
             raise ValueError("scanner report V3 requires a failed capture or radio close")
+        return self
+
+    @property
+    def active_edges(self) -> tuple[ScanTarget, ...]:
+        return tuple(item.target for item in self.results if item.decision is ScanDecision.ACTIVE)
+
+
+class ScannerReportV4(ScannerModel):
+    """Additive scanner report retaining metadata ABI 3 without relabeling it."""
+
+    schema_version: Literal[4] = 4
+    kind: Literal["starlink_scanner_report_v4"] = "starlink_scanner_report_v4"
+    scan_id: str
+    radio_id: str
+    radio_serial: str
+    configuration: ScannerConfigurationV2
+    capture_elapsed_ms: float
+    analysis_elapsed_ms: float
+    results: tuple[ScanEdgeResult, ...]
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceLike, ...]
+    continuity_observable: bool
+    close_failure: ScannerCloseFailureEvidenceV1 | None = None
+    retune_boundaries_are_discontinuous: Literal[True] = True
+    candidate_only: Literal[True] = True
+    payload_decoded: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _covers_plan(self) -> Self:
+        _validate_continuity_report(
+            self.configuration,
+            self.results,
+            self.continuity_evidence,
+            continuity_observable=self.continuity_observable,
+        )
+        if not any(
+            isinstance(item, ScannerFrameContinuityEvidenceV2) for item in self.continuity_evidence
+        ):
+            raise ValueError("scanner report V4 requires metadata ABI 3 evidence")
         return self
 
     @property
@@ -488,6 +538,46 @@ class ScannerBurstReportV3(ScannerModel):
         )
 
 
+class ScannerBurstReportV4(ScannerModel):
+    """Additive burst containing at least one metadata ABI 3 report."""
+
+    schema_version: Literal[4] = 4
+    kind: Literal["starlink_scanner_burst_report_v4"] = "starlink_scanner_burst_report_v4"
+    burst_id: Annotated[str, Field(min_length=1, max_length=128)]
+    reports: Annotated[
+        tuple[ScannerReportV2 | ScannerReportV3 | ScannerReportV4, ...],
+        Field(min_length=4, max_length=4),
+    ]
+
+    @model_validator(mode="after")
+    def _is_one_ordered_radio_burst(self) -> Self:
+        if not any(isinstance(report, ScannerReportV4) for report in self.reports):
+            raise ValueError("scanner burst V4 requires metadata ABI 3 evidence")
+        if len({report.scan_id for report in self.reports}) != len(self.reports):
+            raise ValueError("scanner burst scan IDs must be unique")
+        first = self.reports[0]
+        if any(
+            report.radio_id != first.radio_id
+            or report.radio_serial != first.radio_serial
+            or report.configuration != first.configuration
+            for report in self.reports[1:]
+        ):
+            raise ValueError("scanner burst reports must share one radio and configuration")
+        return self
+
+    @property
+    def active_edge_count(self) -> int:
+        return sum(len(report.active_edges) for report in self.reports)
+
+    @property
+    def inconclusive_edge_count(self) -> int:
+        return sum(
+            result.decision is ScanDecision.INCONCLUSIVE
+            for report in self.reports
+            for result in report.results
+        )
+
+
 class ScannerIqFrameV1(ScannerModel):
     """One fixed-tuning frame inside a concatenated scanner IQ payload."""
 
@@ -577,6 +667,13 @@ class ScannerIqFrameV2(ScannerIqFrameV1):
         if self.overflow_observed != metadata_reports_rx_overflow(self.metadata_flags):
             raise ValueError("scanner frame overflow disagrees with metadata flags bit 11")
         return self
+
+
+class ScannerIqFrameV3(ScannerIqFrameV2):
+    """Additive reset-bounded scanner frame carrying metadata ABI 3."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    metadata_abi_version: Literal[3] = 3  # type: ignore[assignment]
 
 
 class ScannerIqCaptureFailureV1(ScannerModel):
@@ -696,9 +793,24 @@ class ScannerIqBundleManifestV2(ScannerIqBundleManifestV1):
         return self
 
 
+class ScannerIqBundleManifestV3(ScannerIqBundleManifestV2):
+    """Additive scanner IQ bundle retaining metadata ABI 3 frames."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    frames: tuple[ScannerIqFrameV2 | ScannerIqFrameV3, ...]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _contains_abi3_evidence(self) -> Self:
+        if not any(isinstance(frame, ScannerIqFrameV3) for frame in self.frames):
+            raise ValueError("scanner IQ bundle V3 requires metadata ABI 3 evidence")
+        return self
+
+
 ScannerConfigurationLike = ScannerConfiguration | ScannerConfigurationV2
-ScannerReportLike = ScannerReport | ScannerReportV2
+ScannerReportLike = ScannerReport | ScannerReportV2 | ScannerReportV4
 ScannerBurstReportLike = ScannerBurstReportV1 | ScannerBurstReportV2
 ScannerCaptureReportLike = ScannerReportLike | ScannerReportV3
-ScannerCaptureBurstReportLike = ScannerBurstReportLike | ScannerBurstReportV3
-ScannerIqBundleManifestLike = ScannerIqBundleManifestV1 | ScannerIqBundleManifestV2
+ScannerCaptureBurstReportLike = ScannerBurstReportLike | ScannerBurstReportV3 | ScannerBurstReportV4
+ScannerIqBundleManifestLike = (
+    ScannerIqBundleManifestV1 | ScannerIqBundleManifestV2 | ScannerIqBundleManifestV3
+)

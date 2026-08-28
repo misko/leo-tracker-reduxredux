@@ -137,11 +137,13 @@ from leo.radio import (
 from leo.scanner import (
     ScannerBurstReportV2,
     ScannerBurstReportV3,
+    ScannerBurstReportV4,
     ScannerCaptureBurstReportLike,
     ScannerConfiguration,
     ScannerConfigurationV2,
     ScannerReportV2,
     ScannerReportV3,
+    ScannerReportV4,
     SequentialScanRadioLike,
     analyze_scan_sweep,
     capture_scan_sweep,
@@ -1048,7 +1050,7 @@ class LocalAcquisitionBackend:
     def analyze_scheduled_scanner(
         self, burst: ScheduledScannerBurst
     ) -> ScannerCaptureBurstReportLike:
-        reports: list[ScannerReportV2 | ScannerReportV3] = []
+        reports: list[ScannerReportV2 | ScannerReportV3 | ScannerReportV4] = []
         for capture in burst.captures:
             report = (
                 run_published_standard_scanner_analysis(
@@ -1061,11 +1063,15 @@ class LocalAcquisitionBackend:
                 else analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
             )
             write_scanner_report(capture.output_path, report)
-            if not isinstance(report, (ScannerReportV2, ScannerReportV3)):
+            if not isinstance(report, (ScannerReportV2, ScannerReportV3, ScannerReportV4)):
                 raise TypeError("scheduled scanner V2 capture produced a legacy report")
             reports.append(report)
+        if any(isinstance(report, ScannerReportV4) for report in reports):
+            return ScannerBurstReportV4(burst_id=burst.burst_id, reports=tuple(reports))
         if any(isinstance(report, ScannerReportV3) for report in reports):
-            return ScannerBurstReportV3(burst_id=burst.burst_id, reports=tuple(reports))
+            return ScannerBurstReportV3.model_validate(
+                {"burst_id": burst.burst_id, "reports": tuple(reports)}
+            )
         return ScannerBurstReportV2.model_validate(
             {"burst_id": burst.burst_id, "reports": tuple(reports)}
         )

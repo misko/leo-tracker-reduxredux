@@ -21,12 +21,14 @@ from leo.scanner import (
     ScannerBurstReportV1,
     ScannerBurstReportV2,
     ScannerBurstReportV3,
+    ScannerBurstReportV4,
     ScannerCaptureBurstReportLike,
     ScannerCaptureReportLike,
     ScannerConfigurationV2,
     ScannerReportLike,
     ScannerReportV2,
     ScannerReportV3,
+    ScannerReportV4,
     SequentialScanRadioLike,
     analyze_scan_sweep,
     analyze_standard_scanner,
@@ -95,7 +97,7 @@ def run_scanner_command(
         captured_sweeps = tuple(
             capture_scan_sweep(scanner_radio, configuration) for _ in range(SCANNER_BURST_SIZE)
         )
-    reports: list[ScannerReportV2 | ScannerReportV3] = []
+    reports: list[ScannerReportV2 | ScannerReportV3 | ScannerReportV4] = []
     for scan_id, captured in zip(scan_ids, captured_sweeps, strict=True):
         published = iq_store.publish(scan_id, captured) if iq_store is not None else None
         report = (
@@ -113,12 +115,16 @@ def run_scanner_command(
             )
             else analyze_scan_sweep(captured, scan_id=scan_id)
         )
-        if not isinstance(report, (ScannerReportV2, ScannerReportV3)):
+        if not isinstance(report, (ScannerReportV2, ScannerReportV3, ScannerReportV4)):
             raise TypeError("scanner V2 capture produced a legacy report")
         reports.append(report)
     burst: ScannerCaptureBurstReportLike
-    if any(isinstance(report, ScannerReportV3) for report in reports):
-        burst = ScannerBurstReportV3(burst_id=burst_id, reports=tuple(reports))
+    if any(isinstance(report, ScannerReportV4) for report in reports):
+        burst = ScannerBurstReportV4(burst_id=burst_id, reports=tuple(reports))
+    elif any(isinstance(report, ScannerReportV3) for report in reports):
+        burst = ScannerBurstReportV3.model_validate(
+            {"burst_id": burst_id, "reports": tuple(reports)}
+        )
     else:
         burst = ScannerBurstReportV2.model_validate(
             {"burst_id": burst_id, "reports": tuple(reports)}
@@ -280,7 +286,9 @@ def write_scanner_report(path: Path, report: ScannerCaptureReportLike) -> None:
 
 def write_scanner_burst_report(
     path: Path,
-    report: ScannerBurstReportV1 | ScannerBurstReportV2 | ScannerBurstReportV3,
+    report: (
+        ScannerBurstReportV1 | ScannerBurstReportV2 | ScannerBurstReportV3 | ScannerBurstReportV4
+    ),
 ) -> None:
     _write_scanner_json(path, report.model_dump_json(indent=2))
 

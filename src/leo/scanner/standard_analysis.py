@@ -19,8 +19,8 @@ from leo.scanner.analysis_models import (
     ScannerAnalysisMetricsLike,
     ScannerAnalysisMetricsV1,
     ScannerAnalysisMetricsV2,
+    ScannerAnalysisMetricsV3,
     ScannerFrameAnalysisV1,
-    ScannerFrameContinuityEvidenceV1,
     ScannerGlrt64CandidateMetricsV1,
     ScannerGlrt64ProbeMetricsV1,
     ScannerPilotDopplerConfigV1,
@@ -32,9 +32,12 @@ from leo.scanner.models import (
     ScanEdgeResult,
     ScannerConfigurationLike,
     ScannerConfigurationV2,
+    ScannerFrameContinuityEvidenceLike,
+    ScannerFrameContinuityEvidenceV2,
     ScannerReport,
     ScannerReportLike,
     ScannerReportV2,
+    ScannerReportV4,
     ScanTarget,
 )
 from leo.scanner.pilot_doppler import build_scanner_pilot_doppler_segments
@@ -52,7 +55,7 @@ class ScannerAnalysisFrameInput:
     listen_ms: float | None
     samples: npt.NDArray[np.int16] | None
     error: str | None = None
-    continuity: ScannerFrameContinuityEvidenceV1 | None = None
+    continuity: ScannerFrameContinuityEvidenceLike | None = None
 
     def __post_init__(self) -> None:
         if self.samples is None:
@@ -307,12 +310,20 @@ def analyze_standard_scanner(
         "frames": tuple(metrics_frames),
     }
     if isinstance(source.configuration, ScannerConfigurationV2):
-        metrics: ScannerAnalysisMetricsLike = ScannerAnalysisMetricsV2.model_validate(
+        continuity_evidence = tuple(
+            frame.continuity for frame in source.frames if frame.continuity is not None
+        )
+        metrics_type = (
+            ScannerAnalysisMetricsV3
+            if any(
+                isinstance(item, ScannerFrameContinuityEvidenceV2) for item in continuity_evidence
+            )
+            else ScannerAnalysisMetricsV2
+        )
+        metrics: ScannerAnalysisMetricsLike = metrics_type.model_validate(
             {
                 **metrics_common,
-                "continuity_evidence": tuple(
-                    frame.continuity for frame in source.frames if frame.continuity is not None
-                ),
+                "continuity_evidence": continuity_evidence,
             }
         )
     else:
@@ -329,16 +340,22 @@ def analyze_standard_scanner(
         )
         if not any(item.status == "attested" for item in continuity_evidence):
             raise ValueError("scanner V2 analysis requires metadata-attested target IQ")
-        report: ScannerReportLike = ScannerReportV2(
-            scan_id=source.scan_id,
-            radio_id=source.identity.radio_id,
-            radio_serial=source.identity.serial,
-            configuration=source.configuration,
-            capture_elapsed_ms=source.capture_elapsed_ms,
-            analysis_elapsed_ms=analysis_elapsed_ms,
-            results=tuple(report_results),
-            continuity_evidence=continuity_evidence,
-        )
+        report_values = {
+            "scan_id": source.scan_id,
+            "radio_id": source.identity.radio_id,
+            "radio_serial": source.identity.serial,
+            "configuration": source.configuration,
+            "capture_elapsed_ms": source.capture_elapsed_ms,
+            "analysis_elapsed_ms": analysis_elapsed_ms,
+            "results": tuple(report_results),
+            "continuity_evidence": continuity_evidence,
+        }
+        if any(isinstance(item, ScannerFrameContinuityEvidenceV2) for item in continuity_evidence):
+            report: ScannerReportLike = ScannerReportV4.model_validate(
+                {**report_values, "continuity_observable": True}
+            )
+        else:
+            report = ScannerReportV2.model_validate(report_values)
     else:
         report = ScannerReport(
             scan_id=source.scan_id,

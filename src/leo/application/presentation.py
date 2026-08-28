@@ -18,6 +18,7 @@ from leo.catalog import (
     RecordingListRow,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.mixed_rate_capture import CapturePlanV4
 from leo.contracts.profile import (
     CaptureProfileV1 as CaptureContractProfileV1,
 )
@@ -809,14 +810,24 @@ def _radio_setups(
             item.radio_id: item.profile_revision.profile
             for item in manifest.capture_plan.radio_plans
         }
-        fallback_intent: tuple[str, Literal["lower", "upper"]] | None = (
-            f"ch{manifest.capture_plan.starlink_channel}",
-            cast(Literal["lower", "upper"], manifest.capture_plan.starlink_edge.value),
-        )
+        if isinstance(manifest.capture_plan, CapturePlanV4):
+            fallback_by_radio: dict[str, tuple[str, Literal["lower", "upper"]] | None] = {
+                item.radio_id: (
+                    f"ch{item.starlink_channel}",
+                    cast(Literal["lower", "upper"], item.starlink_edge.value),
+                )
+                for item in manifest.capture_plan.radio_plans
+            }
+        else:
+            legacy_fallback = (
+                f"ch{manifest.capture_plan.starlink_channel}",
+                cast(Literal["lower", "upper"], manifest.capture_plan.starlink_edge.value),
+            )
+            fallback_by_radio = dict.fromkeys(profiles_by_radio, legacy_fallback)
     else:
         profile = manifest.capture_plan.profile_revision.profile
         profiles_by_radio = {stream.radio.radio_id: profile for stream in streams}
-        fallback_intent = (
+        profile_fallback = (
             None
             if profile.starlink_channel is None or profile.starlink_edge is None
             else (
@@ -824,11 +835,12 @@ def _radio_setups(
                 cast(Literal["lower", "upper"], profile.starlink_edge.value),
             )
         )
+        fallback_by_radio = dict.fromkeys(profiles_by_radio, profile_fallback)
     setups = []
     for index, stream in enumerate(streams):
         profile = profiles_by_radio[stream.radio.radio_id]
         settings = stream.applied_settings
-        channel_edge = tuning_by_index.get(index, fallback_intent)
+        channel_edge = tuning_by_index.get(index, fallback_by_radio[stream.radio.radio_id])
         setups.append(
             RadioSetupV2(
                 radio_id=stream.radio.radio_id,

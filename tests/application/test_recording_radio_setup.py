@@ -5,6 +5,11 @@ from leo.contracts.profile import CaptureProfileRevisionV1
 from leo.contracts.recording import ContinuitySummaryV1, RecordingManifestV1
 from leo.contracts.states import CaptureState, StreamState
 from leo.domain.profiles import compile_capture_plan
+from leo.radio.fake import FakeRadioSource
+from tests.acquisition.test_continuity_capture_v2 import (
+    _device_axis_coordinator,
+    _production_plan,
+)
 from tests.station.manifest_examples import manifest_example
 
 
@@ -129,3 +134,26 @@ def test_all_eight_channels_project_and_channel_nine_fails_closed() -> None:
         assert "invalid per-stream tuning tag" in str(error)
     else:
         raise AssertionError("channel 9 tuning evidence must fail closed")
+
+
+def test_production_v4_plan_projects_each_radio_tuning_without_plan_root_fields(
+    tmp_path,
+) -> None:
+    plan = _production_plan()
+    result = _device_axis_coordinator(tmp_path).capture_once(
+        plan,
+        {
+            "radio-a": FakeRadioSource("radio-a", seed=1),
+            "radio-b": FakeRadioSource("radio-b", seed=2),
+        },
+        session_id="radio-setup-production-v4",
+    )
+
+    setups = _radio_setups(result.manifest)
+
+    assert [(item.starlink_channel, item.starlink_edge) for item in setups] == [
+        (f"ch{leg.starlink_channel}", leg.starlink_edge.value) for leg in plan.radio_plans
+    ]
+    assert [item.applied_sample_rate_hz for item in setups] == [
+        leg.requested_settings.sample_rate_hz for leg in plan.radio_plans
+    ]
