@@ -52,10 +52,12 @@ from leo.scanner import (
     ScannerBurstReportV1,
     ScannerBurstReportV2,
     ScannerBurstReportV3,
+    ScannerBurstReportV4,
     ScannerCaptureReportLike,
     ScannerReport,
     ScannerReportV2,
     ScannerReportV3,
+    ScannerReportV4,
 )
 
 
@@ -82,9 +84,12 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
     console = Console(file=sys.stdout, force_terminal=False, color_system=None, highlight=False)
     payload = result.payload
     console.print(result.message, style="green" if result.ok else "red")
-    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2, ScannerBurstReportV3)):
+    if isinstance(
+        payload,
+        (ScannerBurstReportV1, ScannerBurstReportV2, ScannerBurstReportV3, ScannerBurstReportV4),
+    ):
         _emit_scanner_burst(console, cast(Sequence[ScannerCaptureReportLike], payload.reports))
-    elif isinstance(payload, (ScannerReport, ScannerReportV2, ScannerReportV3)):
+    elif isinstance(payload, (ScannerReport, ScannerReportV2, ScannerReportV3, ScannerReportV4)):
         table = Table("Channel", "Edge", "IF MHz", "Capture", "First hit", "Margin", "Result")
         for scan_result in payload.results:
             hit = scan_result.first_detection

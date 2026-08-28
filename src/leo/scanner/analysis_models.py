@@ -15,7 +15,9 @@ from leo.scanner.models import (
     ScanDecision,
     ScannerConfiguration,
     ScannerConfigurationV2,
+    ScannerFrameContinuityEvidenceLike,
     ScannerFrameContinuityEvidenceV1,
+    ScannerFrameContinuityEvidenceV2,
     ScannerModel,
     ScannerReport,
     ScannerReportLike,
@@ -152,6 +154,22 @@ class ScannerAnalysisMetricsV2(ScannerAnalysisMetricsV1):
                     != evidence.first_sample_sequence + frame.sample_count
                 ):
                     raise ValueError("scanner continuity sample range disagrees with IQ")
+        return self
+
+
+class ScannerAnalysisMetricsV3(ScannerAnalysisMetricsV2):
+    """Additive scanner metrics retaining metadata ABI 3 continuity evidence."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    kind: Literal["starlink_scanner_analysis_metrics_v3"] = "starlink_scanner_analysis_metrics_v3"  # type: ignore[assignment]
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceLike, ...]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _contains_abi3_evidence(self) -> Self:
+        if not any(
+            isinstance(item, ScannerFrameContinuityEvidenceV2) for item in self.continuity_evidence
+        ):
+            raise ValueError("scanner analysis metrics V3 requires metadata ABI 3 evidence")
         return self
 
 
@@ -620,6 +638,48 @@ class ScannerAnalysisBundleManifestV4(ScannerModel):
     pilot_segment_rates_png_sha256: Sha256Digest
 
 
+class ScannerAnalysisBundleManifestV5(ScannerModel):
+    """Additive Standard bundle retaining metadata ABI 3 scanner products."""
+
+    schema_version: Literal[5] = 5
+    kind: Literal["starlink_scanner_analysis_bundle"] = "starlink_scanner_analysis_bundle"
+    analysis_id: str
+    scan_id: str
+    input_uri: str
+    input_manifest_sha256: Sha256Digest
+    analyzer_id: Literal["standard-scan-analysis-continuity-v2"] = (
+        "standard-scan-analysis-continuity-v2"
+    )
+    report_relative_path: Literal["scanner-report.v4.json"] = "scanner-report.v4.json"
+    report_sha256: Sha256Digest
+    metrics_relative_path: Literal["scanner-metrics.v3.json"] = "scanner-metrics.v3.json"
+    metrics_sha256: Sha256Digest
+    pilot_doppler_relative_path: Literal["scanner-pilot-doppler-segments.v1.json"] = (
+        "scanner-pilot-doppler-segments.v1.json"
+    )
+    pilot_doppler_sha256: Sha256Digest
+    waterfall_png_relative_path: Literal["presentation/scanner-waterfall.v1.png"] = (
+        "presentation/scanner-waterfall.v1.png"
+    )
+    waterfall_png_sha256: Sha256Digest
+    glrt64_png_relative_path: Literal["presentation/scanner-glrt64-response.v1.png"] = (
+        "presentation/scanner-glrt64-response.v1.png"
+    )
+    glrt64_png_sha256: Sha256Digest
+    pilot_doppler_png_relative_path: Literal[
+        "presentation/scanner-pilot-doppler-segments.v1.png"
+    ] = "presentation/scanner-pilot-doppler-segments.v1.png"
+    pilot_doppler_png_sha256: Sha256Digest
+    pilot_carrier_tracking_png_relative_path: Literal[
+        "presentation/scanner-pilot-carrier-tracking.v1.png"
+    ] = "presentation/scanner-pilot-carrier-tracking.v1.png"
+    pilot_carrier_tracking_png_sha256: Sha256Digest
+    pilot_segment_rates_png_relative_path: Literal[
+        "presentation/scanner-pilot-segment-rates.v1.png"
+    ] = "presentation/scanner-pilot-segment-rates.v1.png"
+    pilot_segment_rates_png_sha256: Sha256Digest
+
+
 class ScannerAnalysisHistoryItemV1(ScannerModel):
     """Newest published Standard analysis selected for one scan."""
 
@@ -685,10 +745,13 @@ class ScannerAnalysisHistoryPageV3(ScannerModel):
     items: tuple[ScannerAnalysisHistoryItemV3, ...]
 
 
-ScannerAnalysisMetricsLike = ScannerAnalysisMetricsV1 | ScannerAnalysisMetricsV2
+ScannerAnalysisMetricsLike = (
+    ScannerAnalysisMetricsV1 | ScannerAnalysisMetricsV2 | ScannerAnalysisMetricsV3
+)
 ScannerAnalysisBundleManifestLike = (
     ScannerAnalysisBundleManifestV1
     | ScannerAnalysisBundleManifestV2
     | ScannerAnalysisBundleManifestV3
     | ScannerAnalysisBundleManifestV4
+    | ScannerAnalysisBundleManifestV5
 )

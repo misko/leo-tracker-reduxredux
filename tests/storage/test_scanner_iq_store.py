@@ -11,12 +11,21 @@ from leo.scanner.application import (
     CapturedScannerSweep,
     CapturedScanTarget,
 )
-from leo.scanner.models import ScannerConfiguration, ScannerConfigurationV2, ScanTarget
+from leo.scanner.models import (
+    ScannerConfiguration,
+    ScannerConfigurationV2,
+    ScannerFrameContinuityEvidenceV2,
+    ScannerIqBundleManifestV3,
+    ScannerIqFrameV3,
+    ScanTarget,
+)
 from leo.scanner.ports import ScanRadioBlock, ScanRadioBlockV2, ScanRadioIdentity
 from leo.storage import ScannerIqStore, live_scanner_analysis_source
 
 
-def _captured(*, fail_second: bool = False, v2: bool = False) -> CapturedScannerSweep:
+def _captured(
+    *, fail_second: bool = False, v2: bool = False, abi3: bool = False
+) -> CapturedScannerSweep:
     targets = (
         ScanTarget(
             channel=1,
@@ -67,7 +76,7 @@ def _captured(*, fail_second: bool = False, v2: bool = False) -> CapturedScanner
             return ScanRadioBlock(**common)
         return ScanRadioBlockV2(
             **common,
-            metadata_abi_version=1 + index,
+            metadata_abi_version=3 if abi3 else 1 + index,
             stream_id=101 + index,
             buffer_sequence=0,
             first_sample_sequence=10_000 + index * 100,
@@ -192,6 +201,24 @@ def test_scanner_iq_store_persists_and_reopens_v2_continuity_evidence(tmp_path) 
     assert [item.continuity.status for item in source.frames] == ["attested", "attested"]
     assert [item.continuity.kernel_buffers_readback for item in source.frames] == [8, 8]
     assert [item.continuity.stream_generation for item in source.frames] == ["101", "102"]
+
+
+def test_scanner_iq_store_additively_persists_abi3_and_analysis_source(tmp_path) -> None:
+    store = ScannerIqStore(tmp_path)
+
+    published = store.publish("scan-abi3", _captured(v2=True, abi3=True))
+
+    assert published is not None
+    assert isinstance(published.manifest, ScannerIqBundleManifestV3)
+    assert all(isinstance(frame, ScannerIqFrameV3) for frame in published.manifest.frames)
+    assert [frame.metadata_abi_version for frame in published.manifest.frames] == [3, 3]
+    reopened = store.inspect("scan-abi3")
+    assert reopened.manifest == published.manifest
+    source = live_scanner_analysis_source(store, reopened)
+    assert all(
+        isinstance(frame.continuity, ScannerFrameContinuityEvidenceV2) for frame in source.frames
+    )
+    assert [frame.continuity.metadata_abi_version for frame in source.frames] == [3, 3]
 
 
 def test_scanner_sweep_rejects_generation_reuse_before_storage_publication() -> None:

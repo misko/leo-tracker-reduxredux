@@ -18,7 +18,9 @@ from leo.presentation.scanner_analysis import (
 )
 from leo.scanner.analysis_models import (
     ScannerAnalysisMetricsV2,
+    ScannerAnalysisMetricsV3,
     ScannerFrameContinuityEvidenceV1,
+    ScannerFrameContinuityEvidenceV2,
     ScannerPilotDopplerConfigV1,
 )
 from leo.scanner.detector import (
@@ -31,6 +33,7 @@ from leo.scanner.models import (
     ScannerConfiguration,
     ScannerConfigurationV2,
     ScannerReportV2,
+    ScannerReportV4,
     ScanTarget,
 )
 from leo.scanner.pilot_doppler import _window_samples
@@ -55,7 +58,7 @@ def test_scanner_pilot_window_policy_preserves_historical_and_current_geometry()
     assert _window_samples(200_000, 2_500_000, 40, config) is None
 
 
-def _source(*, v2: bool = False) -> SegmentedScannerSource:
+def _source(*, v2: bool = False, abi3: bool = False) -> SegmentedScannerSource:
     targets = (
         ScanTarget(
             channel=1,
@@ -83,10 +86,10 @@ def _source(*, v2: bool = False) -> SegmentedScannerSource:
     for index, target in enumerate(targets):
         values = np.full((20, 2, 2), 100 + 100 * index, dtype="<i2")
         continuity = (
-            ScannerFrameContinuityEvidenceV1(
+            (ScannerFrameContinuityEvidenceV2 if abi3 else ScannerFrameContinuityEvidenceV1)(
                 status="attested",
                 target_index=index,
-                metadata_abi_version=1,
+                metadata_abi_version=3 if abi3 else 1,
                 stream_id=index + 1,
                 stream_generation=str(index + 1),
                 buffer_sequence=0,
@@ -200,8 +203,38 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
     )
 
 
-def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(monkeypatch, tmp_path) -> None:
-    source = _source(v2=True)
+@pytest.mark.parametrize(
+    ("abi3", "report_type", "metrics_type", "manifest_version", "report_name", "metrics_name"),
+    (
+        (
+            False,
+            ScannerReportV2,
+            ScannerAnalysisMetricsV2,
+            4,
+            "scanner-report.v2.json",
+            "scanner-metrics.v2.json",
+        ),
+        (
+            True,
+            ScannerReportV4,
+            ScannerAnalysisMetricsV3,
+            5,
+            "scanner-report.v4.json",
+            "scanner-metrics.v3.json",
+        ),
+    ),
+)
+def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(
+    monkeypatch,
+    tmp_path,
+    abi3,
+    report_type,
+    metrics_type,
+    manifest_version,
+    report_name,
+    metrics_name,
+) -> None:
+    source = _source(v2=True, abi3=abi3)
 
     def no_detection(_samples, configuration, *, edge):
         del edge
@@ -229,8 +262,8 @@ def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(monkeypatch
         ),
     )
 
-    assert isinstance(result.report, ScannerReportV2)
-    assert isinstance(result.metrics, ScannerAnalysisMetricsV2)
+    assert isinstance(result.report, report_type)
+    assert isinstance(result.metrics, metrics_type)
     assert [item.status for item in result.metrics.continuity_evidence] == [
         "attested",
         "attested",
@@ -252,9 +285,9 @@ def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(monkeypatch
         pilot_segment_rates_png=render_scanner_pilot_segment_rates_png(result.metrics, product),
     )
 
-    assert published.manifest.schema_version == 4
-    assert (published.path / "scanner-report.v2.json").is_file()
-    assert (published.path / "scanner-metrics.v2.json").is_file()
+    assert published.manifest.schema_version == manifest_version
+    assert (published.path / report_name).is_file()
+    assert (published.path / metrics_name).is_file()
     reopened = store.inspect(result.report.scan_id, published.analysis_id)
     assert reopened.report == result.report
     assert reopened.metrics == result.metrics

@@ -18,10 +18,13 @@ from leo.scanner.models import (
     ScannerCloseFailureEvidenceV1,
     ScannerConfigurationLike,
     ScannerConfigurationV2,
+    ScannerFrameContinuityEvidenceLike,
     ScannerFrameContinuityEvidenceV1,
+    ScannerFrameContinuityEvidenceV2,
     ScannerReport,
     ScannerReportV2,
     ScannerReportV3,
+    ScannerReportV4,
     ScanTarget,
 )
 from leo.scanner.ports import (
@@ -198,6 +201,19 @@ def analyze_scan_sweep(
     if isinstance(captured.configuration, ScannerConfigurationV2):
         continuity_evidence = _continuity_evidence(captured)
         continuity_observable = any(item.status == "attested" for item in continuity_evidence)
+        if any(isinstance(item, ScannerFrameContinuityEvidenceV2) for item in continuity_evidence):
+            return ScannerReportV4(
+                scan_id=report_id,
+                radio_id=captured.identity.radio_id,
+                radio_serial=captured.identity.serial,
+                configuration=captured.configuration,
+                capture_elapsed_ms=captured.capture_elapsed_ms,
+                analysis_elapsed_ms=analysis_elapsed_ms,
+                results=tuple(results),
+                continuity_evidence=continuity_evidence,
+                continuity_observable=continuity_observable,
+                close_failure=captured.close_failure,
+            )
         if captured.close_failure is not None or not continuity_observable:
             return ScannerReportV3(
                 scan_id=report_id,
@@ -234,50 +250,63 @@ def analyze_scan_sweep(
 
 def _continuity_evidence(
     captured: CapturedScannerSweep,
-) -> tuple[ScannerFrameContinuityEvidenceV1, ...]:
-    evidence: list[ScannerFrameContinuityEvidenceV1] = []
+) -> tuple[ScannerFrameContinuityEvidenceLike, ...]:
+    uses_abi3 = any(
+        isinstance(item.block, ScanRadioBlockV2) and item.block.metadata_abi_version == 3
+        for item in captured.targets
+    )
+    evidence_type = (
+        ScannerFrameContinuityEvidenceV2 if uses_abi3 else ScannerFrameContinuityEvidenceV1
+    )
+    evidence: list[ScannerFrameContinuityEvidenceLike] = []
     for target_index, item in enumerate(captured.targets):
         block = item.block
         if block is None:
             evidence.append(
-                ScannerFrameContinuityEvidenceV1(
-                    status="capture_failed",
-                    target_index=target_index,
-                    continuity_observable=False,
-                    within_frame_continuity="unavailable_capture_failed",
-                    reason=item.error or "capture failed",
+                evidence_type.model_validate(
+                    {
+                        "status": "capture_failed",
+                        "target_index": target_index,
+                        "continuity_observable": False,
+                        "within_frame_continuity": "unavailable_capture_failed",
+                        "reason": item.error or "capture failed",
+                    }
                 )
             )
             continue
         if not isinstance(block, ScanRadioBlockV2):
             raise ValueError("scanner V2 report requires metadata-attested target frames")
         evidence.append(
-            ScannerFrameContinuityEvidenceV1(
-                status="attested",
-                target_index=target_index,
-                metadata_abi_version=block.metadata_abi_version,
-                stream_id=block.stream_id,
-                stream_generation=block.stream_generation,
-                buffer_sequence=block.buffer_sequence,
-                source_sequence=block.source_sequence,
-                first_sample_sequence=block.first_sample_sequence,
-                last_sample_sequence_exclusive=block.last_sample_sequence_exclusive,
-                device_sample_counter=block.device_sample_counter,
-                device_sample_counter_end_exclusive=(block.device_sample_counter_end_exclusive),
-                metadata_flags=block.metadata_flags,
-                sample_time_realtime_start_ns=block.sample_time_realtime_ns[0],
-                sample_time_realtime_end_ns=block.sample_time_realtime_ns[1],
-                sample_time_monotonic_start_ns=block.sample_time_monotonic_ns[0],
-                sample_time_monotonic_end_ns=block.sample_time_monotonic_ns[1],
-                sample_time_uncertainty_ns=block.sample_time_uncertainty_ns,
-                kernel_buffers_requested=block.kernel_buffers_requested,
-                kernel_buffers_readback=block.kernel_buffers_readback,
-                reset_episode=block.reset_episode,
-                missing_samples_before=block.missing_samples_before,
-                overflow_observed=block.overflow_observed,
-                continuity_observable=True,
-                within_frame_continuity="proven_within_returned_buffer",
-                reason="FPGA metadata proves continuity inside this reset-bounded frame",
+            evidence_type.model_validate(
+                {
+                    "status": "attested",
+                    "target_index": target_index,
+                    "metadata_abi_version": block.metadata_abi_version,
+                    "stream_id": block.stream_id,
+                    "stream_generation": block.stream_generation,
+                    "buffer_sequence": block.buffer_sequence,
+                    "source_sequence": block.source_sequence,
+                    "first_sample_sequence": block.first_sample_sequence,
+                    "last_sample_sequence_exclusive": block.last_sample_sequence_exclusive,
+                    "device_sample_counter": block.device_sample_counter,
+                    "device_sample_counter_end_exclusive": (
+                        block.device_sample_counter_end_exclusive
+                    ),
+                    "metadata_flags": block.metadata_flags,
+                    "sample_time_realtime_start_ns": block.sample_time_realtime_ns[0],
+                    "sample_time_realtime_end_ns": block.sample_time_realtime_ns[1],
+                    "sample_time_monotonic_start_ns": block.sample_time_monotonic_ns[0],
+                    "sample_time_monotonic_end_ns": block.sample_time_monotonic_ns[1],
+                    "sample_time_uncertainty_ns": block.sample_time_uncertainty_ns,
+                    "kernel_buffers_requested": block.kernel_buffers_requested,
+                    "kernel_buffers_readback": block.kernel_buffers_readback,
+                    "reset_episode": block.reset_episode,
+                    "missing_samples_before": block.missing_samples_before,
+                    "overflow_observed": block.overflow_observed,
+                    "continuity_observable": True,
+                    "within_frame_continuity": "proven_within_returned_buffer",
+                    "reason": "FPGA metadata proves continuity inside this reset-bounded frame",
+                }
             )
         )
     return tuple(evidence)
