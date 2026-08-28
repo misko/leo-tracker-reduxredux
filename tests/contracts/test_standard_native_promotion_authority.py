@@ -14,9 +14,12 @@ from leo.artifacts import (
     AnalysisRunManifestV2,
     AnalysisRunManifestV3,
     AnalysisRunManifestV4,
+    AnalysisRunManifestV5,
     StandardNativeMixedStreamAuthorityV1,
+    StandardNativeProductionStreamAuthorityV1,
     StandardNativePromotionAuthorityV1,
     StandardNativePromotionAuthorityV2,
+    StandardNativePromotionAuthorityV3,
     StandardNativeTerminalProductRefV1,
     parse_analysis_run_manifest,
 )
@@ -295,6 +298,119 @@ def _mixed_manifest() -> AnalysisRunManifestV4:
     return AnalysisRunManifestV4.model_validate(
         {**values, "content_digest": canonical_digest(values)}
     )
+
+
+def _production_manifest() -> AnalysisRunManifestV5:
+    definition = _pipeline_definition()
+    terminal_products = tuple(
+        _terminal_ref(product) for product in (_products()[0], *_products()[2:])
+    )
+    streams = tuple(
+        StandardNativeProductionStreamAuthorityV1(
+            stream_id=f"stream-{index}",
+            radio_id=f"radio-{index}",
+            profile_name=f"production-{rate}",
+            profile_revision_digest=_digest(f"production-profile-{rate}"),
+            receiver_ids=receivers,
+            gain_controller_mode=("tandem_hold" if index == 0 else "tandem_auto"),
+            gain_controller_request_digest=_digest(f"gain-request-{rate}"),
+            starlink_channel=1,
+            starlink_edge="lower",
+            sample_rate_hz=rate,
+            rf_bandwidth_hz=rate,
+            tuned_center_frequency_hz=center,
+            pilot_if_center_frequency_hz=959_687_500,
+            channel_if_start_hz=955_000_000,
+            channel_if_stop_hz=1_195_000_000,
+            captured_if_start_hz=center - rate // 2,
+            captured_if_stop_hz=center + rate // 2,
+            logical_sample_count=rate * 60,
+            validity_inventory_digest=_digest(f"production-validity-{rate}"),
+            timeline_digest=_digest(f"production-timeline-{rate}"),
+            metadata_abi_version=3,
+        )
+        for index, (rate, receivers, center) in enumerate(
+            ((2_500_000, (0, 1), 959_687_500), (20_000_000, (1,), 965_000_000))
+        )
+    )
+    authority_values = {
+        "schema_version": 3,
+        "source_manifest_schema_version": 5,
+        "source_manifest_digest": _digest("manifest"),
+        "pipeline_definition": definition.model_dump(mode="json"),
+        "pipeline_definition_id": definition.definition_id,
+        "session_id": "session-a",
+        "run_id": "run-a",
+        "input_manifest_digest": _digest("manifest"),
+        "pipeline_release_id": _RELEASE,
+        "expanded_plan_digest": _digest("expanded-plan"),
+        "raw_integrity_attestation_digest": _digest("raw-integrity"),
+        "release_authority_digest": _digest("release-authority"),
+        "subject_binding_inventory_digest": _digest("subject-bindings"),
+        "terminal_products": tuple(item.model_dump(mode="json") for item in terminal_products),
+        "terminal_product_inventory_digest": canonical_digest(
+            tuple(item.model_dump(mode="json") for item in terminal_products)
+        ),
+        "dwell_class": "mixed_2p5_20",
+        "tuning_branch": "same",
+        "scheduled_intent_digest": _digest("scheduled-intent"),
+        "stream_authorities": tuple(item.model_dump(mode="json") for item in streams),
+        "capture_plan_digest": _digest("production-capture-plan"),
+        "capture_hardware_binding_digest": _digest("production-hardware-binding"),
+        "trigger": "new_capture",
+        "promotion_policy": "current",
+        "processing_status": "succeeded",
+    }
+    authority = StandardNativePromotionAuthorityV3.model_validate(
+        {**authority_values, "content_digest": canonical_digest(authority_values)}
+    )
+    values = {
+        "schema_version": 5,
+        "session_id": "session-a",
+        "run_id": "run-a",
+        "pipeline_release_id": _RELEASE,
+        "input_manifest_digest": _digest("manifest"),
+        "trigger": "new_capture",
+        "pipeline_lane": "standard",
+        "promotion_policy": "current",
+        "processing_status": "succeeded",
+        "jobs": tuple(item.model_dump(mode="json") for item in _jobs()),
+        "products": tuple(item.model_dump(mode="json") for item in _products()),
+        "promotion_authority": authority.model_dump(mode="json"),
+    }
+    return AnalysisRunManifestV5.model_validate(
+        {**values, "content_digest": canonical_digest(values)}
+    )
+
+
+def test_production_promotion_round_trips_single_rx_and_tandem_authority() -> None:
+    manifest = _production_manifest()
+    parsed = parse_analysis_run_manifest(manifest.model_dump(mode="json"))
+
+    assert parsed == manifest
+    assert isinstance(parsed, AnalysisRunManifestV5)
+    assert parsed.promotion_authority.dwell_class == "mixed_2p5_20"
+    assert tuple(
+        (item.sample_rate_hz, item.receiver_ids, item.gain_controller_mode)
+        for item in parsed.promotion_authority.stream_authorities
+    ) == (
+        (2_500_000, (0, 1), "tandem_hold"),
+        (20_000_000, (1,), "tandem_auto"),
+    )
+
+
+def test_production_promotion_rejects_single_rx_geometry_tamper() -> None:
+    document = _production_manifest().model_dump(mode="json")
+    authority = dict(document["promotion_authority"])
+    streams = [dict(item) for item in authority["stream_authorities"]]
+    streams[1]["receiver_ids"] = [0, 1]
+    authority["stream_authorities"] = streams
+    _redigest(authority)
+    document["promotion_authority"] = authority
+    _redigest(document)
+
+    with pytest.raises(ValueError, match="receiver geometry"):
+        AnalysisRunManifestV5.model_validate(document)
 
 
 def test_mixed_promotion_manifest_round_trips_exact_per_stream_rf_authority() -> None:

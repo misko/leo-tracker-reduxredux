@@ -41,13 +41,13 @@ def _published(
     native.parent.mkdir(parents=True)
     binding.parent.mkdir(parents=True)
     receipt.parent.mkdir(parents=True)
-    native.write_bytes(b"metadata libiio ABI 1")
+    native.write_bytes(b"metadata libiio ABI 3")
     binding.write_text("# patched pylibiio\n")
     receipt.write_text(
         json.dumps(
             {
                 "schema_version": 1,
-                "metadata_abi": 1,
+                "metadata_abi": 3,
                 "source_commit": "c26258bfa33098c2b215e19cf85d448e89499b1a",
                 "native_libiio_path": str(native),
                 "pylibiio_path": str(binding),

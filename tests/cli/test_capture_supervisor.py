@@ -24,8 +24,11 @@ from leo.contracts.capture_control import (
 from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
     MIXED_RATE_SCHEDULE_POLICY_V1,
+    PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
+    ProductionDwellClassV2,
     ProductionDwellIntentV1,
+    ProductionDwellIntentV2,
 )
 from leo.contracts.states import CaptureState
 from leo.scanner import ScannerBurstReportV1
@@ -240,6 +243,37 @@ class _MixedRateDurableBackend(_DurableSupervisorBackend):
         )
 
 
+class _ProductionRateDurableBackend(_DurableSupervisorBackend):
+    def production_profile_authority(self):
+        keys = (
+            (2_500_000, (0, 1), False),
+            (5_000_000, (0, 1), False),
+            (2_500_000, (0, 1), True),
+            (5_000_000, (0, 1), True),
+            (10_000_000, (0,), True),
+            (10_000_000, (1,), True),
+            (15_000_000, (0,), True),
+            (15_000_000, (1,), True),
+            (20_000_000, (0,), True),
+            (20_000_000, (1,), True),
+        )
+        return {
+            key: (
+                f"profile-{key[0]}-{'-'.join(map(str, key[1]))}-{int(key[2])}",
+                f"sha256:{index:064x}",
+                1_048_576,
+            )
+            for index, key in enumerate(keys, start=1)
+        }
+
+    def capture_production_once(
+        self,
+        intent: ProductionDwellIntentV2,
+        **_kwargs,
+    ) -> CaptureDataV1:
+        return self.capture_once(intent.dwell_class.value, radio_ids=intent.radio_ids)
+
+
 def test_durable_mixed_rate_policy_persists_exact_balanced_six_two_eight_cycle() -> None:
     clock = _Clock()
     backend = _MixedRateDurableBackend(clock)
@@ -313,6 +347,50 @@ def test_durable_safe_policy_never_enqueues_unqualified_fifteen_m() -> None:
     assert sum(item.dwell_class is ProductionDwellClass.MIXED_2P5_5 for item in intents) == 6
     assert sum(item.dwell_class is ProductionDwellClass.ORDINARY_POOL for item in intents) == 10
     assert all(rate.sample_rate_hz != 15_000_000 for item in intents for rate in item.radio_rates)
+
+
+def test_durable_production_policy_executes_exact_eight_slot_bag() -> None:
+    clock = _Clock()
+    backend = _ProductionRateDurableBackend(clock)
+    backend.analyzed.set()
+    start = datetime.fromtimestamp(0, tz=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        (
+            "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+            "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+        ),
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("production",),
+        interval_seconds=10.0,
+        maximum_captures=8,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        mixed_rate_policy=PRODUCTION_NATIVE_RATE_POLICY_V2,
+    )
+
+    assert summary.capture_count == 8
+    intents = tuple(
+        ProductionDwellIntentV2.model_validate(item.payload)
+        for item in backend.operations
+        if item.kind == "scheduled_recording"
+    )
+    assert len(intents) == 8
+    assert {item.cadence_ordinal for item in intents} == set(range(8))
+    observed = {dwell: 0 for dwell in ProductionDwellClassV2}
+    for intent in intents:
+        observed[intent.dwell_class] += 1
+    assert observed == {
+        ProductionDwellClassV2.BOTH_2P5: 2,
+        ProductionDwellClassV2.BOTH_5: 2,
+        ProductionDwellClassV2.MIXED_2P5_5: 1,
+        ProductionDwellClassV2.MIXED_2P5_10: 1,
+        ProductionDwellClassV2.MIXED_2P5_15: 1,
+        ProductionDwellClassV2.MIXED_2P5_20: 1,
+    }
 
 
 def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis() -> None:

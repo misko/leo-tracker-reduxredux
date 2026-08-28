@@ -37,7 +37,7 @@ from leo.analysis.standard.native_products import (
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
-    PAIRED_REPORT_V5_PRODUCT,
+    PAIRED_REPORT_V6_PRODUCT,
     PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
     PATH_REPORT_V3_PRODUCT,
     PATH_STANDARD_NATIVE_OUTPUTS,
@@ -47,7 +47,7 @@ from leo.analysis.standard.native_products import (
     POWER_TIMELINE_V3_PRODUCT,
     PROBE_SCHEDULE_V3_PRODUCT,
     QUALITY_V2_PRODUCT,
-    RADIO_REPORT_V4_PRODUCT,
+    RADIO_REPORT_V5_PRODUCT,
     RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
     STATEFUL_PATH_V2_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
@@ -72,7 +72,7 @@ from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
 from leo.contracts.standard_native_path_report import StandardNativePathReportV3
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
-from leo.contracts.standard_native_terminal import StandardNativePairedReportV5
+from leo.contracts.standard_native_terminal import StandardNativePairedReportV6
 from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV4
 from leo.pipeline import (
     AnalysisContext,
@@ -514,8 +514,8 @@ class RadioStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="radio-scientific-report-native",
-        algorithm_version="standard-native-radio-report-presentation-v7",
-        configuration_schema="radio-scientific-report-native.evidence.v4",
+        algorithm_version="standard-native-radio-report-presentation-v8",
+        configuration_schema="radio-scientific-report-native.evidence.v5",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(QUALITY_V2_PRODUCT, "path-standard-native"),
@@ -573,7 +573,7 @@ class RadioStandardNativeEvidenceAnalyzer:
         payloads = render_standard_native_common_pngs(source)
         report_document = cast(dict[str, JsonValue], report.model_dump(mode="json"))
         published = (
-            outputs.publish_json(RADIO_REPORT_V4_PRODUCT, report_document),
+            outputs.publish_json(RADIO_REPORT_V5_PRODUCT, report_document),
             *(outputs.publish_bytes(product, payload) for product, payload in payloads),
         )
         return StageResult(
@@ -605,13 +605,13 @@ class PairedStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="paired-scientific-report-native",
-        algorithm_version="standard-native-paired-report-v6",
-        configuration_schema="paired-scientific-report-native.evidence.v4",
+        algorithm_version="standard-native-paired-report-v7",
+        configuration_schema="paired-scientific-report-native.evidence.v5",
         dependencies=("radio-scientific-report-native",),
         input_products=(
-            _require_native_product(RADIO_REPORT_V4_PRODUCT, "radio-scientific-report-native"),
+            _require_native_product(RADIO_REPORT_V5_PRODUCT, "radio-scientific-report-native"),
         ),
-        output_products=(PAIRED_REPORT_V5_PRODUCT,),
+        output_products=(PAIRED_REPORT_V6_PRODUCT,),
         resource_class=ResourceClass.CPU,
         accepted_outcomes=_NATIVE_OUTCOMES,
     )
@@ -635,7 +635,7 @@ class PairedStandardNativeEvidenceAnalyzer:
             radio_products=upstream,
         )
         published = outputs.publish_json(
-            PAIRED_REPORT_V5_PRODUCT,
+            PAIRED_REPORT_V6_PRODUCT,
             cast(dict[str, JsonValue], report.model_dump(mode="json")),
         )
         return StageResult(
@@ -671,15 +671,15 @@ class PairedStandardNativeWaterfallAnalyzer:
 
     spec = StageSpec(
         key="paired-presentation-native",
-        algorithm_version="standard-native-paired-presentation-v4",
-        configuration_schema="paired-presentation-native.evidence.v3",
+        algorithm_version="standard-native-paired-presentation-v5",
+        configuration_schema="paired-presentation-native.evidence.v4",
         dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
             _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
             _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
             _require_native_product(
-                PAIRED_REPORT_V5_PRODUCT,
+                PAIRED_REPORT_V6_PRODUCT,
                 "paired-scientific-report-native",
             ),
         ),
@@ -706,7 +706,7 @@ class PairedStandardNativeWaterfallAnalyzer:
         if len(upstream[3]) != 1:
             raise ValueError("native paired presentation requires one exact paired report")
         paired_item = upstream[3][0]
-        paired = StandardNativePairedReportV5.model_validate(paired_item.document)
+        paired = StandardNativePairedReportV6.model_validate(paired_item.document)
         if (
             context.scope is None
             or context.scope.kind is not ScopeKind.PAIRED

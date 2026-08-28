@@ -143,6 +143,7 @@ from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
     RecordingStreamV2,
     RecordingStreamV3,
 )
@@ -161,6 +162,7 @@ from leo.station.authority import (
     CaptureHardwareBindingV2,
     CaptureHardwareBindingV3,
     CaptureHardwareBindingV4,
+    CaptureHardwareBindingV5,
     FixturePathAuthorityV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -176,6 +178,7 @@ type StationCaptureHardwareBinding = (
     | CaptureHardwareBindingV2
     | CaptureHardwareBindingV3
     | CaptureHardwareBindingV4
+    | CaptureHardwareBindingV5
 )
 type CapturePathAuthorityContract = StationCaptureHardwareBinding | FixturePathAuthorityV1
 
@@ -4115,7 +4118,11 @@ def _validate_subject_binding_document(
         bounds = None if stream is None else _stream_observed_bounds_ns(stream.attributes)
         authority_contract: CapturePathAuthorityContract | None = None
         authority_manifest: (
-            RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | None
+            RecordingManifestV1
+            | RecordingManifestV3
+            | RecordingManifestV4
+            | RecordingManifestV5
+            | None
         ) = None
         manifest_stream = None
         if authority is not None:
@@ -5883,6 +5890,7 @@ def _validate_capture_authority_registration(
             CaptureHardwareBindingV2,
             CaptureHardwareBindingV3,
             CaptureHardwareBindingV4,
+            CaptureHardwareBindingV5,
         ),
     ):
         if source_type not in {"live", "import"}:
@@ -6011,7 +6019,7 @@ def _validate_capture_authority_registration(
 
 def _reconcile_manifest_profile_revision(
     session: Session,
-    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4,
+    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
 ) -> int:
     if isinstance(manifest, RecordingManifestV4):
         profile_id = manifest.capture_plan.dwell_class.value
@@ -6064,6 +6072,7 @@ def _reconcile_capture_path_authority(
             CaptureHardwareBindingV2,
             CaptureHardwareBindingV3,
             CaptureHardwareBindingV4,
+            CaptureHardwareBindingV5,
         ),
     ):
         topology_row = session.get(StationTopology, authority.topology_digest)
@@ -6257,6 +6266,7 @@ def _reconcile_radio_streams(
                         CaptureHardwareBindingV2,
                         CaptureHardwareBindingV3,
                         CaptureHardwareBindingV4,
+                        CaptureHardwareBindingV5,
                     ),
                 )
                 else None

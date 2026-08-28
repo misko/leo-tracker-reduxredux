@@ -89,14 +89,18 @@ from leo.presentation.standard_investigation import (
 from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV5,
+    StandardNativePngArtifactInventoryV6,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
     StandardNativePlotViewV4,
+    StandardNativePlotViewV5,
     StandardNativeSubjectDetailV3,
     StandardNativeSubjectDetailV4,
+    StandardNativeSubjectDetailV5,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectHierarchyV4,
+    StandardNativeSubjectHierarchyV5,
 )
 from leo.presentation.standard_native_repository import (
     DefinitionDispatchedStandardPresentationPort,
@@ -604,6 +608,7 @@ def create_app(
         StandardSubjectHierarchyV2
         | StandardNativeSubjectHierarchyV3
         | StandardNativeSubjectHierarchyV4
+        | StandardNativeSubjectHierarchyV5
     ):
         try:
             hierarchy = _standard_repository().subject_hierarchy(session_id)
@@ -617,7 +622,9 @@ def create_app(
         if hierarchy is None:
             raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")
         try:
-            if isinstance(hierarchy, StandardNativeSubjectHierarchyV4):
+            if isinstance(hierarchy, StandardNativeSubjectHierarchyV5):
+                hierarchy = StandardNativeSubjectHierarchyV5.model_validate(hierarchy.model_dump())
+            elif isinstance(hierarchy, StandardNativeSubjectHierarchyV4):
                 hierarchy = StandardNativeSubjectHierarchyV4.model_validate(hierarchy.model_dump())
             elif isinstance(hierarchy, StandardNativeSubjectHierarchyV3):
                 hierarchy = StandardNativeSubjectHierarchyV3.model_validate(hierarchy.model_dump())
@@ -642,6 +649,7 @@ def create_app(
             StandardSubjectHierarchyV2
             | StandardNativeSubjectHierarchyV3
             | StandardNativeSubjectHierarchyV4
+            | StandardNativeSubjectHierarchyV5
         ),
     )
     def standard_subjects(
@@ -651,6 +659,7 @@ def create_app(
         StandardSubjectHierarchyV2
         | StandardNativeSubjectHierarchyV3
         | StandardNativeSubjectHierarchyV4
+        | StandardNativeSubjectHierarchyV5
     ):
         return _visible_hierarchy(session_id, include_test=include_test)
 
@@ -658,14 +667,22 @@ def create_app(
         "/recordings/{session_id}/standard-subjects/{subject_id}",
         methods=["GET", "HEAD"],
         response_model=(
-            StandardSubjectDetailV2 | StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4
+            StandardSubjectDetailV2
+            | StandardNativeSubjectDetailV3
+            | StandardNativeSubjectDetailV4
+            | StandardNativeSubjectDetailV5
         ),
     )
     def standard_subject_detail(
         session_id: str,
         subject_id: str,
         include_test: bool = False,
-    ) -> StandardSubjectDetailV2 | StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4:
+    ) -> (
+        StandardSubjectDetailV2
+        | StandardNativeSubjectDetailV3
+        | StandardNativeSubjectDetailV4
+        | StandardNativeSubjectDetailV5
+    ):
         _visible_hierarchy(session_id, include_test=include_test)
         try:
             detail = _standard_repository().subject_detail(session_id, subject_id)
@@ -677,6 +694,8 @@ def create_app(
         if detail is None:
             raise HTTPException(status_code=404, detail="Standard subject not found")
         try:
+            if isinstance(detail, StandardNativeSubjectDetailV5):
+                return StandardNativeSubjectDetailV5.model_validate(detail.model_dump())
             if isinstance(detail, StandardNativeSubjectDetailV4):
                 return StandardNativeSubjectDetailV4.model_validate(detail.model_dump())
             if isinstance(detail, StandardNativeSubjectDetailV3):
@@ -723,7 +742,12 @@ def create_app(
         *,
         include_test: bool,
         maximum_points: int,
-    ) -> StandardPlotViewV2 | StandardNativePlotViewV3 | StandardNativePlotViewV4:
+    ) -> (
+        StandardPlotViewV2
+        | StandardNativePlotViewV3
+        | StandardNativePlotViewV4
+        | StandardNativePlotViewV5
+    ):
         _visible_hierarchy(session_id, include_test=include_test)
         presentation = _standard_repository()
         try:
@@ -750,7 +774,10 @@ def create_app(
         if view is None:
             raise HTTPException(status_code=404, detail="Standard subject view not found")
         try:
-            if isinstance(view, (StandardNativePlotViewV3, StandardNativePlotViewV4)):
+            if isinstance(
+                view,
+                (StandardNativePlotViewV3, StandardNativePlotViewV4, StandardNativePlotViewV5),
+            ):
                 native_verifier = getattr(presentation, "verify_source_proof", None)
                 verified = native_verifier is not None and native_verifier(
                     session_id,
@@ -777,8 +804,16 @@ def create_app(
             )
         try:
             if isinstance(
-                detail, (StandardNativeSubjectDetailV3, StandardNativeSubjectDetailV4)
-            ) and isinstance(view, (StandardNativePlotViewV3, StandardNativePlotViewV4)):
+                detail,
+                (
+                    StandardNativeSubjectDetailV3,
+                    StandardNativeSubjectDetailV4,
+                    StandardNativeSubjectDetailV5,
+                ),
+            ) and isinstance(
+                view,
+                (StandardNativePlotViewV3, StandardNativePlotViewV4, StandardNativePlotViewV5),
+            ):
                 validate_standard_native_view_binding(detail, view)
             elif isinstance(detail, StandardSubjectDetailV2) and isinstance(
                 view, StandardPlotViewV2
@@ -890,18 +925,31 @@ def create_app(
     @standard_router.api_route(
         "/recordings/{session_id}/standard-subjects/{subject_id}/artifacts",
         methods=["GET", "HEAD"],
-        response_model=StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5,
+        response_model=(
+            StandardNativePngArtifactInventoryV4
+            | StandardNativePngArtifactInventoryV5
+            | StandardNativePngArtifactInventoryV6
+        ),
     )
     def standard_subject_png_inventory(
         session_id: str,
         subject_id: str,
         include_test: bool = False,
-    ) -> StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5:
+    ) -> (
+        StandardNativePngArtifactInventoryV4
+        | StandardNativePngArtifactInventoryV5
+        | StandardNativePngArtifactInventoryV6
+    ):
         """Return the sealed native 11/5/5 PNG inventory for one subject."""
 
         hierarchy = _visible_hierarchy(session_id, include_test=include_test)
         if not isinstance(
-            hierarchy, (StandardNativeSubjectHierarchyV3, StandardNativeSubjectHierarchyV4)
+            hierarchy,
+            (
+                StandardNativeSubjectHierarchyV3,
+                StandardNativeSubjectHierarchyV4,
+                StandardNativeSubjectHierarchyV5,
+            ),
         ):
             raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
         reader = getattr(_standard_repository(), "subject_png_inventory", None)
@@ -917,6 +965,8 @@ def create_app(
         if inventory is None:
             raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
         try:
+            if isinstance(inventory, StandardNativePngArtifactInventoryV6):
+                return StandardNativePngArtifactInventoryV6.model_validate(inventory.model_dump())
             if isinstance(inventory, StandardNativePngArtifactInventoryV5):
                 return StandardNativePngArtifactInventoryV5.model_validate(inventory.model_dump())
             return StandardNativePngArtifactInventoryV4.model_validate(inventory.model_dump())
@@ -977,7 +1027,12 @@ def create_app(
     @standard_router.api_route(
         "/recordings/{session_id}/standard-subjects/{subject_id}/views/{view_kind}",
         methods=["GET", "HEAD"],
-        response_model=StandardPlotViewV2 | StandardNativePlotViewV3 | StandardNativePlotViewV4,
+        response_model=(
+            StandardPlotViewV2
+            | StandardNativePlotViewV3
+            | StandardNativePlotViewV4
+            | StandardNativePlotViewV5
+        ),
     )
     def standard_subject_view(
         session_id: str,
@@ -985,7 +1040,12 @@ def create_app(
         view_kind: StandardViewKindV2,
         include_test: bool = False,
         maximum_points: Annotated[int, Query(ge=4, le=2048)] = 512,
-    ) -> StandardPlotViewV2 | StandardNativePlotViewV3 | StandardNativePlotViewV4:
+    ) -> (
+        StandardPlotViewV2
+        | StandardNativePlotViewV3
+        | StandardNativePlotViewV4
+        | StandardNativePlotViewV5
+    ):
         return _verified_standard_view(
             session_id,
             subject_id,

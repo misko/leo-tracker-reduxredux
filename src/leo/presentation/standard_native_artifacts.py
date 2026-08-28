@@ -277,3 +277,12 @@ class StandardNativePngArtifactInventoryV5(ContractModel):
         if self.content_digest != canonical_digest(values):
             raise ValueError("mixed native PNG artifact inventory digest does not match")
         return self
+
+
+class StandardNativePngArtifactInventoryV6(StandardNativePngArtifactInventoryV5):
+    """Exact PNG inventory for a production-policy Current run."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rates_hz: tuple[
+        Literal[2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000], ...
+    ] = Field(min_length=1, max_length=2)  # type: ignore[assignment]

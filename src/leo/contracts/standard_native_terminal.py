@@ -149,14 +149,15 @@ class StandardNativeRadioReportV4(ContractModel):
                 or source.sample_rate_hz != self.sample_rate_hz
             ):
                 raise ValueError("native terminal radio report contains a foreign path")
-        left = self.paths[0].source.model_dump(
-            mode="json", exclude={"path_input_binding_digest", "receiver_id"}
-        )
-        right = self.paths[1].source.model_dump(
-            mode="json", exclude={"path_input_binding_digest", "receiver_id"}
-        )
-        if left != right:
-            raise ValueError("native terminal radio paths disagree on stream authority")
+        if len(self.paths) == 2:
+            left = self.paths[0].source.model_dump(
+                mode="json", exclude={"path_input_binding_digest", "receiver_id"}
+            )
+            right = self.paths[1].source.model_dump(
+                mode="json", exclude={"path_input_binding_digest", "receiver_id"}
+            )
+            if left != right:
+                raise ValueError("native terminal radio paths disagree on stream authority")
         _require_statistics(
             self.aggregate_statistics,
             tuple(item.quality for item in self.paths),
@@ -174,9 +175,8 @@ class StandardNativeRadioReportV4(ContractModel):
             )
         ):
             raise ValueError("native terminal radio sufficient statistics do not close")
-        expected_intervals = _intersect_utc_interval_sets(
-            self.paths[0].valid_utc_intervals,
-            self.paths[1].valid_utc_intervals,
+        expected_intervals = _common_utc_interval_sets(
+            tuple(item.valid_utc_intervals for item in self.paths),
         )
         expected_status = _processing_status(
             expected_intervals,
@@ -194,6 +194,23 @@ class StandardNativeRadioReportV4(ContractModel):
         ):
             raise ValueError("native terminal radio report digest does not match content")
         return self
+
+
+class StandardNativeRadioReportV5(StandardNativeRadioReportV4):
+    """Terminal one- or two-path reduction for production receiver selection.
+
+    V4 remains the immutable two-path contract. V5 adds the exact one-path
+    topology used by a high-rate production leg while retaining V4's closure
+    rules for dual-RX radios.
+    """
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-radio-report-v5"] = (
+        "standard-native-radio-report-v5"  # type: ignore[assignment]
+    )
+    paths: Annotated[  # type: ignore[assignment]
+        tuple[NativeTerminalPathEvidenceV2, ...], Field(min_length=1, max_length=2)
+    ]
 
 
 class StandardNativePairedReportV4(ContractModel):
@@ -375,6 +392,24 @@ class StandardNativePairedReportV5(ContractModel):
         ):
             raise ValueError("native terminal paired report digest does not match content")
         return self
+
+
+class StandardNativePairedReportV6(StandardNativePairedReportV5):
+    """Mixed-rate terminal report admitting one- or two-path radio reports.
+
+    V5 remains the immutable two-dual-RX contract. V6 preserves each radio's
+    native rate and accepts the additive V5 radio report required when the
+    high-rate radio records a single randomly selected receiver.
+    """
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-paired-report-v6"] = (
+        "standard-native-paired-report-v6"  # type: ignore[assignment]
+    )
+    radios: tuple[
+        StandardNativeRadioReportV4 | StandardNativeRadioReportV5,
+        StandardNativeRadioReportV4 | StandardNativeRadioReportV5,
+    ]
 
 
 def terminal_track_accounting(
@@ -561,3 +596,15 @@ def _intersect_utc_interval_sets(
         else:
             right_index += 1
     return tuple(output)
+
+
+def _common_utc_interval_sets(
+    children: tuple[tuple[NativeValidUtcIntervalV1, ...], ...],
+) -> tuple[NativeValidUtcIntervalV1, ...]:
+    if not children:
+        raise ValueError("native terminal UTC intersection requires children")
+    result = children[0]
+    _require_canonical_utc_intervals(result)
+    for child in children[1:]:
+        result = _intersect_utc_interval_sets(result, child)
+    return result

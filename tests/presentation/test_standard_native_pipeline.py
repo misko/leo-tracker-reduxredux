@@ -10,8 +10,10 @@ from leo.pipeline import ScopeIdentityV1
 from leo.presentation.standard_native_pipeline import (
     StandardNativeEligibilityV3,
     StandardNativeEligibilityV4,
+    StandardNativeEligibilityV5,
     StandardNativeMixedLegV4,
     StandardNativePipelineReleaseV3,
+    StandardNativeProductionLegV5,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectSummaryV3,
     StandardNativeTerminalSummaryV3,
@@ -233,3 +235,68 @@ def test_mixed_native_eligibility_preserves_each_rate_and_exact_rf_passband() ->
     changed["legs"][1]["rf_bandwidth_hz"] = 2_500_000
     with pytest.raises(ValidationError, match="RF/passband"):
         StandardNativeEligibilityV4.model_validate(changed)
+
+
+def test_production_native_eligibility_preserves_single_rx_and_tandem_authority() -> None:
+    common = {
+        "gain_controller_mode": "tandem_auto",
+        "gain_controller_request_digest": canonical_digest({"controller": "auto"}),
+        "starlink_channel": 1,
+        "starlink_edge": "lower",
+        "pilot_if_center_frequency_hz": 959_687_500,
+        "channel_if_start_hz": 955_000_000,
+        "channel_if_stop_hz": 1_195_000_000,
+        "logical_sample_count": 100,
+        "validity_inventory_digest": canonical_digest({"validity": True}),
+        "timeline_digest": canonical_digest({"timeline": True}),
+        "metadata_abi_version": 3,
+    }
+    legs = (
+        StandardNativeProductionLegV5(
+            stream_id="stream-0",
+            radio_id="radio-0",
+            profile_name="starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+            profile_revision_digest=canonical_digest({"profile": "2p5"}),
+            receiver_ids=(0, 1),
+            sample_rate_hz=2_500_000,
+            rf_bandwidth_hz=2_500_000,
+            tuned_center_frequency_hz=959_687_500,
+            captured_if_start_hz=958_437_500,
+            captured_if_stop_hz=960_937_500,
+            **common,
+        ),
+        StandardNativeProductionLegV5(
+            stream_id="stream-1",
+            radio_id="radio-1",
+            profile_name="starlink-ch4-lower-20m-60s-rx1-production-v5",
+            profile_revision_digest=canonical_digest({"profile": "20"}),
+            receiver_ids=(1,),
+            sample_rate_hz=20_000_000,
+            rf_bandwidth_hz=20_000_000,
+            tuned_center_frequency_hz=965_000_000,
+            captured_if_start_hz=955_000_000,
+            captured_if_stop_hz=975_000_000,
+            **common,
+        ),
+    )
+    eligibility = StandardNativeEligibilityV5(
+        capture_state="committed",
+        capture_committed=True,
+        dwell_class="mixed_2p5_20",
+        tuning_branch="same",
+        legs=legs,
+        scheduled_intent_digest=canonical_digest({"intent": True}),
+        capture_plan_digest=canonical_digest({"plan": True}),
+        capture_hardware_binding_digest=canonical_digest({"hardware": True}),
+        pipeline_definition_id=canonical_digest({"definition": "production-native"}),
+        promotion_authority_digest=canonical_digest({"authority": "production-current"}),
+        reason="Promoted reviewed production Standard-native capture is Current",
+    )
+
+    assert eligibility.legs[1].receiver_ids == (1,)
+    assert eligibility.legs[1].gain_controller_mode == "tandem_auto"
+    assert eligibility.legs[1].metadata_abi_version == 3
+    changed = eligibility.model_dump(mode="json")
+    changed["legs"][1]["receiver_ids"] = [0, 1]
+    with pytest.raises(ValidationError, match="receiver geometry"):
+        StandardNativeEligibilityV5.model_validate(changed)

@@ -198,6 +198,138 @@ class StandardNativeEligibilityV4(ContractModel):
         return self
 
 
+class StandardNativeProductionLegV5(ContractModel):
+    """One exact production-policy radio leg exposed to operators."""
+
+    schema_version: Literal[5] = 5
+    stream_id: Identifier
+    radio_id: Identifier
+    profile_name: Identifier
+    profile_revision_digest: Sha256Digest
+    receiver_ids: tuple[Literal[0, 1], ...]
+    gain_controller_mode: Literal["tandem_hold", "tandem_auto"]
+    gain_controller_request_digest: Sha256Digest
+    starlink_channel: Annotated[int, Field(ge=1, le=4)]
+    starlink_edge: Literal["lower", "upper"]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000]
+    rf_bandwidth_hz: Literal[2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000]
+    tuned_center_frequency_hz: Annotated[int, Field(gt=0)]
+    pilot_if_center_frequency_hz: Annotated[int, Field(gt=0)]
+    channel_if_start_hz: Annotated[int, Field(gt=0)]
+    channel_if_stop_hz: Annotated[int, Field(gt=0)]
+    captured_if_start_hz: Annotated[int, Field(gt=0)]
+    captured_if_stop_hz: Annotated[int, Field(gt=0)]
+    logical_sample_count: Annotated[int, Field(gt=0)]
+    validity_inventory_digest: Sha256Digest
+    timeline_digest: Sha256Digest
+    metadata_abi_version: Literal[3]
+
+    @field_validator("receiver_ids")
+    @classmethod
+    def _receiver_inventory_is_canonical(
+        cls, value: tuple[Literal[0, 1], ...]
+    ) -> tuple[Literal[0, 1], ...]:
+        if value not in {(0,), (1,), (0, 1)}:
+            raise ValueError("production native receiver inventory is not canonical")
+        return value
+
+    @model_validator(mode="after")
+    def _rf_passband_closes(self) -> Self:
+        if (
+            self.rf_bandwidth_hz != self.sample_rate_hz
+            or self.captured_if_stop_hz - self.captured_if_start_hz != self.rf_bandwidth_hz
+            or 2 * self.tuned_center_frequency_hz
+            != self.captured_if_start_hz + self.captured_if_stop_hz
+            or self.channel_if_stop_hz <= self.channel_if_start_hz
+            or self.captured_if_start_hz < self.channel_if_start_hz
+            or self.captured_if_stop_hz > self.channel_if_stop_hz
+            or not (
+                self.captured_if_start_hz
+                <= self.pilot_if_center_frequency_hz
+                <= self.captured_if_stop_hz
+            )
+        ):
+            raise ValueError("production native presentation RF/passband authority is invalid")
+        return self
+
+
+class StandardNativeEligibilityV5(ContractModel):
+    """Promotion truth for one reviewed production-policy RecordingManifestV5."""
+
+    schema_version: Literal[5] = 5
+    source_type: Literal["LIVE"] = "LIVE"
+    source_manifest_schema_version: Literal[5] = 5
+    capture_state: Literal["committed", "degraded"]
+    capture_committed: bool
+    capture_healthy: Literal[True] = True
+    full_device_span: Literal[True] = True
+    validity_aware: Literal[True] = True
+    automatic_eligible: Literal[True] = True
+    explicit_eligible: Literal[True] = True
+    promotion_allowed: Literal[True] = True
+    evidence_only: Literal[False] = False
+    dwell_class: Literal[
+        "both_2p5",
+        "both_5",
+        "mixed_2p5_5",
+        "mixed_2p5_10",
+        "mixed_2p5_15",
+        "mixed_2p5_20",
+    ]
+    tuning_branch: Literal["same", "same_channel_opposite_edge", "independent"]
+    legs: tuple[StandardNativeProductionLegV5, StandardNativeProductionLegV5]
+    scheduled_intent_digest: Sha256Digest
+    capture_plan_digest: Sha256Digest
+    capture_hardware_binding_digest: Sha256Digest
+    pipeline_definition_id: Sha256Digest
+    promotion_authority_digest: Sha256Digest
+    resampled: Literal[False] = False
+    reason: Literal[
+        "Promoted reviewed production Standard-native capture is Current",
+        "Promoted reviewed production Standard-native capture is Current with partial "
+        "validity coverage",
+    ]
+
+    @model_validator(mode="after")
+    def _eligibility_is_exact(self) -> Self:
+        committed = self.capture_state == "committed"
+        if self.capture_committed != committed:
+            raise ValueError(
+                "production native eligibility committed flag disagrees with capture state"
+            )
+        identities = tuple((item.stream_id, item.radio_id) for item in self.legs)
+        if identities != tuple(sorted(identities)) or len(set(identities)) != 2:
+            raise ValueError("production native presentation leg inventory is not exact")
+        expected_rates = {
+            "both_2p5": [2_500_000, 2_500_000],
+            "both_5": [5_000_000, 5_000_000],
+            "mixed_2p5_5": [2_500_000, 5_000_000],
+            "mixed_2p5_10": [2_500_000, 10_000_000],
+            "mixed_2p5_15": [2_500_000, 15_000_000],
+            "mixed_2p5_20": [2_500_000, 20_000_000],
+        }[self.dwell_class]
+        if sorted(item.sample_rate_hz for item in self.legs) != expected_rates:
+            raise ValueError("production native presentation rates disagree with dwell class")
+        mixed = self.dwell_class.startswith("mixed_")
+        if mixed and self.tuning_branch != "same":
+            raise ValueError("mixed production presentation requires same-target tuning")
+        for item in self.legs:
+            expected_receivers = 1 if mixed and item.sample_rate_hz > 5_000_000 else 2
+            if len(item.receiver_ids) != expected_receivers:
+                raise ValueError("production native receiver geometry disagrees with dwell class")
+        expected_reason = (
+            "Promoted reviewed production Standard-native capture is Current"
+            if committed
+            else (
+                "Promoted reviewed production Standard-native capture is Current with partial "
+                "validity coverage"
+            )
+        )
+        if self.reason != expected_reason:
+            raise ValueError("production native eligibility reason disagrees with capture state")
+        return self
+
+
 class StandardNativeTerminalSummaryV3(ContractModel):
     """Terminal sufficient statistics for one displayed subject.
 
@@ -291,8 +423,18 @@ class StandardNativeSubjectSummaryV3(ContractModel):
             if self.subject_id != self.receiver_paths[0].subject_id:
                 raise ValueError("native receiver-path subject identity changed")
         elif self.subject_kind is StandardSubjectKindV2.RADIO:
-            if not self.derived or len(self.receiver_paths) != 2:
-                raise ValueError("native radio subject requires two derived paths")
+            if isinstance(self.eligibility, StandardNativeEligibilityV5):
+                radio_ids = {item.radio_id for item in self.receiver_paths}
+                legs = tuple(item for item in self.eligibility.legs if item.radio_id in radio_ids)
+                if len(radio_ids) != 1 or len(legs) != 1:
+                    raise ValueError("production native radio lacks one exact policy leg")
+                paths_are_exact = (
+                    tuple(item.receiver_id for item in self.receiver_paths) == legs[0].receiver_ids
+                )
+            else:
+                paths_are_exact = len(self.receiver_paths) == 2
+            if not self.derived or not paths_are_exact:
+                raise ValueError("native radio paths differ from capture receiver authority")
             if self.child_subject_ids != path_subject_ids:
                 raise ValueError("native radio children differ from its path inventory")
             if len({item.radio_id for item in self.receiver_paths}) != 1:
@@ -312,6 +454,13 @@ class StandardNativeSubjectSummaryV4(StandardNativeSubjectSummaryV3):
 
     schema_version: Literal[4] = 4  # type: ignore[assignment]
     eligibility: StandardNativeEligibilityV4  # type: ignore[assignment]
+
+
+class StandardNativeSubjectSummaryV5(StandardNativeSubjectSummaryV3):
+    """Production-policy subject summary with run-level V5 promotion truth."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    eligibility: StandardNativeEligibilityV5  # type: ignore[assignment]
 
 
 class StandardNativeSubjectHierarchyV3(ContractModel):
@@ -382,6 +531,41 @@ class StandardNativeSubjectHierarchyV4(ContractModel):
             path for radio in radios for path in radio.receiver_paths
         ):
             raise ValueError("mixed native paired paths differ from the radio union")
+        return self
+
+
+class StandardNativeSubjectHierarchyV5(ContractModel):
+    """Exact pair/radio hierarchy for a production-policy Current run."""
+
+    schema_version: Literal[5] = 5
+    session_id: Identifier
+    source_type: Literal["LIVE"] = "LIVE"
+    eligibility: StandardNativeEligibilityV5
+    generated_at: datetime
+    rows: tuple[StandardNativeSubjectSummaryV5, ...] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def _hierarchy_is_exact(self) -> Self:
+        if any(item.session_id != self.session_id for item in self.rows):
+            raise ValueError("production native hierarchy contains a foreign subject")
+        if any(item.eligibility != self.eligibility for item in self.rows):
+            raise ValueError("production native hierarchy eligibility is crossed")
+        if len({item.subject_id for item in self.rows}) != len(self.rows):
+            raise ValueError("production native hierarchy repeats a subject")
+        paired = tuple(
+            item for item in self.rows if item.subject_kind is StandardSubjectKindV2.PAIRED
+        )
+        radios = tuple(
+            item for item in self.rows if item.subject_kind is StandardSubjectKindV2.RADIO
+        )
+        if len(paired) != 1 or len(radios) != 2 or self.rows[0] is not paired[0]:
+            raise ValueError("production native hierarchy requires pair then two radios")
+        if paired[0].child_subject_ids != tuple(item.subject_id for item in radios):
+            raise ValueError("production native paired children differ from radio rows")
+        if paired[0].receiver_paths != tuple(
+            path for radio in radios for path in radio.receiver_paths
+        ):
+            raise ValueError("production native paired paths differ from the radio union")
         return self
 
 
@@ -522,6 +706,16 @@ class StandardNativeSubjectDetailV4(StandardNativeSubjectDetailV3):
     schema_version: Literal[4] = 4  # type: ignore[assignment]
     subject: StandardNativeSubjectSummaryV4
     receiver_path_expansions: tuple[StandardNativeSubjectSummaryV4, ...] = Field(
+        min_length=1, max_length=4
+    )
+
+
+class StandardNativeSubjectDetailV5(StandardNativeSubjectDetailV3):
+    """Production-policy detail retaining each path's native evidence."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    subject: StandardNativeSubjectSummaryV5
+    receiver_path_expansions: tuple[StandardNativeSubjectSummaryV5, ...] = Field(
         min_length=1, max_length=4
     )
 
@@ -801,9 +995,24 @@ class StandardNativePlotViewV4(ContractModel):
         return self
 
 
-type StandardHierarchy = StandardNativeSubjectHierarchyV3 | StandardNativeSubjectHierarchyV4
-type StandardDetail = StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4
-type StandardPlot = StandardNativePlotViewV3 | StandardNativePlotViewV4
+class StandardNativePlotViewV5(StandardNativePlotViewV4):
+    """Production-policy plot with per-path native axes through 20 MS/s."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    sample_rates_hz: tuple[
+        Literal[2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000], ...
+    ] = Field(min_length=1, max_length=2)  # type: ignore[assignment]
+
+
+type StandardHierarchy = (
+    StandardNativeSubjectHierarchyV3
+    | StandardNativeSubjectHierarchyV4
+    | StandardNativeSubjectHierarchyV5
+)
+type StandardDetail = (
+    StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4 | StandardNativeSubjectDetailV5
+)
+type StandardPlot = StandardNativePlotViewV3 | StandardNativePlotViewV4 | StandardNativePlotViewV5
 
 
 def native_stage_status_v3(

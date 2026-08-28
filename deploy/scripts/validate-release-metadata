@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 QNAP = Path("/mnt/qnap01")
-PRODUCTION_METADATA_ABI = 1
+PRODUCTION_METADATA_ABI = 3
 PRODUCTION_LIBIIO_SOURCE_COMMIT = "c26258bfa33098c2b215e19cf85d448e89499b1a"
 
 
@@ -88,7 +88,7 @@ def _metadata_runtime_inventory(release: Path) -> tuple[Path, Path, Path]:
         or document.get("metadata_abi") != PRODUCTION_METADATA_ABI
         or document.get("source_commit") != PRODUCTION_LIBIIO_SOURCE_COMMIT
     ):
-        raise ValueError("metadata runtime receipt identity is not the production ABI 1 runtime")
+        raise ValueError("metadata runtime receipt identity is not the production ABI 3 runtime")
     resolved: list[Path] = []
     for key in ("native_libiio_path", "pylibiio_path"):
         raw = document.get(key)

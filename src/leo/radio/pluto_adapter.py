@@ -6,11 +6,18 @@ import importlib
 import time
 from collections.abc import Callable
 from contextlib import suppress
-from typing import Any
+from typing import Any, Literal, cast
 
+from leo.contracts.gain_control import (
+    GainControllerMode,
+    GainControllerPolicyV1,
+    TandemBlockEvidenceV1,
+    TandemEventDirection,
+    TandemGainEventV1,
+)
 from leo.contracts.radio import (
     IqBlockMetadataV1,
-    IqBlockMetadataV2,
+    IqBlockMetadataV3,
     NanosecondIntervalV1,
     RadioCapabilitiesV1,
     RadioIdentityV1,
@@ -29,7 +36,7 @@ from leo.domain.iq import IqBlock, receiver_major_complex_to_ci16
 DeviceFactory = Callable[..., Any]
 SettingsFactory = Callable[..., Any]
 ExactSettingsApplier = Callable[[Any, Any], Any]
-_EXPECTED_METADATA_ABI = 1
+_EXPECTED_METADATA_ABI = 3
 
 
 class PlutoAdapterError(RuntimeError):
@@ -86,6 +93,7 @@ class PlutoIioRadioSource:
         self._metadata_refill_samples: int | None = None
         self._kernel_buffers: int | None = None
         self._continuity_validator: ContinuityChainValidator | None = None
+        self._gain_controller: GainControllerPolicyV1 | None = None
         self._sample_cursor = 0
         self._block_index = 0
 
@@ -193,6 +201,7 @@ class PlutoIioRadioSource:
         self._metadata_refill_samples = None
         self._kernel_buffers = None
         self._continuity_validator = None
+        self._gain_controller = None
         try:
             if session is not None:
                 session.close()
@@ -200,7 +209,13 @@ class PlutoIioRadioSource:
         except Exception as error:
             raise PlutoAdapterError(f"Pluto receive-buffer reset failed: {error}") from error
 
-    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int) -> int:
+    def begin_metadata_capture(
+        self,
+        sample_count: int,
+        *,
+        kernel_buffers: int,
+        gain_controller: GainControllerPolicyV1 | None = None,
+    ) -> int:
         device = self._require_device()
         if self._settings is None:
             raise PlutoAdapterError("Pluto must be configured before metadata capture")
@@ -215,8 +230,23 @@ class PlutoIioRadioSource:
             raise PlutoAdapterError("Pluto does not attest counter-authoritative metadata")
         if self._metadata_session is not None:
             raise PlutoAdapterError("Pluto metadata capture session is already active")
+        controller = gain_controller
+        if controller is None:
+            if self._settings.gain_mode is not GainMode.MANUAL:
+                raise PlutoAdapterError(
+                    "ABI3 metadata cannot preserve native automatic gain; select an explicit "
+                    "tandem controller or use ordinary IIO"
+                )
+            controller = GainControllerPolicyV1.create(
+                GainControllerMode.TANDEM_HOLD,
+                sample_count=sample_count,
+            )
         try:
-            session = device.begin_metadata_capture(sample_count, kernel_buffers=kernel_buffers)
+            session = device.begin_metadata_capture(
+                sample_count,
+                kernel_buffers=kernel_buffers,
+                tandem_request=_upstream_tandem_request(controller),
+            )
             readback = int(session.kernel_buffers)
             if readback != kernel_buffers:
                 session.close()
@@ -234,6 +264,7 @@ class PlutoIioRadioSource:
             require_metadata=True,
             require_generation=True,
         )
+        self._gain_controller = controller
         self._sample_cursor = 0
         self._block_index = 0
         return readback
@@ -323,6 +354,7 @@ class PlutoIioRadioSource:
         self._metadata_refill_samples = None
         self._kernel_buffers = None
         self._continuity_validator = None
+        self._gain_controller = None
         self._sample_cursor = 0
         self._block_index = 0
         if device is not None:
@@ -344,7 +376,7 @@ class PlutoIioRadioSource:
         common: dict[str, Any],
         *,
         upstream_sample_count: int,
-    ) -> IqBlockMetadataV2:
+    ) -> IqBlockMetadataV3:
         validator = self._continuity_validator
         if validator is None or self._kernel_buffers is None:
             raise PlutoAdapterError("metadata capture validator is unavailable")
@@ -387,7 +419,18 @@ class PlutoIioRadioSource:
                 )
             uncertainty = getattr(block, "sample_time_uncertainty_ns", None)
             overflow = bool(getattr(block, "overflow_observed", getattr(block, "overflow", False)))
-            metadata = IqBlockMetadataV2(
+            if abi_version != 3:
+                raise ValueError(
+                    f"production Pluto adapter requires metadata ABI 3, got {abi_version}"
+                )
+            controller = self._gain_controller
+            if controller is None:
+                raise ValueError("metadata capture lacks explicit gain-controller authority")
+            tandem = _map_tandem_evidence(
+                getattr(block, "tandem_metadata", None),
+                controller,
+            )
+            metadata = IqBlockMetadataV3(
                 **common,
                 timing_method=TimingMethod.DEVICE_COUNTER_ANCHORED,
                 device_sample_counter=first_sample_sequence,
@@ -429,8 +472,9 @@ class PlutoIioRadioSource:
                     "upstream_utc_ns": int(getattr(block, "utc_ns", 0)),
                     "host_block_index": self._block_index,
                 },
+                tandem=tandem,
             )
-            return IqBlockMetadataV2.model_validate(
+            return IqBlockMetadataV3.model_validate(
                 validator.observe(metadata).model_dump(mode="json")
             )
         except (AttributeError, TypeError, ValueError) as error:
@@ -476,6 +520,101 @@ def _load_exact_settings_applier() -> ExactSettingsApplier:
             "pinned pluto-plus-utils does not expose exact settings application"
         )
     return applier
+
+
+def _upstream_tandem_request(policy: GainControllerPolicyV1) -> Any:
+    try:
+        module = importlib.import_module("pluto_plus.tandem")
+        request_type = module.TandemSessionRequestV1
+        mode_type = module.TandemMode
+    except (AttributeError, ImportError) as error:
+        raise PlutoDependencyError(
+            "pinned pluto-plus-utils lacks explicit tandem session requests"
+        ) from error
+    mode = mode_type.HOLD if policy.mode is GainControllerMode.TANDEM_HOLD else mode_type.AUTO
+    return request_type(
+        mode=mode,
+        observation_capacity=policy.observation_capacity,
+        event_capacity=policy.event_capacity,
+        minimum_gain_db=policy.minimum_gain_db,
+        maximum_gain_db=policy.maximum_gain_db,
+        initial_gain_db=policy.initial_gain_db,
+        power_measurement_samples=policy.power_measurement_samples,
+        low_power_dwell_periods=policy.low_power_dwell_periods,
+        cooldown_periods=policy.cooldown_periods,
+        pulse_high_cycles=policy.pulse_high_cycles,
+        pulse_low_cycles=policy.pulse_low_cycles,
+        detector_blanking_cycles=policy.detector_blanking_cycles,
+        low_power_threshold=policy.low_power_threshold,
+        large_lmt_overload_threshold=policy.large_lmt_overload_threshold,
+        large_adc_overload_threshold=policy.large_adc_overload_threshold,
+        small_adc_overload_threshold=policy.small_adc_overload_threshold,
+    )
+
+
+def _map_tandem_evidence(value: Any, policy: GainControllerPolicyV1) -> TandemBlockEvidenceV1:
+    if value is None:
+        raise ValueError("ABI3 metadata block omits tandem ownership evidence")
+    state_name = str(getattr(value.tandem_state, "name", "")).lower()
+    expected_state = cast(
+        Literal["armed_hold", "armed_auto"],
+        {
+            GainControllerMode.TANDEM_HOLD: "armed_hold",
+            GainControllerMode.TANDEM_AUTO: "armed_auto",
+        }[policy.mode],
+    )
+    if state_name != expected_state:
+        raise ValueError(
+            f"tandem metadata state {state_name!r} disagrees with request {policy.mode.value!r}"
+        )
+    fault_flags = int(value.tandem_fault_flags)
+    if fault_flags:
+        raise ValueError(f"tandem metadata reports fault flags 0x{fault_flags:x}")
+    events = tuple(
+        TandemGainEventV1(
+            sample_sequence=int(event.sample_sequence),
+            event_sequence=int(event.event_sequence),
+            flags=int(event.flags),
+            direction=(
+                TandemEventDirection.INCREASE
+                if str(event.direction.name).lower() == "increase"
+                else TandemEventDirection.DECREASE
+            ),
+            rx0_gain_index=int(event.rx1_gain_index),
+            rx1_gain_index=int(event.rx2_gain_index),
+        )
+        for event in value.gain_events
+    )
+    evidence = TandemBlockEvidenceV1(
+        request_digest=policy.request_digest,
+        mode=policy.mode,
+        ownership_epoch=int(value.ownership_epoch),
+        tandem_state=expected_state,
+        tandem_fault_flags=fault_flags,
+        tandem_transition_count=int(value.tandem_transition_count),
+        gain_table_id=int(value.gain_table_id),
+        threshold_provenance=int(value.threshold_provenance),
+        minimum_gain_db=int(value.minimum_gain_db),
+        maximum_gain_db=int(value.maximum_gain_db),
+        initial_gain_db=int(value.initial_gain_db),
+        minimum_gain_index=int(value.minimum_gain_index),
+        maximum_gain_index=int(value.maximum_gain_index),
+        rx0_gain_index=int(value.rx1_gain_index),
+        rx1_gain_index=int(value.rx2_gain_index),
+        ad9361_temperature_mdeg_c=(
+            None
+            if value.ad9361_temperature_mdeg_c is None
+            else int(value.ad9361_temperature_mdeg_c)
+        ),
+        gain_events=events,
+    )
+    if (
+        evidence.minimum_gain_db != policy.minimum_gain_db
+        or evidence.maximum_gain_db != policy.maximum_gain_db
+        or evidence.initial_gain_db != policy.initial_gain_db
+    ):
+        raise ValueError("tandem metadata request provenance disagrees with capture plan")
+    return evidence
 
 
 def _map_identity(value: Any, *, radio_id: str) -> RadioIdentityV1:

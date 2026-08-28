@@ -322,6 +322,148 @@ class StandardNativePromotionAuthorityV2(ContractModel):
         return self
 
 
+class StandardNativeProductionStreamAuthorityV1(ContractModel):
+    """One exact per-radio source leg authorized by the production policy."""
+
+    schema_version: Literal[1] = 1
+    stream_id: Identifier
+    radio_id: Identifier
+    profile_name: Identifier
+    profile_revision_digest: Sha256Digest
+    receiver_ids: tuple[Literal[0, 1], ...]
+    gain_controller_mode: Literal["tandem_hold", "tandem_auto"]
+    gain_controller_request_digest: Sha256Digest
+    starlink_channel: Annotated[int, Field(ge=1, le=4)]
+    starlink_edge: Literal["lower", "upper"]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000]
+    rf_bandwidth_hz: Annotated[int, Field(gt=0)]
+    tuned_center_frequency_hz: Annotated[int, Field(gt=0)]
+    pilot_if_center_frequency_hz: Annotated[int, Field(gt=0)]
+    channel_if_start_hz: Annotated[int, Field(gt=0)]
+    channel_if_stop_hz: Annotated[int, Field(gt=0)]
+    captured_if_start_hz: Annotated[int, Field(gt=0)]
+    captured_if_stop_hz: Annotated[int, Field(gt=0)]
+    logical_sample_count: Annotated[int, Field(gt=0)]
+    validity_inventory_digest: Sha256Digest
+    timeline_digest: Sha256Digest
+    metadata_abi_version: Literal[3]
+
+    @field_validator("receiver_ids")
+    @classmethod
+    def _receiver_ids_are_canonical(cls, value: tuple[int, ...]) -> tuple[int, ...]:
+        if value not in {(0,), (1,), (0, 1)}:
+            raise ValueError("production stream receiver inventory is not canonical")
+        return value
+
+    @model_validator(mode="after")
+    def _stream_authority_is_closed(self) -> Self:
+        expected_center_hz = starlink_maximum_coverage_if_center_frequency_hz(
+            self.starlink_channel,
+            self.starlink_edge,
+            bandwidth_hz=self.rf_bandwidth_hz,
+        )
+        expected_channel_bounds = starlink_channel_if_bounds_hz(self.starlink_channel)
+        if (
+            self.rf_bandwidth_hz != self.sample_rate_hz
+            or self.pilot_if_center_frequency_hz
+            != starlink_edge_if_center_frequency_hz(
+                self.starlink_channel,
+                self.starlink_edge,
+            )
+            or (self.channel_if_start_hz, self.channel_if_stop_hz) != expected_channel_bounds
+            or self.tuned_center_frequency_hz != expected_center_hz
+            or self.captured_if_stop_hz - self.captured_if_start_hz != self.rf_bandwidth_hz
+            or self.tuned_center_frequency_hz * 2
+            != self.captured_if_start_hz + self.captured_if_stop_hz
+            or self.captured_if_start_hz < self.channel_if_start_hz
+            or self.captured_if_stop_hz > self.channel_if_stop_hz
+            or not (
+                self.captured_if_start_hz
+                <= self.pilot_if_center_frequency_hz
+                <= self.captured_if_stop_hz
+            )
+        ):
+            raise ValueError("production native stream RF/IF authority does not close")
+        return self
+
+
+class StandardNativePromotionAuthorityV3(ContractModel):
+    """Closed Current authority for one production RecordingManifestV5 run."""
+
+    schema_version: Literal[3] = 3
+    source_manifest_schema_version: Literal[5] = 5
+    source_manifest_digest: Sha256Digest
+    pipeline_definition: PipelineDefinitionV1
+    pipeline_definition_id: Sha256Digest
+    session_id: Identifier
+    run_id: Identifier
+    input_manifest_digest: Sha256Digest
+    pipeline_release_id: Identifier
+    expanded_plan_digest: Sha256Digest
+    raw_integrity_attestation_digest: Sha256Digest
+    release_authority_digest: Sha256Digest
+    subject_binding_inventory_digest: Sha256Digest
+    terminal_products: Annotated[
+        tuple[StandardNativeTerminalProductRefV1, ...],
+        Field(min_length=1, max_length=64),
+    ]
+    terminal_product_inventory_digest: Sha256Digest
+    dwell_class: Literal[
+        "both_2p5",
+        "both_5",
+        "mixed_2p5_5",
+        "mixed_2p5_10",
+        "mixed_2p5_15",
+        "mixed_2p5_20",
+    ]
+    tuning_branch: Literal["same", "same_channel_opposite_edge", "independent"]
+    scheduled_intent_digest: Sha256Digest
+    stream_authorities: Annotated[
+        tuple[
+            StandardNativeProductionStreamAuthorityV1,
+            StandardNativeProductionStreamAuthorityV1,
+        ],
+        Field(min_length=2, max_length=2),
+    ]
+    capture_plan_digest: Sha256Digest
+    capture_hardware_binding_digest: Sha256Digest
+    trigger: Literal["new_capture", "reprocess"]
+    promotion_policy: Literal["current"] = "current"
+    processing_status: Literal["succeeded"] = "succeeded"
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _authority_is_closed(self) -> Self:
+        _validate_native_promotion_common(self)
+        identities = tuple((item.stream_id, item.radio_id) for item in self.stream_authorities)
+        if identities != tuple(sorted(identities)) or len(set(identities)) != 2:
+            raise ValueError("production native stream authorities must be unique and ordered")
+        expected_rates = {
+            "both_2p5": [2_500_000, 2_500_000],
+            "both_5": [5_000_000, 5_000_000],
+            "mixed_2p5_5": [2_500_000, 5_000_000],
+            "mixed_2p5_10": [2_500_000, 10_000_000],
+            "mixed_2p5_15": [2_500_000, 15_000_000],
+            "mixed_2p5_20": [2_500_000, 20_000_000],
+        }[self.dwell_class]
+        observed_rates = sorted(item.sample_rate_hz for item in self.stream_authorities)
+        if observed_rates != expected_rates:
+            raise ValueError("production promotion rate pair disagrees with its dwell class")
+        mixed = self.dwell_class.startswith("mixed_")
+        for item in self.stream_authorities:
+            expected_receiver_count = 1 if mixed and item.sample_rate_hz > 5_000_000 else 2
+            if len(item.receiver_ids) != expected_receiver_count:
+                raise ValueError("production promotion receiver geometry disagrees with rate class")
+        if mixed and self.tuning_branch != "same":
+            raise ValueError("mixed production promotion requires same-target tuning")
+        expected_content_digest = canonical_digest(
+            self.model_dump(mode="json", exclude={"content_digest"})
+        )
+        if self.content_digest != expected_content_digest:
+            raise ValueError("production promotion authority content digest does not match")
+        return self
+
+
 class AnalysisRunManifestV3(ContractModel):
     """Promotion-capable Standard-native run with exact terminal authority."""
 
@@ -459,8 +601,45 @@ class AnalysisRunManifestV4(ContractModel):
         return self
 
 
+class AnalysisRunManifestV5(ContractModel):
+    """Promotion-capable production-policy Standard-native run manifest."""
+
+    schema_version: Literal[5] = 5
+    session_id: Identifier
+    run_id: Identifier
+    pipeline_release_id: Identifier
+    input_manifest_digest: Sha256Digest
+    trigger: Literal["new_capture", "reprocess"]
+    pipeline_lane: Literal["standard"] = "standard"
+    promotion_policy: Literal["current"] = "current"
+    processing_status: Literal["succeeded"] = "succeeded"
+    jobs: tuple[AnalysisJobReceiptV1, ...]
+    products: tuple[AnalysisProductReceiptV1, ...]
+    promotion_authority: StandardNativePromotionAuthorityV3
+    content_digest: Sha256Digest
+
+    @field_validator("jobs")
+    @classmethod
+    def _jobs_are_canonical(
+        cls, value: tuple[AnalysisJobReceiptV1, ...]
+    ) -> tuple[AnalysisJobReceiptV1, ...]:
+        return AnalysisRunManifestV1._jobs_are_canonical(value)
+
+    @field_validator("products")
+    @classmethod
+    def _products_are_canonical(
+        cls, value: tuple[AnalysisProductReceiptV1, ...]
+    ) -> tuple[AnalysisProductReceiptV1, ...]:
+        return AnalysisRunManifestV1._products_are_canonical(value)
+
+    @model_validator(mode="after")
+    def _promotion_manifest_is_closed(self) -> Self:
+        _validate_promotion_manifest_common(self, self.promotion_authority)
+        return self
+
+
 def _validate_native_promotion_common(
-    authority: StandardNativePromotionAuthorityV2,
+    authority: StandardNativePromotionAuthorityV2 | StandardNativePromotionAuthorityV3,
 ) -> None:
     definition = authority.pipeline_definition
     if (
@@ -489,8 +668,8 @@ def _validate_native_promotion_common(
 
 
 def _validate_promotion_manifest_common(
-    manifest: AnalysisRunManifestV4,
-    authority: StandardNativePromotionAuthorityV2,
+    manifest: AnalysisRunManifestV4 | AnalysisRunManifestV5,
+    authority: StandardNativePromotionAuthorityV2 | StandardNativePromotionAuthorityV3,
 ) -> None:
     jobs = {(item.stage_key, item.scope_key) for item in manifest.jobs}
     if any((item.stage_key, item.scope_key) not in jobs for item in manifest.products):
@@ -553,7 +732,11 @@ def _validate_promotion_manifest_common(
 
 
 AnalysisRunManifest = (
-    AnalysisRunManifestV1 | AnalysisRunManifestV2 | AnalysisRunManifestV3 | AnalysisRunManifestV4
+    AnalysisRunManifestV1
+    | AnalysisRunManifestV2
+    | AnalysisRunManifestV3
+    | AnalysisRunManifestV4
+    | AnalysisRunManifestV5
 )
 
 
@@ -569,4 +752,6 @@ def parse_analysis_run_manifest(document: object) -> AnalysisRunManifest:
         return AnalysisRunManifestV3.model_validate(document)
     if version == 4:
         return AnalysisRunManifestV4.model_validate(document)
+    if version == 5:
+        return AnalysisRunManifestV5.model_validate(document)
     raise ValueError("analysis run manifest schema version is unsupported")

@@ -397,17 +397,17 @@ def native_standard_png_source(
 ) -> StandardPngSource:
     """Build one legacy-compatible plot source from exact sealed native path products."""
 
-    expected_count = {
-        ScopeKind.RECEIVER_PATH: 1,
-        ScopeKind.RADIO: 2,
-        ScopeKind.PAIRED: 4,
+    expected_counts = {
+        ScopeKind.RECEIVER_PATH: {1},
+        ScopeKind.RADIO: {1, 2},
+        ScopeKind.PAIRED: {3, 4},
     }
-    if context.scope is None or context.scope.kind not in expected_count:
+    if context.scope is None or context.scope.kind not in expected_counts:
         raise ValueError("native PNG projection requires path, radio, or paired scope")
     inventories = (waterfall_products, stateful_products, path_report_products)
     node_ids = tuple(item.producer_node_id for item in waterfall_products)
     if (
-        len(node_ids) != expected_count[context.scope.kind]
+        len(node_ids) not in expected_counts[context.scope.kind]
         or len(set(node_ids)) != len(node_ids)
         or any(
             tuple(item.producer_node_id for item in values) != node_ids for values in inventories

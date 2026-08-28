@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
+from leo.acquisition.mixed_rate_schedule import compile_production_dwell_intent_v2
 from leo.analysis.standard.native_analyzers import (
     production_standard_native_evidence_configuration,
     production_standard_native_evidence_registry,
@@ -21,33 +22,46 @@ from leo.application import (
     DefinitionDispatchedStandardPresentationRepository,
     StandardReprocessService,
 )
-from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV4
+from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV4, AnalysisRunManifestV5
 from leo.catalog import CatalogSubjectBindingReader
 from leo.contracts.digests import canonical_digest
-from leo.contracts.mixed_rate_schedule import ProductionDwellClass
+from leo.contracts.mixed_rate_schedule import ProductionDwellClass, ProductionDwellClassV2
 from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.recording import (
     DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
     RecordingManifestV4,
+    RecordingManifestV5,
 )
 from leo.contracts.standard_native_path_report import StandardNativePathReportV3
-from leo.contracts.standard_native_terminal import StandardNativePairedReportV5
+from leo.contracts.standard_native_terminal import (
+    StandardNativePairedReportV6,
+    StandardNativeRadioReportV5,
+)
 from leo.contracts.standard_pipeline import StandardPathInputBindV4
 from leo.contracts.starlink_frequency import (
     starlink_maximum_coverage_if_center_frequency_hz,
 )
 from leo.contracts.states import CaptureState, SourceType, StarlinkEdge
-from leo.domain.mixed_rate_capture import compile_mixed_rate_capture_plan_v3
+from leo.domain.mixed_rate_capture import (
+    compile_mixed_rate_capture_plan_v3,
+    compile_production_capture_plan_v4,
+)
 from leo.domain.profiles import load_profile_revision
 from leo.operations.service import _stream_registrations
 from leo.pipeline import ScopeIdentityV1
 from leo.pipeline import standard_native as standard_native_pipeline
-from leo.presentation.standard_native_artifacts import StandardNativePngArtifactInventoryV5
+from leo.presentation.standard_native_artifacts import (
+    StandardNativePngArtifactInventoryV5,
+    StandardNativePngArtifactInventoryV6,
+)
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV4,
+    StandardNativePlotViewV5,
     StandardNativeSubjectDetailV4,
+    StandardNativeSubjectDetailV5,
     StandardNativeSubjectHierarchyV4,
+    StandardNativeSubjectHierarchyV5,
 )
 from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.processing import (
@@ -58,6 +72,7 @@ from leo.processing import (
 from leo.radio.fake import FakeRadioSource
 from leo.station.authority import (
     CaptureHardwareBindingV4,
+    CaptureHardwareBindingV5,
     RadioEndpointEvidenceV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -184,10 +199,18 @@ def _register_bundle(
 ) -> None:
     manifest = bundle.manifest
     assert isinstance(manifest, RecordingManifestV4)
-    authority = CaptureHardwareBindingV4.create(
-        manifest,
-        observed_manifest_file_digest=bundle.manifest_sha256,
-        topology=topology,
+    authority = (
+        CaptureHardwareBindingV5.create(
+            manifest,
+            observed_manifest_file_digest=bundle.manifest_sha256,
+            topology=topology,
+        )
+        if type(manifest) is RecordingManifestV5
+        else CaptureHardwareBindingV4.create(
+            manifest,
+            observed_manifest_file_digest=bundle.manifest_sha256,
+            topology=topology,
+        )
     )
     assert database.catalog.reconcile_capture_session(
         session_id=manifest.session_id,
@@ -206,6 +229,74 @@ def _register_bundle(
     assert capture_authority.authority_kind == "station"
     assert capture_authority.current_analysis_eligible is True
     assert capture_authority.promotion_permitted is True
+
+
+def _bounded_production_plan(monkeypatch: pytest.MonkeyPatch):
+    specifications = (
+        ((2_500_000, (0, 1), False), "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4"),
+        ((5_000_000, (0, 1), False), "starlink-ch4-lower-5m-60s-native-bandwidth-v4"),
+        ((2_500_000, (0, 1), True), "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4"),
+        ((5_000_000, (0, 1), True), "starlink-ch4-lower-5m-60s-mixed-device-axis-v4"),
+        *(
+            (
+                (rate, (receiver,), True),
+                f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-production-v5",
+            )
+            for rate in (10_000_000, 15_000_000, 20_000_000)
+            for receiver in (0, 1)
+        ),
+    )
+    revisions: dict[tuple[int, tuple[int, ...], bool], CaptureProfileRevisionV2] = {}
+    for key, profile_name in specifications:
+        source = load_profile_revision(_ROOT / "profiles" / f"{profile_name}.yaml")
+        assert isinstance(source, CaptureProfileRevisionV2)
+        profile_values = source.profile.model_dump(mode="python")
+        profile_values.update(
+            {
+                "name": f"test-{profile_name}",
+                "duration_seconds": _DURATION,
+                "sample_count": None,
+                "settle_seconds": Decimal(0),
+                "prime_refills": 0,
+                "campaign": "bounded-production-native-standard-test",
+            }
+        )
+        revision = CaptureProfileRevisionV2.from_profile(
+            CaptureProfileV2.model_validate(profile_values)
+        )
+        revisions[key] = revision
+        monkeypatch.setitem(
+            standard_native_pipeline.STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES,
+            revision.profile.name,
+            (revision.profile.sample_rate_hz, revision.profile.receivers, revision.revision_digest),
+        )
+    authority = {
+        key: (revision.profile.name, revision.revision_digest, revision.profile.refill_samples)
+        for key, revision in revisions.items()
+    }
+    intent = next(
+        item
+        for ordinal in range(8)
+        if (
+            item := compile_production_dwell_intent_v2(
+                operation_key=f"bounded-production:{ordinal}",
+                cadence_ordinal=ordinal,
+                radio_ids=_RADIO_IDS,
+                profile_authority=authority,
+                extra_tags=("operational-vertical",),
+            )
+        ).dwell_class
+        is ProductionDwellClassV2.MIXED_2P5_10
+    )
+    selected = {
+        leg.radio_id: revisions[(leg.sample_rate_hz, leg.receiver_ids, True)]
+        for leg in intent.radio_legs
+    }
+    return compile_production_capture_plan_v4(
+        intent=intent,
+        profile_revisions_by_radio=selected,
+        source_type=SourceType.LIVE,
+    )
 
 
 @pytest.mark.parametrize(
@@ -396,7 +487,7 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
         paired_product = next(
             item for item in seal.products if item.kind == "standard.paired-report"
         )
-        paired = StandardNativePairedReportV5.model_validate(
+        paired = StandardNativePairedReportV6.model_validate(
             artifacts.read_json(paired_product.logical_uri, paired_product.digest)
         )
         assert paired.radio_sample_rates_hz == rates
@@ -473,6 +564,194 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
                 assert png.status_code == 200
                 assert png.headers["content-type"] == "image/png"
                 assert png.content.startswith(b"\x89PNG\r\n\x1a\n")
+    finally:
+        service.close()
+        artifacts.close()
+        pinned.close()
+
+
+def test_real_postgres_production_ten_msps_single_rx_vertical(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plan = _bounded_production_plan(monkeypatch)
+    assert plan.dwell_class is ProductionDwellClassV2.MIXED_2P5_10
+    bulk_root = tmp_path / "bulk-production"
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(bulk_root),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=1_048_576,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+    result = coordinator.capture_once(
+        plan,
+        {
+            _RADIO_IDS[0]: FakeRadioSource(_RADIO_IDS[0], seed=11),
+            _RADIO_IDS[1]: FakeRadioSource(_RADIO_IDS[1], seed=12),
+        },
+        session_id="standard-native-production-10m-single-rx",
+    )
+    assert result.state is CaptureState.COMMITTED
+    assert type(result.manifest) is RecordingManifestV5
+    assert result.bundle is not None
+    bundle = result.bundle
+    manifest = result.manifest
+    assert sorted(stream.applied_settings.sample_rate_hz for stream in manifest.streams) == [
+        2_500_000,
+        10_000_000,
+    ]
+    assert sorted(len(stream.applied_settings.receiver_ids) for stream in manifest.streams) == [
+        1,
+        2,
+    ]
+    assert all(stream.continuity.metadata_abi_version == 3 for stream in manifest.streams)
+
+    topology = _station_topology(manifest)
+    processing_database.catalog.register_station_topology(topology)
+    _register_bundle(processing_database, bundle, topology)
+
+    registry = production_standard_native_evidence_registry()
+    configuration: dict[str, object] = {
+        "display_version": "standard-native-production-operational-v1",
+        "stages": production_standard_native_evidence_configuration(),
+    }
+    executable = tmp_path / "production-worker-executable"
+    executable.mkdir()
+    (executable / "standard-native.txt").write_text("pinned production native worker\n")
+    loaded = derive_loaded_worker_release_for_tests(
+        pipeline_release_id=_RELEASE,
+        code_revision=_RELEASE,
+        registry=registry,
+        configuration=configuration,
+        environment_document={"name": "real-postgres-production-standard-native"},
+        executable_root=executable,
+    )
+    processing_database.catalog.add_pipeline_release(
+        release_id=_RELEASE,
+        code_revision=_RELEASE,
+        environment_digest=loaded.authority.environment_digest,
+        graph_digest=loaded.authority.graph_digest,
+        configuration=configuration,
+        executable_digest=loaded.authority.executable_digest,
+    )
+
+    pinned = PinnedLocalRoot(bulk_root)
+    recordings = RecordingStore.open_pinned(pinned)
+    artifacts = AnalysisArtifactStore.open_pinned(pinned)
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=artifacts,
+        registry=registry,
+        iq_readers=RecordingIqReaderProvider(recordings),
+        lease_for=timedelta(seconds=30),
+        heartbeat_interval=timedelta(seconds=5),
+        loaded_worker_release=loaded,
+    )
+    try:
+        application = StandardReprocessService(
+            catalog=processing_database.catalog,
+            recordings=recordings,
+            processing=service,
+            pipeline_release_id=_RELEASE,
+        )
+        queued = application.queue(manifest.session_id)
+        assert queued.queued_job_count == 10
+        path_count = sum(len(stream.applied_settings.receiver_ids) for stream in manifest.streams)
+        assert path_count == 3
+
+        executions = []
+        while execution := service.run_once(worker_id="production-standard-native-worker"):
+            executions.append(execution)
+            assert execution.succeeded, execution.error
+        assert len(executions) == 10
+        published = service.finalize_run(queued.run_id)
+        assert isinstance(published.manifest, AnalysisRunManifestV5)
+        authority = published.manifest.promotion_authority
+        assert authority.dwell_class == "mixed_2p5_10"
+        assert authority.tuning_branch == "same"
+        assert sorted(item.sample_rate_hz for item in authority.stream_authorities) == [
+            2_500_000,
+            10_000_000,
+        ]
+        high = next(
+            item for item in authority.stream_authorities if item.sample_rate_hz == 10_000_000
+        )
+        assert len(high.receiver_ids) == 1
+        assert high.metadata_abi_version == 3
+        assert high.gain_controller_mode in {"tandem_hold", "tandem_auto"}
+
+        seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
+        radio_reports = tuple(
+            StandardNativeRadioReportV5.model_validate(
+                artifacts.read_json(item.logical_uri, item.digest)
+            )
+            for item in seal.products
+            if item.kind == "standard.radio-report"
+        )
+        assert sorted(len(item.paths) for item in radio_reports) == [1, 2]
+        paired_product = next(
+            item for item in seal.products if item.kind == "standard.paired-report"
+        )
+        paired = StandardNativePairedReportV6.model_validate(
+            artifacts.read_json(paired_product.logical_uri, paired_product.digest)
+        )
+        assert sorted(paired.radio_sample_rates_hz) == [2_500_000, 10_000_000]
+        assert sorted(len(item.paths) for item in paired.radios) == [1, 2]
+
+        native_repository = CatalogStandardNativePresentationRepository(
+            processing_database.catalog,
+            artifacts,
+        )
+        repository = DefinitionDispatchedStandardPresentationRepository(
+            CatalogStandardPresentationRepository(processing_database.catalog, artifacts),
+            native_repository,
+        )
+        hierarchy = repository.subject_hierarchy(manifest.session_id)
+        assert isinstance(hierarchy, StandardNativeSubjectHierarchyV5)
+        assert hierarchy.eligibility.dwell_class == "mixed_2p5_10"
+        assert sorted(len(item.receiver_ids) for item in hierarchy.eligibility.legs) == [1, 2]
+        paired_subject = hierarchy.rows[0]
+        detail = repository.subject_detail(manifest.session_id, paired_subject.subject_id)
+        assert isinstance(detail, StandardNativeSubjectDetailV5)
+        inventory = repository.subject_png_inventory(
+            manifest.session_id,
+            paired_subject.subject_id,
+        )
+        assert isinstance(inventory, StandardNativePngArtifactInventoryV6)
+        assert sorted(inventory.sample_rates_hz) == [2_500_000, 10_000_000]
+        waterfall = repository.subject_view(
+            manifest.session_id,
+            paired_subject.subject_id,
+            StandardViewKindV2.WATERFALL,
+            maximum_points=64,
+        )
+        assert isinstance(waterfall, StandardNativePlotViewV5)
+        assert sorted(waterfall.sample_rates_hz) == [2_500_000, 10_000_000]
+
+        with TestClient(
+            create_app(
+                CatalogPresentationRepository(
+                    processing_database.catalog,
+                    recordings,
+                    artifacts,
+                    bulk_root=bulk_root,
+                ),
+                artifact_root=bulk_root,
+                standard_repository=repository,
+            )
+        ) as client:
+            base = f"/api/v2/recordings/{manifest.session_id}/standard-subjects"
+            response = client.get(base)
+            assert response.status_code == 200
+            assert response.json()["schema_version"] == 5
+            response = client.get(f"{base}/{paired_subject.subject_id}/artifacts")
+            assert response.status_code == 200
+            assert response.json()["schema_version"] == 6
+            assert sorted(response.json()["sample_rates_hz"]) == [2_500_000, 10_000_000]
     finally:
         service.close()
         artifacts.close()

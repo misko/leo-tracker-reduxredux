@@ -8,6 +8,7 @@ from leo.contracts.calibration import (
 )
 from leo.contracts.continuity import IqTerminalRejectedRefillV1
 from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
+from leo.contracts.gain_control import GainControllerMode, GainControllerPolicyV1
 from leo.contracts.host_health import (
     QualificationBlockDeviceEvidenceV1,
     QualificationHostHealthCheckV1,
@@ -27,14 +28,23 @@ from leo.contracts.kalman_tracking import (
     KalmanTrajectoryTrackV1,
     StandardKalmanTrackingV1,
 )
-from leo.contracts.mixed_rate_capture import CapturePlanV3, MixedRateRadioPlanV1
+from leo.contracts.mixed_rate_capture import (
+    CapturePlanV3,
+    CapturePlanV4,
+    MixedRateRadioPlanV1,
+    ProductionRadioPlanV2,
+)
 from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_10M_SCHEDULE_POLICY_V1,
     MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
     MIXED_RATE_SCHEDULE_CYCLE_LENGTH,
     MIXED_RATE_SCHEDULE_POLICY_V1,
     ProductionDwellClass,
+    ProductionDwellClassV2,
     ProductionDwellIntentV1,
+    ProductionDwellIntentV2,
+    ProductionTuningBranchV2,
+    ScheduledRadioLegV2,
     ScheduledRadioRateV1,
 )
 from leo.contracts.pilot_doppler_segments import (
@@ -58,6 +68,7 @@ from leo.contracts.profile import (
 from leo.contracts.radio import (
     IqBlockMetadataV1,
     IqBlockMetadataV2,
+    IqBlockMetadataV3,
     NanosecondIntervalV1,
     RadioCapabilitiesV1,
     RadioIdentityV1,
@@ -83,6 +94,7 @@ from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
     RecordingStreamV1,
     RecordingStreamV2,
     RecordingStreamV3,
@@ -143,6 +155,7 @@ __all__ = [
     "CapturePlanV1",
     "CapturePlanV2",
     "CapturePlanV3",
+    "CapturePlanV4",
     "CaptureProfileRevisionV1",
     "CaptureProfileRevisionV2",
     "CaptureProfileV1",
@@ -156,6 +169,7 @@ __all__ = [
     "HostIdentityV1",
     "IqBlockMetadataV1",
     "IqBlockMetadataV2",
+    "IqBlockMetadataV3",
     "IqTerminalRejectedRefillV1",
     "KalmanFrameEstimateV1",
     "KalmanTrackingConfigV1",
@@ -180,9 +194,15 @@ __all__ = [
     "NativeKnownPilotEvidenceProductV2",
     "NanosecondIntervalV1",
     "MixedRateRadioPlanV1",
+    "GainControllerMode",
+    "GainControllerPolicyV1",
     "ProducerV1",
     "ProductionDwellClass",
+    "ProductionDwellClassV2",
     "ProductionDwellIntentV1",
+    "ProductionDwellIntentV2",
+    "ProductionRadioPlanV2",
+    "ProductionTuningBranchV2",
     "QualificationBlockDeviceEvidenceV1",
     "QualificationHostHealthCheckV1",
     "QualificationHostHealthCheckV2",
@@ -214,6 +234,7 @@ __all__ = [
     "RecordingManifestV2",
     "RecordingManifestV3",
     "RecordingManifestV4",
+    "RecordingManifestV5",
     "RecordingStreamV1",
     "RecordingStreamV2",
     "RecordingStreamV3",
@@ -222,6 +243,7 @@ __all__ = [
     "ReceiverPathIdentityV1",
     "Sha256Digest",
     "ScheduledRadioRateV1",
+    "ScheduledRadioLegV2",
     "StreamTimingV1",
     "SynchronizationSummaryV1",
     "TerminalGapEvidenceV1",

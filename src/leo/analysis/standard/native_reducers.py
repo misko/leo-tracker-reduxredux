@@ -29,8 +29,9 @@ from leo.contracts.standard_native_stateful import StandardNativeStatefulPathV1
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
 from leo.contracts.standard_native_terminal import (
     NativeTerminalPathEvidenceV2,
-    StandardNativePairedReportV5,
+    StandardNativePairedReportV6,
     StandardNativeRadioReportV4,
+    StandardNativeRadioReportV5,
     aggregate_native_probe_execution_accounting,
     aggregate_native_qam_statistics,
     aggregate_terminal_track_accounting,
@@ -290,8 +291,8 @@ def reduce_native_radio_terminal_evidence(
     stateful_products: tuple[UpstreamJsonProduct, ...],
     glrt_products: tuple[UpstreamJsonProduct, ...],
     path_report_products: tuple[UpstreamJsonProduct, ...],
-) -> StandardNativeRadioReportV4:
-    """Reduce two processing-complete path reports with exact seven-product lineage."""
+) -> StandardNativeRadioReportV5:
+    """Reduce one or two complete path reports with exact seven-product lineage."""
 
     scope = context.scope
     if (
@@ -311,8 +312,8 @@ def reduce_native_radio_terminal_evidence(
         path_report_products,
     )
     node_ids = tuple(item.producer_node_id for item in quality_products)
-    if len(node_ids) != 2 or node_ids != context.dependency_node_ids:
-        raise ValueError("native terminal radio reducer requires two authorized path nodes")
+    if len(node_ids) not in {1, 2} or node_ids != context.dependency_node_ids:
+        raise ValueError("native terminal radio reducer requires one or two authorized path nodes")
     if any(
         tuple(item.producer_node_id for item in inventory) != node_ids for inventory in inventories
     ):
@@ -405,13 +406,14 @@ def reduce_native_radio_terminal_evidence(
                 valid_utc_intervals=valid_utc_intervals(source),
             )
         )
-    ordered = cast(
-        tuple[NativeTerminalPathEvidenceV2, NativeTerminalPathEvidenceV2],
-        tuple(sorted(paths, key=lambda item: item.source.receiver_id)),
-    )
-    intervals = intersect_valid_utc_intervals(
-        ordered[0].valid_utc_intervals,
-        ordered[1].valid_utc_intervals,
+    ordered = tuple(sorted(paths, key=lambda item: item.source.receiver_id))
+    intervals = (
+        ordered[0].valid_utc_intervals
+        if len(ordered) == 1
+        else intersect_valid_utc_intervals(
+            ordered[0].valid_utc_intervals,
+            ordered[1].valid_utc_intervals,
+        )
     )
     status = (
         "insufficient_data"
@@ -426,8 +428,8 @@ def reduce_native_radio_terminal_evidence(
         tuple(item.path_report.scientific_disposition for item in ordered)
     )
     values = {
-        "schema_version": 4,
-        "algorithm_version": "standard-native-radio-report-v4",
+        "schema_version": 5,
+        "algorithm_version": "standard-native-radio-report-v5",
         "session_id": context.session_id,
         "stream_id": scope.stream_id,
         "radio_id": scope.radio_id,
@@ -459,7 +461,7 @@ def reduce_native_radio_terminal_evidence(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardNativeRadioReportV4.model_validate(
+    return StandardNativeRadioReportV5.model_validate(
         {**values, "report_digest": canonical_digest(values)}
     )
 
@@ -469,7 +471,7 @@ def reduce_native_paired_terminal_evidence(
     *,
     pair_binding: StandardPairInputBindV2,
     radio_products: tuple[UpstreamJsonProduct, ...],
-) -> StandardNativePairedReportV5:
+) -> StandardNativePairedReportV6:
     """Intersect two terminal radio reports and merge only sufficient statistics."""
 
     scope = context.scope
@@ -494,13 +496,16 @@ def reduce_native_paired_terminal_evidence(
     reports_by_identity = {
         (report.stream_id, report.radio_id): (product, report)
         for product in radio_products
-        for report in (StandardNativeRadioReportV4.model_validate(product.document),)
+        for report in (_terminal_radio_report(product),)
     }
     if len(reports_by_identity) != 2:
         raise ValueError("native terminal paired reducer repeated a radio identity")
     ordered_pairs = tuple(reports_by_identity[key] for key in sorted(reports_by_identity))
     ordered = cast(
-        tuple[StandardNativeRadioReportV4, StandardNativeRadioReportV4],
+        tuple[
+            StandardNativeRadioReportV4 | StandardNativeRadioReportV5,
+            StandardNativeRadioReportV4 | StandardNativeRadioReportV5,
+        ],
         tuple(item[1] for item in ordered_pairs),
     )
     for product, report in ordered_pairs:
@@ -537,8 +542,8 @@ def reduce_native_paired_terminal_evidence(
         tuple(item.scientific_disposition for item in ordered)
     )
     values = {
-        "schema_version": 5,
-        "algorithm_version": "standard-native-paired-report-v5",
+        "schema_version": 6,
+        "algorithm_version": "standard-native-paired-report-v6",
         "session_id": context.session_id,
         "manifest_digest": pair_binding.manifest_digest,
         "synchronization_inventory_digest": pair_binding.synchronization_inventory_digest,
@@ -571,9 +576,20 @@ def reduce_native_paired_terminal_evidence(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardNativePairedReportV5.model_validate(
+    return StandardNativePairedReportV6.model_validate(
         {**values, "report_digest": canonical_digest(values)}
     )
+
+
+def _terminal_radio_report(
+    product: UpstreamJsonProduct,
+) -> StandardNativeRadioReportV4 | StandardNativeRadioReportV5:
+    schema_version = product.document.get("schema_version")
+    if schema_version == 5:
+        return StandardNativeRadioReportV5.model_validate(product.document)
+    if schema_version == 4:
+        return StandardNativeRadioReportV4.model_validate(product.document)
+    raise ValueError("native terminal paired reducer received an unsupported radio report")
 
 
 def valid_utc_intervals(
@@ -708,11 +724,11 @@ def native_paired_waterfall_source(
     if context.scope is None or context.scope.kind is not ScopeKind.PAIRED:
         raise ValueError("native paired presentation requires an exact paired scope")
     if (
-        len(waterfall_products) != 4
+        len(waterfall_products) not in {3, 4}
         or tuple(item.producer_node_id for item in waterfall_products)
         != context.dependency_node_ids
     ):
-        raise ValueError("native paired presentation requires four authorized path products")
+        raise ValueError("native paired presentation requires three or four authorized paths")
     validated: list[tuple[UpstreamJsonProduct, StandardNativeNumericalWaterfallV3]] = []
     for product in waterfall_products:
         document = StandardNativeNumericalWaterfallV3.model_validate(product.document)
@@ -736,7 +752,7 @@ def native_paired_waterfall_source(
     )
     sources = tuple(item[1].source for item in validated)
     if (
-        len({(item.stream_id, item.receiver_id) for item in sources}) != 4
+        len({(item.stream_id, item.receiver_id) for item in sources}) != len(sources)
         or len({item.manifest_digest for item in sources}) != 1
         or len({item.synchronization_inventory_digest for item in sources}) != 1
     ):

@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from leo.contracts.base import ContractModel
+from leo.contracts.gain_control import TandemBlockEvidenceV1
 from leo.contracts.states import (
     ContinuityStatus,
     GainMode,
@@ -158,8 +159,21 @@ class IqBlockMetadataV2(IqBlockMetadataV1):
         return self
 
 
+class IqBlockMetadataV3(IqBlockMetadataV2):
+    """ABI3 counter evidence with explicit tandem-controller ownership metadata."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    tandem: TandemBlockEvidenceV1
+
+    @model_validator(mode="after")
+    def _abi_is_tandem_v3(self) -> Self:
+        if self.metadata_abi_version != 3:
+            raise ValueError("V3 IQ metadata requires radio metadata ABI 3")
+        return self
+
+
 IqBlockMetadataContract = Annotated[
-    IqBlockMetadataV1 | IqBlockMetadataV2,
+    IqBlockMetadataV1 | IqBlockMetadataV2 | IqBlockMetadataV3,
     Field(discriminator="schema_version"),
 ]
 _IQ_BLOCK_METADATA_ADAPTER: TypeAdapter[IqBlockMetadataContract] = TypeAdapter(

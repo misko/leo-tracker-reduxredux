@@ -117,7 +117,6 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
 
     assert acquisition["ExecStart"].endswith(
         "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} "
-        "--profile ${LEO_CAPTURE_PROFILE_3M} "
         "--profile ${LEO_CAPTURE_PROFILE_5M} "
         "--radio radio_pluto_5d4d --radio radio_pluto_19f2 "
         "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS} "
@@ -351,7 +350,6 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_RADIO_BACKEND",
         "LEO_RADIOS_JSON",
         "LEO_CAPTURE_PROFILE",
-        "LEO_CAPTURE_PROFILE_3M",
         "LEO_CAPTURE_PROFILE_5M",
         "LEO_MIXED_RATE_POLICY",
         "LEO_CAPTURE_INTERVAL_SECONDS",
@@ -398,9 +396,8 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
     assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4"
-    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-native-bandwidth-v4"
     assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-native-bandwidth-v4"
-    assert values["LEO_MIXED_RATE_POLICY"] == "mixed-native-rates-16-safe-v1"
+    assert values["LEO_MIXED_RATE_POLICY"] == "production-native-rates-8-v2"
     assert values["LEO_QUALIFICATION_PROFILE"] == (
         "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"
     )
@@ -512,7 +509,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "--no-editable" in stage
     assert '"$release_dir/.venv/bin/pluto-install-metadata-runtime"' in stage
     assert '--metadata-abi "$metadata_abi"' in stage
-    assert "metadata_abi=1" in stage
+    assert "metadata_abi=3" in stage
     assert stage.index('--directory "$release_dir" sync --frozen') < stage.index(
         '"$release_dir/.venv/bin/pluto-install-metadata-runtime"'
     )
@@ -531,16 +528,13 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert stage.rindex("validate-published-release") < metadata_publish
     assert stage.index('rm -f -- "$release_dir/.leo-release-incomplete"') < metadata_publish
     assert stage.count('PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python"') == 2
-    assert "-u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1" in deployment_text
-    assert '"/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -B -m pytest' in (
-        deployment_text
-    )
-    assert "-ra -s -p no:cacheprovider" in deployment_text
+    assert "production-native-rates-8-v2" in deployment_text
+    assert 'sudo ./ops deploy --full --revision "$release_revision"' in deployment_text
     assert "public.processing_resource_capacity" in deployment_text
     assert "streaming=16`, `cpu=8`,\n`memory=4`, and `heavy=2" in deployment_text
     assert deployment_text.count("leo acquire resume --operator production-cutover") == 2
     assert deployment_text.count("leo acquire pause --operator production-cutover") >= 2
-    assert 'leo acquire once --profile "$LEO_CAPTURE_PROFILE_3M" --json' in deployment_text
+    assert 'leo acquire once --profile "$LEO_CAPTURE_PROFILE" --json' in deployment_text
     assert 'leo acquire once --profile "$LEO_CAPTURE_PROFILE_5M" --json' in deployment_text
     assert "Continuous acquisition requires a later, separate\noperator resume" in deployment_text
     assert "mktemp" in stage
@@ -602,10 +596,6 @@ def test_cutover_verifier_fails_before_host_access_for_non_exact_revision() -> N
             "mouse9911",
             "--release-receipt",
             "/does/not/exist",
-            "--rate-qualification-receipt",
-            "/does/not/exist",
-            "--rate-qualification-receipt-sha256",
-            "0" * 64,
             "--soak-receipt",
             "/does/not/exist",
         ),

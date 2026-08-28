@@ -114,11 +114,13 @@ PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS = (
 
 RADIO_REPORT_V3_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=3)
 RADIO_REPORT_V4_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=4)
-RADIO_SCIENTIFIC_NATIVE_OUTPUTS = (RADIO_REPORT_V4_PRODUCT, *STANDARD_NATIVE_PNG_PRODUCTS)
+RADIO_REPORT_V5_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=5)
+RADIO_SCIENTIFIC_NATIVE_OUTPUTS = (RADIO_REPORT_V5_PRODUCT, *STANDARD_NATIVE_PNG_PRODUCTS)
 PAIRED_REPORT_V3_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=3)
 PAIRED_REPORT_V4_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=4)
 PAIRED_REPORT_V5_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=5)
-PAIRED_SCIENTIFIC_NATIVE_OUTPUTS = (PAIRED_REPORT_V5_PRODUCT,)
+PAIRED_REPORT_V6_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=6)
+PAIRED_SCIENTIFIC_NATIVE_OUTPUTS = (PAIRED_REPORT_V6_PRODUCT,)
 PAIRED_PRESENTATION_NATIVE_OUTPUTS = STANDARD_NATIVE_PNG_PRODUCTS
 
 STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT = sum(

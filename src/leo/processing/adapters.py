@@ -28,7 +28,7 @@ from leo.catalog import (
 )
 from leo.contracts.continuity import IqGapMapV1
 from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
-from leo.contracts.radio import IqBlockMetadataV1, parse_iq_block_metadata_json
+from leo.contracts.radio import IqBlockMetadataV1, IqBlockMetadataV3, parse_iq_block_metadata_json
 from leo.contracts.rate_analysis import VerifiedIqGapMapEvidenceV1
 from leo.contracts.recording import (
     DeviceAxisRecordingChunkV1,
@@ -848,6 +848,14 @@ class _VerifiedRecordingIqReader:
         expected_start = 0
         chunk_index = 0
         for metadata in timeline:
+            if (
+                isinstance(self._stream, RecordingStreamV3)
+                and self._stream.continuity.metadata_abi_version == 3
+                and not isinstance(metadata, IqBlockMetadataV3)
+            ):
+                raise BundleCorruptionError(
+                    "metadata ABI 3 stream lacks typed tandem-controller evidence"
+                )
             if metadata.radio_id != self._stream.radio.radio_id:
                 raise BundleCorruptionError("timeline radio ID disagrees with its stream")
             if metadata.receiver_ids != self.receiver_ids:
