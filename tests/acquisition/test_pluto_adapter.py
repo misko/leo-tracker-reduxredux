@@ -409,6 +409,15 @@ def test_metadata_capture_fails_closed_without_capability_attestation() -> None:
         adapter.begin_metadata_capture(4, kernel_buffers=8)
 
 
+def test_gain_controller_covers_v2_first_refill_arm_window() -> None:
+    controller = GainControllerPolicyV1.create(
+        GainControllerMode.TANDEM_AUTO,
+        sample_count=1_048_576,
+    )
+
+    assert controller.cooldown_periods == 31
+
+
 def test_metadata_session_maps_explicit_auto_controller_and_rejects_faults() -> None:
     device = StubMetadataDevice("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
     adapter = PlutoIioRadioSource(

@@ -57,9 +57,11 @@ class GainControllerPolicyV1(ContractModel):
     ) -> GainControllerPolicyV1:
         if sample_count <= 0:
             raise ValueError("gain-controller sample count must be positive")
-        # Match PPU's capacity proof: the fixed array must cover every possible
-        # AUTO transition in one refill. HOLD retains the same reviewed request.
-        minimum_periods = (sample_count + 64 * 1024 - 1) // (64 * 1024)
+        # Match PPU's V2 capacity proof: the fixed event array must cover the
+        # first-refill arm window as well as the refill being returned. HOLD
+        # retains the same reviewed request so both modes share one authority.
+        retention_samples = sample_count * 2
+        minimum_periods = (retention_samples + 64 * 1024 - 1) // (64 * 1024)
         cooldown = max(16, minimum_periods - 1)
         candidate = cls.model_construct(
             request_digest="sha256:" + "0" * 64,
