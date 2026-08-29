@@ -23,6 +23,7 @@ class AcquisitionConfig:
     safety_reserve_bytes: int = 1 * 1024 * 1024 * 1024
     metadata_bytes_per_refill: int = 4096
     consumer_shutdown_timeout_seconds: float = 10.0
+    raw_stage_finalize_timeout_seconds: float = 600.0
 
     def __post_init__(self) -> None:
         if self.release_lead_ns < 0:
@@ -33,6 +34,8 @@ class AcquisitionConfig:
             raise ValueError("admission reserves are invalid")
         if self.consumer_shutdown_timeout_seconds <= 0:
             raise ValueError("consumer shutdown timeout must be positive")
+        if self.raw_stage_finalize_timeout_seconds <= 0:
+            raise ValueError("raw-stage finalization timeout must be positive")
 
 
 @dataclass(frozen=True, slots=True)

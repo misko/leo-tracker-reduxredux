@@ -1,0 +1,154 @@
+from decimal import Decimal
+
+import pytest
+
+import leo.acquisition.coordinator as coordinator_module
+from leo.acquisition.coordinator import AcquisitionCoordinator
+from leo.acquisition.models import AcquisitionConfig
+from leo.contracts.device_buffer import (
+    DDR_RING_EVIDENCE_KEY_V1,
+    DeviceBufferEvidenceV1,
+    DeviceBufferRequestV1,
+)
+from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
+from leo.contracts.radio import ReceiverGainV1
+from leo.contracts.recording import DEVICE_AXIS_STORAGE_POLICY_V1, CompressionSettingsV1
+from leo.contracts.states import CaptureState, ContinuityPolicy, PeerFailurePolicy, SourceType
+from leo.domain.profiles import compile_capture_plan
+from leo.radio.fake import FakeRadioSource
+from leo.storage import RecordingStore
+from leo.storage.writer import DeviceAxisStreamBundleWriter
+
+
+def _setup(tmp_path, monkeypatch, *, frames=6, queue_capacity=32):
+    profile = CaptureProfileV2(
+        name="tiny-ring-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=20_000_000,
+        bandwidth_hz=20_000_000,
+        receivers=(0,),
+        gains=(ReceiverGainV1(receiver_id=0, gain_db=30),),
+        sample_count=frames * 4,
+        refill_samples=4,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        kernel_buffers=4,
+        refill_queue_capacity=queue_capacity,
+        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+        tags=("TEST",),
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile), ["radio-a"], source_type=SourceType.TEST
+    )
+    request = DeviceBufferRequestV1(
+        requested_bytes=32,
+        target_frames=frames,
+        frame_samples=4,
+        requested_device_samples=frames * 4,
+    )
+    monkeypatch.setattr(coordinator_module, "device_buffer_request_v1", lambda *_: request)
+    store = RecordingStore(tmp_path / "bulk")
+    coordinator = AcquisitionCoordinator(
+        store,
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1, target_uncompressed_bytes=1024
+        ),
+    )
+    return coordinator, plan, request
+
+
+def test_ring_drains_finite_tail_but_publishes_only_requested_device_window(tmp_path, monkeypatch):
+    coordinator, plan, request = _setup(tmp_path, monkeypatch)
+    radio = FakeRadioSource("radio-a", gaps_before_blocks={2: 8})
+    original = DeviceAxisStreamBundleWriter.append
+
+    def append_only_after_radio_drain(self, block):
+        assert radio._ring_returned_frames == request.target_frames
+        assert radio.lifecycle[-1] == "reset_receive_buffer"
+        return original(self, block)
+
+    monkeypatch.setattr(DeviceAxisStreamBundleWriter, "append", append_only_after_radio_drain)
+    result = coordinator.capture_once(plan, {"radio-a": radio}, session_id="ring-tail")
+    assert result.state is CaptureState.DEGRADED
+    assert result.bundle is not None
+    stream = result.bundle.manifest.streams[0]
+    assert stream.requested_sample_count == stream.logical_sample_count == 24
+    assert stream.observed_sample_count == 16
+    assert stream.zero_fill_sample_count == 8
+    assert stream.continuity.enqueue_failure_count == 0
+    reader = coordinator.store.reader(result.bundle, "stream-0")
+    first = next(reader.iter_timeline_metadata())
+    evidence = DeviceBufferEvidenceV1.model_validate(
+        first.hardware_metadata[DDR_RING_EVIDENCE_KEY_V1]
+    )
+    assert evidence.returned_frames == 6
+    assert evidence.returned_device_span_samples == 32
+    assert evidence.drained_outside_window_samples == 8
+    assert evidence.protected_prefix_bytes == 32
+    assert not tuple(result.bundle.path.glob("raw-stage-*"))
+    coordinator.store.verify(result.bundle.session_id)
+
+
+def test_ring_contiguous_capture_commits_and_admits_double_space(tmp_path, monkeypatch):
+    coordinator, plan, _ = _setup(tmp_path, monkeypatch)
+    estimate = coordinator.estimate_admission(plan)
+    assert (
+        estimate.required_free_bytes == 2 * estimate.raw_iq_bytes + estimate.metadata_reserve_bytes
+    )
+    result = coordinator.capture_once(
+        plan, {"radio-a": FakeRadioSource("radio-a")}, session_id="ring-clean"
+    )
+    assert result.state is CaptureState.COMMITTED
+    assert result.bundle is not None
+    assert result.bundle.manifest.streams[0].continuity.refill_count == 6
+
+
+@pytest.mark.parametrize("gap_block", [0, 1])
+def test_ring_prefix_failure_is_never_published(tmp_path, monkeypatch, gap_block):
+    coordinator, plan, _ = _setup(tmp_path, monkeypatch)
+    # First-frame overflow is authoritative evidence even without a prior counter.
+    radio = FakeRadioSource(
+        "radio-a", gaps_before_blocks=({1: 4} if gap_block else {}), overflow_blocks={gap_block}
+    )
+    result = coordinator.capture_once(plan, {"radio-a": radio}, session_id="ring-bad-prefix")
+    assert result.state is CaptureState.FAILED
+    assert result.bundle is None
+    assert any("protected prefix" in error for error in result.errors)
+
+
+def test_ring_status_failure_preserves_raw_stage(tmp_path, monkeypatch):
+    coordinator, plan, _ = _setup(tmp_path, monkeypatch)
+
+    class BadStatusRadio(FakeRadioSource):
+        def ddr_ring_status(self):
+            return super().ddr_ring_status().model_copy(update={"error_code": 5})
+
+    result = coordinator.capture_once(
+        plan, {"radio-a": BadStatusRadio("radio-a")}, session_id="ring-bad-status"
+    )
+    assert result.state is CaptureState.FAILED
+    assert result.bundle is None
+    assert (
+        coordinator.store.spool_root / "ring-bad-status.partial" / "raw-stage-stream-0" / "iq.ci16"
+    ).is_file()
+    assert (
+        coordinator.store.spool_root / "ring-bad-status.partial" / "capture-failure-stream-0.json"
+    ).is_file()
+
+
+def test_raw_stage_compression_failure_remains_unpublished(tmp_path, monkeypatch):
+    coordinator, plan, _ = _setup(tmp_path, monkeypatch)
+
+    def fail(self, block):
+        raise OSError("injected compression failure")
+
+    monkeypatch.setattr(DeviceAxisStreamBundleWriter, "append", fail)
+    result = coordinator.capture_once(
+        plan, {"radio-a": FakeRadioSource("radio-a")}, session_id="ring-compress-fail"
+    )
+    assert result.state is CaptureState.FAILED
+    assert result.bundle is None
+    assert any("injected compression failure" in error for error in result.errors)

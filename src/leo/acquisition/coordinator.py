@@ -29,6 +29,12 @@ from leo.acquisition.models import (
     CaptureSessionResult,
     StorageAdmissionDecision,
 )
+from leo.contracts.device_buffer import (
+    DDR_RING_EVIDENCE_KEY_V1,
+    DeviceBufferEvidenceV1,
+    device_buffer_request_v1,
+)
+from leo.contracts.digests import canonical_json_bytes
 from leo.contracts.mixed_rate_capture import CapturePlanV3, CapturePlanV4
 from leo.contracts.profile import (
     CapturePlanV1,
@@ -77,6 +83,7 @@ from leo.domain.continuity import ContinuityChainValidator
 from leo.domain.iq import IqBlock
 from leo.radio.ports import RadioSource
 from leo.storage import RecordingStore
+from leo.storage.staging import RawIqStage
 from leo.storage.writer import (
     DeviceAxisStreamBundleWriter,
     DeviceAxisStreamWriteReceipt,
@@ -212,7 +219,12 @@ class AcquisitionCoordinator:
             math.ceil(sample_count / profile.refill_samples) * self.config.metadata_bytes_per_refill
             for profile, sample_count, _settings in geometry
         )
-        required = raw_bytes + metadata_bytes + self.config.safety_reserve_bytes
+        staging_bytes = sum(
+            sample_count * len(profile.receivers) * 4
+            for profile, sample_count, _settings in geometry
+            if device_buffer_request_v1(profile, sample_count) is not None
+        )
+        required = raw_bytes + staging_bytes + metadata_bytes + self.config.safety_reserve_bytes
         available = max(0, int(self._free_bytes(self.store.root)))
         policy = self._storage_admission(self.store.root)
         return AdmissionEstimate(
@@ -829,6 +841,8 @@ class AcquisitionCoordinator:
         if not isinstance(profile, CaptureProfileV2):
             raise AcquisitionError("counter-authoritative capture requires CaptureProfileV2")
         device_axis_capture = profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
+        device_buffer = device_buffer_request_v1(profile, resolved_sample_count)
+        ring_evidence: DeviceBufferEvidenceV1 | None = None
         kernel_buffers: int | None = None
         pending: queue.Queue[IqBlock | object] = queue.Queue(maxsize=profile.refill_queue_capacity)
         stop = object()
@@ -862,6 +876,27 @@ class AcquisitionCoordinator:
         def consume() -> None:
             nonlocal queued_refills
             stream_writer: StreamBundleWriter | DeviceAxisStreamBundleWriter | None = None
+            raw_stage: RawIqStage | None = None
+
+            def open_writer() -> StreamBundleWriter | DeviceAxisStreamBundleWriter:
+                if kernel_buffers is None:
+                    raise AcquisitionError("verified kernel-buffer readback is unavailable")
+                if device_axis_capture:
+                    return bundle.open_device_axis_stream(
+                        item.stream_id,
+                        item.identity,
+                        item.applied_settings.receiver_ids,
+                        requested_device_span=resolved_sample_count,
+                        kernel_buffers=kernel_buffers,
+                    )
+                return bundle.open_stream(
+                    item.stream_id,
+                    item.identity,
+                    item.applied_settings.receiver_ids,
+                    counter_authoritative=True,
+                    kernel_buffers=kernel_buffers,
+                )
+
             try:
                 while True:
                     set_consumer_phase("waiting")
@@ -879,33 +914,46 @@ class AcquisitionCoordinator:
                             continue
                         assert isinstance(queued, IqBlock)
                         set_consumer_phase("writing")
-                        if stream_writer is None:
-                            if kernel_buffers is None:
-                                raise AcquisitionError(
-                                    "verified kernel-buffer readback is unavailable"
-                                )
-                            if device_axis_capture:
-                                stream_writer = bundle.open_device_axis_stream(
+                        if device_buffer is not None:
+                            if raw_stage is None:
+                                raw_stage = bundle.open_raw_stage(
                                     item.stream_id,
-                                    item.identity,
-                                    item.applied_settings.receiver_ids,
-                                    requested_device_span=resolved_sample_count,
-                                    kernel_buffers=kernel_buffers,
+                                    maximum_bytes=resolved_sample_count
+                                    * len(profile.receivers)
+                                    * 4,
                                 )
-                            else:
-                                stream_writer = bundle.open_stream(
-                                    item.stream_id,
-                                    item.identity,
-                                    item.applied_settings.receiver_ids,
-                                    counter_authoritative=True,
-                                    kernel_buffers=kernel_buffers,
-                                )
-                        stream_writer.append(queued)
+                            raw_stage.append(queued)
+                        else:
+                            if stream_writer is None:
+                                stream_writer = open_writer()
+                            stream_writer.append(queued)
                     except Exception as error:
                         consumer_error.append(_error_text(error))
                         consumer_failed.set()
                     finally:
                         pending.task_done()
+                if raw_stage is not None and not consumer_failed.is_set():
+                    raw_stage.seal()
+                    if ring_evidence is None:
+                        # The producer retains the original RF/cancellation error;
+                        # keep the raw spool without fabricating a publishable tail.
+                        return
+                    set_consumer_phase("finalizing")
+                    stream_writer = open_writer()
+                    for index, staged in enumerate(raw_stage.blocks()):
+                        if index == 0:
+                            metadata = staged.metadata.model_copy(
+                                update={
+                                    "hardware_metadata": {
+                                        **staged.metadata.hardware_metadata,
+                                        DDR_RING_EVIDENCE_KEY_V1: ring_evidence.model_dump(
+                                            mode="json"
+                                        ),
+                                    }
+                                }
+                            )
+                            staged = IqBlock(samples=staged.samples, metadata=metadata)
+                        stream_writer.append(staged)
                 if stream_writer is not None and not consumer_failed.is_set():
                     set_consumer_phase("finalizing")
                     queue_telemetry = StreamQueueTelemetry(
@@ -935,6 +983,8 @@ class AcquisitionCoordinator:
                                 requested_device_span=resolved_sample_count,
                             )
                         )
+                    if raw_stage is not None:
+                        raw_stage.discard_after_finalize()
                 elif stream_writer is not None:
                     set_consumer_phase("aborting")
                     stream_writer.abort()
@@ -942,6 +992,8 @@ class AcquisitionCoordinator:
                 consumer_error.append(_error_text(error))
                 consumer_failed.set()
             finally:
+                if raw_stage is not None:
+                    raw_stage.close()
                 set_consumer_phase("stopped")
 
         consumer = threading.Thread(
@@ -951,6 +1003,10 @@ class AcquisitionCoordinator:
         )
         consumer.start()
         captured = 0
+        returned_frames = 0
+        returned_samples = 0
+        returned_device_span = 0
+        prefix_contiguous = True
         device_span = 0
         first_counter: int | None = None
         first_metadata: IqBlockMetadataV1 | None = None
@@ -971,7 +1027,14 @@ class AcquisitionCoordinator:
             arm_started = self.clock.monotonic_ns()
             controller = _gain_controller_for_radio(plan, item.identity.radio_id)
             try:
-                if controller is None:
+                if device_buffer is not None:
+                    kernel_buffers = item.source.begin_metadata_capture(
+                        profile.refill_samples,
+                        kernel_buffers=profile.kernel_buffers,
+                        gain_controller=controller,
+                        device_buffer=device_buffer,
+                    )
+                elif controller is None:
                     kernel_buffers = item.source.begin_metadata_capture(
                         profile.refill_samples,
                         kernel_buffers=profile.kernel_buffers,
@@ -1017,17 +1080,27 @@ class AcquisitionCoordinator:
                 arm_completed - arm_started,
                 kernel_buffers,
             )
-            while device_span < resolved_sample_count:
+            while (
+                returned_frames < device_buffer.target_frames
+                if device_buffer is not None
+                else device_span < resolved_sample_count
+            ):
                 if external_cancel.is_set() or (fail_whole and session_cancel.is_set()):
                     raise AcquisitionCancelled("capture cancelled at a refill boundary")
                 if consumer_failed.is_set():
                     raise AcquisitionError(f"storage consumer failed: {consumer_error[-1]}")
-                count = min(
-                    profile.refill_samples,
-                    resolved_sample_count - device_span,
+                count = (
+                    profile.refill_samples
+                    if device_buffer is not None
+                    else min(profile.refill_samples, resolved_sample_count - device_span)
                 )
                 block = item.source.read_block(count)
-                block = _validate_and_rebase_block(block, item, count, captured)
+                block = _validate_and_rebase_block(
+                    block,
+                    item,
+                    count,
+                    returned_samples if device_buffer is not None else captured,
+                )
                 metadata = validator.observe(block.metadata)
                 if not isinstance(metadata, IqBlockMetadataV2):
                     raise AcquisitionError("V2 capture returned legacy IQ metadata")
@@ -1037,6 +1110,22 @@ class AcquisitionCoordinator:
                 if first_counter is None:
                     first_counter = metadata.device_sample_counter
                 block_device_start = metadata.device_sample_counter - first_counter
+                returned_frames += 1
+                returned_samples += count
+                returned_device_span = block_device_start + count
+                if device_buffer is not None and returned_frames <= min(
+                    device_buffer.capacity_frames, device_buffer.target_frames
+                ):
+                    prefix_contiguous = prefix_contiguous and (
+                        block_device_start == (returned_frames - 1) * count
+                        and not metadata.overflow_observed
+                    )
+                    if not prefix_contiguous:
+                        raise AcquisitionError("DDR ring protected prefix is not contiguous")
+                # A finite firmware target counts delivered frames, not device time.
+                # Drain its bounded tail, but never extend the published dwell window.
+                if device_span == resolved_sample_count:
+                    continue
                 accepted_count = min(
                     metadata.sample_count,
                     max(0, resolved_sample_count - block_device_start),
@@ -1054,7 +1143,9 @@ class AcquisitionCoordinator:
                     terminal_gap_metadata = metadata
                     device_span = resolved_sample_count
                     _log_gap(item, metadata)
-                    break
+                    if device_buffer is None:
+                        break
+                    continue
                 if accepted_count < metadata.sample_count:
                     block = _truncate_iq_block(
                         block,
@@ -1116,14 +1207,75 @@ class AcquisitionCoordinator:
                         item.identity.radio_id,
                         metadata.stream_generation,
                     )
+            if device_buffer is not None:
+                status = item.source.ddr_ring_status()
+                prefix_frames = min(device_buffer.capacity_frames, device_buffer.target_frames)
+                assert first_counter is not None
+                prefix_end = first_counter + prefix_frames * profile.refill_samples
+                if (
+                    status.high_water_frames < prefix_frames
+                    or status.last_contiguous_sample_sequence is None
+                    or status.last_contiguous_sample_sequence < prefix_end
+                    or (
+                        status.first_unavailable_sample_sequence is not None
+                        and status.first_unavailable_sample_sequence < prefix_end
+                    )
+                ):
+                    raise AcquisitionError("DDR ring status does not attest the protected prefix")
+                ring_evidence = DeviceBufferEvidenceV1(
+                    request=device_buffer,
+                    status=status,
+                    returned_frames=returned_frames,
+                    returned_device_span_samples=returned_device_span,
+                    protected_prefix_frames=prefix_frames,
+                    protected_prefix_bytes=prefix_frames * profile.refill_samples * 4,
+                    stored_observed_samples=captured,
+                    drained_outside_window_samples=returned_samples - captured,
+                )
+                item.source.reset_receive_buffer()
+                _LOG.info(
+                    "ddr_ring_complete radio=%s stream=%s frames=%d bytes=%d "
+                    "stored_samples=%d drained_outside_window_samples=%d wraps=%d",
+                    item.identity.radio_id,
+                    item.stream_id,
+                    returned_frames,
+                    status.admitted_capacity_iq_bytes,
+                    captured,
+                    returned_samples - captured,
+                    status.wrap_count,
+                )
         except BaseException as error:
             error_text = _error_text(error)
+            if device_buffer is not None:
+                diagnostic: dict[str, object] = {
+                    "schema_version": 1,
+                    "request": device_buffer.model_dump(mode="json"),
+                    "returned_frames": returned_frames,
+                    "returned_device_span_samples": returned_device_span,
+                    "stored_observed_samples": captured,
+                    "error": error_text,
+                }
+                try:
+                    diagnostic["status"] = item.source.ddr_ring_status().model_dump(mode="json")
+                except Exception as status_error:
+                    diagnostic["status_error"] = _error_text(status_error)
+                try:
+                    bundle.write_capture_failure_evidence(
+                        item.stream_id, canonical_json_bytes(diagnostic)
+                    )
+                except Exception:
+                    _LOG.exception("could not persist DDR ring failure evidence")
             if not isinstance(error, Exception):
                 interruption = error
             if fail_whole:
                 session_cancel.set()
         finally:
-            deadline = time.monotonic() + self.config.consumer_shutdown_timeout_seconds
+            shutdown_timeout = (
+                self.config.raw_stage_finalize_timeout_seconds
+                if ring_evidence is not None
+                else self.config.consumer_shutdown_timeout_seconds
+            )
+            deadline = time.monotonic() + shutdown_timeout
             stop_enqueued = False
             while consumer.is_alive() and not stop_enqueued:
                 remaining = deadline - time.monotonic()
@@ -1149,7 +1301,7 @@ class AcquisitionCoordinator:
                     bundle.session_id,
                     item.identity.radio_id,
                     item.stream_id,
-                    self.config.consumer_shutdown_timeout_seconds,
+                    shutdown_timeout,
                     observed_consumer_phase(),
                     remaining_refills,
                     str(stop_enqueued).lower(),

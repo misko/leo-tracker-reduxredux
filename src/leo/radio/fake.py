@@ -6,6 +6,7 @@ from collections.abc import Iterable, Mapping
 
 import numpy as np
 
+from leo.contracts.device_buffer import DdrRingStatusV1, DeviceBufferRequestV1
 from leo.contracts.gain_control import (
     GainControllerMode,
     GainControllerPolicyV1,
@@ -89,6 +90,10 @@ class FakeRadioSource:
         self._kernel_buffers: int | None = None
         self._metadata_refill_samples: int | None = None
         self._gain_controller: GainControllerPolicyV1 | None = None
+        self._device_buffer: DeviceBufferRequestV1 | None = None
+        self._ring_returned_frames = 0
+        self._ring_first_counter: int | None = None
+        self._ring_first_unavailable: int | None = None
         self.lifecycle: list[str] = []
 
     @property
@@ -143,6 +148,7 @@ class FakeRadioSource:
         *,
         kernel_buffers: int,
         gain_controller: GainControllerPolicyV1 | None = None,
+        device_buffer: DeviceBufferRequestV1 | None = None,
     ) -> int:
         self._require_open()
         if self._settings is None:
@@ -154,11 +160,46 @@ class FakeRadioSource:
         self._metadata_sequence = 0
         self._kernel_buffers = kernel_buffers
         self._metadata_refill_samples = sample_count
+        self._device_buffer = device_buffer
+        self._ring_returned_frames = 0
+        self._ring_first_counter = None
+        self._ring_first_unavailable = None
         self._gain_controller = gain_controller
+        if device_buffer is not None and self._gain_controller is None:
+            self._gain_controller = GainControllerPolicyV1.create(
+                GainControllerMode.TANDEM_HOLD, sample_count=sample_count
+            )
         self._session_sample_cursor = 0
         suffix = "" if gain_controller is None else f":{gain_controller.mode.value}"
         self.lifecycle.append(f"begin_metadata_capture:{sample_count}:{kernel_buffers}{suffix}")
         return kernel_buffers
+
+    def ddr_ring_status(self) -> DdrRingStatusV1:
+        request = self._device_buffer
+        if request is None or self._ring_first_counter is None:
+            raise FakeRadioError("fake DDR ring has no returned frames")
+        frames = self._ring_returned_frames
+        complete = frames == request.target_frames
+        return DdrRingStatusV1(
+            state="complete" if complete else "running",
+            terminal_reason="target_complete" if complete else "none",
+            error_code=0,
+            requested_capacity_iq_bytes=request.requested_bytes,
+            admitted_capacity_iq_bytes=request.requested_bytes,
+            target_frames=request.target_frames,
+            produced_frames=frames,
+            consumed_frames=frames,
+            high_water_frames=min(request.capacity_frames, frames),
+            wrap_count=frames // request.capacity_frames,
+            producer_position=frames % request.capacity_frames,
+            consumer_position=frames % request.capacity_frames,
+            last_contiguous_sample_sequence=(
+                self._device_sample_counter
+                if self._ring_first_unavailable is None
+                else self._ring_first_unavailable
+            ),
+            first_unavailable_sample_sequence=self._ring_first_unavailable,
+        )
 
     def read_block(self, sample_count: int) -> IqBlock:
         self._require_open()
@@ -172,6 +213,14 @@ class FakeRadioSource:
 
         missing = self._gaps_before_blocks.get(self._block_index, 0)
         overflow = self._block_index in self._overflow_blocks
+        if self._metadata_capture and self._device_buffer is not None:
+            if self._ring_returned_frames >= self._device_buffer.target_frames:
+                raise FakeRadioError("fake DDR ring read beyond finite target")
+            if missing and self._ring_first_unavailable is None:
+                self._ring_first_unavailable = self._device_sample_counter
+            if self._ring_first_counter is None:
+                self._ring_first_counter = self._device_sample_counter + missing
+            self._ring_returned_frames += 1
         self._device_sample_counter += missing
         if self._metadata_capture and missing:
             assert self._metadata_refill_samples is not None
