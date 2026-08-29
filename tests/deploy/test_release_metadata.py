@@ -48,7 +48,7 @@ def _published(
             {
                 "schema_version": 1,
                 "metadata_abi": 3,
-                "source_commit": "f72a72602e4ac0173bc7dd5842d831007baa3582",
+                "source_commit": "1e5002702f3033f5bc741da315dfe5d5558ef394",
                 "native_libiio_path": str(native),
                 "pylibiio_path": str(binding),
             }
@@ -109,6 +109,18 @@ def test_metadata_native_runtime_tamper_fails(tmp_path: Path) -> None:
     native.write_bytes(b"changed metadata runtime")
     native.chmod(0o440)
     with pytest.raises(ValueError, match="digest does not verify"):
+        _validate(release, metadata)
+
+
+def test_pre_ring_runtime_identity_is_rejected_even_with_matching_file_hashes(tmp_path):
+    release, metadata = _published(tmp_path)
+    receipt = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
+    document = json.loads(receipt.read_text())
+    document["source_commit"] = "f72a72602e4ac0173bc7dd5842d831007baa3582"
+    receipt.chmod(0o640)
+    receipt.write_text(json.dumps(document))
+    receipt.chmod(0o440)
+    with pytest.raises(ValueError, match="production ABI 3 runtime"):
         _validate(release, metadata)
 
 
