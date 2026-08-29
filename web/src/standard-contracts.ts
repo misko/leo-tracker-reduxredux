@@ -336,6 +336,14 @@ export interface StandardNativePngArtifactInventoryV6
   sample_rates_hz: Array<2_500_000 | 5_000_000 | 10_000_000 | 15_000_000 | 20_000_000>;
 }
 
+export interface StandardNativePngArtifactInventoryV7
+  extends Omit<StandardNativePngArtifactInventoryV5, "schema_version" | "sample_rates_hz"> {
+  schema_version: 7;
+  sample_rates_hz: Array<
+    2_500_000 | 3_000_000 | 5_000_000 | 10_000_000 | 15_000_000 | 20_000_000
+  >;
+}
+
 export interface StandardNativePipelineReleaseV3 {
   schema_version: 3;
   family: "standard-native-v1";

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 
@@ -30,6 +31,8 @@ from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
+    StandardNativePngArtifactInventoryV4,
+    StandardNativePngArtifactInventoryV7,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
@@ -209,7 +212,7 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
             bundle.manifest.session_id,
             paired.subject_id,
         )
-        assert paired_inventory is not None
+        assert isinstance(paired_inventory, StandardNativePngArtifactInventoryV7)
         assert tuple(item.name for item in paired_inventory.artifacts) == (
             STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
         )
@@ -218,10 +221,56 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
             bundle.manifest.session_id,
             path_subject.subject_id,
         )
-        assert path_inventory is not None
+        assert isinstance(path_inventory, StandardNativePngArtifactInventoryV7)
         assert tuple(item.name for item in path_inventory.artifacts) == (
             STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4
         )
+
+        # Simulate an already sealed pre-V9 Current run.  The API upgrade must
+        # continue to inventory and serve its immutable schema-3 pilot PNGs.
+        projection = native._load(bundle.manifest.session_id)
+        assert projection is not None
+        legacy_projection = replace(
+            projection,
+            products=tuple(
+                replace(product, schema_version=3)
+                if product.kind
+                in {
+                    "standard.pilot-doppler-segments-png",
+                    "standard.pilot-carrier-tracking-png",
+                    "standard.pilot-segment-rates-png",
+                }
+                and product.schema_version == 4
+                else product
+                for product in projection.products
+            ),
+        )
+        legacy_native = CatalogStandardNativePresentationRepository(
+            processing_database.catalog,
+            artifacts,
+        )
+        monkeypatch.setattr(
+            legacy_native,
+            "_load",
+            lambda _session_id: legacy_projection,
+        )
+        legacy_inventory = legacy_native.subject_png_inventory(
+            bundle.manifest.session_id,
+            path_subject.subject_id,
+        )
+        assert isinstance(legacy_inventory, StandardNativePngArtifactInventoryV4)
+        assert tuple(
+            item.product_schema_version
+            for item in legacy_inventory.artifacts
+            if item.name in {"pilot-doppler", "pilot-carrier-tracking", "pilot-segment-rates"}
+        ) == (3, 3, 3)
+        legacy_pilot_png = legacy_native.subject_named_png_artifact(
+            bundle.manifest.session_id,
+            path_subject.subject_id,
+            "pilot-doppler",
+        )
+        assert legacy_pilot_png is not None
+        assert legacy_pilot_png.startswith(b"\x89PNG\r\n\x1a\n")
 
         waterfall = repository.subject_view(
             bundle.manifest.session_id,

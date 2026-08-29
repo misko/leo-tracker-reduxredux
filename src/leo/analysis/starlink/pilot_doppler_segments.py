@@ -15,6 +15,11 @@ matplotlib.use("Agg")
 from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
 
+from leo.analysis.qam.pilot_phase_locklet import (
+    PilotPhaseLockletConfig,
+    PilotPhaseLockletResult,
+    analyze_contiguous_pilot_phase_locklet,
+)
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
     PilotPntKalmanConfigV2,
@@ -59,6 +64,19 @@ class _WindowRequest:
     probe_sample_start: int
     local_epoch_sample: int
     model: PolynomialFrequencyModel
+
+
+@dataclass(frozen=True, slots=True)
+class PilotDopplerSegmentsBundleV3:
+    """In-process V2 compatibility product plus index-aligned V3 phase evidence."""
+
+    legacy_v2: StandardPilotDopplerSegmentsV2
+    phase_config: PilotPhaseLockletConfig
+    phase_locklets: tuple[PilotPhaseLockletResult, ...]
+
+    def __post_init__(self) -> None:
+        if len(self.phase_locklets) != len(self.legacy_v2.segments):
+            raise ValueError("pilot Doppler V3 phase evidence is not aligned to V2 locklets")
 
 
 def build_standard_pilot_doppler_segments(
@@ -125,6 +143,39 @@ def build_standard_pilot_doppler_segments_v2(
     return result
 
 
+def build_standard_pilot_doppler_segments_bundle_v3(
+    iq: IqReader,
+    *,
+    path_input_binding_digest: Sha256Digest,
+    pilot_scan_digest: Sha256Digest,
+    detections: tuple[PilotProbeDetection, ...],
+    canonical_bank: DealiasedTrajectoryBankV4,
+    final_bank: FinalTrajectoryBankV3,
+    kalman_tracking: StandardKalmanTrackingV1,
+    config: PilotDopplerSegmentConfigV2,
+    edge: StarlinkEdge,
+    phase_config: PilotPhaseLockletConfig | None = None,
+) -> PilotDopplerSegmentsBundleV3:
+    """Build immutable V2 output and corrected phase evidence in one IQ pass."""
+
+    result = _build_standard_pilot_doppler_segments(
+        iq,
+        path_input_binding_digest=path_input_binding_digest,
+        pilot_scan_digest=pilot_scan_digest,
+        detections=detections,
+        canonical_bank=canonical_bank,
+        final_bank=final_bank,
+        kalman_tracking=kalman_tracking,
+        config=config,
+        contract_version=2,
+        edge=edge,
+        phase_config=phase_config or PilotPhaseLockletConfig(),
+    )
+    if not isinstance(result, PilotDopplerSegmentsBundleV3):
+        raise TypeError("V3 pilot Doppler bundle builder returned the wrong result")
+    return result
+
+
 def _build_standard_pilot_doppler_segments(
     iq: IqReader,
     *,
@@ -137,13 +188,16 @@ def _build_standard_pilot_doppler_segments(
     config: PilotDopplerSegmentConfigV1 | PilotDopplerSegmentConfigV2,
     contract_version: int,
     edge: StarlinkEdge,
-) -> StandardPilotDopplerSegmentsV1 | StandardPilotDopplerSegmentsV2:
+    phase_config: PilotPhaseLockletConfig | None = None,
+) -> StandardPilotDopplerSegmentsV1 | StandardPilotDopplerSegmentsV2 | PilotDopplerSegmentsBundleV3:
     """Analyze disjoint complete-frame windows on every bounded final trajectory."""
 
     if contract_version not in (1, 2):
         raise ValueError("pilot Doppler contract version must be 1 or 2")
     if contract_version == 2 and not isinstance(config, PilotDopplerSegmentConfigV2):
         raise TypeError("pilot Doppler V2 requires its additive V2 configuration")
+    if phase_config is not None and contract_version != 2:
+        raise ValueError("pilot phase-locklet evidence requires the V2 compatibility product")
 
     selected_tracks = tuple(sorted(final_bank.trajectories, key=lambda item: item.trajectory_id))[
         : config.maximum_tracks
@@ -212,6 +266,7 @@ def _build_standard_pilot_doppler_segments(
     analyzed_by_track: dict[str, list[dict[str, Any]]] = {
         track.trajectory_id: [] for track in selected_tracks
     }
+    phase_by_request: dict[tuple[str, int], PilotPhaseLockletResult] = {}
     for request, samples in _iter_requested_windows(iq, all_requests, sample_count):
         initial_absolute_cfo_hz = float(
             request.model.frequency_hz(request.probe_sample_start / iq.sample_rate_hz)
@@ -226,6 +281,18 @@ def _build_standard_pilot_doppler_segments(
                 maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
                 config=PilotPntKalmanConfigV2(),
             )
+            if phase_config is not None:
+                phase_by_request[(request.source_trajectory_id, request.probe_sample_start)] = (
+                    analyze_contiguous_pilot_phase_locklet(
+                        samples,
+                        iq.sample_rate_hz,
+                        epoch_sample=request.local_epoch_sample,
+                        initial_absolute_cfo_hz=initial_absolute_cfo_hz,
+                        edge=edge,
+                        maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
+                        config=phase_config,
+                    )
+                )
         else:
             result = analyze_contiguous_pilot_pnt_kalman(
                 samples,
@@ -247,6 +314,7 @@ def _build_standard_pilot_doppler_segments(
         )
 
     segment_documents: list[dict[str, Any]] = []
+    ordered_phase_locklets: list[PilotPhaseLockletResult] = []
     summaries: list[PilotDopplerTrajectorySummaryV1 | PilotDopplerTrajectorySummaryV2] = []
     for track in selected_tracks:
         previous_bias: float | None = None
@@ -260,6 +328,15 @@ def _build_standard_pilot_doppler_segments(
                 previous_bias = float(bias)
             segment_document["segment_index"] = len(segment_documents)
             segment_documents.append(segment_document)
+            if phase_config is not None:
+                ordered_phase_locklets.append(
+                    phase_by_request[
+                        (
+                            str(segment_document["source_trajectory_id"]),
+                            int(segment_document["source_probe_sample_start"]),
+                        )
+                    ]
+                )
         qualified = [item for item in track_documents if item["qualified"]]
         summary_document: dict[str, Any] = {
             "source_trajectory_id": track.trajectory_id,
@@ -351,7 +428,14 @@ def _build_standard_pilot_doppler_segments(
     }
     document["content_digest"] = canonical_digest(identity)
     if contract_version == 2:
-        return StandardPilotDopplerSegmentsV2.model_validate(document)
+        legacy_v2 = StandardPilotDopplerSegmentsV2.model_validate(document)
+        if phase_config is not None:
+            return PilotDopplerSegmentsBundleV3(
+                legacy_v2=legacy_v2,
+                phase_config=phase_config,
+                phase_locklets=tuple(ordered_phase_locklets),
+            )
+        return legacy_v2
     return StandardPilotDopplerSegmentsV1.model_validate(document)
 
 

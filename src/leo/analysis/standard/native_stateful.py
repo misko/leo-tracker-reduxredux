@@ -27,6 +27,7 @@ import numpy as np
 from pydantic import JsonValue
 
 from leo.analysis.qam.pilot import PilotQamResult
+from leo.analysis.qam.pilot_phase_locklet import PilotPhaseLockletConfig, PilotPhaseLockletResult
 from leo.analysis.standard.configuration import require_receiver_standard_sample_rate
 from leo.analysis.standard.native_qam import (
     NativePrimaryQamCapture,
@@ -62,7 +63,7 @@ from leo.analysis.starlink.kalman_tracking import (
     raw_candidate_sources,
 )
 from leo.analysis.starlink.pilot_doppler_segments import (
-    build_standard_pilot_doppler_segments_v2,
+    build_standard_pilot_doppler_segments_bundle_v3,
 )
 from leo.analysis.starlink.pilot_methods import (
     PilotProbeDetection,
@@ -244,6 +245,8 @@ class NativeSegmentLocalScience:
     final_trajectory_bank: FinalTrajectoryBankV3
     kalman_tracking: StandardKalmanTrackingV1
     pilot_doppler_segments: StandardPilotDopplerSegmentsV2
+    pilot_phase_config: PilotPhaseLockletConfig
+    pilot_phase_locklets: tuple[PilotPhaseLockletResult, ...]
     primary_probe_outcomes: tuple[NativePrimaryProbeOutcome, ...] = ()
 
     def __post_init__(self) -> None:
@@ -282,6 +285,8 @@ class NativeSegmentLocalScience:
             != self.kalman_tracking.content_digest
         ):
             raise ValueError("segment-local stateful kernel authority does not close")
+        if len(self.pilot_phase_locklets) != len(self.pilot_doppler_segments.segments):
+            raise ValueError("segment-local phase evidence is not aligned to V2 locklets")
         if (
             self.primary_probe_outcomes
             and tuple(item.detection for item in self.primary_probe_outcomes) != self.detections
@@ -1400,7 +1405,7 @@ def _run_segment_local_science(
         config=config.kalman,
         edge=edge,
     )
-    doppler = build_standard_pilot_doppler_segments_v2(
+    doppler_bundle = build_standard_pilot_doppler_segments_bundle_v3(
         iq,
         path_input_binding_digest=segment_path_binding_digest,
         pilot_scan_digest=pilot_scan_digest,
@@ -1425,7 +1430,9 @@ def _run_segment_local_science(
         cfo_lift_replay=lift_replay,
         final_trajectory_bank=final_bank,
         kalman_tracking=kalman,
-        pilot_doppler_segments=doppler,
+        pilot_doppler_segments=doppler_bundle.legacy_v2,
+        pilot_phase_config=doppler_bundle.phase_config,
+        pilot_phase_locklets=doppler_bundle.phase_locklets,
         primary_probe_outcomes=ordered_primary_outcomes,
     )
 
@@ -1563,7 +1570,7 @@ def _run_segment_global_probe_science(
         config=config,
         edge=edge,
     )
-    doppler = build_standard_pilot_doppler_segments_v2(
+    doppler_bundle = build_standard_pilot_doppler_segments_bundle_v3(
         iq,
         path_input_binding_digest=segment_path_binding_digest,
         pilot_scan_digest=pilot_scan_digest,
@@ -1588,7 +1595,9 @@ def _run_segment_global_probe_science(
         cfo_lift_replay=lift_replay,
         final_trajectory_bank=final_bank,
         kalman_tracking=kalman,
-        pilot_doppler_segments=doppler,
+        pilot_doppler_segments=doppler_bundle.legacy_v2,
+        pilot_phase_config=doppler_bundle.phase_config,
+        pilot_phase_locklets=doppler_bundle.phase_locklets,
         primary_probe_outcomes=tuple(
             NativePrimaryProbeOutcome(
                 item.detection,

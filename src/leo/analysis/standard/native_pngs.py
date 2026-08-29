@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import io
 import math
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any, cast
 
 import numpy as np
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 
 from leo.analysis.standard.full_capture_glrt20ms import (
     FullCaptureGlrt20msResult,
@@ -26,15 +29,11 @@ from leo.analysis.standard.runner import (
     receiver_standard_configuration_digest,
 )
 from leo.analysis.starlink.cfo_dealias import build_final_trajectory_table_v3
-from leo.analysis.starlink.pilot_doppler_segments import (
-    render_standard_pilot_carrier_tracking_v2_png,
-    render_standard_pilot_doppler_segments_png,
-    render_standard_pilot_segment_rates_png,
-)
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentV2,
     StandardPilotDopplerSegmentsV2,
+    StandardPilotDopplerSegmentsV3,
 )
 from leo.contracts.standard_native import StandardNativeNumericalWaterfallV3
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
@@ -720,15 +719,287 @@ def _global_pilot_doppler_segments(
 def render_standard_native_pilot_diagnostics_pngs(
     stateful: StandardNativeStatefulPathV2,
     *,
+    pilot_v3: StandardPilotDopplerSegmentsV3,
     config: ReceiverStandardConfig,
     path_label: str,
 ) -> tuple[bytes, bytes, bytes]:
-    """Render the three pilot views without joining reset-local carrier state."""
+    """Render corrected V3 views without changing the embedded V2 evidence."""
 
-    product = _global_pilot_doppler_segments(stateful, config=config)
-    arguments = {"session_id": stateful.source.session_id, "path_label": path_label}
+    if (
+        pilot_v3.source != stateful.source
+        or pilot_v3.stateful_path_digest != stateful.stateful_path_digest
+        or pilot_v3.science_configuration_digest != receiver_standard_configuration_digest(config)
+    ):
+        raise ValueError("native pilot V3 plot authority does not close")
     return (
-        render_standard_pilot_doppler_segments_png(product, **arguments),
-        render_standard_pilot_carrier_tracking_v2_png(product, **arguments),
-        render_standard_pilot_segment_rates_png(product, **arguments),
+        _render_standard_pilot_doppler_v3_png(pilot_v3, config=config, path_label=path_label),
+        _render_standard_pilot_phase_v3_png(pilot_v3, path_label=path_label),
+        _render_standard_pilot_rates_v3_png(pilot_v3, path_label=path_label),
+    )
+
+
+def _render_standard_pilot_doppler_v3_png(
+    product: StandardPilotDopplerSegmentsV3,
+    *,
+    config: ReceiverStandardConfig,
+    path_label: str,
+) -> bytes:
+    figure = Figure(figsize=(15, 10.5), constrained_layout=True)
+    canvas = FigureCanvasAgg(figure)
+    axes = figure.subplots(2, 2)
+    segments = product.segments
+    times = np.asarray([item.global_reference_time_s for item in segments], dtype=float)
+    qualified = np.asarray([item.qualified for item in segments], dtype=bool)
+    colors = np.where(qualified, "#d48806", "#aeb8c2")
+    local = _optional_array(item.local_doppler_rate_hz_s for item in segments)
+    legacy_kalman = _optional_array(item.legacy_v2_kalman_doppler_rate_hz_s for item in segments)
+    frozen = np.asarray([item.frozen_doppler_rate_hz_s for item in segments], dtype=float)
+    axes[0, 0].scatter(times, local / 1e3, c=colors, s=28, label="independent local line")
+    axes[0, 0].scatter(
+        times,
+        legacy_kalman / 1e3,
+        color="#277da1",
+        marker="x",
+        s=20,
+        label="legacy V2 Kalman diagnostic",
+    )
+    axes[0, 0].scatter(
+        times,
+        frozen / 1e3,
+        color="#17394d",
+        marker=".",
+        s=16,
+        label="frozen trajectory",
+    )
+    axes[0, 0].set_title("A · Phase-safe local Doppler", loc="left", fontweight="bold")
+    axes[0, 0].set_ylabel("receiver-relative rate (kHz/s)")
+
+    axes[0, 1].axhline(0, color="#17394d", linewidth=1)
+    axes[0, 1].scatter(times, (local - frozen) / 1e3, c=colors, s=28)
+    axes[0, 1].set_title("B · Local minus frozen rate", loc="left", fontweight="bold")
+    axes[0, 1].set_ylabel("rate discrepancy (kHz/s)")
+
+    coverage = np.asarray([item.supported_frame_fraction for item in segments], dtype=float)
+    heldout_frequency = _optional_array(item.held_out_frequency_rms_hz for item in segments)
+    policy = config.pilot_doppler_segments
+    axes[1, 0].scatter(coverage, heldout_frequency, c=colors, s=28)
+    axes[1, 0].axvline(
+        policy.minimum_supported_frame_fraction,
+        color="#d62728",
+        linestyle="--",
+    )
+    axes[1, 0].axhline(
+        policy.maximum_held_out_frequency_rms_hz,
+        color="#d62728",
+        linestyle="--",
+    )
+    axes[1, 0].set_title("C · Independent frequency gates", loc="left", fontweight="bold")
+    axes[1, 0].set_xlabel("supported complete-frame fraction")
+    axes[1, 0].set_ylabel("interleaved held-out RMS (Hz)")
+
+    phase_rms = _optional_array(item.held_out_phase_rms_rad for item in segments)
+    axes[1, 1].scatter(times, phase_rms, c=colors, s=28, label="held-out phase RMS")
+    axes[1, 1].axhline(
+        product.phase_config.maximum_held_out_rms_rad,
+        color="#d62728",
+        linestyle="--",
+        label="held-out RMS gate",
+    )
+    axes[1, 1].set_title("D · Prefix-frozen held-out phase", loc="left", fontweight="bold")
+    axes[1, 1].set_ylabel("centered modulo-π RMS (rad)")
+
+    for axis in axes.flat:
+        axis.grid(alpha=0.22)
+        if axis is not axes[1, 0]:
+            axis.set_xlabel("capture time (s)")
+        handles, labels = axis.get_legend_handles_labels()
+        if handles:
+            unique = dict(zip(labels, handles, strict=True))
+            axis.legend(unique.values(), unique.keys(), fontsize=8)
+    figure.suptitle(
+        "Standard V3 pilot Doppler segments\n"
+        f"{product.source.session_id} · {path_label} · "
+        f"{product.qualified_segment_count}/{len(segments)} fully qualified",
+        fontsize=16,
+        fontweight="bold",
+    )
+    payload = io.BytesIO()
+    canvas.print_png(payload)
+    return payload.getvalue()
+
+
+def _render_standard_pilot_phase_v3_png(
+    product: StandardPilotDopplerSegmentsV3,
+    *,
+    path_label: str,
+) -> bytes:
+    figure = Figure(figsize=(15.5, 6.8), constrained_layout=True)
+    canvas = FigureCanvasAgg(figure)
+    phase_axis, bias_axis = figure.subplots(1, 2)
+    segments = product.segments
+    times = np.asarray([item.global_reference_time_s for item in segments], dtype=float)
+    trackable = np.asarray([item.phase_trackability_qualified for item in segments], dtype=bool)
+    colors = np.where(trackable, "#d48806", "#aeb8c2")
+    heldout_rms = _optional_array(item.held_out_phase_rms_rad for item in segments)
+    legacy_rms = _optional_array(item.legacy_v2_phase_innovation_rms_rad for item in segments)
+    phase_axis.scatter(
+        times,
+        legacy_rms,
+        color="#aeb8c2",
+        marker="x",
+        s=24,
+        alpha=0.65,
+        label="legacy V2 RMS diagnostic",
+    )
+    phase_axis.scatter(
+        times,
+        heldout_rms,
+        c=colors,
+        s=30,
+        label="V3 held-out centered RMS",
+    )
+    phase_axis.axhline(
+        product.phase_config.maximum_held_out_rms_rad,
+        color="#d62728",
+        linestyle="--",
+        label="V3 RMS gate",
+    )
+    gate_axis = phase_axis.twinx()
+    gate_fraction = _optional_array(item.held_out_gate_pass_fraction for item in segments)
+    gate_axis.scatter(
+        times,
+        gate_fraction,
+        color="#277da1",
+        marker="+",
+        s=24,
+        alpha=0.7,
+        label="held-out gate-pass fraction",
+    )
+    gate_axis.axhline(
+        product.phase_config.minimum_held_out_gate_pass_fraction,
+        color="#277da1",
+        linestyle=":",
+    )
+    gate_axis.set_ylim(-0.02, 1.02)
+    gate_axis.set_ylabel("held-out gate-pass fraction")
+    phase_axis.set_title(
+        "A · One-step held-out modulo-π evidence",
+        loc="left",
+        fontweight="bold",
+    )
+    phase_axis.set_ylabel("phase innovation RMS (rad)")
+
+    bias = _optional_array(item.phase_bias_hz_modulo for item in segments)
+    training_rms = _optional_array(item.training_phase_rms_rad for item in segments)
+    bias_axis.scatter(times, bias, c=colors, s=30, label="frozen nuisance")
+    bias_axis.axhline(187.5, color="#6b7280", linestyle=":", linewidth=0.8)
+    bias_axis.axhline(-187.5, color="#6b7280", linestyle=":", linewidth=0.8)
+    bias_axis.set_ylim(-200, 200)
+    bias_axis.set_ylabel("equivalent phase-increment nuisance (Hz modulo 375)")
+    training_axis = bias_axis.twinx()
+    training_axis.scatter(
+        times,
+        training_rms,
+        color="#43aa8b",
+        marker="x",
+        s=22,
+        alpha=0.7,
+        label="training RMS",
+    )
+    training_axis.set_ylabel("training centered RMS (rad)")
+    bias_axis.set_title(
+        "B · Nuisance fit uses only the fixed prefix",
+        loc="left",
+        fontweight="bold",
+    )
+    if not segments:
+        phase_axis.text(
+            0.5,
+            0.5,
+            product.reason,
+            transform=phase_axis.transAxes,
+            ha="center",
+            va="center",
+        )
+    for axis in (phase_axis, bias_axis):
+        axis.set_xlabel("capture time (s)")
+        axis.grid(alpha=0.22)
+        handles, labels = axis.get_legend_handles_labels()
+        if handles:
+            axis.legend(handles, labels, fontsize=8, loc="best")
+    legacy_locked = sum(item.legacy_v2_phase_lock_qualified for item in segments)
+    figure.suptitle(
+        "Standard V3 held-out adjacent carrier-phase trackability\n"
+        f"{product.source.session_id} · {path_label} · "
+        f"V3 {product.corrected_phase_trackability_count}/{len(segments)} trackable · "
+        f"legacy V2 {legacy_locked}/{len(segments)}",
+        fontsize=15,
+        fontweight="bold",
+    )
+    payload = io.BytesIO()
+    canvas.print_png(payload)
+    return payload.getvalue()
+
+
+def _render_standard_pilot_rates_v3_png(
+    product: StandardPilotDopplerSegmentsV3,
+    *,
+    path_label: str,
+) -> bytes:
+    figure = Figure(figsize=(15.5, 6.2), constrained_layout=True)
+    canvas = FigureCanvasAgg(figure)
+    axis = figure.subplots(1, 1)
+    for segment in product.segments:
+        color = "#d48806" if segment.qualified else "#aeb8c2"
+        if segment.local_doppler_rate_hz_s is not None:
+            local = segment.local_doppler_rate_hz_s / 1_000
+            axis.hlines(
+                local,
+                segment.global_start_time_s,
+                segment.global_end_time_s,
+                color=color,
+                linewidth=3.0 if segment.qualified else 1.5,
+                alpha=0.9,
+                label=("qualified direct local rate" if segment.qualified else "failed-gate rate"),
+            )
+        axis.hlines(
+            segment.frozen_doppler_rate_hz_s / 1_000,
+            segment.global_start_time_s,
+            segment.global_end_time_s,
+            color="#17394d",
+            linestyle="--",
+            linewidth=1.1,
+            label="frozen trajectory rate",
+        )
+    if not product.segments:
+        axis.text(0.5, 0.5, product.reason, transform=axis.transAxes, ha="center", va="center")
+    axis.axhline(0, color="#17394d", linewidth=0.7, alpha=0.6)
+    axis.set_title(
+        "Independent direct pilot-CFO rates; phase never steers rate",
+        loc="left",
+        fontweight="bold",
+    )
+    axis.set_xlabel("capture time (s)")
+    axis.set_ylabel("receiver-relative Doppler/CFO rate (kHz/s)")
+    axis.grid(alpha=0.22)
+    handles, labels = axis.get_legend_handles_labels()
+    if handles:
+        unique = dict(zip(labels, handles, strict=True))
+        axis.legend(unique.values(), unique.keys(), fontsize=8, loc="best")
+    figure.suptitle(
+        "Standard V3 pilot segment rates\n"
+        f"{product.source.session_id} · {path_label} · "
+        f"{product.qualified_segment_count}/{len(product.segments)} qualified",
+        fontsize=15,
+        fontweight="bold",
+    )
+    payload = io.BytesIO()
+    canvas.print_png(payload)
+    return payload.getvalue()
+
+
+def _optional_array(values: Any) -> np.ndarray:
+    return np.asarray(
+        [math.nan if value is None else float(value) for value in values],
+        dtype=float,
     )

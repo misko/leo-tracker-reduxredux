@@ -28,6 +28,7 @@ from leo.analysis.starlink.pilot_methods import PilotProbeDetection
 from leo.analysis.starlink.trajectory_feedback import iter_pilot_probe_samples
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV3
 from leo.contracts.radio import IqBlockMetadataV1
 from leo.contracts.standard_native import StandardNativeSourceV1
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
@@ -607,13 +608,14 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     result = analyzer.analyze(context, reader, _SubjectProducts(binding), outputs)  # type: ignore[arg-type]
 
     assert result.outcome.value == "partial_coverage"
-    assert len(result.products) == 7
+    assert len(result.products) == 8
     assert set(outputs.documents) == {
         ("quality.summary", 2),
         ("standard.power-timeline", 3),
         ("standard.numerical-waterfall", 3),
         ("standard.probe-schedule", 3),
         ("standard.native-stateful-path", 2),
+        ("standard.pilot-doppler-segments", 3),
         ("standard.full-capture-glrt20ms", 1),
         ("standard.path-report", 3),
     }
@@ -621,6 +623,18 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     stateful = StandardNativeStatefulPathV2.model_validate(
         outputs.documents[("standard.native-stateful-path", 2)]
     )
+    pilot_v3 = StandardPilotDopplerSegmentsV3.model_validate(
+        outputs.documents[("standard.pilot-doppler-segments", 3)]
+    )
+    assert pilot_v3.source == StandardNativeSourceV1.from_path_binding(binding)
+    assert pilot_v3.stateful_path_product_digest == canonical_digest(
+        stateful.model_dump(mode="json")
+    )
+    assert pilot_v3.stateful_path_digest == stateful.stateful_path_digest
+    assert pilot_v3.phase_config_digest == pilot_v3.phase_config.digest
+    assert pilot_v3.source_v2_locklet_count == 0
+    assert pilot_v3.corrected_phase_trackability_count == 0
+    assert pilot_v3.segments == ()
     assert stateful.stateful_science_status == "partial_coverage"
     assert stateful.analyzed_outer_window_count == 2
     assert tuple(item.continuity_segment for item in stateful.segments) == inventory.segments
@@ -669,6 +683,18 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
             tampered_outputs,
         )
     assert tampered_outputs.documents == {}
+
+    tampered_phase_config = dict(context.stage_config)
+    tampered_phase_config["pilot_phase_locklet_configuration_digest"] = canonical_digest(
+        {"unexpected": "phase-locklet configuration"}
+    )
+    with pytest.raises(ValueError, match="phase-locklet policy digest"):
+        analyzer.analyze(  # type: ignore[arg-type]
+            context.model_copy(update={"stage_config": tampered_phase_config}),
+            _Reader(binding.validity_inventory),
+            _SubjectProducts(binding),
+            _OutputSink(),
+        )
 
 
 class _ObservabilityPolicyCaptured(Exception):
@@ -819,7 +845,7 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
     )
 
     assert result.outcome.value == "complete"
-    assert len(result.products) == 7
+    assert len(result.products) == 8
     assert result.summary["coverage_fraction"] == 1.0
     stateful = StandardNativeStatefulPathV2.model_validate(
         outputs.documents[("standard.native-stateful-path", 2)]
@@ -1022,6 +1048,7 @@ def test_native_path_projection_declares_exact_sealed_predecessor_inventory() ->
     assert tuple(item.kind for item in spec.input_products) == (
         "standard.numerical-waterfall",
         "standard.native-stateful-path",
+        "standard.pilot-doppler-segments",
         "standard.full-capture-glrt20ms",
         "standard.path-report",
     )

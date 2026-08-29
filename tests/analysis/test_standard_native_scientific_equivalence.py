@@ -9,6 +9,9 @@ import numpy as np
 import pytest
 
 from leo.analysis.standard.configuration import resolve_receiver_standard_sample_rate
+from leo.analysis.standard.native_pilot_doppler import (
+    build_standard_native_pilot_doppler_segments_v3,
+)
 from leo.analysis.standard.native_qam import native_qam_sufficient_statistics
 from leo.analysis.standard.native_runner import build_standard_native_probe_schedule
 from leo.analysis.standard.native_stateful import (
@@ -17,9 +20,13 @@ from leo.analysis.standard.native_stateful import (
     NativeSegmentLocalScience,
     StandardNativeStatefulResult,
     StandardNativeStatefulRunner,
+    build_standard_native_stateful_path_v2,
     detect_standard_native_probe_outcome,
 )
 from leo.analysis.standard.runner import ReceiverStandardConfig
+from leo.analysis.starlink.pilot_doppler_segments import (
+    build_standard_pilot_doppler_segments_v2,
+)
 from leo.analysis.starlink.templates import (
     CYCLIC_PREFIX_DURATION_S,
     FRAME_RATE_HZ,
@@ -30,6 +37,7 @@ from leo.analysis.starlink.templates import (
 )
 from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.contracts.digests import canonical_digest
+from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV2
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
 from leo.contracts.standard_native_path_report import NativeQamSufficientStatisticsV1
 from leo.contracts.standard_pipeline import StandardPathInputBindV4
@@ -468,6 +476,19 @@ def _run_rate(sample_rate_hz: int) -> _RateScience:
     )
     science = stateful.segments[0].local_science
     assert science is not None and science.primary_probe_outcomes
+    legacy_v2 = build_standard_pilot_doppler_segments_v2(
+        _PilotSegmentReader(sample_rate_hz, inventory.segments[0], samples),
+        path_input_binding_digest=science.segment_path_binding_digest,
+        pilot_scan_digest=science.pilot_scan_digest,
+        detections=science.detections,
+        canonical_bank=science.dealiased_trajectory_bank,
+        final_bank=science.final_trajectory_bank,
+        kalman_tracking=science.kalman_tracking,
+        config=config.pilot_doppler_segments,
+        edge=StarlinkEdge.LOWER,
+    )
+    assert legacy_v2 == science.pilot_doppler_segments
+    assert legacy_v2.content_digest == science.pilot_doppler_segments.content_digest
     primary_qam_result = science.primary_probe_outcomes[0].primary_qam_result
     assert primary_qam_result is not None
     return _RateScience(
@@ -647,6 +668,95 @@ def test_native_stateful_phase_doppler_and_qam_statistics_are_equivalent(
 
     assert max(qam_accuracies) - min(qam_accuracies) <= _QAM_ACCURACY_TOLERANCE
     assert max(qam_evm) - min(qam_evm) <= _QAM_EVM_TOLERANCE
+
+
+def test_nonempty_multirate_v3_phase_evidence_closes_global_multiwindow_geometry(
+    native_rate_science: tuple[_RateScience, ...],
+) -> None:
+    for result in native_rate_science:
+        sample_count = _STATEFUL_DURATION_S * result.sample_rate_hz
+        inventory = _inventory(result.sample_rate_hz, sample_count)
+        binding = _binding(result.sample_rate_hz, inventory)
+        config = _config(
+            result.sample_rate_hz,
+            maximum_outer_windows=_STATEFUL_DURATION_S,
+        )
+        stateful_path = build_standard_native_stateful_path_v2(
+            result.stateful,
+            binding,
+            config,
+            edge=StarlinkEdge.LOWER,
+        )
+        stateful_document = stateful_path.model_dump(mode="json")
+        v3 = build_standard_native_pilot_doppler_segments_v3(
+            result.stateful,
+            binding,
+            stateful_path,
+            stateful_path_product_digest=canonical_digest(stateful_document),
+            config=config,
+            edge=StarlinkEdge.LOWER,
+        )
+
+        assert v3.segments
+        assert v3.source_v2_locklet_count == len(
+            _local_science(result).pilot_doppler_segments.segments
+        )
+        assert any(item.global_source_probe_sample_start > 0 for item in v3.segments)
+        for segment in v3.segments:
+            assert segment.carrier_phase_period_rad == math.pi
+            assert segment.supported_frame_count == len(segment.supported_frame_indexes)
+            assert all(
+                segment.global_start_time_s * result.sample_rate_hz
+                <= interval.previous_global_reference_device_sample
+                < interval.global_reference_device_sample
+                <= segment.global_end_time_s * result.sample_rate_hz + 1e-3
+                for interval in segment.intervals
+            )
+
+
+def test_v3_marks_nested_v2_track_truncation_partial_even_when_stateful_is_complete(
+    native_rate_science: tuple[_RateScience, ...],
+) -> None:
+    result = native_rate_science[0]
+    science = _local_science(result)
+    legacy_document = science.pilot_doppler_segments.model_dump(mode="json")
+    legacy_document["source_track_count"] += 1
+    legacy_document["truncated_track_count"] += 1
+    legacy_body = {key: value for key, value in legacy_document.items() if key != "content_digest"}
+    truncated_legacy = StandardPilotDopplerSegmentsV2.model_validate(
+        {**legacy_body, "content_digest": canonical_digest(legacy_body)}
+    )
+    mutated_science = replace(science, pilot_doppler_segments=truncated_legacy)
+    mutated_segment = replace(result.stateful.segments[0], local_science=mutated_science)
+    mutated_result = replace(result.stateful, segments=(mutated_segment,))
+    sample_count = _STATEFUL_DURATION_S * result.sample_rate_hz
+    inventory = _inventory(result.sample_rate_hz, sample_count)
+    binding = _binding(result.sample_rate_hz, inventory)
+    config = _config(
+        result.sample_rate_hz,
+        maximum_outer_windows=_STATEFUL_DURATION_S,
+    )
+    stateful_path = build_standard_native_stateful_path_v2(
+        mutated_result,
+        binding,
+        config,
+        edge=StarlinkEdge.LOWER,
+    )
+    stateful_document = stateful_path.model_dump(mode="json")
+    v3 = build_standard_native_pilot_doppler_segments_v3(
+        mutated_result,
+        binding,
+        stateful_path,
+        stateful_path_product_digest=canonical_digest(stateful_document),
+        config=config,
+        edge=StarlinkEdge.LOWER,
+    )
+
+    assert stateful_path.stateful_science_status == "complete"
+    assert truncated_legacy.status == "complete"
+    assert v3.bounded_local_track_truncation_present
+    assert v3.status == "partial"
+    assert "track truncation" in v3.reason
 
 
 @pytest.mark.parametrize("sample_rate_hz", _RATES_HZ)

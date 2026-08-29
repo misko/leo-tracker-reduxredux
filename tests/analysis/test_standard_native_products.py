@@ -20,6 +20,7 @@ from leo.analysis.standard.native_products import (
     PATH_INPUT_BIND_V4_PRODUCT,
     PATH_REPORT_V3_PRODUCT,
     PATH_STANDARD_NATIVE_OUTPUTS,
+    PILOT_DOPPLER_SEGMENTS_V3_PRODUCT,
     POWER_TIMELINE_V3_PRODUCT,
     PROBE_SCHEDULE_V3_PRODUCT,
     QUALITY_V2_PRODUCT,
@@ -35,13 +36,14 @@ from leo.pipeline import StageOutcome
 def test_native_product_inventory_is_additive_and_closed() -> None:
     assert PATH_INPUT_BIND_PRODUCT.schema_version == 3
     assert PATH_INPUT_BIND_V4_PRODUCT.schema_version == 4
-    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 32
-    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 7
+    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 33
+    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 8
     assert len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 13
     assert FULL_CAPTURE_GLRT20MS_V1_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V1_PRODUCT.schema_version == 1
     assert STATEFUL_PATH_V1_PRODUCT not in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V2_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
+    assert PILOT_DOPPLER_SEGMENTS_V3_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
 
     identities = tuple(
         (item.kind, item.schema_version, item.role.value, item.media_type)
@@ -80,14 +82,15 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         NUMERICAL_WATERFALL_V3_PRODUCT,
         PROBE_SCHEDULE_V3_PRODUCT,
         STATEFUL_PATH_V2_PRODUCT,
+        PILOT_DOPPLER_SEGMENTS_V3_PRODUCT,
         FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
         PATH_REPORT_V3_PRODUCT,
     )
     assert registry.get("path-standard-native").spec.algorithm_version == (
-        "standard-native-evidence-v8"
+        "standard-native-evidence-v9"
     )
     assert registry.get("path-standard-native").spec.configuration_schema == (
-        "path-standard-native.evidence.v6"
+        "path-standard-native.evidence.v7"
     )
     assert (
         registry.get("radio-scientific-report-native").spec.output_products
@@ -104,8 +107,8 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
     assert alternate.output_products == PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
     assert ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT in alternate.output_products
     assert ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT in alternate.output_products
-    assert alternate.algorithm_version == "standard-native-path-projection-v3"
-    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v3"
+    assert alternate.algorithm_version == "standard-native-path-projection-v4"
+    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v4"
     assert alternate.accepted_outcomes == (
         StageOutcome.COMPLETE,
         StageOutcome.NO_RESULT,
@@ -124,9 +127,10 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         for item in (
             NUMERICAL_WATERFALL_V3_PRODUCT,
             STATEFUL_PATH_V2_PRODUCT,
+            PILOT_DOPPLER_SEGMENTS_V3_PRODUCT,
             FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
             PATH_REPORT_V3_PRODUCT,
         )
     )
-    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 32
-    assert len(registry.get("path-standard-native").spec.output_products) == 7
+    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 33
+    assert len(registry.get("path-standard-native").spec.output_products) == 8

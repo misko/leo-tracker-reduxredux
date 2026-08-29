@@ -8,10 +8,12 @@ from pydantic import ValidationError
 from leo.contracts.digests import canonical_digest
 from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV6,
+    StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactV4,
 )
 from leo.presentation.standard_pipeline import StandardSubjectKindV2
@@ -127,3 +129,45 @@ def test_production_png_inventory_accepts_twenty_msps_without_weakening_v5() -> 
     inventory = StandardNativePngArtifactInventoryV6.model_validate(values)
 
     assert inventory.sample_rates_hz == (2_500_000, 20_000_000)
+
+
+def test_additive_phase_inventory_preserves_old_png_identity() -> None:
+    legacy = _inventory(StandardSubjectKindV2.RECEIVER_PATH)
+    legacy_pilot_versions = tuple(
+        item.product_schema_version
+        for item in legacy.artifacts
+        if item.name.startswith("pilot-") and item.name != "pilot-methods"
+    )
+    assert legacy_pilot_versions == (3, 3, 3)
+
+    artifacts = tuple(
+        item.model_copy(
+            update={
+                "label": STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7[item.name][0],
+                "description": STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7[item.name][1],
+                "catalog_kind": STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7[item.name][2],
+                "product_schema_version": STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7[item.name][3],
+            }
+        )
+        for item in legacy.artifacts
+    )
+    values = {
+        "schema_version": 7,
+        "session_id": legacy.session_id,
+        "subject_id": legacy.subject_id,
+        "subject_kind": legacy.subject_kind.value,
+        "run_id": legacy.run_id,
+        "run_manifest_digest": legacy.run_manifest_digest,
+        "sample_rates_hz": (5_000_000,),
+        "coverage_status": legacy.coverage_status,
+        "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
+    }
+    phase = StandardNativePngArtifactInventoryV7.model_validate(
+        {**values, "content_digest": canonical_digest(values)}
+    )
+
+    assert tuple(
+        item.product_schema_version
+        for item in phase.artifacts
+        if item.name.startswith("pilot-") and item.name != "pilot-methods"
+    ) == (4, 4, 4)

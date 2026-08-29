@@ -15,6 +15,7 @@ import type {
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
+  StandardNativePngArtifactInventoryV7,
   StandardNativePlotViewV5,
   StandardNativePlotViewV3,
   StandardNativeSubjectDetailV3,
@@ -741,6 +742,40 @@ function productionArtifactInventory(): StandardNativePngArtifactInventoryV6 {
   };
 }
 
+function phaseArtifactInventory(): StandardNativePngArtifactInventoryV7 {
+  const { sample_rate_hz, ...legacy } = nativeArtifactInventory(nativePathDetail);
+  return {
+    ...legacy,
+    schema_version: 7,
+    sample_rates_hz: [sample_rate_hz],
+    artifacts: legacy.artifacts.map((artifact) => {
+      if (artifact.name === "pilot-doppler") {
+        return {
+          ...artifact,
+          description: "Independent local Doppler and held-out adjacent phase evidence",
+          product_schema_version: 4,
+        };
+      }
+      if (artifact.name === "pilot-carrier-tracking") {
+        return {
+          ...artifact,
+          label: "Held-out adjacent carrier-phase trackability",
+          description: "Prefix-trained modulo-pi nuisance and later one-step innovations",
+          product_schema_version: 4,
+        };
+      }
+      if (artifact.name === "pilot-segment-rates") {
+        return {
+          ...artifact,
+          description: "Independent direct rates remain separate across continuity segments",
+          product_schema_version: 4,
+        };
+      }
+      return artifact;
+    }),
+  };
+}
+
 const productionPlot: StandardNativePlotViewV5 = {
   schema_version: 5,
   session_id: "T1",
@@ -1098,13 +1133,18 @@ test.each([
   expect(() => parseStandardSubjectHierarchy(document)).toThrow(/contract is invalid/);
 });
 
-test("rejects future native presentation versions", () => {
+test("accepts additive phase inventory and rejects future native presentation versions", () => {
+  const phase = parseStandardNativePngArtifactInventory(phaseArtifactInventory());
+  expect(phase.schema_version).toBe(7);
+  expect(phase.artifacts.filter((item) => item.name.startsWith("pilot-")).map(
+    (item) => item.product_schema_version,
+  )).toEqual([2, 4, 4, 4]);
   expect(() => parseStandardSubjectHierarchy({ ...productionHierarchy, schema_version: 6 }))
     .toThrow(/expected 2, 3, 4, or 5/);
   expect(() => parseStandardNativePngArtifactInventory({
     ...productionArtifactInventory(),
-    schema_version: 7,
-  })).toThrow(/expected one of 4, 5, 6/);
+    schema_version: 8,
+  })).toThrow(/expected one of 4, 5, 6, 7/);
 });
 
 test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {

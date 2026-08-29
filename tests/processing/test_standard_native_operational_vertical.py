@@ -19,6 +19,7 @@ from leo.application import StandardReprocessService
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV3
 from leo.catalog import CatalogSubjectBindingReader
 from leo.contracts.digests import canonical_digest
+from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV3
 from leo.contracts.profile import CapturePlanV2, CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.recording import (
     DEVICE_AXIS_STORAGE_POLICY_V1,
@@ -275,13 +276,14 @@ def _assert_native_products(
     gapped_radio_id: str | None,
 ) -> None:
     products = seal.products  # type: ignore[attr-defined]
-    assert len(products) == 98
+    assert len(products) == 102
     assert Counter(item.kind for item in products) == {
         "quality.summary": 4,
         "standard.power-timeline": 4,
         "standard.numerical-waterfall": 4,
         "standard.probe-schedule": 4,
         "standard.native-stateful-path": 4,
+        "standard.pilot-doppler-segments": 4,
         "standard.full-capture-glrt20ms": 4,
         "standard.path-report": 4,
         "standard.alternate-cfo-track-bank": 4,
@@ -306,6 +308,7 @@ def _assert_native_products(
         "standard.numerical-waterfall": StandardNativeNumericalWaterfallV3,
         "standard.probe-schedule": StandardProbeScheduleV3,
         "standard.native-stateful-path": StandardNativeStatefulPathV2,
+        "standard.pilot-doppler-segments": StandardPilotDopplerSegmentsV3,
         "standard.full-capture-glrt20ms": StandardNativeFullCaptureGlrt20msV1,
         "standard.alternate-cfo-track-bank": StandardNativeAlternateCfoTrackBankV4,
         "standard.trajectory-conditioned-accounting": (
@@ -320,11 +323,18 @@ def _assert_native_products(
     for product in products:
         if product.media_type == "image/png":
             assert artifacts.read_bytes(product.logical_uri, product.digest).startswith(b"\x89PNG")
+            if product.kind in {
+                "standard.pilot-doppler-segments-png",
+                "standard.pilot-carrier-tracking-png",
+                "standard.pilot-segment-rates-png",
+            }:
+                assert product.schema_version == 4
             if product.kind == "standard.alternate-cfo-tracks-png":
                 dependencies = database.catalog.product_direct_dependencies(product.product_id)
                 assert {item.kind for item in dependencies} == {
                     "standard.numerical-waterfall",
                     "standard.native-stateful-path",
+                    "standard.pilot-doppler-segments",
                     "standard.full-capture-glrt20ms",
                     "standard.path-report",
                 }
@@ -343,6 +353,25 @@ def _assert_native_products(
             assert product.coverage == pytest.approx(expected_coverage)
         if isinstance(document, StandardNativeStatefulPathV2):
             stateful_documents.append(document)
+        if isinstance(document, StandardPilotDopplerSegmentsV3):
+            assert product.schema_version == 3
+            assert product.scope is not None
+            stateful_product = next(
+                item
+                for item in products
+                if item.scope_key == product.scope_key
+                and item.kind == "standard.native-stateful-path"
+            )
+            stateful = StandardNativeStatefulPathV2.model_validate(
+                artifacts.read_json(stateful_product.logical_uri, stateful_product.digest)
+            )
+            assert document.source == stateful.source
+            assert document.stateful_path_product_digest == stateful_product.digest
+            assert document.stateful_path_digest == stateful.stateful_path_digest
+            assert document.science_configuration_digest == stateful.science_configuration_digest
+            assert document.primary_cfo_source == "independent-intraframe-pilot-slope"
+            assert document.primary_rate_estimator == "direct-local-frequency-line"
+            assert document.nuisance_transferable_to_cfo_or_rate is False
         if isinstance(document, StandardNativeFullCaptureGlrt20msV1):
             assert product.scope is not None
             binding = CatalogSubjectBindingReader(database.catalog).receiver_path_native(
@@ -422,6 +451,7 @@ def _assert_native_products(
             assert {item.kind for item in dependencies} == {
                 "standard.numerical-waterfall",
                 "standard.native-stateful-path",
+                "standard.pilot-doppler-segments",
                 "standard.full-capture-glrt20ms",
                 "standard.path-report",
             }
@@ -593,7 +623,7 @@ def _run_native_current(
     assert published.manifest.processing_status == "succeeded"
 
     seal = database.catalog.run_seal_snapshot(result.run_id)
-    assert len(seal.products) == 98
+    assert len(seal.products) == 102
     assert sum(item.media_type == "image/png" for item in seal.products) == 59
     _assert_native_products(
         database,
@@ -661,8 +691,8 @@ def test_real_postgres_standard_native_operational_vertical(
     registry = production_standard_native_evidence_registry()
     native_stage_configuration = production_standard_native_evidence_configuration()
     native_path_spec = registry.get("path-standard-native").spec
-    assert native_path_spec.algorithm_version == "standard-native-evidence-v8"
-    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v6"
+    assert native_path_spec.algorithm_version == "standard-native-evidence-v9"
+    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v7"
     assert "probes" not in native_stage_configuration["path-standard-native"]
     configuration: dict[str, object] = {
         "display_version": "standard-native-operational-v1",

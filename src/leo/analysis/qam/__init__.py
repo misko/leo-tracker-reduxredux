@@ -28,6 +28,13 @@ from leo.analysis.qam.pilot_odd import (
     PilotFrameComplexOddObservation,
     estimate_edge_pilot_frame_complex_odd,
 )
+from leo.analysis.qam.pilot_phase_locklet import (
+    PilotPhaseLockletConfig,
+    PilotPhaseLockletFrame,
+    PilotPhaseLockletInterval,
+    PilotPhaseLockletResult,
+    analyze_contiguous_pilot_phase_locklet,
+)
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
     PilotPntKalmanConfigV2,
@@ -77,6 +84,10 @@ __all__ = [
     "PilotPhaseDopplerTrackFrame",
     "PilotPhaseDopplerTrackingConfig",
     "PilotPhaseDopplerTrackingResult",
+    "PilotPhaseLockletConfig",
+    "PilotPhaseLockletFrame",
+    "PilotPhaseLockletInterval",
+    "PilotPhaseLockletResult",
     "PilotQamMetrics",
     "PilotQamResult",
     "PilotPntKalmanConfig",
@@ -103,6 +114,7 @@ __all__ = [
     "analyze_pilot_phase_slope",
     "analyze_pilot_phase_doppler_tracking",
     "analyze_contiguous_pilot_phase_doppler_tracking",
+    "analyze_contiguous_pilot_phase_locklet",
     "analyze_locked_pilot_phase_doppler_tracking",
     "analyze_pilot_qam",
     "combine_receiver_qam",
