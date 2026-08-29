@@ -21,6 +21,7 @@ import type {
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
+  StandardNativePngArtifactInventoryV7,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
@@ -43,7 +44,8 @@ type StandardNativeDetail =
 type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV4
   | StandardNativePngArtifactInventoryV5
-  | StandardNativePngArtifactInventoryV6;
+  | StandardNativePngArtifactInventoryV6
+  | StandardNativePngArtifactInventoryV7;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",

@@ -6,6 +6,7 @@ import type {
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
+  StandardNativePngArtifactInventoryV7,
   StandardNativeScientificDispositionV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
@@ -53,6 +54,12 @@ const nativeArtifactDefinitionsV4 = [
   ["pilot-doppler", "standard.pilot-doppler-segments-png", 3, "artifacts/pilot-doppler.png"],
   ["pilot-carrier-tracking", "standard.pilot-carrier-tracking-png", 3, "artifacts/pilot-carrier-tracking.png"],
   ["pilot-segment-rates", "standard.pilot-segment-rates-png", 3, "artifacts/pilot-segment-rates.png"],
+] as const;
+const nativeArtifactDefinitionsV7 = [
+  ...nativeArtifactDefinitionsV4.slice(0, 8),
+  ["pilot-doppler", "standard.pilot-doppler-segments-png", 4, "artifacts/pilot-doppler.png"],
+  ["pilot-carrier-tracking", "standard.pilot-carrier-tracking-png", 4, "artifacts/pilot-carrier-tracking.png"],
+  ["pilot-segment-rates", "standard.pilot-segment-rates-png", 4, "artifacts/pilot-segment-rates.png"],
 ] as const;
 const scienceStates: StandardNativeScientificDispositionV3[] = [
   "candidate",
@@ -1318,9 +1325,9 @@ export function parseStandardPlotView(value: unknown): StandardPlotView {
 
 export function parseStandardNativePngArtifactInventory(
   value: unknown,
-): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 {
+): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 {
   const item = object(value, "native PNG artifact inventory");
-  const version = oneOf(item.schema_version, [4, 5, 6], "native PNG artifact inventory.schema_version");
+  const version = oneOf(item.schema_version, [4, 5, 6, 7], "native PNG artifact inventory.schema_version");
   const path = `native PNG artifact inventory V${version}`;
   exactKeys(item, [
     "schema_version", "session_id", "subject_id", "subject_kind", "run_id",
@@ -1342,7 +1349,11 @@ export function parseStandardNativePngArtifactInventory(
   } else {
     const rates = array(item.sample_rates_hz, `${path}.sample_rates_hz`);
     if (rates.length < 1 || rates.length > 2) fail(path, "rate inventory is invalid");
-    const allowedRates = version === 5 ? mixedSampleRates : productionSampleRates;
+    const allowedRates = version === 5
+      ? mixedSampleRates
+      : version === 7
+        ? [3_000_000, ...productionSampleRates]
+        : productionSampleRates;
     rates.forEach((rate, index) => oneOf(rate, allowedRates, `${path}.sample_rates_hz[${index}]`));
     if (new Set(rates).size !== rates.length
       || rates.some((rate, index) => index > 0 && Number(rate) <= Number(rates[index - 1]))) {
@@ -1355,9 +1366,12 @@ export function parseStandardNativePngArtifactInventory(
     `${path}.coverage_status`,
   );
   const rows = array(item.artifacts, `${path}.artifacts`);
+  const definitions = version === 7
+    ? nativeArtifactDefinitionsV7
+    : nativeArtifactDefinitionsV4;
   const expected = subjectKind === "receiver_path"
-    ? nativeArtifactDefinitionsV4
-    : nativeArtifactDefinitionsV4.slice(0, 5);
+    ? definitions
+    : definitions.slice(0, 5);
   if (rows.length !== expected.length) {
     fail(`${path}.artifacts`, "scope inventory length differs");
   }
@@ -1385,7 +1399,8 @@ export function parseStandardNativePngArtifactInventory(
   string(item.content_digest, `${path}.content_digest`);
   return item as unknown as StandardNativePngArtifactInventoryV4
     | StandardNativePngArtifactInventoryV5
-    | StandardNativePngArtifactInventoryV6;
+    | StandardNativePngArtifactInventoryV6
+    | StandardNativePngArtifactInventoryV7;
 }
 
 export function assertMatchingStandardMajor(

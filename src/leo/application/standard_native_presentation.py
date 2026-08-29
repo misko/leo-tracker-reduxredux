@@ -21,9 +21,12 @@ from leo.analysis.standard.native_products import (
     PAIRED_REPORT_V6_PRODUCT,
     PATH_REPORT_V3_PRODUCT,
     PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
+    PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT,
     PILOT_METHODS_PNG_V2_PRODUCT,
     PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
+    PILOT_SEGMENT_RATES_PNG_V4_PRODUCT,
     POWER_TIMELINE_V3_PRODUCT,
     RADIO_REPORT_V4_PRODUCT,
     RADIO_REPORT_V5_PRODUCT,
@@ -62,11 +65,13 @@ from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 from leo.pipeline.standard_native import standard_native_pipeline_definition_v1
 from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV5,
     StandardNativePngArtifactInventoryV6,
+    StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactV4,
 )
 from leo.presentation.standard_native_pipeline import (
@@ -170,6 +175,38 @@ class _NativeProjection:
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5,
     ]
+
+
+_PILOT_PNG_KINDS = (
+    "standard.pilot-doppler-segments-png",
+    "standard.pilot-carrier-tracking-png",
+    "standard.pilot-segment-rates-png",
+)
+
+
+def _pilot_png_schema_version(loaded: _NativeProjection) -> Literal[3, 4] | None:
+    """Resolve one run-wide pilot-view generation without rewriting old contracts."""
+
+    schemas_by_kind = {
+        kind: {
+            product.schema_version
+            for product in loaded.products
+            if product.kind == kind
+            and product.role == "presentation"
+            and product.media_type == "image/png"
+            and product.available
+        }
+        for kind in _PILOT_PNG_KINDS
+    }
+    if all(schemas == {4} for schemas in schemas_by_kind.values()):
+        return 4
+    if all(schemas == {3} for schemas in schemas_by_kind.values()):
+        return 3
+    if all(not schemas for schemas in schemas_by_kind.values()):
+        return None
+    raise StandardPresentationUnavailable(
+        "sealed Standard-native run has a mixed or incomplete pilot PNG generation"
+    )
 
 
 class CatalogStandardNativePresentationRepository:
@@ -319,6 +356,7 @@ class CatalogStandardNativePresentationRepository:
         StandardNativePngArtifactInventoryV4
         | StandardNativePngArtifactInventoryV5
         | StandardNativePngArtifactInventoryV6
+        | StandardNativePngArtifactInventoryV7
         | None
     ):
         """Return the complete sealed 11/5/5 artifact inventory, if present."""
@@ -332,6 +370,14 @@ class CatalogStandardNativePresentationRepository:
             if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
             else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
         )
+        pilot_png_schema = _pilot_png_schema_version(loaded)
+        if pilot_png_schema is None:
+            return None
+        definitions = (
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7
+            if pilot_png_schema == 4
+            else STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4
+        )
         product_specs = {
             "waterfall": WATERFALL_PNG_V2_PRODUCT,
             "pilot-methods": PILOT_METHODS_PNG_V2_PRODUCT,
@@ -341,9 +387,21 @@ class CatalogStandardNativePresentationRepository:
             "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
             "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
             "full-capture-glrt20ms": FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
-            "pilot-doppler": PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
-            "pilot-carrier-tracking": PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
-            "pilot-segment-rates": PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
+            "pilot-doppler": (
+                PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT
+                if pilot_png_schema == 4
+                else PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT
+            ),
+            "pilot-carrier-tracking": (
+                PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT
+                if pilot_png_schema == 4
+                else PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT
+            ),
+            "pilot-segment-rates": (
+                PILOT_SEGMENT_RATES_PNG_V4_PRODUCT
+                if pilot_png_schema == 4
+                else PILOT_SEGMENT_RATES_PNG_V3_PRODUCT
+            ),
         }
         artifacts: list[StandardNativePngArtifactV4] = []
         for name in names:
@@ -351,9 +409,7 @@ class CatalogStandardNativePresentationRepository:
             product = self._png_product(loaded, subject, spec.kind, spec.schema_version)
             if product is None:
                 return None
-            label, description, kind, schema_version, view_name = (
-                STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4[name]
-            )
+            label, description, kind, schema_version, view_name = definitions[name]
             base = (
                 f"/api/v2/recordings/{quote(session_id, safe='')}/standard-subjects/"
                 f"{quote(subject.subject_id, safe='')}"
@@ -384,6 +440,44 @@ class CatalogStandardNativePresentationRepository:
             "coverage_status": subject.coverage_status,
             "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
         }
+        if pilot_png_schema == 4:
+            phase_sample_rates_hz = cast(
+                tuple[
+                    Literal[
+                        2_500_000,
+                        3_000_000,
+                        5_000_000,
+                        10_000_000,
+                        15_000_000,
+                        20_000_000,
+                    ],
+                    ...,
+                ],
+                tuple(
+                    sorted(
+                        {
+                            path.report.source.sample_rate_hz
+                            for path in self._subject_paths(loaded, subject)
+                        }
+                    )
+                ),
+            )
+            content_values_v7 = {
+                "schema_version": 7,
+                **common_values,
+                "sample_rates_hz": phase_sample_rates_hz,
+            }
+            return StandardNativePngArtifactInventoryV7(
+                session_id=session_id,
+                subject_id=subject.subject_id,
+                subject_kind=subject.subject_kind,
+                run_id=loaded.run_id,
+                run_manifest_digest=loaded.manifest_digest,
+                sample_rates_hz=phase_sample_rates_hz,
+                coverage_status=subject.coverage_status,
+                artifacts=tuple(artifacts),
+                content_digest=canonical_digest(content_values_v7),
+            )
         if isinstance(subject, StandardNativeSubjectSummaryV5):
             production_sample_rates_hz = cast(
                 tuple[
@@ -535,18 +629,27 @@ class CatalogStandardNativePresentationRepository:
         subject_id: str,
         artifact_name: str,
     ) -> bytes | None:
-        product_spec = {
-            "cfo-raw": CFO_TRAJECTORIES_PNG_V2_PRODUCT,
-            "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
-            "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
-            "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
-            "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
-            "full-capture-glrt20ms": FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
-            "pilot-doppler": PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
-            "pilot-carrier-tracking": PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
-            "pilot-segment-rates": PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
+        product_specs = {
+            "cfo-raw": (CFO_TRAJECTORIES_PNG_V2_PRODUCT,),
+            "cfo-dealiased": (DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,),
+            "cfo-final": (FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,),
+            "cfo-alternate": (ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,),
+            "trajectory-accounting": (TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,),
+            "full-capture-glrt20ms": (FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,),
+            "pilot-doppler": (
+                PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT,
+                PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
+            ),
+            "pilot-carrier-tracking": (
+                PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT,
+                PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
+            ),
+            "pilot-segment-rates": (
+                PILOT_SEGMENT_RATES_PNG_V4_PRODUCT,
+                PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
+            ),
         }.get(artifact_name)
-        if product_spec is None:
+        if product_specs is None:
             return None
         loaded = self._load(session_id)
         if loaded is None or subject_id not in loaded.subjects:
@@ -557,11 +660,21 @@ class CatalogStandardNativePresentationRepository:
             and subject.subject_kind is not StandardSubjectKindV2.RECEIVER_PATH
         ):
             return None
-        product = self._png_product(
-            loaded,
-            subject,
-            product_spec.kind,
-            product_spec.schema_version,
+        product = next(
+            (
+                candidate
+                for spec in product_specs
+                if (
+                    candidate := self._png_product(
+                        loaded,
+                        subject,
+                        spec.kind,
+                        spec.schema_version,
+                    )
+                )
+                is not None
+            ),
+            None,
         )
         return (
             None
@@ -2079,6 +2192,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         StandardNativePngArtifactInventoryV4
         | StandardNativePngArtifactInventoryV5
         | StandardNativePngArtifactInventoryV6
+        | StandardNativePngArtifactInventoryV7
         | None
     ):
         if not self._native(session_id):

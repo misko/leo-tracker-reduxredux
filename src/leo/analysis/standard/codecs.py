@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from leo.analysis.quality import QualityReportV1
 from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
+from leo.analysis.standard.native_products import PILOT_DOPPLER_SEGMENTS_V3_PRODUCT
 from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
     ALTERNATE_CFO_TRACK_BANK_V1_PRODUCT,
@@ -83,6 +84,7 @@ from leo.contracts.kalman_tracking import StandardKalmanTrackingV1
 from leo.contracts.pilot_doppler_segments import (
     StandardPilotDopplerSegmentsV1,
     StandardPilotDopplerSegmentsV2,
+    StandardPilotDopplerSegmentsV3,
 )
 from leo.contracts.standard_pipeline import (
     PairedStandardReportV1,
@@ -141,6 +143,7 @@ _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (KALMAN_TRACKING_PRODUCT.kind, 1): StandardKalmanTrackingV1,
     (PILOT_DOPPLER_SEGMENTS_V1_PRODUCT.kind, 1): StandardPilotDopplerSegmentsV1,
     (PILOT_DOPPLER_SEGMENTS_PRODUCT.kind, 2): StandardPilotDopplerSegmentsV2,
+    (PILOT_DOPPLER_SEGMENTS_V3_PRODUCT.kind, 3): StandardPilotDopplerSegmentsV3,
     (PROBE_SCHEDULE_PRODUCT.kind, 2): ProbeScheduleV2,
     (PATH_REPORT_PRODUCT.kind, 2): PathStandardReportV2,
     (RADIO_REPORT_PRODUCT.kind, 2): RadioStandardReportV2,
