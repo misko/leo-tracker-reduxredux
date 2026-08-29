@@ -101,7 +101,6 @@ class _PreparedRadio:
     identity: RadioIdentityV1
     requested_settings: RadioSettingsV1
     applied_settings: RadioSettingsV1
-    kernel_buffers: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -671,29 +670,12 @@ class AcquisitionCoordinator:
                 if cancel.is_set():
                     raise AcquisitionCancelled("capture cancelled while priming")
                 source.read_block(profile.refill_samples)
-            kernel_buffers = None
             if counter_authoritative:
                 if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4)):
                     raise AcquisitionError("counter-authoritative plan type is unsupported")
                 if not isinstance(profile, CaptureProfileV2):
                     raise AcquisitionError("counter-authoritative profile type is unsupported")
                 source.reset_receive_buffer()
-                controller = _gain_controller_for_radio(plan, expected_radio_id)
-                if controller is None:
-                    kernel_buffers = source.begin_metadata_capture(
-                        profile.refill_samples,
-                        kernel_buffers=profile.kernel_buffers,
-                    )
-                else:
-                    kernel_buffers = source.begin_metadata_capture(
-                        profile.refill_samples,
-                        kernel_buffers=profile.kernel_buffers,
-                        gain_controller=controller,
-                    )
-                if kernel_buffers != profile.kernel_buffers:
-                    raise AcquisitionError(
-                        "radio kernel-buffer readback disagrees with CaptureProfileV2"
-                    )
             return _PreparedRadio(
                 index,
                 f"stream-{index}",
@@ -701,7 +683,6 @@ class AcquisitionCoordinator:
                 identity,
                 requested_settings,
                 actual,
-                kernel_buffers,
             )
         except BaseException as error:
             close_interruption: BaseException | None = None
@@ -848,10 +829,7 @@ class AcquisitionCoordinator:
         if not isinstance(profile, CaptureProfileV2):
             raise AcquisitionError("counter-authoritative capture requires CaptureProfileV2")
         device_axis_capture = profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
-        kernel_buffers = item.kernel_buffers
-        if kernel_buffers != profile.kernel_buffers:
-            return _failed_outcome(item, "verified kernel-buffer readback is unavailable")
-        assert kernel_buffers is not None
+        kernel_buffers: int | None = None
         pending: queue.Queue[IqBlock | object] = queue.Queue(maxsize=profile.refill_queue_capacity)
         stop = object()
         consumer_failed = Event()
@@ -902,6 +880,10 @@ class AcquisitionCoordinator:
                         assert isinstance(queued, IqBlock)
                         set_consumer_phase("writing")
                         if stream_writer is None:
+                            if kernel_buffers is None:
+                                raise AcquisitionError(
+                                    "verified kernel-buffer readback is unavailable"
+                                )
                             if device_axis_capture:
                                 stream_writer = bundle.open_device_axis_stream(
                                     item.stream_id,
@@ -986,6 +968,55 @@ class AcquisitionCoordinator:
         try:
             release_target = gate.arrive_and_wait(external_cancel)
             release_observed = self.clock.wait_until(release_target, external_cancel)
+            arm_started = self.clock.monotonic_ns()
+            controller = _gain_controller_for_radio(plan, item.identity.radio_id)
+            try:
+                if controller is None:
+                    kernel_buffers = item.source.begin_metadata_capture(
+                        profile.refill_samples,
+                        kernel_buffers=profile.kernel_buffers,
+                    )
+                else:
+                    kernel_buffers = item.source.begin_metadata_capture(
+                        profile.refill_samples,
+                        kernel_buffers=profile.kernel_buffers,
+                        gain_controller=controller,
+                    )
+            except BaseException:
+                arm_completed = self.clock.monotonic_ns()
+                _LOG.error(
+                    "metadata_capture_arm_failed radio=%s stream=%s "
+                    "release_target_monotonic_ns=%d release_observed_monotonic_ns=%d "
+                    "arm_started_monotonic_ns=%d arm_completed_monotonic_ns=%d "
+                    "arm_duration_ns=%d",
+                    item.identity.radio_id,
+                    item.stream_id,
+                    release_target,
+                    release_observed,
+                    arm_started,
+                    arm_completed,
+                    arm_completed - arm_started,
+                )
+                raise
+            arm_completed = self.clock.monotonic_ns()
+            if kernel_buffers != profile.kernel_buffers:
+                raise AcquisitionError(
+                    "radio kernel-buffer readback disagrees with CaptureProfileV2"
+                )
+            _LOG.info(
+                "metadata_capture_armed radio=%s stream=%s "
+                "release_target_monotonic_ns=%d release_observed_monotonic_ns=%d "
+                "arm_started_monotonic_ns=%d arm_completed_monotonic_ns=%d "
+                "arm_duration_ns=%d kernel_buffers=%d",
+                item.identity.radio_id,
+                item.stream_id,
+                release_target,
+                release_observed,
+                arm_started,
+                arm_completed,
+                arm_completed - arm_started,
+                kernel_buffers,
+            )
             while device_span < resolved_sample_count:
                 if external_cancel.is_set() or (fail_whole and session_cancel.is_set()):
                     raise AcquisitionCancelled("capture cancelled at a refill boundary")
