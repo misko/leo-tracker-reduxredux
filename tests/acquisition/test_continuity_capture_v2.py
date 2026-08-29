@@ -416,6 +416,49 @@ def test_v2_rate_mode_applies_one_exact_rate_to_both_radios(
     )
 
 
+def test_v2_fast_radio_drains_while_peer_is_still_arming(tmp_path: Path) -> None:
+    slow_arm_entered = Event()
+    fast_read_started = Event()
+    lifecycle: list[str] = []
+    lifecycle_lock = threading.Lock()
+
+    def record(event: str) -> None:
+        with lifecycle_lock:
+            lifecycle.append(event)
+
+    class FastRadio(FakeRadioSource):
+        def begin_metadata_capture(self, *args, **kwargs) -> int:
+            assert slow_arm_entered.wait(timeout=1.0)
+            return super().begin_metadata_capture(*args, **kwargs)
+
+        def read_block(self, sample_count: int) -> IqBlock:
+            record("fast-read")
+            fast_read_started.set()
+            return super().read_block(sample_count)
+
+    class SlowArmRadio(FakeRadioSource):
+        def begin_metadata_capture(self, *args, **kwargs) -> int:
+            record("slow-arm-entered")
+            slow_arm_entered.set()
+            assert fast_read_started.wait(timeout=1.0)
+            result = super().begin_metadata_capture(*args, **kwargs)
+            record("slow-arm-completed")
+            return result
+
+    result = _coordinator(tmp_path).capture_once(
+        _plan(radio_ids=("radio-a", "radio-b"), sample_count=12),
+        {
+            "radio-a": FastRadio("radio-a"),
+            "radio-b": SlowArmRadio("radio-b"),
+        },
+        session_id="continuity-v2-independent-arm-and-drain",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert lifecycle.index("slow-arm-entered") < lifecycle.index("fast-read")
+    assert lifecycle.index("fast-read") < lifecycle.index("slow-arm-completed")
+
+
 @pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000, 10_000_000))
 def test_device_axis_v3_lossless_capture_has_one_fixed_logical_iq_length(
     tmp_path: Path,
