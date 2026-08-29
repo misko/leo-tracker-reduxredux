@@ -63,7 +63,7 @@ quarantines the bundle and poisons the live supervisor exactly as before.
    acquisition selector for rollback. Point `LEO_PROFILE_ROOT` at
    `/opt/leo-tracker/current-acquisition/profiles`. Use the optional
    `20-component-environment.conf` drop-in and `/etc/leo/acquisition.env` for this
-   path, the exact acquisition `LEO_PIPELINE_RELEASE_ID`, and the ring rollout
+   path, the exact acquisition `LEO_ACQUISITION_RELEASE_ID`, and the ring rollout
    limit. Do not change the common worker release identity.
 3. Run explicitly authorized hardware canaries with the service stopped. The
    hardware test below requires an explicit enable flag, radio ID, rate, RX, and

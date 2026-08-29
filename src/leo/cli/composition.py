@@ -208,6 +208,7 @@ class CliSettings:
     database_url: str | None = None
     corpus_root: Path | None = None
     pipeline_release_id: str = "standard-v1"
+    acquisition_release_id: str | None = None
     qualification_root: Path = Path("/srv/bulk/leo/qualification")
     capture_evidence_root: Path = Path("/srv/bulk/leo/qualification/capture")
     legacy_evidence_root: Path = Path("/srv/bulk/leo/qualification/legacy")
@@ -307,6 +308,7 @@ class CliSettings:
                     )
                 ),
                 pipeline_release_id=values.get("LEO_PIPELINE_RELEASE_ID", "standard-v1"),
+                acquisition_release_id=values.get("LEO_ACQUISITION_RELEASE_ID"),
                 qualification_root=qualification_root,
                 capture_evidence_root=Path(
                     values.get(
@@ -1833,7 +1835,9 @@ class LocalAcquisitionBackend:
         return ProducerV1(
             name="leo-acquisition",
             version=__version__,
-            source_revision=self.settings.pipeline_release_id,
+            source_revision=(
+                self.settings.acquisition_release_id or self.settings.pipeline_release_id
+            ),
         )
 
     def _scanner_iq_store(self) -> ScannerIqStore:

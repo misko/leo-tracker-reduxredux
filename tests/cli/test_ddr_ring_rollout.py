@@ -32,6 +32,19 @@ def test_rollout_defaults_off_and_rejects_ambiguous_limit():
         CliSettings.from_environ({"LEO_DDR_RING_MAX_RATE_HZ": "12000000"})
 
 
+def test_acquisition_identity_does_not_change_analysis_worker_identity():
+    settings = CliSettings.from_environ(
+        {
+            "LEO_PIPELINE_RELEASE_ID": "a" * 40,
+            "LEO_ACQUISITION_RELEASE_ID": "b" * 40,
+        }
+    )
+    assert settings.pipeline_release_id == "a" * 40
+    assert LocalAcquisitionBackend(settings)._acquisition_producer().source_revision == "b" * 40
+    legacy = CliSettings.from_environ({"LEO_PIPELINE_RELEASE_ID": "a" * 40})
+    assert LocalAcquisitionBackend(legacy)._acquisition_producer().source_revision == "a" * 40
+
+
 def test_ring_profile_authority_compiles_each_unchanged_production_intent(tmp_path):
     root = Path(__file__).parents[2] / "profiles"
     settings = CliSettings.from_environ(
