@@ -17,10 +17,13 @@ import type { AnalysisLane } from "./standard-api";
 import type {
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
+  StandardNativeSubjectDetailV5,
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
+  StandardNativePngArtifactInventoryV6,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
+  StandardNativeSubjectSummaryV5,
   StandardSubjectDetail,
   StandardSubjectDetailV2,
   StandardReplayAuditV1,
@@ -33,10 +36,14 @@ import type {
 } from "./standard-contracts";
 import "./standard-analysis.css";
 
-type StandardNativeDetail = StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4;
+type StandardNativeDetail =
+  | StandardNativeSubjectDetailV3
+  | StandardNativeSubjectDetailV4
+  | StandardNativeSubjectDetailV5;
 type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV4
-  | StandardNativePngArtifactInventoryV5;
+  | StandardNativePngArtifactInventoryV5
+  | StandardNativePngArtifactInventoryV6;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
@@ -309,8 +316,8 @@ function NativeAnalysisDetail({
           <span>Reducers merge sufficient statistics</span>
         </div>
       </section>
-      {detail.schema_version === 4 ? (
-        <MixedRfAuthority detail={detail} />
+      {detail.schema_version === 4 || detail.schema_version === 5 ? (
+        <NativeRfAuthority detail={detail} />
       ) : null}
       <NativePathCoverage evidence={detail.receiver_path_evidence} />
       <NativePngGallery
@@ -326,14 +333,24 @@ function NativeAnalysisDetail({
   );
 }
 
-function MixedRfAuthority({ detail }: { detail: StandardNativeSubjectDetailV4 }) {
+function NativeRfAuthority({
+  detail,
+}: {
+  detail: StandardNativeSubjectDetailV4 | StandardNativeSubjectDetailV5;
+}) {
+  const production = detail.schema_version === 5;
   return (
-    <section className="standard-native-paths" aria-label="Mixed-rate RF coverage authority">
+    <section
+      className="standard-native-paths"
+      aria-label={production ? "Production RF coverage authority" : "Mixed-rate RF coverage authority"}
+    >
       <header>
         <div>
           <span>SEALED RF / IF AUTHORITY</span>
           <h4>
-            Same Starlink channel and edge · independent native-rate passbands · no resampling
+            {production
+              ? `${formatEnum(detail.subject.eligibility.dwell_class)} · ${formatEnum(detail.subject.eligibility.tuning_branch)} tuning · no resampling`
+              : "Same Starlink channel and edge · independent native-rate passbands · no resampling"}
           </h4>
         </div>
       </header>
@@ -349,6 +366,11 @@ function MixedRfAuthority({ detail }: { detail: StandardNativeSubjectDetailV4 })
           <small>
             Captured {formatMhz(leg.captured_if_start_hz)}–{formatMhz(leg.captured_if_stop_hz)} IF inside {formatMhz(leg.channel_if_start_hz)}–{formatMhz(leg.channel_if_stop_hz)} channel
           </small>
+          {leg.schema_version === 5 ? (
+            <small>
+              RX{leg.receiver_ids.join(" + RX")} · {formatEnum(leg.gain_controller_mode)} · metadata ABI {leg.metadata_abi_version}
+            </small>
+          ) : null}
         </article>
       ))}</div>
     </section>
@@ -780,7 +802,7 @@ function SubjectTabs({
 
 function isNativeSubject(
   subject: StandardSubjectSummary,
-): subject is StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4 {
+): subject is StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4 | StandardNativeSubjectSummaryV5 {
   return "coverage_status" in subject;
 }
 
@@ -987,12 +1009,15 @@ function nativeRateLabel(hierarchy: StandardSubjectHierarchy, lane: AnalysisLane
   if (hierarchy.schema_version === 3) {
     return `STANDARD · NATIVE · ${(hierarchy.eligibility.sample_rate_hz / 1_000_000).toFixed(1)} MS/s`;
   }
-  if (hierarchy.schema_version === 4) {
+  if (hierarchy.schema_version === 4 || hierarchy.schema_version === 5) {
     const rates = [...new Set(hierarchy.eligibility.legs.map((leg) => leg.sample_rate_hz))]
       .sort((left, right) => left - right)
       .map((rate) => (rate / 1_000_000).toFixed(1))
       .join(" + ");
-    return `STANDARD · NATIVE · MIXED ${rates} MS/s`;
+    const mode = hierarchy.schema_version === 5
+      ? formatEnum(hierarchy.eligibility.dwell_class).toUpperCase()
+      : "MIXED";
+    return `STANDARD · NATIVE · ${mode} ${rates} MS/s`;
   }
   return lane === "standard" ? "STANDARD · 2×20 MS / 50 MS" : "RESEARCH · 3×20 MS / 50 MS";
 }
@@ -1010,7 +1035,8 @@ function nativeInventoryMatchesDetail(
     return inventory.schema_version === 4
       && inventory.sample_rate_hz === detail.subject.eligibility.sample_rate_hz;
   }
-  if (inventory.schema_version !== 5) return false;
+  const expectedInventoryVersion = detail.schema_version === 4 ? 5 : 6;
+  if (inventory.schema_version !== expectedInventoryVersion) return false;
   const streamIds = new Set(
     detail.subject.receiver_paths.map((path) => path.scope.stream_id),
   );
