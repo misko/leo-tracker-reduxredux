@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import pytest
 
+from leo.contracts.device_buffer import DeviceBufferRequestV1
 from leo.contracts.gain_control import GainControllerMode, GainControllerPolicyV1
 from leo.contracts.radio import IqBlockMetadataV3, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.states import ContinuityStatus, GainMode, RadioTransport
@@ -416,6 +417,83 @@ def test_gain_controller_covers_v2_first_refill_arm_window() -> None:
     )
 
     assert controller.cooldown_periods == 31
+
+
+class StubRingDevice(StubMetadataDevice):
+    def __init__(self):
+        super().__init__("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+        self.identity.firmware_version = "v0.44-plutoplus-spf-ddr-ring-prefill-v1"
+        self.ring_kwargs = None
+        self.ring_capable = True
+        self.admitted_bytes = 200_000_000
+
+    def diagnostic_facts(self):
+        return {
+            "buffer_metadata_abi": 3,
+            "buffer_ddr_ring": self.ring_capable,
+            "buffer_ddr_ring_modes_raw": "finite,continuous",
+            "buffer_metadata_status": True,
+            "buffer_ddr_ring_max_iq_bytes": 200_000_000,
+        }
+
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers, tandem_request, **kwargs):
+        self.ring_kwargs = kwargs
+        session = super().begin_metadata_capture(
+            sample_count, kernel_buffers=kernel_buffers, tandem_request=tandem_request
+        )
+        session.ddr_ring_enabled = True
+        session.ddr_ring_requested_bytes = kwargs["ddr_ring_bytes"]
+        session.ddr_ring_admitted_bytes = self.admitted_bytes
+        session.ddr_ring_capacity_frames = 50
+        session.ddr_ring_capture_frames = kwargs["ddr_ring_frames"]
+        session.ddr_ring_continuous = False
+        return session
+
+
+@pytest.mark.parametrize("failure", [None, "capability", "firmware", "admission"])
+def test_ring_adapter_exact_request_and_fail_closed_readback(failure):
+    device = StubRingDevice()
+    if failure == "capability":
+        device.ring_capable = False
+    if failure == "firmware":
+        device.identity.firmware_version = "v0.43-plutoplus-spf-ddr-ring-v1"
+    if failure == "admission":
+        device.admitted_bytes = 196_000_000
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.configure(_settings((0,), sample_rate_hz=20_000_000))
+    request = DeviceBufferRequestV1(
+        requested_bytes=200_000_000,
+        target_frames=400,
+        frame_samples=1_000_000,
+        requested_device_samples=400_000_000,
+    )
+    try:
+        if failure:
+            with pytest.raises(PlutoAdapterError):
+                adapter.begin_metadata_capture(1_000_000, kernel_buffers=4, device_buffer=request)
+            if failure in ("capability", "firmware"):
+                assert device.ring_kwargs is None
+            else:
+                assert device.session.closed
+        else:
+            assert (
+                adapter.begin_metadata_capture(1_000_000, kernel_buffers=4, device_buffer=request)
+                == 4
+            )
+            assert device.ring_kwargs == {
+                "ddr_ring_bytes": 200_000_000,
+                "ddr_ring_frames": 400,
+                "ddr_ring_continuous": False,
+            }
+    finally:
+        adapter.close()
 
 
 def test_metadata_session_maps_explicit_auto_controller_and_rejects_faults() -> None:

@@ -38,6 +38,7 @@ from leo.domain.gap_map import build_iq_gap_map
 from leo.domain.iq import IqBlock
 from leo.domain.validity import build_validity_inventory_v1
 from leo.storage.errors import BundleStateError
+from leo.storage.staging import RawIqStage
 from leo.storage.uri import BulkUriResolver
 
 FailureInjector = Callable[[str], None]
@@ -974,6 +975,20 @@ class RecordingBundleWriter:
     @property
     def quarantined(self) -> bool:
         return self._publication_forbidden.is_set()
+
+    def open_raw_stage(self, stream_id: str, *, maximum_bytes: int) -> RawIqStage:
+        """Own private staging paths; acquisition never constructs storage paths."""
+        if not _IDENTIFIER.fullmatch(stream_id):
+            raise ValueError("stream ID is not one safe persisted identifier")
+        self._require_open()
+        return RawIqStage(self._spool_path / f"raw-stage-{stream_id}", maximum_bytes=maximum_bytes)
+
+    def write_capture_failure_evidence(self, stream_id: str, payload: bytes) -> None:
+        """Preserve bounded diagnostic evidence only in an unpublished capture."""
+        if not _IDENTIFIER.fullmatch(stream_id) or len(payload) > 1_048_576:
+            raise ValueError("capture failure evidence identity or size is invalid")
+        self._require_open()
+        _write_immutable_file(self._spool_path / f"capture-failure-{stream_id}.json", payload)
 
     def quarantine(self) -> None:
         """Permanently forbid publication without racing an active stream writer.

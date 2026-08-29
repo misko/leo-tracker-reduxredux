@@ -8,6 +8,7 @@ from collections.abc import Callable
 from contextlib import suppress
 from typing import Any, Literal, cast
 
+from leo.contracts.device_buffer import DdrRingStatusV1, DeviceBufferRequestV1
 from leo.contracts.gain_control import (
     GainControllerMode,
     GainControllerPolicyV1,
@@ -215,6 +216,7 @@ class PlutoIioRadioSource:
         *,
         kernel_buffers: int,
         gain_controller: GainControllerPolicyV1 | None = None,
+        device_buffer: DeviceBufferRequestV1 | None = None,
     ) -> int:
         device = self._require_device()
         if self._settings is None:
@@ -230,6 +232,32 @@ class PlutoIioRadioSource:
             raise PlutoAdapterError("Pluto does not attest counter-authoritative metadata")
         if self._metadata_session is not None:
             raise PlutoAdapterError("Pluto metadata capture session is already active")
+        ring_arguments: dict[str, Any] = {}
+        if device_buffer is not None:
+            if (
+                sample_count != device_buffer.frame_samples
+                or len(self._settings.receiver_ids) != device_buffer.receiver_count
+            ):
+                raise PlutoAdapterError("DDR ring request disagrees with configured RX geometry")
+            facts = device.diagnostic_facts()
+            if (
+                facts.get("buffer_metadata_abi") != 3
+                or facts.get("buffer_ddr_ring") is not True
+                or facts.get("buffer_ddr_ring_modes_raw") != "finite,continuous"
+                or facts.get("buffer_metadata_status") is not True
+                or int(facts.get("buffer_ddr_ring_max_iq_bytes") or 0)
+                < device_buffer.requested_bytes
+            ):
+                raise PlutoAdapterError("Pluto does not attest the requested DDR ring capability")
+            # The first qualified prefill implementation; capability alone on v0.43
+            # does not promise a counter-contiguous admitted prefix.
+            if self.identity.firmware_version != "v0.44-plutoplus-spf-ddr-ring-prefill-v1":
+                raise PlutoAdapterError("DDR ring profile requires the qualified v0.44 firmware")
+            ring_arguments = {
+                "ddr_ring_bytes": device_buffer.requested_bytes,
+                "ddr_ring_frames": device_buffer.target_frames,
+                "ddr_ring_continuous": False,
+            }
         controller = gain_controller
         if controller is None:
             if self._settings.gain_mode is not GainMode.MANUAL:
@@ -241,11 +269,13 @@ class PlutoIioRadioSource:
                 GainControllerMode.TANDEM_HOLD,
                 sample_count=sample_count,
             )
+        session = None
         try:
             session = device.begin_metadata_capture(
                 sample_count,
                 kernel_buffers=kernel_buffers,
                 tandem_request=_upstream_tandem_request(controller),
+                **ring_arguments,
             )
             readback = int(session.kernel_buffers)
             if readback != kernel_buffers:
@@ -253,9 +283,25 @@ class PlutoIioRadioSource:
                 raise PlutoAdapterError(
                     f"kernel-buffer readback mismatch: requested {kernel_buffers}, got {readback}"
                 )
+            if device_buffer is not None and (
+                session.ddr_ring_enabled is not True
+                or session.ddr_ring_requested_bytes != device_buffer.requested_bytes
+                or session.ddr_ring_admitted_bytes != device_buffer.requested_bytes
+                or session.ddr_ring_capacity_frames != device_buffer.capacity_frames
+                or session.ddr_ring_capture_frames != device_buffer.target_frames
+                or session.ddr_ring_continuous is not False
+            ):
+                session.close()
+                raise PlutoAdapterError("DDR ring admission readback disagrees with request")
         except PlutoAdapterError:
+            if session is not None:
+                with suppress(Exception):
+                    session.close()
             raise
         except Exception as error:
+            if session is not None:
+                with suppress(Exception):
+                    session.close()
             raise PlutoAdapterError(f"Pluto metadata capture start failed: {error}") from error
         self._metadata_session = session
         self._metadata_refill_samples = sample_count
@@ -268,6 +314,15 @@ class PlutoIioRadioSource:
         self._sample_cursor = 0
         self._block_index = 0
         return readback
+
+    def ddr_ring_status(self) -> DdrRingStatusV1:
+        session = self._metadata_session
+        if session is None:
+            raise PlutoAdapterError("DDR ring status requires an active metadata session")
+        try:
+            return DdrRingStatusV1.model_validate(dict(session.ddr_ring_status()))
+        except Exception as error:
+            raise PlutoAdapterError(f"Pluto DDR ring status failed: {error}") from error
 
     def read_block(self, sample_count: int) -> IqBlock:
         device = self._require_device()

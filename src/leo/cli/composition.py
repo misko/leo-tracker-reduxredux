@@ -223,6 +223,7 @@ class CliSettings:
     scanner_gain_db: float = 40.0
     scanner_margin_gate: float = 0.025
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
+    ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
 
     def __post_init__(self) -> None:
         ids = tuple(radio.radio_id for radio in self.radios)
@@ -232,6 +233,8 @@ class CliSettings:
             raise ValueError("at most two radios can be configured")
         if self.safety_reserve_bytes < 0:
             raise ValueError("acquisition safety reserve cannot be negative")
+        if self.ddr_ring_max_rate_hz not in (0, 10_000_000, 15_000_000, 20_000_000):
+            raise ValueError("DDR ring rollout maximum must be 0, 10, 15, or 20 MS/s")
         if self.radio_backend == "pluto":
             missing_hosts = tuple(radio.radio_id for radio in self.radios if radio.host is None)
             if missing_hosts:
@@ -292,6 +295,10 @@ class CliSettings:
                 radio_backend=cast(Literal["fake", "pluto"], backend),
                 radios=radios,
                 safety_reserve_bytes=reserve,
+                ddr_ring_max_rate_hz=cast(
+                    Literal[0, 10_000_000, 15_000_000, 20_000_000],
+                    int(values.get("LEO_DDR_RING_MAX_RATE_HZ", "0")),
+                ),
                 database_url=values.get("LEO_DATABASE_URL"),
                 corpus_root=Path(
                     values.get(
@@ -617,7 +624,12 @@ class LocalAcquisitionBackend:
             (5_000_000, (0, 1), True): "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
             **{
                 (rate, (receiver,), True): (
-                    f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-production-v5"
+                    f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-"
+                    + (
+                        "ddr-ring-v6"
+                        if rate <= self.settings.ddr_ring_max_rate_hz
+                        else "production-v5"
+                    )
                 )
                 for rate in (10_000_000, 15_000_000, 20_000_000)
                 for receiver in (0, 1)
