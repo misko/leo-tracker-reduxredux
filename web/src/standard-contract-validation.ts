@@ -2,15 +2,20 @@ import type {
   StandardNativeCoverageStatusV3,
   StandardNativePlotViewV3,
   StandardNativePlotViewV4,
+  StandardNativePlotViewV5,
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
+  StandardNativePngArtifactInventoryV6,
   StandardNativeScientificDispositionV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
+  StandardNativeSubjectDetailV5,
   StandardNativeSubjectHierarchyV3,
   StandardNativeSubjectHierarchyV4,
+  StandardNativeSubjectHierarchyV5,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
+  StandardNativeSubjectSummaryV5,
   StandardPlotView,
   StandardPlotViewV2,
   StandardSubjectDetail,
@@ -56,6 +61,9 @@ const scienceStates: StandardNativeScientificDispositionV3[] = [
 ];
 const sampleRates = [2_500_000, 3_000_000, 5_000_000, 10_000_000] as const;
 const mixedSampleRates = [2_500_000, 5_000_000, 10_000_000] as const;
+const productionSampleRates = [
+  2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000,
+] as const;
 
 function fail(path: string, detail: string): never {
   throw new Error(`Standard ${path} contract is invalid: ${detail}`);
@@ -76,6 +84,12 @@ function array(value: unknown, path: string): unknown[] {
 function string(value: unknown, path: string): string {
   if (typeof value !== "string" || value.length === 0) fail(path, "expected a string");
   return value;
+}
+
+function digest(value: unknown, path: string): string {
+  const result = string(value, path);
+  if (!/^sha256:[0-9a-f]{64}$/.test(result)) fail(path, "expected a canonical SHA-256 digest");
+  return result;
 }
 
 function nullableString(value: unknown, path: string): string | null {
@@ -399,6 +413,120 @@ function assertV4Eligibility(value: unknown, path: string): void {
   literal(item.reason, expectedReason, `${path}.reason`);
 }
 
+function assertV5ProductionLeg(value: unknown, path: string): void {
+  const item = object(value, path);
+  exactKeys(item, [
+    "schema_version", "stream_id", "radio_id", "profile_name",
+    "profile_revision_digest", "receiver_ids", "gain_controller_mode",
+    "gain_controller_request_digest", "starlink_channel", "starlink_edge",
+    "sample_rate_hz", "rf_bandwidth_hz", "tuned_center_frequency_hz",
+    "pilot_if_center_frequency_hz", "channel_if_start_hz", "channel_if_stop_hz",
+    "captured_if_start_hz", "captured_if_stop_hz", "logical_sample_count",
+    "validity_inventory_digest", "timeline_digest", "metadata_abi_version",
+  ], path);
+  literal(item.schema_version, 5, `${path}.schema_version`);
+  for (const key of ["stream_id", "radio_id", "profile_name"]) string(item[key], `${path}.${key}`);
+  for (const key of [
+    "profile_revision_digest", "gain_controller_request_digest",
+    "validity_inventory_digest", "timeline_digest",
+  ]) digest(item[key], `${path}.${key}`);
+  const receivers = array(item.receiver_ids, `${path}.receiver_ids`);
+  if (!(
+    receivers.length === 1 && (receivers[0] === 0 || receivers[0] === 1)
+    || receivers.length === 2 && receivers[0] === 0 && receivers[1] === 1
+  )) fail(path, "receiver inventory is not canonical");
+  oneOf(item.gain_controller_mode, ["tandem_hold", "tandem_auto"], `${path}.gain_controller_mode`);
+  oneOf(item.starlink_channel, [1, 2, 3, 4], `${path}.starlink_channel`);
+  oneOf(item.starlink_edge, ["lower", "upper"], `${path}.starlink_edge`);
+  const rate = oneOf(item.sample_rate_hz, productionSampleRates, `${path}.sample_rate_hz`);
+  if (oneOf(item.rf_bandwidth_hz, productionSampleRates, `${path}.rf_bandwidth_hz`) !== rate) {
+    fail(path, "RF bandwidth differs from native sample rate");
+  }
+  const center = integer(item.tuned_center_frequency_hz, `${path}.tuned_center_frequency_hz`);
+  const pilot = integer(item.pilot_if_center_frequency_hz, `${path}.pilot_if_center_frequency_hz`);
+  const channelStart = integer(item.channel_if_start_hz, `${path}.channel_if_start_hz`);
+  const channelStop = integer(item.channel_if_stop_hz, `${path}.channel_if_stop_hz`);
+  const start = integer(item.captured_if_start_hz, `${path}.captured_if_start_hz`);
+  const stop = integer(item.captured_if_stop_hz, `${path}.captured_if_stop_hz`);
+  if (center <= 0 || channelStart <= 0 || channelStop <= channelStart
+    || start < channelStart || stop > channelStop || stop - start !== rate
+    || 2 * center !== start + stop || pilot < start || pilot > stop) {
+    fail(path, "RF/passband authority does not close");
+  }
+  if (integer(item.logical_sample_count, `${path}.logical_sample_count`) <= 0) {
+    fail(path, "logical sample count must be positive");
+  }
+  literal(item.metadata_abi_version, 3, `${path}.metadata_abi_version`);
+}
+
+function assertV5Eligibility(value: unknown, path: string): void {
+  const item = object(value, path);
+  exactKeys(item, [
+    "schema_version", "source_type", "source_manifest_schema_version", "capture_state",
+    "capture_committed", "capture_healthy", "full_device_span", "validity_aware",
+    "automatic_eligible", "explicit_eligible", "promotion_allowed", "evidence_only",
+    "dwell_class", "tuning_branch", "legs", "scheduled_intent_digest",
+    "capture_plan_digest", "capture_hardware_binding_digest", "pipeline_definition_id",
+    "promotion_authority_digest", "resampled", "reason",
+  ], path);
+  literal(item.schema_version, 5, `${path}.schema_version`);
+  literal(item.source_type, "LIVE", `${path}.source_type`);
+  literal(item.source_manifest_schema_version, 5, `${path}.source_manifest_schema_version`);
+  const captureState = oneOf(item.capture_state, ["committed", "degraded"], `${path}.capture_state`);
+  if (boolean(item.capture_committed, `${path}.capture_committed`) !== (captureState === "committed")) {
+    fail(path, "capture state and committed flag disagree");
+  }
+  for (const key of [
+    "capture_healthy", "full_device_span", "validity_aware", "automatic_eligible",
+    "explicit_eligible", "promotion_allowed",
+  ]) literal(item[key], true, `${path}.${key}`);
+  literal(item.evidence_only, false, `${path}.evidence_only`);
+  literal(item.resampled, false, `${path}.resampled`);
+  const dwellClass = oneOf(item.dwell_class, [
+    "both_2p5", "both_5", "mixed_2p5_5", "mixed_2p5_10",
+    "mixed_2p5_15", "mixed_2p5_20",
+  ], `${path}.dwell_class`);
+  const tuningBranch = oneOf(
+    item.tuning_branch,
+    ["same", "same_channel_opposite_edge", "independent"],
+    `${path}.tuning_branch`,
+  );
+  const legs = array(item.legs, `${path}.legs`);
+  if (legs.length !== 2) fail(path, "production eligibility requires two exact legs");
+  legs.forEach((leg, index) => assertV5ProductionLeg(leg, `${path}.legs[${index}]`));
+  const legObjects = legs.map((leg) => object(leg, path));
+  const identities = legObjects.map((leg) => `${leg.stream_id}\u0000${leg.radio_id}`);
+  if (identities[0] >= identities[1]) fail(path, "production leg inventory is not exact and ordered");
+  const expectedRates: Record<typeof dwellClass, readonly number[]> = {
+    both_2p5: [2_500_000, 2_500_000],
+    both_5: [5_000_000, 5_000_000],
+    mixed_2p5_5: [2_500_000, 5_000_000],
+    mixed_2p5_10: [2_500_000, 10_000_000],
+    mixed_2p5_15: [2_500_000, 15_000_000],
+    mixed_2p5_20: [2_500_000, 20_000_000],
+  };
+  const rates = legObjects.map((leg) => Number(leg.sample_rate_hz)).sort((left, right) => left - right);
+  if (rates.some((rate, index) => rate !== expectedRates[dwellClass][index])) {
+    fail(path, "production leg rate inventory disagrees with dwell class");
+  }
+  const mixed = dwellClass.startsWith("mixed_");
+  if (mixed && tuningBranch !== "same") fail(path, "mixed production tuning must target the same channel and edge");
+  legObjects.forEach((leg) => {
+    const expectedReceivers = mixed && Number(leg.sample_rate_hz) > 5_000_000 ? 1 : 2;
+    if (array(leg.receiver_ids, path).length !== expectedReceivers) {
+      fail(path, "receiver geometry disagrees with dwell class");
+    }
+  });
+  for (const key of [
+    "scheduled_intent_digest", "capture_plan_digest", "capture_hardware_binding_digest",
+    "pipeline_definition_id", "promotion_authority_digest",
+  ]) digest(item[key], `${path}.${key}`);
+  const expectedReason = captureState === "committed"
+    ? "Promoted reviewed production Standard-native capture is Current"
+    : "Promoted reviewed production Standard-native capture is Current with partial validity coverage";
+  literal(item.reason, expectedReason, `${path}.reason`);
+}
+
 function assertV3SufficientStatistics(value: unknown, path: string): void {
   const item = object(value, path);
   exactKeys(item, [
@@ -597,6 +725,44 @@ function assertV4Subject(value: unknown, path: string): asserts value is Standar
   literal(item.evidence_label, "candidate evidence only", `${path}.evidence_label`);
 }
 
+function assertV5Subject(value: unknown, path: string): asserts value is StandardNativeSubjectSummaryV5 {
+  const item = object(value, path);
+  exactKeys(item, [
+    "schema_version", "subject_id", "session_id", "subject_kind", "label", "derived",
+    "receiver_paths", "expected_path_count", "completed_path_count", "child_subject_ids",
+    "state", "ordinary_current", "coverage_status", "scientific_disposition",
+    "pipeline_release", "desired_pipeline_release_id", "reuse", "eligibility", "terminal",
+    "evidence_label",
+  ], path);
+  literal(item.schema_version, 5, `${path}.schema_version`);
+  string(item.subject_id, `${path}.subject_id`);
+  string(item.session_id, `${path}.session_id`);
+  oneOf(item.subject_kind, ["receiver_path", "radio", "paired"], `${path}.subject_kind`);
+  string(item.label, `${path}.label`);
+  boolean(item.derived, `${path}.derived`);
+  const paths = array(item.receiver_paths, `${path}.receiver_paths`);
+  paths.forEach((row, index) => assertReceiverPath(row, `${path}.receiver_paths[${index}]`));
+  if (nonnegativeInteger(item.expected_path_count, `${path}.expected_path_count`) !== paths.length
+    || nonnegativeInteger(item.completed_path_count, `${path}.completed_path_count`) !== paths.length) {
+    fail(path, "path counts do not match the exact inventory");
+  }
+  assertStringArray(item.child_subject_ids, `${path}.child_subject_ids`);
+  literal(item.state, "current", `${path}.state`);
+  literal(item.ordinary_current, true, `${path}.ordinary_current`);
+  const coverage = oneOf(item.coverage_status, coverageStates, `${path}.coverage_status`);
+  const science = oneOf(item.scientific_disposition, scienceStates, `${path}.scientific_disposition`);
+  assertV3Release(item.pipeline_release, `${path}.pipeline_release`);
+  string(item.desired_pipeline_release_id, `${path}.desired_pipeline_release_id`);
+  assertReuse(item.reuse, `${path}.reuse`);
+  assertV5Eligibility(item.eligibility, `${path}.eligibility`);
+  assertV3Terminal(item.terminal, `${path}.terminal`);
+  const terminal = object(item.terminal, `${path}.terminal`);
+  if (terminal.coverage_status !== coverage || terminal.scientific_disposition !== science) {
+    fail(path, "coverage or science differs from terminal evidence");
+  }
+  literal(item.evidence_label, "candidate evidence only", `${path}.evidence_label`);
+}
+
 function assertV3PathEvidence(value: unknown, path: string): void {
   const item = object(value, path);
   exactKeys(item, [
@@ -753,6 +919,67 @@ function assertV4Detail(value: unknown): asserts value is StandardNativeSubjectD
   assertStringArray(item.limitations, "subject detail V4.limitations");
 }
 
+function assertV5Detail(value: unknown): asserts value is StandardNativeSubjectDetailV5 {
+  const item = object(value, "subject detail V5");
+  exactKeys(item, [
+    "schema_version", "subject", "time_domain", "receiver_path_expansions",
+    "receiver_path_evidence", "stage_source_count", "stages", "stages_truncated",
+    "trajectory_source_count", "trajectories", "trajectories_truncated", "views",
+    "available_artifacts", "limitations",
+  ], "subject detail V5");
+  literal(item.schema_version, 5, "subject detail V5.schema_version");
+  assertV5Subject(item.subject, "subject detail V5.subject");
+  assertTimeDomain(item.time_domain, "subject detail V5.time_domain");
+  const expansions = array(item.receiver_path_expansions, "subject detail V5.receiver_path_expansions");
+  expansions.forEach((row, index) =>
+    assertV5Subject(row, `subject detail V5.receiver_path_expansions[${index}]`));
+  const evidence = array(item.receiver_path_evidence, "subject detail V5.receiver_path_evidence");
+  evidence.forEach((row, index) =>
+    assertV3PathEvidence(row, `subject detail V5.receiver_path_evidence[${index}]`));
+  const subject = object(item.subject, "subject detail V5.subject");
+  const subjectPaths = array(subject.receiver_paths, "subject detail V5.subject.receiver_paths")
+    .map((path) => object(path, "subject detail V5 subject path").path_id);
+  const expansionPaths = expansions.map((row) => {
+    const paths = array(object(row, "subject detail V5 expansion").receiver_paths, "subject detail V5 expansion paths");
+    if (paths.length !== 1) fail("subject detail V5", "receiver-path expansion is not singular");
+    return object(paths[0], "subject detail V5 expansion path").path_id;
+  });
+  const evidencePaths = evidence.map((row) =>
+    object(object(row, "subject detail V5 evidence").receiver_path, "subject detail V5 evidence path").path_id);
+  if (subjectPaths.join("\u0000") !== expansionPaths.join("\u0000")
+    || subjectPaths.join("\u0000") !== evidencePaths.join("\u0000")) {
+    fail("subject detail V5", "path expansion/evidence inventory is crossed");
+  }
+  const stageCount = nonnegativeInteger(item.stage_source_count, "subject detail V5.stage_source_count");
+  const stages = array(item.stages, "subject detail V5.stages");
+  stages.forEach((row, index) => assertStage(row, `subject detail V5.stages[${index}]`));
+  if (stageCount < stages.length
+    || boolean(item.stages_truncated, "subject detail V5.stages_truncated") !== (stageCount > stages.length)) {
+    fail("subject detail V5", "stage bounds do not close");
+  }
+  const trajectoryCount = nonnegativeInteger(
+    item.trajectory_source_count,
+    "subject detail V5.trajectory_source_count",
+  );
+  const trajectories = array(item.trajectories, "subject detail V5.trajectories");
+  trajectories.forEach((row, index) =>
+    assertV3Trajectory(row, `subject detail V5.trajectories[${index}]`));
+  if (trajectoryCount < trajectories.length
+    || boolean(item.trajectories_truncated, "subject detail V5.trajectories_truncated")
+      !== (trajectoryCount > trajectories.length)) {
+    fail("subject detail V5", "trajectory bounds do not close");
+  }
+  const views = array(item.views, "subject detail V5.views");
+  views.forEach((row, index) => assertV3ViewDescriptor(row, `subject detail V5.views[${index}]`));
+  const viewInventory = views.map((row) => object(row, "subject detail V5 view").view_kind);
+  if (viewInventory.length !== viewKinds.length
+    || !viewKinds.every((kind) => viewInventory.includes(kind))) {
+    fail("subject detail V5", "view inventory is not the exact six Standard views");
+  }
+  assertStringArray(item.available_artifacts, "subject detail V5.available_artifacts");
+  assertStringArray(item.limitations, "subject detail V5.limitations");
+}
+
 function assertV3ProductRef(value: unknown, path: string): void {
   const item = object(value, path);
   exactKeys(item, [
@@ -894,7 +1121,11 @@ function assertV3Plot(value: unknown): asserts value is StandardNativePlotViewV3
   string(item.projection_digest, "plot view V3.projection_digest");
 }
 
-function assertV4Plot(value: unknown): asserts value is StandardNativePlotViewV4 {
+function assertMultiRatePlot(
+  value: unknown,
+  schemaVersion: 4 | 5,
+  allowedRates: readonly number[],
+): void {
   const item = object(value, "plot view V4");
   exactKeys(item, [
     "schema_version", "session_id", "subject_id", "view_kind", "state", "time_domain",
@@ -902,7 +1133,7 @@ function assertV4Plot(value: unknown): asserts value is StandardNativePlotViewV4
     "returned_point_count", "truncated", "metric_series", "frequency_axes",
     "waterfall_tiles", "trajectories", "reason", "projection_digest",
   ], "plot view V4");
-  literal(item.schema_version, 4, "plot view V4.schema_version");
+  literal(item.schema_version, schemaVersion, "plot view schema_version");
   string(item.session_id, "plot view V4.session_id");
   string(item.subject_id, "plot view V4.subject_id");
   const viewKind = oneOf(item.view_kind, viewKinds, "plot view V4.view_kind");
@@ -913,7 +1144,7 @@ function assertV4Plot(value: unknown): asserts value is StandardNativePlotViewV4
     string(pathId, `plot view V4.receiver_path_ids[${index}]`));
   const rates = array(item.sample_rates_hz, "plot view V4.sample_rates_hz");
   if (rates.length < 1 || rates.length > 2) fail("plot view V4", "rate inventory is invalid");
-  rates.forEach((rate, index) => oneOf(rate, mixedSampleRates, `plot view V4.sample_rates_hz[${index}]`));
+  rates.forEach((rate, index) => oneOf(rate, allowedRates, `plot view V4.sample_rates_hz[${index}]`));
   if (new Set(rates).size !== rates.length) fail("plot view V4", "rates are not unique");
   assertV3SourceProof(item.source_proof, "plot view V4.source_proof");
   const source = nonnegativeInteger(item.source_point_count, "plot view V4.source_point_count");
@@ -966,6 +1197,14 @@ function assertV4Plot(value: unknown): asserts value is StandardNativePlotViewV4
   string(item.projection_digest, "plot view V4.projection_digest");
 }
 
+function assertV4Plot(value: unknown): asserts value is StandardNativePlotViewV4 {
+  assertMultiRatePlot(value, 4, mixedSampleRates);
+}
+
+function assertV5Plot(value: unknown): asserts value is StandardNativePlotViewV5 {
+  assertMultiRatePlot(value, 5, productionSampleRates);
+}
+
 export function parseStandardSubjectHierarchy(value: unknown): StandardSubjectHierarchy {
   const item = object(value, "subject hierarchy");
   if (item.schema_version === 2) {
@@ -1000,7 +1239,39 @@ export function parseStandardSubjectHierarchy(value: unknown): StandardSubjectHi
     rows.forEach((row, index) => assertV4Subject(row, `subject hierarchy V4.rows[${index}]`));
     return item as unknown as StandardNativeSubjectHierarchyV4;
   }
-  fail("subject hierarchy", "unsupported schema_version; expected 2, 3, or 4");
+  if (item.schema_version === 5) {
+    exactKeys(item, ["schema_version", "session_id", "source_type", "eligibility", "generated_at", "rows"], "subject hierarchy V5");
+    literal(item.schema_version, 5, "subject hierarchy V5.schema_version");
+    const sessionId = string(item.session_id, "subject hierarchy V5.session_id");
+    literal(item.source_type, "LIVE", "subject hierarchy V5.source_type");
+    assertV5Eligibility(item.eligibility, "subject hierarchy V5.eligibility");
+    string(item.generated_at, "subject hierarchy V5.generated_at");
+    const rows = array(item.rows, "subject hierarchy V5.rows");
+    if (rows.length !== 3) fail("subject hierarchy V5", "production hierarchy requires pair and two radios");
+    rows.forEach((row, index) => assertV5Subject(row, `subject hierarchy V5.rows[${index}]`));
+    const rowObjects = rows.map((row) => object(row, "subject hierarchy V5 row"));
+    if (rowObjects.some((row) => row.session_id !== sessionId
+      || JSON.stringify(row.eligibility) !== JSON.stringify(item.eligibility))) {
+      fail("subject hierarchy V5", "session or eligibility authority is crossed");
+    }
+    if (rowObjects[0].subject_kind !== "paired"
+      || rowObjects[1].subject_kind !== "radio" || rowObjects[2].subject_kind !== "radio") {
+      fail("subject hierarchy V5", "production hierarchy requires pair then two radios");
+    }
+    const radioIds = rowObjects.slice(1).map((row) => row.subject_id);
+    if (array(rowObjects[0].child_subject_ids, "subject hierarchy V5 paired children").join("\u0000")
+      !== radioIds.join("\u0000")) {
+      fail("subject hierarchy V5", "paired children differ from radio rows");
+    }
+    const pathIds = (row: JsonObject) => array(row.receiver_paths, "subject hierarchy V5 paths")
+      .map((path) => object(path, "subject hierarchy V5 path").path_id);
+    if (pathIds(rowObjects[0]).join("\u0000")
+      !== [...pathIds(rowObjects[1]), ...pathIds(rowObjects[2])].join("\u0000")) {
+      fail("subject hierarchy V5", "paired paths differ from the radio union");
+    }
+    return item as unknown as StandardNativeSubjectHierarchyV5;
+  }
+  fail("subject hierarchy", "unsupported schema_version; expected 2, 3, 4, or 5");
 }
 
 export function parseStandardSubjectDetail(value: unknown): StandardSubjectDetail {
@@ -1017,7 +1288,11 @@ export function parseStandardSubjectDetail(value: unknown): StandardSubjectDetai
     assertV4Detail(item);
     return item;
   }
-  fail("subject detail", "unsupported schema_version; expected 2, 3, or 4");
+  if (item.schema_version === 5) {
+    assertV5Detail(item);
+    return item;
+  }
+  fail("subject detail", "unsupported schema_version; expected 2, 3, 4, or 5");
 }
 
 export function parseStandardPlotView(value: unknown): StandardPlotView {
@@ -1034,14 +1309,18 @@ export function parseStandardPlotView(value: unknown): StandardPlotView {
     assertV4Plot(item);
     return item;
   }
-  fail("plot view", "unsupported schema_version; expected 2, 3, or 4");
+  if (item.schema_version === 5) {
+    assertV5Plot(item);
+    return item;
+  }
+  fail("plot view", "unsupported schema_version; expected 2, 3, 4, or 5");
 }
 
 export function parseStandardNativePngArtifactInventory(
   value: unknown,
-): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 {
+): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 {
   const item = object(value, "native PNG artifact inventory");
-  const version = oneOf(item.schema_version, [4, 5], "native PNG artifact inventory.schema_version");
+  const version = oneOf(item.schema_version, [4, 5, 6], "native PNG artifact inventory.schema_version");
   const path = `native PNG artifact inventory V${version}`;
   exactKeys(item, [
     "schema_version", "session_id", "subject_id", "subject_kind", "run_id",
@@ -1063,8 +1342,12 @@ export function parseStandardNativePngArtifactInventory(
   } else {
     const rates = array(item.sample_rates_hz, `${path}.sample_rates_hz`);
     if (rates.length < 1 || rates.length > 2) fail(path, "rate inventory is invalid");
-    rates.forEach((rate, index) => oneOf(rate, mixedSampleRates, `${path}.sample_rates_hz[${index}]`));
-    if (new Set(rates).size !== rates.length) fail(path, "rate inventory is not unique");
+    const allowedRates = version === 5 ? mixedSampleRates : productionSampleRates;
+    rates.forEach((rate, index) => oneOf(rate, allowedRates, `${path}.sample_rates_hz[${index}]`));
+    if (new Set(rates).size !== rates.length
+      || rates.some((rate, index) => index > 0 && Number(rate) <= Number(rates[index - 1]))) {
+      fail(path, "rate inventory is not unique and ordered");
+    }
   }
   oneOf(
     item.coverage_status,
@@ -1100,7 +1383,9 @@ export function parseStandardNativePngArtifactInventory(
     literal(row.media_type, "image/png", `native PNG artifact inventory V4.artifacts[${index}].media_type`);
   });
   string(item.content_digest, `${path}.content_digest`);
-  return item as unknown as StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5;
+  return item as unknown as StandardNativePngArtifactInventoryV4
+    | StandardNativePngArtifactInventoryV5
+    | StandardNativePngArtifactInventoryV6;
 }
 
 export function assertMatchingStandardMajor(

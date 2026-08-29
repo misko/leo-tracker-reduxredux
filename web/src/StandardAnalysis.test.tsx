@@ -2,19 +2,30 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, expect, test, vi } from "vitest";
 
 import { StandardAnalysis } from "./StandardAnalysis";
-import { parseStandardPlotView, parseStandardSubjectHierarchy } from "./standard-contract-validation";
+import {
+  parseStandardNativePngArtifactInventory,
+  parseStandardPlotView,
+  parseStandardSubjectDetail,
+  parseStandardSubjectHierarchy,
+} from "./standard-contract-validation";
 import type {
   StandardNativeEligibilityV3,
   StandardNativeEligibilityV4,
+  StandardNativeEligibilityV5,
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
+  StandardNativePngArtifactInventoryV6,
+  StandardNativePlotViewV5,
   StandardNativePlotViewV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
+  StandardNativeSubjectDetailV5,
   StandardNativeSubjectHierarchyV3,
   StandardNativeSubjectHierarchyV4,
+  StandardNativeSubjectHierarchyV5,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
+  StandardNativeSubjectSummaryV5,
   StandardNativeTerminalSummaryV3,
   StandardPlotViewV2,
   StandardSubjectDetailV2,
@@ -587,6 +598,174 @@ function mixedArtifactInventory(): StandardNativePngArtifactInventoryV5 {
     content_digest: `sha256:${"e".repeat(64)}`,
   };
 }
+
+const productionEligibility: StandardNativeEligibilityV5 = {
+  schema_version: 5,
+  source_type: "LIVE",
+  source_manifest_schema_version: 5,
+  capture_state: "committed",
+  capture_committed: true,
+  capture_healthy: true,
+  full_device_span: true,
+  validity_aware: true,
+  automatic_eligible: true,
+  explicit_eligible: true,
+  promotion_allowed: true,
+  evidence_only: false,
+  dwell_class: "mixed_2p5_10",
+  tuning_branch: "same",
+  legs: [{
+    schema_version: 5,
+    stream_id: "stream-0",
+    radio_id: "radio0",
+    profile_name: "production-low",
+    profile_revision_digest: `sha256:${"1".repeat(64)}`,
+    receiver_ids: [0, 1],
+    gain_controller_mode: "tandem_auto",
+    gain_controller_request_digest: `sha256:${"2".repeat(64)}`,
+    starlink_channel: 2,
+    starlink_edge: "lower",
+    sample_rate_hz: 2_500_000,
+    rf_bandwidth_hz: 2_500_000,
+    tuned_center_frequency_hz: 1_210_000_000,
+    pilot_if_center_frequency_hz: 1_209_687_500,
+    channel_if_start_hz: 1_205_000_000,
+    channel_if_stop_hz: 1_445_000_000,
+    captured_if_start_hz: 1_208_750_000,
+    captured_if_stop_hz: 1_211_250_000,
+    logical_sample_count: 150_000_000,
+    validity_inventory_digest: `sha256:${"3".repeat(64)}`,
+    timeline_digest: `sha256:${"4".repeat(64)}`,
+    metadata_abi_version: 3,
+  }, {
+    schema_version: 5,
+    stream_id: "stream-1",
+    radio_id: "radio1",
+    profile_name: "production-high",
+    profile_revision_digest: `sha256:${"5".repeat(64)}`,
+    receiver_ids: [0],
+    gain_controller_mode: "tandem_auto",
+    gain_controller_request_digest: `sha256:${"2".repeat(64)}`,
+    starlink_channel: 2,
+    starlink_edge: "lower",
+    sample_rate_hz: 10_000_000,
+    rf_bandwidth_hz: 10_000_000,
+    tuned_center_frequency_hz: 1_210_000_000,
+    pilot_if_center_frequency_hz: 1_209_687_500,
+    channel_if_start_hz: 1_205_000_000,
+    channel_if_stop_hz: 1_445_000_000,
+    captured_if_start_hz: 1_205_000_000,
+    captured_if_stop_hz: 1_215_000_000,
+    logical_sample_count: 600_000_000,
+    validity_inventory_digest: `sha256:${"6".repeat(64)}`,
+    timeline_digest: `sha256:${"7".repeat(64)}`,
+    metadata_abi_version: 3,
+  }],
+  scheduled_intent_digest: `sha256:${"8".repeat(64)}`,
+  capture_plan_digest: `sha256:${"9".repeat(64)}`,
+  capture_hardware_binding_digest: `sha256:${"a".repeat(64)}`,
+  pipeline_definition_id: `sha256:${"b".repeat(64)}`,
+  promotion_authority_digest: `sha256:${"c".repeat(64)}`,
+  resampled: false,
+  reason: "Promoted reviewed production Standard-native capture is Current",
+};
+
+function productionSubject(
+  base: StandardNativeSubjectSummaryV3,
+): StandardNativeSubjectSummaryV5 {
+  return { ...base, schema_version: 5, eligibility: productionEligibility };
+}
+
+const productionPaths = paths.slice(0, 3);
+const productionPathSubjects = productionPaths.map((path, index) => productionSubject(nativeSubject(
+  path.subject_id,
+  `${path.radio_label} ${path.receiver_label}`,
+  "receiver_path",
+  [path],
+  nativeTerminal(index < 2 ? 150 : 600, index < 2 ? 150 : 600, 1, 4),
+)));
+const productionRadio0 = productionSubject(nativeSubject(
+  "radio:stream-0", "Radio0", "radio", productionPaths.slice(0, 2), nativeTerminal(300, 300, 2, 8),
+));
+const productionRadio1 = productionSubject(nativeSubject(
+  "radio:stream-1", "Radio1", "radio", productionPaths.slice(2), nativeTerminal(600, 600, 1, 4),
+));
+const productionPair: StandardNativeSubjectSummaryV5 = {
+  ...productionSubject(nativeSubject(
+    "pair:stream-0:stream-1",
+    "Paired Radio0 + Radio1",
+    "radio",
+    productionPaths,
+    nativeTerminal(900, 900, 3, 12),
+  )),
+  subject_kind: "paired",
+  child_subject_ids: [productionRadio0.subject_id, productionRadio1.subject_id],
+};
+const productionHierarchy: StandardNativeSubjectHierarchyV5 = {
+  schema_version: 5,
+  session_id: "T1",
+  source_type: "LIVE",
+  eligibility: productionEligibility,
+  generated_at: "2026-08-29T13:30:00Z",
+  rows: [productionPair, productionRadio0, productionRadio1],
+};
+const productionEvidence = productionPathSubjects.map((subject) => ({
+  schema_version: 3 as const,
+  receiver_path: subject.receiver_paths[0],
+  terminal: subject.terminal,
+  declared_seconds: 60,
+  valid_seconds: 60,
+  continuity_segment_count: 1,
+  continuity_boundary_count: 0,
+  invalid_zero_fill_excluded: true as const,
+}));
+const productionDetail: StandardNativeSubjectDetailV5 = {
+  ...nativeDetail,
+  schema_version: 5,
+  subject: productionPair,
+  receiver_path_expansions: productionPathSubjects,
+  receiver_path_evidence: productionEvidence,
+};
+
+function productionArtifactInventory(): StandardNativePngArtifactInventoryV6 {
+  const v5 = mixedArtifactInventory();
+  return {
+    ...v5,
+    schema_version: 6,
+    subject_id: productionPair.subject_id,
+    sample_rates_hz: [2_500_000, 10_000_000],
+    artifacts: v5.artifacts.map((artifact) => ({
+      ...artifact,
+      href: artifact.href.replace(encodeURIComponent(mixedPair.subject_id), encodeURIComponent(productionPair.subject_id)),
+    })),
+  };
+}
+
+const productionPlot: StandardNativePlotViewV5 = {
+  schema_version: 5,
+  session_id: "T1",
+  subject_id: productionPair.subject_id,
+  view_kind: "quality",
+  state: "unavailable",
+  time_domain: domain,
+  receiver_path_ids: productionPaths.map((path) => path.path_id),
+  sample_rates_hz: [2_500_000, 10_000_000],
+  source_proof: {
+    schema_version: 3,
+    run_manifest_digest: `sha256:${"d".repeat(64)}`,
+    products: [],
+    content_digest: `sha256:${"e".repeat(64)}`,
+  },
+  source_point_count: 0,
+  returned_point_count: 0,
+  truncated: false,
+  metric_series: [],
+  frequency_axes: [],
+  waterfall_tiles: [],
+  trajectories: [],
+  reason: "No sealed evidence for this view",
+  projection_digest: `sha256:${"f".repeat(64)}`,
+};
 const nativeWaterfall: StandardNativePlotViewV3 = {
   schema_version: 3,
   session_id: "T1",
@@ -825,6 +1004,107 @@ test("renders mixed 2.5/5 Current with sealed same-channel RF passbands and pair
   await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(5));
   expect(screen.queryByRole("region", { name: "Native waterfall validity" }))
     .not.toBeInTheDocument();
+});
+
+test("renders the complete production V5 hierarchy/detail with its V6 PNG inventory", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/artifacts?")) {
+      return new Response(JSON.stringify(productionArtifactInventory()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(productionPair.subject_id))) {
+      return new Response(JSON.stringify(productionDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(productionHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  expect(await screen.findByText("Standard native analysis")).toBeInTheDocument();
+  expect(screen.getByText("STANDARD · NATIVE · MIXED 2P5 10 2.5 + 10.0 MS/s"))
+    .toBeInTheDocument();
+  const authority = await screen.findByRole("region", { name: "Production RF coverage authority" });
+  expect(within(authority).getByText(/mixed 2p5 10 · same tuning/i)).toBeInTheDocument();
+  expect(within(authority).getByText(/RX0 \+ RX1 · tandem auto · metadata ABI 3/)).toBeInTheDocument();
+  expect(within(authority).getByText(/RX0 · tandem auto · metadata ABI 3/)).toBeInTheDocument();
+  const gallery = await screen.findByRole("region", { name: "Registered native image artifacts" });
+  await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(5));
+
+  expect(parseStandardSubjectHierarchy(productionHierarchy).schema_version).toBe(5);
+  expect(parseStandardSubjectDetail(productionDetail).schema_version).toBe(5);
+  expect(parseStandardPlotView(productionPlot).schema_version).toBe(5);
+  expect(parseStandardNativePngArtifactInventory(productionArtifactInventory()).schema_version)
+    .toBe(6);
+});
+
+test.each([
+  ["both_2p5", 2_500_000, 2_500_000],
+  ["both_5", 5_000_000, 5_000_000],
+  ["mixed_2p5_5", 2_500_000, 5_000_000],
+  ["mixed_2p5_10", 2_500_000, 10_000_000],
+  ["mixed_2p5_15", 2_500_000, 15_000_000],
+  ["mixed_2p5_20", 2_500_000, 20_000_000],
+] as const)("accepts exact production dwell geometry %s", (dwellClass, lowRate, highRate) => {
+  const document = structuredClone(productionHierarchy) as unknown as Record<string, unknown>;
+  const authorities = [document.eligibility, ...(document.rows as Array<Record<string, unknown>>)
+    .map((row) => row.eligibility)] as Array<Record<string, unknown>>;
+  authorities.forEach((authority) => {
+    authority.dwell_class = dwellClass;
+    authority.tuning_branch = dwellClass.startsWith("mixed_") ? "same" : "independent";
+    const legs = authority.legs as Array<Record<string, unknown>>;
+    [lowRate, highRate].forEach((rate, index) => {
+      const leg = legs[index];
+      leg.sample_rate_hz = rate;
+      leg.rf_bandwidth_hz = rate;
+      leg.captured_if_start_hz = 1_210_000_000 - rate / 2;
+      leg.captured_if_stop_hz = 1_210_000_000 + rate / 2;
+      leg.channel_if_start_hz = 1_195_000_000;
+      leg.logical_sample_count = rate * 60;
+      leg.receiver_ids = dwellClass.startsWith("mixed_") && rate > 5_000_000
+        ? [index]
+        : [0, 1];
+    });
+  });
+  expect(parseStandardSubjectHierarchy(document).schema_version).toBe(5);
+});
+
+test.each([
+  ["crossed radio order", (document: Record<string, unknown>) => {
+    const eligibility = document.eligibility as Record<string, unknown>;
+    const legs = eligibility.legs as Array<Record<string, unknown>>;
+    legs[0].stream_id = "stream-9";
+  }],
+  ["wrong high-rate receiver geometry", (document: Record<string, unknown>) => {
+    const eligibility = document.eligibility as Record<string, unknown>;
+    const legs = eligibility.legs as Array<Record<string, unknown>>;
+    legs[1].receiver_ids = [0, 1];
+  }],
+  ["missing authority digest", (document: Record<string, unknown>) => {
+    const eligibility = document.eligibility as Record<string, unknown>;
+    delete eligibility.capture_plan_digest;
+  }],
+] as const)("rejects production V5 %s", (_name, mutate) => {
+  const document = structuredClone(productionHierarchy) as unknown as Record<string, unknown>;
+  mutate(document);
+  expect(() => parseStandardSubjectHierarchy(document)).toThrow(/contract is invalid/);
+});
+
+test("rejects future native presentation versions", () => {
+  expect(() => parseStandardSubjectHierarchy({ ...productionHierarchy, schema_version: 6 }))
+    .toThrow(/expected 2, 3, 4, or 5/);
+  expect(() => parseStandardNativePngArtifactInventory({
+    ...productionArtifactInventory(),
+    schema_version: 7,
+  })).toThrow(/expected one of 4, 5, 6/);
 });
 
 test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {

@@ -330,6 +330,12 @@ export interface StandardNativePngArtifactInventoryV5 {
   content_digest: string;
 }
 
+export interface StandardNativePngArtifactInventoryV6
+  extends Omit<StandardNativePngArtifactInventoryV5, "schema_version" | "sample_rates_hz"> {
+  schema_version: 6;
+  sample_rates_hz: Array<2_500_000 | 5_000_000 | 10_000_000 | 15_000_000 | 20_000_000>;
+}
+
 export interface StandardNativePipelineReleaseV3 {
   schema_version: 3;
   family: "standard-native-v1";
@@ -402,6 +408,71 @@ export interface StandardNativeEligibilityV4 {
   reason:
     | "Promoted reviewed mixed Standard-native capture is Current"
     | "Promoted reviewed mixed Standard-native capture is Current with partial validity coverage";
+}
+
+export type StandardNativeProductionSampleRateV5 =
+  | 2_500_000
+  | 5_000_000
+  | 10_000_000
+  | 15_000_000
+  | 20_000_000;
+
+export interface StandardNativeProductionLegV5 {
+  schema_version: 5;
+  stream_id: string;
+  radio_id: string;
+  profile_name: string;
+  profile_revision_digest: string;
+  receiver_ids: [0] | [1] | [0, 1];
+  gain_controller_mode: "tandem_hold" | "tandem_auto";
+  gain_controller_request_digest: string;
+  starlink_channel: 1 | 2 | 3 | 4;
+  starlink_edge: "lower" | "upper";
+  sample_rate_hz: StandardNativeProductionSampleRateV5;
+  rf_bandwidth_hz: StandardNativeProductionSampleRateV5;
+  tuned_center_frequency_hz: number;
+  pilot_if_center_frequency_hz: number;
+  channel_if_start_hz: number;
+  channel_if_stop_hz: number;
+  captured_if_start_hz: number;
+  captured_if_stop_hz: number;
+  logical_sample_count: number;
+  validity_inventory_digest: string;
+  timeline_digest: string;
+  metadata_abi_version: 3;
+}
+
+export interface StandardNativeEligibilityV5 {
+  schema_version: 5;
+  source_type: "LIVE";
+  source_manifest_schema_version: 5;
+  capture_state: "committed" | "degraded";
+  capture_committed: boolean;
+  capture_healthy: true;
+  full_device_span: true;
+  validity_aware: true;
+  automatic_eligible: true;
+  explicit_eligible: true;
+  promotion_allowed: true;
+  evidence_only: false;
+  dwell_class:
+    | "both_2p5"
+    | "both_5"
+    | "mixed_2p5_5"
+    | "mixed_2p5_10"
+    | "mixed_2p5_15"
+    | "mixed_2p5_20";
+  tuning_branch: "same" | "same_channel_opposite_edge" | "independent";
+  legs: [StandardNativeProductionLegV5, StandardNativeProductionLegV5];
+  scheduled_intent_digest: string;
+  capture_plan_digest: string;
+  capture_hardware_binding_digest: string;
+  pipeline_definition_id: string;
+  promotion_authority_digest: string;
+  resampled: false;
+  reason:
+    | "Promoted reviewed production Standard-native capture is Current"
+    | "Promoted reviewed production Standard-native capture is Current with partial validity coverage";
 }
 
 export interface StandardNativeSufficientStatisticsV1 {
@@ -536,6 +607,21 @@ export interface StandardNativeSubjectHierarchyV4 {
   rows: StandardNativeSubjectSummaryV4[];
 }
 
+export interface StandardNativeSubjectSummaryV5
+  extends Omit<StandardNativeSubjectSummaryV3, "schema_version" | "eligibility"> {
+  schema_version: 5;
+  eligibility: StandardNativeEligibilityV5;
+}
+
+export interface StandardNativeSubjectHierarchyV5 {
+  schema_version: 5;
+  session_id: string;
+  source_type: "LIVE";
+  eligibility: StandardNativeEligibilityV5;
+  generated_at: string;
+  rows: StandardNativeSubjectSummaryV5[];
+}
+
 export interface StandardNativePathEvidenceV3 {
   schema_version: 3;
   receiver_path: StandardReceiverPathRefV2;
@@ -599,6 +685,16 @@ export interface StandardNativeSubjectDetailV4
   schema_version: 4;
   subject: StandardNativeSubjectSummaryV4;
   receiver_path_expansions: StandardNativeSubjectSummaryV4[];
+}
+
+export interface StandardNativeSubjectDetailV5
+  extends Omit<
+    StandardNativeSubjectDetailV3,
+    "schema_version" | "subject" | "receiver_path_expansions"
+  > {
+  schema_version: 5;
+  subject: StandardNativeSubjectSummaryV5;
+  receiver_path_expansions: StandardNativeSubjectSummaryV5[];
 }
 
 export interface StandardNativePresentationProductRefV3 {
@@ -696,22 +792,32 @@ export interface StandardNativePlotViewV4 {
   projection_digest: string;
 }
 
+export interface StandardNativePlotViewV5
+  extends Omit<StandardNativePlotViewV4, "schema_version" | "sample_rates_hz"> {
+  schema_version: 5;
+  sample_rates_hz: StandardNativeProductionSampleRateV5[];
+}
+
 export type StandardSubjectHierarchy =
   | StandardSubjectHierarchyV2
   | StandardNativeSubjectHierarchyV3
-  | StandardNativeSubjectHierarchyV4;
+  | StandardNativeSubjectHierarchyV4
+  | StandardNativeSubjectHierarchyV5;
 export type StandardSubjectDetail =
   | StandardSubjectDetailV2
   | StandardNativeSubjectDetailV3
-  | StandardNativeSubjectDetailV4;
+  | StandardNativeSubjectDetailV4
+  | StandardNativeSubjectDetailV5;
 export type StandardSubjectSummary =
   | StandardSubjectSummaryV2
   | StandardNativeSubjectSummaryV3
-  | StandardNativeSubjectSummaryV4;
+  | StandardNativeSubjectSummaryV4
+  | StandardNativeSubjectSummaryV5;
 export type StandardPlotView =
   | StandardPlotViewV2
   | StandardNativePlotViewV3
-  | StandardNativePlotViewV4;
+  | StandardNativePlotViewV4
+  | StandardNativePlotViewV5;
 
 export interface StandardReplayAuditRowV1 {
   receiver_path_id: string;
