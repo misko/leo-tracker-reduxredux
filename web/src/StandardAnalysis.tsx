@@ -1037,8 +1037,11 @@ function nativeInventoryMatchesDetail(
     return inventory.schema_version === 4
       && inventory.sample_rate_hz === detail.subject.eligibility.sample_rate_hz;
   }
-  const expectedInventoryVersion = detail.schema_version === 4 ? 5 : 6;
-  if (inventory.schema_version !== expectedInventoryVersion) return false;
+  if (detail.schema_version === 4) {
+    if (inventory.schema_version !== 5) return false;
+  } else if (inventory.schema_version !== 6 && inventory.schema_version !== 7) {
+    return false;
+  }
   const streamIds = new Set(
     detail.subject.receiver_paths.map((path) => path.scope.stream_id),
   );

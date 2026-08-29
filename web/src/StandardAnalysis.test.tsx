@@ -742,6 +742,13 @@ function productionArtifactInventory(): StandardNativePngArtifactInventoryV6 {
   };
 }
 
+function productionPhaseArtifactInventory(): StandardNativePngArtifactInventoryV7 {
+  return {
+    ...productionArtifactInventory(),
+    schema_version: 7,
+  };
+}
+
 function phaseArtifactInventory(): StandardNativePngArtifactInventoryV7 {
   const { sample_rate_hz, ...legacy } = nativeArtifactInventory(nativePathDetail);
   return {
@@ -1079,6 +1086,41 @@ test("renders the complete production V5 hierarchy/detail with its V6 PNG invent
   expect(parseStandardPlotView(productionPlot).schema_version).toBe(5);
   expect(parseStandardNativePngArtifactInventory(productionArtifactInventory()).schema_version)
     .toBe(6);
+});
+
+test("renders every registered PNG for production V5 detail with a V7 inventory", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/artifacts?")) {
+      return new Response(JSON.stringify(productionPhaseArtifactInventory()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(productionPair.subject_id))) {
+      return new Response(JSON.stringify(productionDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(productionHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  const gallery = await screen.findByRole("region", {
+    name: "Registered native image artifacts",
+  });
+  await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(5));
+  expect(within(gallery).getByRole("img", { name: /Pilot detector comparison/ }))
+    .toBeInTheDocument();
+  expect(within(gallery).getByRole("img", { name: /Final replay/ }))
+    .toBeInTheDocument();
+  expect(parseStandardNativePngArtifactInventory(productionPhaseArtifactInventory()).schema_version)
+    .toBe(7);
 });
 
 test.each([
