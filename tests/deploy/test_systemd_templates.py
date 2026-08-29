@@ -95,7 +95,7 @@ def test_component_selector_is_atomic_bounded_and_syntax_valid() -> None:
 def test_systemd_analyze_accepts_every_template() -> None:
     executable = shutil.which("systemd-analyze")
     assert executable is not None, "systemd-analyze is required for deployment validation"
-    units = tuple(str(path) for path in sorted(UNIT_ROOT.glob("leo-*.*")))
+    units = tuple(str(path) for path in sorted(UNIT_ROOT.glob("leo-*.*")) if path.is_file())
     result = subprocess.run(
         (executable, "verify", *units),
         cwd=PROJECT_ROOT,
