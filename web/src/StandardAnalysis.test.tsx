@@ -16,6 +16,7 @@ import type {
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
   StandardNativePngArtifactInventoryV7,
+  StandardNativePngArtifactInventoryV8,
   StandardNativePlotViewV5,
   StandardNativePlotViewV3,
   StandardNativeSubjectDetailV3,
@@ -783,6 +784,34 @@ function phaseArtifactInventory(): StandardNativePngArtifactInventoryV7 {
   };
 }
 
+function dopplerArtifactInventory(): StandardNativePngArtifactInventoryV8 {
+  const legacy = productionPhaseArtifactInventory();
+  const doppler = {
+    schema_version: 8 as const,
+    name: "doppler-waterfall" as const,
+    label: "Doppler diagnostic — target-band waterfall and GLRT fits",
+    description: "Rate-normalized common-frequency crop with segment-local candidate tracks and resets",
+    href: legacy.artifacts[0].href.replace(
+      "views/waterfall.png",
+      "artifacts/doppler-waterfall.png",
+    ),
+    catalog_kind: "standard.doppler-waterfall-png",
+    product_schema_version: 1,
+    digest: `sha256:${"9".repeat(64)}`,
+    byte_size: 2048,
+    media_type: "image/png" as const,
+  };
+  return {
+    ...legacy,
+    schema_version: 8,
+    artifacts: [
+      { ...legacy.artifacts[0], schema_version: 8 },
+      doppler,
+      ...legacy.artifacts.slice(1).map((artifact) => ({ ...artifact, schema_version: 8 as const })),
+    ],
+  };
+}
+
 const productionPlot: StandardNativePlotViewV5 = {
   schema_version: 5,
   session_id: "T1",
@@ -1123,6 +1152,39 @@ test("renders every registered PNG for production V5 detail with a V7 inventory"
     .toBe(7);
 });
 
+test("renders the additive candidate Doppler diagnostic from a V8 inventory", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/artifacts?")) {
+      return new Response(JSON.stringify(dopplerArtifactInventory()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(productionPair.subject_id))) {
+      return new Response(JSON.stringify(productionDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(productionHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  const gallery = await screen.findByRole("region", {
+    name: "Registered native image artifacts",
+  });
+  await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(6));
+  expect(within(gallery).getByRole("img", { name: /Doppler diagnostic/ })).toHaveAttribute(
+    "src",
+    expect.stringContaining("/artifacts/doppler-waterfall.png"),
+  );
+});
+
 test.each([
   ["both_2p5", 2_500_000, 2_500_000],
   ["both_5", 5_000_000, 5_000_000],
@@ -1175,7 +1237,7 @@ test.each([
   expect(() => parseStandardSubjectHierarchy(document)).toThrow(/contract is invalid/);
 });
 
-test("accepts additive phase inventory and rejects future native presentation versions", () => {
+test("accepts additive phase and Doppler inventories and rejects future versions", () => {
   const phase = parseStandardNativePngArtifactInventory(phaseArtifactInventory());
   expect(phase.schema_version).toBe(7);
   expect(phase.artifacts.filter((item) => item.name.startsWith("pilot-")).map(
@@ -1183,10 +1245,13 @@ test("accepts additive phase inventory and rejects future native presentation ve
   )).toEqual([2, 4, 4, 4]);
   expect(() => parseStandardSubjectHierarchy({ ...productionHierarchy, schema_version: 6 }))
     .toThrow(/expected 2, 3, 4, or 5/);
+  const doppler = parseStandardNativePngArtifactInventory(dopplerArtifactInventory());
+  expect(doppler.schema_version).toBe(8);
+  expect(doppler.artifacts[1].name).toBe("doppler-waterfall");
   expect(() => parseStandardNativePngArtifactInventory({
     ...productionArtifactInventory(),
-    schema_version: 8,
-  })).toThrow(/expected one of 4, 5, 6, 7/);
+    schema_version: 9,
+  })).toThrow(/expected one of 4, 5, 6, 7, 8/);
 });
 
 test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {

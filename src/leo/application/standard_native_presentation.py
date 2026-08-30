@@ -12,6 +12,7 @@ from leo.analysis.standard.native_products import (
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     CFO_TRAJECTORIES_PNG_V2_PRODUCT,
     DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+    DOPPLER_WATERFALL_PNG_V1_PRODUCT,
     FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
     FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
@@ -66,13 +67,19 @@ from leo.pipeline.standard_native import standard_native_pipeline_definition_v1
 from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
+    STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV5,
     StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactInventoryV7,
+    StandardNativePngArtifactInventoryV8,
+    StandardNativePngArtifactNameV4,
     StandardNativePngArtifactV4,
+    StandardNativePngArtifactV8,
 )
 from leo.presentation.standard_native_pipeline import (
     NativeArtifactNameV3,
@@ -357,6 +364,7 @@ class CatalogStandardNativePresentationRepository:
         | StandardNativePngArtifactInventoryV5
         | StandardNativePngArtifactInventoryV6
         | StandardNativePngArtifactInventoryV7
+        | StandardNativePngArtifactInventoryV8
         | None
     ):
         """Return the complete sealed 11/5/5 artifact inventory, if present."""
@@ -365,21 +373,34 @@ class CatalogStandardNativePresentationRepository:
         if loaded is None or subject_id not in loaded.subjects:
             return None
         subject = loaded.subjects[subject_id]
+        doppler_waterfall_present = (
+            self._png_product(
+                loaded,
+                subject,
+                DOPPLER_WATERFALL_PNG_V1_PRODUCT.kind,
+                DOPPLER_WATERFALL_PNG_V1_PRODUCT.schema_version,
+            )
+            is not None
+        )
         names = (
-            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4
-            if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
-            else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
+            (
+                STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8
+                if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
+                else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8
+            )
+            if doppler_waterfall_present
+            else (
+                STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4
+                if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
+                else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
+            )
         )
         pilot_png_schema = _pilot_png_schema_version(loaded)
         if pilot_png_schema is None:
             return None
-        definitions = (
-            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7
-            if pilot_png_schema == 4
-            else STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4
-        )
         product_specs = {
             "waterfall": WATERFALL_PNG_V2_PRODUCT,
+            "doppler-waterfall": DOPPLER_WATERFALL_PNG_V1_PRODUCT,
             "pilot-methods": PILOT_METHODS_PNG_V2_PRODUCT,
             "cfo-raw": CFO_TRAJECTORIES_PNG_V2_PRODUCT,
             "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
@@ -403,13 +424,27 @@ class CatalogStandardNativePresentationRepository:
                 else PILOT_SEGMENT_RATES_PNG_V3_PRODUCT
             ),
         }
-        artifacts: list[StandardNativePngArtifactV4] = []
+        artifacts: list[StandardNativePngArtifactV4 | StandardNativePngArtifactV8] = []
         for name in names:
             spec = product_specs[name]
             product = self._png_product(loaded, subject, spec.kind, spec.schema_version)
             if product is None:
                 return None
-            label, description, kind, schema_version, view_name = definitions[name]
+            artifact: StandardNativePngArtifactV4 | StandardNativePngArtifactV8
+            if doppler_waterfall_present:
+                label, description, kind, schema_version, view_name = (
+                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8[name]
+                )
+            else:
+                legacy_name = cast(StandardNativePngArtifactNameV4, name)
+                legacy_definitions = (
+                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7
+                    if pilot_png_schema == 4
+                    else STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4
+                )
+                label, description, kind, schema_version, view_name = legacy_definitions[
+                    legacy_name
+                ]
             base = (
                 f"/api/v2/recordings/{quote(session_id, safe='')}/standard-subjects/"
                 f"{quote(subject.subject_id, safe='')}"
@@ -419,8 +454,8 @@ class CatalogStandardNativePresentationRepository:
                 if view_name is not None
                 else f"{base}/artifacts/{name}.png"
             )
-            artifacts.append(
-                StandardNativePngArtifactV4(
+            if doppler_waterfall_present:
+                artifact = StandardNativePngArtifactV8(
                     name=name,
                     label=label,
                     description=description,
@@ -430,7 +465,18 @@ class CatalogStandardNativePresentationRepository:
                     digest=product.digest,
                     byte_size=product.byte_size,
                 )
-            )
+            else:
+                artifact = StandardNativePngArtifactV4(
+                    name=legacy_name,
+                    label=label,
+                    description=description,
+                    href=href,
+                    catalog_kind=kind,
+                    product_schema_version=schema_version,
+                    digest=product.digest,
+                    byte_size=product.byte_size,
+                )
+            artifacts.append(artifact)
         common_values = {
             "session_id": session_id,
             "subject_id": subject.subject_id,
@@ -440,6 +486,44 @@ class CatalogStandardNativePresentationRepository:
             "coverage_status": subject.coverage_status,
             "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
         }
+        if doppler_waterfall_present:
+            doppler_sample_rates_hz = cast(
+                tuple[
+                    Literal[
+                        2_500_000,
+                        3_000_000,
+                        5_000_000,
+                        10_000_000,
+                        15_000_000,
+                        20_000_000,
+                    ],
+                    ...,
+                ],
+                tuple(
+                    sorted(
+                        {
+                            path.report.source.sample_rate_hz
+                            for path in self._subject_paths(loaded, subject)
+                        }
+                    )
+                ),
+            )
+            content_values_v8 = {
+                "schema_version": 8,
+                **common_values,
+                "sample_rates_hz": doppler_sample_rates_hz,
+            }
+            return StandardNativePngArtifactInventoryV8(
+                session_id=session_id,
+                subject_id=subject.subject_id,
+                subject_kind=subject.subject_kind,
+                run_id=loaded.run_id,
+                run_manifest_digest=loaded.manifest_digest,
+                sample_rates_hz=doppler_sample_rates_hz,
+                coverage_status=subject.coverage_status,
+                artifacts=tuple(cast(StandardNativePngArtifactV8, item) for item in artifacts),
+                content_digest=canonical_digest(content_values_v8),
+            )
         if pilot_png_schema == 4:
             phase_sample_rates_hz = cast(
                 tuple[
@@ -475,7 +559,7 @@ class CatalogStandardNativePresentationRepository:
                 run_manifest_digest=loaded.manifest_digest,
                 sample_rates_hz=phase_sample_rates_hz,
                 coverage_status=subject.coverage_status,
-                artifacts=tuple(artifacts),
+                artifacts=tuple(cast(StandardNativePngArtifactV4, item) for item in artifacts),
                 content_digest=canonical_digest(content_values_v7),
             )
         if isinstance(subject, StandardNativeSubjectSummaryV5):
@@ -506,7 +590,7 @@ class CatalogStandardNativePresentationRepository:
                 run_manifest_digest=loaded.manifest_digest,
                 sample_rates_hz=production_sample_rates_hz,
                 coverage_status=subject.coverage_status,
-                artifacts=tuple(artifacts),
+                artifacts=tuple(cast(StandardNativePngArtifactV4, item) for item in artifacts),
                 content_digest=canonical_digest(content_values_v6),
             )
         if isinstance(subject, StandardNativeSubjectSummaryV4):
@@ -534,7 +618,7 @@ class CatalogStandardNativePresentationRepository:
                 run_manifest_digest=loaded.manifest_digest,
                 sample_rates_hz=sample_rates_hz,
                 coverage_status=subject.coverage_status,
-                artifacts=tuple(artifacts),
+                artifacts=tuple(cast(StandardNativePngArtifactV4, item) for item in artifacts),
                 content_digest=canonical_digest(content_values_v5),
             )
         content_values = {
@@ -550,7 +634,7 @@ class CatalogStandardNativePresentationRepository:
             run_manifest_digest=loaded.manifest_digest,
             sample_rate_hz=subject.eligibility.sample_rate_hz,
             coverage_status=subject.coverage_status,
-            artifacts=tuple(artifacts),
+            artifacts=tuple(cast(StandardNativePngArtifactV4, item) for item in artifacts),
             content_digest=canonical_digest(content_values),
         )
 
@@ -630,6 +714,7 @@ class CatalogStandardNativePresentationRepository:
         artifact_name: str,
     ) -> bytes | None:
         product_specs = {
+            "doppler-waterfall": (DOPPLER_WATERFALL_PNG_V1_PRODUCT,),
             "cfo-raw": (CFO_TRAJECTORIES_PNG_V2_PRODUCT,),
             "cfo-dealiased": (DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,),
             "cfo-final": (FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,),
@@ -656,7 +741,7 @@ class CatalogStandardNativePresentationRepository:
             return None
         subject = loaded.subjects[subject_id]
         if (
-            artifact_name not in {"cfo-raw", "cfo-dealiased", "cfo-final"}
+            artifact_name not in {"doppler-waterfall", "cfo-raw", "cfo-dealiased", "cfo-final"}
             and subject.subject_kind is not StandardSubjectKindV2.RECEIVER_PATH
         ):
             return None
@@ -2193,6 +2278,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         | StandardNativePngArtifactInventoryV5
         | StandardNativePngArtifactInventoryV6
         | StandardNativePngArtifactInventoryV7
+        | StandardNativePngArtifactInventoryV8
         | None
     ):
         if not self._native(session_id):

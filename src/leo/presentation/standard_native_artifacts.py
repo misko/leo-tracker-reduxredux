@@ -166,6 +166,52 @@ STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7 = {
     ),
 }
 
+StandardNativePngArtifactNameV8 = Literal[
+    "waterfall",
+    "doppler-waterfall",
+    "pilot-methods",
+    "cfo-raw",
+    "cfo-dealiased",
+    "cfo-final",
+    "cfo-alternate",
+    "trajectory-accounting",
+    "full-capture-glrt20ms",
+    "pilot-doppler",
+    "pilot-carrier-tracking",
+    "pilot-segment-rates",
+]
+
+STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8: tuple[StandardNativePngArtifactNameV8, ...] = (
+    "waterfall",
+    "doppler-waterfall",
+    "pilot-methods",
+    "cfo-raw",
+    "cfo-dealiased",
+    "cfo-final",
+)
+STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8: tuple[StandardNativePngArtifactNameV8, ...] = (
+    *STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
+    "cfo-alternate",
+    "trajectory-accounting",
+    "full-capture-glrt20ms",
+    "pilot-doppler",
+    "pilot-carrier-tracking",
+    "pilot-segment-rates",
+)
+STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8: dict[
+    StandardNativePngArtifactNameV8,
+    tuple[str, str, str, int, str | None],
+] = {
+    **{name: values for name, values in STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7.items()},
+    "doppler-waterfall": (
+        "Doppler diagnostic — target-band waterfall and GLRT fits",
+        "Rate-normalized common-frequency crop with segment-local candidate tracks and resets",
+        "standard.doppler-waterfall-png",
+        1,
+        None,
+    ),
+}
+
 
 class StandardNativePngArtifactV4(ContractModel):
     """One immutable PNG available for the selected native subject."""
@@ -378,4 +424,84 @@ class StandardNativePngArtifactInventoryV7(ContractModel):
         }
         if self.content_digest != canonical_digest(values):
             raise ValueError("V7 native PNG artifact inventory digest does not match")
+        return self
+
+
+class StandardNativePngArtifactV8(ContractModel):
+    """One immutable PNG descriptor in the additive Doppler inventory."""
+
+    schema_version: Literal[8] = 8
+    name: StandardNativePngArtifactNameV8
+    label: BoundedText
+    description: BoundedText
+    href: ApiHref
+    catalog_kind: Identifier
+    product_schema_version: Annotated[int, Field(gt=0)]
+    digest: Sha256Digest
+    byte_size: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+    media_type: Literal["image/png"] = "image/png"
+
+
+class StandardNativePngArtifactInventoryV8(ContractModel):
+    """Additive inventory containing the rate-normalized Doppler diagnostic."""
+
+    schema_version: Literal[8] = 8
+    session_id: Identifier
+    subject_id: Identifier
+    subject_kind: StandardSubjectKindV2
+    run_id: Identifier
+    run_manifest_digest: Sha256Digest
+    sample_rates_hz: tuple[
+        Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000],
+        ...,
+    ] = Field(min_length=1, max_length=2)
+    coverage_status: Literal["complete", "partial_coverage", "insufficient_data"]
+    artifacts: tuple[StandardNativePngArtifactV8, ...] = Field(min_length=6, max_length=12)
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _inventory_is_exact(self) -> Self:
+        if self.sample_rates_hz != tuple(sorted(set(self.sample_rates_hz))):
+            raise ValueError("V8 native PNG rates must be unique and ordered")
+        expected_names = (
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8
+            if self.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
+            else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8
+        )
+        if tuple(item.name for item in self.artifacts) != expected_names:
+            raise ValueError("V8 native PNG artifact inventory is not the exact scope set")
+        base = (
+            f"/api/v2/recordings/{quote(self.session_id, safe='')}/standard-subjects/"
+            f"{quote(self.subject_id, safe='')}"
+        )
+        for item in self.artifacts:
+            label, description, kind, schema_version, view_name = (
+                STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8[item.name]
+            )
+            expected_href = (
+                f"{base}/views/{view_name}.png"
+                if view_name is not None
+                else f"{base}/artifacts/{item.name}.png"
+            )
+            if (
+                item.label != label
+                or item.description != description
+                or item.catalog_kind != kind
+                or item.product_schema_version != schema_version
+                or item.href != expected_href
+            ):
+                raise ValueError("V8 native PNG descriptor differs from its closed identity")
+        values = {
+            "schema_version": self.schema_version,
+            "session_id": self.session_id,
+            "subject_id": self.subject_id,
+            "subject_kind": self.subject_kind.value,
+            "run_id": self.run_id,
+            "run_manifest_digest": self.run_manifest_digest,
+            "sample_rates_hz": self.sample_rates_hz,
+            "coverage_status": self.coverage_status,
+            "artifacts": tuple(item.model_dump(mode="json") for item in self.artifacts),
+        }
+        if self.content_digest != canonical_digest(values):
+            raise ValueError("V8 native PNG artifact inventory digest does not match")
         return self

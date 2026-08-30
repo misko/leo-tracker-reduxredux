@@ -43,6 +43,11 @@ def measure_standard_native_waterfall(
         np.asarray(group, dtype=np.int64)
         for group in np.array_split(np.arange(config.fft_samples), config.frequency_bins)
     )
+    uniform_group_size = (
+        config.fft_samples // config.frequency_bins
+        if config.fft_samples % config.frequency_bins == 0
+        else None
+    )
     raw_frequencies = np.fft.fftshift(
         np.fft.fftfreq(config.fft_samples, d=1 / reader.sample_rate_hz)
     )
@@ -95,9 +100,21 @@ def measure_standard_native_waterfall(
                     axes=(1,),
                 )
                 power = np.abs(spectrum) ** 2 / (config.fft_samples * window_energy)
-                grouped = np.stack(
-                    tuple(np.sum(power[:, group, :], axis=1) for group in groups),
-                    axis=1,
+                grouped = (
+                    np.sum(
+                        power.reshape(
+                            frame_count,
+                            config.frequency_bins,
+                            uniform_group_size,
+                            receiver_count,
+                        ),
+                        axis=2,
+                    )
+                    if uniform_group_size is not None
+                    else np.stack(
+                        tuple(np.sum(power[:, group, :], axis=1) for group in groups),
+                        axis=1,
+                    )
                 )
                 local_starts = (
                     values_local_start

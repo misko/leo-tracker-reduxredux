@@ -7,6 +7,7 @@ import type {
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
   StandardNativePngArtifactInventoryV7,
+  StandardNativePngArtifactInventoryV8,
   StandardNativeScientificDispositionV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
@@ -60,6 +61,11 @@ const nativeArtifactDefinitionsV7 = [
   ["pilot-doppler", "standard.pilot-doppler-segments-png", 4, "artifacts/pilot-doppler.png"],
   ["pilot-carrier-tracking", "standard.pilot-carrier-tracking-png", 4, "artifacts/pilot-carrier-tracking.png"],
   ["pilot-segment-rates", "standard.pilot-segment-rates-png", 4, "artifacts/pilot-segment-rates.png"],
+] as const;
+const nativeArtifactDefinitionsV8 = [
+  nativeArtifactDefinitionsV7[0],
+  ["doppler-waterfall", "standard.doppler-waterfall-png", 1, "artifacts/doppler-waterfall.png"],
+  ...nativeArtifactDefinitionsV7.slice(1),
 ] as const;
 const scienceStates: StandardNativeScientificDispositionV3[] = [
   "candidate",
@@ -1325,9 +1331,9 @@ export function parseStandardPlotView(value: unknown): StandardPlotView {
 
 export function parseStandardNativePngArtifactInventory(
   value: unknown,
-): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 {
+): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 | StandardNativePngArtifactInventoryV8 {
   const item = object(value, "native PNG artifact inventory");
-  const version = oneOf(item.schema_version, [4, 5, 6, 7], "native PNG artifact inventory.schema_version");
+  const version = oneOf(item.schema_version, [4, 5, 6, 7, 8], "native PNG artifact inventory.schema_version");
   const path = `native PNG artifact inventory V${version}`;
   exactKeys(item, [
     "schema_version", "session_id", "subject_id", "subject_kind", "run_id",
@@ -1351,7 +1357,7 @@ export function parseStandardNativePngArtifactInventory(
     if (rates.length < 1 || rates.length > 2) fail(path, "rate inventory is invalid");
     const allowedRates = version === 5
       ? mixedSampleRates
-      : version === 7
+      : version === 7 || version === 8
         ? [3_000_000, ...productionSampleRates]
         : productionSampleRates;
     rates.forEach((rate, index) => oneOf(rate, allowedRates, `${path}.sample_rates_hz[${index}]`));
@@ -1366,12 +1372,14 @@ export function parseStandardNativePngArtifactInventory(
     `${path}.coverage_status`,
   );
   const rows = array(item.artifacts, `${path}.artifacts`);
-  const definitions = version === 7
-    ? nativeArtifactDefinitionsV7
-    : nativeArtifactDefinitionsV4;
+  const definitions = version === 8
+    ? nativeArtifactDefinitionsV8
+    : version === 7
+      ? nativeArtifactDefinitionsV7
+      : nativeArtifactDefinitionsV4;
   const expected = subjectKind === "receiver_path"
     ? definitions
-    : definitions.slice(0, 5);
+    : definitions.slice(0, version === 8 ? 6 : 5);
   if (rows.length !== expected.length) {
     fail(`${path}.artifacts`, "scope inventory length differs");
   }
@@ -1383,24 +1391,26 @@ export function parseStandardNativePngArtifactInventory(
       "product_schema_version", "digest", "byte_size", "media_type",
     ], `${path}.artifacts[${index}]`);
     const [name, catalogKind, schemaVersion, suffix] = expected[index];
-    literal(row.schema_version, 4, `native PNG artifact inventory V4.artifacts[${index}].schema_version`);
-    literal(row.name, name, `native PNG artifact inventory V4.artifacts[${index}].name`);
-    string(row.label, `native PNG artifact inventory V4.artifacts[${index}].label`);
-    string(row.description, `native PNG artifact inventory V4.artifacts[${index}].description`);
-    literal(row.href, `${base}/${suffix}`, `native PNG artifact inventory V4.artifacts[${index}].href`);
-    literal(row.catalog_kind, catalogKind, `native PNG artifact inventory V4.artifacts[${index}].catalog_kind`);
-    literal(row.product_schema_version, schemaVersion, `native PNG artifact inventory V4.artifacts[${index}].product_schema_version`);
-    string(row.digest, `native PNG artifact inventory V4.artifacts[${index}].digest`);
-    if (integer(row.byte_size, `native PNG artifact inventory V4.artifacts[${index}].byte_size`) <= 0) {
-      fail(`native PNG artifact inventory V4.artifacts[${index}].byte_size`, "expected a positive integer");
+    const rowPath = `native PNG artifact inventory V${version}.artifacts[${index}]`;
+    literal(row.schema_version, version === 8 ? 8 : 4, `${rowPath}.schema_version`);
+    literal(row.name, name, `${rowPath}.name`);
+    string(row.label, `${rowPath}.label`);
+    string(row.description, `${rowPath}.description`);
+    literal(row.href, `${base}/${suffix}`, `${rowPath}.href`);
+    literal(row.catalog_kind, catalogKind, `${rowPath}.catalog_kind`);
+    literal(row.product_schema_version, schemaVersion, `${rowPath}.product_schema_version`);
+    string(row.digest, `${rowPath}.digest`);
+    if (integer(row.byte_size, `${rowPath}.byte_size`) <= 0) {
+      fail(`${rowPath}.byte_size`, "expected a positive integer");
     }
-    literal(row.media_type, "image/png", `native PNG artifact inventory V4.artifacts[${index}].media_type`);
+    literal(row.media_type, "image/png", `${rowPath}.media_type`);
   });
   string(item.content_digest, `${path}.content_digest`);
   return item as unknown as StandardNativePngArtifactInventoryV4
     | StandardNativePngArtifactInventoryV5
     | StandardNativePngArtifactInventoryV6
-    | StandardNativePngArtifactInventoryV7;
+    | StandardNativePngArtifactInventoryV7
+    | StandardNativePngArtifactInventoryV8;
 }
 
 export function assertMatchingStandardMajor(

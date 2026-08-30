@@ -20,6 +20,7 @@ from leo.analysis.standard.full_capture_glrt20ms import (
 from leo.analysis.standard.native_products import (
     CFO_TRAJECTORIES_PNG_V2_PRODUCT,
     DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+    DOPPLER_WATERFALL_PNG_V1_PRODUCT,
     FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
     PILOT_METHODS_PNG_V2_PRODUCT,
     WATERFALL_PNG_V2_PRODUCT,
@@ -46,6 +47,7 @@ from leo.presentation.standard_png import (
     StandardPngPathSource,
     StandardPngSource,
     render_full_cfo_stage_png,
+    render_full_doppler_waterfall_png,
     render_full_standard_plot_png,
 )
 
@@ -200,6 +202,7 @@ def _path_source(
     *,
     config: ReceiverStandardConfig,
     origin_utc_ns: int,
+    full_capture_glrt: StandardNativeFullCaptureGlrt20msV1 | None = None,
 ) -> StandardPngPathSource:
     source = stateful.source
     detections: list[dict[str, Any]] = []
@@ -280,6 +283,28 @@ def _path_source(
             )
         },
         final_trajectory_table={"trajectories": tuple(final_rows)},
+        continuity_segments=tuple(
+            cast(dict[str, Any], item.model_dump(mode="json"))
+            for item in source.continuity_segments
+        ),
+        full_capture_glrt=(
+            None
+            if full_capture_glrt is None
+            else {
+                "accounting": full_capture_glrt.accounting.model_dump(mode="json"),
+                "tracks": tuple(
+                    {
+                        "reference_time_s": track.global_reference_time_s,
+                        "start_s": track.global_start_time_s,
+                        "end_s": track.global_end_time_s,
+                        "slope_hz_s": track.slope_hz_s,
+                        "cfo_at_reference_hz": track.cfo_at_reference_hz,
+                    }
+                    for segment in full_capture_glrt.segments
+                    for track in segment.hough.tracks
+                ),
+            }
+        ),
     )
 
 
@@ -376,6 +401,16 @@ def _restrict_path_to_common_intervals(
         path_offset_s=path.time_offset_s,
         intervals=intervals,
     )
+    full_capture_glrt = path.full_capture_glrt
+    if full_capture_glrt is not None:
+        full_capture_glrt = {
+            **full_capture_glrt,
+            "tracks": _clip_model_rows(
+                cast(tuple[dict[str, Any], ...], tuple(full_capture_glrt["tracks"])),
+                path_offset_s=path.time_offset_s,
+                intervals=intervals,
+            ),
+        }
     return replace(
         path,
         waterfall=waterfall,
@@ -384,6 +419,7 @@ def _restrict_path_to_common_intervals(
         trajectory_table={"trajectories": raw_rows},
         dealiased_trajectory_bank={"branches": tuple(dealiased_branches)},
         final_trajectory_table={"trajectories": final_rows},
+        full_capture_glrt=full_capture_glrt,
     )
 
 
@@ -393,6 +429,7 @@ def native_standard_png_source(
     waterfall_products: tuple[UpstreamJsonProduct, ...],
     stateful_products: tuple[UpstreamJsonProduct, ...],
     path_report_products: tuple[UpstreamJsonProduct, ...],
+    full_capture_glrt_products: tuple[UpstreamJsonProduct, ...] = (),
     config: ReceiverStandardConfig,
     configs_by_sample_rate_hz: Mapping[int, ReceiverStandardConfig] | None = None,
     valid_utc_intervals: tuple[tuple[int, int], ...] | None = None,
@@ -407,7 +444,12 @@ def native_standard_png_source(
     }
     if context.scope is None or context.scope.kind not in expected_counts:
         raise ValueError("native PNG projection requires path, radio, or paired scope")
-    inventories = (waterfall_products, stateful_products, path_report_products)
+    inventories = (
+        waterfall_products,
+        stateful_products,
+        path_report_products,
+        *((full_capture_glrt_products,) if full_capture_glrt_products else ()),
+    )
     node_ids = tuple(item.producer_node_id for item in waterfall_products)
     if (
         len(node_ids) not in expected_counts[context.scope.kind]
@@ -423,17 +465,26 @@ def native_standard_png_source(
         config.replay_gate.sample_rate_hz: config,
         **({} if configs_by_sample_rate_hz is None else configs_by_sample_rate_hz),
     }
-    for waterfall_item, stateful_item, report_item in zip(*inventories, strict=True):
+    for index, (waterfall_item, stateful_item, report_item) in enumerate(
+        zip(waterfall_products, stateful_products, path_report_products, strict=True)
+    ):
+        glrt_item = full_capture_glrt_products[index] if full_capture_glrt_products else None
         if not (
             waterfall_item.producer_scope
             == stateful_item.producer_scope
             == report_item.producer_scope
+            and (glrt_item is None or glrt_item.producer_scope == waterfall_item.producer_scope)
         ):
             raise ValueError("native PNG products disagree on producer scope")
         producer_scope = waterfall_item.producer_scope
         waterfall = StandardNativeNumericalWaterfallV3.model_validate(waterfall_item.document)
         stateful = StandardNativeStatefulPathV2.model_validate(stateful_item.document)
         report = StandardNativePathReportV3.model_validate(report_item.document)
+        glrt = (
+            None
+            if glrt_item is None
+            else StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
+        )
         source = stateful.source
         path_config = configurations.get(source.sample_rate_hz)
         if (
@@ -441,6 +492,15 @@ def native_standard_png_source(
             or report.source != source
             or report.products.numerical_waterfall_product_digest != waterfall_item.product_digest
             or report.products.stateful_path_product_digest != stateful_item.product_digest
+            or (
+                glrt_item is not None
+                and (
+                    glrt is None
+                    or glrt.source != source
+                    or report.products.full_capture_glrt20ms_product_digest
+                    != glrt_item.product_digest
+                )
+            )
             or producer_scope.kind is not ScopeKind.RECEIVER_PATH
             or producer_scope.session_id != context.session_id
             or (producer_scope.stream_id, producer_scope.receiver_id)
@@ -454,7 +514,7 @@ def native_standard_png_source(
             source.stream_id != context.scope.stream_id or source.radio_id != context.scope.radio_id
         ):
             raise ValueError("native radio PNG received foreign path")
-        validated.append((waterfall, stateful, report, path_config))
+        validated.append((waterfall, stateful, report, path_config, glrt))
     validated.sort(key=lambda item: (item[1].source.stream_id, item[1].source.receiver_id))
     sources = tuple(item[1].source for item in validated)
     if (
@@ -471,8 +531,9 @@ def native_standard_png_source(
             report,
             config=path_config,
             origin_utc_ns=origin_utc_ns,
+            full_capture_glrt=glrt,
         )
-        for waterfall, stateful, report, path_config in validated
+        for waterfall, stateful, report, path_config, glrt in validated
     )
     if valid_utc_intervals is not None:
         relative_intervals = tuple(
@@ -511,12 +572,16 @@ def native_standard_png_source(
 def render_standard_native_common_pngs(
     source: StandardPngSource,
 ) -> tuple[tuple[ProductSpec, bytes], ...]:
-    """Render the five common Standard views from one sealed native source."""
+    """Render the six common Standard views from one sealed native source."""
 
     return (
         (
             WATERFALL_PNG_V2_PRODUCT,
             render_full_standard_plot_png(source, StandardViewKindV2.WATERFALL),
+        ),
+        (
+            DOPPLER_WATERFALL_PNG_V1_PRODUCT,
+            render_full_doppler_waterfall_png(source),
         ),
         (
             PILOT_METHODS_PNG_V2_PRODUCT,

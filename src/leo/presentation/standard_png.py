@@ -62,6 +62,8 @@ class StandardPngPathSource:
     cfo_lift_replay: dict[str, Any]
     final_trajectory_bank: dict[str, Any]
     final_trajectory_table: dict[str, Any]
+    continuity_segments: tuple[dict[str, Any], ...] = ()
+    full_capture_glrt: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,6 +231,18 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
             fontweight="bold",
         )
         return _save(figure, dpi=160)
+
+
+def render_full_doppler_waterfall_png(source: StandardPngSource) -> bytes:
+    """Render a rate-normalized target-band waterfall with candidate CFO fits.
+
+    This is deliberately separate from the unmodified full-band waterfall.
+    It remains a candidate-only diagnostic: fitted GLRT CFO geometry is made
+    visible, but no carrier-phase or payload claim is implied.
+    """
+
+    with _RENDER_LOCK:
+        return _render_full_doppler_waterfall(source)
 
 
 def _raw_glrt64_evidence(
@@ -608,17 +622,210 @@ def _render_full_waterfall(source: StandardPngSource) -> bytes:
         )
     for axis in tuple(axes.flat)[len(source.paths) :]:
         axis.set_visible(False)
-    first = source.paths[0]
+    geometries = tuple(
+        (
+            len(path.waterfall["tiles"]),
+            len(path.waterfall["frequency_bin_centers_hz"]),
+            int(path.waterfall["fft_samples"]),
+        )
+        for path in source.paths
+    )
+    geometry_text = (
+        f"{geometries[0][0]} time bins × {geometries[0][1]} frequency bins · "
+        f"{geometries[0][2]}-sample Hann FFT"
+        if len(set(geometries)) == 1
+        else "per-rate frequency resolution · "
+        + ", ".join(
+            f"{path.sample_rate_hz / 1_000_000:g} MS/s: {bins} bins/{fft}-sample FFT"
+            for path, (_, bins, fft) in zip(source.paths, geometries, strict=True)
+        )
+    )
     figure.suptitle(
         f"Verified full-dwell waterfall · {source.session_id}\n"
-        f"{len(first.waterfall['tiles'])} time bins × "
-        f"{len(first.waterfall['frequency_bin_centers_hz'])} frequency bins · "
-        f"{first.waterfall['fft_samples']}-sample Hann FFT\n"
+        f"{geometry_text}\n"
         "independent robust color scale per panel · gray = no valid FFT support",
         fontsize=14,
         fontweight="bold",
     )
     return _save(figure, dpi=160)
+
+
+def _render_full_doppler_waterfall(source: StandardPngSource) -> bytes:
+    matrices: list[np.ndarray] = []
+    frequency_axes_hz: list[np.ndarray] = []
+    for path in source.paths:
+        receiver_ids = tuple(path.waterfall["receiver_ids"])
+        try:
+            receiver_index = receiver_ids.index(path.receiver_id)
+        except ValueError as error:
+            raise ValueError("waterfall receiver inventory disagrees with PNG source") from error
+        matrices.append(
+            np.asarray(
+                [tile["receiver_power_dbfs"][receiver_index] for tile in path.waterfall["tiles"]],
+                dtype=np.float64,
+            )
+        )
+        frequency_axes_hz.append(
+            path.tuned_center_frequency_hz
+            + np.asarray(path.waterfall["frequency_bin_centers_hz"], dtype=np.float64)
+        )
+    common_low_hz = max(float(values[0]) for values in frequency_axes_hz)
+    common_high_hz = min(float(values[-1]) for values in frequency_axes_hz)
+    if common_high_hz <= common_low_hz:
+        raise ValueError("Doppler waterfall paths have no common tuned-frequency support")
+    crop_width_hz = min(2_500_000.0, common_high_hz - common_low_hz)
+    crop_center_hz = (common_low_hz + common_high_hz) / 2.0
+    crop_low_hz = crop_center_hz - crop_width_hz / 2.0
+    crop_high_hz = crop_center_hz + crop_width_hz / 2.0
+    waterfall_cmap = matplotlib.colormaps["magma"].with_extremes(bad=_WATERFALL_MISSING_COLOR)
+
+    columns = 2 if len(source.paths) > 1 else 1
+    rows = math.ceil(len(source.paths) / columns)
+    figure = Figure(
+        figsize=(8.2 * columns, 4.5 * rows + 1.2),
+        dpi=160,
+        constrained_layout=True,
+    )
+    FigureCanvasAgg(figure)
+    axes = figure.subplots(rows, columns, squeeze=False)
+    for axis, path, matrix, frequencies_hz in zip(
+        axes.flat,
+        source.paths,
+        matrices,
+        frequency_axes_hz,
+        strict=False,
+    ):
+        selected = (frequencies_hz >= crop_low_hz) & (frequencies_hz <= crop_high_hz)
+        if not np.any(selected):
+            raise ValueError("Doppler waterfall crop contains no numerical cells")
+        cropped = matrix[:, selected]
+        cropped_finite = cropped[np.isfinite(cropped)]
+        if not cropped_finite.size:
+            raise ValueError("Doppler waterfall crop contains no finite power values")
+        lower, upper = _waterfall_limits(cropped_finite)
+        cropped_frequencies_mhz = frequencies_hz[selected] / 1_000_000.0
+        bin_width_hz = (
+            float(np.median(np.diff(frequencies_hz)))
+            if len(frequencies_hz) > 1
+            else float(path.sample_rate_hz)
+        )
+        half_bin_mhz = bin_width_hz / 2_000_000.0
+        image = axis.imshow(
+            np.ma.masked_invalid(cropped),
+            cmap=waterfall_cmap,
+            interpolation="nearest",
+            aspect="auto",
+            origin="upper",
+            extent=(
+                cropped_frequencies_mhz[0] - half_bin_mhz,
+                cropped_frequencies_mhz[-1] + half_bin_mhz,
+                path.time_offset_s
+                + path.waterfall["coverage"]["expected_samples"] / path.sample_rate_hz,
+                path.time_offset_s,
+            ),
+            vmin=lower,
+            vmax=upper,
+            zorder=1,
+        )
+        tracks = _doppler_waterfall_tracks(path)
+        for index, track in enumerate(tracks):
+            start_s = path.time_offset_s + float(track["start_s"])
+            end_s = path.time_offset_s + float(track["end_s"])
+            times = np.linspace(start_s, end_s, max(40, round((end_s - start_s) * 20)))
+            cfo_hz = float(track["cfo_at_reference_hz"]) + float(track["slope_hz_s"]) * (
+                times - path.time_offset_s - float(track["reference_time_s"])
+            )
+            axis.plot(
+                (path.tuned_center_frequency_hz + cfo_hz) / 1_000_000.0,
+                times,
+                color="#3ee6e0",
+                linestyle="-",
+                linewidth=1.3,
+                alpha=0.92,
+                label="segment-local candidate GLRT CFO fit" if index == 0 else None,
+                zorder=3,
+            )
+        boundaries = tuple(path.continuity_segments[1:])
+        for index, segment in enumerate(boundaries):
+            boundary_s = (
+                path.time_offset_s + int(segment["device_sample_start"]) / path.sample_rate_hz
+            )
+            axis.axhline(
+                boundary_s,
+                color="#1f2933",
+                linestyle=":",
+                linewidth=0.8,
+                alpha=0.75,
+                label="continuity reset" if index == 0 else None,
+                zorder=4,
+            )
+        coverage = path.waterfall["coverage"]
+        observed_percent = 100.0 * float(coverage["observed_fraction"])
+        longest_s = _longest_continuity_seconds(path)
+        glrt_text = _doppler_waterfall_glrt_text(path)
+        axis.set_title(
+            f"{path.label}\n"
+            f"{bin_width_hz / 1_000.0:.2f} kHz/bin · {len(tracks)} fitted tracks · {glrt_text}\n"
+            f"{observed_percent:.2f}% observed · {int(coverage['gap_count'])} gaps · "
+            f"longest continuous {longest_s:.2f} s",
+            loc="left",
+            fontsize=9,
+            fontweight="bold",
+        )
+        axis.set_xlabel("Tuned-domain frequency (MHz)")
+        axis.set_ylabel("Elapsed time (s; increases downward)")
+        axis.set_xlim(crop_low_hz / 1_000_000.0, crop_high_hz / 1_000_000.0)
+        axis.set_ylim(source.elapsed_end_s, source.elapsed_start_s)
+        axis.grid(False)
+        handles, labels = axis.get_legend_handles_labels()
+        if handles:
+            unique = dict(zip(labels, handles, strict=True))
+            axis.legend(unique.values(), unique.keys(), loc="lower left", fontsize=7)
+        figure.colorbar(image, ax=axis, label="Band power (dBFS; crop-scaled)", pad=0.02)
+    for axis in tuple(axes.flat)[len(source.paths) :]:
+        axis.set_visible(False)
+    figure.suptitle(
+        f"Candidate Doppler diagnostic · {source.session_id}\n"
+        f"common target crop {crop_width_hz / 1_000_000.0:.3f} MHz · "
+        "rate-normalized waterfall · gray = no valid FFT support\n"
+        "cyan = segment-local candidate GLRT CFO fit · no coherent carrier-phase or payload claim",
+        fontsize=13,
+        fontweight="bold",
+    )
+    return _save(figure, dpi=160)
+
+
+def _doppler_waterfall_tracks(path: StandardPngPathSource) -> tuple[dict[str, Any], ...]:
+    if path.full_capture_glrt is not None:
+        return tuple(path.full_capture_glrt.get("tracks", ()))
+    return tuple(
+        {
+            "reference_time_s": row["reference_time_s"],
+            "start_s": row["start_s"],
+            "end_s": row["end_s"],
+            "slope_hz_s": row["coefficients_hz"][-2],
+            "cfo_at_reference_hz": row["coefficients_hz"][-1],
+        }
+        for row in path.trajectory_table["trajectories"]
+        if int(row["polynomial_degree"]) == 1
+    )
+
+
+def _doppler_waterfall_glrt_text(path: StandardPngPathSource) -> str:
+    if path.full_capture_glrt is None:
+        return "GLRT accounting unavailable"
+    accounting = path.full_capture_glrt["accounting"]
+    return f"GLRT {int(accounting['passing_count'])}/{int(accounting['valid_count'])} valid pass"
+
+
+def _longest_continuity_seconds(path: StandardPngPathSource) -> float:
+    if path.continuity_segments:
+        return max(
+            (int(item["device_sample_stop"]) - int(item["device_sample_start"]))
+            / path.sample_rate_hz
+            for item in path.continuity_segments
+        )
+    return path.waterfall["coverage"]["expected_samples"] / path.sample_rate_hz
 
 
 def _waterfall_limits(finite: np.ndarray) -> tuple[float, float]:

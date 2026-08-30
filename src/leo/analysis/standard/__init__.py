@@ -11,6 +11,7 @@ from leo.analysis.standard.configuration import (
     parse_receiver_standard_config,
     production_receiver_standard_config,
     production_receiver_standard_stage_configuration,
+    production_receiver_standard_waterfall_config,
     require_receiver_standard_sample_rate,
     resolve_receiver_standard_sample_rate,
 )
@@ -119,6 +120,7 @@ __all__ = [
     "parse_receiver_standard_config",
     "production_receiver_standard_config",
     "production_receiver_standard_stage_configuration",
+    "production_receiver_standard_waterfall_config",
     "require_receiver_standard_sample_rate",
     "receiver_standard_configuration_digest",
     "receiver_standard_implementation_digest",

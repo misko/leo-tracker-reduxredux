@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 from leo.analysis.qam.pilot_phase_locklet import PilotPhaseLockletConfig
 from leo.analysis.standard.configuration import (
     production_receiver_standard_config,
+    production_receiver_standard_waterfall_config,
     require_receiver_standard_sample_rate,
 )
 from leo.analysis.standard.native_accounting import (
@@ -177,8 +178,8 @@ class PathStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="path-standard-native",
-        algorithm_version="standard-native-evidence-v9",
-        configuration_schema="path-standard-native.evidence.v7",
+        algorithm_version="standard-native-evidence-v10",
+        configuration_schema="path-standard-native.evidence.v8",
         output_products=_NATIVE_EVIDENCE_PRODUCTS,
         resource_class=ResourceClass.HEAVY,
         accepted_outcomes=_NATIVE_OUTCOMES,
@@ -213,6 +214,8 @@ class PathStandardNativeEvidenceAnalyzer:
             != config.stateful_configuration_digest
         ):
             raise ValueError("native stateful policy digest does not match implementation")
+        if config.waterfall.value() != base_config.waterfall:
+            raise ValueError("native waterfall policy does not match implementation")
         if (
             native_full_capture_glrt_configuration_digest(base_config)
             != config.full_capture_glrt_configuration_digest
@@ -241,7 +244,9 @@ class PathStandardNativeEvidenceAnalyzer:
             clipping_abs_threshold=config.quality.clipping_abs_threshold,
             power_block_samples=config.power.block_samples,
             power_window_samples=power_window_numerator // 1_000,
-            waterfall_config=config.waterfall.value(),
+            waterfall_config=production_receiver_standard_waterfall_config(
+                sample_rate_hz=binding.sample_rate_hz
+            ),
             subwindow_ms=stateful_config.feedback.subwindow_ms,
             probe_ms=stateful_config.feedback.probe_ms,
             probe_offsets_ms=stateful_config.feedback.probe_offsets_ms,
@@ -413,8 +418,8 @@ class PathAlternateTracksNativeAnalyzer:
 
     spec = StageSpec(
         key="path-alternate-tracks-native",
-        algorithm_version="standard-native-path-projection-v4",
-        configuration_schema="path-alternate-tracks-native.projection.v4",
+        algorithm_version="standard-native-path-projection-v5",
+        configuration_schema="path-alternate-tracks-native.projection.v5",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
@@ -490,6 +495,7 @@ class PathAlternateTracksNativeAnalyzer:
             waterfall_products=(waterfall_item,),
             stateful_products=(predecessor,),
             path_report_products=(report_item,),
+            full_capture_glrt_products=(glrt_item,),
             config=config,
         )
         common_pngs = render_standard_native_common_pngs(source)
@@ -576,8 +582,8 @@ class RadioStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="radio-scientific-report-native",
-        algorithm_version="standard-native-radio-report-presentation-v8",
-        configuration_schema="radio-scientific-report-native.evidence.v5",
+        algorithm_version="standard-native-radio-report-presentation-v9",
+        configuration_schema="radio-scientific-report-native.evidence.v6",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(QUALITY_V2_PRODUCT, "path-standard-native"),
@@ -630,6 +636,7 @@ class RadioStandardNativeEvidenceAnalyzer:
             waterfall_products=upstream[2],
             stateful_products=upstream[4],
             path_report_products=upstream[6],
+            full_capture_glrt_products=upstream[5],
             config=config,
         )
         payloads = render_standard_native_common_pngs(source)
@@ -729,16 +736,17 @@ class PairedStandardNativeEvidenceAnalyzer:
 
 
 class PairedStandardNativeWaterfallAnalyzer:
-    """Render all five common native views over exact paired path evidence."""
+    """Render all six common native views over exact paired path evidence."""
 
     spec = StageSpec(
         key="paired-presentation-native",
-        algorithm_version="standard-native-paired-presentation-v6",
-        configuration_schema="paired-presentation-native.evidence.v5",
+        algorithm_version="standard-native-paired-presentation-v7",
+        configuration_schema="paired-presentation-native.evidence.v6",
         dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
             _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(FULL_CAPTURE_GLRT20MS_V1_PRODUCT, "path-standard-native"),
             _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
             _require_native_product(
                 PAIRED_REPORT_V6_PRODUCT,
@@ -765,9 +773,9 @@ class PairedStandardNativeWaterfallAnalyzer:
             )
             for requirement in self.spec.input_products
         )
-        if len(upstream[3]) != 1:
+        if len(upstream[4]) != 1:
             raise ValueError("native paired presentation requires one exact paired report")
-        paired_item = upstream[3][0]
+        paired_item = upstream[4][0]
         paired = StandardNativePairedReportV6.model_validate(paired_item.document)
         if (
             context.scope is None
@@ -799,7 +807,8 @@ class PairedStandardNativeWaterfallAnalyzer:
             context,
             waterfall_products=upstream[0],
             stateful_products=upstream[1],
-            path_report_products=upstream[2],
+            path_report_products=upstream[3],
+            full_capture_glrt_products=upstream[2],
             config=config,
             configs_by_sample_rate_hz=configurations,
             valid_utc_intervals=tuple(
@@ -821,6 +830,7 @@ class PairedStandardNativeWaterfallAnalyzer:
                 "current_eligible": False,
                 "available_native_views": [
                     "waterfall",
+                    "doppler_waterfall",
                     "pilot_methods",
                     "cfo_trajectories",
                     "dealiased_cfo_trajectories",
@@ -828,7 +838,7 @@ class PairedStandardNativeWaterfallAnalyzer:
                 ],
             },
             message=(
-                "Five common native views were projected from sealed path evidence under "
+                "Six common native views were projected from sealed path evidence under "
                 "the paired terminal support authority."
             ),
         )

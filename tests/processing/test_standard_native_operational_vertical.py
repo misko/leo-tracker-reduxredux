@@ -276,7 +276,7 @@ def _assert_native_products(
     gapped_radio_id: str | None,
 ) -> None:
     products = seal.products  # type: ignore[attr-defined]
-    assert len(products) == 102
+    assert len(products) == 109
     assert Counter(item.kind for item in products) == {
         "quality.summary": 4,
         "standard.power-timeline": 4,
@@ -297,6 +297,7 @@ def _assert_native_products(
         "standard.radio-report": 2,
         "standard.paired-report": 1,
         "standard.waterfall-png": 7,
+        "standard.doppler-waterfall-png": 7,
         "standard.pilot-methods-png": 7,
         "standard.cfo-trajectories-png": 7,
         "standard.cfo-trajectories-dealiased-png": 7,
@@ -623,8 +624,8 @@ def _run_native_current(
     assert published.manifest.processing_status == "succeeded"
 
     seal = database.catalog.run_seal_snapshot(result.run_id)
-    assert len(seal.products) == 102
-    assert sum(item.media_type == "image/png" for item in seal.products) == 59
+    assert len(seal.products) == 109
+    assert sum(item.media_type == "image/png" for item in seal.products) == 66
     _assert_native_products(
         database,
         artifacts,
@@ -691,8 +692,8 @@ def test_real_postgres_standard_native_operational_vertical(
     registry = production_standard_native_evidence_registry()
     native_stage_configuration = production_standard_native_evidence_configuration()
     native_path_spec = registry.get("path-standard-native").spec
-    assert native_path_spec.algorithm_version == "standard-native-evidence-v9"
-    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v7"
+    assert native_path_spec.algorithm_version == "standard-native-evidence-v10"
+    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v8"
     assert "probes" not in native_stage_configuration["path-standard-native"]
     configuration: dict[str, object] = {
         "display_version": "standard-native-operational-v1",
