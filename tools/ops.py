@@ -1018,8 +1018,11 @@ def _fence_active_release(
 
 
 def _install_units(release: Path) -> None:
-    units = sorted((release / "deploy/systemd").glob("leo-*.*"))
+    systemd_root = release / "deploy/systemd"
+    units = sorted(path for path in systemd_root.glob("leo-*.*") if path.is_file())
     for unit in units:
+        if unit.is_symlink():
+            raise OpsError(f"systemd unit must be a regular non-symlink file: {unit}")
         subprocess.run(
             (
                 "/usr/bin/install",
@@ -1034,6 +1037,47 @@ def _install_units(release: Path) -> None:
             ),
             check=True,
         )
+    drop_in_directories = sorted(systemd_root.glob("leo-*.service.d"))
+    for source_directory in drop_in_directories:
+        if source_directory.is_symlink() or not source_directory.is_dir():
+            raise OpsError(
+                f"systemd drop-in source must be a regular directory: {source_directory}"
+            )
+        destination_directory = Path("/etc/systemd/system") / source_directory.name
+        subprocess.run(
+            (
+                "/usr/bin/install",
+                "-d",
+                "-o",
+                "root",
+                "-g",
+                "root",
+                "-m",
+                "0755",
+                str(destination_directory),
+            ),
+            check=True,
+        )
+        entries = sorted(source_directory.iterdir())
+        if not entries:
+            raise OpsError(f"systemd drop-in directory is empty: {source_directory}")
+        for source in entries:
+            if source.is_symlink() or not source.is_file() or source.suffix != ".conf":
+                raise OpsError(f"systemd drop-in must be a regular .conf file: {source}")
+            subprocess.run(
+                (
+                    "/usr/bin/install",
+                    "-o",
+                    "root",
+                    "-g",
+                    "root",
+                    "-m",
+                    "0644",
+                    str(source),
+                    str(destination_directory),
+                ),
+                check=True,
+            )
     subprocess.run(("/usr/bin/systemd-analyze", "verify", *map(str, units)), check=True)
     subprocess.run(("/usr/bin/systemctl", "daemon-reload"), check=True)
 
