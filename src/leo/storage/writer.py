@@ -47,6 +47,23 @@ _MAX_COUNTER = (1 << 64) - 1
 _ZERO_BUFFER_BYTES = 1024 * 1024
 
 
+def _terminal_header_v2(metadata: IqBlockMetadataV2) -> IqBlockMetadataV2:
+    """Persist the immutable V2 view required by TerminalGapEvidenceV1.
+
+    Pydantic deliberately preserves an already-validated subclass instance.
+    Passing ABI3 ``IqBlockMetadataV3`` through the V2-typed field therefore
+    serialized ``schema_version=3`` even though the published terminal-gap
+    contract admits only V2.  Snapshot the common, contract-owned fields and
+    explicitly serialize that backward-compatible view.
+    """
+
+    if type(metadata) is IqBlockMetadataV2:
+        return metadata
+    values = {name: getattr(metadata, name) for name in IqBlockMetadataV2.model_fields}
+    values["schema_version"] = 2
+    return IqBlockMetadataV2.model_validate(values)
+
+
 @dataclass(frozen=True, slots=True)
 class StreamWriteReceipt:
     stream_id: str
@@ -436,7 +453,7 @@ class StreamBundleWriter:
                 metadata_flags=validated_terminal.metadata_flags,
                 overflow_observed=validated_terminal.overflow_observed,
                 hardware_metadata=validated_terminal.hardware_metadata,
-                header=validated_terminal,
+                header=_terminal_header_v2(validated_terminal),
             )
             summary_gap_count += 1
             summary_missing_samples += in_span_missing
@@ -855,7 +872,7 @@ class DeviceAxisStreamBundleWriter:
             metadata_flags=validated.metadata_flags,
             overflow_observed=validated.overflow_observed,
             hardware_metadata=validated.hardware_metadata,
-            header=validated,
+            header=_terminal_header_v2(validated),
         )
 
     def _write_zero_fill(self, sample_count: int) -> None:
