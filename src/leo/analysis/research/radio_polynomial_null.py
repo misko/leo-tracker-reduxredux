@@ -228,11 +228,12 @@ def _fit_and_score(
     )
     weighted_design = design_training / sigma_training[:, None]
     weighted_response = response_training / sigma_training
-    coefficients, _, rank, singular_values = np.linalg.lstsq(
+    raw_coefficients, _, rank, singular_values = np.linalg.lstsq(
         weighted_design,
         weighted_response,
         rcond=None,
     )
+    coefficients: NDArray[np.float64] = np.asarray(raw_coefficients, dtype=np.float64)
     if rank != degree + 1 or singular_values.size != degree + 1:
         raise RadioPolynomialNullNumericalError("polynomial training design is rank deficient")
     condition_number = float(singular_values[0] / singular_values[-1])

@@ -191,8 +191,9 @@ class SkyFieldService:
                 # by the achieved tolerance, so a decision inside that band is
                 # not knowledge; the object is retained and flagged rather than
                 # ruled out by whichever way the sample happened to land.
-                eligible = eligible_at_each_sample(tracks, pointing, margin_deg=tolerance).any(
-                    axis=1
+                eligible = np.asarray(
+                    eligible_at_each_sample(tracks, pointing, margin_deg=tolerance).any(axis=1),
+                    dtype=np.bool_,
                 )
                 for row, index in enumerate(batch):
                     if not tracks.usable[row]:
