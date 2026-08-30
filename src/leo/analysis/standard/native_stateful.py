@@ -69,6 +69,7 @@ from leo.analysis.starlink.pilot_methods import (
     PilotProbeDetection,
     detect_pilot_method_candidates,
 )
+from leo.analysis.starlink.pilot_search_geometry import compile_pilot_search_geometry
 from leo.analysis.starlink.trajectories import PolynomialTrajectory, TrajectoryBankResult
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
@@ -145,6 +146,7 @@ class NativeScheduledProbeInput:
     global_device_sample_start: int
     global_device_sample_stop: int
     segment_local_sample_start: int
+    frequency_reference: ReceiverFrequencyCalibration
 
     def __post_init__(self) -> None:
         probe = self.opportunity.probe
@@ -170,6 +172,8 @@ class NativeScheduledProbeInput:
             or validity.disposition.value != "valid"
         ):
             raise ValueError("scheduled native probe is not wholly valid in its bound segment")
+        if self.frequency_reference.receiver_id != str(self.iq.receiver_ids[0]):
+            raise ValueError("scheduled native probe frequency reference changed receiver")
 
 
 @dataclass(frozen=True, slots=True)
@@ -506,6 +510,8 @@ class StandardNativeStatefulRunner:
         qam_schedule: StandardProbeScheduleV3 | None,
     ) -> StandardNativeStatefulResult:
         validate_standard_native_source(reader, binding)
+        if edge != StarlinkEdge(binding.starlink_edge):
+            raise ValueError("native stateful edge differs from the V4 path binding")
         require_receiver_standard_sample_rate(
             self._config,
             sample_rate_hz=reader.sample_rate_hz,
@@ -588,6 +594,8 @@ class StandardNativeStatefulRunner:
         capture_qam: bool,
     ) -> StandardNativeStatefulResult:
         validate_standard_native_source(reader, binding)
+        if edge != StarlinkEdge(binding.starlink_edge):
+            raise ValueError("native stateful edge differs from the V4 path binding")
         require_receiver_standard_sample_rate(
             self._config,
             sample_rate_hz=reader.sample_rate_hz,
@@ -606,6 +614,7 @@ class StandardNativeStatefulRunner:
             self._config.feedback,
             edge=edge,
             detector=self._probe_outcome_detector,
+            frequency_reference=_path_frequency_reference(binding, self._config.feedback),
         )
         if len(detected) != schedule.accounting.valid_count:
             raise ValueError("global stateful detection did not close valid opportunity accounting")
@@ -702,6 +711,22 @@ def stateful_global_schedule_is_publishable(binding: StandardPathInputBindV4) ->
     )
 
 
+def _path_frequency_reference(
+    binding: StandardPathInputBindV4,
+    feedback: TrajectoryFeedbackConfig,
+) -> ReceiverFrequencyCalibration:
+    return compile_pilot_search_geometry(
+        receiver_id=binding.receiver_id,
+        starlink_channel=binding.starlink_channel,
+        edge=binding.starlink_edge,
+        tuned_center_frequency_hz=binding.tuned_center_frequency_hz,
+        sample_rate_hz=binding.sample_rate_hz,
+        rf_bandwidth_hz=binding.rf_bandwidth_hz,
+        residual_cfo_min_hz=feedback.cfo_search_min_hz,
+        residual_cfo_max_hz=feedback.cfo_search_max_hz,
+    ).frequency_reference
+
+
 def _validate_global_stateful_schedule(
     schedule: StandardProbeScheduleV3,
     binding: StandardPathInputBindV4,
@@ -727,6 +752,7 @@ def _detect_global_probe_schedule(
     *,
     edge: StarlinkEdge,
     detector: NativeExplicitPilotOutcomeDetector,
+    frequency_reference: ReceiverFrequencyCalibration,
 ) -> tuple[NativeScheduledProbeDetection, ...]:
     """Detect a bounded number of exact windows without retaining their IQ corpus."""
 
@@ -774,6 +800,7 @@ def _detect_global_probe_schedule(
                 segment_local_sample_start=(
                     iq.global_device_sample_start - segment.device_sample_start
                 ),
+                frequency_reference=frequency_reference,
             )
             pending[executor.submit(detector, item, config, edge)] = item
             if len(pending) >= maximum_pending:
@@ -797,18 +824,6 @@ def detect_standard_native_probe(
     expected_probe_samples = item.iq.sample_rate_hz * config.probe_ms
     if expected_probe_samples % 1_000 or expected_probe_samples // 1_000 != item.iq.sample_count:
         raise ValueError("native explicit pilot window disagrees with configured duration")
-    receiver_id = item.iq.receiver_ids[0]
-    calibration = ReceiverFrequencyCalibration(
-        receiver_id=str(receiver_id),
-        center_hz=0.0,
-        calibration_sha256=canonical_digest(
-            {
-                "receiver_id": receiver_id,
-                "frequency_reference": "uncalibrated_prior",
-                "coordinate": "baseband_cfo_hz",
-            }
-        ).removeprefix("sha256:"),
-    )
     acquisition = SymbolwiseAcquisitionConfig(
         residual_cfo_min_hz=config.cfo_search_min_hz,
         residual_cfo_max_hz=config.cfo_search_max_hz,
@@ -826,7 +841,7 @@ def detect_standard_native_probe(
         _native_window_complex_samples(item.iq),
         item.iq.sample_rate_hz,
         sample_start=item.segment_local_sample_start,
-        calibration=calibration,
+        calibration=item.frequency_reference,
         acquisition_config=acquisition,
         edge=edge,
         maximum_scored_candidates=config.maximum_scored_candidates_per_probe,
@@ -860,18 +875,6 @@ def _detect_standard_native_probe(
     expected_probe_samples = item.iq.sample_rate_hz * config.probe_ms
     if expected_probe_samples % 1_000 or expected_probe_samples // 1_000 != item.iq.sample_count:
         raise ValueError("native explicit pilot window disagrees with configured duration")
-    receiver_id = item.iq.receiver_ids[0]
-    calibration = ReceiverFrequencyCalibration(
-        receiver_id=str(receiver_id),
-        center_hz=0.0,
-        calibration_sha256=canonical_digest(
-            {
-                "receiver_id": receiver_id,
-                "frequency_reference": "uncalibrated_prior",
-                "coordinate": "baseband_cfo_hz",
-            }
-        ).removeprefix("sha256:"),
-    )
     acquisition = SymbolwiseAcquisitionConfig(
         residual_cfo_min_hz=config.cfo_search_min_hz,
         residual_cfo_max_hz=config.cfo_search_max_hz,
@@ -889,7 +892,7 @@ def _detect_standard_native_probe(
         _native_window_complex_samples(item.iq),
         item.iq.sample_rate_hz,
         sample_start=item.segment_local_sample_start,
-        calibration=calibration,
+        calibration=item.frequency_reference,
         acquisition_config=acquisition,
         edge=edge,
         maximum_scored_candidates=config.maximum_scored_candidates_per_probe,
@@ -1289,6 +1292,7 @@ def _run_segment_local_science(
         feedback,
         edge=edge,
         primary_qam_detection_observer=retain_primary_qam,
+        frequency_reference=_path_frequency_reference(binding, feedback),
     )
     ordered_primary_outcomes = tuple(
         sorted(primary_outcomes, key=lambda item: item.detection.sample_start)

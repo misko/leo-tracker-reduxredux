@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
+import leo.analysis.standard.native_full_capture_glrt as native_full_capture_glrt
 from leo.analysis.standard.full_capture_glrt20ms import WindowResult
 from leo.analysis.standard.native_full_capture_glrt import (
     StandardNativeFullCaptureGlrtRunner,
@@ -264,9 +265,11 @@ def _binding(inventory: ValidityInventoryV1, *, rate: int) -> StandardPathInputB
         binding_digest=_DIGEST,
         tuned_center_frequency_hz=_Reader.center_frequency_hz,
         sample_rate_hz=rate,
+        rf_bandwidth_hz=rate,
         logical_sample_count=inventory.logical_sample_count,
         observed_sample_count=inventory.observed_sample_count,
         missing_sample_count=inventory.missing_sample_count,
+        starlink_channel=1,
         starlink_edge=StarlinkEdge.LOWER,
         timing={
             "schema_version": 1,
@@ -372,6 +375,37 @@ def test_global_20ms_geometry_is_exact_at_every_native_rate(rate: int) -> None:
     assert seen == [(0, window), (stride, window), (2 * stride, window)]
     assert result.accounting.scheduled_count == result.accounting.valid_count == 3
     assert reader.segment_passes == {0: 1}
+
+
+def test_default_kernel_uses_the_bound_pilot_center_as_its_frequency_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rate = 10_000_000
+    logical = rate * 20 // 1_000
+    inventory = _inventory(((0, logical, None),))
+    reader = _Reader(inventory, sample_rate_hz=rate)
+    reader.center_frequency_hz = 1_190_000_000
+    binding = _binding(inventory, rate=rate).model_copy(
+        update={
+            "tuned_center_frequency_hz": 1_190_000_000,
+            "starlink_channel": 1,
+            "starlink_edge": StarlinkEdge.UPPER,
+            "rf_bandwidth_hz": rate,
+        }
+    )
+    seen_centers: list[float | None] = []
+
+    def analyze(index: int, start: int, samples: np.ndarray, **kwargs: Any) -> WindowResult:
+        reference = kwargs.get("frequency_reference")
+        seen_centers.append(None if reference is None else reference.center_hz)
+        return _window_result(index, start, samples, rate=rate)
+
+    monkeypatch.setattr(native_full_capture_glrt, "_analyze_window", analyze)
+    StandardNativeFullCaptureGlrtRunner(_config(), segment_kernel=_empty_segment_fit).run(
+        reader, binding, edge=StarlinkEdge.UPPER
+    )
+
+    assert seen_centers == [312_500.0]
 
 
 @pytest.mark.parametrize(
