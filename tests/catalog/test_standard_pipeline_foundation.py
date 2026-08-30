@@ -758,7 +758,7 @@ def test_migrated_zero_digest_release_cannot_back_typed_run(
         )
 
 
-def test_initial_two_heavy_lease_capacity_is_enforced_atomically(
+def test_reviewed_three_heavy_lease_capacity_is_enforced_atomically(
     catalog_harness: CatalogHarness,
 ) -> None:
     _seed_typed_capture(catalog_harness)
@@ -813,8 +813,8 @@ def test_initial_two_heavy_lease_capacity_is_enforced_atomically(
     with ThreadPoolExecutor(max_workers=24) as executor:
         leases = tuple(executor.map(claim, range(24)))
     claimed = tuple(item for item in leases if item is not None)
-    assert len(claimed) == 2
-    assert len({item.job_id for item in claimed}) == 2
+    assert len(claimed) == 3
+    assert len({item.job_id for item in claimed}) == 3
     assert claim(24) is None
     cpu = catalog_harness.repository.claim_job(
         worker_id="cpu-control",
