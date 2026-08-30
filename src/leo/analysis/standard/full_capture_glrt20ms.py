@@ -258,11 +258,10 @@ def _analyze_window(
     acquisition_config: SymbolwiseAcquisitionConfig,
     glrt_size: int,
     margin_gate: float,
+    frequency_reference: ReceiverFrequencyCalibration | None = None,
 ) -> WindowResult:
-    calibration = ReceiverFrequencyCalibration(
-        receiver_id="baseband",
-        center_hz=0.0,
-        calibration_sha256=_ZERO_CALIBRATION_SHA256,
+    calibration = frequency_reference or ReceiverFrequencyCalibration(
+        receiver_id="baseband", center_hz=0.0, calibration_sha256=_ZERO_CALIBRATION_SHA256
     )
     acquired = acquire_symbolwise(
         samples,
@@ -643,6 +642,7 @@ def analyze_full_capture_glrt20ms(
     dealias: CfoDealiasConfigV2,
     seeded_alias_em: SeededAliasEmConfigV1,
     huber_linear: HuberLinearRefinementConfigV1,
+    frequency_reference: ReceiverFrequencyCalibration | None = None,
 ) -> FullCaptureGlrt20msResult:
     if receiver_id not in reader.receiver_ids:
         raise ValueError("full-capture receiver is absent from IQ input")
@@ -674,6 +674,7 @@ def analyze_full_capture_glrt20ms(
             acquisition_config=acquisition,
             glrt_size=feedback.glrt_size,
             margin_gate=config.margin_gate,
+            frequency_reference=frequency_reference,
         )
 
     windows = _run_parallel(

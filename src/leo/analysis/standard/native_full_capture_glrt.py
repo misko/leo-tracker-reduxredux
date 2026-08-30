@@ -27,6 +27,7 @@ from leo.analysis.standard.native_windows import (
     native_window_evidence,
 )
 from leo.analysis.standard.runner import ReceiverStandardConfig
+from leo.analysis.starlink.pilot_search_geometry import compile_pilot_search_geometry
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_native import StandardNativeSourceV1
 from leo.contracts.standard_native_glrt import (
@@ -138,9 +139,18 @@ class StandardNativeFullCaptureGlrtRunner:
         window_samples = binding.sample_rate_hz * 20 // 1_000
         stride_samples = binding.sample_rate_hz * 10 // 1_000
         acquisition = _acquisition_config(window_samples, config.feedback)
-
         effective_window_kernel = self._window_kernel
         if effective_window_kernel is None:
+            search_geometry = compile_pilot_search_geometry(
+                receiver_id=binding.receiver_id,
+                starlink_channel=binding.starlink_channel,
+                edge=edge,
+                tuned_center_frequency_hz=binding.tuned_center_frequency_hz,
+                sample_rate_hz=binding.sample_rate_hz,
+                rf_bandwidth_hz=binding.rf_bandwidth_hz,
+                residual_cfo_min_hz=config.feedback.cfo_search_min_hz,
+                residual_cfo_max_hz=config.feedback.cfo_search_max_hz,
+            )
 
             def effective_window_kernel(
                 index: int, start: int, samples: np.ndarray
@@ -154,6 +164,7 @@ class StandardNativeFullCaptureGlrtRunner:
                     acquisition_config=acquisition,
                     glrt_size=config.feedback.glrt_size,
                     margin_gate=full_capture.margin_gate,
+                    frequency_reference=search_geometry.frequency_reference,
                 )
 
         rows = _run_parallel(
