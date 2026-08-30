@@ -20,6 +20,7 @@ from leo.presentation.standard_pipeline import StandardPlotViewV2, StandardViewK
 
 _RENDER_LOCK = RLock()
 _LANE_COLORS = ("#00a6d6", "#f28e2b", "#8e5bb7", "#59a14f")
+_WATERFALL_MISSING_COLOR = "#b8b8b8"
 _GLRT_EVIDENCE_COLOR = "#f28e2b"
 _SEGMENT_COLORS = (
     "#0072b2",
@@ -547,9 +548,8 @@ def _render_full_waterfall(source: StandardPngSource) -> bytes:
     finite = np.concatenate(tuple(matrix[np.isfinite(matrix)] for matrix in matrices))
     if not finite.size:
         raise ValueError("waterfall contains no finite power values")
-    lower, upper = (float(value) for value in np.percentile(finite, (3.0, 99.7)))
-    if upper <= lower:
-        upper = lower + 1.0
+    fallback_limits = _waterfall_limits(finite)
+    waterfall_cmap = matplotlib.colormaps["magma"].with_extremes(bad=_WATERFALL_MISSING_COLOR)
 
     columns = 2 if len(source.paths) > 1 else 1
     rows = math.ceil(len(source.paths) / columns)
@@ -560,8 +560,9 @@ def _render_full_waterfall(source: StandardPngSource) -> bytes:
     )
     FigureCanvasAgg(figure)
     axes = figure.subplots(rows, columns, squeeze=False)
-    last_image = None
     for axis, path, matrix in zip(axes.flat, source.paths, matrices, strict=False):
+        path_finite = matrix[np.isfinite(matrix)]
+        lower, upper = _waterfall_limits(path_finite) if path_finite.size else fallback_limits
         frequencies_mhz = (
             path.tuned_center_frequency_hz
             + np.asarray(path.waterfall["frequency_bin_centers_hz"], dtype=np.float64)
@@ -571,9 +572,9 @@ def _render_full_waterfall(source: StandardPngSource) -> bytes:
             if len(frequencies_mhz) > 1
             else path.sample_rate_hz / 2_000_000.0
         )
-        last_image = axis.imshow(
-            matrix,
-            cmap="magma",
+        image = axis.imshow(
+            np.ma.masked_invalid(matrix),
+            cmap=waterfall_cmap,
             interpolation="nearest",
             aspect="auto",
             origin="upper",
@@ -586,31 +587,45 @@ def _render_full_waterfall(source: StandardPngSource) -> bytes:
             ),
             vmin=lower,
             vmax=upper,
-            rasterized=True,
         )
-        axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
+        coverage = path.waterfall["coverage"]
+        observed_percent = 100.0 * float(coverage["observed_fraction"])
+        gap_count = int(coverage["gap_count"])
+        axis.set_title(
+            f"{path.label}\n{observed_percent:.2f}% observed · {gap_count} gaps",
+            loc="left",
+            fontsize=10,
+            fontweight="bold",
+        )
         axis.set_xlabel("Tuned-domain frequency (MHz)")
         axis.set_ylabel("Elapsed time (s; increases downward)")
         axis.grid(False)
-    for axis in tuple(axes.flat)[len(source.paths) :]:
-        axis.set_visible(False)
-    if last_image is not None:
         figure.colorbar(
-            last_image,
-            ax=[axis for axis in axes.flat if axis.get_visible()],
-            label="Power spectral density (dBFS)",
+            image,
+            ax=axis,
+            label="Power spectral density (dBFS; panel-scaled)",
             pad=0.02,
         )
+    for axis in tuple(axes.flat)[len(source.paths) :]:
+        axis.set_visible(False)
     first = source.paths[0]
     figure.suptitle(
         f"Verified full-dwell waterfall · {source.session_id}\n"
         f"{len(first.waterfall['tiles'])} time bins × "
         f"{len(first.waterfall['frequency_bin_centers_hz'])} frequency bins · "
-        f"{first.waterfall['fft_samples']}-sample Hann FFT",
+        f"{first.waterfall['fft_samples']}-sample Hann FFT\n"
+        "independent robust color scale per panel · gray = no valid FFT support",
         fontsize=14,
         fontweight="bold",
     )
     return _save(figure, dpi=160)
+
+
+def _waterfall_limits(finite: np.ndarray) -> tuple[float, float]:
+    lower, upper = (float(value) for value in np.percentile(finite, (3.0, 99.7)))
+    if upper <= lower:
+        upper = lower + 1.0
+    return lower, upper
 
 
 def _render_full_qam(source: StandardPngSource) -> bytes:
