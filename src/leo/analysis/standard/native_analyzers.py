@@ -733,8 +733,8 @@ class PairedStandardNativeWaterfallAnalyzer:
 
     spec = StageSpec(
         key="paired-presentation-native",
-        algorithm_version="standard-native-paired-presentation-v5",
-        configuration_schema="paired-presentation-native.evidence.v4",
+        algorithm_version="standard-native-paired-presentation-v6",
+        configuration_schema="paired-presentation-native.evidence.v5",
         dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
@@ -805,6 +805,7 @@ class PairedStandardNativeWaterfallAnalyzer:
             valid_utc_intervals=tuple(
                 (item.start_utc_ns, item.stop_utc_ns) for item in paired.valid_utc_intervals
             ),
+            preserve_per_path_waterfall=True,
         )
         payloads = render_standard_native_common_pngs(source)
         published = tuple(outputs.publish_bytes(product, payload) for product, payload in payloads)
