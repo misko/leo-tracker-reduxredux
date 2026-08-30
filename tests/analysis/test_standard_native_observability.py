@@ -60,8 +60,9 @@ def _no_result_scan(
     *,
     edge,
     primary_qam_detection_observer=None,
+    frequency_reference=None,
 ):
-    del edge
+    del edge, frequency_reference
     detections = tuple(
         PilotProbeDetection(
             NumericalStatus.NO_RESULT,
@@ -289,10 +290,13 @@ def _binding(inventory: ValidityInventoryV1) -> StandardPathInputBindV4:
         manifest_digest=canonical_digest({"manifest": 1}),
         synchronization_inventory_digest=canonical_digest({"sync": 1}),
         sample_rate_hz=_RATE,
+        rf_bandwidth_hz=_RATE,
         tuned_center_frequency_hz=959_687_500,
         logical_sample_count=_RATE,
         observed_sample_count=_RATE - _GAP_COUNT,
         missing_sample_count=_GAP_COUNT,
+        starlink_channel=1,
+        starlink_edge="lower",
         timing={
             "schema_version": 1,
             "first_estimate_utc_ns": 1_000_000_000,

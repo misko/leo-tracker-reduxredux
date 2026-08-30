@@ -288,6 +288,7 @@ def scan_pilot_detections(
     *,
     edge: StarlinkEdge,
     primary_qam_detection_observer: PrimaryQamDetectionObserver | None = None,
+    frequency_reference: ReceiverFrequencyCalibration | None = None,
 ) -> tuple[PilotProbeDetection, ...]:
     """Read scheduled probes and emit deterministic bounded multi-basin certificates."""
 
@@ -295,7 +296,9 @@ def scan_pilot_detections(
     if len(iq.receiver_ids) != 1:
         raise ValueError("pilot scan requires one receiver scope")
     geometry = _geometry(iq.sample_rate_hz, config)
-    calibration = _baseband_prior(iq.receiver_ids[0])
+    calibration = frequency_reference or _baseband_prior(iq.receiver_ids[0])
+    if calibration.receiver_id != str(iq.receiver_ids[0]):
+        raise ValueError("pilot search frequency reference belongs to another receiver")
     acquisition = _independent_wide_acquisition(config, geometry.probe_samples)
     detection_batches = _bounded_parallel_batches(
         _iter_probe_batches(iq, geometry, config.maximum_outer_windows),
