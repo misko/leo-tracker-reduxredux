@@ -16,6 +16,7 @@ from leo.analysis.standard.native_windows import (
     StandardNativeWindowAdapter,
     native_window_evidence,
 )
+from leo.analysis.starlink.pilot_search_geometry import compile_pilot_search_geometry
 from leo.catalog import CaptureRecordingIdentity, RunExecutionInfo
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.recording import RecordingManifestV2, parse_recording_manifest_json
@@ -338,6 +339,19 @@ def test_real_iq_executes_production_native_probe_without_crossing_a_gap(
             ),
             validity=native_window_evidence(decision.classification),
         )
+        config = production_receiver_standard_config(
+            sample_rate_hz=settings.sample_rate_hz
+        ).feedback
+        frequency_reference = compile_pilot_search_geometry(
+            receiver_id=receiver_id,
+            starlink_channel=1,
+            edge=StarlinkEdge.LOWER,
+            tuned_center_frequency_hz=settings.center_frequency_hz,
+            sample_rate_hz=settings.sample_rate_hz,
+            rf_bandwidth_hz=settings.bandwidth_hz,
+            residual_cfo_min_hz=config.cfo_search_min_hz,
+            residual_cfo_max_hz=config.cfo_search_max_hz,
+        ).frequency_reference
         scheduled = NativeScheduledProbeInput(
             opportunity_index=0,
             opportunity=opportunity,
@@ -349,10 +363,8 @@ def test_real_iq_executes_production_native_probe_without_crossing_a_gap(
             segment_local_sample_start=(
                 window.global_device_sample_start - segment.device_sample_start
             ),
+            frequency_reference=frequency_reference,
         )
-        config = production_receiver_standard_config(
-            sample_rate_hz=settings.sample_rate_hz
-        ).feedback
         outcome = detect_standard_native_probe_outcome(
             scheduled,
             config,

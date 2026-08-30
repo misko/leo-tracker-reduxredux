@@ -264,10 +264,12 @@ def _binding(inventory: ValidityInventoryV1) -> StandardPathInputBindV4:
         manifest_digest=canonical_digest({"manifest": 1}),
         synchronization_inventory_digest=canonical_digest({"sync": 1}),
         sample_rate_hz=_RATE,
+        rf_bandwidth_hz=_RATE,
         tuned_center_frequency_hz=959_687_500,
         logical_sample_count=inventory.logical_sample_count,
         observed_sample_count=inventory.observed_sample_count,
         missing_sample_count=inventory.missing_sample_count,
+        starlink_channel=1,
         starlink_edge=StarlinkEdge.LOWER,
         timing={
             "schema_version": 1,
@@ -290,8 +292,16 @@ def test_stateful_chain_resets_at_every_segment_and_retains_global_bounds(
     reader = _Reader(inventory)
     seen: list[_SegmentReader] = []
 
-    def empty_scan(iq, config, *, edge, primary_qam_detection_observer=None):
+    def empty_scan(
+        iq,
+        config,
+        *,
+        edge,
+        primary_qam_detection_observer=None,
+        frequency_reference=None,
+    ):
         del primary_qam_detection_observer
+        assert frequency_reference is not None
         assert edge is StarlinkEdge.LOWER
         assert config.maximum_outer_windows == 1
         seen.append(iq)
@@ -336,6 +346,50 @@ def test_stateful_chain_resets_at_every_segment_and_retains_global_bounds(
         assert science.pilot_doppler_segments.status == "no_result"
 
 
+def test_segment_local_scans_use_the_bound_pilot_center_frequency_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inventory = _inventory()
+    reader = _Reader(inventory)
+    tuned_center_hz = 1_190_062_500
+    reader.center_frequency_hz = tuned_center_hz
+    monkeypatch.setattr(
+        _SegmentReader,
+        "center_frequency_hz",
+        property(lambda _self: tuned_center_hz),
+    )
+    binding = _binding(inventory).model_copy(
+        update={
+            "tuned_center_frequency_hz": tuned_center_hz,
+            "starlink_channel": 1,
+            "starlink_edge": StarlinkEdge.UPPER,
+            "rf_bandwidth_hz": _RATE,
+        }
+    )
+    seen_centers: list[float | None] = []
+
+    def empty_scan(
+        iq,
+        config,
+        *,
+        edge,
+        primary_qam_detection_observer=None,
+        frequency_reference=None,
+    ):
+        del iq, config, edge, primary_qam_detection_observer
+        seen_centers.append(None if frequency_reference is None else frequency_reference.center_hz)
+        return ()
+
+    monkeypatch.setattr(native_stateful, "scan_pilot_detections", empty_scan)
+    StandardNativeStatefulRunner(_rate_config()).run(
+        reader,
+        binding,
+        edge=StarlinkEdge.UPPER,
+    )
+
+    assert seen_centers == [250_000.0, 250_000.0]
+
+
 def test_stateful_execution_and_publication_reject_unresolved_rate_config() -> None:
     inventory = _inventory()
     binding = _binding(inventory)
@@ -362,9 +416,17 @@ def test_outer_window_budget_is_global_not_restarted_per_segment(
     reader = _Reader(inventory)
     seen: list[int] = []
 
-    def empty_scan(iq, config, *, edge, primary_qam_detection_observer=None):
+    def empty_scan(
+        iq,
+        config,
+        *,
+        edge,
+        primary_qam_detection_observer=None,
+        frequency_reference=None,
+    ):
         del primary_qam_detection_observer
         del edge
+        assert frequency_reference is not None
         seen.append(iq.continuity_segment_index)
         assert config.maximum_outer_windows == 1
         return ()
