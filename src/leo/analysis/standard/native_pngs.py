@@ -311,29 +311,32 @@ def _restrict_path_to_common_intervals(
     path: StandardPngPathSource,
     *,
     intervals: tuple[tuple[float, float], ...],
+    preserve_per_path_waterfall: bool = False,
 ) -> StandardPngPathSource:
     def point_is_valid(time_s: float) -> bool:
         global_time = path.time_offset_s + time_s
         return any(start <= global_time < stop for start, stop in intervals)
 
-    waterfall = dict(path.waterfall)
-    tiles = []
-    for item in cast(tuple[dict[str, Any], ...], tuple(waterfall["tiles"])):
-        start = path.time_offset_s + int(item["sample_start"]) / path.sample_rate_hz
-        stop = path.time_offset_s + int(item["sample_stop"]) / path.sample_rate_hz
-        fully_valid = any(left <= start and stop <= right for left, right in intervals)
-        if fully_valid:
-            tiles.append(item)
-        else:
-            matrix = cast(tuple[tuple[float | None, ...], ...], item["receiver_power_dbfs"])
-            tiles.append(
-                {
-                    **item,
-                    "transform_count": 0,
-                    "receiver_power_dbfs": tuple(tuple(None for _ in row) for row in matrix),
-                }
-            )
-    waterfall["tiles"] = tuple(tiles)
+    waterfall = path.waterfall
+    if not preserve_per_path_waterfall:
+        waterfall = dict(path.waterfall)
+        tiles = []
+        for item in cast(tuple[dict[str, Any], ...], tuple(waterfall["tiles"])):
+            start = path.time_offset_s + int(item["sample_start"]) / path.sample_rate_hz
+            stop = path.time_offset_s + int(item["sample_stop"]) / path.sample_rate_hz
+            fully_valid = any(left <= start and stop <= right for left, right in intervals)
+            if fully_valid:
+                tiles.append(item)
+            else:
+                matrix = cast(tuple[tuple[float | None, ...], ...], item["receiver_power_dbfs"])
+                tiles.append(
+                    {
+                        **item,
+                        "transform_count": 0,
+                        "receiver_power_dbfs": tuple(tuple(None for _ in row) for row in matrix),
+                    }
+                )
+        waterfall["tiles"] = tuple(tiles)
     detections = tuple(
         item
         for item in cast(tuple[dict[str, Any], ...], path.pilot_scan["detections"])
@@ -393,6 +396,7 @@ def native_standard_png_source(
     config: ReceiverStandardConfig,
     configs_by_sample_rate_hz: Mapping[int, ReceiverStandardConfig] | None = None,
     valid_utc_intervals: tuple[tuple[int, int], ...] | None = None,
+    preserve_per_path_waterfall: bool = False,
 ) -> StandardPngSource:
     """Build one legacy-compatible plot source from exact sealed native path products."""
 
@@ -479,7 +483,12 @@ def native_standard_png_source(
             for start, stop in valid_utc_intervals
         )
         paths = tuple(
-            _restrict_path_to_common_intervals(path, intervals=relative_intervals) for path in paths
+            _restrict_path_to_common_intervals(
+                path,
+                intervals=relative_intervals,
+                preserve_per_path_waterfall=preserve_per_path_waterfall,
+            )
+            for path in paths
         )
     if context.scope.kind is ScopeKind.RECEIVER_PATH:
         subject_id = f"{context.scope.stream_id}:rx{context.scope.receiver_id}"
