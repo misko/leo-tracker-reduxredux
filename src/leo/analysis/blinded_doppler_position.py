@@ -1069,7 +1069,7 @@ def _inverse_spd(
         np.linalg.cholesky(covariance)
     except np.linalg.LinAlgError as error:
         raise BlindedDopplerPositionInputError(f"{label} is not positive definite") from error
-    return np.linalg.inv(covariance)
+    return np.asarray(np.linalg.inv(covariance), dtype=np.float64)
 
 
 def _require_normal_matrix(normal: NDArray[np.float64], *, maximum_condition: float) -> None:

@@ -138,7 +138,7 @@ class PropagatedWindow:
     def usable(self) -> NDArray[np.bool_]:
         """Satellites that propagated without error at every knot."""
 
-        return np.asarray(self.error_code == 0).all(axis=1)
+        return np.asarray(np.asarray(self.error_code == 0).all(axis=1), dtype=np.bool_)
 
 
 def count_element_sets(text: str) -> int:

@@ -180,7 +180,7 @@ def eligible_at_each_sample(
     separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
     edge = pointing.half_angle_deg + _BEAM_EDGE_TOLERANCE_DEG + margin_deg
     mask = pointing.horizon_mask_deg - margin_deg
-    return (separation <= edge) & (tracks.elevation_deg > mask)
+    return np.asarray((separation <= edge) & (tracks.elevation_deg > mask), dtype=np.bool_)
 
 
 def observable_ranking_key(
@@ -279,9 +279,15 @@ def build_predictions(
     elevation_at_closest = tracks.elevation_deg[rows, closest_sample]
     # Both boundaries can be straddled: the cone edge and the horizon mask.  An
     # object within a tolerance of either was not decided by evidence.
-    near_cone = observable_separation > pointing.half_angle_deg - eligibility_margin_deg
-    near_mask = elevation_at_closest < pointing.horizon_mask_deg + eligibility_margin_deg
-    only_by_margin = relaxed.any(axis=1) & ~exact.any(axis=1)
+    near_cone = np.asarray(
+        observable_separation > pointing.half_angle_deg - eligibility_margin_deg,
+        dtype=np.bool_,
+    )
+    near_mask = np.asarray(
+        elevation_at_closest < pointing.horizon_mask_deg + eligibility_margin_deg,
+        dtype=np.bool_,
+    )
+    only_by_margin = np.asarray(relaxed.any(axis=1) & ~exact.any(axis=1), dtype=np.bool_)
     peak_elevation = tracks.elevation_deg.max(axis=1)
     anchor = tracks.anchor_index
     offsets = np.asarray(grid.offsets_s(), dtype=np.float64)
