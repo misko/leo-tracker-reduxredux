@@ -74,9 +74,9 @@ from leo.analysis.starlink.trajectories import PolynomialTrajectory, TrajectoryB
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     fit_residual_hough_pilot_trajectories,
-    infer_hough_replay_alias_indices,
     replay_pilot_trajectories_at_detection_windows_with_conditioned_scores,
     replay_pilot_trajectories_with_conditioned_scores,
+    resolve_hough_replay_alias_indices_by_native_replay,
     scan_pilot_detections,
     trajectory_observations,
     validate_trajectory_feedback_config,
@@ -1310,20 +1310,36 @@ def _run_segment_local_science(
     observations = trajectory_observations(detections)
     if representatives:
         alias_spacing_hz = config.segmentation.initial_hough.alias_spacing_hz
-        alias_indices = infer_hough_replay_alias_indices(
-            representatives,
-            observations,
-            alias_spacing_hz=alias_spacing_hz,
-        )
-        conditioned_replay = replay_pilot_trajectories_with_conditioned_scores(
+        half_usable_hz = min(binding.sample_rate_hz, binding.rf_bandwidth_hz) / 2.0
+        alias_resolution = resolve_hough_replay_alias_indices_by_native_replay(
             iq,
             detections,
             representatives,
+            observations,
             feedback,
             edge=edge,
-            alias_indices=alias_indices,
             alias_spacing_hz=alias_spacing_hz,
-            association_gate_hz=config.trajectory_accounting.association_gate_hz,
+            gate_config=config.replay_gate,
+            usable_baseband_min_hz=-half_usable_hz,
+            usable_baseband_max_hz=half_usable_hz,
+        )
+        alias_indices = alias_resolution.alias_indices
+        replay_representatives = tuple(
+            item for item in representatives if item[1].trajectory_id in alias_indices
+        )
+        conditioned_replay = (
+            replay_pilot_trajectories_with_conditioned_scores(
+                iq,
+                detections,
+                replay_representatives,
+                feedback,
+                edge=edge,
+                alias_indices=alias_indices,
+                alias_spacing_hz=alias_spacing_hz,
+                association_gate_hz=config.trajectory_accounting.association_gate_hz,
+            )
+            if replay_representatives
+            else ()
         )
     else:
         conditioned_replay = ()
@@ -1484,21 +1500,38 @@ def _run_segment_global_probe_science(
     probe_samples = binding.sample_rate_hz * feedback.probe_ms // 1_000
     if representatives:
         alias_spacing_hz = config.segmentation.initial_hough.alias_spacing_hz
-        alias_indices = infer_hough_replay_alias_indices(
-            representatives,
-            observations,
-            alias_spacing_hz=alias_spacing_hz,
-        )
-        conditioned_replay = replay_pilot_trajectories_at_detection_windows_with_conditioned_scores(
+        half_usable_hz = min(binding.sample_rate_hz, binding.rf_bandwidth_hz) / 2.0
+        alias_resolution = resolve_hough_replay_alias_indices_by_native_replay(
             iq,
             detections,
             representatives,
+            observations,
             feedback,
             edge=edge,
-            alias_indices=alias_indices,
             alias_spacing_hz=alias_spacing_hz,
-            association_gate_hz=config.trajectory_accounting.association_gate_hz,
+            gate_config=config.replay_gate,
+            usable_baseband_min_hz=-half_usable_hz,
+            usable_baseband_max_hz=half_usable_hz,
             probe_samples=probe_samples,
+        )
+        alias_indices = alias_resolution.alias_indices
+        replay_representatives = tuple(
+            item for item in representatives if item[1].trajectory_id in alias_indices
+        )
+        conditioned_replay = (
+            replay_pilot_trajectories_at_detection_windows_with_conditioned_scores(
+                iq,
+                detections,
+                replay_representatives,
+                feedback,
+                edge=edge,
+                alias_indices=alias_indices,
+                alias_spacing_hz=alias_spacing_hz,
+                association_gate_hz=config.trajectory_accounting.association_gate_hz,
+                probe_samples=probe_samples,
+            )
+            if replay_representatives
+            else ()
         )
     else:
         conditioned_replay = ()

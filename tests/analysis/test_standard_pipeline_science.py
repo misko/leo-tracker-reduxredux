@@ -393,7 +393,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
                 0.1 if method is not PilotMethod.QAM_ACCURACY else None,
                 -0.1 if negative else 0.8,
                 0.0,
-                250_000.0 - 2_000.0 * time_s + 20.0 * time_s**2,
+                sample_rate_hz * (0.25 - 0.002 * time_s + 0.00002 * time_s**2),
             )
             for method in STANDARD_PILOT_METHODS
         )

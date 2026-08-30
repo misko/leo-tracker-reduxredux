@@ -47,9 +47,9 @@ from leo.analysis.starlink.pilot_doppler_segments import (
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     fit_residual_hough_pilot_trajectories,
-    infer_hough_replay_alias_indices,
     legacy_trajectory_replay_rows,
     replay_pilot_trajectories_with_conditioned_scores,
+    resolve_hough_replay_alias_indices_by_native_replay,
     scan_pilot_detections,
     trajectory_observations,
 )
@@ -141,9 +141,7 @@ def receiver_standard_implementation_digest() -> str:
                 "glrt64-summed-autocorrelation-v2/fine-cfo-geometry-dispatch-v2"
             ),
             "trajectory_bank": "standard-trajectory-bank-v3/residual-hough",
-            "trajectory_feedback": (
-                "standard-trajectory-feedback-v3/support-resolved-alias-replay-v1"
-            ),
+            "trajectory_feedback": ("standard-trajectory-feedback-v3/native-blind-alias-replay-v1"),
             "trajectory_conditioned_accounting": ("trajectory-conditioned-replay-accounting-v2"),
             "trajectory_table": "standard-glrt64-trajectory-table-v3",
             "cfo_alias_map": "cfo-alias-map-v2",
@@ -286,20 +284,40 @@ def run_receiver_standard(
     )
     observations = trajectory_observations(detections)
     replay_alias_spacing_hz = resolved.segmentation.initial_hough.alias_spacing_hz
-    replay_alias_indices = infer_hough_replay_alias_indices(
-        representatives,
-        observations,
-        alias_spacing_hz=replay_alias_spacing_hz,
+    replay_gate = (
+        resolved.replay_gate
+        if resolved.replay_gate.sample_rate_hz == iq.sample_rate_hz
+        else resolved.replay_gate.model_copy(update={"sample_rate_hz": iq.sample_rate_hz})
     )
-    enriched_replay = replay_pilot_trajectories_with_conditioned_scores(
+    alias_resolution = resolve_hough_replay_alias_indices_by_native_replay(
         iq,
         detections,
         representatives,
+        observations,
         resolved.feedback,
         edge=inputs.input_bind.starlink_edge,
-        alias_indices=replay_alias_indices,
         alias_spacing_hz=replay_alias_spacing_hz,
-        association_gate_hz=resolved.trajectory_accounting.association_gate_hz,
+        gate_config=replay_gate,
+        usable_baseband_min_hz=-iq.sample_rate_hz / 2.0,
+        usable_baseband_max_hz=iq.sample_rate_hz / 2.0,
+    )
+    replay_alias_indices = alias_resolution.alias_indices
+    replay_representatives = tuple(
+        item for item in representatives if item[1].trajectory_id in replay_alias_indices
+    )
+    enriched_replay = (
+        replay_pilot_trajectories_with_conditioned_scores(
+            iq,
+            detections,
+            replay_representatives,
+            resolved.feedback,
+            edge=inputs.input_bind.starlink_edge,
+            alias_indices=replay_alias_indices,
+            alias_spacing_hz=replay_alias_spacing_hz,
+            association_gate_hz=resolved.trajectory_accounting.association_gate_hz,
+        )
+        if replay_representatives
+        else ()
     )
     replay = legacy_trajectory_replay_rows(enriched_replay)
     stable_feedback = standard_v3_trajectory_documents(
@@ -318,7 +336,7 @@ def run_receiver_standard(
     raw_feedback_digest = canonical_digest(stable_feedback["standard.trajectory-feedback"])
     trajectory_accounting = build_trajectory_conditioned_accounting_v2(
         detections,
-        representatives,
+        replay_representatives,
         enriched_replay,
         frequency_offsets_hz={
             trajectory_id: alias_index * replay_alias_spacing_hz
@@ -344,11 +362,6 @@ def run_receiver_standard(
         config=resolved.dealias,
         seeded_em_config=resolved.seeded_alias_em,
         huber_config=resolved.huber_linear,
-    )
-    replay_gate = (
-        resolved.replay_gate
-        if resolved.replay_gate.sample_rate_hz == iq.sample_rate_hz
-        else resolved.replay_gate.model_copy(update={"sample_rate_hz": iq.sample_rate_hz})
     )
     lift_replay = replay_observed_cfo_lifts_v4(
         iq,

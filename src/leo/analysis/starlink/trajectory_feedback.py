@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
@@ -41,6 +41,7 @@ from leo.analysis.starlink.trajectories import (
 )
 from leo.analysis.starlink.trajectory_accounting import associate_trajectory_baseline
 from leo.contracts.alternate_cfo_tracks import ResidualHoughSegmentationConfigV2
+from leo.contracts.cfo_dealias import ReplayGateConfigV4
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline import (
@@ -89,6 +90,56 @@ class TrajectoryFeedbackConfig:
     candidate_epoch_separation_samples: int = 20
     candidate_cfo_separation_hz: float = 80_000.0
     glrt_size: int = 512
+
+
+@dataclass(frozen=True, slots=True)
+class HoughReplayAliasCandidate:
+    """One bounded absolute lift proposed by modulo-Hough support."""
+
+    trajectory_id: str
+    alias_index: int
+    support_weight: float
+    support_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class HoughReplayAliasEvidence:
+    """Native-IQ blind-redetection evidence for one absolute lift."""
+
+    trajectory_id: str
+    alias_index: int
+    support_weight: float
+    support_count: int
+    evaluated_probe_count: int
+    evaluated_block_count: int
+    eligible_block_count: int
+    block_coverage_ratio: float
+    positive_block_count: int
+    median_block_corrected_margin: float | None
+    q10_block_corrected_margin: float | None
+    selected: bool
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class HoughReplayAliasResolution:
+    """Fail-closed absolute lifts and their complete screening evidence."""
+
+    selected_alias_indices: tuple[tuple[str, int], ...]
+    unresolved_trajectory_ids: tuple[str, ...]
+    evidence: tuple[HoughReplayAliasEvidence, ...]
+
+    @property
+    def alias_indices(self) -> dict[str, int]:
+        return dict(self.selected_alias_indices)
+
+
+@dataclass(frozen=True, slots=True)
+class _HoughReplayAliasProbe:
+    trajectory_id: str
+    alias_index: int
+    sample_start: int
+    corrected_margin: float
 
 
 def validate_maximum_replayed_families(maximum: int) -> int:
@@ -747,17 +798,11 @@ def infer_hough_replay_alias_indices(
     for _, trajectory in representatives:
         if trajectory.trajectory_id in result:
             raise ValueError("Hough replay representatives must be unique")
-        scores: dict[int, tuple[float, int]] = {}
-        for observation_id in trajectory.observation_ids:
-            observation = by_id.get(observation_id)
-            if observation is None:
-                raise ValueError("Hough replay representative has missing support")
-            delta_hz = observation.tracking_cfo_hz - float(
-                trajectory.frequency_hz(observation.time_s)
-            )
-            alias_index = round(delta_hz / alias_spacing_hz)
-            weight, count = scores.get(alias_index, (0.0, 0))
-            scores[alias_index] = (weight + _observation_weight(observation), count + 1)
+        scores = _hough_alias_support_scores(
+            trajectory,
+            by_id,
+            alias_spacing_hz=alias_spacing_hz,
+        )
         if not scores:
             raise ValueError("Hough replay representative has no support")
         result[trajectory.trajectory_id] = max(
@@ -770,6 +815,124 @@ def infer_hough_replay_alias_indices(
             ),
         )
     return result
+
+
+def rank_hough_replay_alias_candidates(
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    observations: tuple[TrajectoryObservation, ...],
+    *,
+    alias_spacing_hz: float,
+    usable_baseband_min_hz: float,
+    usable_baseband_max_hz: float,
+    maximum_candidates_per_trajectory: int = 5,
+) -> tuple[HoughReplayAliasCandidate, ...]:
+    """Propose supported and adjacent in-band lifts without claiming one is physical."""
+
+    finite = (alias_spacing_hz, usable_baseband_min_hz, usable_baseband_max_hz)
+    if any(not math.isfinite(value) for value in finite) or alias_spacing_hz <= 0:
+        raise ValueError("Hough replay candidate frequency bounds must be finite")
+    if usable_baseband_min_hz >= usable_baseband_max_hz:
+        raise ValueError("Hough replay usable baseband must be increasing")
+    if (
+        isinstance(maximum_candidates_per_trajectory, bool)
+        or not isinstance(maximum_candidates_per_trajectory, int)
+        or maximum_candidates_per_trajectory < 1
+    ):
+        raise ValueError("Hough replay candidate bound must be a positive integer")
+    by_id = {item.observation_id: item for item in observations}
+    if len(by_id) != len(observations):
+        raise ValueError("Hough replay observations must have unique identities")
+    result: list[HoughReplayAliasCandidate] = []
+    seen_trajectories: set[str] = set()
+    for _, trajectory in representatives:
+        if trajectory.trajectory_id in seen_trajectories:
+            raise ValueError("Hough replay representatives must be unique")
+        seen_trajectories.add(trajectory.trajectory_id)
+        scores = _hough_alias_support_scores(
+            trajectory,
+            by_id,
+            alias_spacing_hz=alias_spacing_hz,
+        )
+        if not scores:
+            raise ValueError("Hough replay representative has no support")
+        support_mode = max(
+            sorted(scores),
+            key=lambda index: (
+                scores[index][0],
+                scores[index][1],
+                -abs(index),
+                -index,
+            ),
+        )
+        proposed = set(scores)
+        proposed.update((support_mode - 1, support_mode + 1))
+        ranked = sorted(
+            proposed,
+            key=lambda index: (
+                0 if abs(index - support_mode) <= 1 else 1,
+                -scores.get(index, (0.0, 0))[0],
+                -scores.get(index, (0.0, 0))[1],
+                abs(index - support_mode),
+                abs(index),
+                index,
+            ),
+        )
+        retained = 0
+        for alias_index in ranked:
+            if not _trajectory_lift_is_in_band(
+                trajectory,
+                alias_index=alias_index,
+                alias_spacing_hz=alias_spacing_hz,
+                usable_baseband_min_hz=usable_baseband_min_hz,
+                usable_baseband_max_hz=usable_baseband_max_hz,
+            ):
+                continue
+            weight, count = scores.get(alias_index, (0.0, 0))
+            result.append(
+                HoughReplayAliasCandidate(
+                    trajectory.trajectory_id,
+                    alias_index,
+                    weight,
+                    count,
+                )
+            )
+            retained += 1
+            if retained >= maximum_candidates_per_trajectory:
+                break
+    return tuple(sorted(result, key=lambda item: (item.trajectory_id, item.alias_index)))
+
+
+def _hough_alias_support_scores(
+    trajectory: PolynomialTrajectory,
+    by_id: Mapping[str, TrajectoryObservation],
+    *,
+    alias_spacing_hz: float,
+) -> dict[int, tuple[float, int]]:
+    scores: dict[int, tuple[float, int]] = {}
+    for observation_id in trajectory.observation_ids:
+        observation = by_id.get(observation_id)
+        if observation is None:
+            raise ValueError("Hough replay representative has missing support")
+        delta_hz = observation.tracking_cfo_hz - float(trajectory.frequency_hz(observation.time_s))
+        alias_index = round(delta_hz / alias_spacing_hz)
+        weight, count = scores.get(alias_index, (0.0, 0))
+        scores[alias_index] = (weight + _observation_weight(observation), count + 1)
+    return scores
+
+
+def _trajectory_lift_is_in_band(
+    trajectory: PolynomialTrajectory,
+    *,
+    alias_index: int,
+    alias_spacing_hz: float,
+    usable_baseband_min_hz: float,
+    usable_baseband_max_hz: float,
+) -> bool:
+    times = np.linspace(trajectory.start_s, trajectory.end_s, 65)
+    lifted = trajectory.frequency_hz(times) + alias_index * alias_spacing_hz
+    return bool(
+        np.all(lifted >= usable_baseband_min_hz) and np.all(lifted <= usable_baseband_max_hz)
+    )
 
 
 def _geometry(sample_rate_hz: int, config: TrajectoryFeedbackConfig) -> _Geometry:
@@ -807,6 +970,334 @@ def _independent_wide_acquisition(
         candidate_epoch_separation_samples=config.candidate_epoch_separation_samples,
         candidate_cfo_separation_hz=config.candidate_cfo_separation_hz,
         maximum_probe_samples=probe_samples,
+    )
+
+
+def resolve_hough_replay_alias_indices_by_native_replay(
+    iq: IqReader,
+    detections: tuple[PilotProbeDetection, ...],
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    observations: tuple[TrajectoryObservation, ...],
+    config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge | str,
+    alias_spacing_hz: float,
+    gate_config: ReplayGateConfigV4,
+    usable_baseband_min_hz: float,
+    usable_baseband_max_hz: float,
+    probe_samples: int | None = None,
+) -> HoughReplayAliasResolution:
+    """Resolve absolute Hough lifts with bounded blind replay of native IQ.
+
+    GLRT support is periodic at the pilot symbol rate and therefore supplies
+    candidate ordering only.  A lift becomes correction-eligible only when
+    independent post-correction acquisition passes the absolute replay gate.
+    """
+
+    validate_trajectory_feedback_config(config)
+    if gate_config.sample_rate_hz != iq.sample_rate_hz:
+        raise ValueError("Hough alias replay gate sample rate disagrees with IQ")
+    geometry = _geometry(iq.sample_rate_hz, config)
+    selected_probe_samples = geometry.probe_samples if probe_samples is None else probe_samples
+    if (
+        isinstance(selected_probe_samples, bool)
+        or not isinstance(selected_probe_samples, int)
+        or selected_probe_samples != geometry.probe_samples
+    ):
+        raise ValueError("Hough alias replay probe size must match configured native duration")
+    candidates = rank_hough_replay_alias_candidates(
+        representatives,
+        observations,
+        alias_spacing_hz=alias_spacing_hz,
+        usable_baseband_min_hz=usable_baseband_min_hz,
+        usable_baseband_max_hz=usable_baseband_max_hz,
+    )
+    trajectories = {trajectory.trajectory_id: trajectory for _, trajectory in representatives}
+    if len(trajectories) != len(representatives):
+        raise ValueError("Hough replay representatives must be unique")
+    if len({item.sample_start for item in detections}) != len(detections):
+        raise ValueError("Hough replay detections must have unique probe starts")
+    starts_by_trajectory = {
+        trajectory_id: _alias_screen_probe_starts(
+            detections,
+            trajectory,
+            gate_config=gate_config,
+        )
+        for trajectory_id, trajectory in trajectories.items()
+    }
+    eligible_blocks_by_trajectory = {
+        trajectory_id: len(
+            {
+                item.sample_start // gate_config.samples_per_block
+                for item in detections
+                if trajectory.start_s <= item.time_s <= trajectory.end_s
+            }
+        )
+        for trajectory_id, trajectory in trajectories.items()
+    }
+    candidates_by_trajectory: dict[str, list[HoughReplayAliasCandidate]] = {}
+    for candidate in candidates:
+        candidates_by_trajectory.setdefault(candidate.trajectory_id, []).append(candidate)
+    jobs_by_start: dict[
+        int,
+        list[tuple[PolynomialTrajectory, HoughReplayAliasCandidate]],
+    ] = {}
+    for trajectory_id, starts in starts_by_trajectory.items():
+        trajectory = trajectories[trajectory_id]
+        for start in starts:
+            jobs_by_start.setdefault(start, []).extend(
+                (trajectory, candidate)
+                for candidate in candidates_by_trajectory.get(trajectory_id, ())
+            )
+    replay_config = SymbolwiseAcquisitionConfig(
+        residual_cfo_min_hz=-20_000.0,
+        residual_cfo_max_hz=20_000.0,
+        coarse_cfo_step_hz=10_000.0,
+        fine_cfo_radius_hz=20_000.0,
+        retained_candidate_count=2,
+        maximum_probe_samples=selected_probe_samples,
+    )
+    calibrations = {
+        (candidate.trajectory_id, candidate.alias_index): ReceiverFrequencyCalibration(
+            "trajectory-corrected",
+            0.0,
+            canonical_digest(
+                {
+                    "trajectory_id": candidate.trajectory_id,
+                    "alias_index": candidate.alias_index,
+                    "purpose": "native-replay-alias-screen-v1",
+                }
+            ).removeprefix("sha256:"),
+        )
+        for candidate in candidates
+    }
+    starts = tuple(sorted(jobs_by_start))
+    probes: tuple[_HoughReplayAliasProbe, ...]
+    if starts:
+        maximum_batch_probes = max(1, math.ceil(len(starts) / config.maximum_workers))
+        screened = _bounded_parallel_batches(
+            _iter_explicit_probe_batches(
+                iq,
+                starts,
+                selected_probe_samples,
+                maximum_batch_probes=maximum_batch_probes,
+            ),
+            lambda batch: _screen_hough_alias_batch(
+                batch,
+                iq.sample_rate_hz,
+                jobs_by_start,
+                calibrations,
+                replay_config,
+                StarlinkEdge(edge),
+                alias_spacing_hz,
+            ),
+            config.maximum_workers,
+        )
+        probes = tuple(item for batch in screened for item in batch)
+    else:
+        probes = ()
+    return _select_hough_replay_alias_evidence(
+        representatives,
+        candidates,
+        probes,
+        eligible_blocks_by_trajectory=eligible_blocks_by_trajectory,
+        gate_config=gate_config,
+    )
+
+
+def _alias_screen_probe_starts(
+    detections: tuple[PilotProbeDetection, ...],
+    trajectory: PolynomialTrajectory,
+    *,
+    gate_config: ReplayGateConfigV4,
+) -> tuple[int, ...]:
+    available = tuple(
+        item.sample_start
+        for item in detections
+        if trajectory.start_s <= item.time_s <= trajectory.end_s
+    )
+    if not available:
+        return ()
+    by_block: dict[int, list[int]] = {}
+    for start in available:
+        by_block.setdefault(start // gate_config.samples_per_block, []).append(start)
+    block_indexes = tuple(sorted(by_block))
+    required_blocks = max(
+        1,
+        math.ceil(len(block_indexes) * gate_config.minimum_block_coverage_ratio),
+    )
+    selected_blocks = _evenly_spaced_values(block_indexes, required_blocks)
+    selected = {by_block[index][len(by_block[index]) // 2] for index in selected_blocks}
+    target_count = min(
+        len(available),
+        max(gate_config.minimum_probe_count, required_blocks),
+    )
+    if len(selected) < target_count:
+        selected.update(_evenly_spaced_values(available, target_count))
+    if len(selected) > target_count:
+        selected = set(_evenly_spaced_values(tuple(sorted(selected)), target_count))
+    return tuple(sorted(selected))
+
+
+def _evenly_spaced_values(values: tuple[int, ...], count: int) -> tuple[int, ...]:
+    if count >= len(values):
+        return values
+    indexes = np.rint(np.linspace(0, len(values) - 1, count)).astype(int)
+    return tuple(values[int(index)] for index in np.unique(indexes))
+
+
+def _screen_hough_alias_batch(
+    batch: tuple[tuple[int, np.ndarray], ...],
+    sample_rate_hz: int,
+    jobs_by_start: Mapping[
+        int,
+        list[tuple[PolynomialTrajectory, HoughReplayAliasCandidate]],
+    ],
+    calibrations: Mapping[tuple[str, int], ReceiverFrequencyCalibration],
+    replay_config: SymbolwiseAcquisitionConfig,
+    edge: StarlinkEdge,
+    alias_spacing_hz: float,
+) -> tuple[_HoughReplayAliasProbe, ...]:
+    result: list[_HoughReplayAliasProbe] = []
+    for sample_start, samples in batch:
+        for trajectory, candidate in jobs_by_start.get(sample_start, ()):
+            corrected = correct_polynomial_cfo(
+                samples,
+                sample_rate_hz,
+                sample_start,
+                trajectory,
+                frequency_offset_hz=candidate.alias_index * alias_spacing_hz,
+            )
+            detected = detect_pilot_methods(
+                corrected,
+                sample_rate_hz,
+                sample_start=sample_start,
+                calibration=calibrations[(trajectory.trajectory_id, candidate.alias_index)],
+                acquisition_config=replay_config,
+                edge=edge,
+            )
+            score = next(
+                (item for item in detected.scores if item.method is PilotMethod.GLRT64),
+                None,
+            )
+            if score is None:
+                continue
+            result.append(
+                _HoughReplayAliasProbe(
+                    trajectory.trajectory_id,
+                    candidate.alias_index,
+                    sample_start,
+                    score.margin,
+                )
+            )
+    return tuple(result)
+
+
+def _select_hough_replay_alias_evidence(
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    candidates: tuple[HoughReplayAliasCandidate, ...],
+    probes: tuple[_HoughReplayAliasProbe, ...],
+    *,
+    eligible_blocks_by_trajectory: Mapping[str, int],
+    gate_config: ReplayGateConfigV4,
+) -> HoughReplayAliasResolution:
+    probes_by_candidate: dict[tuple[str, int], list[_HoughReplayAliasProbe]] = {}
+    for probe in probes:
+        probes_by_candidate.setdefault((probe.trajectory_id, probe.alias_index), []).append(probe)
+    evidence: list[HoughReplayAliasEvidence] = []
+    qualifying: dict[str, list[HoughReplayAliasEvidence]] = {}
+    for candidate in candidates:
+        rows = probes_by_candidate.get((candidate.trajectory_id, candidate.alias_index), [])
+        grouped: dict[int, list[_HoughReplayAliasProbe]] = {}
+        for row in rows:
+            grouped.setdefault(row.sample_start // gate_config.samples_per_block, []).append(row)
+        block_margins = tuple(
+            float(np.median([item.corrected_margin for item in grouped[index]]))
+            for index in sorted(grouped)
+        )
+        eligible_blocks = eligible_blocks_by_trajectory.get(candidate.trajectory_id, 0)
+        coverage = len(grouped) / eligible_blocks if eligible_blocks else 0.0
+        median = float(np.median(block_margins)) if block_margins else None
+        q10 = float(np.quantile(block_margins, 0.10, method="lower")) if block_margins else None
+        positive_blocks = sum(
+            value >= gate_config.minimum_median_corrected_margin for value in block_margins
+        )
+        enough = (
+            len(rows) >= gate_config.minimum_probe_count
+            and coverage >= gate_config.minimum_block_coverage_ratio
+        )
+        strong = (
+            median is not None
+            and median >= gate_config.minimum_median_corrected_margin
+            and positive_blocks * 2 >= len(block_margins)
+        )
+        reason = (
+            "native blind replay passed absolute margin and coverage gates"
+            if enough and strong
+            else "native blind replay did not pass absolute margin and coverage gates"
+        )
+        item = HoughReplayAliasEvidence(
+            candidate.trajectory_id,
+            candidate.alias_index,
+            candidate.support_weight,
+            candidate.support_count,
+            len(rows),
+            len(grouped),
+            eligible_blocks,
+            coverage,
+            positive_blocks,
+            median,
+            q10,
+            False,
+            reason,
+        )
+        evidence.append(item)
+        if enough and strong:
+            qualifying.setdefault(candidate.trajectory_id, []).append(item)
+
+    selected: dict[str, int] = {}
+    unresolved: list[str] = []
+    evidence_by_key = {(item.trajectory_id, item.alias_index): item for item in evidence}
+    for _, trajectory in representatives:
+        choices = sorted(
+            qualifying.get(trajectory.trajectory_id, ()),
+            key=lambda item: (
+                -(item.median_block_corrected_margin or 0.0),
+                -(item.q10_block_corrected_margin or 0.0),
+                -item.positive_block_count,
+                -item.support_weight,
+                -item.support_count,
+                abs(item.alias_index),
+                item.alias_index,
+            ),
+        )
+        if not choices:
+            unresolved.append(trajectory.trajectory_id)
+            continue
+        winner = choices[0]
+        if len(choices) > 1:
+            runner_up = choices[1]
+            advantage = (winner.median_block_corrected_margin or 0.0) - (
+                runner_up.median_block_corrected_margin or 0.0
+            )
+            if advantage < gate_config.minimum_median_corrected_margin:
+                unresolved.append(trajectory.trajectory_id)
+                for choice in choices:
+                    evidence_by_key[(choice.trajectory_id, choice.alias_index)] = replace(
+                        choice,
+                        reason="multiple absolute lifts passed without decisive replay separation",
+                    )
+                continue
+        selected[trajectory.trajectory_id] = winner.alias_index
+        evidence_by_key[(winner.trajectory_id, winner.alias_index)] = replace(
+            winner,
+            selected=True,
+            reason="selected by decisive native blind replay evidence",
+        )
+    return HoughReplayAliasResolution(
+        tuple(sorted(selected.items())),
+        tuple(sorted(unresolved)),
+        tuple(evidence_by_key[key] for key in sorted(evidence_by_key)),
     )
 
 
