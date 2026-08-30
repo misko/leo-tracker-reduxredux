@@ -81,51 +81,97 @@ STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES = {
         2_500_000,
         (0, 1),
         "sha256:140d4f834fd27b94754ea9017f2be45da21af2662dfef8ec97c4487fbf15bc89",
+        1_048_576,
     ),
     "starlink-ch4-lower-5m-60s-native-bandwidth-v4": (
         5_000_000,
         (0, 1),
         "sha256:6f8ec4a5dec0f6b18d09c0f464c22c143ac363f2088242db830b0757a6316294",
+        1_048_576,
     ),
     "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4": (
         2_500_000,
         (0, 1),
         "sha256:e5f088ba153a893eb5f5324c6c411ebe189acc9de5bfa68211a841edc9bbdb44",
+        1_048_576,
     ),
     "starlink-ch4-lower-5m-60s-mixed-device-axis-v4": (
         5_000_000,
         (0, 1),
         "sha256:e5d593c1711ddb65be6adeb2f3fe620afe99948aed2881dabc142b5737e81afc",
+        1_048_576,
     ),
     "starlink-ch4-lower-10m-60s-rx0-production-v5": (
         10_000_000,
         (0,),
         "sha256:5f58b6a4afaf77649f389eaf2e167af53d61e851ca294c5d7622b495fa24bf0e",
+        1_048_576,
     ),
     "starlink-ch4-lower-10m-60s-rx1-production-v5": (
         10_000_000,
         (1,),
         "sha256:446a7d5637f3e1bc8a8fe62ecb8f7b4ad6eeac2ece367d9e022ae0b4cc12ba1f",
+        1_048_576,
     ),
     "starlink-ch4-lower-15m-60s-rx0-production-v5": (
         15_000_000,
         (0,),
         "sha256:9336da0d5cc00d006a80e35180812d7ad8cf09ca7f590f0b03b7786b259583ba",
+        1_048_576,
     ),
     "starlink-ch4-lower-15m-60s-rx1-production-v5": (
         15_000_000,
         (1,),
         "sha256:b69997f7ad37b484d22dd21dab95c31ea74af67e7909142a21c94cbf1df174e8",
+        1_048_576,
     ),
     "starlink-ch4-lower-20m-60s-rx0-production-v5": (
         20_000_000,
         (0,),
         "sha256:9c9b4e34515f536bcb01751650a7e8c396d2f03f4ae979f6451f6b9d9fe1f0a1",
+        1_048_576,
     ),
     "starlink-ch4-lower-20m-60s-rx1-production-v5": (
         20_000_000,
         (1,),
         "sha256:5fad84a88fe487a812598fd3de2697aef443ee14b8b64eefc253256dd9006410",
+        1_048_576,
+    ),
+    "starlink-ch4-lower-10m-60s-rx0-ddr-ring-v6": (
+        10_000_000,
+        (0,),
+        "sha256:4c9fcc3fe27af3a6f9341c0ac42beb9f6e135731541114f9a7cb15b95d9e71f4",
+        1_000_000,
+    ),
+    "starlink-ch4-lower-10m-60s-rx1-ddr-ring-v6": (
+        10_000_000,
+        (1,),
+        "sha256:9fce2e136b1f1e002282520d7ce4f2df60afd9e2dcff8db0586a388b976f0b43",
+        1_000_000,
+    ),
+    "starlink-ch4-lower-15m-60s-rx0-ddr-ring-v6": (
+        15_000_000,
+        (0,),
+        "sha256:2dab9044d0b11f4f3af57882e90d248bbafcda684a68182f00fef686aa58cb63",
+        1_000_000,
+    ),
+    "starlink-ch4-lower-15m-60s-rx1-ddr-ring-v6": (
+        15_000_000,
+        (1,),
+        "sha256:17335b014966a45505d46e94bb754ce13f11f52498fa0a2ddfabed07f41ec320",
+        1_000_000,
+    ),
+    "starlink-ch4-lower-20m-60s-rx0-ddr-ring-v6": (
+        20_000_000,
+        (0,),
+        "sha256:3131e4776d9dd6bc9a986adbdce35d6cb431dcfb31178fff1ef9aa285c11cc5a",
+        1_000_000,
+    ),
+    "starlink-ch4-lower-20m-60s-rx1-ddr-ring-v6": (
+        20_000_000,
+        (1,),
+        "sha256:baf767d6a04a183283b606874042138969939d3064e7840b773b1394be7df88a",
+        1_000_000,
     ),
 }
 
@@ -589,7 +635,7 @@ def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> N
         identity = STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES.get(profile.name)
         if identity is None:
             raise ValueError("Standard-native production profile identity is not reviewed")
-        expected_rate, expected_receivers, expected_digest = identity
+        expected_rate, expected_receivers, expected_digest, expected_refill_samples = identity
         rate = leg.requested_settings.sample_rate_hz
         required_receiver_count = 1 if is_mixed and rate > 5_000_000 else 2
         settings = stream.applied_settings
@@ -600,7 +646,7 @@ def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> N
             or profile.receivers != expected_receivers
             or len(profile.receivers) != required_receiver_count
             or profile.duration_seconds != plan.duration_seconds
-            or profile.refill_samples != STANDARD_NATIVE_MIXED_REFILL_SAMPLES
+            or profile.refill_samples != expected_refill_samples
             or profile.kernel_buffers != STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
             or profile.refill_queue_capacity != STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
             or profile.storage_policy != "zstd-128m-device-axis-zero-v1"

@@ -230,7 +230,12 @@ def _register_bundle(
     assert capture_authority.promotion_permitted is True
 
 
-def _bounded_production_plan(monkeypatch: pytest.MonkeyPatch):
+def _bounded_production_plan(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    high_rate_profile_suffix: str,
+):
+    duration = Decimal("0.1") if high_rate_profile_suffix == "ddr-ring-v6" else _DURATION
     specifications = (
         ((2_500_000, (0, 1), False), "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4"),
         ((5_000_000, (0, 1), False), "starlink-ch4-lower-5m-60s-native-bandwidth-v4"),
@@ -239,7 +244,8 @@ def _bounded_production_plan(monkeypatch: pytest.MonkeyPatch):
         *(
             (
                 (rate, (receiver,), True),
-                f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-production-v5",
+                f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-"
+                f"{high_rate_profile_suffix}",
             )
             for rate in (10_000_000, 15_000_000, 20_000_000)
             for receiver in (0, 1)
@@ -253,7 +259,7 @@ def _bounded_production_plan(monkeypatch: pytest.MonkeyPatch):
         profile_values.update(
             {
                 "name": f"test-{profile_name}",
-                "duration_seconds": _DURATION,
+                "duration_seconds": duration,
                 "sample_count": None,
                 "settle_seconds": Decimal(0),
                 "prime_refills": 0,
@@ -267,7 +273,12 @@ def _bounded_production_plan(monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setitem(
             standard_native_pipeline.STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES,
             revision.profile.name,
-            (revision.profile.sample_rate_hz, revision.profile.receivers, revision.revision_digest),
+            (
+                revision.profile.sample_rate_hz,
+                revision.profile.receivers,
+                revision.revision_digest,
+                revision.profile.refill_samples,
+            ),
         )
     authority = {
         key: (revision.profile.name, revision.revision_digest, revision.profile.refill_samples)
@@ -569,12 +580,17 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
         pinned.close()
 
 
+@pytest.mark.parametrize("high_rate_profile_suffix", ("production-v5", "ddr-ring-v6"))
 def test_real_postgres_production_ten_msps_single_rx_vertical(
     processing_database: ProcessingDatabase,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    high_rate_profile_suffix: str,
 ) -> None:
-    plan = _bounded_production_plan(monkeypatch)
+    plan = _bounded_production_plan(
+        monkeypatch,
+        high_rate_profile_suffix=high_rate_profile_suffix,
+    )
     assert plan.dwell_class is ProductionDwellClassV2.MIXED_2P5_10
     bulk_root = tmp_path / "bulk-production"
     coordinator = AcquisitionCoordinator(

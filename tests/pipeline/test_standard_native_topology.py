@@ -19,6 +19,7 @@ from leo.contracts.states import CaptureState, SourceType, StarlinkEdge
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.pipeline.standard_native import (
     STANDARD_NATIVE_MIXED_PROFILE_NAMES,
+    STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES,
     STANDARD_NATIVE_PROFILE_REVISION_DIGESTS,
     STANDARD_NATIVE_STAGE_KEYS,
     STANDARD_NATIVE_V2_PROFILE_ADMISSIONS,
@@ -392,6 +393,30 @@ def test_native_topology_admits_exact_maximum_bandwidth_profiles(
     assert profile.refill_samples == 1_048_576
     assert profile.kernel_buffers == 4
     assert len(plan.jobs) == 12
+
+
+@pytest.mark.parametrize(
+    ("rate_hz", "receiver_id"),
+    tuple(
+        (rate_hz, receiver_id)
+        for rate_hz in (10_000_000, 15_000_000, 20_000_000)
+        for receiver_id in (0, 1)
+    ),
+)
+def test_production_ddr_ring_profiles_have_exact_reviewed_identity(
+    rate_hz: int,
+    receiver_id: int,
+) -> None:
+    profile_name = f"starlink-ch4-lower-{rate_hz // 1_000_000}m-60s-rx{receiver_id}-ddr-ring-v6"
+    revision = load_profile_revision(_ROOT / "profiles" / f"{profile_name}.yaml")
+
+    assert STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES[profile_name] == (
+        rate_hz,
+        (receiver_id,),
+        revision.revision_digest,
+        revision.profile.refill_samples,
+    )
+    assert revision.profile.refill_samples == 1_000_000
 
 
 def test_native_topology_rejects_nonoptimal_wideband_center_even_with_matching_readback() -> None:
