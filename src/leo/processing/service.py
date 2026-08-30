@@ -125,6 +125,7 @@ _DEFAULT_OUTPUT_LIMITS = {
     "heavy": 4 * 1024 * 1024 * 1024,
 }
 _DEFAULT_WALL_LIMITS = {"streaming": 600.0, "cpu": 600.0, "memory": 1200.0, "heavy": 1800.0}
+_STANDARD_NATIVE_REFERENCE_SAMPLE_RATE_HZ = 2_500_000
 # Dense Research acquisition is measured at about 7.1x the former Standard
 # per-probe cost and schedules 1.5x as many probes. Keep the larger boundary
 # narrowly attached to the IQ-heavy path stage; reducers and every Standard
@@ -661,8 +662,23 @@ class ProcessingService:
         lane: PipelineLane,
         stage_key: str,
         resource_class: str,
+        sample_rate_hz: int | None = None,
     ) -> float | None:
         ordinary_limit = self._wall_time_limits_seconds.get(resource_class)
+        if lane is PipelineLane.STANDARD and stage_key == "path-standard-native":
+            if sample_rate_hz is None or sample_rate_hz <= 0:
+                raise RunRejectedError(
+                    "Standard-native path wall-time scaling requires a positive sample rate"
+                )
+            if ordinary_limit is None:
+                return None
+            # Native analysis deliberately preserves source-rate IQ. Its dense
+            # probe and full-capture work therefore scales with samples/second,
+            # not merely with the fixed capture duration.
+            return ordinary_limit * max(
+                1.0,
+                sample_rate_hz / _STANDARD_NATIVE_REFERENCE_SAMPLE_RATE_HZ,
+            )
         if lane is PipelineLane.RESEARCH and stage_key == "path-standard":
             return max(
                 0.0 if ordinary_limit is None else ordinary_limit,
@@ -821,6 +837,11 @@ class ProcessingService:
                 lane=lane,
                 stage_key=lease.stage_key,
                 resource_class=lease.resource_class,
+                sample_rate_hz=(
+                    reader.sample_rate_hz
+                    if lane is PipelineLane.STANDARD and lease.stage_key == "path-standard-native"
+                    else None
+                ),
             )
             if wall_limit is None or wall_limit <= 0:
                 raise RunRejectedError(f"unknown resource class: {lease.resource_class}")
