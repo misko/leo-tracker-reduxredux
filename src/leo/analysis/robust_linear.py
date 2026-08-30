@@ -86,11 +86,14 @@ def fit_huber_linear_irls(
         tail = standardized > tuning_constant
         weights[tail] = tuning_constant / standardized[tail]
         root_weights = np.sqrt(weights)
-        updated = np.linalg.lstsq(
-            design * root_weights[:, None],
-            values * root_weights,
-            rcond=None,
-        )[0]
+        updated = np.asarray(
+            np.linalg.lstsq(
+                design * root_weights[:, None],
+                values * root_weights,
+                rcond=None,
+            )[0],
+            dtype=np.float64,
+        )
         maximum_prediction_change = float(np.max(np.abs(design @ (updated - coefficients))))
         coefficients = updated
         if maximum_prediction_change <= prediction_tolerance_hz:
