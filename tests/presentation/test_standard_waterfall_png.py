@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 import numpy as np
@@ -11,6 +12,7 @@ from leo.presentation.standard_png import (
     _WATERFALL_MISSING_COLOR,
     StandardPngPathSource,
     StandardPngSource,
+    render_full_doppler_waterfall_png,
     render_full_standard_plot_png,
 )
 
@@ -21,10 +23,16 @@ def _path(
     receiver_id: int,
     base_power_dbfs: float,
     missing_time_bin: int | None,
+    sample_rate_hz: int = 2_500_000,
+    frequency_bin_count: int = 4,
 ) -> StandardPngPathSource:
     tiles: list[dict[str, Any]] = []
     time_bin_count = 8
-    frequency_bin_count = 4
+    frequency_step_hz = sample_rate_hz / frequency_bin_count
+    frequency_centers_hz = [
+        -sample_rate_hz / 2 + frequency_step_hz * (index + 0.5)
+        for index in range(frequency_bin_count)
+    ]
     for time_bin in range(time_bin_count):
         row: list[float | None]
         if time_bin == missing_time_bin:
@@ -49,12 +57,12 @@ def _path(
         label=path_id,
         time_offset_s=0.0,
         tuned_center_frequency_hz=1_190_000_000,
-        sample_rate_hz=2_500_000,
+        sample_rate_hz=sample_rate_hz,
         receiver_id=receiver_id,
         waterfall={
-            "fft_samples": 1024,
+            "fft_samples": frequency_bin_count * 4,
             "receiver_ids": [receiver_id],
-            "frequency_bin_centers_hz": [-750_000.0, -250_000.0, 250_000.0, 750_000.0],
+            "frequency_bin_centers_hz": frequency_centers_hz,
             "coverage": {
                 "expected_samples": time_bin_count,
                 "observed_samples": time_bin_count - missing_samples,
@@ -116,3 +124,61 @@ def test_full_waterfall_preserves_continuous_rows_and_marks_only_missing_support
     assert not np.ma.getmaskarray(calls[0]["values"]).any()
     assert np.ma.getmaskarray(calls[1]["values"])[3].all()
     assert tuple(calls[0]["cmap"].get_bad()) == to_rgba(_WATERFALL_MISSING_COLOR)
+
+
+def test_doppler_waterfall_uses_common_band_and_overlays_candidate_tracks(monkeypatch) -> None:
+    low_rate = _path(
+        path_id="2.5 MS/s",
+        receiver_id=0,
+        base_power_dbfs=-100.0,
+        missing_time_bin=None,
+    )
+    high_rate = _path(
+        path_id="10 MS/s",
+        receiver_id=1,
+        base_power_dbfs=-70.0,
+        missing_time_bin=3,
+        sample_rate_hz=10_000_000,
+        frequency_bin_count=16,
+    )
+    glrt = {
+        "accounting": {"passing_count": 5, "valid_count": 7},
+        "tracks": (
+            {
+                "reference_time_s": 0.0,
+                "start_s": 0.0,
+                "end_s": 0.000001,
+                "slope_hz_s": -4_000.0,
+                "cfo_at_reference_hz": 100_000.0,
+            },
+        ),
+    }
+    low_rate = replace(low_rate, full_capture_glrt=glrt)
+    high_rate = replace(
+        high_rate,
+        full_capture_glrt=glrt,
+        continuity_segments=(
+            {"device_sample_start": 0, "device_sample_stop": 4},
+            {"device_sample_start": 5, "device_sample_stop": 8},
+        ),
+    )
+    source = StandardPngSource(
+        session_id="doppler-render",
+        subject_id="paired",
+        elapsed_start_s=0.0,
+        elapsed_end_s=8 / 2_500_000,
+        paths=(low_rate, high_rate),
+    )
+    calls: list[np.ndarray] = []
+    original_imshow = Axes.imshow
+
+    def capture_imshow(axis, values, *args, **kwargs):
+        calls.append(values)
+        return original_imshow(axis, values, *args, **kwargs)
+
+    monkeypatch.setattr(Axes, "imshow", capture_imshow)
+
+    rendered = render_full_doppler_waterfall_png(source)
+
+    assert rendered.startswith(b"\x89PNG\r\n\x1a\n")
+    assert [item.shape for item in calls] == [(8, 4), (8, 4)]

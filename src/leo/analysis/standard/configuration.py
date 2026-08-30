@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import fields, replace
 from typing import Any, cast
 
@@ -33,6 +34,8 @@ from leo.contracts.pilot_doppler_segments import PilotDopplerSegmentConfigV2
 from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 
 PRODUCTION_RECEIVER_STANDARD_SAMPLE_RATE_HZ = 2_500_000
+_PRODUCTION_WATERFALL_FFT_SAMPLES = 1024
+_PRODUCTION_WATERFALL_FREQUENCY_BINS = 256
 RECEIVER_STANDARD_RATE_DERIVED_FIELDS = ("replay_gate.sample_rate_hz",)
 
 
@@ -175,6 +178,30 @@ def resolve_receiver_standard_sample_rate(
     return replace(
         config,
         replay_gate=config.replay_gate.model_copy(update={"sample_rate_hz": sample_rate_hz}),
+    )
+
+
+def production_receiver_standard_waterfall_config(
+    *,
+    sample_rate_hz: int,
+) -> WaterfallConfig:
+    """Keep published waterfall display resolution stable across native rates."""
+
+    _validate_sample_rate(sample_rate_hz)
+    frequency_bins = math.ceil(
+        sample_rate_hz
+        * _PRODUCTION_WATERFALL_FREQUENCY_BINS
+        / PRODUCTION_RECEIVER_STANDARD_SAMPLE_RATE_HZ
+    )
+    # Four raw FFT cells are summed into each published display cell, yielding
+    # approximately 9.77 kHz per displayed bin at every supported rate.
+    fft_samples = (
+        _PRODUCTION_WATERFALL_FFT_SAMPLES * frequency_bins // _PRODUCTION_WATERFALL_FREQUENCY_BINS
+    )
+    return replace(
+        production_receiver_standard_config().waterfall,
+        fft_samples=fft_samples,
+        frequency_bins=frequency_bins,
     )
 
 

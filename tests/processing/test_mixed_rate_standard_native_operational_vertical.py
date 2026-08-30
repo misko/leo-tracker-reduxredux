@@ -52,7 +52,7 @@ from leo.operations.service import _stream_registrations
 from leo.pipeline import ScopeIdentityV1
 from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
-    StandardNativePngArtifactInventoryV7,
+    StandardNativePngArtifactInventoryV8,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV4,
@@ -480,8 +480,8 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
         )
 
         seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
-        assert len(seal.products) == 102
-        assert sum(item.media_type == "image/png" for item in seal.products) == 59
+        assert len(seal.products) == 109
+        assert sum(item.media_type == "image/png" for item in seal.products) == 66
         assert processing_database.catalog.current_run_id(manifest.session_id) == queued.run_id
         path_reports = tuple(
             StandardNativePathReportV3.model_validate(
@@ -529,9 +529,9 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
             manifest.session_id,
             paired_subject.subject_id,
         )
-        assert isinstance(inventory, StandardNativePngArtifactInventoryV7)
+        assert isinstance(inventory, StandardNativePngArtifactInventoryV8)
         assert inventory.sample_rates_hz == rates
-        assert len(inventory.artifacts) == 5
+        assert len(inventory.artifacts) == 6
         waterfall = repository.subject_view(
             manifest.session_id,
             paired_subject.subject_id,
@@ -567,7 +567,7 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
             } == {(3, "lower")}
             response = client.get(f"{base}/{paired_subject.subject_id}/artifacts")
             assert response.status_code == 200
-            assert response.json()["schema_version"] == 7
+            assert response.json()["schema_version"] == 8
             assert response.json()["sample_rates_hz"] == list(rates)
             for artifact in response.json()["artifacts"]:
                 png = client.get(artifact["href"])
@@ -736,7 +736,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
             manifest.session_id,
             paired_subject.subject_id,
         )
-        assert isinstance(inventory, StandardNativePngArtifactInventoryV7)
+        assert isinstance(inventory, StandardNativePngArtifactInventoryV8)
         assert sorted(inventory.sample_rates_hz) == [2_500_000, 10_000_000]
         waterfall = repository.subject_view(
             manifest.session_id,
@@ -765,7 +765,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
             assert response.json()["schema_version"] == 5
             response = client.get(f"{base}/{paired_subject.subject_id}/artifacts")
             assert response.status_code == 200
-            assert response.json()["schema_version"] == 7
+            assert response.json()["schema_version"] == 8
             assert sorted(response.json()["sample_rates_hz"]) == [2_500_000, 10_000_000]
     finally:
         service.close()

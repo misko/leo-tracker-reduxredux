@@ -22,6 +22,7 @@ import type {
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
   StandardNativePngArtifactInventoryV7,
+  StandardNativePngArtifactInventoryV8,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
@@ -45,7 +46,8 @@ type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV4
   | StandardNativePngArtifactInventoryV5
   | StandardNativePngArtifactInventoryV6
-  | StandardNativePngArtifactInventoryV7;
+  | StandardNativePngArtifactInventoryV7
+  | StandardNativePngArtifactInventoryV8;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
@@ -1034,12 +1036,24 @@ function nativeInventoryMatchesDetail(
     return false;
   }
   if (detail.schema_version === 3) {
-    return inventory.schema_version === 4
-      && inventory.sample_rate_hz === detail.subject.eligibility.sample_rate_hz;
+    if (inventory.schema_version === 4) {
+      return inventory.sample_rate_hz === detail.subject.eligibility.sample_rate_hz;
+    }
+    if (inventory.schema_version !== 7 && inventory.schema_version !== 8) return false;
+    return inventory.sample_rates_hz.length === 1
+      && inventory.sample_rates_hz[0] === detail.subject.eligibility.sample_rate_hz;
   }
   if (detail.schema_version === 4) {
-    if (inventory.schema_version !== 5) return false;
-  } else if (inventory.schema_version !== 6 && inventory.schema_version !== 7) {
+    if (
+      inventory.schema_version !== 5
+      && inventory.schema_version !== 7
+      && inventory.schema_version !== 8
+    ) return false;
+  } else if (
+    inventory.schema_version !== 6
+    && inventory.schema_version !== 7
+    && inventory.schema_version !== 8
+  ) {
     return false;
   }
   const streamIds = new Set(

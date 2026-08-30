@@ -8,6 +8,7 @@ from leo.analysis.standard.configuration import (
     parse_receiver_standard_config,
     production_receiver_standard_config,
     production_receiver_standard_stage_configuration,
+    production_receiver_standard_waterfall_config,
     require_receiver_standard_sample_rate,
     resolve_receiver_standard_sample_rate,
 )
@@ -85,3 +86,26 @@ def test_rate_resolution_is_explicit_and_fail_closed() -> None:
     assert receiver_standard_configuration_digest(resolved) == (
         "sha256:93e589103cc7ede6fc88399b83dadb347577abf3c4e99261fdadeb3e8dca2c21"
     )
+
+
+@pytest.mark.parametrize(
+    ("sample_rate_hz", "expected_fft_samples", "expected_frequency_bins"),
+    (
+        (2_500_000, 1024, 256),
+        (3_000_000, 1232, 308),
+        (5_000_000, 2048, 512),
+        (10_000_000, 4096, 1024),
+        (15_000_000, 6144, 1536),
+        (20_000_000, 8192, 2048),
+    ),
+)
+def test_published_waterfall_resolution_is_rate_normalized(
+    sample_rate_hz: int,
+    expected_fft_samples: int,
+    expected_frequency_bins: int,
+) -> None:
+    config = production_receiver_standard_waterfall_config(sample_rate_hz=sample_rate_hz)
+
+    assert config.fft_samples == expected_fft_samples
+    assert config.frequency_bins == expected_frequency_bins
+    assert config.fft_samples // config.frequency_bins == 4

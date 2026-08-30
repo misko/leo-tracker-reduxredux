@@ -9,12 +9,17 @@ from leo.contracts.digests import canonical_digest
 from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
+    STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactInventoryV7,
+    StandardNativePngArtifactInventoryV8,
     StandardNativePngArtifactV4,
+    StandardNativePngArtifactV8,
 )
 from leo.presentation.standard_pipeline import StandardSubjectKindV2
 
@@ -171,3 +176,64 @@ def test_additive_phase_inventory_preserves_old_png_identity() -> None:
         for item in phase.artifacts
         if item.name.startswith("pilot-") and item.name != "pilot-methods"
     ) == (4, 4, 4)
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected_names"),
+    (
+        (StandardSubjectKindV2.RECEIVER_PATH, STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8),
+        (StandardSubjectKindV2.RADIO, STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8),
+        (StandardSubjectKindV2.PAIRED, STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8),
+    ),
+)
+def test_additive_doppler_inventory_is_exact_and_keeps_v7_readable(
+    kind: StandardSubjectKindV2,
+    expected_names: tuple[str, ...],
+) -> None:
+    legacy = _inventory(kind)
+    session_id = legacy.session_id
+    subject_id = legacy.subject_id
+    base = (
+        f"/api/v2/recordings/{quote(session_id, safe='')}/standard-subjects/"
+        f"{quote(subject_id, safe='')}"
+    )
+    artifacts = []
+    for index, name in enumerate(expected_names):
+        label, description, catalog_kind, schema_version, view_name = (
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8[name]
+        )
+        artifacts.append(
+            StandardNativePngArtifactV8(
+                name=name,
+                label=label,
+                description=description,
+                href=(
+                    f"{base}/views/{view_name}.png"
+                    if view_name is not None
+                    else f"{base}/artifacts/{name}.png"
+                ),
+                catalog_kind=catalog_kind,
+                product_schema_version=schema_version,
+                digest=canonical_digest({"v8-artifact": name}),
+                byte_size=2000 + index,
+            )
+        )
+    values = {
+        "schema_version": 8,
+        "session_id": session_id,
+        "subject_id": subject_id,
+        "subject_kind": kind.value,
+        "run_id": legacy.run_id,
+        "run_manifest_digest": legacy.run_manifest_digest,
+        "sample_rates_hz": (2_500_000, 10_000_000),
+        "coverage_status": legacy.coverage_status,
+        "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
+    }
+
+    inventory = StandardNativePngArtifactInventoryV8.model_validate(
+        {**values, "content_digest": canonical_digest(values)}
+    )
+
+    assert tuple(item.name for item in inventory.artifacts) == expected_names
+    assert inventory.artifacts[1].catalog_kind == "standard.doppler-waterfall-png"
+    assert StandardNativePngArtifactInventoryV4.model_validate(legacy.model_dump()) == legacy

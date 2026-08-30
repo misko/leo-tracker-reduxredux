@@ -66,6 +66,7 @@ def _png(kind: str, version: int) -> ProductSpec:
 
 
 WATERFALL_PNG_V2_PRODUCT = _png("standard.waterfall-png", 2)
+DOPPLER_WATERFALL_PNG_V1_PRODUCT = _png("standard.doppler-waterfall-png", 1)
 PILOT_METHODS_PNG_V2_PRODUCT = _png("standard.pilot-methods-png", 2)
 CFO_TRAJECTORIES_PNG_V2_PRODUCT = _png("standard.cfo-trajectories-png", 2)
 DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT = _png("standard.cfo-trajectories-dealiased-png", 2)
@@ -83,6 +84,7 @@ FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT = _png("standard.full-capture-glrt20ms-png"
 
 STANDARD_NATIVE_PNG_PRODUCTS = (
     WATERFALL_PNG_V2_PRODUCT,
+    DOPPLER_WATERFALL_PNG_V1_PRODUCT,
     PILOT_METHODS_PNG_V2_PRODUCT,
     CFO_TRAJECTORIES_PNG_V2_PRODUCT,
     DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
@@ -137,5 +139,5 @@ STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT = sum(
         PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     )
 )
-if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 33:
+if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 36:
     raise RuntimeError("Standard-native-v1 output inventory changed")

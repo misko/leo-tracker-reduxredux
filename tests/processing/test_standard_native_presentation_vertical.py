@@ -29,10 +29,10 @@ from leo.contracts.standard_native import StandardNativeNumericalWaterfallV3
 from leo.contracts.standard_native_terminal import StandardNativePairedReportV6
 from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
-    STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
-    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
+    STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
     StandardNativePngArtifactInventoryV4,
-    StandardNativePngArtifactInventoryV7,
+    StandardNativePngArtifactInventoryV8,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
@@ -212,18 +212,18 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
             bundle.manifest.session_id,
             paired.subject_id,
         )
-        assert isinstance(paired_inventory, StandardNativePngArtifactInventoryV7)
+        assert isinstance(paired_inventory, StandardNativePngArtifactInventoryV8)
         assert tuple(item.name for item in paired_inventory.artifacts) == (
-            STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
+            STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8
         )
         path_subject = detail.receiver_path_expansions[0]
         path_inventory = repository.subject_png_inventory(
             bundle.manifest.session_id,
             path_subject.subject_id,
         )
-        assert isinstance(path_inventory, StandardNativePngArtifactInventoryV7)
+        assert isinstance(path_inventory, StandardNativePngArtifactInventoryV8)
         assert tuple(item.name for item in path_inventory.artifacts) == (
-            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8
         )
 
         # Simulate an already sealed pre-V9 Current run.  The API upgrade must
@@ -243,6 +243,7 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
                 and product.schema_version == 4
                 else product
                 for product in projection.products
+                if product.kind != "standard.doppler-waterfall-png"
             ),
         )
         legacy_native = CatalogStandardNativePresentationRepository(
@@ -333,8 +334,8 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
             assert response.status_code == 200
             assert response.content.startswith(b"\x89PNG")
             for subject, expected_names in (
-                (paired, STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4),
-                (path_subject, STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4),
+                (paired, STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8),
+                (path_subject, STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8),
             ):
                 inventory_path = f"{base}/{subject.subject_id}/artifacts"
                 response = client.get(inventory_path)

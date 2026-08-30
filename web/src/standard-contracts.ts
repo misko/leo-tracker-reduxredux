@@ -290,6 +290,9 @@ export type StandardNativePngArtifactNameV4 =
   | "pilot-doppler"
   | "pilot-carrier-tracking"
   | "pilot-segment-rates";
+export type StandardNativePngArtifactNameV8 =
+  | StandardNativePngArtifactNameV4
+  | "doppler-waterfall";
 
 export interface StandardNativePngArtifactV4 {
   schema_version: 4;
@@ -302,6 +305,12 @@ export interface StandardNativePngArtifactV4 {
   digest: string;
   byte_size: number;
   media_type: "image/png";
+}
+
+export interface StandardNativePngArtifactV8
+  extends Omit<StandardNativePngArtifactV4, "schema_version" | "name"> {
+  schema_version: 8;
+  name: StandardNativePngArtifactNameV8;
 }
 
 export interface StandardNativePngArtifactInventoryV4 {
@@ -342,6 +351,15 @@ export interface StandardNativePngArtifactInventoryV7
   sample_rates_hz: Array<
     2_500_000 | 3_000_000 | 5_000_000 | 10_000_000 | 15_000_000 | 20_000_000
   >;
+}
+
+export interface StandardNativePngArtifactInventoryV8
+  extends Omit<
+    StandardNativePngArtifactInventoryV7,
+    "schema_version" | "artifacts"
+  > {
+  schema_version: 8;
+  artifacts: StandardNativePngArtifactV8[];
 }
 
 export interface StandardNativePipelineReleaseV3 {
