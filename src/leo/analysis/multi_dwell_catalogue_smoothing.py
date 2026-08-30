@@ -1136,7 +1136,7 @@ def _checked_cholesky(
     if not math.isfinite(condition_number) or condition_number > maximum_condition_number:
         raise MultiDwellNumericalError(f"{name} exceeds the configured condition bound")
     try:
-        return np.linalg.cholesky(matrix)
+        return np.asarray(np.linalg.cholesky(matrix), dtype=np.float64)
     except np.linalg.LinAlgError as error:
         raise MultiDwellNumericalError(f"{name} is not positive definite") from error
 

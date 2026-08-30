@@ -48,7 +48,7 @@ def measure_power_timeline(
         cursor = start + block.metadata.sample_count
         observed += block.metadata.sample_count
         widened = block.samples[:, 0, :].astype(np.int64, copy=False)
-        power = np.sum(widened * widened, axis=1, dtype=np.int64)
+        power = np.asarray(np.sum(widened * widened, axis=1, dtype=np.int64), dtype=np.int64)
         # ``widened`` is an allocated int64 conversion for native CI16 and the
         # multiply allocates another matrix before the reduced power vector.
         multiply_bytes = widened.nbytes
