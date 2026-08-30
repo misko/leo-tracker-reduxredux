@@ -92,6 +92,23 @@ def test_ring_drains_finite_tail_but_publishes_only_requested_device_window(tmp_
     coordinator.store.verify(result.bundle.session_id)
 
 
+def test_ring_terminal_abi3_gap_persists_readable_v2_header_view(tmp_path, monkeypatch):
+    coordinator, plan, _ = _setup(tmp_path, monkeypatch)
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={5: 8})},
+        session_id="ring-terminal-abi3-gap",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    bundle = coordinator.store.inspect("ring-terminal-abi3-gap")
+    terminal = bundle.manifest.streams[0].continuity.terminal_gap
+    assert terminal is not None
+    assert terminal.metadata_abi_version == 3
+    assert terminal.header.schema_version == 2
+    coordinator.store.verify(bundle.session_id)
+
+
 def test_ring_contiguous_capture_commits_and_admits_double_space(tmp_path, monkeypatch):
     coordinator, plan, _ = _setup(tmp_path, monkeypatch)
     estimate = coordinator.estimate_admission(plan)
