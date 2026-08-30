@@ -606,6 +606,68 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     ]
 
 
+def test_install_units_installs_service_drop_ins_as_directory_contents(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    release = tmp_path / "release"
+    systemd_root = release / "deploy/systemd"
+    drop_in_root = systemd_root / "leo-acquisition.service.d"
+    drop_in_root.mkdir(parents=True)
+    unit = systemd_root / "leo-acquisition.service"
+    unit.write_text("[Service]\nExecStart=/bin/true\n")
+    drop_in = drop_in_root / "20-component-environment.conf"
+    drop_in.write_text("[Service]\nEnvironmentFile=/etc/leo/acquisition.env\n")
+    commands: list[tuple[str, ...]] = []
+
+    def run(command: tuple[str, ...], **_kwargs: object) -> object:
+        commands.append(tuple(command))
+        return object()
+
+    monkeypatch.setattr(OPS.subprocess, "run", run)
+
+    OPS._install_units(release)
+
+    destination = "/etc/systemd/system/leo-acquisition.service.d"
+    assert commands == [
+        (
+            "/usr/bin/install",
+            "-o",
+            "root",
+            "-g",
+            "root",
+            "-m",
+            "0644",
+            str(unit),
+            "/etc/systemd/system/",
+        ),
+        (
+            "/usr/bin/install",
+            "-d",
+            "-o",
+            "root",
+            "-g",
+            "root",
+            "-m",
+            "0755",
+            destination,
+        ),
+        (
+            "/usr/bin/install",
+            "-o",
+            "root",
+            "-g",
+            "root",
+            "-m",
+            "0644",
+            str(drop_in),
+            destination,
+        ),
+        ("/usr/bin/systemd-analyze", "verify", str(unit)),
+        ("/usr/bin/systemctl", "daemon-reload"),
+    ]
+
+
 def test_full_deploy_rolls_back_no_migration_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
