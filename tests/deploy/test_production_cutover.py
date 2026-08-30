@@ -973,7 +973,7 @@ def test_native_bandwidth_receipt_uses_staged_contract_and_exact_v5_authority(
 def test_processing_resource_capacity_probe_is_exact_read_only_and_service_scoped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    expected = "cpu|8\nheavy|2\nmemory|4\nstreaming|16"
+    expected = "cpu|8\nheavy|3\nmemory|4\nstreaming|16"
     calls: list[tuple[tuple[str, ...], float | None]] = []
 
     def fake_command(*argv: str, timeout_seconds: float | None = None) -> str:
@@ -1095,10 +1095,10 @@ def test_native_bandwidth_v2_receipt_requires_counter_refill_and_exact_rf_readba
     "inventory",
     (
         "cpu|8\nheavy|4\nmemory|4\nstreaming|16",
-        "cpu|8\nheavy|2\nmemory|4",
-        "cpu|8\nheavy|2\nmemory|4\nstreaming|16\nunreviewed|1",
-        "cpu|8\nheavy|2\nmemory|4\nstreaming|16\nstreaming|16",
-        "streaming|16\ncpu|8\nmemory|4\nheavy|2",
+        "cpu|8\nheavy|3\nmemory|4",
+        "cpu|8\nheavy|3\nmemory|4\nstreaming|16\nunreviewed|1",
+        "cpu|8\nheavy|3\nmemory|4\nstreaming|16\nstreaming|16",
+        "streaming|16\ncpu|8\nmemory|4\nheavy|3",
         "",
     ),
 )

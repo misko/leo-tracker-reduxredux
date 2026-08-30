@@ -100,7 +100,7 @@ RELEASE_QUALIFICATION_NATIVE_CORPUS = "/srv/bulk/leo/recordings/2026/08/25"
 RELEASE_QUALIFICATION_MAXIMUM_JSON_BYTES = 16 * 1024 * 1024
 EXPECTED_PROCESSING_RESOURCE_CAPACITY_ROWS = (
     "cpu|8",
-    "heavy|2",
+    "heavy|3",
     "memory|4",
     "streaming|16",
 )
@@ -897,7 +897,7 @@ def verify_processing_resource_capacity_rows(output: str) -> None:
     if observed != EXPECTED_PROCESSING_RESOURCE_CAPACITY_ROWS:
         raise ValueError(
             "processing resource capacity inventory is not exactly "
-            "streaming=16,cpu=8,memory=4,heavy=2"
+            "streaming=16,cpu=8,memory=4,heavy=3"
         )
 
 
@@ -3408,7 +3408,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         "scanner raw-IQ and report directories are installed and permissioned",
         "production environment is permissioned and contains no radio placeholders",
         "legacy user scope and canonical system scope have no active LEO units",
-        "processing resource capacity is exactly streaming=16,cpu=8,memory=4,heavy=2",
+        "processing resource capacity is exactly streaming=16,cpu=8,memory=4,heavy=3",
         "live station radios expose firmware identity and counter-authoritative ABI 3",
         "all canonical unit templates validate and deny QNAP",
         "external release metadata and final-path runtime validate",

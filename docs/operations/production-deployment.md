@@ -358,7 +358,7 @@ The full-cutover transaction runs any required `alembic upgrade head` while
 every LEO unit is quiescent. Before starting any worker, its cutover preflight reads
 `public.processing_resource_capacity` as `leo` with `psql --no-psqlrc` and
 requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
-`memory=4`, and `heavy=2`. A missing, duplicate, extra, malformed, or drifted
+`memory=4`, and `heavy=3`. A missing, duplicate, extra, malformed, or drifted
 row blocks startup.
 
 The historical target-bound 3 MS/s qualification receipt is not a cutover gate:
@@ -515,16 +515,17 @@ sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process r
 
 Start in dependency order. Twenty worker processes remain the global process
 bound on the 24-logical-CPU production host. Catalog admission is intentionally
-stricter by resource class: `streaming=16`, `cpu=8`, `memory=4`, and initially
-`heavy=2`. Each worker forces OpenBLAS, OpenMP, and MKL to at most ten threads
-at the exec boundary, after environment-file composition. The two-lease HEAVY
-cap therefore permits at most two independent native path jobs and roughly
-twenty numerical-library threads at once, leaving four CPUs for acquisition,
-PostgreSQL, the API, and the host. It remains the production safety boundary
-for native 3/5 MS/s analysis. Do not raise the HEAVY lease cap on this 24-CPU
-host without first reducing the per-job numerical thread limit and proving the
-new combination with sealed CPU, memory, I/O, capture-continuity, RAID, OOM,
-swap, and kernel-storage evidence:
+stricter by resource class: `streaming=16`, `cpu=8`, `memory=4`, and `heavy=3`.
+Each worker forces OpenBLAS, OpenMP, and MKL to at most eight threads at the
+exec boundary, after environment-file composition. The three-lease HEAVY cap
+therefore admits at most three independent native path jobs and 24 nominal
+numerical-library threads at once. Acquisition remains protected by its higher
+CPU and I/O weights and lower nice value. This reviewed 3-by-8 profile replaces
+the 2-by-10 profile after host telemetry showed sustained idle E-core capacity,
+negligible CPU pressure and I/O wait, no swap, and a heavy-analysis queue whose
+peak arrival rate exceeded the prior two-lease service rate. Revisit the profile
+only with measured CPU pressure, memory, I/O, capture-continuity, RAID, OOM,
+swap, thermal, and kernel-storage evidence:
 
 ```text
 sudo systemctl enable --now leo-reconcile.timer

@@ -85,7 +85,7 @@ units, and services. Migration cutovers require a production backup and fail clo
 attempting an unsafe schema rollback.
 
 After any required Alembic upgrade and before worker startup, cutover reads the complete production
-resource-capacity inventory and requires exactly `streaming=16,cpu=8,memory=4,heavy=2`; any row
+resource-capacity inventory and requires exactly `streaming=16,cpu=8,memory=4,heavy=3`; any row
 drift, omission, duplication, or addition blocks startup. Deployment does not resume the durable
 capture authority. For post-cutover 3 MS/s and 5 MS/s direct canaries, stop the acquisition service,
 explicitly resume for one `leo acquire once`, immediately re-pause and drain, and only then restart

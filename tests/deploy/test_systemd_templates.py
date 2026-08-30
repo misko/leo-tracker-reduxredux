@@ -196,7 +196,7 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert api["ReadWritePaths"] == "/srv/bulk/leo/control"
 
 
-def test_worker_allows_ten_numerical_threads_at_the_exec_boundary() -> None:
+def test_worker_allows_eight_numerical_threads_at_the_exec_boundary() -> None:
     worker_text = (UNIT_ROOT / "leo-worker@.service").read_text()
     worker = _unit("leo-worker@.service")["Service"]
     command = shlex.split(worker["ExecStart"])
@@ -205,9 +205,9 @@ def test_worker_allows_ten_numerical_threads_at_the_exec_boundary() -> None:
     )
 
     for assignment in (
-        "OPENBLAS_NUM_THREADS=10",
-        "OMP_NUM_THREADS=10",
-        "MKL_NUM_THREADS=10",
+        "OPENBLAS_NUM_THREADS=8",
+        "OMP_NUM_THREADS=8",
+        "MKL_NUM_THREADS=8",
     ):
         assert command.count(assignment) == 1
         assert command.index(assignment) < executable_index
@@ -531,7 +531,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "production-native-rates-8-v2" in deployment_text
     assert 'sudo ./ops deploy --full --revision "$release_revision"' in deployment_text
     assert "public.processing_resource_capacity" in deployment_text
-    assert "streaming=16`, `cpu=8`,\n`memory=4`, and `heavy=2" in deployment_text
+    assert "streaming=16`, `cpu=8`,\n`memory=4`, and `heavy=3" in deployment_text
     assert deployment_text.count("leo acquire resume --operator production-cutover") == 2
     assert deployment_text.count("leo acquire pause --operator production-cutover") >= 2
     assert 'leo acquire once --profile "$LEO_CAPTURE_PROFILE" --json' in deployment_text
