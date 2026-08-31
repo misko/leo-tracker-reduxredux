@@ -5,6 +5,7 @@ import type {
   StandardNativePngArtifactInventoryV6,
   StandardNativePngArtifactInventoryV7,
   StandardNativePngArtifactInventoryV8,
+  StandardNativePngArtifactInventoryV9,
   StandardTrackGateAuditV1,
   StandardPlotView,
   StandardSubjectDetail,
@@ -133,6 +134,7 @@ export async function getStandardNativePngArtifactInventory(
   | StandardNativePngArtifactInventoryV6
   | StandardNativePngArtifactInventoryV7
   | StandardNativePngArtifactInventoryV8
+  | StandardNativePngArtifactInventoryV9
   | null
 > {
   const params = new URLSearchParams({ include_test: String(includeTest) });

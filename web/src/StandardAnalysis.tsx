@@ -18,14 +18,17 @@ import type {
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
   StandardNativeSubjectDetailV5,
+  StandardNativeSubjectDetailV6,
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
   StandardNativePngArtifactInventoryV7,
   StandardNativePngArtifactInventoryV8,
+  StandardNativePngArtifactInventoryV9,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
+  StandardNativeSubjectSummaryV6,
   StandardSubjectDetail,
   StandardSubjectDetailV2,
   StandardReplayAuditV1,
@@ -41,13 +44,15 @@ import "./standard-analysis.css";
 type StandardNativeDetail =
   | StandardNativeSubjectDetailV3
   | StandardNativeSubjectDetailV4
-  | StandardNativeSubjectDetailV5;
+  | StandardNativeSubjectDetailV5
+  | StandardNativeSubjectDetailV6;
 type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV4
   | StandardNativePngArtifactInventoryV5
   | StandardNativePngArtifactInventoryV6
   | StandardNativePngArtifactInventoryV7
-  | StandardNativePngArtifactInventoryV8;
+  | StandardNativePngArtifactInventoryV8
+  | StandardNativePngArtifactInventoryV9;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
@@ -320,7 +325,7 @@ function NativeAnalysisDetail({
           <span>Reducers merge sufficient statistics</span>
         </div>
       </section>
-      {detail.schema_version === 4 || detail.schema_version === 5 ? (
+      {detail.schema_version === 4 || detail.schema_version === 5 || detail.schema_version === 6 ? (
         <NativeRfAuthority detail={detail} />
       ) : null}
       <NativePathCoverage evidence={detail.receiver_path_evidence} />
@@ -340,9 +345,9 @@ function NativeAnalysisDetail({
 function NativeRfAuthority({
   detail,
 }: {
-  detail: StandardNativeSubjectDetailV4 | StandardNativeSubjectDetailV5;
+  detail: StandardNativeSubjectDetailV4 | StandardNativeSubjectDetailV5 | StandardNativeSubjectDetailV6;
 }) {
-  const production = detail.schema_version === 5;
+  const production = detail.schema_version === 5 || detail.schema_version === 6;
   return (
     <section
       className="standard-native-paths"
@@ -370,7 +375,7 @@ function NativeRfAuthority({
           <small>
             Captured {formatMhz(leg.captured_if_start_hz)}–{formatMhz(leg.captured_if_stop_hz)} IF inside {formatMhz(leg.channel_if_start_hz)}–{formatMhz(leg.channel_if_stop_hz)} channel
           </small>
-          {leg.schema_version === 5 ? (
+          {leg.schema_version === 5 || leg.schema_version === 6 ? (
             <small>
               RX{leg.receiver_ids.join(" + RX")} · {formatEnum(leg.gain_controller_mode)} · metadata ABI {leg.metadata_abi_version}
             </small>
@@ -806,7 +811,7 @@ function SubjectTabs({
 
 function isNativeSubject(
   subject: StandardSubjectSummary,
-): subject is StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4 | StandardNativeSubjectSummaryV5 {
+): subject is StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4 | StandardNativeSubjectSummaryV5 | StandardNativeSubjectSummaryV6 {
   return "coverage_status" in subject;
 }
 
@@ -1013,12 +1018,12 @@ function nativeRateLabel(hierarchy: StandardSubjectHierarchy, lane: AnalysisLane
   if (hierarchy.schema_version === 3) {
     return `STANDARD · NATIVE · ${(hierarchy.eligibility.sample_rate_hz / 1_000_000).toFixed(1)} MS/s`;
   }
-  if (hierarchy.schema_version === 4 || hierarchy.schema_version === 5) {
+  if (hierarchy.schema_version === 4 || hierarchy.schema_version === 5 || hierarchy.schema_version === 6) {
     const rates = [...new Set(hierarchy.eligibility.legs.map((leg) => leg.sample_rate_hz))]
       .sort((left, right) => left - right)
       .map((rate) => (rate / 1_000_000).toFixed(1))
       .join(" + ");
-    const mode = hierarchy.schema_version === 5
+    const mode = hierarchy.schema_version === 5 || hierarchy.schema_version === 6
       ? formatEnum(hierarchy.eligibility.dwell_class).toUpperCase()
       : "MIXED";
     return `STANDARD · NATIVE · ${mode} ${rates} MS/s`;
@@ -1053,6 +1058,7 @@ function nativeInventoryMatchesDetail(
     inventory.schema_version !== 6
     && inventory.schema_version !== 7
     && inventory.schema_version !== 8
+    && inventory.schema_version !== 9
   ) {
     return false;
   }

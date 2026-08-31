@@ -12,22 +12,28 @@ import type {
   StandardNativeEligibilityV3,
   StandardNativeEligibilityV4,
   StandardNativeEligibilityV5,
+  StandardNativeEligibilityV6,
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
   StandardNativePngArtifactInventoryV7,
   StandardNativePngArtifactInventoryV8,
+  StandardNativePngArtifactInventoryV9,
   StandardNativePlotViewV5,
+  StandardNativePlotViewV6,
   StandardNativePlotViewV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
   StandardNativeSubjectDetailV5,
+  StandardNativeSubjectDetailV6,
   StandardNativeSubjectHierarchyV3,
   StandardNativeSubjectHierarchyV4,
   StandardNativeSubjectHierarchyV5,
+  StandardNativeSubjectHierarchyV6,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
+  StandardNativeSubjectSummaryV6,
   StandardNativeTerminalSummaryV3,
   StandardPlotViewV2,
   StandardSubjectDetailV2,
@@ -837,6 +843,65 @@ const productionPlot: StandardNativePlotViewV5 = {
   reason: "No sealed evidence for this view",
   projection_digest: `sha256:${"f".repeat(64)}`,
 };
+
+const widebandEligibility: StandardNativeEligibilityV6 = {
+  ...productionEligibility,
+  schema_version: 6,
+  source_manifest_schema_version: 6,
+  dwell_class: "mixed_2p5_25",
+  legs: [{
+    ...productionEligibility.legs[0],
+    schema_version: 6,
+  }, {
+    ...productionEligibility.legs[1],
+    schema_version: 6,
+    sample_rate_hz: 25_000_000,
+    rf_bandwidth_hz: 25_000_000,
+    captured_if_start_hz: 1_197_500_000,
+    captured_if_stop_hz: 1_222_500_000,
+    channel_if_start_hz: 1_195_000_000,
+    logical_sample_count: 1_500_000_000,
+  }],
+};
+
+function widebandSubject(
+  subject: StandardNativeSubjectSummaryV5,
+): StandardNativeSubjectSummaryV6 {
+  return { ...subject, schema_version: 6, eligibility: widebandEligibility };
+}
+
+const widebandPathSubjects = productionPathSubjects.map(widebandSubject);
+const widebandRadio0 = widebandSubject(productionRadio0);
+const widebandRadio1 = widebandSubject(productionRadio1);
+const widebandPair = widebandSubject(productionPair);
+const widebandHierarchy: StandardNativeSubjectHierarchyV6 = {
+  schema_version: 6,
+  session_id: "T1",
+  source_type: "LIVE",
+  eligibility: widebandEligibility,
+  generated_at: "2026-08-31T20:53:31Z",
+  rows: [widebandPair, widebandRadio0, widebandRadio1],
+};
+const widebandDetail: StandardNativeSubjectDetailV6 = {
+  ...productionDetail,
+  schema_version: 6,
+  subject: widebandPair,
+  receiver_path_expansions: widebandPathSubjects,
+};
+const widebandPlot: StandardNativePlotViewV6 = {
+  ...productionPlot,
+  schema_version: 6,
+  sample_rates_hz: [2_500_000, 25_000_000],
+};
+
+function widebandArtifactInventory(): StandardNativePngArtifactInventoryV9 {
+  return {
+    ...dopplerArtifactInventory(),
+    schema_version: 9,
+    sample_rates_hz: [2_500_000, 25_000_000],
+  };
+}
+
 const nativeWaterfall: StandardNativePlotViewV3 = {
   schema_version: 3,
   session_id: "T1",
@@ -1117,6 +1182,44 @@ test("renders the complete production V5 hierarchy/detail with its V6 PNG invent
     .toBe(6);
 });
 
+test("renders the production V6 2.5 + 25 MS/s hierarchy with its V9 PNG inventory", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/artifacts?")) {
+      return new Response(JSON.stringify(widebandArtifactInventory()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(widebandPair.subject_id))) {
+      return new Response(JSON.stringify(widebandDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(widebandHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  expect(await screen.findByText("Standard native analysis")).toBeInTheDocument();
+  expect(screen.getByText("STANDARD · NATIVE · MIXED 2P5 25 2.5 + 25.0 MS/s"))
+    .toBeInTheDocument();
+  const authority = await screen.findByRole("region", { name: "Production RF coverage authority" });
+  expect(within(authority).getByText(/mixed 2p5 25 · same tuning/i)).toBeInTheDocument();
+  const gallery = await screen.findByRole("region", { name: "Registered native image artifacts" });
+  await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(6));
+
+  expect(parseStandardSubjectHierarchy(widebandHierarchy).schema_version).toBe(6);
+  expect(parseStandardSubjectDetail(widebandDetail).schema_version).toBe(6);
+  expect(parseStandardPlotView(widebandPlot).schema_version).toBe(6);
+  expect(parseStandardNativePngArtifactInventory(widebandArtifactInventory()).schema_version)
+    .toBe(9);
+});
+
 test("renders every registered PNG for production V5 detail with a V7 inventory", async () => {
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -1243,15 +1346,15 @@ test("accepts additive phase and Doppler inventories and rejects future versions
   expect(phase.artifacts.filter((item) => item.name.startsWith("pilot-")).map(
     (item) => item.product_schema_version,
   )).toEqual([2, 4, 4, 4]);
-  expect(() => parseStandardSubjectHierarchy({ ...productionHierarchy, schema_version: 6 }))
-    .toThrow(/expected 2, 3, 4, or 5/);
+  expect(() => parseStandardSubjectHierarchy({ ...productionHierarchy, schema_version: 7 }))
+    .toThrow(/expected 2, 3, 4, 5, or 6/);
   const doppler = parseStandardNativePngArtifactInventory(dopplerArtifactInventory());
   expect(doppler.schema_version).toBe(8);
   expect(doppler.artifacts[1].name).toBe("doppler-waterfall");
   expect(() => parseStandardNativePngArtifactInventory({
     ...productionArtifactInventory(),
-    schema_version: 9,
-  })).toThrow(/expected one of 4, 5, 6, 7, 8/);
+    schema_version: 10,
+  })).toThrow(/expected one of 4, 5, 6, 7, 8, 9/);
 });
 
 test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {
