@@ -25,10 +25,12 @@ class ContinuityChainValidator:
         require_metadata: bool = True,
         require_generation: bool | None = None,
         validate_declared: bool = False,
+        allow_non_refill_gaps: bool = False,
     ) -> None:
         self.require_metadata = require_metadata
         self.require_generation = require_generation
         self.validate_declared = validate_declared
+        self.allow_non_refill_gaps = allow_non_refill_gaps
         self.reset()
 
     def reset(self) -> None:
@@ -116,10 +118,17 @@ class ContinuityChainValidator:
             missing = counter - expected_counter
             if isinstance(metadata, IqBlockMetadataV2):
                 if missing % previous.sample_count:
-                    raise ContinuityValidationError(
-                        "counter gap is not an integer number of fixed refills"
-                    )
-                skipped_refills = missing // previous.sample_count
+                    if not self.allow_non_refill_gaps:
+                        raise ContinuityValidationError(
+                            "counter gap is not an integer number of fixed refills"
+                        )
+                    # A fenced direct-async segment restart can resume at any
+                    # device-sample counter. It skipped device time, not an
+                    # integer inventory of returned DMA refills, so its logical
+                    # source sequence advances by the one returned block only.
+                    skipped_refills = 0
+                else:
+                    skipped_refills = missing // previous.sample_count
             else:
                 # Historical V1 sources did not define sequence advancement
                 # through gaps; retain their one-returned-block semantics.
