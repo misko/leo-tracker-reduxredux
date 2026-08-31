@@ -262,8 +262,9 @@ def _bounded_production_plan(
     monkeypatch: pytest.MonkeyPatch,
     *,
     high_rate_profile_suffix: str,
+    dwell_class: ProductionDwellClassV2,
 ):
-    duration = Decimal("0.1") if high_rate_profile_suffix == "ddr-ring-v6" else _DURATION
+    duration = Decimal("0.2") if high_rate_profile_suffix == "ddr-ring-v6" else _DURATION
     specifications = (
         ((2_500_000, (0, 1), False), "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4"),
         ((5_000_000, (0, 1), False), "starlink-ch4-lower-5m-60s-native-bandwidth-v4"),
@@ -324,7 +325,7 @@ def _bounded_production_plan(
                 extra_tags=("operational-vertical",),
             )
         ).dwell_class
-        is ProductionDwellClassV2.MIXED_2P5_10
+        is dwell_class
     )
     selected = {
         leg.radio_id: revisions[(leg.sample_rate_hz, leg.receiver_ids, True)]
@@ -694,18 +695,29 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
         pinned.close()
 
 
-@pytest.mark.parametrize("high_rate_profile_suffix", ("production-v5", "ddr-ring-v6"))
-def test_real_postgres_production_ten_msps_single_rx_vertical(
+@pytest.mark.parametrize(
+    ("high_rate_profile_suffix", "dwell_class", "high_rate_hz"),
+    (
+        ("production-v5", ProductionDwellClassV2.MIXED_2P5_10, 10_000_000),
+        ("ddr-ring-v6", ProductionDwellClassV2.MIXED_2P5_10, 10_000_000),
+        ("ddr-ring-v6", ProductionDwellClassV2.MIXED_2P5_15, 15_000_000),
+        ("ddr-ring-v6", ProductionDwellClassV2.MIXED_2P5_20, 20_000_000),
+    ),
+)
+def test_real_postgres_production_single_rx_all_rate_vertical(
     processing_database: ProcessingDatabase,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     high_rate_profile_suffix: str,
+    dwell_class: ProductionDwellClassV2,
+    high_rate_hz: int,
 ) -> None:
     plan = _bounded_production_plan(
         monkeypatch,
         high_rate_profile_suffix=high_rate_profile_suffix,
+        dwell_class=dwell_class,
     )
-    assert plan.dwell_class is ProductionDwellClassV2.MIXED_2P5_10
+    assert plan.dwell_class is dwell_class
     bulk_root = tmp_path / "bulk-production"
     coordinator = AcquisitionCoordinator(
         RecordingStore(bulk_root),
@@ -722,7 +734,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
             _RADIO_IDS[0]: FakeRadioSource(_RADIO_IDS[0], seed=11),
             _RADIO_IDS[1]: FakeRadioSource(_RADIO_IDS[1], seed=12),
         },
-        session_id="standard-native-production-10m-single-rx",
+        session_id=f"standard-native-production-{high_rate_hz}-single-rx",
     )
     assert result.state is CaptureState.COMMITTED
     assert type(result.manifest) is RecordingManifestV5
@@ -731,7 +743,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
     manifest = result.manifest
     assert sorted(stream.applied_settings.sample_rate_hz for stream in manifest.streams) == [
         2_500_000,
-        10_000_000,
+        high_rate_hz,
     ]
     assert sorted(len(stream.applied_settings.receiver_ids) for stream in manifest.streams) == [
         1,
@@ -800,14 +812,14 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
         published = service.finalize_run(queued.run_id)
         assert isinstance(published.manifest, AnalysisRunManifestV5)
         authority = published.manifest.promotion_authority
-        assert authority.dwell_class == "mixed_2p5_10"
+        assert authority.dwell_class == dwell_class.value
         assert authority.tuning_branch == "same"
         assert sorted(item.sample_rate_hz for item in authority.stream_authorities) == [
             2_500_000,
-            10_000_000,
+            high_rate_hz,
         ]
         high = next(
-            item for item in authority.stream_authorities if item.sample_rate_hz == 10_000_000
+            item for item in authority.stream_authorities if item.sample_rate_hz == high_rate_hz
         )
         assert len(high.receiver_ids) == 1
         assert high.metadata_abi_version == 3
@@ -828,7 +840,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
         paired = StandardNativePairedReportV7.model_validate(
             artifacts.read_json(paired_product.logical_uri, paired_product.digest)
         )
-        assert sorted(paired.radio_sample_rates_hz) == [2_500_000, 10_000_000]
+        assert sorted(paired.radio_sample_rates_hz) == [2_500_000, high_rate_hz]
         assert sorted(len(item.paths) for item in paired.radios) == [1, 2]
 
         native_repository = CatalogStandardNativePresentationRepository(
@@ -841,7 +853,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
         )
         hierarchy = repository.subject_hierarchy(manifest.session_id)
         assert isinstance(hierarchy, StandardNativeSubjectHierarchyV5)
-        assert hierarchy.eligibility.dwell_class == "mixed_2p5_10"
+        assert hierarchy.eligibility.dwell_class == dwell_class.value
         assert sorted(len(item.receiver_ids) for item in hierarchy.eligibility.legs) == [1, 2]
         paired_subject = hierarchy.rows[0]
         detail = repository.subject_detail(manifest.session_id, paired_subject.subject_id)
@@ -851,7 +863,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
             paired_subject.subject_id,
         )
         assert isinstance(inventory, StandardNativePngArtifactInventoryV8)
-        assert sorted(inventory.sample_rates_hz) == [2_500_000, 10_000_000]
+        assert sorted(inventory.sample_rates_hz) == [2_500_000, high_rate_hz]
         waterfall = repository.subject_view(
             manifest.session_id,
             paired_subject.subject_id,
@@ -859,7 +871,19 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
             maximum_points=64,
         )
         assert isinstance(waterfall, StandardNativePlotViewV5)
-        assert sorted(waterfall.sample_rates_hz) == [2_500_000, 10_000_000]
+        assert sorted(waterfall.sample_rates_hz) == [2_500_000, high_rate_hz]
+        assert max(len(axis.frequency_bin_centers_hz) for axis in waterfall.frequency_axes) <= 1024
+        assert all(
+            len(tile.power_dbfs)
+            == len(
+                next(
+                    axis.frequency_bin_centers_hz
+                    for axis in waterfall.frequency_axes
+                    if axis.receiver_path_id == tile.receiver_path_id
+                )
+            )
+            for tile in waterfall.waterfall_tiles
+        )
 
         with TestClient(
             create_app(
@@ -880,7 +904,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
             response = client.get(f"{base}/{paired_subject.subject_id}/artifacts")
             assert response.status_code == 200
             assert response.json()["schema_version"] == 8
-            assert sorted(response.json()["sample_rates_hz"]) == [2_500_000, 10_000_000]
+            assert sorted(response.json()["sample_rates_hz"]) == [2_500_000, high_rate_hz]
     finally:
         service.close()
         artifacts.close()
