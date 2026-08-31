@@ -28,6 +28,7 @@ from leo.presentation.models import (
     ProvenanceV1,
     QamSummaryV1,
     QualitySummaryV1,
+    RadioCoverageV1,
     RadioStreamV1,
     ReceiverQamSummaryV1,
     RecordingDetailV1,
@@ -742,12 +743,23 @@ def _radio(
     state: CaptureHealthV1 = CaptureHealthV1.COMPLETE,
     gaps: int = 0,
 ) -> RadioStreamV1:
+    observed_samples = samples if state is CaptureHealthV1.COMPLETE else max(1, samples - gaps)
+    requested_samples = max(1, samples)
     return RadioStreamV1(
         radio_id=radio_id,
         serial=serial,
         receiver_labels=labels,
         state=state,
         captured_samples=samples,
+        coverage=RadioCoverageV1(
+            delivery_unit="device_samples",
+            delivered_units=samples,
+            requested_units=requested_samples,
+            delivery_coverage_pct=100.0 * samples / requested_samples,
+            observed_samples=observed_samples,
+            logical_samples=samples,
+            observed_density_pct=(None if samples == 0 else 100.0 * observed_samples / samples),
+        ),
         sample_rate_hz=2_500_000,
         gain_db=tuple(44.0 for _ in labels),
         raw_path=path,

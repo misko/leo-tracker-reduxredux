@@ -9,6 +9,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from pydantic import ValidationError
+
+from leo.acquisition.coverage import project_recording_stream_coverage
 from leo.application.campaign_presentation import CatalogCampaignPresentation
 from leo.artifacts import AnalysisArtifactStore, ArtifactStoreError
 from leo.catalog import (
@@ -17,6 +20,7 @@ from leo.catalog import (
     CatalogSessionReadSnapshot,
     RecordingListRow,
 )
+from leo.contracts.device_buffer import DIRECT_ASYNC_EVIDENCE_KEY_V1, DirectAsyncEvidenceV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.mixed_rate_capture import CapturePlanV4
 from leo.contracts.profile import (
@@ -67,6 +71,7 @@ from leo.presentation.models import (
     ProvenanceV1,
     QamSummaryV1,
     QualitySummaryV1,
+    RadioCoverageV1,
     RadioSetupV2,
     RadioStreamV1,
     ReceiverQamSummaryV1,
@@ -296,6 +301,7 @@ class CatalogPresentationRepository:
             tuple[RecordingStreamV1 | RecordingStreamV3, ...],
             manifest.streams,
         )
+        direct_async_evidence = self._direct_async_evidence(snapshot, streams)
         profile_revision_digest, profile, dwell_seconds, title, profile_name = _display_profile(
             manifest
         )
@@ -354,7 +360,13 @@ class CatalogPresentationRepository:
                 receiver_count_per_radio=len(profile.receivers),
             ),
             radios=tuple(
-                _radio_stream(stream, recording_root, storage_state) for stream in streams
+                _radio_stream(
+                    stream,
+                    recording_root,
+                    storage_state,
+                    direct_async_evidence=direct_async_evidence.get(stream.stream_id),
+                )
+                for stream in streams
             ),
             synchronization=_synchronization(manifest),
             paths=RecordingPathsV1(
@@ -374,6 +386,32 @@ class CatalogPresentationRepository:
             provenance=_provenance(snapshot, coverage, products, documents),
             products=products,
         )
+
+    def _direct_async_evidence(
+        self,
+        snapshot: CatalogSessionReadSnapshot,
+        streams: tuple[RecordingStreamV1 | RecordingStreamV3, ...],
+    ) -> dict[str, DirectAsyncEvidenceV1]:
+        if snapshot.bundle_uri is None:
+            return {}
+        try:
+            bundle = self._recordings.inspect_uri(snapshot.bundle_uri)
+        except (OSError, RecordingStoreError):
+            return {}
+        evidence: dict[str, DirectAsyncEvidenceV1] = {}
+        for stream in streams:
+            if not isinstance(stream, RecordingStreamV3):
+                continue
+            try:
+                first = next(
+                    self._recordings.reader(bundle, stream.stream_id).iter_timeline_metadata()
+                )
+                payload = first.hardware_metadata.get(DIRECT_ASYNC_EVIDENCE_KEY_V1)
+                if payload is not None:
+                    evidence[stream.stream_id] = DirectAsyncEvidenceV1.model_validate(payload)
+            except (OSError, StopIteration, ValidationError, ValueError, RecordingStoreError):
+                continue
+        return evidence
 
     def _manifest(
         self, snapshot: CatalogSessionReadSnapshot
@@ -705,6 +743,8 @@ def _radio_stream(
     stream: RecordingStreamV1 | RecordingStreamV3,
     recording_root: Path,
     storage_state: StorageStateV1,
+    *,
+    direct_async_evidence: DirectAsyncEvidenceV1 | None = None,
 ) -> RadioStreamV1:
     settings = stream.applied_settings or stream.requested_settings
     gains = {item.receiver_id: item.gain_db for item in settings.gains}
@@ -744,12 +784,27 @@ def _radio_stream(
         terminal_rejected_gaps = 0
         terminal_rejected_missing_samples = 0
         terminal_rejected_overflows = 0
+    coverage = project_recording_stream_coverage(
+        stream,
+        direct_async_evidence=direct_async_evidence,
+    )
     return RadioStreamV1(
         radio_id=stream.radio.radio_id,
         serial=stream.radio.serial,
         receiver_labels=tuple(f"rx{item}" for item in settings.receiver_ids),
         state=state,
         captured_samples=stream.captured_sample_count,
+        coverage=RadioCoverageV1(
+            delivery_unit=coverage.delivery_unit,
+            delivered_units=coverage.delivered_units,
+            requested_units=coverage.requested_units,
+            delivery_coverage_pct=coverage.delivery_coverage_pct,
+            observed_samples=coverage.observed_samples,
+            logical_samples=coverage.logical_samples,
+            observed_density_pct=coverage.observed_density_pct,
+            in_segment_density_pct=coverage.in_segment_density_pct,
+            transport_density_pct=coverage.transport_density_pct,
+        ),
         sample_rate_hz=settings.sample_rate_hz,
         gain_db=tuple(gains.get(item, 0.0) for item in settings.receiver_ids),
         raw_path=raw_path,
