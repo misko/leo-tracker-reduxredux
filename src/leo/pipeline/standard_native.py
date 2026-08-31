@@ -211,6 +211,16 @@ STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES = {
         (1,),
         "sha256:6675fbf3d6e6899a2c0fec29b078181a7f843df1cb8941906ab11ac3c7f7adb9",
     ),
+    "starlink-ch4-lower-25m-60s-rx0-direct-async-v8": (
+        25_000_000,
+        (0,),
+        "sha256:91ee768cb8d96ae7c6e0462c91585847e504db1c9e66a96ceec08469d13d2a18",
+    ),
+    "starlink-ch4-lower-25m-60s-rx1-direct-async-v8": (
+        25_000_000,
+        (1,),
+        "sha256:2f08108db6f9ed5c8e9b259c23ecb1c9b11376a72f2c1ff234c152b8efe84db4",
+    ),
 }
 
 

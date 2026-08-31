@@ -6,9 +6,15 @@ from decimal import Decimal
 import pytest
 
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
+from leo.acquisition.coverage import project_capture_progress_coverage
 from leo.acquisition.mixed_rate_schedule import (
     compile_production_dwell_intent_v3,
     production_cycle_classes_v3,
+)
+from leo.contracts.device_buffer import (
+    DIRECT_ASYNC_EVIDENCE_KEY_V1,
+    DirectAsyncEvidenceV1,
+    DirectAsyncRequestV1,
 )
 from leo.contracts.gain_control import GainControllerMode
 from leo.contracts.mixed_rate_schedule import (
@@ -30,6 +36,7 @@ from leo.contracts.states import (
     GainMode,
     PeerFailurePolicy,
     SourceType,
+    StreamState,
     SynchronizationMode,
 )
 from leo.domain.mixed_rate_capture import compile_production_capture_plan_v5
@@ -67,7 +74,15 @@ def _intent(ordinal: int) -> ProductionDwellIntentV3:
     )
 
 
-def _revision(rate: int, receivers: tuple[int, ...], *, name: str) -> CaptureProfileRevisionV2:
+def _revision(
+    rate: int,
+    receivers: tuple[int, ...],
+    *,
+    name: str,
+    duration_seconds: Decimal = Decimal("0.0000004"),
+    ordinary_refill_samples: int = 4,
+    prime_refills: int = 1,
+) -> CaptureProfileRevisionV2:
     direct = rate > 2_500_000
     return CaptureProfileRevisionV2.from_profile(
         CaptureProfileV2(
@@ -78,8 +93,9 @@ def _revision(rate: int, receivers: tuple[int, ...], *, name: str) -> CapturePro
             receivers=receivers,
             gain_mode=GainMode.MANUAL,
             gains=tuple(ReceiverGainV1(receiver_id=item, gain_db=30) for item in receivers),
-            duration_seconds=Decimal("0.0000004"),
-            refill_samples=1_048_576 if direct else 4,
+            duration_seconds=duration_seconds,
+            refill_samples=1_048_576 if direct else ordinary_refill_samples,
+            prime_refills=prime_refills,
             kernel_buffers=15 if direct else 4,
             refill_queue_capacity=64 if direct else 32,
             continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
@@ -287,3 +303,118 @@ def test_bounded_live_2p5_x25_manifest_is_admitted_to_standard_analysis(
             "paired-presentation-native": 1,
         }
     )
+
+
+def test_gapped_2p5_x25_pair_publishes_with_complete_delivery_and_truthful_density(
+    tmp_path,
+) -> None:
+    duration = Decimal("0.05")
+    revisions_by_key = {
+        key: _revision(
+            key[0],
+            key[1],
+            name=f"coverage-{key[0]}-rx{''.join(str(item) for item in key[1])}",
+            duration_seconds=duration,
+            ordinary_refill_samples=131_072,
+            prime_refills=0,
+        )
+        for key in _PROFILE_KEYS
+    }
+    authority = {
+        key: (
+            revision.profile.name,
+            revision.revision_digest,
+            revision.profile.refill_samples,
+        )
+        for key, revision in revisions_by_key.items()
+    }
+    intent = next(
+        candidate
+        for ordinal in range(6)
+        for candidate in (
+            compile_production_dwell_intent_v3(
+                operation_key=f"coverage-plan:{ordinal}",
+                cadence_ordinal=ordinal,
+                radio_ids=_RADIOS,
+                profile_authority=authority,
+            ),
+        )
+        if candidate.dwell_class is ProductionDwellClassV3.MIXED_2P5_25
+    )
+    selected = {
+        leg.radio_id: revisions_by_key[(leg.sample_rate_hz, leg.receiver_ids, True)]
+        for leg in intent.radio_legs
+    }
+    plan = compile_production_capture_plan_v5(
+        intent=intent,
+        profile_revisions_by_radio=selected,
+        source_type=SourceType.TEST,
+    )
+    high_leg = next(leg for leg in intent.radio_legs if leg.sample_rate_hz == 25_000_000)
+    sources = {radio_id: FakeRadioSource(radio_id) for radio_id in _RADIOS}
+    sources[high_leg.radio_id] = FakeRadioSource(
+        high_leg.radio_id,
+        gaps_before_blocks={1: 1_048_576},
+    )
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=128 * 1024 * 1024,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+
+    result = coordinator.capture_once(plan, sources, session_id="gapped-pair-coverage")
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV6)
+    high_stream = next(
+        stream for stream in result.manifest.streams if stream.radio.radio_id == high_leg.radio_id
+    )
+    assert high_stream.state is StreamState.PARTIAL
+    assert high_stream.logical_sample_count == high_stream.requested_sample_count == 1_250_000
+    assert high_stream.observed_sample_count == 1_048_576
+    high_coverage = next(
+        item for item in result.stream_coverage if item.radio_id == high_leg.radio_id
+    )
+    low_coverage = next(
+        item for item in result.stream_coverage if item.radio_id != high_leg.radio_id
+    )
+    assert high_coverage.delivery_unit == "frames"
+    assert (high_coverage.delivered_units, high_coverage.requested_units) == (2, 2)
+    assert high_coverage.delivery_coverage_pct == 100.0
+    assert high_coverage.observed_density_pct == pytest.approx(83.88608)
+    assert high_coverage.in_segment_density_pct == pytest.approx(200 / 3)
+    assert high_coverage.transport_density_pct == pytest.approx(200 / 3)
+    assert low_coverage.delivery_coverage_pct == 100.0
+    assert low_coverage.observed_density_pct == 100.0
+    first = next(
+        coordinator.store.reader(result.bundle, high_stream.stream_id).iter_timeline_metadata()
+    )
+    evidence = DirectAsyncEvidenceV1.model_validate(
+        first.hardware_metadata[DIRECT_ASYNC_EVIDENCE_KEY_V1]
+    )
+    assert evidence.returned_frames == evidence.request.target_frames == 2
+    assert evidence.counter_missing_sample_count == 1_048_576
+
+
+@pytest.mark.parametrize("returned_frames", [0, 6, 7, 63, 64, 1430])
+def test_failed_direct_async_progress_reports_exact_frame_delivery(returned_frames) -> None:
+    request = DirectAsyncRequestV1(
+        target_frames=1431,
+        requested_device_samples=1_500_000_000,
+    )
+
+    coverage = project_capture_progress_coverage(
+        radio_id="radio-21",
+        stream_id="stream-1",
+        requested_samples=request.requested_device_samples,
+        observed_samples=returned_frames * request.frame_samples,
+        covered_device_samples=returned_frames * request.frame_samples,
+        direct_async_request=request,
+        returned_frames=returned_frames,
+    )
+
+    assert coverage.delivery_coverage_pct == pytest.approx(100 * returned_frames / 1431)

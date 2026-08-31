@@ -147,12 +147,43 @@ class CaptureProfileV1(PresentationModel):
     receiver_count_per_radio: Annotated[int, Field(ge=1, le=2)]
 
 
+class RadioCoverageV1(PresentationModel):
+    delivery_unit: Literal["frames", "device_samples"]
+    delivered_units: Annotated[int, Field(ge=0)]
+    requested_units: Annotated[int, Field(gt=0)]
+    delivery_coverage_pct: Annotated[float, Field(ge=0.0, le=100.0)]
+    observed_samples: Annotated[int, Field(ge=0)]
+    logical_samples: Annotated[int, Field(ge=0)]
+    observed_density_pct: Annotated[float | None, Field(ge=0.0, le=100.0)] = None
+    in_segment_density_pct: Annotated[float | None, Field(gt=0.0, le=100.0)] = None
+    transport_density_pct: Annotated[float | None, Field(gt=0.0, le=100.0)] = None
+
+    @model_validator(mode="after")
+    def _percentages_match_counts(self) -> Self:
+        if self.delivered_units > self.requested_units:
+            raise ValueError("delivered units exceed requested units")
+        expected_delivery = 100.0 * self.delivered_units / self.requested_units
+        if abs(self.delivery_coverage_pct - expected_delivery) > 1e-12:
+            raise ValueError("delivery coverage percentage disagrees with exact counts")
+        if self.observed_samples > self.logical_samples:
+            raise ValueError("observed samples exceed the logical sample span")
+        expected_density = (
+            None
+            if self.logical_samples == 0
+            else 100.0 * self.observed_samples / self.logical_samples
+        )
+        if self.observed_density_pct != expected_density:
+            raise ValueError("observed density percentage disagrees with exact counts")
+        return self
+
+
 class RadioStreamV1(PresentationModel):
     radio_id: Identifier
     serial: str
     receiver_labels: tuple[str, ...]
     state: CaptureHealthV1
     captured_samples: Annotated[int, Field(ge=0)]
+    coverage: RadioCoverageV1
     sample_rate_hz: Annotated[float, Field(gt=0)]
     gain_db: tuple[float, ...]
     raw_path: AbsolutePath | None

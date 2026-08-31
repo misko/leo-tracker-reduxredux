@@ -18,6 +18,7 @@ from threading import Event
 from typing import Literal, cast
 
 from leo.acquisition.clock import AcquisitionClock, SystemAcquisitionClock
+from leo.acquisition.coverage import CaptureStreamCoverage, project_capture_progress_coverage
 from leo.acquisition.errors import (
     AcquisitionCancelled,
     AcquisitionError,
@@ -132,6 +133,7 @@ class _StreamOutcome:
     storage_fatal: bool = False
     timed_out_consumer: threading.Thread | None = None
     interruption: BaseException | None = None
+    coverage: CaptureStreamCoverage | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -433,6 +435,9 @@ class AcquisitionCoordinator:
                 admission=admission,
                 release_target_monotonic_ns=release_target,
                 errors=_canonical_errors(errors),
+                stream_coverage=tuple(
+                    outcome.coverage for outcome in ordered_outcomes if outcome.coverage is not None
+                ),
             )
 
         try:
@@ -561,6 +566,9 @@ class AcquisitionCoordinator:
                 manifest=published.manifest,
                 release_target_monotonic_ns=release_target,
                 errors=_canonical_errors(errors),
+                stream_coverage=tuple(
+                    outcome.coverage for outcome in ordered_outcomes if outcome.coverage is not None
+                ),
             )
         except BaseException as error:
             _preserve_failed_bundle(bundle_writer, quarantine=device_axis_capture)
@@ -573,6 +581,9 @@ class AcquisitionCoordinator:
                 admission=admission,
                 release_target_monotonic_ns=release_target,
                 errors=_canonical_errors(errors),
+                stream_coverage=tuple(
+                    outcome.coverage for outcome in ordered_outcomes if outcome.coverage is not None
+                ),
             )
 
     def _compression_for(self, plan: CapturePlan) -> CompressionSettingsV1:
@@ -848,6 +859,13 @@ class AcquisitionCoordinator:
             error=error_text,
             storage_fatal=storage_fatal,
             interruption=interruption,
+            coverage=project_capture_progress_coverage(
+                radio_id=item.identity.radio_id,
+                stream_id=item.stream_id,
+                requested_samples=plan.resolved_sample_count,
+                observed_samples=captured,
+                covered_device_samples=captured,
+            ),
         )
 
     def _capture_radio_v2(
@@ -1387,12 +1405,32 @@ class AcquisitionCoordinator:
         except BaseException as error:
             error_text = _error_text(error)
             if device_buffer is not None:
+                failure_coverage = project_capture_progress_coverage(
+                    radio_id=item.identity.radio_id,
+                    stream_id=item.stream_id,
+                    requested_samples=resolved_sample_count,
+                    observed_samples=captured,
+                    covered_device_samples=device_span,
+                    direct_async_request=(
+                        device_buffer if isinstance(device_buffer, DirectAsyncRequestV1) else None
+                    ),
+                    returned_frames=returned_frames,
+                    counter_missing_samples=direct_missing_samples,
+                    inter_segment_skipped_samples=direct_inter_segment_skipped_samples,
+                )
                 diagnostic: dict[str, object] = {
                     "schema_version": 1,
                     "request": device_buffer.model_dump(mode="json"),
                     "returned_frames": returned_frames,
                     "returned_device_span_samples": returned_device_span,
                     "stored_observed_samples": captured,
+                    "coverage": {
+                        "delivery_unit": failure_coverage.delivery_unit,
+                        "delivered_units": failure_coverage.delivered_units,
+                        "requested_units": failure_coverage.requested_units,
+                        "observed_samples": failure_coverage.observed_samples,
+                        "logical_samples": failure_coverage.logical_samples,
+                    },
                     "error": error_text,
                 }
                 if isinstance(device_buffer, DeviceBufferRequestV1):
@@ -1505,6 +1543,16 @@ class AcquisitionCoordinator:
             if complete
             else (StreamState.PARTIAL if captured and receipt is not None else StreamState.FAILED)
         )
+        observed_samples = (
+            receipt.observed_sample_count
+            if isinstance(receipt, DeviceAxisStreamWriteReceipt)
+            else (receipt.captured_sample_count if receipt is not None else captured)
+        )
+        covered_device_samples = (
+            receipt.continuity.device_span_sample_count
+            if isinstance(receipt, DeviceAxisStreamWriteReceipt)
+            else device_span
+        )
         return _StreamOutcome(
             index=item.index,
             stream_id=item.stream_id,
@@ -1512,17 +1560,26 @@ class AcquisitionCoordinator:
             requested_settings=item.requested_settings,
             applied_settings=item.applied_settings,
             state=state,
-            captured_sample_count=(
-                receipt.observed_sample_count
-                if isinstance(receipt, DeviceAxisStreamWriteReceipt)
-                else (receipt.captured_sample_count if receipt is not None else 0)
-            ),
+            captured_sample_count=(observed_samples if receipt is not None else 0),
             receipt=receipt,
             timing=timing if receipt is not None else None,
             error=error_text or (None if complete else "capture produced no publishable IQ"),
             storage_fatal=storage_fatal,
             timed_out_consumer=consumer if consumer_timed_out else None,
             interruption=interruption,
+            coverage=project_capture_progress_coverage(
+                radio_id=item.identity.radio_id,
+                stream_id=item.stream_id,
+                requested_samples=resolved_sample_count,
+                observed_samples=observed_samples,
+                covered_device_samples=covered_device_samples,
+                direct_async_request=(
+                    device_buffer if isinstance(device_buffer, DirectAsyncRequestV1) else None
+                ),
+                returned_frames=returned_frames,
+                counter_missing_samples=direct_missing_samples,
+                inter_segment_skipped_samples=direct_inter_segment_skipped_samples,
+            ),
         )
 
     def _publish_or_recover(

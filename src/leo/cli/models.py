@@ -137,6 +137,36 @@ class ProfileValidationDataV1(CliModel):
     items: tuple[ProfileValidationItemV1, ...]
 
 
+class CaptureStreamCoverageV1(CliModel):
+    radio_id: str
+    stream_id: str
+    delivery_unit: Literal["frames", "device_samples"]
+    delivered_units: Annotated[int, Field(ge=0)]
+    requested_units: Annotated[int, Field(gt=0)]
+    delivery_coverage_pct: Annotated[float, Field(ge=0.0, le=100.0)]
+    observed_samples: Annotated[int, Field(ge=0)]
+    logical_samples: Annotated[int, Field(ge=0)]
+    observed_density_pct: Annotated[float | None, Field(ge=0.0, le=100.0)] = None
+    in_segment_density_pct: Annotated[float | None, Field(gt=0.0, le=100.0)] = None
+    transport_density_pct: Annotated[float | None, Field(gt=0.0, le=100.0)] = None
+
+    @model_validator(mode="after")
+    def _percentages_match_counts(self) -> Self:
+        delivery = 100.0 * self.delivered_units / self.requested_units
+        if abs(self.delivery_coverage_pct - delivery) > 1e-12:
+            raise ValueError("delivery coverage percentage disagrees with exact counts")
+        if self.observed_samples > self.logical_samples:
+            raise ValueError("observed samples exceed the logical sample span")
+        expected_density = (
+            None
+            if self.logical_samples == 0
+            else 100.0 * self.observed_samples / self.logical_samples
+        )
+        if self.observed_density_pct != expected_density:
+            raise ValueError("observed density percentage disagrees with exact counts")
+        return self
+
+
 class CaptureDataV1(CliModel):
     kind: Literal["capture"] = "capture"
     session_id: str
@@ -152,6 +182,7 @@ class CaptureDataV1(CliModel):
     storage_warning: bool = False
     admission_reason: str | None = None
     errors: tuple[str, ...] = ()
+    stream_coverage: tuple[CaptureStreamCoverageV1, ...] = ()
 
 
 class RunDataV1(CliModel):

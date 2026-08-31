@@ -20,6 +20,11 @@ from leo.acquisition.backpressure import (
 from leo.acquisition.clock import AcquisitionClock, SystemAcquisitionClock
 from leo.acquisition.continuity import ContinuityChainValidator, ContinuityValidationError
 from leo.acquisition.coordinator import AcquisitionCoordinator
+from leo.acquisition.coverage import (
+    CaptureStreamCoverage,
+    project_capture_progress_coverage,
+    project_recording_stream_coverage,
+)
 from leo.acquisition.errors import (
     AcquisitionCancelled,
     AcquisitionError,
@@ -54,6 +59,7 @@ __all__ = [
     "CaptureAuthorityError",
     "CapturePausedError",
     "CaptureSessionResult",
+    "CaptureStreamCoverage",
     "CaptureTaskKind",
     "LocalCaptureAuthority",
     "RadioBusyError",
@@ -62,4 +68,6 @@ __all__ = [
     "StorageAdmissionDecision",
     "SystemAcquisitionClock",
     "UnknownRadioError",
+    "project_capture_progress_coverage",
+    "project_recording_stream_coverage",
 ]

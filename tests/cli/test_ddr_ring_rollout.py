@@ -32,6 +32,32 @@ def test_rollout_defaults_off_and_rejects_ambiguous_limit():
         CliSettings.from_environ({"LEO_DDR_RING_MAX_RATE_HZ": "12000000"})
 
 
+@pytest.mark.parametrize(
+    "receiver,digest",
+    [
+        (0, "sha256:91ee768cb8d96ae7c6e0462c91585847e504db1c9e66a96ceec08469d13d2a18"),
+        (1, "sha256:2f08108db6f9ed5c8e9b259c23ecb1c9b11376a72f2c1ff234c152b8efe84db4"),
+    ],
+)
+def test_25m_production_authority_selects_the_zero_external_prime_v8_profile(
+    tmp_path, receiver, digest
+):
+    settings = CliSettings.from_environ(
+        {
+            "LEO_PROFILE_ROOT": str(Path(__file__).parents[2] / "profiles"),
+            "LEO_BULK_ROOT": str(tmp_path),
+        }
+    )
+
+    name, actual_digest, refill = LocalAcquisitionBackend(settings).production_profile_authority()[
+        (25_000_000, (receiver,), True)
+    ]
+
+    assert name == f"starlink-ch4-lower-25m-60s-rx{receiver}-direct-async-v8"
+    assert actual_digest == digest
+    assert refill == 1_048_576
+
+
 def test_acquisition_identity_does_not_change_analysis_worker_identity():
     settings = CliSettings.from_environ(
         {
