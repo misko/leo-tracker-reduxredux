@@ -38,28 +38,28 @@ from leo.analysis.standard.native_pngs import (
     render_standard_native_pilot_diagnostics_pngs,
 )
 from leo.analysis.standard.native_products import (
-    ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT,
+    ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT,
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
-    FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
-    NUMERICAL_WATERFALL_V3_PRODUCT,
+    FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
+    NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
-    PAIRED_REPORT_V6_PRODUCT,
+    PAIRED_REPORT_V7_PRODUCT,
     PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
-    PATH_REPORT_V3_PRODUCT,
+    PATH_REPORT_V4_PRODUCT,
     PATH_STANDARD_NATIVE_OUTPUTS,
     PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT,
-    PILOT_DOPPLER_SEGMENTS_V3_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
     PILOT_SEGMENT_RATES_PNG_V4_PRODUCT,
-    POWER_TIMELINE_V3_PRODUCT,
-    PROBE_SCHEDULE_V3_PRODUCT,
-    QUALITY_V2_PRODUCT,
-    RADIO_REPORT_V5_PRODUCT,
+    POWER_TIMELINE_V4_PRODUCT,
+    PROBE_SCHEDULE_V4_PRODUCT,
+    QUALITY_V3_PRODUCT,
+    RADIO_REPORT_V6_PRODUCT,
     RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
-    STATEFUL_PATH_V2_PRODUCT,
+    STATEFUL_PATH_V3_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
-    TRAJECTORY_CONDITIONED_ACCOUNTING_V3_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_V4_PRODUCT,
 )
 from leo.analysis.standard.native_reducers import (
     reduce_native_paired_terminal_evidence,
@@ -68,7 +68,7 @@ from leo.analysis.standard.native_reducers import (
 from leo.analysis.standard.native_runner import run_standard_native_observability
 from leo.analysis.standard.native_stateful import (
     StandardNativeStatefulRunner,
-    build_standard_native_stateful_path_v2,
+    build_standard_native_stateful_path_v3,
     stateful_global_schedule_is_publishable,
 )
 from leo.analysis.standard.runner import (
@@ -80,12 +80,26 @@ from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.pilot_doppler_segments import (
     PilotPhaseLockletConfigV1,
     StandardPilotDopplerSegmentsV3,
+    StandardPilotDopplerSegmentsV4,
 )
-from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
-from leo.contracts.standard_native_path_report import StandardNativePathReportV3
-from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
-from leo.contracts.standard_native_terminal import StandardNativePairedReportV6
-from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV4
+from leo.contracts.standard_native import StandardProbeScheduleV4
+from leo.contracts.standard_native_glrt import (
+    StandardNativeFullCaptureGlrt20msV2,
+)
+from leo.contracts.standard_native_path_report import (
+    StandardNativePathReportV4,
+)
+from leo.contracts.standard_native_stateful_v2 import (
+    StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
+)
+from leo.contracts.standard_native_terminal import (
+    StandardNativePairedReportV7,
+)
+from leo.contracts.standard_pipeline import (
+    StandardPairInputBindV2,
+    StandardPathInputBindV5,
+)
 from leo.pipeline import (
     AnalysisContext,
     AnalyzerRegistry,
@@ -205,7 +219,7 @@ class PathStandardNativeEvidenceAnalyzer:
         products: ProductReader,
         outputs: OutputSink,
     ) -> StageResult:
-        binding = StandardPathInputBindV4.model_validate(products.read_subject_binding())
+        binding = StandardPathInputBindV5.model_validate(products.read_subject_binding())
         _require_native_path_context(context, binding)
         config = _NativeEvidenceConfig.model_validate(context.stage_config)
         base_config = production_receiver_standard_config()
@@ -252,6 +266,8 @@ class PathStandardNativeEvidenceAnalyzer:
             probe_offsets_ms=stateful_config.feedback.probe_offsets_ms,
             maximum_coarse_windows=stateful_config.feedback.maximum_outer_windows,
         )
+        if not isinstance(result.schedule, StandardProbeScheduleV4):
+            raise ValueError("V5 native binding did not produce a V4 probe schedule")
         stateful_runner = self._stateful_runner_factory(stateful_config)
         if stateful_global_schedule_is_publishable(binding):
             stateful_result = stateful_runner.run(
@@ -270,7 +286,7 @@ class PathStandardNativeEvidenceAnalyzer:
                 capture_qam=True,
             )
             stateful_schedule = result.schedule
-        stateful = build_standard_native_stateful_path_v2(
+        stateful = build_standard_native_stateful_path_v3(
             stateful_result,
             binding,
             stateful_config,
@@ -327,34 +343,34 @@ class PathStandardNativeEvidenceAnalyzer:
         )
         documents: tuple[tuple[Any, dict[str, JsonValue]], ...] = (
             (
-                QUALITY_V2_PRODUCT,
+                QUALITY_V3_PRODUCT,
                 quality_document,
             ),
             (
-                POWER_TIMELINE_V3_PRODUCT,
+                POWER_TIMELINE_V4_PRODUCT,
                 power_document,
             ),
             (
-                NUMERICAL_WATERFALL_V3_PRODUCT,
+                NUMERICAL_WATERFALL_V4_PRODUCT,
                 waterfall_document,
             ),
             (
-                PROBE_SCHEDULE_V3_PRODUCT,
+                PROBE_SCHEDULE_V4_PRODUCT,
                 schedule_document,
             ),
             (
-                STATEFUL_PATH_V2_PRODUCT,
+                STATEFUL_PATH_V3_PRODUCT,
                 stateful_document,
             ),
             (
-                PILOT_DOPPLER_SEGMENTS_V3_PRODUCT,
+                PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
                 pilot_doppler_v3_document,
             ),
             (
-                FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
+                FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
                 glrt_document,
             ),
-            (PATH_REPORT_V3_PRODUCT, path_report_document),
+            (PATH_REPORT_V4_PRODUCT, path_report_document),
         )
         published = tuple(
             outputs.publish_json(product, document) for product, document in documents
@@ -422,11 +438,11 @@ class PathAlternateTracksNativeAnalyzer:
         configuration_schema="path-alternate-tracks-native.projection.v5",
         dependencies=("path-standard-native",),
         input_products=(
-            _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
-            _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
-            _require_native_product(PILOT_DOPPLER_SEGMENTS_V3_PRODUCT, "path-standard-native"),
-            _require_native_product(FULL_CAPTURE_GLRT20MS_V1_PRODUCT, "path-standard-native"),
-            _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),
+            _require_native_product(STATEFUL_PATH_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(PILOT_DOPPLER_SEGMENTS_V4_PRODUCT, "path-standard-native"),
+            _require_native_product(FULL_CAPTURE_GLRT20MS_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(PATH_REPORT_V4_PRODUCT, "path-standard-native"),
         ),
         output_products=PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
         resource_class=ResourceClass.CPU,
@@ -465,8 +481,8 @@ class PathAlternateTracksNativeAnalyzer:
             )
         ):
             raise ValueError("native projection predecessor does not match the exact path node")
-        stateful = StandardNativeStatefulPathV2.model_validate(predecessor.document)
-        pilot_v3 = StandardPilotDopplerSegmentsV3.model_validate(pilot_v3_item.document)
+        stateful = StandardNativeStatefulPathV3.model_validate(predecessor.document)
+        pilot_v3 = StandardPilotDopplerSegmentsV4.model_validate(pilot_v3_item.document)
         if (
             pilot_v3.source != stateful.source
             or pilot_v3.stateful_path_product_digest != predecessor.product_digest
@@ -506,22 +522,22 @@ class PathAlternateTracksNativeAnalyzer:
             config=config,
             path_label=path_label,
         )
-        glrt = StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
+        glrt = StandardNativeFullCaptureGlrt20msV2.model_validate(glrt_item.document)
         if (
             glrt.source != stateful.source
             or glrt_item.product_digest
-            != StandardNativePathReportV3.model_validate(
+            != StandardNativePathReportV4.model_validate(
                 report_item.document
             ).products.full_capture_glrt20ms_product_digest
         ):
             raise ValueError("native GLRT projection lineage does not close")
         documents = (
             (
-                ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT,
+                ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT,
                 cast(dict[str, JsonValue], bank.model_dump(mode="json")),
             ),
             (
-                TRAJECTORY_CONDITIONED_ACCOUNTING_V3_PRODUCT,
+                TRAJECTORY_CONDITIONED_ACCOUNTING_V4_PRODUCT,
                 cast(dict[str, JsonValue], accounting.model_dump(mode="json")),
             ),
         )
@@ -586,13 +602,13 @@ class RadioStandardNativeEvidenceAnalyzer:
         configuration_schema="radio-scientific-report-native.evidence.v6",
         dependencies=("path-standard-native",),
         input_products=(
-            _require_native_product(QUALITY_V2_PRODUCT, "path-standard-native"),
-            _require_native_product(POWER_TIMELINE_V3_PRODUCT, "path-standard-native"),
-            _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
-            _require_native_product(PROBE_SCHEDULE_V3_PRODUCT, "path-standard-native"),
-            _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
-            _require_native_product(FULL_CAPTURE_GLRT20MS_V1_PRODUCT, "path-standard-native"),
-            _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(QUALITY_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(POWER_TIMELINE_V4_PRODUCT, "path-standard-native"),
+            _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),
+            _require_native_product(PROBE_SCHEDULE_V4_PRODUCT, "path-standard-native"),
+            _require_native_product(STATEFUL_PATH_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(FULL_CAPTURE_GLRT20MS_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(PATH_REPORT_V4_PRODUCT, "path-standard-native"),
         ),
         output_products=RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
         resource_class=ResourceClass.CPU,
@@ -626,7 +642,7 @@ class RadioStandardNativeEvidenceAnalyzer:
         )
         if not upstream[4]:
             raise ValueError("native radio presentation has no stateful path source")
-        stateful = StandardNativeStatefulPathV2.model_validate(upstream[4][0].document)
+        stateful = StandardNativeStatefulPathV3.model_validate(upstream[4][0].document)
         config = require_receiver_standard_sample_rate(
             production_receiver_standard_config(sample_rate_hz=stateful.source.sample_rate_hz),
             sample_rate_hz=stateful.source.sample_rate_hz,
@@ -642,7 +658,7 @@ class RadioStandardNativeEvidenceAnalyzer:
         payloads = render_standard_native_common_pngs(source)
         report_document = cast(dict[str, JsonValue], report.model_dump(mode="json"))
         published = (
-            outputs.publish_json(RADIO_REPORT_V5_PRODUCT, report_document),
+            outputs.publish_json(RADIO_REPORT_V6_PRODUCT, report_document),
             *(outputs.publish_bytes(product, payload) for product, payload in payloads),
         )
         return StageResult(
@@ -678,9 +694,9 @@ class PairedStandardNativeEvidenceAnalyzer:
         configuration_schema="paired-scientific-report-native.evidence.v5",
         dependencies=("radio-scientific-report-native",),
         input_products=(
-            _require_native_product(RADIO_REPORT_V5_PRODUCT, "radio-scientific-report-native"),
+            _require_native_product(RADIO_REPORT_V6_PRODUCT, "radio-scientific-report-native"),
         ),
-        output_products=(PAIRED_REPORT_V6_PRODUCT,),
+        output_products=(PAIRED_REPORT_V7_PRODUCT,),
         resource_class=ResourceClass.CPU,
         accepted_outcomes=_NATIVE_OUTCOMES,
     )
@@ -704,7 +720,7 @@ class PairedStandardNativeEvidenceAnalyzer:
             radio_products=upstream,
         )
         published = outputs.publish_json(
-            PAIRED_REPORT_V6_PRODUCT,
+            PAIRED_REPORT_V7_PRODUCT,
             cast(dict[str, JsonValue], report.model_dump(mode="json")),
         )
         return StageResult(
@@ -744,12 +760,12 @@ class PairedStandardNativeWaterfallAnalyzer:
         configuration_schema="paired-presentation-native.evidence.v6",
         dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
-            _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
-            _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
-            _require_native_product(FULL_CAPTURE_GLRT20MS_V1_PRODUCT, "path-standard-native"),
-            _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),
+            _require_native_product(STATEFUL_PATH_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(FULL_CAPTURE_GLRT20MS_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(PATH_REPORT_V4_PRODUCT, "path-standard-native"),
             _require_native_product(
-                PAIRED_REPORT_V6_PRODUCT,
+                PAIRED_REPORT_V7_PRODUCT,
                 "paired-scientific-report-native",
             ),
         ),
@@ -776,7 +792,7 @@ class PairedStandardNativeWaterfallAnalyzer:
         if len(upstream[4]) != 1:
             raise ValueError("native paired presentation requires one exact paired report")
         paired_item = upstream[4][0]
-        paired = StandardNativePairedReportV6.model_validate(paired_item.document)
+        paired = StandardNativePairedReportV7.model_validate(paired_item.document)
         if (
             context.scope is None
             or context.scope.kind is not ScopeKind.PAIRED
@@ -789,7 +805,7 @@ class PairedStandardNativeWaterfallAnalyzer:
         if not upstream[1]:
             raise ValueError("native paired presentation has no stateful path source")
         stateful_documents = tuple(
-            StandardNativeStatefulPathV2.model_validate(item.document) for item in upstream[1]
+            StandardNativeStatefulPathV3.model_validate(item.document) for item in upstream[1]
         )
         stateful = stateful_documents[0]
         configurations = {
@@ -870,7 +886,7 @@ def production_standard_native_evidence_configuration() -> dict[str, dict[str, J
 
 def _require_native_path_context(
     context: AnalysisContext,
-    binding: StandardPathInputBindV4,
+    binding: StandardPathInputBindV5,
 ) -> None:
     scope = context.scope
     if (

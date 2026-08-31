@@ -6,7 +6,11 @@ from collections.abc import Iterable, Mapping
 
 import numpy as np
 
-from leo.contracts.device_buffer import DdrRingStatusV1, DeviceBufferRequestV1
+from leo.contracts.device_buffer import (
+    DdrRingStatusV1,
+    DeviceBufferRequest,
+    DeviceBufferRequestV1,
+)
 from leo.contracts.gain_control import (
     GainControllerMode,
     GainControllerPolicyV1,
@@ -90,7 +94,7 @@ class FakeRadioSource:
         self._kernel_buffers: int | None = None
         self._metadata_refill_samples: int | None = None
         self._gain_controller: GainControllerPolicyV1 | None = None
-        self._device_buffer: DeviceBufferRequestV1 | None = None
+        self._device_buffer: DeviceBufferRequest | None = None
         self._ring_returned_frames = 0
         self._ring_first_counter: int | None = None
         self._ring_first_unavailable: int | None = None
@@ -148,7 +152,8 @@ class FakeRadioSource:
         *,
         kernel_buffers: int,
         gain_controller: GainControllerPolicyV1 | None = None,
-        device_buffer: DeviceBufferRequestV1 | None = None,
+        device_buffer: DeviceBufferRequest | None = None,
+        direct_async_frames: int = 0,
     ) -> int:
         self._require_open()
         if self._settings is None:
@@ -165,6 +170,7 @@ class FakeRadioSource:
         self._ring_first_counter = None
         self._ring_first_unavailable = None
         self._gain_controller = gain_controller
+        del direct_async_frames
         if device_buffer is not None and self._gain_controller is None:
             self._gain_controller = GainControllerPolicyV1.create(
                 GainControllerMode.TANDEM_HOLD, sample_count=sample_count
@@ -176,7 +182,7 @@ class FakeRadioSource:
 
     def ddr_ring_status(self) -> DdrRingStatusV1:
         request = self._device_buffer
-        if request is None or self._ring_first_counter is None:
+        if not isinstance(request, DeviceBufferRequestV1) or self._ring_first_counter is None:
             raise FakeRadioError("fake DDR ring has no returned frames")
         frames = self._ring_returned_frames
         complete = frames == request.target_frames

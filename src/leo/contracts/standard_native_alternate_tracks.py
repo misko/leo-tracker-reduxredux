@@ -14,7 +14,7 @@ from pydantic import Field, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.standard_native import StandardNativeSourceV1
+from leo.contracts.standard_native import StandardNativeSourceV1, StandardNativeSourceV2
 from leo.contracts.standard_native_stateful import NativePolynomialTrajectoryV1
 from leo.contracts.standard_native_stateful_v2 import NativeStatefulSegmentDispositionV2
 from leo.contracts.states import StarlinkEdge
@@ -233,3 +233,13 @@ class StandardNativeAlternateCfoTrackBankV4(ContractModel):
         ):
             raise ValueError("native alternate-track bank digest does not match content")
         return self
+
+
+class StandardNativeAlternateCfoTrackBankV5(StandardNativeAlternateCfoTrackBankV4):
+    """Additive alternate-track bank carrying StandardNativeSourceV2."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-alternate-cfo-track-bank-v5"] = (
+        "standard-native-alternate-cfo-track-bank-v5"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]

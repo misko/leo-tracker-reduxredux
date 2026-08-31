@@ -46,7 +46,11 @@ from leo.cli.models import (
     WP11ShowDataV1,
 )
 from leo.contracts.capture_control import CaptureControlStateV1
-from leo.contracts.mixed_rate_schedule import ProductionDwellIntentV1, ProductionDwellIntentV2
+from leo.contracts.mixed_rate_schedule import (
+    ProductionDwellIntentV1,
+    ProductionDwellIntentV2,
+    ProductionDwellIntentV3,
+)
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
@@ -139,7 +143,7 @@ class AcquisitionCliBackend(Protocol):
 
     def capture_production_once(
         self,
-        intent: ProductionDwellIntentV2,
+        intent: ProductionDwellIntentV2 | ProductionDwellIntentV3,
         *,
         session_id: str | None,
         cancel: Event,

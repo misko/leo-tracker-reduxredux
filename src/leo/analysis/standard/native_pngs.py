@@ -35,12 +35,25 @@ from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentV2,
     StandardPilotDopplerSegmentsV2,
     StandardPilotDopplerSegmentsV3,
+    StandardPilotDopplerSegmentsV4,
 )
-from leo.contracts.standard_native import StandardNativeNumericalWaterfallV3
-from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
-from leo.contracts.standard_native_path_report import StandardNativePathReportV3
+from leo.contracts.standard_native import (
+    StandardNativeNumericalWaterfallV3,
+    StandardNativeNumericalWaterfallV4,
+)
+from leo.contracts.standard_native_glrt import (
+    StandardNativeFullCaptureGlrt20msV1,
+    StandardNativeFullCaptureGlrt20msV2,
+)
+from leo.contracts.standard_native_path_report import (
+    StandardNativePathReportV3,
+    StandardNativePathReportV4,
+)
 from leo.contracts.standard_native_stateful import NativeSegmentLocalScienceV1
-from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
+from leo.contracts.standard_native_stateful_v2 import (
+    StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
+)
 from leo.pipeline import AnalysisContext, ProductSpec, ScopeKind, UpstreamJsonProduct
 from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.presentation.standard_png import (
@@ -196,13 +209,15 @@ def _globalize_final_rows(
 
 
 def _path_source(
-    waterfall: StandardNativeNumericalWaterfallV3,
-    stateful: StandardNativeStatefulPathV2,
-    report: StandardNativePathReportV3,
+    waterfall: StandardNativeNumericalWaterfallV3 | StandardNativeNumericalWaterfallV4,
+    stateful: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
+    report: StandardNativePathReportV3 | StandardNativePathReportV4,
     *,
     config: ReceiverStandardConfig,
     origin_utc_ns: int,
-    full_capture_glrt: StandardNativeFullCaptureGlrt20msV1 | None = None,
+    full_capture_glrt: (
+        StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2 | None
+    ) = None,
 ) -> StandardPngPathSource:
     source = stateful.source
     detections: list[dict[str, Any]] = []
@@ -477,13 +492,30 @@ def native_standard_png_source(
         ):
             raise ValueError("native PNG products disagree on producer scope")
         producer_scope = waterfall_item.producer_scope
-        waterfall = StandardNativeNumericalWaterfallV3.model_validate(waterfall_item.document)
-        stateful = StandardNativeStatefulPathV2.model_validate(stateful_item.document)
-        report = StandardNativePathReportV3.model_validate(report_item.document)
+        wideband = waterfall_item.document.get("schema_version") == 4
+        waterfall = (
+            StandardNativeNumericalWaterfallV4.model_validate(waterfall_item.document)
+            if wideband
+            else StandardNativeNumericalWaterfallV3.model_validate(waterfall_item.document)
+        )
+        stateful = (
+            StandardNativeStatefulPathV3.model_validate(stateful_item.document)
+            if wideband
+            else StandardNativeStatefulPathV2.model_validate(stateful_item.document)
+        )
+        report = (
+            StandardNativePathReportV4.model_validate(report_item.document)
+            if wideband
+            else StandardNativePathReportV3.model_validate(report_item.document)
+        )
         glrt = (
             None
             if glrt_item is None
-            else StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
+            else (
+                StandardNativeFullCaptureGlrt20msV2.model_validate(glrt_item.document)
+                if wideband
+                else StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
+            )
         )
         source = stateful.source
         path_config = configurations.get(source.sample_rate_hz)
@@ -607,7 +639,7 @@ def render_standard_native_common_pngs(
 
 
 def _native_glrt_runtime_result(
-    product: StandardNativeFullCaptureGlrt20msV1,
+    product: StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2,
     config: ReceiverStandardConfig,
 ) -> FullCaptureGlrt20msResult:
     windows = tuple(
@@ -698,7 +730,7 @@ def _native_glrt_runtime_result(
 
 
 def render_standard_native_full_capture_glrt_png(
-    product: StandardNativeFullCaptureGlrt20msV1,
+    product: StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2,
     *,
     config: ReceiverStandardConfig,
     path_label: str,
@@ -714,7 +746,7 @@ def render_standard_native_full_capture_glrt_png(
 
 
 def _global_pilot_doppler_segments(
-    stateful: StandardNativeStatefulPathV2,
+    stateful: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
     *,
     config: ReceiverStandardConfig,
 ) -> StandardPilotDopplerSegmentsV2:
@@ -791,9 +823,9 @@ def _global_pilot_doppler_segments(
 
 
 def render_standard_native_pilot_diagnostics_pngs(
-    stateful: StandardNativeStatefulPathV2,
+    stateful: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
     *,
-    pilot_v3: StandardPilotDopplerSegmentsV3,
+    pilot_v3: StandardPilotDopplerSegmentsV3 | StandardPilotDopplerSegmentsV4,
     config: ReceiverStandardConfig,
     path_label: str,
 ) -> tuple[bytes, bytes, bytes]:

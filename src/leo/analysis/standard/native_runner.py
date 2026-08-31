@@ -17,12 +17,21 @@ from leo.contracts.standard_native import (
     NativeQualityReceiverV2,
     NativeWindowDisposition,
     StandardNativeNumericalWaterfallV3,
+    StandardNativeNumericalWaterfallV4,
     StandardNativePowerTimelineV3,
+    StandardNativePowerTimelineV4,
     StandardNativeQualityV2,
+    StandardNativeQualityV3,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
     StandardProbeScheduleV3,
+    StandardProbeScheduleV4,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardPowerTimelineV2
+from leo.contracts.standard_pipeline import (
+    StandardPathInputBindV4,
+    StandardPathInputBindV5,
+    StandardPowerTimelineV2,
+)
 from leo.contracts.validity import DeviceAxisContentKind
 from leo.domain.iq import IqBlock
 from leo.pipeline.contracts import IqReader
@@ -31,15 +40,15 @@ from leo.pipeline.validity import ValidityAwareIqReader
 
 @dataclass(frozen=True, slots=True)
 class StandardNativeObservabilityResult:
-    schedule: StandardProbeScheduleV3
-    quality: StandardNativeQualityV2
-    power: StandardNativePowerTimelineV3
-    waterfall: StandardNativeNumericalWaterfallV3
+    schedule: StandardProbeScheduleV3 | StandardProbeScheduleV4
+    quality: StandardNativeQualityV2 | StandardNativeQualityV3
+    power: StandardNativePowerTimelineV3 | StandardNativePowerTimelineV4
+    waterfall: StandardNativeNumericalWaterfallV3 | StandardNativeNumericalWaterfallV4
 
 
 def validate_standard_native_source(
     reader: ValidityAwareIqReader,
-    binding: StandardPathInputBindV4,
+    binding: StandardPathInputBindV4 | StandardPathInputBindV5,
 ) -> None:
     """Reject any reader not bound to the exact V4 logical IQ authority."""
 
@@ -57,13 +66,13 @@ def validate_standard_native_source(
 
 def build_standard_native_probe_schedule(
     reader: ValidityAwareIqReader,
-    binding: StandardPathInputBindV4,
+    binding: StandardPathInputBindV4 | StandardPathInputBindV5,
     *,
     subwindow_ms: int,
     probe_ms: int,
     probe_offsets_ms: tuple[int, ...],
     maximum_coarse_windows: int,
-) -> StandardProbeScheduleV3:
+) -> StandardProbeScheduleV3 | StandardProbeScheduleV4:
     """Retain the global schedule and classify every returned opportunity."""
 
     validate_standard_native_source(reader, binding)
@@ -99,8 +108,14 @@ def build_standard_native_probe_schedule(
         ],
         outside_span_count=disposition_counts[NativeWindowDisposition.OUTSIDE_SPAN],
     )
+    source = (
+        StandardNativeSourceV2.from_path_binding(binding)
+        if isinstance(binding, StandardPathInputBindV5)
+        else StandardNativeSourceV1.from_path_binding(binding)
+    )
+    wideband = isinstance(source, StandardNativeSourceV2)
     values: dict[str, Any] = {
-        "source": StandardNativeSourceV1.from_path_binding(binding).model_dump(mode="json"),
+        "source": source.model_dump(mode="json"),
         "coarse_window_ms": legacy.coarse_window_ms,
         "subwindow_ms": legacy.subwindow_ms,
         "probe_ms": legacy.probe_ms,
@@ -114,12 +129,17 @@ def build_standard_native_probe_schedule(
     }
     from leo.contracts.digests import canonical_digest
 
-    return StandardProbeScheduleV3(
+    product_type = StandardProbeScheduleV4 if wideband else StandardProbeScheduleV3
+    schema_version = 4 if wideband else 3
+    algorithm_version = (
+        "standard-native-probe-schedule-v4" if wideband else "standard-native-probe-schedule-v3"
+    )
+    return product_type(
         **values,
         schedule_digest=canonical_digest(
             {
-                "schema_version": 3,
-                "algorithm_version": "standard-native-probe-schedule-v3",
+                "schema_version": schema_version,
+                "algorithm_version": algorithm_version,
                 **values,
             }
         ),
@@ -128,7 +148,7 @@ def build_standard_native_probe_schedule(
 
 def run_standard_native_observability(
     reader: ValidityAwareIqReader,
-    binding: StandardPathInputBindV4,
+    binding: StandardPathInputBindV4 | StandardPathInputBindV5,
     *,
     quality_block_samples: int = 262_144,
     clipping_abs_threshold: int = 32_767,
@@ -145,7 +165,11 @@ def run_standard_native_observability(
     validate_standard_native_source(reader, binding)
     if quality_block_samples <= 0 or not 1 <= clipping_abs_threshold <= 32_768:
         raise ValueError("native quality bounds are invalid")
-    source = StandardNativeSourceV1.from_path_binding(binding)
+    source = (
+        StandardNativeSourceV2.from_path_binding(binding)
+        if isinstance(binding, StandardPathInputBindV5)
+        else StandardNativeSourceV1.from_path_binding(binding)
+    )
     schedule = build_standard_native_probe_schedule(
         reader,
         binding,
@@ -167,9 +191,11 @@ def run_standard_native_observability(
         window_samples=power_window_samples,
         block_samples=power_block_samples,
     )
-    power = StandardNativePowerTimelineV3(
-        source=source,
-        timeline=StandardPowerTimelineV2.model_validate(power_document),
+    timeline = StandardPowerTimelineV2.model_validate(power_document)
+    power = (
+        StandardNativePowerTimelineV4(source=source, timeline=timeline)
+        if isinstance(source, StandardNativeSourceV2)
+        else StandardNativePowerTimelineV3(source=source, timeline=timeline)
     )
     from leo.analysis.standard.native_waterfall import measure_standard_native_waterfall
 
@@ -232,12 +258,12 @@ class _LogicalValidIqReader:
 
 def _measure_native_quality(
     reader: ValidityAwareIqReader,
-    source: StandardNativeSourceV1,
+    source: StandardNativeSourceV1 | StandardNativeSourceV2,
     *,
     receiver_id: int,
     block_samples: int,
     clipping_abs_threshold: int,
-) -> StandardNativeQualityV2:
+) -> StandardNativeQualityV2 | StandardNativeQualityV3:
     valid_count = 0
     energy_sum = 0
     clipped_components = 0
@@ -279,6 +305,13 @@ def _measure_native_quality(
         minimum_q=int(minimum[1]),
         maximum_q=int(maximum[1]),
     )
+    if isinstance(source, StandardNativeSourceV2):
+        return StandardNativeQualityV3(
+            source=source,
+            clipping_abs_threshold=clipping_abs_threshold,
+            uncovered_region_count=uncovered,
+            receivers=(receiver,),
+        )
     return StandardNativeQualityV2(
         source=source,
         clipping_abs_threshold=clipping_abs_threshold,

@@ -19,7 +19,7 @@ from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.pilot_methods import PilotProbeDetection
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_native_accounting import (
-    StandardNativeTrajectoryConditionedAccountingV3,
+    StandardNativeTrajectoryConditionedAccountingV4,
 )
 from leo.contracts.standard_native_stateful import (
     NativeConditionedHoughReplayRowV1,
@@ -28,7 +28,7 @@ from leo.contracts.standard_native_stateful import (
     NativePilotProbeDetectionV1,
     NativePolynomialTrajectoryV1,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4
+from leo.contracts.standard_pipeline import StandardPathInputBindV5
 from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome, UpstreamJsonProduct
 from tests.analysis.test_standard_native_observability import (
@@ -60,6 +60,8 @@ def test_native_path_projection_publishes_accounting_and_all_twelve_pngs() -> No
     inventory = _inventory()
     values = _values(2_500_000)
     values.update(
+        schema_version=5,
+        algorithm_version="standard-path-input-bind-v5",
         observed_sample_count=2_500_000 - 10_000,
         missing_sample_count=10_000,
         timeline_sha256=inventory.timeline_sha256,
@@ -67,7 +69,7 @@ def test_native_path_projection_publishes_accounting_and_all_twelve_pngs() -> No
         validity_inventory_sha256=inventory.inventory_digest,
         validity_inventory=inventory.model_dump(mode="json"),
     )
-    binding = StandardPathInputBindV4.model_validate(
+    binding = StandardPathInputBindV5.model_validate(
         {**values, "binding_digest": canonical_digest(values)}
     )
     scope = ScopeIdentityV1.receiver_path(
@@ -141,8 +143,8 @@ def test_native_path_projection_publishes_accounting_and_all_twelve_pngs() -> No
 
     assert result.outcome is StageOutcome.PARTIAL_COVERAGE
     assert len(result.products) == len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 14
-    accounting = StandardNativeTrajectoryConditionedAccountingV3.model_validate(
-        projection_outputs.documents[("standard.trajectory-conditioned-accounting", 3)]
+    accounting = StandardNativeTrajectoryConditionedAccountingV4.model_validate(
+        projection_outputs.documents[("standard.trajectory-conditioned-accounting", 4)]
     )
     assert accounting.source.path_input_binding_digest == binding.binding_digest
     assert accounting.cross_segment_association_permitted is False

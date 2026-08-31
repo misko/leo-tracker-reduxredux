@@ -288,7 +288,7 @@ def test_full_deployment_plan_binds_exact_production_capture_policy(
 
     plan = OPS._deployment_plan(OPS.parser().parse_args(["deploy", "--plan"]))
 
-    assert plan["capture_policy_id"] == "production-native-rates-2p5-10-15-8-v2"
+    assert plan["capture_policy_id"] == "production-direct-async-2p5-10-15-25-6-v3"
 
 
 def test_stage_only_stages_exact_main_without_cutover_or_rate_receipt(
@@ -544,7 +544,8 @@ def test_deployment_environment_adds_new_reviewed_rate_profile_bindings(
 
     values = OPS._environment_values(environment.read_bytes())
     assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-native-bandwidth-v4"
-    assert values["LEO_MIXED_RATE_POLICY"] == "production-native-rates-2p5-10-15-8-v2"
+    assert values["LEO_MIXED_RATE_POLICY"] == "production-direct-async-2p5-10-15-25-6-v3"
+    assert values["LEO_DIRECT_ASYNC_ENABLED"] == "true"
     assert values["LEO_PIPELINE_RELEASE_ID"] == target
 
 

@@ -10,18 +10,22 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactInventoryV8,
+    StandardNativePngArtifactInventoryV9,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
     StandardNativePlotViewV4,
     StandardNativePlotViewV5,
+    StandardNativePlotViewV6,
     StandardNativeSourceProofV3,
     StandardNativeSubjectDetailV3,
     StandardNativeSubjectDetailV4,
     StandardNativeSubjectDetailV5,
+    StandardNativeSubjectDetailV6,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectHierarchyV4,
     StandardNativeSubjectHierarchyV5,
+    StandardNativeSubjectHierarchyV6,
 )
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
@@ -42,6 +46,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         | StandardNativeSubjectHierarchyV3
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
+        | StandardNativeSubjectHierarchyV6
         | None
     ): ...
 
@@ -52,6 +57,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         | StandardNativeSubjectDetailV3
         | StandardNativeSubjectDetailV4
         | StandardNativeSubjectDetailV5
+        | StandardNativeSubjectDetailV6
         | None
     ): ...
 
@@ -75,6 +81,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         | StandardNativePlotViewV3
         | StandardNativePlotViewV4
         | StandardNativePlotViewV5
+        | StandardNativePlotViewV6
         | None
     ): ...
 
@@ -111,6 +118,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         | StandardNativePngArtifactInventoryV6
         | StandardNativePngArtifactInventoryV7
         | StandardNativePngArtifactInventoryV8
+        | StandardNativePngArtifactInventoryV9
         | None
     ): ...
 

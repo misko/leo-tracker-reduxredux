@@ -19,7 +19,7 @@ from leo.application import StandardReprocessService
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV3
 from leo.catalog import CatalogSubjectBindingReader
 from leo.contracts.digests import canonical_digest
-from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV3
+from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV4
 from leo.contracts.profile import CapturePlanV2, CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.recording import (
     DEVICE_AXIS_STORAGE_POLICY_V1,
@@ -28,30 +28,30 @@ from leo.contracts.recording import (
 )
 from leo.contracts.standard_native import (
     NativeWindowDisposition,
-    StandardNativeNumericalWaterfallV3,
-    StandardNativePowerTimelineV3,
-    StandardNativeQualityV2,
-    StandardNativeSourceV1,
-    StandardProbeScheduleV3,
+    StandardNativeNumericalWaterfallV4,
+    StandardNativePowerTimelineV4,
+    StandardNativeQualityV3,
+    StandardNativeSourceV2,
+    StandardProbeScheduleV4,
 )
 from leo.contracts.standard_native_accounting import (
-    StandardNativeTrajectoryConditionedAccountingV3,
+    StandardNativeTrajectoryConditionedAccountingV4,
 )
 from leo.contracts.standard_native_alternate_tracks import (
     NativeAlternateTrackProjectionDispositionV1,
-    StandardNativeAlternateCfoTrackBankV4,
+    StandardNativeAlternateCfoTrackBankV5,
 )
-from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
-from leo.contracts.standard_native_path_report import StandardNativePathReportV3
+from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV2
+from leo.contracts.standard_native_path_report import StandardNativePathReportV4
 from leo.contracts.standard_native_stateful_v2 import (
     NativeStatefulSegmentDispositionV2,
-    StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
 )
 from leo.contracts.standard_native_terminal import (
-    StandardNativePairedReportV6,
-    StandardNativeRadioReportV5,
+    StandardNativePairedReportV7,
+    StandardNativeRadioReportV6,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4
+from leo.contracts.standard_pipeline import StandardPathInputBindV5
 from leo.contracts.states import CaptureState, SourceType, StreamState
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.operations.service import _stream_registrations
@@ -243,7 +243,7 @@ def _assert_physical_zero_gap(store: RecordingStore, bundle: PublishedBundle) ->
     assert not span.samples[_GAP_START:_GAP_STOP].any()
 
 
-def _assert_v4_bindings(
+def _assert_v5_bindings(
     database: ProcessingDatabase,
     run_id: str,
     manifest: RecordingManifestV3,
@@ -257,7 +257,7 @@ def _assert_v4_bindings(
                 receiver_id=receiver_id,
             )
             binding = reader.receiver_path_native(run_id, scope)
-            assert isinstance(binding, StandardPathInputBindV4)
+            assert isinstance(binding, StandardPathInputBindV5)
             assert binding.sample_rate_hz == _SAMPLE_RATE_HZ
             assert binding.logical_sample_count == stream.logical_sample_count
             assert binding.observed_sample_count == stream.observed_sample_count
@@ -304,23 +304,23 @@ def _assert_native_products(
         "standard.cfo-trajectories-final-png": 7,
     }
     json_models = {
-        "quality.summary": StandardNativeQualityV2,
-        "standard.power-timeline": StandardNativePowerTimelineV3,
-        "standard.numerical-waterfall": StandardNativeNumericalWaterfallV3,
-        "standard.probe-schedule": StandardProbeScheduleV3,
-        "standard.native-stateful-path": StandardNativeStatefulPathV2,
-        "standard.pilot-doppler-segments": StandardPilotDopplerSegmentsV3,
-        "standard.full-capture-glrt20ms": StandardNativeFullCaptureGlrt20msV1,
-        "standard.alternate-cfo-track-bank": StandardNativeAlternateCfoTrackBankV4,
+        "quality.summary": StandardNativeQualityV3,
+        "standard.power-timeline": StandardNativePowerTimelineV4,
+        "standard.numerical-waterfall": StandardNativeNumericalWaterfallV4,
+        "standard.probe-schedule": StandardProbeScheduleV4,
+        "standard.native-stateful-path": StandardNativeStatefulPathV3,
+        "standard.pilot-doppler-segments": StandardPilotDopplerSegmentsV4,
+        "standard.full-capture-glrt20ms": StandardNativeFullCaptureGlrt20msV2,
+        "standard.alternate-cfo-track-bank": StandardNativeAlternateCfoTrackBankV5,
         "standard.trajectory-conditioned-accounting": (
-            StandardNativeTrajectoryConditionedAccountingV3
+            StandardNativeTrajectoryConditionedAccountingV4
         ),
-        "standard.path-report": StandardNativePathReportV3,
-        "standard.radio-report": StandardNativeRadioReportV5,
-        "standard.paired-report": StandardNativePairedReportV6,
+        "standard.path-report": StandardNativePathReportV4,
+        "standard.radio-report": StandardNativeRadioReportV6,
+        "standard.paired-report": StandardNativePairedReportV7,
     }
     streams = {stream.radio.radio_id: stream for stream in manifest.streams}
-    stateful_documents: list[StandardNativeStatefulPathV2] = []
+    stateful_documents: list[StandardNativeStatefulPathV3] = []
     for product in products:
         if product.media_type == "image/png":
             assert artifacts.read_bytes(product.logical_uri, product.digest).startswith(b"\x89PNG")
@@ -352,10 +352,10 @@ def _assert_native_products(
             assert source.missing_sample_count == stream.zero_fill_sample_count
             expected_coverage = stream.observed_sample_count / _SAMPLE_COUNT
             assert product.coverage == pytest.approx(expected_coverage)
-        if isinstance(document, StandardNativeStatefulPathV2):
+        if isinstance(document, StandardNativeStatefulPathV3):
             stateful_documents.append(document)
-        if isinstance(document, StandardPilotDopplerSegmentsV3):
-            assert product.schema_version == 3
+        if isinstance(document, StandardPilotDopplerSegmentsV4):
+            assert product.schema_version == 4
             assert product.scope is not None
             stateful_product = next(
                 item
@@ -363,7 +363,7 @@ def _assert_native_products(
                 if item.scope_key == product.scope_key
                 and item.kind == "standard.native-stateful-path"
             )
-            stateful = StandardNativeStatefulPathV2.model_validate(
+            stateful = StandardNativeStatefulPathV3.model_validate(
                 artifacts.read_json(stateful_product.logical_uri, stateful_product.digest)
             )
             assert document.source == stateful.source
@@ -373,13 +373,13 @@ def _assert_native_products(
             assert document.primary_cfo_source == "independent-intraframe-pilot-slope"
             assert document.primary_rate_estimator == "direct-local-frequency-line"
             assert document.nuisance_transferable_to_cfo_or_rate is False
-        if isinstance(document, StandardNativeFullCaptureGlrt20msV1):
+        if isinstance(document, StandardNativeFullCaptureGlrt20msV2):
             assert product.scope is not None
             binding = CatalogSubjectBindingReader(database.catalog).receiver_path_native(
                 seal.execution.run_id,  # type: ignore[attr-defined]
                 product.scope,
             )
-            assert document.source == StandardNativeSourceV1.from_path_binding(binding)
+            assert document.source == StandardNativeSourceV2.from_path_binding(binding)
             assert len(document.opportunities) == document.accounting.scheduled_count == 7
             expected_valid = 3 if document.source.radio_id == gapped_radio_id else 7
             expected_gap_excluded = 4 if document.source.radio_id == gapped_radio_id else 0
@@ -398,7 +398,7 @@ def _assert_native_products(
             assert dispositions.count(NativeWindowDisposition.GAP_OVERLAP) == expected_gap_excluded
             assert document.native_evidence_only is True
             assert document.current_eligible is False
-        if isinstance(document, StandardNativePathReportV3):
+        if isinstance(document, StandardNativePathReportV4):
             assert product.scope is not None
             same_scope = {
                 item.kind: item
@@ -441,13 +441,13 @@ def _assert_native_products(
             assert document.qam_statistics.qam_result_count == 0
             assert document.scientific_disposition.value == "insufficient"
             assert document.cross_segment_association_permitted is False
-        if isinstance(document, StandardNativeAlternateCfoTrackBankV4):
+        if isinstance(document, StandardNativeAlternateCfoTrackBankV5):
             assert product.scope is not None
             binding = CatalogSubjectBindingReader(database.catalog).receiver_path_native(
                 seal.execution.run_id,  # type: ignore[attr-defined]
                 product.scope,
             )
-            assert document.source == StandardNativeSourceV1.from_path_binding(binding)
+            assert document.source == StandardNativeSourceV2.from_path_binding(binding)
             dependencies = database.catalog.product_direct_dependencies(product.product_id)
             assert {item.kind for item in dependencies} == {
                 "standard.numerical-waterfall",
@@ -462,7 +462,7 @@ def _assert_native_products(
             assert stateful_product.kind == "standard.native-stateful-path"
             assert stateful_product.scope_key == product.scope_key
             assert document.source_stateful_product_digest == stateful_product.digest
-            stateful = StandardNativeStatefulPathV2.model_validate(
+            stateful = StandardNativeStatefulPathV3.model_validate(
                 artifacts.read_json(stateful_product.logical_uri, stateful_product.digest)
             )
             assert document.source_stateful_path_digest == stateful.stateful_path_digest
@@ -485,7 +485,7 @@ def _assert_native_products(
             assert document.native_evidence_only is True
             assert document.current_eligible is False
             assert document.cross_segment_association_permitted is False
-        if isinstance(document, (StandardNativeRadioReportV5, StandardNativePairedReportV6)):
+        if isinstance(document, (StandardNativeRadioReportV6, StandardNativePairedReportV7)):
             assert document.native_evidence_only is True
             assert document.current_eligible is False
             assert document.aggregate_qam_statistics.qam_result_count == 0
@@ -536,7 +536,7 @@ def _run_manual_native_evidence(
     assert result.promotion_policy == "evidence_only"
     assert result.previous_current_run_id == previous_current
     assert result.queued_job_count == 12
-    _assert_v4_bindings(database, result.run_id, manifest)
+    _assert_v5_bindings(database, result.run_id, manifest)
 
     executions = []
     while execution := service.run_once(worker_id="standard-native-operational-worker"):
@@ -586,7 +586,7 @@ def _run_native_current(
     result = application.queue(manifest.session_id)
     assert result.previous_current_run_id == previous_current
     assert result.queued_job_count == 12
-    _assert_v4_bindings(database, result.run_id, manifest)
+    _assert_v5_bindings(database, result.run_id, manifest)
     assert database.catalog.current_run_id(manifest.session_id) == previous_current
 
     executions = []

@@ -307,6 +307,7 @@ class StandardNativeEligibilityV5(ContractModel):
             "mixed_2p5_10": [2_500_000, 10_000_000],
             "mixed_2p5_15": [2_500_000, 15_000_000],
             "mixed_2p5_20": [2_500_000, 20_000_000],
+            "mixed_2p5_25": [2_500_000, 25_000_000],
         }[self.dwell_class]
         if sorted(item.sample_rate_hz for item in self.legs) != expected_rates:
             raise ValueError("production native presentation rates disagree with dwell class")
@@ -327,6 +328,57 @@ class StandardNativeEligibilityV5(ContractModel):
         )
         if self.reason != expected_reason:
             raise ValueError("production native eligibility reason disagrees with capture state")
+        return self
+
+
+class StandardNativeProductionLegV6(StandardNativeProductionLegV5):
+    """One direct-async production leg shown to operators."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000, 15_000_000, 25_000_000]  # type: ignore[assignment]
+    rf_bandwidth_hz: Literal[2_500_000, 10_000_000, 15_000_000, 25_000_000]  # type: ignore[assignment]
+
+
+class StandardNativeEligibilityV6(StandardNativeEligibilityV5):
+    """Promotion truth for one reviewed direct-async RecordingManifestV6."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    source_manifest_schema_version: Literal[6] = 6  # type: ignore[assignment]
+    dwell_class: Literal["mixed_2p5_10", "mixed_2p5_15", "mixed_2p5_25"]  # type: ignore[assignment]
+    tuning_branch: Literal["same"] = "same"  # type: ignore[assignment]
+    legs: tuple[StandardNativeProductionLegV6, StandardNativeProductionLegV6]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _eligibility_is_exact(self) -> Self:
+        committed = self.capture_state == "committed"
+        if self.capture_committed != committed:
+            raise ValueError(
+                "direct-async native eligibility committed flag disagrees with capture state"
+            )
+        identities = tuple((item.stream_id, item.radio_id) for item in self.legs)
+        if identities != tuple(sorted(identities)) or len(set(identities)) != 2:
+            raise ValueError("direct-async native presentation leg inventory is not exact")
+        high_rate = {
+            "mixed_2p5_10": 10_000_000,
+            "mixed_2p5_15": 15_000_000,
+            "mixed_2p5_25": 25_000_000,
+        }[self.dwell_class]
+        if sorted(item.sample_rate_hz for item in self.legs) != [2_500_000, high_rate]:
+            raise ValueError("direct-async native presentation rates disagree with dwell class")
+        for item in self.legs:
+            expected_receivers = 2 if item.sample_rate_hz == 2_500_000 else 1
+            if len(item.receiver_ids) != expected_receivers:
+                raise ValueError("direct-async receiver geometry disagrees with dwell class")
+        expected_reason = (
+            "Promoted reviewed production Standard-native capture is Current"
+            if committed
+            else (
+                "Promoted reviewed production Standard-native capture is Current with partial "
+                "validity coverage"
+            )
+        )
+        if self.reason != expected_reason:
+            raise ValueError("direct-async native eligibility reason disagrees with capture state")
         return self
 
 
@@ -463,6 +515,13 @@ class StandardNativeSubjectSummaryV5(StandardNativeSubjectSummaryV3):
     eligibility: StandardNativeEligibilityV5  # type: ignore[assignment]
 
 
+class StandardNativeSubjectSummaryV6(StandardNativeSubjectSummaryV3):
+    """Direct-async production subject summary with V6 promotion truth."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    eligibility: StandardNativeEligibilityV6  # type: ignore[assignment]
+
+
 class StandardNativeSubjectHierarchyV3(ContractModel):
     schema_version: Literal[3] = 3
     session_id: Identifier
@@ -566,6 +625,41 @@ class StandardNativeSubjectHierarchyV5(ContractModel):
             path for radio in radios for path in radio.receiver_paths
         ):
             raise ValueError("production native paired paths differ from the radio union")
+        return self
+
+
+class StandardNativeSubjectHierarchyV6(ContractModel):
+    """Exact pair/radio hierarchy for a direct-async Current run."""
+
+    schema_version: Literal[6] = 6
+    session_id: Identifier
+    source_type: Literal["LIVE"] = "LIVE"
+    eligibility: StandardNativeEligibilityV6
+    generated_at: datetime
+    rows: tuple[StandardNativeSubjectSummaryV6, ...] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def _hierarchy_is_exact(self) -> Self:
+        if any(item.session_id != self.session_id for item in self.rows):
+            raise ValueError("direct-async native hierarchy contains a foreign subject")
+        if any(item.eligibility != self.eligibility for item in self.rows):
+            raise ValueError("direct-async native hierarchy eligibility is crossed")
+        if len({item.subject_id for item in self.rows}) != len(self.rows):
+            raise ValueError("direct-async native hierarchy repeats a subject")
+        paired = tuple(
+            item for item in self.rows if item.subject_kind is StandardSubjectKindV2.PAIRED
+        )
+        radios = tuple(
+            item for item in self.rows if item.subject_kind is StandardSubjectKindV2.RADIO
+        )
+        if len(paired) != 1 or len(radios) != 2 or self.rows[0] is not paired[0]:
+            raise ValueError("direct-async native hierarchy requires pair then two radios")
+        if paired[0].child_subject_ids != tuple(item.subject_id for item in radios):
+            raise ValueError("direct-async paired children differ from radio rows")
+        if paired[0].receiver_paths != tuple(
+            path for radio in radios for path in radio.receiver_paths
+        ):
+            raise ValueError("direct-async paired paths differ from the radio union")
         return self
 
 
@@ -720,6 +814,16 @@ class StandardNativeSubjectDetailV5(StandardNativeSubjectDetailV3):
     )
 
 
+class StandardNativeSubjectDetailV6(StandardNativeSubjectDetailV3):
+    """Direct-async detail retaining each path's native evidence."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    subject: StandardNativeSubjectSummaryV6
+    receiver_path_expansions: tuple[StandardNativeSubjectSummaryV6, ...] = Field(
+        min_length=1, max_length=4
+    )
+
+
 class StandardNativePresentationProductRefV3(ContractModel):
     schema_version: Literal[3] = 3
     product_id: Annotated[int, Field(gt=0)]
@@ -834,6 +938,16 @@ class StandardNativeWaterfallTileV3(ContractModel):
         return self
 
 
+class StandardNativeWaterfallTileV4(StandardNativeWaterfallTileV3):
+    """Additive native waterfall row for wideband direct-async axes."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    power_dbfs: tuple[float | None, ...] = Field(  # type: ignore[assignment]
+        min_length=1,
+        max_length=4096,
+    )
+
+
 class StandardNativePlotViewV3(ContractModel):
     schema_version: Literal[3] = 3
     session_id: Identifier
@@ -914,6 +1028,16 @@ class StandardNativeFrequencyAxisV4(ContractModel):
         if any(not math.isfinite(item) for item in value):
             raise ValueError("mixed native waterfall frequency axis must be finite")
         return value
+
+
+class StandardNativeFrequencyAxisV5(StandardNativeFrequencyAxisV4):
+    """Additive native frequency axis for wideband direct-async waterfalls."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    frequency_bin_centers_hz: tuple[float, ...] = Field(  # type: ignore[assignment]
+        min_length=1,
+        max_length=4096,
+    )
 
 
 class StandardNativePlotViewV4(ContractModel):
@@ -1004,15 +1128,41 @@ class StandardNativePlotViewV5(StandardNativePlotViewV4):
     ] = Field(min_length=1, max_length=2)  # type: ignore[assignment]
 
 
+class StandardNativePlotViewV6(StandardNativePlotViewV4):
+    """Direct-async plot with per-path native axes through 25 MS/s."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rates_hz: tuple[Literal[2_500_000, 10_000_000, 15_000_000, 25_000_000], ...] = Field(
+        min_length=1, max_length=2
+    )  # type: ignore[assignment]
+    frequency_axes: tuple[StandardNativeFrequencyAxisV5, ...] = Field(  # type: ignore[assignment]
+        default=(),
+        max_length=4,
+    )
+    waterfall_tiles: tuple[StandardNativeWaterfallTileV4, ...] = Field(  # type: ignore[assignment]
+        default=(),
+        max_length=2048,
+    )
+
+
 type StandardHierarchy = (
     StandardNativeSubjectHierarchyV3
     | StandardNativeSubjectHierarchyV4
     | StandardNativeSubjectHierarchyV5
+    | StandardNativeSubjectHierarchyV6
 )
 type StandardDetail = (
-    StandardNativeSubjectDetailV3 | StandardNativeSubjectDetailV4 | StandardNativeSubjectDetailV5
+    StandardNativeSubjectDetailV3
+    | StandardNativeSubjectDetailV4
+    | StandardNativeSubjectDetailV5
+    | StandardNativeSubjectDetailV6
 )
-type StandardPlot = StandardNativePlotViewV3 | StandardNativePlotViewV4 | StandardNativePlotViewV5
+type StandardPlot = (
+    StandardNativePlotViewV3
+    | StandardNativePlotViewV4
+    | StandardNativePlotViewV5
+    | StandardNativePlotViewV6
+)
 
 
 def native_stage_status_v3(

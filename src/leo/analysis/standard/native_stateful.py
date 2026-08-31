@@ -93,7 +93,9 @@ from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV2
 from leo.contracts.standard_native import (
     NativeProbeWindowV3,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
     StandardProbeScheduleV3,
+    StandardProbeScheduleV4,
 )
 from leo.contracts.standard_native_path_report import NativeQamProbeEvidenceV1
 from leo.contracts.standard_native_stateful import (
@@ -110,8 +112,13 @@ from leo.contracts.standard_native_stateful_v2 import (
     NativeStatefulSegmentDispositionV2,
     NativeStatefulSegmentV2,
     StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardScientificStatus
+from leo.contracts.standard_pipeline import (
+    StandardPathInputBindV4,
+    StandardPathInputBindV5,
+    StandardScientificStatus,
+)
 from leo.contracts.states import StarlinkEdge
 from leo.contracts.validity import ContinuitySegmentV1
 from leo.pipeline.validity import ContinuitySegmentIqReader, ValidityAwareIqReader
@@ -728,12 +735,17 @@ def _path_frequency_reference(
 
 
 def _validate_global_stateful_schedule(
-    schedule: StandardProbeScheduleV3,
-    binding: StandardPathInputBindV4,
+    schedule: StandardProbeScheduleV3 | StandardProbeScheduleV4,
+    binding: StandardPathInputBindV4 | StandardPathInputBindV5,
     config: ReceiverStandardConfig,
 ) -> None:
     feedback = config.feedback
-    if schedule.source != StandardNativeSourceV1.from_path_binding(binding):
+    expected_source = (
+        StandardNativeSourceV2.from_path_binding(binding)
+        if isinstance(binding, StandardPathInputBindV5)
+        else StandardNativeSourceV1.from_path_binding(binding)
+    )
+    if schedule.source != expected_source:
         raise ValueError("global stateful schedule changed path source authority")
     if (
         schedule.coarse_window_ms != 1_000
@@ -1061,6 +1073,65 @@ def build_standard_native_stateful_path_v2(
         "payload_decoded": False,
     }
     return StandardNativeStatefulPathV2.model_validate(
+        {**values, "stateful_path_digest": canonical_digest(values)}
+    )
+
+
+def build_standard_native_stateful_path_v3(
+    result: StandardNativeStatefulResult,
+    binding: StandardPathInputBindV5,
+    config: ReceiverStandardConfig,
+    *,
+    edge: StarlinkEdge,
+    schedule: StandardProbeScheduleV4 | None = None,
+) -> StandardNativeStatefulPathV3:
+    """Rebind a wideband campaign to the additive source-V2 stateful major."""
+
+    require_receiver_standard_sample_rate(config, sample_rate_hz=binding.sample_rate_hz)
+    lossless = stateful_global_schedule_is_publishable(binding)
+    if lossless:
+        if (
+            result.schedule_authority is not NativeStatefulScheduleAuthority.SEGMENT_LOCAL_ZERO_V1
+            or schedule is not None
+        ):
+            raise ValueError("lossless native stateful V3 publication changed schedule authority")
+        stateful_science_status = "complete"
+    else:
+        if (
+            result.schedule_authority
+            is not NativeStatefulScheduleAuthority.GLOBAL_PROBE_SCHEDULE_V3
+            or schedule is None
+            or result.probe_schedule_digest != schedule.schedule_digest
+        ):
+            raise ValueError("gapped native stateful V3 publication lacks global schedule proof")
+        _validate_global_stateful_schedule(schedule, binding, config)
+        stateful_science_status = "partial_coverage"
+    if (
+        result.path_input_binding_digest != binding.binding_digest
+        or result.validity_inventory_digest != binding.validity_inventory.inventory_digest
+        or result.sample_rate_hz != binding.sample_rate_hz
+        or result.logical_sample_count != binding.logical_sample_count
+        or tuple(item.segment for item in result.segments) != binding.validity_inventory.segments
+    ):
+        raise ValueError("native stateful V3 result disagrees with path input authority")
+    segments = tuple(_persist_stateful_segment_v2(item) for item in result.segments)
+    values = {
+        "schema_version": 3,
+        "algorithm_version": "standard-native-stateful-path-v3",
+        "source": StandardNativeSourceV2.from_path_binding(binding).model_dump(mode="json"),
+        "starlink_edge": StarlinkEdge(edge).value,
+        "science_configuration_digest": receiver_standard_configuration_digest(config),
+        "stateful_science_status": stateful_science_status,
+        "maximum_outer_window_count": result.maximum_outer_window_count,
+        "analyzed_outer_window_count": result.analyzed_outer_window_count,
+        "segments": tuple(item.model_dump(mode="json") for item in segments),
+        "native_evidence_only": True,
+        "current_eligible": False,
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    return StandardNativeStatefulPathV3.model_validate(
         {**values, "stateful_path_digest": canonical_digest(values)}
     )
 

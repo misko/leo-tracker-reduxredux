@@ -15,14 +15,19 @@ from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_SCHEDULE_CYCLE_LENGTH,
     MIXED_RATE_SCHEDULE_POLICY_V1,
     PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+    PRODUCTION_DIRECT_ASYNC_RATE_CYCLE_LENGTH_V3,
+    PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
     PRODUCTION_NATIVE_RATE_CYCLE_LENGTH_V2,
     PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
     ProductionDwellClassV2,
+    ProductionDwellClassV3,
     ProductionDwellIntentV1,
     ProductionDwellIntentV2,
+    ProductionDwellIntentV3,
     ProductionTuningBranchV2,
     ScheduledRadioLegV2,
+    ScheduledRadioLegV3,
     ScheduledRadioRateV1,
 )
 from leo.contracts.states import StarlinkEdge
@@ -56,9 +61,171 @@ _PRODUCTION_2P5_10_15_V2_CYCLE_CLASSES = (
     *(ProductionDwellClassV2.MIXED_2P5_10 for _ in range(4)),
     *(ProductionDwellClassV2.MIXED_2P5_15 for _ in range(4)),
 )
+_PRODUCTION_DIRECT_ASYNC_V3_CYCLE_CLASSES = (
+    ProductionDwellClassV3.MIXED_2P5_10,
+    ProductionDwellClassV3.MIXED_2P5_10,
+    ProductionDwellClassV3.MIXED_2P5_15,
+    ProductionDwellClassV3.MIXED_2P5_15,
+    ProductionDwellClassV3.MIXED_2P5_25,
+    ProductionDwellClassV3.MIXED_2P5_25,
+)
 
 ProductionProfileKey = tuple[int, tuple[int, ...], bool]
 ProductionProfileAuthority = tuple[str, str, int]
+
+
+def compile_production_dwell_intent_v3(
+    *,
+    operation_key: str,
+    cadence_ordinal: int,
+    radio_ids: Sequence[str],
+    profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
+    policy_id: str = PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
+    extra_tags: Sequence[str] = (),
+) -> ProductionDwellIntentV3:
+    """Resolve one uniform same-target 2.5 x 10/15/25 MS/s dwell."""
+
+    if cadence_ordinal < 0:
+        raise ValueError("cadence ordinal cannot be negative")
+    radios = tuple(radio_ids)
+    if len(radios) != 2 or len(set(radios)) != 2:
+        raise ValueError("production V3 policy requires two unique radios")
+    if policy_id != PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3:
+        raise ValueError("production V3 rate policy is unsupported")
+    required_keys: set[ProductionProfileKey] = {
+        (2_500_000, (0, 1), True),
+        *(
+            (rate, (receiver,), True)
+            for rate in (10_000_000, 15_000_000, 25_000_000)
+            for receiver in (0, 1)
+        ),
+    }
+    if not required_keys.issubset(profile_authority):
+        missing = sorted(required_keys - set(profile_authority))
+        raise ValueError(f"production V3 profile authority omits geometries: {missing}")
+    cycle_index, cycle_slot = divmod(cadence_ordinal, PRODUCTION_DIRECT_ASYNC_RATE_CYCLE_LENGTH_V3)
+    cycle = production_cycle_classes_v3(cycle_index=cycle_index, radio_ids=radios)
+    dwell_class = cycle[cycle_slot]
+    high_rate = {
+        ProductionDwellClassV3.MIXED_2P5_10: 10_000_000,
+        ProductionDwellClassV3.MIXED_2P5_15: 15_000_000,
+        ProductionDwellClassV3.MIXED_2P5_25: 25_000_000,
+    }[dwell_class]
+    high_radio_id = tuple(sorted(radios))[
+        _unbiased_index_v3(2, domain="high-radio", operation_key=operation_key)
+    ]
+    channel = 1 + _unbiased_index_v3(4, domain="channel", operation_key=operation_key)
+    edge = (
+        StarlinkEdge.LOWER
+        if _unbiased_index_v3(2, domain="edge", operation_key=operation_key) == 0
+        else StarlinkEdge.UPPER
+    )
+    legs: list[ScheduledRadioLegV3] = []
+    for radio_id in radios:
+        rate = high_rate if radio_id == high_radio_id else 2_500_000
+        receivers = (
+            (
+                _unbiased_index_v3(
+                    2,
+                    domain=f"high-receiver:{radio_id}",
+                    operation_key=operation_key,
+                ),
+            )
+            if rate != 2_500_000
+            else (0, 1)
+        )
+        profile_name, revision_digest, refill_samples = profile_authority[(rate, receivers, True)]
+        controller_mode = (
+            GainControllerMode.TANDEM_HOLD
+            if _unbiased_index_v3(
+                2,
+                domain=f"gain-controller:{radio_id}",
+                operation_key=operation_key,
+            )
+            == 0
+            else GainControllerMode.TANDEM_AUTO
+        )
+        legs.append(
+            ScheduledRadioLegV3(
+                radio_id=radio_id,
+                sample_rate_hz=cast(Literal[2_500_000, 10_000_000, 15_000_000, 25_000_000], rate),
+                receiver_ids=cast(tuple[Literal[0, 1], ...], receivers),
+                profile_name=profile_name,
+                profile_revision_digest=revision_digest,
+                starlink_channel=channel,
+                starlink_edge=edge,
+                gain_controller=GainControllerPolicyV1.create(
+                    controller_mode,
+                    sample_count=refill_samples,
+                ),
+            )
+        )
+    values: dict[str, Any] = {
+        "schema_version": 3,
+        "policy_id": policy_id,
+        "operation_key": operation_key,
+        "cadence_ordinal": cadence_ordinal,
+        "cycle_index": cycle_index,
+        "cycle_slot": cycle_slot,
+        "dwell_class": dwell_class,
+        "tuning_branch": ProductionTuningBranchV2.SAME,
+        "radio_ids": radios,
+        "radio_legs": tuple(legs),
+        "extra_tags": tuple(sorted(set(extra_tags))),
+    }
+    candidate = ProductionDwellIntentV3.model_construct(
+        intent_digest="sha256:" + "0" * 64,
+        **values,
+    )
+    document = candidate.model_dump(mode="json", exclude={"intent_digest"})
+    return ProductionDwellIntentV3.model_validate(
+        {**document, "intent_digest": canonical_digest(document)}
+    )
+
+
+def production_cycle_classes_v3(
+    *, cycle_index: int, radio_ids: Sequence[str]
+) -> tuple[ProductionDwellClassV3, ...]:
+    if cycle_index < 0:
+        raise ValueError("cycle index cannot be negative")
+    radios = tuple(radio_ids)
+    if len(radios) != 2 or len(set(radios)) != 2:
+        raise ValueError("production V3 cycle requires two unique radios")
+    seed = canonical_digest(
+        {
+            "policy_id": PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
+            "cycle_index": cycle_index,
+            "radio_ids": sorted(radios),
+        }
+    )
+    decorated = [
+        (
+            hashlib.sha256(f"cycle-permutation-v3\0{seed}\0{index}".encode()).digest(),
+            index,
+            dwell_class,
+        )
+        for index, dwell_class in enumerate(_PRODUCTION_DIRECT_ASYNC_V3_CYCLE_CLASSES)
+    ]
+    cycle = tuple(item[2] for item in sorted(decorated))
+    assert Counter(cycle) == Counter(_PRODUCTION_DIRECT_ASYNC_V3_CYCLE_CLASSES)
+    return cycle
+
+
+def _unbiased_index_v3(modulus: int, *, domain: str, operation_key: str) -> int:
+    sample_space = 1 << 256
+    rejection_floor = sample_space - sample_space % modulus
+    counter = 0
+    while True:
+        value = int.from_bytes(
+            hashlib.sha256(
+                f"production-direct-async-rate-schedule-v3\0{domain}\0"
+                f"{operation_key}\0{counter}".encode()
+            ).digest(),
+            "big",
+        )
+        if value < rejection_floor:
+            return value % modulus
+        counter += 1
 
 
 def compile_production_dwell_intent_v2(

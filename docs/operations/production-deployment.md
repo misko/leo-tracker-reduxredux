@@ -333,7 +333,7 @@ sudo ./ops deploy --stage-only --revision "$release_revision"
 
 required_keys=(
   LEO_DATABASE_URL LEO_PIPELINE_RELEASE_ID LEO_CAPTURE_PROFILE
-  LEO_CAPTURE_PROFILE_5M LEO_MIXED_RATE_POLICY
+  LEO_CAPTURE_PROFILE_5M LEO_MIXED_RATE_POLICY LEO_DIRECT_ASYNC_ENABLED
   LEO_CAPTURE_INTERVAL_SECONDS LEO_QUALIFICATION_PROFILE LEO_SOAK_PROFILE
   LEO_SCANNER_ENABLED LEO_SCANNER_RADIO_ID LEO_SCANNER_INTERVAL_SECONDS
   LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_DWELL_MS
@@ -362,22 +362,21 @@ requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
 row blocks startup.
 
 The historical target-bound 3 MS/s qualification receipt is not a cutover gate:
-3 MS/s is absent from `production-native-rates-2p5-10-15-8-v2`. This focused
-eight-dwell policy contains four mixed 2.5/10 MS/s dwells and four mixed
-2.5/15 MS/s dwells; it contains no same-rate, 5 MS/s, or 20 MS/s dwell. The transaction instead
-checks the exact staged profile bytes and service command, the exact-revision
-release qualification, the reviewed Standard regression authority, and both
-live radios through the ABI-3 counter-authoritative adapter before starting any
-runtime unit. A bounded post-start cycle verifies policy behavior. Failures of
-experimental 10/15/20 MS/s legs are recorded as firmware evidence and do not
-renormalize or silently replace the scheduled dwell.
+3 MS/s is absent from `production-direct-async-2p5-10-15-25-6-v3`. This focused
+six-dwell policy contains two same-channel mixed dwells for each of 2.5/10,
+2.5/15, and 2.5/25 MS/s. The 2.5 MS/s leg is dual RX and the high-rate leg is
+single RX; radio order, high-rate RX, channel edge, and tandem HOLD/AUTO are
+digest-stable randomized choices. It contains no same-rate, 3, 5, or 20 MS/s
+dwell. The transaction checks the exact staged direct-async profile bytes,
+service command, feature gate, exact-revision release qualification, reviewed
+Standard regression authority, and both live radios through the exact v0.46 RC1
+ABI-3 direct-async adapter before starting any runtime unit.
 
-The current Standard-native scientific product family is reviewed through
-10 MS/s. A successful 15 or 20 MS/s capture remains durably cataloged, but
-automatic Standard analysis refuses it with the explicit unreviewed-rate error
-until an additive path/source product major is qualified; published contracts
-are not widened in place. The 10 MS/s single-RX branch is covered by the
-radio-report V5 and paired-report V6 three-path operational vertical.
+The additive Standard-native V6 product family is reviewed for the three mixed
+2.5/10, 2.5/15, and 2.5/25 MS/s shapes. Each successful recording produces and
+serves the complete versioned PNG inventory through the WebUI. Firmware loss at
+experimental high rates remains explicit counter-derived evidence and is never
+renormalized or silently replaced.
 
 Legacy V6 3 MS/s and native-bandwidth receipts remain immutable historical
 evidence, but the current deployment path neither regenerates nor consumes

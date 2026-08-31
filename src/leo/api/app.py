@@ -92,17 +92,21 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactInventoryV8,
+    StandardNativePngArtifactInventoryV9,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
     StandardNativePlotViewV4,
     StandardNativePlotViewV5,
+    StandardNativePlotViewV6,
     StandardNativeSubjectDetailV3,
     StandardNativeSubjectDetailV4,
     StandardNativeSubjectDetailV5,
+    StandardNativeSubjectDetailV6,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectHierarchyV4,
     StandardNativeSubjectHierarchyV5,
+    StandardNativeSubjectHierarchyV6,
 )
 from leo.presentation.standard_native_repository import (
     DefinitionDispatchedStandardPresentationPort,
@@ -612,6 +616,7 @@ def create_app(
         | StandardNativeSubjectHierarchyV3
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
+        | StandardNativeSubjectHierarchyV6
     ):
         try:
             hierarchy = _standard_repository().subject_hierarchy(session_id)
@@ -625,7 +630,9 @@ def create_app(
         if hierarchy is None:
             raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")
         try:
-            if isinstance(hierarchy, StandardNativeSubjectHierarchyV5):
+            if isinstance(hierarchy, StandardNativeSubjectHierarchyV6):
+                hierarchy = StandardNativeSubjectHierarchyV6.model_validate(hierarchy.model_dump())
+            elif isinstance(hierarchy, StandardNativeSubjectHierarchyV5):
                 hierarchy = StandardNativeSubjectHierarchyV5.model_validate(hierarchy.model_dump())
             elif isinstance(hierarchy, StandardNativeSubjectHierarchyV4):
                 hierarchy = StandardNativeSubjectHierarchyV4.model_validate(hierarchy.model_dump())
@@ -653,6 +660,7 @@ def create_app(
             | StandardNativeSubjectHierarchyV3
             | StandardNativeSubjectHierarchyV4
             | StandardNativeSubjectHierarchyV5
+            | StandardNativeSubjectHierarchyV6
         ),
     )
     def standard_subjects(
@@ -663,6 +671,7 @@ def create_app(
         | StandardNativeSubjectHierarchyV3
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
+        | StandardNativeSubjectHierarchyV6
     ):
         return _visible_hierarchy(session_id, include_test=include_test)
 
@@ -674,6 +683,7 @@ def create_app(
             | StandardNativeSubjectDetailV3
             | StandardNativeSubjectDetailV4
             | StandardNativeSubjectDetailV5
+            | StandardNativeSubjectDetailV6
         ),
     )
     def standard_subject_detail(
@@ -685,6 +695,7 @@ def create_app(
         | StandardNativeSubjectDetailV3
         | StandardNativeSubjectDetailV4
         | StandardNativeSubjectDetailV5
+        | StandardNativeSubjectDetailV6
     ):
         _visible_hierarchy(session_id, include_test=include_test)
         try:
@@ -697,6 +708,8 @@ def create_app(
         if detail is None:
             raise HTTPException(status_code=404, detail="Standard subject not found")
         try:
+            if isinstance(detail, StandardNativeSubjectDetailV6):
+                return StandardNativeSubjectDetailV6.model_validate(detail.model_dump())
             if isinstance(detail, StandardNativeSubjectDetailV5):
                 return StandardNativeSubjectDetailV5.model_validate(detail.model_dump())
             if isinstance(detail, StandardNativeSubjectDetailV4):
@@ -750,6 +763,7 @@ def create_app(
         | StandardNativePlotViewV3
         | StandardNativePlotViewV4
         | StandardNativePlotViewV5
+        | StandardNativePlotViewV6
     ):
         _visible_hierarchy(session_id, include_test=include_test)
         presentation = _standard_repository()
@@ -779,7 +793,12 @@ def create_app(
         try:
             if isinstance(
                 view,
-                (StandardNativePlotViewV3, StandardNativePlotViewV4, StandardNativePlotViewV5),
+                (
+                    StandardNativePlotViewV3,
+                    StandardNativePlotViewV4,
+                    StandardNativePlotViewV5,
+                    StandardNativePlotViewV6,
+                ),
             ):
                 native_verifier = getattr(presentation, "verify_source_proof", None)
                 verified = native_verifier is not None and native_verifier(
@@ -812,10 +831,16 @@ def create_app(
                     StandardNativeSubjectDetailV3,
                     StandardNativeSubjectDetailV4,
                     StandardNativeSubjectDetailV5,
+                    StandardNativeSubjectDetailV6,
                 ),
             ) and isinstance(
                 view,
-                (StandardNativePlotViewV3, StandardNativePlotViewV4, StandardNativePlotViewV5),
+                (
+                    StandardNativePlotViewV3,
+                    StandardNativePlotViewV4,
+                    StandardNativePlotViewV5,
+                    StandardNativePlotViewV6,
+                ),
             ):
                 validate_standard_native_view_binding(detail, view)
             elif isinstance(detail, StandardSubjectDetailV2) and isinstance(
@@ -935,6 +960,7 @@ def create_app(
             | StandardNativePngArtifactInventoryV6
             | StandardNativePngArtifactInventoryV7
             | StandardNativePngArtifactInventoryV8
+            | StandardNativePngArtifactInventoryV9
         ),
     )
     def standard_subject_png_inventory(
@@ -947,6 +973,7 @@ def create_app(
         | StandardNativePngArtifactInventoryV6
         | StandardNativePngArtifactInventoryV7
         | StandardNativePngArtifactInventoryV8
+        | StandardNativePngArtifactInventoryV9
     ):
         """Return the sealed native 11/5/5 PNG inventory for one subject."""
 
@@ -957,6 +984,7 @@ def create_app(
                 StandardNativeSubjectHierarchyV3,
                 StandardNativeSubjectHierarchyV4,
                 StandardNativeSubjectHierarchyV5,
+                StandardNativeSubjectHierarchyV6,
             ),
         ):
             raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
@@ -973,6 +1001,8 @@ def create_app(
         if inventory is None:
             raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
         try:
+            if isinstance(inventory, StandardNativePngArtifactInventoryV9):
+                return StandardNativePngArtifactInventoryV9.model_validate(inventory.model_dump())
             if isinstance(inventory, StandardNativePngArtifactInventoryV8):
                 return StandardNativePngArtifactInventoryV8.model_validate(inventory.model_dump())
             if isinstance(inventory, StandardNativePngArtifactInventoryV7):
@@ -1044,6 +1074,7 @@ def create_app(
             | StandardNativePlotViewV3
             | StandardNativePlotViewV4
             | StandardNativePlotViewV5
+            | StandardNativePlotViewV6
         ),
     )
     def standard_subject_view(
@@ -1057,6 +1088,7 @@ def create_app(
         | StandardNativePlotViewV3
         | StandardNativePlotViewV4
         | StandardNativePlotViewV5
+        | StandardNativePlotViewV6
     ):
         return _verified_standard_view(
             session_id,

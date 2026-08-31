@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from leo.contracts.device_buffer import DeviceBufferRequestV1
+from leo.contracts.device_buffer import DeviceBufferRequestV1, DirectAsyncRequestV1
 from leo.contracts.gain_control import GainControllerMode, GainControllerPolicyV1
 from leo.contracts.radio import IqBlockMetadataV3, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.states import ContinuityStatus, GainMode, RadioTransport
@@ -492,6 +492,108 @@ def test_ring_adapter_exact_request_and_fail_closed_readback(failure):
                 "ddr_ring_frames": 400,
                 "ddr_ring_continuous": False,
             }
+    finally:
+        adapter.close()
+
+
+class StubDirectAsyncDevice(StubMetadataDevice):
+    def __init__(self):
+        super().__init__("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+        self.identity.firmware_version = "v0.46-plutoplus-spf-iq-direct-async-ring-v1-rc1"
+        self.direct_capable = True
+        self.direct_kwargs = None
+
+    def diagnostic_facts(self):
+        return {
+            "buffer_metadata_abi": 3,
+            "buffer_direct_async": self.direct_capable,
+        }
+
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers, tandem_request, **kwargs):
+        self.direct_kwargs = kwargs
+        session = super().begin_metadata_capture(
+            sample_count, kernel_buffers=kernel_buffers, tandem_request=tandem_request
+        )
+        session.direct_async_frames = kwargs["direct_async_frames"]
+        session.direct_async_ring_extension = False
+        session.ddr_ring_requested_bytes = 0
+        session.ddr_ring_admitted_bytes = 0
+        session.ddr_ring_capacity_frames = 0
+        session.ddr_ring_capture_frames = 0
+        session.ddr_ring_continuous = False
+        return session
+
+
+def test_direct_async_adapter_exposes_device_diagnostic_facts() -> None:
+    device = StubDirectAsyncDevice()
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+
+    assert adapter.diagnostic_facts() == {
+        "buffer_metadata_abi": 3,
+        "buffer_direct_async": True,
+    }
+
+
+@pytest.mark.parametrize("failure", [None, "capability", "firmware", "admission"])
+def test_direct_async_adapter_exact_segment_and_fail_closed_readback(failure):
+    device = StubDirectAsyncDevice()
+    if failure == "capability":
+        device.direct_capable = False
+    if failure == "firmware":
+        device.identity.firmware_version = "v0.44-plutoplus-spf-ddr-ring-prefill-v1"
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.configure(_settings((0,), sample_rate_hz=25_000_000))
+    request = DirectAsyncRequestV1(
+        target_frames=1431,
+        requested_device_samples=1_500_000_000,
+    )
+    try:
+        if failure == "admission":
+            original = device.begin_metadata_capture
+
+            def wrong_admission(*args, **kwargs):
+                session = original(*args, **kwargs)
+                session.direct_async_frames -= 1
+                return session
+
+            device.begin_metadata_capture = wrong_admission  # type: ignore[method-assign]
+        if failure:
+            with pytest.raises(PlutoAdapterError):
+                adapter.begin_metadata_capture(
+                    1_048_576,
+                    kernel_buffers=15,
+                    device_buffer=request,
+                    direct_async_frames=64,
+                )
+            if failure in ("capability", "firmware"):
+                assert device.direct_kwargs is None
+            else:
+                assert device.session is not None and device.session.closed
+        else:
+            assert (
+                adapter.begin_metadata_capture(
+                    1_048_576,
+                    kernel_buffers=15,
+                    device_buffer=request,
+                    direct_async_frames=64,
+                )
+                == 15
+            )
+            assert device.direct_kwargs == {"direct_async_frames": 64}
     finally:
         adapter.close()
 

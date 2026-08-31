@@ -16,6 +16,7 @@ from leo.contracts.standard_pipeline import (
     ProbeWindowV2,
     StandardNumericalWaterfallV2,
     StandardPathInputBindV4,
+    StandardPathInputBindV5,
     StandardPowerTimelineV2,
     StreamTimingEvidenceV1,
 )
@@ -67,6 +68,59 @@ class StandardNativeSourceV1(ContractModel):
 
     @classmethod
     def from_path_binding(cls, binding: StandardPathInputBindV4) -> Self:
+        validity = binding.validity_inventory
+        return cls(
+            session_id=binding.session_id,
+            stream_id=binding.stream_id,
+            radio_id=binding.radio_id,
+            receiver_id=binding.receiver_id,
+            manifest_digest=binding.manifest_digest,
+            synchronization_inventory_digest=binding.synchronization_inventory_digest,
+            path_input_binding_digest=binding.binding_digest,
+            validity_inventory_digest=validity.inventory_digest,
+            tuned_center_frequency_hz=binding.tuned_center_frequency_hz,
+            sample_rate_hz=binding.sample_rate_hz,
+            logical_sample_count=binding.logical_sample_count,
+            observed_sample_count=binding.observed_sample_count,
+            missing_sample_count=binding.missing_sample_count,
+            timing=binding.timing,
+            continuity_segments=validity.segments,
+        )
+
+
+class StandardNativeSourceV2(StandardNativeSourceV1):
+    """Additive native source authority for the reviewed wideband rate set."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _source_is_closed(self) -> Self:
+        if self.sample_rate_hz not in {
+            2_500_000,
+            3_000_000,
+            5_000_000,
+            10_000_000,
+            15_000_000,
+            20_000_000,
+            25_000_000,
+        }:
+            raise ValueError("native V2 product source sample rate is not reviewed")
+        if self.logical_sample_count != self.observed_sample_count + self.missing_sample_count:
+            raise ValueError("native product source counts do not close")
+        if not self.continuity_segments:
+            raise ValueError("native product source requires continuity segments")
+        if tuple(item.segment_index for item in self.continuity_segments) != tuple(
+            range(len(self.continuity_segments))
+        ):
+            raise ValueError("native product continuity segments are not canonical")
+        if self.continuity_segments[-1].device_sample_stop != self.logical_sample_count:
+            raise ValueError("native product continuity segments do not close the logical span")
+        return self
+
+    @classmethod
+    def from_path_binding(cls, binding: StandardPathInputBindV4) -> Self:
+        if not isinstance(binding, StandardPathInputBindV5):
+            raise TypeError("StandardNativeSourceV2 requires StandardPathInputBindV5")
         validity = binding.validity_inventory
         return cls(
             session_id=binding.session_id,
@@ -285,6 +339,36 @@ class StandardNativeNumericalWaterfallV3(ContractModel):
         ):
             raise ValueError("native waterfall disagrees with source authority")
         return self
+
+
+class StandardProbeScheduleV4(StandardProbeScheduleV3):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-probe-schedule-v4"] = (
+        "standard-native-probe-schedule-v4"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]
+
+
+class StandardNativeQualityV3(StandardNativeQualityV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-quality-v3"] = "standard-native-quality-v3"  # type: ignore[assignment]
+    source: StandardNativeSourceV2  # type: ignore[assignment]
+
+
+class StandardNativePowerTimelineV4(StandardNativePowerTimelineV3):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-power-timeline-v4"] = (
+        "standard-native-power-timeline-v4"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]
+
+
+class StandardNativeNumericalWaterfallV4(StandardNativeNumericalWaterfallV3):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-numerical-waterfall-v4"] = (
+        "standard-native-numerical-waterfall-v4"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]
 
 
 class NativeValidUtcIntervalV1(ContractModel):

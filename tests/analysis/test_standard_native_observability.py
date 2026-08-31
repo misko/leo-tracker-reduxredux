@@ -28,13 +28,13 @@ from leo.analysis.starlink.pilot_methods import PilotProbeDetection
 from leo.analysis.starlink.trajectory_feedback import iter_pilot_probe_samples
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
-from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV3
+from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV4
 from leo.contracts.radio import IqBlockMetadataV1
-from leo.contracts.standard_native import StandardNativeSourceV1
-from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
-from leo.contracts.standard_native_path_report import StandardNativePathReportV3
-from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
-from leo.contracts.standard_pipeline import StandardPathInputBindV4
+from leo.contracts.standard_native import StandardNativeSourceV2
+from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV2
+from leo.contracts.standard_native_path_report import StandardNativePathReportV4
+from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV3
+from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardPathInputBindV5
 from leo.contracts.validity import ContinuitySegmentV1, ValidityInventoryV1
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
@@ -577,6 +577,8 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     inventory = _inventory()
     values = _values(_RATE)
     values.update(
+        schema_version=5,
+        algorithm_version="standard-path-input-bind-v5",
         observed_sample_count=_RATE - _GAP_COUNT,
         missing_sample_count=_GAP_COUNT,
         timeline_sha256=inventory.timeline_sha256,
@@ -584,7 +586,7 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
         validity_inventory_sha256=inventory.inventory_digest,
         validity_inventory=inventory.model_dump(mode="json"),
     )
-    binding = StandardPathInputBindV4.model_validate(
+    binding = StandardPathInputBindV5.model_validate(
         {**values, "binding_digest": canonical_digest(values)}
     )
     reader = _Reader(binding.validity_inventory)
@@ -614,31 +616,31 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     assert result.outcome.value == "partial_coverage"
     assert len(result.products) == 8
     assert set(outputs.documents) == {
-        ("quality.summary", 2),
-        ("standard.power-timeline", 3),
-        ("standard.numerical-waterfall", 3),
-        ("standard.probe-schedule", 3),
-        ("standard.native-stateful-path", 2),
-        ("standard.pilot-doppler-segments", 3),
-        ("standard.full-capture-glrt20ms", 1),
-        ("standard.path-report", 3),
+        ("quality.summary", 3),
+        ("standard.power-timeline", 4),
+        ("standard.numerical-waterfall", 4),
+        ("standard.probe-schedule", 4),
+        ("standard.native-stateful-path", 3),
+        ("standard.pilot-doppler-segments", 4),
+        ("standard.full-capture-glrt20ms", 2),
+        ("standard.path-report", 4),
     }
     assert result.summary["native_evidence_only"] is True
-    stateful = StandardNativeStatefulPathV2.model_validate(
-        outputs.documents[("standard.native-stateful-path", 2)]
+    stateful = StandardNativeStatefulPathV3.model_validate(
+        outputs.documents[("standard.native-stateful-path", 3)]
     )
-    pilot_v3 = StandardPilotDopplerSegmentsV3.model_validate(
-        outputs.documents[("standard.pilot-doppler-segments", 3)]
+    pilot_v4 = StandardPilotDopplerSegmentsV4.model_validate(
+        outputs.documents[("standard.pilot-doppler-segments", 4)]
     )
-    assert pilot_v3.source == StandardNativeSourceV1.from_path_binding(binding)
-    assert pilot_v3.stateful_path_product_digest == canonical_digest(
+    assert pilot_v4.source == StandardNativeSourceV2.from_path_binding(binding)
+    assert pilot_v4.stateful_path_product_digest == canonical_digest(
         stateful.model_dump(mode="json")
     )
-    assert pilot_v3.stateful_path_digest == stateful.stateful_path_digest
-    assert pilot_v3.phase_config_digest == pilot_v3.phase_config.digest
-    assert pilot_v3.source_v2_locklet_count == 0
-    assert pilot_v3.corrected_phase_trackability_count == 0
-    assert pilot_v3.segments == ()
+    assert pilot_v4.stateful_path_digest == stateful.stateful_path_digest
+    assert pilot_v4.phase_config_digest == pilot_v4.phase_config.digest
+    assert pilot_v4.source_v2_locklet_count == 0
+    assert pilot_v4.corrected_phase_trackability_count == 0
+    assert pilot_v4.segments == ()
     assert stateful.stateful_science_status == "partial_coverage"
     assert stateful.analyzed_outer_window_count == 2
     assert tuple(item.continuity_segment for item in stateful.segments) == inventory.segments
@@ -652,18 +654,18 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
         0,
     )
     assert stateful.segments[1].local_science.detections[0].sample_start == 15_000
-    glrt = StandardNativeFullCaptureGlrt20msV1.model_validate(
-        outputs.documents[("standard.full-capture-glrt20ms", 1)]
+    glrt = StandardNativeFullCaptureGlrt20msV2.model_validate(
+        outputs.documents[("standard.full-capture-glrt20ms", 2)]
     )
-    assert glrt.source == StandardNativeSourceV1.from_path_binding(binding)
+    assert glrt.source == StandardNativeSourceV2.from_path_binding(binding)
     assert (
         glrt.science_configuration_digest
         == context.stage_config["full_capture_glrt_configuration_digest"]
     )
     assert glrt.accounting.scheduled_count == 99
     assert glrt.accounting.valid_count == 97
-    path_report = StandardNativePathReportV3.model_validate(
-        outputs.documents[("standard.path-report", 3)]
+    path_report = StandardNativePathReportV4.model_validate(
+        outputs.documents[("standard.path-report", 4)]
     )
     assert path_report.schedule_execution.accounting.valid_count == 39
     assert path_report.schedule_execution.accounting.analyzed_count == 39
@@ -705,6 +707,17 @@ class _ObservabilityPolicyCaptured(Exception):
     pass
 
 
+def _v5_binding(binding: StandardPathInputBindV4) -> StandardPathInputBindV5:
+    values = binding.model_dump(mode="json", exclude={"binding_digest"})
+    values.update(
+        schema_version=5,
+        algorithm_version="standard-path-input-bind-v5",
+    )
+    return StandardPathInputBindV5.model_validate(
+        {**values, "binding_digest": canonical_digest(values)}
+    )
+
+
 @pytest.mark.parametrize("sample_rate_hz", (2_500_000, 3_000_000, 5_000_000, 10_000_000))
 def test_native_evidence_analyzer_uses_the_resolved_production_feedback_policy(
     monkeypatch: pytest.MonkeyPatch,
@@ -721,7 +734,7 @@ def test_native_evidence_analyzer_uses_the_resolved_production_feedback_policy(
     )
 
     inventory = rate_inventory(sample_rate_hz)
-    binding = rate_binding(sample_rate_hz, inventory)
+    binding = _v5_binding(rate_binding(sample_rate_hz, inventory))
     captured: dict[str, object] = {}
 
     def capture_policy(*args: object, **kwargs: object) -> None:
@@ -801,6 +814,8 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
     )
     values = _values(_RATE)
     values.update(
+        schema_version=5,
+        algorithm_version="standard-path-input-bind-v5",
         observed_sample_count=_RATE,
         missing_sample_count=0,
         timeline_sha256=inventory.timeline_sha256,
@@ -808,7 +823,7 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
         validity_inventory_sha256=inventory.inventory_digest,
         validity_inventory=inventory.model_dump(mode="json"),
     )
-    binding = StandardPathInputBindV4.model_validate(
+    binding = StandardPathInputBindV5.model_validate(
         {**values, "binding_digest": canonical_digest(values)}
     )
     monkeypatch.setattr(native_stateful, "scan_pilot_detections", _no_result_scan)
@@ -818,7 +833,7 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
         binding,
         edge=binding.starlink_edge,
     )
-    expected_stateful = native_stateful.build_standard_native_stateful_path_v2(
+    expected_stateful = native_stateful.build_standard_native_stateful_path_v3(
         legacy_result,
         binding,
         stateful_config,
@@ -851,8 +866,8 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
     assert result.outcome.value == "complete"
     assert len(result.products) == 8
     assert result.summary["coverage_fraction"] == 1.0
-    stateful = StandardNativeStatefulPathV2.model_validate(
-        outputs.documents[("standard.native-stateful-path", 2)]
+    stateful = StandardNativeStatefulPathV3.model_validate(
+        outputs.documents[("standard.native-stateful-path", 3)]
     )
     assert stateful.stateful_science_status == "complete"
     assert stateful.analyzed_outer_window_count == 1
@@ -860,14 +875,14 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
     assert canonical_json_bytes(stateful.model_dump(mode="json")) == canonical_json_bytes(
         expected_stateful.model_dump(mode="json")
     )
-    glrt = StandardNativeFullCaptureGlrt20msV1.model_validate(
-        outputs.documents[("standard.full-capture-glrt20ms", 1)]
+    glrt = StandardNativeFullCaptureGlrt20msV2.model_validate(
+        outputs.documents[("standard.full-capture-glrt20ms", 2)]
     )
-    assert glrt.source == StandardNativeSourceV1.from_path_binding(binding)
+    assert glrt.source == StandardNativeSourceV2.from_path_binding(binding)
     assert glrt.accounting.scheduled_count == glrt.accounting.valid_count == 99
     assert result.summary["full_capture_glrt_passing_window_count"] == 0
-    path_report = StandardNativePathReportV3.model_validate(
-        outputs.documents[("standard.path-report", 3)]
+    path_report = StandardNativePathReportV4.model_validate(
+        outputs.documents[("standard.path-report", 4)]
     )
     assert path_report.schedule_execution.accounting.valid_count == 40
     assert path_report.schedule_execution.accounting.analyzed_count == 40
@@ -892,7 +907,7 @@ def test_stateful_poison_publishes_no_partial_native_product_batch(
     )
 
     inventory = rate_inventory(_RATE)
-    binding = rate_binding(_RATE, inventory)
+    binding = _v5_binding(rate_binding(_RATE, inventory))
     outputs = _OutputSink()
     context = AnalysisContext(
         session_id=binding.session_id,
@@ -941,7 +956,7 @@ def test_glrt_poison_publishes_no_partial_native_product_batch(
     )
 
     inventory = rate_inventory(_RATE)
-    binding = rate_binding(_RATE, inventory)
+    binding = _v5_binding(rate_binding(_RATE, inventory))
     outputs = _OutputSink()
     context = AnalysisContext(
         session_id=binding.session_id,
@@ -1006,7 +1021,7 @@ def test_path_report_poison_publishes_no_partial_native_product_batch(
     )
 
     inventory = rate_inventory(_RATE)
-    binding = rate_binding(_RATE, inventory)
+    binding = _v5_binding(rate_binding(_RATE, inventory))
     outputs = _OutputSink()
     context = AnalysisContext(
         session_id=binding.session_id,

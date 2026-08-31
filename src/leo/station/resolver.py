@@ -10,6 +10,7 @@ from leo.contracts.recording import (
     RecordingManifestV3,
     RecordingManifestV4,
     RecordingManifestV5,
+    RecordingManifestV6,
 )
 from leo.contracts.states import SourceType
 from leo.station.authority import (
@@ -18,6 +19,7 @@ from leo.station.authority import (
     CaptureHardwareBindingV3,
     CaptureHardwareBindingV4,
     CaptureHardwareBindingV5,
+    CaptureHardwareBindingV6,
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
@@ -46,6 +48,7 @@ class ResolvedCaptureAuthority:
         | CaptureHardwareBindingV3
         | CaptureHardwareBindingV4
         | CaptureHardwareBindingV5
+        | CaptureHardwareBindingV6
         | FixturePathAuthorityV1
     )
 
@@ -76,7 +79,8 @@ class PinnedCaptureAuthorityResolver:
         manifest: RecordingManifestV1
         | RecordingManifestV3
         | RecordingManifestV4
-        | RecordingManifestV5,
+        | RecordingManifestV5
+        | RecordingManifestV6,
         *,
         observed_manifest_file_digest: str,
     ) -> ResolvedCaptureAuthority:
@@ -110,8 +114,15 @@ class PinnedCaptureAuthorityResolver:
             | CaptureHardwareBindingV3
             | CaptureHardwareBindingV4
             | CaptureHardwareBindingV5
+            | CaptureHardwareBindingV6
         )
-        if type(manifest) is RecordingManifestV5:
+        if type(manifest) is RecordingManifestV6:
+            binding = CaptureHardwareBindingV6.create(
+                manifest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
+                topology=topology,
+            )
+        elif type(manifest) is RecordingManifestV5:
             binding = CaptureHardwareBindingV5.create(
                 manifest,
                 observed_manifest_file_digest=observed_manifest_file_digest,

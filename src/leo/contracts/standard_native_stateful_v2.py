@@ -15,7 +15,7 @@ from pydantic import Field, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.standard_native import StandardNativeSourceV1
+from leo.contracts.standard_native import StandardNativeSourceV1, StandardNativeSourceV2
 from leo.contracts.standard_native_stateful import NativeSegmentLocalScienceV1
 from leo.contracts.states import StarlinkEdge
 from leo.contracts.validity import ContinuitySegmentV1
@@ -191,3 +191,13 @@ class StandardNativeStatefulPathV2(ContractModel):
         ):
             raise ValueError("native stateful V2 path digest does not match content")
         return self
+
+
+class StandardNativeStatefulPathV3(StandardNativeStatefulPathV2):
+    """Additive stateful path carrying StandardNativeSourceV2."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-stateful-path-v3"] = (
+        "standard-native-stateful-path-v3"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]

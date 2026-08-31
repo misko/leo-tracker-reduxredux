@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from leo.acquisition.coordinator import AcquisitionCoordinator
 from leo.acquisition.models import AdmissionEstimate, CaptureSessionResult
-from leo.contracts.mixed_rate_capture import CapturePlanV3, CapturePlanV4
+from leo.contracts.mixed_rate_capture import CapturePlanV3, CapturePlanV4, CapturePlanV5
 from leo.contracts.profile import CapturePlanV1
 from leo.contracts.radio import RadioSettingsV1
 from leo.radio.ports import RadioSource
@@ -19,12 +19,14 @@ class AcquisitionApplication:
     def __init__(self, coordinator: AcquisitionCoordinator) -> None:
         self.coordinator = coordinator
 
-    def estimate(self, plan: CapturePlanV1 | CapturePlanV3 | CapturePlanV4) -> AdmissionEstimate:
+    def estimate(
+        self, plan: CapturePlanV1 | CapturePlanV3 | CapturePlanV4 | CapturePlanV5
+    ) -> AdmissionEstimate:
         return self.coordinator.estimate_admission(plan)
 
     def once(
         self,
-        plan: CapturePlanV1 | CapturePlanV3 | CapturePlanV4,
+        plan: CapturePlanV1 | CapturePlanV3 | CapturePlanV4 | CapturePlanV5,
         sources: Mapping[str, RadioSource],
         *,
         session_id: str | None = None,

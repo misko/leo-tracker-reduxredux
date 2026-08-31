@@ -9,7 +9,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
-from leo.acquisition.mixed_rate_schedule import compile_production_dwell_intent_v2
+from leo.acquisition.mixed_rate_schedule import (
+    compile_production_dwell_intent_v2,
+    compile_production_dwell_intent_v3,
+)
 from leo.analysis.standard.native_analyzers import (
     production_standard_native_evidence_configuration,
     production_standard_native_evidence_registry,
@@ -22,23 +25,34 @@ from leo.application import (
     DefinitionDispatchedStandardPresentationRepository,
     StandardReprocessService,
 )
-from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV4, AnalysisRunManifestV5
+from leo.artifacts import (
+    AnalysisArtifactStore,
+    AnalysisRunManifestV4,
+    AnalysisRunManifestV5,
+    AnalysisRunManifestV6,
+)
 from leo.catalog import CatalogSubjectBindingReader
+from leo.contracts.device_buffer import DIRECT_ASYNC_EVIDENCE_KEY_V1, DirectAsyncEvidenceV1
 from leo.contracts.digests import canonical_digest
-from leo.contracts.mixed_rate_schedule import ProductionDwellClass, ProductionDwellClassV2
+from leo.contracts.mixed_rate_schedule import (
+    ProductionDwellClass,
+    ProductionDwellClassV2,
+    ProductionDwellClassV3,
+)
 from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.recording import (
     DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
     RecordingManifestV4,
     RecordingManifestV5,
+    RecordingManifestV6,
 )
-from leo.contracts.standard_native_path_report import StandardNativePathReportV3
+from leo.contracts.standard_native_path_report import StandardNativePathReportV4
 from leo.contracts.standard_native_terminal import (
-    StandardNativePairedReportV6,
-    StandardNativeRadioReportV5,
+    StandardNativePairedReportV7,
+    StandardNativeRadioReportV6,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4
+from leo.contracts.standard_pipeline import StandardPathInputBindV5
 from leo.contracts.starlink_frequency import (
     starlink_maximum_coverage_if_center_frequency_hz,
 )
@@ -46,6 +60,7 @@ from leo.contracts.states import CaptureState, SourceType, StarlinkEdge
 from leo.domain.mixed_rate_capture import (
     compile_mixed_rate_capture_plan_v3,
     compile_production_capture_plan_v4,
+    compile_production_capture_plan_v5,
 )
 from leo.domain.profiles import load_profile_revision
 from leo.operations.service import _stream_registrations
@@ -53,14 +68,18 @@ from leo.pipeline import ScopeIdentityV1
 from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV8,
+    StandardNativePngArtifactInventoryV9,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV4,
     StandardNativePlotViewV5,
+    StandardNativePlotViewV6,
     StandardNativeSubjectDetailV4,
     StandardNativeSubjectDetailV5,
+    StandardNativeSubjectDetailV6,
     StandardNativeSubjectHierarchyV4,
     StandardNativeSubjectHierarchyV5,
+    StandardNativeSubjectHierarchyV6,
 )
 from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.processing import (
@@ -72,6 +91,7 @@ from leo.radio.fake import FakeRadioSource
 from leo.station.authority import (
     CaptureHardwareBindingV4,
     CaptureHardwareBindingV5,
+    CaptureHardwareBindingV6,
     RadioEndpointEvidenceV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -151,7 +171,9 @@ def _capture_bundle(
     return result.bundle
 
 
-def _station_topology(manifest: RecordingManifestV4) -> StationReceiverTopologyV1:
+def _station_topology(
+    manifest: RecordingManifestV4 | RecordingManifestV5 | RecordingManifestV6,
+) -> StationReceiverTopologyV1:
     capture_start = min(stream.timing.first_sample.earliest_utc_ns for stream in manifest.streams)
     capture_end = max(stream.timing.last_sample.latest_utc_ns + 1 for stream in manifest.streams)
     valid_from = capture_start - 1_000_000_000
@@ -199,7 +221,13 @@ def _register_bundle(
     manifest = bundle.manifest
     assert isinstance(manifest, RecordingManifestV4)
     authority = (
-        CaptureHardwareBindingV5.create(
+        CaptureHardwareBindingV6.create(
+            manifest,
+            observed_manifest_file_digest=bundle.manifest_sha256,
+            topology=topology,
+        )
+        if type(manifest) is RecordingManifestV6
+        else CaptureHardwareBindingV5.create(
             manifest,
             observed_manifest_file_digest=bundle.manifest_sha256,
             topology=topology,
@@ -303,6 +331,92 @@ def _bounded_production_plan(
         for leg in intent.radio_legs
     }
     return compile_production_capture_plan_v4(
+        intent=intent,
+        profile_revisions_by_radio=selected,
+        source_type=SourceType.LIVE,
+    )
+
+
+def _bounded_direct_async_plan(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    high_rate_hz: int,
+):
+    specifications = (
+        ((2_500_000, (0, 1), True), "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4"),
+        *(
+            (
+                (rate, (receiver,), True),
+                f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-direct-async-v7",
+            )
+            for rate in (10_000_000, 15_000_000, 25_000_000)
+            for receiver in (0, 1)
+        ),
+    )
+    revisions: dict[tuple[int, tuple[int, ...], bool], CaptureProfileRevisionV2] = {}
+    for key, profile_name in specifications:
+        source = load_profile_revision(_ROOT / "profiles" / f"{profile_name}.yaml")
+        assert isinstance(source, CaptureProfileRevisionV2)
+        profile_values = source.profile.model_dump(mode="python")
+        profile_values.update(
+            {
+                "name": f"test-{profile_name}-{high_rate_hz}",
+                "duration_seconds": Decimal("0.1"),
+                "sample_count": None,
+                "settle_seconds": Decimal(0),
+                "prime_refills": 0,
+                "campaign": "bounded-direct-async-native-standard-test",
+            }
+        )
+        revision = CaptureProfileRevisionV2.from_profile(
+            CaptureProfileV2.model_validate(profile_values)
+        )
+        revisions[key] = revision
+        if key[0] == 2_500_000:
+            monkeypatch.setitem(
+                standard_native_pipeline.STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES,
+                revision.profile.name,
+                (
+                    revision.profile.sample_rate_hz,
+                    revision.profile.receivers,
+                    revision.revision_digest,
+                    revision.profile.refill_samples,
+                ),
+            )
+        else:
+            monkeypatch.setitem(
+                standard_native_pipeline.STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES,
+                revision.profile.name,
+                (
+                    revision.profile.sample_rate_hz,
+                    revision.profile.receivers,
+                    revision.revision_digest,
+                ),
+            )
+    authority = {
+        key: (revision.profile.name, revision.revision_digest, revision.profile.refill_samples)
+        for key, revision in revisions.items()
+    }
+    dwell_class = ProductionDwellClassV3(f"mixed_2p5_{high_rate_hz // 1_000_000}")
+    intent = next(
+        item
+        for ordinal in range(6)
+        if (
+            item := compile_production_dwell_intent_v3(
+                operation_key=f"bounded-direct-async:{high_rate_hz}:{ordinal}",
+                cadence_ordinal=ordinal,
+                radio_ids=_RADIO_IDS,
+                profile_authority=authority,
+                extra_tags=("operational-vertical",),
+            )
+        ).dwell_class
+        is dwell_class
+    )
+    selected = {
+        leg.radio_id: revisions[(leg.sample_rate_hz, leg.receiver_ids, True)]
+        for leg in intent.radio_legs
+    }
+    return compile_production_capture_plan_v5(
         intent=intent,
         profile_revisions_by_radio=selected,
         source_type=SourceType.LIVE,
@@ -449,7 +563,7 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
                     receiver_id=receiver_id,
                 )
                 binding = binding_reader.receiver_path_native(queued.run_id, scope)
-                assert isinstance(binding, StandardPathInputBindV4)
+                assert isinstance(binding, StandardPathInputBindV5)
                 assert binding.sample_rate_hz == stream.applied_settings.sample_rate_hz
                 assert binding.rf_bandwidth_hz == binding.sample_rate_hz
                 assert binding.starlink_channel == 3
@@ -484,7 +598,7 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
         assert sum(item.media_type == "image/png" for item in seal.products) == 66
         assert processing_database.catalog.current_run_id(manifest.session_id) == queued.run_id
         path_reports = tuple(
-            StandardNativePathReportV3.model_validate(
+            StandardNativePathReportV4.model_validate(
                 artifacts.read_json(item.logical_uri, item.digest)
             )
             for item in seal.products
@@ -497,7 +611,7 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
         paired_product = next(
             item for item in seal.products if item.kind == "standard.paired-report"
         )
-        paired = StandardNativePairedReportV6.model_validate(
+        paired = StandardNativePairedReportV7.model_validate(
             artifacts.read_json(paired_product.logical_uri, paired_product.digest)
         )
         assert paired.radio_sample_rates_hz == rates
@@ -701,7 +815,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
 
         seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
         radio_reports = tuple(
-            StandardNativeRadioReportV5.model_validate(
+            StandardNativeRadioReportV6.model_validate(
                 artifacts.read_json(item.logical_uri, item.digest)
             )
             for item in seal.products
@@ -711,7 +825,7 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
         paired_product = next(
             item for item in seal.products if item.kind == "standard.paired-report"
         )
-        paired = StandardNativePairedReportV6.model_validate(
+        paired = StandardNativePairedReportV7.model_validate(
             artifacts.read_json(paired_product.logical_uri, paired_product.digest)
         )
         assert sorted(paired.radio_sample_rates_hz) == [2_500_000, 10_000_000]
@@ -767,6 +881,226 @@ def test_real_postgres_production_ten_msps_single_rx_vertical(
             assert response.status_code == 200
             assert response.json()["schema_version"] == 8
             assert sorted(response.json()["sample_rates_hz"]) == [2_500_000, 10_000_000]
+    finally:
+        service.close()
+        artifacts.close()
+        pinned.close()
+
+
+@pytest.mark.parametrize("high_rate_hz", (10_000_000, 15_000_000, 25_000_000))
+def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    high_rate_hz: int,
+) -> None:
+    plan = _bounded_direct_async_plan(monkeypatch, high_rate_hz=high_rate_hz)
+    expected_dwell = f"mixed_2p5_{high_rate_hz // 1_000_000}"
+    assert plan.dwell_class.value == expected_dwell
+    assert len({(leg.starlink_channel, leg.starlink_edge) for leg in plan.radio_plans}) == 1
+
+    bulk_root = tmp_path / f"bulk-direct-{high_rate_hz}"
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(bulk_root),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=1_048_576,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+    result = coordinator.capture_once(
+        plan,
+        {
+            _RADIO_IDS[0]: FakeRadioSource(_RADIO_IDS[0], seed=21),
+            _RADIO_IDS[1]: FakeRadioSource(_RADIO_IDS[1], seed=22),
+        },
+        session_id=f"standard-native-direct-{high_rate_hz}-operational",
+    )
+    assert result.state is CaptureState.COMMITTED
+    assert type(result.manifest) is RecordingManifestV6
+    assert result.bundle is not None
+    bundle = result.bundle
+    manifest = result.manifest
+    assert sorted(stream.applied_settings.sample_rate_hz for stream in manifest.streams) == [
+        2_500_000,
+        high_rate_hz,
+    ]
+    assert sorted(len(stream.applied_settings.receiver_ids) for stream in manifest.streams) == [
+        1,
+        2,
+    ]
+    high_stream = next(
+        stream
+        for stream in manifest.streams
+        if stream.applied_settings.sample_rate_hz == high_rate_hz
+    )
+    first_metadata = next(
+        coordinator.store.reader(bundle, high_stream.stream_id).iter_timeline_metadata()
+    )
+    evidence = DirectAsyncEvidenceV1.model_validate(
+        first_metadata.hardware_metadata[DIRECT_ASYNC_EVIDENCE_KEY_V1]
+    )
+    assert evidence.request.requested_device_samples == high_stream.logical_sample_count
+    assert evidence.stored_observed_samples == high_stream.observed_sample_count
+    assert evidence.counter_missing_sample_count == 0
+    assert evidence.inter_segment_skipped_samples == 0
+    coordinator.store.verify(bundle)
+
+    topology = _station_topology(manifest)
+    processing_database.catalog.register_station_topology(topology)
+    _register_bundle(processing_database, bundle, topology)
+
+    registry = production_standard_native_evidence_registry()
+    configuration: dict[str, object] = {
+        "display_version": "standard-native-direct-async-operational-v1",
+        "stages": production_standard_native_evidence_configuration(),
+    }
+    executable = tmp_path / f"direct-worker-executable-{high_rate_hz}"
+    executable.mkdir()
+    (executable / "standard-native.txt").write_text("pinned direct-async native worker\n")
+    loaded = derive_loaded_worker_release_for_tests(
+        pipeline_release_id=_RELEASE,
+        code_revision=_RELEASE,
+        registry=registry,
+        configuration=configuration,
+        environment_document={"name": "real-postgres-direct-async-standard-native"},
+        executable_root=executable,
+    )
+    processing_database.catalog.add_pipeline_release(
+        release_id=_RELEASE,
+        code_revision=_RELEASE,
+        environment_digest=loaded.authority.environment_digest,
+        graph_digest=loaded.authority.graph_digest,
+        configuration=configuration,
+        executable_digest=loaded.authority.executable_digest,
+    )
+
+    pinned = PinnedLocalRoot(bulk_root)
+    recordings = RecordingStore.open_pinned(pinned)
+    artifacts = AnalysisArtifactStore.open_pinned(pinned)
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=artifacts,
+        registry=registry,
+        iq_readers=RecordingIqReaderProvider(recordings),
+        lease_for=timedelta(seconds=30),
+        heartbeat_interval=timedelta(seconds=5),
+        loaded_worker_release=loaded,
+    )
+    try:
+        application = StandardReprocessService(
+            catalog=processing_database.catalog,
+            recordings=recordings,
+            processing=service,
+            pipeline_release_id=_RELEASE,
+        )
+        queued = application.queue(manifest.session_id)
+        assert queued.queued_job_count == 10
+        bindings = CatalogSubjectBindingReader(processing_database.catalog)
+        for stream in manifest.streams:
+            for receiver_id in stream.applied_settings.receiver_ids:
+                scope = ScopeIdentityV1.receiver_path(
+                    session_id=manifest.session_id,
+                    stream_id=stream.stream_id,
+                    receiver_id=receiver_id,
+                )
+                binding = bindings.receiver_path_native(queued.run_id, scope)
+                assert isinstance(binding, StandardPathInputBindV5)
+                assert binding.sample_rate_hz == stream.applied_settings.sample_rate_hz
+
+        executions = []
+        while execution := service.run_once(worker_id="direct-async-standard-native-worker"):
+            executions.append(execution)
+            assert execution.succeeded, execution.error
+        assert len(executions) == 10
+        published = service.finalize_run(queued.run_id)
+        assert isinstance(published.manifest, AnalysisRunManifestV6)
+        authority = published.manifest.promotion_authority
+        assert authority.dwell_class == expected_dwell
+        assert authority.tuning_branch == "same"
+        assert sorted(item.sample_rate_hz for item in authority.stream_authorities) == [
+            2_500_000,
+            high_rate_hz,
+        ]
+
+        seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
+        assert len(seal.products) == 87
+        assert sum(item.media_type == "image/png" for item in seal.products) == 54
+        assert {
+            item.schema_version for item in seal.products if item.kind == "standard.path-report"
+        } == {4}
+        assert {
+            item.schema_version for item in seal.products if item.kind == "standard.radio-report"
+        } == {6}
+        assert {
+            item.schema_version for item in seal.products if item.kind == "standard.paired-report"
+        } == {7}
+
+        native_repository = CatalogStandardNativePresentationRepository(
+            processing_database.catalog,
+            artifacts,
+        )
+        repository = DefinitionDispatchedStandardPresentationRepository(
+            CatalogStandardPresentationRepository(processing_database.catalog, artifacts),
+            native_repository,
+        )
+        hierarchy = repository.subject_hierarchy(manifest.session_id)
+        assert isinstance(hierarchy, StandardNativeSubjectHierarchyV6)
+        assert hierarchy.eligibility.dwell_class == expected_dwell
+        assert sorted(len(item.receiver_ids) for item in hierarchy.eligibility.legs) == [1, 2]
+        paired_subject = hierarchy.rows[0]
+        detail = repository.subject_detail(manifest.session_id, paired_subject.subject_id)
+        assert isinstance(detail, StandardNativeSubjectDetailV6)
+        subject_inventory_counts = {
+            paired_subject.subject_id: 6,
+            **{item.subject_id: 12 for item in detail.receiver_path_expansions},
+        }
+        for subject_id, expected_count in subject_inventory_counts.items():
+            inventory = repository.subject_png_inventory(manifest.session_id, subject_id)
+            assert isinstance(inventory, StandardNativePngArtifactInventoryV9)
+            assert len(inventory.artifacts) == expected_count
+            assert sorted(inventory.sample_rates_hz) in (
+                [2_500_000],
+                [high_rate_hz],
+                [2_500_000, high_rate_hz],
+            )
+        waterfall = repository.subject_view(
+            manifest.session_id,
+            paired_subject.subject_id,
+            StandardViewKindV2.WATERFALL,
+            maximum_points=64,
+        )
+        assert isinstance(waterfall, StandardNativePlotViewV6)
+        assert sorted(waterfall.sample_rates_hz) == [2_500_000, high_rate_hz]
+
+        with TestClient(
+            create_app(
+                CatalogPresentationRepository(
+                    processing_database.catalog,
+                    recordings,
+                    artifacts,
+                    bulk_root=bulk_root,
+                ),
+                artifact_root=bulk_root,
+                standard_repository=repository,
+            )
+        ) as client:
+            base = f"/api/v2/recordings/{manifest.session_id}/standard-subjects"
+            response = client.get(base)
+            assert response.status_code == 200
+            assert response.json()["schema_version"] == 6
+            for subject_id, expected_count in subject_inventory_counts.items():
+                response = client.get(f"{base}/{subject_id}/artifacts")
+                assert response.status_code == 200
+                payload = response.json()
+                assert payload["schema_version"] == 9
+                assert len(payload["artifacts"]) == expected_count
+                for item in payload["artifacts"]:
+                    png = client.get(item["href"])
+                    assert png.status_code == 200
+                    assert png.headers["content-type"] == "image/png"
+                    assert png.content.startswith(b"\x89PNG\r\n\x1a\n")
     finally:
         service.close()
         artifacts.close()
