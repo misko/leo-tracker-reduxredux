@@ -362,6 +362,17 @@ export interface StandardNativePngArtifactInventoryV8
   artifacts: StandardNativePngArtifactV8[];
 }
 
+export interface StandardNativePngArtifactInventoryV9
+  extends Omit<
+    StandardNativePngArtifactInventoryV8,
+    "schema_version" | "sample_rates_hz"
+  > {
+  schema_version: 9;
+  sample_rates_hz: Array<
+    2_500_000 | 3_000_000 | 5_000_000 | 10_000_000 | 15_000_000 | 20_000_000 | 25_000_000
+  >;
+}
+
 export interface StandardNativePipelineReleaseV3 {
   schema_version: 3;
   family: "standard-native-v1";
@@ -443,6 +454,10 @@ export type StandardNativeProductionSampleRateV5 =
   | 15_000_000
   | 20_000_000;
 
+export type StandardNativeProductionSampleRateV6 =
+  | StandardNativeProductionSampleRateV5
+  | 25_000_000;
+
 export interface StandardNativeProductionLegV5 {
   schema_version: 5;
   stream_id: string;
@@ -499,6 +514,27 @@ export interface StandardNativeEligibilityV5 {
   reason:
     | "Promoted reviewed production Standard-native capture is Current"
     | "Promoted reviewed production Standard-native capture is Current with partial validity coverage";
+}
+
+export interface StandardNativeProductionLegV6
+  extends Omit<
+    StandardNativeProductionLegV5,
+    "schema_version" | "sample_rate_hz" | "rf_bandwidth_hz"
+  > {
+  schema_version: 6;
+  sample_rate_hz: StandardNativeProductionSampleRateV6;
+  rf_bandwidth_hz: StandardNativeProductionSampleRateV6;
+}
+
+export interface StandardNativeEligibilityV6
+  extends Omit<
+    StandardNativeEligibilityV5,
+    "schema_version" | "source_manifest_schema_version" | "dwell_class" | "legs"
+  > {
+  schema_version: 6;
+  source_manifest_schema_version: 6;
+  dwell_class: StandardNativeEligibilityV5["dwell_class"] | "mixed_2p5_25";
+  legs: [StandardNativeProductionLegV6, StandardNativeProductionLegV6];
 }
 
 export interface StandardNativeSufficientStatisticsV1 {
@@ -648,6 +684,21 @@ export interface StandardNativeSubjectHierarchyV5 {
   rows: StandardNativeSubjectSummaryV5[];
 }
 
+export interface StandardNativeSubjectSummaryV6
+  extends Omit<StandardNativeSubjectSummaryV5, "schema_version" | "eligibility"> {
+  schema_version: 6;
+  eligibility: StandardNativeEligibilityV6;
+}
+
+export interface StandardNativeSubjectHierarchyV6 {
+  schema_version: 6;
+  session_id: string;
+  source_type: "LIVE";
+  eligibility: StandardNativeEligibilityV6;
+  generated_at: string;
+  rows: StandardNativeSubjectSummaryV6[];
+}
+
 export interface StandardNativePathEvidenceV3 {
   schema_version: 3;
   receiver_path: StandardReceiverPathRefV2;
@@ -721,6 +772,16 @@ export interface StandardNativeSubjectDetailV5
   schema_version: 5;
   subject: StandardNativeSubjectSummaryV5;
   receiver_path_expansions: StandardNativeSubjectSummaryV5[];
+}
+
+export interface StandardNativeSubjectDetailV6
+  extends Omit<
+    StandardNativeSubjectDetailV5,
+    "schema_version" | "subject" | "receiver_path_expansions"
+  > {
+  schema_version: 6;
+  subject: StandardNativeSubjectSummaryV6;
+  receiver_path_expansions: StandardNativeSubjectSummaryV6[];
 }
 
 export interface StandardNativePresentationProductRefV3 {
@@ -824,26 +885,36 @@ export interface StandardNativePlotViewV5
   sample_rates_hz: StandardNativeProductionSampleRateV5[];
 }
 
+export interface StandardNativePlotViewV6
+  extends Omit<StandardNativePlotViewV5, "schema_version" | "sample_rates_hz"> {
+  schema_version: 6;
+  sample_rates_hz: StandardNativeProductionSampleRateV6[];
+}
+
 export type StandardSubjectHierarchy =
   | StandardSubjectHierarchyV2
   | StandardNativeSubjectHierarchyV3
   | StandardNativeSubjectHierarchyV4
-  | StandardNativeSubjectHierarchyV5;
+  | StandardNativeSubjectHierarchyV5
+  | StandardNativeSubjectHierarchyV6;
 export type StandardSubjectDetail =
   | StandardSubjectDetailV2
   | StandardNativeSubjectDetailV3
   | StandardNativeSubjectDetailV4
-  | StandardNativeSubjectDetailV5;
+  | StandardNativeSubjectDetailV5
+  | StandardNativeSubjectDetailV6;
 export type StandardSubjectSummary =
   | StandardSubjectSummaryV2
   | StandardNativeSubjectSummaryV3
   | StandardNativeSubjectSummaryV4
-  | StandardNativeSubjectSummaryV5;
+  | StandardNativeSubjectSummaryV5
+  | StandardNativeSubjectSummaryV6;
 export type StandardPlotView =
   | StandardPlotViewV2
   | StandardNativePlotViewV3
   | StandardNativePlotViewV4
-  | StandardNativePlotViewV5;
+  | StandardNativePlotViewV5
+  | StandardNativePlotViewV6;
 
 export interface StandardReplayAuditRowV1 {
   receiver_path_id: string;
