@@ -290,8 +290,8 @@ class PlutoIioRadioSource:
                 or facts.get("buffer_direct_async") is not True
             ):
                 raise PlutoAdapterError("Pluto does not attest the requested direct-async mode")
-            if self.identity.firmware_version != "v0.46-plutoplus-spf-iq-direct-async-ring-v1-rc1":
-                raise PlutoAdapterError("direct-async profile requires the qualified v0.46 RC1")
+            if self.identity.firmware_version != "v0.46-plutoplus-spf-iq-direct-async-ring-v1":
+                raise PlutoAdapterError("direct-async profile requires the qualified v0.46 final")
             buffer_arguments = {"direct_async_frames": direct_async_frames}
         elif device_buffer is not None:
             raise PlutoAdapterError("unsupported device-buffer request")

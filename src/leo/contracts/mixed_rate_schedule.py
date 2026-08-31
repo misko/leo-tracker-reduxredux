@@ -257,7 +257,7 @@ def production_dwell_intent_v2_digest(intent: ProductionDwellIntentV2) -> str:
 
 
 class ProductionDwellClassV3(StrEnum):
-    """Exact mixed-rate classes qualified for direct-async firmware RC1."""
+    """Exact mixed-rate classes qualified for direct-async firmware v0.46 final."""
 
     MIXED_2P5_10 = "mixed_2p5_10"
     MIXED_2P5_15 = "mixed_2p5_15"

@@ -369,7 +369,7 @@ single RX; radio order, high-rate RX, channel edge, and tandem HOLD/AUTO are
 digest-stable randomized choices. It contains no same-rate, 3, 5, or 20 MS/s
 dwell. The transaction checks the exact staged direct-async profile bytes,
 service command, feature gate, exact-revision release qualification, reviewed
-Standard regression authority, and both live radios through the exact v0.46 RC1
+Standard regression authority, and both live radios through the exact v0.46 final
 ABI-3 direct-async adapter before starting any runtime unit.
 
 The additive Standard-native V6 product family is reviewed for the three mixed
