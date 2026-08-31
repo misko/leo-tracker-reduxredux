@@ -499,7 +499,7 @@ def test_ring_adapter_exact_request_and_fail_closed_readback(failure):
 class StubDirectAsyncDevice(StubMetadataDevice):
     def __init__(self):
         super().__init__("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
-        self.identity.firmware_version = "v0.46-plutoplus-spf-iq-direct-async-ring-v1-rc1"
+        self.identity.firmware_version = "v0.46-plutoplus-spf-iq-direct-async-ring-v1"
         self.direct_capable = True
         self.direct_kwargs = None
 

@@ -709,7 +709,7 @@ def _live_station_probe_payload() -> dict[str, Any]:
             {
                 "schema_version": 1,
                 **radio,
-                "firmware_version": "v0.46-plutoplus-spf-iq-direct-async-ring-v1-rc1",
+                "firmware_version": "v0.46-plutoplus-spf-iq-direct-async-ring-v1",
                 "metadata_abi_version": 3,
                 "buffer_direct_async": True,
                 "supports_device_sample_counter": True,
@@ -849,7 +849,7 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
 
     payload = _live_station_probe_payload()
     payload["radios"][0]["firmware_version"] = "v0.44-plutoplus-spf-ddr-ring-prefill-v1"
-    with pytest.raises(ValueError, match="exact qualified v0.46 RC1"):
+    with pytest.raises(ValueError, match="exact qualified v0.46 final"):
         _call("probe_live_station_radios", release)
 
     payload = _live_station_probe_payload()
