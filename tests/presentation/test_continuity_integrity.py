@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from leo.application.presentation import _radio_stream
+from leo.contracts.device_buffer import DirectAsyncEvidenceV1, DirectAsyncRequestV1
 from leo.contracts.radio import IqBlockMetadataV2, NanosecondIntervalV1
 from leo.contracts.recording import ContinuitySummaryV2, RecordingStreamV2
 from leo.contracts.states import ContinuityStatus, SourceType, StreamState
@@ -90,3 +91,43 @@ def test_terminal_rejected_refill_evidence_reaches_the_recording_view() -> None:
     assert presented.terminal_rejected_gaps == 1
     assert presented.terminal_rejected_missing_samples == 4
     assert presented.terminal_rejected_overflows == 1
+
+
+def test_recording_view_exposes_exact_direct_async_delivery_and_density() -> None:
+    stream = manifest_example_v2(
+        radio_count=1,
+        applied_receiver_ids=(0,),
+        source_type=SourceType.TEST,
+    ).streams[0]
+    request = DirectAsyncRequestV1(
+        target_frames=1,
+        requested_device_samples=stream.requested_sample_count,
+    )
+    missing = 100
+    evidence = DirectAsyncEvidenceV1(
+        request=request,
+        returned_frames=1,
+        returned_device_span_samples=request.frame_samples + missing,
+        segment_count=1,
+        upstream_stream_generations=("generation-a",),
+        counter_missing_sample_count=missing,
+        inter_segment_skipped_samples=40,
+        stored_observed_samples=stream.captured_sample_count,
+        drained_outside_window_samples=request.frame_samples - stream.captured_sample_count,
+    )
+
+    presented = _radio_stream(
+        stream,
+        Path("/bulk/recording"),
+        StorageStateV1.AVAILABLE,
+        direct_async_evidence=evidence,
+    )
+
+    assert presented.coverage.delivery_unit == "frames"
+    assert presented.coverage.delivery_coverage_pct == 100.0
+    assert presented.coverage.in_segment_density_pct == (
+        100 * request.frame_samples / (request.frame_samples + 60)
+    )
+    assert presented.coverage.transport_density_pct == (
+        100 * request.frame_samples / (request.frame_samples + 100)
+    )

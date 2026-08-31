@@ -607,6 +607,7 @@ class DeviceAxisStreamBundleWriter:
         requested_device_span: int,
         compression: CompressionSettingsV1,
         kernel_buffers: int,
+        allow_non_refill_gaps: bool,
         on_finalize: Callable[[DeviceAxisStreamWriteReceipt], None],
     ) -> None:
         if requested_device_span <= 0:
@@ -635,6 +636,7 @@ class DeviceAxisStreamBundleWriter:
             require_metadata=True,
             require_generation=True,
             validate_declared=True,
+            allow_non_refill_gaps=allow_non_refill_gaps,
         )
         self._timeline = _CompressedFileWriter(
             stream_directory / "timeline.jsonl.zst.partial",
@@ -1078,6 +1080,7 @@ class RecordingBundleWriter:
         *,
         requested_device_span: int,
         kernel_buffers: int,
+        allow_non_refill_gaps: bool = False,
     ) -> DeviceAxisStreamBundleWriter:
         """Open an explicit V3 writer without changing the historical V1/V2 path."""
 
@@ -1114,6 +1117,7 @@ class RecordingBundleWriter:
                 requested_device_span=requested_device_span,
                 compression=self.compression,
                 kernel_buffers=kernel_buffers,
+                allow_non_refill_gaps=allow_non_refill_gaps,
                 on_finalize=self._register_receipt,
             )
             self._writers[stream_id] = writer

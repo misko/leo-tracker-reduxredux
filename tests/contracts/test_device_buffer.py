@@ -67,6 +67,26 @@ def test_direct_async_profiles_bind_bounded_segment_geometry(rate, frames, rx):
     assert request.next_segment_frames(frames - 1) == 1
 
 
+@pytest.mark.parametrize("rx", [0, 1])
+def test_25m_v8_profiles_use_internal_two_buffer_prime_without_a_ram_ring(rx):
+    path = (
+        Path(__file__).parents[2]
+        / "profiles"
+        / f"starlink-ch4-lower-25m-60s-rx{rx}-direct-async-v8.yaml"
+    )
+    revision = load_profile_revision(path)
+    profile = revision.profile
+    request = device_buffer_request(profile, 1_500_000_000)
+
+    assert isinstance(request, DirectAsyncRequestV1)
+    assert profile.prime_refills == 0
+    assert profile.kernel_buffers == 15
+    assert profile.refill_queue_capacity == 64
+    assert profile.receivers == (rx,)
+    assert request.target_frames == 1431
+    assert request.segment_count == 23
+
+
 def test_direct_async_evidence_closes_segment_gaps_and_tail():
     request = DirectAsyncRequestV1(
         target_frames=65,

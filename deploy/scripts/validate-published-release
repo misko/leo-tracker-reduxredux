@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import importlib.metadata
+import json
 import os
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 QNAP = Path("/mnt/qnap01")
@@ -94,6 +96,25 @@ def validate_metadata_runtime(python: Path) -> None:
     )
 
 
+def validate_pluto_plus_utils_revision(release: Path) -> str:
+    """Close the installed hardware adapter against the immutable uv authority."""
+
+    with (release / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)
+    expected = project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"]
+    if not isinstance(expected, str) or len(expected) != 40:
+        raise ValueError("pluto-plus-utils uv authority is not one full revision")
+    payload = importlib.metadata.distribution("pluto-plus-utils").read_text("direct_url.json")
+    try:
+        direct_url = json.loads(payload or "")
+    except json.JSONDecodeError as error:
+        raise ValueError("installed pluto-plus-utils lacks VCS provenance") from error
+    vcs = direct_url.get("vcs_info") if isinstance(direct_url, dict) else None
+    if not isinstance(vcs, dict) or vcs.get("vcs") != "git" or vcs.get("commit_id") != expected:
+        raise ValueError("installed pluto-plus-utils revision differs from uv authority")
+    return expected
+
+
 def validate(release: Path, forbidden_path: str) -> None:
     release = _safe_absolute(release, "release")
     validate_release_uv(release)
@@ -140,6 +161,7 @@ def validate(release: Path, forbidden_path: str) -> None:
     site_root = venv
     if site_root not in module_path.parents:
         raise ValueError(f"leo imports outside the release venv: {module_path}")
+    validate_pluto_plus_utils_revision(release)
     if forbidden_path:
         forbidden = str(Path(forbidden_path).absolute())
         if any(forbidden in item for item in sys.path):

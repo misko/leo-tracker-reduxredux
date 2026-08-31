@@ -1,14 +1,28 @@
 from __future__ import annotations
 
+import json
 import runpy
 import stat
 import subprocess
+import tomllib
 from contextlib import suppress
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parents[2]
 VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-published-release"
 GLOBALS = runpy.run_path(str(VALIDATOR))
+
+
+def test_ppu_pin_is_one_exact_dependency_authority() -> None:
+    expected = "7578cab938a0658492f4350abbd350fbef62fb30"
+    with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)
+    provenance = json.loads((PROJECT_ROOT / "docs/dependencies/pluto-plus-utils.json").read_text())
+    lock = (PROJECT_ROOT / "uv.lock").read_text()
+
+    assert project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"] == expected
+    assert provenance["revision"] == expected
+    assert f"#{expected}" in lock
 
 
 def test_binary_scan_finds_reference_crossing_chunk_boundary(tmp_path: Path) -> None:
@@ -115,3 +129,48 @@ def test_metadata_runtime_validation_scrubs_ambient_loader_state(
     assert "LD_LIBRARY_PATH" not in environment
     assert "PYTHONPATH" not in environment
     assert "PLUTO_LIBIIO_LIBRARY" not in environment
+
+
+def test_published_release_closes_installed_ppu_against_exact_uv_revision(
+    tmp_path: Path, monkeypatch
+) -> None:  # noqa: ANN001
+    expected = "7578cab938a0658492f4350abbd350fbef62fb30"
+    release = tmp_path / "release"
+    release.mkdir()
+    (release / "pyproject.toml").write_text(
+        "[tool.uv.sources]\n"
+        f'pluto-plus-utils = {{ git = "https://example.test/ppu", rev = "{expected}" }}\n'
+    )
+
+    class Distribution:
+        @staticmethod
+        def read_text(name):  # noqa: ANN001, ANN205
+            assert name == "direct_url.json"
+            return json.dumps(
+                {
+                    "url": "https://example.test/ppu",
+                    "vcs_info": {"vcs": "git", "commit_id": expected},
+                }
+            )
+
+    monkeypatch.setattr(
+        GLOBALS["importlib"].metadata,
+        "distribution",
+        lambda name: Distribution() if name == "pluto-plus-utils" else None,
+    )
+
+    assert GLOBALS["validate_pluto_plus_utils_revision"](release) == expected
+
+    bad = Distribution()
+    monkeypatch.setattr(
+        bad,
+        "read_text",
+        lambda _name: json.dumps({"vcs_info": {"vcs": "git", "commit_id": "0" * 40}}),
+    )
+    monkeypatch.setattr(GLOBALS["importlib"].metadata, "distribution", lambda _name: bad)
+    try:
+        GLOBALS["validate_pluto_plus_utils_revision"](release)
+    except ValueError as error:
+        assert "differs from uv authority" in str(error)
+    else:
+        raise AssertionError("a mismatched installed pluto-plus-utils revision was accepted")

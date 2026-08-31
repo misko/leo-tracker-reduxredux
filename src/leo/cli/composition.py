@@ -58,6 +58,7 @@ from leo.cli.models import (
     CancelRunDataV1,
     CaptureControlDataV1,
     CaptureDataV1,
+    CaptureStreamCoverageV1,
     CheckState,
     DoctorCheckV1,
     DoctorDataV1,
@@ -649,7 +650,7 @@ class LocalAcquisitionBackend:
             },
             **{
                 (25_000_000, (receiver,), True): (
-                    f"starlink-ch4-lower-25m-60s-rx{receiver}-direct-async-v7"
+                    f"starlink-ch4-lower-25m-60s-rx{receiver}-direct-async-v8"
                 )
                 for receiver in (0, 1)
             },
@@ -2032,6 +2033,22 @@ def _capture_data(
         storage_warning=result.admission.storage_warning,
         admission_reason=result.admission.policy_reason,
         errors=result.errors,
+        stream_coverage=tuple(
+            CaptureStreamCoverageV1(
+                radio_id=coverage.radio_id,
+                stream_id=coverage.stream_id,
+                delivery_unit=coverage.delivery_unit,
+                delivered_units=coverage.delivered_units,
+                requested_units=coverage.requested_units,
+                delivery_coverage_pct=coverage.delivery_coverage_pct,
+                observed_samples=coverage.observed_samples,
+                logical_samples=coverage.logical_samples,
+                observed_density_pct=coverage.observed_density_pct,
+                in_segment_density_pct=coverage.in_segment_density_pct,
+                transport_density_pct=coverage.transport_density_pct,
+            )
+            for coverage in result.stream_coverage
+        ),
     )
 
 
