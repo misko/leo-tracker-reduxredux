@@ -189,6 +189,27 @@ class _ReadinessGate:
             self._condition.notify_all()
 
 
+class _RfDrainGate:
+    """Keep post-RF storage work behind every prepared radio read loop."""
+
+    def __init__(self, expected: int) -> None:
+        self._expected = expected
+        self._drained = 0
+        self._condition = threading.Condition()
+
+    def arrive(self) -> None:
+        with self._condition:
+            self._drained += 1
+            if self._drained > self._expected:
+                raise AcquisitionError("RF-drain barrier received too many arrivals")
+            self._condition.notify_all()
+
+    def wait_until_drained(self) -> None:
+        with self._condition:
+            while self._drained < self._expected:
+                self._condition.wait(timeout=0.05)
+
+
 class AcquisitionCoordinator:
     """Prepare radios concurrently, release together, stream bounded IQ, publish last."""
 
@@ -231,7 +252,7 @@ class AcquisitionCoordinator:
         staging_bytes = sum(
             sample_count * len(profile.receivers) * 4
             for profile, sample_count, _settings in geometry
-            if _device_buffer_request(profile, sample_count) is not None
+            if profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
         )
         required = raw_bytes + staging_bytes + metadata_bytes + self.config.safety_reserve_bytes
         available = max(0, int(self._free_bytes(self.store.root)))
@@ -333,6 +354,7 @@ class AcquisitionCoordinator:
         device_axis_capture = _device_axis_capture(plan)
         session_cancel = Event()
         gate = _ReadinessGate(len(prepared))
+        rf_drain_gate = _RfDrainGate(len(prepared))
         capture_futures: dict[int, Future[_StreamOutcome]] = {}
         release_target: int | None = None
         errors: list[str] = list(prep_failures.values())
@@ -348,6 +370,7 @@ class AcquisitionCoordinator:
                     plan,
                     bundle_writer,
                     gate,
+                    rf_drain_gate,
                     external_cancel,
                     session_cancel,
                     fail_whole,
@@ -749,6 +772,7 @@ class AcquisitionCoordinator:
         plan: CapturePlan,
         bundle: RecordingBundleWriter,
         gate: _ReadinessGate,
+        rf_drain_gate: _RfDrainGate,
         external_cancel: Event,
         session_cancel: Event,
         fail_whole: bool,
@@ -761,6 +785,7 @@ class AcquisitionCoordinator:
                 plan,
                 bundle,
                 gate,
+                rf_drain_gate,
                 external_cancel,
                 session_cancel,
                 fail_whole,
@@ -874,6 +899,7 @@ class AcquisitionCoordinator:
         plan: CapturePlanV2 | CapturePlanV3 | CapturePlanV4 | CapturePlanV5,
         bundle: RecordingBundleWriter,
         gate: _ReadinessGate,
+        rf_drain_gate: _RfDrainGate,
         external_cancel: Event,
         session_cancel: Event,
         fail_whole: bool,
@@ -959,7 +985,7 @@ class AcquisitionCoordinator:
                             continue
                         assert isinstance(queued, IqBlock)
                         set_consumer_phase("writing")
-                        if device_buffer is not None:
+                        if device_axis_capture:
                             if raw_stage is None:
                                 raw_stage = bundle.open_raw_stage(
                                     item.stream_id,
@@ -978,16 +1004,17 @@ class AcquisitionCoordinator:
                     finally:
                         pending.task_done()
                 if raw_stage is not None and not consumer_failed.is_set():
+                    rf_drain_gate.wait_until_drained()
                     raw_stage.seal()
                     buffer_evidence = ring_evidence or direct_evidence
-                    if buffer_evidence is None:
+                    if device_buffer is not None and buffer_evidence is None:
                         # The producer retains the original RF/cancellation error;
                         # keep the raw spool without fabricating a publishable tail.
                         return
                     set_consumer_phase("finalizing")
                     stream_writer = open_writer()
                     for index, staged in enumerate(raw_stage.blocks()):
-                        if index == 0:
+                        if index == 0 and buffer_evidence is not None:
                             metadata = staged.metadata.model_copy(
                                 update={
                                     "hardware_metadata": {
@@ -1472,9 +1499,10 @@ class AcquisitionCoordinator:
             if fail_whole:
                 session_cancel.set()
         finally:
+            rf_drain_gate.arrive()
             shutdown_timeout = (
                 self.config.raw_stage_finalize_timeout_seconds
-                if ring_evidence is not None or direct_evidence is not None
+                if device_axis_capture
                 else self.config.consumer_shutdown_timeout_seconds
             )
             deadline = time.monotonic() + shutdown_timeout

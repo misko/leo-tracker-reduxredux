@@ -67,6 +67,15 @@ It emits the existing immutable V3 intent with explicit HOLD assignments and a
 `gain_rollout:tandem_hold_v1` evidence tag. It does not reinterpret old V3
 intents or remove AUTO from their contract.
 
+The first deployed 60-second HOLD canary then found the next measured limit.
+The ordinary dual-RX 2.5 MS/s leg compressed shards during RF and filled its
+bounded host queue after 117,440,512 of 150,000,000 requested device samples
+(78.294% delivery). Peer cancellation stopped the high leg after 555 of 1,431
+frames (38.784% delivery), so the session correctly remained an unpublished
+partial spool. This is a storage-service-time failure, not a radio-ring or
+direct-async failure: the low leg had already written seven compressed shards
+while RF was active.
+
 ## Preserve the contracts that already fit
 
 Keep these existing contracts and semantics unchanged:
@@ -158,14 +167,27 @@ whole pair remains quarantined without a manifest.
 
 ### 4. Keep the RF read path non-blocking
 
-Retain the existing producer/consumer ownership split:
+Retain the existing producer/consumer ownership split for both device-axis
+legs:
 
 1. the radio thread reads and validates one direct-async frame;
 2. it hands the frame once to the bounded host queue without waiting for
    compression;
-3. the storage thread appends CI16 to the filesystem-backed raw stage; and
-4. after exact frame closure, the publisher constructs the device-axis stream,
-   zero-fills counter gaps, compresses it, and atomically publishes the bundle.
+3. each storage thread appends CI16 to its own bounded filesystem-backed raw
+   stage; and
+4. after both radio read loops close, each publisher constructs its device-axis
+   stream, zero-fills counter gaps, compresses it, and atomically publishes the
+   bundle.
+
+The 60-second failure makes this staging mandatory for the ordinary dual-RX
+2.5 MS/s leg as well as the finite direct-async leg. Its bound is exactly the
+admitted logical payload size, 1.2 GB at 60 seconds. Give post-RF replay the
+existing raw-stage finalization timeout; do not make compression part of the
+bounded RF service interval. Preserve queue-full fail-closed behavior if even
+the sequential raw-stage append cannot keep pace. Storage admission reserves
+both the raw stage and a full-size final output for every device-axis leg. A
+session drain barrier prevents the faster low leg from starting compression or
+raw-stage `fsync` while the slower finite-frame high leg is still reading RF.
 
 The bounded kernel queue and host handoff queue are transport backpressure, not
 capture rings. Do not add PPU RAM-ring slots, a user-space circular IQ store, or
