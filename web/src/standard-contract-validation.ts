@@ -3,21 +3,26 @@ import type {
   StandardNativePlotViewV3,
   StandardNativePlotViewV4,
   StandardNativePlotViewV5,
+  StandardNativePlotViewV6,
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
   StandardNativePngArtifactInventoryV7,
   StandardNativePngArtifactInventoryV8,
+  StandardNativePngArtifactInventoryV9,
   StandardNativeScientificDispositionV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
   StandardNativeSubjectDetailV5,
+  StandardNativeSubjectDetailV6,
   StandardNativeSubjectHierarchyV3,
   StandardNativeSubjectHierarchyV4,
   StandardNativeSubjectHierarchyV5,
+  StandardNativeSubjectHierarchyV6,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
+  StandardNativeSubjectSummaryV6,
   StandardPlotView,
   StandardPlotViewV2,
   StandardSubjectDetail,
@@ -74,9 +79,15 @@ const scienceStates: StandardNativeScientificDispositionV3[] = [
 ];
 const sampleRates = [2_500_000, 3_000_000, 5_000_000, 10_000_000] as const;
 const mixedSampleRates = [2_500_000, 5_000_000, 10_000_000] as const;
-const productionSampleRates = [
+const productionSampleRatesV5 = [
   2_500_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000,
 ] as const;
+const productionSampleRatesV6 = [...productionSampleRatesV5, 25_000_000] as const;
+const productionDwellClassesV5 = [
+  "both_2p5", "both_5", "mixed_2p5_5", "mixed_2p5_10",
+  "mixed_2p5_15", "mixed_2p5_20",
+] as const;
+const productionDwellClassesV6 = [...productionDwellClassesV5, "mixed_2p5_25"] as const;
 
 function fail(path: string, detail: string): never {
   throw new Error(`Standard ${path} contract is invalid: ${detail}`);
@@ -426,7 +437,12 @@ function assertV4Eligibility(value: unknown, path: string): void {
   literal(item.reason, expectedReason, `${path}.reason`);
 }
 
-function assertV5ProductionLeg(value: unknown, path: string): void {
+function assertProductionLeg(
+  value: unknown,
+  path: string,
+  schemaVersion: 5 | 6,
+  allowedRates: readonly number[],
+): void {
   const item = object(value, path);
   exactKeys(item, [
     "schema_version", "stream_id", "radio_id", "profile_name",
@@ -437,7 +453,7 @@ function assertV5ProductionLeg(value: unknown, path: string): void {
     "captured_if_start_hz", "captured_if_stop_hz", "logical_sample_count",
     "validity_inventory_digest", "timeline_digest", "metadata_abi_version",
   ], path);
-  literal(item.schema_version, 5, `${path}.schema_version`);
+  literal(item.schema_version, schemaVersion, `${path}.schema_version`);
   for (const key of ["stream_id", "radio_id", "profile_name"]) string(item[key], `${path}.${key}`);
   for (const key of [
     "profile_revision_digest", "gain_controller_request_digest",
@@ -451,8 +467,8 @@ function assertV5ProductionLeg(value: unknown, path: string): void {
   oneOf(item.gain_controller_mode, ["tandem_hold", "tandem_auto"], `${path}.gain_controller_mode`);
   oneOf(item.starlink_channel, [1, 2, 3, 4], `${path}.starlink_channel`);
   oneOf(item.starlink_edge, ["lower", "upper"], `${path}.starlink_edge`);
-  const rate = oneOf(item.sample_rate_hz, productionSampleRates, `${path}.sample_rate_hz`);
-  if (oneOf(item.rf_bandwidth_hz, productionSampleRates, `${path}.rf_bandwidth_hz`) !== rate) {
+  const rate = oneOf(item.sample_rate_hz, allowedRates, `${path}.sample_rate_hz`);
+  if (oneOf(item.rf_bandwidth_hz, allowedRates, `${path}.rf_bandwidth_hz`) !== rate) {
     fail(path, "RF bandwidth differs from native sample rate");
   }
   const center = integer(item.tuned_center_frequency_hz, `${path}.tuned_center_frequency_hz`);
@@ -472,7 +488,12 @@ function assertV5ProductionLeg(value: unknown, path: string): void {
   literal(item.metadata_abi_version, 3, `${path}.metadata_abi_version`);
 }
 
-function assertV5Eligibility(value: unknown, path: string): void {
+function assertProductionEligibility(
+  value: unknown,
+  path: string,
+  schemaVersion: 5 | 6,
+  allowedRates: readonly number[],
+): void {
   const item = object(value, path);
   exactKeys(item, [
     "schema_version", "source_type", "source_manifest_schema_version", "capture_state",
@@ -482,9 +503,13 @@ function assertV5Eligibility(value: unknown, path: string): void {
     "capture_plan_digest", "capture_hardware_binding_digest", "pipeline_definition_id",
     "promotion_authority_digest", "resampled", "reason",
   ], path);
-  literal(item.schema_version, 5, `${path}.schema_version`);
+  literal(item.schema_version, schemaVersion, `${path}.schema_version`);
   literal(item.source_type, "LIVE", `${path}.source_type`);
-  literal(item.source_manifest_schema_version, 5, `${path}.source_manifest_schema_version`);
+  literal(
+    item.source_manifest_schema_version,
+    schemaVersion,
+    `${path}.source_manifest_schema_version`,
+  );
   const captureState = oneOf(item.capture_state, ["committed", "degraded"], `${path}.capture_state`);
   if (boolean(item.capture_committed, `${path}.capture_committed`) !== (captureState === "committed")) {
     fail(path, "capture state and committed flag disagree");
@@ -495,10 +520,11 @@ function assertV5Eligibility(value: unknown, path: string): void {
   ]) literal(item[key], true, `${path}.${key}`);
   literal(item.evidence_only, false, `${path}.evidence_only`);
   literal(item.resampled, false, `${path}.resampled`);
-  const dwellClass = oneOf(item.dwell_class, [
-    "both_2p5", "both_5", "mixed_2p5_5", "mixed_2p5_10",
-    "mixed_2p5_15", "mixed_2p5_20",
-  ], `${path}.dwell_class`);
+  const dwellClass = oneOf(
+    item.dwell_class,
+    schemaVersion === 5 ? productionDwellClassesV5 : productionDwellClassesV6,
+    `${path}.dwell_class`,
+  );
   const tuningBranch = oneOf(
     item.tuning_branch,
     ["same", "same_channel_opposite_edge", "independent"],
@@ -506,17 +532,19 @@ function assertV5Eligibility(value: unknown, path: string): void {
   );
   const legs = array(item.legs, `${path}.legs`);
   if (legs.length !== 2) fail(path, "production eligibility requires two exact legs");
-  legs.forEach((leg, index) => assertV5ProductionLeg(leg, `${path}.legs[${index}]`));
+  legs.forEach((leg, index) =>
+    assertProductionLeg(leg, `${path}.legs[${index}]`, schemaVersion, allowedRates));
   const legObjects = legs.map((leg) => object(leg, path));
   const identities = legObjects.map((leg) => `${leg.stream_id}\u0000${leg.radio_id}`);
   if (identities[0] >= identities[1]) fail(path, "production leg inventory is not exact and ordered");
-  const expectedRates: Record<typeof dwellClass, readonly number[]> = {
+  const expectedRates: Record<string, readonly number[]> = {
     both_2p5: [2_500_000, 2_500_000],
     both_5: [5_000_000, 5_000_000],
     mixed_2p5_5: [2_500_000, 5_000_000],
     mixed_2p5_10: [2_500_000, 10_000_000],
     mixed_2p5_15: [2_500_000, 15_000_000],
     mixed_2p5_20: [2_500_000, 20_000_000],
+    mixed_2p5_25: [2_500_000, 25_000_000],
   };
   const rates = legObjects.map((leg) => Number(leg.sample_rate_hz)).sort((left, right) => left - right);
   if (rates.some((rate, index) => rate !== expectedRates[dwellClass][index])) {
@@ -538,6 +566,14 @@ function assertV5Eligibility(value: unknown, path: string): void {
     ? "Promoted reviewed production Standard-native capture is Current"
     : "Promoted reviewed production Standard-native capture is Current with partial validity coverage";
   literal(item.reason, expectedReason, `${path}.reason`);
+}
+
+function assertV5Eligibility(value: unknown, path: string): void {
+  assertProductionEligibility(value, path, 5, productionSampleRatesV5);
+}
+
+function assertV6Eligibility(value: unknown, path: string): void {
+  assertProductionEligibility(value, path, 6, productionSampleRatesV6);
 }
 
 function assertV3SufficientStatistics(value: unknown, path: string): void {
@@ -738,7 +774,11 @@ function assertV4Subject(value: unknown, path: string): asserts value is Standar
   literal(item.evidence_label, "candidate evidence only", `${path}.evidence_label`);
 }
 
-function assertV5Subject(value: unknown, path: string): asserts value is StandardNativeSubjectSummaryV5 {
+function assertProductionSubject(
+  value: unknown,
+  path: string,
+  schemaVersion: 5 | 6,
+): void {
   const item = object(value, path);
   exactKeys(item, [
     "schema_version", "subject_id", "session_id", "subject_kind", "label", "derived",
@@ -747,7 +787,7 @@ function assertV5Subject(value: unknown, path: string): asserts value is Standar
     "pipeline_release", "desired_pipeline_release_id", "reuse", "eligibility", "terminal",
     "evidence_label",
   ], path);
-  literal(item.schema_version, 5, `${path}.schema_version`);
+  literal(item.schema_version, schemaVersion, `${path}.schema_version`);
   string(item.subject_id, `${path}.subject_id`);
   string(item.session_id, `${path}.session_id`);
   oneOf(item.subject_kind, ["receiver_path", "radio", "paired"], `${path}.subject_kind`);
@@ -767,13 +807,31 @@ function assertV5Subject(value: unknown, path: string): asserts value is Standar
   assertV3Release(item.pipeline_release, `${path}.pipeline_release`);
   string(item.desired_pipeline_release_id, `${path}.desired_pipeline_release_id`);
   assertReuse(item.reuse, `${path}.reuse`);
-  assertV5Eligibility(item.eligibility, `${path}.eligibility`);
+  if (schemaVersion === 5) {
+    assertV5Eligibility(item.eligibility, `${path}.eligibility`);
+  } else {
+    assertV6Eligibility(item.eligibility, `${path}.eligibility`);
+  }
   assertV3Terminal(item.terminal, `${path}.terminal`);
   const terminal = object(item.terminal, `${path}.terminal`);
   if (terminal.coverage_status !== coverage || terminal.scientific_disposition !== science) {
     fail(path, "coverage or science differs from terminal evidence");
   }
   literal(item.evidence_label, "candidate evidence only", `${path}.evidence_label`);
+}
+
+function assertV5Subject(
+  value: unknown,
+  path: string,
+): asserts value is StandardNativeSubjectSummaryV5 {
+  assertProductionSubject(value, path, 5);
+}
+
+function assertV6Subject(
+  value: unknown,
+  path: string,
+): asserts value is StandardNativeSubjectSummaryV6 {
+  assertProductionSubject(value, path, 6);
 }
 
 function assertV3PathEvidence(value: unknown, path: string): void {
@@ -932,7 +990,7 @@ function assertV4Detail(value: unknown): asserts value is StandardNativeSubjectD
   assertStringArray(item.limitations, "subject detail V4.limitations");
 }
 
-function assertV5Detail(value: unknown): asserts value is StandardNativeSubjectDetailV5 {
+function assertProductionDetail(value: unknown, schemaVersion: 5 | 6): void {
   const item = object(value, "subject detail V5");
   exactKeys(item, [
     "schema_version", "subject", "time_domain", "receiver_path_expansions",
@@ -940,12 +998,21 @@ function assertV5Detail(value: unknown): asserts value is StandardNativeSubjectD
     "trajectory_source_count", "trajectories", "trajectories_truncated", "views",
     "available_artifacts", "limitations",
   ], "subject detail V5");
-  literal(item.schema_version, 5, "subject detail V5.schema_version");
-  assertV5Subject(item.subject, "subject detail V5.subject");
+  literal(item.schema_version, schemaVersion, "subject detail V5.schema_version");
+  if (schemaVersion === 5) {
+    assertV5Subject(item.subject, "subject detail V5.subject");
+  } else {
+    assertV6Subject(item.subject, "subject detail V6.subject");
+  }
   assertTimeDomain(item.time_domain, "subject detail V5.time_domain");
   const expansions = array(item.receiver_path_expansions, "subject detail V5.receiver_path_expansions");
-  expansions.forEach((row, index) =>
-    assertV5Subject(row, `subject detail V5.receiver_path_expansions[${index}]`));
+  expansions.forEach((row, index) => {
+    if (schemaVersion === 5) {
+      assertV5Subject(row, `subject detail V5.receiver_path_expansions[${index}]`);
+    } else {
+      assertV6Subject(row, `subject detail V6.receiver_path_expansions[${index}]`);
+    }
+  });
   const evidence = array(item.receiver_path_evidence, "subject detail V5.receiver_path_evidence");
   evidence.forEach((row, index) =>
     assertV3PathEvidence(row, `subject detail V5.receiver_path_evidence[${index}]`));
@@ -991,6 +1058,14 @@ function assertV5Detail(value: unknown): asserts value is StandardNativeSubjectD
   }
   assertStringArray(item.available_artifacts, "subject detail V5.available_artifacts");
   assertStringArray(item.limitations, "subject detail V5.limitations");
+}
+
+function assertV5Detail(value: unknown): asserts value is StandardNativeSubjectDetailV5 {
+  assertProductionDetail(value, 5);
+}
+
+function assertV6Detail(value: unknown): asserts value is StandardNativeSubjectDetailV6 {
+  assertProductionDetail(value, 6);
 }
 
 function assertV3ProductRef(value: unknown, path: string): void {
@@ -1136,7 +1211,7 @@ function assertV3Plot(value: unknown): asserts value is StandardNativePlotViewV3
 
 function assertMultiRatePlot(
   value: unknown,
-  schemaVersion: 4 | 5,
+  schemaVersion: 4 | 5 | 6,
   allowedRates: readonly number[],
 ): void {
   const item = object(value, "plot view V4");
@@ -1215,7 +1290,58 @@ function assertV4Plot(value: unknown): asserts value is StandardNativePlotViewV4
 }
 
 function assertV5Plot(value: unknown): asserts value is StandardNativePlotViewV5 {
-  assertMultiRatePlot(value, 5, productionSampleRates);
+  assertMultiRatePlot(value, 5, productionSampleRatesV5);
+}
+
+function assertV6Plot(value: unknown): asserts value is StandardNativePlotViewV6 {
+  assertMultiRatePlot(value, 6, productionSampleRatesV6);
+}
+
+function assertProductionHierarchy(item: JsonObject, schemaVersion: 5 | 6): void {
+  const path = `subject hierarchy V${schemaVersion}`;
+  exactKeys(
+    item,
+    ["schema_version", "session_id", "source_type", "eligibility", "generated_at", "rows"],
+    path,
+  );
+  literal(item.schema_version, schemaVersion, `${path}.schema_version`);
+  const sessionId = string(item.session_id, `${path}.session_id`);
+  literal(item.source_type, "LIVE", `${path}.source_type`);
+  if (schemaVersion === 5) {
+    assertV5Eligibility(item.eligibility, `${path}.eligibility`);
+  } else {
+    assertV6Eligibility(item.eligibility, `${path}.eligibility`);
+  }
+  string(item.generated_at, `${path}.generated_at`);
+  const rows = array(item.rows, `${path}.rows`);
+  if (rows.length !== 3) fail(path, "production hierarchy requires pair and two radios");
+  rows.forEach((row, index) => {
+    if (schemaVersion === 5) {
+      assertV5Subject(row, `${path}.rows[${index}]`);
+    } else {
+      assertV6Subject(row, `${path}.rows[${index}]`);
+    }
+  });
+  const rowObjects = rows.map((row) => object(row, `${path} row`));
+  if (rowObjects.some((row) => row.session_id !== sessionId
+    || JSON.stringify(row.eligibility) !== JSON.stringify(item.eligibility))) {
+    fail(path, "session or eligibility authority is crossed");
+  }
+  if (rowObjects[0].subject_kind !== "paired"
+    || rowObjects[1].subject_kind !== "radio" || rowObjects[2].subject_kind !== "radio") {
+    fail(path, "production hierarchy requires pair then two radios");
+  }
+  const radioIds = rowObjects.slice(1).map((row) => row.subject_id);
+  if (array(rowObjects[0].child_subject_ids, `${path} paired children`).join("\u0000")
+    !== radioIds.join("\u0000")) {
+    fail(path, "paired children differ from radio rows");
+  }
+  const pathIds = (row: JsonObject) => array(row.receiver_paths, `${path} paths`)
+    .map((receiverPath) => object(receiverPath, `${path} path`).path_id);
+  if (pathIds(rowObjects[0]).join("\u0000")
+    !== [...pathIds(rowObjects[1]), ...pathIds(rowObjects[2])].join("\u0000")) {
+    fail(path, "paired paths differ from the radio union");
+  }
 }
 
 export function parseStandardSubjectHierarchy(value: unknown): StandardSubjectHierarchy {
@@ -1253,38 +1379,14 @@ export function parseStandardSubjectHierarchy(value: unknown): StandardSubjectHi
     return item as unknown as StandardNativeSubjectHierarchyV4;
   }
   if (item.schema_version === 5) {
-    exactKeys(item, ["schema_version", "session_id", "source_type", "eligibility", "generated_at", "rows"], "subject hierarchy V5");
-    literal(item.schema_version, 5, "subject hierarchy V5.schema_version");
-    const sessionId = string(item.session_id, "subject hierarchy V5.session_id");
-    literal(item.source_type, "LIVE", "subject hierarchy V5.source_type");
-    assertV5Eligibility(item.eligibility, "subject hierarchy V5.eligibility");
-    string(item.generated_at, "subject hierarchy V5.generated_at");
-    const rows = array(item.rows, "subject hierarchy V5.rows");
-    if (rows.length !== 3) fail("subject hierarchy V5", "production hierarchy requires pair and two radios");
-    rows.forEach((row, index) => assertV5Subject(row, `subject hierarchy V5.rows[${index}]`));
-    const rowObjects = rows.map((row) => object(row, "subject hierarchy V5 row"));
-    if (rowObjects.some((row) => row.session_id !== sessionId
-      || JSON.stringify(row.eligibility) !== JSON.stringify(item.eligibility))) {
-      fail("subject hierarchy V5", "session or eligibility authority is crossed");
-    }
-    if (rowObjects[0].subject_kind !== "paired"
-      || rowObjects[1].subject_kind !== "radio" || rowObjects[2].subject_kind !== "radio") {
-      fail("subject hierarchy V5", "production hierarchy requires pair then two radios");
-    }
-    const radioIds = rowObjects.slice(1).map((row) => row.subject_id);
-    if (array(rowObjects[0].child_subject_ids, "subject hierarchy V5 paired children").join("\u0000")
-      !== radioIds.join("\u0000")) {
-      fail("subject hierarchy V5", "paired children differ from radio rows");
-    }
-    const pathIds = (row: JsonObject) => array(row.receiver_paths, "subject hierarchy V5 paths")
-      .map((path) => object(path, "subject hierarchy V5 path").path_id);
-    if (pathIds(rowObjects[0]).join("\u0000")
-      !== [...pathIds(rowObjects[1]), ...pathIds(rowObjects[2])].join("\u0000")) {
-      fail("subject hierarchy V5", "paired paths differ from the radio union");
-    }
+    assertProductionHierarchy(item, 5);
     return item as unknown as StandardNativeSubjectHierarchyV5;
   }
-  fail("subject hierarchy", "unsupported schema_version; expected 2, 3, 4, or 5");
+  if (item.schema_version === 6) {
+    assertProductionHierarchy(item, 6);
+    return item as unknown as StandardNativeSubjectHierarchyV6;
+  }
+  fail("subject hierarchy", "unsupported schema_version; expected 2, 3, 4, 5, or 6");
 }
 
 export function parseStandardSubjectDetail(value: unknown): StandardSubjectDetail {
@@ -1305,7 +1407,11 @@ export function parseStandardSubjectDetail(value: unknown): StandardSubjectDetai
     assertV5Detail(item);
     return item;
   }
-  fail("subject detail", "unsupported schema_version; expected 2, 3, 4, or 5");
+  if (item.schema_version === 6) {
+    assertV6Detail(item);
+    return item;
+  }
+  fail("subject detail", "unsupported schema_version; expected 2, 3, 4, 5, or 6");
 }
 
 export function parseStandardPlotView(value: unknown): StandardPlotView {
@@ -1326,14 +1432,18 @@ export function parseStandardPlotView(value: unknown): StandardPlotView {
     assertV5Plot(item);
     return item;
   }
-  fail("plot view", "unsupported schema_version; expected 2, 3, 4, or 5");
+  if (item.schema_version === 6) {
+    assertV6Plot(item);
+    return item;
+  }
+  fail("plot view", "unsupported schema_version; expected 2, 3, 4, 5, or 6");
 }
 
 export function parseStandardNativePngArtifactInventory(
   value: unknown,
-): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 | StandardNativePngArtifactInventoryV8 {
+): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 | StandardNativePngArtifactInventoryV8 | StandardNativePngArtifactInventoryV9 {
   const item = object(value, "native PNG artifact inventory");
-  const version = oneOf(item.schema_version, [4, 5, 6, 7, 8], "native PNG artifact inventory.schema_version");
+  const version = oneOf(item.schema_version, [4, 5, 6, 7, 8, 9], "native PNG artifact inventory.schema_version");
   const path = `native PNG artifact inventory V${version}`;
   exactKeys(item, [
     "schema_version", "session_id", "subject_id", "subject_kind", "run_id",
@@ -1357,9 +1467,11 @@ export function parseStandardNativePngArtifactInventory(
     if (rates.length < 1 || rates.length > 2) fail(path, "rate inventory is invalid");
     const allowedRates = version === 5
       ? mixedSampleRates
-      : version === 7 || version === 8
-        ? [3_000_000, ...productionSampleRates]
-        : productionSampleRates;
+      : version === 9
+        ? [3_000_000, ...productionSampleRatesV6]
+        : version === 7 || version === 8
+          ? [3_000_000, ...productionSampleRatesV5]
+          : productionSampleRatesV5;
     rates.forEach((rate, index) => oneOf(rate, allowedRates, `${path}.sample_rates_hz[${index}]`));
     if (new Set(rates).size !== rates.length
       || rates.some((rate, index) => index > 0 && Number(rate) <= Number(rates[index - 1]))) {
@@ -1372,14 +1484,14 @@ export function parseStandardNativePngArtifactInventory(
     `${path}.coverage_status`,
   );
   const rows = array(item.artifacts, `${path}.artifacts`);
-  const definitions = version === 8
+  const definitions = version === 8 || version === 9
     ? nativeArtifactDefinitionsV8
     : version === 7
       ? nativeArtifactDefinitionsV7
       : nativeArtifactDefinitionsV4;
   const expected = subjectKind === "receiver_path"
     ? definitions
-    : definitions.slice(0, version === 8 ? 6 : 5);
+    : definitions.slice(0, version === 8 || version === 9 ? 6 : 5);
   if (rows.length !== expected.length) {
     fail(`${path}.artifacts`, "scope inventory length differs");
   }
@@ -1392,7 +1504,7 @@ export function parseStandardNativePngArtifactInventory(
     ], `${path}.artifacts[${index}]`);
     const [name, catalogKind, schemaVersion, suffix] = expected[index];
     const rowPath = `native PNG artifact inventory V${version}.artifacts[${index}]`;
-    literal(row.schema_version, version === 8 ? 8 : 4, `${rowPath}.schema_version`);
+    literal(row.schema_version, version === 8 || version === 9 ? 8 : 4, `${rowPath}.schema_version`);
     literal(row.name, name, `${rowPath}.name`);
     string(row.label, `${rowPath}.label`);
     string(row.description, `${rowPath}.description`);
@@ -1410,7 +1522,8 @@ export function parseStandardNativePngArtifactInventory(
     | StandardNativePngArtifactInventoryV5
     | StandardNativePngArtifactInventoryV6
     | StandardNativePngArtifactInventoryV7
-    | StandardNativePngArtifactInventoryV8;
+    | StandardNativePngArtifactInventoryV8
+    | StandardNativePngArtifactInventoryV9;
 }
 
 export function assertMatchingStandardMajor(
