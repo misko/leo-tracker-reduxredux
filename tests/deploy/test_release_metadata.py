@@ -48,7 +48,7 @@ def _published(
             {
                 "schema_version": 1,
                 "metadata_abi": 3,
-                "source_commit": "1e5002702f3033f5bc741da315dfe5d5558ef394",
+                "source_commit": GLOBALS["PRODUCTION_LIBIIO_SOURCE_COMMIT"],
                 "native_libiio_path": str(native),
                 "pylibiio_path": str(binding),
             }
@@ -112,11 +112,20 @@ def test_metadata_native_runtime_tamper_fails(tmp_path: Path) -> None:
         _validate(release, metadata)
 
 
-def test_pre_ring_runtime_identity_is_rejected_even_with_matching_file_hashes(tmp_path):
+@pytest.mark.parametrize(
+    "source_commit",
+    (
+        "1e5002702f3033f5bc741da315dfe5d5558ef394",
+        "f72a72602e4ac0173bc7dd5842d831007baa3582",
+    ),
+)
+def test_prior_runtime_identity_is_rejected_even_with_matching_file_hashes(
+    tmp_path: Path, source_commit: str
+) -> None:
     release, metadata = _published(tmp_path)
     receipt = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
     document = json.loads(receipt.read_text())
-    document["source_commit"] = "f72a72602e4ac0173bc7dd5842d831007baa3582"
+    document["source_commit"] = source_commit
     receipt.chmod(0o640)
     receipt.write_text(json.dumps(document))
     receipt.chmod(0o440)
