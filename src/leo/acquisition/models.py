@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from leo.acquisition.coverage import CaptureStreamCoverage
 from leo.contracts.recording import (
     RecordingManifestV1,
     RecordingManifestV2,
@@ -78,3 +79,4 @@ class CaptureSessionResult:
     ) = None
     release_target_monotonic_ns: int | None = None
     errors: tuple[str, ...] = ()
+    stream_coverage: tuple[CaptureStreamCoverage, ...] = ()

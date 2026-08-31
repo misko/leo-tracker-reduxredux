@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import queue
 import threading
@@ -1562,7 +1563,7 @@ def test_production_capture_persists_single_rx_tandem_evidence_and_v5_plan(
     assert coordinator.store.verify("production-v5-single-rx").validity_inventory_count == 2
 
 
-def test_direct_async_capture_reopens_segments_and_persists_counter_loss(
+def test_direct_async_capture_accepts_non_refill_aligned_segment_rearm_gap(
     tmp_path: Path,
 ) -> None:
     frame_samples = 1_048_576
@@ -1580,16 +1581,20 @@ def test_direct_async_capture_reopens_segments_and_persists_counter_loss(
         def __init__(self, *args, **kwargs) -> None:
             super().__init__(*args, **kwargs)
             self._frame = np.zeros((frame_samples, 1, 2), dtype="<i2")
+            self._arm_count = 0
+
+        def begin_metadata_capture(self, *args, **kwargs) -> int:
+            if self._arm_count:
+                self._device_sample_counter += 17
+            self._arm_count += 1
+            return super().begin_metadata_capture(*args, **kwargs)
 
         def _samples(self, sample_count: int, receiver_ids: tuple[int, ...]) -> np.ndarray:
             assert sample_count == frame_samples
             assert receiver_ids == (0,)
             return self._frame
 
-    radio = ConstantFrameRadio(
-        "radio-a",
-        gaps_before_blocks={1: 64 * frame_samples},
-    )
+    radio = ConstantFrameRadio("radio-a")
 
     result = coordinator.capture_once(
         _direct_async_plan(),
@@ -1602,7 +1607,7 @@ def test_direct_async_capture_reopens_segments_and_persists_counter_loss(
     stream = result.manifest.streams[0]
     assert stream.state is StreamState.PARTIAL
     assert stream.continuity.gap_count == 1
-    assert stream.continuity.missing_sample_count == (63 * frame_samples + 1)
+    assert stream.continuity.missing_sample_count == 1
     assert radio.lifecycle.count("begin_metadata_capture:1048576:15") == 2
     timeline = next(
         coordinator.store.reader(result.bundle, stream.stream_id).iter_timeline_metadata()
@@ -1612,8 +1617,45 @@ def test_direct_async_capture_reopens_segments_and_persists_counter_loss(
     )
     assert evidence.returned_frames == 65
     assert evidence.segment_count == 2
-    assert evidence.counter_missing_sample_count == 64 * frame_samples
-    assert evidence.inter_segment_skipped_samples == 0
+    assert evidence.counter_missing_sample_count == 17
+    assert evidence.inter_segment_skipped_samples == 17
+
+
+def test_short_direct_async_spool_persists_exact_frame_delivery_counts(tmp_path: Path) -> None:
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=128 * 1024 * 1024,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+
+    result = coordinator.capture_once(
+        _direct_async_plan(),
+        {"radio-a": FakeRadioSource("radio-a", fail_after_blocks=1)},
+        session_id="direct-async-short-coverage",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert len(result.stream_coverage) == 1
+    coverage = result.stream_coverage[0]
+    assert (coverage.delivered_units, coverage.requested_units) == (1, 65)
+    evidence_path = (
+        coordinator.store.spool_root
+        / "direct-async-short-coverage.partial"
+        / "capture-failure-stream-0.json"
+    )
+    failure = json.loads(evidence_path.read_text())
+    assert failure["coverage"] == {
+        "delivery_unit": "frames",
+        "delivered_units": 1,
+        "requested_units": 65,
+        "observed_samples": 1_048_576,
+        "logical_samples": 1_048_576,
+    }
 
 
 def test_native_bandwidth_capture_selects_exact_radio_configuration(tmp_path: Path) -> None:
