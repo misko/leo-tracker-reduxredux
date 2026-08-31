@@ -64,6 +64,7 @@ from leo.processing.continuity import iter_masked_device_iq
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
 from leo.storage import writer as storage_writer
+from leo.storage.staging import RawIqStage
 from leo.storage.writer import (
     DeviceAxisStreamBundleWriter,
     RecordingBundleWriter,
@@ -166,6 +167,17 @@ def _device_axis_coordinator(tmp_path: Path) -> AcquisitionCoordinator:
         ),
         config=AcquisitionConfig(safety_reserve_bytes=0),
         free_bytes=lambda _path: 10**12,
+    )
+
+
+def test_device_axis_admission_reserves_raw_stage_and_final_output(tmp_path: Path) -> None:
+    coordinator = _device_axis_coordinator(tmp_path)
+
+    admission = coordinator.estimate_admission(_device_axis_plan(sample_count=12))
+
+    assert admission.raw_iq_bytes == 12 * 2 * 4
+    assert admission.required_free_bytes == (
+        2 * admission.raw_iq_bytes + admission.metadata_reserve_bytes
     )
 
 
@@ -752,11 +764,72 @@ def test_device_axis_v3_writer_failure_quarantines_observed_prefix(
     _assert_quarantined_v3_evidence(coordinator, result.session_id)
 
 
-def test_device_axis_v3_queue_failure_refuses_a_fixed_length_manifest(
+def test_device_axis_v3_defers_compression_until_after_rf_drain(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     original = DeviceAxisStreamBundleWriter.append
+    radio = FakeRadioSource("radio-a")
+
+    def delayed_append(self, block):
+        assert radio._block_index == 3
+        time.sleep(0.05)
+        return original(self, block)
+
+    monkeypatch.setattr(DeviceAxisStreamBundleWriter, "append", delayed_append)
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _device_axis_plan(sample_count=12),
+        {"radio-a": radio},
+        session_id="device-axis-post-rf-compression",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert result.manifest is not None
+    assert result.manifest.streams[0].continuity.enqueue_failure_count == 0
+    assert not tuple(result.bundle.path.glob("raw-stage-*"))
+    coordinator.store.verify(result.session_id)
+
+
+def test_mixed_rate_device_axis_defers_compression_until_both_radios_drain(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = DeviceAxisStreamBundleWriter.append
+
+    class SlowHighRadio(FakeRadioSource):
+        def read_block(self, sample_count: int) -> IqBlock:
+            time.sleep(0.005)
+            return super().read_block(sample_count)
+
+    high = SlowHighRadio("radio-b")
+
+    def append_after_pair_drain(self, block):
+        assert high._block_index == 15
+        return original(self, block)
+
+    monkeypatch.setattr(DeviceAxisStreamBundleWriter, "append", append_after_pair_drain)
+    coordinator = _device_axis_coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _mixed_rate_plan(15_000_000),
+        {
+            "radio-a": FakeRadioSource("radio-a"),
+            "radio-b": high,
+        },
+        session_id="mixed-rate-post-pair-rf-compression",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert result.manifest is not None
+    assert all(stream.continuity.enqueue_failure_count == 0 for stream in result.manifest.streams)
+    coordinator.store.verify(result.session_id)
+
+
+def test_device_axis_v3_raw_stage_queue_failure_still_refuses_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = RawIqStage.append
     first = True
 
     def delayed_append(self, block):
@@ -766,12 +839,12 @@ def test_device_axis_v3_queue_failure_refuses_a_fixed_length_manifest(
             time.sleep(0.1)
         return original(self, block)
 
-    monkeypatch.setattr(DeviceAxisStreamBundleWriter, "append", delayed_append)
+    monkeypatch.setattr(RawIqStage, "append", delayed_append)
     coordinator = _device_axis_coordinator(tmp_path)
     result = coordinator.capture_once(
         _device_axis_plan(sample_count=12, queue_capacity=1),
         {"radio-a": FakeRadioSource("radio-a")},
-        session_id="device-axis-queue-refusal",
+        session_id="device-axis-raw-stage-queue-refusal",
     )
 
     assert result.state is CaptureState.FAILED
