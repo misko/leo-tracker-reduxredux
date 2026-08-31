@@ -8,6 +8,10 @@ from typing import cast
 import pytest
 
 from leo.acquisition import AcquisitionQueuePressure, AcquisitionSupervisorPoisoned
+from leo.acquisition.mixed_rate_schedule import (
+    PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
+)
 from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
@@ -21,15 +25,18 @@ from leo.contracts.capture_control import (
     CaptureDesiredState,
     CaptureObservedState,
 )
+from leo.contracts.gain_control import GainControllerMode
 from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
     MIXED_RATE_SCHEDULE_POLICY_V1,
     PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+    PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
     PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
     ProductionDwellClassV2,
     ProductionDwellIntentV1,
     ProductionDwellIntentV2,
+    ProductionDwellIntentV3,
 )
 from leo.contracts.states import CaptureState
 from leo.scanner import ScannerBurstReportV1
@@ -257,6 +264,8 @@ class _ProductionRateDurableBackend(_DurableSupervisorBackend):
             (15_000_000, (1,), True),
             (20_000_000, (0,), True),
             (20_000_000, (1,), True),
+            (25_000_000, (0,), True),
+            (25_000_000, (1,), True),
         )
         return {
             key: (
@@ -433,6 +442,43 @@ def test_durable_focused_policy_executes_only_2p5_10_and_2p5_15_pairs() -> None:
         in ({2_500_000, 10_000_000}, {2_500_000, 15_000_000})
         for intent in intents
     )
+
+
+def test_durable_hold_rollout_enqueues_explicit_hold_v3_intents() -> None:
+    clock = _Clock()
+    backend = _ProductionRateDurableBackend(clock)
+    backend.analyzed.set()
+    start = datetime.fromtimestamp(0, tz=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        (
+            "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+            "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+        ),
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("production",),
+        interval_seconds=10.0,
+        maximum_captures=6,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        mixed_rate_policy=PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    )
+
+    assert summary.capture_count == 6
+    intents = tuple(
+        ProductionDwellIntentV3.model_validate(item.payload)
+        for item in backend.operations
+        if item.kind == "scheduled_recording"
+    )
+    assert len(intents) == 6
+    assert all(item.policy_id == PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3 for item in intents)
+    assert all(PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 in item.extra_tags for item in intents)
+    assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
+        GainControllerMode.TANDEM_HOLD
+    }
 
 
 def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis() -> None:

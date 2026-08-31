@@ -398,7 +398,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
     assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4"
     assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-native-bandwidth-v4"
-    assert values["LEO_MIXED_RATE_POLICY"] == "production-direct-async-2p5-10-15-25-6-v3"
+    assert values["LEO_MIXED_RATE_POLICY"] == "production-direct-async-2p5-10-15-25-hold-6-v1"
     assert values["LEO_DIRECT_ASYNC_ENABLED"] == "true"
     assert values["LEO_QUALIFICATION_PROFILE"] == (
         "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"
@@ -530,7 +530,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert stage.rindex("validate-published-release") < metadata_publish
     assert stage.index('rm -f -- "$release_dir/.leo-release-incomplete"') < metadata_publish
     assert stage.count('PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python"') == 2
-    assert "production-direct-async-2p5-10-15-25-6-v3" in deployment_text
+    assert "production-direct-async-2p5-10-15-25-hold-6-v1" in deployment_text
     assert 'sudo ./ops deploy --full --revision "$release_revision"' in deployment_text
     assert "public.processing_resource_capacity" in deployment_text
     assert "streaming=16`, `cpu=8`,\n`memory=4`, and `heavy=2" in deployment_text

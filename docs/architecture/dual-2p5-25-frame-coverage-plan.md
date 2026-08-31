@@ -58,6 +58,15 @@ sequence by one returned block when the gap is not a whole-refill inventory,
 and allow the device-axis writer to zero-fill the exact gap. The ordinary
 continuous-IIO validator must retain its stricter whole-refill rule.
 
+The bounded paired tandem-AUTO gate then failed closed after 42 of 72 requested
+high-rate frames with `ENODATA`; its low peer was quarantined and no manifest
+published. The successful HOLD gates completed 3 seconds, 20 seconds, and the
+20-second radio-role swap at 100% delivery. Production therefore uses the
+additive `production-direct-async-2p5-10-15-25-hold-6-v1` scheduler selector.
+It emits the existing immutable V3 intent with explicit HOLD assignments and a
+`gain_rollout:tandem_hold_v1` evidence tag. It does not reinterpret old V3
+intents or remove AUTO from their contract.
+
 ## Preserve the contracts that already fit
 
 Keep these existing contracts and semantics unchanged:
