@@ -8,6 +8,9 @@ import pytest
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.acquisition.coverage import project_capture_progress_coverage
 from leo.acquisition.mixed_rate_schedule import (
+    PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
+    compile_production_dwell_intent_hold_rollout_v1,
     compile_production_dwell_intent_v3,
     production_cycle_classes_v3,
 )
@@ -147,6 +150,44 @@ def test_v3_cycle_is_uniform_and_every_intent_is_same_target() -> None:
         len({(leg.starlink_channel, leg.starlink_edge) for leg in item.radio_legs}) == 1
         for item in intents
     )
+
+
+def test_additive_hold_rollout_preserves_v3_contract_and_excludes_auto() -> None:
+    intents = tuple(
+        compile_production_dwell_intent_hold_rollout_v1(
+            operation_key=f"hold-rollout:{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=_RADIOS,
+            profile_authority=_AUTHORITY,
+            rollout_policy_id=PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+            extra_tags=("production",),
+        )
+        for ordinal in range(6 * 32)
+    )
+
+    assert all(item.policy_id == "production-direct-async-2p5-10-15-25-6-v3" for item in intents)
+    assert all(PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 in item.extra_tags for item in intents)
+    assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
+        GainControllerMode.TANDEM_HOLD
+    }
+    assert {leg.radio_id for intent in intents for leg in intent.radio_legs} == set(_RADIOS)
+    assert {
+        leg.receiver_ids
+        for intent in intents
+        for leg in intent.radio_legs
+        if leg.sample_rate_hz > 2_500_000
+    } == {(0,), (1,)}
+
+
+def test_hold_rollout_rejects_an_unreviewed_selector() -> None:
+    with pytest.raises(ValueError, match="HOLD rollout policy"):
+        compile_production_dwell_intent_hold_rollout_v1(
+            operation_key="hold-rollout:invalid",
+            cadence_ordinal=0,
+            radio_ids=_RADIOS,
+            profile_authority=_AUTHORITY,
+            rollout_policy_id="unreviewed",
+        )
 
 
 def test_v5_plan_and_v6_manifest_round_trip_through_a_real_capture(tmp_path) -> None:

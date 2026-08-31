@@ -362,15 +362,19 @@ requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
 row blocks startup.
 
 The historical target-bound 3 MS/s qualification receipt is not a cutover gate:
-3 MS/s is absent from `production-direct-async-2p5-10-15-25-6-v3`. This focused
-six-dwell policy contains two same-channel mixed dwells for each of 2.5/10,
-2.5/15, and 2.5/25 MS/s. The 2.5 MS/s leg is dual RX and the high-rate leg is
-single RX; radio order, high-rate RX, channel edge, and tandem HOLD/AUTO are
-digest-stable randomized choices. It contains no same-rate, 3, 5, or 20 MS/s
-dwell. The transaction checks the exact staged direct-async profile bytes,
+3 MS/s is absent from `production-direct-async-2p5-10-15-25-hold-6-v1`. This
+focused six-dwell rollout selector retains the immutable V3 rate and tuning
+contract: two same-channel mixed dwells for each of 2.5/10, 2.5/15, and 2.5/25
+MS/s. The 2.5 MS/s leg is dual RX and the high-rate leg is single RX; radio
+order, high-rate RX, and channel edge remain digest-stable randomized choices.
+Every newly scheduled intent explicitly carries tandem HOLD for both legs and
+the `gain_rollout:tandem_hold_v1` evidence tag. Historical randomized V3
+HOLD/AUTO intents remain readable and executable, but the failed AUTO hardware
+mode is not newly scheduled. The rollout contains no same-rate, 3, 5, or 20
+MS/s dwell. The transaction checks the exact staged direct-async profile bytes,
 service command, feature gate, exact-revision release qualification, reviewed
-Standard regression authority, and both live radios through the exact v0.46 final
-ABI-3 direct-async adapter before starting any runtime unit.
+Standard regression authority, and both live radios through the exact v0.46
+final ABI-3 direct-async adapter before starting any runtime unit.
 
 The additive Standard-native V6 product family is reviewed for the three mixed
 2.5/10, 2.5/15, and 2.5/25 MS/s shapes. Each successful recording produces and

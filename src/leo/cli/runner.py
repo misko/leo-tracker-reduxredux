@@ -25,6 +25,8 @@ from leo.acquisition import (
     CaptureTaskKind,
 )
 from leo.acquisition.mixed_rate_schedule import (
+    PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    compile_production_dwell_intent_hold_rollout_v1,
     compile_production_dwell_intent_v1,
     compile_production_dwell_intent_v2,
     compile_production_dwell_intent_v3,
@@ -70,6 +72,7 @@ _MIXED_RATE_POLICIES = frozenset(
         PRODUCTION_NATIVE_RATE_POLICY_V2,
         PRODUCTION_2P5_10_15_RATE_POLICY_V2,
         PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
+        PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
     }
 )
 _PRODUCTION_RATE_POLICIES_V2 = frozenset(
@@ -78,7 +81,12 @@ _PRODUCTION_RATE_POLICIES_V2 = frozenset(
         PRODUCTION_2P5_10_15_RATE_POLICY_V2,
     }
 )
-_PRODUCTION_RATE_POLICIES_V3 = frozenset({PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3})
+_PRODUCTION_RATE_POLICIES_V3 = frozenset(
+    {
+        PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
+        PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    }
+)
 _PRODUCTION_RATE_POLICIES = _PRODUCTION_RATE_POLICIES_V2 | _PRODUCTION_RATE_POLICIES_V3
 ProfileSelector = Callable[[tuple[str, ...], str], str]
 RunData = RunDataV1 | RunDataV2
@@ -284,8 +292,23 @@ class ContinuousAcquisitionRunner:
                                     "5 MS/s service bootstrap profiles"
                                 )
                             if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V3:
-                                intent: ProductionDwellIntentV2 | ProductionDwellIntentV3 = (
-                                    compile_production_dwell_intent_v3(
+                                intent: ProductionDwellIntentV2 | ProductionDwellIntentV3
+                                if (
+                                    mixed_rate_policy
+                                    == PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1
+                                ):
+                                    intent = compile_production_dwell_intent_hold_rollout_v1(
+                                        operation_key=key,
+                                        cadence_ordinal=_cadence_ordinal(
+                                            next_due, interval_seconds
+                                        ),
+                                        radio_ids=radio_ids,
+                                        profile_authority=production_profile_authority,
+                                        rollout_policy_id=mixed_rate_policy,
+                                        extra_tags=extra_tags,
+                                    )
+                                else:
+                                    intent = compile_production_dwell_intent_v3(
                                         operation_key=key,
                                         cadence_ordinal=_cadence_ordinal(
                                             next_due, interval_seconds
@@ -295,7 +318,6 @@ class ContinuousAcquisitionRunner:
                                         policy_id=mixed_rate_policy,
                                         extra_tags=extra_tags,
                                     )
-                                )
                             else:
                                 intent = compile_production_dwell_intent_v2(
                                     operation_key=key,
