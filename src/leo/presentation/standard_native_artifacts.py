@@ -505,3 +505,12 @@ class StandardNativePngArtifactInventoryV8(ContractModel):
         if self.content_digest != canonical_digest(values):
             raise ValueError("V8 native PNG artifact inventory digest does not match")
         return self
+
+
+class StandardNativePngArtifactInventoryV9(StandardNativePngArtifactInventoryV8):
+    """Additive direct-async PNG inventory supporting native 25 MS/s paths."""
+
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    sample_rates_hz: tuple[Literal[2_500_000, 10_000_000, 15_000_000, 25_000_000], ...] = Field(
+        min_length=1, max_length=2
+    )  # type: ignore[assignment]

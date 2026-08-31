@@ -9,6 +9,8 @@ from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
+    RecordingManifestV5,
+    RecordingManifestV6,
 )
 from leo.contracts.states import CaptureState
 from leo.storage.writer import PublishedBundle
@@ -66,7 +68,13 @@ class CaptureSessionResult:
     admission: AdmissionEstimate
     bundle: PublishedBundle | None = None
     manifest: (
-        RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4 | None
+        RecordingManifestV1
+        | RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+        | None
     ) = None
     release_target_monotonic_ns: int | None = None
     errors: tuple[str, ...] = ()

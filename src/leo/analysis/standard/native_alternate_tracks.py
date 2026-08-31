@@ -17,21 +17,23 @@ from leo.contracts.standard_native_alternate_tracks import (
     NativeAlternateTrackProjectionDispositionV1,
     NativeAlternateTrackSegmentV1,
     StandardNativeAlternateCfoTrackBankV4,
+    StandardNativeAlternateCfoTrackBankV5,
 )
 from leo.contracts.standard_native_stateful import NativePolynomialTrajectoryV1
 from leo.contracts.standard_native_stateful_v2 import (
     NativeStatefulSegmentDispositionV2,
     StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
 )
 
 _RENDER_LOCK = RLock()
 
 
 def build_standard_native_alternate_cfo_track_bank(
-    stateful: StandardNativeStatefulPathV2,
+    stateful: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
     *,
     stateful_product_digest: Sha256Digest,
-) -> StandardNativeAlternateCfoTrackBankV4:
+) -> StandardNativeAlternateCfoTrackBankV4 | StandardNativeAlternateCfoTrackBankV5:
     """Copy the exact persisted residual-Hough banks without reading or fitting IQ."""
 
     segments: list[NativeAlternateTrackSegmentV1] = []
@@ -104,9 +106,14 @@ def build_standard_native_alternate_cfo_track_bank(
     else:
         projection_status = "no_result"
 
+    wideband = isinstance(stateful, StandardNativeStatefulPathV3)
     values = {
-        "schema_version": 4,
-        "algorithm_version": "standard-native-alternate-cfo-track-bank-v4",
+        "schema_version": 5 if wideband else 4,
+        "algorithm_version": (
+            "standard-native-alternate-cfo-track-bank-v5"
+            if wideband
+            else "standard-native-alternate-cfo-track-bank-v4"
+        ),
         "source": stateful.source.model_dump(mode="json"),
         "starlink_edge": stateful.starlink_edge.value,
         "source_stateful_product_digest": stateful_product_digest,
@@ -129,13 +136,14 @@ def build_standard_native_alternate_cfo_track_bank(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardNativeAlternateCfoTrackBankV4.model_validate(
-        {**values, "bank_digest": canonical_digest(values)}
+    product_type = (
+        StandardNativeAlternateCfoTrackBankV5 if wideband else StandardNativeAlternateCfoTrackBankV4
     )
+    return product_type.model_validate({**values, "bank_digest": canonical_digest(values)})
 
 
 def render_standard_native_alternate_cfo_tracks_png(
-    bank: StandardNativeAlternateCfoTrackBankV4,
+    bank: StandardNativeAlternateCfoTrackBankV4 | StandardNativeAlternateCfoTrackBankV5,
 ) -> bytes:
     """Render only persisted projected tracks on the global display-time axis."""
 

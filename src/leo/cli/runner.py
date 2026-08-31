@@ -27,6 +27,7 @@ from leo.acquisition import (
 from leo.acquisition.mixed_rate_schedule import (
     compile_production_dwell_intent_v1,
     compile_production_dwell_intent_v2,
+    compile_production_dwell_intent_v3,
 )
 from leo.cli.backend import (
     AcquisitionCliBackend,
@@ -50,10 +51,12 @@ from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
     MIXED_RATE_SCHEDULE_POLICY_V1,
     PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+    PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
     PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
     ProductionDwellIntentV1,
     ProductionDwellIntentV2,
+    ProductionDwellIntentV3,
 )
 from leo.contracts.states import CaptureState
 from leo.scanner import ScannerCaptureBurstReportLike
@@ -66,6 +69,7 @@ _MIXED_RATE_POLICIES = frozenset(
         MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
         PRODUCTION_NATIVE_RATE_POLICY_V2,
         PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+        PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
     }
 )
 _PRODUCTION_RATE_POLICIES_V2 = frozenset(
@@ -74,6 +78,8 @@ _PRODUCTION_RATE_POLICIES_V2 = frozenset(
         PRODUCTION_2P5_10_15_RATE_POLICY_V2,
     }
 )
+_PRODUCTION_RATE_POLICIES_V3 = frozenset({PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3})
+_PRODUCTION_RATE_POLICIES = _PRODUCTION_RATE_POLICIES_V2 | _PRODUCTION_RATE_POLICIES_V3
 ProfileSelector = Callable[[tuple[str, ...], str], str]
 RunData = RunDataV1 | RunDataV2
 
@@ -222,12 +228,12 @@ class ContinuousAcquisitionRunner:
         next_due = _cadence_floor(self._utc_now(), interval_seconds)
         rate_profile_authority = (
             None
-            if mixed_rate_policy is None or mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2
+            if mixed_rate_policy is None or mixed_rate_policy in _PRODUCTION_RATE_POLICIES
             else self.backend.mixed_rate_profile_authority()
         )
         production_profile_authority = (
             self.backend.production_profile_authority()
-            if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2
+            if mixed_rate_policy in _PRODUCTION_RATE_POLICIES
             else None
         )
 
@@ -266,7 +272,7 @@ class ContinuousAcquisitionRunner:
                                 "extra_tags": list(extra_tags),
                             }
                     else:
-                        if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2:
+                        if mixed_rate_policy in _PRODUCTION_RATE_POLICIES:
                             assert production_profile_authority is not None
                             required_profiles = {
                                 "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
@@ -274,17 +280,31 @@ class ContinuousAcquisitionRunner:
                             }
                             if set(profile_names) != required_profiles:
                                 raise ValueError(
-                                    "production V2 policy requires exactly the reviewed 2.5 and "
-                                    "5 MS/s same-rate profiles"
+                                    "production policy requires exactly the reviewed 2.5 and "
+                                    "5 MS/s service bootstrap profiles"
                                 )
-                            intent = compile_production_dwell_intent_v2(
-                                operation_key=key,
-                                cadence_ordinal=_cadence_ordinal(next_due, interval_seconds),
-                                radio_ids=radio_ids,
-                                profile_authority=production_profile_authority,
-                                policy_id=mixed_rate_policy,
-                                extra_tags=extra_tags,
-                            )
+                            if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V3:
+                                intent: ProductionDwellIntentV2 | ProductionDwellIntentV3 = (
+                                    compile_production_dwell_intent_v3(
+                                        operation_key=key,
+                                        cadence_ordinal=_cadence_ordinal(
+                                            next_due, interval_seconds
+                                        ),
+                                        radio_ids=radio_ids,
+                                        profile_authority=production_profile_authority,
+                                        policy_id=mixed_rate_policy,
+                                        extra_tags=extra_tags,
+                                    )
+                                )
+                            else:
+                                intent = compile_production_dwell_intent_v2(
+                                    operation_key=key,
+                                    cadence_ordinal=_cadence_ordinal(next_due, interval_seconds),
+                                    radio_ids=radio_ids,
+                                    profile_authority=production_profile_authority,
+                                    policy_id=mixed_rate_policy,
+                                    extra_tags=extra_tags,
+                                )
                         else:
                             assert rate_profile_authority is not None
                             legacy_intent = compile_production_dwell_intent_v1(
@@ -297,7 +317,7 @@ class ContinuousAcquisitionRunner:
                                 extra_tags=extra_tags,
                             )
                             serialized_payload = legacy_intent.model_dump(mode="json")
-                        if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2:
+                        if mixed_rate_policy in _PRODUCTION_RATE_POLICIES:
                             serialized_payload = intent.model_dump(mode="json")
                     queue.enqueue_acquisition_operation(
                         operation_key=key,
@@ -345,9 +365,11 @@ class ContinuousAcquisitionRunner:
                     continue
                 try:
                     if lease.kind == CaptureTaskKind.SCHEDULED_RECORDING.value:
-                        if lease.payload.get("policy_id") in _PRODUCTION_RATE_POLICIES_V2:
-                            production_intent = ProductionDwellIntentV2.model_validate(
-                                lease.payload
+                        if lease.payload.get("policy_id") in _PRODUCTION_RATE_POLICIES:
+                            production_intent = (
+                                ProductionDwellIntentV3.model_validate(lease.payload)
+                                if lease.payload.get("policy_id") in _PRODUCTION_RATE_POLICIES_V3
+                                else ProductionDwellIntentV2.model_validate(lease.payload)
                             )
                             last = self.backend.capture_production_once(
                                 production_intent,

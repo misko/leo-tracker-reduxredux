@@ -12,6 +12,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_native_accounting import (
     StandardNativeTrajectoryAccountingSegmentV3,
     StandardNativeTrajectoryConditionedAccountingV3,
+    StandardNativeTrajectoryConditionedAccountingV4,
 )
 from leo.contracts.standard_native_stateful import (
     NativeConditionedHoughReplayRowV1,
@@ -20,7 +21,10 @@ from leo.contracts.standard_native_stateful import (
     NativePilotProbeDetectionV1,
     NativePolynomialTrajectoryV1,
 )
-from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
+from leo.contracts.standard_native_stateful_v2 import (
+    StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
+)
 from leo.contracts.trajectory_accounting import (
     ReplayTransitionCountsV1,
     TrajectoryAccountingConfigV2,
@@ -290,10 +294,13 @@ def _accounting_from_sealed_replay(
 
 
 def build_standard_native_trajectory_accounting_v3(
-    stateful: StandardNativeStatefulPathV2,
+    stateful: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
     *,
     configuration: TrajectoryAccountingConfigV2,
-) -> StandardNativeTrajectoryConditionedAccountingV3:
+) -> (
+    StandardNativeTrajectoryConditionedAccountingV3
+    | StandardNativeTrajectoryConditionedAccountingV4
+):
     """Derive reset-local accounting only from the sealed stateful document."""
 
     segments: list[StandardNativeTrajectoryAccountingSegmentV3] = []
@@ -349,9 +356,14 @@ def build_standard_native_trajectory_accounting_v3(
         "reacquired_unique_probe_transitions",
         "conditioned_unique_probe_transitions",
     )
+    wideband = isinstance(stateful, StandardNativeStatefulPathV3)
     values = {
-        "schema_version": 3,
-        "algorithm_version": "standard-native-trajectory-accounting-v3",
+        "schema_version": 4 if wideband else 3,
+        "algorithm_version": (
+            "standard-native-trajectory-accounting-v4"
+            if wideband
+            else "standard-native-trajectory-accounting-v3"
+        ),
         "source": stateful.source.model_dump(mode="json"),
         "stateful_path_digest": stateful.stateful_path_digest,
         "science_configuration_digest": stateful.science_configuration_digest,
@@ -376,13 +388,19 @@ def build_standard_native_trajectory_accounting_v3(
         "payload_decoded": False,
         "cross_segment_association_permitted": False,
     }
-    return StandardNativeTrajectoryConditionedAccountingV3.model_validate(
-        {**values, "content_digest": canonical_digest(values)}
+    product_type = (
+        StandardNativeTrajectoryConditionedAccountingV4
+        if wideband
+        else StandardNativeTrajectoryConditionedAccountingV3
     )
+    return product_type.model_validate({**values, "content_digest": canonical_digest(values)})
 
 
 def _aggregate_for_render(
-    product: StandardNativeTrajectoryConditionedAccountingV3,
+    product: (
+        StandardNativeTrajectoryConditionedAccountingV3
+        | StandardNativeTrajectoryConditionedAccountingV4
+    ),
 ) -> TrajectoryConditionedReplayAccountingV2:
     evaluations: list[TrajectoryConditionedEvaluationV2] = []
     trajectories: list[TrajectoryReplayComparisonSummaryV2] = []
@@ -461,7 +479,10 @@ def _aggregate_for_render(
 
 
 def render_standard_native_trajectory_accounting_png(
-    product: StandardNativeTrajectoryConditionedAccountingV3,
+    product: (
+        StandardNativeTrajectoryConditionedAccountingV3
+        | StandardNativeTrajectoryConditionedAccountingV4
+    ),
     *,
     path_label: str,
 ) -> bytes:

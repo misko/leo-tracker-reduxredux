@@ -8,7 +8,7 @@ from pydantic import Field, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.standard_native import StandardNativeSourceV1
+from leo.contracts.standard_native import StandardNativeSourceV1, StandardNativeSourceV2
 from leo.contracts.standard_native_stateful_v2 import NativeStatefulSegmentDispositionV2
 from leo.contracts.trajectory_accounting import (
     ReplayTransitionCountsV1,
@@ -137,3 +137,15 @@ class StandardNativeTrajectoryConditionedAccountingV3(ContractModel):
         ):
             raise ValueError("native accounting content digest does not match")
         return self
+
+
+class StandardNativeTrajectoryConditionedAccountingV4(
+    StandardNativeTrajectoryConditionedAccountingV3
+):
+    """Additive trajectory accounting carrying StandardNativeSourceV2."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-trajectory-accounting-v4"] = (
+        "standard-native-trajectory-accounting-v4"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]

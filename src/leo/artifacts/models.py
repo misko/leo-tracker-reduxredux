@@ -464,6 +464,79 @@ class StandardNativePromotionAuthorityV3(ContractModel):
         return self
 
 
+class StandardNativeProductionStreamAuthorityV2(StandardNativeProductionStreamAuthorityV1):
+    """Per-radio authority for direct-async production captures through 25 MS/s."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000, 15_000_000, 25_000_000]  # type: ignore[assignment]
+
+
+class StandardNativePromotionAuthorityV4(ContractModel):
+    """Closed Current authority for one direct-async RecordingManifestV6 run."""
+
+    schema_version: Literal[4] = 4
+    source_manifest_schema_version: Literal[6] = 6
+    source_manifest_digest: Sha256Digest
+    pipeline_definition: PipelineDefinitionV1
+    pipeline_definition_id: Sha256Digest
+    session_id: Identifier
+    run_id: Identifier
+    input_manifest_digest: Sha256Digest
+    pipeline_release_id: Identifier
+    expanded_plan_digest: Sha256Digest
+    raw_integrity_attestation_digest: Sha256Digest
+    release_authority_digest: Sha256Digest
+    subject_binding_inventory_digest: Sha256Digest
+    terminal_products: Annotated[
+        tuple[StandardNativeTerminalProductRefV1, ...],
+        Field(min_length=1, max_length=64),
+    ]
+    terminal_product_inventory_digest: Sha256Digest
+    dwell_class: Literal["mixed_2p5_10", "mixed_2p5_15", "mixed_2p5_25"]
+    tuning_branch: Literal["same"] = "same"
+    scheduled_intent_digest: Sha256Digest
+    stream_authorities: Annotated[
+        tuple[
+            StandardNativeProductionStreamAuthorityV2,
+            StandardNativeProductionStreamAuthorityV2,
+        ],
+        Field(min_length=2, max_length=2),
+    ]
+    capture_plan_digest: Sha256Digest
+    capture_hardware_binding_digest: Sha256Digest
+    trigger: Literal["new_capture", "reprocess"]
+    promotion_policy: Literal["current"] = "current"
+    processing_status: Literal["succeeded"] = "succeeded"
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _authority_is_closed(self) -> Self:
+        _validate_native_promotion_common(self)
+        identities = tuple((item.stream_id, item.radio_id) for item in self.stream_authorities)
+        if identities != tuple(sorted(identities)) or len(set(identities)) != 2:
+            raise ValueError("direct-async stream authorities must be unique and ordered")
+        high_rate = {
+            "mixed_2p5_10": 10_000_000,
+            "mixed_2p5_15": 15_000_000,
+            "mixed_2p5_25": 25_000_000,
+        }[self.dwell_class]
+        if sorted(item.sample_rate_hz for item in self.stream_authorities) != [
+            2_500_000,
+            high_rate,
+        ]:
+            raise ValueError("direct-async promotion rate pair disagrees with dwell class")
+        for item in self.stream_authorities:
+            expected_receiver_count = 2 if item.sample_rate_hz == 2_500_000 else 1
+            if len(item.receiver_ids) != expected_receiver_count:
+                raise ValueError("direct-async promotion receiver geometry disagrees with rate")
+        expected_content_digest = canonical_digest(
+            self.model_dump(mode="json", exclude={"content_digest"})
+        )
+        if self.content_digest != expected_content_digest:
+            raise ValueError("direct-async promotion authority content digest does not match")
+        return self
+
+
 class AnalysisRunManifestV3(ContractModel):
     """Promotion-capable Standard-native run with exact terminal authority."""
 
@@ -638,8 +711,49 @@ class AnalysisRunManifestV5(ContractModel):
         return self
 
 
+class AnalysisRunManifestV6(ContractModel):
+    """Promotion-capable direct-async production run manifest."""
+
+    schema_version: Literal[6] = 6
+    session_id: Identifier
+    run_id: Identifier
+    pipeline_release_id: Identifier
+    input_manifest_digest: Sha256Digest
+    trigger: Literal["new_capture", "reprocess"]
+    pipeline_lane: Literal["standard"] = "standard"
+    promotion_policy: Literal["current"] = "current"
+    processing_status: Literal["succeeded"] = "succeeded"
+    jobs: tuple[AnalysisJobReceiptV1, ...]
+    products: tuple[AnalysisProductReceiptV1, ...]
+    promotion_authority: StandardNativePromotionAuthorityV4
+    content_digest: Sha256Digest
+
+    @field_validator("jobs")
+    @classmethod
+    def _jobs_are_canonical(
+        cls, value: tuple[AnalysisJobReceiptV1, ...]
+    ) -> tuple[AnalysisJobReceiptV1, ...]:
+        return AnalysisRunManifestV1._jobs_are_canonical(value)
+
+    @field_validator("products")
+    @classmethod
+    def _products_are_canonical(
+        cls, value: tuple[AnalysisProductReceiptV1, ...]
+    ) -> tuple[AnalysisProductReceiptV1, ...]:
+        return AnalysisRunManifestV1._products_are_canonical(value)
+
+    @model_validator(mode="after")
+    def _promotion_manifest_is_closed(self) -> Self:
+        _validate_promotion_manifest_common(self, self.promotion_authority)
+        return self
+
+
 def _validate_native_promotion_common(
-    authority: StandardNativePromotionAuthorityV2 | StandardNativePromotionAuthorityV3,
+    authority: (
+        StandardNativePromotionAuthorityV2
+        | StandardNativePromotionAuthorityV3
+        | StandardNativePromotionAuthorityV4
+    ),
 ) -> None:
     definition = authority.pipeline_definition
     if (
@@ -668,8 +782,12 @@ def _validate_native_promotion_common(
 
 
 def _validate_promotion_manifest_common(
-    manifest: AnalysisRunManifestV4 | AnalysisRunManifestV5,
-    authority: StandardNativePromotionAuthorityV2 | StandardNativePromotionAuthorityV3,
+    manifest: AnalysisRunManifestV4 | AnalysisRunManifestV5 | AnalysisRunManifestV6,
+    authority: (
+        StandardNativePromotionAuthorityV2
+        | StandardNativePromotionAuthorityV3
+        | StandardNativePromotionAuthorityV4
+    ),
 ) -> None:
     jobs = {(item.stage_key, item.scope_key) for item in manifest.jobs}
     if any((item.stage_key, item.scope_key) not in jobs for item in manifest.products):
@@ -737,6 +855,7 @@ AnalysisRunManifest = (
     | AnalysisRunManifestV3
     | AnalysisRunManifestV4
     | AnalysisRunManifestV5
+    | AnalysisRunManifestV6
 )
 
 
@@ -754,4 +873,6 @@ def parse_analysis_run_manifest(document: object) -> AnalysisRunManifest:
         return AnalysisRunManifestV4.model_validate(document)
     if version == 5:
         return AnalysisRunManifestV5.model_validate(document)
+    if version == 6:
+        return AnalysisRunManifestV6.model_validate(document)
     raise ValueError("analysis run manifest schema version is unsupported")

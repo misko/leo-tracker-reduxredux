@@ -11,15 +11,24 @@ from leo.contracts.standard_pipeline import (
 from leo.pipeline import ProductRole, ProductSpec
 
 PATH_INPUT_BIND_V4_PRODUCT = ProductSpec(kind=STANDARD_PATH_INPUT_BIND_KIND, schema_version=4)
+PATH_INPUT_BIND_V5_PRODUCT = ProductSpec(kind=STANDARD_PATH_INPUT_BIND_KIND, schema_version=5)
 QUALITY_V2_PRODUCT = ProductSpec(kind="quality.summary", schema_version=2)
+QUALITY_V3_PRODUCT = ProductSpec(kind="quality.summary", schema_version=3)
 POWER_TIMELINE_V3_PRODUCT = ProductSpec(kind=STANDARD_POWER_TIMELINE_KIND, schema_version=3)
+POWER_TIMELINE_V4_PRODUCT = ProductSpec(kind=STANDARD_POWER_TIMELINE_KIND, schema_version=4)
 NUMERICAL_WATERFALL_V3_PRODUCT = ProductSpec(
     kind=STANDARD_NUMERICAL_WATERFALL_KIND,
     schema_version=3,
 )
+NUMERICAL_WATERFALL_V4_PRODUCT = ProductSpec(
+    kind=STANDARD_NUMERICAL_WATERFALL_KIND,
+    schema_version=4,
+)
 PROBE_SCHEDULE_V3_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=3)
+PROBE_SCHEDULE_V4_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=4)
 STATEFUL_PATH_V1_PRODUCT = ProductSpec(kind="standard.native-stateful-path", schema_version=1)
 STATEFUL_PATH_V2_PRODUCT = ProductSpec(kind="standard.native-stateful-path", schema_version=2)
+STATEFUL_PATH_V3_PRODUCT = ProductSpec(kind="standard.native-stateful-path", schema_version=3)
 PILOT_SCAN_V4_PRODUCT = ProductSpec(kind="standard.pilot-scan", schema_version=4)
 TRAJECTORY_BANK_V4_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=4)
 TRAJECTORY_FEEDBACK_V4_PRODUCT = ProductSpec(kind="standard.trajectory-feedback", schema_version=4)
@@ -45,10 +54,17 @@ KALMAN_TRACKING_V2_PRODUCT = ProductSpec(kind="standard.kalman-tracking", schema
 PILOT_DOPPLER_SEGMENTS_V3_PRODUCT = ProductSpec(
     kind="standard.pilot-doppler-segments", schema_version=3
 )
+PILOT_DOPPLER_SEGMENTS_V4_PRODUCT = ProductSpec(
+    kind="standard.pilot-doppler-segments", schema_version=4
+)
 FULL_CAPTURE_GLRT20MS_V1_PRODUCT = ProductSpec(
     kind="standard.full-capture-glrt20ms", schema_version=1
 )
+FULL_CAPTURE_GLRT20MS_V2_PRODUCT = ProductSpec(
+    kind="standard.full-capture-glrt20ms", schema_version=2
+)
 PATH_REPORT_V3_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=3)
+PATH_REPORT_V4_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=4)
 PATH_PRESENTATION_V5_PRODUCT = ProductSpec(
     kind="standard.path-presentation",
     schema_version=5,
@@ -92,23 +108,29 @@ STANDARD_NATIVE_PNG_PRODUCTS = (
 )
 
 PATH_STANDARD_NATIVE_OUTPUTS = (
-    QUALITY_V2_PRODUCT,
-    POWER_TIMELINE_V3_PRODUCT,
-    NUMERICAL_WATERFALL_V3_PRODUCT,
-    PROBE_SCHEDULE_V3_PRODUCT,
-    STATEFUL_PATH_V2_PRODUCT,
-    PILOT_DOPPLER_SEGMENTS_V3_PRODUCT,
-    FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
-    PATH_REPORT_V3_PRODUCT,
+    QUALITY_V3_PRODUCT,
+    POWER_TIMELINE_V4_PRODUCT,
+    NUMERICAL_WATERFALL_V4_PRODUCT,
+    PROBE_SCHEDULE_V4_PRODUCT,
+    STATEFUL_PATH_V3_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
+    FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
+    PATH_REPORT_V4_PRODUCT,
 )
 
 ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT = ProductSpec(
     kind="standard.alternate-cfo-track-bank", schema_version=4
 )
+ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT = ProductSpec(
+    kind="standard.alternate-cfo-track-bank", schema_version=5
+)
+TRAJECTORY_CONDITIONED_ACCOUNTING_V4_PRODUCT = ProductSpec(
+    kind="standard.trajectory-conditioned-accounting", schema_version=4
+)
 ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT = _png("standard.alternate-cfo-tracks-png", 3)
 PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS = (
-    ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT,
-    TRAJECTORY_CONDITIONED_ACCOUNTING_V3_PRODUCT,
+    ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_V4_PRODUCT,
     *STANDARD_NATIVE_PNG_PRODUCTS,
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
@@ -121,12 +143,14 @@ PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS = (
 RADIO_REPORT_V3_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=3)
 RADIO_REPORT_V4_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=4)
 RADIO_REPORT_V5_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=5)
-RADIO_SCIENTIFIC_NATIVE_OUTPUTS = (RADIO_REPORT_V5_PRODUCT, *STANDARD_NATIVE_PNG_PRODUCTS)
+RADIO_REPORT_V6_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=6)
+RADIO_SCIENTIFIC_NATIVE_OUTPUTS = (RADIO_REPORT_V6_PRODUCT, *STANDARD_NATIVE_PNG_PRODUCTS)
 PAIRED_REPORT_V3_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=3)
 PAIRED_REPORT_V4_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=4)
 PAIRED_REPORT_V5_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=5)
 PAIRED_REPORT_V6_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=6)
-PAIRED_SCIENTIFIC_NATIVE_OUTPUTS = (PAIRED_REPORT_V6_PRODUCT,)
+PAIRED_REPORT_V7_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=7)
+PAIRED_SCIENTIFIC_NATIVE_OUTPUTS = (PAIRED_REPORT_V7_PRODUCT,)
 PAIRED_PRESENTATION_NATIVE_OUTPUTS = STANDARD_NATIVE_PNG_PRODUCTS
 
 STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT = sum(

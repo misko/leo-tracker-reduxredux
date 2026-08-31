@@ -29,7 +29,7 @@ from leo.analysis.standard.native_windows import (
 from leo.analysis.standard.runner import ReceiverStandardConfig
 from leo.analysis.starlink.pilot_search_geometry import compile_pilot_search_geometry
 from leo.contracts.digests import canonical_digest
-from leo.contracts.standard_native import StandardNativeSourceV1
+from leo.contracts.standard_native import StandardNativeSourceV1, StandardNativeSourceV2
 from leo.contracts.standard_native_glrt import (
     NativeFullCaptureGlrtConstantRateV1,
     NativeFullCaptureGlrtHoughTrackV1,
@@ -40,8 +40,9 @@ from leo.contracts.standard_native_glrt import (
     NativeFullCaptureGlrtTrackObservationV1,
     NativeFullCaptureGlrtWindowV1,
     StandardNativeFullCaptureGlrt20msV1,
+    StandardNativeFullCaptureGlrt20msV2,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4
+from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardPathInputBindV5
 from leo.contracts.states import StarlinkEdge
 from leo.pipeline.validity import ValidityAwareIqReader
 
@@ -100,10 +101,10 @@ class StandardNativeFullCaptureGlrtRunner:
     def run(
         self,
         reader: ValidityAwareIqReader,
-        binding: StandardPathInputBindV4,
+        binding: StandardPathInputBindV4 | StandardPathInputBindV5,
         *,
         edge: StarlinkEdge,
-    ) -> StandardNativeFullCaptureGlrt20msV1:
+    ) -> StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2:
         """Return one complete persisted result, or poison without partial output."""
 
         with self._lock:
@@ -125,10 +126,10 @@ class StandardNativeFullCaptureGlrtRunner:
     def _run(
         self,
         reader: ValidityAwareIqReader,
-        binding: StandardPathInputBindV4,
+        binding: StandardPathInputBindV4 | StandardPathInputBindV5,
         *,
         edge: StarlinkEdge,
-    ) -> StandardNativeFullCaptureGlrt20msV1:
+    ) -> StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2:
         validate_standard_native_source(reader, binding)
         if edge is not binding.starlink_edge:
             raise ValueError("native full-capture GLRT edge differs from the V4 path binding")
@@ -276,7 +277,12 @@ class StandardNativeFullCaptureGlrtRunner:
             analyzed_count=len(rows),
             passing_count=passing,
         )
-        source = StandardNativeSourceV1.from_path_binding(binding)
+        source = (
+            StandardNativeSourceV2.from_path_binding(binding)
+            if isinstance(binding, StandardPathInputBindV5)
+            else StandardNativeSourceV1.from_path_binding(binding)
+        )
+        wideband = isinstance(source, StandardNativeSourceV2)
         schedule_values = {
             "kind": "standard-native-full-capture-glrt20ms-schedule-v1",
             "path_input_binding_digest": source.path_input_binding_digest,
@@ -306,13 +312,20 @@ class StandardNativeFullCaptureGlrtRunner:
             "payload_decoded": False,
         }
         document = {
-            "schema_version": 1,
-            "algorithm_version": "standard-native-full-capture-glrt20ms-v1",
+            "schema_version": 2 if wideband else 1,
+            "algorithm_version": (
+                "standard-native-full-capture-glrt20ms-v2"
+                if wideband
+                else "standard-native-full-capture-glrt20ms-v1"
+            ),
             "window_ms": 20,
             "stride_ms": 10,
             **values,
         }
-        return StandardNativeFullCaptureGlrt20msV1.model_validate(
+        product_type = (
+            StandardNativeFullCaptureGlrt20msV2 if wideband else StandardNativeFullCaptureGlrt20msV1
+        )
+        return product_type.model_validate(
             {**document, "result_digest": canonical_digest(document)}
         )
 

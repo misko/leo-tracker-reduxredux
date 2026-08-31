@@ -9,7 +9,7 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.standard_native import StandardNativeSourceV1
+from leo.contracts.standard_native import StandardNativeSourceV1, StandardNativeSourceV2
 from leo.contracts.standard_pipeline import StandardScientificStatus
 from leo.contracts.states import StarlinkEdge
 
@@ -1077,3 +1077,13 @@ class StandardPilotDopplerSegmentsV3(ContractModel):
         if self.content_digest != canonical_digest(document):
             raise ValueError("pilot Doppler V3 content digest does not match")
         return self
+
+
+class StandardPilotDopplerSegmentsV4(StandardPilotDopplerSegmentsV3):
+    """Additive pilot-Doppler evidence carrying StandardNativeSourceV2."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-pilot-doppler-segments-v4"] = (
+        "standard-native-pilot-doppler-segments-v4"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]

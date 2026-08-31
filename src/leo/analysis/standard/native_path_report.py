@@ -18,12 +18,20 @@ from leo.contracts.standard_native import (
     NativeProbeWindowV3,
     NativeWindowDisposition,
     StandardNativeNumericalWaterfallV3,
+    StandardNativeNumericalWaterfallV4,
     StandardNativePowerTimelineV3,
+    StandardNativePowerTimelineV4,
     StandardNativeQualityV2,
+    StandardNativeQualityV3,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
     StandardProbeScheduleV3,
+    StandardProbeScheduleV4,
 )
-from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
+from leo.contracts.standard_native_glrt import (
+    StandardNativeFullCaptureGlrt20msV1,
+    StandardNativeFullCaptureGlrt20msV2,
+)
 from leo.contracts.standard_native_path_report import (
     NativePathProductDigestsV1,
     NativePathScientificDispositionV1,
@@ -35,35 +43,44 @@ from leo.contracts.standard_native_path_report import (
     NativeQamComputationStatusV1,
     NativeQamProbeEvidenceV1,
     StandardNativePathReportV3,
+    StandardNativePathReportV4,
 )
 from leo.contracts.standard_native_stateful import NativePilotProbeDetectionV1
 from leo.contracts.standard_native_stateful_v2 import (
     NativeStatefulSegmentV2,
     StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4
+from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardPathInputBindV5
 
 
 def build_standard_native_path_report(
-    binding: StandardPathInputBindV4,
+    binding: StandardPathInputBindV4 | StandardPathInputBindV5,
     *,
-    quality: StandardNativeQualityV2,
+    quality: StandardNativeQualityV2 | StandardNativeQualityV3,
     quality_product_digest: Sha256Digest,
-    power_timeline: StandardNativePowerTimelineV3,
+    power_timeline: StandardNativePowerTimelineV3 | StandardNativePowerTimelineV4,
     power_timeline_product_digest: Sha256Digest,
-    numerical_waterfall: StandardNativeNumericalWaterfallV3,
+    numerical_waterfall: StandardNativeNumericalWaterfallV3 | StandardNativeNumericalWaterfallV4,
     numerical_waterfall_product_digest: Sha256Digest,
-    probe_schedule: StandardProbeScheduleV3,
+    probe_schedule: StandardProbeScheduleV3 | StandardProbeScheduleV4,
     probe_schedule_product_digest: Sha256Digest,
-    stateful_path: StandardNativeStatefulPathV2,
+    stateful_path: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
     stateful_path_product_digest: Sha256Digest,
-    full_capture_glrt20ms: StandardNativeFullCaptureGlrt20msV1,
+    full_capture_glrt20ms: (
+        StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2
+    ),
     full_capture_glrt20ms_product_digest: Sha256Digest,
     qam_probe_evidence: Iterable[NativeQamProbeEvidenceV1],
-) -> StandardNativePathReportV3:
+) -> StandardNativePathReportV3 | StandardNativePathReportV4:
     """Close one processing-complete path report from six executable products."""
 
-    source = StandardNativeSourceV1.from_path_binding(binding)
+    source = (
+        StandardNativeSourceV2.from_path_binding(binding)
+        if isinstance(binding, StandardPathInputBindV5)
+        else StandardNativeSourceV1.from_path_binding(binding)
+    )
+    wideband = isinstance(source, StandardNativeSourceV2)
     _require_product(quality, quality_product_digest, source=source)
     _require_product(power_timeline, power_timeline_product_digest, source=source)
     _require_product(numerical_waterfall, numerical_waterfall_product_digest, source=source)
@@ -137,8 +154,10 @@ def build_standard_native_path_report(
         binding.frequency_reference.model_dump(mode="json")
     )
     report_values = {
-        "schema_version": 3,
-        "algorithm_version": "standard-native-path-report-v3",
+        "schema_version": 4 if wideband else 3,
+        "algorithm_version": (
+            "standard-native-path-report-v4" if wideband else "standard-native-path-report-v3"
+        ),
         "source": source.model_dump(mode="json"),
         "starlink_edge": binding.starlink_edge.value,
         "frequency_reference": binding.frequency_reference.model_dump(mode="json"),
@@ -157,7 +176,8 @@ def build_standard_native_path_report(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardNativePathReportV3.model_validate(
+    report_type = StandardNativePathReportV4 if wideband else StandardNativePathReportV3
+    return report_type.model_validate(
         {**report_values, "report_digest": canonical_digest(report_values)}
     )
 
@@ -166,7 +186,7 @@ def _require_product(
     product: ContractModel,
     product_digest: Sha256Digest,
     *,
-    source: StandardNativeSourceV1,
+    source: StandardNativeSourceV1 | StandardNativeSourceV2,
 ) -> None:
     product_source = getattr(product, "source", None)
     if product_source != source:
@@ -176,8 +196,8 @@ def _require_product(
 
 
 def _detections_by_opportunity(
-    schedule: StandardProbeScheduleV3,
-    stateful: StandardNativeStatefulPathV2,
+    schedule: StandardProbeScheduleV3 | StandardProbeScheduleV4,
+    stateful: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
 ) -> dict[int, NativePilotProbeDetectionV1]:
     by_start = {
         opportunity.probe.sample_start: (index, opportunity)

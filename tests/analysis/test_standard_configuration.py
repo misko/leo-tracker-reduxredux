@@ -97,6 +97,7 @@ def test_rate_resolution_is_explicit_and_fail_closed() -> None:
         (10_000_000, 4096, 1024),
         (15_000_000, 6144, 1536),
         (20_000_000, 8192, 2048),
+        (25_000_000, 10_240, 2560),
     ),
 )
 def test_published_waterfall_resolution_is_rate_normalized(

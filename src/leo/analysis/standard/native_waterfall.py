@@ -16,17 +16,23 @@ from leo.analysis.waterfall import (
 )
 from leo.contracts.standard_native import (
     StandardNativeNumericalWaterfallV3,
+    StandardNativeNumericalWaterfallV4,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
 )
-from leo.contracts.standard_pipeline import StandardNumericalWaterfallV2, StandardPathInputBindV4
+from leo.contracts.standard_pipeline import (
+    StandardNumericalWaterfallV2,
+    StandardPathInputBindV4,
+    StandardPathInputBindV5,
+)
 from leo.pipeline.validity import ValidityAwareIqReader
 
 
 def measure_standard_native_waterfall(
     reader: ValidityAwareIqReader,
-    binding: StandardPathInputBindV4,
+    binding: StandardPathInputBindV4 | StandardPathInputBindV5,
     config: WaterfallConfig,
-) -> StandardNativeNumericalWaterfallV3:
+) -> StandardNativeNumericalWaterfallV3 | StandardNativeNumericalWaterfallV4:
     """Transform only complete per-segment FFT windows on the global time axis."""
 
     from leo.analysis.standard.native_runner import validate_standard_native_source
@@ -210,7 +216,13 @@ def measure_standard_native_waterfall(
         ),
     )
     document = numerical_waterfall_document(result, config)
+    waterfall = StandardNumericalWaterfallV2.model_validate(document)
+    if isinstance(binding, StandardPathInputBindV5):
+        return StandardNativeNumericalWaterfallV4(
+            source=StandardNativeSourceV2.from_path_binding(binding),
+            waterfall=waterfall,
+        )
     return StandardNativeNumericalWaterfallV3(
         source=StandardNativeSourceV1.from_path_binding(binding),
-        waterfall=StandardNumericalWaterfallV2.model_validate(document),
+        waterfall=waterfall,
     )

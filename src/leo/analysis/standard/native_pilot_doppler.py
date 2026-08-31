@@ -26,10 +26,18 @@ from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentV3,
     PilotPhaseLockletConfigV1,
     StandardPilotDopplerSegmentsV3,
+    StandardPilotDopplerSegmentsV4,
 )
-from leo.contracts.standard_native import StandardNativeSourceV1
-from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
-from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardScientificStatus
+from leo.contracts.standard_native import StandardNativeSourceV1, StandardNativeSourceV2
+from leo.contracts.standard_native_stateful_v2 import (
+    StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
+)
+from leo.contracts.standard_pipeline import (
+    StandardPathInputBindV4,
+    StandardPathInputBindV5,
+    StandardScientificStatus,
+)
 from leo.contracts.states import StarlinkEdge
 
 _LEGACY_PHASE_FAILURE = "modulo-pi phase lock did not qualify"
@@ -37,16 +45,21 @@ _LEGACY_PHASE_FAILURE = "modulo-pi phase lock did not qualify"
 
 def build_standard_native_pilot_doppler_segments_v3(
     result: StandardNativeStatefulResult,
-    binding: StandardPathInputBindV4,
-    stateful_path: StandardNativeStatefulPathV2,
+    binding: StandardPathInputBindV4 | StandardPathInputBindV5,
+    stateful_path: StandardNativeStatefulPathV2 | StandardNativeStatefulPathV3,
     *,
     stateful_path_product_digest: Sha256Digest,
     config: ReceiverStandardConfig,
     edge: StarlinkEdge,
-) -> StandardPilotDopplerSegmentsV3:
+) -> StandardPilotDopplerSegmentsV3 | StandardPilotDopplerSegmentsV4:
     """Rebind phase-safe segment evidence while preserving embedded V2 bytes."""
 
-    source = StandardNativeSourceV1.from_path_binding(binding)
+    source = (
+        StandardNativeSourceV2.from_path_binding(binding)
+        if isinstance(binding, StandardPathInputBindV5)
+        else StandardNativeSourceV1.from_path_binding(binding)
+    )
+    wideband = isinstance(source, StandardNativeSourceV2)
     if (
         stateful_path.source != source
         or stateful_path.starlink_edge != edge
@@ -146,8 +159,12 @@ def build_standard_native_pilot_doppler_segments_v3(
         else "no V2-selected pilot Doppler locklet was available"
     )
     document = {
-        "schema_version": 3,
-        "algorithm_version": "standard-native-pilot-doppler-segments-v3",
+        "schema_version": 4 if wideband else 3,
+        "algorithm_version": (
+            "standard-native-pilot-doppler-segments-v4"
+            if wideband
+            else "standard-native-pilot-doppler-segments-v3"
+        ),
         "source": source.model_dump(mode="json"),
         "starlink_edge": edge.value,
         "stateful_path_product_digest": stateful_path_product_digest,
@@ -179,9 +196,8 @@ def build_standard_native_pilot_doppler_segments_v3(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardPilotDopplerSegmentsV3.model_validate(
-        {**document, "content_digest": canonical_digest(document)}
-    )
+    product_type = StandardPilotDopplerSegmentsV4 if wideband else StandardPilotDopplerSegmentsV3
+    return product_type.model_validate({**document, "content_digest": canonical_digest(document)})
 
 
 def _segment_document(

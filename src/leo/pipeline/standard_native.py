@@ -5,13 +5,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from leo.contracts.digests import canonical_digest
-from leo.contracts.mixed_rate_schedule import ProductionDwellClass, ProductionDwellClassV2
+from leo.contracts.mixed_rate_schedule import (
+    ProductionDwellClass,
+    ProductionDwellClassV2,
+    ProductionDwellClassV3,
+)
 from leo.contracts.pipeline_lanes import PipelineDefinitionV1, PipelineLane
 from leo.contracts.recording import (
     RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
     RecordingManifestV5,
+    RecordingManifestV6,
 )
 from leo.contracts.standard_pipeline import resolve_manifest_starlink_tuning
 from leo.contracts.starlink_frequency import (
@@ -30,6 +35,7 @@ STANDARD_NATIVE_SAMPLE_RATES_HZ = (
     10_000_000,
     15_000_000,
     20_000_000,
+    25_000_000,
 )
 STANDARD_NATIVE_PROFILE_RATE_HZ = {
     "starlink-ch4-lower-2p5m-60s-device-axis-v3": 2_500_000,
@@ -174,6 +180,38 @@ STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES = {
         1_000_000,
     ),
 }
+STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES = {
+    "starlink-ch4-lower-10m-60s-rx0-direct-async-v7": (
+        10_000_000,
+        (0,),
+        "sha256:22172543ea6139b98eed978a2c994f8384932a2f88dc3135e6ef7e560074aa59",
+    ),
+    "starlink-ch4-lower-10m-60s-rx1-direct-async-v7": (
+        10_000_000,
+        (1,),
+        "sha256:34dd3ea083b62305ecdbc8a9a3563b91bef0e0d37cf598e4168a9217098cef83",
+    ),
+    "starlink-ch4-lower-15m-60s-rx0-direct-async-v7": (
+        15_000_000,
+        (0,),
+        "sha256:7786970fe19bc5f75da2f3bf61219716d306fe69d3e3403b89fa080b2eb07bfd",
+    ),
+    "starlink-ch4-lower-15m-60s-rx1-direct-async-v7": (
+        15_000_000,
+        (1,),
+        "sha256:cdb3734d0bdab0e741e9d855998ee6c5c735fbc1d4b7034b5b4e81340ad33cc2",
+    ),
+    "starlink-ch4-lower-25m-60s-rx0-direct-async-v7": (
+        25_000_000,
+        (0,),
+        "sha256:17794a88d89b35149fe6976b1de8344b5c58d0e52393c69e027d6759b9ee369e",
+    ),
+    "starlink-ch4-lower-25m-60s-rx1-direct-async-v7": (
+        25_000_000,
+        (1,),
+        "sha256:6675fbf3d6e6899a2c0fec29b078181a7f843df1cb8941906ab11ac3c7f7adb9",
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,7 +289,13 @@ def standard_native_pipeline_definition_v1(
 
 
 def compile_standard_native_run_plan(
-    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: (
+        RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
     *,
     manifest_digest: str,
     pipeline_release_id: str,
@@ -374,13 +418,22 @@ def compile_standard_native_run_plan(
 
 
 def compile_standard_native_scope_inventory(
-    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: (
+        RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
 ) -> CompiledScopeInventory:
     """Build native scopes while preserving historical V2 synchronization identity."""
 
     if isinstance(manifest, RecordingManifestV2):
         return compile_scope_inventory(manifest)
-    if not isinstance(manifest, (RecordingManifestV3, RecordingManifestV4, RecordingManifestV5)):
+    if not isinstance(
+        manifest,
+        (RecordingManifestV3, RecordingManifestV4, RecordingManifestV5, RecordingManifestV6),
+    ):
         raise ValueError(
             "Standard-native scope inventory requires a reviewed V2, V3, or V4 recording"
         )
@@ -448,10 +501,19 @@ def compile_standard_native_scope_inventory(
 
 
 def _require_reviewed_native_geometry(
-    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: (
+        RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
 ) -> None:
     if isinstance(manifest, RecordingManifestV2):
         _require_reviewed_historical_v2_geometry(manifest)
+        return
+    if type(manifest) is RecordingManifestV6:
+        _require_reviewed_direct_async_v6_geometry(manifest)
         return
     if type(manifest) is RecordingManifestV5:
         _require_reviewed_production_v5_geometry(manifest)
@@ -672,6 +734,103 @@ def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> N
         resolved = tuning[stream.stream_id]
         if resolved.channel != leg.starlink_channel or resolved.edge is not leg.starlink_edge:
             raise ValueError("Standard-native production tuning tags disagree with capture plan")
+
+
+def _require_reviewed_direct_async_v6_geometry(manifest: RecordingManifestV6) -> None:
+    """Admit exact same-target 2.5 x 10/15/25 MS/s direct-async captures."""
+
+    plan = manifest.capture_plan
+    if manifest.source_type is not SourceType.LIVE or len(manifest.streams) != 2:
+        raise ValueError("Standard-native direct-async capture requires two LIVE streams")
+    high_rate = {
+        ProductionDwellClassV3.MIXED_2P5_10: 10_000_000,
+        ProductionDwellClassV3.MIXED_2P5_15: 15_000_000,
+        ProductionDwellClassV3.MIXED_2P5_25: 25_000_000,
+    }[plan.dwell_class]
+    if sorted(item.requested_settings.sample_rate_hz for item in plan.radio_plans) != [
+        2_500_000,
+        high_rate,
+    ]:
+        raise ValueError("Standard-native direct-async rates disagree with dwell class")
+    required_manifest_tags = {
+        "CAPTURE_ONLY",
+        "DEVICE_AXIS_ZERO_FILL",
+        "LIVE",
+        "MIXED_RATE",
+        "NATIVE_BANDWIDTH",
+        "RANDOM_TUNING",
+        "STANDARD_NATIVE",
+        "PRODUCTION_DIRECT_ASYNC_RATES_V3",
+    }
+    if not required_manifest_tags.issubset(manifest.tags):
+        raise ValueError("Standard-native direct-async manifest capability is incomplete")
+    for stream, leg in zip(manifest.streams, plan.radio_plans, strict=True):
+        profile = leg.profile_revision.profile
+        rate = leg.requested_settings.sample_rate_hz
+        high_leg = rate != 2_500_000
+        if high_leg:
+            identity = STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES.get(profile.name)
+            if identity is None:
+                raise ValueError("Standard-native direct-async profile identity is not reviewed")
+            expected_rate, direct_receivers, expected_digest = identity
+            expected_receivers: tuple[int, ...] = direct_receivers
+            expected_refill_samples = 1_048_576
+            expected_kernel_buffers = 15
+            expected_queue_capacity = 64
+            required_profile_tags = {"DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1", "SINGLE_RX"}
+        else:
+            production_identity = STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES.get(profile.name)
+            if production_identity is None:
+                raise ValueError("Standard-native 2.5 MS/s profile identity is not reviewed")
+            (
+                expected_rate,
+                production_receivers,
+                expected_digest,
+                expected_refill_samples,
+            ) = production_identity
+            expected_receivers = production_receivers
+            expected_kernel_buffers = STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
+            expected_queue_capacity = STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
+            required_profile_tags = set()
+        settings = stream.applied_settings
+        if (
+            leg.profile_revision.revision_digest != expected_digest
+            or profile.sample_rate_hz != expected_rate
+            or profile.bandwidth_hz != expected_rate
+            or profile.receivers != expected_receivers
+            or len(profile.receivers) != (1 if high_leg else 2)
+            or profile.duration_seconds != plan.duration_seconds
+            or profile.refill_samples != expected_refill_samples
+            or profile.kernel_buffers != expected_kernel_buffers
+            or profile.refill_queue_capacity != expected_queue_capacity
+            or profile.storage_policy != "zstd-128m-device-axis-zero-v1"
+            or profile.continuity_policy.value != "allow_segments"
+            or profile.peer_failure_policy.value != "fail_session"
+            or not required_profile_tags.issubset(profile.tags)
+            or stream.radio.radio_id != leg.radio_id
+            or stream.requested_sample_count != leg.resolved_sample_count
+            or stream.logical_sample_count != leg.resolved_sample_count
+            or stream.requested_settings != leg.requested_settings
+            or settings.sample_rate_hz != rate
+            or settings.bandwidth_hz != rate
+            or settings.receiver_ids != profile.receivers
+            or settings.center_frequency_hz != leg.requested_settings.center_frequency_hz
+            or settings.gain_mode is not GainMode.MANUAL
+            or stream.continuity.metadata_abi_version != 3
+            or not stream.continuity.sample_loss_observable
+        ):
+            raise ValueError(
+                "Standard-native direct-async profile, stream, or metadata geometry is not reviewed"
+            )
+    tuning = resolve_manifest_starlink_tuning(manifest)
+    targets = set()
+    for stream, leg in zip(manifest.streams, plan.radio_plans, strict=True):
+        resolved = tuning[stream.stream_id]
+        targets.add((resolved.channel, resolved.edge))
+        if resolved.channel != leg.starlink_channel or resolved.edge is not leg.starlink_edge:
+            raise ValueError("Standard-native direct-async tuning tags disagree with capture plan")
+    if len(targets) != 1:
+        raise ValueError("Standard-native direct-async capture requires one common RF target")
 
 
 def _require_reviewed_historical_v2_geometry(manifest: RecordingManifestV2) -> None:

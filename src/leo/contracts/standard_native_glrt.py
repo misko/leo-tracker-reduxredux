@@ -16,6 +16,7 @@ from leo.contracts.standard_native import (
     NativeWindowDisposition,
     NativeWindowEvidenceV1,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
 )
 from leo.contracts.standard_pipeline import BoundedText
 from leo.contracts.states import StarlinkEdge
@@ -540,8 +541,18 @@ class StandardNativeFullCaptureGlrt20msV1(ContractModel):
         return self
 
 
+class StandardNativeFullCaptureGlrt20msV2(StandardNativeFullCaptureGlrt20msV1):
+    """Additive full-capture GLRT carrying StandardNativeSourceV2."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-full-capture-glrt20ms-v2"] = (
+        "standard-native-full-capture-glrt20ms-v2"  # type: ignore[assignment]
+    )
+    source: StandardNativeSourceV2  # type: ignore[assignment]
+
+
 def _classify_source_window(
-    source: StandardNativeSourceV1,
+    source: StandardNativeSourceV1 | StandardNativeSourceV2,
     device_sample_start: int,
     sample_count: int,
 ) -> NativeWindowEvidenceV1:

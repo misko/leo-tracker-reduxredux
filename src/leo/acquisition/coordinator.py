@@ -31,11 +31,17 @@ from leo.acquisition.models import (
 )
 from leo.contracts.device_buffer import (
     DDR_RING_EVIDENCE_KEY_V1,
+    DIRECT_ASYNC_EVIDENCE_KEY_V1,
+    DIRECT_ASYNC_PROFILE_TAG_V1,
     DeviceBufferEvidenceV1,
+    DeviceBufferRequestV1,
+    DirectAsyncEvidenceV1,
+    DirectAsyncRequestV1,
+    device_buffer_request,
     device_buffer_request_v1,
 )
 from leo.contracts.digests import canonical_json_bytes
-from leo.contracts.mixed_rate_capture import CapturePlanV3, CapturePlanV4
+from leo.contracts.mixed_rate_capture import CapturePlanV3, CapturePlanV4, CapturePlanV5
 from leo.contracts.profile import (
     CapturePlanV1,
     CapturePlanV2,
@@ -61,6 +67,7 @@ from leo.contracts.recording import (
     RecordingManifestV3,
     RecordingManifestV4,
     RecordingManifestV5,
+    RecordingManifestV6,
     RecordingStreamV1,
     RecordingStreamV2,
     RecordingStreamV3,
@@ -96,7 +103,7 @@ from leo.storage.writer import (
 
 FreeBytes = Callable[[Path], int]
 StorageAdmission = Callable[[Path], StorageAdmissionDecision]
-CapturePlan = CapturePlanV1 | CapturePlanV3 | CapturePlanV4
+CapturePlan = CapturePlanV1 | CapturePlanV3 | CapturePlanV4 | CapturePlanV5
 _LOG = logging.getLogger(__name__)
 
 
@@ -222,7 +229,7 @@ class AcquisitionCoordinator:
         staging_bytes = sum(
             sample_count * len(profile.receivers) * 4
             for profile, sample_count, _settings in geometry
-            if device_buffer_request_v1(profile, sample_count) is not None
+            if _device_buffer_request(profile, sample_count) is not None
         )
         required = raw_bytes + staging_bytes + metadata_bytes + self.config.safety_reserve_bytes
         available = max(0, int(self._free_bytes(self.store.root)))
@@ -441,13 +448,29 @@ class AcquisitionCoordinator:
             if device_axis_capture:
                 if not all(isinstance(stream, RecordingStreamV3) for stream in streams):
                     raise AcquisitionError("device-axis capture did not produce exact streams")
-                if isinstance(plan, CapturePlanV4):
+                if isinstance(plan, CapturePlanV5):
                     manifest: (
                         RecordingManifestV1
                         | RecordingManifestV3
                         | RecordingManifestV4
                         | RecordingManifestV5
-                    ) = RecordingManifestV5(
+                        | RecordingManifestV6
+                    ) = RecordingManifestV6(
+                        session_id=session_id,
+                        state=state,
+                        source_type=plan.source_type,
+                        created_utc_ns=created_utc_ns,
+                        finalized_utc_ns=finalized_utc_ns,
+                        capture_plan=plan,
+                        tags=tags,
+                        streams=cast(tuple[RecordingStreamV3, RecordingStreamV3], streams),
+                        synchronization=synchronization,
+                        compression=compression,
+                        host=self._host,
+                        producer=self._producer,
+                    )
+                elif isinstance(plan, CapturePlanV4):
+                    manifest = RecordingManifestV5(
                         session_id=session_id,
                         state=state,
                         source_type=plan.source_type,
@@ -511,7 +534,7 @@ class AcquisitionCoordinator:
                     producer=self._producer,
                 )
             else:
-                if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
+                if isinstance(plan, (CapturePlanV3, CapturePlanV4, CapturePlanV5)):
                     raise AcquisitionError("mixed-rate plan requires device-axis storage")
                 if any(isinstance(stream, RecordingStreamV3) for stream in streams):
                     raise AcquisitionError("legacy V1 capture produced a V3 stream")
@@ -573,9 +596,9 @@ class AcquisitionCoordinator:
         plan: CapturePlan,
         sources: Mapping[str, RadioSource],
     ) -> tuple[RadioSource, ...]:
-        if plan.source_type is SourceType.LIVE and plan.schema_version not in {2, 3, 4}:
+        if plan.source_type is SourceType.LIVE and plan.schema_version not in {2, 3, 4, 5}:
             raise ValueError(
-                "new live capture requires counter-authoritative CapturePlanV2, V3, or V4"
+                "new live capture requires counter-authoritative CapturePlanV2, V3, V4, or V5"
             )
         expected = set(plan.radio_ids)
         if set(sources) != expected:
@@ -640,7 +663,7 @@ class AcquisitionCoordinator:
                     "opened radio identity does not match its attested plan slot"
                 )
             capabilities = source.capabilities
-            counter_authoritative = plan.schema_version in {2, 3, 4}
+            counter_authoritative = plan.schema_version in {2, 3, 4, 5}
             if counter_authoritative and not (
                 capabilities.supports_device_sample_counter
                 and capabilities.supports_continuity_sequence
@@ -663,7 +686,7 @@ class AcquisitionCoordinator:
                 source.reset_receive_buffer()
             profile = _profile_for_radio(plan, expected_radio_id)
             exact_rf_geometry = (
-                isinstance(plan, (CapturePlanV3, CapturePlanV4))
+                isinstance(plan, (CapturePlanV3, CapturePlanV4, CapturePlanV5))
                 or "NATIVE_BANDWIDTH" in profile.tags
             )
             configure_exact = getattr(source, "configure_exact", None)
@@ -683,7 +706,9 @@ class AcquisitionCoordinator:
                     raise AcquisitionCancelled("capture cancelled while priming")
                 source.read_block(profile.refill_samples)
             if counter_authoritative:
-                if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4)):
+                if not isinstance(
+                    plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4, CapturePlanV5)
+                ):
                     raise AcquisitionError("counter-authoritative plan type is unsupported")
                 if not isinstance(profile, CaptureProfileV2):
                     raise AcquisitionError("counter-authoritative profile type is unsupported")
@@ -717,8 +742,8 @@ class AcquisitionCoordinator:
         session_cancel: Event,
         fail_whole: bool,
     ) -> _StreamOutcome:
-        if plan.schema_version in {2, 3, 4}:
-            if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4)):
+        if plan.schema_version in {2, 3, 4, 5}:
+            if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4, CapturePlanV5)):
                 raise AcquisitionError("counter-authoritative plan type is unsupported")
             return self._capture_radio_v2(
                 item,
@@ -828,7 +853,7 @@ class AcquisitionCoordinator:
     def _capture_radio_v2(
         self,
         item: _PreparedRadio,
-        plan: CapturePlanV2 | CapturePlanV3 | CapturePlanV4,
+        plan: CapturePlanV2 | CapturePlanV3 | CapturePlanV4 | CapturePlanV5,
         bundle: RecordingBundleWriter,
         gate: _ReadinessGate,
         external_cancel: Event,
@@ -841,8 +866,9 @@ class AcquisitionCoordinator:
         if not isinstance(profile, CaptureProfileV2):
             raise AcquisitionError("counter-authoritative capture requires CaptureProfileV2")
         device_axis_capture = profile.storage_policy == DEVICE_AXIS_STORAGE_POLICY_V1
-        device_buffer = device_buffer_request_v1(profile, resolved_sample_count)
+        device_buffer = _device_buffer_request(profile, resolved_sample_count)
         ring_evidence: DeviceBufferEvidenceV1 | None = None
+        direct_evidence: DirectAsyncEvidenceV1 | None = None
         kernel_buffers: int | None = None
         pending: queue.Queue[IqBlock | object] = queue.Queue(maxsize=profile.refill_queue_capacity)
         stop = object()
@@ -934,7 +960,8 @@ class AcquisitionCoordinator:
                         pending.task_done()
                 if raw_stage is not None and not consumer_failed.is_set():
                     raw_stage.seal()
-                    if ring_evidence is None:
+                    buffer_evidence = ring_evidence or direct_evidence
+                    if buffer_evidence is None:
                         # The producer retains the original RF/cancellation error;
                         # keep the raw spool without fabricating a publishable tail.
                         return
@@ -946,9 +973,11 @@ class AcquisitionCoordinator:
                                 update={
                                     "hardware_metadata": {
                                         **staged.metadata.hardware_metadata,
-                                        DDR_RING_EVIDENCE_KEY_V1: ring_evidence.model_dump(
-                                            mode="json"
-                                        ),
+                                        (
+                                            DDR_RING_EVIDENCE_KEY_V1
+                                            if ring_evidence is not None
+                                            else DIRECT_ASYNC_EVIDENCE_KEY_V1
+                                        ): buffer_evidence.model_dump(mode="json"),
                                     }
                                 }
                             )
@@ -1016,6 +1045,11 @@ class AcquisitionCoordinator:
         error_text: str | None = None
         consumer_timed_out = False
         interruption: BaseException | None = None
+        direct_segment_pending = isinstance(device_buffer, DirectAsyncRequestV1)
+        direct_upstream_generations: list[str] = []
+        direct_logical_generation: str | None = None
+        direct_missing_samples = 0
+        direct_inter_segment_skipped_samples = 0
         validator = ContinuityChainValidator(
             require_metadata=True,
             require_generation=True,
@@ -1027,7 +1061,15 @@ class AcquisitionCoordinator:
             arm_started = self.clock.monotonic_ns()
             controller = _gain_controller_for_radio(plan, item.identity.radio_id)
             try:
-                if device_buffer is not None:
+                if isinstance(device_buffer, DirectAsyncRequestV1):
+                    kernel_buffers = item.source.begin_metadata_capture(
+                        profile.refill_samples,
+                        kernel_buffers=profile.kernel_buffers,
+                        gain_controller=controller,
+                        device_buffer=device_buffer,
+                        direct_async_frames=device_buffer.next_segment_frames(0),
+                    )
+                elif device_buffer is not None:
                     kernel_buffers = item.source.begin_metadata_capture(
                         profile.refill_samples,
                         kernel_buffers=profile.kernel_buffers,
@@ -1089,6 +1131,24 @@ class AcquisitionCoordinator:
                     raise AcquisitionCancelled("capture cancelled at a refill boundary")
                 if consumer_failed.is_set():
                     raise AcquisitionError(f"storage consumer failed: {consumer_error[-1]}")
+                if (
+                    isinstance(device_buffer, DirectAsyncRequestV1)
+                    and returned_frames
+                    and returned_frames % device_buffer.maximum_segment_frames == 0
+                ):
+                    item.source.reset_receive_buffer()
+                    segment_kernel_buffers = item.source.begin_metadata_capture(
+                        profile.refill_samples,
+                        kernel_buffers=profile.kernel_buffers,
+                        gain_controller=controller,
+                        device_buffer=device_buffer,
+                        direct_async_frames=device_buffer.next_segment_frames(returned_frames),
+                    )
+                    if segment_kernel_buffers != kernel_buffers:
+                        raise AcquisitionError(
+                            "direct-async segment changed the kernel-buffer readback"
+                        )
+                    direct_segment_pending = True
                 count = (
                     profile.refill_samples
                     if device_buffer is not None
@@ -1101,6 +1161,53 @@ class AcquisitionCoordinator:
                     count,
                     returned_samples if device_buffer is not None else captured,
                 )
+                if isinstance(device_buffer, DirectAsyncRequestV1):
+                    raw_metadata = block.metadata
+                    if not isinstance(raw_metadata, IqBlockMetadataV2):
+                        raise AcquisitionError("direct-async capture returned legacy metadata")
+                    if raw_metadata.device_sample_counter is None:
+                        raise AcquisitionError("direct-async metadata omits the device counter")
+                    raw_generation = raw_metadata.stream_generation
+                    if direct_segment_pending:
+                        if raw_generation in direct_upstream_generations:
+                            raise AcquisitionError(
+                                "direct-async segment reused an upstream stream generation"
+                            )
+                        direct_upstream_generations.append(raw_generation)
+                        direct_segment_pending = False
+                    if first_counter is None:
+                        direct_logical_generation = raw_generation
+                        normalized_sequence = 0
+                    else:
+                        delta = raw_metadata.device_sample_counter - first_counter
+                        if delta < 0 or delta % profile.refill_samples:
+                            raise AcquisitionError(
+                                "direct-async device counter is not aligned to whole frames"
+                            )
+                        normalized_sequence = delta // profile.refill_samples
+                    assert direct_logical_generation is not None
+                    block = IqBlock(
+                        samples=block.samples,
+                        metadata=type(raw_metadata).model_validate(
+                            {
+                                **raw_metadata.model_dump(mode="json"),
+                                "stream_generation": direct_logical_generation,
+                                "source_sequence": normalized_sequence,
+                                "continuity": ContinuityStatus.UNKNOWN.value,
+                                "missing_samples_before": 0,
+                                "hardware_metadata": {
+                                    **raw_metadata.hardware_metadata,
+                                    "direct_async_upstream_stream_generation": raw_generation,
+                                    "direct_async_upstream_source_sequence": (
+                                        raw_metadata.source_sequence
+                                    ),
+                                    "direct_async_segment_index": (
+                                        len(direct_upstream_generations) - 1
+                                    ),
+                                },
+                            }
+                        ),
+                    )
                 metadata = validator.observe(block.metadata)
                 if not isinstance(metadata, IqBlockMetadataV2):
                     raise AcquisitionError("V2 capture returned legacy IQ metadata")
@@ -1113,7 +1220,7 @@ class AcquisitionCoordinator:
                 returned_frames += 1
                 returned_samples += count
                 returned_device_span = block_device_start + count
-                if device_buffer is not None and returned_frames <= min(
+                if isinstance(device_buffer, DeviceBufferRequestV1) and returned_frames <= min(
                     device_buffer.capacity_frames, device_buffer.target_frames
                 ):
                     prefix_contiguous = prefix_contiguous and (
@@ -1122,6 +1229,13 @@ class AcquisitionCoordinator:
                     )
                     if not prefix_contiguous:
                         raise AcquisitionError("DDR ring protected prefix is not contiguous")
+                if isinstance(device_buffer, DirectAsyncRequestV1):
+                    direct_missing_samples += metadata.missing_samples_before
+                    if len(direct_upstream_generations) > 1 and (
+                        raw_generation == direct_upstream_generations[-1]
+                        and raw_metadata.source_sequence == 0
+                    ):
+                        direct_inter_segment_skipped_samples += metadata.missing_samples_before
                 # A finite firmware target counts delivered frames, not device time.
                 # Drain its bounded tail, but never extend the published dwell window.
                 if device_span == resolved_sample_count:
@@ -1207,7 +1321,7 @@ class AcquisitionCoordinator:
                         item.identity.radio_id,
                         metadata.stream_generation,
                     )
-            if device_buffer is not None:
+            if isinstance(device_buffer, DeviceBufferRequestV1):
                 status = item.source.ddr_ring_status()
                 prefix_frames = min(device_buffer.capacity_frames, device_buffer.target_frames)
                 assert first_counter is not None
@@ -1244,6 +1358,32 @@ class AcquisitionCoordinator:
                     returned_samples - captured,
                     status.wrap_count,
                 )
+            elif isinstance(device_buffer, DirectAsyncRequestV1):
+                direct_evidence = DirectAsyncEvidenceV1(
+                    request=device_buffer,
+                    returned_frames=returned_frames,
+                    returned_device_span_samples=returned_device_span,
+                    segment_count=len(direct_upstream_generations),
+                    upstream_stream_generations=tuple(direct_upstream_generations),
+                    counter_missing_sample_count=direct_missing_samples,
+                    inter_segment_skipped_samples=direct_inter_segment_skipped_samples,
+                    stored_observed_samples=captured,
+                    drained_outside_window_samples=returned_samples - captured,
+                )
+                item.source.reset_receive_buffer()
+                _LOG.info(
+                    "direct_async_complete radio=%s stream=%s frames=%d segments=%d "
+                    "stored_samples=%d drained_outside_window_samples=%d "
+                    "missing_samples=%d inter_segment_skipped_samples=%d",
+                    item.identity.radio_id,
+                    item.stream_id,
+                    returned_frames,
+                    direct_evidence.segment_count,
+                    captured,
+                    returned_samples - captured,
+                    direct_missing_samples,
+                    direct_inter_segment_skipped_samples,
+                )
         except BaseException as error:
             error_text = _error_text(error)
             if device_buffer is not None:
@@ -1255,10 +1395,19 @@ class AcquisitionCoordinator:
                     "stored_observed_samples": captured,
                     "error": error_text,
                 }
-                try:
-                    diagnostic["status"] = item.source.ddr_ring_status().model_dump(mode="json")
-                except Exception as status_error:
-                    diagnostic["status_error"] = _error_text(status_error)
+                if isinstance(device_buffer, DeviceBufferRequestV1):
+                    try:
+                        diagnostic["status"] = item.source.ddr_ring_status().model_dump(mode="json")
+                    except Exception as status_error:
+                        diagnostic["status_error"] = _error_text(status_error)
+                else:
+                    diagnostic.update(
+                        {
+                            "upstream_stream_generations": direct_upstream_generations,
+                            "counter_missing_sample_count": direct_missing_samples,
+                            "inter_segment_skipped_samples": (direct_inter_segment_skipped_samples),
+                        }
+                    )
                 try:
                     bundle.write_capture_failure_evidence(
                         item.stream_id, canonical_json_bytes(diagnostic)
@@ -1272,7 +1421,7 @@ class AcquisitionCoordinator:
         finally:
             shutdown_timeout = (
                 self.config.raw_stage_finalize_timeout_seconds
-                if ring_evidence is not None
+                if ring_evidence is not None or direct_evidence is not None
                 else self.config.consumer_shutdown_timeout_seconds
             )
             deadline = time.monotonic() + shutdown_timeout
@@ -1380,7 +1529,11 @@ class AcquisitionCoordinator:
         self,
         writer: RecordingBundleWriter,
         manifest: (
-            RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5
+            RecordingManifestV1
+            | RecordingManifestV3
+            | RecordingManifestV4
+            | RecordingManifestV5
+            | RecordingManifestV6
         ),
         errors: list[str],
     ) -> PublishedBundle:
@@ -1438,7 +1591,7 @@ def _requested_settings_by_radio(
     plan: CapturePlan,
     overrides: Mapping[str, RadioSettingsV1] | None,
 ) -> dict[str, RadioSettingsV1]:
-    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4, CapturePlanV5)):
         planned = {item.radio_id: item.requested_settings for item in plan.radio_plans}
         if overrides is not None and dict(overrides) != planned:
             raise ValueError("mixed-rate per-radio settings are immutable plan authority")
@@ -1462,7 +1615,7 @@ def _requested_settings_by_radio(
 
 
 def _profile_for_radio(plan: CapturePlan, radio_id: str) -> CaptureProfileV1 | CaptureProfileV2:
-    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4, CapturePlanV5)):
         matches = tuple(
             item.profile_revision.profile for item in plan.radio_plans if item.radio_id == radio_id
         )
@@ -1479,7 +1632,7 @@ def _radio_geometry(
     radio_id: str,
 ) -> tuple[CaptureProfileV1 | CaptureProfileV2, int, RadioSettingsV1]:
     profile = _profile_for_radio(plan, radio_id)
-    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4, CapturePlanV5)):
         leg = next(item for item in plan.radio_plans if item.radio_id == radio_id)
         return profile, leg.resolved_sample_count, leg.requested_settings
     return profile, plan.resolved_sample_count, _settings_from_profile(profile)
@@ -1502,7 +1655,7 @@ def _device_axis_capture(plan: CapturePlan) -> bool:
 
 
 def _gain_controller_for_radio(plan: CapturePlan, radio_id: str):
-    if not isinstance(plan, CapturePlanV4):
+    if not isinstance(plan, (CapturePlanV4, CapturePlanV5)):
         return None
     matches = tuple(item.gain_controller for item in plan.radio_plans if item.radio_id == radio_id)
     if len(matches) != 1:
@@ -1526,6 +1679,21 @@ def _plan_tags(plan: CapturePlan) -> set[str]:
                 "PRODUCTION_NATIVE_RATES_V2",
                 f"production_dwell_class:{plan.dwell_class.value}",
                 f"tuning_policy:{plan.tuning_branch.value}",
+            }
+        )
+        for index, leg in enumerate(plan.radio_plans):
+            tags.update(
+                {
+                    f"gain_controller:stream-{index}:{leg.gain_controller.mode.value}",
+                    f"tuning:stream-{index}:ch{leg.starlink_channel}:{leg.starlink_edge.value}",
+                }
+            )
+    elif isinstance(plan, CapturePlanV5):
+        tags.update(
+            {
+                "PRODUCTION_DIRECT_ASYNC_RATES_V3",
+                f"production_dwell_class:{plan.dwell_class.value}",
+                "tuning_policy:same",
             }
         )
         for index, leg in enumerate(plan.radio_plans):
@@ -1705,7 +1873,7 @@ def _recording_stream(
 ) -> RecordingStreamV1 | RecordingStreamV3:
     receipt = outcome.receipt
     if _device_axis_capture(plan):
-        if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4)):
+        if not isinstance(plan, (CapturePlanV2, CapturePlanV3, CapturePlanV4, CapturePlanV5)):
             raise AcquisitionError("device-axis storage requires CapturePlanV2 or V3")
         if not isinstance(receipt, DeviceAxisStreamWriteReceipt):
             raise AcquisitionError("device-axis capture has no finalized V3 storage receipt")
@@ -1740,7 +1908,7 @@ def _recording_stream(
                 else (outcome.error or "capture observation integrity degraded")[:2048]
             ),
         )
-    if isinstance(plan, (CapturePlanV3, CapturePlanV4)):
+    if isinstance(plan, (CapturePlanV3, CapturePlanV4, CapturePlanV5)):
         raise AcquisitionError("mixed-rate capture cannot publish legacy stream storage")
     chunks: tuple[RecordingChunkV1, ...]
     if outcome.state is StreamState.FAILED:
@@ -1893,6 +2061,16 @@ def _synchronization_summary(
         guaranteed_overlap_ns=guaranteed_overlap,
         overlap_fraction=overlap_fraction,
     )
+
+
+def _device_buffer_request(
+    profile: CaptureProfileV1, resolved_sample_count: int
+) -> DeviceBufferRequestV1 | DirectAsyncRequestV1 | None:
+    """Preserve the published DDR resolver seam while adding direct-async policy."""
+
+    if DIRECT_ASYNC_PROFILE_TAG_V1 in profile.tags:
+        return device_buffer_request(profile, resolved_sample_count)
+    return device_buffer_request_v1(profile, resolved_sample_count)
 
 
 def _failed_outcome(

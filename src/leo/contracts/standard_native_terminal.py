@@ -21,12 +21,14 @@ from leo.contracts.standard_native import (
     NativeSufficientStatisticsV1,
     NativeValidUtcIntervalV1,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
 )
 from leo.contracts.standard_native_path_report import (
     NativePathScientificDispositionV1,
     NativeProbeExecutionAccountingV1,
     NativeQamSufficientStatisticsV1,
     StandardNativePathReportV3,
+    StandardNativePathReportV4,
 )
 from leo.contracts.standard_pipeline import BoundedText, Identifier
 
@@ -100,6 +102,14 @@ class NativeTerminalPathEvidenceV2(ContractModel):
             raise ValueError("native terminal path outcome disagrees with validity authority")
         _require_canonical_utc_intervals(self.valid_utc_intervals)
         return self
+
+
+class NativeTerminalPathEvidenceV3(NativeTerminalPathEvidenceV2):
+    """Additive terminal path evidence carrying source V2 and path report V4."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    source: StandardNativeSourceV2  # type: ignore[assignment]
+    path_report: StandardNativePathReportV4  # type: ignore[assignment]
 
 
 class StandardNativeRadioReportV4(ContractModel):
@@ -210,6 +220,18 @@ class StandardNativeRadioReportV5(StandardNativeRadioReportV4):
     )
     paths: Annotated[  # type: ignore[assignment]
         tuple[NativeTerminalPathEvidenceV2, ...], Field(min_length=1, max_length=2)
+    ]
+
+
+class StandardNativeRadioReportV6(StandardNativeRadioReportV5):
+    """Additive one- or two-path radio reduction over source V2."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-radio-report-v6"] = (
+        "standard-native-radio-report-v6"  # type: ignore[assignment]
+    )
+    paths: Annotated[  # type: ignore[assignment]
+        tuple[NativeTerminalPathEvidenceV3, ...], Field(min_length=1, max_length=2)
     ]
 
 
@@ -410,6 +432,20 @@ class StandardNativePairedReportV6(StandardNativePairedReportV5):
         StandardNativeRadioReportV4 | StandardNativeRadioReportV5,
         StandardNativeRadioReportV4 | StandardNativeRadioReportV5,
     ]
+
+
+class StandardNativePairedReportV7(StandardNativePairedReportV6):
+    """Additive paired report admitting the complete reviewed wideband rate set."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-paired-report-v7"] = (
+        "standard-native-paired-report-v7"  # type: ignore[assignment]
+    )
+    radio_sample_rates_hz: tuple[
+        Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000, 25_000_000],
+        Literal[2_500_000, 3_000_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000, 25_000_000],
+    ]  # type: ignore[assignment]
+    radios: tuple[StandardNativeRadioReportV6, StandardNativeRadioReportV6]
 
 
 def terminal_track_accounting(

@@ -13,25 +13,40 @@ from leo.contracts.standard_native import (
     NativeSufficientStatisticsV1,
     NativeValidUtcIntervalV1,
     StandardNativeNumericalWaterfallV3,
+    StandardNativeNumericalWaterfallV4,
     StandardNativePairedReportV3,
     StandardNativePowerTimelineV3,
+    StandardNativePowerTimelineV4,
     StandardNativeQualityV2,
+    StandardNativeQualityV3,
     StandardNativeRadioReportV3,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
     StandardProbeScheduleV3,
+    StandardProbeScheduleV4,
 )
-from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
+from leo.contracts.standard_native_glrt import (
+    StandardNativeFullCaptureGlrt20msV1,
+    StandardNativeFullCaptureGlrt20msV2,
+)
 from leo.contracts.standard_native_path_report import (
     NativePathScientificDispositionV1,
     StandardNativePathReportV3,
+    StandardNativePathReportV4,
 )
 from leo.contracts.standard_native_stateful import StandardNativeStatefulPathV1
-from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
+from leo.contracts.standard_native_stateful_v2 import (
+    StandardNativeStatefulPathV2,
+    StandardNativeStatefulPathV3,
+)
 from leo.contracts.standard_native_terminal import (
     NativeTerminalPathEvidenceV2,
+    NativeTerminalPathEvidenceV3,
     StandardNativePairedReportV6,
+    StandardNativePairedReportV7,
     StandardNativeRadioReportV4,
     StandardNativeRadioReportV5,
+    StandardNativeRadioReportV6,
     aggregate_native_probe_execution_accounting,
     aggregate_native_qam_statistics,
     aggregate_terminal_track_accounting,
@@ -319,7 +334,7 @@ def reduce_native_radio_terminal_evidence(
     ):
         raise ValueError("native terminal product fan-in does not share one path inventory")
 
-    paths: list[NativeTerminalPathEvidenceV2] = []
+    paths: list[NativeTerminalPathEvidenceV2 | NativeTerminalPathEvidenceV3] = []
     for upstream_items in zip(*inventories, strict=True):
         (
             quality_item,
@@ -343,13 +358,42 @@ def reduce_native_radio_terminal_evidence(
         ):
             raise ValueError("native terminal reducer received foreign path membership")
 
-        quality = StandardNativeQualityV2.model_validate(quality_item.document)
-        power = StandardNativePowerTimelineV3.model_validate(power_item.document)
-        waterfall = StandardNativeNumericalWaterfallV3.model_validate(waterfall_item.document)
-        schedule = StandardProbeScheduleV3.model_validate(schedule_item.document)
-        stateful = StandardNativeStatefulPathV2.model_validate(stateful_item.document)
-        glrt = StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
-        path_report = StandardNativePathReportV3.model_validate(path_report_item.document)
+        wideband = quality_item.document.get("schema_version") == 3
+        quality = (
+            StandardNativeQualityV3.model_validate(quality_item.document)
+            if wideband
+            else StandardNativeQualityV2.model_validate(quality_item.document)
+        )
+        power = (
+            StandardNativePowerTimelineV4.model_validate(power_item.document)
+            if wideband
+            else StandardNativePowerTimelineV3.model_validate(power_item.document)
+        )
+        waterfall = (
+            StandardNativeNumericalWaterfallV4.model_validate(waterfall_item.document)
+            if wideband
+            else StandardNativeNumericalWaterfallV3.model_validate(waterfall_item.document)
+        )
+        schedule = (
+            StandardProbeScheduleV4.model_validate(schedule_item.document)
+            if wideband
+            else StandardProbeScheduleV3.model_validate(schedule_item.document)
+        )
+        stateful = (
+            StandardNativeStatefulPathV3.model_validate(stateful_item.document)
+            if wideband
+            else StandardNativeStatefulPathV2.model_validate(stateful_item.document)
+        )
+        glrt = (
+            StandardNativeFullCaptureGlrt20msV2.model_validate(glrt_item.document)
+            if wideband
+            else StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
+        )
+        path_report = (
+            StandardNativePathReportV4.model_validate(path_report_item.document)
+            if wideband
+            else StandardNativePathReportV3.model_validate(path_report_item.document)
+        )
         source = quality.source
         if any(
             item != source
@@ -390,8 +434,31 @@ def reduce_native_radio_terminal_evidence(
         )
         if stateful.stateful_science_status not in expected_stateful_statuses:
             raise ValueError("native terminal path outcome disagrees with stateful status")
-        paths.append(
-            NativeTerminalPathEvidenceV2(
+        if wideband:
+            assert isinstance(source, StandardNativeSourceV2)
+            assert isinstance(path_report, StandardNativePathReportV4)
+            terminal_path: NativeTerminalPathEvidenceV2 | NativeTerminalPathEvidenceV3 = (
+                NativeTerminalPathEvidenceV3(
+                    source=source,
+                    stage_outcome=outcome,
+                    path_report_product_digest=path_report_item.product_digest,
+                    full_capture_glrt20ms_product_digest=glrt_item.product_digest,
+                    path_report=path_report,
+                    clipping_abs_threshold=quality.clipping_abs_threshold,
+                    uncovered_region_count=quality.uncovered_region_count,
+                    quality=quality.receivers[0],
+                    terminal_opportunities=path_report.schedule_execution.accounting,
+                    qam_statistics=path_report.qam_statistics,
+                    terminal_tracks=terminal_track_accounting(path_report),
+                    valid_utc_intervals=valid_utc_intervals(source),
+                )
+            )
+        else:
+            assert isinstance(source, StandardNativeSourceV1)
+            assert not isinstance(source, StandardNativeSourceV2)
+            assert isinstance(path_report, StandardNativePathReportV3)
+            assert not isinstance(path_report, StandardNativePathReportV4)
+            terminal_path = NativeTerminalPathEvidenceV2(
                 source=source,
                 stage_outcome=outcome,
                 path_report_product_digest=path_report_item.product_digest,
@@ -405,7 +472,7 @@ def reduce_native_radio_terminal_evidence(
                 terminal_tracks=terminal_track_accounting(path_report),
                 valid_utc_intervals=valid_utc_intervals(source),
             )
-        )
+        paths.append(terminal_path)
     ordered = tuple(sorted(paths, key=lambda item: item.source.receiver_id))
     intervals = (
         ordered[0].valid_utc_intervals
@@ -427,9 +494,12 @@ def reduce_native_radio_terminal_evidence(
     scientific_disposition = _aggregate_scientific_disposition(
         tuple(item.path_report.scientific_disposition for item in ordered)
     )
+    wideband = all(isinstance(item, NativeTerminalPathEvidenceV3) for item in ordered)
     values = {
-        "schema_version": 5,
-        "algorithm_version": "standard-native-radio-report-v5",
+        "schema_version": 6 if wideband else 5,
+        "algorithm_version": (
+            "standard-native-radio-report-v6" if wideband else "standard-native-radio-report-v5"
+        ),
         "session_id": context.session_id,
         "stream_id": scope.stream_id,
         "radio_id": scope.radio_id,
@@ -461,9 +531,8 @@ def reduce_native_radio_terminal_evidence(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardNativeRadioReportV5.model_validate(
-        {**values, "report_digest": canonical_digest(values)}
-    )
+    report_type = StandardNativeRadioReportV6 if wideband else StandardNativeRadioReportV5
+    return report_type.model_validate({**values, "report_digest": canonical_digest(values)})
 
 
 def reduce_native_paired_terminal_evidence(
@@ -471,7 +540,7 @@ def reduce_native_paired_terminal_evidence(
     *,
     pair_binding: StandardPairInputBindV2,
     radio_products: tuple[UpstreamJsonProduct, ...],
-) -> StandardNativePairedReportV6:
+) -> StandardNativePairedReportV6 | StandardNativePairedReportV7:
     """Intersect two terminal radio reports and merge only sufficient statistics."""
 
     scope = context.scope
@@ -541,9 +610,12 @@ def reduce_native_paired_terminal_evidence(
     scientific_disposition = _aggregate_scientific_disposition(
         tuple(item.scientific_disposition for item in ordered)
     )
+    wideband = all(isinstance(item, StandardNativeRadioReportV6) for item in ordered)
     values = {
-        "schema_version": 6,
-        "algorithm_version": "standard-native-paired-report-v6",
+        "schema_version": 7 if wideband else 6,
+        "algorithm_version": (
+            "standard-native-paired-report-v7" if wideband else "standard-native-paired-report-v6"
+        ),
         "session_id": context.session_id,
         "manifest_digest": pair_binding.manifest_digest,
         "synchronization_inventory_digest": pair_binding.synchronization_inventory_digest,
@@ -576,15 +648,16 @@ def reduce_native_paired_terminal_evidence(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
-    return StandardNativePairedReportV6.model_validate(
-        {**values, "report_digest": canonical_digest(values)}
-    )
+    report_type = StandardNativePairedReportV7 if wideband else StandardNativePairedReportV6
+    return report_type.model_validate({**values, "report_digest": canonical_digest(values)})
 
 
 def _terminal_radio_report(
     product: UpstreamJsonProduct,
-) -> StandardNativeRadioReportV4 | StandardNativeRadioReportV5:
+) -> StandardNativeRadioReportV4 | StandardNativeRadioReportV5 | StandardNativeRadioReportV6:
     schema_version = product.document.get("schema_version")
+    if schema_version == 6:
+        return StandardNativeRadioReportV6.model_validate(product.document)
     if schema_version == 5:
         return StandardNativeRadioReportV5.model_validate(product.document)
     if schema_version == 4:
@@ -593,7 +666,7 @@ def _terminal_radio_report(
 
 
 def valid_utc_intervals(
-    source: StandardNativeSourceV1,
+    source: StandardNativeSourceV1 | StandardNativeSourceV2,
 ) -> tuple[NativeValidUtcIntervalV1, ...]:
     """Project device segments into conservative inner UTC intervals.
 

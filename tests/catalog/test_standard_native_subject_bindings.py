@@ -25,7 +25,7 @@ from leo.contracts.recording import (
     SynchronizationSummaryV1,
     TimingEstimateV1,
 )
-from leo.contracts.standard_pipeline import StandardPathInputBindV4
+from leo.contracts.standard_pipeline import StandardPathInputBindV5
 from leo.contracts.states import (
     CaptureState,
     RadioTransport,
@@ -333,7 +333,7 @@ def _register_native_capture(
     )
 
 
-def test_real_postgres_native_expanded_run_persists_and_reads_v4_binding(
+def test_real_postgres_native_expanded_run_persists_and_reads_v5_binding(
     catalog_harness: CatalogHarness,
     tmp_path: Path,
 ) -> None:
@@ -376,7 +376,7 @@ def test_real_postgres_native_expanded_run_persists_and_reads_v4_binding(
     )
     reader = CatalogSubjectBindingReader(catalog_harness.repository)
     binding = reader.receiver_path_native("native-catalog-run", scope)
-    assert isinstance(binding, StandardPathInputBindV4)
+    assert isinstance(binding, StandardPathInputBindV5)
     assert binding.validity_inventory == validity
     assert binding.declared_sample_count == manifest.streams[0].logical_sample_count
     assert binding.observed_sample_count == manifest.streams[0].observed_sample_count
@@ -389,7 +389,7 @@ def test_real_postgres_native_expanded_run_persists_and_reads_v4_binding(
         scope_key=scope.canonical_digest,
         scope=scope,
     )
-    assert StandardPathInputBindV4.model_validate(products.read_subject_binding()) == binding
+    assert StandardPathInputBindV5.model_validate(products.read_subject_binding()) == binding
 
     # The frozen Standard reader remains fail-closed for device-axis V4 input.
     with pytest.raises(ValidationError):
@@ -408,4 +408,4 @@ def test_real_postgres_native_expanded_run_persists_and_reads_v4_binding(
             ).scalars()
         )
     assert job_count == len(plan.jobs) == 5
-    assert binding_versions == ("4", "4")
+    assert binding_versions == ("5", "5")

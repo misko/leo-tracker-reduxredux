@@ -97,13 +97,18 @@ from leo.cli.scanner import (
     write_scanner_report,
 )
 from leo.cli.wp11 import WP11CliBackend
-from leo.contracts.mixed_rate_schedule import ProductionDwellIntentV1, ProductionDwellIntentV2
+from leo.contracts.mixed_rate_schedule import (
+    ProductionDwellIntentV1,
+    ProductionDwellIntentV2,
+    ProductionDwellIntentV3,
+)
 from leo.contracts.profile import CaptureProfileRevisionV2
 from leo.contracts.recording import ProducerV1
 from leo.contracts.states import SourceType
 from leo.domain.mixed_rate_capture import (
     compile_mixed_rate_capture_plan_v3,
     compile_production_capture_plan_v4,
+    compile_production_capture_plan_v5,
 )
 from leo.domain.profiles import compile_capture_plan
 from leo.qualification import (
@@ -225,6 +230,7 @@ class CliSettings:
     scanner_margin_gate: float = 0.025
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
     ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
+    direct_async_enabled: bool = False
 
     def __post_init__(self) -> None:
         ids = tuple(radio.radio_id for radio in self.radios)
@@ -300,6 +306,7 @@ class CliSettings:
                     Literal[0, 10_000_000, 15_000_000, 20_000_000],
                     int(values.get("LEO_DDR_RING_MAX_RATE_HZ", "0")),
                 ),
+                direct_async_enabled=_environment_bool(values, "LEO_DIRECT_ASYNC_ENABLED", False),
                 database_url=values.get("LEO_DATABASE_URL"),
                 corpus_root=Path(
                     values.get(
@@ -628,12 +635,22 @@ class LocalAcquisitionBackend:
                 (rate, (receiver,), True): (
                     f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-"
                     + (
-                        "ddr-ring-v6"
-                        if rate <= self.settings.ddr_ring_max_rate_hz
-                        else "production-v5"
+                        "direct-async-v7"
+                        if self.settings.direct_async_enabled and rate in (10_000_000, 15_000_000)
+                        else (
+                            "ddr-ring-v6"
+                            if rate <= self.settings.ddr_ring_max_rate_hz
+                            else "production-v5"
+                        )
                     )
                 )
                 for rate in (10_000_000, 15_000_000, 20_000_000)
+                for receiver in (0, 1)
+            },
+            **{
+                (25_000_000, (receiver,), True): (
+                    f"starlink-ch4-lower-25m-60s-rx{receiver}-direct-async-v7"
+                )
                 for receiver in (0, 1)
             },
         }
@@ -757,7 +774,7 @@ class LocalAcquisitionBackend:
 
     def capture_production_once(
         self,
-        intent: ProductionDwellIntentV2,
+        intent: ProductionDwellIntentV2 | ProductionDwellIntentV3,
         *,
         session_id: str | None,
         cancel: Event,
@@ -787,10 +804,18 @@ class LocalAcquisitionBackend:
             source_type = (
                 SourceType.TEST if self.settings.radio_backend == "fake" else SourceType.LIVE
             )
-            plan = compile_production_capture_plan_v4(
-                intent=intent,
-                profile_revisions_by_radio=revisions,
-                source_type=source_type,
+            plan = (
+                compile_production_capture_plan_v5(
+                    intent=intent,
+                    profile_revisions_by_radio=revisions,
+                    source_type=source_type,
+                )
+                if isinstance(intent, ProductionDwellIntentV3)
+                else compile_production_capture_plan_v4(
+                    intent=intent,
+                    profile_revisions_by_radio=revisions,
+                    source_type=source_type,
+                )
             )
             coordinator = AcquisitionCoordinator(
                 self._recording_store(),

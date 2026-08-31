@@ -9,6 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 from threading import Event
 
+import numpy as np
 import pytest
 
 import leo.acquisition.coordinator as acquisition_coordinator
@@ -24,6 +25,7 @@ from leo.acquisition import (
     RadioResource,
 )
 from leo.acquisition.mixed_rate_schedule import compile_production_dwell_intent_v2
+from leo.contracts.device_buffer import DIRECT_ASYNC_EVIDENCE_KEY_V1, DirectAsyncEvidenceV1
 from leo.contracts.mixed_rate_schedule import ProductionDwellClass, ProductionDwellClassV2
 from leo.contracts.profile import (
     CaptureProfileRevisionV1,
@@ -163,6 +165,41 @@ def _device_axis_coordinator(tmp_path: Path) -> AcquisitionCoordinator:
         ),
         config=AcquisitionConfig(safety_reserve_bytes=0),
         free_bytes=lambda _path: 10**12,
+    )
+
+
+def _direct_async_plan():
+    frame_samples = 1_048_576
+    profile = CaptureProfileV2(
+        name="direct-async-segment-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=10_000_000,
+        bandwidth_hz=10_000_000,
+        receivers=(0,),
+        gain_mode=GainMode.MANUAL,
+        gains=(ReceiverGainV1(receiver_id=0, gain_db=30.0),),
+        sample_count=64 * frame_samples + 1,
+        refill_samples=frame_samples,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        kernel_buffers=15,
+        refill_queue_capacity=64,
+        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+        synchronization_mode="best_effort",
+        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+        tags=(
+            "CAPTURE_ONLY",
+            "DEVICE_AXIS_ZERO_FILL",
+            "DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1",
+            "LIVE",
+            "NATIVE_BANDWIDTH",
+        ),
+    )
+    return compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        ("radio-a",),
+        source_type=SourceType.LIVE,
     )
 
 
@@ -1523,6 +1560,60 @@ def test_production_capture_persists_single_rx_tandem_evidence_and_v5_plan(
     assert high_stream.continuity.metadata_abi_version == 3
     assert high_stream.timeline_sha256 is not None
     assert coordinator.store.verify("production-v5-single-rx").validity_inventory_count == 2
+
+
+def test_direct_async_capture_reopens_segments_and_persists_counter_loss(
+    tmp_path: Path,
+) -> None:
+    frame_samples = 1_048_576
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=128 * 1024 * 1024,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+
+    class ConstantFrameRadio(FakeRadioSource):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            self._frame = np.zeros((frame_samples, 1, 2), dtype="<i2")
+
+        def _samples(self, sample_count: int, receiver_ids: tuple[int, ...]) -> np.ndarray:
+            assert sample_count == frame_samples
+            assert receiver_ids == (0,)
+            return self._frame
+
+    radio = ConstantFrameRadio(
+        "radio-a",
+        gaps_before_blocks={1: 64 * frame_samples},
+    )
+
+    result = coordinator.capture_once(
+        _direct_async_plan(),
+        {"radio-a": radio},
+        session_id="direct-async-two-segments",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV3)
+    stream = result.manifest.streams[0]
+    assert stream.state is StreamState.PARTIAL
+    assert stream.continuity.gap_count == 1
+    assert stream.continuity.missing_sample_count == (63 * frame_samples + 1)
+    assert radio.lifecycle.count("begin_metadata_capture:1048576:15") == 2
+    timeline = next(
+        coordinator.store.reader(result.bundle, stream.stream_id).iter_timeline_metadata()
+    )
+    evidence = DirectAsyncEvidenceV1.model_validate(
+        timeline.hardware_metadata[DIRECT_ASYNC_EVIDENCE_KEY_V1]
+    )
+    assert evidence.returned_frames == 65
+    assert evidence.segment_count == 2
+    assert evidence.counter_missing_sample_count == 64 * frame_samples
+    assert evidence.inter_segment_skipped_samples == 0
 
 
 def test_native_bandwidth_capture_selects_exact_radio_configuration(tmp_path: Path) -> None:

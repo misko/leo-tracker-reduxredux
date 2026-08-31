@@ -144,6 +144,7 @@ from leo.contracts.recording import (
     RecordingManifestV3,
     RecordingManifestV4,
     RecordingManifestV5,
+    RecordingManifestV6,
     RecordingStreamV2,
     RecordingStreamV3,
 )
@@ -153,6 +154,7 @@ from leo.contracts.standard_pipeline import (
     StandardPairInputBindV2,
     StandardPathInputBindV3,
     StandardPathInputBindV4,
+    StandardPathInputBindV5,
     resolve_manifest_starlink_tuning,
 )
 from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
@@ -163,6 +165,7 @@ from leo.station.authority import (
     CaptureHardwareBindingV3,
     CaptureHardwareBindingV4,
     CaptureHardwareBindingV5,
+    CaptureHardwareBindingV6,
     FixturePathAuthorityV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -179,6 +182,7 @@ type StationCaptureHardwareBinding = (
     | CaptureHardwareBindingV3
     | CaptureHardwareBindingV4
     | CaptureHardwareBindingV5
+    | CaptureHardwareBindingV6
 )
 type CapturePathAuthorityContract = StationCaptureHardwareBinding | FixturePathAuthorityV1
 
@@ -4086,11 +4090,13 @@ def _validate_subject_binding_document(
     if scope.kind.value == "receiver_path":
         binding_schema_version = document.get("schema_version")
         if binding_schema_version == 3:
-            path_binding: StandardPathInputBindV3 | StandardPathInputBindV4 = (
-                StandardPathInputBindV3.model_validate(document)
-            )
+            path_binding: (
+                StandardPathInputBindV3 | StandardPathInputBindV4 | StandardPathInputBindV5
+            ) = StandardPathInputBindV3.model_validate(document)
         elif binding_schema_version == 4:
             path_binding = StandardPathInputBindV4.model_validate(document)
+        elif binding_schema_version == 5:
+            path_binding = StandardPathInputBindV5.model_validate(document)
         else:
             raise InvalidStateError("receiver-path snapshot schema version is unsupported")
         lineage = session.get(
@@ -4122,6 +4128,7 @@ def _validate_subject_binding_document(
             | RecordingManifestV3
             | RecordingManifestV4
             | RecordingManifestV5
+            | RecordingManifestV6
             | None
         ) = None
         manifest_stream = None
@@ -5891,6 +5898,7 @@ def _validate_capture_authority_registration(
             CaptureHardwareBindingV3,
             CaptureHardwareBindingV4,
             CaptureHardwareBindingV5,
+            CaptureHardwareBindingV6,
         ),
     ):
         if source_type not in {"live", "import"}:
@@ -6019,7 +6027,13 @@ def _validate_capture_authority_registration(
 
 def _reconcile_manifest_profile_revision(
     session: Session,
-    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: (
+        RecordingManifestV1
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
 ) -> int:
     if isinstance(manifest, RecordingManifestV4):
         profile_id = manifest.capture_plan.dwell_class.value
@@ -6073,6 +6087,7 @@ def _reconcile_capture_path_authority(
             CaptureHardwareBindingV3,
             CaptureHardwareBindingV4,
             CaptureHardwareBindingV5,
+            CaptureHardwareBindingV6,
         ),
     ):
         topology_row = session.get(StationTopology, authority.topology_digest)
@@ -6267,6 +6282,7 @@ def _reconcile_radio_streams(
                         CaptureHardwareBindingV3,
                         CaptureHardwareBindingV4,
                         CaptureHardwareBindingV5,
+                        CaptureHardwareBindingV6,
                     ),
                 )
                 else None

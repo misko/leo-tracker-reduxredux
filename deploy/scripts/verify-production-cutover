@@ -133,6 +133,24 @@ REVIEWED_CAPTURE_PROFILE_SHA256 = {
     Path("profiles/starlink-ch4-lower-15m-60s-rx1-production-v5.yaml"): (
         "0660139aacb4255aa3af26895cf1aa44290c28bfdbe2bfd5848f3d5ee9dde479"
     ),
+    Path("profiles/starlink-ch4-lower-10m-60s-rx0-direct-async-v7.yaml"): (
+        "44c69908b23c1e8fc2d6c7d5cb92d797e0c701daf91a910acb83879e993ad948"
+    ),
+    Path("profiles/starlink-ch4-lower-10m-60s-rx1-direct-async-v7.yaml"): (
+        "ab868ea443b277cdb34410bfea602056979096047df30b69ca77aab254372c8c"
+    ),
+    Path("profiles/starlink-ch4-lower-15m-60s-rx0-direct-async-v7.yaml"): (
+        "0aa3545a2403819fdde1da39d890cd4f7206e7398bc044791cd68bcc3af220d8"
+    ),
+    Path("profiles/starlink-ch4-lower-15m-60s-rx1-direct-async-v7.yaml"): (
+        "deb275e4842dfdb5c0acd0b38a869c9d1be725db703acaa03dbde6b049af4f83"
+    ),
+    Path("profiles/starlink-ch4-lower-25m-60s-rx0-direct-async-v7.yaml"): (
+        "a838308601b3e7e6d0c54a2d2ed79864a8cf92efdcb5c680ace7b93dc500f1ee"
+    ),
+    Path("profiles/starlink-ch4-lower-25m-60s-rx1-direct-async-v7.yaml"): (
+        "930b0ae52a4c8ca5517cb49886b0681727f6edd5edce69166b042a2ab9df2923"
+    ),
     Path("profiles/starlink-ch4-lower-20m-60s-rx0-production-v5.yaml"): (
         "75dd8f83d00a4c168035c033b1c83d834cd1f91e17a982d9dd96ad5ac79f5e64"
     ),
@@ -193,6 +211,7 @@ for radio_id, host, serial in targets:
     try:
         identity = source.open()
         capabilities = source.capabilities
+        facts = source.diagnostic_facts()
         radios.append(
             {
                 "schema_version": 1,
@@ -201,7 +220,8 @@ for radio_id, host, serial in targets:
                 "uri": identity.uri,
                 "transport": identity.transport.value,
                 "firmware_version": identity.firmware_version,
-                "metadata_abi_version": 3,
+                "metadata_abi_version": facts.get("buffer_metadata_abi"),
+                "buffer_direct_async": facts.get("buffer_direct_async"),
                 "supports_device_sample_counter": capabilities.supports_device_sample_counter,
                 "supports_continuity_sequence": capabilities.supports_continuity_sequence,
             }
@@ -964,6 +984,7 @@ def probe_live_station_radios(
         "transport",
         "firmware_version",
         "metadata_abi_version",
+        "buffer_direct_async",
         "supports_device_sample_counter",
         "supports_continuity_sequence",
     }
@@ -997,8 +1018,8 @@ def probe_live_station_radios(
         ):
             raise ValueError("live station radio identity differs from the frozen station pair")
         firmware = observed.get("firmware_version")
-        if not isinstance(firmware, str) or not firmware:
-            raise ValueError("live station radio firmware identity is unavailable")
+        if firmware != "v0.46-plutoplus-spf-iq-direct-async-ring-v1-rc1":
+            raise ValueError("live station radio firmware is not the exact qualified v0.46 RC1")
         if (
             type(observed.get("metadata_abi_version")) is not int
             or observed.get("metadata_abi_version") != 3
@@ -1009,6 +1030,8 @@ def probe_live_station_radios(
             or observed.get("supports_continuity_sequence") is not True
         ):
             raise ValueError("live station radio lacks counter-authoritative capabilities")
+        if observed.get("buffer_direct_async") is not True:
+            raise ValueError("live station radio does not attest direct-async capture")
     return payload
 
 
@@ -1095,13 +1118,13 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         raise ValueError("production sample-rate profile pool is not the exact reviewed set")
     if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
         raise ValueError("production capture interval must be a 180-second start period")
-    if (
-        environment.get("LEO_MIXED_RATE_POLICY")
-        != "production-native-rates-2p5-10-15-8-v2"
-    ):
+    if environment.get("LEO_MIXED_RATE_POLICY") != "production-direct-async-2p5-10-15-25-6-v3":
         raise ValueError(
-            "production rate policy must be the exact reviewed 2.5/10 and 2.5/15 policy"
+            "production rate policy must be the exact reviewed same-channel "
+            "2.5 x 10/15/25 direct-async policy"
         )
+    if environment.get("LEO_DIRECT_ASYNC_ENABLED") != "true":
+        raise ValueError("production direct-async feature gate must be enabled")
     expected_capture_modes = {
         "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
         "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -3407,7 +3430,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         "production and retained qualification profiles match the exact reviewed bytes",
         "staged acquisition service uses the exact ordered profile and radio pool",
         "exact-revision release qualification is sealed and passed",
-        "production-native-rates-2p5-10-15-8-v2 policy and exact staged service are sealed",
+        "production-direct-async-2p5-10-15-25-6-v3 policy and exact staged service are sealed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
         "scanner raw-IQ and report directories are installed and permissioned",

@@ -23,6 +23,7 @@ from leo.contracts.recording import (
     RecordingManifestV3,
     RecordingManifestV4,
     RecordingManifestV5,
+    RecordingManifestV6,
 )
 from leo.contracts.states import StarlinkEdge
 from leo.contracts.validity import ValidityInventoryV1
@@ -536,6 +537,53 @@ class StandardPathInputBindV4(_StandardPathInputBindBase):
         return self
 
 
+class StandardPathInputBindV5(StandardPathInputBindV4):
+    """Additive native binding for the reviewed 15/20/25 MS/s rate set."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    algorithm_version: Literal["standard-path-input-bind-v5"]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _native_device_axis_is_closed(self) -> Self:
+        if self.sample_rate_hz not in {
+            2_500_000,
+            3_000_000,
+            5_000_000,
+            10_000_000,
+            15_000_000,
+            20_000_000,
+            25_000_000,
+        }:
+            raise ValueError("Standard-native V5 sample rate is not reviewed")
+        if not (
+            self.declared_sample_count == self.requested_sample_count == self.logical_sample_count
+        ):
+            raise ValueError("Standard-native declared, requested, and logical counts differ")
+        if self.logical_sample_count != self.observed_sample_count + self.missing_sample_count:
+            raise ValueError("Standard-native logical count does not close observed and missing IQ")
+        expected_duration = Decimal(self.requested_sample_count) / Decimal(self.sample_rate_hz)
+        if self.requested_duration_seconds != expected_duration:
+            raise ValueError("Standard-native requested duration disagrees with sample geometry")
+        if (
+            self.last_device_sample_counter_inclusive - self.first_device_sample_counter + 1
+            != self.logical_sample_count
+        ):
+            raise ValueError("Standard-native counter span disagrees with logical sample count")
+        validity = self.validity_inventory
+        if (
+            validity.stream_id != self.stream_id
+            or validity.timeline_sha256 != self.timeline_sha256
+            or validity.gap_map_content_digest != self.gap_map_content_digest
+            or validity.first_device_sample_counter != self.first_device_sample_counter
+            or validity.logical_sample_count != self.logical_sample_count
+            or validity.observed_sample_count != self.observed_sample_count
+            or validity.missing_sample_count != self.missing_sample_count
+            or validity.inventory_digest != self.validity_inventory_sha256
+        ):
+            raise ValueError("Standard-native path facts disagree with the validity inventory")
+        return self
+
+
 @dataclass(frozen=True, slots=True)
 class ManifestStarlinkTuningIntent:
     channel: int
@@ -544,7 +592,13 @@ class ManifestStarlinkTuningIntent:
 
 
 def resolve_manifest_starlink_tuning(
-    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: (
+        RecordingManifestV1
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
 ) -> dict[str, ManifestStarlinkTuningIntent]:
     """Resolve explicit per-stream Starlink intent without frequency inference."""
 
@@ -578,8 +632,8 @@ def resolve_manifest_starlink_tuning(
             raise ValueError("per-stream Starlink tuning tags must cover every manifest stream")
         return resolved
 
-    if type(manifest) is RecordingManifestV5:
-        raise ValueError("production V5 manifest requires complete per-stream tuning tags")
+    if type(manifest) in {RecordingManifestV5, RecordingManifestV6}:
+        raise ValueError("production manifest requires complete per-stream tuning tags")
     if isinstance(manifest, RecordingManifestV4):
         return {
             stream_id: ManifestStarlinkTuningIntent(

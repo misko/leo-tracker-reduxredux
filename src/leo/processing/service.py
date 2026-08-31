@@ -29,13 +29,16 @@ from leo.artifacts import (
     AnalysisRunManifestV3,
     AnalysisRunManifestV4,
     AnalysisRunManifestV5,
+    AnalysisRunManifestV6,
     ProductPublication,
     PublishedRunManifest,
     StandardNativeMixedStreamAuthorityV1,
     StandardNativeProductionStreamAuthorityV1,
+    StandardNativeProductionStreamAuthorityV2,
     StandardNativePromotionAuthorityV1,
     StandardNativePromotionAuthorityV2,
     StandardNativePromotionAuthorityV3,
+    StandardNativePromotionAuthorityV4,
     StandardNativeTerminalProductRefV1,
 )
 from leo.artifacts.store import ArtifactOutputSink
@@ -65,6 +68,7 @@ from leo.contracts.recording import (
     RecordingManifestV3,
     RecordingManifestV4,
     RecordingManifestV5,
+    RecordingManifestV6,
     RecordingStreamV2,
     RecordingStreamV3,
 )
@@ -72,7 +76,7 @@ from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     StandardPairInputBindV2,
     StandardPathInputBindV3,
-    StandardPathInputBindV4,
+    StandardPathInputBindV5,
     StreamTimingEvidenceV1,
     resolve_manifest_starlink_tuning,
 )
@@ -114,9 +118,9 @@ AUTOMATIC_JOB_PRIORITY = 0
 REPROCESS_JOB_PRIORITY = 100
 RESEARCH_JOB_PRIORITY = -100
 _STANDARD_NATIVE_TERMINAL_PRODUCT_SCHEMAS = {
-    "path-standard-native": ("standard.path-report", 3),
-    "radio-scientific-report-native": ("standard.radio-report", 5),
-    "paired-scientific-report-native": ("standard.paired-report", 6),
+    "path-standard-native": ("standard.path-report", 4),
+    "radio-scientific-report-native": ("standard.radio-report", 6),
+    "paired-scientific-report-native": ("standard.paired-report", 7),
 }
 _DEFAULT_OUTPUT_LIMITS = {
     "streaming": 512 * 1024 * 1024,
@@ -1280,6 +1284,7 @@ class ProcessingService:
             StandardNativePromotionAuthorityV1
             | StandardNativePromotionAuthorityV2
             | StandardNativePromotionAuthorityV3
+            | StandardNativePromotionAuthorityV4
             | None
         ) = None
         if snapshot.execution.promotion_policy == PromotionPolicy.CURRENT.value and any(
@@ -1308,6 +1313,7 @@ class ProcessingService:
         StandardNativePromotionAuthorityV1
         | StandardNativePromotionAuthorityV2
         | StandardNativePromotionAuthorityV3
+        | StandardNativePromotionAuthorityV4
     ):
         execution = snapshot.execution
         if (
@@ -1330,7 +1336,7 @@ class ProcessingService:
             raise RunRejectedError("native promotion raw-integrity authority changed")
         source = self.iq_readers.verified_manifest(integrity.attestation_digest)
         if not isinstance(source, (RecordingManifestV3, RecordingManifestV4)):
-            raise RunRejectedError("native Current promotion requires an exact V3/V4/V5 source")
+            raise RunRejectedError("native Current promotion requires an exact V3/V4/V5/V6 source")
 
         capture_authority = self.catalog.capture_path_authority(execution.session_id)
         try:
@@ -1389,6 +1395,90 @@ class ProcessingService:
             graph_digest=execution.graph_digest,
             configuration_digest=execution.configuration_digest,
         )
+        if type(source) is RecordingManifestV6:
+            leg_by_radio = {item.radio_id: item for item in source.capture_plan.radio_plans}
+            stream_authorities_v4 = tuple(
+                StandardNativeProductionStreamAuthorityV2(
+                    stream_id=stream.stream_id,
+                    radio_id=stream.radio.radio_id,
+                    profile_name=leg_by_radio[stream.radio.radio_id].profile_revision.profile.name,
+                    profile_revision_digest=(
+                        leg_by_radio[stream.radio.radio_id].profile_revision.revision_digest
+                    ),
+                    receiver_ids=cast(
+                        tuple[Literal[0, 1], ...], stream.applied_settings.receiver_ids
+                    ),
+                    gain_controller_mode=leg_by_radio[
+                        stream.radio.radio_id
+                    ].gain_controller.mode.value,
+                    gain_controller_request_digest=leg_by_radio[
+                        stream.radio.radio_id
+                    ].gain_controller.request_digest,
+                    starlink_channel=leg_by_radio[stream.radio.radio_id].starlink_channel,
+                    starlink_edge=leg_by_radio[stream.radio.radio_id].starlink_edge.value,
+                    sample_rate_hz=cast(
+                        Literal[2_500_000, 10_000_000, 15_000_000, 25_000_000],
+                        stream.applied_settings.sample_rate_hz,
+                    ),
+                    rf_bandwidth_hz=stream.applied_settings.bandwidth_hz,
+                    tuned_center_frequency_hz=stream.applied_settings.center_frequency_hz,
+                    pilot_if_center_frequency_hz=(
+                        leg_by_radio[stream.radio.radio_id].pilot_if_center_frequency_hz
+                    ),
+                    channel_if_start_hz=leg_by_radio[stream.radio.radio_id].channel_if_start_hz,
+                    channel_if_stop_hz=leg_by_radio[stream.radio.radio_id].channel_if_stop_hz,
+                    captured_if_start_hz=leg_by_radio[stream.radio.radio_id].captured_if_start_hz,
+                    captured_if_stop_hz=leg_by_radio[stream.radio.radio_id].captured_if_stop_hz,
+                    logical_sample_count=stream.logical_sample_count,
+                    validity_inventory_digest=stream.validity_inventory_sha256,
+                    timeline_digest=stream.timeline_sha256,
+                    metadata_abi_version=cast(Literal[3], stream.continuity.metadata_abi_version),
+                )
+                for stream in sorted(
+                    source.streams,
+                    key=lambda item: (item.stream_id, item.radio.radio_id),
+                )
+            )
+            values_v4 = {
+                "schema_version": 4,
+                "source_manifest_schema_version": 6,
+                "source_manifest_digest": execution.input_manifest_digest,
+                "pipeline_definition": definition,
+                "pipeline_definition_id": definition.definition_id,
+                "session_id": execution.session_id,
+                "run_id": execution.run_id,
+                "input_manifest_digest": execution.input_manifest_digest,
+                "pipeline_release_id": execution.pipeline_release_id,
+                "expanded_plan_digest": execution.expanded_plan_digest,
+                "raw_integrity_attestation_digest": integrity.attestation_digest,
+                "release_authority_digest": release_authority_digest,
+                "subject_binding_inventory_digest": subject_binding_inventory_digest,
+                "terminal_products": terminal_products,
+                "terminal_product_inventory_digest": terminal_product_inventory_digest,
+                "dwell_class": source.capture_plan.dwell_class.value,
+                "tuning_branch": source.capture_plan.tuning_branch.value,
+                "scheduled_intent_digest": source.capture_plan.scheduled_intent_digest,
+                "stream_authorities": stream_authorities_v4,
+                "capture_plan_digest": source.capture_plan.plan_digest,
+                "capture_hardware_binding_digest": capture_authority.authority_digest,
+                "trigger": execution.trigger,
+                "promotion_policy": "current",
+                "processing_status": "succeeded",
+            }
+            digest_values_v4 = {
+                **values_v4,
+                "pipeline_definition": definition.model_dump(mode="json"),
+                "terminal_products": tuple(
+                    item.model_dump(mode="json") for item in terminal_products
+                ),
+                "stream_authorities": tuple(
+                    item.model_dump(mode="json") for item in stream_authorities_v4
+                ),
+            }
+            return StandardNativePromotionAuthorityV4.model_validate(
+                {**values_v4, "content_digest": canonical_digest(digest_values_v4)}
+            )
+
         if type(source) is RecordingManifestV5:
             leg_by_radio = {item.radio_id: item for item in source.capture_plan.radio_plans}
             stream_authorities_v3 = tuple(
@@ -1750,7 +1840,13 @@ def _compile_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
     iq_readers: IqReaderProvider,
-    manifest: RecordingManifestV1 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: (
+        RecordingManifestV1
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
@@ -1921,7 +2017,13 @@ def _compile_native_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
     iq_readers: IqReaderProvider,
-    manifest: RecordingManifestV2 | RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: (
+        RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
@@ -2023,8 +2125,8 @@ def _compile_native_subject_binding_registrations(
             settings.sample_rate_hz
         )
         values: dict[str, Any] = {
-            "schema_version": 4,
-            "algorithm_version": "standard-path-input-bind-v4",
+            "schema_version": 5,
+            "algorithm_version": "standard-path-input-bind-v5",
             "session_id": manifest.session_id,
             "stream_id": stream.stream_id,
             "radio_id": stream.radio.radio_id,
@@ -2069,7 +2171,7 @@ def _compile_native_subject_binding_registrations(
             "timing": timing.model_dump(mode="json"),
             "frequency_reference": frequency_reference.model_dump(mode="json"),
         }
-        path_binding = StandardPathInputBindV4.model_validate(
+        path_binding = StandardPathInputBindV5.model_validate(
             {**values, "binding_digest": canonical_digest(values)}
         )
         registrations.append(
@@ -2230,7 +2332,7 @@ def _native_terminal_product_refs(
 def _require_native_station_promotion_authority(
     authority: CapturePathAuthorityRecord,
     *,
-    manifest: RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5,
+    manifest: RecordingManifestV3 | RecordingManifestV4 | RecordingManifestV5 | RecordingManifestV6,
     manifest_digest: str,
 ) -> None:
     """Require the immutable station gate before a native run may be Current."""
@@ -2259,9 +2361,16 @@ def _manifest_from_snapshot(
         StandardNativePromotionAuthorityV1
         | StandardNativePromotionAuthorityV2
         | StandardNativePromotionAuthorityV3
+        | StandardNativePromotionAuthorityV4
         | None
     ) = None,
-) -> AnalysisRunManifestV2 | AnalysisRunManifestV3 | AnalysisRunManifestV4 | AnalysisRunManifestV5:
+) -> (
+    AnalysisRunManifestV2
+    | AnalysisRunManifestV3
+    | AnalysisRunManifestV4
+    | AnalysisRunManifestV5
+    | AnalysisRunManifestV6
+):
     jobs = tuple(
         AnalysisJobReceiptV1(
             job_id=job.job_id,
@@ -2300,7 +2409,9 @@ def _manifest_from_snapshot(
             products=products,
         )
     schema_version = (
-        5
+        6
+        if isinstance(promotion_authority, StandardNativePromotionAuthorityV4)
+        else 5
         if isinstance(promotion_authority, StandardNativePromotionAuthorityV3)
         else 4
         if isinstance(promotion_authority, StandardNativePromotionAuthorityV2)
@@ -2327,6 +2438,8 @@ def _manifest_from_snapshot(
         "promotion_authority": promotion_authority.model_dump(mode="json"),
     }
     document = {**values, "content_digest": canonical_digest(digest_values)}
+    if isinstance(promotion_authority, StandardNativePromotionAuthorityV4):
+        return AnalysisRunManifestV6.model_validate(document)
     if isinstance(promotion_authority, StandardNativePromotionAuthorityV3):
         return AnalysisRunManifestV5.model_validate(document)
     if isinstance(promotion_authority, StandardNativePromotionAuthorityV2):

@@ -7,6 +7,7 @@ from leo.contracts.standard_pipeline import (
     StandardPairInputBindV2,
     StandardPathInputBindV3,
     StandardPathInputBindV4,
+    StandardPathInputBindV5,
 )
 from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 
@@ -33,12 +34,14 @@ class CatalogSubjectBindingReader:
         self,
         run_id: str,
         scope: ScopeIdentityV1,
-    ) -> StandardPathInputBindV4:
-        """Read a frozen native device-axis V4 path binding."""
+    ) -> StandardPathInputBindV4 | StandardPathInputBindV5:
+        """Read a frozen native device-axis path binding."""
 
         if scope.kind is not ScopeKind.RECEIVER_PATH:
             raise ValueError("native receiver-path binding requires a receiver_path scope")
         record = self._catalog.run_subject_binding(run_id, scope)
+        if record.document.get("schema_version") == 5:
+            return StandardPathInputBindV5.model_validate(record.document)
         return StandardPathInputBindV4.model_validate(record.document)
 
     def paired(self, run_id: str, scope: ScopeIdentityV1) -> StandardPairInputBindV2:

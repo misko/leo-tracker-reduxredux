@@ -23,6 +23,7 @@ from leo.contracts.standard_native import (
     NativeProbeWindowV3,
     NativeWindowDisposition,
     StandardNativeSourceV1,
+    StandardNativeSourceV2,
 )
 from leo.contracts.standard_native_stateful_v2 import NativeStatefulSegmentDispositionV2
 from leo.contracts.standard_pipeline import (
@@ -513,6 +514,14 @@ class StandardNativePathReportV3(ContractModel):
         ):
             raise ValueError("native path report digest does not match content")
         return self
+
+
+class StandardNativePathReportV4(StandardNativePathReportV3):
+    """Additive terminal path report carrying StandardNativeSourceV2."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    algorithm_version: Literal["standard-native-path-report-v4"] = "standard-native-path-report-v4"  # type: ignore[assignment]
+    source: StandardNativeSourceV2  # type: ignore[assignment]
 
 
 def _merge_qam_statistics(

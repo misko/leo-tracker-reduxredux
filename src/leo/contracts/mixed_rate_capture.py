@@ -13,6 +13,7 @@ from leo.contracts.gain_control import GainControllerPolicyV1
 from leo.contracts.mixed_rate_schedule import (
     ProductionDwellClass,
     ProductionDwellClassV2,
+    ProductionDwellClassV3,
     ProductionTuningBranchV2,
 )
 from leo.contracts.profile import CaptureProfileRevisionV2
@@ -333,4 +334,75 @@ class CapturePlanV4(ContractModel):
 
 
 def capture_plan_v4_digest(plan: CapturePlanV4) -> str:
+    return canonical_digest(plan.model_dump(mode="json", exclude={"plan_digest"}))
+
+
+class CapturePlanV5(ContractModel):
+    """Additive plan for uniform direct-async 2.5 x 10/15/25 MS/s dwells."""
+
+    schema_version: Literal[5] = 5
+    plan_digest: Sha256Digest
+    scheduled_intent_digest: Sha256Digest
+    dwell_class: ProductionDwellClassV3
+    tuning_branch: Literal[ProductionTuningBranchV2.SAME] = ProductionTuningBranchV2.SAME
+    radio_ids: tuple[RadioId, RadioId]
+    radio_plans: tuple[ProductionRadioPlanV2, ProductionRadioPlanV2]
+    source_type: SourceType = SourceType.LIVE
+    duration_seconds: Annotated[Decimal, Field(gt=0)]
+    requested_synchronization_mode: Literal[SynchronizationMode.BEST_EFFORT] = (
+        SynchronizationMode.BEST_EFFORT
+    )
+    effective_synchronization_mode: Literal[SynchronizationMode.BEST_EFFORT] = (
+        SynchronizationMode.BEST_EFFORT
+    )
+
+    @field_validator("radio_ids")
+    @classmethod
+    def _v5_radio_ids_are_unique(cls, value: tuple[str, str]) -> tuple[str, str]:
+        if len(set(value)) != 2:
+            raise ValueError("direct-async production plan radio IDs must be unique")
+        return value
+
+    @model_validator(mode="after")
+    def _plan_is_closed_v5(self) -> Self:
+        if tuple(item.radio_id for item in self.radio_plans) != self.radio_ids:
+            raise ValueError("direct-async production plan leg order must match radio order")
+        high_rate = {
+            ProductionDwellClassV3.MIXED_2P5_10: 10_000_000,
+            ProductionDwellClassV3.MIXED_2P5_15: 15_000_000,
+            ProductionDwellClassV3.MIXED_2P5_25: 25_000_000,
+        }[self.dwell_class]
+        if sorted(item.requested_settings.sample_rate_hz for item in self.radio_plans) != [
+            2_500_000,
+            high_rate,
+        ]:
+            raise ValueError("direct-async plan rate geometry disagrees with dwell class")
+        if len({(leg.starlink_channel, leg.starlink_edge) for leg in self.radio_plans}) != 1:
+            raise ValueError("direct-async production plan requires one common RF target")
+        for leg in self.radio_plans:
+            profile = leg.profile_revision.profile
+            high_leg = leg.requested_settings.sample_rate_hz != 2_500_000
+            if len(leg.requested_settings.receiver_ids) != (1 if high_leg else 2):
+                raise ValueError("direct-async plan receiver geometry is invalid")
+            if high_leg and "DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1" not in profile.tags:
+                raise ValueError("direct-async high-rate profile lacks its device-buffer policy")
+            if profile.duration_seconds != self.duration_seconds:
+                raise ValueError("direct-async production profiles must use one duration")
+            if (
+                profile.storage_policy != _DEVICE_AXIS_STORAGE_POLICY_V1
+                or profile.continuity_policy is not ContinuityPolicy.ALLOW_SEGMENTS
+                or profile.peer_failure_policy is not PeerFailurePolicy.FAIL_SESSION
+                or profile.synchronization_mode is not SynchronizationMode.BEST_EFFORT
+                or profile.require_device_metadata is not True
+            ):
+                raise ValueError("direct-async production profile integrity policy is incomplete")
+        expected_digest = capture_plan_v5_digest(self)
+        if self.plan_digest != expected_digest:
+            raise ValueError(
+                f"direct-async production plan digest does not match content: {expected_digest}"
+            )
+        return self
+
+
+def capture_plan_v5_digest(plan: CapturePlanV5) -> str:
     return canonical_digest(plan.model_dump(mode="json", exclude={"plan_digest"}))
