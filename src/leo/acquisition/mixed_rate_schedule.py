@@ -70,6 +70,13 @@ _PRODUCTION_DIRECT_ASYNC_V3_CYCLE_CLASSES = (
     ProductionDwellClassV3.MIXED_2P5_25,
 )
 
+# This is an operator-facing scheduler selector, not a new persisted intent
+# contract. It compiles an ordinary immutable V3 rate/tuning intent whose
+# explicit controller assignments are all HOLD and whose extra tag records the
+# restricted rollout authority.
+PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1 = "production-direct-async-2p5-10-15-25-hold-6-v1"
+PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 = "gain_rollout:tandem_hold_v1"
+
 ProductionProfileKey = tuple[int, tuple[int, ...], bool]
 ProductionProfileAuthority = tuple[str, str, int]
 
@@ -178,6 +185,44 @@ def compile_production_dwell_intent_v3(
         **values,
     )
     document = candidate.model_dump(mode="json", exclude={"intent_digest"})
+    return ProductionDwellIntentV3.model_validate(
+        {**document, "intent_digest": canonical_digest(document)}
+    )
+
+
+def compile_production_dwell_intent_hold_rollout_v1(
+    *,
+    operation_key: str,
+    cadence_ordinal: int,
+    radio_ids: Sequence[str],
+    profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
+    rollout_policy_id: str = PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    extra_tags: Sequence[str] = (),
+) -> ProductionDwellIntentV3:
+    """Compile the additive HOLD-only rollout into an immutable V3 intent."""
+
+    if rollout_policy_id != PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1:
+        raise ValueError("direct-async HOLD rollout policy is unsupported")
+    intent = compile_production_dwell_intent_v3(
+        operation_key=operation_key,
+        cadence_ordinal=cadence_ordinal,
+        radio_ids=radio_ids,
+        profile_authority=profile_authority,
+        extra_tags=(*extra_tags, PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1),
+    )
+    legs = tuple(
+        leg.model_copy(
+            update={
+                "gain_controller": GainControllerPolicyV1.create(
+                    GainControllerMode.TANDEM_HOLD,
+                    sample_count=profile_authority[(leg.sample_rate_hz, leg.receiver_ids, True)][2],
+                )
+            }
+        )
+        for leg in intent.radio_legs
+    )
+    document = intent.model_dump(mode="json", exclude={"intent_digest"})
+    document["radio_legs"] = [leg.model_dump(mode="json") for leg in legs]
     return ProductionDwellIntentV3.model_validate(
         {**document, "intent_digest": canonical_digest(document)}
     )

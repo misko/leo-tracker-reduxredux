@@ -27,7 +27,7 @@ RELEASE_ROOT = Path("/opt/leo-tracker")
 PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
 DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
 QNAP_ROOT = Path("/mnt/qnap01")
-PRODUCTION_CAPTURE_POLICY = "production-direct-async-2p5-10-15-25-6-v3"
+PRODUCTION_CAPTURE_POLICY = "production-direct-async-2p5-10-15-25-hold-6-v1"
 
 _SELECTOR_COMPONENTS = ("global", "api", "worker", "acquisition")
 _WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
@@ -52,7 +52,7 @@ _LEO_SERVICE_UNITS = (
 _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_CAPTURE_PROFILE": "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
     "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
-    "LEO_MIXED_RATE_POLICY": "production-direct-async-2p5-10-15-25-6-v3",
+    "LEO_MIXED_RATE_POLICY": "production-direct-async-2p5-10-15-25-hold-6-v1",
     "LEO_DIRECT_ASYNC_ENABLED": "true",
     "LEO_CAPTURE_INTERVAL_SECONDS": "180",
     "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
