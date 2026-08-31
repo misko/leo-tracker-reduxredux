@@ -932,6 +932,7 @@ class AcquisitionCoordinator:
                         item.applied_settings.receiver_ids,
                         requested_device_span=resolved_sample_count,
                         kernel_buffers=kernel_buffers,
+                        allow_non_refill_gaps=isinstance(device_buffer, DirectAsyncRequestV1),
                     )
                 return bundle.open_stream(
                     item.stream_id,
@@ -1066,12 +1067,15 @@ class AcquisitionCoordinator:
         direct_segment_pending = isinstance(device_buffer, DirectAsyncRequestV1)
         direct_upstream_generations: list[str] = []
         direct_logical_generation: str | None = None
+        direct_previous_counter: int | None = None
+        direct_logical_sequence: int | None = None
         direct_missing_samples = 0
         direct_inter_segment_skipped_samples = 0
         validator = ContinuityChainValidator(
             require_metadata=True,
             require_generation=True,
             validate_declared=True,
+            allow_non_refill_gaps=isinstance(device_buffer, DirectAsyncRequestV1),
         )
         try:
             release_target = gate.arrive_and_wait(external_cancel)
@@ -1197,12 +1201,23 @@ class AcquisitionCoordinator:
                         direct_logical_generation = raw_generation
                         normalized_sequence = 0
                     else:
-                        delta = raw_metadata.device_sample_counter - first_counter
-                        if delta < 0 or delta % profile.refill_samples:
+                        assert direct_previous_counter is not None
+                        assert direct_logical_sequence is not None
+                        missing = raw_metadata.device_sample_counter - (
+                            direct_previous_counter + profile.refill_samples
+                        )
+                        if missing < 0:
                             raise AcquisitionError(
-                                "direct-async device counter is not aligned to whole frames"
+                                "direct-async device counter regressed or overlapped"
                             )
-                        normalized_sequence = delta // profile.refill_samples
+                        skipped_refills = (
+                            missing // profile.refill_samples
+                            if missing % profile.refill_samples == 0
+                            else 0
+                        )
+                        normalized_sequence = direct_logical_sequence + 1 + skipped_refills
+                    direct_previous_counter = raw_metadata.device_sample_counter
+                    direct_logical_sequence = normalized_sequence
                     assert direct_logical_generation is not None
                     block = IqBlock(
                         samples=block.samples,

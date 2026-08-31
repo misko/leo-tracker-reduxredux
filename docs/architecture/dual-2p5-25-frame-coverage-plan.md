@@ -48,6 +48,16 @@ another 15-buffer queue, transiently requiring roughly twice the contiguous DMA
 allocation. Leo's failed pair stopped after six or seven high-rate frames with
 `ENODATA`; the current ladder completed every frame on the same radios.
 
+The first staged Leo high-leg gate exposed a second, independent integration
+defect after returning its first complete 64-frame segment. Leo normalized all
+direct-async segments into one logical metadata generation, but required the
+device counter at the next segment to remain aligned to a whole 1,048,576-sample
+frame. A fenced direct-async re-arm can resume after an arbitrary number of
+device samples. Preserve that exact counter gap, advance the normalized source
+sequence by one returned block when the gap is not a whole-refill inventory,
+and allow the device-axis writer to zero-fill the exact gap. The ordinary
+continuous-IIO validator must retain its stricter whole-refill rule.
+
 ## Preserve the contracts that already fit
 
 Keep these existing contracts and semantics unchanged:
@@ -223,6 +233,9 @@ compression.
 - Coordinator tests inject in-segment and inter-segment gaps while returning all
   target frames; the bundle must publish `DEGRADED` with 100% delivery coverage
   and truthful densities.
+- A direct-async segment-rearm test uses a non-refill-aligned counter gap; it
+  must retain all finite frames, persist the exact inter-segment skip, and leave
+  the default continuous-IIO whole-refill validator strict.
 - Peer-policy tests prove `FAIL_SESSION` still quarantines a missing/short peer,
   while allowing two transport-complete device-axis receipts to publish when
   their only defect is counter-proven observation loss.
