@@ -41,6 +41,16 @@ IQ, both are candidate-only, and receiver sample clock, receiver/LNB drift, tran
 propagation remain confounded. The exploratory direct PSS carrier-CFO estimator is materially less
 stable than the frame-timing result and is not ready to replace known-pilot GLRT CFO.
 
+### Causal-TLE sign follow-up
+
+The subsequent [fixed-time causal-TLE comparison](2026_08_31_071200_pss_glrt_causal_tle_alignment.md)
+resolves an important limitation of the same-sign diagnostic. GLRT closes strongly to physical
+received-minus-transmitted TLE Doppler. PSS closes to the same top catalogue family only when its
+frame-epoch curvature retains the repository same-sign mapping. Under conventional
+observed-minus-nominal arrival delay, its sign is opposite the visible TLE field and it does not
+improve over an affine timing null. The PSS timing lock remains valid, but its conversion to
+physical propagation Doppler is not calibrated.
+
 ## Provenance and immutable inputs
 
 | Item | Value |
