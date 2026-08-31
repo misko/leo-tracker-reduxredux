@@ -49,6 +49,7 @@ from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_10M_SCHEDULE_POLICY_V1,
     MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
     MIXED_RATE_SCHEDULE_POLICY_V1,
+    PRODUCTION_2P5_10_15_RATE_POLICY_V2,
     PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
     ProductionDwellIntentV1,
@@ -64,6 +65,13 @@ _MIXED_RATE_POLICIES = frozenset(
         MIXED_RATE_10M_SCHEDULE_POLICY_V1,
         MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
         PRODUCTION_NATIVE_RATE_POLICY_V2,
+        PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+    }
+)
+_PRODUCTION_RATE_POLICIES_V2 = frozenset(
+    {
+        PRODUCTION_NATIVE_RATE_POLICY_V2,
+        PRODUCTION_2P5_10_15_RATE_POLICY_V2,
     }
 )
 ProfileSelector = Callable[[tuple[str, ...], str], str]
@@ -214,12 +222,12 @@ class ContinuousAcquisitionRunner:
         next_due = _cadence_floor(self._utc_now(), interval_seconds)
         rate_profile_authority = (
             None
-            if mixed_rate_policy is None or mixed_rate_policy == PRODUCTION_NATIVE_RATE_POLICY_V2
+            if mixed_rate_policy is None or mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2
             else self.backend.mixed_rate_profile_authority()
         )
         production_profile_authority = (
             self.backend.production_profile_authority()
-            if mixed_rate_policy == PRODUCTION_NATIVE_RATE_POLICY_V2
+            if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2
             else None
         )
 
@@ -258,7 +266,7 @@ class ContinuousAcquisitionRunner:
                                 "extra_tags": list(extra_tags),
                             }
                     else:
-                        if mixed_rate_policy == PRODUCTION_NATIVE_RATE_POLICY_V2:
+                        if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2:
                             assert production_profile_authority is not None
                             required_profiles = {
                                 "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
@@ -274,6 +282,7 @@ class ContinuousAcquisitionRunner:
                                 cadence_ordinal=_cadence_ordinal(next_due, interval_seconds),
                                 radio_ids=radio_ids,
                                 profile_authority=production_profile_authority,
+                                policy_id=mixed_rate_policy,
                                 extra_tags=extra_tags,
                             )
                         else:
@@ -288,7 +297,7 @@ class ContinuousAcquisitionRunner:
                                 extra_tags=extra_tags,
                             )
                             serialized_payload = legacy_intent.model_dump(mode="json")
-                        if mixed_rate_policy == PRODUCTION_NATIVE_RATE_POLICY_V2:
+                        if mixed_rate_policy in _PRODUCTION_RATE_POLICIES_V2:
                             serialized_payload = intent.model_dump(mode="json")
                     queue.enqueue_acquisition_operation(
                         operation_key=key,
@@ -336,7 +345,7 @@ class ContinuousAcquisitionRunner:
                     continue
                 try:
                     if lease.kind == CaptureTaskKind.SCHEDULED_RECORDING.value:
-                        if lease.payload.get("policy_id") == PRODUCTION_NATIVE_RATE_POLICY_V2:
+                        if lease.payload.get("policy_id") in _PRODUCTION_RATE_POLICIES_V2:
                             production_intent = ProductionDwellIntentV2.model_validate(
                                 lease.payload
                             )

@@ -10,6 +10,7 @@ from leo.acquisition.mixed_rate_schedule import (
 )
 from leo.contracts.gain_control import GainControllerMode
 from leo.contracts.mixed_rate_schedule import (
+    PRODUCTION_2P5_10_15_RATE_POLICY_V2,
     ProductionDwellClassV2,
     ProductionDwellIntentV2,
     ProductionTuningBranchV2,
@@ -65,6 +66,40 @@ def test_every_cycle_has_the_exact_eight_slot_probability_bag() -> None:
             Counter(production_cycle_classes_v2(cycle_index=cycle_index, radio_ids=_RADIOS))
             == expected
         )
+
+
+def test_focused_cycle_contains_only_balanced_2p5_10_and_2p5_15_pairs() -> None:
+    expected = {
+        ProductionDwellClassV2.MIXED_2P5_10: 4,
+        ProductionDwellClassV2.MIXED_2P5_15: 4,
+    }
+    for cycle_index in range(128):
+        assert (
+            Counter(
+                production_cycle_classes_v2(
+                    cycle_index=cycle_index,
+                    radio_ids=_RADIOS,
+                    policy_id=PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+                )
+            )
+            == expected
+        )
+
+    intents = tuple(
+        compile_production_dwell_intent_v2(
+            operation_key=f"focused-production-dwell:{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=_RADIOS,
+            profile_authority=_AUTHORITY,
+            policy_id=PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+        )
+        for ordinal in range(8)
+    )
+    assert all(
+        {leg.sample_rate_hz for leg in intent.radio_legs}
+        in ({2_500_000, 10_000_000}, {2_500_000, 15_000_000})
+        for intent in intents
+    )
 
 
 def test_policy_randomizes_physical_high_radio_single_rx_and_tandem_mode() -> None:
