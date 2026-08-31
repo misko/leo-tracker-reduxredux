@@ -378,6 +378,13 @@ serves the complete versioned PNG inventory through the WebUI. Firmware loss at
 experimental high rates remains explicit counter-derived evidence and is never
 renormalized or silently replaced.
 
+The analysis topology is not capture-policy-specific: the same
+`standard-native-v1` stages accept 2.5, 3, 5, 10, 15, 20, and 25 MS/s native IQ.
+New runs bind the additive V5 path authority and V2 native source while older
+contract generations remain readable. The focused direct-async schedule does
+not acquire 20 MS/s, but existing production/DDR-ring 20 MS/s recordings use
+the same analyzers, reducers, PNG renderers, presentation repository, and API.
+
 Legacy V6 3 MS/s and native-bandwidth receipts remain immutable historical
 evidence, but the current deployment path neither regenerates nor consumes
 them. Do not run those retired RF campaigns as part of this cutover.

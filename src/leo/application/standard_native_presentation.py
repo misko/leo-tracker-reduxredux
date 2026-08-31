@@ -2298,10 +2298,21 @@ def _mixed_waterfall_payload(
 ]:
     axis_model = StandardNativeFrequencyAxisV5 if wide else StandardNativeFrequencyAxisV4
     tile_model = StandardNativeWaterfallTileV4 if wide else StandardNativeWaterfallTileV3
+    maximum_frequency_bins = 4096 if wide else 1024
+    projected_axes = {
+        path.reference.path_id: _frequency_projection_indexes(
+            len(path.waterfall.waterfall.frequency_bin_centers_hz),
+            maximum=maximum_frequency_bins,
+        )
+        for path in paths
+    }
     axes = tuple(
         axis_model(
             receiver_path_id=path.reference.path_id,
-            frequency_bin_centers_hz=path.waterfall.waterfall.frequency_bin_centers_hz,
+            frequency_bin_centers_hz=tuple(
+                path.waterfall.waterfall.frequency_bin_centers_hz[index]
+                for index in projected_axes[path.reference.path_id]
+            ),
         )
         for path in paths
     )
@@ -2320,10 +2331,22 @@ def _mixed_waterfall_payload(
                     sample_stop=tile.sample_stop,
                     transform_count=tile.transform_count,
                     valid=tile.transform_count > 0,
-                    power_dbfs=tile.receiver_power_dbfs[0],
+                    power_dbfs=tuple(
+                        tile.receiver_power_dbfs[0][index]
+                        for index in projected_axes[path.reference.path_id]
+                    ),
                 )
             )
     return axes, tuple(rows)
+
+
+def _frequency_projection_indexes(source_count: int, *, maximum: int) -> tuple[int, ...]:
+    """Select a deterministic contract-bounded view without altering analysis products."""
+
+    if source_count <= maximum:
+        return tuple(range(source_count))
+    last = source_count - 1
+    return tuple(round(index * last / (maximum - 1)) for index in range(maximum))
 
 
 def _evenly_spaced[ValueT](values: tuple[ValueT, ...], maximum: int) -> tuple[ValueT, ...]:

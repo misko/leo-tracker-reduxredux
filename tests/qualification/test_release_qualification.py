@@ -169,6 +169,14 @@ def test_release_lane_seals_reproducible_pass_receipt_and_isolates_environment(
         "test_real_postgres_mixed_capture_standard_png_and_browser_vertical" in item
         for item in definition["commands"][2]["argv"]
     )
+    assert any(
+        "test_real_postgres_production_single_rx_all_rate_vertical" in item
+        for item in definition["commands"][2]["argv"]
+    )
+    assert any(
+        "test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical" in item
+        for item in definition["commands"][2]["argv"]
+    )
     assert definition["commands"][3]["name"] == "standard-native-real-corpus"
     assert "real_corpus" in definition["commands"][3]["argv"]
     build_argv = definition["commands"][4]["argv"]

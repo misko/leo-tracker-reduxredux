@@ -83,6 +83,7 @@ def release_qualification_v2_command_documents() -> tuple[dict[str, Any], ...]:
             "tests/analysis/test_standard_native_full_capture_glrt.py",
             "tests/analysis/test_standard_native_qam.py",
             "tests/analysis/test_standard_native_path_report.py",
+            "tests/contracts/test_standard_path_input_bind_v4.py",
         ),
         pytest_command(
             "standard-native-postgresql",
@@ -97,6 +98,14 @@ def release_qualification_v2_command_documents() -> tuple[dict[str, Any], ...]:
             (
                 "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
                 "test_real_postgres_mixed_capture_standard_png_and_browser_vertical"
+            ),
+            (
+                "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
+                "test_real_postgres_production_single_rx_all_rate_vertical"
+            ),
+            (
+                "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
+                "test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical"
             ),
         ),
         pytest_command(
