@@ -24,6 +24,7 @@ from leo.contracts.capture_control import (
 from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
     MIXED_RATE_SCHEDULE_POLICY_V1,
+    PRODUCTION_2P5_10_15_RATE_POLICY_V2,
     PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
     ProductionDwellClassV2,
@@ -391,6 +392,47 @@ def test_durable_production_policy_executes_exact_eight_slot_bag() -> None:
         ProductionDwellClassV2.MIXED_2P5_15: 1,
         ProductionDwellClassV2.MIXED_2P5_20: 1,
     }
+
+
+def test_durable_focused_policy_executes_only_2p5_10_and_2p5_15_pairs() -> None:
+    clock = _Clock()
+    backend = _ProductionRateDurableBackend(clock)
+    backend.analyzed.set()
+    start = datetime.fromtimestamp(0, tz=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        (
+            "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+            "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+        ),
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("production",),
+        interval_seconds=10.0,
+        maximum_captures=8,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        mixed_rate_policy=PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+    )
+
+    assert summary.capture_count == 8
+    intents = tuple(
+        ProductionDwellIntentV2.model_validate(item.payload)
+        for item in backend.operations
+        if item.kind == "scheduled_recording"
+    )
+    assert len(intents) == 8
+    assert {item.dwell_class for item in intents} == {
+        ProductionDwellClassV2.MIXED_2P5_10,
+        ProductionDwellClassV2.MIXED_2P5_15,
+    }
+    assert all(
+        {leg.sample_rate_hz for leg in intent.radio_legs}
+        in ({2_500_000, 10_000_000}, {2_500_000, 15_000_000})
+        for intent in intents
+    )
 
 
 def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis() -> None:

@@ -14,6 +14,7 @@ from leo.contracts.mixed_rate_schedule import (
     MIXED_RATE_SAFE_SCHEDULE_POLICY_V1,
     MIXED_RATE_SCHEDULE_CYCLE_LENGTH,
     MIXED_RATE_SCHEDULE_POLICY_V1,
+    PRODUCTION_2P5_10_15_RATE_POLICY_V2,
     PRODUCTION_NATIVE_RATE_CYCLE_LENGTH_V2,
     PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
@@ -51,6 +52,10 @@ _PRODUCTION_V2_CYCLE_CLASSES = (
     ProductionDwellClassV2.MIXED_2P5_15,
     ProductionDwellClassV2.MIXED_2P5_20,
 )
+_PRODUCTION_2P5_10_15_V2_CYCLE_CLASSES = (
+    *(ProductionDwellClassV2.MIXED_2P5_10 for _ in range(4)),
+    *(ProductionDwellClassV2.MIXED_2P5_15 for _ in range(4)),
+)
 
 ProductionProfileKey = tuple[int, tuple[int, ...], bool]
 ProductionProfileAuthority = tuple[str, str, int]
@@ -62,15 +67,21 @@ def compile_production_dwell_intent_v2(
     cadence_ordinal: int,
     radio_ids: Sequence[str],
     profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
+    policy_id: str = PRODUCTION_NATIVE_RATE_POLICY_V2,
     extra_tags: Sequence[str] = (),
 ) -> ProductionDwellIntentV2:
-    """Resolve one slot of the exact 8-dwell production policy."""
+    """Resolve one slot of an exact 8-dwell production policy."""
 
     if cadence_ordinal < 0:
         raise ValueError("cadence ordinal cannot be negative")
     radios = tuple(radio_ids)
     if len(radios) != 2 or len(set(radios)) != 2:
         raise ValueError("production V2 policy requires two unique radios")
+    if policy_id not in {
+        PRODUCTION_NATIVE_RATE_POLICY_V2,
+        PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+    }:
+        raise ValueError("production V2 rate policy is unsupported")
     required_keys: set[ProductionProfileKey] = {
         (2_500_000, (0, 1), False),
         (5_000_000, (0, 1), False),
@@ -86,7 +97,7 @@ def compile_production_dwell_intent_v2(
         missing = sorted(required_keys - set(profile_authority))
         raise ValueError(f"production profile authority omits required geometries: {missing}")
     cycle_index, cycle_slot = divmod(cadence_ordinal, PRODUCTION_NATIVE_RATE_CYCLE_LENGTH_V2)
-    cycle = _production_v2_cycle(cycle_index, radios)
+    cycle = _production_v2_cycle(cycle_index, radios, policy_id)
     dwell_class = cycle[cycle_slot]
     is_mixed = dwell_class.value.startswith("mixed_")
     high_rate = {
@@ -190,7 +201,7 @@ def compile_production_dwell_intent_v2(
         )
     values: dict[str, Any] = {
         "schema_version": 2,
-        "policy_id": PRODUCTION_NATIVE_RATE_POLICY_V2,
+        "policy_id": policy_id,
         "operation_key": operation_key,
         "cadence_ordinal": cadence_ordinal,
         "cycle_index": cycle_index,
@@ -212,23 +223,37 @@ def compile_production_dwell_intent_v2(
 
 
 def production_cycle_classes_v2(
-    *, cycle_index: int, radio_ids: Sequence[str]
+    *,
+    cycle_index: int,
+    radio_ids: Sequence[str],
+    policy_id: str = PRODUCTION_NATIVE_RATE_POLICY_V2,
 ) -> tuple[ProductionDwellClassV2, ...]:
     if cycle_index < 0:
         raise ValueError("cycle index cannot be negative")
     radios = tuple(radio_ids)
     if len(radios) != 2 or len(set(radios)) != 2:
         raise ValueError("production V2 cycle requires two unique radios")
-    return _production_v2_cycle(cycle_index, radios)
+    if policy_id not in {
+        PRODUCTION_NATIVE_RATE_POLICY_V2,
+        PRODUCTION_2P5_10_15_RATE_POLICY_V2,
+    }:
+        raise ValueError("production V2 rate policy is unsupported")
+    return _production_v2_cycle(cycle_index, radios, policy_id)
 
 
 def _production_v2_cycle(
     cycle_index: int,
     radio_ids: tuple[str, ...],
+    policy_id: str,
 ) -> tuple[ProductionDwellClassV2, ...]:
+    cycle_classes = (
+        _PRODUCTION_2P5_10_15_V2_CYCLE_CLASSES
+        if policy_id == PRODUCTION_2P5_10_15_RATE_POLICY_V2
+        else _PRODUCTION_V2_CYCLE_CLASSES
+    )
     seed = canonical_digest(
         {
-            "policy_id": PRODUCTION_NATIVE_RATE_POLICY_V2,
+            "policy_id": policy_id,
             "cycle_index": cycle_index,
             "radio_ids": sorted(radio_ids),
         }
@@ -239,10 +264,10 @@ def _production_v2_cycle(
             index,
             dwell_class,
         )
-        for index, dwell_class in enumerate(_PRODUCTION_V2_CYCLE_CLASSES)
+        for index, dwell_class in enumerate(cycle_classes)
     ]
     cycle = tuple(item[2] for item in sorted(decorated))
-    assert Counter(cycle) == Counter(_PRODUCTION_V2_CYCLE_CLASSES)
+    assert Counter(cycle) == Counter(cycle_classes)
     return cycle
 
 

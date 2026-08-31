@@ -1095,8 +1095,13 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         raise ValueError("production sample-rate profile pool is not the exact reviewed set")
     if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
         raise ValueError("production capture interval must be a 180-second start period")
-    if environment.get("LEO_MIXED_RATE_POLICY") != "production-native-rates-8-v2":
-        raise ValueError("production rate policy must be the exact reviewed 8-dwell policy")
+    if (
+        environment.get("LEO_MIXED_RATE_POLICY")
+        != "production-native-rates-2p5-10-15-8-v2"
+    ):
+        raise ValueError(
+            "production rate policy must be the exact reviewed 2.5/10 and 2.5/15 policy"
+        )
     expected_capture_modes = {
         "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
         "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -3402,7 +3407,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         "production and retained qualification profiles match the exact reviewed bytes",
         "staged acquisition service uses the exact ordered profile and radio pool",
         "exact-revision release qualification is sealed and passed",
-        "production-native-rates-8-v2 policy and exact staged service are sealed",
+        "production-native-rates-2p5-10-15-8-v2 policy and exact staged service are sealed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
         "scanner raw-IQ and report directories are installed and permissioned",

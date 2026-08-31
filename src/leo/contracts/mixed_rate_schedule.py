@@ -18,6 +18,7 @@ MIXED_RATE_10M_SCHEDULE_POLICY_V1 = "mixed-native-rates-16-10m-v1"
 MIXED_RATE_SAFE_SCHEDULE_POLICY_V1 = "mixed-native-rates-16-safe-v1"
 MIXED_RATE_SCHEDULE_CYCLE_LENGTH = 16
 PRODUCTION_NATIVE_RATE_POLICY_V2 = "production-native-rates-8-v2"
+PRODUCTION_2P5_10_15_RATE_POLICY_V2 = "production-native-rates-2p5-10-15-8-v2"
 PRODUCTION_NATIVE_RATE_CYCLE_LENGTH_V2 = 8
 
 OperationKey = Annotated[
@@ -177,7 +178,10 @@ class ProductionDwellIntentV2(ContractModel):
 
     schema_version: Literal[2] = 2
     intent_digest: Sha256Digest
-    policy_id: Literal["production-native-rates-8-v2"] = "production-native-rates-8-v2"
+    policy_id: Literal[
+        "production-native-rates-8-v2",
+        "production-native-rates-2p5-10-15-8-v2",
+    ] = "production-native-rates-8-v2"
     operation_key: OperationKey
     cadence_ordinal: Annotated[int, Field(ge=0)]
     cycle_index: Annotated[int, Field(ge=0)]

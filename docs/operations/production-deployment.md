@@ -362,7 +362,9 @@ requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
 row blocks startup.
 
 The historical target-bound 3 MS/s qualification receipt is not a cutover gate:
-3 MS/s is absent from `production-native-rates-8-v2`. The transaction instead
+3 MS/s is absent from `production-native-rates-2p5-10-15-8-v2`. This focused
+eight-dwell policy contains four mixed 2.5/10 MS/s dwells and four mixed
+2.5/15 MS/s dwells; it contains no same-rate, 5 MS/s, or 20 MS/s dwell. The transaction instead
 checks the exact staged profile bytes and service command, the exact-revision
 release qualification, the reviewed Standard regression authority, and both
 live radios through the ABI-3 counter-authoritative adapter before starting any

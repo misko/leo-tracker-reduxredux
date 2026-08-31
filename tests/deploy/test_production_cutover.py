@@ -1148,7 +1148,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
             "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
             "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-native-bandwidth-v4",
-            "LEO_MIXED_RATE_POLICY=production-native-rates-8-v2",
+            "LEO_MIXED_RATE_POLICY=production-native-rates-2p5-10-15-8-v2",
             "LEO_CAPTURE_INTERVAL_SECONDS=180",
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -2678,7 +2678,7 @@ def test_full_cutover_uses_release_and_production_policy_without_obsolete_3m_gat
     assert "rate_qualification_receipt" not in verify_source
     assert "verify_contiguous_rate_3m_receipt" not in verify_source
     assert "verify_native_bandwidth_receipt" not in verify_source
-    assert "production-native-rates-8-v2" in verify_source
+    assert "production-native-rates-2p5-10-15-8-v2" in verify_source
 
 
 def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:
