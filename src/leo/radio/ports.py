@@ -21,6 +21,13 @@ class RadioSource(Protocol):
 
     def configure(self, settings: RadioSettingsV1) -> RadioSettingsV1: ...
 
+    def reopen_configured(
+        self,
+        settings: RadioSettingsV1,
+        *,
+        exact_readback: bool,
+    ) -> RadioSettingsV1: ...
+
     def reset_receive_buffer(self) -> None: ...
 
     def begin_metadata_capture(

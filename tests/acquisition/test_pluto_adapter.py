@@ -229,6 +229,42 @@ def test_adapter_applies_and_attests_exact_rate_modes(sample_rate_hz: int) -> No
     assert actual.bandwidth_hz == 2_500_000
 
 
+def test_adapter_reopen_recreates_context_and_restores_exact_settings() -> None:
+    devices: list[StubDevice] = []
+    exact_applications: list[tuple[StubDevice, Any]] = []
+
+    def factory(uri: str, *, serial: str, radio_id: str, **_kwargs: Any) -> StubDevice:
+        device = StubDevice(uri, serial=serial, radio_id=radio_id)
+        devices.append(device)
+        return device
+
+    def apply_exact(device: StubDevice, settings: Any) -> Any:
+        device.settings = settings
+        exact_applications.append((device, settings))
+        return SimpleNamespace(applied=settings)
+
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=factory,
+        settings_factory=_upstream_settings,
+        exact_settings_applier=apply_exact,
+    )
+    requested = _settings((0,), sample_rate_hz=25_000_000)
+    adapter.open()
+    adapter.configure(requested)
+
+    actual = adapter.reopen_configured(requested, exact_readback=True)
+
+    assert len(devices) == 2
+    assert devices[0].closed
+    assert not devices[1].closed
+    assert exact_applications == [(devices[1], devices[1].settings)]
+    assert actual == requested
+    adapter.close()
+
+
 def test_adapter_rejects_rate_mode_readback_coercion() -> None:
     class CoercingDevice(StubDevice):
         def apply_settings(self, settings):
