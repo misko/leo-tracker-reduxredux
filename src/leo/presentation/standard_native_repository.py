@@ -22,10 +22,12 @@ from leo.presentation.standard_native_pipeline import (
     StandardNativeSubjectDetailV4,
     StandardNativeSubjectDetailV5,
     StandardNativeSubjectDetailV6,
+    StandardNativeSubjectDetailV7,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectHierarchyV4,
     StandardNativeSubjectHierarchyV5,
     StandardNativeSubjectHierarchyV6,
+    StandardNativeSubjectHierarchyV7,
 )
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
@@ -47,6 +49,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
         | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
         | None
     ): ...
 
@@ -58,6 +61,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         | StandardNativeSubjectDetailV4
         | StandardNativeSubjectDetailV5
         | StandardNativeSubjectDetailV6
+        | StandardNativeSubjectDetailV7
         | None
     ): ...
 

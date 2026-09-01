@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from leo.application.presentation import _radio_setups
+from leo.contracts.mixed_rate_capture import CapturePlanV5
 from leo.contracts.profile import CaptureProfileRevisionV1
 from leo.contracts.recording import ContinuitySummaryV1, RecordingManifestV1
 from leo.contracts.states import CaptureState, StreamState
@@ -156,4 +157,26 @@ def test_production_v4_plan_projects_each_radio_tuning_without_plan_root_fields(
     ]
     assert [item.applied_sample_rate_hz for item in setups] == [
         leg.requested_settings.sample_rate_hz for leg in plan.radio_plans
+    ]
+
+
+def test_direct_async_v5_plan_projects_each_radio_tuning_without_plan_root_fields(
+    tmp_path,
+) -> None:
+    plan = _production_plan()
+    result = _device_axis_coordinator(tmp_path).capture_once(
+        plan,
+        {
+            "radio-a": FakeRadioSource("radio-a", seed=1),
+            "radio-b": FakeRadioSource("radio-b", seed=2),
+        },
+        session_id="radio-setup-production-v5",
+    )
+    direct_async_plan = CapturePlanV5.model_construct(radio_plans=plan.radio_plans)
+    manifest = result.manifest.model_copy(update={"capture_plan": direct_async_plan})
+
+    setups = _radio_setups(manifest)
+
+    assert [(item.starlink_channel, item.starlink_edge) for item in setups] == [
+        (f"ch{leg.starlink_channel}", leg.starlink_edge.value) for leg in plan.radio_plans
     ]

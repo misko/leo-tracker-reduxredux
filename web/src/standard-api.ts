@@ -92,7 +92,10 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
       body?.detail ?? "Standard analysis is still processing; no sealed image artifacts are available yet",
     );
   }
-  if (!response.ok) throw new Error(`Standard analysis request failed (${response.status})`);
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { detail?: string } | null;
+    throw new Error(body?.detail ?? `Standard presentation request failed (${response.status})`);
+  }
   return (await response.json()) as T;
 }
 

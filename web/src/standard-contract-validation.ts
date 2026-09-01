@@ -15,14 +15,17 @@ import type {
   StandardNativeSubjectDetailV4,
   StandardNativeSubjectDetailV5,
   StandardNativeSubjectDetailV6,
+  StandardNativeSubjectDetailV7,
   StandardNativeSubjectHierarchyV3,
   StandardNativeSubjectHierarchyV4,
   StandardNativeSubjectHierarchyV5,
   StandardNativeSubjectHierarchyV6,
+  StandardNativeSubjectHierarchyV7,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
   StandardNativeSubjectSummaryV6,
+  StandardNativeSubjectSummaryV7,
   StandardPlotView,
   StandardPlotViewV2,
   StandardSubjectDetail,
@@ -774,19 +777,40 @@ function assertV4Subject(value: unknown, path: string): asserts value is Standar
   literal(item.evidence_label, "candidate evidence only", `${path}.evidence_label`);
 }
 
+function assertAnalysisSelection(value: unknown, path: string): void {
+  const item = object(value, path);
+  exactKeys(
+    item,
+    ["schema_version", "policy", "analyzed_stream_ids", "omitted_stream_ids"],
+    path,
+  );
+  literal(item.schema_version, 1, `${path}.schema_version`);
+  literal(item.policy, "automatic_2p5_only", `${path}.policy`);
+  const analyzed = array(item.analyzed_stream_ids, `${path}.analyzed_stream_ids`);
+  const omitted = array(item.omitted_stream_ids, `${path}.omitted_stream_ids`);
+  if (analyzed.length !== 1 || omitted.length !== 1) {
+    fail(path, "automatic selection requires exactly one analyzed and one omitted stream");
+  }
+  const analyzedId = string(analyzed[0], `${path}.analyzed_stream_ids[0]`);
+  const omittedId = string(omitted[0], `${path}.omitted_stream_ids[0]`);
+  if (analyzedId === omittedId) fail(path, "analyzed and omitted stream IDs overlap");
+}
+
 function assertProductionSubject(
   value: unknown,
   path: string,
-  schemaVersion: 5 | 6,
+  schemaVersion: 5 | 6 | 7,
 ): void {
   const item = object(value, path);
-  exactKeys(item, [
+  const keys = [
     "schema_version", "subject_id", "session_id", "subject_kind", "label", "derived",
     "receiver_paths", "expected_path_count", "completed_path_count", "child_subject_ids",
     "state", "ordinary_current", "coverage_status", "scientific_disposition",
     "pipeline_release", "desired_pipeline_release_id", "reuse", "eligibility", "terminal",
     "evidence_label",
-  ], path);
+  ];
+  if (schemaVersion === 7) keys.push("analysis_selection");
+  exactKeys(item, keys, path);
   literal(item.schema_version, schemaVersion, `${path}.schema_version`);
   string(item.subject_id, `${path}.subject_id`);
   string(item.session_id, `${path}.session_id`);
@@ -812,6 +836,9 @@ function assertProductionSubject(
   } else {
     assertV6Eligibility(item.eligibility, `${path}.eligibility`);
   }
+  if (schemaVersion === 7) {
+    assertAnalysisSelection(item.analysis_selection, `${path}.analysis_selection`);
+  }
   assertV3Terminal(item.terminal, `${path}.terminal`);
   const terminal = object(item.terminal, `${path}.terminal`);
   if (terminal.coverage_status !== coverage || terminal.scientific_disposition !== science) {
@@ -832,6 +859,13 @@ function assertV6Subject(
   path: string,
 ): asserts value is StandardNativeSubjectSummaryV6 {
   assertProductionSubject(value, path, 6);
+}
+
+function assertV7Subject(
+  value: unknown,
+  path: string,
+): asserts value is StandardNativeSubjectSummaryV7 {
+  assertProductionSubject(value, path, 7);
 }
 
 function assertV3PathEvidence(value: unknown, path: string): void {
@@ -990,27 +1024,32 @@ function assertV4Detail(value: unknown): asserts value is StandardNativeSubjectD
   assertStringArray(item.limitations, "subject detail V4.limitations");
 }
 
-function assertProductionDetail(value: unknown, schemaVersion: 5 | 6): void {
-  const item = object(value, "subject detail V5");
+function assertProductionDetail(value: unknown, schemaVersion: 5 | 6 | 7): void {
+  const path = `subject detail V${schemaVersion}`;
+  const item = object(value, path);
   exactKeys(item, [
     "schema_version", "subject", "time_domain", "receiver_path_expansions",
     "receiver_path_evidence", "stage_source_count", "stages", "stages_truncated",
     "trajectory_source_count", "trajectories", "trajectories_truncated", "views",
     "available_artifacts", "limitations",
-  ], "subject detail V5");
-  literal(item.schema_version, schemaVersion, "subject detail V5.schema_version");
+  ], path);
+  literal(item.schema_version, schemaVersion, `${path}.schema_version`);
   if (schemaVersion === 5) {
     assertV5Subject(item.subject, "subject detail V5.subject");
-  } else {
+  } else if (schemaVersion === 6) {
     assertV6Subject(item.subject, "subject detail V6.subject");
+  } else {
+    assertV7Subject(item.subject, "subject detail V7.subject");
   }
   assertTimeDomain(item.time_domain, "subject detail V5.time_domain");
   const expansions = array(item.receiver_path_expansions, "subject detail V5.receiver_path_expansions");
   expansions.forEach((row, index) => {
     if (schemaVersion === 5) {
       assertV5Subject(row, `subject detail V5.receiver_path_expansions[${index}]`);
-    } else {
+    } else if (schemaVersion === 6) {
       assertV6Subject(row, `subject detail V6.receiver_path_expansions[${index}]`);
+    } else {
+      assertV7Subject(row, `subject detail V7.receiver_path_expansions[${index}]`);
     }
   });
   const evidence = array(item.receiver_path_evidence, "subject detail V5.receiver_path_evidence");
@@ -1066,6 +1105,10 @@ function assertV5Detail(value: unknown): asserts value is StandardNativeSubjectD
 
 function assertV6Detail(value: unknown): asserts value is StandardNativeSubjectDetailV6 {
   assertProductionDetail(value, 6);
+}
+
+function assertV7Detail(value: unknown): asserts value is StandardNativeSubjectDetailV7 {
+  assertProductionDetail(value, 7);
 }
 
 function assertV3ProductRef(value: unknown, path: string): void {
@@ -1344,6 +1387,59 @@ function assertProductionHierarchy(item: JsonObject, schemaVersion: 5 | 6): void
   }
 }
 
+function assertV7Hierarchy(item: JsonObject): void {
+  const path = "subject hierarchy V7";
+  exactKeys(
+    item,
+    [
+      "schema_version", "session_id", "source_type", "eligibility",
+      "analysis_selection", "generated_at", "rows",
+    ],
+    path,
+  );
+  literal(item.schema_version, 7, `${path}.schema_version`);
+  const sessionId = string(item.session_id, `${path}.session_id`);
+  literal(item.source_type, "LIVE", `${path}.source_type`);
+  assertV6Eligibility(item.eligibility, `${path}.eligibility`);
+  assertAnalysisSelection(item.analysis_selection, `${path}.analysis_selection`);
+  string(item.generated_at, `${path}.generated_at`);
+  const rows = array(item.rows, `${path}.rows`);
+  if (rows.length !== 1) fail(path, "automatic hierarchy requires exactly one radio row");
+  assertV7Subject(rows[0], `${path}.rows[0]`);
+  const row = object(rows[0], `${path}.rows[0]`);
+  const selection = object(item.analysis_selection, `${path}.analysis_selection`);
+  const analyzed = array(selection.analyzed_stream_ids, `${path}.analyzed_stream_ids`);
+  const omitted = array(selection.omitted_stream_ids, `${path}.omitted_stream_ids`);
+  const eligibility = object(item.eligibility, `${path}.eligibility`);
+  const legs = array(eligibility.legs, `${path}.eligibility.legs`).map((leg) =>
+    object(leg, `${path}.eligibility.leg`));
+  const streamIds = legs.map((leg) => string(leg.stream_id, `${path}.eligibility.leg.stream_id`));
+  if ([...analyzed, ...omitted].sort().join("\u0000") !== [...streamIds].sort().join("\u0000")) {
+    fail(path, "analysis selection does not close capture stream authority");
+  }
+  const selectedId = string(analyzed[0], `${path}.analyzed_stream_ids[0]`);
+  const selectedLeg = legs.find((leg) => leg.stream_id === selectedId);
+  if (!selectedLeg || selectedLeg.sample_rate_hz !== 2_500_000) {
+    fail(path, "automatic hierarchy did not select the 2.5 MS/s stream");
+  }
+  if (
+    row.session_id !== sessionId
+    || row.subject_kind !== "radio"
+    || row.subject_id !== `radio:${selectedId}`
+    || JSON.stringify(row.eligibility) !== JSON.stringify(item.eligibility)
+    || JSON.stringify(row.analysis_selection) !== JSON.stringify(item.analysis_selection)
+  ) {
+    fail(path, "selected radio row authority is crossed");
+  }
+  array(row.receiver_paths, `${path}.rows[0].receiver_paths`).forEach((receiverPath) => {
+    const receiver = object(receiverPath, `${path}.receiver_path`);
+    const scope = object(receiver.scope, `${path}.receiver_path.scope`);
+    if (scope.stream_id !== selectedId || receiver.radio_id !== selectedLeg.radio_id) {
+      fail(path, "selected receiver path crosses stream or radio authority");
+    }
+  });
+}
+
 export function parseStandardSubjectHierarchy(value: unknown): StandardSubjectHierarchy {
   const item = object(value, "subject hierarchy");
   if (item.schema_version === 2) {
@@ -1386,7 +1482,11 @@ export function parseStandardSubjectHierarchy(value: unknown): StandardSubjectHi
     assertProductionHierarchy(item, 6);
     return item as unknown as StandardNativeSubjectHierarchyV6;
   }
-  fail("subject hierarchy", "unsupported schema_version; expected 2, 3, 4, 5, or 6");
+  if (item.schema_version === 7) {
+    assertV7Hierarchy(item);
+    return item as unknown as StandardNativeSubjectHierarchyV7;
+  }
+  fail("subject hierarchy", "unsupported schema_version; expected 2, 3, 4, 5, 6, or 7");
 }
 
 export function parseStandardSubjectDetail(value: unknown): StandardSubjectDetail {
@@ -1411,7 +1511,11 @@ export function parseStandardSubjectDetail(value: unknown): StandardSubjectDetai
     assertV6Detail(item);
     return item;
   }
-  fail("subject detail", "unsupported schema_version; expected 2, 3, 4, 5, or 6");
+  if (item.schema_version === 7) {
+    assertV7Detail(item);
+    return item;
+  }
+  fail("subject detail", "unsupported schema_version; expected 2, 3, 4, 5, 6, or 7");
 }
 
 export function parseStandardPlotView(value: unknown): StandardPlotView {
@@ -1532,5 +1636,13 @@ export function assertMatchingStandardMajor(
 ): void {
   if (hierarchy.schema_version !== detail.schema_version) {
     fail("presentation", "hierarchy and detail schema versions differ");
+  }
+  if (
+    hierarchy.schema_version === 7
+    && detail.schema_version === 7
+    && JSON.stringify(hierarchy.analysis_selection)
+      !== JSON.stringify(detail.subject.analysis_selection)
+  ) {
+    fail("presentation", "hierarchy and detail analysis selections differ");
   }
 }

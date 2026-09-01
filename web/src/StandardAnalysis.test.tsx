@@ -26,14 +26,17 @@ import type {
   StandardNativeSubjectDetailV4,
   StandardNativeSubjectDetailV5,
   StandardNativeSubjectDetailV6,
+  StandardNativeSubjectDetailV7,
   StandardNativeSubjectHierarchyV3,
   StandardNativeSubjectHierarchyV4,
   StandardNativeSubjectHierarchyV5,
   StandardNativeSubjectHierarchyV6,
+  StandardNativeSubjectHierarchyV7,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
   StandardNativeSubjectSummaryV6,
+  StandardNativeSubjectSummaryV7,
   StandardNativeTerminalSummaryV3,
   StandardPlotViewV2,
   StandardSubjectDetailV2,
@@ -888,6 +891,38 @@ const widebandDetail: StandardNativeSubjectDetailV6 = {
   subject: widebandPair,
   receiver_path_expansions: widebandPathSubjects,
 };
+
+const automaticSelection = {
+  schema_version: 1 as const,
+  policy: "automatic_2p5_only" as const,
+  analyzed_stream_ids: ["stream-0"] as [string],
+  omitted_stream_ids: ["stream-1"] as [string],
+};
+
+function automaticSubject(
+  subject: StandardNativeSubjectSummaryV6,
+): StandardNativeSubjectSummaryV7 {
+  return { ...subject, schema_version: 7, analysis_selection: automaticSelection };
+}
+
+const automaticPathSubjects = widebandPathSubjects.slice(0, 2).map(automaticSubject);
+const automaticRadio = automaticSubject(widebandRadio0);
+const automaticHierarchy: StandardNativeSubjectHierarchyV7 = {
+  schema_version: 7,
+  session_id: "T1",
+  source_type: "LIVE",
+  eligibility: widebandEligibility,
+  analysis_selection: automaticSelection,
+  generated_at: "2026-09-01T21:25:44Z",
+  rows: [automaticRadio],
+};
+const automaticDetail: StandardNativeSubjectDetailV7 = {
+  ...widebandDetail,
+  schema_version: 7,
+  subject: automaticRadio,
+  receiver_path_expansions: automaticPathSubjects,
+  receiver_path_evidence: productionEvidence.slice(0, 2),
+};
 const widebandPlot: StandardNativePlotViewV6 = {
   ...productionPlot,
   schema_version: 6,
@@ -899,6 +934,22 @@ function widebandArtifactInventory(): StandardNativePngArtifactInventoryV9 {
     ...dopplerArtifactInventory(),
     schema_version: 9,
     sample_rates_hz: [2_500_000, 25_000_000],
+  };
+}
+
+function automaticArtifactInventory(): StandardNativePngArtifactInventoryV9 {
+  const inventory = widebandArtifactInventory();
+  return {
+    ...inventory,
+    subject_id: automaticRadio.subject_id,
+    sample_rates_hz: [2_500_000],
+    artifacts: inventory.artifacts.map((artifact) => ({
+      ...artifact,
+      href: artifact.href.replace(
+        encodeURIComponent(widebandPair.subject_id),
+        encodeURIComponent(automaticRadio.subject_id),
+      ),
+    })),
   };
 }
 
@@ -1220,6 +1271,42 @@ test("renders the production V6 2.5 + 25 MS/s hierarchy with its V9 PNG inventor
     .toBe(9);
 });
 
+test("renders the V7 automatic 2.5 MS/s selection without claiming wideband analysis", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/artifacts?")) {
+      return new Response(JSON.stringify(automaticArtifactInventory()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(automaticRadio.subject_id))) {
+      return new Response(JSON.stringify(automaticDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(automaticHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  expect(await screen.findByText("Standard native analysis")).toBeInTheDocument();
+  expect(screen.getByText("STANDARD · NATIVE · AUTO 2.5 ONLY 2.5 MS/s"))
+    .toBeInTheDocument();
+  const authority = await screen.findByRole("region", { name: "Production RF coverage authority" });
+  expect(within(authority).getByText(/Automatic analysis selected the 2.5 MS\/s stream/))
+    .toBeInTheDocument();
+  expect(within(authority).getByText("Automatically analyzed")).toBeInTheDocument();
+  expect(within(authority).getByText("Captured; omitted from automatic analysis"))
+    .toBeInTheDocument();
+  expect(parseStandardSubjectHierarchy(automaticHierarchy).schema_version).toBe(7);
+  expect(parseStandardSubjectDetail(automaticDetail).schema_version).toBe(7);
+});
+
 test("renders every registered PNG for production V5 detail with a V7 inventory", async () => {
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -1346,8 +1433,8 @@ test("accepts additive phase and Doppler inventories and rejects future versions
   expect(phase.artifacts.filter((item) => item.name.startsWith("pilot-")).map(
     (item) => item.product_schema_version,
   )).toEqual([2, 4, 4, 4]);
-  expect(() => parseStandardSubjectHierarchy({ ...productionHierarchy, schema_version: 7 }))
-    .toThrow(/expected 2, 3, 4, 5, or 6/);
+  expect(() => parseStandardSubjectHierarchy({ ...productionHierarchy, schema_version: 8 }))
+    .toThrow(/expected 2, 3, 4, 5, 6, or 7/);
   const doppler = parseStandardNativePngArtifactInventory(dopplerArtifactInventory());
   expect(doppler.schema_version).toBe(8);
   expect(doppler.artifacts[1].name).toBe("doppler-waterfall");

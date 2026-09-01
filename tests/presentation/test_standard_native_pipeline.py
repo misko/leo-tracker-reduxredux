@@ -8,14 +8,19 @@ from pydantic import ValidationError
 from leo.contracts.digests import canonical_digest
 from leo.pipeline import ScopeIdentityV1
 from leo.presentation.standard_native_pipeline import (
+    StandardNativeAnalysisSelectionV1,
     StandardNativeEligibilityV3,
     StandardNativeEligibilityV4,
     StandardNativeEligibilityV5,
+    StandardNativeEligibilityV6,
     StandardNativeMixedLegV4,
     StandardNativePipelineReleaseV3,
     StandardNativeProductionLegV5,
+    StandardNativeProductionLegV6,
     StandardNativeSubjectHierarchyV3,
+    StandardNativeSubjectHierarchyV7,
     StandardNativeSubjectSummaryV3,
+    StandardNativeSubjectSummaryV7,
     StandardNativeTerminalSummaryV3,
     StandardNativeWaterfallTileV3,
 )
@@ -300,3 +305,93 @@ def test_production_native_eligibility_preserves_single_rx_and_tandem_authority(
     changed["legs"][1]["receiver_ids"] = [0, 1]
     with pytest.raises(ValidationError, match="receiver geometry"):
         StandardNativeEligibilityV5.model_validate(changed)
+
+
+def test_selection_aware_hierarchy_preserves_full_capture_authority() -> None:
+    common = {
+        "gain_controller_mode": "tandem_hold",
+        "gain_controller_request_digest": canonical_digest({"controller": "hold"}),
+        "starlink_channel": 1,
+        "starlink_edge": "lower",
+        "pilot_if_center_frequency_hz": 959_687_500,
+        "channel_if_start_hz": 955_000_000,
+        "channel_if_stop_hz": 1_195_000_000,
+        "logical_sample_count": 100,
+        "validity_inventory_digest": canonical_digest({"validity": True}),
+        "timeline_digest": canonical_digest({"timeline": True}),
+        "metadata_abi_version": 3,
+    }
+    eligibility = StandardNativeEligibilityV6(
+        capture_state="degraded",
+        capture_committed=False,
+        dwell_class="mixed_2p5_25",
+        legs=(
+            StandardNativeProductionLegV6(
+                stream_id="stream-0",
+                radio_id="radio-0",
+                profile_name="direct-low",
+                profile_revision_digest=canonical_digest({"profile": "2p5"}),
+                receiver_ids=(0, 1),
+                sample_rate_hz=2_500_000,
+                rf_bandwidth_hz=2_500_000,
+                tuned_center_frequency_hz=959_687_500,
+                captured_if_start_hz=958_437_500,
+                captured_if_stop_hz=960_937_500,
+                **common,
+            ),
+            StandardNativeProductionLegV6(
+                stream_id="stream-1",
+                radio_id="radio-1",
+                profile_name="direct-high",
+                profile_revision_digest=canonical_digest({"profile": "25"}),
+                receiver_ids=(0,),
+                sample_rate_hz=25_000_000,
+                rf_bandwidth_hz=25_000_000,
+                tuned_center_frequency_hz=967_500_000,
+                captured_if_start_hz=955_000_000,
+                captured_if_stop_hz=980_000_000,
+                **common,
+            ),
+        ),
+        scheduled_intent_digest=canonical_digest({"intent": True}),
+        capture_plan_digest=canonical_digest({"plan": True}),
+        capture_hardware_binding_digest=canonical_digest({"hardware": True}),
+        pipeline_definition_id=canonical_digest({"definition": "direct-native"}),
+        promotion_authority_digest=canonical_digest({"authority": "direct-current"}),
+        reason=(
+            "Promoted reviewed production Standard-native capture is Current with partial "
+            "validity coverage"
+        ),
+    )
+    selection = StandardNativeAnalysisSelectionV1(
+        analyzed_stream_ids=("stream-0",),
+        omitted_stream_ids=("stream-1",),
+    )
+    row = StandardNativeSubjectSummaryV7.model_validate(
+        {
+            **_radio_summary().model_dump(mode="json"),
+            "schema_version": 7,
+            "eligibility": eligibility,
+            "pipeline_release": _release().model_copy(
+                update={"pipeline_definition_id": eligibility.pipeline_definition_id}
+            ),
+            "analysis_selection": selection,
+        }
+    )
+
+    hierarchy = StandardNativeSubjectHierarchyV7(
+        session_id=row.session_id,
+        eligibility=eligibility,
+        analysis_selection=selection,
+        generated_at="2026-09-01T21:25:44Z",
+        rows=(row,),
+    )
+
+    assert hierarchy.rows == (row,)
+    assert hierarchy.analysis_selection.omitted_stream_ids == ("stream-1",)
+    crossed = hierarchy.model_dump(mode="json")
+    crossed["analysis_selection"]["analyzed_stream_ids"] = ["stream-1"]
+    crossed["analysis_selection"]["omitted_stream_ids"] = ["stream-0"]
+    crossed["rows"][0]["analysis_selection"] = crossed["analysis_selection"]
+    with pytest.raises(ValidationError, match="authority is crossed"):
+        StandardNativeSubjectHierarchyV7.model_validate(crossed)

@@ -102,6 +102,7 @@ from leo.presentation.standard_native_artifacts import (
 )
 from leo.presentation.standard_native_pipeline import (
     NativeArtifactNameV3,
+    StandardNativeAnalysisSelectionV1,
     StandardNativeEligibilityV3,
     StandardNativeEligibilityV4,
     StandardNativeEligibilityV5,
@@ -125,14 +126,17 @@ from leo.presentation.standard_native_pipeline import (
     StandardNativeSubjectDetailV4,
     StandardNativeSubjectDetailV5,
     StandardNativeSubjectDetailV6,
+    StandardNativeSubjectDetailV7,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectHierarchyV4,
     StandardNativeSubjectHierarchyV5,
     StandardNativeSubjectHierarchyV6,
+    StandardNativeSubjectHierarchyV7,
     StandardNativeSubjectSummaryV3,
     StandardNativeSubjectSummaryV4,
     StandardNativeSubjectSummaryV5,
     StandardNativeSubjectSummaryV6,
+    StandardNativeSubjectSummaryV7,
     StandardNativeTerminalSummaryV3,
     StandardNativeTrajectoryV3,
     StandardNativeViewDescriptorV3,
@@ -216,13 +220,15 @@ class _NativeProjection:
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
         | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
     )
     subjects: dict[
         str,
         StandardNativeSubjectSummaryV3
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
-        | StandardNativeSubjectSummaryV6,
+        | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7,
     ]
 
 
@@ -298,6 +304,7 @@ class CatalogStandardNativePresentationRepository:
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
         | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
         | None
     ):
         loaded = self._load(session_id)
@@ -310,6 +317,7 @@ class CatalogStandardNativePresentationRepository:
         | StandardNativeSubjectDetailV4
         | StandardNativeSubjectDetailV5
         | StandardNativeSubjectDetailV6
+        | StandardNativeSubjectDetailV7
         | None
     ):
         loaded = self._load(session_id)
@@ -359,6 +367,18 @@ class CatalogStandardNativePresentationRepository:
                 "Paired-radio support is the intersection of valid UTC intervals",
             ),
         }
+        if isinstance(subject, StandardNativeSubjectSummaryV7):
+            expansions_v7 = cast(
+                tuple[StandardNativeSubjectSummaryV7, ...],
+                tuple(loaded.subjects[path.reference.subject_id] for path in paths),
+            )
+            return StandardNativeSubjectDetailV7.model_validate(
+                {
+                    "subject": subject,
+                    "receiver_path_expansions": expansions_v7,
+                    **common,
+                }
+            )
         if isinstance(subject, StandardNativeSubjectSummaryV6):
             expansions_v6 = cast(
                 tuple[StandardNativeSubjectSummaryV6, ...],
@@ -866,6 +886,7 @@ class CatalogStandardNativePresentationRepository:
             | StandardNativeSubjectSummaryV4
             | StandardNativeSubjectSummaryV5
             | StandardNativeSubjectSummaryV6
+            | StandardNativeSubjectSummaryV7
         ),
     ) -> tuple[_NativePath, ...]:
         wanted = {item.path_id for item in subject.receiver_paths}
@@ -879,6 +900,7 @@ class CatalogStandardNativePresentationRepository:
             | StandardNativeSubjectSummaryV4
             | StandardNativeSubjectSummaryV5
             | StandardNativeSubjectSummaryV6
+            | StandardNativeSubjectSummaryV7
         ),
         paths: tuple[_NativePath, ...],
         kind: StandardViewKindV2,
@@ -930,6 +952,7 @@ class CatalogStandardNativePresentationRepository:
             | StandardNativeSubjectSummaryV4
             | StandardNativeSubjectSummaryV5
             | StandardNativeSubjectSummaryV6
+            | StandardNativeSubjectSummaryV7
         ),
         kind: str,
         schema_version: int,
@@ -1169,19 +1192,27 @@ class CatalogStandardNativePresentationRepository:
                 )
                 for product in path_products
             )
+            if isinstance(parsed, AnalysisRunManifestV3):
+                capture_stream_order = tuple(sorted({item.binding.stream_id for item in paths}))
+            else:
+                capture_stream_order = tuple(
+                    item.stream_id for item in parsed.promotion_authority.stream_authorities
+                )
             paths = _normalize_path_labels(
                 tuple(
                     sorted(
                         paths,
                         key=lambda item: (item.binding.stream_id, item.binding.receiver_id),
                     )
-                )
+                ),
+                stream_order=capture_stream_order,
             )
             capture_state: Literal["committed", "degraded"] = (
                 "degraded"
                 if any(item.report.source.missing_sample_count for item in paths)
                 else "committed"
             )
+            analysis_selection: StandardNativeAnalysisSelectionV1 | None = None
             if isinstance(parsed, AnalysisRunManifestV6):
                 authority_v4 = parsed.promotion_authority
                 direct_legs = cast(
@@ -1196,6 +1227,19 @@ class CatalogStandardNativePresentationRepository:
                         for item in authority_v4.stream_authorities
                     ),
                 )
+                capture_stream_ids = tuple(
+                    sorted(item.stream_id for item in authority_v4.stream_authorities)
+                )
+                analyzed_stream_ids = tuple(sorted({item.binding.stream_id for item in paths}))
+                if analyzed_stream_ids != capture_stream_ids:
+                    analysis_selection = StandardNativeAnalysisSelectionV1(
+                        analyzed_stream_ids=analyzed_stream_ids,
+                        omitted_stream_ids=tuple(
+                            item for item in capture_stream_ids if item not in analyzed_stream_ids
+                        ),
+                    )
+                    if snapshot.state == "degraded":
+                        capture_state = "degraded"
                 eligibility: (
                     StandardNativeEligibilityV3
                     | StandardNativeEligibilityV4
@@ -1325,6 +1369,7 @@ class CatalogStandardNativePresentationRepository:
                 paths,
                 radio_documents,
                 paired,
+                analysis_selection,
             )
             return _NativeProjection(
                 snapshot=snapshot,
@@ -1606,21 +1651,34 @@ def _hierarchy(
     paths: tuple[_NativePath, ...],
     radio_documents: tuple[tuple[CatalogProductRecord, _TerminalRadioReport], ...],
     paired: tuple[CatalogProductRecord, _TerminalPairedReport] | None,
+    analysis_selection: StandardNativeAnalysisSelectionV1 | None,
 ) -> tuple[
-    StandardNativeSubjectHierarchyV3
-    | StandardNativeSubjectHierarchyV4
-    | StandardNativeSubjectHierarchyV5
-    | StandardNativeSubjectHierarchyV6,
+    (
+        StandardNativeSubjectHierarchyV3
+        | StandardNativeSubjectHierarchyV4
+        | StandardNativeSubjectHierarchyV5
+        | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
+    ),
     dict[
         str,
         StandardNativeSubjectSummaryV3
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
-        | StandardNativeSubjectSummaryV6,
+        | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7,
     ],
 ]:
     streams = tuple(sorted({item.binding.stream_id for item in paths}))
-    labels = {stream: f"Radio{index}" for index, stream in enumerate(streams)}
+    capture_streams = (
+        tuple(item.stream_id for item in eligibility.legs)
+        if isinstance(
+            eligibility,
+            (StandardNativeEligibilityV4, StandardNativeEligibilityV5, StandardNativeEligibilityV6),
+        )
+        else streams
+    )
+    labels = {stream: f"Radio{index}" for index, stream in enumerate(capture_streams)}
 
     def summary(
         *,
@@ -1635,6 +1693,7 @@ def _hierarchy(
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
         | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7
     ):
         values = dict(
             subject_id=subject_id,
@@ -1658,6 +1717,11 @@ def _hierarchy(
             ),
             terminal=terminal,
         )
+        if analysis_selection is not None:
+            values["analysis_selection"] = analysis_selection
+            return StandardNativeSubjectSummaryV7.model_validate(
+                {"eligibility": eligibility, **values}
+            )
         if isinstance(eligibility, StandardNativeEligibilityV6):
             return StandardNativeSubjectSummaryV6.model_validate(
                 {"eligibility": eligibility, **values}
@@ -1702,7 +1766,8 @@ def _hierarchy(
         StandardNativeSubjectSummaryV3
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
-        | StandardNativeSubjectSummaryV6,
+        | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7,
         ...,
     ] = (
         *path_subjects,
@@ -1712,7 +1777,8 @@ def _hierarchy(
         StandardNativeSubjectSummaryV3
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
-        | StandardNativeSubjectSummaryV6,
+        | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7,
         ...,
     ]
     if paired is not None:
@@ -1734,8 +1800,17 @@ def _hierarchy(
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
         | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
     )
-    if isinstance(eligibility, StandardNativeEligibilityV6):
+    if analysis_selection is not None:
+        hierarchy = StandardNativeSubjectHierarchyV7(
+            session_id=snapshot.session_id,
+            eligibility=cast(StandardNativeEligibilityV6, eligibility),
+            analysis_selection=analysis_selection,
+            generated_at=generated_at,
+            rows=cast(tuple[StandardNativeSubjectSummaryV7], rows),
+        )
+    elif isinstance(eligibility, StandardNativeEligibilityV6):
         hierarchy = StandardNativeSubjectHierarchyV6(
             session_id=snapshot.session_id,
             eligibility=eligibility,
@@ -1834,9 +1909,10 @@ def _aggregate_terminal_summary(
     )
 
 
-def _normalize_path_labels(paths: tuple[_NativePath, ...]) -> tuple[_NativePath, ...]:
-    streams = tuple(sorted({item.binding.stream_id for item in paths}))
-    labels = {stream: f"Radio{index}" for index, stream in enumerate(streams)}
+def _normalize_path_labels(
+    paths: tuple[_NativePath, ...], *, stream_order: tuple[str, ...]
+) -> tuple[_NativePath, ...]:
+    labels = {stream: f"Radio{index}" for index, stream in enumerate(stream_order)}
     return tuple(
         _NativePath(
             product=item.product,
@@ -1930,6 +2006,7 @@ def _stage_rows(
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
         | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7
     ),
     paths: tuple[_NativePath, ...],
 ) -> tuple[StandardStageStatusV2, ...]:
@@ -2037,6 +2114,7 @@ def _build_view(
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
         | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7
     ),
     paths: tuple[_NativePath, ...],
     kind: StandardViewKindV2,
@@ -2070,6 +2148,7 @@ def _build_view(
                 StandardNativeSubjectSummaryV4,
                 StandardNativeSubjectSummaryV5,
                 StandardNativeSubjectSummaryV6,
+                StandardNativeSubjectSummaryV7,
             ),
         ):
             frequency_axes, tiles = _mixed_waterfall_payload(
@@ -2365,6 +2444,7 @@ def _scope_matches_subject(
         | StandardNativeSubjectSummaryV4
         | StandardNativeSubjectSummaryV5
         | StandardNativeSubjectSummaryV6
+        | StandardNativeSubjectSummaryV7
     ),
     scope: ScopeIdentityV1,
 ) -> bool:
@@ -2383,6 +2463,7 @@ def validate_standard_native_view_binding(
         | StandardNativeSubjectDetailV4
         | StandardNativeSubjectDetailV5
         | StandardNativeSubjectDetailV6
+        | StandardNativeSubjectDetailV7
     ),
     view: (
         StandardNativePlotViewV3
@@ -2473,6 +2554,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
         | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
         | None
     ):
         if self._native(session_id):
@@ -2487,6 +2569,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         | StandardNativeSubjectDetailV4
         | StandardNativeSubjectDetailV5
         | StandardNativeSubjectDetailV6
+        | StandardNativeSubjectDetailV7
         | None
     ):
         if self._native(session_id):
