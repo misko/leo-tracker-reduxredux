@@ -14,9 +14,9 @@ GLOBALS = runpy.run_path(str(VALIDATOR))
 REVISION = "f" * 40
 
 
-def test_production_runtime_identity_is_direct_async_v2_libiio() -> None:
+def test_production_runtime_identity_is_direct_async_v3_libiio() -> None:
     assert GLOBALS["PRODUCTION_METADATA_ABI"] == 3
-    assert GLOBALS["PRODUCTION_LIBIIO_SOURCE_COMMIT"] == "8f66f353c9a70a5524988ceb588b0e9271c2390d"
+    assert GLOBALS["PRODUCTION_LIBIIO_SOURCE_COMMIT"] == "0d323080a0a1067da8c7adbadfd03ee186a40ec2"
 
 
 def _sha256(path: Path) -> str:

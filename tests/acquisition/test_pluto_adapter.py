@@ -534,7 +534,7 @@ class StubDirectAsyncDevice(StubMetadataDevice):
 class StubRamDropDevice(StubMetadataDevice):
     def __init__(self):
         super().__init__("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
-        self.identity.firmware_version = "v0.47-plutoplus-spf-iq-direct-async-v2"
+        self.identity.firmware_version = "v0.48-plutoplus-spf-iq-direct-async-v3"
         self.direct_kwargs = None
 
     def diagnostic_facts(self):
