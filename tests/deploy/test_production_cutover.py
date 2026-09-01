@@ -709,9 +709,16 @@ def _live_station_probe_payload() -> dict[str, Any]:
             {
                 "schema_version": 1,
                 **radio,
-                "firmware_version": "v0.46-plutoplus-spf-iq-direct-async-ring-v1",
+                "firmware_version": "v0.47-plutoplus-spf-iq-direct-async-v2",
                 "metadata_abi_version": 3,
                 "buffer_direct_async": True,
+                "buffer_direct_async_ring": True,
+                "buffer_direct_async_overrun_policies": [
+                    "drop-backlog",
+                    "preserve-backlog",
+                ],
+                "buffer_direct_async_default_overrun_policy": "drop-backlog",
+                "buffer_ddr_ring_max_iq_bytes": 200_000_000,
                 "supports_device_sample_counter": True,
                 "supports_continuity_sequence": True,
             }
@@ -849,7 +856,7 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
 
     payload = _live_station_probe_payload()
     payload["radios"][0]["firmware_version"] = "v0.44-plutoplus-spf-ddr-ring-prefill-v1"
-    with pytest.raises(ValueError, match="exact qualified v0.46 final"):
+    with pytest.raises(ValueError, match="exact qualified v0.47"):
         _call("probe_live_station_radios", release)
 
     payload = _live_station_probe_payload()
@@ -868,8 +875,8 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
         _call("probe_live_station_radios", release)
 
     payload = _live_station_probe_payload()
-    payload["radios"][0]["buffer_direct_async"] = False
-    with pytest.raises(ValueError, match="does not attest direct-async"):
+    payload["radios"][0]["buffer_direct_async_ring"] = False
+    with pytest.raises(ValueError, match="does not attest RAM/drop direct-async"):
         _call("probe_live_station_radios", release)
 
 

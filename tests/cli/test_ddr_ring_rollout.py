@@ -58,6 +58,35 @@ def test_25m_production_authority_selects_the_zero_external_prime_v8_profile(
     assert refill == 1_048_576
 
 
+@pytest.mark.parametrize(
+    ("rate", "receiver", "digest"),
+    [
+        (10, 0, "sha256:741353a4f21fbcf798ebfbc292ce8f3de3645f518ef8a7f5e0121fc7c1f07875"),
+        (15, 1, "sha256:129e4ba840adace7eb3648228f966ef08ef160a042fd6b622cb99f8bb75f0aab"),
+        (20, 0, "sha256:cd8aa94677162329df799712f55483df082ab457fe94b782e9f91141cc47d696"),
+        (25, 1, "sha256:117a77ac1250f86a11bee00df8653b26c9747250d6aa54cad2d42be1595d071e"),
+    ],
+)
+def test_direct_async_rollout_selects_ram_drop_v9_for_every_high_rate(
+    tmp_path, rate, receiver, digest
+):
+    settings = CliSettings.from_environ(
+        {
+            "LEO_PROFILE_ROOT": str(Path(__file__).parents[2] / "profiles"),
+            "LEO_BULK_ROOT": str(tmp_path),
+            "LEO_DIRECT_ASYNC_ENABLED": "1",
+        }
+    )
+
+    name, actual_digest, refill = LocalAcquisitionBackend(settings).production_profile_authority()[
+        (rate * 1_000_000, (receiver,), True)
+    ]
+
+    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v9")
+    assert actual_digest == digest
+    assert refill == 1_048_576
+
+
 def test_acquisition_identity_does_not_change_analysis_worker_identity():
     settings = CliSettings.from_environ(
         {

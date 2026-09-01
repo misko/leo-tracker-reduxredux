@@ -6,7 +6,12 @@ from typing import Any
 import numpy as np
 import pytest
 
-from leo.contracts.device_buffer import DeviceBufferRequestV1, DirectAsyncRequestV1
+from leo.contracts.device_buffer import (
+    DeviceBufferRequestV1,
+    DirectAsyncRamDropRequestV2,
+    DirectAsyncRamStatusV2,
+    DirectAsyncRequestV1,
+)
 from leo.contracts.gain_control import GainControllerMode, GainControllerPolicyV1
 from leo.contracts.radio import IqBlockMetadataV3, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.states import ContinuityStatus, GainMode, RadioTransport
@@ -522,6 +527,101 @@ class StubDirectAsyncDevice(StubMetadataDevice):
         session.ddr_ring_capture_frames = 0
         session.ddr_ring_continuous = False
         return session
+
+
+class StubRamDropDevice(StubMetadataDevice):
+    def __init__(self):
+        super().__init__("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+        self.identity.firmware_version = "v0.47-plutoplus-spf-iq-direct-async-v2"
+        self.direct_kwargs = None
+
+    def diagnostic_facts(self):
+        return {
+            "buffer_metadata_abi": 3,
+            "buffer_metadata_status": True,
+            "buffer_ddr_ring_max_iq_bytes": 200_000_000,
+            "buffer_direct_async": True,
+            "buffer_direct_async_ring": True,
+            "buffer_direct_async_overrun_policies": (
+                "drop-backlog",
+                "preserve-backlog",
+            ),
+            "buffer_direct_async_default_overrun_policy": "drop-backlog",
+        }
+
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers, tandem_request, **kwargs):
+        self.direct_kwargs = kwargs
+        session = super().begin_metadata_capture(
+            sample_count, kernel_buffers=kernel_buffers, tandem_request=tandem_request
+        )
+        session.direct_async_frames = kwargs["direct_async_frames"]
+        session.direct_async_ring_extension = True
+        session.drop_backlog_on_overrun = kwargs["drop_backlog_on_overrun"]
+        session.ddr_ring_requested_bytes = kwargs["ddr_ring_bytes"]
+        session.ddr_ring_admitted_bytes = 197_132_288
+        session.ddr_ring_capacity_frames = 47
+        session.ddr_ring_capture_frames = kwargs["ddr_ring_frames"]
+        session.ddr_ring_continuous = kwargs["ddr_ring_continuous"]
+        session.ddr_ring_status = lambda: {
+            "version": 1,
+            "state": "complete",
+            "terminal_reason": "target_complete",
+            "error_code": 0,
+            "requested_capacity_iq_bytes": 200_000_000,
+            "admitted_capacity_iq_bytes": 197_132_288,
+            "target_frames": 0,
+            "produced_frames": 12,
+            "consumed_frames": 7,
+            "high_water_frames": 10,
+            "wrap_count": 1,
+            "producer_position": 12,
+            "consumer_position": 7,
+            "last_contiguous_sample_sequence": None,
+            "first_unavailable_sample_sequence": 123,
+            "failure_frame_index": None,
+            "failure_sample_sequence": None,
+        }
+        return session
+
+
+def test_ram_drop_adapter_attests_v047_policy_ram_and_status() -> None:
+    device = StubRamDropDevice()
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.configure(_settings((0,), sample_rate_hz=25_000_000))
+    request = DirectAsyncRamDropRequestV2(
+        target_frames=1431,
+        requested_device_samples=1_500_000_000,
+    )
+    try:
+        assert (
+            adapter.begin_metadata_capture(
+                1_048_576,
+                kernel_buffers=12,
+                device_buffer=request,
+                direct_async_frames=1431,
+            )
+            == 12
+        )
+        assert device.direct_kwargs == {
+            "direct_async_frames": 1431,
+            "ddr_ring_bytes": 200_000_000,
+            "ddr_ring_frames": 0,
+            "ddr_ring_continuous": False,
+            "drop_backlog_on_overrun": True,
+        }
+        status = adapter.ddr_ring_status()
+        assert isinstance(status, DirectAsyncRamStatusV2)
+        assert status.produced_frames == 12
+        assert status.consumed_frames == 7
+    finally:
+        adapter.close()
 
 
 def test_direct_async_adapter_exposes_device_diagnostic_facts() -> None:

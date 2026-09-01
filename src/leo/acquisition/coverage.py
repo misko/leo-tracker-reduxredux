@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from leo.contracts.device_buffer import DirectAsyncEvidenceV1, DirectAsyncRequestV1
+from leo.contracts.device_buffer import DirectAsyncEvidence, DirectAsyncRequest
 from leo.contracts.recording import RecordingStreamV1, RecordingStreamV3
 
 
@@ -85,7 +85,7 @@ class CaptureStreamCoverage:
 def project_recording_stream_coverage(
     stream: RecordingStreamV1 | RecordingStreamV3,
     *,
-    direct_async_evidence: DirectAsyncEvidenceV1 | None = None,
+    direct_async_evidence: DirectAsyncEvidence | None = None,
 ) -> CaptureStreamCoverage:
     """Project one immutable recording without persisting rounded percentages."""
 
@@ -140,7 +140,7 @@ def project_capture_progress_coverage(
     requested_samples: int,
     observed_samples: int,
     covered_device_samples: int,
-    direct_async_request: DirectAsyncRequestV1 | None = None,
+    direct_async_request: DirectAsyncRequest | None = None,
     returned_frames: int = 0,
     counter_missing_samples: int = 0,
     inter_segment_skipped_samples: int = 0,

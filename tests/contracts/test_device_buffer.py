@@ -5,6 +5,9 @@ import pytest
 from leo.contracts.device_buffer import (
     DDR_RING_PROFILE_TAG_V1,
     DirectAsyncEvidenceV1,
+    DirectAsyncRamDropEvidenceV2,
+    DirectAsyncRamDropRequestV2,
+    DirectAsyncRamStatusV2,
     DirectAsyncRequestV1,
     device_buffer_request,
     device_buffer_request_v1,
@@ -104,3 +107,64 @@ def test_direct_async_evidence_closes_segment_gaps_and_tail():
         drained_outside_window_samples=1_048_576 - 100,
     )
     assert evidence.request.segment_count == 2
+
+
+@pytest.mark.parametrize("rate,frames", [(10, 573), (15, 859), (20, 1145), (25, 1431)])
+@pytest.mark.parametrize("rx", [0, 1])
+def test_ram_drop_profiles_bind_one_session_and_maximum_whole_frame_ram(rate, frames, rx):
+    path = (
+        Path(__file__).parents[2]
+        / "profiles"
+        / f"starlink-ch4-lower-{rate}m-60s-rx{rx}-direct-async-ram-drop-v9.yaml"
+    )
+    revision = load_profile_revision(path)
+    plan = compile_capture_plan(revision, ["radio-a"])
+    request = device_buffer_request(revision.profile, plan.resolved_sample_count)
+
+    assert isinstance(request, DirectAsyncRamDropRequestV2)
+    assert request.target_frames == frames
+    assert request.segment_count == 1
+    assert request.next_segment_frames(0) == frames
+    assert request.capacity_frames == 47
+    assert request.requested_ram_bytes == 200_000_000
+    assert request.admitted_ram_bytes == 197_132_288
+    assert request.drop_backlog_on_overrun is True
+    assert revision.profile.kernel_buffers == 12
+
+
+def test_ram_drop_evidence_closes_spill_drain_drop_and_device_span():
+    request = DirectAsyncRamDropRequestV2(
+        target_frames=3,
+        requested_device_samples=2 * 1_048_576 + 100,
+    )
+    status = DirectAsyncRamStatusV2(
+        version=1,
+        state="complete",
+        terminal_reason="target_complete",
+        error_code=0,
+        requested_capacity_iq_bytes=200_000_000,
+        admitted_capacity_iq_bytes=197_132_288,
+        target_frames=0,
+        produced_frames=12,
+        consumed_frames=7,
+        high_water_frames=10,
+        wrap_count=1,
+        producer_position=12,
+        consumer_position=7,
+    )
+    evidence = DirectAsyncRamDropEvidenceV2(
+        request=request,
+        status=status,
+        returned_frames=3,
+        returned_device_span_samples=4 * 1_048_576,
+        segment_count=1,
+        upstream_stream_generations=("one-session",),
+        counter_missing_sample_count=1_048_576,
+        inter_segment_skipped_samples=0,
+        stored_observed_samples=2 * 1_048_576 + 100,
+        drained_outside_window_samples=1_048_576 - 100,
+    )
+
+    assert evidence.ram_spilled_frames == 12
+    assert evidence.ram_drained_frames == 7
+    assert evidence.ram_dropped_frames == 5

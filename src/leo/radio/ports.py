@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from leo.contracts.device_buffer import DdrRingStatusV1, DeviceBufferRequest
+from leo.contracts.device_buffer import DdrRingStatus, DeviceBufferRequest
 from leo.contracts.gain_control import GainControllerPolicyV1
 from leo.contracts.radio import RadioCapabilitiesV1, RadioIdentityV1, RadioSettingsV1
 from leo.domain.iq import IqBlock
@@ -33,7 +33,7 @@ class RadioSource(Protocol):
         direct_async_frames: int = 0,
     ) -> int: ...
 
-    def ddr_ring_status(self) -> DdrRingStatusV1: ...
+    def ddr_ring_status(self) -> DdrRingStatus: ...
 
     def read_block(self, sample_count: int) -> IqBlock: ...
 

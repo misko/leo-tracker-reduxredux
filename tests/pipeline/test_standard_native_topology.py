@@ -18,6 +18,7 @@ from leo.contracts.recording import (
 from leo.contracts.states import CaptureState, SourceType, StarlinkEdge
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.pipeline.standard_native import (
+    STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES,
     STANDARD_NATIVE_MIXED_PROFILE_NAMES,
     STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES,
     STANDARD_NATIVE_PROFILE_REVISION_DIGESTS,
@@ -417,6 +418,26 @@ def test_production_ddr_ring_profiles_have_exact_reviewed_identity(
         revision.profile.refill_samples,
     )
     assert revision.profile.refill_samples == 1_000_000
+
+
+@pytest.mark.parametrize("rate_hz", (10_000_000, 15_000_000, 20_000_000, 25_000_000))
+@pytest.mark.parametrize("receiver_id", (0, 1))
+def test_ram_drop_profiles_have_exact_standard_native_identity(
+    rate_hz: int,
+    receiver_id: int,
+) -> None:
+    profile_name = (
+        f"starlink-ch4-lower-{rate_hz // 1_000_000}m-60s-rx{receiver_id}-direct-async-ram-drop-v9"
+    )
+    revision = load_profile_revision(_ROOT / "profiles" / f"{profile_name}.yaml")
+
+    assert STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES[profile_name] == (
+        rate_hz,
+        (receiver_id,),
+        revision.revision_digest,
+    )
+    assert revision.profile.kernel_buffers == 12
+    assert "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2" in revision.profile.tags
 
 
 def test_native_topology_rejects_nonoptimal_wideband_center_even_with_matching_readback() -> None:
