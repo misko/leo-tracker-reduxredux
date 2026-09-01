@@ -14,6 +14,7 @@ from leo.analysis.starlink import (
     pss_subband_template,
     search_pss_frame_timing,
 )
+from leo.analysis.starlink.pss_timing import _normalized_match_power
 
 
 def test_published_native_pss_construction_is_exact_and_immutable() -> None:
@@ -155,6 +156,32 @@ def test_noise_returns_an_unqualified_diagnostic_candidate() -> None:
     assert len(result.candidates) == 1
     assert not result.candidates[0].qualified
     assert result.windows == ()
+
+
+def test_short_template_match_power_matches_direct_normalized_correlation() -> None:
+    rng = np.random.default_rng(731)
+    values = np.asarray(
+        rng.normal(size=257) + 1j * rng.normal(size=257),
+        dtype=np.complex64,
+    )
+    template = np.asarray(
+        rng.normal(size=11) + 1j * rng.normal(size=11),
+        dtype=np.complex64,
+    )
+    template /= np.linalg.norm(template)
+
+    actual = _normalized_match_power(values, template, output_block_samples=32)
+    expected = np.asarray(
+        [
+            abs(np.vdot(template, values[index : index + template.size])) ** 2
+            / np.sum(np.abs(values[index : index + template.size]) ** 2)
+            for index in range(values.size - template.size + 1)
+        ],
+        dtype=np.float64,
+    )
+
+    assert actual == pytest.approx(expected, rel=2e-6, abs=2e-7)
+    assert not actual.flags.writeable
 
 
 def test_short_continuity_segment_is_explicitly_insufficient() -> None:

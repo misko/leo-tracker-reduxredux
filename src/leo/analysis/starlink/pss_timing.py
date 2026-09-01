@@ -413,8 +413,24 @@ def _normalized_match_power(
     output_block_samples: int,
 ) -> npt.NDArray[np.float64]:
     output_count = values.size - template.size + 1
-    output = np.empty(output_count, dtype=np.float64)
     reversed_conjugate = np.conj(template[::-1])
+    if template.size <= 64:
+        correlation = np.convolve(values, reversed_conjugate, mode="valid")
+        power = np.square(np.abs(values), dtype=np.float64)
+        cumulative = np.concatenate(([0.0], np.cumsum(power, dtype=np.float64)))
+        energy = cumulative[template.size :] - cumulative[: -template.size]
+        usable = energy > max(float(np.max(energy)), 0.0) * 1e-12
+        output = np.zeros(output_count, dtype=np.float64)
+        np.divide(
+            np.square(np.abs(correlation), dtype=np.float64),
+            energy,
+            out=output,
+            where=usable,
+        )
+        output.flags.writeable = False
+        return output
+
+    output = np.empty(output_count, dtype=np.float64)
     template_ffts: dict[int, npt.NDArray[np.complex128]] = {}
     for output_start in range(0, output_count, output_block_samples):
         count = min(output_block_samples, output_count - output_start)

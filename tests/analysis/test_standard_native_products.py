@@ -24,11 +24,16 @@ from leo.analysis.standard.native_products import (
     PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
     POWER_TIMELINE_V4_PRODUCT,
     PROBE_SCHEDULE_V4_PRODUCT,
+    PSS_FRAME_TIMING_V1_PRODUCT,
     QUALITY_V3_PRODUCT,
     RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
     STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT,
     STATEFUL_PATH_V1_PRODUCT,
     STATEFUL_PATH_V3_PRODUCT,
+)
+from leo.analysis.standard.native_pss import (
+    StandardNativePssConfig,
+    standard_native_pss_configuration_digest,
 )
 from leo.analysis.standard.products import PATH_INPUT_BIND_PRODUCT
 from leo.pipeline import StageOutcome
@@ -38,14 +43,15 @@ def test_native_product_inventory_is_additive_and_closed() -> None:
     assert PATH_INPUT_BIND_PRODUCT.schema_version == 3
     assert PATH_INPUT_BIND_V4_PRODUCT.schema_version == 4
     assert PATH_INPUT_BIND_V5_PRODUCT.schema_version == 5
-    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 36
-    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 8
+    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 37
+    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 9
     assert len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 14
     assert FULL_CAPTURE_GLRT20MS_V2_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V1_PRODUCT.schema_version == 1
     assert STATEFUL_PATH_V1_PRODUCT not in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V3_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert PILOT_DOPPLER_SEGMENTS_V4_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
+    assert PSS_FRAME_TIMING_V1_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
 
     identities = tuple(
         (item.kind, item.schema_version, item.role.value, item.media_type)
@@ -78,6 +84,9 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
     assert path_configuration["full_capture_glrt_configuration_digest"] == (
         native_full_capture_glrt_configuration_digest(production_receiver_standard_config())
     )
+    assert path_configuration["pss_configuration_digest"] == (
+        standard_native_pss_configuration_digest(StandardNativePssConfig())
+    )
     assert registry.get("path-standard-native").spec.output_products == (
         QUALITY_V3_PRODUCT,
         POWER_TIMELINE_V4_PRODUCT,
@@ -86,13 +95,14 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         STATEFUL_PATH_V3_PRODUCT,
         PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
         FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
+        PSS_FRAME_TIMING_V1_PRODUCT,
         PATH_REPORT_V4_PRODUCT,
     )
     assert registry.get("path-standard-native").spec.algorithm_version == (
-        "standard-native-evidence-v10"
+        "standard-native-evidence-v11"
     )
     assert registry.get("path-standard-native").spec.configuration_schema == (
-        "path-standard-native.evidence.v8"
+        "path-standard-native.evidence.v9"
     )
     assert (
         registry.get("radio-scientific-report-native").spec.output_products
@@ -134,5 +144,5 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
             PATH_REPORT_V4_PRODUCT,
         )
     )
-    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 36
-    assert len(registry.get("path-standard-native").spec.output_products) == 8
+    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 37
+    assert len(registry.get("path-standard-native").spec.output_products) == 9

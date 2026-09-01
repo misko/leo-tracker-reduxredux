@@ -692,8 +692,8 @@ def test_real_postgres_standard_native_operational_vertical(
     registry = production_standard_native_evidence_registry()
     native_stage_configuration = production_standard_native_evidence_configuration()
     native_path_spec = registry.get("path-standard-native").spec
-    assert native_path_spec.algorithm_version == "standard-native-evidence-v10"
-    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v8"
+    assert native_path_spec.algorithm_version == "standard-native-evidence-v11"
+    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v9"
     assert "probes" not in native_stage_configuration["path-standard-native"]
     configuration: dict[str, object] = {
         "display_version": "standard-native-operational-v1",
