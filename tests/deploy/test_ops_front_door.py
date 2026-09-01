@@ -157,6 +157,39 @@ def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> 
     assert "tests/analysis" not in pytest_gate.command
 
 
+def test_fast_test_checks_changed_source_and_only_changed_portable_tests() -> None:
+    paths = (
+        "src/leo/analysis/standard/final_reports.py",
+        "tests/analysis/test_final_trajectory_reports.py",
+        "tests/processing/test_standard_native_operational_vertical.py",
+    )
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    gates = OPS.selected_gates(
+        paths,
+        selected,
+        all_tests=False,
+        release=False,
+        fast=True,
+    )
+
+    mypy = next(gate for gate in gates if gate.name == "mypy")
+    assert mypy.command[-1] == "src/leo/analysis/standard/final_reports.py"
+    assert "src" not in mypy.command
+    pytest_commands = tuple(
+        gate.command for gate in gates if gate.name.startswith("pytest-changed-")
+    )
+    assert len(pytest_commands) == 1
+    assert "tests/analysis/test_final_trajectory_reports.py" in pytest_commands[0]
+    assert not any(gate.needs_postgres for gate in gates)
+
+
+def test_fast_test_is_incompatible_with_complete_test_tiers() -> None:
+    for arguments in (("test", "--fast", "--all"), ("test", "--fast", "--release")):
+        with pytest.raises(OPS.OpsError, match="cannot be combined"):
+            OPS._test(OPS.parser().parse_args(arguments))
+
+
 def test_python_quality_gates_force_configured_exclusions() -> None:
     paths = ("src/leo/analysis/standard/final_reports.py",)
     selected = OPS.components_for_paths(paths, OPS.load_components())
@@ -650,6 +683,26 @@ def test_matching_receipt_must_cover_every_deployment_path(
             target=target,
             changed=("web/src/App.tsx", "web/src/api.ts"),
         )
+
+
+def test_fast_iteration_receipt_cannot_authorize_deployment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    receipt_root = tmp_path / ".leo/test-receipts"
+    receipt_root.mkdir(parents=True)
+    receipt = {
+        "kind": "leo-test-receipt",
+        "revision": target,
+        "passed": True,
+        "plan": {"tier": "fast-iteration", "paths": ["web/src/App.tsx"]},
+    }
+    (receipt_root / "receipt.json").write_text(json.dumps(receipt))
+    monkeypatch.setattr(OPS, "ROOT", tmp_path)
+
+    with pytest.raises(OPS.OpsError, match="exact-revision test receipt"):
+        OPS._require_matching_test_receipt(target=target, changed=("web/src/App.tsx",))
 
 
 def test_restore_environment_is_atomic_and_rejects_symlink(

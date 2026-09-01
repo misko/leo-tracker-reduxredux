@@ -269,6 +269,7 @@ def selected_gates(
     *,
     all_tests: bool,
     release: bool,
+    fast: bool = False,
 ) -> tuple[Gate, ...]:
     # Deleted Python paths still select their owning component and deployment
     # impact, but file-oriented formatters cannot be invoked on an absent path.
@@ -289,7 +290,13 @@ def selected_gates(
             )
         )
     if source_changed or all_tests:
-        gates.append(Gate("mypy", _python_tool("mypy", "src")))
+        mypy_targets = tuple(path for path in python_paths if path.startswith("src/"))
+        gates.append(
+            Gate(
+                "mypy",
+                _python_tool("mypy", *(mypy_targets if fast else ("src",))),
+            )
+        )
     changed_test_paths = sorted(
         path
         for path in paths
@@ -332,9 +339,16 @@ def selected_gates(
     elif changed_test_paths:
         # Component changes are required to carry component-owned tests. Running the
         # exact changed tests avoids recursively selecting a multi-minute directory.
-        test_paths = sorted(
-            set(changed_test_paths).union(
-                path for component in components if component.exclusive for path in component.tests
+        test_paths = (
+            changed_test_paths
+            if fast
+            else sorted(
+                set(changed_test_paths).union(
+                    path
+                    for component in components
+                    if component.exclusive
+                    for path in component.tests
+                )
             )
         )
         for index, path in enumerate(test_paths, start=1):
@@ -346,6 +360,8 @@ def selected_gates(
             exclusive_owners = tuple(component for component in owners if component.exclusive)
             effective_owners = exclusive_owners or owners
             needs_postgres = any(component.postgres for component in effective_owners)
+            if fast and needs_postgres:
+                continue
             expression = "not real_corpus and not legacy_oracle"
             if not needs_postgres:
                 expression += " and not postgres"
@@ -364,6 +380,8 @@ def selected_gates(
                     needs_postgres=needs_postgres,
                 )
             )
+        test_paths = []
+    elif fast:
         test_paths = []
     elif any(component.exclusive for component in components):
         test_paths = sorted(
@@ -513,6 +531,8 @@ def overlay_digest(paths: tuple[str, ...]) -> str:
 
 
 def _test(args: argparse.Namespace) -> int:
+    if args.fast and (args.all or args.release):
+        raise OpsError("--fast cannot be combined with --all or --release")
     components = load_components()
     paths = changed_paths(
         all_paths=args.all or args.release,
@@ -520,9 +540,14 @@ def _test(args: argparse.Namespace) -> int:
     )
     selected = components_for_paths(paths, components)
     gates = selected_gates(
-        paths, selected, all_tests=args.all or args.release, release=args.release
+        paths,
+        selected,
+        all_tests=args.all or args.release,
+        release=args.release,
+        fast=args.fast,
     )
     plan = {
+        "tier": "fast-iteration" if args.fast else "deployment",
         "paths": list(paths),
         "components": [component.name for component in selected],
         "gates": [
@@ -1510,6 +1535,7 @@ def _require_matching_test_receipt(*, target: str, changed: tuple[str, ...]) -> 
             receipt.get("kind") == "leo-test-receipt"
             and receipt.get("revision") == target
             and receipt.get("passed") is True
+            and receipt.get("plan", {}).get("tier") != "fast-iteration"
             and set(receipt.get("plan", {}).get("paths", ())) >= set(changed)
         ):
             return path
@@ -2413,6 +2439,14 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(prog="ops")
     commands = result.add_subparsers(dest="command", required=True)
     test = commands.add_parser("test", help="run safe change-aware developer gates")
+    test.add_argument(
+        "--fast",
+        action="store_true",
+        help=(
+            "run changed-file static checks and changed portable tests only; "
+            "the receipt cannot authorize deployment"
+        ),
+    )
     test.add_argument("--all", action="store_true")
     test.add_argument("--release", action="store_true")
     test.add_argument("--explain", action="store_true")

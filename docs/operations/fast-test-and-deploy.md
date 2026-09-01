@@ -36,11 +36,20 @@ connection. A permitted database name must contain `qualification` or end in `_t
 The available test tiers are:
 
 ```bash
+./ops test --fast          # changed-file iteration gate; never deploy-qualifying
 ./ops test                 # changed components
 ./ops test --all           # all portable components and explicit PostgreSQL tests
 ./ops test --release       # release-instruction tests in addition to --all
 ./ops test --base SHA      # exact clean committed delta intended for deployment
 ```
+
+Use `./ops test --fast` for the normal edit/test loop. It lints changed Python files, type-checks
+only changed source files, and runs only changed tests that do not require PostgreSQL. It also
+excludes real-corpus and legacy-oracle cases. It deliberately does not discover whole component
+test directories, run hardware or PostgreSQL tests, or produce a receipt accepted by deployment.
+Before pushing a production revision, run the ordinary change-aware gate with `./ops test --base
+CURRENT_PRODUCTION_SHA`; `--all` and `--release` remain explicit wider sweeps rather than iteration
+defaults.
 
 `./ops deploy --plan` is read-only. A full-cutover plan also requires the sealed,
 exact-revision V6 combined-pool receipt via `--rate-qualification-receipt`. V6 binds the exact
