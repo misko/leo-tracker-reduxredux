@@ -69,11 +69,11 @@ def test_25m_production_authority_selects_the_zero_external_prime_v8_profile(
     [
         (10, 0, "sha256:335ba1585253ec1f2357626b16f2f32cbc5368cc1c082c8220fbd283ed1ef9bd"),
         (15, 1, "sha256:69a5ad262cece68ab4a44266dd44f9cc1c7648ea18ce331ed1ab02263ab28165"),
-        (20, 0, "sha256:544e77f9bfe1a3f2b37de07f838833089b1022852cd1f257f09e0dc7c911767b"),
-        (25, 1, "sha256:4710ba1fec16ac0d0841de5115fa53432cbb3a57653cc85516829cd48757e1d0"),
+        (20, 0, "sha256:077f8254cd91ebe6642b9513bd8a51150c55bac0ab1f7101175bfcb66fd83d59"),
+        (25, 1, "sha256:722ee701893e402822f33e1802b3d984005d9c3ee7b1cd882f8f9c23f5962292"),
     ],
 )
-def test_direct_async_rollout_selects_session_geometry_by_high_rate(
+def test_direct_async_rollout_selects_one_session_ram_drop_geometry(
     tmp_path, rate, receiver, digest
 ):
     settings = CliSettings.from_environ(
@@ -88,8 +88,7 @@ def test_direct_async_rollout_selects_session_geometry_by_high_rate(
         (rate * 1_000_000, (receiver,), True)
     ]
 
-    version = 11 if rate >= 20 else 10
-    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v{version}")
+    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v10")
     assert actual_digest == digest
     assert refill == 1_048_576
 
@@ -164,9 +163,6 @@ def test_qualified_ram_drop_authority_compiles_actual_capture_plans(tmp_path):
 
         assert plan.schema_version == 5
         assert any(
-            {
-                "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3",
-                "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V4",
-            }.intersection(leg.profile_revision.profile.tags)
+            "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3" in leg.profile_revision.profile.tags
             for leg in plan.radio_plans
         )
