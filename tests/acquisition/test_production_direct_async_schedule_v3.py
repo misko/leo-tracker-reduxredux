@@ -8,10 +8,13 @@ import pytest
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.acquisition.coverage import project_capture_progress_coverage
 from leo.acquisition.mixed_rate_schedule import (
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
     compile_production_dwell_intent_hold_rollout_v1,
     compile_production_dwell_intent_v3,
+    compile_production_fixed_25_hold_intent_v1,
     production_cycle_classes_v3,
 )
 from leo.contracts.device_buffer import (
@@ -188,6 +191,35 @@ def test_hold_rollout_rejects_an_unreviewed_selector() -> None:
             profile_authority=_AUTHORITY,
             rollout_policy_id="unreviewed",
         )
+
+
+def test_fixed_25_hold_selector_reuses_v3_intent_and_profiles() -> None:
+    intents = tuple(
+        compile_production_fixed_25_hold_intent_v1(
+            operation_key=f"fixed-25:{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=_RADIOS,
+            profile_authority=_AUTHORITY,
+            rollout_policy_id=PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
+            extra_tags=("operator-fixed-rate",),
+        )
+        for ordinal in range(24)
+    )
+
+    assert {intent.dwell_class for intent in intents} == {ProductionDwellClassV3.MIXED_2P5_25}
+    assert all(
+        intent.policy_id == "production-direct-async-2p5-10-15-25-6-v3" for intent in intents
+    )
+    assert all(
+        PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1 in intent.extra_tags for intent in intents
+    )
+    assert {leg.sample_rate_hz for intent in intents for leg in intent.radio_legs} == {
+        2_500_000,
+        25_000_000,
+    }
+    assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
+        GainControllerMode.TANDEM_HOLD
+    }
 
 
 def test_v5_plan_and_v6_manifest_round_trip_through_a_real_capture(tmp_path) -> None:
