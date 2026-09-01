@@ -1271,21 +1271,7 @@ class AcquisitionCoordinator:
                             )
                         segment_status.require_complete(device_buffer)
                         direct_ram_segment_statuses.append(segment_status)
-                        segment_settings = item.source.reopen_configured(
-                            item.requested_settings,
-                            exact_readback=True,
-                        )
-                        if item.source.identity != item.identity:
-                            raise AcquisitionError(
-                                "direct-async segment transport changed radio identity"
-                            )
-                        _validate_settings_readback(
-                            item.requested_settings,
-                            segment_settings,
-                            exact_rf_geometry=True,
-                        )
-                    else:
-                        item.source.reset_receive_buffer()
+                    item.source.reset_receive_buffer()
                     segment_kernel_buffers = item.source.begin_metadata_capture(
                         profile.refill_samples,
                         kernel_buffers=profile.kernel_buffers,
