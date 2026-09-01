@@ -362,11 +362,19 @@ requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
 row blocks startup.
 
 The historical target-bound 3 MS/s qualification receipt is not a cutover gate:
-3 MS/s is absent from `production-direct-async-2p5-10-15-25-hold-6-v1`. This
+3 MS/s is absent from `production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2`. This
 focused six-dwell rollout selector retains the immutable V3 rate and tuning
 contract: two same-channel mixed dwells for each of 2.5/10, 2.5/15, and 2.5/25
 MS/s. The 2.5 MS/s leg is dual RX and the high-rate leg is single RX; radio
-order, high-rate RX, and channel edge remain digest-stable randomized choices.
+order, high-rate RX, and channel remain digest-stable randomized choices. The
+10 MS/s class retains both edges. Hardware qualification on both production
+radios found that AD9361 integer readback skips make the channel 1--3 ideal
+15 MS/s lower-edge and 25 MS/s upper-edge centers impossible to reproduce
+exactly. The selector redirects only those targets to the same channel's
+qualified complementary edge; channel 4 retains both edges. The complete
+allowed high-rate matrix closed exactly on both radios, preserves full native
+bandwidth and in-channel placement, and does not alter the immutable V3 intent
+or V5 plan contracts.
 Every newly scheduled intent explicitly carries tandem HOLD for both legs and
 the `gain_rollout:tandem_hold_v1` evidence tag. Historical randomized V3
 HOLD/AUTO intents remain readable and executable, but the failed AUTO hardware

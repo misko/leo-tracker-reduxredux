@@ -76,6 +76,10 @@ _PRODUCTION_DIRECT_ASYNC_V3_CYCLE_CLASSES = (
 # restricted rollout authority.
 PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1 = "production-direct-async-2p5-10-15-25-hold-6-v1"
 PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 = "gain_rollout:tandem_hold_v1"
+PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2 = (
+    "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
+)
+PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 = "tuning_rollout:exact_lo_matrix_v2"
 PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1 = "production-direct-async-2p5-25-hold-v1"
 PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1 = "rate_rollout:fixed_2p5_25_hold_v1"
 
@@ -216,6 +220,42 @@ def compile_production_dwell_intent_hold_rollout_v1(
     return _with_tandem_hold_v1(intent, profile_authority=profile_authority)
 
 
+def compile_production_dwell_intent_exact_lo_hold_rollout_v2(
+    *,
+    operation_key: str,
+    cadence_ordinal: int,
+    radio_ids: Sequence[str],
+    profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
+    rollout_policy_id: str = PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2,
+    extra_tags: Sequence[str] = (),
+) -> ProductionDwellIntentV3:
+    """Compile HOLD-only V3 intents over the qualified exact-LO target matrix.
+
+    AD9361 integer readback skips make the channel 1--3 ideal 15 MHz
+    lower-edge and 25 MHz upper-edge centers impossible to apply exactly on the
+    production radios.  Both edges close exactly on channel 4, while the
+    complementary edges close on every channel.  The immutable V3 intent and
+    V5 capture-plan contracts remain unchanged; this selector only redirects
+    an impossible target to its same-channel qualified edge.
+    """
+
+    if rollout_policy_id != PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2:
+        raise ValueError("exact-LO HOLD rollout policy is unsupported")
+    intent = compile_production_dwell_intent_v3(
+        operation_key=operation_key,
+        cadence_ordinal=cadence_ordinal,
+        radio_ids=radio_ids,
+        profile_authority=profile_authority,
+        extra_tags=(
+            *extra_tags,
+            PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
+            PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2,
+        ),
+    )
+    intent = _with_exact_lo_qualified_edge_v2(intent)
+    return _with_tandem_hold_v1(intent, profile_authority=profile_authority)
+
+
 def compile_production_fixed_25_hold_intent_v1(
     *,
     operation_key: str,
@@ -259,6 +299,31 @@ def _with_tandem_hold_v1(
             }
         )
         for leg in intent.radio_legs
+    )
+    document = intent.model_dump(mode="json", exclude={"intent_digest"})
+    document["radio_legs"] = [leg.model_dump(mode="json") for leg in legs]
+    return ProductionDwellIntentV3.model_validate(
+        {**document, "intent_digest": canonical_digest(document)}
+    )
+
+
+def _with_exact_lo_qualified_edge_v2(
+    intent: ProductionDwellIntentV3,
+) -> ProductionDwellIntentV3:
+    channel = intent.radio_legs[0].starlink_channel
+    selected_edge = (
+        StarlinkEdge.UPPER
+        if intent.dwell_class is ProductionDwellClassV3.MIXED_2P5_15 and channel < 4
+        else (
+            StarlinkEdge.LOWER
+            if intent.dwell_class is ProductionDwellClassV3.MIXED_2P5_25 and channel < 4
+            else None
+        )
+    )
+    if selected_edge is None:
+        return intent
+    legs = tuple(
+        leg.model_copy(update={"starlink_edge": selected_edge}) for leg in intent.radio_legs
     )
     document = intent.model_dump(mode="json", exclude={"intent_digest"})
     document["radio_legs"] = [leg.model_dump(mode="json") for leg in legs]

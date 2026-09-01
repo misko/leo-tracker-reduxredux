@@ -8,10 +8,13 @@ import pytest
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.acquisition.coverage import project_capture_progress_coverage
 from leo.acquisition.mixed_rate_schedule import (
+    PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2,
+    PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
+    compile_production_dwell_intent_exact_lo_hold_rollout_v2,
     compile_production_dwell_intent_hold_rollout_v1,
     compile_production_dwell_intent_v3,
     compile_production_fixed_25_hold_intent_v1,
@@ -42,6 +45,7 @@ from leo.contracts.states import (
     GainMode,
     PeerFailurePolicy,
     SourceType,
+    StarlinkEdge,
     StreamState,
     SynchronizationMode,
 )
@@ -186,6 +190,70 @@ def test_hold_rollout_rejects_an_unreviewed_selector() -> None:
     with pytest.raises(ValueError, match="HOLD rollout policy"):
         compile_production_dwell_intent_hold_rollout_v1(
             operation_key="hold-rollout:invalid",
+            cadence_ordinal=0,
+            radio_ids=_RADIOS,
+            profile_authority=_AUTHORITY,
+            rollout_policy_id="unreviewed",
+        )
+
+
+def test_exact_lo_hold_rollout_preserves_v3_contract_and_qualified_edges() -> None:
+    intents = tuple(
+        compile_production_dwell_intent_exact_lo_hold_rollout_v2(
+            operation_key=f"exact-lo-hold:{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=_RADIOS,
+            profile_authority=_AUTHORITY,
+            rollout_policy_id=PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2,
+            extra_tags=("production",),
+        )
+        for ordinal in range(6 * 128)
+    )
+
+    assert all(item.policy_id == "production-direct-async-2p5-10-15-25-6-v3" for item in intents)
+    assert all(PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 in item.extra_tags for item in intents)
+    assert all(
+        PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 in item.extra_tags for item in intents
+    )
+    assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
+        GainControllerMode.TANDEM_HOLD
+    }
+    by_class = {
+        dwell_class: tuple(item for item in intents if item.dwell_class is dwell_class)
+        for dwell_class in ProductionDwellClassV3
+    }
+    targets_by_class = {
+        dwell_class: {
+            (leg.starlink_channel, leg.starlink_edge)
+            for intent in selected
+            for leg in intent.radio_legs
+        }
+        for dwell_class, selected in by_class.items()
+    }
+    assert targets_by_class[ProductionDwellClassV3.MIXED_2P5_15] == {
+        (1, StarlinkEdge.UPPER),
+        (2, StarlinkEdge.UPPER),
+        (3, StarlinkEdge.UPPER),
+        (4, StarlinkEdge.LOWER),
+        (4, StarlinkEdge.UPPER),
+    }
+    assert targets_by_class[ProductionDwellClassV3.MIXED_2P5_25] == {
+        (1, StarlinkEdge.LOWER),
+        (2, StarlinkEdge.LOWER),
+        (3, StarlinkEdge.LOWER),
+        (4, StarlinkEdge.LOWER),
+        (4, StarlinkEdge.UPPER),
+    }
+    assert targets_by_class[ProductionDwellClassV3.MIXED_2P5_10] == {
+        (channel, edge) for channel in range(1, 5) for edge in StarlinkEdge
+    }
+    assert {leg.starlink_channel for intent in intents for leg in intent.radio_legs} == {1, 2, 3, 4}
+
+
+def test_exact_lo_hold_rollout_rejects_an_unreviewed_selector() -> None:
+    with pytest.raises(ValueError, match="exact-LO HOLD rollout policy"):
+        compile_production_dwell_intent_exact_lo_hold_rollout_v2(
+            operation_key="exact-lo-hold:invalid",
             cadence_ordinal=0,
             radio_ids=_RADIOS,
             profile_authority=_AUTHORITY,

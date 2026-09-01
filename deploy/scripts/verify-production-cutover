@@ -1197,10 +1197,12 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         raise ValueError("production sample-rate profile pool is not the exact reviewed set")
     if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
         raise ValueError("production capture interval must be a 180-second start period")
-    if environment.get("LEO_MIXED_RATE_POLICY") != "production-direct-async-2p5-10-15-25-hold-6-v1":
+    if environment.get("LEO_MIXED_RATE_POLICY") != (
+        "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
+    ):
         raise ValueError(
             "production rate policy must be the exact reviewed same-channel "
-            "2.5 x 10/15/25 direct-async tandem-HOLD rollout policy"
+            "2.5 x 10/15/25 direct-async exact-LO tandem-HOLD rollout policy"
         )
     if environment.get("LEO_DIRECT_ASYNC_ENABLED") != "true":
         raise ValueError("production direct-async feature gate must be enabled")
@@ -3509,7 +3511,8 @@ def verify(args: argparse.Namespace) -> list[str]:
         "production and retained qualification profiles match the exact reviewed bytes",
         "staged acquisition service uses the exact ordered profile and radio pool",
         "exact-revision release qualification is sealed and passed",
-        "production-direct-async-2p5-10-15-25-hold-6-v1 policy and exact staged service are sealed",
+        "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2 policy and "
+        "exact staged service are sealed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
         "scanner raw-IQ and report directories are installed and permissioned",
