@@ -39,13 +39,14 @@ metadata=/opt/leo-tracker/release-metadata/$revision.txt
   exit 65
 }
 
-started_ms=$(/usr/bin/date +%s%3N)
+started_ns=$(/usr/bin/date +%s%N)
 /usr/bin/systemctl restart leo-api.service
 for ((attempt = 0; attempt < 300; attempt += 1)); do
   if /usr/bin/curl --fail --silent --show-error --max-time 1 \
     http://127.0.0.1:8090/api/v1/status >/dev/null 2>&1; then
-    finished_ms=$(/usr/bin/date +%s%3N)
-    echo "API READY release=$revision elapsed_ms=$((finished_ms - started_ms))"
+    finished_ns=$(/usr/bin/date +%s%N)
+    elapsed_ms=$(((finished_ns - started_ns) / 1000000))
+    echo "API READY release=$revision elapsed_ms=$elapsed_ms"
     exit 0
   fi
   /usr/bin/sleep 0.1

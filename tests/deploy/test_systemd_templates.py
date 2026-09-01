@@ -67,6 +67,9 @@ def test_fast_api_restart_is_narrow_and_syntax_valid() -> None:
     assert "http://127.0.0.1:8090/api/v1/status" in text
     assert "releases/([0-9a-f]{40})" in text
     assert "root:leo:440" in text
+    assert "/usr/bin/date +%s%N" in text
+    assert "(finished_ns - started_ns) / 1000000" in text
+    assert "+%s%3N" not in text
     for forbidden in (
         "stage-production-release",
         "verify-production-cutover",
