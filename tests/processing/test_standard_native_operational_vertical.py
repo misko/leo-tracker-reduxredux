@@ -43,6 +43,7 @@ from leo.contracts.standard_native_alternate_tracks import (
 )
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV2
 from leo.contracts.standard_native_path_report import StandardNativePathReportV4
+from leo.contracts.standard_native_pss import StandardNativePssFrameTimingV1
 from leo.contracts.standard_native_stateful_v2 import (
     NativeStatefulSegmentDispositionV2,
     StandardNativeStatefulPathV3,
@@ -276,7 +277,7 @@ def _assert_native_products(
     gapped_radio_id: str | None,
 ) -> None:
     products = seal.products  # type: ignore[attr-defined]
-    assert len(products) == 109
+    assert len(products) == 113
     assert Counter(item.kind for item in products) == {
         "quality.summary": 4,
         "standard.power-timeline": 4,
@@ -285,6 +286,7 @@ def _assert_native_products(
         "standard.native-stateful-path": 4,
         "standard.pilot-doppler-segments": 4,
         "standard.full-capture-glrt20ms": 4,
+        "standard.pss-frame-timing": 4,
         "standard.path-report": 4,
         "standard.alternate-cfo-track-bank": 4,
         "standard.trajectory-conditioned-accounting": 4,
@@ -311,6 +313,7 @@ def _assert_native_products(
         "standard.native-stateful-path": StandardNativeStatefulPathV3,
         "standard.pilot-doppler-segments": StandardPilotDopplerSegmentsV4,
         "standard.full-capture-glrt20ms": StandardNativeFullCaptureGlrt20msV2,
+        "standard.pss-frame-timing": StandardNativePssFrameTimingV1,
         "standard.alternate-cfo-track-bank": StandardNativeAlternateCfoTrackBankV5,
         "standard.trajectory-conditioned-accounting": (
             StandardNativeTrajectoryConditionedAccountingV4
@@ -624,7 +627,7 @@ def _run_native_current(
     assert published.manifest.processing_status == "succeeded"
 
     seal = database.catalog.run_seal_snapshot(result.run_id)
-    assert len(seal.products) == 109
+    assert len(seal.products) == 113
     assert sum(item.media_type == "image/png" for item in seal.products) == 66
     _assert_native_products(
         database,
