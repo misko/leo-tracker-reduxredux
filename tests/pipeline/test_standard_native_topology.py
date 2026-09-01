@@ -467,8 +467,7 @@ def test_bounded_ram_drop_profiles_have_exact_standard_native_identity(
     receiver_id: int,
 ) -> None:
     profile_name = (
-        f"starlink-ch4-lower-{rate_hz // 1_000_000}m-60s-rx{receiver_id}-"
-        "direct-async-ram-drop-v11"
+        f"starlink-ch4-lower-{rate_hz // 1_000_000}m-60s-rx{receiver_id}-direct-async-ram-drop-v11"
     )
     revision = load_profile_revision(_ROOT / "profiles" / f"{profile_name}.yaml")
 

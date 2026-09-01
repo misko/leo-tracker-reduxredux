@@ -356,9 +356,7 @@ class DirectAsyncRamStatusV2(ContractModel):
     def require_complete(
         self,
         request: (
-            DirectAsyncRamDropRequestV2
-            | DirectAsyncRamDropRequestV3
-            | DirectAsyncRamDropRequestV4
+            DirectAsyncRamDropRequestV2 | DirectAsyncRamDropRequestV3 | DirectAsyncRamDropRequestV4
         ),
     ) -> None:
         if (self.state, self.terminal_reason, self.error_code) != (
