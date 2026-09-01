@@ -440,6 +440,26 @@ def test_ram_drop_profiles_have_exact_standard_native_identity(
     assert "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2" in revision.profile.tags
 
 
+@pytest.mark.parametrize("rate_hz", (10_000_000, 15_000_000, 20_000_000, 25_000_000))
+@pytest.mark.parametrize("receiver_id", (0, 1))
+def test_qualified_ram_drop_profiles_have_exact_standard_native_identity(
+    rate_hz: int,
+    receiver_id: int,
+) -> None:
+    profile_name = (
+        f"starlink-ch4-lower-{rate_hz // 1_000_000}m-60s-rx{receiver_id}-direct-async-ram-drop-v10"
+    )
+    revision = load_profile_revision(_ROOT / "profiles" / f"{profile_name}.yaml")
+
+    assert STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES[profile_name] == (
+        rate_hz,
+        (receiver_id,),
+        revision.revision_digest,
+    )
+    assert revision.profile.kernel_buffers == 11
+    assert "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3" in revision.profile.tags
+
+
 def test_native_topology_rejects_nonoptimal_wideband_center_even_with_matching_readback() -> None:
     manifest = _manifest(
         "starlink-ch4-lower-10m-60s-native-bandwidth-v4",

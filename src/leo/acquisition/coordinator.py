@@ -35,14 +35,18 @@ from leo.contracts.device_buffer import (
     DIRECT_ASYNC_EVIDENCE_KEY_V1,
     DIRECT_ASYNC_PROFILE_TAG_V1,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2,
+    DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3,
     DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2,
+    DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,
     DdrRingStatusV1,
     DeviceBufferEvidenceV1,
     DeviceBufferRequestV1,
     DirectAsyncEvidence,
     DirectAsyncEvidenceV1,
     DirectAsyncRamDropEvidenceV2,
+    DirectAsyncRamDropEvidenceV3,
     DirectAsyncRamDropRequestV2,
+    DirectAsyncRamDropRequestV3,
     DirectAsyncRamStatusV2,
     DirectAsyncRequest,
     DirectAsyncRequestV1,
@@ -967,7 +971,12 @@ class AcquisitionCoordinator:
                         requested_device_span=resolved_sample_count,
                         kernel_buffers=kernel_buffers,
                         allow_non_refill_gaps=isinstance(
-                            device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)
+                            device_buffer,
+                            (
+                                DirectAsyncRequestV1,
+                                DirectAsyncRamDropRequestV2,
+                                DirectAsyncRamDropRequestV3,
+                            ),
                         ),
                     )
                 return bundle.open_stream(
@@ -1033,12 +1042,19 @@ class AcquisitionCoordinator:
                                             DDR_RING_EVIDENCE_KEY_V1
                                             if ring_evidence is not None
                                             else (
-                                                DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2
+                                                DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3
                                                 if isinstance(
                                                     direct_evidence,
-                                                    DirectAsyncRamDropEvidenceV2,
+                                                    DirectAsyncRamDropEvidenceV3,
                                                 )
-                                                else DIRECT_ASYNC_EVIDENCE_KEY_V1
+                                                else (
+                                                    DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2
+                                                    if isinstance(
+                                                        direct_evidence,
+                                                        DirectAsyncRamDropEvidenceV2,
+                                                    )
+                                                    else DIRECT_ASYNC_EVIDENCE_KEY_V1
+                                                )
                                             )
                                         ): buffer_evidence.model_dump(mode="json"),
                                     }
@@ -1109,7 +1125,8 @@ class AcquisitionCoordinator:
         consumer_timed_out = False
         interruption: BaseException | None = None
         direct_segment_pending = isinstance(
-            device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)
+            device_buffer,
+            (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3),
         )
         direct_upstream_generations: list[str] = []
         direct_logical_generation: str | None = None
@@ -1122,7 +1139,8 @@ class AcquisitionCoordinator:
             require_generation=True,
             validate_declared=True,
             allow_non_refill_gaps=isinstance(
-                device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)
+                device_buffer,
+                (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3),
             ),
         )
         try:
@@ -1131,7 +1149,14 @@ class AcquisitionCoordinator:
             arm_started = self.clock.monotonic_ns()
             controller = _gain_controller_for_radio(plan, item.identity.radio_id)
             try:
-                if isinstance(device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)):
+                if isinstance(
+                    device_buffer,
+                    (
+                        DirectAsyncRequestV1,
+                        DirectAsyncRamDropRequestV2,
+                        DirectAsyncRamDropRequestV3,
+                    ),
+                ):
                     kernel_buffers = item.source.begin_metadata_capture(
                         profile.refill_samples,
                         kernel_buffers=profile.kernel_buffers,
@@ -1202,7 +1227,14 @@ class AcquisitionCoordinator:
                 if consumer_failed.is_set():
                     raise AcquisitionError(f"storage consumer failed: {consumer_error[-1]}")
                 if (
-                    isinstance(device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2))
+                    isinstance(
+                        device_buffer,
+                        (
+                            DirectAsyncRequestV1,
+                            DirectAsyncRamDropRequestV2,
+                            DirectAsyncRamDropRequestV3,
+                        ),
+                    )
                     and returned_frames
                     and returned_frames % device_buffer.maximum_segment_frames == 0
                 ):
@@ -1231,7 +1263,14 @@ class AcquisitionCoordinator:
                     count,
                     returned_samples if device_buffer is not None else captured,
                 )
-                if isinstance(device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)):
+                if isinstance(
+                    device_buffer,
+                    (
+                        DirectAsyncRequestV1,
+                        DirectAsyncRamDropRequestV2,
+                        DirectAsyncRamDropRequestV3,
+                    ),
+                ):
                     raw_metadata = block.metadata
                     if not isinstance(raw_metadata, IqBlockMetadataV2):
                         raise AcquisitionError("direct-async capture returned legacy metadata")
@@ -1310,7 +1349,14 @@ class AcquisitionCoordinator:
                     )
                     if not prefix_contiguous:
                         raise AcquisitionError("DDR ring protected prefix is not contiguous")
-                if isinstance(device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)):
+                if isinstance(
+                    device_buffer,
+                    (
+                        DirectAsyncRequestV1,
+                        DirectAsyncRamDropRequestV2,
+                        DirectAsyncRamDropRequestV3,
+                    ),
+                ):
                     direct_missing_samples += metadata.missing_samples_before
                     if len(direct_upstream_generations) > 1 and (
                         raw_generation == direct_upstream_generations[-1]
@@ -1441,25 +1487,44 @@ class AcquisitionCoordinator:
                     returned_samples - captured,
                     status.wrap_count,
                 )
-            elif isinstance(device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)):
-                if isinstance(device_buffer, DirectAsyncRamDropRequestV2):
+            elif isinstance(
+                device_buffer,
+                (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3),
+            ):
+                if isinstance(
+                    device_buffer, (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3)
+                ):
                     status = item.source.ddr_ring_status()
                     if not isinstance(status, DirectAsyncRamStatusV2):
                         raise AcquisitionError(
                             "direct-async RAM/drop status has the wrong contract generation"
                         )
-                    direct_evidence = DirectAsyncRamDropEvidenceV2(
-                        request=device_buffer,
-                        status=status,
-                        returned_frames=returned_frames,
-                        returned_device_span_samples=returned_device_span,
-                        segment_count=len(direct_upstream_generations),
-                        upstream_stream_generations=tuple(direct_upstream_generations),
-                        counter_missing_sample_count=direct_missing_samples,
-                        inter_segment_skipped_samples=direct_inter_segment_skipped_samples,
-                        stored_observed_samples=captured,
-                        drained_outside_window_samples=returned_samples - captured,
-                    )
+                    if isinstance(device_buffer, DirectAsyncRamDropRequestV3):
+                        direct_evidence = DirectAsyncRamDropEvidenceV3(
+                            request=device_buffer,
+                            status=status,
+                            returned_frames=returned_frames,
+                            returned_device_span_samples=returned_device_span,
+                            segment_count=len(direct_upstream_generations),
+                            upstream_stream_generations=tuple(direct_upstream_generations),
+                            counter_missing_sample_count=direct_missing_samples,
+                            inter_segment_skipped_samples=direct_inter_segment_skipped_samples,
+                            stored_observed_samples=captured,
+                            drained_outside_window_samples=returned_samples - captured,
+                        )
+                    else:
+                        direct_evidence = DirectAsyncRamDropEvidenceV2(
+                            request=device_buffer,
+                            status=status,
+                            returned_frames=returned_frames,
+                            returned_device_span_samples=returned_device_span,
+                            segment_count=len(direct_upstream_generations),
+                            upstream_stream_generations=tuple(direct_upstream_generations),
+                            counter_missing_sample_count=direct_missing_samples,
+                            inter_segment_skipped_samples=direct_inter_segment_skipped_samples,
+                            stored_observed_samples=captured,
+                            drained_outside_window_samples=returned_samples - captured,
+                        )
                 else:
                     direct_evidence = DirectAsyncEvidenceV1(
                         request=device_buffer,
@@ -1488,17 +1553,26 @@ class AcquisitionCoordinator:
                     direct_inter_segment_skipped_samples,
                     (
                         direct_evidence.ram_spilled_frames
-                        if isinstance(direct_evidence, DirectAsyncRamDropEvidenceV2)
+                        if isinstance(
+                            direct_evidence,
+                            (DirectAsyncRamDropEvidenceV2, DirectAsyncRamDropEvidenceV3),
+                        )
                         else 0
                     ),
                     (
                         direct_evidence.ram_drained_frames
-                        if isinstance(direct_evidence, DirectAsyncRamDropEvidenceV2)
+                        if isinstance(
+                            direct_evidence,
+                            (DirectAsyncRamDropEvidenceV2, DirectAsyncRamDropEvidenceV3),
+                        )
                         else 0
                     ),
                     (
                         direct_evidence.ram_dropped_frames
-                        if isinstance(direct_evidence, DirectAsyncRamDropEvidenceV2)
+                        if isinstance(
+                            direct_evidence,
+                            (DirectAsyncRamDropEvidenceV2, DirectAsyncRamDropEvidenceV3),
+                        )
                         else 0
                     ),
                 )
@@ -1514,7 +1588,12 @@ class AcquisitionCoordinator:
                     direct_async_request=(
                         device_buffer
                         if isinstance(
-                            device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)
+                            device_buffer,
+                            (
+                                DirectAsyncRequestV1,
+                                DirectAsyncRamDropRequestV2,
+                                DirectAsyncRamDropRequestV3,
+                            ),
                         )
                         else None
                     ),
@@ -1681,7 +1760,12 @@ class AcquisitionCoordinator:
                 direct_async_request=(
                     device_buffer
                     if isinstance(
-                        device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2)
+                        device_buffer,
+                        (
+                            DirectAsyncRequestV1,
+                            DirectAsyncRamDropRequestV2,
+                            DirectAsyncRamDropRequestV3,
+                        ),
                     )
                     else None
                 ),
@@ -2237,6 +2321,7 @@ def _device_buffer_request(
     if (
         DIRECT_ASYNC_PROFILE_TAG_V1 in profile.tags
         or DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2 in profile.tags
+        or DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3 in profile.tags
     ):
         return device_buffer_request(profile, resolved_sample_count)
     return device_buffer_request_v1(profile, resolved_sample_count)

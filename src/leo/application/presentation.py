@@ -23,9 +23,11 @@ from leo.catalog import (
 from leo.contracts.device_buffer import (
     DIRECT_ASYNC_EVIDENCE_KEY_V1,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2,
+    DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3,
     DirectAsyncEvidence,
     DirectAsyncEvidenceV1,
     DirectAsyncRamDropEvidenceV2,
+    DirectAsyncRamDropEvidenceV3,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.mixed_rate_capture import CapturePlanV4
@@ -419,6 +421,12 @@ class CatalogPresentationRepository:
                 payload = first.hardware_metadata.get(DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2)
                 if payload is not None:
                     evidence[stream.stream_id] = DirectAsyncRamDropEvidenceV2.model_validate(
+                        payload
+                    )
+                    continue
+                payload = first.hardware_metadata.get(DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3)
+                if payload is not None:
+                    evidence[stream.stream_id] = DirectAsyncRamDropEvidenceV3.model_validate(
                         payload
                     )
             except (OSError, StopIteration, ValidationError, ValueError, RecordingStoreError):
