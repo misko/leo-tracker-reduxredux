@@ -152,31 +152,6 @@ class FakeRadioSource:
         self._gain_controller = None
         self.lifecycle.append("reset_receive_buffer")
 
-    def reopen_configured(
-        self,
-        settings: RadioSettingsV1,
-        *,
-        exact_readback: bool,
-    ) -> RadioSettingsV1:
-        self._require_open()
-        if any(
-            receiver not in self.capabilities.receiver_ids for receiver in settings.receiver_ids
-        ):
-            raise FakeRadioError("settings request an unsupported receiver")
-        if not (
-            self.capabilities.minimum_sample_rate_hz
-            <= settings.sample_rate_hz
-            <= self.capabilities.maximum_sample_rate_hz
-        ):
-            raise FakeRadioError("settings request an unsupported sample rate")
-        self._settings = settings
-        self._metadata_capture = False
-        self._kernel_buffers = None
-        self._metadata_refill_samples = None
-        self._gain_controller = None
-        self.lifecycle.append("reopen_configured:exact" if exact_readback else "reopen_configured")
-        return settings
-
     def begin_metadata_capture(
         self,
         sample_count: int,

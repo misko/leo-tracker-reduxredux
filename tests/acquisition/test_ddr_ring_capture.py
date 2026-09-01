@@ -308,7 +308,6 @@ def test_bounded_ram_drop_collects_terminal_status_from_every_segment(tmp_path, 
 
     assert result.state is CaptureState.COMMITTED
     assert radio.lifecycle.count("begin_metadata_capture:4:11") == 3
-    assert radio.lifecycle.count("reopen_configured:exact") == 2
     assert result.bundle is not None
     first = next(coordinator.store.reader(result.bundle, "stream-0").iter_timeline_metadata())
     payload = first.hardware_metadata[DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V4]
@@ -327,68 +326,6 @@ def test_bounded_ram_drop_collects_terminal_status_from_every_segment(tmp_path, 
     ]
     assert DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3 not in first.hardware_metadata
     coordinator.store.verify(result.bundle.session_id)
-
-
-def test_bounded_ram_drop_rejects_identity_change_during_transport_reopen(tmp_path, monkeypatch):
-    profile = CaptureProfileV2(
-        name="tiny-bounded-direct-ram-drop-identity-test",
-        center_frequency_hz=1_700_000_000,
-        sample_rate_hz=20_000_000,
-        bandwidth_hz=20_000_000,
-        receivers=(0,),
-        gains=(ReceiverGainV1(receiver_id=0, gain_db=30),),
-        sample_count=12,
-        refill_samples=4,
-        settle_seconds=Decimal(0),
-        prime_refills=0,
-        kernel_buffers=11,
-        refill_queue_capacity=8,
-        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
-        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
-        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
-        tags=("TEST",),
-    )
-    plan = compile_capture_plan(
-        CaptureProfileRevisionV2.from_profile(profile),
-        ["radio-a"],
-        source_type=SourceType.TEST,
-    )
-    request = DirectAsyncRamDropRequestV4.model_construct(
-        schema_version=4,
-        mode="direct_async_ram_drop",
-        frame_samples=4,
-        maximum_segment_frames=2,
-        target_frames=3,
-        receiver_count=1,
-        requested_device_samples=12,
-        requested_ram_bytes=134_217_728,
-        drop_backlog_on_overrun=True,
-    )
-    monkeypatch.setattr(coordinator_module, "_device_buffer_request", lambda *_: request)
-    coordinator = AcquisitionCoordinator(
-        RecordingStore(tmp_path / "bulk"),
-        config=AcquisitionConfig(safety_reserve_bytes=0),
-        compression=CompressionSettingsV1(
-            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
-            target_uncompressed_bytes=1024,
-        ),
-    )
-
-    class ChangedIdentityRadio(FakeRadioSource):
-        def reopen_configured(self, settings, *, exact_readback):
-            actual = super().reopen_configured(settings, exact_readback=exact_readback)
-            self._identity = self.identity.model_copy(update={"serial": "different-radio"})
-            return actual
-
-    result = coordinator.capture_once(
-        plan,
-        {"radio-a": ChangedIdentityRadio("radio-a")},
-        session_id="bounded-direct-ram-drop-identity-change",
-    )
-
-    assert result.state is CaptureState.FAILED
-    assert result.bundle is None
-    assert any("changed radio identity" in error for error in result.errors)
 
 
 @pytest.mark.parametrize("gap_block", [0, 1])

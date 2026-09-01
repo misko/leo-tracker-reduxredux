@@ -168,23 +168,6 @@ class PlutoIioRadioSource:
 
         return self._configure(settings, exact_readback=True)
 
-    def reopen_configured(
-        self,
-        settings: RadioSettingsV1,
-        *,
-        exact_readback: bool,
-    ) -> RadioSettingsV1:
-        """Recreate the IIO context and restore one already-attested geometry."""
-
-        expected_identity = self.identity
-        self.close()
-        identity = self.open()
-        if identity != expected_identity:
-            with suppress(Exception):
-                self.close()
-            raise PlutoAdapterError("reopened Pluto identity changed")
-        return self._configure(settings, exact_readback=exact_readback)
-
     def _configure(
         self,
         settings: RadioSettingsV1,
