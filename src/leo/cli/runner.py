@@ -9,7 +9,7 @@ import re
 import secrets
 import signal
 import socket
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
@@ -255,6 +255,11 @@ class ContinuousAcquisitionRunner:
                         if mixed_rate_policy is None
                         else (*profile_names, mixed_rate_policy)
                     )
+                    if production_profile_authority is not None:
+                        key_profiles = (
+                            *key_profiles,
+                            _production_profile_authority_identity(production_profile_authority),
+                        )
                     key = _scheduled_dwell_key(key_profiles, next_due, interval_seconds)
                     if mixed_rate_policy is None:
                         selected_profile = self._select_profile(
@@ -937,6 +942,25 @@ def _scheduled_dwell_key(
             f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='microseconds')}"
         )
     return f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='seconds')}"
+
+
+def _production_profile_authority_identity(
+    authority: Mapping[
+        tuple[int, tuple[int, ...], bool],
+        tuple[str, str, int],
+    ],
+) -> str:
+    """Bind a production cadence key to its exact immutable profile authority."""
+
+    digest = hashlib.sha256()
+    for (rate, receivers, mixed), (profile, revision, refill_samples) in sorted(authority.items()):
+        digest.update(
+            (
+                f"{rate}\0{','.join(str(receiver) for receiver in receivers)}\0"
+                f"{int(mixed)}\0{profile}\0{revision}\0{refill_samples}\n"
+            ).encode()
+        )
+    return f"production-profile-authority-v1:{digest.hexdigest()}"
 
 
 def _reap_scanner_analysis(

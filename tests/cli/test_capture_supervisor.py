@@ -481,6 +481,65 @@ def test_durable_hold_rollout_enqueues_explicit_hold_v3_intents() -> None:
     }
 
 
+def test_production_profile_revision_change_supersedes_same_slot_pending_intent() -> None:
+    class MutableAuthorityBackend(_ProductionRateDurableBackend):
+        authority_revision = "a"
+
+        def production_profile_authority(self):
+            authority = super().production_profile_authority()
+            key = (25_000_000, (0,), True)
+            profile, _revision, refill_samples = authority[key]
+            authority[key] = (
+                profile,
+                "sha256:" + self.authority_revision * 64,
+                refill_samples,
+            )
+            return authority
+
+    clock = _Clock()
+    backend = MutableAuthorityBackend(clock)
+    backend.control = _control(CaptureDesiredState.PAUSED)
+    start = datetime.fromtimestamp(0, tz=UTC)
+    runner = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    )
+    profiles = (
+        "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+        "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+    )
+
+    first_cancel = _AdvancingCancel(clock)
+    first_cancel.on_wait = first_cancel.set
+    runner.run(
+        profiles,
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("production",),
+        interval_seconds=10.0,
+        maximum_captures=None,
+        cancel=cast(Event, first_cancel),
+        mixed_rate_policy=PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    )
+    backend.authority_revision = "b"
+    second_cancel = _AdvancingCancel(clock)
+    second_cancel.on_wait = second_cancel.set
+    runner.run(
+        profiles,
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("production",),
+        interval_seconds=10.0,
+        maximum_captures=None,
+        cancel=cast(Event, second_cancel),
+        mixed_rate_policy=PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+    )
+
+    scheduled = [item for item in backend.operations if item.kind == "scheduled_recording"]
+    assert len(scheduled) == 2
+    assert scheduled[0].operation_key != scheduled[1].operation_key
+    assert [item.state for item in scheduled] == ["cancelled", "pending"]
+
+
 def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis() -> None:
     clock = _Clock()
     backend = _SupervisorBackend(clock)
