@@ -26,10 +26,14 @@ DIRECT_ASYNC_SEGMENT_FRAMES_V1 = 64
 DIRECT_ASYNC_KERNEL_BUFFERS_V1 = 15
 DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2"
 DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2 = "direct_async_ram_drop_evidence_v2"
+DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3"
+DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3 = "direct_async_ram_drop_evidence_v3"
 DIRECT_ASYNC_FRAME_SAMPLES_V2 = 1_048_576
 DIRECT_ASYNC_MAXIMUM_SEGMENT_FRAMES_V2 = 4_096
 DIRECT_ASYNC_KERNEL_BUFFERS_V2 = 12
 DIRECT_ASYNC_RAM_REQUESTED_BYTES_V2 = 200_000_000
+DIRECT_ASYNC_KERNEL_BUFFERS_V3 = 11
+DIRECT_ASYNC_RAM_REQUESTED_BYTES_V3 = 134_217_728
 
 
 class DeviceBufferRequestV1(ContractModel):
@@ -239,6 +243,49 @@ class DirectAsyncRamDropRequestV2(ContractModel):
         return min(self.maximum_segment_frames, self.target_frames - returned_frames)
 
 
+class DirectAsyncRamDropRequestV3(ContractModel):
+    """Hardware-qualified RAM/drop geometry for the existing direct-async path."""
+
+    schema_version: Literal[3] = 3
+    mode: Literal["direct_async_ram_drop"] = "direct_async_ram_drop"
+    frame_samples: Literal[1_048_576] = 1_048_576
+    maximum_segment_frames: Literal[4_096] = 4_096
+    target_frames: Annotated[int, Field(gt=0, le=4_096)]
+    receiver_count: Literal[1] = 1
+    requested_device_samples: Annotated[int, Field(gt=0)]
+    requested_ram_bytes: Literal[134_217_728] = 134_217_728
+    drop_backlog_on_overrun: Literal[True] = True
+
+    @model_validator(mode="after")
+    def _geometry_closes(self) -> Self:
+        if not (
+            (self.target_frames - 1) * self.frame_samples
+            < self.requested_device_samples
+            <= self.target_frames * self.frame_samples
+        ):
+            raise ValueError("direct-async RAM/drop frame target does not cover the dwell")
+        return self
+
+    @property
+    def segment_count(self) -> int:
+        return (self.target_frames + self.maximum_segment_frames - 1) // (
+            self.maximum_segment_frames
+        )
+
+    @property
+    def capacity_frames(self) -> int:
+        return self.requested_ram_bytes // (self.frame_samples * 4)
+
+    @property
+    def admitted_ram_bytes(self) -> int:
+        return self.capacity_frames * self.frame_samples * 4
+
+    def next_segment_frames(self, returned_frames: int) -> int:
+        if not 0 <= returned_frames < self.target_frames:
+            raise ValueError("direct-async RAM/drop frame cursor is outside the request")
+        return min(self.maximum_segment_frames, self.target_frames - returned_frames)
+
+
 class DirectAsyncRamStatusV2(ContractModel):
     """Terminal RAM-queue counters returned by the released ABI-3 runtime."""
 
@@ -260,7 +307,9 @@ class DirectAsyncRamStatusV2(ContractModel):
     failure_frame_index: None = None
     failure_sample_sequence: None = None
 
-    def require_complete(self, request: DirectAsyncRamDropRequestV2) -> None:
+    def require_complete(
+        self, request: DirectAsyncRamDropRequestV2 | DirectAsyncRamDropRequestV3
+    ) -> None:
         if (self.state, self.terminal_reason, self.error_code) != (
             "complete",
             "target_complete",
@@ -327,8 +376,63 @@ class DirectAsyncRamDropEvidenceV2(ContractModel):
         return self.status.produced_frames - self.status.consumed_frames
 
 
-type DirectAsyncRequest = DirectAsyncRequestV1 | DirectAsyncRamDropRequestV2
-type DirectAsyncEvidence = DirectAsyncEvidenceV1 | DirectAsyncRamDropEvidenceV2
+class DirectAsyncRamDropEvidenceV3(ContractModel):
+    """V3 evidence binds the qualified 32-frame RAM/drop request."""
+
+    schema_version: Literal[3] = 3
+    request: DirectAsyncRamDropRequestV3
+    status: DirectAsyncRamStatusV2
+    returned_frames: Annotated[int, Field(gt=0)]
+    returned_device_span_samples: Annotated[int, Field(gt=0)]
+    segment_count: Annotated[int, Field(gt=0)]
+    upstream_stream_generations: tuple[Annotated[str, Field(min_length=1, max_length=128)], ...]
+    counter_missing_sample_count: Annotated[int, Field(ge=0)]
+    inter_segment_skipped_samples: Annotated[int, Field(ge=0)]
+    stored_observed_samples: Annotated[int, Field(gt=0)]
+    drained_outside_window_samples: Annotated[int, Field(ge=0)]
+    host_ingestion: Literal["bounded_queue_raw_spool_v1"] = "bounded_queue_raw_spool_v1"
+
+    @model_validator(mode="after")
+    def _evidence_closes(self) -> Self:
+        self.status.require_complete(self.request)
+        if self.returned_frames != self.request.target_frames:
+            raise ValueError("direct-async RAM/drop returned frames disagree with request")
+        if (
+            self.segment_count != self.request.segment_count
+            or len(self.upstream_stream_generations) != self.segment_count
+            or len(set(self.upstream_stream_generations)) != self.segment_count
+        ):
+            raise ValueError("direct-async RAM/drop session inventory does not close")
+        returned_samples = self.returned_frames * self.request.frame_samples
+        if self.stored_observed_samples + self.drained_outside_window_samples != returned_samples:
+            raise ValueError("direct-async RAM/drop stored window and tail do not close")
+        if self.inter_segment_skipped_samples > self.counter_missing_sample_count:
+            raise ValueError("direct-async RAM/drop inter-session loss exceeds total loss")
+        if self.returned_device_span_samples != (
+            returned_samples + self.counter_missing_sample_count
+        ):
+            raise ValueError("direct-async RAM/drop returned span does not close")
+        return self
+
+    @property
+    def ram_spilled_frames(self) -> int:
+        return self.status.produced_frames
+
+    @property
+    def ram_drained_frames(self) -> int:
+        return self.status.consumed_frames
+
+    @property
+    def ram_dropped_frames(self) -> int:
+        return self.status.produced_frames - self.status.consumed_frames
+
+
+type DirectAsyncRequest = (
+    DirectAsyncRequestV1 | DirectAsyncRamDropRequestV2 | DirectAsyncRamDropRequestV3
+)
+type DirectAsyncEvidence = (
+    DirectAsyncEvidenceV1 | DirectAsyncRamDropEvidenceV2 | DirectAsyncRamDropEvidenceV3
+)
 type DdrRingStatus = DdrRingStatusV1 | DirectAsyncRamStatusV2
 type DeviceBufferRequest = DeviceBufferRequestV1 | DirectAsyncRequest
 type DeviceBufferEvidence = DeviceBufferEvidenceV1 | DirectAsyncEvidence
@@ -389,6 +493,28 @@ def device_buffer_request(
             )
         )
         return DirectAsyncRamDropRequestV2(
+            target_frames=target_frames,
+            requested_device_samples=resolved_sample_count,
+        )
+    if tags == (DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,):
+        if (
+            not isinstance(profile, CaptureProfileV2)
+            or profile.sample_rate_hz not in (10_000_000, 15_000_000, 20_000_000, 25_000_000)
+            or len(profile.receivers) != 1
+            or profile.refill_samples != DIRECT_ASYNC_FRAME_SAMPLES_V2
+            or profile.kernel_buffers != DIRECT_ASYNC_KERNEL_BUFFERS_V3
+            or profile.storage_policy != "zstd-128m-device-axis-zero-v1"
+            or profile.continuity_policy.value != "allow_segments"
+        ):
+            raise ValueError(
+                "direct-async RAM/drop V3 requires reviewed single-RX device-axis geometry"
+            )
+        target_frames = int(
+            (Decimal(resolved_sample_count) / Decimal(profile.refill_samples)).to_integral_value(
+                rounding=ROUND_CEILING
+            )
+        )
+        return DirectAsyncRamDropRequestV3(
             target_frames=target_frames,
             requested_device_samples=resolved_sample_count,
         )

@@ -375,12 +375,17 @@ MS/s dwell. The transaction checks the exact staged direct-async profile bytes,
 service command, feature gate, exact-revision release qualification, reviewed
 Standard regression authority, and both live radios through the exact v0.47
 ABI-3 direct-async-v2 adapter before starting any runtime unit. New high-rate
-intents use the same production scheduling and raw-spool path with the additive
-`DIRECT_ASYNC_RAM_DROP_V2` contract: one finite session, a 200 MB RAM request
-admitting 47 complete 1,048,576-sample frames, and explicit `drop-backlog`
-readback. This prioritizes fresh RF and fewer discontinuity boundaries; it does
-not claim maximum source-time coverage when Ethernet is slower than the offered
-IQ rate.
+intents use the same production scheduling and raw-spool path with the additive,
+hardware-qualified `DIRECT_ASYNC_RAM_DROP_V3` contract: one finite session, 11
+kernel buffers, an exact 128 MiB RAM request admitting 32 complete
+1,048,576-sample frames, and explicit `drop-backlog` readback. The unpublished
+200 MB V2 geometry remains readable and immutable but is not selected because
+live allocation trials rejected it. Worst-case 25 MS/s qualification admitted
+the V3 geometry on both radios and both receiver layouts; a three-second cell
+could be gap-free, while longer cells truthfully reported stale drops once
+Ethernet fell behind. This prioritizes fresh RF and fewer discontinuity
+boundaries; it does not claim maximum source-time coverage when Ethernet is
+slower than the offered IQ rate.
 
 The additive Standard-native V6 product family is reviewed for the three mixed
 2.5/10, 2.5/15, and 2.5/25 MS/s shapes. Each successful recording produces and

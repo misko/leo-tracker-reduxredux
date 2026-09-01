@@ -1,0 +1,29 @@
+schema_version: 2
+name: starlink-ch4-lower-15m-60s-rx1-direct-async-ram-drop-v10
+description: 60-second 15 MS/s single-RX1 direct-async capture with qualified RAM overflow and stale-backlog dropping
+center_frequency_hz: 1717500000
+rf_center_frequency_hz: 11467500000
+lnb_lo_hz: 9750000000
+starlink_channel: ch4
+starlink_edge: lower
+sample_rate_hz: 15000000
+bandwidth_hz: 15000000
+receivers: [1]
+gain_mode: manual
+gains:
+  - schema_version: 1
+    receiver_id: 1
+    gain_db: 30.0
+duration_seconds: 60
+refill_samples: 1048576
+settle_seconds: 0.5
+prime_refills: 0
+continuity_policy: allow_segments
+synchronization_mode: best_effort
+peer_failure_policy: fail_session
+kernel_buffers: 11
+refill_queue_capacity: 64
+require_device_metadata: true
+storage_policy: zstd-128m-device-axis-zero-v1
+campaign: production-native-rates-direct-async-ram-drop-v3
+tags: [CAPTURE_ONLY, DEVICE_AXIS_ZERO_FILL, 'DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3', EXPERIMENTAL, FRESH_DATA_PRIORITY, LIVE, MIXED_RATE, NATIVE_BANDWIDTH, RAM_OVERFLOW, RANDOM_TUNING, SINGLE_RX, STANDARD_NATIVE, TANDEM_CONTROLLER]

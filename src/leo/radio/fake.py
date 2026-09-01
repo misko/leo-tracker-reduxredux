@@ -12,6 +12,7 @@ from leo.contracts.device_buffer import (
     DeviceBufferRequest,
     DeviceBufferRequestV1,
     DirectAsyncRamDropRequestV2,
+    DirectAsyncRamDropRequestV3,
     DirectAsyncRamStatusV2,
 )
 from leo.contracts.gain_control import (
@@ -188,7 +189,7 @@ class FakeRadioSource:
         if self._ring_first_counter is None:
             raise FakeRadioError("fake DDR ring has no returned frames")
         frames = self._ring_returned_frames
-        if isinstance(request, DirectAsyncRamDropRequestV2):
+        if isinstance(request, (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3)):
             return DirectAsyncRamStatusV2(
                 version=1,
                 state="complete" if frames == request.target_frames else "running",

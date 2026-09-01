@@ -261,6 +261,46 @@ STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES = {
         (1,),
         "sha256:117a77ac1250f86a11bee00df8653b26c9747250d6aa54cad2d42be1595d071e",
     ),
+    "starlink-ch4-lower-10m-60s-rx0-direct-async-ram-drop-v10": (
+        10_000_000,
+        (0,),
+        "sha256:335ba1585253ec1f2357626b16f2f32cbc5368cc1c082c8220fbd283ed1ef9bd",
+    ),
+    "starlink-ch4-lower-10m-60s-rx1-direct-async-ram-drop-v10": (
+        10_000_000,
+        (1,),
+        "sha256:81de78394131fe6904f7a1b6b9d4a4900bdb477464376563364782a12ed86ef4",
+    ),
+    "starlink-ch4-lower-15m-60s-rx0-direct-async-ram-drop-v10": (
+        15_000_000,
+        (0,),
+        "sha256:49c51b945f9c7c2a80b4f5e32f103cff694056736bb41047075188748f33539d",
+    ),
+    "starlink-ch4-lower-15m-60s-rx1-direct-async-ram-drop-v10": (
+        15_000_000,
+        (1,),
+        "sha256:69a5ad262cece68ab4a44266dd44f9cc1c7648ea18ce331ed1ab02263ab28165",
+    ),
+    "starlink-ch4-lower-20m-60s-rx0-direct-async-ram-drop-v10": (
+        20_000_000,
+        (0,),
+        "sha256:077f8254cd91ebe6642b9513bd8a51150c55bac0ab1f7101175bfcb66fd83d59",
+    ),
+    "starlink-ch4-lower-20m-60s-rx1-direct-async-ram-drop-v10": (
+        20_000_000,
+        (1,),
+        "sha256:364fafc64c73412dcd1e95f523ac77b4943a6430f7a0e958532e32219772c54e",
+    ),
+    "starlink-ch4-lower-25m-60s-rx0-direct-async-ram-drop-v10": (
+        25_000_000,
+        (0,),
+        "sha256:faf2ad1ab3153c15228ec9332f3bff3bead7c615668ddf784fff757657f88eaf",
+    ),
+    "starlink-ch4-lower-25m-60s-rx1-direct-async-ram-drop-v10": (
+        25_000_000,
+        (1,),
+        "sha256:722ee701893e402822f33e1802b3d984005d9c3ee7b1cd882f8f9c23f5962292",
+    ),
 }
 
 
@@ -758,10 +798,20 @@ def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> N
                 raise ValueError("Standard-native production profile identity is not reviewed")
             expected_rate, expected_receivers, expected_digest = direct_identity
             expected_refill_samples = 1_048_576
-            expected_kernel_buffers = 12
+            ram_drop_v3 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3" in profile.tags
+            ram_drop_v2 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2" in profile.tags
+            expected_kernel_buffers = 11 if ram_drop_v3 else 12 if ram_drop_v2 else 15
             expected_queue_capacity = 64
             required_profile_tags = {
-                "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2",
+                (
+                    "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3"
+                    if ram_drop_v3
+                    else (
+                        "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2"
+                        if ram_drop_v2
+                        else "DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1"
+                    )
+                ),
                 "SINGLE_RX",
             }
         settings = stream.applied_settings
@@ -840,14 +890,19 @@ def _require_reviewed_direct_async_v6_geometry(manifest: RecordingManifestV6) ->
             expected_rate, direct_receivers, expected_digest = identity
             expected_receivers: tuple[int, ...] = direct_receivers
             expected_refill_samples = 1_048_576
-            ram_drop = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2" in profile.tags
-            expected_kernel_buffers = 12 if ram_drop else 15
+            ram_drop_v3 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3" in profile.tags
+            ram_drop_v2 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2" in profile.tags
+            expected_kernel_buffers = 11 if ram_drop_v3 else 12 if ram_drop_v2 else 15
             expected_queue_capacity = 64
             required_profile_tags = {
                 (
-                    "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2"
-                    if ram_drop
-                    else "DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1"
+                    "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3"
+                    if ram_drop_v3
+                    else (
+                        "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2"
+                        if ram_drop_v2
+                        else "DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1"
+                    )
                 ),
                 "SINGLE_RX",
             }

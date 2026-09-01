@@ -61,13 +61,13 @@ def test_25m_production_authority_selects_the_zero_external_prime_v8_profile(
 @pytest.mark.parametrize(
     ("rate", "receiver", "digest"),
     [
-        (10, 0, "sha256:741353a4f21fbcf798ebfbc292ce8f3de3645f518ef8a7f5e0121fc7c1f07875"),
-        (15, 1, "sha256:129e4ba840adace7eb3648228f966ef08ef160a042fd6b622cb99f8bb75f0aab"),
-        (20, 0, "sha256:cd8aa94677162329df799712f55483df082ab457fe94b782e9f91141cc47d696"),
-        (25, 1, "sha256:117a77ac1250f86a11bee00df8653b26c9747250d6aa54cad2d42be1595d071e"),
+        (10, 0, "sha256:335ba1585253ec1f2357626b16f2f32cbc5368cc1c082c8220fbd283ed1ef9bd"),
+        (15, 1, "sha256:69a5ad262cece68ab4a44266dd44f9cc1c7648ea18ce331ed1ab02263ab28165"),
+        (20, 0, "sha256:077f8254cd91ebe6642b9513bd8a51150c55bac0ab1f7101175bfcb66fd83d59"),
+        (25, 1, "sha256:722ee701893e402822f33e1802b3d984005d9c3ee7b1cd882f8f9c23f5962292"),
     ],
 )
-def test_direct_async_rollout_selects_ram_drop_v9_for_every_high_rate(
+def test_direct_async_rollout_selects_qualified_ram_drop_v10_for_every_high_rate(
     tmp_path, rate, receiver, digest
 ):
     settings = CliSettings.from_environ(
@@ -82,7 +82,7 @@ def test_direct_async_rollout_selects_ram_drop_v9_for_every_high_rate(
         (rate * 1_000_000, (receiver,), True)
     ]
 
-    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v9")
+    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v10")
     assert actual_digest == digest
     assert refill == 1_048_576
 
