@@ -23,6 +23,12 @@ then applies the catalog policy: start at 70%, select oldest eligible data down
 to 65%, warn at 75%, and stop acquisition admission at 80% when retention
 cannot make enough room. Holds and TEST sessions remain protected.
 
+Immutable runtime release retention is a separate operator workflow. Deployment
+never silently removes rollback releases. Use `sudo ./ops releases --plan`
+followed by an exact-digest `--apply` as documented in the production deployment
+runbook; the command shares the deployment lock and preserves sealed metadata
+and receipts for every retired runtime.
+
 Qualification is similarly disabled unless
 `/etc/leo/qualification-enabled` exists. It conflicts with continuous
 acquisition because both own the radios; use the procedure in the operator

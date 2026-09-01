@@ -770,6 +770,46 @@ QNAP, never overwrite/drop `leo_tracker`, and never relabel a legacy
 continuity-unobservable recording as safe. Preserve the pre-cutover database
 dump and environment snapshot until operator review closes the rollback window.
 
+## Retire superseded immutable releases
+
+Retain at least the active and previous healthy, database-compatible releases. A full installed
+runtime is not required forever merely because its SHA remains in historical catalog and
+qualification evidence: the SHA, deployment receipts, and archived publication metadata preserve
+that audit identity. Use only the guarded operations front door; never run `rm` directly beneath
+`/opt/leo-tracker/releases`.
+
+First produce the complete read-only inventory as root:
+
+```text
+sudo ./ops releases --plan --keep 10
+```
+
+Review `selectors`, `runtime_revisions`, `previous_revisions`, every per-release
+`protected_reasons` value, `candidate_count`, `candidate_bytes`, `warnings`, and the terminal
+`plan_sha256`. The default ten-release window is deliberately more conservative than the minimum
+active-plus-previous rollback requirement. Repeat `--protect FULL_40_HEX_SHA` during planning and
+apply for any additional operator hold. Do not apply a plan with warnings; unresolved healthy
+deployment history blocks the command independently.
+
+Apply only the exact reviewed plan:
+
+```text
+sudo ./ops releases --apply --keep 10 --expect-plan REVIEWED_PLAN_SHA256
+```
+
+The apply path acquires `/opt/leo-tracker/.ops-deploy.lock`, reconstructs the plan, and refuses a
+changed selector, process reference, metadata digest, inventory, size, or protection set. Before
+each exact SHA tree is removed with a one-filesystem boundary, its unchanged `root:leo` metadata
+is archived at `/opt/leo-tracker/retired-release-metadata/FULL_SHA.txt`. Canonical metadata is
+removed only after the runtime tree is gone. Sealed plan and completion receipts are written under
+`/srv/bulk/leo/qualification/deployment`. QNAP paths are rejected without traversal.
+
+If power loss or interruption occurs after metadata archival, run a new plan rather than editing
+the directories. A surviving tree is reported as `retirement-started`; canonical metadata whose
+tree is already gone is reported as `retirement-metadata-pending`. A newly reviewed apply resumes
+either state idempotently. After completion, rerun the plan and confirm `candidate_count=0` before
+closing the operator review.
+
 ## Deferred post-resync tuning
 
 The RAID is currently rebuilding at about 50 MB/s. That degraded measurement
