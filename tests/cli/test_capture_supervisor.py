@@ -11,6 +11,8 @@ from leo.acquisition import AcquisitionQueuePressure, AcquisitionSupervisorPoiso
 from leo.acquisition.mixed_rate_schedule import (
     PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2,
     PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2,
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2,
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
@@ -542,6 +544,48 @@ def test_durable_fixed_25_selector_only_executes_2p5_x25_hold() -> None:
     assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
         GainControllerMode.TANDEM_HOLD
     }
+
+
+def test_durable_fixed_25_exact_lo_selector_only_executes_qualified_2p5_x25_hold() -> None:
+    clock = _Clock()
+    backend = _ProductionRateDurableBackend(clock)
+    backend.analyzed.set()
+    start = datetime.fromtimestamp(0, tz=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        (
+            "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+            "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+        ),
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=12,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        mixed_rate_policy=PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2,
+    )
+
+    assert summary.capture_count == 12
+    intents = tuple(
+        ProductionDwellIntentV3.model_validate(item.payload)
+        for item in backend.operations
+        if item.kind == "scheduled_recording"
+    )
+    assert {intent.dwell_class for intent in intents} == {ProductionDwellClassV3.MIXED_2P5_25}
+    assert all(
+        PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2 in intent.extra_tags
+        and PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 in intent.extra_tags
+        for intent in intents
+    )
+    assert all(
+        leg.starlink_channel == 4 or leg.starlink_edge is StarlinkEdge.LOWER
+        for intent in intents
+        for leg in intent.radio_legs
+    )
 
 
 def test_production_profile_revision_change_supersedes_same_slot_pending_intent() -> None:

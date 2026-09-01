@@ -82,6 +82,12 @@ PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2 = (
 PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 = "capture_rollout:exact_lo_matrix_v2"
 PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1 = "production-direct-async-2p5-25-hold-v1"
 PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1 = "rate_rollout:fixed_2p5_25_hold_v1"
+PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2 = (
+    "production-direct-async-2p5-25-hold-exact-lo-v2"
+)
+PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2 = (
+    "rate_rollout:fixed_2p5_25_exact_lo_hold_v2"
+)
 
 ProductionProfileKey = tuple[int, tuple[int, ...], bool]
 ProductionProfileAuthority = tuple[str, str, int]
@@ -281,6 +287,36 @@ def compile_production_fixed_25_hold_intent_v1(
             PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
         ),
     )
+    return _with_tandem_hold_v1(intent, profile_authority=profile_authority)
+
+
+def compile_production_fixed_25_exact_lo_hold_intent_v2(
+    *,
+    operation_key: str,
+    cadence_ordinal: int,
+    radio_ids: Sequence[str],
+    profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
+    rollout_policy_id: str = PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2,
+    extra_tags: Sequence[str] = (),
+) -> ProductionDwellIntentV3:
+    """Compile one fixed 2.5 x 25 MS/s HOLD dwell on the qualified LO matrix."""
+
+    if rollout_policy_id != PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2:
+        raise ValueError("fixed 2.5 x 25 MS/s exact-LO HOLD policy is unsupported")
+    intent = compile_production_dwell_intent_v3(
+        operation_key=operation_key,
+        cadence_ordinal=cadence_ordinal,
+        radio_ids=radio_ids,
+        profile_authority=profile_authority,
+        dwell_class_override=ProductionDwellClassV3.MIXED_2P5_25,
+        extra_tags=(
+            *extra_tags,
+            PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
+            PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2,
+            PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2,
+        ),
+    )
+    intent = _with_exact_lo_qualified_edge_v2(intent)
     return _with_tandem_hold_v1(intent, profile_authority=profile_authority)
 
 

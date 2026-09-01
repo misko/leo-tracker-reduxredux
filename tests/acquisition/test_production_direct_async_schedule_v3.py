@@ -10,11 +10,14 @@ from leo.acquisition.coverage import project_capture_progress_coverage
 from leo.acquisition.mixed_rate_schedule import (
     PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2,
     PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2,
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2,
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
     compile_production_dwell_intent_exact_lo_hold_rollout_v2,
+    compile_production_fixed_25_exact_lo_hold_intent_v2,
     compile_production_dwell_intent_hold_rollout_v1,
     compile_production_dwell_intent_v3,
     compile_production_fixed_25_hold_intent_v1,
@@ -288,6 +291,31 @@ def test_fixed_25_hold_selector_reuses_v3_intent_and_profiles() -> None:
     assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
         GainControllerMode.TANDEM_HOLD
     }
+
+
+def test_fixed_25_exact_lo_hold_selector_uses_only_qualified_targets() -> None:
+    intents = tuple(
+        compile_production_fixed_25_exact_lo_hold_intent_v2(
+            operation_key=f"fixed-25-exact-lo:{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=_RADIOS,
+            profile_authority=_AUTHORITY,
+            rollout_policy_id=PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2,
+        )
+        for ordinal in range(64)
+    )
+
+    assert {intent.dwell_class for intent in intents} == {ProductionDwellClassV3.MIXED_2P5_25}
+    assert all(
+        PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2 in intent.extra_tags
+        and PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 in intent.extra_tags
+        for intent in intents
+    )
+    assert all(
+        leg.starlink_channel == 4 or leg.starlink_edge is StarlinkEdge.LOWER
+        for intent in intents
+        for leg in intent.radio_legs
+    )
 
 
 def test_v5_plan_and_v6_manifest_round_trip_through_a_real_capture(tmp_path) -> None:
