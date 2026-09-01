@@ -10,6 +10,7 @@ from leo.contracts.device_buffer import (
     DeviceBufferRequestV1,
     DirectAsyncRamDropRequestV2,
     DirectAsyncRamDropRequestV3,
+    DirectAsyncRamDropRequestV4,
     DirectAsyncRamStatusV2,
     DirectAsyncRequestV1,
 )
@@ -661,6 +662,43 @@ def test_qualified_ram_drop_adapter_uses_exact_128_mib_geometry() -> None:
         status = adapter.ddr_ring_status()
         assert status.requested_capacity_iq_bytes == 134_217_728
         assert status.admitted_capacity_iq_bytes == 134_217_728
+    finally:
+        adapter.close()
+
+
+def test_bounded_ram_drop_adapter_arms_one_64_frame_session() -> None:
+    device = StubRamDropDevice()
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.configure(_settings((0,), sample_rate_hz=25_000_000))
+    request = DirectAsyncRamDropRequestV4(
+        target_frames=1431,
+        requested_device_samples=1_500_000_000,
+    )
+    try:
+        assert (
+            adapter.begin_metadata_capture(
+                1_048_576,
+                kernel_buffers=11,
+                device_buffer=request,
+                direct_async_frames=64,
+            )
+            == 11
+        )
+        assert device.direct_kwargs == {
+            "direct_async_frames": 64,
+            "ddr_ring_bytes": 134_217_728,
+            "ddr_ring_frames": 0,
+            "ddr_ring_continuous": False,
+            "drop_backlog_on_overrun": True,
+        }
+        assert isinstance(adapter.ddr_ring_status(), DirectAsyncRamStatusV2)
     finally:
         adapter.close()
 

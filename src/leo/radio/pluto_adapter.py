@@ -15,6 +15,7 @@ from leo.contracts.device_buffer import (
     DeviceBufferRequestV1,
     DirectAsyncRamDropRequestV2,
     DirectAsyncRamDropRequestV3,
+    DirectAsyncRamDropRequestV4,
     DirectAsyncRamStatusV2,
     DirectAsyncRequestV1,
 )
@@ -250,7 +251,12 @@ class PlutoIioRadioSource:
             device_buffer.maximum_segment_frames
             if isinstance(
                 device_buffer,
-                (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3),
+                (
+                    DirectAsyncRequestV1,
+                    DirectAsyncRamDropRequestV2,
+                    DirectAsyncRamDropRequestV3,
+                    DirectAsyncRamDropRequestV4,
+                ),
             )
             else 64
         )
@@ -307,7 +313,10 @@ class PlutoIioRadioSource:
             if self.identity.firmware_version != "v0.46-plutoplus-spf-iq-direct-async-ring-v1":
                 raise PlutoAdapterError("direct-async profile requires the qualified v0.46 final")
             buffer_arguments = {"direct_async_frames": direct_async_frames}
-        elif isinstance(device_buffer, (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3)):
+        elif isinstance(
+            device_buffer,
+            (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3, DirectAsyncRamDropRequestV4),
+        ):
             if (
                 sample_count != device_buffer.frame_samples
                 or len(self._settings.receiver_ids) != device_buffer.receiver_count
@@ -391,7 +400,12 @@ class PlutoIioRadioSource:
                 session.close()
                 raise PlutoAdapterError("direct-async admission readback disagrees with request")
             if isinstance(
-                device_buffer, (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3)
+                device_buffer,
+                (
+                    DirectAsyncRamDropRequestV2,
+                    DirectAsyncRamDropRequestV3,
+                    DirectAsyncRamDropRequestV4,
+                ),
             ) and (
                 session.direct_async_frames != direct_async_frames
                 or session.direct_async_ring_extension is not True
@@ -439,7 +453,11 @@ class PlutoIioRadioSource:
                 DirectAsyncRamStatusV2
                 if isinstance(
                     self._device_buffer_request,
-                    (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3),
+                    (
+                        DirectAsyncRamDropRequestV2,
+                        DirectAsyncRamDropRequestV3,
+                        DirectAsyncRamDropRequestV4,
+                    ),
                 )
                 else DdrRingStatusV1
             )

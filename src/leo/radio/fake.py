@@ -13,6 +13,7 @@ from leo.contracts.device_buffer import (
     DeviceBufferRequestV1,
     DirectAsyncRamDropRequestV2,
     DirectAsyncRamDropRequestV3,
+    DirectAsyncRamDropRequestV4,
     DirectAsyncRamStatusV2,
 )
 from leo.contracts.gain_control import (
@@ -100,6 +101,7 @@ class FakeRadioSource:
         self._gain_controller: GainControllerPolicyV1 | None = None
         self._device_buffer: DeviceBufferRequest | None = None
         self._ring_returned_frames = 0
+        self._direct_async_frames = 0
         self._ring_first_counter: int | None = None
         self._ring_first_unavailable: int | None = None
         self.lifecycle: list[str] = []
@@ -171,10 +173,10 @@ class FakeRadioSource:
         self._metadata_refill_samples = sample_count
         self._device_buffer = device_buffer
         self._ring_returned_frames = 0
+        self._direct_async_frames = direct_async_frames
         self._ring_first_counter = None
         self._ring_first_unavailable = None
         self._gain_controller = gain_controller
-        del direct_async_frames
         if device_buffer is not None and self._gain_controller is None:
             self._gain_controller = GainControllerPolicyV1.create(
                 GainControllerMode.TANDEM_HOLD, sample_count=sample_count
@@ -189,11 +191,15 @@ class FakeRadioSource:
         if self._ring_first_counter is None:
             raise FakeRadioError("fake DDR ring has no returned frames")
         frames = self._ring_returned_frames
-        if isinstance(request, (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3)):
+        if isinstance(
+            request,
+            (DirectAsyncRamDropRequestV2, DirectAsyncRamDropRequestV3, DirectAsyncRamDropRequestV4),
+        ):
+            target_frames = self._direct_async_frames or request.target_frames
             return DirectAsyncRamStatusV2(
                 version=1,
-                state="complete" if frames == request.target_frames else "running",
-                terminal_reason=("target_complete" if frames == request.target_frames else "none"),
+                state="complete" if frames == target_frames else "running",
+                terminal_reason=("target_complete" if frames == target_frames else "none"),
                 error_code=0,
                 requested_capacity_iq_bytes=request.requested_ram_bytes,
                 admitted_capacity_iq_bytes=request.admitted_ram_bytes,
@@ -248,7 +254,8 @@ class FakeRadioSource:
         missing = self._gaps_before_blocks.get(self._block_index, 0)
         overflow = self._block_index in self._overflow_blocks
         if self._metadata_capture and self._device_buffer is not None:
-            if self._ring_returned_frames >= self._device_buffer.target_frames:
+            target_frames = self._direct_async_frames or self._device_buffer.target_frames
+            if self._ring_returned_frames >= target_frames:
                 raise FakeRadioError("fake DDR ring read beyond finite target")
             if missing and self._ring_first_unavailable is None:
                 self._ring_first_unavailable = self._device_sample_counter
@@ -382,6 +389,7 @@ class FakeRadioSource:
         self._kernel_buffers = None
         self._metadata_refill_samples = None
         self._gain_controller = None
+        self._direct_async_frames = 0
         self.lifecycle.append("close")
 
     def _samples(self, sample_count: int, receiver_ids: tuple[int, ...]) -> np.ndarray:
