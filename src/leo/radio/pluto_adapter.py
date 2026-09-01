@@ -14,6 +14,7 @@ from leo.contracts.device_buffer import (
     DdrRingStatusV1,
     DeviceBufferRequest,
     DeviceBufferRequestV1,
+    DirectAsyncExactDmaDropRequestV5,
     DirectAsyncRamDropRequestV2,
     DirectAsyncRamDropRequestV3,
     DirectAsyncRamDropRequestV4,
@@ -257,6 +258,7 @@ class PlutoIioRadioSource:
                     DirectAsyncRamDropRequestV2,
                     DirectAsyncRamDropRequestV3,
                     DirectAsyncRamDropRequestV4,
+                    DirectAsyncExactDmaDropRequestV5,
                 ),
             )
             else 64
@@ -350,6 +352,39 @@ class PlutoIioRadioSource:
                 "ddr_ring_continuous": False,
                 "drop_backlog_on_overrun": True,
             }
+        elif isinstance(device_buffer, DirectAsyncExactDmaDropRequestV5):
+            if (
+                sample_count != device_buffer.frame_samples
+                or kernel_buffers != device_buffer.requested_kernel_buffers
+                or len(self._settings.receiver_ids) != device_buffer.receiver_count
+                or not 1 <= direct_async_frames <= device_buffer.maximum_segment_frames
+            ):
+                raise PlutoAdapterError(
+                    "direct-async exact-DMA request disagrees with configured geometry"
+                )
+            facts = device.diagnostic_facts()
+            if (
+                facts.get("buffer_metadata_abi") != 3
+                or facts.get("buffer_direct_async") is not True
+                or facts.get("buffer_direct_async_exact_kernel_queue") is not True
+                or facts.get("buffer_direct_async_overrun_policies")
+                != ("drop-backlog", "preserve-backlog")
+                or facts.get("buffer_direct_async_default_overrun_policy") != "drop-backlog"
+            ):
+                raise PlutoAdapterError(
+                    "Pluto does not attest exact direct-async DMA/drop capabilities"
+                )
+            if self.identity.firmware_version != "v0.49-plutoplus-spf-iq-direct-async-v4":
+                raise PlutoAdapterError(
+                    "direct-async exact-DMA profile requires the qualified v0.49 release"
+                )
+            buffer_arguments = {
+                "direct_async_frames": direct_async_frames,
+                "ddr_ring_bytes": 0,
+                "ddr_ring_frames": 0,
+                "ddr_ring_continuous": False,
+                "drop_backlog_on_overrun": True,
+            }
         elif device_buffer is not None:
             raise PlutoAdapterError("unsupported device-buffer request")
         elif direct_async_frames:
@@ -379,6 +414,7 @@ class PlutoIioRadioSource:
                 raise PlutoAdapterError(
                     f"kernel-buffer readback mismatch: requested {kernel_buffers}, got {readback}"
                 )
+            allocated_kernel_buffers = int(getattr(session, "allocated_kernel_buffers", 0))
             if isinstance(device_buffer, DeviceBufferRequestV1) and (
                 session.ddr_ring_enabled is not True
                 or session.ddr_ring_requested_bytes != device_buffer.requested_bytes
@@ -420,6 +456,21 @@ class PlutoIioRadioSource:
                 session.close()
                 raise PlutoAdapterError(
                     "direct-async RAM/drop admission readback disagrees with request"
+                )
+            if isinstance(device_buffer, DirectAsyncExactDmaDropRequestV5) and (
+                allocated_kernel_buffers != device_buffer.requested_kernel_buffers
+                or session.direct_async_frames != direct_async_frames
+                or session.direct_async_ring_extension is not False
+                or session.drop_backlog_on_overrun is not True
+                or session.ddr_ring_requested_bytes
+                or session.ddr_ring_admitted_bytes
+                or session.ddr_ring_capacity_frames
+                or session.ddr_ring_capture_frames
+                or session.ddr_ring_continuous
+            ):
+                session.close()
+                raise PlutoAdapterError(
+                    "direct-async exact-DMA/drop admission readback disagrees with request"
                 )
         except PlutoAdapterError:
             if session is not None:

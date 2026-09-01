@@ -9,6 +9,7 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.device_buffer import (
+    DIRECT_ASYNC_EXACT_DMA_DROP_PROFILE_TAG_V5,
     DIRECT_ASYNC_PROFILE_TAG_V1,
     DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2,
     DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,
@@ -395,6 +396,7 @@ class CapturePlanV5(ContractModel):
                 DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2,
                 DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,
                 DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V4,
+                DIRECT_ASYNC_EXACT_DMA_DROP_PROFILE_TAG_V5,
             }.intersection(profile.tags):
                 raise ValueError("direct-async high-rate profile lacks its device-buffer policy")
             if profile.duration_seconds != self.duration_seconds:

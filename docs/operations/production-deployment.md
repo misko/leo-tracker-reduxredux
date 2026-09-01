@@ -381,23 +381,26 @@ HOLD/AUTO intents remain readable and executable, but the failed AUTO hardware
 mode is not newly scheduled. The rollout contains no same-rate, 3, 5, or 20
 MS/s dwell. The transaction checks the exact staged direct-async profile bytes,
 service command, feature gate, exact-revision release qualification, reviewed
-Standard regression authority, and both live radios through the exact v0.48
-ABI-3 direct-async-v3 adapter before starting any runtime unit. New high-rate
-intents use the same production scheduling and raw-spool path. The 10 and 15
-MS/s legs retain the additive, hardware-qualified `DIRECT_ASYNC_RAM_DROP_V3`
-contract: one finite session, 11 kernel buffers, an exact 128 MiB RAM request
-admitting 32 complete 1,048,576-sample frames, and explicit `drop-backlog`
-readback. With v0.48, the 20 and 25 MS/s authority returns to those same V3
-profiles and carries all 1,145 or 1,431 frames in one finite hardware session.
-This removes the host re-arm gaps introduced by the temporary v0.47 containment
-while preserving the existing scheduler, raw-spool, evidence, and Standard
-analysis paths. Published V4 profiles and recordings remain readable and
-immutable, but are no longer selected for new production dwells.
+Standard regression authority, and both live radios through the exact v0.49
+ABI-3 direct-async-v4 adapter before starting any runtime unit. New high-rate
+intents use the same production scheduling and raw-spool path. Every single-RX
+10, 15, 20, and 25 MS/s direct-async profile uses the additive
+`DIRECT_ASYNC_EXACT_DMA_DROP_V5` contract: one finite session, 1,000,000 samples
+per frame, exactly 50 requested and allocated kernel DMA buffers, no optional
+RAM ring, and explicit `drop-backlog` readback. This is exactly 200,000,000 IQ
+payload bytes and fails closed when firmware admits fewer than 50 buffers. The
+dual-RX 2.5 MS/s reference leg remains on its existing ordinary metadata path;
+v0.49 qualifies the exact 200 MB direct-async geometry only for one receiver,
+and changing that leg to single RX would change the scientific capture.
+Published V2--V4 buffer profiles and recordings remain readable and immutable,
+but are no longer selected for new direct-async production dwells.
 
 The retired 64-frame V4 session cap was a measured containment for v0.47: full
-25 MS/s 1,431-frame sessions returned premature `ENODATA` on both production
-radios. V0.48 makes stale gain/RSSI metadata recoverable in default
-`drop-backlog` mode, so one finite request continues without host re-arm.
+25 MS/s sessions returned premature `ENODATA` on both production radios. V0.49
+makes DMA admission authoritative and rejects a partial queue instead of
+reporting only the requested count. Default `drop-backlog` mode keeps the frame
+already entering TCP and retires older queued frames after overrun, so one
+finite request continues without host re-arm.
 Hardware tests also confirm that the 100 MB/s offered IQ rate exceeds the
 roughly 60--73 MB/s achieved transport rate. `drop-backlog` therefore minimizes
 stale-data latency and discontinuity count, but cannot promise gapless source

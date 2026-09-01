@@ -7,11 +7,14 @@ from leo.acquisition.coordinator import AcquisitionCoordinator
 from leo.acquisition.models import AcquisitionConfig
 from leo.contracts.device_buffer import (
     DDR_RING_EVIDENCE_KEY_V1,
+    DIRECT_ASYNC_EXACT_DMA_DROP_EVIDENCE_KEY_V5,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V4,
     DeviceBufferEvidenceV1,
     DeviceBufferRequestV1,
+    DirectAsyncExactDmaDropEvidenceV5,
+    DirectAsyncExactDmaDropRequestV5,
     DirectAsyncRamDropEvidenceV2,
     DirectAsyncRamDropEvidenceV3,
     DirectAsyncRamDropRequestV2,
@@ -325,6 +328,65 @@ def test_bounded_ram_drop_collects_terminal_status_from_every_segment(tmp_path, 
         "fake-generation-3",
     ]
     assert DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3 not in first.hardware_metadata
+    coordinator.store.verify(result.bundle.session_id)
+
+
+def test_exact_dma_drop_uses_one_session_and_persists_allocation(tmp_path, monkeypatch):
+    profile = CaptureProfileV2(
+        name="tiny-exact-dma-drop-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=25_000_000,
+        bandwidth_hz=25_000_000,
+        receivers=(0,),
+        gains=(ReceiverGainV1(receiver_id=0, gain_db=30),),
+        sample_count=100,
+        refill_samples=1_000_000,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        kernel_buffers=50,
+        refill_queue_capacity=4,
+        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+        tags=("TEST",),
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        ["radio-a"],
+        source_type=SourceType.TEST,
+    )
+    request = DirectAsyncExactDmaDropRequestV5(
+        target_frames=1,
+        requested_device_samples=100,
+    )
+    monkeypatch.setattr(coordinator_module, "_device_buffer_request", lambda *_: request)
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=1024,
+        ),
+    )
+    radio = FakeRadioSource("radio-a")
+
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": radio},
+        session_id="exact-dma-drop-clean",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert radio.lifecycle.count("begin_metadata_capture:1000000:50") == 1
+    assert result.bundle is not None
+    first = next(coordinator.store.reader(result.bundle, "stream-0").iter_timeline_metadata())
+    evidence = DirectAsyncExactDmaDropEvidenceV5.model_validate(
+        first.hardware_metadata[DIRECT_ASYNC_EXACT_DMA_DROP_EVIDENCE_KEY_V5]
+    )
+    assert evidence.segment_count == 1
+    assert evidence.allocated_kernel_buffers == 50
+    assert evidence.allocated_dma_iq_bytes == 200_000_000
+    assert evidence.request.requested_ram_bytes == 0
     coordinator.store.verify(result.bundle.session_id)
 
 

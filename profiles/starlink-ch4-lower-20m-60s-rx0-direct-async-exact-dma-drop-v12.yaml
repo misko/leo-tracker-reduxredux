@@ -1,0 +1,29 @@
+schema_version: 2
+name: starlink-ch4-lower-20m-60s-rx0-direct-async-exact-dma-drop-v12
+description: 60-second 20 MS/s single-RX0 direct-async capture with exact 200 MB DMA and stale-backlog dropping
+center_frequency_hz: 1717500000
+rf_center_frequency_hz: 11467500000
+lnb_lo_hz: 9750000000
+starlink_channel: ch4
+starlink_edge: lower
+sample_rate_hz: 20000000
+bandwidth_hz: 20000000
+receivers: [0]
+gain_mode: manual
+gains:
+  - schema_version: 1
+    receiver_id: 0
+    gain_db: 30.0
+duration_seconds: 60
+refill_samples: 1000000
+settle_seconds: 0.5
+prime_refills: 0
+continuity_policy: allow_segments
+synchronization_mode: best_effort
+peer_failure_policy: fail_session
+kernel_buffers: 50
+refill_queue_capacity: 64
+require_device_metadata: true
+storage_policy: zstd-128m-device-axis-zero-v1
+campaign: production-native-rates-direct-async-exact-dma-v5
+tags: [CAPTURE_ONLY, DEVICE_AXIS_ZERO_FILL, 'DEVICE_BUFFER:DIRECT_ASYNC_EXACT_DMA_DROP_V5', DMA_QUEUE_200M, FRESH_DATA_PRIORITY, LIVE, MIXED_RATE, NATIVE_BANDWIDTH, RANDOM_TUNING, RINGLESS, SINGLE_RX, STANDARD_NATIVE, TANDEM_CONTROLLER]
