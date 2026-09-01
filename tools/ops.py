@@ -34,6 +34,30 @@ QNAP_ROOT = Path("/mnt/qnap01")
 PRODUCTION_CAPTURE_POLICY = "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
 DEFAULT_RELEASE_RETENTION = 10
 MINIMUM_RELEASE_RETENTION = 2
+FAST_DEPLOY_TARGET_SECONDS = 30.0
+
+_FAST_DEPLOY_ALLOWED_PATTERNS = (
+    "src/leo/api/**",
+    "src/leo/application/**",
+    "src/leo/presentation/**",
+    "tests/api/**",
+    "tests/application/**",
+    "tests/presentation/**",
+    "web/**",
+    "docs/**",
+    "reports/**",
+    "*.md",
+)
+_FAST_DEPLOY_DENIED_PATTERNS = (
+    "web/package.json",
+    "web/package-lock.json",
+)
+_FAST_DEPLOY_RUNTIME_PATTERNS = (
+    "src/leo/api/**",
+    "src/leo/application/**",
+    "src/leo/presentation/**",
+    "web/**",
+)
 
 _REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 
@@ -1331,12 +1355,17 @@ def _warn_release_pressure(*, release_root: Path = RELEASE_ROOT) -> None:
 
 def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     stage_only = bool(getattr(args, "stage_only", False))
+    fast = bool(getattr(args, "fast", False))
     if stage_only and args.revision is None:
         raise OpsError("--stage-only requires an explicit --revision FULL_SHA")
     if stage_only and args.plan:
         raise OpsError("--stage-only cannot be combined with --plan")
     if stage_only and args.full:
         raise OpsError("--stage-only cannot be combined with --full")
+    if stage_only and fast:
+        raise OpsError("--stage-only cannot be combined with --fast")
+    if args.full and fast:
+        raise OpsError("--full cannot be combined with --fast")
     if _run_git("status", "--porcelain"):
         raise OpsError("deployment planning requires a clean worktree")
     target = args.revision or _run_git("rev-parse", "origin/main")
@@ -1346,27 +1375,64 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     if target != origin:
         raise OpsError("ordinary deployment target must equal the locally fetched origin/main")
     current = _selected_release_revision()
-    paths = tuple(_git_lines("diff", "--name-only", f"{current}..{target}")) if current else ()
+    current_api = _selected_component_release_revision("api") if fast else None
+    comparison = current_api if fast and current_api is not None else current
+    paths = (
+        tuple(_git_lines("diff", "--name-only", f"{comparison}..{target}")) if comparison else ()
+    )
     components = components_for_paths(paths, load_components())
     impact = sorted({item for component in components for item in component.impact})
-    mode = "full" if {"migration", "systemd"}.intersection(impact) else "minimal"
-    full_cutover = bool(impact) and (args.full or set(impact) != {"api"})
+    rejected_fast_paths = _fast_deploy_rejected_paths(paths) if fast else ()
+    fast_runtime_change = any(
+        any(fnmatch.fnmatchcase(path, pattern) for pattern in _FAST_DEPLOY_RUNTIME_PATTERNS)
+        for path in paths
+    )
+    fast_eligible = fast and fast_runtime_change and not rejected_fast_paths
+    mode = (
+        "fast-api-only"
+        if fast_eligible
+        else "full"
+        if {"migration", "systemd"}.intersection(impact)
+        else "minimal"
+    )
+    full_cutover = bool(impact) and not fast_eligible and (args.full or set(impact) != {"api"})
     return {
         "schema_version": 1,
         "kind": "leo-deployment-plan",
         "current_revision": current,
+        "current_api_revision": current_api,
+        "comparison_revision": comparison,
         "target_revision": target,
         "changed_paths": list(paths),
         "components": [component.name for component in components],
         "impact": impact,
         "mode": mode,
-        "services_to_restart": [
-            name for name in ("api", "worker", "acquisition") if name in impact
-        ],
-        "migration_required": "migration" in impact,
-        "worker_fence_required": "worker" in impact,
+        "services_to_restart": (
+            ["api"]
+            if fast_eligible
+            else [name for name in ("api", "worker", "acquisition") if name in impact]
+        ),
+        "migration_required": False if fast_eligible else "migration" in impact,
+        "worker_fence_required": False if fast_eligible else "worker" in impact,
         "capture_policy_id": PRODUCTION_CAPTURE_POLICY if full_cutover else None,
+        "fast_requested": fast,
+        "fast_eligible": fast_eligible,
+        "fast_rejected_paths": list(rejected_fast_paths),
+        "fast_target_seconds": FAST_DEPLOY_TARGET_SECONDS if fast else None,
     }
+
+
+def _fast_deploy_rejected_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            path
+            for path in paths
+            if any(fnmatch.fnmatchcase(path, pattern) for pattern in _FAST_DEPLOY_DENIED_PATTERNS)
+            or not any(
+                fnmatch.fnmatchcase(path, pattern) for pattern in _FAST_DEPLOY_ALLOWED_PATTERNS
+            )
+        )
+    )
 
 
 def _deploy(args: argparse.Namespace) -> int:
@@ -1387,6 +1453,30 @@ def _deploy(args: argparse.Namespace) -> int:
     if not impact:
         print(f"NO-OP target={target} has no runtime impact")
         return 0
+    if bool(getattr(args, "fast", False)):
+        rejected = tuple(document["fast_rejected_paths"])
+        if rejected:
+            raise OpsError(
+                "fast deploy refuses changes outside the API/UI boundary: " + ", ".join(rejected)
+            )
+        if not document["fast_eligible"]:
+            raise OpsError("fast deploy requires at least one API/UI runtime change")
+        if os.geteuid() != 0:
+            raise OpsError("mutating deployment requires root; rerun with sudo")
+        current_api = document.get("current_api_revision")
+        if current is None or current_api is None:
+            raise OpsError("fast deploy requires reviewed global and API component selectors")
+        _require_passing_release_qualification(str(current))
+        _require_matching_test_receipt(
+            target=target,
+            changed=tuple(document["changed_paths"]),
+        )
+        return _deploy_api_release(
+            target=target,
+            previous=str(current_api),
+            plan=document,
+            require_pre_staged=True,
+        )
     full_cutover = args.full or impact != {"api"}
     if full_cutover:
         if os.geteuid() != 0:
@@ -1400,12 +1490,13 @@ def _deploy(args: argparse.Namespace) -> int:
         return _deploy_full_release(target=target, previous=str(current), plan=document)
     if os.geteuid() != 0:
         raise OpsError("mutating deployment requires root; rerun with sudo")
-    if current is None or _selected_component_release_revision("api") is None:
+    current_api = _selected_component_release_revision("api")
+    if current is None or current_api is None:
         raise OpsError(
             "component selectors require one reviewed --full rollout before minimal deploy"
         )
     _require_matching_test_receipt(target=target, changed=tuple(document["changed_paths"]))
-    return _deploy_api_release(target=target, previous=str(current), plan=document)
+    return _deploy_api_release(target=target, previous=str(current_api), plan=document)
 
 
 def _require_matching_test_receipt(*, target: str, changed: tuple[str, ...]) -> Path:
@@ -1428,7 +1519,13 @@ def _require_matching_test_receipt(*, target: str, changed: tuple[str, ...]) -> 
     )
 
 
-def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> int:
+def _deploy_api_release(
+    *,
+    target: str,
+    previous: str,
+    plan: dict[str, Any],
+    require_pre_staged: bool = False,
+) -> int:
     lock_path = RELEASE_ROOT / ".ops-deploy.lock"
     lock_path.touch(mode=0o600, exist_ok=True)
     with lock_path.open("r+") as lock:
@@ -1437,6 +1534,8 @@ def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> 
         except BlockingIOError as error:
             raise OpsError("another deployment holds the host lock") from error
         started = time.monotonic()
+        if require_pre_staged:
+            _require_pre_staged_release(target)
         _stage_release(target)
         selector = ROOT / "deploy/scripts/select-component-release"
         restart = RELEASE_ROOT / "releases" / target / "deploy/scripts/restart-current-api"
@@ -1451,13 +1550,19 @@ def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> 
         DEPLOYMENT_EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         receipt_path = DEPLOYMENT_EVIDENCE_ROOT / f"deploy-{stamp}-{target}.json"
+        duration_seconds = round(time.monotonic() - started, 6)
         receipt = {
             "schema_version": 1,
             "kind": "leo-deployment-receipt",
-            "mode": "api-only",
+            "mode": "fast-api-only" if require_pre_staged else "api-only",
             "previous_revision": previous,
             "target_revision": target,
-            "duration_seconds": round(time.monotonic() - started, 6),
+            "duration_seconds": duration_seconds,
+            "target_seconds": (FAST_DEPLOY_TARGET_SECONDS if require_pre_staged else None),
+            "met_target": (
+                duration_seconds <= FAST_DEPLOY_TARGET_SECONDS if require_pre_staged else None
+            ),
+            "pre_staged": require_pre_staged,
             "plan": plan,
             "healthy": True,
         }
@@ -1466,8 +1571,32 @@ def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> 
         )
         _seal_evidence_file(receipt_path)
         print(f"DEPLOYED component=api revision={target} receipt={receipt_path}")
+        if require_pre_staged and duration_seconds > FAST_DEPLOY_TARGET_SECONDS:
+            print(
+                "FAST-DEPLOY-WARNING "
+                f"duration={duration_seconds:.3f}s "
+                f"target={FAST_DEPLOY_TARGET_SECONDS:.0f}s",
+                file=sys.stderr,
+            )
         _warn_release_pressure()
     return 0
+
+
+def _require_pre_staged_release(
+    target: str,
+    *,
+    release_root: Path = RELEASE_ROOT,
+) -> Path:
+    release = release_root / "releases" / target
+    metadata = release_root / "release-metadata" / f"{target}.txt"
+    if not release.is_dir() or release.is_symlink():
+        raise OpsError(
+            "fast deploy requires an already-staged immutable release; run "
+            f"sudo ./ops deploy --stage-only --revision {target}"
+        )
+    if not metadata.is_file() or metadata.is_symlink():
+        raise OpsError("fast deploy target has no sealed publication metadata")
+    return release
 
 
 def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) -> int:
@@ -1571,15 +1700,11 @@ def _select_component_revisions(*, release: Path, revisions: dict[str, str]) -> 
 
 
 def _release_qualification(target: str) -> Path:
-    evidence_root = Path("/srv/bulk/leo/qualification/release")
-    for receipt_path in sorted(evidence_root.glob("*/receipt.json"), reverse=True):
-        try:
-            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if receipt.get("git_revision") == target and receipt.get("passed") is True:
-            return receipt_path
+    existing = _passing_release_qualification(target)
+    if existing is not None:
+        return existing
     release = RELEASE_ROOT / "releases" / target
+    evidence_root = Path("/srv/bulk/leo/qualification/release")
     run_id = f"release-{target[:7]}-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
     command = (
         str(release / ".venv/bin/leo-release-qualify"),
@@ -1620,6 +1745,62 @@ def _release_qualification(target: str) -> Path:
     if receipt.get("git_revision") != target or receipt.get("passed") is not True:
         raise OpsError("release qualification receipt does not pass for the exact target")
     return receipt_path
+
+
+def _passing_release_qualification(target: str) -> Path | None:
+    evidence_root = Path("/srv/bulk/leo/qualification/release")
+    for receipt_path in sorted(evidence_root.glob("*/receipt.json"), reverse=True):
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if receipt.get("git_revision") == target and receipt.get("passed") is True:
+            return receipt_path
+    return None
+
+
+def _require_passing_release_qualification(
+    target: str,
+    *,
+    deployment_root: Path = DEPLOYMENT_EVIDENCE_ROOT,
+    release_evidence_root: Path = Path("/srv/bulk/leo/qualification/release"),
+) -> Path:
+    for deployment_path in sorted(deployment_root.glob("deploy-*.json"), reverse=True):
+        if not _is_sealed_evidence_file(deployment_path):
+            continue
+        try:
+            deployment = json.loads(deployment_path.read_text(encoding="utf-8"))
+            receipt_path = Path(str(deployment["release_qualification_receipt"]))
+        except (KeyError, OSError, TypeError, ValueError):
+            continue
+        if (
+            deployment.get("kind") != "leo-deployment-receipt"
+            or deployment.get("mode") != "full"
+            or deployment.get("target_revision") != target
+            or deployment.get("healthy") is not True
+            or not receipt_path.is_absolute()
+            or release_evidence_root not in receipt_path.parents
+            or not _is_sealed_evidence_file(receipt_path)
+        ):
+            continue
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if receipt.get("git_revision") == target and receipt.get("passed") is True:
+            return receipt_path
+    raise OpsError(
+        "fast deploy requires a sealed healthy full-deployment receipt and passing "
+        f"release qualification for the selected global base {target}"
+    )
+
+
+def _is_sealed_evidence_file(path: Path) -> bool:
+    try:
+        info = path.lstat()
+    except OSError:
+        return False
+    return stat.S_ISREG(info.st_mode) and stat.S_IMODE(info.st_mode) == 0o440
 
 
 def _environment_values(raw: bytes) -> dict[str, str]:
@@ -2245,6 +2426,11 @@ def parser() -> argparse.ArgumentParser:
         help="stage and validate an exact revision without cutting over runtime state",
     )
     deploy.add_argument("--full", action="store_true")
+    deploy.add_argument(
+        "--fast",
+        action="store_true",
+        help=("switch only the API to a pre-staged API/UI-only revision; refuse broader changes"),
+    )
     deploy.add_argument("--revision")
     releases = commands.add_parser(
         "releases",

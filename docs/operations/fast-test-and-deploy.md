@@ -7,6 +7,8 @@ The repository has one operator-facing command:
 ./ops test --base CURRENT_PRODUCTION_SHA
 release_revision=$(git rev-parse origin/main)
 sudo ./ops deploy --stage-only --revision "$release_revision"
+# For a strictly API/UI-only revision, cut over the already-staged release:
+sudo ./ops deploy --fast --revision "$release_revision"
 # Run the authorized hardware qualification with
 # /opt/leo-tracker/releases/$release_revision/.venv/bin/python.
 rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v6.json"
@@ -86,6 +88,26 @@ startup launches the API, workers, and acquisition directly; reconciliation rema
 asynchronous on its timer. A no-migration failure restores the prior environment, selectors,
 units, and services. Migration cutovers require a production backup and fail closed rather than
 attempting an unsafe schema rollback.
+
+`sudo ./ops deploy --fast` is the explicit approximately-30-second production path. Build and
+publication happen beforehand with `--stage-only`; `--fast` refuses to build a missing target.
+It compares the target with the currently selected API revision, requires a passing exact-revision
+test receipt, revalidates the immutable release and its sealed metadata, switches only
+`current-api`, restarts the API, and waits for `/api/v1/status`. Its receipt records the measured
+duration and whether the 30-second target was met. A failed health check atomically selects and
+restarts the previous API release.
+
+The fast boundary is deliberately narrow: API, application, presentation, UI source, their tests,
+and documentation may be present in the delta. Python or browser dependency files, contracts,
+analysis, processing, pipeline, catalog, migrations, acquisition, radio, station, deployment, and
+systemd changes are rejected with their exact paths. The selected global base must already have a
+sealed passing full-release qualification. Workers, acquisition, PostgreSQL, production
+environment bindings, and the global pipeline release are never touched by this path. Review its
+decision before cutover with:
+
+```bash
+./ops deploy --fast --plan --revision "$release_revision"
+```
 
 After any required Alembic upgrade and before worker startup, cutover reads the complete production
 resource-capacity inventory and requires exactly `streaming=16,cpu=8,memory=4,heavy=2`; any row
