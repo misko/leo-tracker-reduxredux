@@ -109,7 +109,10 @@ from leo.operations.retention import (
     WARNING_WATERMARK,
 )
 from leo.pipeline import ExpandedRunPlanV1, compile_standard_run_plan
-from leo.pipeline.standard_native import compile_standard_native_run_plan
+from leo.pipeline.standard_native import (
+    compile_standard_native_automatic_run_plan,
+    compile_standard_native_run_plan,
+)
 from leo.presentation.standard_pipeline import (
     StandardSourceTypeV2,
     standard_eligibility_v2,
@@ -928,7 +931,7 @@ class LocalProcessingBackend:
             raise ValueError("catalog and bundle manifest digests disagree")
         if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
             try:
-                plan = compile_standard_native_run_plan(
+                plan = compile_standard_native_automatic_run_plan(
                     bundle.manifest,
                     manifest_digest=snapshot.manifest_digest,
                     pipeline_release_id=self.services.pipeline_release_id,

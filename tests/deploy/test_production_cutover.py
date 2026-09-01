@@ -1168,7 +1168,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_CAPTURE_INTERVAL_SECONDS=180",
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
-            "LEO_SCANNER_ENABLED=true",
+            "LEO_SCANNER_ENABLED=false",
             "LEO_SCANNER_RADIO_ID=radio_pluto_5d4d",
             "LEO_SCANNER_INTERVAL_SECONDS=180",
             "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=180",
@@ -1238,7 +1238,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
     with pytest.raises(ValueError, match="scanner configuration"):
         _call(
             "verify_environment_text",
-            environment.replace("LEO_SCANNER_ENABLED=true", "LEO_SCANNER_ENABLED=false"),
+            environment.replace("LEO_SCANNER_ENABLED=false", "LEO_SCANNER_ENABLED=true"),
             revision,
         )
     station_lines = tuple(

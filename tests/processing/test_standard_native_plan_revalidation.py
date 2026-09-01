@@ -5,6 +5,7 @@ from typing import Any, Literal, cast
 
 import pytest
 
+from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.analysis.standard.native_analyzers import (
     production_standard_native_evidence_registry,
 )
@@ -12,6 +13,11 @@ from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pipeline_lanes import PipelineLane
+from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
+    CompressionSettingsV1,
+    RecordingManifestV6,
+)
 from leo.pipeline import (
     ExpandedRunPlanV1,
     IqAccess,
@@ -21,10 +27,19 @@ from leo.pipeline import (
     ResourceClass,
     ScopeIdentityV1,
 )
-from leo.pipeline.standard_native import compile_standard_native_run_plan
+from leo.pipeline.standard_native import (
+    compile_standard_native_automatic_run_plan,
+    compile_standard_native_run_plan,
+)
 from leo.processing import ProcessingService
 from leo.processing.adapters import IqReaderProvider
+from leo.radio.fake import FakeRadioSource
+from leo.storage import RecordingStore
 from tests.pipeline.test_standard_native_topology import _manifest, _reviewed_v2_manifest
+from tests.processing.test_mixed_rate_standard_native_operational_vertical import (
+    _RADIO_IDS,
+    _bounded_direct_async_plan,
+)
 
 _RELEASE = "1" * 40
 
@@ -157,7 +172,7 @@ def test_native_plan_cannot_enter_research_lane() -> None:
     ),
 )
 @pytest.mark.parametrize("trigger", ("new_capture", "reprocess"))
-def test_exact_v3_native_plan_can_enter_current_with_station_authority(
+def test_exact_v3_native_plan_respects_automatic_2p5_only_policy(
     monkeypatch: pytest.MonkeyPatch,
     profile_name: str,
     trigger: Literal["new_capture", "reprocess"],
@@ -166,7 +181,24 @@ def test_exact_v3_native_plan_can_enter_current_with_station_authority(
 
     manifest = _manifest(profile_name)
     manifest_digest = canonical_digest({"manifest": profile_name})
-    plan = compile_standard_native_run_plan(
+    rate_hz = manifest.capture_plan.profile_revision.profile.sample_rate_hz
+    compiler = (
+        compile_standard_native_automatic_run_plan
+        if trigger == "new_capture"
+        else compile_standard_native_run_plan
+    )
+    if trigger == "new_capture" and rate_hz != 2_500_000:
+        with pytest.raises(
+            ValueError,
+            match="automatic Standard-native analysis requires a 2.5 MS/s stream",
+        ):
+            compiler(
+                manifest,
+                manifest_digest=manifest_digest,
+                pipeline_release_id=_RELEASE,
+            )
+        return
+    plan = compiler(
         manifest,
         manifest_digest=manifest_digest,
         pipeline_release_id=_RELEASE,
@@ -185,10 +217,7 @@ def test_exact_v3_native_plan_can_enter_current_with_station_authority(
     )
 
     service.create_expanded_run(
-        run_id=(
-            f"native-current-{trigger}-"
-            f"{manifest.capture_plan.profile_revision.profile.sample_rate_hz}"
-        ),
+        run_id=(f"native-current-{trigger}-{rate_hz}"),
         plan=plan,
         trigger=trigger,
         pipeline_lane=PipelineLane.STANDARD,
@@ -340,3 +369,85 @@ def test_exact_native_plan_reaches_evidence_only_persistence(
     assert catalog.created["promotion_policy"] == "evidence_only"
     assert catalog.created["pipeline_lane"] is PipelineLane.STANDARD
     assert len(catalog.created["jobs"]) == len(plan.jobs)
+
+
+def test_v6_automatic_run_revalidates_only_2p5_while_reprocess_retains_25m(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from leo.processing import service as processing_service
+
+    capture_plan = _bounded_direct_async_plan(monkeypatch, high_rate_hz=25_000_000)
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=1_048_576,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+    result = coordinator.capture_once(
+        capture_plan,
+        {
+            _RADIO_IDS[0]: FakeRadioSource(_RADIO_IDS[0], seed=81),
+            _RADIO_IDS[1]: FakeRadioSource(_RADIO_IDS[1], seed=82),
+        },
+        session_id="automatic-low-only-v6",
+    )
+    assert type(result.manifest) is RecordingManifestV6
+    manifest = result.manifest
+    manifest_digest = canonical_digest({"manifest": "automatic-low-only-v6"})
+    automatic = compile_standard_native_automatic_run_plan(
+        manifest,
+        manifest_digest=manifest_digest,
+        pipeline_release_id=_RELEASE,
+    )
+    explicit = compile_standard_native_run_plan(
+        manifest,
+        manifest_digest=manifest_digest,
+        pipeline_release_id=_RELEASE,
+    )
+    catalog = _Catalog(manifest_digest)
+    service = ProcessingService(
+        catalog=cast(CatalogRepository, catalog),
+        artifacts=cast(AnalysisArtifactStore, SimpleNamespace()),
+        registry=production_standard_native_evidence_registry(),
+        iq_readers=cast(IqReaderProvider, _Provider(manifest, manifest_digest)),
+    )
+    monkeypatch.setattr(
+        processing_service,
+        "_compile_subject_binding_registrations",
+        lambda **_values: (),
+    )
+
+    service.create_expanded_run(
+        run_id="automatic-low-only-v6-run",
+        plan=automatic,
+        trigger="new_capture",
+        promotion_policy="current",
+    )
+
+    assert catalog.created is not None
+    rates_by_stream_id = {
+        stream.stream_id: stream.applied_settings.sample_rate_hz for stream in manifest.streams
+    }
+    automatic_rates = {
+        rates_by_stream_id[job.scope.stream_id]
+        for job in automatic.jobs
+        if job.scope.stream_id is not None
+    }
+    explicit_rates = {
+        rates_by_stream_id[job.scope.stream_id]
+        for job in explicit.jobs
+        if job.scope.stream_id is not None
+    }
+    assert automatic_rates == {2_500_000}
+    assert explicit_rates == {2_500_000, 25_000_000}
+    with pytest.raises(ValueError, match="manifest-authoritative Standard-native DAG"):
+        service.create_expanded_run(
+            run_id="automatic-full-v6-run",
+            plan=explicit,
+            trigger="new_capture",
+            promotion_policy="current",
+        )

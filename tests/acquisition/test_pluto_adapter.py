@@ -163,6 +163,7 @@ def _upstream_settings(**kwargs):
 def test_adapter_maps_one_or_two_rx_without_leaking_upstream_models(receiver_ids) -> None:
     constructed: list[StubDevice] = []
     expected_metadata_abis: list[int] = []
+    iq_decoders: list[str] = []
 
     def factory(
         uri: str,
@@ -170,8 +171,10 @@ def test_adapter_maps_one_or_two_rx_without_leaking_upstream_models(receiver_ids
         serial: str,
         radio_id: str,
         expected_metadata_abi: int,
+        iq_decoder: str,
     ) -> StubDevice:
         expected_metadata_abis.append(expected_metadata_abi)
+        iq_decoders.append(iq_decoder)
         device = StubDevice(uri, serial=serial, radio_id=radio_id)
         constructed.append(device)
         return device
@@ -199,11 +202,13 @@ def test_adapter_maps_one_or_two_rx_without_leaking_upstream_models(receiver_ids
         "radio-a",
     )
     assert expected_metadata_abis == [3]
+    assert iq_decoders == ["raw-complex64"]
     assert isinstance(actual, RadioSettingsV1)
     assert block.samples.shape == (4, len(receiver_ids), 2)
     assert block.samples.dtype == np.dtype("<i2")
     assert block.samples[3, 0].tolist() == [3, -3]
     assert block.metadata.hardware_metadata["upstream_utc_ns"] == 1234
+    assert block.metadata.hardware_metadata["iq_decoder"] == "raw-complex64"
     assert block.metadata.host_request_utc_ns.lower_ns == 100
     assert block.metadata.host_request_utc_ns.upper_ns == 200
     adapter.close()
@@ -397,6 +402,7 @@ def test_metadata_session_maps_exact_header_and_derives_gap() -> None:
     assert second.metadata.hardware_metadata["stream_id"] == 77
     assert second.metadata.hardware_metadata["stream_generation"] == "generation-77"
     assert second.metadata.hardware_metadata["first_sample_sequence"] == 108
+    assert second.metadata.hardware_metadata["iq_decoder"] == "raw-complex64"
     assert device.reset_count == 1
     adapter.close()
     assert device.session is not None and device.session.closed

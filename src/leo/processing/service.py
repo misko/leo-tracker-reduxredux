@@ -100,6 +100,7 @@ from leo.pipeline import (
 )
 from leo.pipeline.standard_native import (
     STANDARD_NATIVE_STAGE_KEYS,
+    compile_standard_native_automatic_run_plan,
     compile_standard_native_run_plan,
     compile_standard_native_scope_inventory,
     standard_native_pipeline_definition_v1,
@@ -1166,7 +1167,11 @@ class ProcessingService:
                     raise ValueError("Standard-native mixed promotion policy is unsupported")
             else:
                 raise ValueError("Standard-native requires a reviewed V2/V3/V4 recording")
-            expected_plan = compile_standard_native_run_plan(
+            expected_plan = (
+                compile_standard_native_automatic_run_plan
+                if trigger == "new_capture"
+                else compile_standard_native_run_plan
+            )(
                 manifest,
                 manifest_digest=plan.manifest_digest,
                 pipeline_release_id=plan.pipeline_release_id,
@@ -1345,7 +1350,11 @@ class ProcessingService:
                 manifest=source,
                 manifest_digest=execution.input_manifest_digest,
             )
-            expected_plan = compile_standard_native_run_plan(
+            expected_plan = (
+                compile_standard_native_automatic_run_plan
+                if execution.trigger == "new_capture"
+                else compile_standard_native_run_plan
+            )(
                 source,
                 manifest_digest=execution.input_manifest_digest,
                 pipeline_release_id=execution.pipeline_release_id,
@@ -2030,7 +2039,13 @@ def _compile_native_subject_binding_registrations(
     """Freeze verified logical-IQ and validity authority for every native path."""
 
     release = catalog.pipeline_release_snapshot(plan.pipeline_release_id)
-    topology = compile_standard_native_scope_inventory(manifest)
+    selected_stream_ids = frozenset(
+        job.scope.stream_id for job in plan.jobs if job.scope.stream_id is not None
+    )
+    topology = compile_standard_native_scope_inventory(
+        manifest,
+        selected_stream_ids=selected_stream_ids,
+    )
     starlink_tuning = resolve_manifest_starlink_tuning(manifest)
     streams = {item.stream_id: item for item in manifest.streams}
     raw_streams = {item.stream_id: item for item in integrity.streams}

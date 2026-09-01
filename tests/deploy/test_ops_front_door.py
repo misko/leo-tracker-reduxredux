@@ -551,6 +551,33 @@ def test_deployment_environment_adds_new_reviewed_rate_profile_bindings(
     assert values["LEO_PIPELINE_RELEASE_ID"] == target
 
 
+def test_acquisition_environment_atomically_binds_selected_release(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    environment = tmp_path / "acquisition.env"
+    original = (
+        "# preserved acquisition override\n"
+        f"LEO_ACQUISITION_RELEASE_ID={'1' * 40}\n"
+        "LEO_MIXED_RATE_POLICY=fixed-2p5-25\n"
+    ).encode()
+    environment.write_bytes(original)
+    monkeypatch.setattr(OPS.os, "chown", lambda *_args: None)
+    monkeypatch.setattr(OPS.grp, "getgrnam", lambda _name: type("Group", (), {"gr_gid": 1})())
+
+    OPS._write_acquisition_release_environment(environment, original, target)
+
+    values = OPS._environment_values(environment.read_bytes())
+    assert values["LEO_ACQUISITION_RELEASE_ID"] == target
+    assert values["LEO_MIXED_RATE_POLICY"] == "fixed-2p5-25"
+    assert environment.read_text().startswith("# preserved acquisition override\n")
+    monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", environment)
+    OPS._verify_acquisition_environment_revision(target)
+    with pytest.raises(OPS.OpsError, match="does not match"):
+        OPS._verify_acquisition_environment_revision("3" * 40)
+
+
 def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -564,11 +591,14 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     environment.write_text(
         f"LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker\nLEO_PIPELINE_RELEASE_ID={previous}\n"
     )
+    acquisition_environment = tmp_path / "acquisition.env"
+    acquisition_environment.write_text(f"LEO_ACQUISITION_RELEASE_ID={previous}\n")
     qualification = tmp_path / "qualification.json"
     qualification.write_text("{}")
     order: list[str] = []
     monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
     monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", acquisition_environment)
     monkeypatch.setattr(OPS, "_stage_release", lambda _target: order.append("stage"))
     monkeypatch.setattr(OPS, "_release_qualification", lambda _target: qualification)
     monkeypatch.setattr(OPS, "_migration_required", lambda **_kwargs: False)
@@ -580,6 +610,11 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     monkeypatch.setattr(OPS, "_quiesce_runtime", lambda: order.append("quiesce"))
     monkeypatch.setattr(
         OPS, "_write_deployment_environment", lambda *_args: order.append("environment")
+    )
+    monkeypatch.setattr(
+        OPS,
+        "_write_acquisition_release_environment",
+        lambda *_args: order.append("acquisition-environment"),
     )
     monkeypatch.setattr(OPS, "_select_all_components", lambda **_kwargs: order.append("select"))
     monkeypatch.setattr(OPS, "_fence_previous_release", lambda **_kwargs: order.append("fence"))
@@ -600,6 +635,7 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
         "stage",
         "quiesce",
         "environment",
+        "acquisition-environment",
         "select",
         "fence",
         "units",
@@ -690,8 +726,12 @@ def test_full_deploy_rolls_back_no_migration_failure(
         + f"\nLEO_PIPELINE_RELEASE_ID={previous}\n"
     ).encode()
     environment.write_bytes(old_environment)
+    acquisition_environment = tmp_path / "acquisition.env"
+    old_acquisition_environment = f"LEO_ACQUISITION_RELEASE_ID={previous}\n".encode()
+    acquisition_environment.write_bytes(old_acquisition_environment)
     monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
     monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", acquisition_environment)
     previous_api = "3" * 40
     selectors = {
         "global": previous,
@@ -701,6 +741,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
     }
     order: list[str] = []
     write_deployment_environment = OPS._write_deployment_environment
+    write_acquisition_release_environment = OPS._write_acquisition_release_environment
     restore_environment = OPS._restore_environment
     monkeypatch.setattr(OPS, "_stage_release", lambda _target: order.append("stage"))
     monkeypatch.setattr(OPS, "_release_qualification", lambda _target: tmp_path / "receipt")
@@ -715,6 +756,16 @@ def test_full_deploy_rolls_back_no_migration_failure(
         write_deployment_environment(path, content, revision)
 
     monkeypatch.setattr(OPS, "_write_deployment_environment", write_target)
+
+    def write_acquisition_target(path: Path, content: bytes, revision: str) -> None:
+        order.append("target-acquisition-environment")
+        write_acquisition_release_environment(path, content, revision)
+
+    monkeypatch.setattr(
+        OPS,
+        "_write_acquisition_release_environment",
+        write_acquisition_target,
+    )
     monkeypatch.setattr(
         OPS, "_select_all_components", lambda **_kwargs: order.append("target-selectors")
     )
@@ -747,11 +798,19 @@ def test_full_deploy_rolls_back_no_migration_failure(
     )
 
     def restore_previous(path: Path, content: bytes) -> None:
-        assert OPS._environment_values(path.read_bytes())["LEO_CAPTURE_PROFILE"].endswith(
-            "native-bandwidth-v4"
-        )
-        assert content == old_environment
-        order.append("previous-environment")
+        if path == environment:
+            assert OPS._environment_values(path.read_bytes())["LEO_CAPTURE_PROFILE"].endswith(
+                "native-bandwidth-v4"
+            )
+            assert content == old_environment
+            order.append("previous-environment")
+        else:
+            assert path == acquisition_environment
+            assert (
+                OPS._environment_values(path.read_bytes())["LEO_ACQUISITION_RELEASE_ID"] == target
+            )
+            assert content == old_acquisition_environment
+            order.append("previous-acquisition-environment")
         restore_environment(path, content)
 
     monkeypatch.setattr(OPS, "_restore_environment", restore_previous)
@@ -793,6 +852,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
         "stage",
         "quiesce",
         "target-environment",
+        "target-acquisition-environment",
         "target-selectors",
         "fence",
         "target-units",
@@ -801,6 +861,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
         "target-health",
         "quiesce",
         "previous-environment",
+        "previous-acquisition-environment",
         "previous-selectors",
         "previous-units",
         "target-fence",
@@ -808,6 +869,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
         "previous-health",
     ]
     assert environment.read_bytes() == old_environment
+    assert acquisition_environment.read_bytes() == old_acquisition_environment
 
 
 def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
@@ -822,9 +884,12 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
     environment.write_text(
         f"LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker\nLEO_PIPELINE_RELEASE_ID={previous}\n"
     )
+    acquisition_environment = tmp_path / "acquisition.env"
+    acquisition_environment.write_text(f"LEO_ACQUISITION_RELEASE_ID={previous}\n")
     order: list[str] = []
     monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
     monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", acquisition_environment)
     monkeypatch.setattr(OPS, "_stage_release", lambda _target: None)
     monkeypatch.setattr(OPS, "_release_qualification", lambda _target: tmp_path / "receipt")
     monkeypatch.setattr(OPS, "_migration_required", lambda **_kwargs: True)
@@ -837,6 +902,7 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
     monkeypatch.setattr(OPS, "_backup_database", lambda **_kwargs: tmp_path / "backup")
     monkeypatch.setattr(OPS, "_run_as_leo", lambda *_args, **_kwargs: order.append("migration"))
     monkeypatch.setattr(OPS, "_write_deployment_environment", lambda *_args: None)
+    monkeypatch.setattr(OPS, "_write_acquisition_release_environment", lambda *_args: None)
     monkeypatch.setattr(OPS, "_select_all_components", lambda **_kwargs: None)
     monkeypatch.setattr(OPS, "_fence_previous_release", lambda **_kwargs: None)
     monkeypatch.setattr(OPS, "_install_units", lambda _release: None)
@@ -968,6 +1034,8 @@ def test_restore_refuses_to_mutate_previous_runtime_until_target_is_stopped(
             selector_release=tmp_path / "target",
             environment_path=tmp_path / "leo.env",
             old_environment=b"old",
+            acquisition_environment_path=tmp_path / "acquisition.env",
+            old_acquisition_environment=b"old-acquisition",
         )
 
     assert calls == []
@@ -1003,10 +1071,13 @@ def test_failed_previous_runtime_health_is_quiesced_again(
             selector_release=tmp_path / ("2" * 40),
             environment_path=tmp_path / "leo.env",
             old_environment=b"old",
+            acquisition_environment_path=tmp_path / "acquisition.env",
+            old_acquisition_environment=b"old-acquisition",
         )
 
     assert order == [
         "quiesce",
+        "environment",
         "environment",
         "selectors",
         "units",
@@ -1070,6 +1141,7 @@ def test_restored_runtime_verifies_divergent_selectors_and_service_health(
         lambda component: observed_components[component],
     )
     monkeypatch.setattr(OPS, "_wait_for_api", lambda: health.append("api"))
+    monkeypatch.setattr(OPS, "_verify_acquisition_environment_revision", lambda _revision: None)
     monkeypatch.setattr(
         OPS.subprocess,
         "run",

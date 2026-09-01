@@ -50,6 +50,7 @@ DeviceFactory = Callable[..., Any]
 SettingsFactory = Callable[..., Any]
 ExactSettingsApplier = Callable[[Any, Any], Any]
 _EXPECTED_METADATA_ABI = 3
+_PPU_IQ_DECODER = "raw-complex64"
 
 
 class PlutoAdapterError(RuntimeError):
@@ -129,6 +130,7 @@ class PlutoIioRadioSource:
                 serial=self._expected_serial,
                 radio_id=self._radio_id,
                 expected_metadata_abi=_EXPECTED_METADATA_ABI,
+                iq_decoder=_PPU_IQ_DECODER,
             )
         except Exception as error:
             raise PlutoAdapterError(f"Pluto construction failed: {error}") from error
@@ -585,6 +587,7 @@ class PlutoIioRadioSource:
                     "continuity": ContinuityStatus.UNKNOWN,
                     "hardware_metadata": {
                         "adapter": "pluto-plus-utils-iio-legacy-unobservable",
+                        "iq_decoder": _PPU_IQ_DECODER,
                         "upstream_utc_ns": upstream_utc_ns,
                         "host_block_index": self._block_index,
                     },
@@ -726,6 +729,7 @@ class PlutoIioRadioSource:
                 sample_time_uncertainty_ns=(None if uncertainty is None else int(uncertainty)),
                 hardware_metadata={
                     "adapter": "pluto-plus-utils-metadata",
+                    "iq_decoder": _PPU_IQ_DECODER,
                     "stream_id": raw_stream_id,
                     "stream_generation": stream_generation,
                     "buffer_sequence": buffer_sequence,

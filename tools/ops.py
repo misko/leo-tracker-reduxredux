@@ -28,6 +28,7 @@ MANIFEST_PATH = ROOT / "config/ops-components.json"
 PROTECTED_DATABASES = frozenset({"leo_tracker", "postgres", "template0", "template1"})
 RELEASE_ROOT = Path("/opt/leo-tracker")
 PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
+PRODUCTION_ACQUISITION_ENVIRONMENT = Path("/etc/leo/acquisition.env")
 DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
 QNAP_ROOT = Path("/mnt/qnap01")
 PRODUCTION_CAPTURE_POLICY = "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
@@ -64,7 +65,7 @@ _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_CAPTURE_INTERVAL_SECONDS": "180",
     "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
     "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
-    "LEO_SCANNER_ENABLED": "true",
+    "LEO_SCANNER_ENABLED": "false",
     "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
     "LEO_SCANNER_INTERVAL_SECONDS": "180",
     "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "180",
@@ -1485,6 +1486,8 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
         release = RELEASE_ROOT / "releases" / target
         environment_path = PRODUCTION_ENVIRONMENT
         old_environment = environment_path.read_bytes()
+        acquisition_environment_path = PRODUCTION_ACQUISITION_ENVIRONMENT
+        old_acquisition_environment = acquisition_environment_path.read_bytes()
         database_url = _environment_values(old_environment)["LEO_DATABASE_URL"]
         migration_changed = _migration_required(release=release, database_url=database_url)
         previous_selectors = _selected_selector_revisions()
@@ -1507,6 +1510,11 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
                     extra_environment={"LEO_DATABASE_URL": database_url},
                 )
             _write_deployment_environment(environment_path, old_environment, target)
+            _write_acquisition_release_environment(
+                acquisition_environment_path,
+                old_acquisition_environment,
+                target,
+            )
             _select_all_components(release=release, revision=target)
             _fence_previous_release(release=release, previous=previous, target=target)
             _install_units(release)
@@ -1530,6 +1538,8 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
                         selector_release=release,
                         environment_path=environment_path,
                         old_environment=old_environment,
+                        acquisition_environment_path=acquisition_environment_path,
+                        old_acquisition_environment=old_acquisition_environment,
                     )
             raise
         receipt_path = _write_deployment_receipt(
@@ -1656,6 +1666,40 @@ def _write_deployment_environment(path: Path, old_environment: bytes, target: st
             lines[locations[key][0]] = f"{key}={value}"
     additions = [f"{key}={value}" for key, value in updates.items() if not locations[key]]
     lines[insertion_index:insertion_index] = additions
+    temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
+    try:
+        temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        os.chown(temporary, 0, grp.getgrnam("leo").gr_gid)
+        os.chmod(temporary, 0o640)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _write_acquisition_release_environment(
+    path: Path,
+    old_environment: bytes,
+    target: str,
+) -> None:
+    """Atomically bind acquisition provenance to the selected component release."""
+
+    if path.is_symlink() or not path.is_file():
+        raise OpsError("acquisition environment must be a regular non-symlink file")
+    if path.read_bytes() != old_environment:
+        raise OpsError("acquisition environment changed after the deployment snapshot")
+    lines = old_environment.decode().splitlines()
+    locations = [
+        index
+        for index, line in enumerate(lines)
+        if not line.lstrip().startswith("#")
+        and line.partition("=")[1]
+        and line.partition("=")[0].strip() == "LEO_ACQUISITION_RELEASE_ID"
+    ]
+    if len(locations) != 1:
+        raise OpsError(
+            "acquisition environment must contain exactly one LEO_ACQUISITION_RELEASE_ID binding"
+        )
+    lines[locations[0]] = f"LEO_ACQUISITION_RELEASE_ID={target}"
     temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
     try:
         temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -1932,6 +1976,7 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
     for component, revision in selector_revisions.items():
         if selected[component] != revision:
             raise OpsError(f"{component} selector failed exact-release verification")
+    _verify_acquisition_environment_revision(selector_revisions["acquisition"])
     _wait_for_api()
     states = subprocess.run(
         (
@@ -1948,6 +1993,17 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
     ).stdout.splitlines()
     if states != ["active"] * 4:
         raise OpsError(f"runtime service state is not active: {states}")
+
+
+def _verify_acquisition_environment_revision(expected: str) -> None:
+    path = PRODUCTION_ACQUISITION_ENVIRONMENT
+    if path.is_symlink() or not path.is_file():
+        raise OpsError("acquisition environment must be a regular non-symlink file")
+    actual = _environment_values(path.read_bytes()).get("LEO_ACQUISITION_RELEASE_ID")
+    if actual != expected:
+        raise OpsError(
+            "acquisition environment release does not match the selected acquisition component"
+        )
 
 
 def _wait_for_api(*, timeout_seconds: float = 10.0) -> None:
@@ -1976,11 +2032,14 @@ def _restore_full_release(
     selector_release: Path,
     environment_path: Path,
     old_environment: bytes,
+    acquisition_environment_path: Path,
+    old_acquisition_environment: bytes,
 ) -> None:
     # A failed start can leave some target services alive.  Never repoint a
     # selector or replace its unit/environment beneath such a process.
     _quiesce_runtime()
     _restore_environment(environment_path, old_environment)
+    _restore_environment(acquisition_environment_path, old_acquisition_environment)
     previous_release = RELEASE_ROOT / "releases" / selector_revisions["global"]
     _select_component_revisions(release=selector_release, revisions=selector_revisions)
     _install_units(previous_release)
