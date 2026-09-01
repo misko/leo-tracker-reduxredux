@@ -703,6 +703,42 @@ def test_bounded_ram_drop_adapter_arms_one_64_frame_session() -> None:
         adapter.close()
 
 
+def test_ram_drop_refill_failure_retains_terminal_firmware_status() -> None:
+    device = StubRamDropDevice()
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.configure(_settings((0,), sample_rate_hz=25_000_000))
+    request = DirectAsyncRamDropRequestV4(
+        target_frames=1431,
+        requested_device_samples=1_500_000_000,
+    )
+    adapter.begin_metadata_capture(
+        1_048_576,
+        kernel_buffers=11,
+        device_buffer=request,
+        direct_async_frames=64,
+    )
+    assert device.session is not None
+    device.session.read_block = lambda: (_ for _ in ()).throw(OSError(61, "No data available"))
+
+    try:
+        with pytest.raises(PlutoAdapterError) as captured:
+            adapter.read_block(1_048_576)
+        message = str(captured.value)
+        assert "[Errno 61] No data available" in message
+        assert 'terminal_status={"admitted_capacity_iq_bytes":134217728' in message
+        assert '"state":"complete"' in message
+        assert '"terminal_reason":"target_complete"' in message
+    finally:
+        adapter.close()
+
+
 def test_direct_async_adapter_exposes_device_diagnostic_facts() -> None:
     device = StubDirectAsyncDevice()
     adapter = PlutoIioRadioSource(

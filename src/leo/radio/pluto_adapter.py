@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import time
 from collections.abc import Callable
 from contextlib import suppress
@@ -489,7 +490,9 @@ class PlutoIioRadioSource:
                     )
                 block = self._metadata_session.read_block()
         except Exception as error:
-            raise PlutoAdapterError(f"Pluto refill failed: {error}") from error
+            status = self._refill_failure_status()
+            status_suffix = "" if status is None else f"; terminal_status={status}"
+            raise PlutoAdapterError(f"Pluto refill failed: {error}{status_suffix}") from error
         monotonic_after = self._monotonic_ns()
         utc_after = self._utc_ns()
         upstream_sample_count = int(getattr(block, "sample_count", sample_count))
@@ -546,6 +549,32 @@ class PlutoIioRadioSource:
         self._sample_cursor += sample_count
         self._block_index += 1
         return result
+
+    def _refill_failure_status(self) -> str | None:
+        """Best-effort firmware status retained alongside a refill exception."""
+
+        session = self._metadata_session
+        if session is None or not isinstance(
+            self._device_buffer_request,
+            (
+                DirectAsyncRamDropRequestV2,
+                DirectAsyncRamDropRequestV3,
+                DirectAsyncRamDropRequestV4,
+            ),
+        ):
+            return None
+        try:
+            payload = dict(session.ddr_ring_status())
+            return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+        except Exception as status_error:
+            return json.dumps(
+                {
+                    "status_error": str(status_error),
+                    "status_error_type": type(status_error).__name__,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
 
     def close(self) -> None:
         device, self._device = self._device, None
