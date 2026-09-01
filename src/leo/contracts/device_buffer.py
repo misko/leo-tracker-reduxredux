@@ -30,6 +30,8 @@ DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3"
 DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3 = "direct_async_ram_drop_evidence_v3"
 DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V4 = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V4"
 DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V4 = "direct_async_ram_drop_evidence_v4"
+DIRECT_ASYNC_EXACT_DMA_DROP_PROFILE_TAG_V5 = "DEVICE_BUFFER:DIRECT_ASYNC_EXACT_DMA_DROP_V5"
+DIRECT_ASYNC_EXACT_DMA_DROP_EVIDENCE_KEY_V5 = "direct_async_exact_dma_drop_evidence_v5"
 DIRECT_ASYNC_FRAME_SAMPLES_V2 = 1_048_576
 DIRECT_ASYNC_MAXIMUM_SEGMENT_FRAMES_V2 = 4_096
 DIRECT_ASYNC_KERNEL_BUFFERS_V2 = 12
@@ -37,6 +39,10 @@ DIRECT_ASYNC_RAM_REQUESTED_BYTES_V2 = 200_000_000
 DIRECT_ASYNC_KERNEL_BUFFERS_V3 = 11
 DIRECT_ASYNC_RAM_REQUESTED_BYTES_V3 = 134_217_728
 DIRECT_ASYNC_MAXIMUM_SEGMENT_FRAMES_V4 = 64
+DIRECT_ASYNC_FRAME_SAMPLES_V5 = 1_000_000
+DIRECT_ASYNC_MAXIMUM_SEGMENT_FRAMES_V5 = 4_096
+DIRECT_ASYNC_KERNEL_BUFFERS_V5 = 50
+DIRECT_ASYNC_DMA_BYTES_V5 = 200_000_000
 
 
 class DeviceBufferRequestV1(ContractModel):
@@ -332,6 +338,48 @@ class DirectAsyncRamDropRequestV4(ContractModel):
         return min(self.maximum_segment_frames, self.target_frames - returned_frames)
 
 
+class DirectAsyncExactDmaDropRequestV5(ContractModel):
+    """Released v0.49 exact-DMA geometry with fresh-data priority."""
+
+    schema_version: Literal[5] = 5
+    mode: Literal["direct_async_exact_dma_drop"] = "direct_async_exact_dma_drop"
+    frame_samples: Literal[1_000_000] = 1_000_000
+    maximum_segment_frames: Literal[4_096] = 4_096
+    target_frames: Annotated[int, Field(gt=0, le=4_096)]
+    receiver_count: Literal[1] = 1
+    requested_device_samples: Annotated[int, Field(gt=0)]
+    requested_kernel_buffers: Literal[50] = 50
+    requested_dma_iq_bytes: Literal[200_000_000] = 200_000_000
+    requested_ram_bytes: Literal[0] = 0
+    drop_backlog_on_overrun: Literal[True] = True
+
+    @model_validator(mode="after")
+    def _geometry_closes(self) -> Self:
+        if not (
+            (self.target_frames - 1) * self.frame_samples
+            < self.requested_device_samples
+            <= self.target_frames * self.frame_samples
+        ):
+            raise ValueError("direct-async exact-DMA frame target does not cover the dwell")
+        if (
+            self.frame_samples * self.receiver_count * 4 * self.requested_kernel_buffers
+            != self.requested_dma_iq_bytes
+        ):
+            raise ValueError("direct-async exact-DMA byte geometry does not close")
+        return self
+
+    @property
+    def segment_count(self) -> int:
+        return (self.target_frames + self.maximum_segment_frames - 1) // (
+            self.maximum_segment_frames
+        )
+
+    def next_segment_frames(self, returned_frames: int) -> int:
+        if not 0 <= returned_frames < self.target_frames:
+            raise ValueError("direct-async exact-DMA frame cursor is outside the request")
+        return min(self.maximum_segment_frames, self.target_frames - returned_frames)
+
+
 class DirectAsyncRamStatusV2(ContractModel):
     """Terminal RAM-queue counters returned by the released ABI-3 runtime."""
 
@@ -533,17 +581,63 @@ class DirectAsyncRamDropEvidenceV4(ContractModel):
         return max(status.high_water_frames for status in self.segment_statuses)
 
 
+class DirectAsyncExactDmaDropEvidenceV5(ContractModel):
+    """Counter closure plus exact v0.49 kernel-DMA allocation attestation."""
+
+    schema_version: Literal[5] = 5
+    request: DirectAsyncExactDmaDropRequestV5
+    allocated_kernel_buffers: Literal[50] = 50
+    allocated_dma_iq_bytes: Literal[200_000_000] = 200_000_000
+    returned_frames: Annotated[int, Field(gt=0)]
+    returned_device_span_samples: Annotated[int, Field(gt=0)]
+    segment_count: Annotated[int, Field(gt=0)]
+    upstream_stream_generations: tuple[Annotated[str, Field(min_length=1, max_length=128)], ...]
+    counter_missing_sample_count: Annotated[int, Field(ge=0)]
+    inter_segment_skipped_samples: Annotated[int, Field(ge=0)]
+    stored_observed_samples: Annotated[int, Field(gt=0)]
+    drained_outside_window_samples: Annotated[int, Field(ge=0)]
+    host_ingestion: Literal["bounded_queue_raw_spool_v1"] = "bounded_queue_raw_spool_v1"
+
+    @model_validator(mode="after")
+    def _evidence_closes(self) -> Self:
+        if (
+            self.allocated_kernel_buffers != self.request.requested_kernel_buffers
+            or self.allocated_dma_iq_bytes != self.request.requested_dma_iq_bytes
+        ):
+            raise ValueError("direct-async exact-DMA allocation disagrees with request")
+        if self.returned_frames != self.request.target_frames:
+            raise ValueError("direct-async exact-DMA returned frames disagree with request")
+        if (
+            self.segment_count != self.request.segment_count
+            or len(self.upstream_stream_generations) != self.segment_count
+            or len(set(self.upstream_stream_generations)) != self.segment_count
+        ):
+            raise ValueError("direct-async exact-DMA session inventory does not close")
+        returned_samples = self.returned_frames * self.request.frame_samples
+        if self.stored_observed_samples + self.drained_outside_window_samples != returned_samples:
+            raise ValueError("direct-async exact-DMA stored window and tail do not close")
+        if self.inter_segment_skipped_samples > self.counter_missing_sample_count:
+            raise ValueError("direct-async exact-DMA inter-session loss exceeds total loss")
+        if self.returned_device_span_samples != (
+            returned_samples + self.counter_missing_sample_count
+        ):
+            raise ValueError("direct-async exact-DMA returned span does not close")
+        return self
+
+
 type DirectAsyncRequest = (
     DirectAsyncRequestV1
     | DirectAsyncRamDropRequestV2
     | DirectAsyncRamDropRequestV3
     | DirectAsyncRamDropRequestV4
+    | DirectAsyncExactDmaDropRequestV5
 )
 type DirectAsyncEvidence = (
     DirectAsyncEvidenceV1
     | DirectAsyncRamDropEvidenceV2
     | DirectAsyncRamDropEvidenceV3
     | DirectAsyncRamDropEvidenceV4
+    | DirectAsyncExactDmaDropEvidenceV5
 )
 type DdrRingStatus = DdrRingStatusV1 | DirectAsyncRamStatusV2
 type DeviceBufferRequest = DeviceBufferRequestV1 | DirectAsyncRequest
@@ -649,6 +743,26 @@ def device_buffer_request(
             )
         )
         return DirectAsyncRamDropRequestV4(
+            target_frames=target_frames,
+            requested_device_samples=resolved_sample_count,
+        )
+    if tags == (DIRECT_ASYNC_EXACT_DMA_DROP_PROFILE_TAG_V5,):
+        if (
+            not isinstance(profile, CaptureProfileV2)
+            or profile.sample_rate_hz not in (10_000_000, 15_000_000, 20_000_000, 25_000_000)
+            or len(profile.receivers) != 1
+            or profile.refill_samples != DIRECT_ASYNC_FRAME_SAMPLES_V5
+            or profile.kernel_buffers != DIRECT_ASYNC_KERNEL_BUFFERS_V5
+            or profile.storage_policy != "zstd-128m-device-axis-zero-v1"
+            or profile.continuity_policy.value != "allow_segments"
+        ):
+            raise ValueError("direct-async exact-DMA/drop V5 requires reviewed single-RX geometry")
+        target_frames = int(
+            (Decimal(resolved_sample_count) / Decimal(profile.refill_samples)).to_integral_value(
+                rounding=ROUND_CEILING
+            )
+        )
+        return DirectAsyncExactDmaDropRequestV5(
             target_frames=target_frames,
             requested_device_samples=resolved_sample_count,
         )

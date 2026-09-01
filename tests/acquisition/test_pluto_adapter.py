@@ -8,6 +8,7 @@ import pytest
 
 from leo.contracts.device_buffer import (
     DeviceBufferRequestV1,
+    DirectAsyncExactDmaDropRequestV5,
     DirectAsyncRamDropRequestV2,
     DirectAsyncRamDropRequestV3,
     DirectAsyncRamDropRequestV4,
@@ -585,6 +586,89 @@ class StubRamDropDevice(StubMetadataDevice):
             "failure_sample_sequence": None,
         }
         return session
+
+
+class StubExactDmaDevice(StubMetadataDevice):
+    def __init__(self, *, allocated_kernel_buffers: int = 50):
+        super().__init__("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+        self.identity.firmware_version = "v0.49-plutoplus-spf-iq-direct-async-v4"
+        self.allocated_kernel_buffers = allocated_kernel_buffers
+        self.direct_kwargs = None
+
+    def diagnostic_facts(self):
+        return {
+            "buffer_metadata_abi": 3,
+            "buffer_direct_async": True,
+            "buffer_direct_async_exact_kernel_queue": True,
+            "buffer_direct_async_overrun_policies": (
+                "drop-backlog",
+                "preserve-backlog",
+            ),
+            "buffer_direct_async_default_overrun_policy": "drop-backlog",
+        }
+
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers, tandem_request, **kwargs):
+        self.direct_kwargs = kwargs
+        session = super().begin_metadata_capture(
+            sample_count, kernel_buffers=kernel_buffers, tandem_request=tandem_request
+        )
+        session.allocated_kernel_buffers = self.allocated_kernel_buffers
+        session.direct_async_frames = kwargs["direct_async_frames"]
+        session.direct_async_ring_extension = False
+        session.drop_backlog_on_overrun = kwargs["drop_backlog_on_overrun"]
+        session.ddr_ring_requested_bytes = 0
+        session.ddr_ring_admitted_bytes = 0
+        session.ddr_ring_capacity_frames = 0
+        session.ddr_ring_capture_frames = 0
+        session.ddr_ring_continuous = False
+        return session
+
+
+@pytest.mark.parametrize("allocated", [50, 12])
+def test_v049_exact_dma_adapter_requires_50_of_50_allocation(allocated):
+    device = StubExactDmaDevice(allocated_kernel_buffers=allocated)
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.configure(_settings((0,), sample_rate_hz=25_000_000))
+    request = DirectAsyncExactDmaDropRequestV5(
+        target_frames=1500,
+        requested_device_samples=1_500_000_000,
+    )
+    try:
+        if allocated != 50:
+            with pytest.raises(PlutoAdapterError, match="admission readback"):
+                adapter.begin_metadata_capture(
+                    1_000_000,
+                    kernel_buffers=50,
+                    device_buffer=request,
+                    direct_async_frames=1500,
+                )
+            assert device.session is not None and device.session.closed
+        else:
+            assert (
+                adapter.begin_metadata_capture(
+                    1_000_000,
+                    kernel_buffers=50,
+                    device_buffer=request,
+                    direct_async_frames=1500,
+                )
+                == 50
+            )
+            assert device.direct_kwargs == {
+                "direct_async_frames": 1500,
+                "ddr_ring_bytes": 0,
+                "ddr_ring_frames": 0,
+                "ddr_ring_continuous": False,
+                "drop_backlog_on_overrun": True,
+            }
+    finally:
+        adapter.close()
 
 
 def test_ram_drop_adapter_attests_v047_policy_ram_and_status() -> None:

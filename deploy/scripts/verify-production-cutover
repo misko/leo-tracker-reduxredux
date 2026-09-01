@@ -205,6 +205,30 @@ REVIEWED_CAPTURE_PROFILE_SHA256 = {
     Path("profiles/starlink-ch4-lower-25m-60s-rx1-direct-async-ram-drop-v11.yaml"): (
         "a8ff14221cc3bb48791937b016ae429ccae8169530ed5613b8b7fe9e337f7b39"
     ),
+    Path("profiles/starlink-ch4-lower-10m-60s-rx0-direct-async-exact-dma-drop-v12.yaml"): (
+        "9d80defc40af1f52f09f4070088146fde00a24059808cc07726f969f29148543"
+    ),
+    Path("profiles/starlink-ch4-lower-10m-60s-rx1-direct-async-exact-dma-drop-v12.yaml"): (
+        "13551f5a60877e873ff427f41ae187ca5f981c5196498e229e966d346cdbc273"
+    ),
+    Path("profiles/starlink-ch4-lower-15m-60s-rx0-direct-async-exact-dma-drop-v12.yaml"): (
+        "55595a5960749aa812198cc565f1e05058ec6acc2946238d58fae85364a35356"
+    ),
+    Path("profiles/starlink-ch4-lower-15m-60s-rx1-direct-async-exact-dma-drop-v12.yaml"): (
+        "3f72496a2806a5343a97255907a87276bed7c3d94728eab0506f2ce5b81426ec"
+    ),
+    Path("profiles/starlink-ch4-lower-20m-60s-rx0-direct-async-exact-dma-drop-v12.yaml"): (
+        "1e778c3c6a917f906cb09e17d9e9ed3d097c6f05776bc5a2b6115d9a938a3b0b"
+    ),
+    Path("profiles/starlink-ch4-lower-20m-60s-rx1-direct-async-exact-dma-drop-v12.yaml"): (
+        "ed62fa4abac2779ffab1f8dbbabc076cc1fc5159aab29d30dab50152c2e5fc67"
+    ),
+    Path("profiles/starlink-ch4-lower-25m-60s-rx0-direct-async-exact-dma-drop-v12.yaml"): (
+        "6ca03526ea5b52ae5f9de41e5dd7d6327b3d88686419a03e5b7364d0dd51319f"
+    ),
+    Path("profiles/starlink-ch4-lower-25m-60s-rx1-direct-async-exact-dma-drop-v12.yaml"): (
+        "151339229e1d17799ba0006950137405357518833dd7ccfadbdeea0744751d44"
+    ),
     Path("profiles/starlink-ch4-lower-25m-60s-rx0-direct-async-v7.yaml"): (
         "a838308601b3e7e6d0c54a2d2ed79864a8cf92efdcb5c680ace7b93dc500f1ee"
     ),
@@ -282,6 +306,9 @@ for radio_id, host, serial in targets:
                 "firmware_version": identity.firmware_version,
                 "metadata_abi_version": facts.get("buffer_metadata_abi"),
                 "buffer_direct_async": facts.get("buffer_direct_async"),
+                "buffer_direct_async_exact_kernel_queue": facts.get(
+                    "buffer_direct_async_exact_kernel_queue"
+                ),
                 "buffer_direct_async_ring": facts.get("buffer_direct_async_ring"),
                 "buffer_direct_async_overrun_policies": facts.get(
                     "buffer_direct_async_overrun_policies"
@@ -1053,6 +1080,7 @@ def probe_live_station_radios(
         "firmware_version",
         "metadata_abi_version",
         "buffer_direct_async",
+        "buffer_direct_async_exact_kernel_queue",
         "buffer_direct_async_ring",
         "buffer_direct_async_overrun_policies",
         "buffer_direct_async_default_overrun_policy",
@@ -1090,8 +1118,8 @@ def probe_live_station_radios(
         ):
             raise ValueError("live station radio identity differs from the frozen station pair")
         firmware = observed.get("firmware_version")
-        if firmware != "v0.48-plutoplus-spf-iq-direct-async-v3":
-            raise ValueError("live station radio firmware is not the exact qualified v0.48")
+        if firmware != "v0.49-plutoplus-spf-iq-direct-async-v4":
+            raise ValueError("live station radio firmware is not the exact qualified v0.49")
         if (
             type(observed.get("metadata_abi_version")) is not int
             or observed.get("metadata_abi_version") != 3
@@ -1104,13 +1132,14 @@ def probe_live_station_radios(
             raise ValueError("live station radio lacks counter-authoritative capabilities")
         if (
             observed.get("buffer_direct_async") is not True
+            or observed.get("buffer_direct_async_exact_kernel_queue") is not True
             or observed.get("buffer_direct_async_ring") is not True
             or observed.get("buffer_direct_async_overrun_policies")
             != ["drop-backlog", "preserve-backlog"]
             or observed.get("buffer_direct_async_default_overrun_policy") != "drop-backlog"
             or observed.get("buffer_ddr_ring_max_iq_bytes") != 200_000_000
         ):
-            raise ValueError("live station radio does not attest RAM/drop direct-async capture")
+            raise ValueError("live station radio does not attest exact-DMA/drop direct-async")
     return payload
 
 

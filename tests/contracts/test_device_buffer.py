@@ -5,6 +5,8 @@ import pytest
 from leo.contracts.device_buffer import (
     DDR_RING_PROFILE_TAG_V1,
     DirectAsyncEvidenceV1,
+    DirectAsyncExactDmaDropEvidenceV5,
+    DirectAsyncExactDmaDropRequestV5,
     DirectAsyncRamDropEvidenceV2,
     DirectAsyncRamDropEvidenceV3,
     DirectAsyncRamDropEvidenceV4,
@@ -302,3 +304,39 @@ def test_bounded_ram_drop_evidence_closes_every_hardware_session():
                 "segment_statuses": (status(20, 12), bad_status),
             }
         )
+
+
+@pytest.mark.parametrize("rate,frames", [(10, 600), (15, 900), (20, 1200), (25, 1500)])
+@pytest.mark.parametrize("rx", [0, 1])
+def test_v049_profiles_bind_exact_200m_dma_and_drop_stale(rate, frames, rx):
+    path = (
+        Path(__file__).parents[2]
+        / "profiles"
+        / f"starlink-ch4-lower-{rate}m-60s-rx{rx}-direct-async-exact-dma-drop-v12.yaml"
+    )
+    revision = load_profile_revision(path)
+    plan = compile_capture_plan(revision, ["radio-a"])
+    request = device_buffer_request(revision.profile, plan.resolved_sample_count)
+
+    assert isinstance(request, DirectAsyncExactDmaDropRequestV5)
+    assert request.target_frames == frames
+    assert request.segment_count == 1
+    assert request.frame_samples == 1_000_000
+    assert request.requested_kernel_buffers == revision.profile.kernel_buffers == 50
+    assert request.requested_dma_iq_bytes == 200_000_000
+    assert request.requested_ram_bytes == 0
+    assert request.drop_backlog_on_overrun is True
+
+    evidence = DirectAsyncExactDmaDropEvidenceV5(
+        request=request,
+        returned_frames=frames,
+        returned_device_span_samples=frames * 1_000_000,
+        segment_count=1,
+        upstream_stream_generations=("one-session",),
+        counter_missing_sample_count=0,
+        inter_segment_skipped_samples=0,
+        stored_observed_samples=frames * 1_000_000,
+        drained_outside_window_samples=0,
+    )
+    assert evidence.allocated_kernel_buffers == 50
+    assert evidence.allocated_dma_iq_bytes == 200_000_000

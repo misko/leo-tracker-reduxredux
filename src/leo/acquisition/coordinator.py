@@ -33,6 +33,8 @@ from leo.acquisition.models import (
 from leo.contracts.device_buffer import (
     DDR_RING_EVIDENCE_KEY_V1,
     DIRECT_ASYNC_EVIDENCE_KEY_V1,
+    DIRECT_ASYNC_EXACT_DMA_DROP_EVIDENCE_KEY_V5,
+    DIRECT_ASYNC_EXACT_DMA_DROP_PROFILE_TAG_V5,
     DIRECT_ASYNC_PROFILE_TAG_V1,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3,
@@ -45,6 +47,8 @@ from leo.contracts.device_buffer import (
     DeviceBufferRequestV1,
     DirectAsyncEvidence,
     DirectAsyncEvidenceV1,
+    DirectAsyncExactDmaDropEvidenceV5,
+    DirectAsyncExactDmaDropRequestV5,
     DirectAsyncRamDropEvidenceV2,
     DirectAsyncRamDropEvidenceV3,
     DirectAsyncRamDropEvidenceV4,
@@ -981,6 +985,7 @@ class AcquisitionCoordinator:
                                 DirectAsyncRamDropRequestV2,
                                 DirectAsyncRamDropRequestV3,
                                 DirectAsyncRamDropRequestV4,
+                                DirectAsyncExactDmaDropRequestV5,
                             ),
                         ),
                     )
@@ -1059,12 +1064,19 @@ class AcquisitionCoordinator:
                                                         DirectAsyncRamDropEvidenceV3,
                                                     )
                                                     else (
-                                                        DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2
+                                                        DIRECT_ASYNC_EXACT_DMA_DROP_EVIDENCE_KEY_V5
                                                         if isinstance(
                                                             direct_evidence,
-                                                            DirectAsyncRamDropEvidenceV2,
+                                                            DirectAsyncExactDmaDropEvidenceV5,
                                                         )
-                                                        else DIRECT_ASYNC_EVIDENCE_KEY_V1
+                                                        else (
+                                                            DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2
+                                                            if isinstance(
+                                                                direct_evidence,
+                                                                DirectAsyncRamDropEvidenceV2,
+                                                            )
+                                                            else DIRECT_ASYNC_EVIDENCE_KEY_V1
+                                                        )
                                                     )
                                                 )
                                             )
@@ -1143,6 +1155,7 @@ class AcquisitionCoordinator:
                 DirectAsyncRamDropRequestV2,
                 DirectAsyncRamDropRequestV3,
                 DirectAsyncRamDropRequestV4,
+                DirectAsyncExactDmaDropRequestV5,
             ),
         )
         direct_upstream_generations: list[str] = []
@@ -1163,6 +1176,7 @@ class AcquisitionCoordinator:
                     DirectAsyncRamDropRequestV2,
                     DirectAsyncRamDropRequestV3,
                     DirectAsyncRamDropRequestV4,
+                    DirectAsyncExactDmaDropRequestV5,
                 ),
             ),
         )
@@ -1179,6 +1193,7 @@ class AcquisitionCoordinator:
                         DirectAsyncRamDropRequestV2,
                         DirectAsyncRamDropRequestV3,
                         DirectAsyncRamDropRequestV4,
+                        DirectAsyncExactDmaDropRequestV5,
                     ),
                 ):
                     kernel_buffers = item.source.begin_metadata_capture(
@@ -1258,6 +1273,7 @@ class AcquisitionCoordinator:
                             DirectAsyncRamDropRequestV2,
                             DirectAsyncRamDropRequestV3,
                             DirectAsyncRamDropRequestV4,
+                            DirectAsyncExactDmaDropRequestV5,
                         ),
                     )
                     and returned_frames
@@ -1303,6 +1319,7 @@ class AcquisitionCoordinator:
                         DirectAsyncRamDropRequestV2,
                         DirectAsyncRamDropRequestV3,
                         DirectAsyncRamDropRequestV4,
+                        DirectAsyncExactDmaDropRequestV5,
                     ),
                 ):
                     raw_metadata = block.metadata
@@ -1390,6 +1407,7 @@ class AcquisitionCoordinator:
                         DirectAsyncRamDropRequestV2,
                         DirectAsyncRamDropRequestV3,
                         DirectAsyncRamDropRequestV4,
+                        DirectAsyncExactDmaDropRequestV5,
                     ),
                 ):
                     direct_missing_samples += metadata.missing_samples_before
@@ -1529,6 +1547,7 @@ class AcquisitionCoordinator:
                     DirectAsyncRamDropRequestV2,
                     DirectAsyncRamDropRequestV3,
                     DirectAsyncRamDropRequestV4,
+                    DirectAsyncExactDmaDropRequestV5,
                 ),
             ):
                 if isinstance(
@@ -1585,7 +1604,20 @@ class AcquisitionCoordinator:
                             stored_observed_samples=captured,
                             drained_outside_window_samples=returned_samples - captured,
                         )
+                elif isinstance(device_buffer, DirectAsyncExactDmaDropRequestV5):
+                    direct_evidence = DirectAsyncExactDmaDropEvidenceV5(
+                        request=device_buffer,
+                        returned_frames=returned_frames,
+                        returned_device_span_samples=returned_device_span,
+                        segment_count=len(direct_upstream_generations),
+                        upstream_stream_generations=tuple(direct_upstream_generations),
+                        counter_missing_sample_count=direct_missing_samples,
+                        inter_segment_skipped_samples=direct_inter_segment_skipped_samples,
+                        stored_observed_samples=captured,
+                        drained_outside_window_samples=returned_samples - captured,
+                    )
                 else:
+                    assert isinstance(device_buffer, DirectAsyncRequestV1)
                     direct_evidence = DirectAsyncEvidenceV1(
                         request=device_buffer,
                         returned_frames=returned_frames,
@@ -1666,6 +1698,7 @@ class AcquisitionCoordinator:
                                 DirectAsyncRamDropRequestV2,
                                 DirectAsyncRamDropRequestV3,
                                 DirectAsyncRamDropRequestV4,
+                                DirectAsyncExactDmaDropRequestV5,
                             ),
                         )
                         else None
@@ -1857,6 +1890,7 @@ class AcquisitionCoordinator:
                             DirectAsyncRamDropRequestV2,
                             DirectAsyncRamDropRequestV3,
                             DirectAsyncRamDropRequestV4,
+                            DirectAsyncExactDmaDropRequestV5,
                         ),
                     )
                     else None
@@ -2415,6 +2449,7 @@ def _device_buffer_request(
         or DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2 in profile.tags
         or DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3 in profile.tags
         or DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V4 in profile.tags
+        or DIRECT_ASYNC_EXACT_DMA_DROP_PROFILE_TAG_V5 in profile.tags
     ):
         return device_buffer_request(profile, resolved_sample_count)
     return device_buffer_request_v1(profile, resolved_sample_count)

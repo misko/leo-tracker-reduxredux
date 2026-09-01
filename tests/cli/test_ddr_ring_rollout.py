@@ -67,13 +67,13 @@ def test_25m_production_authority_selects_the_zero_external_prime_v8_profile(
 @pytest.mark.parametrize(
     ("rate", "receiver", "digest"),
     [
-        (10, 0, "sha256:335ba1585253ec1f2357626b16f2f32cbc5368cc1c082c8220fbd283ed1ef9bd"),
-        (15, 1, "sha256:69a5ad262cece68ab4a44266dd44f9cc1c7648ea18ce331ed1ab02263ab28165"),
-        (20, 0, "sha256:077f8254cd91ebe6642b9513bd8a51150c55bac0ab1f7101175bfcb66fd83d59"),
-        (25, 1, "sha256:722ee701893e402822f33e1802b3d984005d9c3ee7b1cd882f8f9c23f5962292"),
+        (10, 0, "sha256:b08edacbbfafcfd525e9320c2a582503751d851a8bb5b8c2a58cf3997ff132ce"),
+        (15, 1, "sha256:8b92ea68da761389ff0ae64844f85af3f7c2e6c4c5245627d79cb52e261cd30c"),
+        (20, 0, "sha256:0fe7aec03eb65de32693327f29527a6f6342ee93a875169324ef9cfa2fa670a6"),
+        (25, 1, "sha256:1e631a4adbc892e9fb2d610c795953d22db8cbb15485767785b23fdaa9b4c64e"),
     ],
 )
-def test_direct_async_rollout_selects_one_session_ram_drop_geometry(
+def test_direct_async_rollout_selects_one_session_exact_dma_drop_geometry(
     tmp_path, rate, receiver, digest
 ):
     settings = CliSettings.from_environ(
@@ -88,9 +88,9 @@ def test_direct_async_rollout_selects_one_session_ram_drop_geometry(
         (rate * 1_000_000, (receiver,), True)
     ]
 
-    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v10")
+    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-exact-dma-drop-v12")
     assert actual_digest == digest
-    assert refill == 1_048_576
+    assert refill == 1_000_000
 
 
 def test_acquisition_identity_does_not_change_analysis_worker_identity():
@@ -135,7 +135,7 @@ def test_ring_profile_authority_compiles_each_unchanged_production_intent(tmp_pa
         assert plan.scheduled_intent_digest == intent.intent_digest
 
 
-def test_qualified_ram_drop_authority_compiles_actual_capture_plans(tmp_path):
+def test_exact_dma_drop_authority_compiles_actual_capture_plans(tmp_path):
     root = Path(__file__).parents[2] / "profiles"
     settings = CliSettings.from_environ(
         {
@@ -148,7 +148,7 @@ def test_qualified_ram_drop_authority_compiles_actual_capture_plans(tmp_path):
 
     for ordinal in range(6):
         intent = compile_production_dwell_intent_hold_rollout_v1(
-            operation_key=f"qualified-ram-drop-{ordinal}",
+            operation_key=f"exact-dma-drop-{ordinal}",
             cadence_ordinal=ordinal,
             radio_ids=("radio-a", "radio-b"),
             profile_authority=authority,
@@ -163,6 +163,6 @@ def test_qualified_ram_drop_authority_compiles_actual_capture_plans(tmp_path):
 
         assert plan.schema_version == 5
         assert any(
-            "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3" in leg.profile_revision.profile.tags
+            "DEVICE_BUFFER:DIRECT_ASYNC_EXACT_DMA_DROP_V5" in leg.profile_revision.profile.tags
             for leg in plan.radio_plans
         )
