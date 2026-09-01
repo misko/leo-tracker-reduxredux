@@ -103,10 +103,12 @@ from leo.presentation.standard_native_pipeline import (
     StandardNativeSubjectDetailV4,
     StandardNativeSubjectDetailV5,
     StandardNativeSubjectDetailV6,
+    StandardNativeSubjectDetailV7,
     StandardNativeSubjectHierarchyV3,
     StandardNativeSubjectHierarchyV4,
     StandardNativeSubjectHierarchyV5,
     StandardNativeSubjectHierarchyV6,
+    StandardNativeSubjectHierarchyV7,
 )
 from leo.presentation.standard_native_repository import (
     DefinitionDispatchedStandardPresentationPort,
@@ -617,6 +619,7 @@ def create_app(
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
         | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
     ):
         try:
             hierarchy = _standard_repository().subject_hierarchy(session_id)
@@ -630,7 +633,9 @@ def create_app(
         if hierarchy is None:
             raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")
         try:
-            if isinstance(hierarchy, StandardNativeSubjectHierarchyV6):
+            if isinstance(hierarchy, StandardNativeSubjectHierarchyV7):
+                hierarchy = StandardNativeSubjectHierarchyV7.model_validate(hierarchy.model_dump())
+            elif isinstance(hierarchy, StandardNativeSubjectHierarchyV6):
                 hierarchy = StandardNativeSubjectHierarchyV6.model_validate(hierarchy.model_dump())
             elif isinstance(hierarchy, StandardNativeSubjectHierarchyV5):
                 hierarchy = StandardNativeSubjectHierarchyV5.model_validate(hierarchy.model_dump())
@@ -661,6 +666,7 @@ def create_app(
             | StandardNativeSubjectHierarchyV4
             | StandardNativeSubjectHierarchyV5
             | StandardNativeSubjectHierarchyV6
+            | StandardNativeSubjectHierarchyV7
         ),
     )
     def standard_subjects(
@@ -672,6 +678,7 @@ def create_app(
         | StandardNativeSubjectHierarchyV4
         | StandardNativeSubjectHierarchyV5
         | StandardNativeSubjectHierarchyV6
+        | StandardNativeSubjectHierarchyV7
     ):
         return _visible_hierarchy(session_id, include_test=include_test)
 
@@ -684,6 +691,7 @@ def create_app(
             | StandardNativeSubjectDetailV4
             | StandardNativeSubjectDetailV5
             | StandardNativeSubjectDetailV6
+            | StandardNativeSubjectDetailV7
         ),
     )
     def standard_subject_detail(
@@ -696,6 +704,7 @@ def create_app(
         | StandardNativeSubjectDetailV4
         | StandardNativeSubjectDetailV5
         | StandardNativeSubjectDetailV6
+        | StandardNativeSubjectDetailV7
     ):
         _visible_hierarchy(session_id, include_test=include_test)
         try:
@@ -708,6 +717,8 @@ def create_app(
         if detail is None:
             raise HTTPException(status_code=404, detail="Standard subject not found")
         try:
+            if isinstance(detail, StandardNativeSubjectDetailV7):
+                return StandardNativeSubjectDetailV7.model_validate(detail.model_dump())
             if isinstance(detail, StandardNativeSubjectDetailV6):
                 return StandardNativeSubjectDetailV6.model_validate(detail.model_dump())
             if isinstance(detail, StandardNativeSubjectDetailV5):
@@ -832,6 +843,7 @@ def create_app(
                     StandardNativeSubjectDetailV4,
                     StandardNativeSubjectDetailV5,
                     StandardNativeSubjectDetailV6,
+                    StandardNativeSubjectDetailV7,
                 ),
             ) and isinstance(
                 view,
@@ -985,6 +997,7 @@ def create_app(
                 StandardNativeSubjectHierarchyV4,
                 StandardNativeSubjectHierarchyV5,
                 StandardNativeSubjectHierarchyV6,
+                StandardNativeSubjectHierarchyV7,
             ),
         ):
             raise HTTPException(status_code=404, detail="Native PNG inventory is not published")

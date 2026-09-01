@@ -522,6 +522,32 @@ class StandardNativeSubjectSummaryV6(StandardNativeSubjectSummaryV3):
     eligibility: StandardNativeEligibilityV6  # type: ignore[assignment]
 
 
+class StandardNativeAnalysisSelectionV1(ContractModel):
+    """Run-level stream selection for bounded automatic native analysis."""
+
+    schema_version: Literal[1] = 1
+    policy: Literal["automatic_2p5_only"] = "automatic_2p5_only"
+    analyzed_stream_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=1)
+    omitted_stream_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=1)
+
+    @model_validator(mode="after")
+    def _selection_is_exact(self) -> Self:
+        if (
+            self.analyzed_stream_ids != tuple(sorted(self.analyzed_stream_ids))
+            or self.omitted_stream_ids != tuple(sorted(self.omitted_stream_ids))
+            or set(self.analyzed_stream_ids).intersection(self.omitted_stream_ids)
+        ):
+            raise ValueError("native analysis stream selection is not exact")
+        return self
+
+
+class StandardNativeSubjectSummaryV7(StandardNativeSubjectSummaryV6):
+    """Selection-aware direct-async subject summary."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    analysis_selection: StandardNativeAnalysisSelectionV1
+
+
 class StandardNativeSubjectHierarchyV3(ContractModel):
     schema_version: Literal[3] = 3
     session_id: Identifier
@@ -660,6 +686,40 @@ class StandardNativeSubjectHierarchyV6(ContractModel):
             path for radio in radios for path in radio.receiver_paths
         ):
             raise ValueError("direct-async paired paths differ from the radio union")
+        return self
+
+
+class StandardNativeSubjectHierarchyV7(ContractModel):
+    """Truthful single-radio hierarchy for automatic 2.5 MS/s-only analysis."""
+
+    schema_version: Literal[7] = 7
+    session_id: Identifier
+    source_type: Literal["LIVE"] = "LIVE"
+    eligibility: StandardNativeEligibilityV6
+    analysis_selection: StandardNativeAnalysisSelectionV1
+    generated_at: datetime
+    rows: tuple[StandardNativeSubjectSummaryV7] = Field(min_length=1, max_length=1)
+
+    @model_validator(mode="after")
+    def _hierarchy_is_exact(self) -> Self:
+        row = self.rows[0]
+        if (
+            row.session_id != self.session_id
+            or row.eligibility != self.eligibility
+            or row.analysis_selection != self.analysis_selection
+            or row.subject_kind is not StandardSubjectKindV2.RADIO
+            or row.subject_id != f"radio:{self.analysis_selection.analyzed_stream_ids[0]}"
+        ):
+            raise ValueError("selected native hierarchy authority is crossed")
+        legs = {item.stream_id: item for item in self.eligibility.legs}
+        selected = self.analysis_selection.analyzed_stream_ids
+        omitted = self.analysis_selection.omitted_stream_ids
+        if set((*selected, *omitted)) != set(legs) or len(legs) != 2:
+            raise ValueError("selected native hierarchy does not close capture stream authority")
+        if legs[selected[0]].sample_rate_hz != 2_500_000:
+            raise ValueError("automatic native hierarchy did not select the 2.5 MS/s stream")
+        if any(item.radio_id != legs[selected[0]].radio_id for item in row.receiver_paths):
+            raise ValueError("selected native hierarchy crosses radio authority")
         return self
 
 
@@ -820,6 +880,16 @@ class StandardNativeSubjectDetailV6(StandardNativeSubjectDetailV3):
     schema_version: Literal[6] = 6  # type: ignore[assignment]
     subject: StandardNativeSubjectSummaryV6
     receiver_path_expansions: tuple[StandardNativeSubjectSummaryV6, ...] = Field(
+        min_length=1, max_length=4
+    )
+
+
+class StandardNativeSubjectDetailV7(StandardNativeSubjectDetailV6):
+    """Selection-aware direct-async detail retaining low-rate path evidence."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    subject: StandardNativeSubjectSummaryV7
+    receiver_path_expansions: tuple[StandardNativeSubjectSummaryV7, ...] = Field(
         min_length=1, max_length=4
     )
 
@@ -1150,12 +1220,14 @@ type StandardHierarchy = (
     | StandardNativeSubjectHierarchyV4
     | StandardNativeSubjectHierarchyV5
     | StandardNativeSubjectHierarchyV6
+    | StandardNativeSubjectHierarchyV7
 )
 type StandardDetail = (
     StandardNativeSubjectDetailV3
     | StandardNativeSubjectDetailV4
     | StandardNativeSubjectDetailV5
     | StandardNativeSubjectDetailV6
+    | StandardNativeSubjectDetailV7
 )
 type StandardPlot = (
     StandardNativePlotViewV3

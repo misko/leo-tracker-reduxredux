@@ -34,7 +34,7 @@ from leo.contracts.device_buffer import (
     DirectAsyncRamDropEvidenceV4,
 )
 from leo.contracts.digests import canonical_digest
-from leo.contracts.mixed_rate_capture import CapturePlanV4
+from leo.contracts.mixed_rate_capture import CapturePlanV4, CapturePlanV5
 from leo.contracts.profile import (
     CaptureProfileV1 as CaptureContractProfileV1,
 )
@@ -901,7 +901,7 @@ def _radio_setups(
             item.radio_id: item.profile_revision.profile
             for item in manifest.capture_plan.radio_plans
         }
-        if isinstance(manifest.capture_plan, CapturePlanV4):
+        if isinstance(manifest.capture_plan, (CapturePlanV4, CapturePlanV5)):
             fallback_by_radio: dict[str, tuple[str, Literal["lower", "upper"]] | None] = {
                 item.radio_id: (
                     f"ch{item.starlink_channel}",

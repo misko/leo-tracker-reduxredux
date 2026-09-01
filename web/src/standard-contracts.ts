@@ -699,6 +699,29 @@ export interface StandardNativeSubjectHierarchyV6 {
   rows: StandardNativeSubjectSummaryV6[];
 }
 
+export interface StandardNativeAnalysisSelectionV1 {
+  schema_version: 1;
+  policy: "automatic_2p5_only";
+  analyzed_stream_ids: [string];
+  omitted_stream_ids: [string];
+}
+
+export interface StandardNativeSubjectSummaryV7
+  extends Omit<StandardNativeSubjectSummaryV6, "schema_version"> {
+  schema_version: 7;
+  analysis_selection: StandardNativeAnalysisSelectionV1;
+}
+
+export interface StandardNativeSubjectHierarchyV7 {
+  schema_version: 7;
+  session_id: string;
+  source_type: "LIVE";
+  eligibility: StandardNativeEligibilityV6;
+  analysis_selection: StandardNativeAnalysisSelectionV1;
+  generated_at: string;
+  rows: [StandardNativeSubjectSummaryV7];
+}
+
 export interface StandardNativePathEvidenceV3 {
   schema_version: 3;
   receiver_path: StandardReceiverPathRefV2;
@@ -782,6 +805,16 @@ export interface StandardNativeSubjectDetailV6
   schema_version: 6;
   subject: StandardNativeSubjectSummaryV6;
   receiver_path_expansions: StandardNativeSubjectSummaryV6[];
+}
+
+export interface StandardNativeSubjectDetailV7
+  extends Omit<
+    StandardNativeSubjectDetailV6,
+    "schema_version" | "subject" | "receiver_path_expansions"
+  > {
+  schema_version: 7;
+  subject: StandardNativeSubjectSummaryV7;
+  receiver_path_expansions: StandardNativeSubjectSummaryV7[];
 }
 
 export interface StandardNativePresentationProductRefV3 {
@@ -896,19 +929,22 @@ export type StandardSubjectHierarchy =
   | StandardNativeSubjectHierarchyV3
   | StandardNativeSubjectHierarchyV4
   | StandardNativeSubjectHierarchyV5
-  | StandardNativeSubjectHierarchyV6;
+  | StandardNativeSubjectHierarchyV6
+  | StandardNativeSubjectHierarchyV7;
 export type StandardSubjectDetail =
   | StandardSubjectDetailV2
   | StandardNativeSubjectDetailV3
   | StandardNativeSubjectDetailV4
   | StandardNativeSubjectDetailV5
-  | StandardNativeSubjectDetailV6;
+  | StandardNativeSubjectDetailV6
+  | StandardNativeSubjectDetailV7;
 export type StandardSubjectSummary =
   | StandardSubjectSummaryV2
   | StandardNativeSubjectSummaryV3
   | StandardNativeSubjectSummaryV4
   | StandardNativeSubjectSummaryV5
-  | StandardNativeSubjectSummaryV6;
+  | StandardNativeSubjectSummaryV6
+  | StandardNativeSubjectSummaryV7;
 export type StandardPlotView =
   | StandardPlotViewV2
   | StandardNativePlotViewV3

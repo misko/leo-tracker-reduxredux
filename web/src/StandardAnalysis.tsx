@@ -19,6 +19,7 @@ import type {
   StandardNativeSubjectDetailV4,
   StandardNativeSubjectDetailV5,
   StandardNativeSubjectDetailV6,
+  StandardNativeSubjectDetailV7,
   StandardNativePngArtifactInventoryV4,
   StandardNativePngArtifactInventoryV5,
   StandardNativePngArtifactInventoryV6,
@@ -29,6 +30,7 @@ import type {
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
   StandardNativeSubjectSummaryV6,
+  StandardNativeSubjectSummaryV7,
   StandardSubjectDetail,
   StandardSubjectDetailV2,
   StandardReplayAuditV1,
@@ -45,7 +47,8 @@ type StandardNativeDetail =
   | StandardNativeSubjectDetailV3
   | StandardNativeSubjectDetailV4
   | StandardNativeSubjectDetailV5
-  | StandardNativeSubjectDetailV6;
+  | StandardNativeSubjectDetailV6
+  | StandardNativeSubjectDetailV7;
 type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV4
   | StandardNativePngArtifactInventoryV5
@@ -325,7 +328,8 @@ function NativeAnalysisDetail({
           <span>Reducers merge sufficient statistics</span>
         </div>
       </section>
-      {detail.schema_version === 4 || detail.schema_version === 5 || detail.schema_version === 6 ? (
+      {detail.schema_version === 4 || detail.schema_version === 5 || detail.schema_version === 6
+        || detail.schema_version === 7 ? (
         <NativeRfAuthority detail={detail} />
       ) : null}
       <NativePathCoverage evidence={detail.receiver_path_evidence} />
@@ -345,9 +349,13 @@ function NativeAnalysisDetail({
 function NativeRfAuthority({
   detail,
 }: {
-  detail: StandardNativeSubjectDetailV4 | StandardNativeSubjectDetailV5 | StandardNativeSubjectDetailV6;
+  detail: StandardNativeSubjectDetailV4 | StandardNativeSubjectDetailV5
+    | StandardNativeSubjectDetailV6 | StandardNativeSubjectDetailV7;
 }) {
-  const production = detail.schema_version === 5 || detail.schema_version === 6;
+  const production = detail.schema_version === 5
+    || detail.schema_version === 6
+    || detail.schema_version === 7;
+  const selection = detail.schema_version === 7 ? detail.subject.analysis_selection : null;
   return (
     <section
       className="standard-native-paths"
@@ -361,6 +369,12 @@ function NativeRfAuthority({
               ? `${formatEnum(detail.subject.eligibility.dwell_class)} · ${formatEnum(detail.subject.eligibility.tuning_branch)} tuning · no resampling`
               : "Same Starlink channel and edge · independent native-rate passbands · no resampling"}
           </h4>
+          {selection ? (
+            <small>
+              Automatic analysis selected the 2.5 MS/s stream; the wideband stream remains captured
+              and is available for explicit analysis.
+            </small>
+          ) : null}
         </div>
       </header>
       <div>{detail.subject.eligibility.legs.map((leg) => (
@@ -375,6 +389,13 @@ function NativeRfAuthority({
           <small>
             Captured {formatMhz(leg.captured_if_start_hz)}–{formatMhz(leg.captured_if_stop_hz)} IF inside {formatMhz(leg.channel_if_start_hz)}–{formatMhz(leg.channel_if_stop_hz)} channel
           </small>
+          {selection ? (
+            <small>
+              {selection.analyzed_stream_ids.includes(leg.stream_id)
+                ? "Automatically analyzed"
+                : "Captured; omitted from automatic analysis"}
+            </small>
+          ) : null}
           {leg.schema_version === 5 || leg.schema_version === 6 ? (
             <small>
               RX{leg.receiver_ids.join(" + RX")} · {formatEnum(leg.gain_controller_mode)} · metadata ABI {leg.metadata_abi_version}
@@ -811,7 +832,9 @@ function SubjectTabs({
 
 function isNativeSubject(
   subject: StandardSubjectSummary,
-): subject is StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4 | StandardNativeSubjectSummaryV5 | StandardNativeSubjectSummaryV6 {
+): subject is StandardNativeSubjectSummaryV3 | StandardNativeSubjectSummaryV4
+  | StandardNativeSubjectSummaryV5 | StandardNativeSubjectSummaryV6
+  | StandardNativeSubjectSummaryV7 {
   return "coverage_status" in subject;
 }
 
@@ -1018,14 +1041,22 @@ function nativeRateLabel(hierarchy: StandardSubjectHierarchy, lane: AnalysisLane
   if (hierarchy.schema_version === 3) {
     return `STANDARD · NATIVE · ${(hierarchy.eligibility.sample_rate_hz / 1_000_000).toFixed(1)} MS/s`;
   }
-  if (hierarchy.schema_version === 4 || hierarchy.schema_version === 5 || hierarchy.schema_version === 6) {
-    const rates = [...new Set(hierarchy.eligibility.legs.map((leg) => leg.sample_rate_hz))]
+  if (hierarchy.schema_version === 4 || hierarchy.schema_version === 5
+    || hierarchy.schema_version === 6 || hierarchy.schema_version === 7) {
+    const analyzedStreams = hierarchy.schema_version === 7
+      ? new Set(hierarchy.analysis_selection.analyzed_stream_ids)
+      : null;
+    const rates = [...new Set(hierarchy.eligibility.legs
+      .filter((leg) => analyzedStreams === null || analyzedStreams.has(leg.stream_id))
+      .map((leg) => leg.sample_rate_hz))]
       .sort((left, right) => left - right)
       .map((rate) => (rate / 1_000_000).toFixed(1))
       .join(" + ");
-    const mode = hierarchy.schema_version === 5 || hierarchy.schema_version === 6
-      ? formatEnum(hierarchy.eligibility.dwell_class).toUpperCase()
-      : "MIXED";
+    const mode = hierarchy.schema_version === 7
+      ? "AUTO 2.5 ONLY"
+      : hierarchy.schema_version === 5 || hierarchy.schema_version === 6
+        ? formatEnum(hierarchy.eligibility.dwell_class).toUpperCase()
+        : "MIXED";
     return `STANDARD · NATIVE · ${mode} ${rates} MS/s`;
   }
   return lane === "standard" ? "STANDARD · 2×20 MS / 50 MS" : "RESEARCH · 3×20 MS / 50 MS";
