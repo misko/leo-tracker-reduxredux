@@ -12,6 +12,9 @@ sudo ./ops deploy --stage-only --revision "$release_revision"
 rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v6.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
+sudo ./ops releases --plan --keep 10
+# Review plan_sha256, every protected reason, and every retirement candidate.
+sudo ./ops releases --apply --keep 10 --expect-plan PLAN_SHA256
 ```
 
 `./ops test` classifies the dirty overlay (or the current commit when clean), runs independent
@@ -94,6 +97,23 @@ the still-paused service. Continuous acquisition requires a later, separate oper
 The first rollout containing component selectors must use `sudo ./ops deploy --full`. Subsequent
 web/API-only deployments avoid worker fencing, acquisition interruption, database work, and full
 reconciliation.
+
+`sudo ./ops releases --plan --keep 10` is the read-only immutable-release retention front door.
+It needs root only so it can inspect sealed `root:leo` metadata and every `/proc` reference. The
+plan always protects all four selectors, runtime-referenced releases, the previous healthy
+deployment, the ten newest published metadata records, and each explicit `--protect FULL_SHA`.
+It reports exact allocated candidate bytes and a deterministic `plan_sha256`. Missing deployment
+history, malformed inventory, symlinks, separate mounts, unexpected ownership, or any QNAP path
+fails closed.
+
+Applying retention is a separate audited operation. Pass the exact reviewed digest back through
+`sudo ./ops releases --apply --keep 10 --expect-plan SHA256`, repeating every `--protect` argument
+from planning. The command takes the same host lock as deployment, rebuilds the complete plan, and
+refuses any drift before mutation. Each retired runtime's immutable metadata is retained beneath
+`/opt/leo-tracker/retired-release-metadata`; sealed plan and completion receipts live with the
+deployment evidence. An interrupted removal is resumable by reviewing a fresh plan. Deployment
+only emits an advisory when more than ten releases exist; it never silently prunes as part of a
+successful cutover.
 
 The reviewed ownership manifest is `config/ops-components.json`. Every tracked path must match at
 least one component; an unclassified new path fails closed. Test-infrastructure paths form an

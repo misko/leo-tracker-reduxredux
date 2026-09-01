@@ -3,14 +3,17 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import errno
 import fcntl
 import fnmatch
 import grp
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -28,6 +31,10 @@ PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
 DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
 QNAP_ROOT = Path("/mnt/qnap01")
 PRODUCTION_CAPTURE_POLICY = "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
+DEFAULT_RELEASE_RETENTION = 10
+MINIMUM_RELEASE_RETENTION = 2
+
+_REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 
 _SELECTOR_COMPONENTS = ("global", "api", "worker", "acquisition")
 _WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
@@ -91,6 +98,18 @@ class Gate:
     name: str
     command: tuple[str, ...]
     needs_postgres: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseRecord:
+    revision: str
+    state: str
+    release_path: Path | None
+    metadata_path: Path
+    archive_path: Path
+    size_bytes: int
+    published_mtime_ns: int
+    metadata_sha256: str
 
 
 def _run_git(*arguments: str) -> str:
@@ -554,6 +573,761 @@ def _prepare_web_dependencies(gates: tuple[Gate, ...]) -> None:
     )
 
 
+def _is_revision(value: str) -> bool:
+    return _REVISION_PATTERN.fullmatch(value) is not None
+
+
+def _assert_not_qnap(path: Path) -> None:
+    if not path.is_absolute():
+        raise OpsError(f"release-retention path must be absolute: {path}")
+    if path == QNAP_ROOT or QNAP_ROOT in path.parents:
+        raise OpsError(f"QNAP cannot be a release-retention path: {path}")
+
+
+def _validate_owned_directory(
+    path: Path,
+    *,
+    expected_uid: int,
+    expected_gid: int,
+) -> os.stat_result:
+    _assert_not_qnap(path)
+    try:
+        info = path.lstat()
+    except FileNotFoundError as error:
+        raise OpsError(f"required release-retention directory is absent: {path}") from error
+    if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise OpsError(f"release-retention directory must not be a symlink: {path}")
+    if info.st_uid != expected_uid or info.st_gid != expected_gid:
+        raise OpsError(f"release-retention directory has unexpected ownership: {path}")
+    if stat.S_IMODE(info.st_mode) & 0o022:
+        raise OpsError(f"release-retention directory is group/world writable: {path}")
+    return info
+
+
+def _validate_release_metadata(
+    path: Path,
+    *,
+    expected_uid: int,
+    expected_gid: int,
+) -> tuple[os.stat_result, str]:
+    _assert_not_qnap(path)
+    try:
+        info = path.lstat()
+    except FileNotFoundError as error:
+        raise OpsError(f"release metadata is absent: {path}") from error
+    if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise OpsError(f"release metadata must be a regular non-symlink file: {path}")
+    if info.st_uid != expected_uid or info.st_gid != expected_gid:
+        raise OpsError(f"release metadata has unexpected ownership: {path}")
+    if stat.S_IMODE(info.st_mode) != 0o440:
+        raise OpsError(f"release metadata mode must be 0440: {path}")
+    try:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as error:
+        raise OpsError(f"release metadata is unreadable: {path}") from error
+    return info, digest
+
+
+def _release_size_bytes(path: Path) -> int:
+    completed = subprocess.run(
+        ("/usr/bin/du", "-x", "-s", "-B1", "--", str(path)),
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    )
+    try:
+        size = int(completed.stdout.split(maxsplit=1)[0])
+    except (IndexError, ValueError) as error:
+        raise OpsError(f"cannot parse release size for {path}") from error
+    if size < 0:
+        raise OpsError(f"release size is negative for {path}")
+    return size
+
+
+def _release_inventory(
+    *,
+    release_root: Path = RELEASE_ROOT,
+    expected_uid: int = 0,
+    expected_gid: int | None = None,
+) -> tuple[tuple[ReleaseRecord, ...], int]:
+    group_id = grp.getgrnam("leo").gr_gid if expected_gid is None else expected_gid
+    _validate_owned_directory(
+        release_root,
+        expected_uid=expected_uid,
+        expected_gid=group_id,
+    )
+    releases_root = release_root / "releases"
+    metadata_root = release_root / "release-metadata"
+    history_root = release_root / "retired-release-metadata"
+    releases_info = _validate_owned_directory(
+        releases_root,
+        expected_uid=expected_uid,
+        expected_gid=group_id,
+    )
+    _validate_owned_directory(
+        metadata_root,
+        expected_uid=expected_uid,
+        expected_gid=group_id,
+    )
+
+    release_paths: dict[str, Path] = {}
+    for path in releases_root.iterdir():
+        if not _is_revision(path.name):
+            raise OpsError(f"noncanonical entry exists in release inventory: {path}")
+        info = _validate_owned_directory(
+            path,
+            expected_uid=expected_uid,
+            expected_gid=group_id,
+        )
+        if info.st_dev != releases_info.st_dev:
+            raise OpsError(f"release directory is a separate mount: {path}")
+        release_paths[path.name] = path
+
+    metadata_paths: dict[str, Path] = {}
+    metadata_details: dict[str, tuple[os.stat_result, str]] = {}
+    for path in metadata_root.iterdir():
+        revision = path.name.removesuffix(".txt")
+        if path.name != f"{revision}.txt" or not _is_revision(revision):
+            raise OpsError(f"noncanonical entry exists in release metadata: {path}")
+        metadata_paths[revision] = path
+        metadata_details[revision] = _validate_release_metadata(
+            path,
+            expected_uid=expected_uid,
+            expected_gid=group_id,
+        )
+
+    archived: dict[str, tuple[Path, str]] = {}
+    if history_root.exists() or history_root.is_symlink():
+        history_info = _validate_owned_directory(
+            history_root,
+            expected_uid=expected_uid,
+            expected_gid=group_id,
+        )
+        if history_info.st_dev != releases_info.st_dev:
+            raise OpsError("retired release metadata must share the release filesystem")
+        for path in history_root.iterdir():
+            revision = path.name.removesuffix(".txt")
+            if path.name != f"{revision}.txt" or not _is_revision(revision):
+                raise OpsError(f"noncanonical retired release metadata exists: {path}")
+            _info, digest = _validate_release_metadata(
+                path,
+                expected_uid=expected_uid,
+                expected_gid=group_id,
+            )
+            archived[revision] = (path, digest)
+
+    records: list[ReleaseRecord] = []
+    for revision in sorted(set(release_paths) | set(metadata_paths)):
+        release_path = release_paths.get(revision)
+        metadata_path = metadata_paths.get(revision)
+        archive = archived.get(revision)
+        if release_path is not None and metadata_path is None:
+            raise OpsError(f"published release has no canonical metadata: {release_path}")
+        if metadata_path is None:
+            raise AssertionError("metadata path was unexpectedly absent")
+        metadata_info, metadata_digest = metadata_details[revision]
+        if archive is not None and archive[1] != metadata_digest:
+            raise OpsError(f"retired and canonical metadata disagree for release {revision}")
+        if release_path is None:
+            if archive is None:
+                raise OpsError(
+                    f"canonical metadata has no release or retirement archive: {metadata_path}"
+                )
+            state = "retirement-metadata-pending"
+            size_bytes = 0
+        else:
+            state = "retirement-started" if archive is not None else "published"
+            size_bytes = _release_size_bytes(release_path)
+        records.append(
+            ReleaseRecord(
+                revision=revision,
+                state=state,
+                release_path=release_path,
+                metadata_path=metadata_path,
+                archive_path=(
+                    archive[0] if archive is not None else history_root / f"{revision}.txt"
+                ),
+                size_bytes=size_bytes,
+                published_mtime_ns=metadata_info.st_mtime_ns,
+                metadata_sha256=metadata_digest,
+            )
+        )
+    return tuple(records), len(archived)
+
+
+def _release_revisions_in_text(text: str, *, release_root: Path) -> set[str]:
+    prefix = re.escape(str(release_root / "releases") + os.sep)
+    return set(re.findall(prefix + r"([0-9a-f]{40})(?=/|\s|\x00|$)", text))
+
+
+def _runtime_release_references(
+    *,
+    release_root: Path = RELEASE_ROOT,
+    proc_root: Path = Path("/proc"),
+) -> set[str]:
+    references: set[str] = set()
+    try:
+        processes = tuple(path for path in proc_root.iterdir() if path.name.isdigit())
+    except OSError as error:
+        raise OpsError(f"cannot enumerate process references beneath {proc_root}") from error
+
+    def vanished(error: OSError) -> bool:
+        return error.errno in {errno.ENOENT, errno.ESRCH}
+
+    for process in processes:
+        for name in ("exe", "cwd"):
+            try:
+                target = os.readlink(process / name)
+            except OSError as error:
+                if vanished(error):
+                    continue
+                raise OpsError(f"cannot inspect runtime reference {process / name}") from error
+            references.update(_release_revisions_in_text(target, release_root=release_root))
+        file_descriptors = process / "fd"
+        try:
+            descriptors = tuple(file_descriptors.iterdir())
+        except OSError as error:
+            if vanished(error):
+                descriptors = ()
+            else:
+                raise OpsError(f"cannot inspect runtime file descriptors for {process}") from error
+        for descriptor in descriptors:
+            try:
+                target = os.readlink(descriptor)
+            except OSError as error:
+                if vanished(error):
+                    continue
+                raise OpsError(f"cannot inspect runtime file descriptor {descriptor}") from error
+            references.update(_release_revisions_in_text(target, release_root=release_root))
+        for name in ("cmdline", "maps"):
+            try:
+                content = (process / name).read_bytes().decode(errors="replace")
+            except OSError as error:
+                if vanished(error):
+                    continue
+                raise OpsError(f"cannot inspect runtime process data {process / name}") from error
+            references.update(_release_revisions_in_text(content, release_root=release_root))
+    return references
+
+
+def _previous_deployment_revisions(
+    *,
+    selected_revisions: set[str],
+    evidence_root: Path = DEPLOYMENT_EVIDENCE_ROOT,
+) -> tuple[set[str], set[str]]:
+    previous: set[str] = set()
+    unresolved = set(selected_revisions)
+    if not evidence_root.is_dir() or evidence_root.is_symlink():
+        return previous, unresolved
+    for path in sorted(
+        evidence_root.glob("deploy-*.json"), key=lambda item: item.name, reverse=True
+    ):
+        if path.is_symlink() or not path.is_file():
+            continue
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        target = document.get("target_revision")
+        prior = document.get("previous_revision")
+        if (
+            target in unresolved
+            and document.get("kind") == "leo-deployment-receipt"
+            and document.get("healthy") is True
+            and isinstance(prior, str)
+            and _is_revision(prior)
+            and prior != target
+        ):
+            previous.add(prior)
+            unresolved.remove(str(target))
+        if not unresolved:
+            break
+    return previous, unresolved
+
+
+def _release_plan_digest(document: dict[str, Any]) -> str:
+    canonical = json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _release_retention_plan(
+    *,
+    keep: int,
+    explicitly_protected: tuple[str, ...] = (),
+    release_root: Path = RELEASE_ROOT,
+    evidence_root: Path = DEPLOYMENT_EVIDENCE_ROOT,
+    proc_root: Path = Path("/proc"),
+    expected_uid: int = 0,
+    expected_gid: int | None = None,
+) -> dict[str, Any]:
+    if keep < MINIMUM_RELEASE_RETENTION:
+        raise OpsError(f"release retention must keep at least {MINIMUM_RELEASE_RETENTION} releases")
+    invalid_protections = tuple(
+        revision for revision in explicitly_protected if not _is_revision(revision)
+    )
+    if invalid_protections:
+        raise OpsError("invalid explicitly protected release: " + ", ".join(invalid_protections))
+    records, retired_metadata_count = _release_inventory(
+        release_root=release_root,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    by_revision = {record.revision: record for record in records}
+    selectors = _selected_selector_revisions(release_root=release_root)
+    selected_revisions = set(selectors.values())
+    unavailable_selectors = tuple(
+        sorted(
+            revision
+            for revision in selected_revisions
+            if revision not in by_revision or by_revision[revision].release_path is None
+        )
+    )
+    if unavailable_selectors:
+        raise OpsError(
+            "selected releases are absent from the published inventory: "
+            + ", ".join(unavailable_selectors)
+        )
+    runtime_revisions = _runtime_release_references(
+        release_root=release_root,
+        proc_root=proc_root,
+    )
+    unknown_runtime = tuple(sorted(runtime_revisions - set(by_revision)))
+    if unknown_runtime:
+        raise OpsError(
+            "running processes reference releases outside the published inventory: "
+            + ", ".join(unknown_runtime)
+        )
+    missing_explicit = tuple(sorted(set(explicitly_protected) - set(by_revision)))
+    if missing_explicit:
+        raise OpsError("explicitly protected releases are absent: " + ", ".join(missing_explicit))
+
+    previous_revisions, unresolved_history = _previous_deployment_revisions(
+        selected_revisions=selected_revisions,
+        evidence_root=evidence_root,
+    )
+    unavailable_previous = tuple(sorted(previous_revisions - set(by_revision)))
+    history_complete = not unresolved_history and not unavailable_previous
+    newest = tuple(
+        record.revision
+        for record in sorted(
+            (record for record in records if record.state == "published"),
+            key=lambda record: (record.published_mtime_ns, record.revision),
+            reverse=True,
+        )[:keep]
+    )
+    reasons: dict[str, set[str]] = {revision: set() for revision in by_revision}
+    for component, revision in selectors.items():
+        reasons[revision].add(f"selector:{component}")
+    for revision in runtime_revisions:
+        reasons[revision].add("runtime")
+    for revision in previous_revisions & set(by_revision):
+        reasons[revision].add("previous-deployment")
+    for revision in explicitly_protected:
+        reasons[revision].add("operator")
+    for revision in newest:
+        reasons[revision].add("retention-window")
+
+    inventory: list[dict[str, Any]] = []
+    for record in sorted(
+        records,
+        key=lambda item: (item.published_mtime_ns, item.revision),
+        reverse=True,
+    ):
+        protection = sorted(reasons[record.revision])
+        inventory.append(
+            {
+                "revision": record.revision,
+                "state": record.state,
+                "size_bytes": record.size_bytes,
+                "published_mtime_ns": record.published_mtime_ns,
+                "metadata_sha256": record.metadata_sha256,
+                "archive_path": str(record.archive_path),
+                "protected_reasons": protection,
+                "action": "keep" if protection else "retire",
+            }
+        )
+    candidates = [item for item in inventory if item["action"] == "retire"]
+    warnings: list[str] = []
+    if unresolved_history:
+        warnings.append(
+            "no healthy deployment receipt resolves previous releases for: "
+            + ", ".join(sorted(unresolved_history))
+        )
+    if unavailable_previous:
+        warnings.append(
+            "deployment receipts reference unavailable previous releases: "
+            + ", ".join(unavailable_previous)
+        )
+    document: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": "leo-release-retention-plan",
+        "release_root": str(release_root),
+        "keep": keep,
+        "explicitly_protected": sorted(set(explicitly_protected)),
+        "selectors": selectors,
+        "runtime_revisions": sorted(runtime_revisions),
+        "previous_revisions": sorted(previous_revisions & set(by_revision)),
+        "history_complete": history_complete,
+        "retired_metadata_count": retired_metadata_count,
+        "inventory_count": len(inventory),
+        "inventory_bytes": sum(int(item["size_bytes"]) for item in inventory),
+        "candidate_count": len(candidates),
+        "candidate_bytes": sum(int(item["size_bytes"]) for item in candidates),
+        "warnings": warnings,
+        "inventory": inventory,
+    }
+    document["plan_sha256"] = _release_plan_digest(document)
+    return document
+
+
+def _ensure_retired_metadata_root(
+    *,
+    release_root: Path,
+    expected_uid: int,
+    expected_gid: int,
+) -> Path:
+    path = release_root / "retired-release-metadata"
+    releases_info = _validate_owned_directory(
+        release_root / "releases",
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    if not path.exists() and not path.is_symlink():
+        path.mkdir(mode=0o750)
+        os.chown(path, expected_uid, expected_gid)
+        os.chmod(path, 0o750)
+    info = _validate_owned_directory(
+        path,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    if info.st_dev != releases_info.st_dev:
+        raise OpsError("retired release metadata must share the release filesystem")
+    return path
+
+
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _archive_release_metadata(
+    *,
+    revision: str,
+    metadata: Path,
+    expected_digest: str,
+    release_root: Path,
+    expected_uid: int,
+    expected_gid: int,
+) -> Path:
+    _info, observed_digest = _validate_release_metadata(
+        metadata,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    if observed_digest != expected_digest:
+        raise OpsError(f"release metadata changed after planning: {revision}")
+    history_root = _ensure_retired_metadata_root(
+        release_root=release_root,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    archive = history_root / f"{revision}.txt"
+    if archive.exists() or archive.is_symlink():
+        _archive_info, archive_digest = _validate_release_metadata(
+            archive,
+            expected_uid=expected_uid,
+            expected_gid=expected_gid,
+        )
+        if archive_digest != expected_digest:
+            raise OpsError(f"retired release metadata conflicts for {revision}")
+        return archive
+    content = metadata.read_bytes()
+    if hashlib.sha256(content).hexdigest() != expected_digest:
+        raise OpsError(f"release metadata changed while archiving: {revision}")
+    temporary = history_root / f".{revision}.{os.getpid()}.tmp"
+    try:
+        with temporary.open("xb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chown(temporary, expected_uid, expected_gid)
+        os.chmod(temporary, 0o440)
+        os.replace(temporary, archive)
+        _fsync_directory(history_root)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return archive
+
+
+def _remove_release_tree(
+    *,
+    release: Path,
+    release_root: Path,
+    expected_uid: int,
+    expected_gid: int,
+) -> None:
+    releases_root = release_root / "releases"
+    if release.parent != releases_root or not _is_revision(release.name):
+        raise OpsError(f"release cleanup target is not one exact canonical SHA: {release}")
+    releases_info = _validate_owned_directory(
+        releases_root,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    release_info = _validate_owned_directory(
+        release,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    if release_info.st_dev != releases_info.st_dev:
+        raise OpsError(f"release cleanup target is a separate mount: {release}")
+    subprocess.run(
+        ("/usr/bin/rm", "-rf", "--one-file-system", "--", str(release)),
+        check=True,
+    )
+    if release.exists() or release.is_symlink():
+        raise OpsError(f"release cleanup did not remove its exact target: {release}")
+    _fsync_directory(releases_root)
+
+
+def _retire_release(
+    item: dict[str, Any],
+    *,
+    release_root: Path,
+    expected_uid: int,
+    expected_gid: int,
+) -> Path:
+    revision = str(item["revision"])
+    if not _is_revision(revision) or item.get("action") != "retire":
+        raise OpsError("retirement item is not an exact planned release candidate")
+    metadata = release_root / "release-metadata" / f"{revision}.txt"
+    archive = _archive_release_metadata(
+        revision=revision,
+        metadata=metadata,
+        expected_digest=str(item["metadata_sha256"]),
+        release_root=release_root,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    release = release_root / "releases" / revision
+    if release.exists() or release.is_symlink():
+        _remove_release_tree(
+            release=release,
+            release_root=release_root,
+            expected_uid=expected_uid,
+            expected_gid=expected_gid,
+        )
+    _info, observed_digest = _validate_release_metadata(
+        metadata,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    if observed_digest != item["metadata_sha256"]:
+        raise OpsError(f"release metadata changed before canonical retirement: {revision}")
+    metadata.unlink()
+    _fsync_directory(metadata.parent)
+    return archive
+
+
+def _write_release_retention_evidence(
+    *,
+    evidence_root: Path,
+    name: str,
+    document: dict[str, Any],
+    expected_uid: int,
+    expected_gid: int,
+) -> Path:
+    _assert_not_qnap(evidence_root)
+    try:
+        root_info = evidence_root.lstat()
+    except FileNotFoundError as error:
+        raise OpsError(f"deployment evidence root is unavailable: {evidence_root}") from error
+    if not stat.S_ISDIR(root_info.st_mode) or stat.S_ISLNK(root_info.st_mode):
+        raise OpsError("deployment evidence root must be a real directory")
+    if stat.S_IMODE(root_info.st_mode) & 0o022:
+        raise OpsError("deployment evidence root must not be group/world writable")
+    destination = evidence_root / name
+    content = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
+    if destination.exists() or destination.is_symlink():
+        _info, _digest = _validate_release_metadata(
+            destination,
+            expected_uid=expected_uid,
+            expected_gid=expected_gid,
+        )
+        if destination.read_bytes() != content:
+            raise OpsError(
+                f"release-retention evidence already exists with other content: {destination}"
+            )
+        return destination
+    temporary = evidence_root / f".{name}.{os.getpid()}.tmp"
+    try:
+        with temporary.open("xb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chown(temporary, expected_uid, expected_gid)
+        os.chmod(temporary, 0o440)
+        os.replace(temporary, destination)
+        _fsync_directory(evidence_root)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return destination
+
+
+def _apply_release_retention(
+    *,
+    expected_plan: str,
+    keep: int,
+    explicitly_protected: tuple[str, ...] = (),
+    release_root: Path = RELEASE_ROOT,
+    evidence_root: Path = DEPLOYMENT_EVIDENCE_ROOT,
+    proc_root: Path = Path("/proc"),
+    expected_uid: int = 0,
+    expected_gid: int | None = None,
+    operator: str | None = None,
+) -> dict[str, Any]:
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_plan):
+        raise OpsError("--expect-plan must be one lowercase SHA-256 digest")
+    group_id = grp.getgrnam("leo").gr_gid if expected_gid is None else expected_gid
+    lock_path = release_root / ".ops-deploy.lock"
+    if lock_path.is_symlink():
+        raise OpsError("deployment lock must not be a symlink")
+    lock_path.touch(mode=0o600, exist_ok=True)
+    lock_info = lock_path.lstat()
+    if (
+        not stat.S_ISREG(lock_info.st_mode)
+        or lock_info.st_uid != expected_uid
+        or stat.S_IMODE(lock_info.st_mode) & 0o077
+    ):
+        raise OpsError("deployment lock must be an owner-only regular file")
+    with lock_path.open("r+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise OpsError(
+                "another deployment or release-retention operation holds the host lock"
+            ) from error
+        plan = _release_retention_plan(
+            keep=keep,
+            explicitly_protected=explicitly_protected,
+            release_root=release_root,
+            evidence_root=evidence_root,
+            proc_root=proc_root,
+            expected_uid=expected_uid,
+            expected_gid=group_id,
+        )
+        if plan["plan_sha256"] != expected_plan:
+            raise OpsError(
+                "release-retention plan changed; review a new --plan before applying "
+                f"(observed {plan['plan_sha256']})"
+            )
+        if not plan["history_complete"]:
+            raise OpsError("release-retention history is incomplete; resolve plan warnings first")
+        plan_receipt = _write_release_retention_evidence(
+            evidence_root=evidence_root,
+            name=f"release-retention-plan-{expected_plan}.json",
+            document=plan,
+            expected_uid=expected_uid,
+            expected_gid=group_id,
+        )
+        candidates = [item for item in plan["inventory"] if item["action"] == "retire"]
+        retired: list[dict[str, Any]] = []
+        for item in reversed(candidates):
+            revision = str(item["revision"])
+            selectors = _selected_selector_revisions(release_root=release_root)
+            if revision in selectors.values():
+                raise OpsError(f"release became selected during retirement: {revision}")
+            runtime = _runtime_release_references(
+                release_root=release_root,
+                proc_root=proc_root,
+            )
+            if revision in runtime:
+                raise OpsError(f"release became runtime-referenced during retirement: {revision}")
+            archive = _retire_release(
+                item,
+                release_root=release_root,
+                expected_uid=expected_uid,
+                expected_gid=group_id,
+            )
+            retired.append(
+                {
+                    "revision": revision,
+                    "size_bytes": item["size_bytes"],
+                    "metadata_sha256": item["metadata_sha256"],
+                    "archive_path": str(archive),
+                }
+            )
+        completion: dict[str, Any] = {
+            "schema_version": 1,
+            "kind": "leo-release-retention-receipt",
+            "plan_sha256": expected_plan,
+            "plan_receipt": str(plan_receipt),
+            "applied_utc": datetime.now(UTC).isoformat(),
+            "operator": operator
+            or os.environ.get("SUDO_USER")
+            or os.environ.get("USER")
+            or str(os.getuid()),
+            "retired_count": len(retired),
+            "retired_bytes": sum(int(item["size_bytes"]) for item in retired),
+            "retired": retired,
+        }
+        completion_path = _write_release_retention_evidence(
+            evidence_root=evidence_root,
+            name=f"release-retention-complete-{expected_plan}.json",
+            document=completion,
+            expected_uid=expected_uid,
+            expected_gid=group_id,
+        )
+        completion["receipt"] = str(completion_path)
+        return completion
+
+
+def _releases(args: argparse.Namespace) -> int:
+    if os.geteuid() != 0:
+        raise OpsError("complete release inventory requires root; rerun with sudo")
+    protections = tuple(args.protect or ())
+    if args.apply:
+        if args.expect_plan is None:
+            raise OpsError("--apply requires --expect-plan from a reviewed plan")
+        completion = _apply_release_retention(
+            expected_plan=args.expect_plan,
+            keep=args.keep,
+            explicitly_protected=protections,
+        )
+        print(json.dumps(completion, indent=2, sort_keys=True))
+        return 0
+    if args.expect_plan is not None:
+        raise OpsError("--expect-plan is valid only with --apply")
+    plan = _release_retention_plan(
+        keep=args.keep,
+        explicitly_protected=protections,
+    )
+    print(json.dumps(plan, indent=2, sort_keys=True))
+    return 0
+
+
+def _warn_release_pressure(*, release_root: Path = RELEASE_ROOT) -> None:
+    try:
+        releases = tuple(
+            path
+            for path in (release_root / "releases").iterdir()
+            if _is_revision(path.name) and path.is_dir() and not path.is_symlink()
+        )
+    except OSError:
+        return
+    if len(releases) > DEFAULT_RELEASE_RETENTION:
+        print(
+            "RELEASE-RETENTION "
+            f"inventory={len(releases)} keep={DEFAULT_RELEASE_RETENTION} "
+            "review='sudo ./ops releases --plan --keep 10'",
+            file=sys.stderr,
+        )
+
+
 def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     stage_only = bool(getattr(args, "stage_only", False))
     if stage_only and args.revision is None:
@@ -607,6 +1381,7 @@ def _deploy(args: argparse.Namespace) -> int:
             raise OpsError("release staging requires root; rerun with sudo")
         _stage_release(target)
         print(f"STAGED-ONLY revision={target} release={RELEASE_ROOT / 'releases' / target}")
+        _warn_release_pressure()
         return 0
     if not impact:
         print(f"NO-OP target={target} has no runtime impact")
@@ -690,6 +1465,7 @@ def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> 
         )
         _seal_evidence_file(receipt_path)
         print(f"DEPLOYED component=api revision={target} receipt={receipt_path}")
+        _warn_release_pressure()
     return 0
 
 
@@ -765,6 +1541,7 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
             release_receipt=release_receipt,
         )
         print(f"DEPLOYED mode=full revision={target} receipt={receipt_path}")
+        _warn_release_pressure()
     return 0
 
 
@@ -1345,8 +2122,8 @@ def _stage_release(target: str) -> None:
     subprocess.run(command, check=True)
 
 
-def _selected_release_revision() -> str | None:
-    selector = Path("/opt/leo-tracker/current")
+def _selected_release_revision(*, release_root: Path = RELEASE_ROOT) -> str | None:
+    selector = release_root / "current"
     if not selector.is_symlink():
         return None
     target = os.readlink(selector)
@@ -1357,8 +2134,12 @@ def _selected_release_revision() -> str | None:
     raise OpsError("current release selector is not an exact relative SHA")
 
 
-def _selected_component_release_revision(component: str) -> str | None:
-    selector = Path(f"/opt/leo-tracker/current-{component}")
+def _selected_component_release_revision(
+    component: str,
+    *,
+    release_root: Path = RELEASE_ROOT,
+) -> str | None:
+    selector = release_root / f"current-{component}"
     if not selector.is_symlink():
         return None
     target = os.readlink(selector)
@@ -1368,11 +2149,16 @@ def _selected_component_release_revision(component: str) -> str | None:
     raise OpsError(f"current {component} selector is not an exact relative SHA")
 
 
-def _selected_selector_revisions() -> dict[str, str]:
-    selected: dict[str, str | None] = {"global": _selected_release_revision()}
+def _selected_selector_revisions(*, release_root: Path = RELEASE_ROOT) -> dict[str, str]:
+    selected: dict[str, str | None] = {
+        "global": _selected_release_revision(release_root=release_root)
+    }
     selected.update(
         {
-            component: _selected_component_release_revision(component)
+            component: _selected_component_release_revision(
+                component,
+                release_root=release_root,
+            )
             for component in _SELECTOR_COMPONENTS
             if component != "global"
         }
@@ -1401,6 +2187,16 @@ def parser() -> argparse.ArgumentParser:
     )
     deploy.add_argument("--full", action="store_true")
     deploy.add_argument("--revision")
+    releases = commands.add_parser(
+        "releases",
+        help="plan or apply guarded immutable-release retention",
+    )
+    mode = releases.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--plan", action="store_true")
+    mode.add_argument("--apply", action="store_true")
+    releases.add_argument("--keep", type=int, default=DEFAULT_RELEASE_RETENTION)
+    releases.add_argument("--protect", action="append", metavar="FULL_SHA")
+    releases.add_argument("--expect-plan", metavar="SHA256")
     return result
 
 
@@ -1409,7 +2205,9 @@ def main() -> int:
     try:
         if args.command == "test":
             return _test(args)
-        return _deploy(args)
+        if args.command == "deploy":
+            return _deploy(args)
+        return _releases(args)
     except (OpsError, subprocess.CalledProcessError) as error:
         print(f"ops: {error}", file=sys.stderr)
         return 2
