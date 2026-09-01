@@ -54,7 +54,10 @@ from leo.contracts.states import (
 )
 from leo.domain.mixed_rate_capture import compile_production_capture_plan_v5
 from leo.pipeline import standard_native as standard_native_pipeline
-from leo.pipeline.standard_native import compile_standard_native_run_plan
+from leo.pipeline.standard_native import (
+    compile_standard_native_automatic_run_plan,
+    compile_standard_native_run_plan,
+)
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
 
@@ -473,6 +476,33 @@ def test_bounded_live_2p5_x25_manifest_is_admitted_to_standard_analysis(
             "paired-scientific-report-native": 1,
             "paired-presentation-native": 1,
         }
+    )
+    automatic = compile_standard_native_automatic_run_plan(
+        manifest,
+        manifest_digest="sha256:" + "a" * 64,
+        pipeline_release_id="b" * 40,
+    )
+    assert Counter(item.stage_key for item in automatic.jobs) == Counter(
+        {
+            "path-standard-native": 2,
+            "path-alternate-tracks-native": 2,
+            "radio-scientific-report-native": 1,
+        }
+    )
+    assert {job.scope.stream_id for job in automatic.jobs if job.scope.stream_id is not None} == {
+        stream.stream_id
+        for stream in manifest.streams
+        if stream.applied_settings.sample_rate_hz == 2_500_000
+    }
+    assert any(
+        job.scope.stream_id is not None
+        and next(
+            stream.applied_settings.sample_rate_hz
+            for stream in manifest.streams
+            if stream.stream_id == job.scope.stream_id
+        )
+        == 25_000_000
+        for job in expanded.jobs
     )
 
 

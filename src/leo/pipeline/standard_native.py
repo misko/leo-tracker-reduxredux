@@ -458,7 +458,70 @@ def compile_standard_native_run_plan(
     """
 
     _require_reviewed_native_geometry(manifest)
-    topology = compile_standard_native_scope_inventory(manifest)
+    return _compile_standard_native_run_plan(
+        manifest,
+        manifest_digest=manifest_digest,
+        pipeline_release_id=pipeline_release_id,
+        selected_stream_ids=None,
+    )
+
+
+def compile_standard_native_automatic_run_plan(
+    manifest: (
+        RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
+    *,
+    manifest_digest: str,
+    pipeline_release_id: str,
+) -> ExpandedRunPlanV1:
+    """Compile the bounded automatic graph while retaining full manual analysis.
+
+    Production dwells automatically analyze only their 2.5 MS/s stream.
+    High-rate-only recordings are retained without entering the automatic lane.
+    Explicit reprocess and native-evidence actions continue to use
+    :func:`compile_standard_native_run_plan` and therefore retain every native
+    rate, including 15, 20, and 25 MS/s.
+    """
+
+    _require_reviewed_native_geometry(manifest)
+    rates = {
+        stream.stream_id: (stream.applied_settings or stream.requested_settings).sample_rate_hz
+        for stream in manifest.streams
+    }
+    selected_stream_ids = frozenset(
+        stream_id for stream_id, rate in rates.items() if rate == 2_500_000
+    )
+    if not selected_stream_ids:
+        raise ValueError("automatic Standard-native analysis requires a 2.5 MS/s stream")
+    return _compile_standard_native_run_plan(
+        manifest,
+        manifest_digest=manifest_digest,
+        pipeline_release_id=pipeline_release_id,
+        selected_stream_ids=selected_stream_ids,
+    )
+
+
+def _compile_standard_native_run_plan(
+    manifest: (
+        RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
+    *,
+    manifest_digest: str,
+    pipeline_release_id: str,
+    selected_stream_ids: frozenset[str] | None,
+) -> ExpandedRunPlanV1:
+    topology = compile_standard_native_scope_inventory(
+        manifest,
+        selected_stream_ids=selected_stream_ids,
+    )
     jobs: list[JobNodeV1] = []
     edges: list[JobDependencyRefV1] = []
     path_terminals: dict[str, list[str]] = {}
@@ -575,11 +638,17 @@ def compile_standard_native_scope_inventory(
         | RecordingManifestV5
         | RecordingManifestV6
     ),
+    *,
+    selected_stream_ids: frozenset[str] | None = None,
 ) -> CompiledScopeInventory:
     """Build native scopes while preserving historical V2 synchronization identity."""
 
     if isinstance(manifest, RecordingManifestV2):
-        return compile_scope_inventory(manifest)
+        inventory = compile_scope_inventory(manifest)
+        all_stream_ids = frozenset(stream.stream_id for stream in manifest.streams)
+        if selected_stream_ids is None or selected_stream_ids == all_stream_ids:
+            return inventory
+        raise ValueError("historical V2 native evidence does not support stream selection")
     if not isinstance(
         manifest,
         (RecordingManifestV3, RecordingManifestV4, RecordingManifestV5, RecordingManifestV6),
@@ -587,6 +656,10 @@ def compile_standard_native_scope_inventory(
         raise ValueError(
             "Standard-native scope inventory requires a reviewed V2, V3, or V4 recording"
         )
+    all_stream_ids = frozenset(stream.stream_id for stream in manifest.streams)
+    selected = all_stream_ids if selected_stream_ids is None else selected_stream_ids
+    if not selected or not selected.issubset(all_stream_ids):
+        raise ValueError("Standard-native stream selection must be a non-empty manifest subset")
     ordered = tuple(
         sorted(manifest.streams, key=lambda item: (item.stream_id, item.radio.radio_id))
     )
@@ -618,13 +691,14 @@ def compile_standard_native_scope_inventory(
             for ordinal, stream in enumerate(ordered)
         ]
     )
+    selected_streams = tuple(stream for stream in ordered if stream.stream_id in selected)
     receiver_paths = tuple(
         ScopeIdentityV1.receiver_path(
             session_id=manifest.session_id,
             stream_id=stream.stream_id,
             receiver_id=receiver_id,
         )
-        for stream in ordered
+        for stream in selected_streams
         for receiver_id in stream.applied_settings.receiver_ids
     )
     radios = tuple(
@@ -633,14 +707,14 @@ def compile_standard_native_scope_inventory(
             stream_id=stream.stream_id,
             radio_id=stream.radio.radio_id,
         )
-        for stream in ordered
+        for stream in selected_streams
     )
     return CompiledScopeInventory(
         receiver_paths=receiver_paths,
         radios=radios,
         paired=(
             None
-            if len(ordered) != 2
+            if len(selected_streams) != 2
             else ScopeIdentityV1.paired(
                 session_id=manifest.session_id,
                 synchronization_inventory_digest=synchronization_inventory_digest,

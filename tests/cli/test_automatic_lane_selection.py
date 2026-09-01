@@ -213,7 +213,7 @@ def test_v3_native_dispatch_precedes_degraded_and_capture_only_rejection(
     )
     monkeypatch.setattr(
         processing_module,
-        "compile_standard_native_run_plan",
+        "compile_standard_native_automatic_run_plan",
         lambda *_args, **_kwargs: plan,
     )
     monkeypatch.setattr(
