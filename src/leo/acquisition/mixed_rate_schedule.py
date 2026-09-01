@@ -85,9 +85,7 @@ PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1 = "rate_rollout:fixed_2p5_25_hold_v
 PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_POLICY_V2 = (
     "production-direct-async-2p5-25-hold-exact-lo-v2"
 )
-PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2 = (
-    "rate_rollout:fixed_2p5_25_exact_lo_hold_v2"
-)
+PRODUCTION_DIRECT_ASYNC_FIXED_25_EXACT_LO_HOLD_TAG_V2 = "rate_rollout:fixed_2p5_25_exact_lo_hold_v2"
 
 ProductionProfileKey = tuple[int, tuple[int, ...], bool]
 ProductionProfileAuthority = tuple[str, str, int]
