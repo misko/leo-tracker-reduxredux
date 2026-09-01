@@ -9,6 +9,8 @@ import pytest
 
 from leo.acquisition import AcquisitionQueuePressure, AcquisitionSupervisorPoisoned
 from leo.acquisition.mixed_rate_schedule import (
+    PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2,
+    PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
@@ -41,7 +43,7 @@ from leo.contracts.mixed_rate_schedule import (
     ProductionDwellIntentV2,
     ProductionDwellIntentV3,
 )
-from leo.contracts.states import CaptureState
+from leo.contracts.states import CaptureState, StarlinkEdge
 from leo.scanner import ScannerBurstReportV1
 
 
@@ -447,7 +449,7 @@ def test_durable_focused_policy_executes_only_2p5_10_and_2p5_15_pairs() -> None:
     )
 
 
-def test_durable_hold_rollout_enqueues_explicit_hold_v3_intents() -> None:
+def test_durable_exact_lo_hold_rollout_enqueues_qualified_v3_intents() -> None:
     clock = _Clock()
     backend = _ProductionRateDurableBackend(clock)
     backend.analyzed.set()
@@ -467,7 +469,7 @@ def test_durable_hold_rollout_enqueues_explicit_hold_v3_intents() -> None:
         interval_seconds=10.0,
         maximum_captures=6,
         cancel=cast(Event, _AdvancingCancel(clock)),
-        mixed_rate_policy=PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
+        mixed_rate_policy=PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2,
     )
 
     assert summary.capture_count == 6
@@ -479,9 +481,24 @@ def test_durable_hold_rollout_enqueues_explicit_hold_v3_intents() -> None:
     assert len(intents) == 6
     assert all(item.policy_id == PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3 for item in intents)
     assert all(PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 in item.extra_tags for item in intents)
+    assert all(
+        PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 in item.extra_tags for item in intents
+    )
     assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
         GainControllerMode.TANDEM_HOLD
     }
+    assert all(
+        leg.starlink_channel == 4 or leg.starlink_edge is StarlinkEdge.UPPER
+        for intent in intents
+        if intent.dwell_class is ProductionDwellClassV3.MIXED_2P5_15
+        for leg in intent.radio_legs
+    )
+    assert all(
+        leg.starlink_channel == 4 or leg.starlink_edge is StarlinkEdge.LOWER
+        for intent in intents
+        if intent.dwell_class is ProductionDwellClassV3.MIXED_2P5_25
+        for leg in intent.radio_legs
+    )
 
 
 def test_durable_fixed_25_selector_only_executes_2p5_x25_hold() -> None:
