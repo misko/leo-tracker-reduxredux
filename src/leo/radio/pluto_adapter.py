@@ -339,9 +339,9 @@ class PlutoIioRadioSource:
                 < device_buffer.requested_ram_bytes
             ):
                 raise PlutoAdapterError("Pluto does not attest direct-async RAM/drop capabilities")
-            if self.identity.firmware_version != "v0.47-plutoplus-spf-iq-direct-async-v2":
+            if self.identity.firmware_version != "v0.48-plutoplus-spf-iq-direct-async-v3":
                 raise PlutoAdapterError(
-                    "direct-async RAM/drop profile requires the qualified v0.47 release"
+                    "direct-async RAM/drop profile requires the qualified v0.48 release"
                 )
             buffer_arguments = {
                 "direct_async_frames": direct_async_frames,

@@ -1090,8 +1090,8 @@ def probe_live_station_radios(
         ):
             raise ValueError("live station radio identity differs from the frozen station pair")
         firmware = observed.get("firmware_version")
-        if firmware != "v0.47-plutoplus-spf-iq-direct-async-v2":
-            raise ValueError("live station radio firmware is not the exact qualified v0.47")
+        if firmware != "v0.48-plutoplus-spf-iq-direct-async-v3":
+            raise ValueError("live station radio firmware is not the exact qualified v0.48")
         if (
             type(observed.get("metadata_abi_version")) is not int
             or observed.get("metadata_abi_version") != 3
