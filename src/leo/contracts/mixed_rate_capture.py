@@ -12,6 +12,7 @@ from leo.contracts.device_buffer import (
     DIRECT_ASYNC_PROFILE_TAG_V1,
     DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2,
     DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,
+    DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V4,
 )
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.gain_control import GainControllerPolicyV1
@@ -393,6 +394,7 @@ class CapturePlanV5(ContractModel):
                 DIRECT_ASYNC_PROFILE_TAG_V1,
                 DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2,
                 DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,
+                DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V4,
             }.intersection(profile.tags):
                 raise ValueError("direct-async high-rate profile lacks its device-buffer policy")
             if profile.duration_seconds != self.duration_seconds:

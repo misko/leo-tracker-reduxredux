@@ -7,8 +7,10 @@ from leo.contracts.device_buffer import (
     DirectAsyncEvidenceV1,
     DirectAsyncRamDropEvidenceV2,
     DirectAsyncRamDropEvidenceV3,
+    DirectAsyncRamDropEvidenceV4,
     DirectAsyncRamDropRequestV2,
     DirectAsyncRamDropRequestV3,
+    DirectAsyncRamDropRequestV4,
     DirectAsyncRamStatusV2,
     DirectAsyncRequestV1,
     device_buffer_request,
@@ -227,3 +229,76 @@ def test_qualified_ram_drop_evidence_preserves_v3_request_generation():
 
     assert evidence.schema_version == evidence.request.schema_version == 3
     assert evidence.ram_dropped_frames == 5
+
+
+@pytest.mark.parametrize("rate,frames", [(20, 1145), (25, 1431)])
+@pytest.mark.parametrize("rx", [0, 1])
+def test_bounded_ram_drop_profiles_bind_64_frame_hardware_sessions(rate, frames, rx):
+    path = (
+        Path(__file__).parents[2]
+        / "profiles"
+        / f"starlink-ch4-lower-{rate}m-60s-rx{rx}-direct-async-ram-drop-v11.yaml"
+    )
+    revision = load_profile_revision(path)
+    plan = compile_capture_plan(revision, ["radio-a"])
+    request = device_buffer_request(revision.profile, plan.resolved_sample_count)
+
+    assert isinstance(request, DirectAsyncRamDropRequestV4)
+    assert request.target_frames == frames
+    assert request.maximum_segment_frames == 64
+    assert request.segment_count == (frames + 63) // 64
+    assert request.next_segment_frames(0) == 64
+    assert request.next_segment_frames(frames - 1) == 1
+    assert request.capacity_frames == 32
+    assert revision.profile.kernel_buffers == 11
+
+
+def test_bounded_ram_drop_evidence_closes_every_hardware_session():
+    request = DirectAsyncRamDropRequestV4(
+        target_frames=65,
+        requested_device_samples=64 * 1_048_576 + 100,
+    )
+
+    def status(produced: int, consumed: int) -> DirectAsyncRamStatusV2:
+        return DirectAsyncRamStatusV2(
+            version=1,
+            state="complete",
+            terminal_reason="target_complete",
+            error_code=0,
+            requested_capacity_iq_bytes=134_217_728,
+            admitted_capacity_iq_bytes=134_217_728,
+            target_frames=0,
+            produced_frames=produced,
+            consumed_frames=consumed,
+            high_water_frames=12,
+            wrap_count=1,
+            producer_position=produced % 32,
+            consumer_position=consumed % 32,
+        )
+
+    evidence = DirectAsyncRamDropEvidenceV4(
+        request=request,
+        segment_statuses=(status(20, 12), status(7, 5)),
+        returned_frames=65,
+        returned_device_span_samples=66 * 1_048_576,
+        segment_count=2,
+        upstream_stream_generations=("segment-a", "segment-b"),
+        counter_missing_sample_count=1_048_576,
+        inter_segment_skipped_samples=1_048_576,
+        stored_observed_samples=64 * 1_048_576 + 100,
+        drained_outside_window_samples=1_048_576 - 100,
+    )
+
+    assert evidence.ram_spilled_frames == 27
+    assert evidence.ram_drained_frames == 17
+    assert evidence.ram_dropped_frames == 10
+    assert evidence.ram_high_water_frames == 12
+
+    bad_status = status(7, 5).model_copy(update={"state": "failed"})
+    with pytest.raises(ValueError, match="target_complete"):
+        DirectAsyncRamDropEvidenceV4(
+            **{
+                **evidence.model_dump(mode="python"),
+                "segment_statuses": (status(20, 12), bad_status),
+            }
+        )

@@ -9,12 +9,14 @@ from leo.contracts.device_buffer import (
     DDR_RING_EVIDENCE_KEY_V1,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2,
     DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3,
+    DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V4,
     DeviceBufferEvidenceV1,
     DeviceBufferRequestV1,
     DirectAsyncRamDropEvidenceV2,
     DirectAsyncRamDropEvidenceV3,
     DirectAsyncRamDropRequestV2,
     DirectAsyncRamDropRequestV3,
+    DirectAsyncRamDropRequestV4,
 )
 from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.radio import ReceiverGainV1
@@ -247,6 +249,82 @@ def test_qualified_ram_drop_uses_v3_key_and_qualified_geometry(tmp_path, monkeyp
     assert evidence.status.requested_capacity_iq_bytes == 134_217_728
     assert evidence.status.admitted_capacity_iq_bytes == 134_217_728
     assert DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2 not in first.hardware_metadata
+    coordinator.store.verify(result.bundle.session_id)
+
+
+def test_bounded_ram_drop_collects_terminal_status_from_every_segment(tmp_path, monkeypatch):
+    profile = CaptureProfileV2(
+        name="tiny-bounded-direct-ram-drop-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=20_000_000,
+        bandwidth_hz=20_000_000,
+        receivers=(0,),
+        gains=(ReceiverGainV1(receiver_id=0, gain_db=30),),
+        sample_count=20,
+        refill_samples=4,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        kernel_buffers=11,
+        refill_queue_capacity=8,
+        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+        tags=("TEST",),
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        ["radio-a"],
+        source_type=SourceType.TEST,
+    )
+    # Production V4 fixes these values at 1,048,576 and 239. A tiny constructed
+    # instance exercises the same coordinator state machine without a 1 GiB fixture.
+    request = DirectAsyncRamDropRequestV4.model_construct(
+        schema_version=4,
+        mode="direct_async_ram_drop",
+        frame_samples=4,
+        maximum_segment_frames=2,
+        target_frames=5,
+        receiver_count=1,
+        requested_device_samples=20,
+        requested_ram_bytes=134_217_728,
+        drop_backlog_on_overrun=True,
+    )
+    monkeypatch.setattr(coordinator_module, "_device_buffer_request", lambda *_: request)
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=1024,
+        ),
+    )
+    radio = FakeRadioSource("radio-a")
+
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": radio},
+        session_id="bounded-direct-ram-drop-clean",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert radio.lifecycle.count("begin_metadata_capture:4:11") == 3
+    assert result.bundle is not None
+    first = next(coordinator.store.reader(result.bundle, "stream-0").iter_timeline_metadata())
+    payload = first.hardware_metadata[DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V4]
+    assert payload["schema_version"] == 4
+    assert payload["segment_count"] == 3
+    assert len(payload["segment_statuses"]) == 3
+    assert [status["state"] for status in payload["segment_statuses"]] == [
+        "complete",
+        "complete",
+        "complete",
+    ]
+    assert payload["upstream_stream_generations"] == [
+        "fake-generation-1",
+        "fake-generation-2",
+        "fake-generation-3",
+    ]
+    assert DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V3 not in first.hardware_metadata
     coordinator.store.verify(result.bundle.session_id)
 
 
