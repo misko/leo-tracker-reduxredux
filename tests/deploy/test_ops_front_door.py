@@ -291,6 +291,206 @@ def test_full_deployment_plan_binds_exact_production_capture_policy(
     assert plan["capture_policy_id"] == ("production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2")
 
 
+def test_fast_deployment_plan_uses_selected_api_delta_and_only_restarts_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "1" * 40
+    current_api = "2" * 40
+    target = "3" * 40
+
+    def fake_git(*arguments: str) -> str:
+        if arguments == ("status", "--porcelain"):
+            return ""
+        if arguments == ("rev-parse", "origin/main"):
+            return target
+        raise AssertionError(arguments)
+
+    observed_diff: list[tuple[str, ...]] = []
+
+    def fake_git_lines(*arguments: str) -> tuple[str, ...]:
+        observed_diff.append(arguments)
+        return (
+            "src/leo/presentation/standard_native_pipeline.py",
+            "tests/presentation/test_standard_native_pipeline.py",
+            "web/src/App.tsx",
+        )
+
+    monkeypatch.setattr(OPS, "_run_git", fake_git)
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(
+        OPS,
+        "_selected_component_release_revision",
+        lambda component: current_api if component == "api" else None,
+    )
+    monkeypatch.setattr(OPS, "_git_lines", fake_git_lines)
+
+    plan = OPS._deployment_plan(OPS.parser().parse_args(["deploy", "--fast", "--plan"]))
+
+    assert observed_diff == [("diff", "--name-only", f"{current_api}..{target}")]
+    assert plan["current_revision"] == current
+    assert plan["current_api_revision"] == current_api
+    assert plan["comparison_revision"] == current_api
+    assert plan["fast_eligible"] is True
+    assert plan["fast_rejected_paths"] == []
+    assert plan["mode"] == "fast-api-only"
+    assert plan["services_to_restart"] == ["api"]
+    assert plan["worker_fence_required"] is False
+    assert plan["migration_required"] is False
+    assert plan["capture_policy_id"] is None
+
+
+@pytest.mark.parametrize(
+    "changed_path",
+    (
+        "src/leo/contracts/standard_native.py",
+        "src/leo/processing/worker.py",
+        "migrations/versions/unsafe.py",
+        "deploy/systemd/leo-api.service",
+        "pyproject.toml",
+        "uv.lock",
+        "web/package-lock.json",
+    ),
+)
+def test_fast_deployment_plan_rejects_shared_runtime_and_dependency_changes(
+    changed_path: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "1" * 40
+    target = "2" * 40
+
+    def fake_git(*arguments: str) -> str:
+        if arguments == ("status", "--porcelain"):
+            return ""
+        if arguments == ("rev-parse", "origin/main"):
+            return target
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(OPS, "_run_git", fake_git)
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(OPS, "_selected_component_release_revision", lambda _name: current)
+    monkeypatch.setattr(
+        OPS,
+        "_git_lines",
+        lambda *_arguments: ("src/leo/api/routes.py", changed_path),
+    )
+
+    plan = OPS._deployment_plan(OPS.parser().parse_args(["deploy", "--fast", "--plan"]))
+
+    assert plan["fast_eligible"] is False
+    assert plan["fast_rejected_paths"] == [changed_path]
+
+
+def test_fast_deploy_requires_receipts_and_pre_staged_api_cutover(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "1" * 40
+    current_api = "2" * 40
+    target = "3" * 40
+    plan = {
+        "impact": ["api", "worker"],
+        "target_revision": target,
+        "current_revision": current,
+        "current_api_revision": current_api,
+        "changed_paths": ["src/leo/presentation/view.py"],
+        "fast_eligible": True,
+        "fast_rejected_paths": [],
+    }
+    monkeypatch.setattr(OPS, "_deployment_plan", lambda _args: plan)
+    monkeypatch.setattr(OPS.os, "geteuid", lambda: 0)
+    checked: list[tuple[str, object]] = []
+    monkeypatch.setattr(
+        OPS,
+        "_require_passing_release_qualification",
+        lambda revision: checked.append(("qualification", revision)) or Path("qualified"),
+    )
+    monkeypatch.setattr(
+        OPS,
+        "_require_matching_test_receipt",
+        lambda **kwargs: checked.append(("tests", kwargs)) or Path("tested"),
+    )
+    deployed: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        OPS,
+        "_deploy_api_release",
+        lambda **kwargs: deployed.append(kwargs) or 0,
+    )
+
+    assert OPS._deploy(OPS.parser().parse_args(["deploy", "--fast"])) == 0
+    assert checked == [
+        ("qualification", current),
+        (
+            "tests",
+            {"target": target, "changed": ("src/leo/presentation/view.py",)},
+        ),
+    ]
+    assert deployed == [
+        {
+            "target": target,
+            "previous": current_api,
+            "plan": plan,
+            "require_pre_staged": True,
+        }
+    ]
+
+
+def test_fast_deploy_requires_published_immutable_target(tmp_path: Path) -> None:
+    target = "2" * 40
+
+    with pytest.raises(OPS.OpsError, match="already-staged"):
+        OPS._require_pre_staged_release(target, release_root=tmp_path)
+
+    release = tmp_path / "releases" / target
+    release.mkdir(parents=True)
+    with pytest.raises(OPS.OpsError, match="publication metadata"):
+        OPS._require_pre_staged_release(target, release_root=tmp_path)
+
+    metadata = tmp_path / "release-metadata" / f"{target}.txt"
+    metadata.parent.mkdir()
+    metadata.write_text(f"revision={target}\n")
+    assert OPS._require_pre_staged_release(target, release_root=tmp_path) == release
+
+
+def test_fast_deploy_requires_sealed_healthy_full_deployment_base(tmp_path: Path) -> None:
+    target = "2" * 40
+    deployment_root = tmp_path / "deployment"
+    release_root = tmp_path / "release"
+    deployment_root.mkdir()
+    receipt = release_root / "qualified" / "receipt.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text(json.dumps({"git_revision": target, "passed": True}))
+    receipt.chmod(0o440)
+    deployment = deployment_root / f"deploy-{target}.json"
+    deployment.write_text(
+        json.dumps(
+            {
+                "kind": "leo-deployment-receipt",
+                "mode": "full",
+                "target_revision": target,
+                "healthy": True,
+                "release_qualification_receipt": str(receipt),
+            }
+        )
+    )
+    deployment.chmod(0o440)
+
+    assert (
+        OPS._require_passing_release_qualification(
+            target,
+            deployment_root=deployment_root,
+            release_evidence_root=release_root,
+        )
+        == receipt
+    )
+
+    receipt.chmod(0o640)
+    with pytest.raises(OPS.OpsError, match="sealed healthy full-deployment"):
+        OPS._require_passing_release_qualification(
+            target,
+            deployment_root=deployment_root,
+            release_evidence_root=release_root,
+        )
+
+
 def test_stage_only_stages_exact_main_without_cutover_or_rate_receipt(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -340,6 +540,11 @@ def test_stage_only_stages_exact_main_without_cutover_or_rate_receipt(
             ("deploy", "--stage-only", "--revision", "2" * 40, "--full"),
             "cannot be combined with --full",
         ),
+        (
+            ("deploy", "--stage-only", "--revision", "2" * 40, "--fast"),
+            "cannot be combined with --fast",
+        ),
+        (("deploy", "--full", "--fast"), "cannot be combined with --fast"),
     ),
 )
 def test_stage_only_rejects_ambiguous_modes(
