@@ -79,7 +79,7 @@ PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 = "gain_rollout:tandem_hold_v1"
 PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_POLICY_V2 = (
     "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
 )
-PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 = "tuning_rollout:exact_lo_matrix_v2"
+PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 = "capture_rollout:exact_lo_matrix_v2"
 PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1 = "production-direct-async-2p5-25-hold-v1"
 PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1 = "rate_rollout:fixed_2p5_25_hold_v1"
 
