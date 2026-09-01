@@ -63,6 +63,7 @@ FULL_CAPTURE_GLRT20MS_V1_PRODUCT = ProductSpec(
 FULL_CAPTURE_GLRT20MS_V2_PRODUCT = ProductSpec(
     kind="standard.full-capture-glrt20ms", schema_version=2
 )
+PSS_FRAME_TIMING_V1_PRODUCT = ProductSpec(kind="standard.pss-frame-timing", schema_version=1)
 PATH_REPORT_V3_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=3)
 PATH_REPORT_V4_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=4)
 PATH_PRESENTATION_V5_PRODUCT = ProductSpec(
@@ -115,6 +116,7 @@ PATH_STANDARD_NATIVE_OUTPUTS = (
     STATEFUL_PATH_V3_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
+    PSS_FRAME_TIMING_V1_PRODUCT,
     PATH_REPORT_V4_PRODUCT,
 )
 
@@ -163,5 +165,5 @@ STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT = sum(
         PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     )
 )
-if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 36:
+if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 37:
     raise RuntimeError("Standard-native-v1 output inventory changed")

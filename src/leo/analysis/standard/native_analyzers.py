@@ -54,12 +54,18 @@ from leo.analysis.standard.native_products import (
     PILOT_SEGMENT_RATES_PNG_V4_PRODUCT,
     POWER_TIMELINE_V4_PRODUCT,
     PROBE_SCHEDULE_V4_PRODUCT,
+    PSS_FRAME_TIMING_V1_PRODUCT,
     QUALITY_V3_PRODUCT,
     RADIO_REPORT_V6_PRODUCT,
     RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
     STATEFUL_PATH_V3_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_V4_PRODUCT,
+)
+from leo.analysis.standard.native_pss import (
+    StandardNativePssConfig,
+    StandardNativePssRunner,
+    standard_native_pss_configuration_digest,
 )
 from leo.analysis.standard.native_reducers import (
     reduce_native_paired_terminal_evidence,
@@ -181,6 +187,9 @@ class _NativeEvidenceConfig(BaseModel):
     pilot_phase_locklet_configuration_digest: Sha256Digest = (
         PilotPhaseLockletConfigV1.model_validate(asdict(PilotPhaseLockletConfig())).digest
     )
+    pss_configuration_digest: Sha256Digest = standard_native_pss_configuration_digest(
+        StandardNativePssConfig()
+    )
 
 
 class _AlternateProjectionConfig(BaseModel):
@@ -192,8 +201,8 @@ class PathStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="path-standard-native",
-        algorithm_version="standard-native-evidence-v10",
-        configuration_schema="path-standard-native.evidence.v8",
+        algorithm_version="standard-native-evidence-v11",
+        configuration_schema="path-standard-native.evidence.v9",
         output_products=_NATIVE_EVIDENCE_PRODUCTS,
         resource_class=ResourceClass.HEAVY,
         accepted_outcomes=_NATIVE_OUTCOMES,
@@ -208,9 +217,13 @@ class PathStandardNativeEvidenceAnalyzer:
         full_capture_glrt_runner_factory: Callable[
             [ReceiverStandardConfig], StandardNativeFullCaptureGlrtRunner
         ] = StandardNativeFullCaptureGlrtRunner,
+        pss_runner_factory: Callable[
+            [StandardNativePssConfig], StandardNativePssRunner
+        ] = StandardNativePssRunner,
     ) -> None:
         self._stateful_runner_factory = stateful_runner_factory
         self._full_capture_glrt_runner_factory = full_capture_glrt_runner_factory
+        self._pss_runner_factory = pss_runner_factory
 
     def analyze(
         self,
@@ -243,6 +256,9 @@ class PathStandardNativeEvidenceAnalyzer:
             raise ValueError(
                 "native pilot phase-locklet policy digest does not match implementation"
             )
+        pss_config = StandardNativePssConfig()
+        if standard_native_pss_configuration_digest(pss_config) != config.pss_configuration_digest:
+            raise ValueError("native PSS policy digest does not match implementation")
         stateful_config = require_receiver_standard_sample_rate(
             production_receiver_standard_config(sample_rate_hz=binding.sample_rate_hz),
             sample_rate_hz=binding.sample_rate_hz,
@@ -298,6 +314,13 @@ class PathStandardNativeEvidenceAnalyzer:
             binding,
             edge=binding.starlink_edge,
         )
+        if not isinstance(full_capture_glrt, StandardNativeFullCaptureGlrt20msV2):
+            raise ValueError("V5 native binding did not produce V2 full-capture GLRT evidence")
+        pss = self._pss_runner_factory(pss_config).run(
+            native_iq,
+            binding,
+            full_capture_glrt=full_capture_glrt,
+        )
         quality_document = cast(dict[str, JsonValue], result.quality.model_dump(mode="json"))
         power_document = cast(dict[str, JsonValue], result.power.model_dump(mode="json"))
         waterfall_document = cast(dict[str, JsonValue], result.waterfall.model_dump(mode="json"))
@@ -321,6 +344,7 @@ class PathStandardNativeEvidenceAnalyzer:
             pilot_doppler_v3.model_dump(mode="json"),
         )
         glrt_document = cast(dict[str, JsonValue], full_capture_glrt.model_dump(mode="json"))
+        pss_document = cast(dict[str, JsonValue], pss.model_dump(mode="json"))
         path_report = build_standard_native_path_report(
             binding,
             quality=result.quality,
@@ -370,6 +394,7 @@ class PathStandardNativeEvidenceAnalyzer:
                 FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
                 glrt_document,
             ),
+            (PSS_FRAME_TIMING_V1_PRODUCT, pss_document),
             (PATH_REPORT_V4_PRODUCT, path_report_document),
         )
         published = tuple(
@@ -412,6 +437,10 @@ class PathStandardNativeEvidenceAnalyzer:
                 "full_capture_glrt_passing_window_count": (
                     full_capture_glrt.accounting.passing_count
                 ),
+                "pss_blind_block_count": pss.accounting.blind_block_count,
+                "pss_conditioned_block_count": pss.accounting.conditioned_block_count,
+                "pss_retained_mode_count": pss.accounting.retained_mode_count,
+                "pss_track_count": pss.accounting.track_count,
                 "terminal_probe_analyzed_count": (
                     path_report.schedule_execution.accounting.analyzed_count
                 ),
@@ -421,7 +450,7 @@ class PathStandardNativeEvidenceAnalyzer:
             },
             message=(
                 "Validity-aware native observability completed; stateful pilot/trajectory/"
-                "Doppler and full-capture GLRT evidence were published on canonical "
+                "Doppler, full-capture GLRT, and PSS evidence were published on canonical "
                 "global schedules and closed by the terminal path report."
                 if stateful.stateful_science_status in {"complete", "partial_coverage"}
                 else "Validity-aware native observability completed without stateful science."

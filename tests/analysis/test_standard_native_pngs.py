@@ -33,6 +33,7 @@ from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome, UpstreamJsonProduct
 from tests.analysis.test_standard_native_observability import (
     _fast_glrt_runner,
+    _fast_pss_runner,
     _inventory,
     _OutputSink,
     _Reader,
@@ -85,6 +86,7 @@ def test_native_path_projection_publishes_accounting_and_all_twelve_pngs() -> No
             probe_detector=_no_result_probe,
         ),
         full_capture_glrt_runner_factory=_fast_glrt_runner,
+        pss_runner_factory=_fast_pss_runner,
     )
     science_result = science.analyze(  # type: ignore[arg-type]
         AnalysisContext(
