@@ -311,7 +311,7 @@ def test_v5_plan_and_v6_manifest_round_trip_through_a_real_capture(tmp_path) -> 
         candidate
         for ordinal in range(6)
         for candidate in (
-            compile_production_dwell_intent_v3(
+            compile_production_dwell_intent_exact_lo_hold_rollout_v2(
                 operation_key=f"direct-plan:{ordinal}",
                 cadence_ordinal=ordinal,
                 radio_ids=_RADIOS,
@@ -377,7 +377,7 @@ def test_bounded_live_2p5_x25_manifest_is_admitted_to_standard_analysis(
         candidate
         for ordinal in range(6)
         for candidate in (
-            compile_production_dwell_intent_v3(
+            compile_production_dwell_intent_exact_lo_hold_rollout_v2(
                 operation_key=f"direct-live-plan:{ordinal}",
                 cadence_ordinal=ordinal,
                 radio_ids=_RADIOS,
@@ -408,9 +408,11 @@ def test_bounded_live_2p5_x25_manifest_is_admitted_to_standard_analysis(
         plan,
         {radio_id: FakeRadioSource(radio_id) for radio_id in _RADIOS},
         session_id="production-direct-async-live-v6",
+        extra_tags=intent.extra_tags,
     )
     assert type(result.manifest) is RecordingManifestV6
     manifest = result.manifest
+    assert PRODUCTION_DIRECT_ASYNC_EXACT_LO_HOLD_ROLLOUT_TAG_V2 in manifest.tags
     for revision in selected.values():
         profile = revision.profile
         if profile.sample_rate_hz == 2_500_000:
