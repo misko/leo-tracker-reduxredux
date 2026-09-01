@@ -89,9 +89,7 @@ def test_direct_async_rollout_selects_session_geometry_by_high_rate(
     ]
 
     version = 11 if rate >= 20 else 10
-    assert name == (
-        f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v{version}"
-    )
+    assert name == (f"starlink-ch4-lower-{rate}m-60s-rx{receiver}-direct-async-ram-drop-v{version}")
     assert actual_digest == digest
     assert refill == 1_048_576
 
