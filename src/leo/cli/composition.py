@@ -636,8 +636,8 @@ class LocalAcquisitionBackend:
                 (rate, (receiver,), True): (
                     f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-"
                     + (
-                        "direct-async-v7"
-                        if self.settings.direct_async_enabled and rate in (10_000_000, 15_000_000)
+                        "direct-async-ram-drop-v9"
+                        if self.settings.direct_async_enabled
                         else (
                             "ddr-ring-v6"
                             if rate <= self.settings.ddr_ring_max_rate_hz
@@ -650,7 +650,12 @@ class LocalAcquisitionBackend:
             },
             **{
                 (25_000_000, (receiver,), True): (
-                    f"starlink-ch4-lower-25m-60s-rx{receiver}-direct-async-v8"
+                    f"starlink-ch4-lower-25m-60s-rx{receiver}-"
+                    + (
+                        "direct-async-ram-drop-v9"
+                        if self.settings.direct_async_enabled
+                        else "direct-async-v8"
+                    )
                 )
                 for receiver in (0, 1)
             },

@@ -20,7 +20,13 @@ from leo.catalog import (
     CatalogSessionReadSnapshot,
     RecordingListRow,
 )
-from leo.contracts.device_buffer import DIRECT_ASYNC_EVIDENCE_KEY_V1, DirectAsyncEvidenceV1
+from leo.contracts.device_buffer import (
+    DIRECT_ASYNC_EVIDENCE_KEY_V1,
+    DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2,
+    DirectAsyncEvidence,
+    DirectAsyncEvidenceV1,
+    DirectAsyncRamDropEvidenceV2,
+)
 from leo.contracts.digests import canonical_digest
 from leo.contracts.mixed_rate_capture import CapturePlanV4
 from leo.contracts.profile import (
@@ -391,14 +397,14 @@ class CatalogPresentationRepository:
         self,
         snapshot: CatalogSessionReadSnapshot,
         streams: tuple[RecordingStreamV1 | RecordingStreamV3, ...],
-    ) -> dict[str, DirectAsyncEvidenceV1]:
+    ) -> dict[str, DirectAsyncEvidence]:
         if snapshot.bundle_uri is None:
             return {}
         try:
             bundle = self._recordings.inspect_uri(snapshot.bundle_uri)
         except (OSError, RecordingStoreError):
             return {}
-        evidence: dict[str, DirectAsyncEvidenceV1] = {}
+        evidence: dict[str, DirectAsyncEvidence] = {}
         for stream in streams:
             if not isinstance(stream, RecordingStreamV3):
                 continue
@@ -409,6 +415,12 @@ class CatalogPresentationRepository:
                 payload = first.hardware_metadata.get(DIRECT_ASYNC_EVIDENCE_KEY_V1)
                 if payload is not None:
                     evidence[stream.stream_id] = DirectAsyncEvidenceV1.model_validate(payload)
+                    continue
+                payload = first.hardware_metadata.get(DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2)
+                if payload is not None:
+                    evidence[stream.stream_id] = DirectAsyncRamDropEvidenceV2.model_validate(
+                        payload
+                    )
             except (OSError, StopIteration, ValidationError, ValueError, RecordingStoreError):
                 continue
         return evidence
@@ -744,7 +756,7 @@ def _radio_stream(
     recording_root: Path,
     storage_state: StorageStateV1,
     *,
-    direct_async_evidence: DirectAsyncEvidenceV1 | None = None,
+    direct_async_evidence: DirectAsyncEvidence | None = None,
 ) -> RadioStreamV1:
     settings = stream.applied_settings or stream.requested_settings
     gains = {item.receiver_id: item.gain_db for item in settings.gains}

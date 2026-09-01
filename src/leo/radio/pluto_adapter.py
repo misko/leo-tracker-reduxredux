@@ -9,9 +9,12 @@ from contextlib import suppress
 from typing import Any, Literal, cast
 
 from leo.contracts.device_buffer import (
+    DdrRingStatus,
     DdrRingStatusV1,
     DeviceBufferRequest,
     DeviceBufferRequestV1,
+    DirectAsyncRamDropRequestV2,
+    DirectAsyncRamStatusV2,
     DirectAsyncRequestV1,
 )
 from leo.contracts.gain_control import (
@@ -96,6 +99,7 @@ class PlutoIioRadioSource:
         )
         self._settings: RadioSettingsV1 | None = None
         self._metadata_session: Any | None = None
+        self._device_buffer_request: DeviceBufferRequest | None = None
         self._metadata_refill_samples: int | None = None
         self._kernel_buffers: int | None = None
         self._continuity_validator: ContinuityChainValidator | None = None
@@ -213,6 +217,7 @@ class PlutoIioRadioSource:
     def reset_receive_buffer(self) -> None:
         device = self._require_device()
         session, self._metadata_session = self._metadata_session, None
+        self._device_buffer_request = None
         self._metadata_refill_samples = None
         self._kernel_buffers = None
         self._continuity_validator = None
@@ -240,8 +245,13 @@ class PlutoIioRadioSource:
             raise ValueError("sample_count must be positive")
         if kernel_buffers < 2:
             raise ValueError("metadata capture requires at least two kernel buffers")
-        if not 0 <= direct_async_frames <= 64:
-            raise ValueError("direct_async_frames must be in [0, 64]")
+        maximum_direct_frames = (
+            device_buffer.maximum_segment_frames
+            if isinstance(device_buffer, (DirectAsyncRequestV1, DirectAsyncRamDropRequestV2))
+            else 64
+        )
+        if not 0 <= direct_async_frames <= maximum_direct_frames:
+            raise ValueError(f"direct_async_frames must be in [0, {maximum_direct_frames}]")
         if not (
             self.capabilities.supports_device_sample_counter
             and self.capabilities.supports_continuity_sequence
@@ -293,6 +303,39 @@ class PlutoIioRadioSource:
             if self.identity.firmware_version != "v0.46-plutoplus-spf-iq-direct-async-ring-v1":
                 raise PlutoAdapterError("direct-async profile requires the qualified v0.46 final")
             buffer_arguments = {"direct_async_frames": direct_async_frames}
+        elif isinstance(device_buffer, DirectAsyncRamDropRequestV2):
+            if (
+                sample_count != device_buffer.frame_samples
+                or len(self._settings.receiver_ids) != device_buffer.receiver_count
+                or not 1 <= direct_async_frames <= device_buffer.maximum_segment_frames
+            ):
+                raise PlutoAdapterError(
+                    "direct-async RAM/drop request disagrees with configured geometry"
+                )
+            facts = device.diagnostic_facts()
+            if (
+                facts.get("buffer_metadata_abi") != 3
+                or facts.get("buffer_direct_async") is not True
+                or facts.get("buffer_direct_async_ring") is not True
+                or facts.get("buffer_metadata_status") is not True
+                or facts.get("buffer_direct_async_overrun_policies")
+                != ("drop-backlog", "preserve-backlog")
+                or facts.get("buffer_direct_async_default_overrun_policy") != "drop-backlog"
+                or int(facts.get("buffer_ddr_ring_max_iq_bytes") or 0)
+                < device_buffer.requested_ram_bytes
+            ):
+                raise PlutoAdapterError("Pluto does not attest direct-async RAM/drop capabilities")
+            if self.identity.firmware_version != "v0.47-plutoplus-spf-iq-direct-async-v2":
+                raise PlutoAdapterError(
+                    "direct-async RAM/drop profile requires the qualified v0.47 release"
+                )
+            buffer_arguments = {
+                "direct_async_frames": direct_async_frames,
+                "ddr_ring_bytes": device_buffer.requested_ram_bytes,
+                "ddr_ring_frames": 0,
+                "ddr_ring_continuous": False,
+                "drop_backlog_on_overrun": True,
+            }
         elif device_buffer is not None:
             raise PlutoAdapterError("unsupported device-buffer request")
         elif direct_async_frames:
@@ -343,6 +386,20 @@ class PlutoIioRadioSource:
             ):
                 session.close()
                 raise PlutoAdapterError("direct-async admission readback disagrees with request")
+            if isinstance(device_buffer, DirectAsyncRamDropRequestV2) and (
+                session.direct_async_frames != direct_async_frames
+                or session.direct_async_ring_extension is not True
+                or session.drop_backlog_on_overrun is not True
+                or session.ddr_ring_requested_bytes != device_buffer.requested_ram_bytes
+                or session.ddr_ring_admitted_bytes != device_buffer.admitted_ram_bytes
+                or session.ddr_ring_capacity_frames != device_buffer.capacity_frames
+                or session.ddr_ring_capture_frames
+                or session.ddr_ring_continuous
+            ):
+                session.close()
+                raise PlutoAdapterError(
+                    "direct-async RAM/drop admission readback disagrees with request"
+                )
         except PlutoAdapterError:
             if session is not None:
                 with suppress(Exception):
@@ -354,6 +411,7 @@ class PlutoIioRadioSource:
                     session.close()
             raise PlutoAdapterError(f"Pluto metadata capture start failed: {error}") from error
         self._metadata_session = session
+        self._device_buffer_request = device_buffer
         self._metadata_refill_samples = sample_count
         self._kernel_buffers = readback
         self._continuity_validator = ContinuityChainValidator(
@@ -365,12 +423,22 @@ class PlutoIioRadioSource:
         self._block_index = 0
         return readback
 
-    def ddr_ring_status(self) -> DdrRingStatusV1:
+    def ddr_ring_status(self) -> DdrRingStatus:
         session = self._metadata_session
         if session is None:
             raise PlutoAdapterError("DDR ring status requires an active metadata session")
         try:
-            return DdrRingStatusV1.model_validate(dict(session.ddr_ring_status()))
+            payload = dict(session.ddr_ring_status())
+            model = (
+                DirectAsyncRamStatusV2
+                if isinstance(self._device_buffer_request, DirectAsyncRamDropRequestV2)
+                else DdrRingStatusV1
+            )
+            if model is DdrRingStatusV1:
+                # New pylibiio exposes the wire-status version; the immutable
+                # historical Leo V1 contract predates that transport field.
+                payload.pop("version", None)
+            return model.model_validate(payload)
         except Exception as error:
             raise PlutoAdapterError(f"Pluto DDR ring status failed: {error}") from error
 

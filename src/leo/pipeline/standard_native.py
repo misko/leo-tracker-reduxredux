@@ -221,6 +221,46 @@ STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES = {
         (1,),
         "sha256:2f08108db6f9ed5c8e9b259c23ecb1c9b11376a72f2c1ff234c152b8efe84db4",
     ),
+    "starlink-ch4-lower-10m-60s-rx0-direct-async-ram-drop-v9": (
+        10_000_000,
+        (0,),
+        "sha256:741353a4f21fbcf798ebfbc292ce8f3de3645f518ef8a7f5e0121fc7c1f07875",
+    ),
+    "starlink-ch4-lower-10m-60s-rx1-direct-async-ram-drop-v9": (
+        10_000_000,
+        (1,),
+        "sha256:306fac2fbf58e9978cdc39a2314e15f1d00394e4c85ba558df7cac364de68271",
+    ),
+    "starlink-ch4-lower-15m-60s-rx0-direct-async-ram-drop-v9": (
+        15_000_000,
+        (0,),
+        "sha256:96543d27db022bcc4c179f61a4028ef2209684632ee9add021f2060fc8b9bde6",
+    ),
+    "starlink-ch4-lower-15m-60s-rx1-direct-async-ram-drop-v9": (
+        15_000_000,
+        (1,),
+        "sha256:129e4ba840adace7eb3648228f966ef08ef160a042fd6b622cb99f8bb75f0aab",
+    ),
+    "starlink-ch4-lower-20m-60s-rx0-direct-async-ram-drop-v9": (
+        20_000_000,
+        (0,),
+        "sha256:cd8aa94677162329df799712f55483df082ab457fe94b782e9f91141cc47d696",
+    ),
+    "starlink-ch4-lower-20m-60s-rx1-direct-async-ram-drop-v9": (
+        20_000_000,
+        (1,),
+        "sha256:a3eca7b5bde9f0dbf007bbd006222dd45818ef1563fdf5eb53def323a28d0e68",
+    ),
+    "starlink-ch4-lower-25m-60s-rx0-direct-async-ram-drop-v9": (
+        25_000_000,
+        (0,),
+        "sha256:c6dae16bb7bbbb27305c91fa4426cde27b4d712b97694d4cac680972bcf86cc6",
+    ),
+    "starlink-ch4-lower-25m-60s-rx1-direct-async-ram-drop-v9": (
+        25_000_000,
+        (1,),
+        "sha256:117a77ac1250f86a11bee00df8653b26c9747250d6aa54cad2d42be1595d071e",
+    ),
 }
 
 
@@ -705,11 +745,25 @@ def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> N
     for stream, leg in zip(manifest.streams, plan.radio_plans, strict=True):
         profile = leg.profile_revision.profile
         identity = STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES.get(profile.name)
-        if identity is None:
-            raise ValueError("Standard-native production profile identity is not reviewed")
-        expected_rate, expected_receivers, expected_digest, expected_refill_samples = identity
         rate = leg.requested_settings.sample_rate_hz
         required_receiver_count = 1 if is_mixed and rate > 5_000_000 else 2
+        required_profile_tags: set[str] = set()
+        if identity is not None:
+            expected_rate, expected_receivers, expected_digest, expected_refill_samples = identity
+            expected_kernel_buffers = STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
+            expected_queue_capacity = STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
+        else:
+            direct_identity = STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES.get(profile.name)
+            if direct_identity is None:
+                raise ValueError("Standard-native production profile identity is not reviewed")
+            expected_rate, expected_receivers, expected_digest = direct_identity
+            expected_refill_samples = 1_048_576
+            expected_kernel_buffers = 12
+            expected_queue_capacity = 64
+            required_profile_tags = {
+                "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2",
+                "SINGLE_RX",
+            }
         settings = stream.applied_settings
         if (
             leg.profile_revision.revision_digest != expected_digest
@@ -719,11 +773,12 @@ def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> N
             or len(profile.receivers) != required_receiver_count
             or profile.duration_seconds != plan.duration_seconds
             or profile.refill_samples != expected_refill_samples
-            or profile.kernel_buffers != STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
-            or profile.refill_queue_capacity != STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
+            or profile.kernel_buffers != expected_kernel_buffers
+            or profile.refill_queue_capacity != expected_queue_capacity
             or profile.storage_policy != "zstd-128m-device-axis-zero-v1"
             or profile.continuity_policy.value != "allow_segments"
             or profile.peer_failure_policy.value != "fail_session"
+            or not required_profile_tags.issubset(profile.tags)
             or stream.radio.radio_id != leg.radio_id
             or stream.requested_sample_count != leg.resolved_sample_count
             or stream.logical_sample_count != leg.resolved_sample_count
@@ -785,9 +840,17 @@ def _require_reviewed_direct_async_v6_geometry(manifest: RecordingManifestV6) ->
             expected_rate, direct_receivers, expected_digest = identity
             expected_receivers: tuple[int, ...] = direct_receivers
             expected_refill_samples = 1_048_576
-            expected_kernel_buffers = 15
+            ram_drop = "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2" in profile.tags
+            expected_kernel_buffers = 12 if ram_drop else 15
             expected_queue_capacity = 64
-            required_profile_tags = {"DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1", "SINGLE_RX"}
+            required_profile_tags = {
+                (
+                    "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V2"
+                    if ram_drop
+                    else "DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1"
+                ),
+                "SINGLE_RX",
+            }
         else:
             production_identity = STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES.get(profile.name)
             if production_identity is None:

@@ -7,8 +7,11 @@ from leo.acquisition.coordinator import AcquisitionCoordinator
 from leo.acquisition.models import AcquisitionConfig
 from leo.contracts.device_buffer import (
     DDR_RING_EVIDENCE_KEY_V1,
+    DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2,
     DeviceBufferEvidenceV1,
     DeviceBufferRequestV1,
+    DirectAsyncRamDropEvidenceV2,
+    DirectAsyncRamDropRequestV2,
 )
 from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.radio import ReceiverGainV1
@@ -121,6 +124,68 @@ def test_ring_contiguous_capture_commits_and_admits_double_space(tmp_path, monke
     assert result.state is CaptureState.COMMITTED
     assert result.bundle is not None
     assert result.bundle.manifest.streams[0].continuity.refill_count == 6
+
+
+def test_direct_async_ram_drop_uses_one_session_and_persists_queue_closure(tmp_path, monkeypatch):
+    profile = CaptureProfileV2(
+        name="tiny-direct-ram-drop-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=25_000_000,
+        bandwidth_hz=25_000_000,
+        receivers=(0,),
+        gains=(ReceiverGainV1(receiver_id=0, gain_db=30),),
+        sample_count=100,
+        refill_samples=1_048_576,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        kernel_buffers=12,
+        refill_queue_capacity=4,
+        continuity_policy=ContinuityPolicy.ALLOW_SEGMENTS,
+        peer_failure_policy=PeerFailurePolicy.FAIL_SESSION,
+        storage_policy=DEVICE_AXIS_STORAGE_POLICY_V1,
+        tags=("TEST",),
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        ["radio-a"],
+        source_type=SourceType.TEST,
+    )
+    request = DirectAsyncRamDropRequestV2(
+        target_frames=1,
+        requested_device_samples=100,
+    )
+    monkeypatch.setattr(coordinator_module, "_device_buffer_request", lambda *_: request)
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        compression=CompressionSettingsV1(
+            policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
+            target_uncompressed_bytes=1024,
+        ),
+    )
+    radio = FakeRadioSource("radio-a")
+
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": radio},
+        session_id="direct-ram-drop-clean",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert radio.lifecycle.count("begin_metadata_capture:1048576:12") == 1
+    assert result.bundle is not None
+    first = next(coordinator.store.reader(result.bundle, "stream-0").iter_timeline_metadata())
+    evidence = DirectAsyncRamDropEvidenceV2.model_validate(
+        first.hardware_metadata[DIRECT_ASYNC_RAM_DROP_EVIDENCE_KEY_V2]
+    )
+    assert evidence.segment_count == 1
+    assert evidence.returned_frames == 1
+    assert evidence.stored_observed_samples == 100
+    assert evidence.drained_outside_window_samples == 1_048_476
+    assert evidence.status.requested_capacity_iq_bytes == 200_000_000
+    assert evidence.status.admitted_capacity_iq_bytes == 197_132_288
+    assert evidence.ram_dropped_frames == 0
+    coordinator.store.verify(result.bundle.session_id)
 
 
 @pytest.mark.parametrize("gap_block", [0, 1])

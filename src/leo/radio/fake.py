@@ -7,9 +7,12 @@ from collections.abc import Iterable, Mapping
 import numpy as np
 
 from leo.contracts.device_buffer import (
+    DdrRingStatus,
     DdrRingStatusV1,
     DeviceBufferRequest,
     DeviceBufferRequestV1,
+    DirectAsyncRamDropRequestV2,
+    DirectAsyncRamStatusV2,
 )
 from leo.contracts.gain_control import (
     GainControllerMode,
@@ -180,11 +183,35 @@ class FakeRadioSource:
         self.lifecycle.append(f"begin_metadata_capture:{sample_count}:{kernel_buffers}{suffix}")
         return kernel_buffers
 
-    def ddr_ring_status(self) -> DdrRingStatusV1:
+    def ddr_ring_status(self) -> DdrRingStatus:
         request = self._device_buffer
-        if not isinstance(request, DeviceBufferRequestV1) or self._ring_first_counter is None:
+        if self._ring_first_counter is None:
             raise FakeRadioError("fake DDR ring has no returned frames")
         frames = self._ring_returned_frames
+        if isinstance(request, DirectAsyncRamDropRequestV2):
+            return DirectAsyncRamStatusV2(
+                version=1,
+                state="complete" if frames == request.target_frames else "running",
+                terminal_reason=("target_complete" if frames == request.target_frames else "none"),
+                error_code=0,
+                requested_capacity_iq_bytes=request.requested_ram_bytes,
+                admitted_capacity_iq_bytes=request.admitted_ram_bytes,
+                target_frames=0,
+                produced_frames=frames,
+                consumed_frames=frames,
+                high_water_frames=min(request.capacity_frames, frames),
+                wrap_count=frames // request.capacity_frames,
+                producer_position=frames % request.capacity_frames,
+                consumer_position=frames % request.capacity_frames,
+                last_contiguous_sample_sequence=(
+                    self._device_sample_counter
+                    if self._ring_first_unavailable is None
+                    else self._ring_first_unavailable
+                ),
+                first_unavailable_sample_sequence=self._ring_first_unavailable,
+            )
+        if not isinstance(request, DeviceBufferRequestV1):
+            raise FakeRadioError("fake DDR ring request is unsupported")
         complete = frames == request.target_frames
         return DdrRingStatusV1(
             state="complete" if complete else "running",
