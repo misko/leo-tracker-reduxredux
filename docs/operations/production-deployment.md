@@ -373,26 +373,24 @@ HOLD/AUTO intents remain readable and executable, but the failed AUTO hardware
 mode is not newly scheduled. The rollout contains no same-rate, 3, 5, or 20
 MS/s dwell. The transaction checks the exact staged direct-async profile bytes,
 service command, feature gate, exact-revision release qualification, reviewed
-Standard regression authority, and both live radios through the exact v0.47
-ABI-3 direct-async-v2 adapter before starting any runtime unit. New high-rate
+Standard regression authority, and both live radios through the exact v0.48
+ABI-3 direct-async-v3 adapter before starting any runtime unit. New high-rate
 intents use the same production scheduling and raw-spool path. The 10 and 15
 MS/s legs retain the additive, hardware-qualified `DIRECT_ASYNC_RAM_DROP_V3`
 contract: one finite session, 11 kernel buffers, an exact 128 MiB RAM request
 admitting 32 complete 1,048,576-sample frames, and explicit `drop-backlog`
-readback. The 20 and 25 MS/s authority selects additive V4 profiles with the
-same RAM/drop geometry and existing path, but caps each hardware session at 64
-frames (about 2.7 seconds at 25 MS/s). One logical dwell spans those sessions;
-the V4 timeline evidence closes every terminal RAM status, upstream generation,
-counter gap, inter-session skip, stored window, and drained tail. A missing or
-non-complete intermediate status makes the capture unpublishable. V2 and V3
-profiles remain readable and immutable.
+readback. With v0.48, the 20 and 25 MS/s authority returns to those same V3
+profiles and carries all 1,145 or 1,431 frames in one finite hardware session.
+This removes the host re-arm gaps introduced by the temporary v0.47 containment
+while preserving the existing scheduler, raw-spool, evidence, and Standard
+analysis paths. Published V4 profiles and recordings remain readable and
+immutable, but are no longer selected for new production dwells.
 
-This session cap is a measured containment for v0.47: full 25 MS/s 1,431-frame
-sessions returned premature `ENODATA` on both production radios, including one
-239-frame request that ended at frame 199. Independent 72-frame production-
-geometry controls completed on both radios and both RX layouts. Separate 20-second,
-500-frame tests completed ringless and RAM-extended modes under both overrun
-policies; they also confirmed that the 100 MB/s offered IQ rate exceeds the
+The retired 64-frame V4 session cap was a measured containment for v0.47: full
+25 MS/s 1,431-frame sessions returned premature `ENODATA` on both production
+radios. V0.48 makes stale gain/RSSI metadata recoverable in default
+`drop-backlog` mode, so one finite request continues without host re-arm.
+Hardware tests also confirm that the 100 MB/s offered IQ rate exceeds the
 roughly 60--73 MB/s achieved transport rate. `drop-backlog` therefore minimizes
 stale-data latency and discontinuity count, but cannot promise gapless source
 coverage. Counter-derived loss remains evidence, never a command failure or a
@@ -408,9 +406,9 @@ The analysis topology is not capture-policy-specific: the same
 `standard-native-v1` stages accept 2.5, 3, 5, 10, 15, 20, and 25 MS/s native IQ.
 New runs bind the additive V5 path authority and V2 native source while older
 contract generations remain readable. The focused direct-async schedule does
-not currently schedule 20 MS/s, but the V4 20 MS/s profiles and existing
-recordings use the same analyzers, reducers, PNG renderers, presentation
-repository, and API.
+not currently schedule 20 MS/s, but the V3 profiles selected for new captures
+and historical V4 recordings use the same analyzers, reducers, PNG renderers,
+presentation repository, and API.
 
 Legacy V6 3 MS/s and native-bandwidth receipts remain immutable historical
 evidence, but the current deployment path neither regenerates nor consumes
