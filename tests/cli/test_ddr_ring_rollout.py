@@ -2,10 +2,16 @@ from pathlib import Path
 
 import pytest
 
-from leo.acquisition.mixed_rate_schedule import compile_production_dwell_intent_v2
+from leo.acquisition.mixed_rate_schedule import (
+    compile_production_dwell_intent_hold_rollout_v1,
+    compile_production_dwell_intent_v2,
+)
 from leo.cli.backend import CliBackendError
 from leo.cli.composition import CliSettings, LocalAcquisitionBackend
-from leo.domain.mixed_rate_capture import compile_production_capture_plan_v4
+from leo.domain.mixed_rate_capture import (
+    compile_production_capture_plan_v4,
+    compile_production_capture_plan_v5,
+)
 from leo.domain.profiles import load_profile_revision
 
 
@@ -127,3 +133,36 @@ def test_ring_profile_authority_compiles_each_unchanged_production_intent(tmp_pa
         )
         assert plan.schema_version == 4
         assert plan.scheduled_intent_digest == intent.intent_digest
+
+
+def test_qualified_ram_drop_authority_compiles_actual_v10_capture_plans(tmp_path):
+    root = Path(__file__).parents[2] / "profiles"
+    settings = CliSettings.from_environ(
+        {
+            "LEO_PROFILE_ROOT": str(root),
+            "LEO_BULK_ROOT": str(tmp_path),
+            "LEO_DIRECT_ASYNC_ENABLED": "1",
+        }
+    )
+    authority = LocalAcquisitionBackend(settings).production_profile_authority()
+
+    for ordinal in range(6):
+        intent = compile_production_dwell_intent_hold_rollout_v1(
+            operation_key=f"qualified-ram-drop-{ordinal}",
+            cadence_ordinal=ordinal,
+            radio_ids=("radio-a", "radio-b"),
+            profile_authority=authority,
+        )
+        plan = compile_production_capture_plan_v5(
+            intent=intent,
+            profile_revisions_by_radio={
+                leg.radio_id: load_profile_revision(root / f"{leg.profile_name}.yaml")
+                for leg in intent.radio_legs
+            },
+        )
+
+        assert plan.schema_version == 5
+        assert any(
+            "DEVICE_BUFFER:DIRECT_ASYNC_RAM_DROP_V3" in leg.profile_revision.profile.tags
+            for leg in plan.radio_plans
+        )

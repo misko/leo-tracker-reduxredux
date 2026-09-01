@@ -8,6 +8,11 @@ from typing import Annotated, Literal, Self
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
+from leo.contracts.device_buffer import (
+    DIRECT_ASYNC_PROFILE_TAG_V1,
+    DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2,
+    DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,
+)
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.gain_control import GainControllerPolicyV1
 from leo.contracts.mixed_rate_schedule import (
@@ -384,7 +389,11 @@ class CapturePlanV5(ContractModel):
             high_leg = leg.requested_settings.sample_rate_hz != 2_500_000
             if len(leg.requested_settings.receiver_ids) != (1 if high_leg else 2):
                 raise ValueError("direct-async plan receiver geometry is invalid")
-            if high_leg and "DEVICE_BUFFER:DIRECT_ASYNC_SEGMENTED_V1" not in profile.tags:
+            if high_leg and not {
+                DIRECT_ASYNC_PROFILE_TAG_V1,
+                DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V2,
+                DIRECT_ASYNC_RAM_DROP_PROFILE_TAG_V3,
+            }.intersection(profile.tags):
                 raise ValueError("direct-async high-rate profile lacks its device-buffer policy")
             if profile.duration_seconds != self.duration_seconds:
                 raise ValueError("direct-async production profiles must use one duration")
