@@ -17,9 +17,9 @@ from leo.acquisition.mixed_rate_schedule import (
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
     compile_production_dwell_intent_exact_lo_hold_rollout_v2,
-    compile_production_fixed_25_exact_lo_hold_intent_v2,
     compile_production_dwell_intent_hold_rollout_v1,
     compile_production_dwell_intent_v3,
+    compile_production_fixed_25_exact_lo_hold_intent_v2,
     compile_production_fixed_25_hold_intent_v1,
     production_cycle_classes_v3,
 )
