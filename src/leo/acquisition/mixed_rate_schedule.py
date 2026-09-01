@@ -76,6 +76,8 @@ _PRODUCTION_DIRECT_ASYNC_V3_CYCLE_CLASSES = (
 # restricted rollout authority.
 PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1 = "production-direct-async-2p5-10-15-25-hold-6-v1"
 PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 = "gain_rollout:tandem_hold_v1"
+PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1 = "production-direct-async-2p5-25-hold-v1"
+PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1 = "rate_rollout:fixed_2p5_25_hold_v1"
 
 ProductionProfileKey = tuple[int, tuple[int, ...], bool]
 ProductionProfileAuthority = tuple[str, str, int]
@@ -89,6 +91,7 @@ def compile_production_dwell_intent_v3(
     profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
     policy_id: str = PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3,
     extra_tags: Sequence[str] = (),
+    dwell_class_override: ProductionDwellClassV3 | None = None,
 ) -> ProductionDwellIntentV3:
     """Resolve one uniform same-target 2.5 x 10/15/25 MS/s dwell."""
 
@@ -112,7 +115,7 @@ def compile_production_dwell_intent_v3(
         raise ValueError(f"production V3 profile authority omits geometries: {missing}")
     cycle_index, cycle_slot = divmod(cadence_ordinal, PRODUCTION_DIRECT_ASYNC_RATE_CYCLE_LENGTH_V3)
     cycle = production_cycle_classes_v3(cycle_index=cycle_index, radio_ids=radios)
-    dwell_class = cycle[cycle_slot]
+    dwell_class = cycle[cycle_slot] if dwell_class_override is None else dwell_class_override
     high_rate = {
         ProductionDwellClassV3.MIXED_2P5_10: 10_000_000,
         ProductionDwellClassV3.MIXED_2P5_15: 15_000_000,
@@ -210,6 +213,42 @@ def compile_production_dwell_intent_hold_rollout_v1(
         profile_authority=profile_authority,
         extra_tags=(*extra_tags, PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1),
     )
+    return _with_tandem_hold_v1(intent, profile_authority=profile_authority)
+
+
+def compile_production_fixed_25_hold_intent_v1(
+    *,
+    operation_key: str,
+    cadence_ordinal: int,
+    radio_ids: Sequence[str],
+    profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
+    rollout_policy_id: str = PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
+    extra_tags: Sequence[str] = (),
+) -> ProductionDwellIntentV3:
+    """Compile one fixed 2.5 x 25 MS/s operator dwell on the V3 path."""
+
+    if rollout_policy_id != PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1:
+        raise ValueError("fixed 2.5 x 25 MS/s HOLD policy is unsupported")
+    intent = compile_production_dwell_intent_v3(
+        operation_key=operation_key,
+        cadence_ordinal=cadence_ordinal,
+        radio_ids=radio_ids,
+        profile_authority=profile_authority,
+        dwell_class_override=ProductionDwellClassV3.MIXED_2P5_25,
+        extra_tags=(
+            *extra_tags,
+            PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
+            PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
+        ),
+    )
+    return _with_tandem_hold_v1(intent, profile_authority=profile_authority)
+
+
+def _with_tandem_hold_v1(
+    intent: ProductionDwellIntentV3,
+    *,
+    profile_authority: Mapping[ProductionProfileKey, ProductionProfileAuthority],
+) -> ProductionDwellIntentV3:
     legs = tuple(
         leg.model_copy(
             update={

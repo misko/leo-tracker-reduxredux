@@ -9,6 +9,8 @@ import pytest
 
 from leo.acquisition import AcquisitionQueuePressure, AcquisitionSupervisorPoisoned
 from leo.acquisition.mixed_rate_schedule import (
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
+    PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_POLICY_V1,
     PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1,
 )
@@ -34,6 +36,7 @@ from leo.contracts.mixed_rate_schedule import (
     PRODUCTION_NATIVE_RATE_POLICY_V2,
     ProductionDwellClass,
     ProductionDwellClassV2,
+    ProductionDwellClassV3,
     ProductionDwellIntentV1,
     ProductionDwellIntentV2,
     ProductionDwellIntentV3,
@@ -476,6 +479,49 @@ def test_durable_hold_rollout_enqueues_explicit_hold_v3_intents() -> None:
     assert len(intents) == 6
     assert all(item.policy_id == PRODUCTION_DIRECT_ASYNC_RATE_POLICY_V3 for item in intents)
     assert all(PRODUCTION_DIRECT_ASYNC_HOLD_ROLLOUT_TAG_V1 in item.extra_tags for item in intents)
+    assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
+        GainControllerMode.TANDEM_HOLD
+    }
+
+
+def test_durable_fixed_25_selector_only_executes_2p5_x25_hold() -> None:
+    clock = _Clock()
+    backend = _ProductionRateDurableBackend(clock)
+    backend.analyzed.set()
+    start = datetime.fromtimestamp(0, tz=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        (
+            "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
+            "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
+        ),
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("operator-fixed-rate",),
+        interval_seconds=10.0,
+        maximum_captures=6,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        mixed_rate_policy=PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_POLICY_V1,
+    )
+
+    assert summary.capture_count == 6
+    intents = tuple(
+        ProductionDwellIntentV3.model_validate(item.payload)
+        for item in backend.operations
+        if item.kind == "scheduled_recording"
+    )
+    assert len(intents) == 6
+    assert {intent.dwell_class for intent in intents} == {ProductionDwellClassV3.MIXED_2P5_25}
+    assert all(
+        PRODUCTION_DIRECT_ASYNC_FIXED_25_HOLD_TAG_V1 in intent.extra_tags for intent in intents
+    )
+    assert {leg.sample_rate_hz for intent in intents for leg in intent.radio_legs} == {
+        2_500_000,
+        25_000_000,
+    }
     assert {leg.gain_controller.mode for intent in intents for leg in intent.radio_legs} == {
         GainControllerMode.TANDEM_HOLD
     }
