@@ -305,6 +305,8 @@ export type StandardNativePngArtifactNameV11 =
   | "cfo-dealiased"
   | "cfo-final"
   | "pss-glrt-frame-comparison";
+export type StandardNativePngArtifactNameV12 = StandardNativePngArtifactNameV10;
+export type StandardNativePngArtifactNameV13 = StandardNativePngArtifactNameV11;
 
 export interface StandardNativePngArtifactV4 {
   schema_version: 4;
@@ -335,6 +337,18 @@ export interface StandardNativePngArtifactV11
   extends Omit<StandardNativePngArtifactV8, "schema_version" | "name"> {
   schema_version: 11;
   name: StandardNativePngArtifactNameV11;
+}
+
+export interface StandardNativePngArtifactV12
+  extends Omit<StandardNativePngArtifactV10, "schema_version" | "name"> {
+  schema_version: 12;
+  name: StandardNativePngArtifactNameV12;
+}
+
+export interface StandardNativePngArtifactV13
+  extends Omit<StandardNativePngArtifactV11, "schema_version" | "name"> {
+  schema_version: 13;
+  name: StandardNativePngArtifactNameV13;
 }
 
 export interface StandardNativePngArtifactInventoryV4 {
@@ -416,6 +430,18 @@ export interface StandardNativePngArtifactInventoryV11
   subject_kind: "radio";
   sample_rates_hz: [2_500_000, 25_000_000];
   artifacts: StandardNativePngArtifactV11[];
+}
+
+export interface StandardNativePngArtifactInventoryV12
+  extends Omit<StandardNativePngArtifactInventoryV10, "schema_version" | "artifacts"> {
+  schema_version: 12;
+  artifacts: StandardNativePngArtifactV12[];
+}
+
+export interface StandardNativePngArtifactInventoryV13
+  extends Omit<StandardNativePngArtifactInventoryV11, "schema_version" | "artifacts"> {
+  schema_version: 13;
+  artifacts: StandardNativePngArtifactV13[];
 }
 
 export interface StandardNativePipelineReleaseV3 {

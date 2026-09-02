@@ -21,7 +21,11 @@ import type {
   StandardNativePngArtifactInventoryV9,
   StandardNativePngArtifactInventoryV10,
   StandardNativePngArtifactInventoryV11,
+  StandardNativePngArtifactInventoryV12,
+  StandardNativePngArtifactInventoryV13,
   StandardNativePngArtifactNameV11,
+  StandardNativePngArtifactNameV12,
+  StandardNativePngArtifactNameV13,
   StandardNativePlotViewV5,
   StandardNativePlotViewV6,
   StandardNativePlotViewV3,
@@ -534,6 +538,24 @@ function epochArtifactInventory(
       ...existing.slice(9),
     ],
     content_digest: legacy.content_digest,
+  };
+}
+
+function fractionalEpochArtifactInventory(
+  detail: StandardNativeSubjectDetailV3,
+): StandardNativePngArtifactInventoryV12 {
+  const previous = epochArtifactInventory(detail);
+  return {
+    ...previous,
+    schema_version: 12,
+    artifacts: previous.artifacts.map((artifact) => ({
+      ...artifact,
+      schema_version: 12 as const,
+      name: artifact.name as StandardNativePngArtifactNameV12,
+      product_schema_version: ["glrt-epoch-timing", "glrt-epoch-rate"].includes(
+        artifact.name,
+      ) ? 2 : artifact.product_schema_version,
+    })),
   };
 }
 
@@ -1052,6 +1074,22 @@ function pairedComparisonArtifactInventory(): StandardNativePngArtifactInventory
   };
 }
 
+function fractionalComparisonArtifactInventory(): StandardNativePngArtifactInventoryV13 {
+  const previous = pairedComparisonArtifactInventory();
+  return {
+    ...previous,
+    schema_version: 13,
+    artifacts: previous.artifacts.map((artifact) => ({
+      ...artifact,
+      schema_version: 13 as const,
+      name: artifact.name as StandardNativePngArtifactNameV13,
+      product_schema_version: artifact.name === "pss-glrt-frame-comparison"
+        ? 2
+        : artifact.product_schema_version,
+    })),
+  };
+}
+
 function automaticArtifactInventory(): StandardNativePngArtifactInventoryV9 {
   const inventory = widebandArtifactInventory();
   return {
@@ -1068,8 +1106,8 @@ function automaticArtifactInventory(): StandardNativePngArtifactInventoryV9 {
   };
 }
 
-function automaticComparisonArtifactInventory(): StandardNativePngArtifactInventoryV11 {
-  const inventory = pairedComparisonArtifactInventory();
+function automaticComparisonArtifactInventory(): StandardNativePngArtifactInventoryV13 {
+  const inventory = fractionalComparisonArtifactInventory();
   return {
     ...inventory,
     subject_id: automaticRadio.subject_id,
@@ -1588,10 +1626,33 @@ test("accepts additive phase, Doppler, epoch, and paired comparison inventories"
   );
   expect(comparison.schema_version).toBe(11);
   expect(comparison.artifacts.at(-1)?.name).toBe("pss-glrt-frame-comparison");
+  const fractionalEpoch = parseStandardNativePngArtifactInventory(
+    fractionalEpochArtifactInventory(nativePathDetail),
+  );
+  expect(fractionalEpoch.schema_version).toBe(12);
+  expect(fractionalEpoch.artifacts.slice(9, 11).map((item) => item.product_schema_version))
+    .toEqual([2, 2]);
+  const fractionalComparison = parseStandardNativePngArtifactInventory(
+    fractionalComparisonArtifactInventory(),
+  );
+  expect(fractionalComparison.schema_version).toBe(13);
+  expect(fractionalComparison.artifacts.at(-1)?.product_schema_version).toBe(2);
+  const staleFractionalEpoch = structuredClone(
+    fractionalEpochArtifactInventory(nativePathDetail),
+  );
+  staleFractionalEpoch.artifacts[9].product_schema_version = 1;
+  expect(() => parseStandardNativePngArtifactInventory(staleFractionalEpoch))
+    .toThrow(/contract is invalid/);
+  const wrongFractionalComparisonScope = structuredClone(
+    fractionalComparisonArtifactInventory(),
+  ) as unknown as Record<string, unknown>;
+  wrongFractionalComparisonScope.subject_kind = "paired";
+  expect(() => parseStandardNativePngArtifactInventory(wrongFractionalComparisonScope))
+    .toThrow(/low-radio-only/);
   expect(() => parseStandardNativePngArtifactInventory({
     ...productionArtifactInventory(),
-    schema_version: 12,
-  })).toThrow(/expected one of 4, 5, 6, 7, 8, 9, 10, 11/);
+    schema_version: 14,
+  })).toThrow(/expected one of 4, 5, 6, 7, 8, 9, 10, 11, 12, 13/);
 });
 
 test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {

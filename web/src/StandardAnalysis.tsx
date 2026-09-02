@@ -28,6 +28,8 @@ import type {
   StandardNativePngArtifactInventoryV9,
   StandardNativePngArtifactInventoryV10,
   StandardNativePngArtifactInventoryV11,
+  StandardNativePngArtifactInventoryV12,
+  StandardNativePngArtifactInventoryV13,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
@@ -59,7 +61,9 @@ type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV8
   | StandardNativePngArtifactInventoryV9
   | StandardNativePngArtifactInventoryV10
-  | StandardNativePngArtifactInventoryV11;
+  | StandardNativePngArtifactInventoryV11
+  | StandardNativePngArtifactInventoryV12
+  | StandardNativePngArtifactInventoryV13;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
@@ -1083,6 +1087,7 @@ function nativeInventoryMatchesDetail(
       inventory.schema_version !== 7
       && inventory.schema_version !== 8
       && inventory.schema_version !== 10
+      && inventory.schema_version !== 12
     ) return false;
     return inventory.sample_rates_hz.length === 1
       && inventory.sample_rates_hz[0] === detail.subject.eligibility.sample_rate_hz;
@@ -1093,6 +1098,7 @@ function nativeInventoryMatchesDetail(
       && inventory.schema_version !== 7
       && inventory.schema_version !== 8
       && inventory.schema_version !== 10
+      && inventory.schema_version !== 12
     ) return false;
   } else if (
     inventory.schema_version !== 6
@@ -1101,10 +1107,12 @@ function nativeInventoryMatchesDetail(
     && inventory.schema_version !== 9
     && inventory.schema_version !== 10
     && inventory.schema_version !== 11
+    && inventory.schema_version !== 12
+    && inventory.schema_version !== 13
   ) {
     return false;
   }
-  if (inventory.schema_version === 11) {
+  if (inventory.schema_version === 11 || inventory.schema_version === 13) {
     const expectedRates = [...new Set(
       detail.subject.eligibility.legs.map((leg) => leg.sample_rate_hz),
     )].sort((left, right) => left - right);
