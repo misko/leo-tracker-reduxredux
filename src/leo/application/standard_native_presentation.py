@@ -18,7 +18,9 @@ from leo.analysis.standard.native_products import (
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
     GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
+    GLRT_EPOCH_RATE_PNG_V2_PRODUCT,
     GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+    GLRT_EPOCH_TIMING_PNG_V2_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_REPORT_V4_PRODUCT,
@@ -37,6 +39,7 @@ from leo.analysis.standard.native_products import (
     POWER_TIMELINE_V3_PRODUCT,
     POWER_TIMELINE_V4_PRODUCT,
     PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,
+    PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT,
     RADIO_REPORT_V4_PRODUCT,
     RADIO_REPORT_V5_PRODUCT,
     RADIO_REPORT_V6_PRODUCT,
@@ -91,12 +94,16 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V10,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V11,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11,
+    STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V12,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV5,
     StandardNativePngArtifactInventoryV6,
@@ -105,14 +112,20 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV9,
     StandardNativePngArtifactInventoryV10,
     StandardNativePngArtifactInventoryV11,
+    StandardNativePngArtifactInventoryV12,
+    StandardNativePngArtifactInventoryV13,
     StandardNativePngArtifactNameV4,
     StandardNativePngArtifactNameV8,
     StandardNativePngArtifactNameV10,
     StandardNativePngArtifactNameV11,
+    StandardNativePngArtifactNameV12,
+    StandardNativePngArtifactNameV13,
     StandardNativePngArtifactV4,
     StandardNativePngArtifactV8,
     StandardNativePngArtifactV10,
     StandardNativePngArtifactV11,
+    StandardNativePngArtifactV12,
+    StandardNativePngArtifactV13,
 )
 from leo.presentation.standard_native_pipeline import (
     NativeArtifactNameV3,
@@ -458,6 +471,8 @@ class CatalogStandardNativePresentationRepository:
         | StandardNativePngArtifactInventoryV9
         | StandardNativePngArtifactInventoryV10
         | StandardNativePngArtifactInventoryV11
+        | StandardNativePngArtifactInventoryV12
+        | StandardNativePngArtifactInventoryV13
         | None
     ):
         """Return the complete sealed versioned artifact inventory, if present."""
@@ -475,7 +490,24 @@ class CatalogStandardNativePresentationRepository:
             )
             is not None
         )
-        epoch_pngs_present = (
+        fractional_epoch_pngs_present = (
+            subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
+            and self._png_product(
+                loaded,
+                subject,
+                GLRT_EPOCH_TIMING_PNG_V2_PRODUCT.kind,
+                GLRT_EPOCH_TIMING_PNG_V2_PRODUCT.schema_version,
+            )
+            is not None
+            and self._png_product(
+                loaded,
+                subject,
+                GLRT_EPOCH_RATE_PNG_V2_PRODUCT.kind,
+                GLRT_EPOCH_RATE_PNG_V2_PRODUCT.schema_version,
+            )
+            is not None
+        )
+        integer_epoch_pngs_present = (
             subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
             and self._png_product(
                 loaded,
@@ -492,10 +524,24 @@ class CatalogStandardNativePresentationRepository:
             )
             is not None
         )
-        paired_comparison_present = (
+        epoch_pngs_present = fractional_epoch_pngs_present or integer_epoch_pngs_present
+        paired_scope = (
             subject.subject_kind is StandardSubjectKindV2.RADIO
             and isinstance(loaded.eligibility, StandardNativeEligibilityV6)
             and {leg.sample_rate_hz for leg in loaded.eligibility.legs} == {2_500_000, 25_000_000}
+        )
+        fractional_paired_comparison_present = (
+            paired_scope
+            and self._png_product(
+                loaded,
+                subject,
+                PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT.kind,
+                PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT.schema_version,
+            )
+            is not None
+        )
+        integer_paired_comparison_present = (
+            paired_scope
             and self._png_product(
                 loaded,
                 subject,
@@ -504,11 +550,22 @@ class CatalogStandardNativePresentationRepository:
             )
             is not None
         )
+        paired_comparison_present = (
+            fractional_paired_comparison_present or integer_paired_comparison_present
+        )
         names = (
-            STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11
+            (
+                STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13
+                if fractional_paired_comparison_present
+                else STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11
+            )
             if paired_comparison_present
             else (
-                STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10
+                (
+                    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V12
+                    if fractional_epoch_pngs_present
+                    else STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10
+                )
                 if epoch_pngs_present
                 else (
                     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8
@@ -536,9 +593,21 @@ class CatalogStandardNativePresentationRepository:
             "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
             "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
             "full-capture-glrt20ms": FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
-            "glrt-epoch-timing": GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
-            "glrt-epoch-rate": GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
-            "pss-glrt-frame-comparison": PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,
+            "glrt-epoch-timing": (
+                GLRT_EPOCH_TIMING_PNG_V2_PRODUCT
+                if fractional_epoch_pngs_present
+                else GLRT_EPOCH_TIMING_PNG_V1_PRODUCT
+            ),
+            "glrt-epoch-rate": (
+                GLRT_EPOCH_RATE_PNG_V2_PRODUCT
+                if fractional_epoch_pngs_present
+                else GLRT_EPOCH_RATE_PNG_V1_PRODUCT
+            ),
+            "pss-glrt-frame-comparison": (
+                PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT
+                if fractional_paired_comparison_present
+                else PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT
+            ),
             "pilot-doppler": (
                 PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT
                 if pilot_png_schema == 4
@@ -560,6 +629,8 @@ class CatalogStandardNativePresentationRepository:
             | StandardNativePngArtifactV8
             | StandardNativePngArtifactV10
             | StandardNativePngArtifactV11
+            | StandardNativePngArtifactV12
+            | StandardNativePngArtifactV13
         ] = []
         for name in names:
             spec = product_specs[name]
@@ -571,11 +642,23 @@ class CatalogStandardNativePresentationRepository:
                 | StandardNativePngArtifactV8
                 | StandardNativePngArtifactV10
                 | StandardNativePngArtifactV11
+                | StandardNativePngArtifactV12
+                | StandardNativePngArtifactV13
             )
-            if paired_comparison_present:
+            if fractional_paired_comparison_present:
+                paired_name_v13 = cast(StandardNativePngArtifactNameV13, name)
+                label, description, kind, schema_version, view_name = (
+                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13[paired_name_v13]
+                )
+            elif paired_comparison_present:
                 paired_name = cast(StandardNativePngArtifactNameV11, name)
                 label, description, kind, schema_version, view_name = (
                     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V11[paired_name]
+                )
+            elif fractional_epoch_pngs_present:
+                epoch_name_v12 = cast(StandardNativePngArtifactNameV12, name)
+                label, description, kind, schema_version, view_name = (
+                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12[epoch_name_v12]
                 )
             elif epoch_pngs_present:
                 epoch_name = cast(StandardNativePngArtifactNameV10, name)
@@ -606,9 +689,31 @@ class CatalogStandardNativePresentationRepository:
                 if view_name is not None
                 else f"{base}/artifacts/{name}.png"
             )
-            if paired_comparison_present:
+            if fractional_paired_comparison_present:
+                artifact = StandardNativePngArtifactV13(
+                    name=paired_name_v13,
+                    label=label,
+                    description=description,
+                    href=href,
+                    catalog_kind=kind,
+                    product_schema_version=schema_version,
+                    digest=product.digest,
+                    byte_size=product.byte_size,
+                )
+            elif paired_comparison_present:
                 artifact = StandardNativePngArtifactV11(
                     name=paired_name,
+                    label=label,
+                    description=description,
+                    href=href,
+                    catalog_kind=kind,
+                    product_schema_version=schema_version,
+                    digest=product.digest,
+                    byte_size=product.byte_size,
+                )
+            elif fractional_epoch_pngs_present:
+                artifact = StandardNativePngArtifactV12(
+                    name=epoch_name_v12,
                     label=label,
                     description=description,
                     href=href,
@@ -667,6 +772,28 @@ class CatalogStandardNativePresentationRepository:
             "coverage_status": inventory_coverage_status,
             "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
         }
+        if fractional_paired_comparison_present:
+            paired_eligibility = cast(StandardNativeEligibilityV6, loaded.eligibility)
+            paired_sample_rates_hz = cast(
+                tuple[Literal[2_500_000, 25_000_000], Literal[2_500_000, 25_000_000]],
+                tuple(sorted({leg.sample_rate_hz for leg in paired_eligibility.legs})),
+            )
+            content_values_v13 = {
+                "schema_version": 13,
+                **common_values,
+                "sample_rates_hz": paired_sample_rates_hz,
+            }
+            return StandardNativePngArtifactInventoryV13(
+                session_id=session_id,
+                subject_id=subject.subject_id,
+                subject_kind=StandardSubjectKindV2.RADIO,
+                run_id=loaded.run_id,
+                run_manifest_digest=loaded.manifest_digest,
+                sample_rates_hz=paired_sample_rates_hz,
+                coverage_status=inventory_coverage_status,
+                artifacts=tuple(cast(StandardNativePngArtifactV13, item) for item in artifacts),
+                content_digest=canonical_digest(content_values_v13),
+            )
         if paired_comparison_present:
             paired_eligibility = cast(StandardNativeEligibilityV6, loaded.eligibility)
             paired_sample_rates_hz = cast(
@@ -688,6 +815,45 @@ class CatalogStandardNativePresentationRepository:
                 coverage_status=inventory_coverage_status,
                 artifacts=tuple(cast(StandardNativePngArtifactV11, item) for item in artifacts),
                 content_digest=canonical_digest(content_values_v11),
+            )
+        if fractional_epoch_pngs_present:
+            fractional_epoch_sample_rates_hz = cast(
+                tuple[
+                    Literal[
+                        2_500_000,
+                        3_000_000,
+                        5_000_000,
+                        10_000_000,
+                        15_000_000,
+                        20_000_000,
+                        25_000_000,
+                    ],
+                    ...,
+                ],
+                tuple(
+                    sorted(
+                        {
+                            path.report.source.sample_rate_hz
+                            for path in self._subject_paths(loaded, subject)
+                        }
+                    )
+                ),
+            )
+            content_values_v12 = {
+                "schema_version": 12,
+                **common_values,
+                "sample_rates_hz": fractional_epoch_sample_rates_hz,
+            }
+            return StandardNativePngArtifactInventoryV12(
+                session_id=session_id,
+                subject_id=subject.subject_id,
+                subject_kind=StandardSubjectKindV2.RECEIVER_PATH,
+                run_id=loaded.run_id,
+                run_manifest_digest=loaded.manifest_digest,
+                sample_rates_hz=fractional_epoch_sample_rates_hz,
+                coverage_status=subject.coverage_status,
+                artifacts=tuple(cast(StandardNativePngArtifactV12, item) for item in artifacts),
+                content_digest=canonical_digest(content_values_v12),
             )
         if epoch_pngs_present:
             epoch_sample_rates_hz = cast(
@@ -997,9 +1163,18 @@ class CatalogStandardNativePresentationRepository:
             "cfo-alternate": (ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,),
             "trajectory-accounting": (TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,),
             "full-capture-glrt20ms": (FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,),
-            "glrt-epoch-timing": (GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,),
-            "glrt-epoch-rate": (GLRT_EPOCH_RATE_PNG_V1_PRODUCT,),
-            "pss-glrt-frame-comparison": (PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,),
+            "glrt-epoch-timing": (
+                GLRT_EPOCH_TIMING_PNG_V2_PRODUCT,
+                GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+            ),
+            "glrt-epoch-rate": (
+                GLRT_EPOCH_RATE_PNG_V2_PRODUCT,
+                GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
+            ),
+            "pss-glrt-frame-comparison": (
+                PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT,
+                PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,
+            ),
             "pilot-doppler": (
                 PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT,
                 PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
@@ -2830,6 +3005,8 @@ class DefinitionDispatchedStandardPresentationRepository:
         | StandardNativePngArtifactInventoryV9
         | StandardNativePngArtifactInventoryV10
         | StandardNativePngArtifactInventoryV11
+        | StandardNativePngArtifactInventoryV12
+        | StandardNativePngArtifactInventoryV13
         | None
     ):
         if not self._native(session_id):

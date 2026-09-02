@@ -18,6 +18,10 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
 from leo.contracts.standard_native import NativeWindowDisposition
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
+from leo.contracts.standard_native_glrt_fractional import (
+    NativeGlrtFractionalEpochStatusV1,
+    StandardNativeGlrtFractionalEpochV1,
+)
 from leo.contracts.standard_pipeline import StandardPathInputBindV4
 from leo.contracts.states import StarlinkEdge
 from leo.contracts.validity import (
@@ -375,6 +379,46 @@ def test_global_20ms_geometry_is_exact_at_every_native_rate(rate: int) -> None:
     assert seen == [(0, window), (stride, window), (2 * stride, window)]
     assert result.accounting.scheduled_count == result.accounting.valid_count == 3
     assert reader.segment_passes == {0: 1}
+
+
+def test_v5_runner_seals_fractional_epoch_companion_without_mutating_glrt_v2() -> None:
+    from tests.analysis.test_standard_native_observability import _v5_binding
+    from tests.analysis.test_standard_native_rate_equivalence import _binding as complete_binding
+    from tests.analysis.test_standard_native_rate_equivalence import (
+        _inventory as complete_inventory,
+    )
+
+    rate = 2_500_000
+    inventory = complete_inventory(rate)
+    reader = _Reader(inventory, sample_rate_hz=rate)
+    scores = tuple(float(np.exp(-((offset - 0.25) ** 2))) for offset in range(-2, 3))
+
+    def kernel(index: int, start: int, samples: np.ndarray) -> WindowResult:
+        return replace(
+            _window_result(index, start, samples, rate=rate, passing=True),
+            glrt_exact_score=scores[2],
+            fractional_epoch_status="complete",
+            fractional_epoch_offset_samples=0.25,
+            fractional_epoch_exact_score_grid=scores,
+        )
+
+    evidence = StandardNativeFullCaptureGlrtRunner(
+        _config(), window_kernel=kernel, segment_kernel=_empty_segment_fit
+    ).run_evidence(
+        reader,
+        _v5_binding(complete_binding(rate, inventory)),
+        edge=StarlinkEdge.LOWER,
+    )
+
+    assert evidence.full_capture.schema_version == 2
+    assert isinstance(evidence.fractional_epoch, StandardNativeGlrtFractionalEpochV1)
+    companion = evidence.fractional_epoch
+    assert companion.source_glrt_product_digest == canonical_digest(
+        evidence.full_capture.model_dump(mode="json")
+    )
+    assert companion.complete_count == companion.refinement_count == 99
+    assert companion.refinements[0].status is NativeGlrtFractionalEpochStatusV1.COMPLETE
+    assert companion.refinements[0].fractional_epoch_offset_samples == pytest.approx(0.25)
 
 
 def test_default_kernel_uses_the_bound_pilot_center_as_its_frequency_reference(

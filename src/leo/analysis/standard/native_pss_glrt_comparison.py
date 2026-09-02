@@ -12,7 +12,10 @@ from matplotlib.figure import Figure
 from leo.contracts.standard_native_glrt_epoch import (
     NativeGlrtEpochLockletV1,
     NativeGlrtEpochObservationV1,
+    NativeGlrtFractionalEpochLockletV2,
+    NativeGlrtFractionalEpochObservationV2,
     StandardNativeGlrtEpochTrackingV1,
+    StandardNativeGlrtEpochTrackingV2,
 )
 from leo.contracts.standard_native_pss import (
     NativePssSearchOriginV1,
@@ -26,7 +29,9 @@ _COLORS = ("#2563eb", "#7c3aed", "#0891b2", "#be123c")
 
 def render_native25_pss_vs_2p5_glrt_png(
     pss_products: tuple[StandardNativePssFrameTimingV1, ...],
-    glrt_epoch_products: tuple[StandardNativeGlrtEpochTrackingV1, ...],
+    glrt_epoch_products: tuple[
+        StandardNativeGlrtEpochTrackingV1 | StandardNativeGlrtEpochTrackingV2, ...
+    ],
 ) -> bytes:
     """Render same-dimension timing residuals and frequency-change agreement.
 
@@ -114,10 +119,10 @@ def render_native25_pss_vs_2p5_glrt_png(
 
         overlapping_glrt: list[
             tuple[
-                StandardNativeGlrtEpochTrackingV1,
-                NativeGlrtEpochLockletV1,
+                StandardNativeGlrtEpochTrackingV1 | StandardNativeGlrtEpochTrackingV2,
+                NativeGlrtEpochLockletV1 | NativeGlrtFractionalEpochLockletV2,
                 np.ndarray,
-                tuple[NativeGlrtEpochObservationV1, ...],
+                tuple[NativeGlrtEpochObservationV1 | NativeGlrtFractionalEpochObservationV2, ...],
             ]
         ] = []
         pss_start = float(pss_utc_times[0])
@@ -231,8 +236,8 @@ def render_native25_pss_vs_2p5_glrt_png(
         axes[2].set_title("C · PSS phase-derived frequency change versus canonical GLRT CFO")
         figure.suptitle(
             f"{session_id} · native 25 MS/s PSS versus dual 2.5 MS/s GLRT\n"
-            "PSS: 125 ms complete windows / 62.5 ms stride · independent acquisition · "
-            "no clipped blocks"
+            "PSS: 125 ms windows / 62.5 ms stride · GLRT: fractional exact-score peaks · "
+            "independent acquisition · no clipped blocks"
         )
         return _save(figure)
 

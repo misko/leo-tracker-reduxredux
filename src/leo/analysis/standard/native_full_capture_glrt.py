@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import threading
 from collections.abc import Callable, Iterable
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import numpy as np
@@ -42,6 +42,12 @@ from leo.contracts.standard_native_glrt import (
     StandardNativeFullCaptureGlrt20msV1,
     StandardNativeFullCaptureGlrt20msV2,
 )
+from leo.contracts.standard_native_glrt_fractional import (
+    FRACTIONAL_GLRT_EPOCH_OFFSETS_V1,
+    NativeGlrtFractionalEpochRefinementV1,
+    NativeGlrtFractionalEpochStatusV1,
+    StandardNativeGlrtFractionalEpochV1,
+)
 from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardPathInputBindV5
 from leo.contracts.states import StarlinkEdge
 from leo.pipeline.validity import ValidityAwareIqReader
@@ -51,6 +57,14 @@ NativeFullCaptureSegmentKernel = Callable[
     [tuple[WindowResult, ...]],
     tuple[dict[str, Any], dict[str, Any] | None],
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class StandardNativeFullCaptureGlrtEvidence:
+    """Existing GLRT product plus additive fractional timing evidence."""
+
+    full_capture: StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2
+    fractional_epoch: StandardNativeGlrtFractionalEpochV1 | None
 
 
 def native_full_capture_glrt_configuration_digest(config: ReceiverStandardConfig) -> str:
@@ -107,6 +121,30 @@ class StandardNativeFullCaptureGlrtRunner:
     ) -> StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2:
         """Return one complete persisted result, or poison without partial output."""
 
+        return self._execute(reader, binding, edge=StarlinkEdge(edge)).full_capture
+
+    def run_evidence(
+        self,
+        reader: ValidityAwareIqReader,
+        binding: StandardPathInputBindV5,
+        *,
+        edge: StarlinkEdge,
+    ) -> StandardNativeFullCaptureGlrtEvidence:
+        """Return the current full-capture result and fractional timing companion."""
+
+        result = self._execute(reader, binding, edge=StarlinkEdge(edge))
+        if result.fractional_epoch is None:
+            raise ValueError("V5 native GLRT did not produce fractional epoch evidence")
+        return result
+
+    def _execute(
+        self,
+        reader: ValidityAwareIqReader,
+        binding: StandardPathInputBindV4 | StandardPathInputBindV5,
+        *,
+        edge: StarlinkEdge,
+    ) -> StandardNativeFullCaptureGlrtEvidence:
+
         with self._lock:
             if self._poisoned:
                 raise RuntimeError("native full-capture GLRT runner is poisoned")
@@ -114,7 +152,7 @@ class StandardNativeFullCaptureGlrtRunner:
                 raise RuntimeError("native full-capture GLRT runner is already running")
             self._running = True
         try:
-            return self._run(reader, binding, edge=StarlinkEdge(edge))
+            return self._run(reader, binding, edge=edge)
         except BaseException:
             with self._lock:
                 self._poisoned = True
@@ -129,7 +167,7 @@ class StandardNativeFullCaptureGlrtRunner:
         binding: StandardPathInputBindV4 | StandardPathInputBindV5,
         *,
         edge: StarlinkEdge,
-    ) -> StandardNativeFullCaptureGlrt20msV1 | StandardNativeFullCaptureGlrt20msV2:
+    ) -> StandardNativeFullCaptureGlrtEvidence:
         validate_standard_native_source(reader, binding)
         if edge is not binding.starlink_edge:
             raise ValueError("native full-capture GLRT edge differs from the V4 path binding")
@@ -166,6 +204,7 @@ class StandardNativeFullCaptureGlrtRunner:
                     glrt_size=config.feedback.glrt_size,
                     margin_gate=full_capture.margin_gate,
                     frequency_reference=search_geometry.frequency_reference,
+                    refine_fractional_epoch=isinstance(binding, StandardPathInputBindV5),
                 )
 
         rows = _run_parallel(
@@ -325,9 +364,131 @@ class StandardNativeFullCaptureGlrtRunner:
         product_type = (
             StandardNativeFullCaptureGlrt20msV2 if wideband else StandardNativeFullCaptureGlrt20msV1
         )
-        return product_type.model_validate(
+        full_capture_result = product_type.model_validate(
             {**document, "result_digest": canonical_digest(document)}
         )
+        fractional_epoch = (
+            _persist_fractional_epoch(
+                rows,
+                decision_by_index,
+                source,
+                full_capture_result,
+            )
+            if isinstance(source, StandardNativeSourceV2)
+            and isinstance(full_capture_result, StandardNativeFullCaptureGlrt20msV2)
+            else None
+        )
+        return StandardNativeFullCaptureGlrtEvidence(full_capture_result, fractional_epoch)
+
+
+def _persist_fractional_epoch(
+    rows: tuple[WindowResult, ...],
+    decisions: dict[int, NativeWindowDecision],
+    source: StandardNativeSourceV2,
+    full_capture: StandardNativeFullCaptureGlrt20msV2,
+) -> StandardNativeGlrtFractionalEpochV1:
+    """Seal passing-window fractional peaks without changing integer evidence."""
+
+    refinements: list[NativeGlrtFractionalEpochRefinementV1] = []
+    for row in rows:
+        if not row.passed_margin_gate:
+            continue
+        decision = decisions[row.probe_index]
+        segment_index = decision.classification.continuity_segment_index
+        if (
+            segment_index is None
+            or row.epoch_sample is None
+            or row.acquired_cfo_hz is None
+            or row.glrt_exact_score is None
+        ):
+            raise ValueError("passing native GLRT window lacks fractional refinement inputs")
+        try:
+            status = NativeGlrtFractionalEpochStatusV1(row.fractional_epoch_status)
+        except ValueError as error:
+            raise ValueError("passing native GLRT window was not fractionally evaluated") from error
+        if status not in {
+            NativeGlrtFractionalEpochStatusV1.COMPLETE,
+            NativeGlrtFractionalEpochStatusV1.UNBRACKETED,
+            NativeGlrtFractionalEpochStatusV1.UNAVAILABLE,
+        }:
+            raise ValueError("passing native GLRT window was not fractionally evaluated")
+        integer_global = decision.request.device_sample_start + row.epoch_sample
+        score_grid = (
+            None
+            if status is NativeGlrtFractionalEpochStatusV1.UNAVAILABLE
+            else tuple(row.fractional_epoch_exact_score_grid)
+        )
+        fractional_global = (
+            None
+            if row.fractional_epoch_offset_samples is None
+            else integer_global + row.fractional_epoch_offset_samples
+        )
+        refinement_values = {
+            "opportunity_index": row.probe_index,
+            "continuity_segment_index": segment_index,
+            "integer_global_epoch_device_sample": integer_global,
+            "acquired_cfo_hz": row.acquired_cfo_hz,
+            "integer_exact_score": row.glrt_exact_score,
+            "status": status.value,
+            "exact_score_grid": score_grid,
+            "fractional_epoch_offset_samples": row.fractional_epoch_offset_samples,
+            "fractional_global_epoch_device_sample": fractional_global,
+        }
+        refinements.append(
+            NativeGlrtFractionalEpochRefinementV1.model_validate(
+                {
+                    **refinement_values,
+                    "refinement_digest": canonical_digest(
+                        {"schema_version": 1, **refinement_values}
+                    ),
+                }
+            )
+        )
+    statuses = tuple(item.status for item in refinements)
+    product_values = {
+        "source": source.model_dump(mode="json"),
+        "source_glrt_product_digest": canonical_digest(full_capture.model_dump(mode="json")),
+        "source_glrt_result_digest": full_capture.result_digest,
+        "configuration_digest": canonical_digest(
+            {
+                "algorithm_version": "standard-native-glrt-fractional-epoch-v1",
+                "source_glrt_configuration_digest": full_capture.science_configuration_digest,
+                "score_definition": "conditioned-exact-glrt64-at-fixed-acquired-cfo",
+                "interpolation_method": "three-cell-log-parabola-v1",
+                "score_grid_offsets_samples": FRACTIONAL_GLRT_EPOCH_OFFSETS_V1,
+                "selection_policy": "persisted-margin-pass-windows-only",
+            }
+        ),
+        "starlink_edge": full_capture.starlink_edge.value,
+        "score_grid_offsets_samples": FRACTIONAL_GLRT_EPOCH_OFFSETS_V1,
+        "refinement_count": len(refinements),
+        "complete_count": statuses.count(NativeGlrtFractionalEpochStatusV1.COMPLETE),
+        "unbracketed_count": statuses.count(NativeGlrtFractionalEpochStatusV1.UNBRACKETED),
+        "unavailable_count": statuses.count(NativeGlrtFractionalEpochStatusV1.UNAVAILABLE),
+        "refinements": tuple(item.model_dump(mode="json") for item in refinements),
+        "limitations": (
+            "Only persisted GLRT margin-pass windows are refined; detection is unchanged.",
+            "The acquired CFO and edge hypothesis remain fixed during timing refinement.",
+            "The fractional peak is a three-cell log-parabolic interpolation of integer "
+            "exact-score evaluations, not a fractionally shifted template correlation.",
+            "Overlapping 20 ms windows are statistically dependent at the 10 ms stride.",
+            "Candidate evidence does not establish Starlink or satellite identity.",
+        ),
+        "native_evidence_only": True,
+        "current_eligible": False,
+        "candidate_only": True,
+    }
+    document = {
+        "schema_version": 1,
+        "algorithm_version": "standard-native-glrt-fractional-epoch-v1",
+        "score_definition": "conditioned-exact-glrt64-at-fixed-acquired-cfo",
+        "interpolation_method": "three-cell-log-parabola-v1",
+        "selection_policy": "persisted-margin-pass-windows-only",
+        **product_values,
+    }
+    return StandardNativeGlrtFractionalEpochV1.model_validate(
+        {**document, "result_digest": canonical_digest(document)}
+    )
 
 
 def _kernel_windows(

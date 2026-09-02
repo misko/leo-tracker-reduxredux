@@ -20,7 +20,14 @@ from leo.contracts.standard_native_glrt_epoch import (
     NativeGlrtEpochLockletV1,
     NativeGlrtEpochObservationV1,
     NativeGlrtEpochPolynomialFitV1,
+    NativeGlrtFractionalEpochLockletV2,
+    NativeGlrtFractionalEpochObservationV2,
     StandardNativeGlrtEpochTrackingV1,
+    StandardNativeGlrtEpochTrackingV2,
+)
+from leo.contracts.standard_native_glrt_fractional import (
+    NativeGlrtFractionalEpochStatusV1,
+    StandardNativeGlrtFractionalEpochV1,
 )
 from leo.contracts.starlink_frequency import STARLINK_LNB_LO_HZ
 
@@ -67,10 +74,15 @@ class _EpochCandidate:
     global_epoch_device_sample: int
     raw_cfo_hz: float
     hough_alias_index: int
+    fractional_epoch_offset_samples: float = 0.0
 
     @property
     def canonical_cfo_hz(self) -> float:
         return self.raw_cfo_hz - self.hough_alias_index * _CFO_ALIAS_SPACING_HZ
+
+    @property
+    def measured_epoch_device_sample(self) -> float:
+        return self.global_epoch_device_sample + self.fractional_epoch_offset_samples
 
 
 def glrt_epoch_tracking_configuration_digest(
@@ -83,6 +95,22 @@ def glrt_epoch_tracking_configuration_digest(
             "configuration": asdict(settings),
             "frame_rate_hz": 750,
             "cfo_alias_spacing_hz": _CFO_ALIAS_SPACING_HZ,
+            "equivalent_doppler_sign": "negative_frame_arrival_phase_derivative",
+        }
+    )
+
+
+def glrt_fractional_epoch_tracking_configuration_digest(
+    config: GlrtEpochTrackingConfig | None = None,
+) -> Sha256Digest:
+    settings = config or GlrtEpochTrackingConfig()
+    return canonical_digest(
+        {
+            "algorithm_version": "standard-native-glrt-epoch-tracking-v2",
+            "configuration": asdict(settings),
+            "frame_rate_hz": 750,
+            "cfo_alias_spacing_hz": _CFO_ALIAS_SPACING_HZ,
+            "fractional_epoch_method": "three-cell-log-parabola-v1",
             "equivalent_doppler_sign": "negative_frame_arrival_phase_derivative",
         }
     )
@@ -117,17 +145,17 @@ def build_standard_native_glrt_epoch_tracking_v1(
                 and window.tracking_cfo_hz is not None
             )
             for rows in _split_candidate_runs(candidates, settings):
-                locklets.append(
-                    _fit_locklet(
-                        rows,
-                        continuity_segment_index=segment.continuity_segment.segment_index,
-                        locklet_index=segment_locklet_index,
-                        source_hough_track_label=track.track_label,
-                        sample_rate_hz=glrt.source.sample_rate_hz,
-                        rf_reference_hz=rf_reference_hz,
-                        config=settings,
-                    )
+                fitted = _fit_locklet(
+                    rows,
+                    continuity_segment_index=segment.continuity_segment.segment_index,
+                    locklet_index=segment_locklet_index,
+                    source_hough_track_label=track.track_label,
+                    sample_rate_hz=glrt.source.sample_rate_hz,
+                    rf_reference_hz=rf_reference_hz,
+                    config=settings,
                 )
+                assert isinstance(fitted, NativeGlrtEpochLockletV1)
+                locklets.append(fitted)
                 segment_locklet_index += 1
     values: dict[str, Any] = {
         "source": glrt.source.model_dump(mode="json"),
@@ -167,6 +195,139 @@ def build_standard_native_glrt_epoch_tracking_v1(
     )
 
 
+def build_standard_native_glrt_epoch_tracking_v2(
+    glrt: StandardNativeFullCaptureGlrt20msV2,
+    fractional: StandardNativeGlrtFractionalEpochV1,
+    *,
+    source_glrt_product_digest: Sha256Digest,
+    source_fractional_epoch_product_digest: Sha256Digest,
+    config: GlrtEpochTrackingConfig | None = None,
+) -> StandardNativeGlrtEpochTrackingV2:
+    """Fit receiver-relative epochs from locally interpolated GLRT peaks."""
+
+    if (
+        fractional.source != glrt.source
+        or fractional.starlink_edge is not glrt.starlink_edge
+        or fractional.source_glrt_product_digest != source_glrt_product_digest
+        or fractional.source_glrt_result_digest != glrt.result_digest
+    ):
+        raise ValueError("fractional GLRT epoch lineage does not close")
+    full_windows = {
+        item.opportunity_index: item for segment in glrt.segments for item in segment.windows
+    }
+    refinements = {item.opportunity_index: item for item in fractional.refinements}
+    passing = {index for index, item in full_windows.items() if item.passed_margin_gate}
+    if set(refinements) != passing:
+        raise ValueError("fractional GLRT evidence does not cover every passing window")
+    for index, refinement in refinements.items():
+        window = full_windows[index]
+        if (
+            refinement.continuity_segment_index != window.continuity_segment_index
+            or refinement.integer_global_epoch_device_sample != window.global_epoch_device_sample
+            or not math.isclose(
+                refinement.acquired_cfo_hz,
+                cast(float, window.acquired_cfo_hz),
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            )
+            or not math.isclose(
+                refinement.integer_exact_score,
+                cast(float, window.glrt_exact_score),
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            )
+        ):
+            raise ValueError("fractional GLRT refinement differs from its full window")
+
+    settings = config or GlrtEpochTrackingConfig()
+    rf_reference_hz = float(STARLINK_LNB_LO_HZ + glrt.source.tuned_center_frequency_hz)
+    locklets: list[NativeGlrtFractionalEpochLockletV2] = []
+    for segment in glrt.segments:
+        windows = {item.opportunity_index: item for item in segment.windows}
+        segment_locklet_index = 0
+        for track in segment.hough.tracks:
+            candidate_rows: list[_EpochCandidate] = []
+            for observation in track.observations:
+                fractional_window = windows.get(observation.opportunity_index)
+                refinement_row = refinements.get(observation.opportunity_index)
+                if (
+                    fractional_window is None
+                    or refinement_row is None
+                    or refinement_row.status is not NativeGlrtFractionalEpochStatusV1.COMPLETE
+                    or fractional_window.global_epoch_device_sample is None
+                    or fractional_window.tracking_cfo_hz is None
+                    or refinement_row.fractional_epoch_offset_samples is None
+                ):
+                    continue
+                candidate_rows.append(
+                    _EpochCandidate(
+                        opportunity_index=fractional_window.opportunity_index,
+                        global_center_time_s=fractional_window.global_center_time_s,
+                        global_epoch_device_sample=fractional_window.global_epoch_device_sample,
+                        raw_cfo_hz=observation.raw_cfo_hz,
+                        hough_alias_index=observation.alias_index,
+                        fractional_epoch_offset_samples=(
+                            refinement_row.fractional_epoch_offset_samples
+                        ),
+                    )
+                )
+            candidates = tuple(candidate_rows)
+            for rows in _split_candidate_runs(candidates, settings):
+                fitted = _fit_locklet(
+                    rows,
+                    continuity_segment_index=segment.continuity_segment.segment_index,
+                    locklet_index=segment_locklet_index,
+                    source_hough_track_label=track.track_label,
+                    sample_rate_hz=glrt.source.sample_rate_hz,
+                    rf_reference_hz=rf_reference_hz,
+                    config=settings,
+                    fractional=True,
+                )
+                assert isinstance(fitted, NativeGlrtFractionalEpochLockletV2)
+                locklets.append(fitted)
+                segment_locklet_index += 1
+    values: dict[str, Any] = {
+        "source": glrt.source.model_dump(mode="json"),
+        "source_glrt_product_digest": source_glrt_product_digest,
+        "source_glrt_result_digest": glrt.result_digest,
+        "source_fractional_epoch_product_digest": source_fractional_epoch_product_digest,
+        "source_fractional_epoch_result_digest": fractional.result_digest,
+        "configuration_digest": glrt_fractional_epoch_tracking_configuration_digest(settings),
+        "starlink_edge": glrt.starlink_edge.value,
+        "rf_reference_hz": rf_reference_hz,
+        "cfo_alias_spacing_hz": _CFO_ALIAS_SPACING_HZ,
+        "locklets": tuple(item.model_dump(mode="json") for item in locklets),
+        "limitations": (
+            "Frame epoch is receiver-relative and includes sample-clock and acquisition bias.",
+            "Only bracketed fractional peaks from persisted margin-pass windows are fitted.",
+            "CFO Hough membership and robust CFO residuals select branches without epoch timing.",
+            "Arrival-time equivalent Doppler uses the physical minus sign; receiver clocks "
+            "and acquisition bias can dominate it.",
+            "The RF scale is documented LNB LO plus tuned IF center, not a measured carrier RF.",
+            "Formal fit sigmas treat overlapping 20 ms windows as independent and are optimistic.",
+            "Candidate evidence does not establish Starlink or satellite identity.",
+        ),
+    }
+    document = {
+        "schema_version": 2,
+        "algorithm_version": "standard-native-glrt-epoch-tracking-v2",
+        **values,
+        "frame_rate_hz": 750,
+        "fractional_epoch_method": "three-cell-log-parabola-v1",
+        "rf_reference_provenance": "documented_lnb_lo_plus_tuned_if_center",
+        "equivalent_doppler_sign_convention": (
+            "equivalent_doppler_hz=-rf_reference_hz*d(frame_arrival_phase_s)/dt"
+        ),
+        "cfo_canonicalization": "canonical_cfo=raw_cfo-alias_index*alias_spacing",
+        "receiver_relative": True,
+        "cfo_selection_uses_epoch": False,
+        "cross_continuity_fit_permitted": False,
+    }
+    return StandardNativeGlrtEpochTrackingV2.model_validate(
+        {**document, "result_digest": canonical_digest(document)}
+    )
+
+
 def _split_candidate_runs(
     rows: tuple[_EpochCandidate, ...],
     config: GlrtEpochTrackingConfig,
@@ -194,7 +355,8 @@ def _fit_locklet(
     sample_rate_hz: int,
     rf_reference_hz: float,
     config: GlrtEpochTrackingConfig,
-) -> NativeGlrtEpochLockletV1:
+    fractional: bool = False,
+) -> NativeGlrtEpochLockletV1 | NativeGlrtFractionalEpochLockletV2:
     times_s = np.asarray([item.global_center_time_s for item in rows], dtype=np.float64)
     cfo_hz = np.asarray(
         [item.canonical_cfo_hz for item in rows],
@@ -202,7 +364,11 @@ def _fit_locklet(
     )
     phases_s = np.asarray(
         [
-            ((item.global_epoch_device_sample * 750) % sample_rate_hz) / (sample_rate_hz * 750)
+            (
+                ((item.global_epoch_device_sample * 750) % sample_rate_hz) / (sample_rate_hz * 750)
+                + item.fractional_epoch_offset_samples / sample_rate_hz
+            )
+            % _FRAME_PERIOD_S
             for item in rows
         ],
         dtype=np.float64,
@@ -319,29 +485,58 @@ def _fit_locklet(
                 quadratic_fit = None
                 epoch_inliers[:] = False
 
-    observations = tuple(
-        NativeGlrtEpochObservationV1(
-            opportunity_index=item.opportunity_index,
-            global_center_time_s=item.global_center_time_s,
-            global_epoch_device_sample=item.global_epoch_device_sample,
-            raw_cfo_hz=item.raw_cfo_hz,
-            hough_alias_index=item.hough_alias_index,
-            canonical_cfo_hz=float(cfo_hz[index]),
-            frame_phase_s=float(phases_s[index]),
-            unwrapped_frame_phase_s=float(unwrapped_s[index]),
-            cfo_branch_inlier=bool(cfo_inliers[index]),
-            epoch_fit_inlier=bool(epoch_inliers[index] and linear_fit is not None),
-            linear_residual_s=(
-                float(linear_residuals[index]) if epoch_inliers[index] and linear_fit else None
-            ),
-            quadratic_residual_s=(
-                float(quadratic_residuals[index])
-                if epoch_inliers[index] and quadratic_fit
-                else None
-            ),
+    if fractional:
+        observations: tuple[
+            NativeGlrtEpochObservationV1 | NativeGlrtFractionalEpochObservationV2, ...
+        ] = tuple(
+            NativeGlrtFractionalEpochObservationV2(
+                opportunity_index=item.opportunity_index,
+                global_center_time_s=item.global_center_time_s,
+                integer_global_epoch_device_sample=item.global_epoch_device_sample,
+                fractional_epoch_offset_samples=item.fractional_epoch_offset_samples,
+                fractional_global_epoch_device_sample=item.measured_epoch_device_sample,
+                raw_cfo_hz=item.raw_cfo_hz,
+                hough_alias_index=item.hough_alias_index,
+                canonical_cfo_hz=float(cfo_hz[index]),
+                frame_phase_s=float(phases_s[index]),
+                unwrapped_frame_phase_s=float(unwrapped_s[index]),
+                cfo_branch_inlier=bool(cfo_inliers[index]),
+                epoch_fit_inlier=bool(epoch_inliers[index] and linear_fit is not None),
+                linear_residual_s=(
+                    float(linear_residuals[index]) if epoch_inliers[index] and linear_fit else None
+                ),
+                quadratic_residual_s=(
+                    float(quadratic_residuals[index])
+                    if epoch_inliers[index] and quadratic_fit
+                    else None
+                ),
+            )
+            for index, item in enumerate(rows)
         )
-        for index, item in enumerate(rows)
-    )
+    else:
+        observations = tuple(
+            NativeGlrtEpochObservationV1(
+                opportunity_index=item.opportunity_index,
+                global_center_time_s=item.global_center_time_s,
+                global_epoch_device_sample=item.global_epoch_device_sample,
+                raw_cfo_hz=item.raw_cfo_hz,
+                hough_alias_index=item.hough_alias_index,
+                canonical_cfo_hz=float(cfo_hz[index]),
+                frame_phase_s=float(phases_s[index]),
+                unwrapped_frame_phase_s=float(unwrapped_s[index]),
+                cfo_branch_inlier=bool(cfo_inliers[index]),
+                epoch_fit_inlier=bool(epoch_inliers[index] and linear_fit is not None),
+                linear_residual_s=(
+                    float(linear_residuals[index]) if epoch_inliers[index] and linear_fit else None
+                ),
+                quadratic_residual_s=(
+                    float(quadratic_residuals[index])
+                    if epoch_inliers[index] and quadratic_fit
+                    else None
+                ),
+            )
+            for index, item in enumerate(rows)
+        )
     status = (
         NativeGlrtEpochLockletStatusV1.COMPLETE
         if linear_fit is not None and quadratic_fit is not None
@@ -361,8 +556,14 @@ def _fit_locklet(
         "linear_fit": None if linear_fit is None else linear_fit.model_dump(mode="json"),
         "quadratic_fit": (None if quadratic_fit is None else quadratic_fit.model_dump(mode="json")),
     }
-    return NativeGlrtEpochLockletV1.model_validate(
-        {**values, "locklet_digest": canonical_digest({"schema_version": 1, **values})}
+    schema_version = 2 if fractional else 1
+    locklet_type = NativeGlrtFractionalEpochLockletV2 if fractional else NativeGlrtEpochLockletV1
+    return locklet_type.model_validate(
+        {
+            "schema_version": schema_version,
+            **values,
+            "locklet_digest": canonical_digest({"schema_version": schema_version, **values}),
+        }
     )
 
 
@@ -489,7 +690,7 @@ def _polynomial_contract(
 
 
 def render_standard_native_glrt_epoch_timing_png(
-    product: StandardNativeGlrtEpochTrackingV1,
+    product: StandardNativeGlrtEpochTrackingV1 | StandardNativeGlrtEpochTrackingV2,
     *,
     path_label: str,
 ) -> bytes:
@@ -558,15 +759,21 @@ def render_standard_native_glrt_epoch_timing_png(
         axes[2].set_ylabel("Quadratic residual (µs)")
         axes[2].set_xlabel("Global device-axis time (s)")
         axes[2].set_title("C · Quadratic timing residual")
+        timing_label = (
+            "fractional exact-score GLRT peaks"
+            if isinstance(product, StandardNativeGlrtEpochTrackingV2)
+            else "integer GLRT epochs"
+        )
         figure.suptitle(
             f"{product.source.session_id} · {path_label} · receiver-relative GLRT epoch tracking\n"
-            "750 Hz arrival phase · overlapping-window formal uncertainties are optimistic"
+            f"750 Hz arrival phase from {timing_label} · overlapping-window formal "
+            "uncertainties are optimistic"
         )
         return _save(figure)
 
 
 def render_standard_native_glrt_epoch_rate_png(
-    product: StandardNativeGlrtEpochTrackingV1,
+    product: StandardNativeGlrtEpochTrackingV1 | StandardNativeGlrtEpochTrackingV2,
     *,
     path_label: str,
 ) -> bytes:

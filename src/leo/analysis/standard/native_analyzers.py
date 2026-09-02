@@ -28,7 +28,7 @@ from leo.analysis.standard.native_full_capture_glrt import (
     native_full_capture_glrt_configuration_digest,
 )
 from leo.analysis.standard.native_glrt_epoch import (
-    build_standard_native_glrt_epoch_tracking_v1,
+    build_standard_native_glrt_epoch_tracking_v2,
     render_standard_native_glrt_epoch_rate_png,
     render_standard_native_glrt_epoch_timing_png,
 )
@@ -47,9 +47,10 @@ from leo.analysis.standard.native_products import (
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
-    GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
-    GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
-    GLRT_EPOCH_TRACKING_V1_PRODUCT,
+    GLRT_EPOCH_RATE_PNG_V2_PRODUCT,
+    GLRT_EPOCH_TIMING_PNG_V2_PRODUCT,
+    GLRT_EPOCH_TRACKING_V2_PRODUCT,
+    GLRT_FRACTIONAL_EPOCH_V1_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_PSS_GLRT_PRESENTATION_NATIVE_OUTPUTS,
@@ -65,7 +66,7 @@ from leo.analysis.standard.native_products import (
     POWER_TIMELINE_V4_PRODUCT,
     PROBE_SCHEDULE_V4_PRODUCT,
     PSS_FRAME_TIMING_V1_PRODUCT,
-    PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,
+    PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT,
     QUALITY_V3_PRODUCT,
     RADIO_REPORT_V6_PRODUCT,
     RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
@@ -106,6 +107,7 @@ from leo.contracts.standard_native import StandardProbeScheduleV4
 from leo.contracts.standard_native_glrt import (
     StandardNativeFullCaptureGlrt20msV2,
 )
+from leo.contracts.standard_native_glrt_fractional import StandardNativeGlrtFractionalEpochV1
 from leo.contracts.standard_native_path_report import (
     StandardNativePathReportV4,
 )
@@ -221,8 +223,8 @@ class PathStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="path-standard-native",
-        algorithm_version="standard-native-evidence-v13",
-        configuration_schema="path-standard-native.evidence.v11",
+        algorithm_version="standard-native-evidence-v14",
+        configuration_schema="path-standard-native.evidence.v12",
         output_products=_NATIVE_EVIDENCE_PRODUCTS,
         resource_class=ResourceClass.HEAVY,
         accepted_outcomes=_NATIVE_OUTCOMES,
@@ -322,13 +324,17 @@ class PathStandardNativeEvidenceAnalyzer:
             edge=binding.starlink_edge,
             schedule=stateful_schedule,
         )
-        full_capture_glrt = self._full_capture_glrt_runner_factory(stateful_config).run(
+        glrt_evidence = self._full_capture_glrt_runner_factory(stateful_config).run_evidence(
             native_iq,
             binding,
             edge=binding.starlink_edge,
         )
+        full_capture_glrt = glrt_evidence.full_capture
+        fractional_glrt_epoch = glrt_evidence.fractional_epoch
         if not isinstance(full_capture_glrt, StandardNativeFullCaptureGlrt20msV2):
             raise ValueError("V5 native binding did not produce V2 full-capture GLRT evidence")
+        if fractional_glrt_epoch is None:
+            raise ValueError("V5 native binding did not produce fractional GLRT epoch evidence")
         quality_document = cast(dict[str, JsonValue], result.quality.model_dump(mode="json"))
         power_document = cast(dict[str, JsonValue], result.power.model_dump(mode="json"))
         waterfall_document = cast(dict[str, JsonValue], result.waterfall.model_dump(mode="json"))
@@ -352,6 +358,10 @@ class PathStandardNativeEvidenceAnalyzer:
             pilot_doppler_v3.model_dump(mode="json"),
         )
         glrt_document = cast(dict[str, JsonValue], full_capture_glrt.model_dump(mode="json"))
+        fractional_glrt_epoch_document = cast(
+            dict[str, JsonValue],
+            fractional_glrt_epoch.model_dump(mode="json"),
+        )
         path_report = build_standard_native_path_report(
             binding,
             quality=result.quality,
@@ -401,6 +411,10 @@ class PathStandardNativeEvidenceAnalyzer:
                 FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
                 glrt_document,
             ),
+            (
+                GLRT_FRACTIONAL_EPOCH_V1_PRODUCT,
+                fractional_glrt_epoch_document,
+            ),
             (PATH_REPORT_V4_PRODUCT, path_report_document),
         )
         published = tuple(
@@ -443,6 +457,10 @@ class PathStandardNativeEvidenceAnalyzer:
                 "full_capture_glrt_passing_window_count": (
                     full_capture_glrt.accounting.passing_count
                 ),
+                "fractional_glrt_epoch_complete_count": fractional_glrt_epoch.complete_count,
+                "fractional_glrt_epoch_unbracketed_count": (
+                    fractional_glrt_epoch.unbracketed_count
+                ),
                 "terminal_probe_analyzed_count": (
                     path_report.schedule_execution.accounting.analyzed_count
                 ),
@@ -452,7 +470,8 @@ class PathStandardNativeEvidenceAnalyzer:
             },
             message=(
                 "Validity-aware native observability completed; stateful pilot/trajectory/"
-                "Doppler and full-capture GLRT evidence were published on canonical "
+                "Doppler, full-capture GLRT, and fractional epoch evidence were published "
+                "on canonical "
                 "global schedules and closed by the terminal path report."
                 if stateful.stateful_science_status in {"complete", "partial_coverage"}
                 else "Validity-aware native observability completed without stateful science."
@@ -538,14 +557,15 @@ class PathAlternateTracksNativeAnalyzer:
 
     spec = StageSpec(
         key="path-alternate-tracks-native",
-        algorithm_version="standard-native-path-projection-v6",
-        configuration_schema="path-alternate-tracks-native.projection.v6",
+        algorithm_version="standard-native-path-projection-v7",
+        configuration_schema="path-alternate-tracks-native.projection.v7",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),
             _require_native_product(STATEFUL_PATH_V3_PRODUCT, "path-standard-native"),
             _require_native_product(PILOT_DOPPLER_SEGMENTS_V4_PRODUCT, "path-standard-native"),
             _require_native_product(FULL_CAPTURE_GLRT20MS_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(GLRT_FRACTIONAL_EPOCH_V1_PRODUCT, "path-standard-native"),
             _require_native_product(PATH_REPORT_V4_PRODUCT, "path-standard-native"),
         ),
         output_products=PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
@@ -571,7 +591,7 @@ class PathAlternateTracksNativeAnalyzer:
         )
         if any(len(items) != 1 for items in inventories):
             raise ValueError("native path projection requires one exact product inventory")
-        waterfall_item, predecessor, pilot_v3_item, glrt_item, report_item = (
+        waterfall_item, predecessor, pilot_v3_item, glrt_item, fractional_item, report_item = (
             items[0] for items in inventories
         )
         if (
@@ -581,7 +601,13 @@ class PathAlternateTracksNativeAnalyzer:
             or any(
                 item.producer_node_id != predecessor.producer_node_id
                 or item.producer_scope != context.scope
-                for item in (waterfall_item, pilot_v3_item, glrt_item, report_item)
+                for item in (
+                    waterfall_item,
+                    pilot_v3_item,
+                    glrt_item,
+                    fractional_item,
+                    report_item,
+                )
             )
         ):
             raise ValueError("native projection predecessor does not match the exact path node")
@@ -627,6 +653,9 @@ class PathAlternateTracksNativeAnalyzer:
             path_label=path_label,
         )
         glrt = StandardNativeFullCaptureGlrt20msV2.model_validate(glrt_item.document)
+        fractional_glrt_epoch = StandardNativeGlrtFractionalEpochV1.model_validate(
+            fractional_item.document
+        )
         if (
             glrt.source != stateful.source
             or glrt_item.product_digest
@@ -635,9 +664,11 @@ class PathAlternateTracksNativeAnalyzer:
             ).products.full_capture_glrt20ms_product_digest
         ):
             raise ValueError("native GLRT projection lineage does not close")
-        epoch_tracking = build_standard_native_glrt_epoch_tracking_v1(
+        epoch_tracking = build_standard_native_glrt_epoch_tracking_v2(
             glrt,
+            fractional_glrt_epoch,
             source_glrt_product_digest=glrt_item.product_digest,
+            source_fractional_epoch_product_digest=fractional_item.product_digest,
         )
         documents = (
             (
@@ -649,7 +680,7 @@ class PathAlternateTracksNativeAnalyzer:
                 cast(dict[str, JsonValue], accounting.model_dump(mode="json")),
             ),
             (
-                GLRT_EPOCH_TRACKING_V1_PRODUCT,
+                GLRT_EPOCH_TRACKING_V2_PRODUCT,
                 cast(dict[str, JsonValue], epoch_tracking.model_dump(mode="json")),
             ),
         )
@@ -675,14 +706,14 @@ class PathAlternateTracksNativeAnalyzer:
                 ),
             ),
             (
-                GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+                GLRT_EPOCH_TIMING_PNG_V2_PRODUCT,
                 render_standard_native_glrt_epoch_timing_png(
                     epoch_tracking,
                     path_label=path_label,
                 ),
             ),
             (
-                GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
+                GLRT_EPOCH_RATE_PNG_V2_PRODUCT,
                 render_standard_native_glrt_epoch_rate_png(
                     epoch_tracking,
                     path_label=path_label,
@@ -995,12 +1026,13 @@ class PairedStandardNativePssGlrtPresentationAnalyzer:
 
     spec = StageSpec(
         key="paired-pss-glrt-presentation-native",
-        algorithm_version="standard-native-paired-pss-glrt-presentation-v1",
-        configuration_schema="paired-pss-glrt-presentation-native.evidence.v1",
+        algorithm_version="standard-native-paired-pss-glrt-presentation-v2",
+        configuration_schema="paired-pss-glrt-presentation-native.evidence.v2",
         dependencies=("path-pss-native", "path-standard-native"),
         input_products=(
             _require_native_product(PSS_FRAME_TIMING_V1_PRODUCT, "path-pss-native"),
             _require_native_product(FULL_CAPTURE_GLRT20MS_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(GLRT_FRACTIONAL_EPOCH_V1_PRODUCT, "path-standard-native"),
         ),
         output_products=PAIRED_PSS_GLRT_PRESENTATION_NATIVE_OUTPUTS,
         resource_class=ResourceClass.CPU,
@@ -1029,6 +1061,10 @@ class PairedStandardNativePssGlrtPresentationAnalyzer:
             self.spec.input_products[1],
             producer_node_ids=context.dependency_node_ids,
         )
+        fractional_items = products.read_json_many(
+            self.spec.input_products[2],
+            producer_node_ids=context.dependency_node_ids,
+        )
         pss_products = tuple(
             StandardNativePssFrameTimingV1.model_validate(item.document) for item in pss_items
         )
@@ -1040,10 +1076,17 @@ class PairedStandardNativePssGlrtPresentationAnalyzer:
             for item in glrt_items
         )
         low_glrt = tuple(pair for pair in glrt_pairs if pair[0].source.sample_rate_hz == 2_500_000)
-        if len(native_pss) != 1 or len(low_glrt) != 2:
+        fractional_pairs = tuple(
+            (StandardNativeGlrtFractionalEpochV1.model_validate(item.document), item)
+            for item in fractional_items
+        )
+        low_fractional = tuple(
+            pair for pair in fractional_pairs if pair[0].source.sample_rate_hz == 2_500_000
+        )
+        if len(native_pss) != 1 or len(low_glrt) != 2 or len(low_fractional) != 2:
             raise ValueError(
                 "paired PSS/GLRT presentation requires one native-25 PSS path and two "
-                "2.5 MS/s GLRT receiver paths"
+                "2.5 MS/s GLRT receiver paths with fractional epoch evidence"
             )
         if any(item.source.session_id != context.session_id for item in native_pss) or any(
             document.source.session_id != context.session_id for document, _source in low_glrt
@@ -1055,15 +1098,28 @@ class PairedStandardNativePssGlrtPresentationAnalyzer:
             for item, _source in low_glrt
         ):
             raise ValueError("paired PSS/GLRT presentation GLRT source is not its radio scope")
-        glrt_epoch_products = tuple(
-            build_standard_native_glrt_epoch_tracking_v1(
-                item,
-                source_glrt_product_digest=source.product_digest,
+        fractional_by_binding = {
+            item.source.path_input_binding_digest: (item, source) for item, source in low_fractional
+        }
+        glrt_epoch_products = []
+        for item, source in low_glrt:
+            fractional_pair = fractional_by_binding.get(item.source.path_input_binding_digest)
+            if fractional_pair is None:
+                raise ValueError("paired PSS/GLRT fractional evidence source is missing")
+            fractional, fractional_source = fractional_pair
+            glrt_epoch_products.append(
+                build_standard_native_glrt_epoch_tracking_v2(
+                    item,
+                    fractional,
+                    source_glrt_product_digest=source.product_digest,
+                    source_fractional_epoch_product_digest=fractional_source.product_digest,
+                )
             )
-            for item, source in low_glrt
+        payload = render_native25_pss_vs_2p5_glrt_png(
+            native_pss,
+            tuple(glrt_epoch_products),
         )
-        payload = render_native25_pss_vs_2p5_glrt_png(native_pss, glrt_epoch_products)
-        published = outputs.publish_bytes(PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT, payload)
+        published = outputs.publish_bytes(PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT, payload)
         outcome = (
             StageOutcome.COMPLETE
             if native_pss[0].source.missing_sample_count == 0

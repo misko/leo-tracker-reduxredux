@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from types import ModuleType
 
 import numpy as np
 import pytest
+
+from leo.analysis.standard.full_capture_glrt20ms import fractional_log_peak_offset
 
 
 def _tool() -> ModuleType:
@@ -54,3 +57,27 @@ def test_quadratic_timing_fit_recovers_rate_and_residuals() -> None:
     assert fit["timing_curvature_s_s2"] == pytest.approx(curvature)
     assert fit["equivalent_doppler_rate_hz_s"] == pytest.approx(3_000.0)
     assert fit["residual_rms_us"] < 1e-9
+
+
+def test_production_fractional_estimator_reproduces_all_7fea_replayed_peaks() -> None:
+    path = (
+        Path(__file__).parents[2]
+        / "reports"
+        / "figures"
+        / "2026_09_02_7fea_glrt_fractional_epoch"
+        / "fractional-glrt-epoch-prototype.json"
+    )
+    evidence = json.loads(path.read_text(encoding="utf-8"))
+    rows = evidence["rows"]
+
+    production = tuple(fractional_log_peak_offset(row["exact_scores"]) for row in rows)
+
+    assert len(rows) == 652
+    assert all(item is not None for item in production)
+    assert (
+        max(
+            abs(float(actual) - row["log_peak_correction_samples"])
+            for actual, row in zip(production, rows, strict=True)
+        )
+        < 1e-12
+    )

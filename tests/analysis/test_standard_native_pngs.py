@@ -21,7 +21,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_native_accounting import (
     StandardNativeTrajectoryConditionedAccountingV4,
 )
-from leo.contracts.standard_native_glrt_epoch import StandardNativeGlrtEpochTrackingV1
+from leo.contracts.standard_native_glrt_epoch import StandardNativeGlrtEpochTrackingV2
 from leo.contracts.standard_native_stateful import (
     NativeConditionedHoughReplayRowV1,
     NativePilotCandidateV1,
@@ -34,7 +34,6 @@ from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome, UpstreamJsonProduct
 from tests.analysis.test_standard_native_observability import (
     _fast_glrt_runner,
-    _fast_pss_runner,
     _inventory,
     _OutputSink,
     _Reader,
@@ -87,7 +86,6 @@ def test_native_path_projection_publishes_epoch_tracking_and_all_fourteen_pngs()
             probe_detector=_no_result_probe,
         ),
         full_capture_glrt_runner_factory=_fast_glrt_runner,
-        pss_runner_factory=_fast_pss_runner,
     )
     science_result = science.analyze(  # type: ignore[arg-type]
         AnalysisContext(
@@ -151,8 +149,8 @@ def test_native_path_projection_publishes_epoch_tracking_and_all_fourteen_pngs()
     )
     assert accounting.source.path_input_binding_digest == binding.binding_digest
     assert accounting.cross_segment_association_permitted is False
-    epoch = StandardNativeGlrtEpochTrackingV1.model_validate(
-        projection_outputs.documents[("standard.glrt-epoch-tracking", 1)]
+    epoch = StandardNativeGlrtEpochTrackingV2.model_validate(
+        projection_outputs.documents[("standard.glrt-epoch-tracking", 2)]
     )
     assert epoch.source.path_input_binding_digest == binding.binding_digest
     assert epoch.locklets == ()

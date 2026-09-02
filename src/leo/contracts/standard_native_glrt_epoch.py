@@ -385,6 +385,264 @@ class StandardNativeGlrtEpochTrackingV1(ContractModel):
         return self
 
 
+class NativeGlrtFractionalEpochObservationV2(ContractModel):
+    """One GLRT epoch measured from a bracketed fractional score peak."""
+
+    schema_version: Literal[2] = 2
+    opportunity_index: Annotated[int, Field(ge=0)]
+    global_center_time_s: Annotated[float, Field(ge=0)]
+    integer_global_epoch_device_sample: Annotated[int, Field(ge=0)]
+    fractional_epoch_offset_samples: Annotated[float, Field(ge=-1.5, le=1.5)]
+    fractional_global_epoch_device_sample: Annotated[float, Field(ge=0)]
+    raw_cfo_hz: float
+    hough_alias_index: int
+    canonical_cfo_hz: float
+    frame_phase_s: Annotated[float, Field(ge=0, lt=1.0 / 750.0)]
+    unwrapped_frame_phase_s: float
+    cfo_branch_inlier: bool
+    epoch_fit_inlier: bool
+    linear_residual_s: float | None
+    quadratic_residual_s: float | None
+
+    @field_validator(
+        "global_center_time_s",
+        "fractional_epoch_offset_samples",
+        "fractional_global_epoch_device_sample",
+        "raw_cfo_hz",
+        "canonical_cfo_hz",
+        "frame_phase_s",
+        "unwrapped_frame_phase_s",
+        "linear_residual_s",
+        "quadratic_residual_s",
+    )
+    @classmethod
+    def _value_is_finite(cls, value: float | None) -> float | None:
+        if value is not None and not math.isfinite(value):
+            raise ValueError("fractional GLRT epoch observation values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _membership_is_closed(self) -> Self:
+        if not math.isclose(
+            self.fractional_global_epoch_device_sample,
+            self.integer_global_epoch_device_sample + self.fractional_epoch_offset_samples,
+            rel_tol=0.0,
+            abs_tol=1e-9,
+        ):
+            raise ValueError("fractional GLRT epoch sample does not close its integer origin")
+        if self.epoch_fit_inlier and not self.cfo_branch_inlier:
+            raise ValueError("fractional GLRT epoch inlier escaped its CFO-selected branch")
+        residuals_present = (
+            self.linear_residual_s is not None and self.quadratic_residual_s is not None
+        )
+        if residuals_present != self.epoch_fit_inlier:
+            raise ValueError("fractional GLRT epoch residuals do not close fit membership")
+        return self
+
+
+class NativeGlrtFractionalEpochLockletV2(ContractModel):
+    """One gap-bounded locklet fitted from local fractional measurements."""
+
+    schema_version: Literal[2] = 2
+    continuity_segment_index: Annotated[int, Field(ge=0)]
+    locklet_index: Annotated[int, Field(ge=0)]
+    source_hough_track_label: BoundedText
+    global_start_time_s: Annotated[float, Field(ge=0)]
+    global_end_time_s: Annotated[float, Field(ge=0)]
+    status: NativeGlrtEpochLockletStatusV1
+    reason: BoundedText
+    cfo_selection: NativeGlrtEpochCfoSelectionV1
+    epoch_inlier_count: Annotated[int, Field(ge=0)]
+    observations: tuple[NativeGlrtFractionalEpochObservationV2, ...]
+    linear_fit: NativeGlrtEpochPolynomialFitV1 | None
+    quadratic_fit: NativeGlrtEpochPolynomialFitV1 | None
+    locklet_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _locklet_is_closed(self) -> Self:
+        if not self.observations or self.global_end_time_s < self.global_start_time_s:
+            raise ValueError("fractional GLRT epoch locklet support is invalid")
+        indexes = tuple(item.opportunity_index for item in self.observations)
+        times = tuple(item.global_center_time_s for item in self.observations)
+        if indexes != tuple(sorted(set(indexes))) or times != tuple(sorted(times)):
+            raise ValueError("fractional GLRT epoch observations are not canonical")
+        if self.global_start_time_s != times[0] or self.global_end_time_s != times[-1]:
+            raise ValueError("fractional GLRT epoch locklet time support does not close")
+        if self.cfo_selection.candidate_count != len(self.observations):
+            raise ValueError("fractional GLRT epoch candidate accounting does not close")
+        if self.cfo_selection.selected_count != sum(
+            item.cfo_branch_inlier for item in self.observations
+        ) or self.epoch_inlier_count != sum(item.epoch_fit_inlier for item in self.observations):
+            raise ValueError("fractional GLRT epoch fit membership does not close")
+        complete = self.status is NativeGlrtEpochLockletStatusV1.COMPLETE
+        if complete != (self.linear_fit is not None and self.quadratic_fit is not None):
+            raise ValueError("fractional GLRT epoch fit availability disagrees with status")
+        if complete:
+            assert self.linear_fit is not None and self.quadratic_fit is not None
+            if (
+                self.linear_fit.polynomial_degree != 1
+                or self.quadratic_fit.polynomial_degree != 2
+                or self.linear_fit.point_count != self.epoch_inlier_count
+                or self.quadratic_fit.point_count != self.epoch_inlier_count
+                or self.linear_fit.reference_time_s != self.quadratic_fit.reference_time_s
+            ):
+                raise ValueError("fractional GLRT polynomial fits do not share exact support")
+            for observation in self.observations:
+                if not observation.epoch_fit_inlier:
+                    continue
+                linear_dt = observation.global_center_time_s - self.linear_fit.reference_time_s
+                quadratic_dt = (
+                    observation.global_center_time_s - self.quadratic_fit.reference_time_s
+                )
+                linear_prediction = (
+                    self.linear_fit.phase_at_reference_s
+                    + self.linear_fit.timing_drift_s_s * linear_dt
+                )
+                quadratic_prediction = (
+                    self.quadratic_fit.phase_at_reference_s
+                    + self.quadratic_fit.timing_drift_s_s * quadratic_dt
+                    + 0.5 * self.quadratic_fit.timing_curvature_s_s2 * quadratic_dt**2
+                )
+                if not (
+                    math.isclose(
+                        observation.linear_residual_s or 0.0,
+                        _frame_phase_residual(observation.frame_phase_s, linear_prediction),
+                        abs_tol=1e-12,
+                    )
+                    and math.isclose(
+                        observation.quadratic_residual_s or 0.0,
+                        _frame_phase_residual(observation.frame_phase_s, quadratic_prediction),
+                        abs_tol=1e-12,
+                    )
+                ):
+                    raise ValueError("fractional GLRT residuals do not close their fits")
+        if self.locklet_digest != canonical_digest(
+            self.model_dump(mode="json", exclude={"locklet_digest"})
+        ):
+            raise ValueError("fractional GLRT epoch locklet digest does not match")
+        return self
+
+
+class StandardNativeGlrtEpochTrackingV2(ContractModel):
+    """Receiver-relative fits using independently measured fractional GLRT peaks."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-native-glrt-epoch-tracking-v2"] = (
+        "standard-native-glrt-epoch-tracking-v2"
+    )
+    source: StandardNativeSourceV2
+    source_glrt_product_digest: Sha256Digest
+    source_glrt_result_digest: Sha256Digest
+    source_fractional_epoch_product_digest: Sha256Digest
+    source_fractional_epoch_result_digest: Sha256Digest
+    configuration_digest: Sha256Digest
+    frame_rate_hz: Literal[750] = 750
+    starlink_edge: StarlinkEdge
+    fractional_epoch_method: Literal["three-cell-log-parabola-v1"] = "three-cell-log-parabola-v1"
+    rf_reference_hz: Annotated[float, Field(gt=0)]
+    rf_reference_provenance: Literal["documented_lnb_lo_plus_tuned_if_center"] = (
+        "documented_lnb_lo_plus_tuned_if_center"
+    )
+    equivalent_doppler_sign_convention: Literal[
+        "equivalent_doppler_hz=-rf_reference_hz*d(frame_arrival_phase_s)/dt"
+    ] = "equivalent_doppler_hz=-rf_reference_hz*d(frame_arrival_phase_s)/dt"
+    cfo_alias_spacing_hz: Annotated[float, Field(gt=0)]
+    cfo_canonicalization: Literal["canonical_cfo=raw_cfo-alias_index*alias_spacing"] = (
+        "canonical_cfo=raw_cfo-alias_index*alias_spacing"
+    )
+    receiver_relative: Literal[True] = True
+    cfo_selection_uses_epoch: Literal[False] = False
+    cross_continuity_fit_permitted: Literal[False] = False
+    locklets: tuple[NativeGlrtFractionalEpochLockletV2, ...]
+    limitations: tuple[BoundedText, ...]
+    result_digest: Sha256Digest
+
+    @field_validator("rf_reference_hz", "cfo_alias_spacing_hz")
+    @classmethod
+    def _frequency_is_finite(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("fractional GLRT epoch frequency references must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _result_is_closed(self) -> Self:
+        ordering = tuple(
+            (item.continuity_segment_index, item.locklet_index, item.global_start_time_s)
+            for item in self.locklets
+        )
+        if ordering != tuple(sorted(ordering)):
+            raise ValueError("fractional GLRT epoch locklets are not canonical")
+        segments = {item.segment_index: item for item in self.source.continuity_segments}
+        if any(item.continuity_segment_index not in segments for item in self.locklets):
+            raise ValueError("fractional GLRT epoch locklet escaped source continuity")
+        if not math.isclose(self.cfo_alias_spacing_hz, 2_500_000 / 11, abs_tol=1e-12):
+            raise ValueError("fractional GLRT CFO alias spacing differs from its source algorithm")
+        if not self.limitations:
+            raise ValueError("fractional GLRT epoch result must disclose limitations")
+        period_s = 1.0 / self.frame_rate_hz
+        for locklet in self.locklets:
+            segment = segments[locklet.continuity_segment_index]
+            start_s = segment.device_sample_start / self.source.sample_rate_hz
+            stop_s = segment.device_sample_stop / self.source.sample_rate_hz
+            if locklet.global_start_time_s < start_s or locklet.global_end_time_s > stop_s:
+                raise ValueError("fractional GLRT locklet escaped its continuity time span")
+            for observation in locklet.observations:
+                if not (
+                    segment.device_sample_start
+                    <= observation.fractional_global_epoch_device_sample
+                    < segment.device_sample_stop
+                ):
+                    raise ValueError("fractional GLRT observation escaped continuity samples")
+                integer_phase = (
+                    (observation.integer_global_epoch_device_sample * self.frame_rate_hz)
+                    % self.source.sample_rate_hz
+                ) / (self.source.sample_rate_hz * self.frame_rate_hz)
+                expected_phase = (
+                    integer_phase
+                    + observation.fractional_epoch_offset_samples / self.source.sample_rate_hz
+                ) % period_s
+                if not math.isclose(observation.frame_phase_s, expected_phase, abs_tol=1e-15):
+                    raise ValueError("fractional GLRT frame phase does not close its peak")
+                if not math.isclose(
+                    observation.canonical_cfo_hz,
+                    observation.raw_cfo_hz
+                    - observation.hough_alias_index * self.cfo_alias_spacing_hz,
+                    abs_tol=1e-9,
+                ):
+                    raise ValueError("fractional GLRT canonical CFO does not close its alias")
+                if not math.isclose(
+                    _frame_phase_residual(
+                        observation.unwrapped_frame_phase_s, observation.frame_phase_s
+                    ),
+                    0.0,
+                    abs_tol=1e-12,
+                ):
+                    raise ValueError("fractional GLRT unwrapped phase changed its frame class")
+            for fit in (locklet.linear_fit, locklet.quadratic_fit):
+                if fit is None:
+                    continue
+                if not (
+                    math.isclose(
+                        fit.equivalent_doppler_at_reference_hz,
+                        -self.rf_reference_hz * fit.timing_drift_s_s,
+                        rel_tol=1e-12,
+                        abs_tol=1e-6,
+                    )
+                    and math.isclose(
+                        fit.equivalent_doppler_rate_hz_s,
+                        -self.rf_reference_hz * fit.timing_curvature_s_s2,
+                        rel_tol=1e-12,
+                        abs_tol=1e-6,
+                    )
+                ):
+                    raise ValueError("fractional GLRT equivalent Doppler does not close timing fit")
+        if self.result_digest != canonical_digest(
+            self.model_dump(mode="json", exclude={"result_digest"})
+        ):
+            raise ValueError("fractional GLRT epoch result digest does not match")
+        return self
+
+
 def _frame_phase_residual(observed_s: float, predicted_s: float) -> float:
     period_s = 1.0 / 750.0
     return (observed_s - predicted_s + period_s / 2.0) % period_s - period_s / 2.0

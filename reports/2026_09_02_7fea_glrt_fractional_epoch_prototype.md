@@ -32,6 +32,30 @@ The rate moves by only −4.19 Hz/s, or **−0.138%**. It remains an approximate
 and stays close to the independent native-25 PSS timing rate (2.99891 kHz/s) and low-rate GLRT CFO
 rate magnitude (3.00827 kHz/s).
 
+## Standard-pipeline resolution
+
+The reviewed estimator is now integrated into the existing Standard-native analysis path without
+changing the published full-capture GLRT V2 contract or its detection decisions:
+
+- `standard.full-capture-glrt20ms` V2 remains the integer acquisition, score, CFO, Hough, and
+  margin-gate authority.
+- The same raw-IQ stage emits additive `standard.glrt-fractional-epoch` V1 evidence for every
+  margin-passing window. Each row seals the fixed acquired CFO, integer epoch, center score, five
+  exact-score cells at offsets `[-2,-1,0,+1,+2]`, and the resulting fractional offset.
+- Boundary maxima and non-concave local surfaces are explicitly marked unbracketed; they are not
+  silently promoted to fractional observations.
+- `standard.glrt-epoch-tracking` V2 consumes the full-capture and companion digests, retains the
+  existing CFO/Hough branch selection, and fits only bracketed fractional peaks within each
+  continuity-local locklet.
+- Epoch timing/rate PNG V2 and paired PSS/GLRT PNG V2 are the new default UI artifacts. Additive UI
+  inventories V12/V13 describe those semantics, while V10/V11 continue to serve older sealed runs.
+
+This is deliberately an estimator refinement, not a new analysis pathway: window geometry remains
+20 ms at a 10 ms stride, detection thresholds are unchanged, and neither the PSS result nor a
+global timing fit influences the local GLRT peak. The implementation is sample-rate aware and is
+tested at 2.5, 3, 5, 10, 15, 20, and 25 MS/s. A regression over all 652 recorded `7fea` score grids
+reproduces the prototype fractional offsets to better than `1e-12` sample.
+
 ![Before and after GLRT timing versus time](figures/2026_09_02_7fea_glrt_fractional_epoch/fractional-glrt-before-after.png)
 
 **Figure 1.** Direct before/after comparison on identical time and residual axes. The bottom row
@@ -98,7 +122,7 @@ score surface and that extracting it materially improves timing precision. The c
 computed independently in each window and does not use the global quadratic trajectory, so the
 global fit is not forcing points onto itself.
 
-It is not yet a production validation:
+It does not yet establish population-level accuracy or promotion eligibility:
 
 - This is an in-sample measurement replay of one already selected locklet, not a detection or
   false-alarm study.
@@ -111,10 +135,11 @@ It is not yet a production validation:
 - Formal least-squares uncertainties remain optimistic unless overlap and selection are included
   in the statistical model.
 
-The next scientifically clean step is a bounded injected-signal study with known fractional delay,
-SNR, CFO, and Doppler rate, followed by replay on several independent captures. A direct analytic
-or band-limited fractionally shifted template should be compared with this inexpensive log-peak
-approximation before changing a Standard persisted contract.
+The additive Standard product therefore remains candidate-only and ineligible for scientific
+promotion. The next scientifically clean step is a bounded injected-signal study with known
+fractional delay, SNR, CFO, and Doppler rate, followed by replay on several independent captures.
+A direct analytic or band-limited fractionally shifted template should also be compared with this
+inexpensive log-peak approximation before using the result as promoted physical evidence.
 
 ## Reproduction
 
@@ -123,6 +148,8 @@ Machine-readable per-window score grids and fits are in
 The capture-local tool and focused tests are
 [`prototype_7fea_glrt_fractional_epoch.py`](../tools/prototype_7fea_glrt_fractional_epoch.py) and
 [`test_7fea_glrt_fractional_epoch_tool.py`](../tests/analysis/test_7fea_glrt_fractional_epoch_tool.py).
+The JSON's `production_behavior_changed: false` field records the state of that original prototype
+execution; the integration described above was performed afterward through new versioned products.
 
 ```bash
 BASE=/srv/bulk/leo/analysis/cap-20260902T152702-7fea7427619d/\
