@@ -1,0 +1,420 @@
+{
+  "analysis_kind": "7fea7427619d-pss-glrt-deep-dive",
+  "analysis_run_id": "native-capture-71829dc4471b474c9a9322e26c5c6f26",
+  "capture_geometry": {
+    "cross_stream_first_estimate_offset_s": 0.24349546432495117,
+    "low_rate_center_frequency_hz": 959687500,
+    "low_rate_first_timestamp_half_width_ms": 0.542688,
+    "low_rate_offset_inside_native25_hz": -7812500,
+    "native25_bandwidth_hz": 25000000,
+    "native25_center_frequency_hz": 967500000,
+    "native25_continuity_segment_count": 18,
+    "native25_counter_gap_count": 17,
+    "native25_first_timestamp_half_width_ms": 1.047322,
+    "native25_logical_samples": 1500000000,
+    "native25_missing_samples": 585000000,
+    "native25_observed_density": 0.61,
+    "native25_observed_samples": 915000000
+  },
+  "capture_id": "cap-20260902T152702-7fea7427619d",
+  "conclusions": [
+    "Native-25 PSS retains one high-quality quadratic track across six counter gaps.",
+    "PSS search-frequency changes and counter-gap crossings do not produce elevated timing jumps relative to ordinary adjacent modes.",
+    "The RX0 GLRT CFO rate agrees with the same-coordinate PSS rate to substantially better than one percent.",
+    "RX1 does not provide a complete GLRT locklet over the PSS interval; its margin-pass density is much lower than RX0, so absence is receiver evidence rather than a cross-rate contradiction.",
+    "Every complete GLRT locklet is close to the 2.5 MS/s integer-epoch quantization floor; visible fans are quantization structure rather than resolved timing waves.",
+    "The best PSS piecewise split is smaller than one native-25 sample and is not shared by both GLRT receivers, unlike the event in 6f8ad3b4fb91."
+  ],
+  "configuration": {
+    "cfo_alias_spacing_hz": 227272.72727272726,
+    "glrt_epoch_sample_spacing_us": 0.4,
+    "glrt_stride_ms": 10.0,
+    "glrt_uniform_quantization_rms_us": 0.11547005383792516,
+    "glrt_window_ms": 20.0,
+    "pss_decimation_factor": 1,
+    "pss_stride_ms": 62.5,
+    "pss_window_ms": 125.0
+  },
+  "frequency_rate": {
+    "glrt_rx0_canonical_cfo_mean_rate_hz_s": -3008.2725052488095,
+    "interpretation": "PSS physical arrival-delay sign is mirrored relative to observed-IQ GLRT. After an explicit coordinate mirror, their mean rates agree closely; absolute received-RF sign remains uncalibrated.",
+    "pss_physical_arrival_delay_rate_hz_s": 2998.907054904638,
+    "pss_same_observed_coordinate_rate_hz_s": -2998.907054904638,
+    "rf_reference_hz": 10709687500.0,
+    "same_coordinate_magnitude_difference_percent": 0.31229545206660264
+  },
+  "glrt": {
+    "RX0": {
+      "alias_transitions": {
+        "by_locklet": [
+          {
+            "hough_label": "H3",
+            "locklet_index": 2,
+            "transition_count": 0
+          },
+          {
+            "hough_label": "H4",
+            "locklet_index": 3,
+            "transition_count": 1
+          }
+        ],
+        "median_absolute_canonical_cfo_jump_hz": 647.3316064824467,
+        "median_absolute_raw_cfo_jump_hz": 226625.39566624482,
+        "median_absolute_timing_residual_jump_us": 0.23684933555113802,
+        "transition_count": 1
+      },
+      "cfo_rate_over_pss_support": {
+        "maximum_hz_s": -2998.8971093856067,
+        "mean_hz_s": -3008.2725052488095,
+        "median_hz_s": -3007.1702943151613,
+        "minimum_hz_s": -3027.5130449605463,
+        "support_point_count": 652
+      },
+      "complete_locklet_count": 2,
+      "complete_locklet_quantization": [
+        {
+          "hough_label": "H3",
+          "locklet_index": 2,
+          "model_rounding_error_rms_us": 0.1033437210100273,
+          "nearest_model_sample_fraction": 0.9354838709677419,
+          "nearest_or_adjacent_model_sample_fraction": 1.0,
+          "point_count": 62,
+          "sample_offset_counts": {
+            "-1": 1,
+            "0": 58,
+            "1": 3
+          }
+        },
+        {
+          "hough_label": "H4",
+          "locklet_index": 3,
+          "model_rounding_error_rms_us": 0.10648489000686168,
+          "nearest_model_sample_fraction": 0.9371165644171779,
+          "nearest_or_adjacent_model_sample_fraction": 1.0,
+          "point_count": 652,
+          "sample_offset_counts": {
+            "-1": 18,
+            "0": 611,
+            "1": 23
+          }
+        }
+      ],
+      "insufficient_locklet_count": 4,
+      "margin_over_pss_wall_interval": {
+        "margin_pass_count": 869,
+        "margin_pass_fraction": 0.30405878236529044,
+        "median_margin": 0.009030189969646971,
+        "p90_margin": 0.3540137936181513,
+        "p99_margin": 0.4370824914825371,
+        "window_count": 2858
+      },
+      "overlapping_complete_locklets": [
+        {
+          "candidate_start_s_on_native25_clock": 21.40349546432495,
+          "candidate_stop_s_on_native25_clock": 46.92349546432495,
+          "hough_label": "H4",
+          "inlier_start_s_on_native25_clock": 24.42349546432495,
+          "inlier_stop_s_on_native25_clock": 46.92349546432495,
+          "locklet_index": 3,
+          "point_count": 652,
+          "quadratic_rms_us": 0.1126471812215946,
+          "timing_derived_physical_rate_hz_s": 3033.336326991013
+        }
+      ],
+      "stateful_replay": {
+        "branches_with_multiple_alias_candidates": 0,
+        "dealiased_branch_count": 4,
+        "final_candidate_count": 4,
+        "replay_candidate_count": 4,
+        "replay_candidates": [
+          {
+            "alias_index": 1,
+            "branch_id": "sha256:0670b66f122036b2fc4bada703fc827c8f5b4b91b0e4cb5f9f67cf05a1ab6597",
+            "evaluated_probe_count": 78,
+            "median_block_corrected_margin": 0.0003591331690544902,
+            "tier": "automatic"
+          },
+          {
+            "alias_index": 1,
+            "branch_id": "sha256:4e25c3f148bef9fbdfc768ef899f06ee9243b53e362e058db8b6d3abb98f4bc6",
+            "evaluated_probe_count": 87,
+            "median_block_corrected_margin": 0.032805810232746195,
+            "tier": "automatic"
+          },
+          {
+            "alias_index": 2,
+            "branch_id": "sha256:4ef90ff677afaf79ded6a037adb11a8673768b21a789fd3dcf1fe17caab73254",
+            "evaluated_probe_count": 748,
+            "median_block_corrected_margin": 0.28054977295992906,
+            "tier": "automatic"
+          },
+          {
+            "alias_index": 2,
+            "branch_id": "sha256:da57ba32a4ae1c1de6580a817d111f4a77ea1e995982ebb7bcef021aca57eaf3",
+            "evaluated_probe_count": 83,
+            "median_block_corrected_margin": 0.3899890635361327,
+            "tier": "automatic"
+          }
+        ]
+      },
+      "u_structure_diagnostic": {
+        "dominant_plateau": {
+          "frame_phase_us": 42.4,
+          "local_epoch_sample": 106,
+          "maximum_residual_us": 0.24449497054799402,
+          "minimum_residual_us": 0.06986159336403938,
+          "opportunity_parity": 0,
+          "point_count": 45,
+          "start_s_low_rate_clock": 40.57,
+          "stop_s_low_rate_clock": 42.61,
+          "unwrapped_frame_phase_us": 1375.7333333333333
+        },
+        "hough_label": "H4",
+        "locklet_index": 3,
+        "quadratic_vertex_s_low_rate_clock": 41.499147758558266,
+        "quadratic_vertex_s_native25_clock": 41.74264322288322,
+        "rate_robustness": {
+          "all_inliers": {
+            "physical_rate_hz_s": 3033.336326991889,
+            "point_count": 652,
+            "rms_us": 0.11264718122160411
+          },
+          "even_nonoverlap_parity": {
+            "physical_rate_hz_s": 3032.246649965153,
+            "point_count": 325,
+            "rms_us": 0.11124235769270939
+          },
+          "excluding_vertex_interval": {
+            "physical_rate_hz_s": 3031.0919528326426,
+            "point_count": 565,
+            "rms_us": 0.10752095363229622
+          },
+          "odd_nonoverlap_parity": {
+            "physical_rate_hz_s": 3034.495657632956,
+            "point_count": 327,
+            "rms_us": 0.11373098567464297
+          }
+        },
+        "residual_branch_curvature_us_s2": 0.2832329446579102
+      }
+    },
+    "RX1": {
+      "alias_transitions": {
+        "by_locklet": [
+          {
+            "hough_label": "H1",
+            "locklet_index": 0,
+            "transition_count": 0
+          },
+          {
+            "hough_label": "H11",
+            "locklet_index": 10,
+            "transition_count": 2
+          }
+        ],
+        "median_absolute_canonical_cfo_jump_hz": 199.99550818616262,
+        "median_absolute_raw_cfo_jump_hz": 227214.2771718204,
+        "median_absolute_timing_residual_jump_us": 0.12422714566317355,
+        "transition_count": 2
+      },
+      "cfo_rate_over_pss_support": null,
+      "complete_locklet_count": 2,
+      "complete_locklet_quantization": [
+        {
+          "hough_label": "H1",
+          "locklet_index": 0,
+          "model_rounding_error_rms_us": 0.10771594624915597,
+          "nearest_model_sample_fraction": 0.9024390243902439,
+          "nearest_or_adjacent_model_sample_fraction": 1.0,
+          "point_count": 82,
+          "sample_offset_counts": {
+            "-1": 5,
+            "0": 74,
+            "1": 3
+          }
+        },
+        {
+          "hough_label": "H11",
+          "locklet_index": 10,
+          "model_rounding_error_rms_us": 0.10827709565388247,
+          "nearest_model_sample_fraction": 0.8297872340425532,
+          "nearest_or_adjacent_model_sample_fraction": 1.0,
+          "point_count": 47,
+          "sample_offset_counts": {
+            "-1": 3,
+            "0": 39,
+            "1": 5
+          }
+        }
+      ],
+      "insufficient_locklet_count": 9,
+      "margin_over_pss_wall_interval": {
+        "margin_pass_count": 160,
+        "margin_pass_fraction": 0.05598320503848846,
+        "median_margin": 0.00688557495360876,
+        "p90_margin": 0.012940607324714222,
+        "p99_margin": 0.1381276797670555,
+        "window_count": 2858
+      },
+      "overlapping_complete_locklets": [],
+      "stateful_replay": {
+        "branches_with_multiple_alias_candidates": 0,
+        "dealiased_branch_count": 2,
+        "final_candidate_count": 2,
+        "replay_candidate_count": 2,
+        "replay_candidates": [
+          {
+            "alias_index": 0,
+            "branch_id": "sha256:af21bb9591d36ad2dd38336b4e5b9135a84d7e8c2d171bd6ada0ca0db7513207",
+            "evaluated_probe_count": 100,
+            "median_block_corrected_margin": 0.00034368541209478,
+            "tier": "automatic"
+          },
+          {
+            "alias_index": -1,
+            "branch_id": "sha256:dc289ee0a17b455f2b49940f7118edfacdf04a28a7dcc43ede618f7e80fffda3",
+            "evaluated_probe_count": 97,
+            "median_block_corrected_margin": 0.002731641549955083,
+            "tier": "automatic"
+          }
+        ]
+      }
+    }
+  },
+  "pss": {
+    "available_unique_complete_window_count": 263,
+    "best_piecewise_quadratic": {
+      "fitted_step_us": -0.021527049825771465,
+      "rms_us": 0.02715615219754969,
+      "split_left_s": 31.3875,
+      "split_midpoint_s": 31.41875,
+      "split_right_s": 31.45
+    },
+    "frequency_hypothesis_counts": {
+      "0": 80,
+      "100000": 183
+    },
+    "global_quadratic_maximum_absolute_residual_us": 0.19630762372428723,
+    "global_quadratic_rms_us": 0.06126523139352525,
+    "nominal_wall_stride_opportunity_count": 458,
+    "polynomial_validation": {
+      "1": {
+        "blocked_cv_p95_absolute_us": 15.819057706015306,
+        "blocked_cv_rms_us": 9.331088786598716,
+        "coefficients_descending_s": [
+          9.001995480749456e-07,
+          0.0007646490737056147
+        ],
+        "in_sample_rms_us": 8.717949594629022,
+        "reference_time_s": 33.341121673003805
+      },
+      "2": {
+        "blocked_cv_p95_absolute_us": 0.13447537870533027,
+        "blocked_cv_rms_us": 0.06602580909582058,
+        "coefficients_descending_s": [
+          -1.4000908312705847e-07,
+          9.370486151166464e-07,
+          0.0007745167628724262
+        ],
+        "in_sample_rms_us": 0.06126523139352525,
+        "reference_time_s": 33.341121673003805
+      },
+      "3": {
+        "blocked_cv_p95_absolute_us": 0.07513273769211515,
+        "blocked_cv_rms_us": 0.034167633681591196,
+        "coefficients_descending_s": [
+          -1.1457791659022156e-10,
+          -1.3989898927290702e-07,
+          9.514057474309438e-07,
+          0.0007745111289263123
+        ],
+        "in_sample_rms_us": 0.031607193801946466,
+        "reference_time_s": 33.341121673003805
+      },
+      "4": {
+        "blocked_cv_p95_absolute_us": 0.060460097602607434,
+        "blocked_cv_rms_us": 0.028389450902492504,
+        "coefficients_descending_s": [
+          4.591787257579837e-12,
+          -1.259857944527791e-10,
+          -1.4071613208966294e-07,
+          9.525735371488104e-07,
+          0.0007745282984574647
+        ],
+        "in_sample_rms_us": 0.027569885873822437,
+        "reference_time_s": 33.341121673003805
+      },
+      "5": {
+        "blocked_cv_p95_absolute_us": 0.06454931828781801,
+        "blocked_cv_rms_us": 0.02939733071855975,
+        "coefficients_descending_s": [
+          9.681531893640176e-15,
+          4.548017303726149e-12,
+          -1.2818258593994718e-10,
+          -1.4070965865665551e-07,
+          9.52670242410825e-07,
+          0.000774528199021254
+        ],
+        "in_sample_rms_us": 0.02756887745782496,
+        "reference_time_s": 33.341121673003805
+      }
+    },
+    "robust_z_median": 17.985101359437266,
+    "robust_z_minimum": 6.35977393177265,
+    "secondary_track_comparison": [
+      {
+        "frequency_hypothesis_counts": {
+          "0": 34
+        },
+        "mode_count": 34,
+        "shared_time_fraction": 1.0,
+        "shared_time_phase_difference_rms_us": 0.08133721016212256,
+        "time_count_also_present_in_primary": 34,
+        "track_id": "sha256:d71319462346d729ec6dc36e24050e2b39e3c1823d0e92b6c0ffc83eb07f05cc"
+      }
+    ],
+    "selected_available_complete_window_fraction": 1.0,
+    "selected_continuity_segment_count": 7,
+    "selected_counter_gap_crossings": 6,
+    "selected_mode_count": 263,
+    "selected_nominal_wall_stride_fraction": 0.574235807860262,
+    "selected_start_s": 19.8625,
+    "selected_stop_s": 48.4425,
+    "selected_track_id": "sha256:0f8469669b8311a9fa5d12aaa63acb1bbe6fbb98ece7b855518105afa8a8c79c",
+    "selected_wall_span_s": 28.580000000000002,
+    "strong_window_fraction_median": 0.9574468085106383,
+    "track_count": 2,
+    "track_mode_counts": [
+      263,
+      34
+    ],
+    "transition_statistics": {
+      "counter_gap_crossing": {
+        "count": 6,
+        "maximum_absolute_residual_jump_us": 0.0720680749065469,
+        "median_absolute_residual_jump_us": 0.03363026782445336,
+        "p95_absolute_residual_jump_us": 0.06592093777706773
+      },
+      "frequency_hypothesis_change": {
+        "count": 17,
+        "maximum_absolute_residual_jump_us": 0.0424737870930109,
+        "median_absolute_residual_jump_us": 0.008662863629671669,
+        "p95_absolute_residual_jump_us": 0.02496947665326254
+      },
+      "ordinary": {
+        "count": 239,
+        "maximum_absolute_residual_jump_us": 0.192474729259688,
+        "median_absolute_residual_jump_us": 0.014689693825491873,
+        "p95_absolute_residual_jump_us": 0.07850824003598644
+      }
+    }
+  },
+  "schema_version": 1,
+  "source_product_digests": {
+    "glrt_epoch_RX0": "sha256:715e71e402d20e859afc679e3d10e26a744e1a082dea9f382f014f7db0a7f7a8",
+    "glrt_epoch_RX1": "sha256:0850d0a344d43745969965a9be5e2c73c5339ced794ad391d930eb310ebfccf8",
+    "glrt_full_RX0": "sha256:0cbf2d3bea8affb3caba67056796296cc0c6d3885b972d5d953b677fba626b20",
+    "glrt_full_RX1": "sha256:349c1249e28626c89570e8cdc5cb286e0c117c01ea59d502359e7973c35ddb84",
+    "pss": "sha256:864b46a408485ce69f3af2e0a413b24fb26b7830da0e0b6dec8a12575282f3de"
+  }
+}
