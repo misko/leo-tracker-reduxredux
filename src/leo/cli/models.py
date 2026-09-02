@@ -252,6 +252,15 @@ class ScheduledDwellPayloadV1(CliModel):
         return self
 
 
+class ScannerRunDataV1(CliModel):
+    """Summary for an explicitly bounded scanner-only supervisor run."""
+
+    kind: Literal["scanner_run"] = "scanner_run"
+    stopped_reason: Literal["cancelled", "maximum_scanner_runs", "error"]
+    scanner_run_count: int = Field(ge=0)
+    error: str | None = None
+
+
 class AcquisitionStatusDataV1(CliModel):
     kind: Literal["acquisition_status"] = "acquisition_status"
     backend: Literal["fake", "pluto"]
@@ -622,6 +631,7 @@ CliPayload = Annotated[
     | CaptureControlDataV1
     | RunDataV1
     | RunDataV2
+    | ScannerRunDataV1
     | AcquisitionStatusDataV1
     | ProcessHelpDataV1
     | AcquisitionQualificationReceiptV1

@@ -931,15 +931,27 @@ class LocalAcquisitionBackend:
         )
 
     def active_acquisition_operations(
-        self, *, limit: int = 200
+        self,
+        *,
+        limit: int = 200,
+        kinds: Sequence[str] | None = None,
     ) -> tuple[AcquisitionOperationRecord, ...]:
-        return self._acquisition_operation_catalog().active_acquisition_operations(limit=limit)
+        return self._acquisition_operation_catalog().active_acquisition_operations(
+            limit=limit,
+            kinds=kinds,
+        )
 
     def claim_acquisition_operation(
-        self, *, worker_id: str, lease_for: timedelta
+        self,
+        *,
+        worker_id: str,
+        lease_for: timedelta,
+        kinds: Sequence[str] | None = None,
     ) -> AcquisitionOperationLease | None:
         return self._acquisition_operation_catalog().claim_acquisition_operation(
-            worker_id=worker_id, lease_for=lease_for
+            worker_id=worker_id,
+            lease_for=lease_for,
+            kinds=kinds,
         )
 
     def complete_acquisition_operation(

@@ -34,6 +34,7 @@ from leo.cli.models import (
     RetentionDataV1,
     RunDataV1,
     RunDataV2,
+    ScannerRunDataV1,
     SessionDetailDataV1,
     SessionPathsDataV1,
     SessionSearchDataV1,
@@ -274,6 +275,21 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             int | None,
             typer.Option("--max-captures", min=1, help="Stop after N captures."),
         ] = None,
+        scanner_only: Annotated[
+            bool,
+            typer.Option(
+                "--scanner-only",
+                help="Dispatch only scanner sweeps from the durable radio queue.",
+            ),
+        ] = False,
+        maximum_scanner_runs: Annotated[
+            int | None,
+            typer.Option(
+                "--max-scanner-runs",
+                min=1,
+                help="Stop scanner-only mode after N scanner starts.",
+            ),
+        ] = None,
         mixed_rate_policy: Annotated[
             str,
             typer.Option(
@@ -285,7 +301,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     ) -> None:
         cancel = Event()
 
-        def run_foreground() -> RunDataV1 | RunDataV2:
+        def run_foreground() -> RunDataV1 | RunDataV2 | ScannerRunDataV1:
             if len(set(profile_names)) != len(profile_names):
                 raise ValueError("acquisition run profile names must be unique")
             backend = backend_factory()
@@ -302,6 +318,8 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 maximum_captures=maximum_captures,
                 cancel=cancel,
                 mixed_rate_policy=(None if mixed_rate_policy == "disabled" else mixed_rate_policy),
+                scanner_only=scanner_only,
+                maximum_scanner_runs=maximum_scanner_runs,
             )
 
         _execute(
@@ -1341,6 +1359,11 @@ def _exit_code(payload: CliPayload) -> ExitCode:
             return ExitCode.CAPTURE_FAILED
         if payload.degraded_count:
             return ExitCode.CAPTURE_DEGRADED
+    if isinstance(payload, ScannerRunDataV1):
+        if payload.stopped_reason == "cancelled":
+            return ExitCode.INTERRUPTED
+        if payload.stopped_reason == "error":
+            return ExitCode.CAPTURE_FAILED
     if isinstance(payload, AcquisitionQualificationReceiptV1):
         if payload.cancelled:
             return ExitCode.INTERRUPTED
@@ -1414,6 +1437,11 @@ def _message(payload: CliPayload) -> str:
         return f"Capture {payload.session_id} finished {payload.state.value}."
     if isinstance(payload, (RunDataV1, RunDataV2)):
         return f"Acquisition run stopped: {payload.stopped_reason}."
+    if isinstance(payload, ScannerRunDataV1):
+        return (
+            f"Scanner-only run stopped: {payload.stopped_reason}; "
+            f"{payload.scanner_run_count} scanner run(s) started."
+        )
     if isinstance(payload, AcquisitionQualificationReceiptV1):
         return (
             f"Qualification {payload.qualification_id} passed."

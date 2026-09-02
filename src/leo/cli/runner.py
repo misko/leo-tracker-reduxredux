@@ -48,6 +48,7 @@ from leo.cli.models import (
     ExitCode,
     RunDataV1,
     RunDataV2,
+    ScannerRunDataV1,
     ScheduledDwellPayloadV1,
 )
 from leo.contracts.capture_control import (
@@ -102,7 +103,7 @@ _PRODUCTION_RATE_POLICIES_V3 = frozenset(
 )
 _PRODUCTION_RATE_POLICIES = _PRODUCTION_RATE_POLICIES_V2 | _PRODUCTION_RATE_POLICIES_V3
 ProfileSelector = Callable[[tuple[str, ...], str], str]
-RunData = RunDataV1 | RunDataV2
+RunData = RunDataV1 | RunDataV2 | ScannerRunDataV1
 
 _RUNNING_CONTROL = CaptureControlStateV1(
     generation=0,
@@ -171,11 +172,23 @@ class ContinuousAcquisitionRunner:
         maximum_captures: int | None,
         cancel: Event,
         mixed_rate_policy: str | None = None,
+        scanner_only: bool = False,
+        maximum_scanner_runs: int | None = None,
     ) -> RunData:
         if interval_seconds < 0:
             raise ValueError("capture interval cannot be negative")
         if maximum_captures is not None and maximum_captures <= 0:
             raise ValueError("maximum captures must be positive")
+        if maximum_scanner_runs is not None and maximum_scanner_runs <= 0:
+            raise ValueError("maximum scanner runs must be positive")
+        if scanner_only and maximum_scanner_runs is None:
+            raise ValueError(
+                "scanner-only acquisition requires a bounded maximum scanner run count"
+            )
+        if not scanner_only and maximum_scanner_runs is not None:
+            raise ValueError("maximum scanner runs requires scanner-only acquisition")
+        if scanner_only and maximum_captures is not None:
+            raise ValueError("scanner-only acquisition cannot set maximum ordinary captures")
         if mixed_rate_policy is not None and mixed_rate_policy not in _MIXED_RATE_POLICIES:
             raise ValueError("unsupported mixed-rate dwell policy")
         if mixed_rate_policy is not None and interval_seconds <= 0:
@@ -191,7 +204,12 @@ class ContinuousAcquisitionRunner:
         ):
             raise ValueError("multi-profile acquisition requires exactly two unique radios")
         scanner = _scheduled_scanner(self.backend)
-        if scanner is not None and _durable_acquisition_queue(self.backend):
+        if scanner_only and (scanner is None or scanner.scanner_schedule() is None):
+            raise ValueError("scanner-only acquisition requires an enabled scanner schedule")
+        durable_queue = _durable_acquisition_queue(self.backend)
+        if scanner_only and not durable_queue:
+            raise ValueError("scanner-only acquisition requires the durable acquisition queue")
+        if scanner is not None and durable_queue:
             return self._run_durable_supervised(
                 profile_names,
                 radio_ids=resolved_radio_ids,
@@ -201,6 +219,8 @@ class ContinuousAcquisitionRunner:
                 cancel=cancel,
                 scanner=scanner,
                 mixed_rate_policy=mixed_rate_policy,
+                scanner_only=scanner_only,
+                maximum_scanner_runs=maximum_scanner_runs,
             )
         if mixed_rate_policy is not None:
             raise ValueError("mixed-rate dwell policy requires the durable acquisition queue")
@@ -235,6 +255,8 @@ class ContinuousAcquisitionRunner:
         cancel: Event,
         scanner: ScheduledScannerPort,
         mixed_rate_policy: str | None,
+        scanner_only: bool,
+        maximum_scanner_runs: int | None,
     ) -> RunData:
         """Persist cadence ticks before admission and dispatch one global lease."""
 
@@ -242,26 +264,27 @@ class ContinuousAcquisitionRunner:
         worker_id = f"capture-supervisor:{socket.gethostname()}:{os.getpid()}"
         lease_for = timedelta(minutes=10)
         scanner_configuration = scanner.scanner_schedule()
-        if scanner_configuration is not None:
-            scanner.reconcile_scanner_recordings()
+        scanner.reconcile_scanner_recordings()
         next_scanner_due = (
             None
             if scanner_configuration is None
             else _cadence_floor(self._utc_now(), scanner_configuration.interval_seconds)
         )
-        count = committed = degraded = failed = 0
+        count = committed = degraded = failed = scanner_run_count = 0
         last: CaptureDataV1 | None = None
         next_due = _cadence_floor(self._utc_now(), interval_seconds)
         scanner_analysis: Future[ScheduledScannerRunAnalysis] | None = None
         rate_profile_authority = (
             None
-            if mixed_rate_policy is None or mixed_rate_policy in _PRODUCTION_RATE_POLICIES
+            if scanner_only
+            or mixed_rate_policy is None
+            or mixed_rate_policy in _PRODUCTION_RATE_POLICIES
             else self.backend.mixed_rate_profile_authority()
         )
         production_profile_authority = (
-            self.backend.production_profile_authority()
-            if mixed_rate_policy in _PRODUCTION_RATE_POLICIES
-            else None
+            None
+            if scanner_only or mixed_rate_policy not in _PRODUCTION_RATE_POLICIES
+            else self.backend.production_profile_authority()
         )
 
         queue.reclaim_expired_acquisition_operations()
@@ -275,7 +298,7 @@ class ContinuousAcquisitionRunner:
             while not cancel.is_set():
                 scanner_analysis = _reap_scanner_run_analysis(scanner_analysis)
                 now_utc = self._utc_now()
-                if now_utc >= next_due:
+                if not scanner_only and now_utc >= next_due:
                     key_profiles = (
                         profile_names
                         if mixed_rate_policy is None
@@ -454,7 +477,15 @@ class ContinuousAcquisitionRunner:
                         break
                     continue
 
-                active = queue.active_acquisition_operations(limit=1)
+                if scanner_only:
+                    operation_kinds = (CaptureTaskKind.SCANNER_SWEEP.value,)
+                    active = queue.active_acquisition_operations(
+                        limit=1,
+                        kinds=operation_kinds,
+                    )
+                else:
+                    operation_kinds = None
+                    active = queue.active_acquisition_operations(limit=1)
                 if not active:
                     if cancel.wait(self._capture_control_poll_seconds):
                         break
@@ -474,7 +505,17 @@ class ContinuousAcquisitionRunner:
                         break
                     continue
 
-                lease = queue.claim_acquisition_operation(worker_id=worker_id, lease_for=lease_for)
+                if operation_kinds is None:
+                    lease = queue.claim_acquisition_operation(
+                        worker_id=worker_id,
+                        lease_for=lease_for,
+                    )
+                else:
+                    lease = queue.claim_acquisition_operation(
+                        worker_id=worker_id,
+                        lease_for=lease_for,
+                        kinds=operation_kinds,
+                    )
                 if lease is None:
                     if cancel.wait(self._radio_busy_retry_seconds):
                         break
@@ -565,6 +606,7 @@ class ContinuousAcquisitionRunner:
                                 ),
                             )
                         else:
+                            scanner_run_count += 1
                             captured = scanner.capture_scheduled_scanner(
                                 scanner_intent,
                                 cancel=cancel,
@@ -597,6 +639,14 @@ class ContinuousAcquisitionRunner:
                                     "scheduled_scanner_analysis_deferred "
                                     "reason=analysis_busy run_id=%s",
                                     captured.published.run_id,
+                                )
+                            if scanner_only and run_manifest.status != "complete":
+                                if cancel.is_set():
+                                    return _scanner_run_result("cancelled", scanner_run_count)
+                                return _scanner_run_result(
+                                    "error",
+                                    scanner_run_count,
+                                    error=run_manifest.stop_reason,
                                 )
                     else:
                         queue.fail_acquisition_operation(
@@ -640,6 +690,12 @@ class ContinuousAcquisitionRunner:
                         )
                     if not retryable:
                         logger.error("scheduled_scanner_operation_failed reason=%s", error)
+                    if scanner_only and scanner_run_count:
+                        return _scanner_run_result(
+                            "error",
+                            scanner_run_count,
+                            error=str(error),
+                        )
                 except Exception as error:
                     queue.fail_acquisition_operation(
                         operation_id=lease.operation_id,
@@ -649,7 +705,25 @@ class ContinuousAcquisitionRunner:
                         retry_after=timedelta(seconds=self._radio_busy_retry_seconds),
                     )
                     logger.exception("durable_acquisition_operation_failed")
+                    if scanner_only and scanner_run_count:
+                        return _scanner_run_result(
+                            "error",
+                            scanner_run_count,
+                            error=f"{type(error).__name__}: {error}",
+                        )
 
+                if (
+                    scanner_only
+                    and maximum_scanner_runs is not None
+                    and scanner_run_count >= maximum_scanner_runs
+                ):
+                    return _scanner_run_result(
+                        "maximum_scanner_runs",
+                        scanner_run_count,
+                    )
+
+        if scanner_only:
+            return _scanner_run_result("cancelled", scanner_run_count)
         return _run_result(profile_names, "cancelled", count, committed, degraded, failed, last)
 
     def _run_capture_only(
@@ -737,7 +811,7 @@ class ContinuousAcquisitionRunner:
         now = self._clock()
         next_capture_due = now
         scanner_configuration = scanner.scanner_schedule() if scanner is not None else None
-        if scanner is not None and scanner_configuration is not None:
+        if scanner is not None:
             scanner.reconcile_scanner_recordings()
         next_scanner_slot = (
             None
@@ -1202,3 +1276,16 @@ def _run_result(
     if len(profile_names) == 1:
         return RunDataV1(profile_name=profile_names[0], **common)
     return RunDataV2(profile_names=profile_names, **common)
+
+
+def _scanner_run_result(
+    reason: str,
+    count: int,
+    *,
+    error: str | None = None,
+) -> ScannerRunDataV1:
+    return ScannerRunDataV1(
+        stopped_reason=cast(Any, reason),
+        scanner_run_count=count,
+        error=error,
+    )

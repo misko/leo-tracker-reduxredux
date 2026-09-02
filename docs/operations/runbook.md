@@ -129,6 +129,61 @@ invalid profile, or unhealthy database as a stop condition. The Pluto timing
 is best-effort overlap with measured uncertainty; it is not hardware trigger
 or cross-radio phase coherence.
 
+## Bounded two-rate scanner canary
+
+Do not collect scanner RF without explicit operator authorization for that
+specific run. Keep `LEO_SCANNER_ENABLED=false` in `/etc/leo/leo.env` while
+qualifying the scanner. A canary consists of two adjacent UTC scanner slots:
+one 300-second 2.5 MS/s run and one 300-second 5 MS/s run. Start within the
+configured 120-second lateness allowance after a 20-minute UTC boundary; the
+second run then finishes about 25 minutes after that boundary.
+
+First pause and drain the shared capture authority, then stop the normal
+supervisor. Verify that no acquisition operation remains leased:
+
+```text
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire pause --reason "bounded two-rate scanner canary" \
+    --operator operator --wait --json'
+sudo systemctl stop leo-acquisition.service
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire status --json'
+```
+
+Immediately after an eligible boundary, resume the durable authority and run
+the scanner-only supervisor with both an operation-count bound and a 29-minute
+wall-clock backstop. The environment override applies only to this foreground
+process; it does not enable scanning for the normal service. Scanner-only queue
+claims skip all pending ordinary dwells while retaining the global radio mutex.
+
+```text
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; \
+  export LEO_SCANNER_ENABLED=true; set +a; \
+  leo acquire resume --operator operator --json; \
+  timeout --signal=TERM --kill-after=30s 29m \
+    leo acquire run --profile "$LEO_CAPTURE_PROFILE" \
+      --scanner-only --max-scanner-runs 2 --json'
+```
+
+Whether the canary succeeds or fails, pause before restarting the normal
+service. The checked-in environment keeps its scanner disabled:
+
+```text
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo acquire pause --reason "scanner canary complete" \
+    --operator operator --wait --json'
+sudo systemctl start leo-acquisition.service
+```
+
+Accept the canary only when exactly two new run manifests are `complete`, their
+sample-rate set is `{2500000, 5000000}`, each RF bandwidth equals its sample
+rate, each dwell is 120 ms, every run lasts approximately 300 seconds, and the
+target order is CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U. Also verify
+every referenced sweep bundle opens with its recorded manifest digest and that
+standard analysis completes. Leave recurring scanning disabled until scanner
+IQ has a reviewed, tested local-retention path; at the configured cadence its
+conservative raw growth is 649,036,800,000 bytes/day.
+
 ## First capture and normal services
 
 Each canonical profile records 60 seconds and

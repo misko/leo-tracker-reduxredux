@@ -7,7 +7,7 @@ import tomllib
 from dataclasses import replace
 from pathlib import Path
 from threading import Event
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from typer.testing import CliRunner
@@ -444,6 +444,15 @@ def test_run_accepts_an_exact_repeated_profile_pool_and_emits_v2_json() -> None:
     assert backend.capture_requests == [
         (payload["last_capture"]["profile_name"], ("radio-a", "radio-b"))
     ]
+
+
+def test_run_help_exposes_bounded_scanner_only_controls() -> None:
+    result = runner.invoke(create_cli(lambda: cast(Any, None)), ["acquire", "run", "--help"])
+
+    assert result.exit_code == ExitCode.OK, result.stdout
+    assert "--scanner-only" in result.stdout
+    assert "--max-scanner-runs" in result.stdout
+    assert "after N scanner starts" in result.stdout
 
 
 def test_admission_rejection_has_distinct_automation_exit(configured_cli) -> None:

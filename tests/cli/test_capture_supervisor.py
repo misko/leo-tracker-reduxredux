@@ -100,6 +100,8 @@ class _SupervisorBackend:
         self.scanner_capture_times: list[float] = []
         self.events: list[str] = []
         self.analyzed = Event()
+        self.scanner_status = "complete"
+        self.scanner_stop_reason = "complete"
 
     def reconcile_scanner_recordings(self) -> None:
         self.events.append("reconcile")
@@ -151,7 +153,10 @@ class _SupervisorBackend:
         return SimpleNamespace(
             published=SimpleNamespace(
                 run_id=f"run-{len(self.scanner_capture_times)}",
-                manifest=SimpleNamespace(status="complete", stop_reason="complete"),
+                manifest=SimpleNamespace(
+                    status=self.scanner_status,
+                    stop_reason=self.scanner_stop_reason,
+                ),
             ),
             sweeps=(1,),
         )
@@ -211,14 +216,25 @@ class _DurableSupervisorBackend(_SupervisorBackend):
         self.operations.append(item)
         return item
 
-    def active_acquisition_operations(self, *, limit=200):
-        active = tuple(item for item in self.operations if item.state in {"pending", "leased"})
+    def active_acquisition_operations(self, *, limit=200, kinds=None):
+        active = tuple(
+            item
+            for item in self.operations
+            if item.state in {"pending", "leased"} and (kinds is None or item.kind in kinds)
+        )
         return active[:limit]
 
-    def claim_acquisition_operation(self, *, worker_id, lease_for):
+    def claim_acquisition_operation(self, *, worker_id, lease_for, kinds=None):
         if any(item.state == "leased" for item in self.operations):
             return None
-        item = next((item for item in self.operations if item.state == "pending"), None)
+        item = next(
+            (
+                item
+                for item in self.operations
+                if item.state == "pending" and (kinds is None or item.kind in kinds)
+            ),
+            None,
+        )
         if item is None:
             return None
         item.state = "leased"
@@ -864,6 +880,137 @@ def test_durable_scanner_admission_failure_does_not_stop_ordinary_capture() -> N
     assert backend.capture_times == [0.0, 10.0]
     assert [item.state for item in scanner[:2]] == ["failed", "failed"]
     assert all(item.retryable is False for item in scanner[:2])
+
+
+def test_durable_scanner_only_is_bounded_and_does_not_consume_ordinary_work() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    ordinary = backend.enqueue_acquisition_operation(
+        operation_key="dwell:preexisting",
+        kind="scheduled_recording",
+        payload={
+            "profile_name": "test-profile",
+            "radio_ids": ["radio-a"],
+            "extra_tags": [],
+        },
+        scheduled_for=start - timedelta(minutes=1),
+    )
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=None,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        scanner_only=True,
+        maximum_scanner_runs=2,
+    )
+
+    scanners = [item for item in backend.operations if item.kind == "scanner_sweep"]
+    assert summary.kind == "scanner_run"
+    assert summary.stopped_reason == "maximum_scanner_runs"
+    assert summary.scanner_run_count == 2
+    assert backend.capture_times == []
+    assert backend.scanner_capture_times == [0.0, 5.0]
+    assert ordinary.state == "pending"
+    assert ordinary.attempt_count == 0
+    assert [item.state for item in scanners] == ["succeeded", "succeeded"]
+
+
+def test_scanner_only_stops_after_a_failed_started_run() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    backend.scanner_status = "failed"
+    backend.scanner_stop_reason = "radio stream ended early"
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=None,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        scanner_only=True,
+        maximum_scanner_runs=2,
+    )
+
+    assert summary.kind == "scanner_run"
+    assert summary.stopped_reason == "error"
+    assert summary.scanner_run_count == 1
+    assert summary.error == "radio stream ended early"
+    assert backend.scanner_capture_times == [0.0]
+    scanner = next(item for item in backend.operations if item.kind == "scanner_sweep")
+    assert scanner.state == "failed"
+
+
+def test_scanner_only_requires_an_explicit_positive_bound() -> None:
+    backend = cast(AcquisitionCliBackend, _SupervisorBackend(_Clock()))
+    runner = ContinuousAcquisitionRunner(backend)
+
+    with pytest.raises(ValueError, match="requires a bounded maximum scanner run count"):
+        runner.run(
+            "test-profile",
+            radio_ids=("radio-a",),
+            extra_tags=(),
+            interval_seconds=10.0,
+            maximum_captures=None,
+            cancel=Event(),
+            scanner_only=True,
+        )
+    with pytest.raises(ValueError, match="requires scanner-only acquisition"):
+        runner.run(
+            "test-profile",
+            radio_ids=("radio-a",),
+            extra_tags=(),
+            interval_seconds=10.0,
+            maximum_captures=None,
+            cancel=Event(),
+            maximum_scanner_runs=2,
+        )
+    with pytest.raises(ValueError, match="requires the durable acquisition queue"):
+        runner.run(
+            "test-profile",
+            radio_ids=("radio-a",),
+            extra_tags=(),
+            interval_seconds=10.0,
+            maximum_captures=None,
+            cancel=Event(),
+            scanner_only=True,
+            maximum_scanner_runs=2,
+        )
+
+
+def test_durable_supervisor_reconciles_scanner_evidence_while_schedule_is_disabled() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.scanner_schedule = lambda: None  # type: ignore[method-assign]
+    cancel = Event()
+    cancel.set()
+
+    summary = ContinuousAcquisitionRunner(cast(AcquisitionCliBackend, backend)).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=None,
+        cancel=cancel,
+    )
+
+    assert summary.stopped_reason == "cancelled"
+    assert backend.events == ["reconcile"]
 
 
 def test_durable_multi_profile_dwell_persists_one_selection_for_both_radios_and_retry() -> None:
