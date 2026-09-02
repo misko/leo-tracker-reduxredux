@@ -27,6 +27,8 @@ CURRENT_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-current-rele
 CACHE_PREPARER = PROJECT_ROOT / "deploy" / "scripts" / "prepare-leo-cache"
 CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 FAST_API_RESTART = PROJECT_ROOT / "deploy" / "scripts" / "restart-current-api"
+FAST_WORKER_RESTART = PROJECT_ROOT / "deploy" / "scripts" / "restart-current-workers"
+FAST_ACQUISITION_RESTART = PROJECT_ROOT / "deploy" / "scripts" / "restart-current-acquisition"
 COMPONENT_SELECTOR = PROJECT_ROOT / "deploy" / "scripts" / "select-component-release"
 
 
@@ -95,6 +97,40 @@ def test_component_selector_is_atomic_bounded_and_syntax_valid() -> None:
     subprocess.run(("/usr/bin/bash", "-n", str(COMPONENT_SELECTOR)), check=True)
 
 
+def test_fast_worker_restart_checks_full_inventory_and_fails_stopped() -> None:
+    text = FAST_WORKER_RESTART.read_text()
+
+    assert FAST_WORKER_RESTART.stat().st_mode & 0o111
+    assert "current-worker" in text
+    assert "/etc/leo/worker.env" in text
+    assert "LEO_PIPELINE_RELEASE_ID" in text
+    assert "index <= 20" in text
+    assert 'systemctl restart "${worker_units[@]}"' in text
+    assert 'systemctl stop "${worker_units[@]}"' in text
+    assert "MainPID" in text
+    for forbidden in ("leo-api.service", "leo-acquisition.service", "alembic", "/mnt/qnap01"):
+        assert forbidden not in text
+    subprocess.run(("/usr/bin/bash", "-n", str(FAST_WORKER_RESTART)), check=True)
+
+
+def test_fast_acquisition_restart_drains_and_restores_authority_state() -> None:
+    text = FAST_ACQUISITION_RESTART.read_text()
+
+    assert FAST_ACQUISITION_RESTART.stat().st_mode & 0o111
+    assert "current-acquisition" in text
+    assert "/etc/leo/acquisition.env" in text
+    assert "LEO_ACQUISITION_RELEASE_ID" in text
+    assert "acquire pause" in text
+    assert "--wait --timeout-seconds 90" in text
+    assert "acquire resume" in text
+    assert "original_desired_state" in text
+    assert "capture remains durably paused and the service is stopped" in text
+    assert "MainPID" in text
+    for forbidden in ("leo-api.service", "leo-worker@", "alembic", "/mnt/qnap01"):
+        assert forbidden not in text
+    subprocess.run(("/usr/bin/bash", "-n", str(FAST_ACQUISITION_RESTART)), check=True)
+
+
 def test_systemd_analyze_accepts_every_template() -> None:
     executable = shutil.which("systemd-analyze")
     assert executable is not None, "systemd-analyze is required for deployment validation"
@@ -139,6 +175,16 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
         "/opt/leo-tracker/current-api/.venv/bin/leo-api"
     )
     assert "uvicorn" not in api["ExecStart"]
+
+
+def test_worker_component_release_identity_has_a_narrow_environment_override() -> None:
+    drop_in = UNIT_ROOT / "leo-worker@.service.d/20-component-environment.conf"
+    example = PROJECT_ROOT / "deploy/etc/leo/worker.env.example"
+
+    assert drop_in.read_text() == "[Service]\nEnvironmentFile=/etc/leo/worker.env\n"
+    assert "LEO_PIPELINE_RELEASE_ID=REPLACE_WITH_EXACT_40_CHARACTER_RELEASE_SHA" in (
+        example.read_text()
+    )
 
 
 def test_every_python_service_forces_bytecode_suppression_at_exec_boundary() -> None:
@@ -503,7 +549,12 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "current.next" not in stage
     assert '"$script_root/prepare-leo-cache"' in stage
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in stage
-    assert stage.index("trap cleanup EXIT") < stage.index("git clone")
+    assert stage.index("trap cleanup EXIT") < stage.index('git -C "$source_real" archive')
+    assert "git clone" not in stage
+    assert "' :(exclude)reports'" not in stage
+    assert "':(exclude)reports'" in stage
+    assert ".leo-release-source.json" in stage
+    assert 'chmod 0440 "$release_dir/$source_identity_name"' in stage
     assert 'rm -rf --one-file-system -- "$staging_dir"' in stage
     assert 'mv -- "$staging_dir" "$release_dir"' in stage
     assert stage.index('mv -- "$staging_dir" "$release_dir"') < stage.index(
@@ -619,5 +670,10 @@ def test_cutover_verifier_fails_before_host_access_for_non_exact_revision() -> N
     assert "full lowercase 40-character SHA" in result.stderr
 
 
-def test_staged_release_git_check_disables_optional_index_writes() -> None:
-    assert "export GIT_OPTIONAL_LOCKS=0" in STAGE_CHECKER.read_text()
+def test_staged_release_check_is_git_free_and_uses_sealed_source_identity() -> None:
+    text = STAGE_CHECKER.read_text()
+
+    assert ".leo-release-source.json" in text
+    assert "org\\.leo\\.release-source/v1" in text
+    assert "git -C" not in text
+    assert "GIT_OPTIONAL_LOCKS" not in text

@@ -36,6 +36,11 @@ def _published(
     tooling.parent.mkdir()
     python.parent.mkdir()
     tooling.write_bytes(uv_bytes)
+    source_identity = release / ".leo-release-source.json"
+    tree = "e" * 40
+    source_identity.write_text(
+        f'{{"schema":"org.leo.release-source/v1","revision":"{revision}","tree":"{tree}"}}\n'
+    )
     python.write_text("#!/bin/sh\nprintf '3.14\\n'\n")
     python.chmod(0o755)
     (release / "uv.lock").write_text("python-lock\n")
@@ -62,6 +67,7 @@ def _published(
     paths = (
         python,
         tooling,
+        source_identity,
         release / "uv.lock",
         release / "web/package-lock.json",
         receipt,

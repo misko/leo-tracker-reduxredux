@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# Drain radio ownership before restarting acquisition from an already-selected
+# immutable release. On failure capture stays paused and the service stays down.
+set -euo pipefail
+
+if [[ $# -ne 0 ]]; then
+  echo "usage: sudo $0" >&2
+  exit 64
+fi
+if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+  echo "restart-current-acquisition must run as root" >&2
+  exit 77
+fi
+
+current=/opt/leo-tracker/current-acquisition
+[[ -L "$current" ]] || { echo "current acquisition release selector is not a symlink" >&2; exit 65; }
+target=$(/usr/bin/readlink -- "$current")
+[[ "$target" =~ ^releases/([0-9a-f]{40})$ ]] || {
+  echo "current acquisition selector is not one exact relative release SHA" >&2
+  exit 65
+}
+revision=${BASH_REMATCH[1]}
+release=/opt/leo-tracker/releases/$revision
+metadata=/opt/leo-tracker/release-metadata/$revision.txt
+
+[[ -d "$release" && ! -L "$release" ]] || { echo "selected acquisition release is unavailable" >&2; exit 65; }
+[[ -x "$release/.venv/bin/leo" ]] || { echo "selected release has no acquisition entrypoint" >&2; exit 65; }
+[[ -f "$metadata" && ! -L "$metadata" ]] || { echo "selected release has no sealed metadata" >&2; exit 65; }
+[[ $(/usr/bin/stat -c '%U:%G:%a' -- "$metadata") == root:leo:440 ]] || {
+  echo "selected release metadata ownership or mode is invalid" >&2
+  exit 65
+}
+
+acquisition_environment=/etc/leo/acquisition.env
+[[ -f "$acquisition_environment" && ! -L "$acquisition_environment" ]] || {
+  echo "acquisition component environment is unavailable" >&2
+  exit 65
+}
+mapfile -t release_bindings < <(
+  /usr/bin/sed -n 's/^[[:space:]]*LEO_ACQUISITION_RELEASE_ID=\([^#[:space:]]*\)[[:space:]]*$/\1/p' \
+    "$acquisition_environment"
+)
+[[ ${#release_bindings[@]} -eq 1 && ${release_bindings[0]} = "$revision" ]] || {
+  echo "acquisition component environment does not bind the selected release" >&2
+  exit 65
+}
+
+run_leo() {
+  /usr/sbin/runuser -u leo -- /bin/bash -c \
+    'set -a; source /etc/leo/leo.env; source /etc/leo/acquisition.env; set +a; exec "$@"' \
+    acquisition-component-cutover "$release/.venv/bin/leo" "$@"
+}
+
+if ! status_json=$(run_leo acquire status --json); then
+  echo "cannot read capture authority before acquisition restart" >&2
+  exit 1
+fi
+if ! original_desired_state=$(printf '%s' "$status_json" | "$release/.venv/bin/python" -c \
+  'import json,sys; print(json.load(sys.stdin)["payload"]["capture_control"]["desired_state"])'); then
+  echo "capture authority status is malformed" >&2
+  exit 65
+fi
+[[ "$original_desired_state" =~ ^(running|paused)$ ]] || {
+  echo "capture authority has an unsupported desired state" >&2
+  exit 65
+}
+
+safety_armed=false
+completed=false
+cleanup() {
+  exit_code=$?
+  trap - EXIT
+  if $safety_armed && ! $completed; then
+    /usr/bin/systemctl stop leo-acquisition.service >/dev/null 2>&1 || true
+    if run_leo acquire pause --operator component-cutover \
+      --reason "failed acquisition restart at release $revision" \
+      --wait --timeout-seconds 90 --json >/dev/null 2>&1; then
+      echo "acquisition cutover failed; capture remains durably paused and the service is stopped" >&2
+    else
+      echo "acquisition cutover failed and the service is stopped; durable pause could not be reconfirmed" >&2
+    fi
+  fi
+  exit "$exit_code"
+}
+trap cleanup EXIT
+
+safety_armed=true
+pause_json=$(run_leo acquire pause --operator component-cutover \
+  --reason "restart acquisition at release $revision" \
+  --wait --timeout-seconds 90 --json)
+pause_state=$(printf '%s' "$pause_json" | "$release/.venv/bin/python" -c \
+  'import json,sys; s=json.load(sys.stdin)["payload"]["state"]; print(s["desired_state"], s["observed_state"])')
+[[ "$pause_state" = "paused paused" ]] || {
+  echo "capture authority did not prove a complete drain" >&2
+  exit 1
+}
+started_ns=$(/usr/bin/date +%s%N)
+/usr/bin/systemctl restart leo-acquisition.service
+
+stable=0
+for ((attempt = 0; attempt < 300; attempt += 1)); do
+  if /usr/bin/systemctl is-active --quiet leo-acquisition.service; then
+    pid=$(/usr/bin/systemctl show --property=MainPID --value leo-acquisition.service)
+    if [[ "$pid" =~ ^[1-9][0-9]*$ ]]; then
+      stable=$((stable + 1))
+      if ((stable >= 10)); then
+        break
+      fi
+    else
+      stable=0
+    fi
+  else
+    stable=0
+  fi
+  /usr/bin/sleep 0.1
+done
+((stable >= 10)) || {
+  echo "acquisition did not remain healthy within 30 seconds" >&2
+  /usr/bin/systemctl status leo-acquisition.service --no-pager >&2 || true
+  /usr/bin/journalctl -u leo-acquisition.service --since '1 minute ago' --no-pager -n 120 >&2 || true
+  exit 1
+}
+
+if [[ "$original_desired_state" = running ]]; then
+  resume_json=$(run_leo acquire resume --operator component-cutover \
+    --reason "acquisition restart at release $revision passed health checks" \
+    --json)
+  resumed_state=$(printf '%s' "$resume_json" | "$release/.venv/bin/python" -c \
+    'import json,sys; s=json.load(sys.stdin)["payload"]["state"]; print(s["desired_state"], s["observed_state"])')
+  [[ "$resumed_state" = "running running" ]] || {
+    echo "capture authority did not prove a complete resume" >&2
+    exit 1
+  }
+fi
+
+finished_ns=$(/usr/bin/date +%s%N)
+elapsed_ms=$(((finished_ns - started_ns) / 1000000))
+completed=true
+trap - EXIT
+echo "ACQUISITION READY release=$revision capture=$original_desired_state elapsed_ms=$elapsed_ms"

@@ -9,14 +9,15 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field
 
 from leo.catalog import ActiveRunExistsError, CatalogRepository, IdenticalRunExistsError
-from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3, RecordingManifestV4
-from leo.pipeline import compile_standard_run_plan
 from leo.pipeline.standard_native import (
     compile_standard_native_default_run_plan,
     compile_standard_native_run_plan,
 )
-from leo.presentation.standard_pipeline import StandardSourceTypeV2, standard_eligibility_v2
-from leo.processing import ProcessingService
+from leo.processing import (
+    ProcessingService,
+    UnsupportedOnlineRecordingManifestError,
+    require_online_recording_manifest,
+)
 from leo.storage import RecordingStore
 
 
@@ -49,7 +50,7 @@ class StandardReprocessResultV1(BaseModel):
 
 
 class StandardNativeEvidenceResultV1(BaseModel):
-    """Acknowledgement for a non-promotable reviewed V2/V3 native evidence run."""
+    """Acknowledgement for a non-promotable current-format native evidence run."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -125,24 +126,10 @@ class StandardReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
-        native_current = isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4))
-        if not native_current:
-            if "CAPTURE_ONLY" in bundle.manifest.tags:
-                raise StandardReprocessError(
-                    "capture-only recording requires a separately versioned scientific pipeline"
-                )
-            healthy = all(
-                stream.captured_sample_count > 0 and bool(stream.chunks)
-                for stream in bundle.manifest.streams
-            )
-            eligibility = standard_eligibility_v2(
-                StandardSourceTypeV2(bundle.manifest.source_type.value.upper()),
-                bundle.manifest.tags,
-                capture_committed=bundle.manifest.state.value == "committed",
-                capture_healthy=healthy,
-            )
-            if not eligibility.explicit_eligible:
-                raise StandardReprocessError(eligibility.reason)
+        try:
+            manifest = require_online_recording_manifest(bundle.manifest)
+        except UnsupportedOnlineRecordingManifestError as error:
+            raise StandardReprocessError(str(error)) from error
         try:
             release = self._catalog.pipeline_release_snapshot(self._pipeline_release_id)
         except Exception as error:
@@ -155,18 +142,11 @@ class StandardReprocessService:
             )
 
         try:
-            if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
-                plan = compile_standard_native_default_run_plan(
-                    bundle.manifest,
-                    manifest_digest=snapshot.manifest_digest,
-                    pipeline_release_id=self._pipeline_release_id,
-                )
-            else:
-                plan = compile_standard_run_plan(
-                    bundle.manifest,
-                    manifest_digest=snapshot.manifest_digest,
-                    pipeline_release_id=self._pipeline_release_id,
-                )
+            plan = compile_standard_native_default_run_plan(
+                manifest,
+                manifest_digest=snapshot.manifest_digest,
+                pipeline_release_id=self._pipeline_release_id,
+            )
         except ValueError as error:
             raise StandardReprocessError(str(error)) from error
         run_id = f"reprocess-{uuid4().hex}"
@@ -177,7 +157,7 @@ class StandardReprocessService:
                 plan=plan,
                 trigger="reprocess",
                 promotion_policy=(
-                    "evidence_only" if bundle.manifest.source_type.value == "test" else "current"
+                    "evidence_only" if manifest.source_type.value == "test" else "current"
                 ),
             )
         except IdenticalRunExistsError as error:
@@ -195,7 +175,7 @@ class StandardReprocessService:
         )
 
     def queue_native_evidence(self, session_id: str) -> StandardNativeEvidenceResultV1:
-        """Verify and queue one reviewed V2/V3 run that can never become CURRENT."""
+        """Verify and queue one current-format run that can never become CURRENT."""
 
         if (
             not session_id
@@ -219,13 +199,10 @@ class StandardReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
-        if not isinstance(
-            bundle.manifest,
-            (RecordingManifestV2, RecordingManifestV3, RecordingManifestV4),
-        ):
-            raise StandardReprocessError(
-                "native evidence action requires a reviewed V2/V3/V4 recording"
-            )
+        try:
+            manifest = require_online_recording_manifest(bundle.manifest)
+        except UnsupportedOnlineRecordingManifestError as error:
+            raise StandardReprocessError(str(error)) from error
         try:
             release = self._catalog.pipeline_release_snapshot(self._pipeline_release_id)
         except Exception as error:
@@ -238,7 +215,7 @@ class StandardReprocessService:
             )
         try:
             plan = compile_standard_native_run_plan(
-                bundle.manifest,
+                manifest,
                 manifest_digest=snapshot.manifest_digest,
                 pipeline_release_id=self._pipeline_release_id,
             )

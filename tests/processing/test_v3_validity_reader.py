@@ -8,14 +8,12 @@ import pytest
 import zstandard as zstd
 
 from leo.catalog import CaptureRecordingIdentity, RunExecutionInfo
-from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.recording import DeviceAxisRecordingChunkV1, RecordingManifestV3
 from leo.contracts.validity import DeviceAxisContentKind
 from leo.pipeline import ScopeIdentityV1, WindowValidity
 from leo.processing import RecordingIqReaderProvider
-from leo.radio import FakeRadioSource
 from leo.storage import BundleCorruptionError
-from tests.acquisition.test_continuity_capture_v2 import _coordinator, _plan
 from tests.storage.test_recording_store_v3 import _decompress, _prepare_v3_bundle
 
 
@@ -87,135 +85,6 @@ def test_v3_provider_exposes_only_verified_mandatory_validity_iq(tmp_path: Path)
     reader.close()
     with pytest.raises(RuntimeError, match="closed"):
         reader.read_device_span(0, 1)
-
-
-@pytest.mark.parametrize(
-    ("gaps_before_blocks", "logical_sample_count"),
-    (({}, 8), ({1: 4}, 12)),
-)
-def test_v2_synthesized_and_v3_physical_views_are_bit_and_digest_equivalent(
-    tmp_path: Path,
-    gaps_before_blocks: dict[int, int],
-    logical_sample_count: int,
-) -> None:
-    suffix = "gapped" if gaps_before_blocks else "lossless"
-    v3 = _prepare_v3_bundle(
-        tmp_path / "v3",
-        f"parity-v3-{suffix}",
-        requested_sample_count=logical_sample_count,
-        gaps_before_blocks=gaps_before_blocks,
-    )
-    v3_published = v3.writer.publish(v3.manifest)
-    v2_coordinator = _coordinator(tmp_path / "v2")
-    v2_result = v2_coordinator.capture_once(
-        _plan(sample_count=logical_sample_count, sample_rate_hz=5_000_000),
-        {
-            "radio-a": FakeRadioSource(
-                "radio-a",
-                seed=23,
-                gaps_before_blocks=gaps_before_blocks,
-            )
-        },
-        session_id=f"parity-v2-{suffix}",
-    )
-    assert v2_result.bundle is not None
-    v2_published = v2_result.bundle
-
-    v2_provider = RecordingIqReaderProvider(
-        v2_coordinator.store,
-        allow_unpinned_integrity_for_tests=True,
-    )
-    v3_provider = RecordingIqReaderProvider(
-        v3.store,
-        allow_unpinned_integrity_for_tests=True,
-    )
-    v2_attestation = v2_provider.verify_integrity(_identity(v2_published))
-    v3_attestation = v3_provider.verify_integrity(_identity(v3_published))
-    v2_evidence = v2_provider.verified_historical_v2_native_stream_evidence(
-        v2_attestation.attestation_digest,
-        "stream-0",
-    )
-    v3_stream = v3_published.manifest.streams[0]
-    assert v2_evidence.raw_integrity_attestation_digest == v2_attestation.attestation_digest
-    assert v2_evidence.selected_stream_digest == canonical_digest(
-        v2_published.manifest.streams[0].model_dump(mode="json")
-    )
-    assert v2_evidence.uncompressed_chunk_closure_digest == (
-        v2_attestation.streams[0].uncompressed_closure_digest
-    )
-    assert v2_evidence.observed_iq_digest == v3_stream.observed_iq_sha256
-    assert v2_evidence.logical_iq_digest == v3_stream.logical_iq_sha256
-    assert (v2_evidence.observed_iq_digest == v2_evidence.logical_iq_digest) is (
-        not gaps_before_blocks
-    )
-    v2_reader = v2_provider.open_validity_scope(
-        _execution(v2_published, v2_attestation),
-        _scope(v2_published.session_id, "stream-0"),
-    )
-    v3_reader = v3_provider.open_validity_scope(
-        _execution(v3_published, v3_attestation),
-        _scope(v3_published.session_id, "stream-a"),
-    )
-
-    v2_span = v2_reader.read_device_span(0, logical_sample_count)
-    v3_span = v3_reader.read_device_span(0, logical_sample_count)
-    np.testing.assert_array_equal(v3_span.samples, v2_span.samples)
-    np.testing.assert_array_equal(v3_span.valid_samples, v2_span.valid_samples)
-    np.testing.assert_array_equal(
-        v3_span.continuity_segment_ids,
-        v2_span.continuity_segment_ids,
-    )
-    assert [
-        (
-            run.content_kind,
-            run.device_sample_start,
-            run.sample_count,
-            run.stored_sample_start,
-            run.continuity_segment_index,
-        )
-        for run in v3_reader.validity_inventory.runs
-    ] == [
-        (
-            run.content_kind,
-            run.device_sample_start,
-            run.sample_count,
-            run.stored_sample_start,
-            run.continuity_segment_index,
-        )
-        for run in v2_reader.validity_inventory.runs
-    ]
-    assert [
-        (
-            segment.device_sample_start,
-            segment.device_sample_stop,
-            segment.stored_sample_start,
-            segment.stored_sample_stop,
-            segment.preceding_missing_sample_count,
-            segment.preceding_boundary_reason,
-        )
-        for segment in v3_reader.validity_inventory.segments
-    ] == [
-        (
-            segment.device_sample_start,
-            segment.device_sample_stop,
-            segment.stored_sample_start,
-            segment.stored_sample_stop,
-            segment.preceding_missing_sample_count,
-            segment.preceding_boundary_reason,
-        )
-        for segment in v2_reader.validity_inventory.segments
-    ]
-    for start in range(logical_sample_count):
-        for count in range(1, logical_sample_count + 1 - start):
-            assert v3_reader.classify_window(start, count) == v2_reader.classify_window(
-                start,
-                count,
-            )
-
-    v2_reader.close()
-    v3_reader.close()
-    v2_provider.close()
-    v3_provider.close()
 
 
 def test_v3_provider_rejects_validity_and_physical_zero_tamper(tmp_path: Path) -> None:

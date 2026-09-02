@@ -37,7 +37,7 @@ from leo.processing import ProcessingService
 from leo.processing.adapters import IqReaderProvider
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
-from tests.pipeline.test_standard_native_topology import _manifest, _reviewed_v2_manifest
+from tests.pipeline.test_standard_native_topology import _manifest
 from tests.processing.test_mixed_rate_standard_native_operational_vertical import (
     _RADIO_IDS,
     _bounded_direct_async_plan,
@@ -133,29 +133,10 @@ def _system():  # noqa: ANN202
     return service, catalog, plan, manifest
 
 
-def _historical_v2_system():  # noqa: ANN202
-    manifest = _reviewed_v2_manifest(5_000_000)
-    manifest_digest = canonical_digest({"manifest": "historical-v2-native-service"})
-    plan = compile_standard_native_run_plan(
-        manifest,
-        manifest_digest=manifest_digest,
-        pipeline_release_id=_RELEASE,
-    )
-    catalog = _Catalog(manifest_digest)
-    provider = _Provider(manifest, manifest_digest)
-    service = ProcessingService(
-        catalog=cast(CatalogRepository, catalog),
-        artifacts=cast(AnalysisArtifactStore, SimpleNamespace()),
-        registry=production_standard_native_evidence_registry(),
-        iq_readers=cast(IqReaderProvider, provider),
-    )
-    return service, catalog, plan
-
-
 def test_native_plan_cannot_enter_research_lane() -> None:
     service, _, plan, _ = _system()
 
-    with pytest.raises(ValueError, match="disjoint Standard-lane"):
+    with pytest.raises(ValueError, match="require the Standard-native graph"):
         service.create_expanded_run(
             run_id="native-run",
             plan=plan,
@@ -268,28 +249,6 @@ def test_v3_current_requires_station_promotion_authority(
     assert catalog.created is None
 
 
-@pytest.mark.parametrize(
-    ("trigger", "promotion"),
-    (("new_capture", "evidence_only"), ("reprocess", "current")),
-)
-def test_historical_v2_native_plan_never_enters_automatic_or_current(
-    trigger: str,
-    promotion: str,
-) -> None:
-    service, catalog, plan = _historical_v2_system()
-
-    with pytest.raises(ValueError, match="V2 requires a manual Standard-lane evidence-only"):
-        service.create_expanded_run(
-            run_id="historical-v2-native-run",
-            plan=plan,
-            trigger=trigger,  # type: ignore[arg-type]
-            pipeline_lane=PipelineLane.STANDARD,
-            promotion_policy=promotion,
-        )
-
-    assert catalog.created is None
-
-
 def test_v3_manifest_cannot_enter_frozen_standard_graph() -> None:
     service, _, _, manifest = _system()
     scope = ScopeIdentityV1.receiver_path(
@@ -313,7 +272,7 @@ def test_v3_manifest_cannot_enter_frozen_standard_graph() -> None:
         edges=(),
     )
 
-    with pytest.raises(ValueError, match="frozen Standard accepts only V1/V2"):
+    with pytest.raises(ValueError, match="require the Standard-native graph"):
         service.create_expanded_run(
             run_id="foreign-run",
             plan=plan,

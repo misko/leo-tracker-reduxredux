@@ -8,6 +8,7 @@ import socket
 import subprocess
 import time
 import tomllib
+from argparse import Namespace
 from pathlib import Path
 from typing import Any
 
@@ -21,11 +22,13 @@ from leo.contracts.profile import CaptureProfileRevisionV2
 from leo.contracts.states import SourceType
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.qualification.release_contract import (
-    RELEASE_QUALIFICATION_V2_COMMAND_NAMES,
-    RELEASE_QUALIFICATION_V2_JUNIT_PATHS,
-    RELEASE_QUALIFICATION_V2_LOG_PATHS,
-    RELEASE_QUALIFICATION_V2_RESULT_PATHS,
-    release_qualification_v2_definition,
+    RELEASE_QUALIFICATION_V3_COMMAND_NAMES,
+    RELEASE_QUALIFICATION_V3_JUNIT_PATHS,
+    RELEASE_QUALIFICATION_V3_LANE_INPUT_PATHS,
+    RELEASE_QUALIFICATION_V3_LOG_PATHS,
+    RELEASE_QUALIFICATION_V3_RESULT_PATHS,
+    release_qualification_v3_command_documents,
+    release_qualification_v3_definition,
     summarize_pytest_junit_v1,
 )
 
@@ -53,11 +56,30 @@ def _release_qualification_definition(
     corpus_digest: str = "c" * 64,
     run_id: str = "run-1",
     started_utc: str = "2026-08-26T12:00:00.000000Z",
+    release: Path | None = None,
 ) -> dict[str, Any]:
-    return release_qualification_v2_definition(
+    commands = release_qualification_v3_command_documents()
+    if release is None:
+        lane_input_digests = {
+            command["name"]: {"fixture": hashlib.sha256(command["name"].encode()).hexdigest()}
+            for command in commands
+        }
+    else:
+        contract = _call("_load_release_qualification_contract", release)
+        lane_input_digests = _call(
+            "_release_qualification_v3_lane_input_digests",
+            release,
+            contract=contract,
+            commands=commands,
+            python_version="3.12.11",
+            platform_identity="Linux-test-x86_64",
+        )
+    return release_qualification_v3_definition(
         run_id=run_id,
         started_utc=started_utc,
         git_revision=revision,
+        git_tree="e" * 40,
+        source_identity_kind="sealed-release-marker",
         python_version="3.12.11",
         platform_identity="Linux-test-x86_64",
         uv_lock_sha256=uv_digest,
@@ -65,7 +87,10 @@ def _release_qualification_definition(
         corpus_manifest_sha256=corpus_digest,
         database_identity="postgresql+psycopg:///leo_qualification",
         protected_corpus_root="/srv/bulk/leo/test-corpus",
-        native_rate_corpus_root="/srv/bulk/leo/recordings/2026/08/25",
+        native_rate_corpus_root="/srv/bulk/leo/test-corpus",
+        maximum_resource_units=4,
+        include_historical=False,
+        lane_input_digests=lane_input_digests,
     )
 
 
@@ -131,6 +156,35 @@ def _release_qualification_fixture(
         release / "src/leo/qualification/release_contract.py",
         (PROJECT_ROOT / "src/leo/qualification/release_contract.py").read_bytes(),
     )
+    _write(release / "src/leo/__init__.py", b'"""Fixture package."""\n')
+    _write(release / "src/leo/qualification/release.py", b'"""Fixture runner."""\n')
+    _write(release / "pyproject.toml", b"[project]\nname='fixture'\n")
+    _write(release / "alembic.ini", b"[alembic]\n")
+    bounded_paths = {
+        relative
+        for name in RELEASE_QUALIFICATION_V3_COMMAND_NAMES
+        for relative in RELEASE_QUALIFICATION_V3_LANE_INPUT_PATHS[name]
+    }
+    for relative in sorted(bounded_paths):
+        path = release / relative
+        if path.exists():
+            continue
+        if path.suffix:
+            _write(path, f"fixture input: {relative}\n".encode())
+        else:
+            _write(path / ".fixture", f"fixture input tree: {relative}\n".encode())
+    source_marker = release / ".leo-release-source.json"
+    _write(
+        source_marker,
+        _canonical_json_bytes(
+            {
+                "schema": "org.leo.release-source/v1",
+                "revision": revision,
+                "tree": "e" * 40,
+            }
+        ),
+    )
+    source_marker.chmod(0o440)
     _write(release / "web/dist/index.html", b"<main>compiled</main>\n")
     _write(release / "web/dist/assets/app.js", b"compiled();\n")
 
@@ -140,6 +194,7 @@ def _release_qualification_fixture(
         uv_digest,
         npm_digest,
         corpus_digest=corpus_digest,
+        release=release,
     )
     definition_digest = _write(
         run_root / "definition.json",
@@ -147,12 +202,14 @@ def _release_qualification_fixture(
     )
     timestamp = "2026-08-26T12:00:00.000000Z"
     outcomes: list[dict[str, Any]] = []
-    for command_name in RELEASE_QUALIFICATION_V2_COMMAND_NAMES:
-        log_relative = RELEASE_QUALIFICATION_V2_LOG_PATHS[command_name]
+    commands_by_name = {command["name"]: command for command in definition["commands"]}
+    for command_name in RELEASE_QUALIFICATION_V3_COMMAND_NAMES:
+        command = commands_by_name[command_name]
+        log_relative = RELEASE_QUALIFICATION_V3_LOG_PATHS[command_name]
         log_digest = _write(run_root / log_relative, f"{command_name} passed\n".encode())
-        result_relative = RELEASE_QUALIFICATION_V2_RESULT_PATHS[command_name]
-        if command_name in RELEASE_QUALIFICATION_V2_JUNIT_PATHS:
-            junit_relative = RELEASE_QUALIFICATION_V2_JUNIT_PATHS[command_name]
+        result_relative = RELEASE_QUALIFICATION_V3_RESULT_PATHS[command_name]
+        if command_name in RELEASE_QUALIFICATION_V3_JUNIT_PATHS:
+            junit_relative = RELEASE_QUALIFICATION_V3_JUNIT_PATHS[command_name]
             junit_payload = (
                 "<testsuites><testsuite tests='1' failures='0' errors='0' skipped='0'>"
                 f"<testcase classname='qualification' name='{command_name}'/>"
@@ -166,14 +223,14 @@ def _release_qualification_fixture(
             )
         elif command_name == "production-web-build":
             result = {
-                "schema": "org.leo.release-qualification/v2",
+                "schema": "org.leo.release-qualification/v3",
                 "kind": "compiled-web-inventory",
                 "files": _test_inventory(release / "web/dist"),
             }
         else:
             _write(run_root / "results/playwright/trace.txt", b"browser trace\n")
             result = {
-                "schema": "org.leo.release-qualification/v2",
+                "schema": "org.leo.release-qualification/v3",
                 "kind": "production-chromium-e2e-result",
                 "project": "production-chromium",
                 "passed": True,
@@ -185,6 +242,12 @@ def _release_qualification_fixture(
                 "name": command_name,
                 "exit_code": 0,
                 "passed": True,
+                "release_blocking": command["release_blocking"],
+                "resource_units": command["resource_units"],
+                "database_access": command["database_access"],
+                "depends_on": command["depends_on"],
+                "command_sha256": command["lane_metadata"]["command_sha256"],
+                "reuse_key_sha256": command["lane_metadata"]["reuse_key_sha256"],
                 "started_utc": timestamp,
                 "finished_utc": timestamp,
                 "duration_seconds": 0.0,
@@ -196,7 +259,7 @@ def _release_qualification_fixture(
             }
         )
     receipt = {
-        "schema": "org.leo.release-qualification/v2",
+        "schema": "org.leo.release-qualification/v3",
         "run_id": "run-1",
         "status": "passed",
         "passed": True,
@@ -204,6 +267,11 @@ def _release_qualification_fixture(
         "finished_utc": timestamp,
         "duration_seconds": 0.0,
         "git_revision": revision,
+        "git_tree": "e" * 40,
+        "source_identity_kind": "sealed-release-marker",
+        "maximum_resource_units": 4,
+        "include_historical": False,
+        "reused_lanes": [],
         "definition_relative_path": "definition.json",
         "definition_sha256": definition_digest,
         "commands": outcomes,
@@ -1364,7 +1432,9 @@ def test_standard_cutover_receipt_is_exact_and_bound_to_staged_golden(
 
 
 def test_json_receipt_must_be_sealed_and_not_a_symlink(tmp_path: Path) -> None:
-    receipt = tmp_path / "receipt.json"
+    run_root = tmp_path / "qualification/run-1"
+    run_root.mkdir(parents=True)
+    receipt = run_root / "receipt.json"
     receipt.write_text('{"accepted": true}\n')
     with pytest.raises(ValueError, match="not sealed read-only"):
         _call("load_json", receipt, "receipt")
@@ -2291,7 +2361,7 @@ def test_release_inventory_and_lockfiles_verify_then_fail_on_tamper(tmp_path: Pa
         revision=revision,
     )
 
-    tampered_log = run_root / RELEASE_QUALIFICATION_V2_LOG_PATHS["protected-real-corpus"]
+    tampered_log = run_root / RELEASE_QUALIFICATION_V3_LOG_PATHS["protected-real-corpus"]
     tampered_log.chmod(0o640)
     tampered_log.write_text("tampered\n")
     tampered_log.chmod(0o440)
@@ -2305,7 +2375,7 @@ def test_release_inventory_and_lockfiles_verify_then_fail_on_tamper(tmp_path: Pa
         )
 
 
-def test_release_qualification_v2_requires_exact_native_gate_inventory() -> None:
+def test_release_qualification_v3_requires_exact_native_gate_inventory() -> None:
     definition = _release_qualification_definition("a" * 40, "u" * 64, "n" * 64)
 
     _call("_verify_release_qualification_commands", definition, release=PROJECT_ROOT)
@@ -2322,29 +2392,21 @@ def test_release_qualification_v2_requires_exact_native_gate_inventory() -> None
     with pytest.raises(ValueError, match="command inventory"):
         _call("_verify_release_qualification_commands", weakened, release=PROJECT_ROOT)
 
-    presentation_weakened = copy.deepcopy(definition)
-    presentation_weakened["commands"][2]["argv"].remove(
-        "tests/processing/test_standard_native_presentation_vertical.py::"
-        "test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partial"
+    current_postgresql_weakened = copy.deepcopy(definition)
+    current_postgresql_weakened["commands"][2]["argv"].remove(
+        "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
+        "test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical"
     )
     with pytest.raises(ValueError, match="command inventory"):
         _call(
             "_verify_release_qualification_commands",
-            presentation_weakened,
+            current_postgresql_weakened,
             release=PROJECT_ROOT,
         )
 
-    mixed_weakened = copy.deepcopy(definition)
-    mixed_weakened["commands"][2]["argv"].remove(
-        "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
-        "test_real_postgres_mixed_capture_standard_png_and_browser_vertical"
+    assert [command["name"] for command in definition["commands"]] == list(
+        RELEASE_QUALIFICATION_V3_COMMAND_NAMES
     )
-    with pytest.raises(ValueError, match="command inventory"):
-        _call(
-            "_verify_release_qualification_commands",
-            mixed_weakened,
-            release=PROJECT_ROOT,
-        )
 
 
 @pytest.mark.parametrize(
@@ -2354,13 +2416,13 @@ def test_release_qualification_v2_requires_exact_native_gate_inventory() -> None
         (1, "keyword-filter"),
         (1, "deselect"),
         (2, "cwd"),
+        (2, "junit"),
         (3, "log"),
-        (3, "junit"),
-        (4, "web-argument"),
-        (5, "browser-cwd"),
+        (3, "web-argument"),
+        (4, "browser-cwd"),
     ),
 )
-def test_release_qualification_v2_rejects_command_bypass_variants(
+def test_release_qualification_v3_rejects_command_bypass_variants(
     command_index: int,
     mutation: str,
 ) -> None:
@@ -2414,7 +2476,7 @@ def test_release_evidence_rejects_noncanonical_definition_authority(
     receipt["definition_sha256"] = _rewrite_sealed_json(definition_path, definition)
     _refresh_release_receipt(receipt_path, receipt, run_root)
 
-    with pytest.raises(ValueError, match="canonical staged V2 contract"):
+    with pytest.raises(ValueError, match="canonical staged V3 contract"):
         _call(
             "verify_release_evidence",
             receipt_path,
@@ -2539,7 +2601,16 @@ def test_release_evidence_rejects_staged_web_drift(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "relative",
-    ("uv.lock", "web/package-lock.json", "corpus/manifest.json"),
+    (
+        "uv.lock",
+        "web/package-lock.json",
+        "corpus/manifest.json",
+        "src/leo/analysis/drift.py",
+        "tests/e2e/drift.py",
+        "migrations/drift.py",
+        "web/drift.ts",
+        "pyproject.toml",
+    ),
 )
 def test_release_evidence_rejects_staged_source_input_drift(
     tmp_path: Path,
@@ -2552,7 +2623,7 @@ def test_release_evidence_rejects_staged_source_input_drift(
     )
     (release / relative).write_text("drifted after qualification\n")
 
-    with pytest.raises(ValueError, match="canonical staged V2 contract"):
+    with pytest.raises(ValueError, match="lane inputs do not match staged release content"):
         _call(
             "verify_release_evidence",
             receipt_path,
@@ -2560,6 +2631,178 @@ def test_release_evidence_rejects_staged_source_input_drift(
             release=release,
             revision=revision,
         )
+
+
+def test_release_evidence_ignores_only_reviewed_transient_cache_directories(
+    tmp_path: Path,
+) -> None:
+    revision = "0" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    cache = release / "tests/__pycache__"
+    cache.mkdir()
+    (cache / "ignored.pyc").write_bytes(b"ignored transient bytecode")
+
+    _call(
+        "verify_release_evidence",
+        receipt_path,
+        receipt,
+        release=release,
+        revision=revision,
+    )
+
+
+@pytest.mark.parametrize(
+    ("component", "key", "selector", "unit_name"),
+    (
+        ("worker", "LEO_PIPELINE_RELEASE_ID", "current-worker", "leo-worker@.service"),
+        (
+            "acquisition",
+            "LEO_ACQUISITION_RELEASE_ID",
+            "current-acquisition",
+            "leo-acquisition.service",
+        ),
+    ),
+)
+def test_narrow_component_preflight_requires_exact_environment_and_unit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    component: str,
+    key: str,
+    selector: str,
+    unit_name: str,
+) -> None:
+    revision = "a" * 40
+    release = tmp_path / "release"
+    unit = release / "deploy/systemd" / unit_name
+    drop_in = release / "deploy/systemd" / f"{unit_name}.d/20-component-environment.conf"
+    invocation = (
+        "leo process worker --worker-id worker-%i "
+        if component == "worker"
+        else "leo acquire run --profile fixture "
+    )
+    _write(
+        unit,
+        (
+            "[Service]\n"
+            f"WorkingDirectory=/opt/leo-tracker/{selector}\n"
+            f"ExecStart=/opt/leo-tracker/{selector}/.venv/bin/{invocation}\n"
+            "InaccessiblePaths=/mnt/qnap01\n"
+        ).encode(),
+    )
+    environment_name = "worker.env" if component == "worker" else "acquisition.env"
+    _write(drop_in, f"[Service]\nEnvironmentFile=/etc/leo/{environment_name}\n".encode())
+    environment = tmp_path / environment_name
+    environment.write_text(f"{key}={revision}\n")
+    environment.chmod(0o640)
+    preflight = SCRIPT_GLOBALS["_verify_component_preflight"]
+    monkeypatch.setitem(
+        preflight.__globals__,
+        "WORKER_ENVIRONMENT" if component == "worker" else "ACQUISITION_ENVIRONMENT",
+        environment,
+    )
+    commands: list[tuple[str, ...]] = []
+    monkeypatch.setitem(
+        preflight.__globals__,
+        "command",
+        lambda *arguments: commands.append(tuple(arguments)) or "",
+    )
+
+    result = preflight(component, release, revision)
+
+    assert commands == [("systemd-analyze", "verify", str(unit))]
+    assert any("intentionally not probed" in item for item in result)
+
+    environment.write_text(f"{key}={'b' * 40}\n")
+    with pytest.raises(ValueError, match="does not bind the exact target"):
+        preflight(component, release, revision)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        ("unsealed-source", "source identity is not sealed read-only"),
+        ("wrong-target", "receipt does not match staged revision"),
+        ("malformed-v3", "receipt schema is not closed"),
+    ),
+)
+def test_narrow_verify_cannot_bypass_source_or_v3_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+    message: str,
+) -> None:
+    revision = "a" * 40
+    release_root = tmp_path / "releases"
+    release = release_root / revision
+    for relative in (".venv/bin/leo", ".venv/bin/leo-api", "web/dist/index.html"):
+        _write(release / relative, b"fixture\n")
+    marker = release / ".leo-release-source.json"
+    _write(
+        marker,
+        _canonical_json_bytes(
+            {
+                "schema": "org.leo.release-source/v1",
+                "revision": revision,
+                "tree": "e" * 40,
+            }
+        ),
+    )
+    if mutation != "unsealed-source":
+        marker.chmod(0o440)
+    release.chmod(0o555)
+    receipt_revision = "b" * 40 if mutation == "wrong-target" else revision
+    run_root = tmp_path / "qualification/run-1"
+    run_root.mkdir(parents=True)
+    receipt = run_root / "receipt.json"
+    _write(
+        receipt,
+        _canonical_json_bytes(
+            {"passed": True, "status": "passed", "git_revision": receipt_revision}
+        ),
+    )
+    receipt.chmod(0o440)
+    run_root.chmod(0o550)
+    verify = SCRIPT_GLOBALS["verify"]
+    monkeypatch.setitem(verify.__globals__, "RELEASE_ROOT", release_root)
+    monkeypatch.setitem(verify.__globals__, "verify_staged_capture_profiles", lambda _release: None)
+    monkeypatch.setitem(
+        verify.__globals__, "verify_staged_acquisition_service", lambda _release: None
+    )
+    component_calls: list[str] = []
+    monkeypatch.setitem(
+        verify.__globals__,
+        "_verify_component_preflight",
+        lambda component, _release, _revision: component_calls.append(component) or [],
+    )
+    args = Namespace(
+        revision=revision,
+        release_receipt=receipt,
+        standard_regression_receipt=tmp_path / "standard.json",
+        soak_receipt=None,
+        legacy_user="fixture",
+        component="worker",
+    )
+
+    try:
+        with pytest.raises(ValueError, match=message):
+            verify(args)
+    finally:
+        run_root.chmod(0o750)
+
+    assert component_calls == []
+
+
+def test_full_cutover_retains_global_quiescence_and_live_radio_checks() -> None:
+    verify_source = SCRIPT.read_text()
+
+    assert "if component is None:" in verify_source
+    assert "system-scope LEO units are already active" in verify_source
+    assert "probe_processing_resource_capacity()" in verify_source
+    assert "probe_live_station_radios(release)" in verify_source
+    assert verify_source.count("if component is None:") >= 2
 
 
 def test_release_evidence_requires_staged_contract_source(tmp_path: Path) -> None:
@@ -2605,7 +2848,93 @@ def test_release_cutover_rejects_historical_v1_receipt(tmp_path: Path) -> None:
     receipt["schema"] = "org.leo.release-qualification/v1"
     _rewrite_sealed_json(receipt_path, receipt)
 
-    with pytest.raises(ValueError, match="required V2 schema"):
+    with pytest.raises(ValueError, match="required blocking V3 schema"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_cutover_requires_exact_git_free_source_tree(tmp_path: Path) -> None:
+    revision = "7" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    marker = release / ".leo-release-source.json"
+    marker.chmod(0o640)
+    marker.write_bytes(
+        _canonical_json_bytes(
+            {
+                "schema": "org.leo.release-source/v1",
+                "revision": revision,
+                "tree": "8" * 40,
+            }
+        )
+    )
+    marker.chmod(0o440)
+
+    with pytest.raises(ValueError, match="staged source tree"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_cutover_accepts_closed_lane_reuse_provenance(tmp_path: Path) -> None:
+    revision = "8" * 40
+    release, run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    outcome = receipt["commands"][0]
+    receipt["reused_lanes"] = [
+        {
+            "name": outcome["name"],
+            "reuse_key_sha256": outcome["reuse_key_sha256"],
+            "source_run_id": "prior-run",
+            "source_git_revision": "9" * 40,
+            "source_receipt_sha256": "a" * 64,
+        }
+    ]
+    _refresh_release_receipt(receipt_path, receipt, run_root)
+
+    _call(
+        "verify_release_evidence",
+        receipt_path,
+        receipt,
+        release=release,
+        revision=revision,
+    )
+
+    receipt["reused_lanes"][0]["reuse_key_sha256"] = "b" * 64
+    _refresh_release_receipt(receipt_path, receipt, run_root)
+    with pytest.raises(ValueError, match="reuse provenance is invalid"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_cutover_rejects_historical_v3_mode(tmp_path: Path) -> None:
+    revision = "9" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    receipt["include_historical"] = True
+    _rewrite_sealed_json(receipt_path, receipt)
+
+    with pytest.raises(ValueError, match="required blocking V3 schema"):
         _call(
             "verify_release_evidence",
             receipt_path,
@@ -2623,7 +2952,7 @@ def test_release_evidence_rejects_nonpassing_junit_even_if_inventoried(
         tmp_path,
         revision=revision,
     )
-    junit_path = run_root / RELEASE_QUALIFICATION_V2_JUNIT_PATHS["protected-real-corpus"]
+    junit_path = run_root / RELEASE_QUALIFICATION_V3_JUNIT_PATHS["protected-real-corpus"]
     junit_path.chmod(0o640)
     junit_path.write_text(
         "<testsuite tests='1' failures='0' errors='0' skipped='1'>"
@@ -2715,6 +3044,8 @@ def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:
     )
 
 
-def test_cutover_git_checks_are_read_only() -> None:
+def test_cutover_source_identity_check_is_git_free() -> None:
     text = SCRIPT.read_text()
-    assert '("env", "GIT_OPTIONAL_LOCKS=0", "git", "-C", str(release))' in text
+    assert "RELEASE_SOURCE_MARKER" in text
+    assert "org.leo.release-source/v1" in text
+    assert '"GIT_OPTIONAL_LOCKS=0"' not in text

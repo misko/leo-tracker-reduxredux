@@ -108,6 +108,7 @@ script_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 release_uv=$release_dir/.release-tools/uv
 metadata_abi=3
 metadata_runtime_receipt=$release_dir/.venv/share/pluto-plus-utils/metadata-runtime.json
+source_identity_name=.leo-release-source.json
 
 if ! $execute; then
   printf 'Validated immutable source revision %s\n' "$revision"
@@ -237,9 +238,28 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if git -C "$source_real" cat-file -e "$revision:$source_identity_name" 2>/dev/null; then
+  echo "reserved release source identity path is tracked by the requested revision" >&2
+  exit 65
+fi
+if ! source_tree=$(git -C "$source_real" rev-parse --verify "$revision^{tree}"); then
+  echo "cannot resolve requested source tree" >&2
+  exit 65
+fi
+[[ "$source_tree" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "requested source tree is not a full lowercase Git object ID" >&2
+  exit 65
+}
+
 staging_owned=true
-git clone --no-local --no-hardlinks --quiet "$source_real" "$staging_dir"
-git -C "$staging_dir" checkout --quiet --detach "$revision"
+install -d -o leo -g leo -m 0700 "$staging_dir"
+# Historical reports account for roughly half the old release and are not an
+# input to runtime or the blocking release qualification.  Git archive also
+# omits the repository object database by construction.
+git -C "$source_real" archive --format=tar "$revision" -- . ':(exclude)reports' \
+  | tar -x --no-same-owner -C "$staging_dir"
+printf '{"schema":"org.leo.release-source/v1","revision":"%s","tree":"%s"}\n' \
+  "$revision" "$source_tree" >"$staging_dir/$source_identity_name"
 "$staging_dir/deploy/scripts/check-staged-release" "$staging_dir" "$revision"
 chown -R leo:leo "$staging_dir"
 chmod -R o-rwx "$staging_dir"
@@ -279,6 +299,7 @@ runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release" \
   "$release_dir" "$revision"
 chown -R root:leo "$release_dir"
 chmod -R go-w "$release_dir"
+chmod 0440 "$release_dir/$source_identity_name"
 runuser -u leo -- "$release_dir/.venv/bin/python" \
   "$release_dir/deploy/scripts/validate-published-release" \
   "$release_dir" "$staging_dir"
@@ -322,7 +343,8 @@ mapfile -t metadata_runtime_paths <<<"$metadata_runtime_path_text"
   printf 'revision=%s\n' "$revision"
   printf 'python=%s\n' "$python_bin"
   printf 'python_version=%s\n' "$python_version"
-  sha256sum "$python_bin" "$release_uv" "$release_dir/uv.lock" \
+  sha256sum "$python_bin" "$release_uv" "$release_dir/$source_identity_name" \
+    "$release_dir/uv.lock" \
     "$release_dir/web/package-lock.json" "${metadata_runtime_paths[@]}"
 } >"$metadata_temp"
 chown root:leo "$metadata_temp"

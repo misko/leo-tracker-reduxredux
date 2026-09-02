@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# Restart the reviewed 20-instance worker pool from an already-selected
+# immutable release. Selection and rollback remain the caller's transaction.
+set -euo pipefail
+
+if [[ $# -ne 0 ]]; then
+  echo "usage: sudo $0" >&2
+  exit 64
+fi
+if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+  echo "restart-current-workers must run as root" >&2
+  exit 77
+fi
+
+current=/opt/leo-tracker/current-worker
+[[ -L "$current" ]] || { echo "current worker release selector is not a symlink" >&2; exit 65; }
+target=$(/usr/bin/readlink -- "$current")
+[[ "$target" =~ ^releases/([0-9a-f]{40})$ ]] || {
+  echo "current worker selector is not one exact relative release SHA" >&2
+  exit 65
+}
+revision=${BASH_REMATCH[1]}
+release=/opt/leo-tracker/releases/$revision
+metadata=/opt/leo-tracker/release-metadata/$revision.txt
+
+[[ -d "$release" && ! -L "$release" ]] || { echo "selected worker release is unavailable" >&2; exit 65; }
+[[ -x "$release/.venv/bin/leo" ]] || { echo "selected release has no worker entrypoint" >&2; exit 65; }
+[[ -f "$metadata" && ! -L "$metadata" ]] || { echo "selected release has no sealed metadata" >&2; exit 65; }
+[[ $(/usr/bin/stat -c '%U:%G:%a' -- "$metadata") == root:leo:440 ]] || {
+  echo "selected release metadata ownership or mode is invalid" >&2
+  exit 65
+}
+
+worker_environment=/etc/leo/worker.env
+[[ -f "$worker_environment" && ! -L "$worker_environment" ]] || {
+  echo "worker component environment is unavailable" >&2
+  exit 65
+}
+mapfile -t release_bindings < <(
+  /usr/bin/sed -n 's/^[[:space:]]*LEO_PIPELINE_RELEASE_ID=\([^#[:space:]]*\)[[:space:]]*$/\1/p' \
+    "$worker_environment"
+)
+[[ ${#release_bindings[@]} -eq 1 && ${release_bindings[0]} = "$revision" ]] || {
+  echo "worker component environment does not bind the selected release" >&2
+  exit 65
+}
+
+worker_units=()
+for ((index = 1; index <= 20; index += 1)); do
+  worker_units+=("leo-worker@$index.service")
+done
+
+restart_started=false
+completed=false
+cleanup() {
+  exit_code=$?
+  trap - EXIT
+  if $restart_started && ! $completed; then
+    /usr/bin/systemctl stop "${worker_units[@]}" >/dev/null 2>&1 || true
+  fi
+  exit "$exit_code"
+}
+trap cleanup EXIT
+
+started_ns=$(/usr/bin/date +%s%N)
+restart_started=true
+if ! /usr/bin/systemctl restart "${worker_units[@]}"; then
+  echo "worker restart failed; affected workers were left stopped for rollback" >&2
+  exit 1
+fi
+
+stable=0
+for ((attempt = 0; attempt < 300; attempt += 1)); do
+  all_running=true
+  for unit in "${worker_units[@]}"; do
+    /usr/bin/systemctl is-active --quiet "$unit" || all_running=false
+    pid=$(/usr/bin/systemctl show --property=MainPID --value "$unit")
+    [[ "$pid" =~ ^[1-9][0-9]*$ ]] || all_running=false
+  done
+  if $all_running; then
+    stable=$((stable + 1))
+    if ((stable >= 10)); then
+      finished_ns=$(/usr/bin/date +%s%N)
+      elapsed_ms=$(((finished_ns - started_ns) / 1000000))
+      completed=true
+      trap - EXIT
+      echo "WORKERS READY release=$revision instances=${#worker_units[@]} elapsed_ms=$elapsed_ms"
+      exit 0
+    fi
+  else
+    stable=0
+  fi
+  /usr/bin/sleep 0.1
+done
+
+/usr/bin/systemctl stop "${worker_units[@]}" >/dev/null 2>&1 || true
+echo "workers did not remain healthy within 30 seconds; affected workers were left stopped" >&2
+/usr/bin/systemctl status "${worker_units[@]}" --no-pager >&2 || true
+/usr/bin/journalctl -u 'leo-worker@*.service' --since '1 minute ago' --no-pager -n 120 >&2 || true
+exit 1

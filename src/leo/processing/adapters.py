@@ -27,7 +27,7 @@ from leo.catalog import (
     RunExecutionInfo,
 )
 from leo.contracts.continuity import IqGapMapV1
-from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
+from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, IqBlockMetadataV3, parse_iq_block_metadata_json
 from leo.contracts.rate_analysis import VerifiedIqGapMapEvidenceV1
 from leo.contracts.recording import (
@@ -51,7 +51,6 @@ from leo.domain.gap_map import IqContinuityEvidenceError, build_iq_gap_map
 from leo.domain.iq import IqBlock
 from leo.domain.validity import build_validity_inventory_v1
 from leo.pipeline import (
-    GapAwareIqReader,
     IqReader,
     ProductReader,
     ProductRequirement,
@@ -63,11 +62,7 @@ from leo.pipeline import (
     UpstreamJsonProduct,
     ValidityAwareIqReader,
 )
-from leo.processing.continuity import (
-    PhysicalDeviceIqBlock,
-    V2ValidityAwareIqReader,
-    V3ValidityAwareIqReader,
-)
+from leo.processing.continuity import PhysicalDeviceIqBlock, V3ValidityAwareIqReader
 from leo.storage import PinnedLocalRoot, RecordingStore, parse_recording_bundle_uri
 from leo.storage.errors import BundleCorruptionError
 from leo.storage.writer import PublishedBundle
@@ -78,19 +73,6 @@ _MAX_TYPED_IQ_BLOCK_SAMPLES = 1_048_576
 
 class InputManifestMismatchError(RuntimeError):
     """The recording at a catalog URI is not the run's pinned input."""
-
-
-@dataclass(frozen=True, slots=True)
-class VerifiedHistoricalV2NativeStreamEvidence:
-    """Attestation-bound digests for one verified packed historical V2 stream."""
-
-    raw_integrity_attestation_digest: Sha256Digest
-    stream_id: str
-    selected_stream_digest: Sha256Digest
-    uncompressed_chunk_closure_digest: Sha256Digest
-    validity_inventory: ValidityInventoryV1
-    observed_iq_digest: Sha256Digest
-    logical_iq_digest: Sha256Digest
 
 
 class IqReaderProvider(Protocol):
@@ -112,10 +94,6 @@ class IqReaderProvider(Protocol):
         self, attestation_digest: str, stream_id: str
     ) -> ValidityInventoryV1: ...
 
-    def verified_historical_v2_native_stream_evidence(
-        self, attestation_digest: str, stream_id: str
-    ) -> VerifiedHistoricalV2NativeStreamEvidence: ...
-
     def close(self) -> None: ...
 
 
@@ -129,10 +107,6 @@ class ValidityAwareIqReaderProvider(Protocol):
     def verified_validity_inventory(
         self, attestation_digest: str, stream_id: str
     ) -> ValidityInventoryV1: ...
-
-    def verified_historical_v2_native_stream_evidence(
-        self, attestation_digest: str, stream_id: str
-    ) -> VerifiedHistoricalV2NativeStreamEvidence: ...
 
 
 class RecordingIqReaderProvider:
@@ -191,7 +165,7 @@ class RecordingIqReaderProvider:
     def open_validity_scope(
         self, execution: RunExecutionInfo, scope: ScopeIdentityV1
     ) -> ValidityAwareIqReader:
-        """Open one verified V2-synthesized or V3-physical mandatory-validity path."""
+        """Open one verified V3 physical mandatory-validity path."""
 
         if scope.kind is not ScopeKind.RECEIVER_PATH:
             raise ValueError("only receiver_path scopes may open validity-aware IQ")
@@ -199,31 +173,23 @@ class RecordingIqReaderProvider:
             raise ValueError("receiver_path scope is incomplete")
         capability = self._typed_capability(execution)
         stream = _capability_stream(capability, scope.stream_id)
-        if isinstance(stream, RecordingStreamV3):
-            capability.assert_bound()
-            capability.acquire()
-            v3_source: _VerifiedV3DeviceAxisSource | None = None
-            try:
-                v3_source = _VerifiedV3DeviceAxisSource(
-                    capability,
-                    stream,
-                    receiver_id=scope.receiver_id,
-                )
-                return V3ValidityAwareIqReader(v3_source)
-            except Exception:
-                if v3_source is None:
-                    capability.release()
-                else:
-                    v3_source.close()
-                raise
-
-        source = self.open_scope(execution, scope)
+        if not isinstance(stream, RecordingStreamV3):
+            raise ValueError("validity-aware online IQ requires a V3 device-axis stream")
+        capability.assert_bound()
+        capability.acquire()
+        v3_source: _VerifiedV3DeviceAxisSource | None = None
         try:
-            return V2ValidityAwareIqReader(cast(GapAwareIqReader, source))
+            v3_source = _VerifiedV3DeviceAxisSource(
+                capability,
+                stream,
+                receiver_id=scope.receiver_id,
+            )
+            return V3ValidityAwareIqReader(v3_source)
         except Exception:
-            close = getattr(source, "close", None)
-            if callable(close):
-                close()
+            if v3_source is None:
+                capability.release()
+            else:
+                v3_source.close()
             raise
 
     def verify_integrity(self, identity: CaptureRecordingIdentity) -> RawIntegrityAttestationV1:
@@ -308,87 +274,12 @@ class RecordingIqReaderProvider:
             raise InputManifestMismatchError("raw-integrity capability is not retained")
         stream = _capability_stream(capability, stream_id)
         evidence = _VerifiedRecordingIqReader(capability, stream.stream_id).gap_map_evidence()
-        if isinstance(stream, RecordingStreamV2):
-            return build_validity_inventory_v1(evidence.gap_map)
         if not isinstance(stream, RecordingStreamV3):
-            raise ValueError("verified validity requires a V2 or V3 stream")
+            raise ValueError("verified online validity requires a V3 stream")
         return _verified_v3_inventory(
             capability,
             stream,
             gap_evidence=evidence,
-        )
-
-    def verified_historical_v2_native_stream_evidence(
-        self,
-        attestation_digest: str,
-        stream_id: str,
-    ) -> VerifiedHistoricalV2NativeStreamEvidence:
-        """Hash the verified packed and synthesized V2 axes in canonical CI16 order."""
-
-        key = self._attestation_keys.get(attestation_digest)
-        capability = None if key is None else self._capabilities.get(key)
-        if capability is None:
-            raise InputManifestMismatchError("raw-integrity capability is not retained")
-        capability.assert_bound()
-        stream = _capability_stream(capability, stream_id)
-        if not isinstance(stream, RecordingStreamV2):
-            raise ValueError("historical V2 native evidence requires a V2 stream")
-        source = _VerifiedRecordingIqReader(capability, stream.stream_id)
-        gap_map = source.gap_map_evidence().gap_map
-        if gap_map.capture_start_overflow or gap_map.terminal_rejected_refill is not None:
-            raise BundleCorruptionError(
-                "historical V2 native evidence forbids overflow or rejected refill evidence"
-            )
-        reader = V2ValidityAwareIqReader(source)
-        observed_digest = hashlib.sha256()
-        logical_digest = hashlib.sha256()
-        observed_samples = 0
-        logical_samples = 0
-        try:
-            for block in reader.iter_masked_blocks(block_samples=_MAX_TYPED_IQ_BLOCK_SAMPLES):
-                payload = memoryview(block.samples).cast("B")
-                logical_digest.update(payload)
-                logical_samples += block.sample_count
-                if np.all(block.valid_samples):
-                    observed_digest.update(payload)
-                    observed_samples += block.sample_count
-                elif np.any(block.valid_samples):
-                    raise BundleCorruptionError(
-                        "historical V2 synthesized digest block has mixed validity"
-                    )
-        finally:
-            reader.close()
-        validity = build_validity_inventory_v1(gap_map)
-        if (
-            observed_samples != validity.observed_sample_count
-            or logical_samples != validity.logical_sample_count
-        ):
-            raise BundleCorruptionError("historical V2 synthesized digest counts do not close")
-        observed_iq_digest = f"sha256:{observed_digest.hexdigest()}"
-        logical_iq_digest = f"sha256:{logical_digest.hexdigest()}"
-        if validity.missing_sample_count:
-            if observed_iq_digest == logical_iq_digest:
-                raise BundleCorruptionError("gapped V2 logical IQ digest aliases observed IQ")
-        elif observed_iq_digest != logical_iq_digest:
-            raise BundleCorruptionError("lossless V2 logical and observed IQ digests differ")
-        raw_stream = next(
-            (
-                item
-                for item in _stream_integrities(capability.bundle)
-                if item.stream_id == stream_id
-            ),
-            None,
-        )
-        if raw_stream is None:
-            raise BundleCorruptionError("historical V2 raw stream closure is absent")
-        return VerifiedHistoricalV2NativeStreamEvidence(
-            raw_integrity_attestation_digest=attestation_digest,
-            stream_id=stream_id,
-            selected_stream_digest=canonical_digest(stream.model_dump(mode="json")),
-            uncompressed_chunk_closure_digest=raw_stream.uncompressed_closure_digest,
-            validity_inventory=validity,
-            observed_iq_digest=observed_iq_digest,
-            logical_iq_digest=logical_iq_digest,
         )
 
     def _typed_capability(self, execution: RunExecutionInfo) -> _VerifiedBundleCapability:

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# Verify one checkout without allowing command-substitution failures to masquerade
-# as empty successful output.
+# Verify the exact, Git-free source identity emitted by stage-production-release.
 set -euo pipefail
-export GIT_OPTIONAL_LOCKS=0
 
 if [[ $# -ne 2 ]]; then
   echo "usage: $0 ABSOLUTE_RELEASE_DIR FULL_40_HEX_SHA" >&2
@@ -26,22 +24,35 @@ case "$release_real/" in
 esac
 [[ -d "$release_real" ]] || { echo "release directory does not exist" >&2; exit 66; }
 
-if ! observed_revision=$(git -C "$release_real" rev-parse --verify HEAD); then
-  echo "cannot resolve staged release HEAD" >&2
+source_identity=$release_real/.leo-release-source.json
+[[ -f "$source_identity" && ! -L "$source_identity" ]] || {
+  echo "staged release source identity is absent or not a regular file" >&2
+  exit 65
+}
+if [[ -e "$release_real/.git" || -L "$release_real/.git" ]]; then
+  echo "staged release unexpectedly contains Git metadata" >&2
   exit 65
 fi
-if [[ "$observed_revision" != "$revision" ]]; then
-  echo "staged release HEAD does not match requested revision" >&2
-  exit 65
-fi
-if ! tracked_status=$(git -C "$release_real" status --porcelain --untracked-files=no); then
-  echo "cannot inspect staged release tracked-file cleanliness" >&2
-  exit 65
-fi
-if [[ -n "$tracked_status" ]]; then
-  echo "staged release has modified tracked files:" >&2
-  printf '%s\n' "$tracked_status" >&2
+if [[ -e "$release_real/reports" || -L "$release_real/reports" ]]; then
+  echo "staged release unexpectedly contains historical reports" >&2
   exit 65
 fi
 
-printf 'verified clean staged release %s at %s\n' "$revision" "$release_real"
+if ! source_document=$(<"$source_identity"); then
+  echo "cannot read staged release source identity" >&2
+  exit 65
+fi
+source_pattern='^\{"schema":"org\.leo\.release-source/v1","revision":"([0-9a-f]{40})","tree":"([0-9a-f]{40})"\}$'
+if [[ ! "$source_document" =~ $source_pattern ]]; then
+  echo "staged release source identity is not canonical V1 JSON" >&2
+  exit 65
+fi
+observed_revision=${BASH_REMATCH[1]}
+observed_tree=${BASH_REMATCH[2]}
+[[ "$observed_revision" = "$revision" ]] || {
+  echo "staged release source identity does not match requested revision" >&2
+  exit 65
+}
+
+printf 'verified staged release source revision=%s tree=%s at %s\n' \
+  "$revision" "$observed_tree" "$release_real"
