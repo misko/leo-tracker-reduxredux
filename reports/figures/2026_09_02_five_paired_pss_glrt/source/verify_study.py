@@ -106,13 +106,11 @@ def main() -> None:
         require(projection["decimation_factor"] == 1, "PSS replay was decimated")
         require(projection["edge_trim_output_samples"] == 0, "PSS replay was edge trimmed")
         require(
-            projection["input_center_frequency_hz"]
-            == capture["native25"]["center_frequency_hz"],
+            projection["input_center_frequency_hz"] == capture["native25"]["center_frequency_hz"],
             "PSS replay input center does not match the native stream",
         )
         require(
-            projection["output_center_frequency_hz"]
-            == projection["input_center_frequency_hz"],
+            projection["output_center_frequency_hz"] == projection["input_center_frequency_hz"],
             "PSS replay translated the native capture",
         )
         require(
@@ -182,25 +180,21 @@ def main() -> None:
         "cohort rate/fitness figure",
     )
     pss_track_count = sum(
-        item["pss"]["independent_track"] is not None
-        for item in analysis["captures"]
+        item["pss"]["independent_track"] is not None for item in analysis["captures"]
     )
     require(pss_track_count > 0, "none of the five native-25 replays produced a PSS track")
     for capture in analysis["captures"]:
         if capture["pss"]["independent_track"] is not None:
             continue
         capture_id = capture["capture_id"]
-        sensitivity_path = (
-            args.analysis.parent / f"{capture_id}-pss-association-sensitivity.json"
-        )
+        sensitivity_path = args.analysis.parent / f"{capture_id}-pss-association-sensitivity.json"
         require(
             sensitivity_path.is_file(),
             f"{capture_id} post-hoc association sensitivity is missing",
         )
         sensitivity = json.loads(sensitivity_path.read_text(encoding="utf-8"))
         require(
-            sensitivity["analysis_kind"]
-            == "post-hoc-pss-only-association-gate-sensitivity",
+            sensitivity["analysis_kind"] == "post-hoc-pss-only-association-gate-sensitivity",
             f"{capture_id} has the wrong sensitivity analysis kind",
         )
         sensitivity_source = Path(sensitivity["source"]["path"])
@@ -242,14 +236,12 @@ def main() -> None:
             f"{capture_id} association sensitivity figure digest mismatch",
         )
         require(
-            sensitivity_path.name in report
-            and Path(sensitivity["figure"]["path"]).name in report,
+            sensitivity_path.name in report and Path(sensitivity["figure"]["path"]).name in report,
             f"report does not link {capture_id} association sensitivity evidence",
         )
 
     require(
-        tle["analysis_kind"]
-        == "five-capture-independent-and-joint-pss-glrt-causal-tle-ranking",
+        tle["analysis_kind"] == "five-capture-independent-and-joint-pss-glrt-causal-tle-ranking",
         "unexpected TLE analysis kind",
     )
     tle_source = Path(tle["source"]["path"])
@@ -268,14 +260,11 @@ def main() -> None:
     )
     tle_ids = [item["capture_id"] for item in tle["captures"]]
     require(tle_ids == selected_ids, "TLE capture order does not match the cohort")
-    analysis_by_capture = {
-        item["capture_id"]: item for item in analysis["captures"]
-    }
+    analysis_by_capture = {item["capture_id"]: item for item in analysis["captures"]}
     for capture in tle["captures"]:
         capture_id = capture["capture_id"]
         require(
-            capture["tle"]["collection_utc_ns"]
-            <= capture["first_sample_estimate_utc_ns"],
+            capture["tle"]["collection_utc_ns"] <= capture["first_sample_estimate_utc_ns"],
             f"{capture_id} uses a future TLE snapshot",
         )
         tle_path = Path(capture["tle"]["path"])
@@ -294,8 +283,7 @@ def main() -> None:
             if path["stitched_family"] is not None
         }
         require(
-            set(capture["headline"]["glrt_physical_best_by_receiver"])
-            == expected_receivers,
+            set(capture["headline"]["glrt_physical_best_by_receiver"]) == expected_receivers,
             f"{capture_id} omits a usable GLRT receiver ranking",
         )
         require(
@@ -303,8 +291,7 @@ def main() -> None:
             f"{capture_id} omits the dual-receiver GLRT consensus ranking",
         )
         require(
-            capture["headline"]["glrt_all_receiver_anchor_sensitivity_best"]
-            is not None,
+            capture["headline"]["glrt_all_receiver_anchor_sensitivity_best"] is not None,
             f"{capture_id} omits the dual-receiver anchor sensitivity ranking",
         )
         require(
@@ -313,8 +300,7 @@ def main() -> None:
             f"{capture_id} omits the single-episode GLRT sensitivity ranking",
         )
         require(
-            set(capture["specificity"]["glrt_anchor_sensitivity"])
-            == expected_receivers,
+            set(capture["specificity"]["glrt_anchor_sensitivity"]) == expected_receivers,
             f"{capture_id} omits GLRT anchor sensitivity specificity",
         )
         pss_track = analysis_by_capture[capture_id]["pss"]["independent_track"]
@@ -329,8 +315,7 @@ def main() -> None:
             )
         else:
             require(
-                capture["accounting"]["pss_block_median_count"]
-                == pss_track["mode_count"],
+                capture["accounting"]["pss_block_median_count"] == pss_track["mode_count"],
                 f"{capture_id} TLE ranking used the wrong PSS measurements",
             )
             require(
@@ -431,8 +416,7 @@ def main() -> None:
                 "verified": True,
                 "capture_count": len(selected_ids),
                 "pss_track_count": sum(
-                    item["pss"]["independent_track"] is not None
-                    for item in analysis["captures"]
+                    item["pss"]["independent_track"] is not None for item in analysis["captures"]
                 ),
                 "report": str(args.report),
             },

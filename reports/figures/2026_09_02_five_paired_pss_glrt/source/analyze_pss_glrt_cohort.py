@@ -45,9 +45,7 @@ def rms(values: np.ndarray) -> float:
 
 
 def circular_residual(observed: np.ndarray, predicted: np.ndarray) -> np.ndarray:
-    return (observed - predicted + FRAME_PERIOD_S / 2.0) % FRAME_PERIOD_S - (
-        FRAME_PERIOD_S / 2.0
-    )
+    return (observed - predicted + FRAME_PERIOD_S / 2.0) % FRAME_PERIOD_S - (FRAME_PERIOD_S / 2.0)
 
 
 def robust_polynomial(
@@ -230,26 +228,15 @@ def stitch_glrt_tracks(tracks: list[dict[str, Any]]) -> dict[str, Any] | None:
         for track in tracks:
             predicted = evaluate_glrt_fit(global_fit, track["_times_s"])
             shift = round(
-                float(
-                    np.median(
-                        (predicted - track["_canonical_cfo_hz"])
-                        / GLRT_ALIAS_SPACING_HZ
-                    )
-                )
+                float(np.median((predicted - track["_canonical_cfo_hz"]) / GLRT_ALIAS_SPACING_HZ))
             )
-            residual_hz = (
-                track["_canonical_cfo_hz"]
-                + shift * GLRT_ALIAS_SPACING_HZ
-                - predicted
-            )
+            residual_hz = track["_canonical_cfo_hz"] + shift * GLRT_ALIAS_SPACING_HZ - predicted
             if track is anchor or float(np.median(np.abs(residual_hz))) <= final_limit_hz:
                 updated_active.append(track)
                 updated_shifts[track["track_label"]] = shift
-        if (
-            [track["track_label"] for track in updated_active]
-            == [track["track_label"] for track in active]
-            and updated_shifts == shifts
-        ):
+        if [track["track_label"] for track in updated_active] == [
+            track["track_label"] for track in active
+        ] and updated_shifts == shifts:
             active = updated_active
             shifts = updated_shifts
             break
@@ -302,9 +289,7 @@ def stitch_glrt_tracks(tracks: list[dict[str, Any]]) -> dict[str, Any] | None:
             for track in active
         ],
         "fit": {
-            key: value
-            for key, value in global_fit.items()
-            if not isinstance(value, np.ndarray)
+            key: value for key, value in global_fit.items() if not isinstance(value, np.ndarray)
         },
         "_times_s": times_s,
         "_aligned_cfo_hz": aligned_cfo_hz,
@@ -426,9 +411,7 @@ def validate_pss(document: dict[str, Any], capture: dict[str, Any]) -> None:
         "window duration": math.isclose(
             document["configuration"]["maximum_block_duration_s"], 0.250
         ),
-        "window stride": math.isclose(
-            document["configuration"]["block_stride_duration_s"], 0.125
-        ),
+        "window stride": math.isclose(document["configuration"]["block_stride_duration_s"], 0.125),
     }
     failed = [label for label, passed in checks.items() if not passed]
     if failed:
@@ -436,11 +419,7 @@ def validate_pss(document: dict[str, Any], capture: dict[str, Any]) -> None:
 
 
 def flatten_modes(document: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {
-        mode["mode_id"]: mode
-        for block in document["blocks"]
-        for mode in block["modes"]
-    }
+    return {mode["mode_id"]: mode for block in document["blocks"] for mode in block["modes"]}
 
 
 def select_independent_pss_track(document: dict[str, Any]) -> dict[str, Any] | None:
@@ -508,9 +487,7 @@ def deduplicate_frame_windows(
                 float(np.polyval(coefficients, time_s - origin_s)) % FRAME_PERIOD_S
             ) * sample_rate_hz
             frame_number = round((sample - expected_phase_samples) / period_samples)
-            grouped[frame_number].append(
-                (sample, float(window["normalized_match_power"]))
-            )
+            grouped[frame_number].append((sample, float(window["normalized_match_power"])))
     frame_rows = sorted(grouped.items())
     samples = np.asarray(
         [np.median([sample for sample, _ in values]) for _, values in frame_rows],
@@ -518,12 +495,16 @@ def deduplicate_frame_windows(
     )
     times_s = samples / sample_rate_hz
     phases_s = np.mod(samples / sample_rate_hz, FRAME_PERIOD_S)
-    return times_s, phases_s, {
-        "raw_refined_window_count": raw_count,
-        "strong_refined_window_count": strong_count,
-        "unique_strong_frame_epoch_count": len(frame_rows),
-        "overlap_duplicate_count": strong_count - len(frame_rows),
-    }
+    return (
+        times_s,
+        phases_s,
+        {
+            "raw_refined_window_count": raw_count,
+            "strong_refined_window_count": strong_count,
+            "unique_strong_frame_epoch_count": len(frame_rows),
+            "overlap_duplicate_count": strong_count - len(frame_rows),
+        },
+    )
 
 
 def pss_summary(document: dict[str, Any], capture: dict[str, Any]) -> dict[str, Any]:
@@ -534,9 +515,7 @@ def pss_summary(document: dict[str, Any], capture: dict[str, Any]) -> dict[str, 
         "candidate_block_count": sum(bool(block["modes"]) for block in document["blocks"]),
         "retained_mode_count": len(modes_by_id),
         "published_track_count": len(document["tracks"]),
-        "strong_window_count": sum(
-            mode["strong_window_count"] for mode in modes_by_id.values()
-        ),
+        "strong_window_count": sum(mode["strong_window_count"] for mode in modes_by_id.values()),
         "refined_window_count": sum(mode["window_count"] for mode in modes_by_id.values()),
     }
     if track is None:
@@ -587,18 +566,14 @@ def pss_summary(document: dict[str, Any], capture: dict[str, Any]) -> dict[str, 
     return {
         "inventory": inventory,
         "independent_track": {
-            "selection": (
-                "PSS-only: maximum published time span, then mode count, then lower RMS"
-            ),
+            "selection": ("PSS-only: maximum published time span, then mode count, then lower RMS"),
             "track_id": track["track_id"],
             "mode_count": len(selected_modes),
             "time_start_s": float(track["time_start_s"]),
             "time_stop_s": float(track["time_stop_s"]),
             "span_s": float(track["time_stop_s"] - track["time_start_s"]),
             "published_rms_residual_us": float(track["rms_residual_s"]) * 1e6,
-            "published_maximum_absolute_residual_us": float(
-                track["maximum_absolute_residual_s"]
-            )
+            "published_maximum_absolute_residual_us": float(track["maximum_absolute_residual_s"])
             * 1e6,
             "pss_rf_reference_hz": pss_rf_hz,
             "quadratic_physical_equivalent_doppler_hz_at_reference": (
@@ -632,9 +607,7 @@ def pss_summary(document: dict[str, Any], capture: dict[str, Any]) -> dict[str, 
 
 def glrt_tracks(product: dict[str, Any], *, native_first_utc_ns: int) -> list[dict[str, Any]]:
     source = product["source"]
-    start_offset_s = (
-        int(source["timing"]["first_estimate_utc_ns"]) - native_first_utc_ns
-    ) / 1e9
+    start_offset_s = (int(source["timing"]["first_estimate_utc_ns"]) - native_first_utc_ns) / 1e9
     rf_hz = LNB_LO_HZ + float(source["tuned_center_frequency_hz"])
     rows: list[dict[str, Any]] = []
     track_number = 0
@@ -709,8 +682,7 @@ def summarize_glrt(
                 key=lambda item: (
                     max(
                         0.0,
-                        min(pss_stop, item["time_stop_s"])
-                        - max(pss_start, item["time_start_s"]),
+                        min(pss_stop, item["time_stop_s"]) - max(pss_start, item["time_start_s"]),
                     ),
                     item["observation_count"],
                 ),
@@ -751,9 +723,7 @@ def clean_glrt(summary: dict[str, Any]) -> dict[str, Any]:
         return {key: value for key, value in track.items() if not key.startswith("_")}
 
     return {
-        "best_receiver_id_from_cohort_selection": summary[
-            "best_receiver_id_from_cohort_selection"
-        ],
+        "best_receiver_id_from_cohort_selection": summary["best_receiver_id_from_cohort_selection"],
         "paths": [
             {
                 **{
@@ -762,9 +732,7 @@ def clean_glrt(summary: dict[str, Any]) -> dict[str, Any]:
                     if key not in {"tracks", "stitched_family"}
                 },
                 "independent_track": clean_track(path["independent_track"]),
-                "joint_temporal_overlap_track": clean_track(
-                    path["joint_temporal_overlap_track"]
-                ),
+                "joint_temporal_overlap_track": clean_track(path["joint_temporal_overlap_track"]),
                 "stitched_family": clean_track(path["stitched_family"]),
                 "tracks": [clean_track(track) for track in path["tracks"]],
             }
@@ -813,9 +781,7 @@ def affine_phase_alignment(
                 "evaluation_rms_us": rms(fold_residuals_s[evaluation]) * 1e6,
             }
         )
-    holdout_rms_us = float(
-        np.sqrt(np.mean([fold["evaluation_rms_us"] ** 2 for fold in folds]))
-    )
+    holdout_rms_us = float(np.sqrt(np.mean([fold["evaluation_rms_us"] ** 2 for fold in folds])))
     return {
         "nuisance_origin_s": origin_s,
         "full_nuisance_coefficients_ascending_s": coefficients.tolist(),
@@ -874,8 +840,7 @@ def comparison(pss: dict[str, Any], glrt: dict[str, Any]) -> dict[str, Any] | No
                 "pss_same_sign_equivalent_doppler_rate_hz_s_at_glrt_rf": (
                     pss_same * path["rf_reference_hz"]
                 ),
-                "physical_pss_minus_glrt_s_inverse": pss_physical
-                - glrt_rate_fractional,
+                "physical_pss_minus_glrt_s_inverse": pss_physical - glrt_rate_fractional,
                 "same_sign_pss_minus_glrt_s_inverse": pss_same - glrt_rate_fractional,
                 "opposite_iq_glrt_rate_s_inverse": -glrt_rate_fractional,
             }
@@ -883,9 +848,7 @@ def comparison(pss: dict[str, Any], glrt: dict[str, Any]) -> dict[str, Any] | No
         aligned_modes = [
             mode
             for mode in selected_modes
-            if family["time_start_s"]
-            <= float(mode["center_time_s"])
-            <= family["time_stop_s"]
+            if family["time_start_s"] <= float(mode["center_time_s"]) <= family["time_stop_s"]
         ]
         if len(aligned_modes) < 6:
             continue
@@ -897,9 +860,9 @@ def comparison(pss: dict[str, Any], glrt: dict[str, Any]) -> dict[str, Any] | No
             [float(mode["median_frame_phase_s"]) for mode in aligned_modes],
             dtype=float,
         )
-        observed_unwrapped_s = np.unwrap(
-            alignment_phases_s / FRAME_PERIOD_S * 2.0 * np.pi
-        ) * (FRAME_PERIOD_S / (2.0 * np.pi))
+        observed_unwrapped_s = np.unwrap(alignment_phases_s / FRAME_PERIOD_S * 2.0 * np.pi) * (
+            FRAME_PERIOD_S / (2.0 * np.pi)
+        )
         primitive = np.polyint(coefficients) / float(path["rf_reference_hz"])
         centered_s = alignment_times_s - float(family["fit"]["origin_s"])
         integrated_fractional_cfo_s = np.polyval(primitive, centered_s)
@@ -974,11 +937,7 @@ def render_capture(
     path: Path,
 ) -> None:
     figure, axes = plt.subplots(6, 1, figsize=(15, 20), sharex=True, constrained_layout=True)
-    all_modes = [
-        mode
-        for block in pss["_document"]["blocks"]
-        for mode in block["modes"]
-    ]
+    all_modes = [mode for block in pss["_document"]["blocks"] for mode in block["modes"]]
     axes[0].scatter(
         [item["center_time_s"] for item in all_modes],
         [item["median_frame_phase_s"] * 1e6 for item in all_modes],
@@ -998,12 +957,8 @@ def render_capture(
             label="independent PSS track",
         )
         cubic = pss["_fits"]["3"]
-        axes[1].scatter(
-            cubic["times_s"], cubic["unwrapped_s"] * 1e6, s=14, color="#111827"
-        )
-        axes[1].plot(
-            cubic["times_s"], cubic["fitted_s"] * 1e6, color="#ea580c", linewidth=2
-        )
+        axes[1].scatter(cubic["times_s"], cubic["unwrapped_s"] * 1e6, s=14, color="#111827")
+        axes[1].plot(cubic["times_s"], cubic["fitted_s"] * 1e6, color="#ea580c", linewidth=2)
         quadratic = pss["_fits"]["2"]
         axes[2].scatter(
             quadratic["times_s"],
@@ -1040,9 +995,7 @@ def render_capture(
             alpha=0.28,
             color="#2563eb",
             rasterized=True,
-            label=(
-                f"{stitched['retained_track_count']} GLRT episodes after integer-class shifts"
-            ),
+            label=(f"{stitched['retained_track_count']} GLRT episodes after integer-class shifts"),
         )
         order = np.argsort(stitched["_times_s"])
         axes[4].plot(
@@ -1256,9 +1209,7 @@ def render_rate_summary(captures: list[dict[str, Any]], path: Path) -> None:
         physical_alignment_scores.append(
             math.nan
             if alignment is None
-            else alignment["physical_pss_vs_recorded_glrt_iq"][
-                "holdout_rms_ratio_to_affine_null"
-            ]
+            else alignment["physical_pss_vs_recorded_glrt_iq"]["holdout_rms_ratio_to_affine_null"]
         )
         same_sign_alignment_scores.append(
             math.nan
@@ -1330,9 +1281,7 @@ def main() -> None:
     capture_results: list[dict[str, Any]] = []
     for capture in cohort["selected"]:
         capture_id = capture["session_id"]
-        pss_path = (
-            args.pss_root / capture_id / "native25-blind-250ms-stride125ms.json"
-        )
+        pss_path = args.pss_root / capture_id / "native25-blind-250ms-stride125ms.json"
         document = json.loads(pss_path.read_text(encoding="utf-8"))
         validate_pss(document, capture)
         pss = pss_summary(document, capture)
@@ -1400,9 +1349,7 @@ def main() -> None:
                 "strong local windows only; overlapping detections deduplicated by global "
                 "750 Hz frame epoch before cubic fit"
             ),
-            "glrt_alias_canonicalization": (
-                "canonical_cfo = raw_cfo - alias_index*(2.5 MHz/11)"
-            ),
+            "glrt_alias_canonicalization": ("canonical_cfo = raw_cfo - alias_index*(2.5 MHz/11)"),
             "glrt_independent_track_selection": (
                 "maximum published Hough observation count, then span"
             ),

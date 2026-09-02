@@ -77,11 +77,7 @@ def _track_summary(track: dict[str, Any]) -> dict[str, Any]:
 
 def _path_summary(path: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     document = json.loads(Path(path["path"]).read_text(encoding="utf-8"))
-    tracks = [
-        track
-        for segment in document["segments"]
-        for track in segment["hough"]["tracks"]
-    ]
+    tracks = [track for segment in document["segments"] for track in segment["hough"]["tracks"]]
     summaries = [_track_summary(track) for track in tracks]
     summary = {
         "receiver_id": int(path["receiver_id"]),
@@ -109,9 +105,9 @@ def _plot_selection(selected: list[dict[str, Any]], output: Path) -> None:
         values = [
             100.0
             * float(
-                next(
-                    row for row in item["glrt_2p5m"] if row["receiver_id"] == receiver
-                )["passing_fraction"]
+                next(row for row in item["glrt_2p5m"] if row["receiver_id"] == receiver)[
+                    "passing_fraction"
+                ]
             )
             for item in selected
         ]
@@ -153,11 +149,7 @@ def _plot_aliases(
     for row_index, (capture, color) in enumerate(zip(selected, COLORS, strict=True)):
         receiver = int(capture["rank_fields"]["best_receiver_id"])
         document = documents[(str(capture["session_id"]), receiver)]
-        tracks = [
-            track
-            for segment in document["segments"]
-            for track in segment["hough"]["tracks"]
-        ]
+        tracks = [track for segment in document["segments"] for track in segment["hough"]["tracks"]]
         left, right = axes[row_index]
         for track in tracks:
             observations = track["observations"]
@@ -243,8 +235,7 @@ def main() -> None:
         encoding="utf-8",
     )
     if not all(
-        math.isfinite(float(item["rank_fields"]["best_passing_fraction"]))
-        for item in selected
+        math.isfinite(float(item["rank_fields"]["best_passing_fraction"])) for item in selected
     ):
         raise ValueError("cohort selection contains non-finite GLRT strength")
     print(

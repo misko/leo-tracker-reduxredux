@@ -74,20 +74,14 @@ def _glrt_metrics(document: dict[str, Any]) -> dict[str, Any]:
         for window in segment["windows"]
         if window["passed_margin_gate"]
     ]
-    tracks = [
-        track
-        for segment in document["segments"]
-        for track in segment["hough"]["tracks"]
-    ]
+    tracks = [track for segment in document["segments"] for track in segment["hough"]["tracks"]]
     accounting = document["accounting"]
     valid = int(accounting["valid_count"])
     return {
         "valid_window_count": valid,
         "passing_window_count": int(accounting["passing_count"]),
         "passing_fraction": float(accounting["passing_count"] / valid),
-        "median_passing_margin": _median(
-            [float(window["glrt_margin"]) for window in passing]
-        ),
+        "median_passing_margin": _median([float(window["glrt_margin"]) for window in passing]),
         "median_passing_exact_score": _median(
             [float(window["glrt_exact_score"]) for window in passing]
         ),
@@ -104,8 +98,7 @@ def _glrt_metrics(document: dict[str, Any]) -> dict[str, Any]:
         ),
         "longest_hough_span_s": max(
             (
-                float(track["global_end_time_s"])
-                - float(track["global_start_time_s"])
+                float(track["global_end_time_s"]) - float(track["global_start_time_s"])
                 for track in tracks
             ),
             default=0.0,
@@ -130,8 +123,7 @@ def _stream_summary(row: dict[str, Any]) -> dict[str, Any]:
         "observed_sample_count": int(attributes["observed_sample_count"]),
         "missing_sample_count": int(attributes["zero_fill_sample_count"]),
         "observed_density": float(
-            int(attributes["observed_sample_count"])
-            / int(attributes["logical_sample_count"])
+            int(attributes["observed_sample_count"]) / int(attributes["logical_sample_count"])
         ),
         "continuity_gap_count": int(continuity["gap_count"]),
         "continuity_segment_count": int(continuity["segment_count"]),
@@ -226,9 +218,10 @@ def main() -> None:
             for row in products_by_session[session_id]
             if int(row["binding"]["sample_rate_hz"]) == 2_500_000
         ]
-        if len(products) != 2 or sorted(
-            int(row["binding"]["receiver_id"]) for row in products
-        ) != [0, 1]:
+        if len(products) != 2 or sorted(int(row["binding"]["receiver_id"]) for row in products) != [
+            0,
+            1,
+        ]:
             exclusions.append(
                 {"session_id": session_id, "reason": "missing dual-receiver 2.5M GLRT V2"}
             )
