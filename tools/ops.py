@@ -29,6 +29,7 @@ PROTECTED_DATABASES = frozenset({"leo_tracker", "postgres", "template0", "templa
 RELEASE_ROOT = Path("/opt/leo-tracker")
 PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
 PRODUCTION_ACQUISITION_ENVIRONMENT = Path("/etc/leo/acquisition.env")
+PRODUCTION_WORKER_ENVIRONMENT = Path("/etc/leo/worker.env")
 DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
 QNAP_ROOT = Path("/mnt/qnap01")
 PRODUCTION_CAPTURE_POLICY = "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
@@ -120,10 +121,12 @@ class Component:
     name: str
     patterns: tuple[str, ...]
     tests: tuple[str, ...]
+    runtime_patterns: tuple[str, ...]
     impact: tuple[str, ...]
     postgres: bool = False
     web: bool = False
     exclusive: bool = False
+    fallback: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,17 +157,19 @@ def _run_git(*arguments: str) -> str:
 
 def load_components(path: Path = MANIFEST_PATH) -> tuple[Component, ...]:
     document = json.loads(path.read_text(encoding="utf-8"))
-    if document.get("schema_version") != 1:
+    if document.get("schema_version") != 2:
         raise OpsError("unsupported component manifest schema")
     return tuple(
         Component(
             name=item["name"],
             patterns=tuple(item["patterns"]),
             tests=tuple(item.get("tests", ())),
+            runtime_patterns=tuple(item.get("runtime_patterns", ())),
             impact=tuple(item.get("impact", ())),
             postgres=bool(item.get("postgres", False)),
             web=bool(item.get("web", False)),
             exclusive=bool(item.get("exclusive", False)),
+            fallback=bool(item.get("fallback", False)),
         )
         for item in document["components"]
     )
@@ -184,6 +189,8 @@ def components_for_paths(
         exclusive_matches = [component for component in matches if component.exclusive]
         if exclusive_matches:
             matches = exclusive_matches
+        elif any(not component.fallback for component in matches):
+            matches = [component for component in matches if not component.fallback]
         if not matches:
             unclassified.append(path)
         for component in matches:
@@ -191,6 +198,27 @@ def components_for_paths(
     if unclassified:
         raise OpsError("unclassified changed paths: " + ", ".join(sorted(unclassified)))
     return tuple(selected[name] for name in sorted(selected))
+
+
+def runtime_impacts_for_paths(
+    paths: tuple[str, ...], components: tuple[Component, ...]
+) -> tuple[str, ...]:
+    """Return runtime effects without treating test selection as deployment impact."""
+
+    return tuple(
+        sorted(
+            {
+                impact
+                for component in components
+                if any(
+                    fnmatch.fnmatchcase(path, pattern)
+                    for path in paths
+                    for pattern in component.runtime_patterns
+                )
+                for impact in component.impact
+            }
+        )
+    )
 
 
 def changed_paths(*, all_paths: bool = False, base_revision: str | None = None) -> tuple[str, ...]:
@@ -1414,21 +1442,29 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         tuple(_git_lines("diff", "--name-only", f"{comparison}..{target}")) if comparison else ()
     )
     components = components_for_paths(paths, load_components())
-    impact = sorted({item for component in components for item in component.impact})
+    impact = list(runtime_impacts_for_paths(paths, components))
     rejected_fast_paths = _fast_deploy_rejected_paths(paths) if fast else ()
     fast_runtime_change = any(
         any(fnmatch.fnmatchcase(path, pattern) for pattern in _FAST_DEPLOY_RUNTIME_PATTERNS)
         for path in paths
     )
     fast_eligible = fast and fast_runtime_change and not rejected_fast_paths
+    service_impact = {name for name in ("api", "worker", "acquisition") if name in impact}
+    guarded_full_cutover = bool(
+        args.full or {"deployment", "migration"}.intersection(impact) or len(service_impact) > 1
+    )
     mode = (
         "fast-api-only"
         if fast_eligible
         else "full"
-        if {"migration", "systemd"}.intersection(impact)
+        if guarded_full_cutover
+        else f"{next(iter(service_impact))}-only"
+        if service_impact and service_impact != {"api"}
+        else "no-op"
+        if not service_impact
         else "minimal"
     )
-    full_cutover = bool(impact) and not fast_eligible and (args.full or set(impact) != {"api"})
+    full_cutover = bool(impact) and not fast_eligible and guarded_full_cutover
     return {
         "schema_version": 1,
         "kind": "leo-deployment-plan",
@@ -1510,7 +1546,10 @@ def _deploy(args: argparse.Namespace) -> int:
             plan=document,
             require_pre_staged=True,
         )
-    full_cutover = args.full or impact != {"api"}
+    service_impact = {name for name in ("api", "worker", "acquisition") if name in impact}
+    full_cutover = bool(
+        args.full or {"deployment", "migration"}.intersection(impact) or len(service_impact) > 1
+    )
     if full_cutover:
         if os.geteuid() != 0:
             raise OpsError("mutating deployment requires root; rerun with sudo")
@@ -1523,13 +1562,21 @@ def _deploy(args: argparse.Namespace) -> int:
         return _deploy_full_release(target=target, previous=str(current), plan=document)
     if os.geteuid() != 0:
         raise OpsError("mutating deployment requires root; rerun with sudo")
-    current_api = _selected_component_release_revision("api")
-    if current is None or current_api is None:
+    component = next(iter(service_impact))
+    current_component = _selected_component_release_revision(component)
+    if current is None or current_component is None:
         raise OpsError(
             "component selectors require one reviewed --full rollout before minimal deploy"
         )
     _require_matching_test_receipt(target=target, changed=tuple(document["changed_paths"]))
-    return _deploy_api_release(target=target, previous=str(current_api), plan=document)
+    if component == "api":
+        return _deploy_api_release(target=target, previous=str(current_component), plan=document)
+    return _deploy_component_release(
+        component=component,
+        target=target,
+        previous=str(current_component),
+        plan=document,
+    )
 
 
 def _require_matching_test_receipt(*, target: str, changed: tuple[str, ...]) -> Path:
@@ -1616,6 +1663,80 @@ def _deploy_api_release(
     return 0
 
 
+def _deploy_component_release(
+    *,
+    component: str,
+    target: str,
+    previous: str,
+    plan: dict[str, Any],
+) -> int:
+    """Cut over one prequalified worker or acquisition component transactionally."""
+
+    if component not in {"worker", "acquisition"}:
+        raise OpsError("narrow component deployment supports only worker or acquisition")
+    lock_path = RELEASE_ROOT / ".ops-deploy.lock"
+    lock_path.touch(mode=0o600, exist_ok=True)
+    with lock_path.open("r+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise OpsError("another deployment holds the host lock") from error
+        started = time.monotonic()
+        _stage_release(target)
+        release_receipt = _release_qualification(target)
+        release = RELEASE_ROOT / "releases" / target
+        previous_release = RELEASE_ROOT / "releases" / previous
+        selector = release / "deploy/scripts/select-component-release"
+        restart = release / f"deploy/scripts/restart-current-{component}s"
+        if component == "acquisition":
+            restart = release / "deploy/scripts/restart-current-acquisition"
+            environment_path = PRODUCTION_ACQUISITION_ENVIRONMENT
+            old_environment = environment_path.read_bytes()
+            write_environment = _write_acquisition_release_environment
+            previous_acquisition_state = _acquisition_desired_state(previous_release)
+        else:
+            environment_path = PRODUCTION_WORKER_ENVIRONMENT
+            old_environment = _ensure_worker_release_environment(environment_path, previous)
+            write_environment = _write_worker_release_environment
+            _fence_previous_release(release=release, previous=previous, target=target)
+        selected = False
+        environment_written = False
+        try:
+            subprocess.run((str(selector), component, target), check=True)
+            selected = True
+            write_environment(environment_path, old_environment, target)
+            environment_written = True
+            _verify_cutover(
+                target=target,
+                release_receipt=release_receipt,
+                release=release,
+                component=component,
+            )
+            subprocess.run((str(restart),), check=True)
+        except Exception:
+            if selected:
+                subprocess.run((str(selector), component, previous), check=True)
+            if environment_written:
+                _restore_environment(environment_path, old_environment)
+            if selected and environment_written:
+                rollback = previous_release / restart.relative_to(release)
+                subprocess.run((str(rollback),), check=True)
+                if component == "acquisition" and previous_acquisition_state == "running":
+                    _resume_acquisition_after_rollback(previous_release)
+            raise
+        receipt_path = _write_deployment_receipt(
+            target=target,
+            previous=previous,
+            mode=f"{component}-only",
+            started=started,
+            plan=plan,
+            release_receipt=release_receipt,
+        )
+        print(f"DEPLOYED component={component} revision={target} receipt={receipt_path}")
+        _warn_release_pressure()
+    return 0
+
+
 def _require_pre_staged_release(
     target: str,
     *,
@@ -1647,15 +1768,20 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
         _stage_release(target)
         release_receipt = _release_qualification(target)
         release = RELEASE_ROOT / "releases" / target
+        previous_selectors = _selected_selector_revisions()
+        if previous_selectors["global"] != previous:
+            raise OpsError("global selector changed while the deployment plan was being applied")
         environment_path = PRODUCTION_ENVIRONMENT
         old_environment = environment_path.read_bytes()
+        worker_environment_path = PRODUCTION_WORKER_ENVIRONMENT
+        old_worker_environment = _ensure_worker_release_environment(
+            worker_environment_path,
+            previous_selectors["worker"],
+        )
         acquisition_environment_path = PRODUCTION_ACQUISITION_ENVIRONMENT
         old_acquisition_environment = acquisition_environment_path.read_bytes()
         database_url = _environment_values(old_environment)["LEO_DATABASE_URL"]
         migration_changed = _migration_required(release=release, database_url=database_url)
-        previous_selectors = _selected_selector_revisions()
-        if previous_selectors["global"] != previous:
-            raise OpsError("global selector changed while the deployment plan was being applied")
         quiesced = False
         try:
             _quiesce_runtime()
@@ -1673,6 +1799,11 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
                     extra_environment={"LEO_DATABASE_URL": database_url},
                 )
             _write_deployment_environment(environment_path, old_environment, target)
+            _write_worker_release_environment(
+                worker_environment_path,
+                old_worker_environment,
+                target,
+            )
             _write_acquisition_release_environment(
                 acquisition_environment_path,
                 old_acquisition_environment,
@@ -1701,6 +1832,8 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
                         selector_release=release,
                         environment_path=environment_path,
                         old_environment=old_environment,
+                        worker_environment_path=worker_environment_path,
+                        old_worker_environment=old_worker_environment,
                         acquisition_environment_path=acquisition_environment_path,
                         old_acquisition_environment=old_acquisition_environment,
                     )
@@ -1784,6 +1917,8 @@ def _release_qualification(target: str) -> Path:
 def _passing_release_qualification(target: str) -> Path | None:
     evidence_root = Path("/srv/bulk/leo/qualification/release")
     for receipt_path in sorted(evidence_root.glob("*/receipt.json"), reverse=True):
+        if not _is_sealed_evidence_file(receipt_path):
+            continue
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -1915,6 +2050,75 @@ def _write_acquisition_release_environment(
             "acquisition environment must contain exactly one LEO_ACQUISITION_RELEASE_ID binding"
         )
     lines[locations[0]] = f"LEO_ACQUISITION_RELEASE_ID={target}"
+    temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
+    try:
+        temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        os.chown(temporary, 0, grp.getgrnam("leo").gr_gid)
+        os.chmod(temporary, 0o640)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _ensure_worker_release_environment(path: Path, revision: str) -> bytes:
+    """Create the component binding once, then return its exact snapshot."""
+
+    if path.is_symlink():
+        raise OpsError("worker environment must be a regular non-symlink file")
+    if not path.exists():
+        temporary = path.with_name(f".{path.name}.ops-create-{os.getpid()}")
+        try:
+            descriptor = os.open(
+                temporary,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                0o640,
+            )
+            with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                stream.write(f"LEO_PIPELINE_RELEASE_ID={revision}\n")
+            os.chown(temporary, 0, grp.getgrnam("leo").gr_gid)
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+    if not path.is_file() or path.is_symlink():
+        raise OpsError("worker environment must be a regular non-symlink file")
+    content = path.read_bytes()
+    lines = content.decode().splitlines()
+    locations = [
+        index
+        for index, line in enumerate(lines)
+        if not line.lstrip().startswith("#")
+        and line.partition("=")[1]
+        and line.partition("=")[0].strip() == "LEO_PIPELINE_RELEASE_ID"
+    ]
+    if len(locations) != 1:
+        raise OpsError(
+            "worker environment must contain exactly one LEO_PIPELINE_RELEASE_ID binding"
+        )
+    if _environment_values(content)["LEO_PIPELINE_RELEASE_ID"] != revision:
+        raise OpsError("worker environment does not match the selected worker release")
+    return content
+
+
+def _write_worker_release_environment(path: Path, old_environment: bytes, target: str) -> None:
+    """Atomically bind worker provenance to the selected component release."""
+
+    if path.is_symlink() or not path.is_file():
+        raise OpsError("worker environment must be a regular non-symlink file")
+    if path.read_bytes() != old_environment:
+        raise OpsError("worker environment changed after the deployment snapshot")
+    lines = old_environment.decode().splitlines()
+    locations = [
+        index
+        for index, line in enumerate(lines)
+        if not line.lstrip().startswith("#")
+        and line.partition("=")[1]
+        and line.partition("=")[0].strip() == "LEO_PIPELINE_RELEASE_ID"
+    ]
+    if len(locations) != 1:
+        raise OpsError(
+            "worker environment must contain exactly one LEO_PIPELINE_RELEASE_ID binding"
+        )
+    lines[locations[0]] = f"LEO_PIPELINE_RELEASE_ID={target}"
     temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
     try:
         temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -2149,25 +2353,26 @@ def _verify_cutover(
     target: str,
     release_receipt: Path,
     release: Path,
+    component: str | None = None,
 ) -> None:
     standard = Path(
         "/srv/bulk/leo/qualification/standard-cutover/"
         "trial-132-standard-v2-full-review-receipt.json"
     )
-    subprocess.run(
-        (
-            str(release / "deploy/scripts/verify-production-cutover"),
-            "--revision",
-            target,
-            "--legacy-user",
-            "mouse9911",
-            "--release-receipt",
-            str(release_receipt),
-            "--standard-regression-receipt",
-            str(standard),
-        ),
-        check=True,
-    )
+    command = [
+        str(release / "deploy/scripts/verify-production-cutover"),
+        "--revision",
+        target,
+        "--legacy-user",
+        "mouse9911",
+        "--release-receipt",
+        str(release_receipt),
+        "--standard-regression-receipt",
+        str(standard),
+    ]
+    if component is not None:
+        command.extend(("--component", component))
+    subprocess.run(tuple(command), check=True)
 
 
 def _start_runtime() -> None:
@@ -2214,6 +2419,7 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
     for component, revision in selector_revisions.items():
         if selected[component] != revision:
             raise OpsError(f"{component} selector failed exact-release verification")
+    _verify_worker_environment_revision(selector_revisions["worker"])
     _verify_acquisition_environment_revision(selector_revisions["acquisition"])
     _wait_for_api()
     states = subprocess.run(
@@ -2244,6 +2450,61 @@ def _verify_acquisition_environment_revision(expected: str) -> None:
         )
 
 
+def _acquisition_desired_state(release: Path) -> str:
+    completed = _run_as_leo(
+        (str(release / ".venv/bin/leo"), "acquire", "status", "--json"),
+        source_environment=True,
+        component_environment=PRODUCTION_ACQUISITION_ENVIRONMENT,
+        capture_output=True,
+    )
+    try:
+        state = json.loads(completed.stdout)["payload"]["capture_control"]["desired_state"]
+    except (KeyError, TypeError, ValueError) as error:
+        raise OpsError("capture authority status is malformed") from error
+    if state not in {"running", "paused"}:
+        raise OpsError("capture authority has an unsupported desired state")
+    return str(state)
+
+
+def _resume_acquisition_after_rollback(release: Path) -> None:
+    _run_as_leo(
+        (
+            str(release / ".venv/bin/leo"),
+            "acquire",
+            "resume",
+            "--operator",
+            "ops-rollback",
+            "--reason",
+            "restore pre-deployment capture authority",
+            "--json",
+        ),
+        source_environment=True,
+        component_environment=PRODUCTION_ACQUISITION_ENVIRONMENT,
+    )
+
+
+def _verify_worker_environment_revision(expected: str) -> None:
+    path = PRODUCTION_WORKER_ENVIRONMENT
+    if path.is_symlink() or not path.is_file():
+        raise OpsError("worker environment must be a regular non-symlink file")
+    content = path.read_bytes()
+    lines = content.decode().splitlines()
+    bindings = [
+        line
+        for line in lines
+        if not line.lstrip().startswith("#")
+        and line.partition("=")[1]
+        and line.partition("=")[0].strip() == "LEO_PIPELINE_RELEASE_ID"
+    ]
+    if len(bindings) != 1:
+        raise OpsError(
+            "worker environment must contain exactly one LEO_PIPELINE_RELEASE_ID binding"
+        )
+    actual = _environment_values(content)["LEO_PIPELINE_RELEASE_ID"]
+    if actual != expected:
+        raise OpsError("worker environment release does not match the selected worker component")
+
+
 def _wait_for_api(*, timeout_seconds: float = 10.0) -> None:
     deadline = time.monotonic() + timeout_seconds
     command = (
@@ -2270,6 +2531,8 @@ def _restore_full_release(
     selector_release: Path,
     environment_path: Path,
     old_environment: bytes,
+    worker_environment_path: Path,
+    old_worker_environment: bytes,
     acquisition_environment_path: Path,
     old_acquisition_environment: bytes,
 ) -> None:
@@ -2277,6 +2540,7 @@ def _restore_full_release(
     # selector or replace its unit/environment beneath such a process.
     _quiesce_runtime()
     _restore_environment(environment_path, old_environment)
+    _restore_environment(worker_environment_path, old_worker_environment)
     _restore_environment(acquisition_environment_path, old_acquisition_environment)
     previous_release = RELEASE_ROOT / "releases" / selector_revisions["global"]
     _select_component_revisions(release=selector_release, revisions=selector_revisions)
@@ -2349,11 +2613,19 @@ def _run_as_leo(
     *,
     extra_environment: dict[str, str] | None = None,
     source_environment: bool = False,
+    component_environment: Path | None = None,
     capture_output: bool = False,
 ) -> subprocess.CompletedProcess[str]:
+    if component_environment is not None and not source_environment:
+        raise OpsError("a component environment requires the production environment")
     argv: tuple[str, ...]
     if source_environment:
         quoted = " ".join(shlex.quote(item) for item in command)
+        component_source = (
+            f"source {shlex.quote(str(component_environment))}; "
+            if component_environment is not None
+            else ""
+        )
         argv = (
             "/usr/sbin/runuser",
             "-u",
@@ -2362,7 +2634,8 @@ def _run_as_leo(
             "/bin/bash",
             "-c",
             (
-                "set -a; source /etc/leo/leo.env; set +a; "
+                "set -a; source /etc/leo/leo.env; "
+                f"{component_source}set +a; "
                 f"export PYTHONDONTWRITEBYTECODE=1; exec {quoted}"
             ),
         )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import json
 import subprocess
 from pathlib import Path
 
@@ -18,82 +18,68 @@ def _run(*command: str, cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _committed_repository(tmp_path: Path) -> tuple[Path, str]:
+def _staged_release(tmp_path: Path) -> tuple[Path, str, str]:
     repository = tmp_path / "release"
     repository.mkdir()
-    assert _run("git", "init", "--quiet", cwd=repository).returncode == 0
-    assert _run("git", "config", "user.name", "Deployment Test", cwd=repository).returncode == 0
-    assert (
-        _run(
-            "git", "config", "user.email", "deployment-test@example.invalid", cwd=repository
-        ).returncode
-        == 0
+    revision = "a" * 40
+    tree = "b" * 40
+    (repository / ".leo-release-source.json").write_text(
+        json.dumps(
+            {
+                "schema": "org.leo.release-source/v1",
+                "revision": revision,
+                "tree": tree,
+            },
+            separators=(",", ":"),
+        )
+        + "\n"
     )
-    (repository / "tracked.txt").write_text("sealed\n")
-    assert _run("git", "add", "tracked.txt", cwd=repository).returncode == 0
-    assert _run("git", "commit", "--quiet", "-m", "fixture", cwd=repository).returncode == 0
-    revision = _run("git", "rev-parse", "HEAD", cwd=repository).stdout.strip()
-    return repository, revision
+    return repository, revision, tree
 
 
-def test_checker_accepts_exact_clean_tracked_checkout(tmp_path: Path) -> None:
-    repository, revision = _committed_repository(tmp_path)
+def test_checker_accepts_exact_git_free_source_identity(tmp_path: Path) -> None:
+    repository, revision, tree = _staged_release(tmp_path)
     result = _run(str(CHECKER), str(repository), revision, cwd=PROJECT_ROOT)
     assert result.returncode == 0, result.stderr
-    assert f"verified clean staged release {revision}" in result.stdout
+    assert f"revision={revision} tree={tree}" in result.stdout
 
 
-def test_checker_rejects_modified_tracked_checkout(tmp_path: Path) -> None:
-    repository, revision = _committed_repository(tmp_path)
-    (repository / "tracked.txt").write_text("modified\n")
+def test_checker_rejects_mismatched_revision(tmp_path: Path) -> None:
+    repository, revision, _tree = _staged_release(tmp_path)
     result = _run(str(CHECKER), str(repository), revision, cwd=PROJECT_ROOT)
+    assert result.returncode == 0
+
+    result = _run(str(CHECKER), str(repository), "c" * 40, cwd=PROJECT_ROOT)
     assert result.returncode == 65
-    assert "staged release has modified tracked files" in result.stderr
-    assert "tracked.txt" in result.stderr
+    assert "does not match requested revision" in result.stderr
 
 
-def test_checker_propagates_git_failure_instead_of_treating_output_as_clean(
-    tmp_path: Path,
-) -> None:
-    not_a_repository = tmp_path / "not-a-repository"
-    not_a_repository.mkdir()
-    result = _run(str(CHECKER), str(not_a_repository), "0" * 40, cwd=PROJECT_ROOT)
-    assert result.returncode == 65
-    assert "cannot resolve staged release HEAD" in result.stderr
-    assert "verified clean" not in result.stdout
-
-
-def test_checker_propagates_status_failure_after_revision_succeeds(tmp_path: Path) -> None:
-    revision = "c" * 40
+def test_checker_rejects_missing_or_malformed_source_identity(tmp_path: Path) -> None:
     release = tmp_path / "release"
     release.mkdir()
-    fake_bin = tmp_path / "fake-bin"
-    fake_bin.mkdir()
-    fake_git = fake_bin / "git"
-    fake_git.write_text(
-        "#!/usr/bin/env bash\n"
-        "if [[ \"$*\" == *'rev-parse --verify HEAD'* ]]; then\n"
-        f"  echo {revision}\n"
-        "  exit 0\n"
-        "fi\n"
-        "echo 'simulated status failure' >&2\n"
-        "exit 128\n"
-    )
-    fake_git.chmod(0o755)
-    environment = dict(os.environ)
-    environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
-    result = subprocess.run(
-        (str(CHECKER), str(release), revision),
-        cwd=PROJECT_ROOT,
-        env=environment,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    result = _run(str(CHECKER), str(release), "0" * 40, cwd=PROJECT_ROOT)
     assert result.returncode == 65
-    assert "simulated status failure" in result.stderr
-    assert "cannot inspect staged release tracked-file cleanliness" in result.stderr
-    assert "verified clean" not in result.stdout
+    assert "source identity is absent" in result.stderr
+
+    marker = release / ".leo-release-source.json"
+    marker.write_text('{"schema":"org.leo.release-source/v1","revision":"bad"}\n')
+    result = _run(str(CHECKER), str(release), "0" * 40, cwd=PROJECT_ROOT)
+    assert result.returncode == 65
+    assert "not canonical V1 JSON" in result.stderr
+
+
+def test_checker_rejects_git_metadata_and_historical_reports(tmp_path: Path) -> None:
+    release, revision, _tree = _staged_release(tmp_path)
+    (release / ".git").mkdir()
+    result = _run(str(CHECKER), str(release), revision, cwd=PROJECT_ROOT)
+    assert result.returncode == 65
+    assert "contains Git metadata" in result.stderr
+
+    (release / ".git").rmdir()
+    (release / "reports").mkdir()
+    result = _run(str(CHECKER), str(release), revision, cwd=PROJECT_ROOT)
+    assert result.returncode == 65
+    assert "contains historical reports" in result.stderr
 
 
 def test_nonblocking_publication_lock_rejects_concurrent_holder(tmp_path: Path) -> None:

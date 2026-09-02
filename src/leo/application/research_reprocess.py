@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from typing import Literal, Protocol
-from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,12 +12,13 @@ from leo.application.standard_reprocess import (
     StandardReprocessNotFound,
     StandardReprocessUnavailable,
 )
-from leo.catalog import ActiveRunExistsError, CatalogRepository, IdenticalRunExistsError
+from leo.catalog import CatalogRepository
 from leo.contracts.pipeline_lanes import PipelineLane
-from leo.contracts.recording import RecordingManifestV3, RecordingManifestV4
-from leo.pipeline import compile_rate_baseline_run_plan, compile_standard_run_plan
-from leo.presentation.standard_pipeline import StandardSourceTypeV2, standard_eligibility_v2
-from leo.processing import ProcessingService
+from leo.processing import (
+    ProcessingService,
+    UnsupportedOnlineRecordingManifestError,
+    require_online_recording_manifest,
+)
 from leo.storage import RecordingStore
 
 
@@ -87,67 +87,10 @@ class ResearchReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
-        if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
-            raise StandardReprocessError(
-                "device-axis recording requires the explicit Standard-native action"
-            )
-        capture_only = "CAPTURE_ONLY" in bundle.manifest.tags
-        if capture_only:
-            try:
-                plan = compile_rate_baseline_run_plan(
-                    bundle.manifest,
-                    manifest_digest=snapshot.manifest_digest,
-                    pipeline_release_id=self._pipeline_release_id,
-                )
-            except ValueError as error:
-                raise StandardReprocessError(
-                    "capture-only recording requires a separately versioned scientific pipeline"
-                ) from error
-        else:
-            healthy = all(
-                stream.captured_sample_count > 0 and bool(stream.chunks)
-                for stream in bundle.manifest.streams
-            )
-            eligibility = standard_eligibility_v2(
-                StandardSourceTypeV2(bundle.manifest.source_type.value.upper()),
-                bundle.manifest.tags,
-                capture_committed=bundle.manifest.state.value == "committed",
-                capture_healthy=healthy,
-            )
-            if not eligibility.explicit_eligible:
-                raise StandardReprocessError(eligibility.reason)
-            plan = compile_standard_run_plan(
-                bundle.manifest,
-                manifest_digest=snapshot.manifest_digest,
-                pipeline_release_id=self._pipeline_release_id,
-            )
-        release = self._catalog.pipeline_release_snapshot(self._pipeline_release_id)
-        if release.code_revision != self._pipeline_release_id:
-            raise StandardReprocessUnavailable(
-                "deployed analysis release is not exact source authority"
-            )
-        run_id = f"research-{uuid4().hex}"
-        previous = self._catalog.current_run_id(session_id, PipelineLane.RESEARCH)
         try:
-            self._processing.create_expanded_run(
-                run_id=run_id,
-                plan=plan,
-                trigger="reprocess",
-                pipeline_lane=PipelineLane.RESEARCH,
-                promotion_policy=(
-                    "evidence_only"
-                    if capture_only or bundle.manifest.source_type.value == "test"
-                    else "current"
-                ),
-            )
-        except IdenticalRunExistsError as error:
+            require_online_recording_manifest(bundle.manifest)
+        except UnsupportedOnlineRecordingManifestError as error:
             raise StandardReprocessError(str(error)) from error
-        except ActiveRunExistsError as error:
-            raise StandardReprocessError("recording already has an active Research run") from error
-        return ResearchReprocessResultV1(
-            session_id=session_id,
-            run_id=run_id,
-            pipeline_release_id=self._pipeline_release_id,
-            previous_research_run_id=previous,
-            queued_job_count=len(plan.jobs),
+        raise StandardReprocessError(
+            "current recording schemas require the explicit Standard-native action"
         )

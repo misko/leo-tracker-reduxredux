@@ -113,7 +113,42 @@ def test_web_change_selects_only_web_component_and_api_impact() -> None:
 
     assert [component.name for component in selected] == ["web"]
     assert {gate.name for gate in gates} == {"web-build", "web-test"}
-    assert {impact for component in selected for impact in component.impact} == {"api"}
+    assert OPS.runtime_impacts_for_paths(("web/src/App.tsx",), selected) == ("api",)
+
+
+def test_test_only_change_selects_its_owner_without_runtime_impact() -> None:
+    paths = ("tests/processing/test_processing_service.py",)
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    assert [component.name for component in selected] == ["processing"]
+    assert OPS.runtime_impacts_for_paths(paths, selected) == ()
+
+
+def test_specific_component_suppresses_conservative_python_fallback() -> None:
+    selected = OPS.components_for_paths(("src/leo/api/routes.py",), OPS.load_components())
+
+    assert [component.name for component in selected] == ["api"]
+    assert OPS.runtime_impacts_for_paths(("src/leo/api/routes.py",), selected) == ("api",)
+
+
+def test_only_database_contract_changes_request_migration() -> None:
+    components = OPS.load_components()
+    source_paths = ("src/leo/processing/worker.py",)
+    migration_paths = ("migrations/versions/new.py",)
+
+    source = OPS.components_for_paths(source_paths, components)
+    migration = OPS.components_for_paths(migration_paths, components)
+
+    assert "migration" not in OPS.runtime_impacts_for_paths(source_paths, source)
+    assert "migration" in OPS.runtime_impacts_for_paths(migration_paths, migration)
+
+
+def test_worker_entrypoint_change_has_worker_only_runtime_impact() -> None:
+    paths = ("src/leo/cli/processing.py",)
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    assert [component.name for component in selected] == ["worker-entrypoint"]
+    assert OPS.runtime_impacts_for_paths(paths, selected) == ("worker",)
 
 
 def test_test_infrastructure_change_uses_bounded_exclusive_shard() -> None:
@@ -136,10 +171,9 @@ def test_catalog_change_requires_postgres_and_full_service_impact() -> None:
 
     pytest_gate = next(gate for gate in gates if gate.name == "pytest-components")
     assert pytest_gate.needs_postgres
-    assert {impact for component in selected for impact in component.impact} == {
+    assert set(OPS.runtime_impacts_for_paths(("src/leo/catalog/repository.py",), selected)) == {
         "acquisition",
         "api",
-        "migration",
         "worker",
     }
 
@@ -297,6 +331,35 @@ def test_deploy_plan_for_web_change_cannot_touch_workers_or_acquisition(
     assert not plan["worker_fence_required"]
     assert plan["mode"] == "minimal"
     assert plan["capture_policy_id"] is None
+
+
+def test_deploy_plan_for_test_only_change_has_no_runtime_work(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "1" * 40
+    target = "2" * 40
+
+    def fake_git(*arguments: str) -> str:
+        if arguments == ("status", "--porcelain"):
+            return ""
+        if arguments == ("rev-parse", "origin/main"):
+            return target
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(OPS, "_run_git", fake_git)
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(
+        OPS,
+        "_git_lines",
+        lambda *_arguments: ("tests/processing/test_processing_service.py",),
+    )
+
+    plan = OPS._deployment_plan(OPS.parser().parse_args(["deploy", "--plan"]))
+
+    assert plan["components"] == ["processing"]
+    assert plan["impact"] == []
+    assert plan["services_to_restart"] == []
+    assert plan["mode"] == "no-op"
 
 
 def test_full_deployment_plan_binds_exact_production_capture_policy(
@@ -612,7 +675,7 @@ def test_stage_only_requires_root_before_staging(monkeypatch: pytest.MonkeyPatch
         OPS._deploy(args)
 
 
-def test_non_api_mutating_deploy_automatically_selects_full_cutover(
+def test_worker_only_deploy_uses_narrow_component_cutover(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     target = "2" * 40
@@ -629,16 +692,80 @@ def test_non_api_mutating_deploy_automatically_selects_full_cutover(
     )
     monkeypatch.setattr(OPS.os, "geteuid", lambda: 0)
     monkeypatch.setattr(OPS, "_require_matching_test_receipt", lambda **_kwargs: Path("ok"))
+    monkeypatch.setattr(
+        OPS,
+        "_selected_component_release_revision",
+        lambda component: "1" * 40 if component == "worker" else None,
+    )
     deployed: list[dict[str, object]] = []
     monkeypatch.setattr(
         OPS,
-        "_deploy_full_release",
+        "_deploy_component_release",
         lambda **kwargs: deployed.append(kwargs) or 0,
     )
     args = OPS.parser().parse_args(["deploy"])
 
     assert OPS._deploy(args) == 0
-    assert deployed == [{"target": target, "previous": "1" * 40, "plan": plan}]
+    assert deployed == [
+        {"component": "worker", "target": target, "previous": "1" * 40, "plan": plan}
+    ]
+
+
+def test_worker_component_cutover_qualifies_fences_binds_and_restarts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    previous = "1" * 40
+    release_root = tmp_path / "opt"
+    release_root.mkdir()
+    worker_environment = tmp_path / "worker.env"
+    worker_environment.write_text(f"LEO_PIPELINE_RELEASE_ID={previous}\n")
+    order: list[str] = []
+    monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
+    monkeypatch.setattr(OPS, "PRODUCTION_WORKER_ENVIRONMENT", worker_environment)
+    monkeypatch.setattr(OPS, "_stage_release", lambda _target: order.append("stage"))
+    monkeypatch.setattr(
+        OPS, "_release_qualification", lambda _target: order.append("qualify") or tmp_path / "q"
+    )
+    monkeypatch.setattr(OPS, "_verify_cutover", lambda **_kwargs: order.append("preflight"))
+    monkeypatch.setattr(OPS, "_fence_previous_release", lambda **_kwargs: order.append("fence"))
+    monkeypatch.setattr(
+        OPS,
+        "_write_worker_release_environment",
+        lambda *_args: order.append("environment"),
+    )
+
+    def run(command: tuple[str, ...], **_kwargs: object) -> object:
+        order.append("select" if command[-2:] == ("worker", target) else "restart")
+        return object()
+
+    monkeypatch.setattr(OPS.subprocess, "run", run)
+    monkeypatch.setattr(
+        OPS,
+        "_write_deployment_receipt",
+        lambda **_kwargs: order.append("receipt") or tmp_path / "deployment.json",
+    )
+
+    assert (
+        OPS._deploy_component_release(
+            component="worker",
+            target=target,
+            previous=previous,
+            plan={"mode": "worker-only"},
+        )
+        == 0
+    )
+    assert order == [
+        "stage",
+        "qualify",
+        "fence",
+        "select",
+        "environment",
+        "preflight",
+        "restart",
+        "receipt",
+    ]
 
 
 def test_api_mutating_deploy_requires_root(
@@ -838,6 +965,42 @@ def test_acquisition_environment_atomically_binds_selected_release(
         OPS._verify_acquisition_environment_revision("3" * 40)
 
 
+def test_worker_environment_is_created_and_atomically_binds_selected_release(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    previous = "1" * 40
+    target = "2" * 40
+    environment = tmp_path / "worker.env"
+    monkeypatch.setattr(OPS.os, "chown", lambda *_args: None)
+    monkeypatch.setattr(OPS.grp, "getgrnam", lambda _name: type("Group", (), {"gr_gid": 1})())
+
+    original = OPS._ensure_worker_release_environment(environment, previous)
+    OPS._write_worker_release_environment(environment, original, target)
+
+    assert original == f"LEO_PIPELINE_RELEASE_ID={previous}\n".encode()
+    assert OPS._environment_values(environment.read_bytes()) == {"LEO_PIPELINE_RELEASE_ID": target}
+    monkeypatch.setattr(OPS, "PRODUCTION_WORKER_ENVIRONMENT", environment)
+    OPS._verify_worker_environment_revision(target)
+    with pytest.raises(OPS.OpsError, match="does not match"):
+        OPS._verify_worker_environment_revision(previous)
+
+
+def test_worker_environment_rejects_duplicate_release_bindings(
+    tmp_path: Path,
+) -> None:
+    revision = "1" * 40
+    environment = tmp_path / "worker.env"
+    environment.write_text(
+        f"LEO_PIPELINE_RELEASE_ID={revision}\nLEO_PIPELINE_RELEASE_ID={revision}\n"
+    )
+
+    with pytest.raises(OPS.OpsError, match="exactly one"):
+        OPS._ensure_worker_release_environment(environment, revision)
+    with pytest.raises(OPS.OpsError, match="exactly one"):
+        OPS._write_worker_release_environment(environment, environment.read_bytes(), revision)
+
+
 def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -853,11 +1016,14 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     )
     acquisition_environment = tmp_path / "acquisition.env"
     acquisition_environment.write_text(f"LEO_ACQUISITION_RELEASE_ID={previous}\n")
+    worker_environment = tmp_path / "worker.env"
+    worker_environment.write_text(f"LEO_PIPELINE_RELEASE_ID={previous}\n")
     qualification = tmp_path / "qualification.json"
     qualification.write_text("{}")
     order: list[str] = []
     monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
     monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "PRODUCTION_WORKER_ENVIRONMENT", worker_environment)
     monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", acquisition_environment)
     monkeypatch.setattr(OPS, "_stage_release", lambda _target: order.append("stage"))
     monkeypatch.setattr(OPS, "_release_qualification", lambda _target: qualification)
@@ -870,6 +1036,9 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     monkeypatch.setattr(OPS, "_quiesce_runtime", lambda: order.append("quiesce"))
     monkeypatch.setattr(
         OPS, "_write_deployment_environment", lambda *_args: order.append("environment")
+    )
+    monkeypatch.setattr(
+        OPS, "_write_worker_release_environment", lambda *_args: order.append("worker-environment")
     )
     monkeypatch.setattr(
         OPS,
@@ -895,6 +1064,7 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
         "stage",
         "quiesce",
         "environment",
+        "worker-environment",
         "acquisition-environment",
         "select",
         "fence",
@@ -989,8 +1159,12 @@ def test_full_deploy_rolls_back_no_migration_failure(
     acquisition_environment = tmp_path / "acquisition.env"
     old_acquisition_environment = f"LEO_ACQUISITION_RELEASE_ID={previous}\n".encode()
     acquisition_environment.write_bytes(old_acquisition_environment)
+    worker_environment = tmp_path / "worker.env"
+    old_worker_environment = f"LEO_PIPELINE_RELEASE_ID={previous}\n".encode()
+    worker_environment.write_bytes(old_worker_environment)
     monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
     monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "PRODUCTION_WORKER_ENVIRONMENT", worker_environment)
     monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", acquisition_environment)
     previous_api = "3" * 40
     selectors = {
@@ -1002,6 +1176,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
     order: list[str] = []
     write_deployment_environment = OPS._write_deployment_environment
     write_acquisition_release_environment = OPS._write_acquisition_release_environment
+    write_worker_release_environment = OPS._write_worker_release_environment
     restore_environment = OPS._restore_environment
     monkeypatch.setattr(OPS, "_stage_release", lambda _target: order.append("stage"))
     monkeypatch.setattr(OPS, "_release_qualification", lambda _target: tmp_path / "receipt")
@@ -1016,6 +1191,12 @@ def test_full_deploy_rolls_back_no_migration_failure(
         write_deployment_environment(path, content, revision)
 
     monkeypatch.setattr(OPS, "_write_deployment_environment", write_target)
+
+    def write_worker_target(path: Path, content: bytes, revision: str) -> None:
+        order.append("target-worker-environment")
+        write_worker_release_environment(path, content, revision)
+
+    monkeypatch.setattr(OPS, "_write_worker_release_environment", write_worker_target)
 
     def write_acquisition_target(path: Path, content: bytes, revision: str) -> None:
         order.append("target-acquisition-environment")
@@ -1064,13 +1245,18 @@ def test_full_deploy_rolls_back_no_migration_failure(
             )
             assert content == old_environment
             order.append("previous-environment")
-        else:
+        elif path == acquisition_environment:
             assert path == acquisition_environment
             assert (
                 OPS._environment_values(path.read_bytes())["LEO_ACQUISITION_RELEASE_ID"] == target
             )
             assert content == old_acquisition_environment
             order.append("previous-acquisition-environment")
+        else:
+            assert path == worker_environment
+            assert OPS._environment_values(path.read_bytes())["LEO_PIPELINE_RELEASE_ID"] == target
+            assert content == old_worker_environment
+            order.append("previous-worker-environment")
         restore_environment(path, content)
 
     monkeypatch.setattr(OPS, "_restore_environment", restore_previous)
@@ -1112,6 +1298,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
         "stage",
         "quiesce",
         "target-environment",
+        "target-worker-environment",
         "target-acquisition-environment",
         "target-selectors",
         "fence",
@@ -1121,6 +1308,7 @@ def test_full_deploy_rolls_back_no_migration_failure(
         "target-health",
         "quiesce",
         "previous-environment",
+        "previous-worker-environment",
         "previous-acquisition-environment",
         "previous-selectors",
         "previous-units",
@@ -1146,9 +1334,12 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
     )
     acquisition_environment = tmp_path / "acquisition.env"
     acquisition_environment.write_text(f"LEO_ACQUISITION_RELEASE_ID={previous}\n")
+    worker_environment = tmp_path / "worker.env"
+    worker_environment.write_text(f"LEO_PIPELINE_RELEASE_ID={previous}\n")
     order: list[str] = []
     monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
     monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "PRODUCTION_WORKER_ENVIRONMENT", worker_environment)
     monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", acquisition_environment)
     monkeypatch.setattr(OPS, "_stage_release", lambda _target: None)
     monkeypatch.setattr(OPS, "_release_qualification", lambda _target: tmp_path / "receipt")
@@ -1162,6 +1353,7 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
     monkeypatch.setattr(OPS, "_backup_database", lambda **_kwargs: tmp_path / "backup")
     monkeypatch.setattr(OPS, "_run_as_leo", lambda *_args, **_kwargs: order.append("migration"))
     monkeypatch.setattr(OPS, "_write_deployment_environment", lambda *_args: None)
+    monkeypatch.setattr(OPS, "_write_worker_release_environment", lambda *_args: None)
     monkeypatch.setattr(OPS, "_write_acquisition_release_environment", lambda *_args: None)
     monkeypatch.setattr(OPS, "_select_all_components", lambda **_kwargs: None)
     monkeypatch.setattr(OPS, "_fence_previous_release", lambda **_kwargs: None)
@@ -1294,6 +1486,8 @@ def test_restore_refuses_to_mutate_previous_runtime_until_target_is_stopped(
             selector_release=tmp_path / "target",
             environment_path=tmp_path / "leo.env",
             old_environment=b"old",
+            worker_environment_path=tmp_path / "worker.env",
+            old_worker_environment=b"old-worker",
             acquisition_environment_path=tmp_path / "acquisition.env",
             old_acquisition_environment=b"old-acquisition",
         )
@@ -1331,12 +1525,15 @@ def test_failed_previous_runtime_health_is_quiesced_again(
             selector_release=tmp_path / ("2" * 40),
             environment_path=tmp_path / "leo.env",
             old_environment=b"old",
+            worker_environment_path=tmp_path / "worker.env",
+            old_worker_environment=b"old-worker",
             acquisition_environment_path=tmp_path / "acquisition.env",
             old_acquisition_environment=b"old-acquisition",
         )
 
     assert order == [
         "quiesce",
+        "environment",
         "environment",
         "environment",
         "selectors",
@@ -1467,6 +1664,7 @@ def test_restored_runtime_verifies_divergent_selectors_and_service_health(
         lambda component: observed_components[component],
     )
     monkeypatch.setattr(OPS, "_wait_for_api", lambda: health.append("api"))
+    monkeypatch.setattr(OPS, "_verify_worker_environment_revision", lambda _revision: None)
     monkeypatch.setattr(OPS, "_verify_acquisition_environment_revision", lambda _revision: None)
     monkeypatch.setattr(
         OPS.subprocess,

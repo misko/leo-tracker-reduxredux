@@ -1,49 +1,87 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "components": [
     {
       "name": "test-infrastructure",
-      "patterns": ["ops", "tools/ops.py", "config/ops-components.json", "tests/conftest.py", "tests/postgres_support.py", "tests/test_postgres_test_safety.py", "tests/deploy/test_ops_front_door.py", "tests/deploy/test_release_retention.py", "tests/catalog/conftest.py", "tests/processing/conftest.py", "tests/operations/conftest.py", "tests/integration/test_standard_v2_operational_vertical.py", "tests/integration/test_read_vertical.py", "tests/qualification/test_soak_acceptance_postgres.py", "tests/qualification/test_trusted_campaign_store.py", "tests/e2e/server.py"],
+      "patterns": ["ops", "tools/ops.py", "config/ops-components.json", "tests/conftest.py", "tests/postgres_support.py", "tests/test_postgres_test_safety.py", "tests/deploy/test_ops_front_door.py", "tests/deploy/test_release_retention.py", "tests/catalog/conftest.py", "tests/processing/conftest.py", "tests/operations/conftest.py", "tests/integration/test_read_vertical.py", "tests/qualification/test_soak_acceptance_postgres.py", "tests/qualification/test_trusted_campaign_store.py", "tests/e2e/server.py"],
       "tests": ["tests/test_postgres_test_safety.py", "tests/deploy/test_ops_front_door.py", "tests/deploy/test_release_retention.py"],
+      "runtime_patterns": ["ops", "tools/ops.py", "config/ops-components.json"],
       "postgres": false,
       "exclusive": true,
-      "impact": ["systemd"]
+      "impact": ["deployment"]
     },
     {
       "name": "analysis",
       "patterns": ["src/leo/analysis/**", "src/leo/contracts/**", "src/leo/dsp/**", "tests/analysis/**", "tests/contracts/**", "tests/dsp/**", "config/analysis/**", "corpus/**", "standard_pipeline*.md", "research_pipeline.md"],
       "tests": ["tests/analysis", "tests/contracts", "tests/dsp"],
+      "runtime_patterns": ["src/leo/analysis/**", "src/leo/contracts/**", "src/leo/dsp/**", "config/analysis/**", "corpus/**"],
       "impact": ["api", "worker"]
     },
     {
       "name": "api",
       "patterns": ["src/leo/api/**", "src/leo/application/**", "src/leo/presentation/**", "tests/api/**", "tests/application/**", "tests/presentation/**"],
       "tests": ["tests/api", "tests/application", "tests/presentation"],
+      "runtime_patterns": ["src/leo/api/**", "src/leo/application/**", "src/leo/presentation/**"],
       "impact": ["api"]
     },
     {
       "name": "acquisition",
       "patterns": ["src/leo/acquisition/**", "src/leo/radio/**", "src/leo/scanner/**", "src/leo/station/**", "tests/acquisition/**", "tests/scanner/**", "tests/station/**", "profiles/**", "deploy/station/**"],
       "tests": ["tests/acquisition", "tests/scanner", "tests/station"],
+      "runtime_patterns": ["src/leo/acquisition/**", "src/leo/radio/**", "src/leo/scanner/**", "src/leo/station/**", "profiles/**", "deploy/station/**"],
       "impact": ["acquisition"]
     },
     {
-      "name": "catalog",
-      "patterns": ["src/leo/catalog/**", "src/leo/processing/**", "src/leo/pipeline/**", "migrations/**", "alembic.ini", "tests/catalog/**", "tests/processing/**", "tests/pipeline/**", "tests/integration/**"],
-      "tests": ["tests/catalog", "tests/processing", "tests/pipeline"],
+      "name": "database-schema",
+      "patterns": ["migrations/**", "alembic.ini"],
+      "tests": ["tests/catalog/test_migrations.py"],
+      "runtime_patterns": ["migrations/**", "alembic.ini"],
       "postgres": true,
+      "exclusive": true,
       "impact": ["api", "worker", "acquisition", "migration"]
     },
     {
-      "name": "operations",
-      "patterns": ["src/leo/operations/**", "src/leo/qualification/**", "tests/operations/**", "tests/qualification/**", "config/qualification/**"],
-      "tests": ["tests/operations", "tests/qualification"],
+      "name": "catalog",
+      "patterns": ["src/leo/catalog/**", "tests/catalog/**", "tests/integration/**"],
+      "tests": ["tests/catalog"],
+      "runtime_patterns": ["src/leo/catalog/**"],
+      "postgres": true,
       "impact": ["api", "worker", "acquisition"]
+    },
+    {
+      "name": "processing",
+      "patterns": ["src/leo/processing/**", "src/leo/pipeline/**", "tests/processing/**", "tests/pipeline/**"],
+      "tests": ["tests/processing", "tests/pipeline"],
+      "runtime_patterns": ["src/leo/processing/**", "src/leo/pipeline/**"],
+      "postgres": true,
+      "impact": ["api", "worker"]
+    },
+    {
+      "name": "worker-entrypoint",
+      "patterns": ["src/leo/cli/processing.py", "tests/cli/test_process_cli.py", "tests/cli/test_worker_memory.py", "tests/cli/test_stop_fence_backend.py", "tests/cli/test_automatic_lane_selection.py"],
+      "tests": ["tests/cli/test_process_cli.py", "tests/cli/test_worker_memory.py", "tests/cli/test_stop_fence_backend.py", "tests/cli/test_automatic_lane_selection.py"],
+      "runtime_patterns": ["src/leo/cli/processing.py"],
+      "impact": ["worker"]
+    },
+    {
+      "name": "operations",
+      "patterns": ["src/leo/operations/**", "tests/operations/**"],
+      "tests": ["tests/operations"],
+      "runtime_patterns": ["src/leo/operations/**"],
+      "impact": ["api", "worker", "acquisition"]
+    },
+    {
+      "name": "release-qualification",
+      "patterns": ["src/leo/qualification/**", "tests/qualification/**", "config/qualification/**"],
+      "tests": ["tests/qualification"],
+      "runtime_patterns": ["src/leo/qualification/**", "config/qualification/**"],
+      "impact": ["deployment"]
     },
     {
       "name": "web",
       "patterns": ["web/**"],
       "tests": [],
+      "runtime_patterns": ["web/**"],
       "web": true,
       "impact": ["api"]
     },
@@ -51,24 +89,29 @@
       "name": "deployment",
       "patterns": ["deploy/**", "tests/deploy/**", ".github/**", "pyproject.toml", "uv.lock", "setup.py"],
       "tests": ["tests/deploy", "tests/test_postgres_test_safety.py"],
-      "impact": ["api", "worker", "acquisition", "systemd"]
+      "runtime_patterns": ["deploy/**", ".github/**", "pyproject.toml", "uv.lock", "setup.py"],
+      "impact": ["api", "worker", "acquisition", "deployment"]
     },
     {
       "name": "python-general",
       "patterns": ["src/leo/**", "tests/**", "tools/**"],
       "tests": [],
+      "runtime_patterns": ["src/leo/**", "tools/**"],
+      "fallback": true,
       "impact": ["api", "worker"]
     },
     {
       "name": "documentation",
       "patterns": ["*.md", "docs/**", "reports/**", "parking.md", "plan*.md"],
       "tests": [],
+      "runtime_patterns": [],
       "impact": []
     },
     {
       "name": "repository-metadata",
       "patterns": [".gitignore", "AGENTS.md"],
       "tests": [],
+      "runtime_patterns": [],
       "impact": []
     }
   ]

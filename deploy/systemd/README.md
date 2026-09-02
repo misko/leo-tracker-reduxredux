@@ -7,6 +7,8 @@ maintenance commands during the rollout window. Install the units in
 `/etc/systemd/system` and install
 [`deploy/etc/leo/leo.env.example`](../etc/leo/leo.env.example) as
 `/etc/leo/leo.env` after replacing every placeholder.
+Workers additionally load `/etc/leo/worker.env`, which binds their exact
+`LEO_PIPELINE_RELEASE_ID` independently of the API and acquisition selectors.
 
 The environment file is required. All services fail closed if it is absent.
 Every service also makes `/mnt/qnap01` inaccessible, including read-only API

@@ -16,6 +16,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 
 from alembic import command
@@ -24,39 +25,27 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
 
-from leo.analysis.adapters import (
-    production_standard_v2_configuration,
-    production_standard_v2_registry,
+from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
+from leo.acquisition.mixed_rate_schedule import compile_production_dwell_intent_v3
+from leo.analysis.standard.native_analyzers import (
+    production_standard_native_evidence_configuration,
+    production_standard_native_evidence_registry,
 )
 from leo.api import ProductionSettings, create_production_app
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_session_factory
 from leo.contracts.digests import sha256_digest
-from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
-from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
+from leo.contracts.profile import CaptureProfileRevisionV2, CaptureProfileV2
 from leo.contracts.recording import (
+    DEVICE_AXIS_STORAGE_POLICY_V1,
     CompressionSettingsV1,
-    HostIdentityV1,
-    ProducerV1,
-    RecordingManifestV1,
-    RecordingStreamV1,
-    StreamTimingV1,
-    SynchronizationSummaryV1,
-    TimingEstimateV1,
+    RecordingManifestV6,
 )
-from leo.contracts.states import (
-    CaptureState,
-    GainMode,
-    SourceType,
-    StarlinkEdge,
-    StreamState,
-    SynchronizationGrade,
-    SynchronizationMode,
-    TimingMethod,
-)
-from leo.domain.profiles import compile_capture_plan
+from leo.contracts.states import CaptureState, SourceType
+from leo.domain.mixed_rate_capture import compile_production_capture_plan_v5
+from leo.domain.profiles import load_profile_revision
 from leo.operations.service import _stream_registrations
-from leo.pipeline import compile_standard_run_plan
+from leo.pipeline import standard_native as standard_native_pipeline
 from leo.processing import (
     ProcessingService,
     RecordingIqReaderProvider,
@@ -76,7 +65,7 @@ from leo.scanner import (
     current_low_band_targets,
 )
 from leo.station.authority import (
-    CaptureHardwareBindingV1,
+    CaptureHardwareBindingV6,
     RadioEndpointEvidenceV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -99,9 +88,6 @@ REPLACED_RUN_ID = "e2e-main-run-v1"
 MAIN_SESSION_ID = "e2e-main-test-recording"
 FAILED_SESSION_ID = "e2e-failed-test-recording"
 PENDING_SESSION_ID = "e2e-pending-test-recording"
-SAMPLE_RATE_HZ = 2_500_000
-SAMPLE_COUNT = 2_048
-BASE_UTC_NS = 1_780_000_000_000_000_000
 SCANNER_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 )
@@ -118,6 +104,13 @@ class PublishedInput:
     @property
     def manifest_digest(self) -> str:
         return self.bundle.manifest_sha256
+
+    @property
+    def manifest(self) -> RecordingManifestV6:
+        manifest = self.bundle.manifest
+        if type(manifest) is not RecordingManifestV6:
+            raise RuntimeError("production E2E input is not RecordingManifestV6")
+        return manifest
 
 
 _temporary_directory = tempfile.TemporaryDirectory(prefix="leo-production-e2e-")
@@ -164,20 +157,73 @@ def _isolated_database() -> tuple[Engine, str]:
     return engine, url.render_as_string(hide_password=False)
 
 
-def _timing(first_utc_ns: int, duration_ns: int) -> StreamTimingV1:
-    return StreamTimingV1(
-        first_sample=TimingEstimateV1(
-            estimate_utc_ns=first_utc_ns,
-            earliest_utc_ns=first_utc_ns - 10_000,
-            latest_utc_ns=first_utc_ns + 10_000,
-            method=TimingMethod.DEVICE_COUNTER_ANCHORED,
+def _bounded_direct_async_plan(session_id: str, radio_ids: tuple[str, str]):
+    """Compile a small, current V5 plan without weakening production admission."""
+
+    specifications = (
+        ((2_500_000, (0, 1), True), "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4"),
+        *(
+            (
+                (rate, (receiver,), True),
+                f"starlink-ch4-lower-{rate // 1_000_000}m-60s-rx{receiver}-direct-async-v7",
+            )
+            for rate in (10_000_000, 15_000_000, 25_000_000)
+            for receiver in (0, 1)
         ),
-        last_sample=TimingEstimateV1(
-            estimate_utc_ns=first_utc_ns + duration_ns,
-            earliest_utc_ns=first_utc_ns + duration_ns - 10_000,
-            latest_utc_ns=first_utc_ns + duration_ns + 10_000,
-            method=TimingMethod.DEVICE_COUNTER_ANCHORED,
-        ),
+    )
+    revisions: dict[tuple[int, tuple[int, ...], bool], CaptureProfileRevisionV2] = {}
+    for key, profile_name in specifications:
+        source = load_profile_revision(PROJECT_ROOT / "profiles" / f"{profile_name}.yaml")
+        if not isinstance(source, CaptureProfileRevisionV2):
+            raise RuntimeError(f"E2E direct-async profile is not V2: {profile_name}")
+        values = source.profile.model_dump(mode="python")
+        values.update(
+            {
+                "name": f"e2e-{profile_name}",
+                "duration_seconds": Decimal("0.1"),
+                "sample_count": None,
+                "settle_seconds": Decimal(0),
+                "prime_refills": 0,
+                "campaign": "bounded-production-e2e",
+            }
+        )
+        revision = CaptureProfileRevisionV2.from_profile(CaptureProfileV2.model_validate(values))
+        revisions[key] = revision
+        if key[0] == 2_500_000:
+            standard_native_pipeline.STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES[
+                revision.profile.name
+            ] = (
+                revision.profile.sample_rate_hz,
+                revision.profile.receivers,
+                revision.revision_digest,
+                revision.profile.refill_samples,
+            )
+        else:
+            standard_native_pipeline.STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES[
+                revision.profile.name
+            ] = (
+                revision.profile.sample_rate_hz,
+                (revision.profile.receivers[0],),
+                revision.revision_digest,
+            )
+    authority = {
+        key: (revision.profile.name, revision.revision_digest, revision.profile.refill_samples)
+        for key, revision in revisions.items()
+    }
+    intent = compile_production_dwell_intent_v3(
+        operation_key=f"production-e2e:{session_id}",
+        cadence_ordinal=0,
+        radio_ids=radio_ids,
+        profile_authority=authority,
+        extra_tags=("E2E",),
+    )
+    return compile_production_capture_plan_v5(
+        intent=intent,
+        profile_revisions_by_radio={
+            leg.radio_id: revisions[(leg.sample_rate_hz, leg.receiver_ids, True)]
+            for leg in intent.radio_legs
+        },
+        source_type=SourceType.LIVE,
     )
 
 
@@ -189,143 +235,58 @@ def _publish_recording(
     paired: bool,
     seed: int,
 ) -> PublishedInput:
-    radio_ids = ("e2e-radio-a", "e2e-radio-b") if paired else ("e2e-radio-failed",)
-    receiver_ids = (0, 1) if paired else (0,)
-    profile = CaptureProfileV1(
-        name=f"profile-{session_id}",
-        description=(
-            "Production E2E paired imported dwell"
-            if paired
-            else "Production E2E intentional analysis failure"
-        ),
-        center_frequency_hz=1_709_687_500,
-        sample_rate_hz=SAMPLE_RATE_HZ,
-        bandwidth_hz=2_500_000,
-        receivers=receiver_ids,
-        gain_mode=GainMode.MANUAL,
-        gains=tuple(
-            ReceiverGainV1(receiver_id=receiver_id, gain_db=34.0) for receiver_id in receiver_ids
-        ),
-        sample_count=SAMPLE_COUNT,
-        refill_samples=512,
-        settle_seconds=0,
-        prime_refills=0,
-        synchronization_mode=(
-            SynchronizationMode.BEST_EFFORT if paired else SynchronizationMode.NONE
-        ),
-        storage_policy="e2e-zstd-v1",
-        tags=("E2E",),
-        starlink_channel="ch4",
-        starlink_edge=StarlinkEdge.LOWER,
-    )
-    plan = compile_capture_plan(
-        CaptureProfileRevisionV1.from_profile(profile),
-        radio_ids,
-        source_type=SourceType.IMPORT,
-    )
-    settings = RadioSettingsV1(
-        center_frequency_hz=profile.center_frequency_hz,
-        sample_rate_hz=profile.sample_rate_hz,
-        bandwidth_hz=profile.bandwidth_hz,
-        receiver_ids=profile.receivers,
-        gain_mode=profile.gain_mode,
-        gains=profile.gains,
-    )
+    stem = "main" if paired else session_id.removeprefix("e2e-").removesuffix("-test-recording")
+    radio_ids = (f"e2e-radio-{stem}-a", f"e2e-radio-{stem}-b")
+    plan = _bounded_direct_async_plan(session_id, radio_ids)
     compression = CompressionSettingsV1(
-        policy_id=profile.storage_policy,
+        policy_id=DEVICE_AXIS_STORAGE_POLICY_V1,
         level=1,
-        target_uncompressed_bytes=SAMPLE_COUNT * 4,
+        target_uncompressed_bytes=1_048_576,
     )
-    writer = recordings.begin(session_id, compression)
-    streams = []
-    for index, radio_id in enumerate(radio_ids):
-        radio = FakeRadioSource(
-            radio_id,
-            receiver_count=len(receiver_ids),
-            seed=seed + index,
-        )
-        radio.open()
-        radio.configure(settings)
-        stream_id = f"stream-{index + 1}"
-        stream_writer = writer.open_stream(stream_id, radio.identity, receiver_ids)
-        for _ in range(SAMPLE_COUNT // 512):
-            stream_writer.append(radio.read_block(512))
-        receipt = stream_writer.finalize()
-        radio.close()
-        first = BASE_UTC_NS + index * 50_000
-        duration = round(SAMPLE_COUNT * 1_000_000_000 / SAMPLE_RATE_HZ)
-        streams.append(
-            RecordingStreamV1(
-                stream_id=stream_id,
-                radio=radio.identity,
-                requested_settings=settings,
-                applied_settings=settings,
-                state=StreamState.COMPLETE,
-                requested_sample_count=SAMPLE_COUNT,
-                captured_sample_count=SAMPLE_COUNT,
-                timing=_timing(first, duration),
-                chunks=receipt.chunks,
-                timeline_relative_path=receipt.timeline_relative_path,
-                timeline_sha256=receipt.timeline_sha256,
-                continuity=receipt.continuity,
-            )
-        )
-    duration = round(SAMPLE_COUNT * 1_000_000_000 / SAMPLE_RATE_HZ)
-    overlap = duration - 50_000
-    synchronization = (
-        SynchronizationSummaryV1(
-            requested_mode=SynchronizationMode.BEST_EFFORT,
-            effective_mode=SynchronizationMode.BEST_EFFORT,
-            grade=SynchronizationGrade.BEST_EFFORT_OBSERVED,
-            stream_ids=tuple(stream.stream_id for stream in streams),
-            release_target_monotonic_ns=1_000_000_000,
-            estimated_start_skew_ns=50_000,
-            start_skew_uncertainty_ns=20_000,
-            estimated_overlap_ns=overlap,
-            estimated_overlap_start_utc_ns=BASE_UTC_NS + 50_000,
-            estimated_overlap_end_utc_ns=BASE_UTC_NS + duration,
-            guaranteed_overlap_ns=overlap - 20_000,
-            overlap_fraction=overlap / duration,
-        )
-        if paired
-        else SynchronizationSummaryV1(
-            requested_mode=SynchronizationMode.NONE,
-            effective_mode=SynchronizationMode.NONE,
-            grade=SynchronizationGrade.NOT_REQUESTED,
-            stream_ids=(streams[0].stream_id,),
-        )
-    )
-    manifest = RecordingManifestV1(
-        session_id=session_id,
-        state=CaptureState.COMMITTED,
-        source_type=SourceType.IMPORT,
-        created_utc_ns=BASE_UTC_NS,
-        finalized_utc_ns=BASE_UTC_NS + duration + 1_000_000,
-        capture_plan=plan,
-        tags=profile.tags,
-        streams=tuple(streams),
-        synchronization=synchronization,
+    coordinator = AcquisitionCoordinator(
+        recordings,
         compression=compression,
-        host=HostIdentityV1(hostname="e2e-host", machine_id="e2e-machine"),
-        producer=ProducerV1(name="production-e2e", version="1"),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
     )
-    published = writer.publish(manifest)
-    topology = _station_topology(published.manifest)
+    result = coordinator.capture_once(
+        plan,
+        {
+            radio_id: FakeRadioSource(radio_id, seed=seed + index)
+            for index, radio_id in enumerate(radio_ids)
+        },
+        session_id=session_id,
+    )
+    if result.state is not CaptureState.COMMITTED or result.bundle is None:
+        raise RuntimeError(f"production E2E direct-async capture failed: {result.errors}")
+    published = result.bundle
+    manifest = published.manifest
+    if type(manifest) is not RecordingManifestV6:
+        raise RuntimeError("production E2E capture did not publish RecordingManifestV6")
+    topology = _station_topology(manifest)
     catalog.register_station_topology(topology)
-    authority = CaptureHardwareBindingV1.create(
+    authority = CaptureHardwareBindingV6.create(
         published.manifest,
         observed_manifest_file_digest=published.manifest_sha256,
         topology=topology,
     )
     catalog.reconcile_capture_session(
         session_id=session_id,
-        source_type="import",
+        source_type=manifest.source_type.value,
         bundle_uri=published.uri,
         manifest_digest=published.manifest_sha256,
         tags=manifest.tags,
-        attributes={"presentation": {"title": profile.description}},
+        attributes={
+            "presentation": {
+                "title": (
+                    "Production E2E paired imported dwell"
+                    if paired
+                    else "Production E2E intentional analysis failure"
+                )
+            }
+        },
         allocated_bytes=sum(
-            chunk.compressed_bytes for stream in streams for chunk in stream.chunks
+            item.stat().st_size for item in published.path.rglob("*") if item.is_file()
         ),
         streams=_stream_registrations(published),
         path_authority=authority,
@@ -333,7 +294,7 @@ def _publish_recording(
     return PublishedInput(published)
 
 
-def _station_topology(manifest: RecordingManifestV1) -> StationReceiverTopologyV1:
+def _station_topology(manifest: RecordingManifestV6) -> StationReceiverTopologyV1:
     """Create explicit synthetic station authority for the generated E2E capture."""
 
     valid_from = manifest.created_utc_ns - 1_000_000_000
@@ -384,8 +345,13 @@ def _execute_run(
     reprocess: bool,
     pipeline_release_id: str = PIPELINE_RELEASE,
 ) -> None:
-    plan = compile_standard_run_plan(
-        source.bundle.manifest,
+    compiler = (
+        standard_native_pipeline.compile_standard_native_default_run_plan
+        if reprocess
+        else standard_native_pipeline.compile_standard_native_automatic_run_plan
+    )
+    plan = compiler(
+        source.manifest,
         manifest_digest=source.manifest_digest,
         pipeline_release_id=pipeline_release_id,
     )
@@ -410,20 +376,20 @@ def _prepare() -> tuple[str, Path]:
     catalog = CatalogRepository(create_session_factory(_schema_engine))
     recordings = RecordingStore(_bulk_root)
     (_bulk_root / "qualification" / "trusted-campaigns").mkdir(parents=True, exist_ok=True)
-    registry = production_standard_v2_registry()
+    registry = production_standard_native_evidence_registry()
     configuration: dict[str, object] = {
-        "display_version": "2.0.0",
-        "stages": production_standard_v2_configuration(),
+        "display_version": "standard-native-e2e-v1",
+        "stages": production_standard_native_evidence_configuration(),
     }
     executable = _bulk_root.parent / "worker-executable"
     executable.mkdir()
-    (executable / "standard-v2.txt").write_text("pinned production E2E executable\n")
+    (executable / "standard-native.txt").write_text("pinned production E2E executable\n")
     loaded = derive_loaded_worker_release_for_tests(
         pipeline_release_id=PIPELINE_RELEASE,
         code_revision=PIPELINE_RELEASE,
         registry=registry,
         configuration=configuration,
-        environment_document={"name": "production-e2e-standard-v2"},
+        environment_document={"name": "production-e2e-standard-native"},
         executable_root=executable,
     )
     previous_loaded = derive_loaded_worker_release_for_tests(
@@ -431,7 +397,7 @@ def _prepare() -> tuple[str, Path]:
         code_revision=PREVIOUS_PIPELINE_RELEASE,
         registry=registry,
         configuration=configuration,
-        environment_document={"name": "production-e2e-standard-v2"},
+        environment_document={"name": "production-e2e-standard-native"},
         executable_root=executable,
     )
     for release_id, worker_release in (
@@ -494,8 +460,8 @@ def _prepare() -> tuple[str, Path]:
         run_id=CURRENT_RUN_ID,
         reprocess=True,
     )
-    failed_plan = compile_standard_run_plan(
-        failed.bundle.manifest,
+    failed_plan = standard_native_pipeline.compile_standard_native_automatic_run_plan(
+        failed.manifest,
         manifest_digest=failed.manifest_digest,
         pipeline_release_id=PIPELINE_RELEASE,
     )
@@ -508,8 +474,8 @@ def _prepare() -> tuple[str, Path]:
         run_id="e2e-intentional-failure",
         failure="Intentional production E2E analysis failure",
     )
-    pending_plan = compile_standard_run_plan(
-        pending.bundle.manifest,
+    pending_plan = standard_native_pipeline.compile_standard_native_automatic_run_plan(
+        pending.manifest,
         manifest_digest=pending.manifest_digest,
         pipeline_release_id=PIPELINE_RELEASE,
     )

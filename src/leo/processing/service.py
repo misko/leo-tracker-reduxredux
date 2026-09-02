@@ -32,7 +32,6 @@ from leo.artifacts import (
     AnalysisRunManifestV6,
     ProductPublication,
     PublishedRunManifest,
-    StandardNativeMixedStreamAuthorityV1,
     StandardNativeProductionStreamAuthorityV1,
     StandardNativeProductionStreamAuthorityV2,
     StandardNativePromotionAuthorityV1,
@@ -63,26 +62,20 @@ from leo.catalog import (
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.pipeline_lanes import PipelineLane
 from leo.contracts.recording import (
-    RecordingManifestV1,
-    RecordingManifestV2,
     RecordingManifestV3,
     RecordingManifestV4,
     RecordingManifestV5,
     RecordingManifestV6,
-    RecordingStreamV2,
-    RecordingStreamV3,
 )
 from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     StandardPairInputBindV2,
-    StandardPathInputBindV3,
     StandardPathInputBindV5,
     StreamTimingEvidenceV1,
     resolve_manifest_starlink_tuning,
 )
 from leo.contracts.states import SourceType
 from leo.pipeline import (
-    RATE_CONTINUITY_BASELINE_STAGE_KEY,
     AnalysisContext,
     Analyzer,
     AnalyzerRegistry,
@@ -95,8 +88,6 @@ from leo.pipeline import (
     StageOutcome,
     StageResult,
     ValidityAwareIqReader,
-    compile_rate_baseline_run_plan,
-    compile_standard_run_plan,
 )
 from leo.pipeline.standard_native import (
     STANDARD_NATIVE_STAGE_KEYS,
@@ -106,13 +97,13 @@ from leo.pipeline.standard_native import (
     compile_standard_native_scope_inventory,
     standard_native_pipeline_definition_v1,
 )
-from leo.pipeline.topology import compile_scope_inventory
 from leo.processing.adapters import (
     CatalogArtifactProductReader,
     IqReaderProvider,
     ValidityAwareIqReaderProvider,
 )
 from leo.processing.authority import LoadedWorkerRelease
+from leo.processing.recording_support import require_online_recording_manifest
 from leo.storage import PinnedLocalRoot
 
 FailureInjector = Callable[[str], None]
@@ -1121,105 +1112,53 @@ class ProcessingService:
             or integrity.manifest_digest != plan.manifest_digest
         ):
             raise ValueError("integrity authority returned evidence for different raw bytes")
-        manifest = self.iq_readers.verified_manifest(integrity.attestation_digest)
+        manifest = require_online_recording_manifest(
+            self.iq_readers.verified_manifest(integrity.attestation_digest)
+        )
         stage_keys = {job.stage_key for job in plan.jobs}
-        rate_baseline = canonical_lane is PipelineLane.RESEARCH and {
-            job.stage_key for job in plan.jobs
-        } == {RATE_CONTINUITY_BASELINE_STAGE_KEY}
         native_evidence = bool(stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS))
         alternate_expected_plan: ExpandedRunPlanV1 | None = None
-        if native_evidence:
-            if canonical_lane is not PipelineLane.STANDARD or not stage_keys.issubset(
-                STANDARD_NATIVE_STAGE_KEYS
-            ):
-                raise ValueError("Standard-native requires the exact disjoint Standard-lane graph")
-            if isinstance(manifest, RecordingManifestV2):
-                if (
-                    canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY
-                    or trigger != "reprocess"
-                ):
-                    raise ValueError(
-                        "Standard-native V2 requires a manual Standard-lane evidence-only run"
-                    )
-            elif isinstance(manifest, RecordingManifestV3):
-                if canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY:
-                    if trigger != "reprocess":
-                        raise ValueError(
-                            "Standard-native V3 evidence requires a manual reprocess action"
-                        )
-                elif canonical_promotion_policy is PromotionPolicy.CURRENT:
-                    _require_native_station_promotion_authority(
-                        capture_authority,
-                        manifest=manifest,
-                        manifest_digest=plan.manifest_digest,
-                    )
-                else:  # pragma: no cover - finite enum, retained as a corruption boundary
-                    raise ValueError("Standard-native promotion policy is unsupported")
-            elif isinstance(manifest, RecordingManifestV4):
-                if canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY:
-                    if trigger != "reprocess":
-                        raise ValueError(
-                            "Standard-native mixed V4 evidence requires manual reprocess"
-                        )
-                elif canonical_promotion_policy is PromotionPolicy.CURRENT:
-                    _require_native_station_promotion_authority(
-                        capture_authority,
-                        manifest=manifest,
-                        manifest_digest=plan.manifest_digest,
-                    )
-                else:  # pragma: no cover - finite enum
-                    raise ValueError("Standard-native mixed promotion policy is unsupported")
-            else:
-                raise ValueError("Standard-native requires a reviewed V2/V3/V4 recording")
-            expected_plan = (
-                compile_standard_native_automatic_run_plan
-                if trigger == "new_capture"
-                else compile_standard_native_default_run_plan
-                if canonical_promotion_policy is PromotionPolicy.CURRENT
-                else compile_standard_native_run_plan
-            )(
+        if (
+            not native_evidence
+            or canonical_lane is not PipelineLane.STANDARD
+            or not stage_keys.issubset(STANDARD_NATIVE_STAGE_KEYS)
+        ):
+            raise ValueError("online recording formats require the Standard-native graph")
+        if canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY:
+            if trigger != "reprocess":
+                raise ValueError("Standard-native evidence requires a manual reprocess action")
+        elif canonical_promotion_policy is PromotionPolicy.CURRENT:
+            _require_native_station_promotion_authority(
+                capture_authority,
+                manifest=manifest,
+                manifest_digest=plan.manifest_digest,
+            )
+        else:  # pragma: no cover - finite enum, retained as a corruption boundary
+            raise ValueError("Standard-native promotion policy is unsupported")
+        expected_plan = (
+            compile_standard_native_automatic_run_plan
+            if trigger == "new_capture"
+            else compile_standard_native_default_run_plan
+            if canonical_promotion_policy is PromotionPolicy.CURRENT
+            else compile_standard_native_run_plan
+        )(
+            manifest,
+            manifest_digest=plan.manifest_digest,
+            pipeline_release_id=plan.pipeline_release_id,
+        )
+        alternate_expected_plan = (
+            compile_standard_native_default_run_plan(
                 manifest,
                 manifest_digest=plan.manifest_digest,
                 pipeline_release_id=plan.pipeline_release_id,
             )
-            alternate_expected_plan = (
-                compile_standard_native_default_run_plan(
-                    manifest,
-                    manifest_digest=plan.manifest_digest,
-                    pipeline_release_id=plan.pipeline_release_id,
-                )
-                if trigger == "reprocess"
-                and canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY
-                else None
-            )
-        elif rate_baseline:
-            if canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY:
-                raise ValueError("rate baseline requires evidence-only promotion policy")
-            if not isinstance(manifest, RecordingManifestV1):
-                raise ValueError("rate baseline accepts only V1/V2 recording manifests")
-            expected_plan = compile_rate_baseline_run_plan(
-                manifest,
-                manifest_digest=plan.manifest_digest,
-                pipeline_release_id=plan.pipeline_release_id,
-            )
-        else:
-            if not isinstance(manifest, RecordingManifestV1):
-                raise ValueError("frozen Standard accepts only V1/V2 recording manifests")
-            expected_plan = compile_standard_run_plan(
-                manifest,
-                manifest_digest=plan.manifest_digest,
-                pipeline_release_id=plan.pipeline_release_id,
-            )
+            if trigger == "reprocess"
+            and canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY
+            else None
+        )
         if plan != expected_plan and plan != alternate_expected_plan:
-            lane_name = (
-                "Standard-native"
-                if native_evidence
-                else "rate-baseline"
-                if rate_baseline
-                else "Standard"
-            )
             raise ValueError(
-                f"expanded plan differs from the manifest-authoritative {lane_name} DAG"
+                "expanded plan differs from the manifest-authoritative Standard-native DAG"
             )
         dependencies: dict[str, list[str]] = {job.node_id: [] for job in plan.jobs}
         for edge in plan.edges:
@@ -1355,9 +1294,12 @@ class ProcessingService:
             or integrity.manifest_digest != execution.input_manifest_digest
         ):
             raise RunRejectedError("native promotion raw-integrity authority changed")
-        source = self.iq_readers.verified_manifest(integrity.attestation_digest)
-        if not isinstance(source, (RecordingManifestV3, RecordingManifestV4)):
-            raise RunRejectedError("native Current promotion requires an exact V3/V4/V5/V6 source")
+        try:
+            source = require_online_recording_manifest(
+                self.iq_readers.verified_manifest(integrity.attestation_digest)
+            )
+        except ValueError as error:
+            raise RunRejectedError(str(error)) from error
 
         capture_authority = self.catalog.capture_path_authority(execution.session_id)
         try:
@@ -1588,87 +1530,8 @@ class ProcessingService:
                 {**values_v3, "content_digest": canonical_digest(digest_values_v3)}
             )
 
-        if isinstance(source, RecordingManifestV4):
-            mixed_leg_by_radio = {item.radio_id: item for item in source.capture_plan.radio_plans}
-            stream_authorities = tuple(
-                StandardNativeMixedStreamAuthorityV1(
-                    stream_id=stream.stream_id,
-                    radio_id=stream.radio.radio_id,
-                    profile_name=mixed_leg_by_radio[
-                        stream.radio.radio_id
-                    ].profile_revision.profile.name,
-                    profile_revision_digest=(
-                        mixed_leg_by_radio[stream.radio.radio_id].profile_revision.revision_digest
-                    ),
-                    starlink_channel=source.capture_plan.starlink_channel,
-                    starlink_edge=source.capture_plan.starlink_edge.value,
-                    sample_rate_hz=cast(
-                        Literal[2_500_000, 5_000_000, 10_000_000],
-                        stream.applied_settings.sample_rate_hz,
-                    ),
-                    rf_bandwidth_hz=stream.applied_settings.bandwidth_hz,
-                    tuned_center_frequency_hz=stream.applied_settings.center_frequency_hz,
-                    pilot_if_center_frequency_hz=(
-                        mixed_leg_by_radio[stream.radio.radio_id].pilot_if_center_frequency_hz
-                    ),
-                    channel_if_start_hz=(
-                        mixed_leg_by_radio[stream.radio.radio_id].channel_if_start_hz
-                    ),
-                    channel_if_stop_hz=(
-                        mixed_leg_by_radio[stream.radio.radio_id].channel_if_stop_hz
-                    ),
-                    captured_if_start_hz=(
-                        mixed_leg_by_radio[stream.radio.radio_id].captured_if_start_hz
-                    ),
-                    captured_if_stop_hz=(
-                        mixed_leg_by_radio[stream.radio.radio_id].captured_if_stop_hz
-                    ),
-                    logical_sample_count=stream.logical_sample_count,
-                    validity_inventory_digest=stream.validity_inventory_sha256,
-                )
-                for stream in sorted(
-                    source.streams,
-                    key=lambda item: (item.stream_id, item.radio.radio_id),
-                )
-            )
-            values_v2 = {
-                "schema_version": 2,
-                "source_manifest_schema_version": 4,
-                "source_manifest_digest": execution.input_manifest_digest,
-                "pipeline_definition": definition,
-                "pipeline_definition_id": definition.definition_id,
-                "session_id": execution.session_id,
-                "run_id": execution.run_id,
-                "input_manifest_digest": execution.input_manifest_digest,
-                "pipeline_release_id": execution.pipeline_release_id,
-                "expanded_plan_digest": execution.expanded_plan_digest,
-                "raw_integrity_attestation_digest": integrity.attestation_digest,
-                "release_authority_digest": release_authority_digest,
-                "subject_binding_inventory_digest": subject_binding_inventory_digest,
-                "terminal_products": terminal_products,
-                "terminal_product_inventory_digest": terminal_product_inventory_digest,
-                "dwell_class": source.capture_plan.dwell_class.value,
-                "stream_authorities": stream_authorities,
-                "capture_plan_digest": source.capture_plan.plan_digest,
-                "capture_hardware_binding_digest": capture_authority.authority_digest,
-                "trigger": execution.trigger,
-                "promotion_policy": "current",
-                "processing_status": "succeeded",
-            }
-            digest_values_v2 = {
-                **values_v2,
-                "pipeline_definition": definition.model_dump(mode="json"),
-                "terminal_products": tuple(
-                    item.model_dump(mode="json") for item in terminal_products
-                ),
-                "stream_authorities": tuple(
-                    item.model_dump(mode="json") for item in stream_authorities
-                ),
-            }
-            return StandardNativePromotionAuthorityV2.model_validate(
-                {**values_v2, "content_digest": canonical_digest(digest_values_v2)}
-            )
-
+        if type(source) is not RecordingManifestV3:
+            raise RunRejectedError("native promotion source schema is unsupported")
         rates = {stream.applied_settings.sample_rate_hz for stream in source.streams}
         if len(rates) != 1:
             raise RunRejectedError("native promotion source rates disagree")
@@ -1865,190 +1728,29 @@ def _compile_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
     iq_readers: IqReaderProvider,
-    manifest: (
-        RecordingManifestV1
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
     """Freeze every manifest-derived path/pair fact before the run can exist."""
 
     stage_keys = {job.stage_key for job in plan.jobs}
-    if stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS):
-        if not isinstance(
-            manifest,
-            (RecordingManifestV2, RecordingManifestV3, RecordingManifestV4),
-        ):
-            raise ValueError("Standard-native subject bindings require a reviewed V2/V3/V4 input")
-        return _compile_native_subject_binding_registrations(
-            catalog=catalog,
-            iq_readers=iq_readers,
-            manifest=manifest,
-            integrity=integrity,
-            plan=plan,
-        )
-    if isinstance(manifest, (RecordingManifestV3, RecordingManifestV4)):
-        raise ValueError("device-axis recordings require the Standard-native graph")
-    return _compile_legacy_subject_binding_registrations(
+    if not stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS):
+        raise ValueError("online recordings require Standard-native subject bindings")
+    return _compile_native_subject_binding_registrations(
         catalog=catalog,
+        iq_readers=iq_readers,
         manifest=manifest,
         integrity=integrity,
         plan=plan,
     )
 
 
-def _compile_legacy_subject_binding_registrations(
-    *,
-    catalog: CatalogRepository,
-    manifest: RecordingManifestV1,
-    integrity: RawIntegrityAttestationV1,
-    plan: ExpandedRunPlanV1,
-) -> tuple[RunSubjectBindingRegistration, ...]:
-    """Preserve the frozen V1/V2 subject binding semantics exactly."""
-
-    release = catalog.pipeline_release_snapshot(plan.pipeline_release_id)
-    topology = compile_scope_inventory(manifest)
-    starlink_tuning = resolve_manifest_starlink_tuning(manifest)
-    streams = {item.stream_id: item for item in manifest.streams}
-    raw_streams = {item.stream_id: item for item in integrity.streams}
-    registrations: list[RunSubjectBindingRegistration] = []
-    for scope in topology.receiver_paths:
-        assert scope.stream_id is not None and scope.receiver_id is not None
-        stream = streams[scope.stream_id]
-        tuning_intent = starlink_tuning[stream.stream_id]
-        raw = raw_streams.get(scope.stream_id)
-        if stream.timing is None or raw is None:
-            raise ValueError("typed receiver path lacks timing or verified chunk closure")
-        settings = stream.applied_settings or stream.requested_settings
-        capture_binding = catalog.capture_receiver_binding(scope)
-        if (
-            capture_binding.radio_id != stream.radio.radio_id
-            or capture_binding.radio_serial != stream.radio.serial
-            or capture_binding.manifest_digest != plan.manifest_digest
-            or capture_binding.profile_revision_digest
-            != manifest.capture_plan.profile_revision.revision_digest
-        ):
-            raise ValueError("manifest and catalog receiver authority disagree")
-        timing = StreamTimingEvidenceV1(
-            first_estimate_utc_ns=stream.timing.first_sample.estimate_utc_ns,
-            first_earliest_utc_ns=stream.timing.first_sample.earliest_utc_ns,
-            first_latest_utc_ns=stream.timing.first_sample.latest_utc_ns,
-            last_estimate_utc_ns=stream.timing.last_sample.estimate_utc_ns,
-            last_earliest_utc_ns=stream.timing.last_sample.earliest_utc_ns,
-            last_latest_utc_ns=stream.timing.last_sample.latest_utc_ns,
-        )
-        frequency_reference = catalog.capture_frequency_reference(
-            scope,
-            tuned_center_frequency_hz=settings.center_frequency_hz,
-        )
-        values: dict[str, Any] = {
-            "schema_version": 3,
-            "algorithm_version": "standard-path-input-bind-v3",
-            "session_id": manifest.session_id,
-            "stream_id": stream.stream_id,
-            "radio_id": stream.radio.radio_id,
-            "receiver_id": scope.receiver_id,
-            "manifest_digest": plan.manifest_digest,
-            "raw_integrity_attestation_digest": integrity.attestation_digest,
-            "selected_stream_digest": canonical_digest(stream.model_dump(mode="json")),
-            "compressed_chunk_closure_digest": raw.compressed_closure_digest,
-            "uncompressed_chunk_closure_digest": raw.uncompressed_closure_digest,
-            "synchronization_inventory_digest": topology.synchronization_inventory_digest,
-            "profile_revision_digest": capture_binding.profile_revision_digest,
-            "capture_plan_digest": manifest.capture_plan.plan_digest,
-            "receiver_settings_digest": canonical_digest(settings.model_dump(mode="json")),
-            "science_configuration_digest": release.configuration_digest,
-            "science_implementation_digest": release.executable_digest,
-            "capture_lineage_resolution": capture_binding.lineage_resolution,
-            "physical_receiver_id": capture_binding.physical_receiver_id,
-            "hardware_epoch_id": capture_binding.hardware_epoch_id,
-            "tuned_center_frequency_hz": settings.center_frequency_hz,
-            "sample_rate_hz": settings.sample_rate_hz,
-            "declared_sample_count": stream.captured_sample_count,
-            "starlink_channel": tuning_intent.channel,
-            "starlink_edge": tuning_intent.edge.value,
-            "starlink_tuning_evidence_source": tuning_intent.evidence_source,
-            "timing": timing.model_dump(mode="json"),
-            "frequency_reference": frequency_reference.model_dump(mode="json"),
-        }
-        path_binding = StandardPathInputBindV3.model_validate(
-            {**values, "binding_digest": canonical_digest(values)}
-        )
-        registrations.append(
-            RunSubjectBindingRegistration(
-                scope=scope,
-                document=path_binding.model_dump(mode="json"),
-            )
-        )
-
-    pair_is_planned = topology.paired is not None and any(
-        job.scope == topology.paired for job in plan.jobs
-    )
-    if topology.paired is not None and pair_is_planned:
-        synchronization = manifest.synchronization
-        required = (
-            synchronization.estimated_start_skew_ns,
-            synchronization.start_skew_uncertainty_ns,
-            synchronization.estimated_overlap_start_utc_ns,
-            synchronization.estimated_overlap_end_utc_ns,
-            synchronization.guaranteed_overlap_ns,
-        )
-        if any(value is None for value in required) or any(
-            stream.timing is None for stream in manifest.streams
-        ):
-            raise ValueError("paired Standard run lacks authoritative overlap timing")
-        stream_timings = tuple(
-            cast(Any, stream.timing) for stream in manifest.streams if stream.timing is not None
-        )
-        pair_timing = PairTimingEvidenceV1(
-            synchronization_inventory_digest=topology.synchronization_inventory_digest,
-            union_start_utc_ns=min(
-                timing.first_sample.estimate_utc_ns for timing in stream_timings
-            ),
-            union_end_utc_ns=max(timing.last_sample.estimate_utc_ns for timing in stream_timings),
-            estimated_overlap_start_utc_ns=cast(int, required[2]),
-            estimated_overlap_end_utc_ns=cast(int, required[3]),
-            estimated_start_skew_ns=cast(int, required[0]),
-            start_skew_uncertainty_ns=cast(int, required[1]),
-            guaranteed_overlap_ns=cast(int, required[4]),
-            synchronization_grade=synchronization.grade.value,
-        )
-        values = {
-            "schema_version": 2,
-            "algorithm_version": "standard-pair-input-bind-v2",
-            "session_id": manifest.session_id,
-            "manifest_digest": plan.manifest_digest,
-            "synchronization_inventory_digest": topology.synchronization_inventory_digest,
-            "raw_integrity_attestation_digests": [integrity.attestation_digest],
-            "timing": pair_timing.model_dump(mode="json"),
-        }
-        pair_binding = StandardPairInputBindV2.model_validate(
-            {**values, "binding_digest": canonical_digest(values)}
-        )
-        registrations.append(
-            RunSubjectBindingRegistration(
-                scope=topology.paired,
-                document=pair_binding.model_dump(mode="json"),
-            )
-        )
-    return tuple(sorted(registrations, key=lambda item: item.scope.canonical_digest))
-
-
 def _compile_native_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
     iq_readers: IqReaderProvider,
-    manifest: (
-        RecordingManifestV2
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
@@ -2065,17 +1767,6 @@ def _compile_native_subject_binding_registrations(
     starlink_tuning = resolve_manifest_starlink_tuning(manifest)
     streams = {item.stream_id: item for item in manifest.streams}
     raw_streams = {item.stream_id: item for item in integrity.streams}
-    historical_v2_evidence = (
-        {
-            stream.stream_id: iq_readers.verified_historical_v2_native_stream_evidence(
-                integrity.attestation_digest,
-                stream.stream_id,
-            )
-            for stream in manifest.streams
-        }
-        if isinstance(manifest, RecordingManifestV2)
-        else {}
-    )
     registrations: list[RunSubjectBindingRegistration] = []
     for scope in topology.receiver_paths:
         assert scope.stream_id is not None and scope.receiver_id is not None
@@ -2085,38 +1776,16 @@ def _compile_native_subject_binding_registrations(
         if raw is None or settings is None or stream.timing is None:
             raise ValueError("native receiver path lacks settings, timing, or chunk closure")
         selected_stream_digest = canonical_digest(stream.model_dump(mode="json"))
-        if isinstance(stream, RecordingStreamV3):
-            validity = iq_readers.verified_validity_inventory(
-                integrity.attestation_digest,
-                stream.stream_id,
-            )
-            logical_sample_count = stream.logical_sample_count
-            observed_sample_count = stream.observed_sample_count
-            missing_sample_count = stream.zero_fill_sample_count
-            observed_iq_digest = stream.observed_iq_sha256
-            logical_iq_digest = stream.logical_iq_sha256
-            validity_inventory_sha256 = stream.validity_inventory_sha256
-        elif isinstance(stream, RecordingStreamV2):
-            evidence = historical_v2_evidence.get(stream.stream_id)
-            if (
-                evidence is None
-                or evidence.raw_integrity_attestation_digest != integrity.attestation_digest
-                or evidence.stream_id != stream.stream_id
-                or evidence.selected_stream_digest != selected_stream_digest
-                or evidence.uncompressed_chunk_closure_digest != raw.uncompressed_closure_digest
-            ):
-                raise ValueError(
-                    "historical V2 logical-IQ evidence is not bound to this raw stream"
-                )
-            validity = evidence.validity_inventory
-            logical_sample_count = stream.continuity.device_span_sample_count
-            observed_sample_count = stream.captured_sample_count
-            missing_sample_count = stream.continuity.missing_sample_count
-            observed_iq_digest = evidence.observed_iq_digest
-            logical_iq_digest = evidence.logical_iq_digest
-            validity_inventory_sha256 = validity.inventory_digest
-        else:
-            raise ValueError("native receiver path stream schema is unsupported")
+        validity = iq_readers.verified_validity_inventory(
+            integrity.attestation_digest,
+            stream.stream_id,
+        )
+        logical_sample_count = stream.logical_sample_count
+        observed_sample_count = stream.observed_sample_count
+        missing_sample_count = stream.zero_fill_sample_count
+        observed_iq_digest = stream.observed_iq_sha256
+        logical_iq_digest = stream.logical_iq_sha256
+        validity_inventory_sha256 = stream.validity_inventory_sha256
         if stream.timeline_sha256 is None or stream.gap_map_sha256 is None:
             raise ValueError("native receiver path lacks counter evidence digests")
         tuning_intent = starlink_tuning[stream.stream_id]

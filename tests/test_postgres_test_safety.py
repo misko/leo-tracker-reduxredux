@@ -69,7 +69,6 @@ def test_database_fixture_modules_have_no_production_fallback() -> None:
         "tests/catalog/conftest.py",
         "tests/processing/conftest.py",
         "tests/operations/conftest.py",
-        "tests/integration/test_standard_v2_operational_vertical.py",
         "tests/integration/test_read_vertical.py",
         "tests/qualification/test_soak_acceptance_postgres.py",
         "tests/qualification/test_trusted_campaign_store.py",

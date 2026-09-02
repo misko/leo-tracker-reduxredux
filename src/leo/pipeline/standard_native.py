@@ -2,19 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from leo.contracts.digests import canonical_digest
 from leo.contracts.mixed_rate_schedule import (
-    ProductionDwellClass,
     ProductionDwellClassV2,
     ProductionDwellClassV3,
 )
 from leo.contracts.pipeline_lanes import PipelineDefinitionV1, PipelineLane
 from leo.contracts.recording import (
-    RecordingManifestV2,
     RecordingManifestV3,
-    RecordingManifestV4,
     RecordingManifestV5,
     RecordingManifestV6,
 )
@@ -22,11 +17,11 @@ from leo.contracts.standard_pipeline import resolve_manifest_starlink_tuning
 from leo.contracts.starlink_frequency import (
     starlink_maximum_coverage_if_center_frequency_hz,
 )
-from leo.contracts.states import CaptureState, GainMode, SourceType, StarlinkEdge, StreamState
+from leo.contracts.states import GainMode, SourceType
 from leo.pipeline.contracts import ResourceClass
 from leo.pipeline.planning import ExpandedRunPlanV1, IqAccess, JobDependencyRefV1, JobNodeV1
 from leo.pipeline.scopes import ScopeIdentityV1
-from leo.pipeline.topology import CompiledScopeInventory, compile_scope_inventory
+from leo.pipeline.topology import CompiledScopeInventory
 
 STANDARD_NATIVE_SAMPLE_RATES_HZ = (
     2_500_000,
@@ -364,36 +359,6 @@ STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES = {
 }
 
 
-@dataclass(frozen=True, slots=True)
-class HistoricalV2NativeAdmission:
-    """One exact packed-IQ profile admitted only to manual native evidence."""
-
-    revision_digest: str
-    sample_rate_hz: int
-    expected_sample_count: int
-    counter_gaps_allowed: bool
-
-
-STANDARD_NATIVE_V2_PROFILE_ADMISSIONS = {
-    "starlink-ch4-lower-2p5m-60s-continuity-v2": HistoricalV2NativeAdmission(
-        revision_digest=("sha256:8b4b47a1c5abcc5cb8b5bb41796fd08a6221a862aceb7139c5cd43819e79820f"),
-        sample_rate_hz=2_500_000,
-        expected_sample_count=150_000_000,
-        counter_gaps_allowed=True,
-    ),
-    "starlink-ch4-lower-3m-60s-capture-v2": HistoricalV2NativeAdmission(
-        revision_digest=("sha256:6dbcb80f92b605a20564bac17001ae6ce394e5961fda2d11c808cdff8a81a652"),
-        sample_rate_hz=3_000_000,
-        expected_sample_count=180_000_000,
-        counter_gaps_allowed=False,
-    ),
-    "starlink-ch4-lower-5m-60s-segmented-v2": HistoricalV2NativeAdmission(
-        revision_digest=("sha256:52a5fa028ae3d5975188e2221e7f00af850366ede0903645d952ba6ad4636640"),
-        sample_rate_hz=5_000_000,
-        expected_sample_count=300_000_000,
-        counter_gaps_allowed=True,
-    ),
-}
 STANDARD_NATIVE_STAGE_KEYS = (
     "path-standard-native",
     "path-pss-native",
@@ -441,13 +406,7 @@ def standard_native_pipeline_definition_v1(
 
 
 def compile_standard_native_run_plan(
-    manifest: (
-        RecordingManifestV2
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
     *,
     manifest_digest: str,
     pipeline_release_id: str,
@@ -475,13 +434,7 @@ def compile_standard_native_run_plan(
 
 
 def compile_standard_native_default_run_plan(
-    manifest: (
-        RecordingManifestV2
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
     *,
     manifest_digest: str,
     pipeline_release_id: str,
@@ -512,13 +465,7 @@ def compile_standard_native_default_run_plan(
 
 
 def compile_standard_native_automatic_run_plan(
-    manifest: (
-        RecordingManifestV2
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
     *,
     manifest_digest: str,
     pipeline_release_id: str,
@@ -553,13 +500,7 @@ def compile_standard_native_automatic_run_plan(
 
 
 def _compile_standard_native_run_plan(
-    manifest: (
-        RecordingManifestV2
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
     *,
     manifest_digest: str,
     pipeline_release_id: str,
@@ -745,31 +686,14 @@ def _compile_standard_native_run_plan(
 
 
 def compile_standard_native_scope_inventory(
-    manifest: (
-        RecordingManifestV2
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
     *,
     selected_stream_ids: frozenset[str] | None = None,
 ) -> CompiledScopeInventory:
-    """Build native scopes while preserving historical V2 synchronization identity."""
+    """Build native scopes for current online recording formats."""
 
-    if isinstance(manifest, RecordingManifestV2):
-        inventory = compile_scope_inventory(manifest)
-        all_stream_ids = frozenset(stream.stream_id for stream in manifest.streams)
-        if selected_stream_ids is None or selected_stream_ids == all_stream_ids:
-            return inventory
-        raise ValueError("historical V2 native evidence does not support stream selection")
-    if not isinstance(
-        manifest,
-        (RecordingManifestV3, RecordingManifestV4, RecordingManifestV5, RecordingManifestV6),
-    ):
-        raise ValueError(
-            "Standard-native scope inventory requires a reviewed V2, V3, or V4 recording"
-        )
+    if manifest.schema_version not in {3, 5, 6}:
+        raise ValueError("Standard-native scope inventory requires recording schema 3, 5, or 6")
     all_stream_ids = frozenset(stream.stream_id for stream in manifest.streams)
     selected = all_stream_ids if selected_stream_ids is None else selected_stream_ids
     if not selected or not selected.issubset(all_stream_ids):
@@ -839,28 +763,16 @@ def compile_standard_native_scope_inventory(
 
 
 def _require_reviewed_native_geometry(
-    manifest: (
-        RecordingManifestV2
-        | RecordingManifestV3
-        | RecordingManifestV4
-        | RecordingManifestV5
-        | RecordingManifestV6
-    ),
+    manifest: RecordingManifestV3 | RecordingManifestV5 | RecordingManifestV6,
 ) -> None:
-    if isinstance(manifest, RecordingManifestV2):
-        _require_reviewed_historical_v2_geometry(manifest)
-        return
     if type(manifest) is RecordingManifestV6:
         _require_reviewed_direct_async_v6_geometry(manifest)
         return
     if type(manifest) is RecordingManifestV5:
         _require_reviewed_production_v5_geometry(manifest)
         return
-    if isinstance(manifest, RecordingManifestV4):
-        _require_reviewed_mixed_v4_geometry(manifest)
-        return
-    if not isinstance(manifest, RecordingManifestV3):
-        raise ValueError("Standard-native expanded runs require a reviewed V2, V3, or V4 recording")
+    if type(manifest) is not RecordingManifestV3:
+        raise ValueError("Standard-native expanded runs require recording schema 3, 5, or 6")
     if not manifest.streams:
         raise ValueError("Standard-native requires at least one recorded stream")
     revision = manifest.capture_plan.profile_revision
@@ -934,70 +846,6 @@ def _require_reviewed_native_geometry(
                 or stream.applied_settings.center_frequency_hz != expected_center_hz
             ):
                 raise ValueError("Standard-native RF center does not maximize in-channel coverage")
-
-
-def _require_reviewed_mixed_v4_geometry(manifest: RecordingManifestV4) -> None:
-    """Admit only exact reviewed unequal-rate V4 capabilities."""
-
-    plan = manifest.capture_plan
-    if plan.dwell_class not in {
-        ProductionDwellClass.MIXED_2P5_5,
-        ProductionDwellClass.MIXED_2P5_10,
-    }:
-        raise ValueError("Standard-native mixed 2.5/15 remains disabled by hardware qualification")
-    if manifest.source_type is not SourceType.LIVE or len(manifest.streams) != 2:
-        raise ValueError("Standard-native mixed capture requires exactly two LIVE streams")
-    expected_rates = {
-        ProductionDwellClass.MIXED_2P5_5: {2_500_000, 5_000_000},
-        ProductionDwellClass.MIXED_2P5_10: {2_500_000, 10_000_000},
-    }[plan.dwell_class]
-    if {item.requested_settings.sample_rate_hz for item in plan.radio_plans} != expected_rates:
-        raise ValueError("Standard-native mixed capture rates disagree with the reviewed class")
-    required_tags = {
-        "CAPTURE_ONLY",
-        "DEVICE_AXIS_ZERO_FILL",
-        "LIVE",
-        "MIXED_RATE",
-        "NATIVE_BANDWIDTH",
-        "RANDOM_TUNING",
-        "STANDARD_NATIVE",
-    }
-    if not required_tags.issubset(manifest.tags):
-        raise ValueError("Standard-native mixed manifest capability is incomplete")
-
-    for stream, leg in zip(manifest.streams, plan.radio_plans, strict=True):
-        profile = leg.profile_revision.profile
-        rate = leg.requested_settings.sample_rate_hz
-        if (
-            profile.name != STANDARD_NATIVE_MIXED_PROFILE_NAMES.get(rate)
-            or leg.profile_revision.revision_digest
-            != STANDARD_NATIVE_MIXED_PROFILE_REVISION_DIGESTS.get(rate)
-            or profile.sample_rate_hz != rate
-            or profile.bandwidth_hz != rate
-            or profile.duration_seconds != plan.duration_seconds
-            or profile.refill_samples != STANDARD_NATIVE_MIXED_REFILL_SAMPLES
-            or profile.kernel_buffers != STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
-            or profile.refill_queue_capacity != STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
-            or profile.storage_policy != "zstd-128m-device-axis-zero-v1"
-            or profile.continuity_policy.value != "allow_segments"
-            or profile.peer_failure_policy.value != "fail_session"
-            or tuple(profile.receivers) != (0, 1)
-            or not required_tags.issubset(profile.tags)
-        ):
-            raise ValueError("Standard-native mixed profile identity or capability is not reviewed")
-        settings = stream.applied_settings
-        if (
-            stream.radio.radio_id != leg.radio_id
-            or stream.requested_sample_count != leg.resolved_sample_count
-            or stream.logical_sample_count != leg.resolved_sample_count
-            or stream.requested_settings != leg.requested_settings
-            or settings.sample_rate_hz != rate
-            or settings.bandwidth_hz != profile.bandwidth_hz
-            or tuple(settings.receiver_ids) != (0, 1)
-            or settings.center_frequency_hz != leg.requested_settings.center_frequency_hz
-        ):
-            raise ValueError("Standard-native mixed stream geometry differs from its plan leg")
-    resolve_manifest_starlink_tuning(manifest)
 
 
 def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> None:
@@ -1243,171 +1091,3 @@ def _require_reviewed_direct_async_v6_geometry(manifest: RecordingManifestV6) ->
             raise ValueError("Standard-native direct-async tuning tags disagree with capture plan")
     if len(targets) != 1:
         raise ValueError("Standard-native direct-async capture requires one common RF target")
-
-
-def _require_reviewed_historical_v2_geometry(manifest: RecordingManifestV2) -> None:
-    """Admit only exact full-span counter-proven historical packed-IQ captures."""
-
-    revision = manifest.capture_plan.profile_revision
-    profile = revision.profile
-    admission = STANDARD_NATIVE_V2_PROFILE_ADMISSIONS.get(profile.name)
-    if admission is None or revision.revision_digest != admission.revision_digest:
-        raise ValueError("Standard-native historical V2 capture profile identity is not reviewed")
-    if (
-        manifest.source_type is not SourceType.LIVE
-        or profile.schema_version != 2
-        or profile.sample_rate_hz != admission.sample_rate_hz
-        or manifest.capture_plan.resolved_sample_count != admission.expected_sample_count
-        or profile.storage_policy != "zstd-128m-v1"
-        or profile.continuity_policy.value != "allow_segments"
-        or not profile.require_device_metadata
-        or tuple(profile.receivers) != (0, 1)
-        or not {"LIVE", "RANDOM_TUNING"}.issubset(profile.tags)
-    ):
-        raise ValueError("Standard-native historical V2 profile capability is incomplete")
-    if len(manifest.streams) != 2:
-        raise ValueError("Standard-native historical V2 requires exactly two preserved streams")
-    _require_historical_v2_runtime_settings(manifest)
-
-    any_gaps = False
-    for stream in manifest.streams:
-        settings = stream.applied_settings
-        continuity = stream.continuity
-        missing = continuity.missing_sample_count
-        any_gaps = any_gaps or bool(missing)
-        if (
-            settings is None
-            or stream.timing is None
-            or stream.timeline_relative_path is None
-            or stream.timeline_sha256 is None
-            or stream.gap_map_relative_path is None
-            or stream.gap_map_sha256 is None
-            or not stream.chunks
-            or stream.requested_sample_count != admission.expected_sample_count
-            or stream.captured_sample_count != continuity.observed_sample_count
-            or continuity.device_span_sample_count != admission.expected_sample_count
-            or continuity.observed_sample_count + missing != admission.expected_sample_count
-            or not continuity.sample_loss_observable
-            or continuity.first_device_sample_counter is None
-            or continuity.last_device_sample_counter is None
-            or continuity.last_device_sample_counter - continuity.first_device_sample_counter + 1
-            != admission.expected_sample_count
-            or continuity.validated_stream_generation is None
-            or continuity.metadata_abi_version != 1
-            or continuity.kernel_buffers != profile.kernel_buffers
-            or continuity.queue_capacity_refills != profile.refill_queue_capacity
-            or continuity.refill_count <= 0
-            or continuity.segment_count != continuity.gap_count + 1
-            or continuity.overflow_count != 0
-            or continuity.enqueue_failure_count != 0
-            or continuity.terminal_enqueue_failure is not None
-            or continuity.terminal_rejected_gap_count != 0
-            or continuity.terminal_rejected_missing_sample_count != 0
-            or continuity.terminal_rejected_overflow_count != 0
-            or stream.requested_settings.sample_rate_hz != admission.sample_rate_hz
-            or settings.sample_rate_hz != admission.sample_rate_hz
-            or settings.bandwidth_hz != profile.bandwidth_hz
-            or stream.requested_settings.bandwidth_hz != profile.bandwidth_hz
-            or tuple(settings.receiver_ids) != (0, 1)
-            or tuple(stream.requested_settings.receiver_ids) != (0, 1)
-        ):
-            raise ValueError(
-                "Standard-native historical V2 stream lacks a complete counter-proven span"
-            )
-        if missing:
-            if not admission.counter_gaps_allowed or stream.state is not StreamState.PARTIAL:
-                raise ValueError("Standard-native historical V2 profile does not permit gaps")
-        elif stream.state is not StreamState.COMPLETE:
-            raise ValueError("Standard-native historical V2 lossless stream is not complete")
-
-    expected_state = CaptureState.DEGRADED if any_gaps else CaptureState.COMMITTED
-    if manifest.state is not expected_state:
-        raise ValueError("Standard-native historical V2 capture state disagrees with gap evidence")
-    synchronization = manifest.synchronization
-    if any(
-        value is None
-        for value in (
-            synchronization.estimated_start_skew_ns,
-            synchronization.start_skew_uncertainty_ns,
-            synchronization.estimated_overlap_start_utc_ns,
-            synchronization.estimated_overlap_end_utc_ns,
-            synchronization.guaranteed_overlap_ns,
-        )
-    ):
-        raise ValueError("Standard-native historical V2 lacks paired timing evidence")
-
-
-def _require_historical_v2_runtime_settings(manifest: RecordingManifestV2) -> None:
-    """Bind random tuning/gain tags to requested settings and exact readback evidence."""
-
-    profile = manifest.capture_plan.profile_revision.profile
-    tuning_tags = tuple(tag for tag in manifest.tags if tag.startswith("tuning:"))
-    policy_tags = tuple(tag for tag in manifest.tags if tag.startswith("tuning_policy:"))
-    gain_tags = tuple(tag for tag in manifest.tags if tag.startswith("gain_mode:"))
-    runtime_tags = set(tuning_tags + policy_tags + gain_tags)
-    if (
-        len(tuning_tags) != 2
-        or len(policy_tags) != 1
-        or len(gain_tags) != 2
-        or set(manifest.tags) != set(profile.tags) | runtime_tags
-    ):
-        raise ValueError("Standard-native historical V2 runtime tag inventory is invalid")
-    policy = policy_tags[0].removeprefix("tuning_policy:")
-    if policy not in {"same", "same_channel_opposite_edge", "independent"}:
-        raise ValueError("Standard-native historical V2 tuning policy is invalid")
-
-    tuning_by_stream = resolve_manifest_starlink_tuning(manifest)
-    if any(item.channel not in {1, 2, 3, 4} for item in tuning_by_stream.values()):
-        raise ValueError("Standard-native historical V2 tuning is outside enabled channels")
-    ordered_tuning = tuple(tuning_by_stream[stream.stream_id] for stream in manifest.streams)
-    if policy == "same" and ordered_tuning[0] != ordered_tuning[1]:
-        raise ValueError("Standard-native historical V2 same-tuning policy disagrees with tags")
-    if policy == "same_channel_opposite_edge" and not (
-        ordered_tuning[0].channel == ordered_tuning[1].channel
-        and ordered_tuning[0].edge is not ordered_tuning[1].edge
-    ):
-        raise ValueError("Standard-native historical V2 opposite-edge policy disagrees with tags")
-
-    stream_ids = {stream.stream_id for stream in manifest.streams}
-    gain_by_stream: dict[str, GainMode] = {}
-    for tag in gain_tags:
-        parts = tag.split(":")
-        if len(parts) != 3 or parts[1] not in stream_ids or parts[1] in gain_by_stream:
-            raise ValueError("Standard-native historical V2 gain-mode tag is invalid")
-        try:
-            gain_mode = GainMode(parts[2])
-        except ValueError as error:
-            raise ValueError("Standard-native historical V2 gain mode is invalid") from error
-        if gain_mode not in {GainMode.MANUAL, GainMode.SLOW_ATTACK}:
-            raise ValueError("Standard-native historical V2 gain mode is not reviewed")
-        gain_by_stream[parts[1]] = gain_mode
-    if set(gain_by_stream) != stream_ids:
-        raise ValueError("Standard-native historical V2 gain tags do not cover every stream")
-
-    for stream in manifest.streams:
-        applied = stream.applied_settings
-        if applied is None:
-            raise ValueError("Standard-native historical V2 lacks applied settings")
-        tuning = tuning_by_stream[stream.stream_id]
-        first_center = 959_687_500 if tuning.edge is StarlinkEdge.LOWER else 1_190_312_500
-        expected_center = first_center + (tuning.channel - 1) * 250_000_000
-        requested = stream.requested_settings
-        gain_mode = gain_by_stream[stream.stream_id]
-        if requested.center_frequency_hz != expected_center:
-            raise ValueError("Standard-native historical V2 requested center disagrees with tags")
-        if any(
-            settings.sample_rate_hz != profile.sample_rate_hz
-            or settings.bandwidth_hz != profile.bandwidth_hz
-            or settings.receiver_ids != profile.receivers
-            or settings.gain_mode is not gain_mode
-            or (
-                settings.gains != profile.gains
-                if gain_mode is GainMode.MANUAL
-                else bool(settings.gains)
-            )
-            for settings in (requested, applied)
-        ):
-            raise ValueError("Standard-native historical V2 settings disagree with tuning tags")
-        center_tolerance = max(1, round(requested.center_frequency_hz * 1e-6))
-        if abs(applied.center_frequency_hz - requested.center_frequency_hz) > center_tolerance:
-            raise ValueError("Standard-native historical V2 applied center exceeds tolerance")
