@@ -299,6 +299,10 @@ runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release" \
   "$release_dir" "$revision"
 chown -R root:leo "$release_dir"
 chmod -R go-w "$release_dir"
+# The Git-free staging root starts at 0700 while it is owned by leo. Restore
+# group traversal after sealing ownership so the leo validator and services can
+# execute the immutable release without granting access to other users.
+chmod 0750 "$release_dir"
 chmod 0440 "$release_dir/$source_identity_name"
 runuser -u leo -- "$release_dir/.venv/bin/python" \
   "$release_dir/deploy/scripts/validate-published-release" \

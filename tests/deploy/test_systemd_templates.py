@@ -579,6 +579,12 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
         compile_bytecode
     )
     assert compile_bytecode < stage.index('chown -R root:leo "$release_dir"')
+    restore_group_traversal = stage.index('chmod 0750 "$release_dir"')
+    assert stage.index('chown -R root:leo "$release_dir"') < restore_group_traversal
+    assert restore_group_traversal < stage.index(
+        'runuser -u leo -- "$release_dir/.venv/bin/python"',
+        restore_group_traversal,
+    )
     assert "-q -f --invalidation-mode checked-hash" in stage
     assert '"$release_dir/.venv/lib/python$python_version/site-packages"' in stage
     assert "metadata-runtime.json" in stage
