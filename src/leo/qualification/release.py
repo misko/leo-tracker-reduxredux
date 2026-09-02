@@ -10,6 +10,7 @@ test results, and a digest inventory.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -21,6 +22,7 @@ import sys
 import tempfile
 from collections.abc import Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,7 +30,6 @@ from typing import Any
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
-from sqlalchemy.schema import DropSchema
 
 from leo.contracts.digests import canonical_json_bytes
 from leo.qualification.release_contract import (
@@ -68,6 +69,7 @@ _IGNORED_INPUT_DIRECTORIES = frozenset(
 )
 _SOURCE_MARKER = ".leo-release-source.json"
 _SOURCE_MARKER_SCHEMA = "org.leo.release-source/v1"
+_QUALIFICATION_DATABASE_LOCK = Path("/var/lib/leo/.cache/qualification-database.lock")
 _CHILD_ENVIRONMENT_ALLOWLIST = frozenset(
     {
         "LANG",
@@ -883,21 +885,29 @@ def _validate_database_cleanup(database_url: str) -> str | None:
     leaked = tuple(schema for schema in schemas if schema != "public")
     controlled_prefixes = ("leo_e2e_", "leo_processing_", "leo_test_")
     if all(schema.startswith(controlled_prefixes) for schema in leaked):
-        engine = create_engine(database_url, pool_pre_ping=True)
-        try:
-            with engine.begin() as connection:
-                for schema in leaked:
-                    connection.execute(DropSchema(schema, cascade=True))
-        finally:
-            engine.dispose()
-        remaining = _qualification_schemas(database_url)
-        cleanup = (
-            "recognized test schemas were removed"
-            if remaining == ("public",)
-            else ("cleanup did not restore the public-only baseline")
+        return (
+            f"qualification command leaked PostgreSQL schemas {list(leaked)!r}; "
+            "automatic cross-process deletion is forbidden"
         )
-        return f"qualification command leaked PostgreSQL schemas {list(leaked)!r}; {cleanup}"
     return f"qualification command created unexpected PostgreSQL schemas {list(leaked)!r}"
+
+
+@contextmanager
+def _exclusive_qualification_database_lock():
+    """Exclude qualification while shared isolated-schema test gates are active."""
+
+    descriptor = os.open(
+        _QUALIFICATION_DATABASE_LOCK,
+        os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW,
+        0o600,
+    )
+    try:
+        os.fchmod(descriptor, 0o600)
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
 
 
 def _qualification_schemas(database_url: str) -> tuple[str, ...]:
@@ -1380,16 +1390,17 @@ def main(arguments: Sequence[str] | None = None) -> None:
     if not options.database_url:
         parser.error("--database-url or LEO_QUALIFICATION_DATABASE_URL is required")
     try:
-        receipt = run_release_qualification(
-            project_root=options.project_root,
-            database_url=options.database_url,
-            corpus_root=options.corpus_root,
-            native_corpus_root=options.native_corpus_root,
-            evidence_root=options.evidence_root,
-            run_id=options.run_id,
-            maximum_resource_units=options.maximum_resource_units,
-            include_historical=options.include_historical,
-        )
+        with _exclusive_qualification_database_lock():
+            receipt = run_release_qualification(
+                project_root=options.project_root,
+                database_url=options.database_url,
+                corpus_root=options.corpus_root,
+                native_corpus_root=options.native_corpus_root,
+                evidence_root=options.evidence_root,
+                run_id=options.run_id,
+                maximum_resource_units=options.maximum_resource_units,
+                include_historical=options.include_historical,
+            )
     except QualificationFailed as error:
         print(str(error), file=sys.stderr)
         raise SystemExit(1) from error

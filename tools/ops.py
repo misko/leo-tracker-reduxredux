@@ -30,6 +30,7 @@ RELEASE_ROOT = Path("/opt/leo-tracker")
 PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
 PRODUCTION_ACQUISITION_ENVIRONMENT = Path("/etc/leo/acquisition.env")
 PRODUCTION_WORKER_ENVIRONMENT = Path("/etc/leo/worker.env")
+QUALIFICATION_DATABASE_LOCK = Path("/var/lib/leo/.cache/qualification-database.lock")
 DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
 QNAP_ROOT = Path("/mnt/qnap01")
 PRODUCTION_CAPTURE_POLICY = "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
@@ -494,6 +495,9 @@ def _execute_gate(gate: Gate) -> dict[str, Any]:
                 "-n",
                 "-u",
                 "leo",
+                "/usr/bin/flock",
+                "--shared",
+                str(QUALIFICATION_DATABASE_LOCK),
                 "/usr/bin/env",
                 "HOME=/var/lib/leo",
                 f"LEO_TEST_DATABASE_URL={environment['LEO_TEST_DATABASE_URL']}",
