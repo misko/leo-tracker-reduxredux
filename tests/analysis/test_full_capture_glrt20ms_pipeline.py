@@ -14,6 +14,7 @@ from leo.analysis.standard.full_capture_glrt20ms import (
     _constant_rate,
     _fit_supported_frame_line,
     analyze_full_capture_glrt20ms,
+    fractional_log_peak_offset,
     render_full_capture_glrt20ms_png,
 )
 from leo.analysis.starlink import StarlinkEdge
@@ -70,6 +71,19 @@ def test_huber_frame_line_resists_one_large_outlier() -> None:
     assert fit["available"] is True
     assert abs(float(fit["slope_hz_s"]) + 6_000.0) < 50.0
     assert fit["outlier_count"] == 1
+
+
+@pytest.mark.parametrize("peak", (-1.25, -0.2, 0.0, 0.37, 1.4))
+def test_fractional_log_peak_recovers_bracketed_subsample_maximum(peak: float) -> None:
+    offsets = np.arange(-2, 3, dtype=float)
+    scores = np.exp(-1.7 * (offsets - peak) ** 2)
+
+    assert fractional_log_peak_offset(scores) == pytest.approx(peak, abs=1e-12)
+
+
+def test_fractional_log_peak_refuses_boundary_and_flat_surfaces() -> None:
+    assert fractional_log_peak_offset((5.0, 4.0, 3.0, 2.0, 1.0)) is None
+    assert fractional_log_peak_offset((2.0, 2.0, 2.0, 2.0, 2.0)) is None
 
 
 def test_rate_summary_is_constant_not_quadratic_equivalent() -> None:

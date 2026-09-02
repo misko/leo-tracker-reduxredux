@@ -60,8 +60,8 @@ from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV8,
     StandardNativePngArtifactInventoryV9,
-    StandardNativePngArtifactInventoryV10,
-    StandardNativePngArtifactInventoryV11,
+    StandardNativePngArtifactInventoryV12,
+    StandardNativePngArtifactInventoryV13,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV5,
@@ -765,12 +765,12 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
         for subject_id, expected_count in subject_inventory_counts.items():
             inventory = repository.subject_png_inventory(manifest.session_id, subject_id)
             if subject_id == low_radio_subject_id:
-                assert isinstance(inventory, StandardNativePngArtifactInventoryV11)
+                assert isinstance(inventory, StandardNativePngArtifactInventoryV13)
                 assert inventory.artifacts[-1].name == "pss-glrt-frame-comparison"
             elif high_rate_hz != 25_000_000 and subject_id == root_subject.subject_id:
                 assert isinstance(inventory, StandardNativePngArtifactInventoryV9)
             else:
-                assert isinstance(inventory, StandardNativePngArtifactInventoryV10)
+                assert isinstance(inventory, StandardNativePngArtifactInventoryV12)
             assert len(inventory.artifacts) == expected_count
             assert sorted(inventory.sample_rates_hz) in (
                 [2_500_000],

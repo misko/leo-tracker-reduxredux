@@ -61,6 +61,7 @@ from leo.pipeline import IqReader
 _ZERO_CALIBRATION_SHA256 = "0" * 64
 _RENDER_LOCK = RLock()
 _GLRT_BATCH_TIE_GUARD = 1e-10
+_FRACTIONAL_EPOCH_GRID_OFFSETS = (-2, -1, 0, 1, 2)
 
 _BLUE = "#2678a8"
 _ORANGE = "#f28e2b"
@@ -139,6 +140,9 @@ class WindowResult:
     robust_outlier_count: int
     robust_converged: bool | None
     reason: str
+    fractional_epoch_status: str = "not_evaluated"
+    fractional_epoch_offset_samples: float | None = None
+    fractional_epoch_exact_score_grid: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -248,6 +252,66 @@ def _winning_candidate_glrt64(
     return max(scalar_scored, key=lambda item: (item[1].margin, -item[0].rank))
 
 
+def fractional_log_peak_offset(
+    scores: Sequence[float],
+    offsets: Sequence[int] = _FRACTIONAL_EPOCH_GRID_OFFSETS,
+) -> float | None:
+    """Interpolate one bracketed exact-score maximum in log-score space.
+
+    ``None`` is deliberately returned for a boundary maximum or a non-concave
+    local surface.  Callers can then retain the integer acquisition epoch as
+    provenance without presenting an unsupported fractional measurement.
+    """
+
+    values = np.asarray(scores, dtype=float)
+    grid = np.asarray(offsets, dtype=float)
+    if values.ndim != 1 or grid.ndim != 1 or values.size != grid.size or values.size < 3:
+        raise ValueError("fractional GLRT peak requires equal score and offset vectors")
+    if not np.all(np.isfinite(values)) or np.any(values < 0.0):
+        raise ValueError("fractional GLRT scores must be finite and nonnegative")
+    steps = np.diff(grid)
+    if np.any(steps <= 0.0) or not np.allclose(steps, steps[0], rtol=0.0, atol=1e-12):
+        raise ValueError("fractional GLRT offsets must be uniformly increasing")
+    index = int(np.argmax(values))
+    if index == 0 or index == len(values) - 1:
+        return None
+    selected = np.log(np.maximum(values[index - 1 : index + 2], np.finfo(float).tiny))
+    denominator = float(selected[0] - 2.0 * selected[1] + selected[2])
+    if not math.isfinite(denominator) or denominator >= -np.finfo(float).eps:
+        return None
+    fraction = float(np.clip(0.5 * (selected[0] - selected[2]) / denominator, -0.5, 0.5))
+    return float(grid[index] + fraction * steps[0])
+
+
+def _fractional_glrt_epoch(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    candidate: AcquisitionCandidate,
+    score: PilotMethodScore,
+    *,
+    edge: StarlinkEdge,
+    glrt_size: int,
+) -> tuple[str, float | None, tuple[float, ...]]:
+    epoch = candidate.refined_epoch_sample
+    if epoch + _FRACTIONAL_EPOCH_GRID_OFFSETS[0] < 0:
+        return "unavailable", None, ()
+    scores = conditioned_glrt64_scores(
+        samples,
+        sample_rate_hz,
+        epoch_samples=tuple(epoch + item for item in _FRACTIONAL_EPOCH_GRID_OFFSETS),
+        acquired_cfo_hz=tuple(
+            candidate.absolute_cfo_hz for _item in _FRACTIONAL_EPOCH_GRID_OFFSETS
+        ),
+        edge=edge,
+        glrt_size=glrt_size,
+    )
+    exact = tuple(float(item.exact_score) for item in scores)
+    if not math.isclose(exact[2], score.exact_score, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("fractional GLRT center score differs from the selected candidate")
+    offset = fractional_log_peak_offset(exact)
+    return ("complete", offset, exact) if offset is not None else ("unbracketed", None, exact)
+
+
 def _analyze_window(
     probe_index: int,
     sample_start: int,
@@ -259,6 +323,7 @@ def _analyze_window(
     glrt_size: int,
     margin_gate: float,
     frequency_reference: ReceiverFrequencyCalibration | None = None,
+    refine_fractional_epoch: bool = False,
 ) -> WindowResult:
     calibration = frequency_reference or ReceiverFrequencyCalibration(
         receiver_id="baseband", center_hz=0.0, calibration_sha256=_ZERO_CALIBRATION_SHA256
@@ -312,6 +377,18 @@ def _analyze_window(
         edge=edge,
         glrt_size=glrt_size,
     )
+    fractional_status = "not_evaluated"
+    fractional_offset: float | None = None
+    fractional_scores: tuple[float, ...] = ()
+    if refine_fractional_epoch and score.margin >= margin_gate:
+        fractional_status, fractional_offset, fractional_scores = _fractional_glrt_epoch(
+            samples,
+            sample_rate_hz,
+            candidate,
+            score,
+            edge=edge,
+            glrt_size=glrt_size,
+        )
     frame_result = analyze_pilot_phase_slope(
         samples,
         sample_rate_hz,
@@ -363,6 +440,9 @@ def _analyze_window(
             if line["available"]
             else f"only {len(frames)} complete frame CFO measurements; need at least 6"
         ),
+        fractional_epoch_status=fractional_status,
+        fractional_epoch_offset_samples=fractional_offset,
+        fractional_epoch_exact_score_grid=fractional_scores,
     )
 
 

@@ -12,22 +12,30 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V10,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V11,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11,
+    STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V12,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactInventoryV8,
     StandardNativePngArtifactInventoryV10,
     StandardNativePngArtifactInventoryV11,
+    StandardNativePngArtifactInventoryV12,
+    StandardNativePngArtifactInventoryV13,
     StandardNativePngArtifactV4,
     StandardNativePngArtifactV8,
     StandardNativePngArtifactV10,
     StandardNativePngArtifactV11,
+    StandardNativePngArtifactV12,
+    StandardNativePngArtifactV13,
 )
 from leo.presentation.standard_pipeline import StandardSubjectKindV2
 
@@ -352,3 +360,87 @@ def test_additive_v11_inventory_closes_the_exact_low_radio_2p5_x25_comparison() 
     tampered["sample_rates_hz"] = [2_500_000, 15_000_000]
     with pytest.raises(ValidationError):
         StandardNativePngArtifactInventoryV11.model_validate(tampered)
+
+
+@pytest.mark.parametrize(
+    ("schema_version", "names", "definitions", "artifact_type", "inventory_type", "kind"),
+    (
+        (
+            12,
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V12,
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12,
+            StandardNativePngArtifactV12,
+            StandardNativePngArtifactInventoryV12,
+            StandardSubjectKindV2.RECEIVER_PATH,
+        ),
+        (
+            13,
+            STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13,
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13,
+            StandardNativePngArtifactV13,
+            StandardNativePngArtifactInventoryV13,
+            StandardSubjectKindV2.RADIO,
+        ),
+    ),
+)
+def test_fractional_glrt_png_inventories_are_additive_and_closed(
+    schema_version: int,
+    names: tuple[str, ...],
+    definitions: dict[str, tuple[str, str, str, int, str | None]],
+    artifact_type: type[StandardNativePngArtifactV12 | StandardNativePngArtifactV13],
+    inventory_type: type[
+        StandardNativePngArtifactInventoryV12 | StandardNativePngArtifactInventoryV13
+    ],
+    kind: StandardSubjectKindV2,
+) -> None:
+    session_id = "cap-fractional-glrt"
+    subject_id = "path:radio-0:rx0" if kind is StandardSubjectKindV2.RECEIVER_PATH else "radio:0"
+    base = f"/api/v2/recordings/{session_id}/standard-subjects/{quote(subject_id, safe='')}"
+    artifacts = []
+    for index, name in enumerate(names):
+        label, description, catalog_kind, product_version, view_name = definitions[name]
+        artifacts.append(
+            artifact_type(
+                name=name,
+                label=label,
+                description=description,
+                href=(
+                    f"{base}/views/{view_name}.png"
+                    if view_name is not None
+                    else f"{base}/artifacts/{name}.png"
+                ),
+                catalog_kind=catalog_kind,
+                product_schema_version=product_version,
+                digest=canonical_digest({"fractional-artifact": name}),
+                byte_size=5000 + index,
+            )
+        )
+    values = {
+        "schema_version": schema_version,
+        "session_id": session_id,
+        "subject_id": subject_id,
+        "subject_kind": kind.value,
+        "run_id": "run-fractional-glrt",
+        "run_manifest_digest": canonical_digest({"fractional": "manifest"}),
+        "sample_rates_hz": (2_500_000,)
+        if kind is StandardSubjectKindV2.RECEIVER_PATH
+        else (2_500_000, 25_000_000),
+        "coverage_status": "complete",
+        "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
+    }
+    inventory = inventory_type.model_validate(
+        {**values, "content_digest": canonical_digest(values)}
+    )
+
+    assert tuple(item.name for item in inventory.artifacts) == names
+    fractional_name = (
+        "glrt-epoch-timing"
+        if kind is StandardSubjectKindV2.RECEIVER_PATH
+        else "pss-glrt-frame-comparison"
+    )
+    fractional_index = names.index(fractional_name)
+    assert inventory.artifacts[fractional_index].product_schema_version == 2
+    tampered = inventory.model_dump(mode="json")
+    tampered["artifacts"][fractional_index]["product_schema_version"] = 1
+    with pytest.raises(ValidationError):
+        inventory_type.model_validate(tampered)

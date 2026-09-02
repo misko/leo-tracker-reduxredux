@@ -7,7 +7,8 @@ points at an immutable, run-registered PNG that was produced before sealing.
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Self, cast
+from collections.abc import Mapping
+from typing import Annotated, Any, Literal, Self, cast
 from urllib.parse import quote
 
 from pydantic import Field, StringConstraints, model_validator
@@ -758,3 +759,199 @@ class StandardNativePngArtifactInventoryV11(ContractModel):
         if self.content_digest != canonical_digest(values):
             raise ValueError("V11 native PNG artifact inventory digest does not match")
         return self
+
+
+# V10/V11 remain immutable descriptions of the integer-epoch renderers.  These
+# additive identities preserve the same UI slots while truthfully declaring
+# the fractional-epoch PNG product versions.
+StandardNativePngArtifactNameV12 = StandardNativePngArtifactNameV10
+STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V12 = STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10
+STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12 = cast(
+    dict[StandardNativePngArtifactNameV12, tuple[str, str, str, int, str | None]],
+    {
+        **STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V10,
+        "glrt-epoch-timing": (
+            "Fractional GLRT frame-epoch timing fits",
+            "CFO-selected, continuity-local fits from bracketed exact-score peaks",
+            "standard.glrt-epoch-timing-png",
+            2,
+            None,
+        ),
+        "glrt-epoch-rate": (
+            "Fractional GLRT epoch/CFO Doppler-rate consistency",
+            "Physical-minus-sign fractional epoch curvature versus canonical GLRT CFO",
+            "standard.glrt-epoch-rate-png",
+            2,
+            None,
+        ),
+    },
+)
+
+
+class StandardNativePngArtifactV12(ContractModel):
+    """One immutable PNG descriptor in the fractional epoch inventory."""
+
+    schema_version: Literal[12] = 12
+    name: StandardNativePngArtifactNameV12
+    label: BoundedText
+    description: BoundedText
+    href: ApiHref
+    catalog_kind: Identifier
+    product_schema_version: Annotated[int, Field(gt=0)]
+    digest: Sha256Digest
+    byte_size: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+    media_type: Literal["image/png"] = "image/png"
+
+
+class StandardNativePngArtifactInventoryV12(ContractModel):
+    """Path inventory whose GLRT timing views use fractional exact-score peaks."""
+
+    schema_version: Literal[12] = 12
+    session_id: Identifier
+    subject_id: Identifier
+    subject_kind: Literal[StandardSubjectKindV2.RECEIVER_PATH]
+    run_id: Identifier
+    run_manifest_digest: Sha256Digest
+    sample_rates_hz: tuple[
+        Literal[
+            2_500_000,
+            3_000_000,
+            5_000_000,
+            10_000_000,
+            15_000_000,
+            20_000_000,
+            25_000_000,
+        ],
+        ...,
+    ] = Field(min_length=1, max_length=1)
+    coverage_status: Literal["complete", "partial_coverage", "insufficient_data"]
+    artifacts: tuple[StandardNativePngArtifactV12, ...] = Field(min_length=14, max_length=14)
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _inventory_is_exact(self) -> Self:
+        if self.sample_rates_hz != tuple(sorted(set(self.sample_rates_hz))):
+            raise ValueError("V12 native PNG rates must be unique and ordered")
+        if tuple(item.name for item in self.artifacts) != STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V12:
+            raise ValueError("V12 native PNG artifact inventory is not the exact path set")
+        _validate_artifact_descriptors(
+            self.session_id,
+            self.subject_id,
+            self.artifacts,
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12,
+        )
+        values = {
+            "schema_version": self.schema_version,
+            "session_id": self.session_id,
+            "subject_id": self.subject_id,
+            "subject_kind": self.subject_kind.value,
+            "run_id": self.run_id,
+            "run_manifest_digest": self.run_manifest_digest,
+            "sample_rates_hz": self.sample_rates_hz,
+            "coverage_status": self.coverage_status,
+            "artifacts": tuple(item.model_dump(mode="json") for item in self.artifacts),
+        }
+        if self.content_digest != canonical_digest(values):
+            raise ValueError("V12 native PNG artifact inventory digest does not match")
+        return self
+
+
+StandardNativePngArtifactNameV13 = StandardNativePngArtifactNameV11
+STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13 = STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11
+STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13 = cast(
+    dict[StandardNativePngArtifactNameV13, tuple[str, str, str, int, str | None]],
+    {
+        **STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V11,
+        "pss-glrt-frame-comparison": (
+            "Native-25 PSS versus dual 2.5 MS/s fractional GLRT",
+            "Independent PSS timing versus fractional exact-score GLRT timing",
+            "standard.pss-glrt-frame-comparison-png",
+            2,
+            None,
+        ),
+    },
+)
+
+
+class StandardNativePngArtifactV13(ContractModel):
+    """One immutable PNG descriptor in the fractional paired inventory."""
+
+    schema_version: Literal[13] = 13
+    name: StandardNativePngArtifactNameV13
+    label: BoundedText
+    description: BoundedText
+    href: ApiHref
+    catalog_kind: Identifier
+    product_schema_version: Annotated[int, Field(gt=0)]
+    digest: Sha256Digest
+    byte_size: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+    media_type: Literal["image/png"] = "image/png"
+
+
+class StandardNativePngArtifactInventoryV13(ContractModel):
+    """Exact 2.5/25 inventory using fractional GLRT timing in its comparison."""
+
+    schema_version: Literal[13] = 13
+    session_id: Identifier
+    subject_id: Identifier
+    subject_kind: Literal[StandardSubjectKindV2.RADIO]
+    run_id: Identifier
+    run_manifest_digest: Sha256Digest
+    sample_rates_hz: tuple[Literal[2_500_000, 25_000_000], Literal[2_500_000, 25_000_000]]
+    coverage_status: Literal["complete", "partial_coverage", "insufficient_data"]
+    artifacts: tuple[StandardNativePngArtifactV13, ...] = Field(min_length=7, max_length=7)
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _inventory_is_exact(self) -> Self:
+        if self.sample_rates_hz != (2_500_000, 25_000_000):
+            raise ValueError("V13 native PNG rates must be the exact 2.5/25 pair")
+        if tuple(item.name for item in self.artifacts) != STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13:
+            raise ValueError("V13 native PNG artifact inventory is not the exact paired set")
+        _validate_artifact_descriptors(
+            self.session_id,
+            self.subject_id,
+            self.artifacts,
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13,
+        )
+        values = {
+            "schema_version": self.schema_version,
+            "session_id": self.session_id,
+            "subject_id": self.subject_id,
+            "subject_kind": self.subject_kind.value,
+            "run_id": self.run_id,
+            "run_manifest_digest": self.run_manifest_digest,
+            "sample_rates_hz": self.sample_rates_hz,
+            "coverage_status": self.coverage_status,
+            "artifacts": tuple(item.model_dump(mode="json") for item in self.artifacts),
+        }
+        if self.content_digest != canonical_digest(values):
+            raise ValueError("V13 native PNG artifact inventory digest does not match")
+        return self
+
+
+def _validate_artifact_descriptors(
+    session_id: str,
+    subject_id: str,
+    artifacts: tuple[StandardNativePngArtifactV12 | StandardNativePngArtifactV13, ...],
+    definitions: Mapping[Any, tuple[str, str, str, int, str | None]],
+) -> None:
+    base = (
+        f"/api/v2/recordings/{quote(session_id, safe='')}/standard-subjects/"
+        f"{quote(subject_id, safe='')}"
+    )
+    for item in artifacts:
+        label, description, kind, schema_version, view_name = definitions[item.name]
+        expected_href = (
+            f"{base}/views/{view_name}.png"
+            if view_name is not None
+            else f"{base}/artifacts/{item.name}.png"
+        )
+        if (
+            item.label != label
+            or item.description != description
+            or item.catalog_kind != kind
+            or item.product_schema_version != schema_version
+            or item.href != expected_href
+        ):
+            raise ValueError("fractional native PNG descriptor differs from its closed identity")
