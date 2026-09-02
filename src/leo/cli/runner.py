@@ -629,7 +629,13 @@ class ContinuousAcquisitionRunner:
                                         f"status={run_manifest.status}"
                                     ),
                                 )
-                            if scanner_analysis is None:
+                            if scanner_only:
+                                logger.info(
+                                    "scheduled_scanner_analysis_deferred "
+                                    "reason=bounded_scanner_only run_id=%s",
+                                    captured.published.run_id,
+                                )
+                            elif scanner_analysis is None:
                                 scanner_analysis = scanner_analysis_pool.submit(
                                     scanner.analyze_scheduled_scanner,
                                     captured,

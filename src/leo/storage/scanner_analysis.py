@@ -53,6 +53,23 @@ class ScannerCaptureTimeReader(Protocol):
     def captured_at(self, scan_id: str) -> datetime: ...
 
 
+class FallbackScannerCaptureTimeReader:
+    """Resolve capture time from live IQ first and durable tombstones second."""
+
+    def __init__(self, *readers: ScannerCaptureTimeReader) -> None:
+        if not readers:
+            raise ValueError("at least one scanner capture-time reader is required")
+        self._readers = readers
+
+    def captured_at(self, scan_id: str) -> datetime:
+        for reader in self._readers:
+            try:
+                return reader.captured_at(scan_id)
+            except BundleNotFoundError:
+                continue
+        raise BundleNotFoundError(f"scanner capture time does not exist: {scan_id}")
+
+
 @dataclass(frozen=True, slots=True)
 class PublishedScannerAnalysisBundle:
     analysis_id: str
@@ -414,6 +431,38 @@ class ScannerAnalysisStore:
             metrics=metrics,
             pilot_doppler=pilot_doppler,
         )
+
+    def has_matching_input(
+        self,
+        scan_id: str,
+        analysis_ids: tuple[str, ...],
+        *,
+        input_uri: str,
+        input_manifest_sha256: str,
+        verify_products: bool,
+    ) -> bool:
+        """Confirm that an allowed analysis was published from exact IQ evidence."""
+
+        if not _IDENTIFIER.fullmatch(scan_id) or not analysis_ids:
+            raise ValueError("scanner analysis retention identity is invalid")
+        for analysis_id in analysis_ids:
+            if not _IDENTIFIER.fullmatch(analysis_id):
+                raise ValueError("scanner analysis retention identity is invalid")
+            candidate = self.analysis_root / scan_id / analysis_id
+            if not candidate.exists():
+                continue
+            path = confined_path(self.analysis_root, candidate, must_exist=True)
+            if verify_products:
+                published = self.inspect(scan_id, analysis_id)
+                manifest = published.manifest
+            else:
+                _, manifest = self._manifest(path, scan_id, analysis_id)
+            if (
+                manifest.input_uri == input_uri
+                and manifest.input_manifest_sha256 == input_manifest_sha256
+            ):
+                return True
+        return False
 
     def page(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV1:
         """Return one bounded page with the newest analysis variant per scan."""

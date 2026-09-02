@@ -166,7 +166,10 @@ sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; \
 ```
 
 Whether the canary succeeds or fails, pause before restarting the normal
-service. The checked-in environment keeps its scanner disabled:
+service. Bounded scanner-only mode deliberately defers Standard analysis so
+the 29-minute guard covers RF capture and durable run publication only. The
+normal service performs startup scanner reconciliation while it remains
+paused. The checked-in environment keeps its scanner disabled:
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
@@ -180,8 +183,9 @@ sample-rate set is `{2500000, 5000000}`, each RF bandwidth equals its sample
 rate, each dwell is 120 ms, every run lasts approximately 300 seconds, and the
 target order is CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U. Also verify
 every referenced sweep bundle opens with its recorded manifest digest and that
-standard analysis completes. Leave recurring scanning disabled until scanner
-IQ has a reviewed, tested local-retention path; at the configured cadence its
+startup reconciliation completes Standard analysis for every sweep. Leave
+recurring scanning disabled until scanner IQ has passed the scanner-retention
+checks below; at the configured cadence its
 conservative raw growth is 649,036,800,000 bytes/day.
 
 ## First capture and normal services
@@ -376,11 +380,33 @@ Eligible raw sessions must be committed, reconciled, successfully analyzed,
 unheld, non-TEST, and free of active analysis/purge claims. Superseded artifacts
 can be reclaimed independently; current UI products remain protected.
 
+Scanner IQ uses the same capacity watermarks so raw signal is kept for as long
+as local capacity permits. It is eligible only after a terminal `complete`
+scanner run references its exact URI and manifest digest and an allowed
+Standard analysis names that same input. Retention re-verifies the analysis,
+stages only the exact dated scanner bundle, then durably records its original
+manifest in `control/scanner-purges/` before trash removal. Scanner runs,
+reports, Standard products, and UI history are retained. Unanalyzed,
+cancelled-run, failed-run, partial-spool, corrupt, or QNAP data fails closed and
+is never selected.
+
 Always inspect status and a dry run first:
 
 ```text
 leo process retention-status --json
 leo process retention-run --dry-run --json
+```
+
+Before first unattended scanner enablement, also run the isolated scanner
+retention tests from the exact qualified release. They exercise selection,
+digest/run/analysis fences, pre-commit restore, post-commit discard, symlink
+confinement, and QNAP rejection without touching production evidence:
+
+```text
+uv run pytest -q \
+  tests/operations/test_retention.py \
+  tests/operations/test_scanner_retention.py \
+  tests/storage/test_scanner_run_store.py
 ```
 
 A manual destructive pass requires explicit confirmation:

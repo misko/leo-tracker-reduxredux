@@ -6,10 +6,15 @@ import json
 import os
 import re
 import shutil
+import stat
 import uuid
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
+
+from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.storage.errors import BundleNotFoundError
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 HIGH_WATERMARK = 0.70
@@ -17,6 +22,7 @@ LOW_WATERMARK = 0.65
 WARNING_WATERMARK = 0.75
 ADMISSION_STOP_WATERMARK = 0.80
 _FORBIDDEN_DESTRUCTIVE_ROOT = Path("/mnt/qnap01")
+_MAX_SCANNER_TOMBSTONE_BYTES = 17 * 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,8 +175,149 @@ class HoldReceiptStore:
 
 
 @dataclass(frozen=True, slots=True)
+class ScannerPurgeTombstone:
+    """Durable evidence that one analyzed scanner IQ bundle was purged."""
+
+    schema_version: Literal[1]
+    scan_id: str
+    claim_token: str
+    iq_bundle_uri: str
+    iq_manifest_sha256: str
+    iq_manifest: dict[str, Any]
+    original_path: str
+    staged_bytes: int
+    purged_utc_ns: int
+
+    def __post_init__(self) -> None:
+        if self.schema_version != 1:
+            raise ValueError("scanner tombstone schema version must be 1")
+        _validate_identifier(self.scan_id)
+        _validate_identifier(self.claim_token)
+        if not self.iq_bundle_uri.startswith("bulk://scanner-recordings/"):
+            raise ValueError("scanner tombstone has an invalid IQ bundle URI")
+        if sha256_digest(canonical_json_bytes(self.iq_manifest)) != self.iq_manifest_sha256:
+            raise ValueError("scanner tombstone IQ manifest digest disagrees")
+        if self.staged_bytes < 0 or self.purged_utc_ns < 0:
+            raise ValueError("scanner tombstone bytes and time cannot be negative")
+
+
+class ScannerPurgeTombstoneStore:
+    """Append-only local availability evidence for scanner IQ retention."""
+
+    def __init__(self, bulk_root: Path) -> None:
+        self.bulk_root = _validated_local_bulk_root(bulk_root)
+        self.root = self.bulk_root / "control" / "scanner-purges"
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.root = _validated_local_bulk_root(self.root)
+
+    def put(self, tombstone: ScannerPurgeTombstone) -> Path:
+        self._validate(tombstone)
+        destination = self._path(tombstone.scan_id)
+        payload = json.dumps(asdict(tombstone), sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+        temporary = self.root / f".{tombstone.scan_id}.{uuid.uuid4().hex}.json.partial"
+        with temporary.open("xb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        try:
+            os.link(temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+        _fsync_directory(self.root)
+        return destination
+
+    def get(self, scan_id: str) -> ScannerPurgeTombstone | None:
+        path = self._path(scan_id)
+        if not path.exists():
+            return None
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("scanner purge tombstone must be a real file")
+        document = json.loads(self._read_regular(path))
+        tombstone = ScannerPurgeTombstone(**document)
+        if tombstone.scan_id != scan_id:
+            raise ValueError("scanner purge tombstone identity disagrees with filename")
+        self._validate(tombstone)
+        return tombstone
+
+    def commits(self, receipt: PurgeReceipt) -> bool:
+        if receipt.kind != "scanner":
+            raise ValueError("scanner tombstones only commit scanner purge receipts")
+        tombstone = self.get(receipt.item_id)
+        return tombstone is not None and (
+            tombstone.scan_id == receipt.item_id
+            and tombstone.claim_token == receipt.claim_token
+            and tombstone.original_path == receipt.original_path
+            and tombstone.staged_bytes == receipt.staged_bytes
+        )
+
+    def captured_at(self, scan_id: str) -> datetime:
+        """Recover immutable capture time after the raw IQ bundle is gone."""
+
+        tombstone = self.get(scan_id)
+        if tombstone is None:
+            raise BundleNotFoundError(f"scanner purge tombstone does not exist: {scan_id}")
+        created_utc_ns = tombstone.iq_manifest.get("created_utc_ns")
+        if not isinstance(created_utc_ns, int) or created_utc_ns < 0:
+            raise ValueError("scanner purge tombstone has an invalid capture time")
+        return datetime.fromtimestamp(created_utc_ns / 1_000_000_000, tz=UTC)
+
+    def _path(self, scan_id: str) -> Path:
+        _validate_identifier(scan_id)
+        return self.root / f"{scan_id}.json"
+
+    def _validate(self, tombstone: ScannerPurgeTombstone) -> None:
+        original = Path(tombstone.original_path)
+        scanner_root = self.bulk_root / "scanner-recordings"
+        try:
+            relative = original.relative_to(scanner_root)
+        except ValueError as error:
+            raise ValueError("scanner tombstone path escapes the scanner root") from error
+        if len(relative.parts) != 4 or relative.parts[-1] != tombstone.scan_id:
+            raise ValueError("scanner tombstone path is not one dated IQ bundle")
+        expected_uri = f"bulk://scanner-recordings/{'/'.join(relative.parts)}"
+        if tombstone.iq_bundle_uri != expected_uri:
+            raise ValueError("scanner tombstone URI disagrees with its original path")
+        if tombstone.iq_manifest.get("scan_id") != tombstone.scan_id:
+            raise ValueError("scanner tombstone manifest identity disagrees")
+
+    @staticmethod
+    def _read_regular(path: Path) -> bytes:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            before = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(before.st_mode)
+                or before.st_nlink != 1
+                or not 0 < before.st_size <= _MAX_SCANNER_TOMBSTONE_BYTES
+            ):
+                raise ValueError("scanner purge tombstone inode is invalid")
+            chunks: list[bytes] = []
+            remaining = before.st_size + 1
+            while remaining:
+                chunk = os.read(descriptor, min(1024 * 1024, remaining))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            payload = b"".join(chunks)
+            after = os.fstat(descriptor)
+            if len(payload) != before.st_size or (
+                before.st_dev,
+                before.st_ino,
+                before.st_size,
+                before.st_mtime_ns,
+            ) != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
+                raise ValueError("scanner purge tombstone changed while reading")
+            return payload
+        finally:
+            os.close(descriptor)
+
+
+@dataclass(frozen=True, slots=True)
 class PurgeReceipt:
-    kind: Literal["session", "artifact"]
+    kind: Literal["session", "artifact", "scanner"]
     item_id: str
     session_id: str
     claim_token: str
@@ -185,6 +332,9 @@ class PurgeExecutor:
     def __init__(self, bulk_root: Path) -> None:
         self.bulk_root = _validated_local_bulk_root(bulk_root)
         self.recordings_root = (self.bulk_root / "recordings").resolve(strict=True)
+        self.scanner_root = self.bulk_root / "scanner-recordings"
+        self.scanner_root.mkdir(parents=True, exist_ok=True)
+        self.scanner_root = _validated_local_bulk_root(self.scanner_root)
         self.analysis_root = self.bulk_root / "analysis"
         self.analysis_root.mkdir(parents=True, exist_ok=True)
         self.analysis_root = self.analysis_root.resolve(strict=True)
@@ -196,10 +346,17 @@ class PurgeExecutor:
         self.journal_root = self.journal_root.resolve(strict=True)
         devices = {
             os.stat(path).st_dev
-            for path in (self.recordings_root, self.analysis_root, self.trash_root)
+            for path in (
+                self.recordings_root,
+                self.scanner_root,
+                self.analysis_root,
+                self.trash_root,
+            )
         }
         if len(devices) != 1:
-            raise ValueError("recording, analysis, and trash roots must share one filesystem")
+            raise ValueError(
+                "recording, scanner, analysis, and trash roots must share one filesystem"
+            )
 
     def stage(self, bundle_path: Path, session_id: str, claim_token: str) -> PurgeReceipt:
         _validate_identifier(session_id)
@@ -218,6 +375,40 @@ class PurgeExecutor:
             kind="session",
             item_id=session_id,
             session_id=session_id,
+            claim_token=claim_token,
+            original_path=str(resolved),
+            staged_path=str(destination),
+            staged_bytes=staged_bytes,
+        )
+        self._write_journal(receipt)
+        os.rename(resolved, destination)
+        _fsync_directory(resolved.parent)
+        _fsync_directory(self.trash_root)
+        return receipt
+
+    def stage_scanner(
+        self,
+        bundle_path: Path,
+        *,
+        scan_id: str,
+        claim_token: str,
+    ) -> PurgeReceipt:
+        _validate_identifier(scan_id)
+        _validate_identifier(claim_token)
+        resolved = bundle_path.resolve(strict=True)
+        relative = _strict_descendant(self.scanner_root, resolved)
+        if len(relative.parts) != 4 or relative.parts[-1] != scan_id:
+            raise ValueError("scanner purge target must be one dated IQ bundle")
+        if resolved.is_symlink() or not resolved.is_dir():
+            raise ValueError("scanner purge target must be a real recording directory")
+        destination = self.trash_root / f"scanner.{scan_id}.{claim_token}"
+        if destination.exists() or destination.is_symlink():
+            raise FileExistsError(f"purge staging target already exists: {destination}")
+        staged_bytes = _allocated_bytes(resolved)
+        receipt = PurgeReceipt(
+            kind="scanner",
+            item_id=scan_id,
+            session_id=scan_id,
             claim_token=claim_token,
             original_path=str(resolved),
             staged_path=str(destination),
@@ -275,7 +466,7 @@ class PurgeExecutor:
             _strict_descendant(self.trash_root, resolved)
             if resolved.is_symlink():
                 raise ValueError("staged purge target cannot be a symlink")
-            if receipt.kind == "session" and resolved.is_dir():
+            if receipt.kind in {"session", "scanner"} and resolved.is_dir():
                 shutil.rmtree(resolved)
             elif receipt.kind == "artifact" and resolved.is_file():
                 resolved.unlink()
@@ -292,7 +483,13 @@ class PurgeExecutor:
             raise ValueError("purge receipt does not identify its exact trash entry")
         destination = Path(receipt.original_path)
         parent = destination.parent.resolve(strict=True)
-        allowed_root = self.recordings_root if receipt.kind == "session" else self.analysis_root
+        allowed_root = (
+            self.recordings_root
+            if receipt.kind == "session"
+            else self.scanner_root
+            if receipt.kind == "scanner"
+            else self.analysis_root
+        )
         _strict_descendant(allowed_root, destination)
         if staged.exists():
             resolved = staged.resolve(strict=True)
@@ -337,12 +534,12 @@ class PurgeExecutor:
     def _journal_path(self, receipt: PurgeReceipt) -> Path:
         _validate_identifier(receipt.session_id)
         _validate_identifier(receipt.claim_token)
-        if receipt.kind not in {"session", "artifact"}:
+        if receipt.kind not in {"session", "artifact", "scanner"}:
             raise ValueError("unknown purge receipt kind")
         if receipt.kind == "artifact" and not receipt.item_id.isdigit():
             raise ValueError("artifact receipt item ID must be numeric")
-        if receipt.kind == "session" and receipt.item_id != receipt.session_id:
-            raise ValueError("session receipt identity disagrees")
+        if receipt.kind in {"session", "scanner"} and receipt.item_id != receipt.session_id:
+            raise ValueError("directory receipt identity disagrees")
         return self.journal_root / f"{receipt.kind}.{receipt.item_id}.{receipt.claim_token}.json"
 
 

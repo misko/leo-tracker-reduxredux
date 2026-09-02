@@ -76,6 +76,11 @@ from leo.cli.models import (
     WorkerDataV1,
     WorkerExecutionDataV1,
 )
+from leo.cli.scanner import (
+    CONTINUITY_STANDARD_SCANNER_ANALYSIS_ID,
+    LEGACY_STANDARD_SCANNER_ANALYSIS_IDS,
+    STANDARD_SCANNER_ANALYSIS_ID,
+)
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.pipeline_lanes import (
     DISABLED_AUTOMATIC_LANE_SELECTION_V1,
@@ -98,6 +103,7 @@ from leo.operations import (
     HoldReceiptStore,
     PurgeExecutor,
     RetentionRunResult,
+    ScannerPurgeTombstoneStore,
     StorageUsage,
 )
 from leo.operations.retention import (
@@ -137,7 +143,14 @@ from leo.station.resolver import (
     FixtureAuthorityFileReference,
     PinnedCaptureAuthorityResolver,
 )
-from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
+from leo.storage import (
+    PinnedLocalRoot,
+    PublishedBundle,
+    RecordingStore,
+    ScannerAnalysisStore,
+    ScannerIqStore,
+    ScannerRunStore,
+)
 
 logger = logging.getLogger(__name__)
 _WORKER_EVIDENCE_LIMIT = 256
@@ -1140,6 +1153,9 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             fixtures=settings.fixture_authorities,
         )
     hold_receipts = HoldReceiptStore(settings.bulk_root)
+    scanner_iq = ScannerIqStore(settings.bulk_root)
+    scanner_analysis = ScannerAnalysisStore(settings.bulk_root)
+    scanner_runs = ScannerRunStore(settings.bulk_root)
     services = ProcessingServices(
         catalog=catalog,
         recordings=recordings,
@@ -1159,6 +1175,15 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             recordings,
             hold_receipts,
             PurgeExecutor(settings.bulk_root),
+            scanner_iq=scanner_iq,
+            scanner_analysis=scanner_analysis,
+            scanner_runs=scanner_runs,
+            scanner_tombstones=ScannerPurgeTombstoneStore(settings.bulk_root),
+            scanner_analysis_ids=(
+                CONTINUITY_STANDARD_SCANNER_ANALYSIS_ID,
+                STANDARD_SCANNER_ANALYSIS_ID,
+                *LEGACY_STANDARD_SCANNER_ANALYSIS_IDS,
+            ),
         ),
         reconciliation=CatalogReconciliationService(
             catalog,

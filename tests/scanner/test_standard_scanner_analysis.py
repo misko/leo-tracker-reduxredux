@@ -215,6 +215,27 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
     inspected = store.inspect(result.report.scan_id, "standard-scan-analysis-v1")
     assert inspected.manifest.metrics_sha256 == published.manifest.metrics_sha256
     assert inspected.metrics == result.metrics
+    assert store.has_matching_input(
+        result.report.scan_id,
+        ("standard-scan-analysis-v1",),
+        input_uri=source.input_uri,
+        input_manifest_sha256=source.input_manifest_sha256,
+        verify_products=False,
+    )
+    assert store.has_matching_input(
+        result.report.scan_id,
+        ("standard-scan-analysis-v1",),
+        input_uri=source.input_uri,
+        input_manifest_sha256=source.input_manifest_sha256,
+        verify_products=True,
+    )
+    assert not store.has_matching_input(
+        result.report.scan_id,
+        ("standard-scan-analysis-v1",),
+        input_uri=source.input_uri,
+        input_manifest_sha256="sha256:" + "2" * 64,
+        verify_products=True,
+    )
     assert (published.path.stat().st_mode & 0o777) == 0o755
     assert all(
         (path.stat().st_mode & 0o777) == 0o644

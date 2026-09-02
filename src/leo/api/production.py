@@ -34,10 +34,17 @@ from leo.application.sky_field import SkyFieldService
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
 from leo.contracts.pipeline_lanes import PipelineLane
+from leo.operations import ScannerPurgeTombstoneStore
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.scanner import ScannerReportStore
 from leo.processing import ProcessingService, RecordingIqReaderProvider
-from leo.storage import PinnedLocalRoot, RecordingStore, ScannerAnalysisStore, ScannerIqStore
+from leo.storage import (
+    FallbackScannerCaptureTimeReader,
+    PinnedLocalRoot,
+    RecordingStore,
+    ScannerAnalysisStore,
+    ScannerIqStore,
+)
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -184,7 +191,10 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             ),
             scanner_analyses=ScannerAnalysisStore(
                 configured.bulk_root,
-                capture_times=scanner_iq,
+                capture_times=FallbackScannerCaptureTimeReader(
+                    scanner_iq,
+                    ScannerPurgeTombstoneStore(configured.bulk_root),
+                ),
             ),
             capture_control=OperatorCaptureControl(
                 # The global operation lock is sufficient for this control-only

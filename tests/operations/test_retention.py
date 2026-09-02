@@ -1,17 +1,23 @@
 from __future__ import annotations
 
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import pytest
 
+from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.operations.retention import (
     HoldReceipt,
     HoldReceiptStore,
     PurgeExecutor,
     RetentionCandidate,
+    ScannerPurgeTombstone,
+    ScannerPurgeTombstoneStore,
     StorageUsage,
     plan_retention,
 )
+from leo.storage import FallbackScannerCaptureTimeReader
+from leo.storage.errors import BundleNotFoundError
 
 
 def candidate(session_id: str, age: int, size: int, **flags: bool) -> RetentionCandidate:
@@ -151,6 +157,59 @@ def test_artifact_purge_is_exact_journaled_and_recoverable(tmp_path: Path) -> No
     assert executor.pending() == ()
 
 
+def test_scanner_purge_is_exact_journaled_tombstoned_and_recoverable(
+    tmp_path: Path,
+) -> None:
+    bulk = tmp_path / "bulk"
+    (bulk / "recordings").mkdir(parents=True)
+    bundle = bulk / "scanner-recordings" / "2026" / "08" / "21" / "scan-a"
+    bundle.mkdir(parents=True)
+    manifest = {
+        "schema_version": 4,
+        "scan_id": "scan-a",
+        "created_utc_ns": 123_000_000,
+    }
+    (bundle / "manifest.json").write_text('{"scan_id":"scan-a"}')
+    executor = PurgeExecutor(bulk)
+    tombstones = ScannerPurgeTombstoneStore(bulk)
+
+    receipt = executor.stage_scanner(bundle, scan_id="scan-a", claim_token="claim-a")
+    assert executor.pending() == (receipt,)
+    assert not bundle.exists()
+    assert executor.restore(receipt) == bundle
+
+    receipt = executor.stage_scanner(bundle, scan_id="scan-a", claim_token="claim-b")
+    tombstone = ScannerPurgeTombstone(
+        schema_version=1,
+        scan_id="scan-a",
+        claim_token="claim-b",
+        iq_bundle_uri="bulk://scanner-recordings/2026/08/21/scan-a",
+        iq_manifest_sha256=sha256_digest(canonical_json_bytes(manifest)),
+        iq_manifest=manifest,
+        original_path=receipt.original_path,
+        staged_bytes=receipt.staged_bytes,
+        purged_utc_ns=123,
+    )
+    tombstones.put(tombstone)
+    assert tombstones.get("scan-a") == tombstone
+    assert tombstones.commits(receipt)
+    assert tombstones.captured_at("scan-a").timestamp() == pytest.approx(0.123)
+    with pytest.raises(FileExistsError):
+        tombstones.put(replace(tombstone, purged_utc_ns=456))
+    assert tombstones.get("scan-a") == tombstone
+    with pytest.raises(ValueError, match="schema version"):
+        ScannerPurgeTombstone(**{**asdict(tombstone), "schema_version": 2})  # type: ignore[arg-type]
+
+    class MissingCaptureTimes:
+        def captured_at(self, scan_id: str):
+            raise BundleNotFoundError(scan_id)
+
+    capture_times = FallbackScannerCaptureTimeReader(MissingCaptureTimes(), tombstones)
+    assert capture_times.captured_at("scan-a") == tombstones.captured_at("scan-a")
+    assert executor.discard_staged(receipt) > 0
+    assert executor.pending() == ()
+
+
 def test_purge_rejects_qnap_other_roots_and_symlinked_content(tmp_path: Path) -> None:
     bulk = tmp_path / "bulk"
     (bulk / "recordings").mkdir(parents=True)
@@ -173,5 +232,7 @@ def test_qnap_mount_can_never_be_configured_as_a_destructive_root() -> None:
     forbidden = Path("/mnt/qnap01")
     with pytest.raises(ValueError, match="read-only"):
         HoldReceiptStore(forbidden)
+    with pytest.raises(ValueError, match="read-only"):
+        ScannerPurgeTombstoneStore(forbidden)
     with pytest.raises(ValueError, match="read-only"):
         PurgeExecutor(forbidden)
