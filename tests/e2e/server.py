@@ -279,7 +279,7 @@ def _publish_recording(
         attributes={
             "presentation": {
                 "title": (
-                    "Production E2E paired imported dwell"
+                    "Production E2E paired live dwell"
                     if paired
                     else "Production E2E intentional analysis failure"
                 )
@@ -297,8 +297,13 @@ def _publish_recording(
 def _station_topology(manifest: RecordingManifestV6) -> StationReceiverTopologyV1:
     """Create explicit synthetic station authority for the generated E2E capture."""
 
-    valid_from = manifest.created_utc_ns - 1_000_000_000
-    valid_until = manifest.finalized_utc_ns + 1_000_000_000
+    valid_from = (
+        min(stream.timing.first_sample.earliest_utc_ns for stream in manifest.streams)
+        - 1_000_000_000
+    )
+    valid_until = (
+        max(stream.timing.last_sample.latest_utc_ns for stream in manifest.streams) + 1_000_000_000
+    )
     radios = tuple(
         StationRadioTopologyV1.create(
             radio_id=stream.radio.radio_id,
