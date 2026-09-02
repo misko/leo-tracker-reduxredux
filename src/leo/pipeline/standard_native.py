@@ -396,10 +396,12 @@ STANDARD_NATIVE_V2_PROFILE_ADMISSIONS = {
 }
 STANDARD_NATIVE_STAGE_KEYS = (
     "path-standard-native",
+    "path-pss-native",
     "path-alternate-tracks-native",
     "radio-scientific-report-native",
     "paired-scientific-report-native",
     "paired-presentation-native",
+    "paired-pss-glrt-presentation-native",
 )
 
 
@@ -458,11 +460,54 @@ def compile_standard_native_run_plan(
     """
 
     _require_reviewed_native_geometry(manifest)
+    rates = {
+        (stream.applied_settings or stream.requested_settings).sample_rate_hz
+        for stream in manifest.streams
+    }
     return _compile_standard_native_run_plan(
         manifest,
         manifest_digest=manifest_digest,
         pipeline_release_id=pipeline_release_id,
-        selected_stream_ids=None,
+        standard_stream_ids=None,
+        pss_stream_ids=None,
+        include_pss_glrt_comparison=(rates == {2_500_000, 25_000_000}),
+    )
+
+
+def compile_standard_native_default_run_plan(
+    manifest: (
+        RecordingManifestV2
+        | RecordingManifestV3
+        | RecordingManifestV4
+        | RecordingManifestV5
+        | RecordingManifestV6
+    ),
+    *,
+    manifest_digest: str,
+    pipeline_release_id: str,
+) -> ExpandedRunPlanV1:
+    """Compile the production default while retaining explicit all-rate analysis.
+
+    Exact paired 2.5/25 MS/s captures run Standard GLRT/stateful analysis only
+    on the 2.5 MS/s paths and native PSS only on the 25 MS/s paths.  Other
+    reviewed native geometries retain the complete all-rate graph compiled by
+    :func:`compile_standard_native_run_plan`.
+    """
+
+    _require_reviewed_native_geometry(manifest)
+    rates = {
+        (stream.applied_settings or stream.requested_settings).sample_rate_hz
+        for stream in manifest.streams
+    }
+    compiler = (
+        compile_standard_native_automatic_run_plan
+        if rates == {2_500_000, 25_000_000}
+        else compile_standard_native_run_plan
+    )
+    return compiler(
+        manifest,
+        manifest_digest=manifest_digest,
+        pipeline_release_id=pipeline_release_id,
     )
 
 
@@ -478,13 +523,12 @@ def compile_standard_native_automatic_run_plan(
     manifest_digest: str,
     pipeline_release_id: str,
 ) -> ExpandedRunPlanV1:
-    """Compile the bounded automatic graph while retaining full manual analysis.
+    """Compile low-rate GLRT plus isolated native-25 PSS for paired captures.
 
-    Production dwells automatically analyze only their 2.5 MS/s stream.
-    High-rate-only recordings are retained without entering the automatic lane.
-    Explicit reprocess and native-evidence actions continue to use
-    :func:`compile_standard_native_run_plan` and therefore retain every native
-    rate, including 15, 20, and 25 MS/s.
+    The full Standard path remains confined to 2.5 MS/s.  A co-captured
+    25 MS/s leg enters the dedicated PSS module and paired comparison without
+    running stateful analysis or GLRT at 25 MS/s.  High-rate-only recordings
+    remain manual.
     """
 
     _require_reviewed_native_geometry(manifest)
@@ -492,16 +536,19 @@ def compile_standard_native_automatic_run_plan(
         stream.stream_id: (stream.applied_settings or stream.requested_settings).sample_rate_hz
         for stream in manifest.streams
     }
-    selected_stream_ids = frozenset(
-        stream_id for stream_id, rate in rates.items() if rate == 2_500_000
-    )
-    if not selected_stream_ids:
+    low_stream_ids = frozenset(stream_id for stream_id, rate in rates.items() if rate == 2_500_000)
+    if not low_stream_ids:
         raise ValueError("automatic Standard-native analysis requires a 2.5 MS/s stream")
+    native_25_stream_ids = frozenset(
+        stream_id for stream_id, rate in rates.items() if rate == 25_000_000
+    )
     return _compile_standard_native_run_plan(
         manifest,
         manifest_digest=manifest_digest,
         pipeline_release_id=pipeline_release_id,
-        selected_stream_ids=selected_stream_ids,
+        standard_stream_ids=low_stream_ids,
+        pss_stream_ids=native_25_stream_ids,
+        include_pss_glrt_comparison=bool(native_25_stream_ids),
     )
 
 
@@ -516,9 +563,27 @@ def _compile_standard_native_run_plan(
     *,
     manifest_digest: str,
     pipeline_release_id: str,
-    selected_stream_ids: frozenset[str] | None,
+    standard_stream_ids: frozenset[str] | None,
+    pss_stream_ids: frozenset[str] | None,
+    include_pss_glrt_comparison: bool,
 ) -> ExpandedRunPlanV1:
-    topology = compile_standard_native_scope_inventory(
+    standard_topology = compile_standard_native_scope_inventory(
+        manifest,
+        selected_stream_ids=standard_stream_ids,
+    )
+    pss_topology = (
+        None
+        if pss_stream_ids == frozenset()
+        else compile_standard_native_scope_inventory(
+            manifest,
+            selected_stream_ids=pss_stream_ids,
+        )
+    )
+    all_stream_ids = frozenset(stream.stream_id for stream in manifest.streams)
+    selected_stream_ids = (
+        all_stream_ids if standard_stream_ids is None else standard_stream_ids
+    ) | (all_stream_ids if pss_stream_ids is None else pss_stream_ids)
+    full_topology = compile_standard_native_scope_inventory(
         manifest,
         selected_stream_ids=selected_stream_ids,
     )
@@ -526,7 +591,8 @@ def _compile_standard_native_run_plan(
     edges: list[JobDependencyRefV1] = []
     path_terminals: dict[str, list[str]] = {}
 
-    for path_ordinal, scope in enumerate(topology.receiver_paths):
+    standard_path_nodes: list[str] = []
+    for path_ordinal, scope in enumerate(standard_topology.receiver_paths):
         assert scope.stream_id is not None
         path_node_id = f"path-{path_ordinal:02d}-standard-native"
         jobs.append(
@@ -538,6 +604,7 @@ def _compile_standard_native_run_plan(
                 resource_class=ResourceClass.HEAVY,
             )
         )
+        standard_path_nodes.append(path_node_id)
         alternate_node_id = f"path-{path_ordinal:02d}-alternate-tracks-native"
         jobs.append(
             JobNodeV1(
@@ -556,8 +623,23 @@ def _compile_standard_native_run_plan(
         )
         path_terminals.setdefault(scope.stream_id, []).append(path_node_id)
 
+    pss_nodes: list[str] = []
+    if pss_topology is not None:
+        for path_ordinal, scope in enumerate(pss_topology.receiver_paths):
+            node_id = f"pss-path-{path_ordinal:02d}-native"
+            jobs.append(
+                JobNodeV1(
+                    node_id=node_id,
+                    stage_key="path-pss-native",
+                    scope=scope,
+                    iq_access=IqAccess.RECEIVER_PATH,
+                    resource_class=ResourceClass.HEAVY,
+                )
+            )
+            pss_nodes.append(node_id)
+
     radio_nodes: list[str] = []
-    for radio_ordinal, scope in enumerate(topology.radios):
+    for radio_ordinal, scope in enumerate(standard_topology.radios):
         assert scope.stream_id is not None
         node_id = f"radio-{radio_ordinal:02d}-reduce-native"
         jobs.append(
@@ -575,13 +657,13 @@ def _compile_standard_native_run_plan(
         )
         radio_nodes.append(node_id)
 
-    if topology.paired is not None:
+    if standard_topology.paired is not None:
         paired_node_id = "paired-00-reduce-native"
         jobs.append(
             JobNodeV1(
                 node_id=paired_node_id,
                 stage_key="paired-scientific-report-native",
-                scope=topology.paired,
+                scope=standard_topology.paired,
                 iq_access=IqAccess.NONE,
                 resource_class=ResourceClass.CPU,
             )
@@ -599,7 +681,7 @@ def _compile_standard_native_run_plan(
             JobNodeV1(
                 node_id=presentation_node_id,
                 stage_key="paired-presentation-native",
-                scope=topology.paired,
+                scope=standard_topology.paired,
                 iq_access=IqAccess.NONE,
                 resource_class=ResourceClass.CPU,
             )
@@ -619,6 +701,38 @@ def _compile_standard_native_run_plan(
                 job_node_id=presentation_node_id,
                 depends_on_job_node_id=paired_node_id,
             )
+        )
+
+    if include_pss_glrt_comparison:
+        if full_topology.paired is None or not pss_nodes:
+            raise ValueError("paired PSS/GLRT comparison requires both native path families")
+        rates_by_stream_id = {
+            stream.stream_id: (stream.applied_settings or stream.requested_settings).sample_rate_hz
+            for stream in manifest.streams
+        }
+        comparison_scopes = tuple(
+            scope
+            for scope in standard_topology.radios
+            if scope.stream_id is not None and rates_by_stream_id[scope.stream_id] == 2_500_000
+        )
+        if len(comparison_scopes) != 1:
+            raise ValueError("paired PSS/GLRT comparison requires one 2.5 MS/s radio scope")
+        comparison_node_id = "paired-00-pss-glrt-presentation-native"
+        jobs.append(
+            JobNodeV1(
+                node_id=comparison_node_id,
+                stage_key="paired-pss-glrt-presentation-native",
+                scope=comparison_scopes[0],
+                iq_access=IqAccess.NONE,
+                resource_class=ResourceClass.CPU,
+            )
+        )
+        edges.extend(
+            JobDependencyRefV1(
+                job_node_id=comparison_node_id,
+                depends_on_job_node_id=dependency,
+            )
+            for dependency in sorted((*standard_path_nodes, *pss_nodes))
         )
 
     return ExpandedRunPlanV1.create(

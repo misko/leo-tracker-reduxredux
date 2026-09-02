@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from types import SimpleNamespace
 from typing import Any, Literal, cast
 
@@ -29,6 +30,7 @@ from leo.pipeline import (
 )
 from leo.pipeline.standard_native import (
     compile_standard_native_automatic_run_plan,
+    compile_standard_native_default_run_plan,
     compile_standard_native_run_plan,
 )
 from leo.processing import ProcessingService
@@ -371,7 +373,7 @@ def test_exact_native_plan_reaches_evidence_only_persistence(
     assert len(catalog.created["jobs"]) == len(plan.jobs)
 
 
-def test_v6_automatic_run_revalidates_only_2p5_while_reprocess_retains_25m(
+def test_v6_automatic_run_revalidates_the_complete_2p5_x25_pair(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -404,6 +406,11 @@ def test_v6_automatic_run_revalidates_only_2p5_while_reprocess_retains_25m(
         pipeline_release_id=_RELEASE,
     )
     explicit = compile_standard_native_run_plan(
+        manifest,
+        manifest_digest=manifest_digest,
+        pipeline_release_id=_RELEASE,
+    )
+    default = compile_standard_native_default_run_plan(
         manifest,
         manifest_digest=manifest_digest,
         pipeline_release_id=_RELEASE,
@@ -442,12 +449,36 @@ def test_v6_automatic_run_revalidates_only_2p5_while_reprocess_retains_25m(
         for job in explicit.jobs
         if job.scope.stream_id is not None
     }
-    assert automatic_rates == {2_500_000}
+    assert automatic_rates == {2_500_000, 25_000_000}
     assert explicit_rates == {2_500_000, 25_000_000}
-    with pytest.raises(ValueError, match="manifest-authoritative Standard-native DAG"):
-        service.create_expanded_run(
-            run_id="automatic-full-v6-run",
-            plan=explicit,
-            trigger="new_capture",
-            promotion_policy="current",
-        )
+    assert default == automatic
+    assert Counter(job.stage_key for job in automatic.jobs) == Counter(
+        {
+            "path-standard-native": 2,
+            "path-alternate-tracks-native": 2,
+            "path-pss-native": 1,
+            "radio-scientific-report-native": 1,
+            "paired-pss-glrt-presentation-native": 1,
+        }
+    )
+    assert Counter(job.stage_key for job in explicit.jobs) == Counter(
+        {
+            "path-standard-native": 3,
+            "path-alternate-tracks-native": 3,
+            "path-pss-native": 3,
+            "radio-scientific-report-native": 2,
+            "paired-scientific-report-native": 1,
+            "paired-presentation-native": 1,
+            "paired-pss-glrt-presentation-native": 1,
+        }
+    )
+    assert {
+        rates_by_stream_id[job.scope.stream_id]
+        for job in automatic.jobs
+        if job.stage_key == "path-standard-native" and job.scope.stream_id is not None
+    } == {2_500_000}
+    assert {
+        rates_by_stream_id[job.scope.stream_id]
+        for job in automatic.jobs
+        if job.stage_key == "path-pss-native" and job.scope.stream_id is not None
+    } == {25_000_000}

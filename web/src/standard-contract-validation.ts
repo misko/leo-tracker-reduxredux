@@ -11,6 +11,7 @@ import type {
   StandardNativePngArtifactInventoryV8,
   StandardNativePngArtifactInventoryV9,
   StandardNativePngArtifactInventoryV10,
+  StandardNativePngArtifactInventoryV11,
   StandardNativeScientificDispositionV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
@@ -81,6 +82,10 @@ const nativeArtifactDefinitionsV10 = [
   ["glrt-epoch-timing", "standard.glrt-epoch-timing-png", 1, "artifacts/glrt-epoch-timing.png"],
   ["glrt-epoch-rate", "standard.glrt-epoch-rate-png", 1, "artifacts/glrt-epoch-rate.png"],
   ...nativeArtifactDefinitionsV8.slice(9),
+] as const;
+const nativeArtifactDefinitionsV11 = [
+  ...nativeArtifactDefinitionsV8.slice(0, 6),
+  ["pss-glrt-frame-comparison", "standard.pss-glrt-frame-comparison-png", 1, "artifacts/pss-glrt-frame-comparison.png"],
 ] as const;
 const scienceStates: StandardNativeScientificDispositionV3[] = [
   "candidate",
@@ -1552,9 +1557,9 @@ export function parseStandardPlotView(value: unknown): StandardPlotView {
 
 export function parseStandardNativePngArtifactInventory(
   value: unknown,
-): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 | StandardNativePngArtifactInventoryV8 | StandardNativePngArtifactInventoryV9 | StandardNativePngArtifactInventoryV10 {
+): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 | StandardNativePngArtifactInventoryV8 | StandardNativePngArtifactInventoryV9 | StandardNativePngArtifactInventoryV10 | StandardNativePngArtifactInventoryV11 {
   const item = object(value, "native PNG artifact inventory");
-  const version = oneOf(item.schema_version, [4, 5, 6, 7, 8, 9, 10], "native PNG artifact inventory.schema_version");
+  const version = oneOf(item.schema_version, [4, 5, 6, 7, 8, 9, 10, 11], "native PNG artifact inventory.schema_version");
   const path = `native PNG artifact inventory V${version}`;
   exactKeys(item, [
     "schema_version", "session_id", "subject_id", "subject_kind", "run_id",
@@ -1572,6 +1577,9 @@ export function parseStandardNativePngArtifactInventory(
   if (version === 10 && subjectKind !== "receiver_path") {
     fail(path, "V10 epoch inventory is path-only");
   }
+  if (version === 11 && subjectKind !== "radio") {
+    fail(path, "V11 PSS/GLRT comparison inventory is low-radio-only");
+  }
   string(item.run_id, `${path}.run_id`);
   string(item.run_manifest_digest, `${path}.run_manifest_digest`);
   if (version === 4) {
@@ -1580,9 +1588,12 @@ export function parseStandardNativePngArtifactInventory(
     const rates = array(item.sample_rates_hz, `${path}.sample_rates_hz`);
     if (rates.length < 1 || rates.length > 2) fail(path, "rate inventory is invalid");
     if (version === 10 && rates.length !== 1) fail(path, "V10 path inventory must carry one rate");
+    if (version === 11 && (rates.length !== 2 || rates[0] !== 2_500_000 || rates[1] !== 25_000_000)) {
+      fail(path, "V11 paired inventory must carry the exact 2.5/25 MS/s rate pair");
+    }
     const allowedRates = version === 5
       ? mixedSampleRates
-      : version === 9 || version === 10
+      : version === 9 || version === 10 || version === 11
         ? [3_000_000, ...productionSampleRatesV6]
         : version === 7 || version === 8
           ? [3_000_000, ...productionSampleRatesV5]
@@ -1599,14 +1610,18 @@ export function parseStandardNativePngArtifactInventory(
     `${path}.coverage_status`,
   );
   const rows = array(item.artifacts, `${path}.artifacts`);
-  const definitions = version === 10
-    ? nativeArtifactDefinitionsV10
+  const definitions = version === 11
+    ? nativeArtifactDefinitionsV11
+    : version === 10
+      ? nativeArtifactDefinitionsV10
     : version === 8 || version === 9
     ? nativeArtifactDefinitionsV8
     : version === 7
       ? nativeArtifactDefinitionsV7
       : nativeArtifactDefinitionsV4;
-  const expected = subjectKind === "receiver_path"
+  const expected = version === 11
+    ? definitions
+    : subjectKind === "receiver_path"
     ? definitions
     : definitions.slice(0, version === 8 || version === 9 ? 6 : 5);
   if (rows.length !== expected.length) {
@@ -1621,7 +1636,7 @@ export function parseStandardNativePngArtifactInventory(
     ], `${path}.artifacts[${index}]`);
     const [name, catalogKind, schemaVersion, suffix] = expected[index];
     const rowPath = `native PNG artifact inventory V${version}.artifacts[${index}]`;
-    literal(row.schema_version, version === 10 ? 10 : version === 8 || version === 9 ? 8 : 4, `${rowPath}.schema_version`);
+    literal(row.schema_version, version === 11 ? 11 : version === 10 ? 10 : version === 8 || version === 9 ? 8 : 4, `${rowPath}.schema_version`);
     literal(row.name, name, `${rowPath}.name`);
     string(row.label, `${rowPath}.label`);
     string(row.description, `${rowPath}.description`);
@@ -1641,7 +1656,8 @@ export function parseStandardNativePngArtifactInventory(
     | StandardNativePngArtifactInventoryV7
     | StandardNativePngArtifactInventoryV8
     | StandardNativePngArtifactInventoryV9
-    | StandardNativePngArtifactInventoryV10;
+    | StandardNativePngArtifactInventoryV10
+    | StandardNativePngArtifactInventoryV11;
 }
 
 export function assertMatchingStandardMajor(

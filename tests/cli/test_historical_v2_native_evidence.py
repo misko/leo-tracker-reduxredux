@@ -72,7 +72,7 @@ def test_cli_queues_reviewed_historical_v2_only_through_manual_evidence_action()
 
     assert result.state == "dry_run"
     assert result.previous_current_run_id == "frozen-standard-current"
-    assert result.queued_job_count == 12
+    assert result.queued_job_count == 16
     assert result.queued_scope_keys == tuple(stream.stream_id for stream in manifest.streams)
 
 
@@ -107,6 +107,7 @@ def test_cli_standard_reprocess_dispatches_reviewed_v3_to_native_current() -> No
     assert {job.stage_key for job in plan.jobs} == {
         "path-standard-native",
         "path-alternate-tracks-native",
+        "path-pss-native",
         "radio-scientific-report-native",
         "paired-scientific-report-native",
         "paired-presentation-native",

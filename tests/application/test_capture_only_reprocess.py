@@ -181,7 +181,7 @@ def test_manual_native_action_is_explicit_and_evidence_only(manifest_schema: int
     else:
         current = service.queue(manifest.session_id)
         assert current.previous_current_run_id == "frozen-standard-current"
-        assert current.queued_job_count == 12
+        assert current.queued_job_count == 16
         assert processing.values is not None
         assert processing.values["promotion_policy"] == "current"
         assert processing.values["trigger"] == "reprocess"
@@ -191,13 +191,14 @@ def test_manual_native_action_is_explicit_and_evidence_only(manifest_schema: int
     assert result.pipeline_family == "standard-native-evidence-v1"
     assert result.promotion_policy == "evidence_only"
     assert result.previous_current_run_id == "frozen-standard-current"
-    assert result.queued_job_count == 12
+    assert result.queued_job_count == 16
     assert processing.values is not None
     assert processing.values["promotion_policy"] == "evidence_only"
     plan = processing.values["plan"]
     assert {job.stage_key for job in plan.jobs} == {
         "path-standard-native",
         "path-alternate-tracks-native",
+        "path-pss-native",
         "radio-scientific-report-native",
         "paired-scientific-report-native",
         "paired-presentation-native",

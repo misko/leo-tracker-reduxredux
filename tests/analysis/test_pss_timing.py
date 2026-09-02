@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 
 import numpy as np
 import pytest
@@ -120,17 +121,24 @@ def test_search_recovers_frame_epoch_cfo_and_every_window_at_each_rate(
     windows = tuple(
         window for window in result.windows if window.candidate_index == best.candidate_index
     )
-    assert len(windows) == len(injected_starts)
+    radius = math.ceil(PssTimingSearchConfig().local_search_radius_s * sample_rate_hz)
+    complete_search_starts = tuple(
+        start
+        for start in injected_starts
+        if start - radius >= 0 and start + radius + template.size <= sample_count
+    )
+    assert len(windows) == len(complete_search_starts)
     assert [window.measured_local_sample for window in windows] == pytest.approx(
-        injected_starts,
+        complete_search_starts,
         abs=1,
     )
     assert [window.global_device_sample for window in windows] == pytest.approx(
-        [global_start + start for start in injected_starts],
+        [global_start + start for start in complete_search_starts],
         abs=1,
     )
     assert all(
-        window.local_search_stop_sample > window.local_search_start_sample for window in windows
+        window.local_search_stop_sample - window.local_search_start_sample == 2 * radius + 1
+        for window in windows
     )
 
 

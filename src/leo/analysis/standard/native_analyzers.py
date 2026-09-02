@@ -52,8 +52,10 @@ from leo.analysis.standard.native_products import (
     GLRT_EPOCH_TRACKING_V1_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
+    PAIRED_PSS_GLRT_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_REPORT_V7_PRODUCT,
     PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
+    PATH_PSS_NATIVE_OUTPUTS,
     PATH_REPORT_V4_PRODUCT,
     PATH_STANDARD_NATIVE_OUTPUTS,
     PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT,
@@ -63,6 +65,7 @@ from leo.analysis.standard.native_products import (
     POWER_TIMELINE_V4_PRODUCT,
     PROBE_SCHEDULE_V4_PRODUCT,
     PSS_FRAME_TIMING_V1_PRODUCT,
+    PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,
     QUALITY_V3_PRODUCT,
     RADIO_REPORT_V6_PRODUCT,
     RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
@@ -74,6 +77,9 @@ from leo.analysis.standard.native_pss import (
     StandardNativePssConfig,
     StandardNativePssRunner,
     standard_native_pss_configuration_digest,
+)
+from leo.analysis.standard.native_pss_glrt_comparison import (
+    render_native25_pss_vs_2p5_glrt_png,
 )
 from leo.analysis.standard.native_reducers import (
     reduce_native_paired_terminal_evidence,
@@ -103,6 +109,7 @@ from leo.contracts.standard_native_glrt import (
 from leo.contracts.standard_native_path_report import (
     StandardNativePathReportV4,
 )
+from leo.contracts.standard_native_pss import StandardNativePssFrameTimingV1
 from leo.contracts.standard_native_stateful_v2 import (
     StandardNativeStatefulPathV2,
     StandardNativeStatefulPathV3,
@@ -195,6 +202,11 @@ class _NativeEvidenceConfig(BaseModel):
     pilot_phase_locklet_configuration_digest: Sha256Digest = (
         PilotPhaseLockletConfigV1.model_validate(asdict(PilotPhaseLockletConfig())).digest
     )
+
+
+class _NativePssConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     pss_configuration_digest: Sha256Digest = standard_native_pss_configuration_digest(
         StandardNativePssConfig()
     )
@@ -209,8 +221,8 @@ class PathStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="path-standard-native",
-        algorithm_version="standard-native-evidence-v12",
-        configuration_schema="path-standard-native.evidence.v10",
+        algorithm_version="standard-native-evidence-v13",
+        configuration_schema="path-standard-native.evidence.v11",
         output_products=_NATIVE_EVIDENCE_PRODUCTS,
         resource_class=ResourceClass.HEAVY,
         accepted_outcomes=_NATIVE_OUTCOMES,
@@ -225,13 +237,9 @@ class PathStandardNativeEvidenceAnalyzer:
         full_capture_glrt_runner_factory: Callable[
             [ReceiverStandardConfig], StandardNativeFullCaptureGlrtRunner
         ] = StandardNativeFullCaptureGlrtRunner,
-        pss_runner_factory: Callable[
-            [StandardNativePssConfig], StandardNativePssRunner
-        ] = StandardNativePssRunner,
     ) -> None:
         self._stateful_runner_factory = stateful_runner_factory
         self._full_capture_glrt_runner_factory = full_capture_glrt_runner_factory
-        self._pss_runner_factory = pss_runner_factory
 
     def analyze(
         self,
@@ -264,9 +272,6 @@ class PathStandardNativeEvidenceAnalyzer:
             raise ValueError(
                 "native pilot phase-locklet policy digest does not match implementation"
             )
-        pss_config = StandardNativePssConfig()
-        if standard_native_pss_configuration_digest(pss_config) != config.pss_configuration_digest:
-            raise ValueError("native PSS policy digest does not match implementation")
         stateful_config = require_receiver_standard_sample_rate(
             production_receiver_standard_config(sample_rate_hz=binding.sample_rate_hz),
             sample_rate_hz=binding.sample_rate_hz,
@@ -324,11 +329,6 @@ class PathStandardNativeEvidenceAnalyzer:
         )
         if not isinstance(full_capture_glrt, StandardNativeFullCaptureGlrt20msV2):
             raise ValueError("V5 native binding did not produce V2 full-capture GLRT evidence")
-        pss = self._pss_runner_factory(pss_config).run(
-            native_iq,
-            binding,
-            full_capture_glrt=full_capture_glrt,
-        )
         quality_document = cast(dict[str, JsonValue], result.quality.model_dump(mode="json"))
         power_document = cast(dict[str, JsonValue], result.power.model_dump(mode="json"))
         waterfall_document = cast(dict[str, JsonValue], result.waterfall.model_dump(mode="json"))
@@ -352,7 +352,6 @@ class PathStandardNativeEvidenceAnalyzer:
             pilot_doppler_v3.model_dump(mode="json"),
         )
         glrt_document = cast(dict[str, JsonValue], full_capture_glrt.model_dump(mode="json"))
-        pss_document = cast(dict[str, JsonValue], pss.model_dump(mode="json"))
         path_report = build_standard_native_path_report(
             binding,
             quality=result.quality,
@@ -402,7 +401,6 @@ class PathStandardNativeEvidenceAnalyzer:
                 FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
                 glrt_document,
             ),
-            (PSS_FRAME_TIMING_V1_PRODUCT, pss_document),
             (PATH_REPORT_V4_PRODUCT, path_report_document),
         )
         published = tuple(
@@ -445,10 +443,6 @@ class PathStandardNativeEvidenceAnalyzer:
                 "full_capture_glrt_passing_window_count": (
                     full_capture_glrt.accounting.passing_count
                 ),
-                "pss_blind_block_count": pss.accounting.blind_block_count,
-                "pss_conditioned_block_count": pss.accounting.conditioned_block_count,
-                "pss_retained_mode_count": pss.accounting.retained_mode_count,
-                "pss_track_count": pss.accounting.track_count,
                 "terminal_probe_analyzed_count": (
                     path_report.schedule_execution.accounting.analyzed_count
                 ),
@@ -458,10 +452,83 @@ class PathStandardNativeEvidenceAnalyzer:
             },
             message=(
                 "Validity-aware native observability completed; stateful pilot/trajectory/"
-                "Doppler, full-capture GLRT, and PSS evidence were published on canonical "
+                "Doppler and full-capture GLRT evidence were published on canonical "
                 "global schedules and closed by the terminal path report."
                 if stateful.stateful_science_status in {"complete", "partial_coverage"}
                 else "Validity-aware native observability completed without stateful science."
+            ),
+        )
+
+
+class PathStandardNativePssAnalyzer:
+    """Publish independent PSS timing without running the full high-rate path."""
+
+    spec = StageSpec(
+        key="path-pss-native",
+        algorithm_version="standard-native-path-pss-v1",
+        configuration_schema="path-pss-native.evidence.v1",
+        output_products=PATH_PSS_NATIVE_OUTPUTS,
+        resource_class=ResourceClass.HEAVY,
+        accepted_outcomes=_NATIVE_OUTCOMES,
+    )
+
+    def __init__(
+        self,
+        *,
+        pss_runner_factory: Callable[
+            [StandardNativePssConfig], StandardNativePssRunner
+        ] = StandardNativePssRunner,
+    ) -> None:
+        self._pss_runner_factory = pss_runner_factory
+
+    def analyze(
+        self,
+        context: AnalysisContext,
+        iq: IqReader,
+        products: ProductReader,
+        outputs: OutputSink,
+    ) -> StageResult:
+        binding = StandardPathInputBindV5.model_validate(products.read_subject_binding())
+        _require_native_path_context(context, binding)
+        config = _NativePssConfig.model_validate(context.stage_config)
+        pss_config = StandardNativePssConfig()
+        if standard_native_pss_configuration_digest(pss_config) != config.pss_configuration_digest:
+            raise ValueError("native PSS policy digest does not match implementation")
+        pss = self._pss_runner_factory(pss_config).run(
+            cast(ValidityAwareIqReader, iq),
+            binding,
+        )
+        published = outputs.publish_json(
+            PSS_FRAME_TIMING_V1_PRODUCT,
+            cast(dict[str, JsonValue], pss.model_dump(mode="json")),
+        )
+        boundary_count = len(binding.validity_inventory.segments) - 1
+        outcome = (
+            StageOutcome.COMPLETE
+            if binding.missing_sample_count == 0 and boundary_count == 0
+            else StageOutcome.PARTIAL_COVERAGE
+        )
+        return StageResult(
+            outcome=outcome,
+            products=(published,),
+            summary={
+                "coverage_fraction": binding.observed_sample_count / binding.logical_sample_count,
+                "observed_sample_count": binding.observed_sample_count,
+                "missing_sample_count": binding.missing_sample_count,
+                "continuity_boundary_count": boundary_count,
+                "pss_blind_block_count": pss.accounting.blind_block_count,
+                "pss_retained_mode_count": pss.accounting.retained_mode_count,
+                "pss_track_count": pss.accounting.track_count,
+                "window_duration_ms": pss_config.maximum_block_duration_s * 1_000,
+                "window_stride_ms": (
+                    pss_config.maximum_block_duration_s - pss_config.block_overlap_duration_s
+                )
+                * 1_000,
+                "native_evidence_only": True,
+            },
+            message=(
+                "Independent native-rate PSS acquisition and PSS-only dense tracking "
+                "completed on complete 125 ms windows at a 62.5 ms stride."
             ),
         )
 
@@ -923,15 +990,114 @@ class PairedStandardNativeWaterfallAnalyzer:
         )
 
 
+class PairedStandardNativePssGlrtPresentationAnalyzer:
+    """Render native-25 PSS versus 2.5 MS/s GLRT without high-rate GLRT."""
+
+    spec = StageSpec(
+        key="paired-pss-glrt-presentation-native",
+        algorithm_version="standard-native-paired-pss-glrt-presentation-v1",
+        configuration_schema="paired-pss-glrt-presentation-native.evidence.v1",
+        dependencies=("path-pss-native", "path-standard-native"),
+        input_products=(
+            _require_native_product(PSS_FRAME_TIMING_V1_PRODUCT, "path-pss-native"),
+            _require_native_product(FULL_CAPTURE_GLRT20MS_V2_PRODUCT, "path-standard-native"),
+        ),
+        output_products=PAIRED_PSS_GLRT_PRESENTATION_NATIVE_OUTPUTS,
+        resource_class=ResourceClass.CPU,
+        accepted_outcomes=_NATIVE_OUTCOMES,
+    )
+
+    def analyze(
+        self,
+        context: AnalysisContext,
+        iq: IqReader,
+        products: ProductReader,
+        outputs: OutputSink,
+    ) -> StageResult:
+        del iq
+        if (
+            context.scope is None
+            or context.scope.kind is not ScopeKind.RADIO
+            or context.scope.session_id != context.session_id
+        ):
+            raise ValueError("native PSS/GLRT paired presentation authority does not close")
+        pss_items = products.read_json_many(
+            self.spec.input_products[0],
+            producer_node_ids=context.dependency_node_ids,
+        )
+        glrt_items = products.read_json_many(
+            self.spec.input_products[1],
+            producer_node_ids=context.dependency_node_ids,
+        )
+        pss_products = tuple(
+            StandardNativePssFrameTimingV1.model_validate(item.document) for item in pss_items
+        )
+        native_pss = tuple(
+            item for item in pss_products if item.source.sample_rate_hz == 25_000_000
+        )
+        glrt_pairs = tuple(
+            (StandardNativeFullCaptureGlrt20msV2.model_validate(item.document), item)
+            for item in glrt_items
+        )
+        low_glrt = tuple(pair for pair in glrt_pairs if pair[0].source.sample_rate_hz == 2_500_000)
+        if len(native_pss) != 1 or len(low_glrt) != 2:
+            raise ValueError(
+                "paired PSS/GLRT presentation requires one native-25 PSS path and two "
+                "2.5 MS/s GLRT receiver paths"
+            )
+        if any(item.source.session_id != context.session_id for item in native_pss) or any(
+            document.source.session_id != context.session_id for document, _source in low_glrt
+        ):
+            raise ValueError("paired PSS/GLRT presentation crossed recording sessions")
+        if any(
+            item.source.stream_id != context.scope.stream_id
+            or item.source.radio_id != context.scope.radio_id
+            for item, _source in low_glrt
+        ):
+            raise ValueError("paired PSS/GLRT presentation GLRT source is not its radio scope")
+        glrt_epoch_products = tuple(
+            build_standard_native_glrt_epoch_tracking_v1(
+                item,
+                source_glrt_product_digest=source.product_digest,
+            )
+            for item, source in low_glrt
+        )
+        payload = render_native25_pss_vs_2p5_glrt_png(native_pss, glrt_epoch_products)
+        published = outputs.publish_bytes(PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT, payload)
+        outcome = (
+            StageOutcome.COMPLETE
+            if native_pss[0].source.missing_sample_count == 0
+            and len(native_pss[0].source.continuity_segments) == 1
+            else StageOutcome.PARTIAL_COVERAGE
+        )
+        return StageResult(
+            outcome=outcome,
+            products=(published,),
+            summary={
+                "native_25_pss_path_count": 1,
+                "low_2p5_glrt_path_count": 2,
+                "pss_track_count": native_pss[0].accounting.track_count,
+                "artifact_name": "pss-glrt-frame-comparison",
+                "native_evidence_only": True,
+            },
+            message=(
+                "Published the native 25 MS/s PSS versus dual 2.5 MS/s GLRT comparison "
+                "without running GLRT on the 25 MS/s stream."
+            ),
+        )
+
+
 def production_standard_native_evidence_registry() -> AnalyzerRegistry:
     """Build the non-promotable native vertical without changing Standard-v2."""
 
     analyzers = (
         PathStandardNativeEvidenceAnalyzer(),
+        PathStandardNativePssAnalyzer(),
         PathAlternateTracksNativeAnalyzer(),
         RadioStandardNativeEvidenceAnalyzer(),
         PairedStandardNativeEvidenceAnalyzer(),
         PairedStandardNativeWaterfallAnalyzer(),
+        PairedStandardNativePssGlrtPresentationAnalyzer(),
     )
     return AnalyzerRegistry(analyzers)
 
@@ -943,6 +1109,9 @@ def production_standard_native_evidence_configuration() -> dict[str, dict[str, J
     configuration: dict[str, dict[str, JsonValue]] = {key: {} for key in registry.keys}
     configuration["path-standard-native"] = cast(
         dict[str, JsonValue], _NativeEvidenceConfig().model_dump(mode="json")
+    )
+    configuration["path-pss-native"] = cast(
+        dict[str, JsonValue], _NativePssConfig().model_dump(mode="json")
     )
     return configuration
 

@@ -17,10 +17,6 @@ from leo.analysis.standard.native_analyzers import (
 from leo.analysis.standard.native_full_capture_glrt import (
     StandardNativeFullCaptureGlrtRunner,
 )
-from leo.analysis.standard.native_pss import (
-    StandardNativePssConfig,
-    build_empty_standard_native_pss,
-)
 from leo.analysis.standard.native_runner import run_standard_native_observability
 from leo.analysis.standard.native_stateful import (
     StandardNativeStatefulRunner,
@@ -37,7 +33,6 @@ from leo.contracts.radio import IqBlockMetadataV1
 from leo.contracts.standard_native import StandardNativeSourceV2
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV2
 from leo.contracts.standard_native_path_report import StandardNativePathReportV4
-from leo.contracts.standard_native_pss import StandardNativePssFrameTimingV1
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV3
 from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardPathInputBindV5
 from leo.contracts.validity import ContinuitySegmentV1, ValidityInventoryV1
@@ -560,19 +555,6 @@ def _fast_glrt_runner(config: ReceiverStandardConfig) -> StandardNativeFullCaptu
     )
 
 
-class _EmptyPssRunner:
-    def __init__(self, config: StandardNativePssConfig) -> None:
-        self._config = config
-
-    def run(self, reader, binding, *, full_capture_glrt):
-        del reader, full_capture_glrt
-        return build_empty_standard_native_pss(binding, config=self._config)
-
-
-def _fast_pss_runner(config: StandardNativePssConfig) -> _EmptyPssRunner:
-    return _EmptyPssRunner(config)
-
-
 def test_native_evidence_analyzer_executes_only_truthful_products(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -615,7 +597,6 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
             probe_detector=no_result_probe,
         ),
         full_capture_glrt_runner_factory=_fast_glrt_runner,
-        pss_runner_factory=_fast_pss_runner,
     )
     context = AnalysisContext(
         session_id=binding.session_id,
@@ -633,7 +614,7 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     result = analyzer.analyze(context, reader, _SubjectProducts(binding), outputs)  # type: ignore[arg-type]
 
     assert result.outcome.value == "partial_coverage"
-    assert len(result.products) == 9
+    assert len(result.products) == 8
     assert set(outputs.documents) == {
         ("quality.summary", 3),
         ("standard.power-timeline", 4),
@@ -642,7 +623,6 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
         ("standard.native-stateful-path", 3),
         ("standard.pilot-doppler-segments", 4),
         ("standard.full-capture-glrt20ms", 2),
-        ("standard.pss-frame-timing", 1),
         ("standard.path-report", 4),
     }
     assert result.summary["native_evidence_only"] is True
@@ -695,13 +675,6 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     assert glrt.accounting.gap_excluded_count == 2
     assert glrt.accounting.analyzed_count == 97
     assert result.summary["full_capture_glrt_excluded_window_count"] == 2
-    pss = StandardNativePssFrameTimingV1.model_validate(
-        outputs.documents[("standard.pss-frame-timing", 1)]
-    )
-    assert pss.accounting.blind_block_count == 0
-    assert pss.accounting.conditioned_block_count == 0
-    assert result.summary["pss_retained_mode_count"] == 0
-
     tampered_config = dict(context.stage_config)
     tampered_config["full_capture_glrt_configuration_digest"] = canonical_digest(
         {"unexpected": "GLRT configuration"}
@@ -723,18 +696,6 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     with pytest.raises(ValueError, match="phase-locklet policy digest"):
         analyzer.analyze(  # type: ignore[arg-type]
             context.model_copy(update={"stage_config": tampered_phase_config}),
-            _Reader(binding.validity_inventory),
-            _SubjectProducts(binding),
-            _OutputSink(),
-        )
-
-    tampered_pss_config = dict(context.stage_config)
-    tampered_pss_config["pss_configuration_digest"] = canonical_digest(
-        {"unexpected": "PSS configuration"}
-    )
-    with pytest.raises(ValueError, match="PSS policy digest"):
-        analyzer.analyze(  # type: ignore[arg-type]
-            context.model_copy(update={"stage_config": tampered_pss_config}),
             _Reader(binding.validity_inventory),
             _SubjectProducts(binding),
             _OutputSink(),
@@ -880,7 +841,6 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
     outputs = _OutputSink()
     analyzer = PathStandardNativeEvidenceAnalyzer(
         full_capture_glrt_runner_factory=_fast_glrt_runner,
-        pss_runner_factory=_fast_pss_runner,
     )
     context = AnalysisContext(
         session_id=binding.session_id,
@@ -903,7 +863,7 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
     )
 
     assert result.outcome.value == "complete"
-    assert len(result.products) == 9
+    assert len(result.products) == 8
     assert result.summary["coverage_fraction"] == 1.0
     stateful = StandardNativeStatefulPathV3.model_validate(
         outputs.documents[("standard.native-stateful-path", 3)]
@@ -1087,7 +1047,6 @@ def test_path_report_poison_publishes_no_partial_native_product_batch(
     )
     analyzer = PathStandardNativeEvidenceAnalyzer(
         full_capture_glrt_runner_factory=_fast_glrt_runner,
-        pss_runner_factory=_fast_pss_runner,
     )
 
     with pytest.raises(_PathReportCampaignAbort):

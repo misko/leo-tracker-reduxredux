@@ -81,6 +81,7 @@ from leo.analysis.starlink.pss_search import (
     PssTrackAssociationConfig,
     associate_pss_timing_tracks,
     compile_pss_projection,
+    fit_pss_timing_track,
     project_pss_block,
     search_pss_frame_timing_bank,
 )
@@ -257,6 +258,7 @@ __all__ = [
     "pss_native_time_samples",
     "pss_subband_template",
     "associate_pss_timing_tracks",
+    "fit_pss_timing_track",
     "compile_pss_projection",
     "project_pss_block",
     "QIN_EDGE_PILOT_HEX_V1",

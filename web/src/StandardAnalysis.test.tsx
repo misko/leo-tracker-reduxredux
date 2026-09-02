@@ -20,6 +20,8 @@ import type {
   StandardNativePngArtifactInventoryV8,
   StandardNativePngArtifactInventoryV9,
   StandardNativePngArtifactInventoryV10,
+  StandardNativePngArtifactInventoryV11,
+  StandardNativePngArtifactNameV11,
   StandardNativePlotViewV5,
   StandardNativePlotViewV6,
   StandardNativePlotViewV3,
@@ -1014,6 +1016,42 @@ function widebandArtifactInventory(): StandardNativePngArtifactInventoryV9 {
   };
 }
 
+function pairedComparisonArtifactInventory(): StandardNativePngArtifactInventoryV11 {
+  const legacy = widebandArtifactInventory();
+  const subjectId = widebandRadio0.subject_id;
+  const base = `/api/v2/recordings/${encodeURIComponent(legacy.session_id)}/standard-subjects/${encodeURIComponent(subjectId)}`;
+  return {
+    ...legacy,
+    schema_version: 11,
+    subject_id: subjectId,
+    subject_kind: "radio",
+    sample_rates_hz: [2_500_000, 25_000_000],
+    artifacts: [
+      ...legacy.artifacts.slice(0, 6).map((artifact) => ({
+        ...artifact,
+        schema_version: 11 as const,
+        name: artifact.name as StandardNativePngArtifactNameV11,
+        href: artifact.href.replace(
+          encodeURIComponent(legacy.subject_id),
+          encodeURIComponent(subjectId),
+        ),
+      })),
+      {
+        schema_version: 11,
+        name: "pss-glrt-frame-comparison",
+        label: "Native-25 PSS versus dual 2.5 MS/s GLRT",
+        description: "Independent frame-timing residuals and phase-derived frequency change",
+        href: `${base}/artifacts/pss-glrt-frame-comparison.png`,
+        catalog_kind: "standard.pss-glrt-frame-comparison-png",
+        product_schema_version: 1,
+        digest: `sha256:${"c".repeat(64)}`,
+        byte_size: 8192,
+        media_type: "image/png",
+      },
+    ],
+  };
+}
+
 function automaticArtifactInventory(): StandardNativePngArtifactInventoryV9 {
   const inventory = widebandArtifactInventory();
   return {
@@ -1508,7 +1546,7 @@ test.each([
   expect(() => parseStandardSubjectHierarchy(document)).toThrow(/contract is invalid/);
 });
 
-test("accepts additive phase, Doppler, and epoch inventories and rejects future versions", () => {
+test("accepts additive phase, Doppler, epoch, and paired comparison inventories", () => {
   const phase = parseStandardNativePngArtifactInventory(phaseArtifactInventory());
   expect(phase.schema_version).toBe(7);
   expect(phase.artifacts.filter((item) => item.name.startsWith("pilot-")).map(
@@ -1525,10 +1563,15 @@ test("accepts additive phase, Doppler, and epoch inventories and rejects future 
     "glrt-epoch-timing",
     "glrt-epoch-rate",
   ]);
+  const comparison = parseStandardNativePngArtifactInventory(
+    pairedComparisonArtifactInventory(),
+  );
+  expect(comparison.schema_version).toBe(11);
+  expect(comparison.artifacts.at(-1)?.name).toBe("pss-glrt-frame-comparison");
   expect(() => parseStandardNativePngArtifactInventory({
     ...productionArtifactInventory(),
-    schema_version: 11,
-  })).toThrow(/expected one of 4, 5, 6, 7, 8, 9, 10/);
+    schema_version: 12,
+  })).toThrow(/expected one of 4, 5, 6, 7, 8, 9, 10, 11/);
 });
 
 test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {

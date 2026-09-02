@@ -344,6 +344,15 @@ def test_worker_routes_research_run_to_exact_lane_registry_and_configuration(
     )
     assert (
         service._wall_time_limit_seconds_for(  # noqa: SLF001 - policy boundary fixture
+            lane=PipelineLane.STANDARD,
+            stage_key="path-pss-native",
+            resource_class="heavy",
+            sample_rate_hz=25_000_000,
+        )
+        == 18000.0
+    )
+    assert (
+        service._wall_time_limit_seconds_for(  # noqa: SLF001 - policy boundary fixture
             lane=PipelineLane.RESEARCH,
             stage_key="path-standard",
             resource_class="heavy",

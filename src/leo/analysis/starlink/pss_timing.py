@@ -414,7 +414,11 @@ def _normalized_match_power(
 ) -> npt.NDArray[np.float64]:
     output_count = values.size - template.size + 1
     reversed_conjugate = np.conj(template[::-1])
-    if template.size <= 64:
+    # The reviewed native-rate PSS templates are short (11 samples at
+    # 2.5 MS/s and 110 samples at 25 MS/s).  Direct complex convolution is
+    # materially faster than rebuilding overlap-save FFTs for this range and
+    # produces the same correlation definition.
+    if template.size <= 256:
         correlation = np.convolve(values, reversed_conjugate, mode="valid")
         power = np.square(np.abs(values), dtype=np.float64)
         cumulative = np.concatenate(([0.0], np.cumsum(power, dtype=np.float64)))
@@ -466,17 +470,21 @@ def _fold_match_power(
     epoch_count = round(frame_period_samples)
     folded = np.zeros(epoch_count, dtype=float)
     support = np.zeros(epoch_count, dtype=np.int64)
-    for epoch in range(epoch_count):
-        count = math.ceil((match_power.size - epoch) / frame_period_samples)
-        if count <= 0:
+    # Accumulate one complete frame at a time.  This is numerically
+    # equivalent to constructing a tiny index vector for every possible
+    # epoch, while replacing tens of thousands of Python iterations with at
+    # most a few hundred vector operations.  Re-evaluating ``rint`` for every
+    # frame preserves the exact fractional-period and ties-to-even behavior.
+    epochs = np.arange(epoch_count, dtype=float)
+    frame_count = math.ceil(match_power.size / frame_period_samples)
+    for frame_index in range(frame_count):
+        indexes = np.rint(epochs + frame_index * frame_period_samples).astype(np.int64)
+        usable = indexes < match_power.size
+        if not np.any(usable):
             continue
-        indexes = np.rint(epoch + np.arange(count, dtype=float) * frame_period_samples).astype(
-            np.int64
-        )
-        indexes = indexes[indexes < match_power.size]
-        if indexes.size:
-            folded[epoch] = float(np.mean(match_power[indexes]))
-            support[epoch] = indexes.size
+        folded[usable] += match_power[indexes[usable]]
+        support[usable] += 1
+    np.divide(folded, support, out=folded, where=support > 0)
     folded.flags.writeable = False
     support.flags.writeable = False
     return folded, support
@@ -580,12 +588,12 @@ def _measure_candidate_windows(
     conditioned = _conditioned_template(template, candidate.frequency_offset_hz, sample_rate_hz)
     output: list[PssFrameWindow] = []
     for frame_index, predicted in enumerate(starts):
-        search_start = max(0, int(predicted) - radius)
-        search_stop = min(
-            values.size - template.size + 1,
-            int(predicted) + radius + 1,
-        )
-        if search_start >= search_stop:
+        search_start = int(predicted) - radius
+        search_stop = int(predicted) + radius + 1
+        if search_start < 0 or search_stop + template.size - 1 > values.size:
+            # Never publish a timing estimate whose local matched-filter
+            # aperture was truncated by this analysis block. Overlapping
+            # blocks provide an interior copy of boundary opportunities.
             continue
         scores, correlations = _local_match_scores(
             values,
