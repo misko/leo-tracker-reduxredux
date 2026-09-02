@@ -31,6 +31,10 @@ from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
     fit_huber_linear_dealiased_trajectories,
 )
+from leo.analysis.starlink.fractional_epoch import (
+    FRACTIONAL_GLRT_GRID_OFFSETS,
+    fractional_log_peak,
+)
 from leo.analysis.starlink.local_doppler import (
     complete_lattice_count,
     frequency_line,
@@ -61,7 +65,7 @@ from leo.pipeline import IqReader
 _ZERO_CALIBRATION_SHA256 = "0" * 64
 _RENDER_LOCK = RLock()
 _GLRT_BATCH_TIE_GUARD = 1e-10
-_FRACTIONAL_EPOCH_GRID_OFFSETS = (-2, -1, 0, 1, 2)
+_FRACTIONAL_EPOCH_GRID_OFFSETS = FRACTIONAL_GLRT_GRID_OFFSETS
 
 _BLUE = "#2678a8"
 _ORANGE = "#f28e2b"
@@ -263,24 +267,8 @@ def fractional_log_peak_offset(
     provenance without presenting an unsupported fractional measurement.
     """
 
-    values = np.asarray(scores, dtype=float)
-    grid = np.asarray(offsets, dtype=float)
-    if values.ndim != 1 or grid.ndim != 1 or values.size != grid.size or values.size < 3:
-        raise ValueError("fractional GLRT peak requires equal score and offset vectors")
-    if not np.all(np.isfinite(values)) or np.any(values < 0.0):
-        raise ValueError("fractional GLRT scores must be finite and nonnegative")
-    steps = np.diff(grid)
-    if np.any(steps <= 0.0) or not np.allclose(steps, steps[0], rtol=0.0, atol=1e-12):
-        raise ValueError("fractional GLRT offsets must be uniformly increasing")
-    index = int(np.argmax(values))
-    if index == 0 or index == len(values) - 1:
-        return None
-    selected = np.log(np.maximum(values[index - 1 : index + 2], np.finfo(float).tiny))
-    denominator = float(selected[0] - 2.0 * selected[1] + selected[2])
-    if not math.isfinite(denominator) or denominator >= -np.finfo(float).eps:
-        return None
-    fraction = float(np.clip(0.5 * (selected[0] - selected[2]) / denominator, -0.5, 0.5))
-    return float(grid[index] + fraction * steps[0])
+    offset, _curvature = fractional_log_peak(tuple(float(item) for item in scores), tuple(offsets))
+    return offset
 
 
 def _fractional_glrt_epoch(

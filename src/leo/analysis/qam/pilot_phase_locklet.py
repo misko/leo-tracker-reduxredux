@@ -187,6 +187,7 @@ def analyze_contiguous_pilot_phase_locklet(
     maximum_residual_cfo_hz: float = 2_000.0,
     expected_symbol_roll: int = 0,
     config: PilotPhaseLockletConfig | None = None,
+    initial_fractional_epoch_offset_samples: float = 0.0,
 ) -> PilotPhaseLockletResult:
     """Qualify local modulo-pi phase without allowing it to steer CFO/rate."""
 
@@ -196,7 +197,11 @@ def analyze_contiguous_pilot_phase_locklet(
         raise ValueError("samples must be one dimensional")
     if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
         raise ValueError("sample rate must be finite and positive")
-    if epoch_sample < 0 or not math.isfinite(initial_absolute_cfo_hz):
+    if (
+        epoch_sample < 0
+        or not math.isfinite(initial_absolute_cfo_hz)
+        or not math.isfinite(initial_fractional_epoch_offset_samples)
+    ):
         raise ValueError("epoch must be nonnegative and initial CFO finite")
     if (
         not math.isfinite(maximum_residual_cfo_hz)
@@ -207,7 +212,12 @@ def analyze_contiguous_pilot_phase_locklet(
     if not isinstance(expected_symbol_roll, int):
         raise ValueError("expected symbol roll must be an integer")
     settings = config or PilotPhaseLockletConfig()
-    starts = _complete_frame_starts(values.size, sample_rate_hz, epoch_sample)
+    starts = _complete_frame_starts(
+        values.size,
+        sample_rate_hz,
+        epoch_sample,
+        fractional_epoch_offset_samples=initial_fractional_epoch_offset_samples,
+    )
     if not starts:
         return _empty_result(
             NumericalStatus.INSUFFICIENT,
@@ -234,7 +244,10 @@ def analyze_contiguous_pilot_phase_locklet(
     )
     frames: list[_FrameObservation] = []
     for frame_index, start in enumerate(starts):
-        pilots = demodulator.frame(start)
+        pilots = demodulator.frame(
+            start,
+            fractional_epoch_offset_samples=initial_fractional_epoch_offset_samples,
+        )
         fit = _fit_phase_slope_frame(
             pilots * np.conj(expected),
             pilots * np.conj(control),
@@ -253,7 +266,11 @@ def analyze_contiguous_pilot_phase_locklet(
         frames.append(
             _FrameObservation(
                 frame_index=frame_index,
-                reference_sample=float(start + reference_offset_s * sample_rate_hz),
+                reference_sample=float(
+                    start
+                    + initial_fractional_epoch_offset_samples
+                    + reference_offset_s * sample_rate_hz
+                ),
                 residual_cfo_hz=float(fit.residual_cfo_hz),
                 exact_coherence=float(fit.exact_coherence),
                 control_coherence=float(fit.control_coherence),

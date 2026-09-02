@@ -68,6 +68,7 @@ from leo.analysis.starlink.pilot_doppler_segments import (
 from leo.analysis.starlink.pilot_methods import (
     PilotProbeDetection,
     detect_pilot_method_candidates,
+    integer_epoch_detection_document,
 )
 from leo.analysis.starlink.pilot_search_geometry import compile_pilot_search_geometry
 from leo.analysis.starlink.trajectories import PolynomialTrajectory, TrajectoryBankResult
@@ -1295,7 +1296,8 @@ def _persist_segment_local_science(
     science: NativeSegmentLocalScience,
 ) -> NativeSegmentLocalScienceV1:
     detections = tuple(
-        NativePilotProbeDetectionV1.model_validate(asdict(item)) for item in science.detections
+        NativePilotProbeDetectionV1.model_validate(integer_epoch_detection_document(item))
+        for item in science.detections
     )
     raw_bank = NativeRawTrajectoryBankV1.model_validate(asdict(science.residual_hough_bank))
     representatives = tuple(
@@ -1430,7 +1432,7 @@ def _run_segment_local_science(
         {
             "kind": "standard-native-segment-local-pilot-scan-v1",
             "segment_path_binding_digest": segment_path_binding_digest,
-            "detections": [asdict(item) for item in detections],
+            "detections": [integer_epoch_detection_document(item) for item in detections],
         }
     )
     raw_bank_digest = canonical_digest(
@@ -1622,7 +1624,7 @@ def _run_segment_global_probe_science(
         {
             "kind": "standard-native-segment-local-pilot-scan-v1",
             "segment_path_binding_digest": segment_path_binding_digest,
-            "detections": [asdict(item) for item in detections],
+            "detections": [integer_epoch_detection_document(item) for item in detections],
         }
     )
     raw_bank_digest = canonical_digest(

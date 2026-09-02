@@ -706,13 +706,13 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
         seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
         analyzed_path_count = 2 if high_rate_hz == 25_000_000 else 3
         previous_product_count = 59 if high_rate_hz == 25_000_000 else 99
-        expected_product_count = previous_product_count + analyzed_path_count
+        expected_product_count = previous_product_count + 2 * analyzed_path_count
         expected_png_count = 35 if high_rate_hz == 25_000_000 else 60
         assert len(seal.products) == expected_product_count
         assert sum(item.media_type == "image/png" for item in seal.products) == expected_png_count
         assert (
             sum(item.kind == "standard.glrt-fractional-epoch" for item in seal.products)
-            == analyzed_path_count
+            == 2 * analyzed_path_count
         )
         assert {
             item.schema_version for item in seal.products if item.kind == "standard.path-report"

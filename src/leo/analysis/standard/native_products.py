@@ -66,6 +66,9 @@ FULL_CAPTURE_GLRT20MS_V2_PRODUCT = ProductSpec(
 GLRT_FRACTIONAL_EPOCH_V1_PRODUCT = ProductSpec(
     kind="standard.glrt-fractional-epoch", schema_version=1
 )
+GLRT_FRACTIONAL_EPOCH_V2_PRODUCT = ProductSpec(
+    kind="standard.glrt-fractional-epoch", schema_version=2
+)
 GLRT_EPOCH_TRACKING_V1_PRODUCT = ProductSpec(kind="standard.glrt-epoch-tracking", schema_version=1)
 GLRT_EPOCH_TRACKING_V2_PRODUCT = ProductSpec(kind="standard.glrt-epoch-tracking", schema_version=2)
 PSS_FRAME_TIMING_V1_PRODUCT = ProductSpec(kind="standard.pss-frame-timing", schema_version=1)
@@ -128,6 +131,7 @@ PATH_STANDARD_NATIVE_OUTPUTS = (
     PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
     GLRT_FRACTIONAL_EPOCH_V1_PRODUCT,
+    GLRT_FRACTIONAL_EPOCH_V2_PRODUCT,
     PATH_REPORT_V4_PRODUCT,
 )
 PATH_PSS_NATIVE_OUTPUTS = (PSS_FRAME_TIMING_V1_PRODUCT,)
@@ -183,5 +187,5 @@ STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT = sum(
         PAIRED_PSS_GLRT_PRESENTATION_NATIVE_OUTPUTS,
     )
 )
-if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 42:
+if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 43:
     raise RuntimeError("Standard-native-v1 output inventory changed")

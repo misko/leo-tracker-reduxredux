@@ -18,6 +18,10 @@ from typing import cast
 import numpy as np
 
 from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.fractional_epoch import (
+    fractional_take,
+    fractional_take_bounds,
+)
 from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
     CYCLIC_PREFIX_DURATION_S,
@@ -297,6 +301,7 @@ def analyze_pilot_qam(
     epoch_sample: int,
     absolute_cfo_hz: float,
     edge: StarlinkEdge | str,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> PilotQamResult:
     """Demodulate and cross-fit all complete known-pilot frames."""
 
@@ -306,12 +311,21 @@ def analyze_pilot_qam(
         raise ValueError("samples must be one dimensional")
     if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
         raise ValueError("sample_rate_hz must be finite and positive")
-    if epoch_sample < 0 or not math.isfinite(absolute_cfo_hz):
+    if (
+        epoch_sample < 0
+        or not math.isfinite(absolute_cfo_hz)
+        or not math.isfinite(fractional_epoch_offset_samples)
+    ):
         raise ValueError("epoch must be nonnegative and CFO finite")
     minimum_rate_hz = 8 * 234_375.0
     if sample_rate_hz < minimum_rate_hz:
         raise ValueError(f"sample rate must be at least {minimum_rate_hz:.0f} Hz")
-    starts = _complete_frame_starts(values.size, sample_rate_hz, epoch_sample)
+    starts = _complete_frame_starts(
+        values.size,
+        sample_rate_hz,
+        epoch_sample,
+        fractional_epoch_offset_samples=fractional_epoch_offset_samples,
+    )
     if not starts:
         return _empty(
             NumericalStatus.INSUFFICIENT,
@@ -321,7 +335,16 @@ def analyze_pilot_qam(
         return _empty(NumericalStatus.NO_RESULT, "window has zero signal energy")
 
     demodulator = _KnownPilotDemodulator(values, sample_rate_hz, selected_edge, absolute_cfo_hz)
-    pilots = np.asarray([demodulator.frame(start) for start in starts], dtype=np.complex64)
+    pilots = np.asarray(
+        [
+            demodulator.frame(
+                start,
+                fractional_epoch_offset_samples=fractional_epoch_offset_samples,
+            )
+            for start in starts
+        ],
+        dtype=np.complex64,
+    )
     expected = qin_edge_pilot_symbols(selected_edge)
     residual_cfo_hz = _estimate_residual_cfo(pilots, expected)
     pilot_times_s = (np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S
@@ -385,6 +408,7 @@ def analyze_pilot_phase_slope(
     absolute_cfo_hz: float,
     edge: StarlinkEdge | str,
     maximum_residual_cfo_hz: float = 2_000.0,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> PilotPhaseSlopeResult:
     """Estimate one independent carrier-frequency slope per complete frame.
 
@@ -401,7 +425,11 @@ def analyze_pilot_phase_slope(
         raise ValueError("samples must be one dimensional")
     if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
         raise ValueError("sample_rate_hz must be finite and positive")
-    if epoch_sample < 0 or not math.isfinite(absolute_cfo_hz):
+    if (
+        epoch_sample < 0
+        or not math.isfinite(absolute_cfo_hz)
+        or not math.isfinite(fractional_epoch_offset_samples)
+    ):
         raise ValueError("epoch must be nonnegative and CFO finite")
     if not math.isfinite(maximum_residual_cfo_hz) or maximum_residual_cfo_hz <= 0:
         raise ValueError("maximum residual CFO must be finite and positive")
@@ -410,7 +438,12 @@ def analyze_pilot_phase_slope(
     minimum_rate_hz = 8 * 234_375.0
     if sample_rate_hz < minimum_rate_hz:
         raise ValueError(f"sample rate must be at least {minimum_rate_hz:.0f} Hz")
-    starts = _complete_frame_starts(values.size, sample_rate_hz, epoch_sample)
+    starts = _complete_frame_starts(
+        values.size,
+        sample_rate_hz,
+        epoch_sample,
+        fractional_epoch_offset_samples=fractional_epoch_offset_samples,
+    )
     if not starts:
         return _empty_phase_slope(
             NumericalStatus.INSUFFICIENT,
@@ -425,7 +458,16 @@ def analyze_pilot_phase_slope(
         selected_edge,
         absolute_cfo_hz,
     )
-    pilots = np.asarray([demodulator.frame(start) for start in starts], dtype=np.complex128)
+    pilots = np.asarray(
+        [
+            demodulator.frame(
+                start,
+                fractional_epoch_offset_samples=fractional_epoch_offset_samples,
+            )
+            for start in starts
+        ],
+        dtype=np.complex128,
+    )
     expected = qin_edge_pilot_symbols(selected_edge)
     control = qin_edge_pilot_symbols(selected_edge, symbol_roll=CONTROL_SYMBOL_ROLL)
     return _estimate_phase_slope_frames(
@@ -436,6 +478,7 @@ def analyze_pilot_phase_slope(
         sample_rate_hz=sample_rate_hz,
         absolute_cfo_hz=absolute_cfo_hz,
         maximum_residual_cfo_hz=maximum_residual_cfo_hz,
+        fractional_epoch_offset_samples=fractional_epoch_offset_samples,
     )
 
 
@@ -867,11 +910,16 @@ class _KnownPilotDemodulator:
         self._cfo = absolute_cfo_hz
         self._edge = edge
 
-    def frame(self, frame_start: int) -> np.ndarray:
+    def frame(
+        self,
+        frame_start: int,
+        *,
+        fractional_epoch_offset_samples: float = 0.0,
+    ) -> np.ndarray:
         result = np.empty((300, 8), dtype=np.complex128)
         for positions, relative, solves in _known_pilot_layout(float(self._rate), self._edge):
-            absolute = frame_start + relative
-            values = np.asarray(self._samples[absolute], dtype=np.complex128)
+            absolute = frame_start + relative.astype(float) + fractional_epoch_offset_samples
+            values = fractional_take(self._samples, absolute)
             values *= np.exp(-2j * np.pi * self._cfo * absolute / self._rate)
             result[positions] = np.einsum("sfc,sc->sf", solves, values, optimize=False)
         return result
@@ -968,6 +1016,7 @@ def _estimate_phase_slope_frames(
     sample_rate_hz: float,
     absolute_cfo_hz: float,
     maximum_residual_cfo_hz: float,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> PilotPhaseSlopeResult:
     """Pure frame-cube kernel behind :func:`analyze_pilot_phase_slope`."""
 
@@ -1018,7 +1067,9 @@ def _estimate_phase_slope_frames(
         PilotPhaseSlopeFrame(
             frame_index=index,
             frame_start_sample=int(frame_start),
-            reference_sample=float(frame_start + reference_offset_s * sample_rate_hz),
+            reference_sample=float(
+                frame_start + fractional_epoch_offset_samples + reference_offset_s * sample_rate_hz
+            ),
             residual_cfo_hz=fit.residual_cfo_hz,
             absolute_cfo_hz=float(absolute_cfo_hz + fit.residual_cfo_hz),
             frequency_uncertainty_hz=fit.frequency_uncertainty_hz,
@@ -1513,15 +1564,27 @@ def _constellation_states(values: np.ndarray) -> np.ndarray:
 
 
 def _complete_frame_starts(
-    sample_count: int, sample_rate_hz: float, epoch_sample: int
+    sample_count: int,
+    sample_rate_hz: float,
+    epoch_sample: int,
+    *,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> tuple[int, ...]:
+    if not math.isfinite(fractional_epoch_offset_samples):
+        raise ValueError("fractional epoch offset must be finite")
+    first_pilot_sample = round(2 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
     frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    left_guard, right_guard = fractional_take_bounds(fractional_epoch_offset_samples)
     result: list[int] = []
     frame = 0
     while True:
         start = epoch_sample + round(frame * sample_rate_hz / FRAME_RATE_HZ)
-        if start + frame_content > sample_count:
+        continuous_start = start + fractional_epoch_offset_samples
+        if continuous_start + frame_content - 1 >= sample_count - right_guard:
             return tuple(result)
+        if continuous_start + first_pilot_sample < left_guard:
+            frame += 1
+            continue
         result.append(start)
         frame += 1
 

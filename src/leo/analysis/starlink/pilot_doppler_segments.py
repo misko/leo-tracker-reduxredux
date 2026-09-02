@@ -64,6 +64,7 @@ class _WindowRequest:
     probe_sample_start: int
     local_epoch_sample: int
     model: PolynomialFrequencyModel
+    fractional_epoch_offset_samples: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

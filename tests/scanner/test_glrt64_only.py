@@ -105,19 +105,35 @@ def _detect_with_probe_scores(monkeypatch, margins, frequencies, *, full=False):
         )
         return SimpleNamespace(candidates=(candidate,))
 
-    def score(_probe, _rate, *, acquired_cfo_hz, **_kwargs):
+    def scores(_probe, _rate, *, acquired_cfo_hz, **_kwargs):
         probe_index = round(float(_probe[0].real)) // configuration.probe_stride_samples
         margin = float(margins.get(probe_index, 0.0))
-        return SimpleNamespace(
-            margin=margin,
-            residual_cfo_hz=0.0,
-            tracking_cfo_hz=acquired_cfo_hz,
-            exact_score=0.1 + margin,
-            control_score=0.1,
+        return tuple(
+            SimpleNamespace(
+                margin=margin,
+                residual_cfo_hz=0.0,
+                tracking_cfo_hz=frequency,
+                exact_score=0.1 + margin,
+                control_score=0.1,
+            )
+            for frequency in acquired_cfo_hz
+        )
+
+    def refinements(_probe, _rate, *, integer_epoch_samples, **_kwargs):
+        return tuple(
+            SimpleNamespace(
+                status=SimpleNamespace(value="complete"),
+                fractional_epoch_offset_samples=0.0,
+                fractional_frame_phase_sample=float(epoch),
+                fractional_exact_score=0.1,
+                fractional_control_score=0.1,
+            )
+            for epoch in integer_epoch_samples
         )
 
     monkeypatch.setattr(detector_module, "acquire_symbolwise", acquire)
-    monkeypatch.setattr(detector_module, "conditioned_glrt64_score", score)
+    monkeypatch.setattr(detector_module, "conditioned_glrt64_scores", scores)
+    monkeypatch.setattr(detector_module, "refine_glrt64_epochs", refinements)
     function = detector_module.analyze_glrt64_dwell if full else detector_module.detect_first_glrt64
     return function(samples, configuration, edge="lower")
 

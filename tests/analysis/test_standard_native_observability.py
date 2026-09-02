@@ -32,7 +32,10 @@ from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV4
 from leo.contracts.radio import IqBlockMetadataV1
 from leo.contracts.standard_native import StandardNativeSourceV2
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV2
-from leo.contracts.standard_native_glrt_fractional import StandardNativeGlrtFractionalEpochV1
+from leo.contracts.standard_native_glrt_fractional import (
+    StandardNativeGlrtFractionalEpochV1,
+    StandardNativeGlrtFractionalEpochV2,
+)
 from leo.contracts.standard_native_path_report import StandardNativePathReportV4
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV3
 from leo.contracts.standard_pipeline import StandardPathInputBindV4, StandardPathInputBindV5
@@ -615,7 +618,7 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     result = analyzer.analyze(context, reader, _SubjectProducts(binding), outputs)  # type: ignore[arg-type]
 
     assert result.outcome.value == "partial_coverage"
-    assert len(result.products) == 9
+    assert len(result.products) == 10
     assert set(outputs.documents) == {
         ("quality.summary", 3),
         ("standard.power-timeline", 4),
@@ -625,6 +628,7 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
         ("standard.pilot-doppler-segments", 4),
         ("standard.full-capture-glrt20ms", 2),
         ("standard.glrt-fractional-epoch", 1),
+        ("standard.glrt-fractional-epoch", 2),
         ("standard.path-report", 4),
     }
     assert result.summary["native_evidence_only"] is True
@@ -647,6 +651,12 @@ def test_native_evidence_analyzer_executes_only_truthful_products(
     )
     assert fractional.source_glrt_product_digest == canonical_digest(glrt.model_dump(mode="json"))
     assert fractional.refinement_count == fractional.complete_count == 0
+    fractional_v2 = StandardNativeGlrtFractionalEpochV2.model_validate(
+        outputs.documents[("standard.glrt-fractional-epoch", 2)]
+    )
+    assert fractional_v2.source == fractional.source
+    assert fractional_v2.candidate_refinement_count == 0
+    assert fractional_v2.source_full_capture_fractional_result_digest == fractional.result_digest
     assert pilot_v4.phase_config_digest == pilot_v4.phase_config.digest
     assert pilot_v4.source_v2_locklet_count == 0
     assert pilot_v4.corrected_phase_trackability_count == 0
@@ -873,7 +883,7 @@ def test_native_evidence_analyzer_reports_complete_for_one_lossless_segment(
     )
 
     assert result.outcome.value == "complete"
-    assert len(result.products) == 9
+    assert len(result.products) == 10
     assert result.summary["coverage_fraction"] == 1.0
     stateful = StandardNativeStatefulPathV3.model_validate(
         outputs.documents[("standard.native-stateful-path", 3)]

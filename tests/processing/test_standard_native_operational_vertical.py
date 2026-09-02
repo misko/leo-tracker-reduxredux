@@ -43,7 +43,10 @@ from leo.contracts.standard_native_alternate_tracks import (
 )
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV2
 from leo.contracts.standard_native_glrt_epoch import StandardNativeGlrtEpochTrackingV2
-from leo.contracts.standard_native_glrt_fractional import StandardNativeGlrtFractionalEpochV1
+from leo.contracts.standard_native_glrt_fractional import (
+    StandardNativeGlrtFractionalEpochV1,
+    StandardNativeGlrtFractionalEpochV2,
+)
 from leo.contracts.standard_native_path_report import StandardNativePathReportV4
 from leo.contracts.standard_native_pss import StandardNativePssFrameTimingV1
 from leo.contracts.standard_native_stateful_v2 import (
@@ -279,7 +282,7 @@ def _assert_native_products(
     gapped_radio_id: str | None,
 ) -> None:
     products = seal.products  # type: ignore[attr-defined]
-    assert len(products) == 129
+    assert len(products) == 133
     assert Counter(item.kind for item in products) == {
         "quality.summary": 4,
         "standard.power-timeline": 4,
@@ -288,7 +291,7 @@ def _assert_native_products(
         "standard.native-stateful-path": 4,
         "standard.pilot-doppler-segments": 4,
         "standard.full-capture-glrt20ms": 4,
-        "standard.glrt-fractional-epoch": 4,
+        "standard.glrt-fractional-epoch": 8,
         "standard.glrt-epoch-tracking": 4,
         "standard.pss-frame-timing": 4,
         "standard.path-report": 4,
@@ -353,7 +356,11 @@ def _assert_native_products(
                 }
                 assert {item.scope_key for item in dependencies} == {product.scope_key}
             continue
-        model = json_models[product.kind]
+        model = (
+            StandardNativeGlrtFractionalEpochV2
+            if product.kind == "standard.glrt-fractional-epoch" and product.schema_version == 2
+            else json_models[product.kind]
+        )
         document = model.model_validate(artifacts.read_json(product.logical_uri, product.digest))
         if hasattr(document, "source"):
             source = document.source
@@ -421,6 +428,27 @@ def _assert_native_products(
             assert document.refinement_count == (
                 document.complete_count + document.unbracketed_count + document.unavailable_count
             )
+        if isinstance(document, StandardNativeGlrtFractionalEpochV2):
+            stateful = next(
+                item
+                for item in products
+                if item.scope_key == product.scope_key
+                and item.kind == "standard.native-stateful-path"
+            )
+            source_fractional = next(
+                item
+                for item in products
+                if item.scope_key == product.scope_key
+                and item.kind == "standard.glrt-fractional-epoch"
+                and item.schema_version == 1
+            )
+            assert document.source_stateful_path_product_digest == stateful.digest
+            assert (
+                document.source_full_capture_fractional_product_digest == source_fractional.digest
+            )
+            assert document.candidate_refinement_count == (
+                document.complete_count + document.unbracketed_count
+            )
         if isinstance(document, StandardNativeGlrtEpochTrackingV2):
             source_glrt = next(
                 item
@@ -433,6 +461,7 @@ def _assert_native_products(
                 for item in products
                 if item.scope_key == product.scope_key
                 and item.kind == "standard.glrt-fractional-epoch"
+                and item.schema_version == 1
             )
             assert document.source_glrt_product_digest == source_glrt.digest
             assert document.source_fractional_epoch_product_digest == source_fractional.digest
@@ -668,7 +697,7 @@ def _run_native_current(
     assert published.manifest.processing_status == "succeeded"
 
     seal = database.catalog.run_seal_snapshot(result.run_id)
-    assert len(seal.products) == 129
+    assert len(seal.products) == 133
     assert sum(item.media_type == "image/png" for item in seal.products) == 74
     _assert_native_products(
         database,
@@ -736,8 +765,8 @@ def test_real_postgres_standard_native_operational_vertical(
     registry = production_standard_native_evidence_registry()
     native_stage_configuration = production_standard_native_evidence_configuration()
     native_path_spec = registry.get("path-standard-native").spec
-    assert native_path_spec.algorithm_version == "standard-native-evidence-v14"
-    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v12"
+    assert native_path_spec.algorithm_version == "standard-native-evidence-v15"
+    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v13"
     assert "probes" not in native_stage_configuration["path-standard-native"]
     configuration: dict[str, object] = {
         "display_version": "standard-native-operational-v1",
