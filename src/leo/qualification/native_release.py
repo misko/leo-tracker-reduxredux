@@ -12,10 +12,12 @@ from pathlib import Path
 
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scientific import TrustedNativeReleaseEvidenceV2
+from leo.qualification.release import _source_identity as _load_release_source_identity
 from leo.qualification.release import _validate_deployed_release
 
 ReleaseValidator = Callable[[Path, str], None]
 _QNAP = Path("/mnt/qnap01")
+_SOURCE_MARKER = ".leo-release-source.json"
 
 
 def selected_current_revision(
@@ -78,16 +80,15 @@ def assert_trusted_current_release_unchanged(
         raise ValueError("current release path changed after composition")
     metadata = deployment_root / "release-metadata" / f"{revision}.txt"
     interpreter = _resolve_regular_file(release / ".venv/bin/python")
+    git_tree, source_tree_digest = _source_identity(release, revision)
     observed = {
         "release_metadata_digest": _file_digest(metadata),
         "worker_digest": _file_digest(release / "tools/native_evidence_worker.py"),
         "interpreter_digest": _file_digest(interpreter),
         "runtime_package_tree_digest": _runtime_package_tree_digest(release),
-        "source_revision": _git(release, "rev-parse", "HEAD"),
-        "git_tree": _git(release, "rev-parse", "HEAD^{tree}"),
-        "source_tree_digest": sha256_digest(
-            _git(release, "ls-tree", "-r", "--full-tree", "HEAD").encode("utf-8")
-        ),
+        "source_revision": revision,
+        "git_tree": git_tree,
+        "source_tree_digest": source_tree_digest,
     }
     expected = {key: getattr(evidence, key) for key in observed}
     if observed != expected:
@@ -170,14 +171,7 @@ def load_trusted_current_release(
         or _runtime_package_tree_digest(release) != runtime_package_tree_digest
     ):
         raise ValueError("release, runtime, or metadata changed during validation")
-    observed_revision = _git(release, "rev-parse", "HEAD")
-    if observed_revision != revision:
-        raise ValueError("validated release checkout differs from selected revision")
-    git_tree = _git(release, "rev-parse", "HEAD^{tree}")
-    if re.fullmatch(r"[0-9a-f]{40}", git_tree) is None:
-        raise ValueError("validated release has an invalid Git tree identity")
-    tree_inventory = _git(release, "ls-tree", "-r", "--full-tree", "HEAD")
-    source_tree_digest = sha256_digest(tree_inventory.encode("utf-8"))
+    git_tree, source_tree_digest = _source_identity(release, revision)
     values = {
         "schema_version": 2,
         "kind": "validated-current-native-release",
@@ -307,6 +301,27 @@ def _git(root: Path, *arguments: str) -> str:
         },
     )
     return result.stdout.strip()
+
+
+def _source_identity(release: Path, revision: str) -> tuple[str, str]:
+    """Load the sealed Git-free marker, with a legacy-checkout fallback."""
+
+    marker = release / _SOURCE_MARKER
+    if marker.exists() or marker.is_symlink():
+        identity = _load_release_source_identity(release)
+        if identity.kind != "sealed-release-marker" or identity.revision != revision:
+            raise ValueError("release source marker differs from selected revision")
+        tree = identity.tree
+        return tree, sha256_digest(f"git-tree:{tree}".encode("ascii"))
+
+    observed_revision = _git(release, "rev-parse", "HEAD")
+    if observed_revision != revision:
+        raise ValueError("validated release checkout differs from selected revision")
+    tree = _git(release, "rev-parse", "HEAD^{tree}")
+    if re.fullmatch(r"[0-9a-f]{40}", tree) is None:
+        raise ValueError("validated release has an invalid Git tree identity")
+    inventory = _git(release, "ls-tree", "-r", "--full-tree", "HEAD")
+    return tree, sha256_digest(inventory.encode("utf-8"))
 
 
 def _file_digest(path: Path) -> str:
