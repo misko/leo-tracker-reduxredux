@@ -8,7 +8,7 @@ from typing import Protocol
 import numpy as np
 
 from leo.scanner.metadata import metadata_reports_rx_overflow
-from leo.scanner.models import ScannerConfiguration, ScannerConfigurationV2
+from leo.scanner.models import ScannerConfiguration, ScannerConfigurationV2, ScannerConfigurationV3
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,7 +150,9 @@ class SequentialScanRadioV2(Protocol):
 
     def open(self) -> ScanRadioIdentity: ...
 
-    def configure_once(self, configuration: ScannerConfigurationV2) -> None: ...
+    def configure_once(
+        self, configuration: ScannerConfigurationV2 | ScannerConfigurationV3
+    ) -> None: ...
 
     def tune_and_read(self, if_center_hz: int, sample_count: int) -> ScanRadioBlockV2: ...
 

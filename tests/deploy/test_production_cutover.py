@@ -1170,8 +1170,9 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
             "LEO_SCANNER_ENABLED=false",
             "LEO_SCANNER_RADIO_ID=radio_pluto_5d4d",
-            "LEO_SCANNER_INTERVAL_SECONDS=180",
-            "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=180",
+            "LEO_SCANNER_INTERVAL_SECONDS=1200",
+            "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=120",
+            "LEO_SCANNER_RUN_SECONDS=300",
             "LEO_SCANNER_DWELL_MS=120",
             "LEO_SCANNER_GAIN_DB=40.0",
             "LEO_SCANNER_MARGIN_GATE=0.025",
@@ -1316,7 +1317,7 @@ def test_installed_station_authority_requires_exact_inode_and_digest(tmp_path: P
 def test_scanner_data_directories_must_be_installed_exactly(tmp_path: Path) -> None:
     root = tmp_path / "bulk"
     root.mkdir()
-    for relative in ("scanner-recordings", "scanner-reports"):
+    for relative in ("scanner-recordings", "scanner-reports", "scanner-runs"):
         path = root / relative
         path.mkdir(mode=0o770)
         path.chmod(0o2770)

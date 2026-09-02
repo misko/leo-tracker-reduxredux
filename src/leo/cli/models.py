@@ -40,6 +40,7 @@ from leo.scanner import (
     ScannerReportV2,
     ScannerReportV3,
     ScannerReportV4,
+    ScannerReportV5,
 )
 
 
@@ -659,7 +660,8 @@ CliPayload = Annotated[
     | ScannerReport
     | ScannerReportV2
     | ScannerReportV3
-    | ScannerReportV4,
+    | ScannerReportV4
+    | ScannerReportV5,
     Field(discriminator="kind"),
 ]
 

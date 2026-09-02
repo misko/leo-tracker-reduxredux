@@ -15,6 +15,7 @@ from leo.scanner.models import (
     ScanDecision,
     ScannerConfiguration,
     ScannerConfigurationV2,
+    ScannerConfigurationV3,
     ScannerFrameContinuityEvidenceLike,
     ScannerFrameContinuityEvidenceV1,
     ScannerFrameContinuityEvidenceV2,
@@ -171,6 +172,14 @@ class ScannerAnalysisMetricsV3(ScannerAnalysisMetricsV2):
         ):
             raise ValueError("scanner analysis metrics V3 requires metadata ABI 3 evidence")
         return self
+
+
+class ScannerAnalysisMetricsV4(ScannerAnalysisMetricsV3):
+    """Additive ABI-3 metrics for lower-then-upper scanner V3 acquisition."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    kind: Literal["starlink_scanner_analysis_metrics_v4"] = "starlink_scanner_analysis_metrics_v4"  # type: ignore[assignment]
+    configuration: ScannerConfigurationV3  # type: ignore[assignment]
 
 
 class ScannerAnalysisBundleManifestV1(ScannerModel):
@@ -680,6 +689,14 @@ class ScannerAnalysisBundleManifestV5(ScannerModel):
     pilot_segment_rates_png_sha256: Sha256Digest
 
 
+class ScannerAnalysisBundleManifestV6(ScannerAnalysisBundleManifestV5):
+    """Additive Standard bundle for scanner V3 acquisition products."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    report_relative_path: Literal["scanner-report.v5.json"] = "scanner-report.v5.json"  # type: ignore[assignment]
+    metrics_relative_path: Literal["scanner-metrics.v4.json"] = "scanner-metrics.v4.json"  # type: ignore[assignment]
+
+
 class ScannerAnalysisHistoryItemV1(ScannerModel):
     """Newest published Standard analysis selected for one scan."""
 
@@ -746,7 +763,10 @@ class ScannerAnalysisHistoryPageV3(ScannerModel):
 
 
 ScannerAnalysisMetricsLike = (
-    ScannerAnalysisMetricsV1 | ScannerAnalysisMetricsV2 | ScannerAnalysisMetricsV3
+    ScannerAnalysisMetricsV1
+    | ScannerAnalysisMetricsV2
+    | ScannerAnalysisMetricsV3
+    | ScannerAnalysisMetricsV4
 )
 ScannerAnalysisBundleManifestLike = (
     ScannerAnalysisBundleManifestV1
@@ -754,4 +774,5 @@ ScannerAnalysisBundleManifestLike = (
     | ScannerAnalysisBundleManifestV3
     | ScannerAnalysisBundleManifestV4
     | ScannerAnalysisBundleManifestV5
+    | ScannerAnalysisBundleManifestV6
 )

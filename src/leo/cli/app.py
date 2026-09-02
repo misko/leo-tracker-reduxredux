@@ -72,6 +72,7 @@ from leo.scanner import (
     ScannerReportV2,
     ScannerReportV3,
     ScannerReportV4,
+    ScannerReportV5,
 )
 
 PayloadOperation = Callable[[], CliPayload]
@@ -1300,7 +1301,7 @@ def _exit_code(payload: CliPayload) -> ExitCode:
         return ExitCode.CAPTURE_DEGRADED
     if isinstance(
         payload,
-        (ScannerReport, ScannerReportV2, ScannerReportV3, ScannerReportV4),
+        (ScannerReport, ScannerReportV2, ScannerReportV3, ScannerReportV4, ScannerReportV5),
     ) and any(item.decision is ScanDecision.INCONCLUSIVE for item in payload.results):
         return ExitCode.CAPTURE_DEGRADED
     if isinstance(payload, RadioListDataV1) and any(
@@ -1382,7 +1383,10 @@ def _message(payload: CliPayload) -> str:
             f"found {payload.active_edge_count} active edge observation(s); "
             f"{payload.inconclusive_edge_count} edge observation(s) inconclusive."
         )
-    if isinstance(payload, (ScannerReport, ScannerReportV2, ScannerReportV3, ScannerReportV4)):
+    if isinstance(
+        payload,
+        (ScannerReport, ScannerReportV2, ScannerReportV3, ScannerReportV4, ScannerReportV5),
+    ):
         inconclusive = sum(item.decision is ScanDecision.INCONCLUSIVE for item in payload.results)
         return (
             f"Starlink scan {payload.scan_id} found "

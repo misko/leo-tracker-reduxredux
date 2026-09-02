@@ -10,6 +10,10 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.recording import CompressionSettingsV1
+from leo.contracts.starlink_frequency import (
+    STARLINK_LNB_LO_HZ,
+    starlink_maximum_coverage_if_center_frequency_hz,
+)
 from leo.contracts.states import GainMode, SampleFormat, SampleLayout, StarlinkEdge
 from leo.scanner.metadata import metadata_reports_rx_overflow
 
@@ -36,6 +40,27 @@ class ScanTarget(ScannerModel):
     if_center_hz: Annotated[int, Field(gt=0)]
 
 
+_SCHEDULED_TARGET_ORDER = tuple(
+    (channel, edge) for edge in (StarlinkEdge.LOWER, StarlinkEdge.UPPER) for channel in range(1, 5)
+)
+
+
+def _validate_common_scanner_configuration(configuration: ScannerConfiguration) -> None:
+    if configuration.bandwidth_hz > configuration.sample_rate_hz:
+        raise ValueError("scanner bandwidth cannot exceed sample rate")
+    if (
+        len(set(configuration.receiver_ids)) != len(configuration.receiver_ids)
+        or not configuration.receiver_ids
+    ):
+        raise ValueError("scanner receiver IDs must be nonempty and unique")
+    if len(set((item.channel, item.edge) for item in configuration.targets)) != len(
+        configuration.targets
+    ):
+        raise ValueError("scanner targets must be unique by channel and edge")
+    if not math.isfinite(configuration.gain_db):
+        raise ValueError("scanner gain must be finite")
+
+
 class ScannerConfiguration(ScannerModel):
     schema_version: Literal[1] = 1
     band_plan_id: str = "starlink-low-ch1-ch4-v1"
@@ -54,16 +79,9 @@ class ScannerConfiguration(ScannerModel):
 
     @model_validator(mode="after")
     def _geometry_is_exact(self) -> Self:
-        if self.bandwidth_hz > self.sample_rate_hz:
-            raise ValueError("scanner bandwidth cannot exceed sample rate")
-        if len(set(self.receiver_ids)) != len(self.receiver_ids) or not self.receiver_ids:
-            raise ValueError("scanner receiver IDs must be nonempty and unique")
-        if len(set((item.channel, item.edge) for item in self.targets)) != len(self.targets):
-            raise ValueError("scanner targets must be unique by channel and edge")
+        _validate_common_scanner_configuration(self)
         if tuple(sorted(self.targets, key=lambda item: item.if_center_hz)) != self.targets:
             raise ValueError("scanner targets must be ordered by increasing IF center")
-        if not math.isfinite(self.gain_db):
-            raise ValueError("scanner gain must be finite")
         return self
 
     @property
@@ -104,6 +122,30 @@ class ScannerConfigurationV2(ScannerConfiguration):
     require_device_metadata: Literal[True] = True
 
 
+class ScannerConfigurationV3(ScannerConfigurationV2):
+    """Continuity-observable lower-then-upper maximum-coverage scan policy."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    band_plan_id: Literal["starlink-low-ch1-ch4-lower-then-upper-v1"] = (
+        "starlink-low-ch1-ch4-lower-then-upper-v1"
+    )
+
+    @model_validator(mode="after")
+    def _geometry_is_exact(self) -> Self:
+        _validate_common_scanner_configuration(self)
+        if self.bandwidth_hz != self.sample_rate_hz:
+            raise ValueError("scanner V3 bandwidth must equal sample rate for maximum coverage")
+        expected = scheduled_low_band_targets(
+            bandwidth_hz=self.bandwidth_hz,
+            lnb_lo_hz=self.lnb_lo_hz,
+        )
+        if self.targets != expected:
+            raise ValueError(
+                "scanner V3 targets must use the exact CH1L..CH4L, CH1U..CH4U maximum-coverage plan"
+            )
+        return self
+
+
 def current_low_band_targets(lnb_lo_hz: int = 9_750_000_000) -> tuple[ScanTarget, ...]:
     """Return every presently published channel edge reachable by the low LNB."""
 
@@ -117,6 +159,32 @@ def current_low_band_targets(lnb_lo_hz: int = 9_750_000_000) -> tuple[ScanTarget
         for channel, edge, rf_center in _CURRENT_RF_CENTERS_HZ
     )
     return tuple(sorted(targets, key=lambda item: item.if_center_hz))
+
+
+def scheduled_low_band_targets(
+    *,
+    bandwidth_hz: int,
+    lnb_lo_hz: int = STARLINK_LNB_LO_HZ,
+) -> tuple[ScanTarget, ...]:
+    """Return the exact lower-then-upper plan at the widest admitted passband."""
+
+    targets: list[ScanTarget] = []
+    for channel, edge in _SCHEDULED_TARGET_ORDER:
+        default_if_hz = starlink_maximum_coverage_if_center_frequency_hz(
+            channel,
+            edge,
+            bandwidth_hz=bandwidth_hz,
+        )
+        if_center_hz = default_if_hz + STARLINK_LNB_LO_HZ - lnb_lo_hz
+        targets.append(
+            ScanTarget(
+                channel=channel,
+                edge=edge,
+                rf_center_hz=if_center_hz + lnb_lo_hz,
+                if_center_hz=if_center_hz,
+            )
+        )
+    return tuple(targets)
 
 
 class ScanDecision(StrEnum):
@@ -421,6 +489,40 @@ class ScannerReportV4(ScannerModel):
             isinstance(item, ScannerFrameContinuityEvidenceV2) for item in self.continuity_evidence
         ):
             raise ValueError("scanner report V4 requires metadata ABI 3 evidence")
+        return self
+
+    @property
+    def active_edges(self) -> tuple[ScanTarget, ...]:
+        return tuple(item.target for item in self.results if item.decision is ScanDecision.ACTIVE)
+
+
+class ScannerReportV5(ScannerModel):
+    """Additive report for lower-then-upper scanner V3 acquisition."""
+
+    schema_version: Literal[5] = 5
+    kind: Literal["starlink_scanner_report_v5"] = "starlink_scanner_report_v5"
+    scan_id: str
+    radio_id: str
+    radio_serial: str
+    configuration: ScannerConfigurationV3
+    capture_elapsed_ms: float
+    analysis_elapsed_ms: float
+    results: tuple[ScanEdgeResult, ...]
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceLike, ...]
+    continuity_observable: bool
+    close_failure: ScannerCloseFailureEvidenceV1 | None = None
+    retune_boundaries_are_discontinuous: Literal[True] = True
+    candidate_only: Literal[True] = True
+    payload_decoded: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _covers_plan(self) -> Self:
+        _validate_continuity_report(
+            self.configuration,
+            self.results,
+            self.continuity_evidence,
+            continuity_observable=self.continuity_observable,
+        )
         return self
 
     @property
@@ -806,11 +908,21 @@ class ScannerIqBundleManifestV3(ScannerIqBundleManifestV2):
         return self
 
 
-ScannerConfigurationLike = ScannerConfiguration | ScannerConfigurationV2
-ScannerReportLike = ScannerReport | ScannerReportV2 | ScannerReportV4
+class ScannerIqBundleManifestV4(ScannerIqBundleManifestV3):
+    """Additive ABI-3 bundle for lower-then-upper scanner V3 acquisition."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    configuration: ScannerConfigurationV3  # type: ignore[assignment]
+
+
+ScannerConfigurationLike = ScannerConfiguration | ScannerConfigurationV2 | ScannerConfigurationV3
+ScannerReportLike = ScannerReport | ScannerReportV2 | ScannerReportV4 | ScannerReportV5
 ScannerBurstReportLike = ScannerBurstReportV1 | ScannerBurstReportV2
 ScannerCaptureReportLike = ScannerReportLike | ScannerReportV3
 ScannerCaptureBurstReportLike = ScannerBurstReportLike | ScannerBurstReportV3 | ScannerBurstReportV4
 ScannerIqBundleManifestLike = (
-    ScannerIqBundleManifestV1 | ScannerIqBundleManifestV2 | ScannerIqBundleManifestV3
+    ScannerIqBundleManifestV1
+    | ScannerIqBundleManifestV2
+    | ScannerIqBundleManifestV3
+    | ScannerIqBundleManifestV4
 )

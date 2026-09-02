@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import secrets
 import shutil
 import time
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -44,9 +46,10 @@ from leo.cli.backend import (
     CliBackend,
     CliBackendError,
     ProcessingCliBackend,
-    ScheduledScannerBurst,
-    ScheduledScannerCapture,
     ScheduledScannerConfiguration,
+    ScheduledScannerRun,
+    ScheduledScannerRunAnalysis,
+    ScheduledScannerSweepReference,
 )
 from leo.cli.calibration import CalibrationCliBackend
 from leo.cli.models import (
@@ -141,22 +144,34 @@ from leo.radio import (
     RadioSource,
 )
 from leo.scanner import (
-    ScannerBurstReportV2,
-    ScannerBurstReportV3,
-    ScannerBurstReportV4,
     ScannerCaptureBurstReportLike,
+    ScannerCaptureReportLike,
+    ScannerCloseFailureEvidenceV1,
     ScannerConfiguration,
     ScannerConfigurationV2,
     ScannerReportV2,
     ScannerReportV3,
     ScannerReportV4,
+    ScannerReportV5,
+    ScannerRunManifestV1,
+    ScannerRunSweepEntryV1,
+    ScheduledScannerRunIntentV1,
     SequentialScanRadioLike,
     analyze_scan_sweep,
-    capture_scan_sweep,
+    capture_configured_scan_sweep,
+    compile_scheduled_scanner_run_intent_v1,
     current_low_band_targets,
 )
 from leo.station.resolver import FixtureAuthorityFileReference
-from leo.storage import PublishedBundle, RecordingStore, ScannerAnalysisStore, ScannerIqStore
+from leo.storage import (
+    PublishedBundle,
+    PublishedScannerIqBundle,
+    RecordingStore,
+    ScannerAnalysisStore,
+    ScannerIqStore,
+    ScannerRunStore,
+)
+from leo.storage.errors import BundleNotFoundError
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
 ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadioLike]
@@ -164,7 +179,10 @@ ScannerRadioSelector = Callable[[tuple["RadioConfigurationV1", ...]], "RadioConf
 RecordingStoreFactory = Callable[[Path], RecordingStore]
 ScannerIqStoreFactory = Callable[[Path], ScannerIqStore]
 ScannerAnalysisStoreFactory = Callable[[Path], ScannerAnalysisStore]
+ScannerRunStoreFactory = Callable[[Path], ScannerRunStore]
 CaptureObserver = Callable[[CaptureSessionResult], None]
+
+_MAX_SCANNER_REPORT_BYTES = 4 * 1024 * 1024
 BackendFactory = Callable[[], CliBackend]
 ProcessingBackendFactory = Callable[["CliSettings"], ProcessingCliBackend]
 CalibrationBackendFactory = Callable[["CliSettings"], CalibrationCliBackend]
@@ -181,6 +199,22 @@ _CAPTURE_MODE_RADIO_CONFIG = (
         "192.168.1.21",
     ),
 )
+
+
+def _maximum_scanner_run_sweeps(intent: ScheduledScannerRunIntentV1) -> int:
+    """Bound memory and admission to at most one sweep beyond the RF-time target."""
+
+    sweep_signal_seconds = (
+        intent.configuration.dwell_ms * len(intent.configuration.targets) / 1_000.0
+    )
+    return max(1, math.ceil(intent.run_duration_seconds / sweep_signal_seconds))
+
+
+def _persisted_scanner_capture_elapsed_ms(bundle: PublishedScannerIqBundle) -> float:
+    frames = bundle.manifest.frames
+    lower = min(frame.host_request_monotonic_ns_lower for frame in frames)
+    upper = max(frame.host_request_monotonic_ns_upper for frame in frames)
+    return max(0.0, (upper - lower) / 1_000_000)
 
 
 def _environment_bool(values: Mapping[str, str], name: str, default: bool) -> bool:
@@ -224,8 +258,9 @@ class CliSettings:
     fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
     scanner_enabled: bool = False
     scanner_radio_id: str | None = None
-    scanner_interval_seconds: float = 180.0
-    scanner_maximum_lateness_seconds: float = 180.0
+    scanner_interval_seconds: float = 1_200.0
+    scanner_maximum_lateness_seconds: float = 120.0
+    scanner_run_seconds: float = 300.0
     scanner_dwell_ms: int = 120
     scanner_gain_db: float = 40.0
     scanner_margin_gate: float = 0.025
@@ -256,6 +291,8 @@ class CliSettings:
             raise ValueError("scanner interval must be positive")
         if self.scanner_maximum_lateness_seconds < 0:
             raise ValueError("scanner maximum lateness cannot be negative")
+        if not 0 < self.scanner_run_seconds <= 1_800:
+            raise ValueError("scanner run duration is outside its operational bound")
         if self.scanner_dwell_ms < 20 or self.scanner_dwell_ms > 5_000:
             raise ValueError("scanner dwell is outside its operational bound")
         if self.scanner_dwell_ms % 20:
@@ -340,10 +377,11 @@ class CliSettings:
                 fixture_authorities=fixture_authorities,
                 scanner_enabled=_environment_bool(values, "LEO_SCANNER_ENABLED", False),
                 scanner_radio_id=values.get("LEO_SCANNER_RADIO_ID"),
-                scanner_interval_seconds=float(values.get("LEO_SCANNER_INTERVAL_SECONDS", "180")),
+                scanner_interval_seconds=float(values.get("LEO_SCANNER_INTERVAL_SECONDS", "1200")),
                 scanner_maximum_lateness_seconds=float(
-                    values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "180")
+                    values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "120")
                 ),
+                scanner_run_seconds=float(values.get("LEO_SCANNER_RUN_SECONDS", "300")),
                 scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "120")),
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
@@ -371,6 +409,9 @@ class CompositionHooks:
     recording_store_factory: RecordingStoreFactory = RecordingStore
     scanner_iq_store_factory: ScannerIqStoreFactory = ScannerIqStore
     scanner_analysis_store_factory: ScannerAnalysisStoreFactory = ScannerAnalysisStore
+    scanner_run_store_factory: ScannerRunStoreFactory = ScannerRunStore
+    scanner_monotonic: Callable[[], float] = time.monotonic
+    scanner_utc_ns: Callable[[], int] = time.time_ns
     capture_observer: CaptureObserver = lambda _result: None
     processing_backend_factory: ProcessingBackendFactory | None = None
     calibration_backend_factory: CalibrationBackendFactory | None = None
@@ -385,6 +426,7 @@ class LocalAcquisitionBackend:
         self._store: RecordingStore | None = None
         self._scanner_iq: ScannerIqStore | None = None
         self._scanner_analysis: ScannerAnalysisStore | None = None
+        self._scanner_runs: ScannerRunStore | None = None
         self._capture_authority: LocalCaptureAuthority | None = None
         self._processing_backend: ProcessingCliBackend | None = None
         self._calibration_backend: CalibrationCliBackend | None = None
@@ -1032,6 +1074,35 @@ class LocalAcquisitionBackend:
         return ScheduledScannerConfiguration(
             interval_seconds=self.settings.scanner_interval_seconds,
             maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
+            run_duration_seconds=self.settings.scanner_run_seconds,
+        )
+
+    def scheduled_scanner_intent(
+        self,
+        *,
+        operation_key: str,
+        scheduled_for: datetime,
+    ) -> ScheduledScannerRunIntentV1:
+        if not self.settings.scanner_enabled:
+            raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
+        assert self.settings.scanner_radio_id is not None
+        configured = next(
+            radio
+            for radio in self.settings.radios
+            if radio.radio_id == self.settings.scanner_radio_id
+        )
+        return compile_scheduled_scanner_run_intent_v1(
+            operation_key=operation_key,
+            radio_id=configured.radio_id,
+            radio_serial=configured.serial or configured.radio_id,
+            scheduled_for=scheduled_for,
+            interval_seconds=self.settings.scanner_interval_seconds,
+            maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
+            run_duration_seconds=self.settings.scanner_run_seconds,
+            dwell_ms=self.settings.scanner_dwell_ms,
+            gain_db=self.settings.scanner_gain_db,
+            margin_gate=self.settings.scanner_margin_gate,
+            maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
         )
 
     def reconcile_scanner_recordings(self) -> None:
@@ -1048,78 +1119,379 @@ class LocalAcquisitionBackend:
                 len(result.failed),
             )
 
-    def capture_scheduled_scanner(self) -> ScheduledScannerBurst:
+    def capture_scheduled_scanner(
+        self,
+        intent: ScheduledScannerRunIntentV1,
+        *,
+        cancel: Event,
+    ) -> ScheduledScannerRun:
         if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
-        configured = self.hooks.scanner_radio_selector(self.settings.radios)
+        expected = self.scheduled_scanner_intent(
+            operation_key=intent.operation_key,
+            scheduled_for=intent.scheduled_for,
+        )
+        if intent != expected:
+            raise CliBackendError(
+                "scheduled scanner intent disagrees with runtime policy",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        configured = next(
+            radio for radio in self.settings.radios if radio.radio_id == intent.radio_id
+        )
         radio_id = configured.radio_id
         assert configured.host is not None
-        configuration = ScannerConfigurationV2(
-            gain_db=self.settings.scanner_gain_db,
-            glrt64_margin_gate=self.settings.scanner_margin_gate,
-            dwell_ms=self.settings.scanner_dwell_ms,
-            maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
-            targets=current_low_band_targets(),
+        configuration = intent.configuration
+        maximum_sweeps = _maximum_scanner_run_sweeps(intent)
+        run_id = f"scan-run-{intent.intent_digest.removeprefix('sha256:')[:16]}"
+        stamp = intent.scheduled_for.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
+        try:
+            existing = self._scanner_run_store().inspect(run_id)
+        except BundleNotFoundError:
+            pass
+        else:
+            if existing.manifest.intent != intent:
+                raise CliBackendError(
+                    "persisted scanner run disagrees with the scheduled intent",
+                    ExitCode.CONFLICT,
+                )
+            return ScheduledScannerRun(
+                intent=intent,
+                published=existing,
+                sweeps=self._restore_scheduled_scanner_sweeps(existing.manifest),
+            )
+        self._admit_scanner_iq(configuration, scan_count=maximum_sweeps)
+        references = list(
+            self._recover_scheduled_scanner_sweeps(
+                intent,
+                run_id=run_id,
+                stamp=stamp,
+                maximum_sweeps=maximum_sweeps,
+            )
         )
-        self._admit_scanner_iq(configuration, scan_count=SCANNER_BURST_SIZE)
-        burst_id = f"scan-burst-{uuid4().hex[:16]}"
-        scan_ids = tuple(f"{burst_id}-{index + 1:02d}" for index in range(SCANNER_BURST_SIZE))
+        run_started_utc_ns = self.hooks.scanner_utc_ns()
+        run_started = self.hooks.scanner_monotonic()
+        scanner_radio = self._scanner_radio(configured)
+        identity = scanner_radio.identity
+        close_failure: ScannerCloseFailureEvidenceV1 | None = None
+        status: Literal["complete", "cancelled", "failed"] = "failed"
+        stop_reason = "scanner run did not start"
+        opened = False
         try:
             with self._authority().claim(
                 (radio_id,),
-                task_id=f"scheduled-scan-{uuid4().hex[:16]}",
+                task_id=run_id,
                 task_kind=CaptureTaskKind.SCANNER_SWEEP,
             ):
-                scanner_radio = self._scanner_radio(configured)
-                captured_sweeps = tuple(
-                    capture_scan_sweep(scanner_radio, configuration)
-                    for _ in range(SCANNER_BURST_SIZE)
-                )
+                try:
+                    if not cancel.is_set() and len(references) < maximum_sweeps:
+                        identity = scanner_radio.open()
+                        opened = True
+                        scanner_radio.configure_once(configuration)
+                        deadline = run_started + intent.run_duration_seconds
+                        pending: Future[ScheduledScannerSweepReference] | None = None
+                        with ThreadPoolExecutor(
+                            max_workers=1,
+                            thread_name_prefix="leo-scanner-publish",
+                        ) as publisher:
+                            while (
+                                not cancel.is_set()
+                                and len(references) + (pending is not None) < maximum_sweeps
+                                and (pending is None or self.hooks.scanner_monotonic() < deadline)
+                            ):
+                                sweep_number = (
+                                    len(references) + (1 if pending is not None else 0) + 1
+                                )
+                                captured = capture_configured_scan_sweep(
+                                    scanner_radio,
+                                    configuration,
+                                    identity=identity,
+                                )
+                                if pending is not None:
+                                    references.append(pending.result())
+                                scan_id = (
+                                    f"scan-{run_id.removeprefix('scan-run-')}-{sweep_number:04d}"
+                                )
+                                output_path = self._scheduled_scanner_report_path(
+                                    stamp=stamp,
+                                    scan_id=scan_id,
+                                )
+                                pending = publisher.submit(
+                                    self._publish_scheduled_scanner_sweep,
+                                    captured,
+                                    scan_id=scan_id,
+                                    output_path=output_path,
+                                )
+                            if pending is not None:
+                                references.append(pending.result())
+                    if cancel.is_set():
+                        status = "cancelled"
+                        stop_reason = "capture cancellation requested between complete sweeps"
+                    else:
+                        status = "complete"
+                        stop_reason = (
+                            f"{intent.run_duration_seconds:g}-second capture window "
+                            "reached at a sweep boundary"
+                        )
+                except Exception as error:
+                    status = "failed"
+                    stop_reason = f"{type(error).__name__}: {error}"[:2048]
+                finally:
+                    if opened:
+                        try:
+                            scanner_radio.close()
+                        except Exception as error:
+                            close_failure = ScannerCloseFailureEvidenceV1(
+                                exception_type=type(error).__name__,
+                                message=(
+                                    str(error) or "radio close failed without an exception message"
+                                )[:2048],
+                            )
+                            status = "failed"
+                            stop_reason = "scanner radio close failed"
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
-        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-        captures = tuple(
-            ScheduledScannerCapture(
-                captured=captured,
-                output_path=(
-                    self.settings.scanner_report_root
-                    / f"starlink-scan-{stamp}-{index + 1:02d}-{scan_id}.json"
-                ),
-                scan_id=scan_id,
-                iq_bundle=self._scanner_iq_store().publish(scan_id, captured),
-            )
-            for index, (scan_id, captured) in enumerate(zip(scan_ids, captured_sweeps, strict=True))
+        finalized_utc_ns = max(run_started_utc_ns, self.hooks.scanner_utc_ns())
+        manifest = ScannerRunManifestV1(
+            run_id=run_id,
+            intent=intent,
+            radio_id=identity.radio_id,
+            radio_serial=identity.serial,
+            radio_uri=identity.uri,
+            started_utc_ns=run_started_utc_ns,
+            finalized_utc_ns=finalized_utc_ns,
+            capture_elapsed_ms=max(
+                0.0,
+                (self.hooks.scanner_monotonic() - run_started) * 1_000,
+            ),
+            status=status,
+            stop_reason=stop_reason,
+            sweeps=tuple(
+                ScannerRunSweepEntryV1(
+                    scan_id=reference.scan_id,
+                    capture_elapsed_ms=reference.capture_elapsed_ms,
+                    iq_bundle_uri=(
+                        None if reference.iq_bundle is None else reference.iq_bundle.uri
+                    ),
+                    iq_manifest_sha256=(
+                        None if reference.iq_bundle is None else reference.iq_bundle.manifest_sha256
+                    ),
+                    report_filename=reference.output_path.name,
+                )
+                for reference in references
+            ),
+            close_failure=close_failure,
         )
-        return ScheduledScannerBurst(burst_id=burst_id, captures=captures)
+        published = self._scanner_run_store().publish(manifest)
+        return ScheduledScannerRun(intent=intent, published=published, sweeps=tuple(references))
 
     def analyze_scheduled_scanner(
-        self, burst: ScheduledScannerBurst
-    ) -> ScannerCaptureBurstReportLike:
-        reports: list[ScannerReportV2 | ScannerReportV3 | ScannerReportV4] = []
-        for capture in burst.captures:
+        self,
+        run: ScheduledScannerRun,
+    ) -> ScheduledScannerRunAnalysis:
+        reports: list[ScannerReportV2 | ScannerReportV3 | ScannerReportV4 | ScannerReportV5] = []
+        for capture in run.sweeps:
             report = (
                 run_published_standard_scanner_analysis(
                     self._scanner_iq_store(),
                     self._scanner_analysis_store(),
                     capture.iq_bundle,
-                    capture_elapsed_ms=capture.captured.capture_elapsed_ms,
+                    capture_elapsed_ms=capture.capture_elapsed_ms,
                 )
-                if capture.iq_bundle is not None and capture.captured.close_failure is None
-                else analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
+                if capture.iq_bundle is not None
+                else capture.fallback_report
             )
-            write_scanner_report(capture.output_path, report)
-            if not isinstance(report, (ScannerReportV2, ScannerReportV3, ScannerReportV4)):
-                raise TypeError("scheduled scanner V2 capture produced a legacy report")
+            assert report is not None
+            self._write_scheduled_scanner_report(capture.output_path, report)
+            if not isinstance(
+                report,
+                (ScannerReportV2, ScannerReportV3, ScannerReportV4, ScannerReportV5),
+            ):
+                raise TypeError("scheduled scanner capture produced a legacy report")
             reports.append(report)
-        if any(isinstance(report, ScannerReportV4) for report in reports):
-            return ScannerBurstReportV4(burst_id=burst.burst_id, reports=tuple(reports))
-        if any(isinstance(report, ScannerReportV3) for report in reports):
-            return ScannerBurstReportV3.model_validate(
-                {"burst_id": burst.burst_id, "reports": tuple(reports)}
-            )
-        return ScannerBurstReportV2.model_validate(
-            {"burst_id": burst.burst_id, "reports": tuple(reports)}
+        return ScheduledScannerRunAnalysis(
+            run_id=run.published.run_id,
+            sweep_count=len(reports),
+            active_edge_count=sum(len(report.active_edges) for report in reports),
+            failed_sweep_count=sum(
+                not report.continuity_observable
+                for report in reports
+                if isinstance(report, (ScannerReportV3, ScannerReportV4, ScannerReportV5))
+            ),
         )
+
+    def _publish_scheduled_scanner_sweep(
+        self,
+        captured,
+        *,
+        scan_id: str,
+        output_path: Path,
+    ) -> ScheduledScannerSweepReference:
+        bundle = self._scanner_iq_store().publish(scan_id, captured)
+        fallback = None if bundle is not None else analyze_scan_sweep(captured, scan_id=scan_id)
+        if fallback is not None:
+            self._write_scheduled_scanner_report(output_path, fallback)
+        return ScheduledScannerSweepReference(
+            scan_id=scan_id,
+            output_path=output_path,
+            capture_elapsed_ms=captured.capture_elapsed_ms,
+            iq_bundle=bundle,
+            fallback_report=fallback,
+        )
+
+    def _restore_scheduled_scanner_sweeps(
+        self,
+        manifest: ScannerRunManifestV1,
+    ) -> tuple[ScheduledScannerSweepReference, ...]:
+        references: list[ScheduledScannerSweepReference] = []
+        for entry in manifest.sweeps:
+            if (
+                entry.report_filename is None
+                or Path(entry.report_filename).name != entry.report_filename
+            ):
+                raise CliBackendError(
+                    "persisted scanner run has an invalid report filename",
+                    ExitCode.CONFLICT,
+                )
+            output_path = self.settings.scanner_report_root / entry.report_filename
+            if entry.iq_bundle_uri is not None:
+                bundle = self._scanner_iq_store().inspect(entry.scan_id)
+                if (
+                    bundle.uri != entry.iq_bundle_uri
+                    or bundle.manifest_sha256 != entry.iq_manifest_sha256
+                    or bundle.manifest.configuration != manifest.intent.configuration
+                    or bundle.manifest.radio_id != manifest.intent.radio_id
+                    or bundle.manifest.radio_serial != manifest.intent.radio_serial
+                ):
+                    raise CliBackendError(
+                        "persisted scanner sweep disagrees with its run manifest",
+                        ExitCode.CONFLICT,
+                    )
+                fallback: ScannerCaptureReportLike | None = None
+            else:
+                bundle = None
+                fallback = self._read_scheduled_scanner_fallback(
+                    output_path,
+                    scan_id=entry.scan_id,
+                    intent=manifest.intent,
+                )
+            references.append(
+                ScheduledScannerSweepReference(
+                    scan_id=entry.scan_id,
+                    output_path=output_path,
+                    capture_elapsed_ms=entry.capture_elapsed_ms,
+                    iq_bundle=bundle,
+                    fallback_report=fallback,
+                )
+            )
+        return tuple(references)
+
+    def _recover_scheduled_scanner_sweeps(
+        self,
+        intent: ScheduledScannerRunIntentV1,
+        *,
+        run_id: str,
+        stamp: str,
+        maximum_sweeps: int,
+    ) -> tuple[ScheduledScannerSweepReference, ...]:
+        recovered: list[ScheduledScannerSweepReference] = []
+        for sweep_number in range(1, maximum_sweeps + 1):
+            scan_id = f"scan-{run_id.removeprefix('scan-run-')}-{sweep_number:04d}"
+            output_path = self._scheduled_scanner_report_path(stamp=stamp, scan_id=scan_id)
+            try:
+                bundle = self._scanner_iq_store().inspect(scan_id)
+            except BundleNotFoundError:
+                if not output_path.exists():
+                    break
+                fallback = self._read_scheduled_scanner_fallback(
+                    output_path,
+                    scan_id=scan_id,
+                    intent=intent,
+                )
+                recovered.append(
+                    ScheduledScannerSweepReference(
+                        scan_id=scan_id,
+                        output_path=output_path,
+                        capture_elapsed_ms=fallback.capture_elapsed_ms,
+                        iq_bundle=None,
+                        fallback_report=fallback,
+                    )
+                )
+                continue
+            if bundle.manifest.configuration != intent.configuration:
+                raise CliBackendError(
+                    "orphaned scanner sweep disagrees with the scheduled intent",
+                    ExitCode.CONFLICT,
+                )
+            if (
+                bundle.manifest.radio_id != intent.radio_id
+                or bundle.manifest.radio_serial != intent.radio_serial
+            ):
+                raise CliBackendError(
+                    "orphaned scanner sweep has the wrong radio identity",
+                    ExitCode.CONFLICT,
+                )
+            recovered.append(
+                ScheduledScannerSweepReference(
+                    scan_id=scan_id,
+                    output_path=output_path,
+                    capture_elapsed_ms=_persisted_scanner_capture_elapsed_ms(bundle),
+                    iq_bundle=bundle,
+                )
+            )
+        return tuple(recovered)
+
+    def _read_scheduled_scanner_fallback(
+        self,
+        path: Path,
+        *,
+        scan_id: str,
+        intent: ScheduledScannerRunIntentV1,
+    ) -> ScannerReportV5:
+        payload = path.read_bytes()
+        if not 0 < len(payload) <= _MAX_SCANNER_REPORT_BYTES:
+            raise CliBackendError(
+                "persisted scanner fallback report is not bounded",
+                ExitCode.CONFLICT,
+            )
+        try:
+            report = ScannerReportV5.model_validate_json(payload)
+        except Exception as error:
+            raise CliBackendError(
+                f"persisted scanner fallback report is invalid: {error}",
+                ExitCode.CONFLICT,
+            ) from error
+        if (
+            report.scan_id != scan_id
+            or report.configuration != intent.configuration
+            or report.radio_id != intent.radio_id
+            or report.radio_serial != intent.radio_serial
+        ):
+            raise CliBackendError(
+                "persisted scanner fallback report disagrees with the scheduled intent",
+                ExitCode.CONFLICT,
+            )
+        return report
+
+    @staticmethod
+    def _write_scheduled_scanner_report(
+        path: Path,
+        report: ScannerCaptureReportLike,
+    ) -> None:
+        try:
+            write_scanner_report(path, report)
+        except FileExistsError:
+            try:
+                existing = json.loads(path.read_bytes())
+            except Exception as error:
+                raise ValueError("existing scanner report is invalid") from error
+            if existing != report.model_dump(mode="json"):
+                raise ValueError(
+                    "existing scanner report disagrees with regenerated analysis"
+                ) from None
+
+    def _scheduled_scanner_report_path(self, *, stamp: str, scan_id: str) -> Path:
+        return self.settings.scanner_report_root / f"starlink-scan-{stamp}-{scan_id}.json"
 
     def qualify(
         self,
@@ -1882,6 +2254,11 @@ class LocalAcquisitionBackend:
                 self.settings.bulk_root
             )
         return self._scanner_analysis
+
+    def _scanner_run_store(self) -> ScannerRunStore:
+        if self._scanner_runs is None:
+            self._scanner_runs = self.hooks.scanner_run_store_factory(self.settings.bulk_root)
+        return self._scanner_runs
 
     def _admit_scanner_iq(
         self, configuration: ScannerConfiguration, *, scan_count: int = 1

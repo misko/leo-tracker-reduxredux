@@ -237,7 +237,7 @@ Create only the canonical local directories. Confirm all public stores share
 one filesystem before changing access:
 
 ```text
-sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
 sudo install -d -o root -g leo -m 2770 \
@@ -257,10 +257,10 @@ sudo setfacl -R -m u:leo:rX /srv/bulk/leo/recordings /srv/bulk/leo/analysis \
   /srv/bulk/leo/test-corpus /srv/bulk/leo/qualification
 sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control \
   /srv/bulk/leo/trash /srv/bulk/leo/presentation-cache \
-  /srv/bulk/leo/scanner-recordings /srv/bulk/leo/scanner-reports
+  /srv/bulk/leo/scanner-recordings /srv/bulk/leo/scanner-reports /srv/bulk/leo/scanner-runs
 sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
   -exec setfacl -m u:leo:rwx {} +
-sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports}
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx \
   /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-configs,wp11-plans,trusted-campaigns}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/wp11-plan-runs
@@ -270,6 +270,7 @@ sudo -u leo test -w /srv/bulk/leo/analysis
 sudo -u leo test -w /srv/bulk/leo/spool
 sudo -u leo test -w /srv/bulk/leo/scanner-recordings
 sudo -u leo test -w /srv/bulk/leo/scanner-reports
+sudo -u leo test -w /srv/bulk/leo/scanner-runs
 for path in release capture legacy frequency-calibration-plans \
   frequency-calibration-promotions wp11-configs wp11-plans trusted-campaigns; do
   sudo -u leo test -w "/srv/bulk/leo/qualification/$path"
@@ -336,7 +337,7 @@ required_keys=(
   LEO_CAPTURE_PROFILE_5M LEO_MIXED_RATE_POLICY LEO_DIRECT_ASYNC_ENABLED
   LEO_CAPTURE_INTERVAL_SECONDS LEO_QUALIFICATION_PROFILE LEO_SOAK_PROFILE
   LEO_SCANNER_ENABLED LEO_SCANNER_RADIO_ID LEO_SCANNER_INTERVAL_SECONDS
-  LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_DWELL_MS
+  LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_RUN_SECONDS LEO_SCANNER_DWELL_MS
   LEO_SCANNER_GAIN_DB LEO_SCANNER_MARGIN_GATE LEO_SCANNER_REPORT_ROOT
 )
 for key in "${required_keys[@]}"; do

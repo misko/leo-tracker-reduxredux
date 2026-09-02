@@ -20,6 +20,7 @@ from leo.scanner.analysis_models import (
     ScannerAnalysisMetricsV1,
     ScannerAnalysisMetricsV2,
     ScannerAnalysisMetricsV3,
+    ScannerAnalysisMetricsV4,
     ScannerFrameAnalysisV1,
     ScannerGlrt64CandidateMetricsV1,
     ScannerGlrt64ProbeMetricsV1,
@@ -32,12 +33,14 @@ from leo.scanner.models import (
     ScanEdgeResult,
     ScannerConfigurationLike,
     ScannerConfigurationV2,
+    ScannerConfigurationV3,
     ScannerFrameContinuityEvidenceLike,
     ScannerFrameContinuityEvidenceV2,
     ScannerReport,
     ScannerReportLike,
     ScannerReportV2,
     ScannerReportV4,
+    ScannerReportV5,
     ScanTarget,
 )
 from leo.scanner.pilot_doppler import build_scanner_pilot_doppler_segments
@@ -314,7 +317,9 @@ def analyze_standard_scanner(
             frame.continuity for frame in source.frames if frame.continuity is not None
         )
         metrics_type = (
-            ScannerAnalysisMetricsV3
+            ScannerAnalysisMetricsV4
+            if isinstance(source.configuration, ScannerConfigurationV3)
+            else ScannerAnalysisMetricsV3
             if any(
                 isinstance(item, ScannerFrameContinuityEvidenceV2) for item in continuity_evidence
             )
@@ -350,8 +355,14 @@ def analyze_standard_scanner(
             "results": tuple(report_results),
             "continuity_evidence": continuity_evidence,
         }
-        if any(isinstance(item, ScannerFrameContinuityEvidenceV2) for item in continuity_evidence):
-            report: ScannerReportLike = ScannerReportV4.model_validate(
+        if isinstance(source.configuration, ScannerConfigurationV3):
+            report: ScannerReportLike = ScannerReportV5.model_validate(
+                {**report_values, "continuity_observable": True}
+            )
+        elif any(
+            isinstance(item, ScannerFrameContinuityEvidenceV2) for item in continuity_evidence
+        ):
+            report = ScannerReportV4.model_validate(
                 {**report_values, "continuity_observable": True}
             )
         else:

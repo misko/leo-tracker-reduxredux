@@ -38,16 +38,32 @@ The acquisition service also schedules the configured Starlink scanner when
 `LEO_SCANNER_ENABLED=true`. The scanner radio is selected by logical radio ID;
 all acquisition entry points share a durable capture authority and kernel-held
 per-radio leases, so ordinary, scanner, soak, qualification, probe, and manual
-captures cannot overlap on the same physical radio. Each scan captures all
-eight low-band channel edges at the configured 80 ms dwell, releases the radio,
-publishes one framed, digest-verified CI16 bundle beneath
-`$LEO_BULK_ROOT/scanner-recordings/YYYY/MM/DD/<scan-id>/`, then analyzes and
-retains a timestamped JSON report beneath `LEO_SCANNER_REPORT_ROOT`. The bundle
-manifest preserves each retune's sample boundary and requested/applied IF/RF;
-the concatenated payload must not be interpreted as one fixed tuning. Each dwell
-and its following scan are durable queue operations. Backpressure, pause, and
-restart preserve rather than drop those intents, while the global radio lease
-permits only one acquisition operation at a time.
+captures cannot overlap on the same physical radio. Scanner slots are anchored
+to UTC every 20 minutes and alternate deterministically between 2.5 MS/s with a
+2.5 MHz RF bandwidth and 5 MS/s with a 5 MHz RF bandwidth. Each slot opens and
+configures the radio once, then captures complete eight-target sweeps for 300
+seconds at 120 ms per target in CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U
+order. Every target uses the maximum-coverage IF for that slot's admitted
+bandwidth.
+
+Each completed sweep is independently committed as a framed, digest-verified
+CI16 bundle beneath `$LEO_BULK_ROOT/scanner-recordings/YYYY/MM/DD/<scan-id>/`;
+one terminal run manifest is committed beneath `$LEO_BULK_ROOT/scanner-runs/`.
+The bundle manifest preserves every retune's sample boundary and
+requested/applied IF/RF, so the concatenated payload must not be interpreted as
+one fixed tuning. Standard analysis runs after RF release and startup
+reconciliation repairs any missing analysis without recapturing. Ordinary
+dwells and scanner slots are independent durable queue operations. Pause and
+restart retain their intents, slots over the configured lateness bound are
+explicitly skipped, and the global radio lease permits only one acquisition
+operation at a time.
+
+Admission rounds the 300-second window up to 313 complete sweeps. Before opening
+the radio it therefore requires, in addition to the configured safety reserve,
+6,009,600,000 raw bytes for a 2.5 MS/s slot or 12,019,200,000 raw bytes for a
+5 MS/s slot. At 72 slots per UTC day this is a conservative 649,036,800,000 raw
+bytes/day before compression; operational capacity and retention must be sized
+from that upper bound rather than an assumed compression ratio.
 
 Full recording reconciliation is recovery and maintenance work, not a readiness
 probe. API, workers, and acquisition do not order themselves behind

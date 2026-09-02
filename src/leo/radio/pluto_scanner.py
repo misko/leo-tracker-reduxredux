@@ -12,7 +12,7 @@ import numpy as np
 
 from leo.contracts.states import GainMode
 from leo.scanner.metadata import metadata_reports_rx_overflow
-from leo.scanner.models import ScannerConfigurationV2
+from leo.scanner.models import ScannerConfigurationV2, ScannerConfigurationV3
 from leo.scanner.ports import ScanRadioBlockV2, ScanRadioIdentity
 
 _LO_READBACK_TOLERANCE_HZ = 10
@@ -61,7 +61,7 @@ class PlutoSequentialScanRadio:
         self._utc_ns = utc_ns
         self._monotonic_ns = monotonic_ns
         self._device: Any | None = None
-        self._configuration: ScannerConfigurationV2 | None = None
+        self._configuration: ScannerConfigurationV2 | ScannerConfigurationV3 | None = None
         self._metadata_abi_version: int | None = None
         self._reset_episode = 0
         self._stream_generations: set[int] = set()
@@ -106,7 +106,9 @@ class PlutoSequentialScanRadio:
                     device.close()
             raise
 
-    def configure_once(self, configuration: ScannerConfigurationV2) -> None:
+    def configure_once(
+        self, configuration: ScannerConfigurationV2 | ScannerConfigurationV3
+    ) -> None:
         device = self._require_device()
         if not isinstance(configuration, ScannerConfigurationV2):
             raise PlutoScannerError("live scanner capture requires ScannerConfigurationV2")
@@ -221,7 +223,7 @@ class PlutoSequentialScanRadio:
 def _map_metadata_block(
     upstream: Any,
     *,
-    configuration: ScannerConfigurationV2,
+    configuration: ScannerConfigurationV2 | ScannerConfigurationV3,
     metadata_abi_version: int,
     requested_if_center_hz: int,
     actual_if_center_hz: int,
@@ -348,7 +350,10 @@ def _require_metadata_api(device: Any) -> None:
             raise PlutoScannerError(f"installed pluto-plus-utils lacks required {name} API")
 
 
-def _validate_settings_readback(configuration: ScannerConfigurationV2, actual: Any) -> None:
+def _validate_settings_readback(
+    configuration: ScannerConfigurationV2 | ScannerConfigurationV3,
+    actual: Any,
+) -> None:
     expected = {
         "sample_rate_hz": configuration.sample_rate_hz,
         "bandwidth_hz": configuration.bandwidth_hz,
