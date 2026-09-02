@@ -139,3 +139,20 @@ class ScannerRunStore:
             manifest=manifest,
             manifest_sha256=sha256_digest(payload),
         )
+
+    def run_ids(self) -> tuple[str, ...]:
+        """Return immutable terminal run IDs in oldest-first order."""
+
+        runs: list[tuple[int, str]] = []
+        for candidate in self.runs_root.glob("*/*/*/*"):
+            if not _IDENTIFIER.fullmatch(candidate.name):
+                continue
+            try:
+                path = confined_path(self.runs_root, candidate, must_exist=True)
+                metadata = path.stat(follow_symlinks=False)
+            except (FileNotFoundError, ValueError):
+                continue
+            if not stat.S_ISDIR(metadata.st_mode) or path.is_symlink():
+                continue
+            runs.append((metadata.st_mtime_ns, path.name))
+        return tuple(run_id for _modified_ns, run_id in sorted(runs))

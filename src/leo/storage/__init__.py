@@ -9,7 +9,11 @@ from leo.storage.errors import (
 )
 from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
-from leo.storage.scanner_analysis import PublishedScannerAnalysisBundle, ScannerAnalysisStore
+from leo.storage.scanner_analysis import (
+    FallbackScannerCaptureTimeReader,
+    PublishedScannerAnalysisBundle,
+    ScannerAnalysisStore,
+)
 from leo.storage.scanner_analysis_source import (
     live_scanner_analysis_source,
     replay_scanner_analysis_source,
@@ -49,6 +53,7 @@ __all__ = [
     "DeviceAxisStreamBundleWriter",
     "DeviceAxisStreamWriteReceipt",
     "DeviceIqSpan",
+    "FallbackScannerCaptureTimeReader",
     "PathConfinementError",
     "PublishedBundle",
     "PublishedScannerAnalysisBundle",

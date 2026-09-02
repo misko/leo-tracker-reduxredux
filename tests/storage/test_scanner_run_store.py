@@ -61,6 +61,7 @@ def test_scanner_run_store_atomically_publishes_and_reopens_manifest(tmp_path) -
     assert reopened.manifest == manifest
     assert reopened.manifest_sha256 == published.manifest_sha256
     assert reopened.uri.endswith("/scanner-runs/2023/11/14/scan-run-test")
+    assert store.run_ids() == ("scan-run-test",)
     assert list(store.spool_root.iterdir()) == []
 
 

@@ -81,9 +81,23 @@ separate scanner service or timer to coordinate.
 For the initial two-rate canary, keep the service environment disabled and use
 the runbook's `leo acquire run --scanner-only --max-scanner-runs 2` procedure.
 This bounded mode never enqueues or claims ordinary dwells, but it still honors
-the durable pause state and global radio-owner lease. Do not enable unattended
-scanner slots until the scanner-IQ retention workflow has been reviewed and
-tested.
+the durable pause state and global radio-owner lease. It defers Standard
+analysis until the normal, still-paused acquisition service performs startup
+reconciliation, keeping the 29-minute canary guard focused on RF capture and
+durable run publication.
+
+Scanner IQ participates in the same 70%-to-65% local watermarked retention
+plan as ordinary recordings. A scanner bundle is eligible only when an exact
+IQ URI/digest reference belongs to a terminal `complete` scanner run and an
+allowed Standard analysis manifest names that same input. Execution verifies
+the complete analysis products again, stages the exact dated IQ bundle in
+local trash, and commits an append-only tombstone containing its immutable IQ
+manifest before deletion. Recovery restores a pre-tombstone stage and discards
+a post-tombstone stage. Run manifests, reports, analysis products, and their UI
+capture-time history remain available; QNAP is never a retention target.
+
+Do not enable unattended scanner slots until the bounded RF canary and the
+scanner-retention dry-run/recovery checks in the runbook have both passed.
 
 The independent `leo-release-qualification.timer` owns no radio or production
 data. It runs the protected detector/processing corpus and compiled Chromium

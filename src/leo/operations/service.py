@@ -25,18 +25,28 @@ from leo.contracts.recording import (
     RecordingStreamV3,
 )
 from leo.operations.retention import (
+    HIGH_WATERMARK,
     HoldReceipt,
     HoldReceiptStore,
     PurgeExecutor,
     PurgeReceipt,
     RetentionCandidate,
     RetentionDecision,
+    ScannerPurgeTombstone,
+    ScannerPurgeTombstoneStore,
     StorageUsage,
     allocated_bytes,
     plan_retention,
 )
 from leo.station.resolver import ResolvedCaptureAuthority, UnreviewedTestFixtureAuthorityError
-from leo.storage import PublishedBundle, ReconcileIssueKind, RecordingStore
+from leo.storage import (
+    PublishedBundle,
+    ReconcileIssueKind,
+    RecordingStore,
+    ScannerAnalysisStore,
+    ScannerIqStore,
+    ScannerRunStore,
+)
 
 FailureInjector = Callable[[str], None]
 
@@ -122,15 +132,45 @@ class CatalogRetentionService:
         holds: HoldReceiptStore,
         executor: PurgeExecutor,
         *,
+        scanner_iq: ScannerIqStore | None = None,
+        scanner_analysis: ScannerAnalysisStore | None = None,
+        scanner_runs: ScannerRunStore | None = None,
+        scanner_tombstones: ScannerPurgeTombstoneStore | None = None,
+        scanner_analysis_ids: tuple[str, ...] = (),
         lease_for: timedelta = timedelta(minutes=10),
         failure_injector: FailureInjector | None = None,
     ) -> None:
         if recordings.root != executor.bulk_root or holds.bulk_root != executor.bulk_root:
             raise ValueError("retention components must share one local bulk root")
+        scanner_components = (scanner_iq, scanner_analysis, scanner_runs, scanner_tombstones)
+        if any(item is not None for item in scanner_components) != all(
+            item is not None for item in scanner_components
+        ):
+            raise ValueError("scanner retention components must be configured together")
+        if scanner_iq is not None:
+            assert (
+                scanner_analysis is not None
+                and scanner_runs is not None
+                and scanner_tombstones is not None
+            )
+            if (
+                scanner_iq.root != executor.bulk_root
+                or scanner_analysis.root != executor.bulk_root
+                or scanner_runs.root != executor.bulk_root
+                or scanner_tombstones.bulk_root != executor.bulk_root
+            ):
+                raise ValueError("scanner retention components must share one local bulk root")
+            if not scanner_analysis_ids:
+                raise ValueError("scanner retention requires allowed analysis IDs")
         self._catalog = catalog
         self._recordings = recordings
         self._holds = holds
         self._executor = executor
+        self._scanner_iq = scanner_iq
+        self._scanner_analysis = scanner_analysis
+        self._scanner_runs = scanner_runs
+        self._scanner_tombstones = scanner_tombstones
+        self._scanner_analysis_ids = scanner_analysis_ids
         self._lease_for = lease_for
         self._failure_injector = failure_injector
 
@@ -143,16 +183,21 @@ class CatalogRetentionService:
     def run(
         self, usage: StorageUsage | None = None, *, dry_run: bool = False
     ) -> RetentionRunResult:
+        selected_usage = self.storage_usage() if usage is None else usage
         catalog_candidates = self._catalog.retention_candidates()
-        candidates = tuple(
+        candidates = [
             RetentionCandidate(
                 session_id=f"{item.kind}:{item.item_id}",
                 created_utc_ns=int(item.created_at.timestamp() * 1_000_000_000),
                 allocated_bytes=item.allocated_bytes,
             )
             for item in catalog_candidates
-        )
-        decision = plan_retention(self.storage_usage() if usage is None else usage, candidates)
+        ]
+        scanner_inputs: dict[str, tuple[str, str]] = {}
+        if selected_usage.fraction >= HIGH_WATERMARK:
+            scanner_candidates, scanner_inputs = self._scanner_retention_candidates()
+            candidates.extend(scanner_candidates)
+        decision = plan_retention(selected_usage, tuple(candidates))
         if dry_run or not decision.should_run:
             return RetentionRunResult(decision=decision, committed=(), failures=())
 
@@ -161,11 +206,19 @@ class CatalogRetentionService:
         for work_id in decision.selected_session_ids:
             kind, item_id = work_id.split(":", 1)
             try:
-                accepted = (
-                    self._purge_session(item_id)
-                    if kind == "session"
-                    else self._purge_artifact(int(item_id))
-                )
+                if kind == "session":
+                    accepted = self._purge_session(item_id)
+                elif kind == "artifact":
+                    accepted = self._purge_artifact(int(item_id))
+                elif kind == "scanner":
+                    expected_input = scanner_inputs.get(item_id)
+                    if expected_input is None:
+                        raise InvalidStateError(
+                            "scanner retention candidate lost its completed-run fence"
+                        )
+                    accepted = self._purge_scanner(item_id, expected_input=expected_input)
+                else:
+                    raise ValueError(f"unknown retention candidate kind: {kind}")
             except Exception as error:
                 failures.append(f"{work_id}: {type(error).__name__}: {error}")
             else:
@@ -181,6 +234,17 @@ class CatalogRetentionService:
         restored: list[str] = []
         discarded: list[str] = []
         for receipt in self._executor.pending():
+            if receipt.kind == "scanner":
+                if self._scanner_tombstones is None:
+                    raise RuntimeError("scanner purge recovery is not configured")
+                identity = f"scanner:{receipt.item_id}"
+                if self._scanner_tombstones.commits(receipt):
+                    self._executor.discard_staged(receipt)
+                    discarded.append(identity)
+                else:
+                    self._executor.restore(receipt)
+                    restored.append(identity)
+                continue
             disposition = self._catalog.purge_disposition(
                 kind=receipt.kind,
                 item_id=receipt.item_id,
@@ -211,6 +275,45 @@ class CatalogRetentionService:
                 )
             restored.append(identity)
         return RecoveryResult(restored=tuple(restored), discarded=tuple(discarded))
+
+    def _scanner_retention_candidates(
+        self,
+    ) -> tuple[tuple[RetentionCandidate, ...], dict[str, tuple[str, str]]]:
+        if self._scanner_iq is None or self._scanner_analysis is None or self._scanner_runs is None:
+            return (), {}
+        completed_inputs: dict[str, tuple[str, str]] = {}
+        for run_id in self._scanner_runs.run_ids():
+            run = self._scanner_runs.inspect(run_id)
+            if run.manifest.status != "complete":
+                continue
+            for sweep in run.manifest.sweeps:
+                if sweep.iq_bundle_uri is None or sweep.iq_manifest_sha256 is None:
+                    continue
+                reference = (sweep.iq_bundle_uri, sweep.iq_manifest_sha256)
+                previous = completed_inputs.setdefault(sweep.scan_id, reference)
+                if previous != reference:
+                    raise InvalidStateError("completed scanner runs disagree about one IQ bundle")
+        candidates: list[RetentionCandidate] = []
+        for scan_id in self._scanner_iq.recording_ids():
+            bundle = self._scanner_iq.inspect(scan_id)
+            if completed_inputs.get(scan_id) != (bundle.uri, bundle.manifest_sha256):
+                continue
+            if not self._scanner_analysis.has_matching_input(
+                scan_id,
+                self._scanner_analysis_ids,
+                input_uri=bundle.uri,
+                input_manifest_sha256=bundle.manifest_sha256,
+                verify_products=False,
+            ):
+                continue
+            candidates.append(
+                RetentionCandidate(
+                    session_id=f"scanner:{scan_id}",
+                    created_utc_ns=bundle.manifest.created_utc_ns,
+                    allocated_bytes=allocated_bytes(bundle.path),
+                )
+            )
+        return tuple(candidates), completed_inputs
 
     def _purge_session(self, session_id: str) -> bool:
         token = uuid.uuid4().hex
@@ -275,6 +378,58 @@ class CatalogRetentionService:
                 item_id=str(product_id),
                 token=token,
             )
+            raise
+
+    def _purge_scanner(
+        self,
+        scan_id: str,
+        *,
+        expected_input: tuple[str, str],
+    ) -> bool:
+        if (
+            self._scanner_iq is None
+            or self._scanner_analysis is None
+            or self._scanner_tombstones is None
+        ):
+            raise RuntimeError("scanner retention is not configured")
+        token = uuid.uuid4().hex
+        bundle = self._scanner_iq.inspect(scan_id)
+        if (bundle.uri, bundle.manifest_sha256) != expected_input:
+            raise InvalidStateError("scanner IQ changed after retention selection")
+        if not self._scanner_analysis.has_matching_input(
+            scan_id,
+            self._scanner_analysis_ids,
+            input_uri=bundle.uri,
+            input_manifest_sha256=bundle.manifest_sha256,
+            verify_products=True,
+        ):
+            return False
+        receipt: PurgeReceipt | None = None
+        try:
+            receipt = self._executor.stage_scanner(
+                bundle.path,
+                scan_id=scan_id,
+                claim_token=token,
+            )
+            self._inject("scanner:after_stage")
+            self._scanner_tombstones.put(
+                ScannerPurgeTombstone(
+                    schema_version=1,
+                    scan_id=scan_id,
+                    claim_token=token,
+                    iq_bundle_uri=bundle.uri,
+                    iq_manifest_sha256=bundle.manifest_sha256,
+                    iq_manifest=bundle.manifest.model_dump(mode="json"),
+                    original_path=receipt.original_path,
+                    staged_bytes=receipt.staged_bytes,
+                    purged_utc_ns=time.time_ns(),
+                )
+            )
+            self._inject("scanner:after_commit")
+            return True
+        except Exception:
+            if receipt is not None and not self._scanner_tombstones.commits(receipt):
+                self._executor.restore(receipt)
             raise
 
     def _restore_if_uncommitted(

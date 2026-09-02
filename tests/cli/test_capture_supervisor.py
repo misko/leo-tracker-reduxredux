@@ -99,6 +99,7 @@ class _SupervisorBackend:
         self.capture_times: list[float] = []
         self.scanner_capture_times: list[float] = []
         self.events: list[str] = []
+        self.analysis_calls: list[str] = []
         self.analyzed = Event()
         self.scanner_status = "complete"
         self.scanner_stop_reason = "complete"
@@ -162,6 +163,7 @@ class _SupervisorBackend:
         )
 
     def analyze_scheduled_scanner(self, capture) -> ScheduledScannerRunAnalysis:
+        self.analysis_calls.append(capture.published.run_id)
         assert self.analyzed.wait(timeout=2.0)
         return ScheduledScannerRunAnalysis(
             run_id=capture.published.run_id,
@@ -919,6 +921,7 @@ def test_durable_scanner_only_is_bounded_and_does_not_consume_ordinary_work() ->
     assert summary.scanner_run_count == 2
     assert backend.capture_times == []
     assert backend.scanner_capture_times == [0.0, 5.0]
+    assert backend.analysis_calls == []
     assert ordinary.state == "pending"
     assert ordinary.attempt_count == 0
     assert [item.state for item in scanners] == ["succeeded", "succeeded"]
