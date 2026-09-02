@@ -348,6 +348,7 @@ def _assert_native_products(
                     "standard.native-stateful-path",
                     "standard.pilot-doppler-segments",
                     "standard.full-capture-glrt20ms",
+                    "standard.glrt-fractional-epoch",
                     "standard.path-report",
                 }
                 assert {item.scope_key for item in dependencies} == {product.scope_key}
@@ -493,6 +494,7 @@ def _assert_native_products(
                 "standard.native-stateful-path",
                 "standard.pilot-doppler-segments",
                 "standard.full-capture-glrt20ms",
+                "standard.glrt-fractional-epoch",
                 "standard.path-report",
             }
             stateful_product = next(
@@ -666,7 +668,7 @@ def _run_native_current(
     assert published.manifest.processing_status == "succeeded"
 
     seal = database.catalog.run_seal_snapshot(result.run_id)
-    assert len(seal.products) == 125
+    assert len(seal.products) == 129
     assert sum(item.media_type == "image/png" for item in seal.products) == 74
     _assert_native_products(
         database,
