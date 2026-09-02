@@ -553,25 +553,28 @@ def _run_manual_native_evidence(
     assert result.pipeline_family == "standard-native-evidence-v1"
     assert result.promotion_policy == "evidence_only"
     assert result.previous_current_run_id == previous_current
-    assert result.queued_job_count == 12
+    assert result.queued_job_count == 16
     _assert_v5_bindings(database, result.run_id, manifest)
 
     executions = []
     while execution := service.run_once(worker_id="standard-native-operational-worker"):
         executions.append(execution)
         assert execution.succeeded, execution.error
-    assert len(executions) == 12
+    assert len(executions) == 16
     service.finalize_run(result.run_id)
     seal = database.catalog.run_seal_snapshot(result.run_id)
-    assert len(seal.jobs) == 12
+    assert len(seal.jobs) == 16
     assert {item.state for item in seal.jobs} == {"succeeded"}
     outcomes = Counter(item.outcome for item in seal.jobs)
     if gapped_radio_id is None:
-        assert outcomes == {StageOutcome.COMPLETE.value: 8, StageOutcome.INSUFFICIENT_DATA.value: 4}
+        assert outcomes == {
+            StageOutcome.COMPLETE.value: 12,
+            StageOutcome.INSUFFICIENT_DATA.value: 4,
+        }
     else:
         assert outcomes == {
-            StageOutcome.COMPLETE.value: 3,
-            StageOutcome.PARTIAL_COVERAGE.value: 5,
+            StageOutcome.COMPLETE.value: 5,
+            StageOutcome.PARTIAL_COVERAGE.value: 7,
             StageOutcome.INSUFFICIENT_DATA.value: 4,
         }
     assert seal.execution.trigger == "reprocess"
@@ -603,7 +606,7 @@ def _run_native_current(
     previous_current = database.catalog.current_run_id(manifest.session_id)
     result = application.queue(manifest.session_id)
     assert result.previous_current_run_id == previous_current
-    assert result.queued_job_count == 12
+    assert result.queued_job_count == 16
     _assert_v5_bindings(database, result.run_id, manifest)
     assert database.catalog.current_run_id(manifest.session_id) == previous_current
 
@@ -611,7 +614,7 @@ def _run_native_current(
     while execution := service.run_once(worker_id="standard-native-current-worker"):
         executions.append(execution)
         assert execution.succeeded, execution.error
-    assert len(executions) == 12
+    assert len(executions) == 16
     published = service.finalize_run(result.run_id)
     assert isinstance(published.manifest, AnalysisRunManifestV3)
     authority = published.manifest.promotion_authority
@@ -710,8 +713,8 @@ def test_real_postgres_standard_native_operational_vertical(
     registry = production_standard_native_evidence_registry()
     native_stage_configuration = production_standard_native_evidence_configuration()
     native_path_spec = registry.get("path-standard-native").spec
-    assert native_path_spec.algorithm_version == "standard-native-evidence-v12"
-    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v10"
+    assert native_path_spec.algorithm_version == "standard-native-evidence-v13"
+    assert native_path_spec.configuration_schema == "path-standard-native.evidence.v11"
     assert "probes" not in native_stage_configuration["path-standard-native"]
     configuration: dict[str, object] = {
         "display_version": "standard-native-operational-v1",
@@ -745,15 +748,15 @@ def test_real_postgres_standard_native_operational_vertical(
             manifest_digest=bundle.manifest_sha256,
             pipeline_release_id=_RELEASE,
         )
-        assert (len(native_plan.jobs), len(native_plan.edges)) == (12, 15)
+        assert (len(native_plan.jobs), len(native_plan.edges)) == (16, 15)
         assert {item.stage_key for item in native_plan.jobs} == set(
             standard_native_pipeline.STANDARD_NATIVE_STAGE_KEYS
-        )
+        ) - {"paired-pss-glrt-presentation-native"}
         assert all("resampl" not in item.stage_key for item in native_plan.jobs)
         assert all(
             item.iq_access.value == "receiver_path"
             for item in native_plan.jobs
-            if item.stage_key == "path-standard-native"
+            if item.stage_key in {"path-standard-native", "path-pss-native"}
         )
         assert all(
             item.iq_access.value == "none"

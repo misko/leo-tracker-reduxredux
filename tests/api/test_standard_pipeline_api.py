@@ -167,6 +167,12 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
         assert response.content == b"\x89PNG\r\n\x1a\n" + name.encode()
         assert response.headers["x-leo-png-cache"] == "artifact"
         assert "immutable" in response.headers["cache-control"]
+    paired_response = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/artifacts/"
+        "pss-glrt-frame-comparison.png"
+    )
+    assert paired_response.status_code == 200
+    assert paired_response.content == b"\x89PNG\r\n\x1a\npss-glrt-frame-comparison"
     assert repository.requests == [
         ("T1", "path:radio0:rx0", "cfo-raw"),
         ("T1", "path:radio0:rx0", "cfo-dealiased"),
@@ -179,6 +185,7 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
         ("T1", "path:radio0:rx0", "full-capture-glrt20ms"),
         ("T1", "path:radio0:rx0", "glrt-epoch-timing"),
         ("T1", "path:radio0:rx0", "glrt-epoch-rate"),
+        ("T1", "pair:radio0:radio1", "pss-glrt-frame-comparison"),
     ]
     assert client.get(f"{base}/unknown.png").status_code == 422
 

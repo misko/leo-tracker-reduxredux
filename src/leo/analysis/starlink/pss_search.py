@@ -521,7 +521,7 @@ def associate_pss_timing_tracks(
         selected = _best_track_modes(tuple(remaining), policy)
         if len(selected) < policy.minimum_block_count:
             break
-        track = _fit_track(selected)
+        track = fit_pss_timing_track(selected)
         if (
             track.time_stop_s - track.time_start_s < policy.minimum_span_s
             or track.maximum_absolute_residual_s > policy.phase_inlier_radius_s
@@ -697,7 +697,21 @@ def _best_track_modes(
     return best
 
 
-def _fit_track(modes: tuple[PssBankMode, ...]) -> PssTimingTrack:
+def fit_pss_timing_track(modes: tuple[PssBankMode, ...]) -> PssTimingTrack:
+    """Fit one already-associated PSS-only timing corridor.
+
+    Callers may use this after a blind PSS track has independently constrained
+    a denser follow-up search.  It deliberately performs no association or
+    external-data targeting; every supplied mode must already have one common
+    PSS provenance and a distinct block identity.
+    """
+
+    if len(modes) < 3:
+        raise ValueError("PSS timing-track fitting requires at least three modes")
+    if len({item.block_index for item in modes}) != len(modes):
+        raise ValueError("PSS timing-track fitting requires one mode per block")
+    if len({item.origin for item in modes}) != 1:
+        raise ValueError("PSS timing-track fitting cannot mix search origins")
     ordered = tuple(sorted(modes, key=lambda item: item.center_time_s))
     times = np.asarray([item.center_time_s for item in ordered])
     phases = np.asarray([item.median_frame_phase_s for item in ordered])

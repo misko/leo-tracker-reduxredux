@@ -261,7 +261,7 @@ def test_real_postgres_historical_v2_runs_through_native_v4_graph(
         manifest_digest=bundle.manifest_sha256,
         pipeline_release_id=_RELEASE,
     )
-    assert (len(plan.jobs), len(plan.edges)) == (12, 15)
+    assert (len(plan.jobs), len(plan.edges)) == (16, 15)
     assert all("resampl" not in item.stage_key for item in plan.jobs)
     expected_product_kinds = Counter(
         product.kind
@@ -294,7 +294,7 @@ def test_real_postgres_historical_v2_runs_through_native_v4_graph(
         result = application.queue_native_evidence(manifest.session_id)
         assert result.promotion_policy == "evidence_only"
         assert result.previous_current_run_id is None
-        assert result.queued_job_count == 12
+        assert result.queued_job_count == 16
 
         subject_reader = CatalogSubjectBindingReader(processing_database.catalog)
         for stream in manifest.streams:
@@ -327,13 +327,13 @@ def test_real_postgres_historical_v2_runs_through_native_v4_graph(
         while execution := service.run_once(worker_id="historical-v2-native-worker"):
             executions.append(execution)
             assert execution.succeeded, execution.error
-        assert len(executions) == 12
+        assert len(executions) == 16
         service.finalize_run(result.run_id)
         seal = processing_database.catalog.run_seal_snapshot(result.run_id)
         assert {item.state for item in seal.jobs} == {"succeeded"}
         assert Counter(item.outcome for item in seal.jobs) == {
-            StageOutcome.COMPLETE.value: 3,
-            StageOutcome.PARTIAL_COVERAGE.value: 5,
+            StageOutcome.COMPLETE.value: 5,
+            StageOutcome.PARTIAL_COVERAGE.value: 7,
             StageOutcome.INSUFFICIENT_DATA.value: 4,
         }
         assert Counter(item.kind for item in seal.products) == expected_product_kinds

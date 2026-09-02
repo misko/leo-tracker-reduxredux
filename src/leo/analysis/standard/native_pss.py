@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import math
 from dataclasses import asdict, dataclass, field
 
@@ -12,6 +13,7 @@ from leo.analysis.starlink.pss_search import (
     PssBankMode,
     PssBankSearchConfig,
     PssBankSearchResult,
+    PssProjectedBlock,
     PssProjection,
     PssSearchOrigin,
     PssSearchTarget,
@@ -19,6 +21,7 @@ from leo.analysis.starlink.pss_search import (
     PssTrackAssociationConfig,
     associate_pss_timing_tracks,
     compile_pss_projection,
+    fit_pss_timing_track,
     project_pss_block,
     search_pss_frame_timing_bank,
 )
@@ -50,20 +53,48 @@ from leo.contracts.states import StarlinkEdge
 from leo.pipeline.validity import ValidityAwareIqReader
 
 _PSS_HALF_BIN_HZ = STARLINK_CHANNEL_OCCUPIED_BANDWIDTH_HZ / 2048.0
+_MAX_DEVICE_READ_SAMPLES = 1_048_576
+
+
+def _production_blind_anchor_bank() -> PssBankSearchConfig:
+    """Return the bounded PSS-only acquisition bank used at native rate."""
+
+    return PssBankSearchConfig(
+        coarse_frequency_offsets_hz=tuple(
+            float(value) for value in range(-1_200_000, 1_200_001, 200_000)
+        ),
+        fine_frequency_radius_hz=0.0,
+    )
+
+
+def _production_tracking_bank() -> PssBankSearchConfig:
+    """Return the three-hypothesis bank used after a PSS-only lock."""
+
+    return PssBankSearchConfig(
+        coarse_frequency_offsets_hz=(0.0,),
+        fine_frequency_radius_hz=0.0,
+        fine_frequency_step_hz=100_000.0,
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class StandardNativePssConfig:
     """Release-bound PSS policy shared by every reviewed native rate."""
 
-    maximum_block_duration_s: float = 0.25
-    maximum_input_block_samples: int = 1_048_576
-    canonical_projection_sample_rate_hz: int = 2_500_000
+    maximum_block_duration_s: float = 0.125
+    block_overlap_duration_s: float = 0.0625
+    maximum_input_block_samples: int = 4_194_304
+    canonical_projection_sample_rate_hz: int = 25_000_000
     projection_edge_trim_output_samples: int = 64
     timing: PssTimingSearchConfig = field(default_factory=PssTimingSearchConfig)
-    blind_bank: PssBankSearchConfig = field(default_factory=PssBankSearchConfig)
+    blind_bank: PssBankSearchConfig = field(default_factory=_production_blind_anchor_bank)
+    tracking_bank: PssBankSearchConfig = field(default_factory=_production_tracking_bank)
     association: PssTrackAssociationConfig = field(default_factory=PssTrackAssociationConfig)
-    glrt_conditioning_enabled: bool = True
+    blind_anchor_stride_s: float = 0.5
+    tracking_frequency_half_width_hz: float = 100_000.0
+    maximum_parallel_searches: int = 8
+    maximum_refined_tracks: int = 1
+    glrt_conditioning_enabled: bool = False
     glrt_bootstrap_minimum_pairs: int = 3
     glrt_timing_radius_s: float = 2.0e-6
     glrt_frequency_half_width_hz: float = 75_000.0
@@ -71,15 +102,24 @@ class StandardNativePssConfig:
     def __post_init__(self) -> None:
         numerical = (
             self.maximum_block_duration_s,
+            self.blind_anchor_stride_s,
+            self.tracking_frequency_half_width_hz,
             self.glrt_timing_radius_s,
             self.glrt_frequency_half_width_hz,
         )
         if not all(math.isfinite(value) and value > 0 for value in numerical):
             raise ValueError("native PSS search bounds must be finite and positive")
         if (
+            not math.isfinite(self.block_overlap_duration_s)
+            or not 0 <= self.block_overlap_duration_s < self.maximum_block_duration_s
+        ):
+            raise ValueError("native PSS block overlap must be finite and shorter than a block")
+        if (
             self.canonical_projection_sample_rate_hz <= 0
             or self.maximum_input_block_samples <= 0
             or self.projection_edge_trim_output_samples < 0
+            or not 1 <= self.maximum_parallel_searches <= 16
+            or not 1 <= self.maximum_refined_tracks <= self.association.maximum_tracks
             or self.glrt_bootstrap_minimum_pairs < 1
         ):
             raise ValueError("native PSS search count bounds are invalid")
@@ -119,11 +159,11 @@ class StandardNativePssRunner:
         reader: ValidityAwareIqReader,
         binding: StandardPathInputBindV5,
         *,
-        full_capture_glrt: StandardNativeFullCaptureGlrt20msV2,
+        full_capture_glrt: StandardNativeFullCaptureGlrt20msV2 | None = None,
     ) -> StandardNativePssFrameTimingV1:
         validate_standard_native_source(reader, binding)
         source = StandardNativeSourceV2.from_path_binding(binding)
-        if full_capture_glrt.source != source:
+        if full_capture_glrt is not None and full_capture_glrt.source != source:
             raise ValueError("native PSS GLRT source differs from the exact path binding")
         config = self._config
         reference_hz = starlink_pss_channel_reference_hz(
@@ -150,9 +190,13 @@ class StandardNativePssRunner:
             canonical_output_sample_rate_hz=canonical_rate,
             edge_trim_output_samples=config.projection_edge_trim_output_samples,
         )
-        blind_rows, projected_by_block = self._blind_blocks(reader, binding, projection)
+        blind_rows, projected_by_block, independent_tracks = self._blind_blocks(
+            reader,
+            binding,
+            projection,
+        )
         conditioned_rows: tuple[tuple[object, PssBankSearchResult], ...] = ()
-        if config.glrt_conditioning_enabled:
+        if config.glrt_conditioning_enabled and full_capture_glrt is not None:
             conditioned_rows = self._conditioned_blocks(
                 projected_by_block,
                 blind_rows,
@@ -160,14 +204,16 @@ class StandardNativePssRunner:
             )
         all_rows = (*blind_rows, *conditioned_rows)
         all_modes = tuple(mode for _block, result in all_rows for mode in result.modes)
-        tracks = tuple(
+        conditioned_tracks = tuple(
             track
-            for origin in PssSearchOrigin
             for track in associate_pss_timing_tracks(
-                tuple(mode for mode in all_modes if mode.origin is origin),
+                tuple(
+                    mode for mode in all_modes if mode.origin is PssSearchOrigin.GLRT_CONDITIONED
+                ),
                 config=config.association,
             )
         )
+        tracks = (*independent_tracks, *conditioned_tracks)
         return _build_contract(
             source=source,
             edge=binding.starlink_edge,
@@ -187,11 +233,19 @@ class StandardNativePssRunner:
     ) -> tuple[
         tuple[tuple[object, PssBankSearchResult], ...],
         dict[int, object],
+        tuple[PssTimingTrack, ...],
     ]:
         config = self._config
         maximum_samples = min(
             config.maximum_input_block_samples,
             max(1, round(config.maximum_block_duration_s * binding.sample_rate_hz)),
+        )
+        stride_samples = max(
+            1,
+            round(
+                (config.maximum_block_duration_s - config.block_overlap_duration_s)
+                * binding.sample_rate_hz
+            ),
         )
         template = pss_subband_template(
             projection.output_sample_rate_hz,
@@ -211,39 +265,253 @@ class StandardNativePssRunner:
                 device_sample_start=segment.device_sample_start,
                 sample_count=segment.observed_sample_count,
                 maximum_samples=maximum_samples,
+                stride_samples=stride_samples,
                 minimum_samples=minimum_input_samples,
             )
         )
-        rows: list[tuple[object, PssBankSearchResult]] = []
-        projected_by_block: dict[int, object] = {}
-        for block_index, (segment_index, start, count) in enumerate(blocks):
-            span = reader.read_device_span(start, count)
-            if span.receiver_ids != (binding.receiver_id,):
-                raise ValueError("native PSS block returned a foreign receiver inventory")
+        anchor_stride_samples = round(config.blind_anchor_stride_s * binding.sample_rate_hz)
+        anchors: list[tuple[int, tuple[int, int, int], PssSearchTarget | None]] = []
+        last_anchor_by_segment: dict[int, int] = {}
+        for block_index, block in enumerate(blocks):
+            segment_index, start, _count = block
+            previous = last_anchor_by_segment.get(segment_index)
+            if previous is None or start - previous >= anchor_stride_samples:
+                anchors.append((block_index, block, None))
+                last_anchor_by_segment[segment_index] = start
+        anchor_rows = self._search_blocks(
+            reader,
+            binding,
+            projection,
+            tuple(anchors),
+            bank=config.blind_bank,
+        )
+        anchor_modes = tuple(mode for _block, result in anchor_rows for mode in result.modes)
+        anchor_tracks = associate_pss_timing_tracks(anchor_modes, config=config.association)
+        if not anchor_tracks:
+            return (
+                anchor_rows,
+                {result.block_index: block for block, result in anchor_rows},
+                (),
+            )
+
+        modes_by_id = {item.mode_id: item for item in anchor_modes}
+        period_s = 1.0 / FRAME_RATE_HZ
+        refined_rows: list[tuple[object, PssBankSearchResult]] = []
+        refined_tracks: list[PssTimingTrack] = []
+        selected_tracks = tuple(
+            sorted(
+                anchor_tracks,
+                key=lambda item: (
+                    -len(item.mode_ids),
+                    -(item.time_stop_s - item.time_start_s),
+                    item.rms_residual_s,
+                    item.track_id,
+                ),
+            )[: config.maximum_refined_tracks]
+        )
+        for track_ordinal, track in enumerate(selected_tracks, start=1):
+            source_modes = tuple(modes_by_id[item] for item in track.mode_ids)
+            frequency_center_hz = float(
+                np.median([item.nominal_frequency_offset_hz for item in source_modes])
+            )
+            requests: list[tuple[int, tuple[int, int, int], PssSearchTarget | None]] = []
+            for block_index, block in enumerate(blocks):
+                _segment_index, start, count = block
+                center_time_s = (start + count / 2) / binding.sample_rate_hz
+                if not track.time_start_s <= center_time_s <= track.time_stop_s:
+                    continue
+                predicted_phase_s = (
+                    float(
+                        np.polyval(
+                            track.coefficients_descending_s,
+                            center_time_s - track.time_origin_s,
+                        )
+                    )
+                    % period_s
+                )
+                requests.append(
+                    (
+                        track_ordinal * len(blocks) + block_index,
+                        block,
+                        PssSearchTarget(
+                            origin=PssSearchOrigin.INDEPENDENT_BLIND,
+                            frequency_center_hz=frequency_center_hz,
+                            frequency_half_width_hz=config.tracking_frequency_half_width_hz,
+                            predicted_frame_phase_s=predicted_phase_s,
+                            frame_phase_radius_s=config.association.phase_inlier_radius_s,
+                        ),
+                    )
+                )
+            track_rows = self._search_blocks(
+                reader,
+                binding,
+                projection,
+                tuple(requests),
+                bank=config.tracking_bank,
+            )
+            refined_rows.extend(track_rows)
+            selected_modes: list[PssBankMode] = []
+            for _raw_block, result in track_rows:
+                if not result.modes:
+                    continue
+                selected_modes.append(
+                    max(
+                        result.modes,
+                        key=lambda item: (
+                            item.candidate.robust_z,
+                            item.candidate.peak_to_median,
+                            -abs(item.nominal_frequency_offset_hz - frequency_center_hz),
+                            item.mode_id,
+                        ),
+                    )
+                )
+            if len(selected_modes) < config.association.minimum_block_count:
+                continue
+            refined = fit_pss_timing_track(tuple(selected_modes))
+            if (
+                refined.time_stop_s - refined.time_start_s >= config.association.minimum_span_s
+                and refined.maximum_absolute_residual_s <= config.association.phase_inlier_radius_s
+            ):
+                refined_tracks.append(refined)
+
+        rows = (*anchor_rows, *refined_rows)
+        projected_by_block = {result.block_index: block for block, result in anchor_rows}
+        tracks = (*refined_tracks, *anchor_tracks) if refined_tracks else anchor_tracks
+        return rows, projected_by_block, tracks
+
+    def _search_blocks(
+        self,
+        reader: ValidityAwareIqReader,
+        binding: StandardPathInputBindV5,
+        projection: PssProjection,
+        requests: tuple[
+            tuple[int, tuple[int, int, int], PssSearchTarget | None],
+            ...,
+        ],
+        *,
+        bank: PssBankSearchConfig,
+    ) -> tuple[tuple[object, PssBankSearchResult], ...]:
+        """Read serially and search a bounded number of blocks concurrently."""
+
+        if not requests:
+            return ()
+        results: dict[int, tuple[object, PssBankSearchResult]] = {}
+        pending: dict[concurrent.futures.Future[PssBankSearchResult], object] = {}
+        previous_projected: PssProjectedBlock | None = None
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self._config.maximum_parallel_searches,
+            thread_name_prefix="native-pss",
+        ) as executor:
+            for block_index, (segment_index, start, count), target in requests:
+                projected = self._read_projected_continuation(
+                    reader,
+                    binding,
+                    projection,
+                    segment_index=segment_index,
+                    start=start,
+                    count=count,
+                    previous=previous_projected,
+                )
+                previous_projected = projected
+                future = executor.submit(
+                    search_pss_frame_timing_bank,
+                    projected,
+                    block_index=block_index,
+                    target=target,
+                    bank_config=bank,
+                    timing_config=self._config.timing,
+                )
+                pending[future] = projected
+                if len(pending) >= self._config.maximum_parallel_searches:
+                    self._collect_completed_searches(pending, results, wait_for_one=True)
+            while pending:
+                self._collect_completed_searches(pending, results, wait_for_one=True)
+        return tuple(results[index] for index in sorted(results))
+
+    @staticmethod
+    def _collect_completed_searches(
+        pending: dict[concurrent.futures.Future[PssBankSearchResult], object],
+        results: dict[int, tuple[object, PssBankSearchResult]],
+        *,
+        wait_for_one: bool,
+    ) -> None:
+        return_when = (
+            concurrent.futures.FIRST_COMPLETED if wait_for_one else concurrent.futures.ALL_COMPLETED
+        )
+        completed, _ = concurrent.futures.wait(tuple(pending), return_when=return_when)
+        for future in completed:
+            projected = pending.pop(future)
+            result = future.result()
+            results[result.block_index] = projected, result
+
+    @staticmethod
+    def _read_projected_continuation(
+        reader: ValidityAwareIqReader,
+        binding: StandardPathInputBindV5,
+        projection: PssProjection,
+        *,
+        segment_index: int,
+        start: int,
+        count: int,
+        previous: PssProjectedBlock | None,
+    ) -> PssProjectedBlock:
+        overlap = 0
+        if (
+            previous is not None
+            and projection.decimation_factor == 1
+            and previous.continuity_segment_index == segment_index
+            and previous.input_device_sample_start < start < previous.input_device_sample_stop
+            and start + count > previous.input_device_sample_stop
+        ):
+            overlap = previous.input_device_sample_stop - start
+        read_start = start + overlap
+        read_count = count - overlap
+        chunks: list[np.ndarray] = []
+        cursor = read_start
+        remaining = read_count
+        while remaining:
+            chunk_count = min(remaining, _MAX_DEVICE_READ_SAMPLES)
+            span = reader.read_device_span(cursor, chunk_count)
+            if (
+                span.device_sample_start != cursor
+                or span.sample_count != chunk_count
+                or span.receiver_ids != (binding.receiver_id,)
+            ):
+                raise ValueError("native PSS block returned a foreign device-axis span")
             if not np.all(span.valid_samples) or not np.all(
                 span.continuity_segment_ids == segment_index
             ):
                 raise ValueError("native PSS block escaped its authoritative continuity segment")
-            values = np.asarray(
-                span.samples[:, 0, 0].astype(np.float32)
-                + 1j * span.samples[:, 0, 1].astype(np.float32),
-                dtype=np.complex64,
+            chunks.append(
+                np.asarray(
+                    span.samples[:, 0, 0].astype(np.float32)
+                    + 1j * span.samples[:, 0, 1].astype(np.float32),
+                    dtype=np.complex64,
+                )
             )
-            projected = project_pss_block(
-                values,
-                projection,
-                input_device_sample_start=start,
-                continuity_segment_index=segment_index,
-            )
-            result = search_pss_frame_timing_bank(
-                projected,
-                block_index=block_index,
-                bank_config=config.blind_bank,
-                timing_config=config.timing,
-            )
-            rows.append((projected, result))
-            projected_by_block[block_index] = projected
-        return tuple(rows), projected_by_block
+            cursor += chunk_count
+            remaining -= chunk_count
+        new_values = (
+            chunks[0]
+            if len(chunks) == 1
+            else np.concatenate(chunks).astype(np.complex64, copy=False)
+        )
+        if overlap:
+            assert previous is not None
+            values = np.concatenate(
+                (
+                    previous.samples[-overlap:],
+                    new_values,
+                )
+            ).astype(np.complex64, copy=False)
+        else:
+            values = new_values
+        return project_pss_block(
+            values,
+            projection,
+            input_device_sample_start=start,
+            continuity_segment_index=segment_index,
+        )
 
     def _conditioned_blocks(
         self,
@@ -384,24 +652,26 @@ def _continuity_blocks(
     device_sample_start: int,
     sample_count: int,
     maximum_samples: int,
+    stride_samples: int,
     minimum_samples: int,
 ) -> tuple[tuple[int, int, int], ...]:
+    """Place only complete overlapping windows inside one continuity segment."""
+
     if maximum_samples < minimum_samples or minimum_samples <= 0:
         raise ValueError("PSS continuity block bounds are invalid")
-    output: list[tuple[int, int, int]] = []
-    cursor = device_sample_start
-    remaining = sample_count
-    while remaining >= minimum_samples:
-        count = min(remaining, maximum_samples)
-        trailing = remaining - count
-        if 0 < trailing < minimum_samples:
-            borrowed = minimum_samples - trailing
-            if count - borrowed >= minimum_samples:
-                count -= borrowed
-        output.append((segment_index, cursor, count))
-        cursor += count
-        remaining -= count
-    return tuple(output)
+    if not 0 < stride_samples <= maximum_samples:
+        raise ValueError("native PSS block stride must be in (0, block size]")
+    if sample_count < maximum_samples:
+        return ()
+    block_count = 1 + (sample_count - maximum_samples) // stride_samples
+    return tuple(
+        (
+            segment_index,
+            device_sample_start + block_index * stride_samples,
+            maximum_samples,
+        )
+        for block_index in range(block_count)
+    )
 
 
 def _best_glrt_window(

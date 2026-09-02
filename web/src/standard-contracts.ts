@@ -297,6 +297,14 @@ export type StandardNativePngArtifactNameV10 =
   | StandardNativePngArtifactNameV8
   | "glrt-epoch-timing"
   | "glrt-epoch-rate";
+export type StandardNativePngArtifactNameV11 =
+  | "waterfall"
+  | "doppler-waterfall"
+  | "pilot-methods"
+  | "cfo-raw"
+  | "cfo-dealiased"
+  | "cfo-final"
+  | "pss-glrt-frame-comparison";
 
 export interface StandardNativePngArtifactV4 {
   schema_version: 4;
@@ -321,6 +329,12 @@ export interface StandardNativePngArtifactV10
   extends Omit<StandardNativePngArtifactV8, "schema_version" | "name"> {
   schema_version: 10;
   name: StandardNativePngArtifactNameV10;
+}
+
+export interface StandardNativePngArtifactV11
+  extends Omit<StandardNativePngArtifactV8, "schema_version" | "name"> {
+  schema_version: 11;
+  name: StandardNativePngArtifactNameV11;
 }
 
 export interface StandardNativePngArtifactInventoryV4 {
@@ -391,6 +405,17 @@ export interface StandardNativePngArtifactInventoryV10
   schema_version: 10;
   subject_kind: "receiver_path";
   artifacts: StandardNativePngArtifactV10[];
+}
+
+export interface StandardNativePngArtifactInventoryV11
+  extends Omit<
+    StandardNativePngArtifactInventoryV9,
+    "schema_version" | "subject_kind" | "sample_rates_hz" | "artifacts"
+  > {
+  schema_version: 11;
+  subject_kind: "radio";
+  sample_rates_hz: [2_500_000, 25_000_000];
+  artifacts: StandardNativePngArtifactV11[];
 }
 
 export interface StandardNativePipelineReleaseV3 {

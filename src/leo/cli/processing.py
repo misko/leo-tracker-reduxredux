@@ -111,6 +111,7 @@ from leo.operations.retention import (
 from leo.pipeline import ExpandedRunPlanV1, compile_standard_run_plan
 from leo.pipeline.standard_native import (
     compile_standard_native_automatic_run_plan,
+    compile_standard_native_default_run_plan,
     compile_standard_native_run_plan,
 )
 from leo.presentation.standard_pipeline import (
@@ -632,7 +633,7 @@ class LocalProcessingBackend:
             )
         try:
             if isinstance(bundle.manifest, (RecordingManifestV3, RecordingManifestV4)):
-                plan = compile_standard_native_run_plan(
+                plan = compile_standard_native_default_run_plan(
                     bundle.manifest,
                     manifest_digest=snapshot.manifest_digest,
                     pipeline_release_id=pipeline_release_id,

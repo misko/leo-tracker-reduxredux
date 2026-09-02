@@ -101,6 +101,7 @@ from leo.pipeline import (
 from leo.pipeline.standard_native import (
     STANDARD_NATIVE_STAGE_KEYS,
     compile_standard_native_automatic_run_plan,
+    compile_standard_native_default_run_plan,
     compile_standard_native_run_plan,
     compile_standard_native_scope_inventory,
     standard_native_pipeline_definition_v1,
@@ -131,6 +132,7 @@ _DEFAULT_OUTPUT_LIMITS = {
 }
 _DEFAULT_WALL_LIMITS = {"streaming": 600.0, "cpu": 600.0, "memory": 1200.0, "heavy": 1800.0}
 _STANDARD_NATIVE_REFERENCE_SAMPLE_RATE_HZ = 2_500_000
+_STANDARD_NATIVE_VALIDITY_PATH_STAGES = frozenset({"path-standard-native", "path-pss-native"})
 # Dense Research acquisition is measured at about 7.1x the former Standard
 # per-probe cost and schedules 1.5x as many probes. Keep the larger boundary
 # narrowly attached to the IQ-heavy path stage; reducers and every Standard
@@ -670,7 +672,7 @@ class ProcessingService:
         sample_rate_hz: int | None = None,
     ) -> float | None:
         ordinary_limit = self._wall_time_limits_seconds.get(resource_class)
-        if lane is PipelineLane.STANDARD and stage_key == "path-standard-native":
+        if lane is PipelineLane.STANDARD and stage_key in _STANDARD_NATIVE_VALIDITY_PATH_STAGES:
             if sample_rate_hz is None or sample_rate_hz <= 0:
                 raise RunRejectedError(
                     "Standard-native path wall-time scaling requires a positive sample rate"
@@ -820,7 +822,7 @@ class ProcessingService:
                     cast(ValidityAwareIqReaderProvider, self.iq_readers).open_validity_scope(
                         execution, lease.scope
                     )
-                    if lease.stage_key == "path-standard-native"
+                    if lease.stage_key in _STANDARD_NATIVE_VALIDITY_PATH_STAGES
                     else self.iq_readers.open_scope(execution, lease.scope)
                 )
             else:
@@ -844,7 +846,8 @@ class ProcessingService:
                 resource_class=lease.resource_class,
                 sample_rate_hz=(
                     reader.sample_rate_hz
-                    if lane is PipelineLane.STANDARD and lease.stage_key == "path-standard-native"
+                    if lane is PipelineLane.STANDARD
+                    and lease.stage_key in _STANDARD_NATIVE_VALIDITY_PATH_STAGES
                     else None
                 ),
             )
@@ -1124,6 +1127,7 @@ class ProcessingService:
             job.stage_key for job in plan.jobs
         } == {RATE_CONTINUITY_BASELINE_STAGE_KEY}
         native_evidence = bool(stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS))
+        alternate_expected_plan: ExpandedRunPlanV1 | None = None
         if native_evidence:
             if canonical_lane is not PipelineLane.STANDARD or not stage_keys.issubset(
                 STANDARD_NATIVE_STAGE_KEYS
@@ -1170,11 +1174,23 @@ class ProcessingService:
             expected_plan = (
                 compile_standard_native_automatic_run_plan
                 if trigger == "new_capture"
+                else compile_standard_native_default_run_plan
+                if canonical_promotion_policy is PromotionPolicy.CURRENT
                 else compile_standard_native_run_plan
             )(
                 manifest,
                 manifest_digest=plan.manifest_digest,
                 pipeline_release_id=plan.pipeline_release_id,
+            )
+            alternate_expected_plan = (
+                compile_standard_native_default_run_plan(
+                    manifest,
+                    manifest_digest=plan.manifest_digest,
+                    pipeline_release_id=plan.pipeline_release_id,
+                )
+                if trigger == "reprocess"
+                and canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY
+                else None
             )
         elif rate_baseline:
             if canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY:
@@ -1194,7 +1210,7 @@ class ProcessingService:
                 manifest_digest=plan.manifest_digest,
                 pipeline_release_id=plan.pipeline_release_id,
             )
-        if plan != expected_plan:
+        if plan != expected_plan and plan != alternate_expected_plan:
             lane_name = (
                 "Standard-native"
                 if native_evidence
@@ -1353,7 +1369,7 @@ class ProcessingService:
             expected_plan = (
                 compile_standard_native_automatic_run_plan
                 if execution.trigger == "new_capture"
-                else compile_standard_native_run_plan
+                else compile_standard_native_default_run_plan
             )(
                 source,
                 manifest_digest=execution.input_manifest_digest,
