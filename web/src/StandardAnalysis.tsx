@@ -1100,8 +1100,18 @@ function nativeInventoryMatchesDetail(
     && inventory.schema_version !== 8
     && inventory.schema_version !== 9
     && inventory.schema_version !== 10
+    && inventory.schema_version !== 11
   ) {
     return false;
+  }
+  if (inventory.schema_version === 11) {
+    const expectedRates = [...new Set(
+      detail.subject.eligibility.legs.map((leg) => leg.sample_rate_hz),
+    )].sort((left, right) => left - right);
+    return detail.schema_version === 7
+      && inventory.subject_kind === "radio"
+      && expectedRates.length === inventory.sample_rates_hz.length
+      && expectedRates.every((rate, index) => rate === inventory.sample_rates_hz[index]);
   }
   const streamIds = new Set(
     detail.subject.receiver_paths.map((path) => path.scope.stream_id),

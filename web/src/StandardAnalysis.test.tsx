@@ -1068,6 +1068,21 @@ function automaticArtifactInventory(): StandardNativePngArtifactInventoryV9 {
   };
 }
 
+function automaticComparisonArtifactInventory(): StandardNativePngArtifactInventoryV11 {
+  const inventory = pairedComparisonArtifactInventory();
+  return {
+    ...inventory,
+    subject_id: automaticRadio.subject_id,
+    artifacts: inventory.artifacts.map((artifact) => ({
+      ...artifact,
+      href: artifact.href.replace(
+        encodeURIComponent(inventory.subject_id),
+        encodeURIComponent(automaticRadio.subject_id),
+      ),
+    })),
+  };
+}
+
 const nativeWaterfall: StandardNativePlotViewV3 = {
   schema_version: 3,
   session_id: "T1",
@@ -1394,7 +1409,7 @@ test("renders the V7 automatic 2.5 MS/s selection without claiming wideband anal
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes("/artifacts?")) {
-      return new Response(JSON.stringify(automaticArtifactInventory()), {
+      return new Response(JSON.stringify(automaticComparisonArtifactInventory()), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
@@ -1422,6 +1437,11 @@ test("renders the V7 automatic 2.5 MS/s selection without claiming wideband anal
   expect(within(authority).getByText("Automatically analyzed")).toBeInTheDocument();
   expect(within(authority).getByText("Captured; omitted from automatic analysis"))
     .toBeInTheDocument();
+  const gallery = await screen.findByRole("region", { name: "Registered native image artifacts" });
+  await waitFor(() => expect(within(gallery).getAllByRole("img")).toHaveLength(7));
+  expect(within(gallery).getByRole("img", {
+    name: /Native-25 PSS versus dual 2.5 MS\/s GLRT/,
+  })).toBeInTheDocument();
   expect(parseStandardSubjectHierarchy(automaticHierarchy).schema_version).toBe(7);
   expect(parseStandardSubjectDetail(automaticDetail).schema_version).toBe(7);
 });
