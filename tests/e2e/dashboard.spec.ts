@@ -1,6 +1,6 @@
 import { expect, test } from "../../web/playwright";
 
-test("production dashboard reads an atomically promoted Standard import run", async ({ page }) => {
+test("production dashboard reads an atomically promoted current-format live run", async ({ page }) => {
   const serverFailures: string[] = [];
   page.on("response", (response) => {
     if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
@@ -16,18 +16,18 @@ test("production dashboard reads an atomically promoted Standard import run", as
   await search.fill("e2e-main-test-recording");
   const row = page.getByRole("button", { name: /e2e-main-test-recording/ });
   await expect(row).toBeVisible();
-  await expect(row).toContainText("IMPORT");
-  await expect(row).toContainText("no result");
+  await expect(row).toContainText("LIVE");
+  await expect(row).toContainText("partial");
   await row.click();
 
-  await expect(page.getByRole("heading", { name: "Production E2E paired imported dwell" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Mixed-rate 2\.5M\/\d+M native dwell/ })).toBeVisible();
   await expect(page.getByText("e2e-main-run-v2", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("e2e-main-run-v1", { exact: true })).toHaveCount(0);
 
   await expect(page.getByText("best effort · observed")).toBeVisible();
-  await expect(page.getByText("0.0007692 s", { exact: true })).toBeVisible();
+  await expect(page.getByText("0.1 s", { exact: true })).toBeVisible();
   await expect(page.getByText("phase coherent: no")).toBeVisible();
-  await expect(page.getByText(/bulk\/recordings\/2026\/05\/28\/e2e-main-test-recording$/)).toBeVisible();
+  await expect(page.getByText(/bulk\/recordings\/\d{4}\/\d{2}\/\d{2}\/e2e-main-test-recording$/)).toBeVisible();
   await expect(page.getByText(/bulk\/analysis\/e2e-main-test-recording\/e2e-main-run-v2$/)).toBeVisible();
   await expect(page.getByText(/quality · ap-/).first()).toBeVisible();
 
@@ -49,13 +49,14 @@ test("production dashboard reads an atomically promoted Standard import run", as
   expect(mutationStatuses).toEqual([405, 405, 405]);
   await expect(page.getByRole("button", { name: /^(purge|reprocess)$/i })).toHaveCount(0);
 
-  const pairedHough = page.getByRole("region", {
-    name: "Paired receiver-path Hough CFO candidates",
+  const coverage = page.getByRole("region", {
+    name: "Production RF coverage authority",
   });
-  await expect(pairedHough).toBeVisible({ timeout: 15_000 });
-  await expect(pairedHough.getByRole("img")).toHaveCount(4);
-  for (const label of ["Radio0 RX0", "Radio0 RX1", "Radio1 RX0", "Radio1 RX1"]) {
-    const image = pairedHough.getByRole("img", { name: `Alternate Hough CFO candidates for ${label}` });
+  await expect(coverage).toContainText("Automatic analysis selected the 2.5 MS/s stream");
+  const artifacts = page.getByRole("region", { name: "Registered native image artifacts" });
+  await expect(artifacts).toBeVisible({ timeout: 15_000 });
+  await expect(artifacts.getByRole("img")).toHaveCount(7);
+  for (const image of await artifacts.getByRole("img").all()) {
     await expect(image).toBeVisible();
     await image.scrollIntoViewIfNeeded();
     await expect.poll(
@@ -67,7 +68,6 @@ test("production dashboard reads an atomically promoted Standard import run", as
     ).toEqual({ complete: true, naturalWidth: expect.any(Number) });
     expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   }
-  await expect(pairedHough).toContainText("No joint or cross-radio Hough product is inferred");
   await page.waitForLoadState("networkidle");
   expect(serverFailures).toEqual([]);
 });
@@ -114,9 +114,11 @@ test("production dashboard exposes an ordinary failed analysis explicitly", asyn
   await page.goto("/");
   const search = page.getByRole("searchbox", { name: "Search recordings" });
   await search.fill("e2e-failed-test-recording");
-  await page.getByRole("button", { name: /e2e-failed-test-recording/ }).click();
+  const row = page.getByRole("button", { name: /e2e-failed-test-recording/ });
+  await expect(row).toContainText("Production E2E intentional analysis failure");
+  await row.click();
 
-  await expect(page.getByRole("heading", { name: "Production E2E intentional analysis failure" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Mixed-rate 2\.5M\/\d+M native dwell/ })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("failed");
   await expect(page.getByText("Intentional production E2E analysis failure").first()).toBeVisible();
   await expect(page.getByText("No current run")).toBeVisible();
