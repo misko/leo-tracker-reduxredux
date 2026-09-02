@@ -99,9 +99,7 @@ def parabolic_peak(
     denominator = float(selected[0] - 2.0 * selected[1] + selected[2])
     if not math.isfinite(denominator) or denominator >= -np.finfo(float).eps:
         return float(grid[index])
-    fraction = float(
-        np.clip(0.5 * (selected[0] - selected[2]) / denominator, -0.5, 0.5)
-    )
+    fraction = float(np.clip(0.5 * (selected[0] - selected[2]) / denominator, -0.5, 0.5))
     return float(grid[index] + fraction * steps[0])
 
 
@@ -134,9 +132,7 @@ def quadratic_timing_fit(
         "timing_drift_s_s": float(coefficients[1]),
         "timing_curvature_s_s2": float(coefficients[2]),
         "equivalent_doppler_rate_hz_s": float(-rf_reference_hz * coefficients[2]),
-        "formal_equivalent_doppler_rate_sigma_hz_s": float(
-            rf_reference_hz * curvature_sigma
-        ),
+        "formal_equivalent_doppler_rate_sigma_hz_s": float(rf_reference_hz * curvature_sigma),
         "residual_rms_us": float(np.sqrt(np.mean(residuals**2)) * 1e6),
         "residual_mad_us": float(
             1.4826 * np.median(np.abs(residuals - np.median(residuals))) * 1e6
@@ -151,8 +147,7 @@ def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("expected one selected CI16 receiver")
     return np.asarray(
-        (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64))
-        / 2**15,
+        (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 2**15,
         dtype=np.complex128,
     )
 
@@ -203,9 +198,7 @@ def _replay(
     started = time.perf_counter()
     try:
         store = RecordingStore.open_pinned(capability)
-        reader = store.reader(
-            store.inspect(source["session_id"]), source["stream_id"], verify=True
-        )
+        reader = store.reader(store.inspect(source["session_id"]), source["stream_id"], verify=True)
         span = reader.read_device_span(
             first,
             stop - first,
@@ -252,15 +245,11 @@ def _replay(
             acquired_cfo_hz=float(window["acquired_cfo_hz"]),
             exact_scores=tuple(float(item) for item in exact),
             control_scores=tuple(float(item) for item in control),
-            raw_peak_correction_samples=parabolic_peak(
-                exact, GRID_OFFSETS.astype(float)
-            ),
+            raw_peak_correction_samples=parabolic_peak(exact, GRID_OFFSETS.astype(float)),
             log_peak_correction_samples=parabolic_peak(
                 exact, GRID_OFFSETS.astype(float), logarithmic=True
             ),
-            margin_peak_correction_samples=parabolic_peak(
-                margin, GRID_OFFSETS.astype(float)
-            ),
+            margin_peak_correction_samples=parabolic_peak(margin, GRID_OFFSETS.astype(float)),
         )
 
     score_started = time.perf_counter()
@@ -281,9 +270,7 @@ def _replay(
         "score_replay_seconds": score_seconds,
         "workers": workers,
         "maximum_exact_score_reproduction_error": float(np.max(np.abs(reproduction))),
-        "maximum_control_score_reproduction_error": float(
-            np.max(np.abs(control_reproduction))
-        ),
+        "maximum_control_score_reproduction_error": float(np.max(np.abs(control_reproduction))),
     }
 
 
@@ -333,20 +320,14 @@ def _fit_inventory(
             row.update(
                 {
                     "median_correction_samples": float(np.median(correction)),
-                    "p95_absolute_correction_samples": float(
-                        np.quantile(np.abs(correction), 0.95)
-                    ),
+                    "p95_absolute_correction_samples": float(np.quantile(np.abs(correction), 0.95)),
                     "maximum_absolute_correction_samples": float(np.max(np.abs(correction))),
-                    "fraction_with_integer_peak_move": float(
-                        np.mean(integer_peak_offsets != 0)
-                    ),
+                    "fraction_with_integer_peak_move": float(np.mean(integer_peak_offsets != 0)),
                 }
             )
         inventory[name] = row
     inventory["nonoverlap_stride_parity"] = {}
-    opportunity_indexes = np.asarray(
-        [item.opportunity_index for item in replayed], dtype=int
-    )
+    opportunity_indexes = np.asarray([item.opportunity_index for item in replayed], dtype=int)
     for parity in (0, 1):
         selected = opportunity_indexes % 2 == parity
         inventory["nonoverlap_stride_parity"][str(parity)] = {}
@@ -358,9 +339,7 @@ def _fit_inventory(
             fit.pop("residuals_us")
             inventory["nonoverlap_stride_parity"][str(parity)][name] = fit
     inventory["interpolator_sensitivity_samples"] = {
-        "raw_minus_log_median_absolute": float(
-            np.median(np.abs(raw_correction - log_correction))
-        ),
+        "raw_minus_log_median_absolute": float(np.median(np.abs(raw_correction - log_correction))),
         "raw_minus_log_p95_absolute": float(
             np.quantile(np.abs(raw_correction - log_correction), 0.95)
         ),
@@ -601,9 +580,7 @@ def main() -> int:
     epoch = _load(args.epoch_product)
     full = _load(args.full_product)
     locklet, rows = _selected_rows(epoch)
-    replayed, runtime = _replay(
-        args.recordings_root, epoch, full, rows, workers=args.workers
-    )
+    replayed, runtime = _replay(args.recordings_root, epoch, full, rows, workers=args.workers)
     sample_rate_hz = int(epoch["source"]["sample_rate_hz"])
     fits, arrays = _fit_inventory(
         replayed,
@@ -614,9 +591,7 @@ def main() -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     _plot(args.output_dir / "fractional-glrt-epoch-comparison.png", replayed, arrays, fits)
     _plot_profiles(args.output_dir / "fractional-glrt-peak-profiles.png", replayed)
-    _plot_before_after(
-        args.output_dir / "fractional-glrt-before-after.png", replayed, arrays, fits
-    )
+    _plot_before_after(args.output_dir / "fractional-glrt-before-after.png", replayed, arrays, fits)
     facts = {
         "schema_version": 1,
         "analysis_kind": "7fea-rx0-glrt-fractional-epoch-prototype",

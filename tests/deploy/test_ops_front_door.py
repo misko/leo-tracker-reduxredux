@@ -187,9 +187,10 @@ def test_test_infrastructure_change_uses_bounded_exclusive_shard() -> None:
     )
 
     assert [component.name for component in selected] == ["test-infrastructure"]
-    pytest_gate = next(gate for gate in gates if gate.name == "pytest-components")
-    assert not pytest_gate.needs_postgres
-    assert "tests/catalog" not in pytest_gate.command
+    pytest_gates = tuple(gate for gate in gates if gate.name.startswith("pytest-components-"))
+    assert pytest_gates
+    assert not any(gate.needs_postgres for gate in pytest_gates)
+    assert not any("tests/catalog" in gate.command for gate in pytest_gates)
 
 
 def test_catalog_change_requires_postgres_and_full_service_impact() -> None:
@@ -198,8 +199,9 @@ def test_catalog_change_requires_postgres_and_full_service_impact() -> None:
         ("src/leo/catalog/repository.py",), selected, all_tests=False, release=False
     )
 
-    pytest_gate = next(gate for gate in gates if gate.name == "pytest-components")
-    assert pytest_gate.needs_postgres
+    pytest_gates = tuple(gate for gate in gates if gate.name.startswith("pytest-components-"))
+    assert pytest_gates
+    assert all(gate.needs_postgres for gate in pytest_gates)
     assert set(OPS.runtime_impacts_for_paths(("src/leo/catalog/repository.py",), selected)) == {
         "acquisition",
         "api",
@@ -219,6 +221,38 @@ def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> 
     pytest_gate = next(gate for gate in gates if gate.name.startswith("pytest-changed-"))
     assert "tests/analysis/test_final_trajectory_reports.py" in pytest_gate.command
     assert "tests/analysis" not in pytest_gate.command
+
+
+@pytest.mark.parametrize(
+    ("paths", "gate_prefix"),
+    (
+        (
+            ("tests/processing/test_mixed_rate_standard_native_operational_vertical.py",),
+            "pytest-changed-",
+        ),
+        (("src/leo/processing/service.py",), "pytest-components-"),
+    ),
+)
+def test_current_mixed_rate_vertical_is_sharded_without_historical_cases(
+    paths: tuple[str, ...],
+    gate_prefix: str,
+) -> None:
+    path = "tests/processing/test_mixed_rate_standard_native_operational_vertical.py"
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
+
+    pytest_gates = tuple(gate for gate in gates if gate.name.startswith(gate_prefix))
+    node_ids = {gate.command[-1] for gate in pytest_gates}
+    current_nodes = {
+        f"{path}::test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical"
+        f"[{rate_hz}]"
+        for rate_hz in (10_000_000, 15_000_000, 25_000_000)
+    }
+    assert current_nodes <= node_ids
+    assert all(gate.needs_postgres for gate in pytest_gates if gate.command[-1] in current_nodes)
+    assert "tests/processing" not in node_ids
+    assert not any("production_single_rx_all_rate" in node_id for node_id in node_ids)
 
 
 def test_fast_test_checks_changed_source_and_only_changed_portable_tests() -> None:
@@ -284,7 +318,8 @@ def test_deleted_python_path_selects_owner_without_formatter_file_error(
     }
     assert "src/leo/api/deleted_cache.py" not in formatter_arguments
     assert not {"ruff-check", "ruff-format"} & {gate.name for gate in gates}
-    assert {"pytest-components", "web-build", "web-test"} <= {gate.name for gate in gates}
+    assert {"web-build", "web-test"} <= {gate.name for gate in gates}
+    assert any(gate.name.startswith("pytest-components-") for gate in gates)
 
 
 def test_test_support_modules_select_owned_tests_but_are_not_collected_as_tests() -> None:
@@ -389,6 +424,33 @@ def test_deploy_plan_for_test_only_change_has_no_runtime_work(
     assert plan["impact"] == []
     assert plan["services_to_restart"] == []
     assert plan["mode"] == "no-op"
+
+
+@pytest.mark.parametrize(
+    "paths",
+    (
+        ("tools/ops.py", "config/ops-components.json"),
+        (
+            "tools/report_7fea_pss_glrt_deep_dive.py",
+            "tools/prototype_7fea_glrt_fractional_epoch.py",
+        ),
+    ),
+)
+def test_operator_and_offline_tools_have_no_runtime_work(
+    paths: tuple[str, ...],
+) -> None:
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    assert OPS.runtime_impacts_for_paths(paths, selected) == ()
+
+
+def test_native_evidence_worker_remains_runtime_authority() -> None:
+    native_worker = ("tools/native_evidence_worker.py",)
+    selected_native = OPS.components_for_paths(native_worker, OPS.load_components())
+    assert set(OPS.runtime_impacts_for_paths(native_worker, selected_native)) == {
+        "api",
+        "worker",
+    }
 
 
 def test_full_deployment_plan_binds_exact_production_capture_policy(
@@ -652,6 +714,38 @@ def test_stage_only_stages_exact_main_without_cutover_or_rate_receipt(
     assert OPS._deploy(args) == 0
     assert staged == [target]
     assert f"STAGED-ONLY revision={target}" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("local_head, accepted", (("3" * 40, True), ("4" * 40, False)))
+def test_stage_only_accepts_only_main_or_clean_local_head(
+    monkeypatch: pytest.MonkeyPatch,
+    local_head: str,
+    accepted: bool,
+) -> None:
+    current = "1" * 40
+    origin = "2" * 40
+    target = "3" * 40
+
+    def fake_git(*arguments: str) -> str:
+        if arguments == ("status", "--porcelain"):
+            return ""
+        if arguments == ("rev-parse", "origin/main"):
+            return origin
+        if arguments == ("rev-parse", "HEAD"):
+            return local_head
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(OPS, "_run_git", fake_git)
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(OPS, "_git_lines", lambda *_arguments: ("tools/ops.py",))
+    arguments = OPS.parser().parse_args(["deploy", "--stage-only", "--revision", target])
+    if accepted:
+        plan = OPS._deployment_plan(arguments)
+        assert plan["target_revision"] == target
+        assert plan["mode"] == "no-op"
+    else:
+        with pytest.raises(OPS.OpsError, match="clean local HEAD"):
+            OPS._deployment_plan(arguments)
 
 
 @pytest.mark.parametrize(

@@ -596,7 +596,12 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert stage.index('rm -f -- "$release_dir/.leo-release-incomplete"') < metadata_publish
     assert stage.count('PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python"') == 2
     assert "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2" in deployment_text
-    assert 'sudo ./ops deploy --full --revision "$release_revision"' in deployment_text
+    assert 'sudo ./ops deploy --stage-only --revision "$release_revision" & stage_pid=$!' in (
+        deployment_text
+    )
+    assert './ops test --base "$base_revision" & test_pid=$!' in deployment_text
+    assert "sudo ./ops deploy\n" in deployment_text
+    assert "sudo ./ops deploy --full" not in deployment_text
     assert "public.processing_resource_capacity" in deployment_text
     assert "streaming=16`, `cpu=8`,\n`memory=4`, and `heavy=2" in deployment_text
     assert deployment_text.count("leo acquire resume --operator production-cutover") == 2

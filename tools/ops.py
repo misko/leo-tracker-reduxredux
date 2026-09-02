@@ -112,6 +112,15 @@ _ADDITIVE_REVIEWED_ENVIRONMENT_KEYS = frozenset(
 
 _CLI_NOT_FOUND_EXIT_CODE = 11
 
+_DEFAULT_TEST_NODE_SHARDS = {
+    "tests/processing/test_mixed_rate_standard_native_operational_vertical.py": tuple(
+        "tests/processing/test_mixed_rate_standard_native_operational_vertical.py::"
+        "test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical"
+        f"[{rate_hz}]"
+        for rate_hz in (10_000_000, 15_000_000, 25_000_000)
+    ),
+}
+
 
 class OpsError(RuntimeError):
     pass
@@ -376,7 +385,7 @@ def selected_gates(
     elif changed_test_paths:
         # Component changes are required to carry component-owned tests. Running the
         # exact changed tests avoids recursively selecting a multi-minute directory.
-        test_paths = (
+        requested_test_paths = (
             changed_test_paths
             if fast
             else sorted(
@@ -387,6 +396,9 @@ def selected_gates(
                     for path in component.tests
                 )
             )
+        )
+        test_paths = sorted(
+            {shard for path in requested_test_paths for shard in _expand_test_shard(path)}
         )
         for index, path in enumerate(test_paths, start=1):
             owners = tuple(
@@ -427,19 +439,34 @@ def selected_gates(
     else:
         test_paths = sorted({path for component in components for path in component.tests})
     if test_paths:
-        needs_postgres = any(component.postgres for component in components)
-        expression = "not real_corpus and not legacy_oracle"
-        if not needs_postgres:
-            expression += " and not postgres"
-        gates.append(
-            Gate(
-                "pytest-components",
-                _python_tool(
-                    "pytest", "-q", "-p", "no:cacheprovider", "-m", expression, *test_paths
-                ),
-                needs_postgres=needs_postgres,
-            )
+        expanded_test_paths = tuple(
+            sorted({shard for path in test_paths for shard in _expand_test_shard(path)})
         )
+        for index, path in enumerate(expanded_test_paths, start=1):
+            owners = tuple(
+                component
+                for component in components
+                if any(fnmatch.fnmatchcase(path, pattern) for pattern in component.patterns)
+            )
+            needs_postgres = any(component.postgres for component in owners)
+            expression = "not real_corpus and not legacy_oracle"
+            if not needs_postgres:
+                expression += " and not postgres"
+            gates.append(
+                Gate(
+                    f"pytest-components-{index}",
+                    _python_tool(
+                        "pytest",
+                        "-q",
+                        "-p",
+                        "no:cacheprovider",
+                        "-m",
+                        expression,
+                        path,
+                    ),
+                    needs_postgres=needs_postgres,
+                )
+            )
     if any(component.web for component in components) or all_tests:
         npm = shutil.which("npm") or "/usr/bin/npm"
         gates.extend(
@@ -460,15 +487,18 @@ def selected_gates(
 
 
 def _expand_test_shard(path: str) -> tuple[str, ...]:
+    if path in _DEFAULT_TEST_NODE_SHARDS:
+        return _DEFAULT_TEST_NODE_SHARDS[path]
     location = ROOT / path
     if not location.is_dir():
         return (path,)
-    files = tuple(
+    files = (
         item.relative_to(ROOT).as_posix()
         for item in sorted(location.glob("test_*.py"))
         if item.is_file()
     )
-    return files or (path,)
+    expanded = tuple(shard for item in files for shard in _expand_test_shard(item))
+    return expanded or (path,)
 
 
 def _python_tool(name: str, *arguments: str) -> tuple[str, ...]:
@@ -1437,8 +1467,12 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     if len(target) != 40 or any(character not in "0123456789abcdef" for character in target):
         raise OpsError("deployment revision must be one full lowercase Git SHA")
     origin = _run_git("rev-parse", "origin/main")
-    if target != origin:
-        raise OpsError("ordinary deployment target must equal the locally fetched origin/main")
+    local_head = _run_git("rev-parse", "HEAD") if stage_only and target != origin else None
+    if target != origin and target != local_head:
+        raise OpsError(
+            "deployment target must equal the locally fetched origin/main; "
+            "stage-only may instead use the clean local HEAD"
+        )
     current = _selected_release_revision()
     current_api = _selected_component_release_revision("api") if fast else None
     comparison = current_api if fast and current_api is not None else current
@@ -2783,7 +2817,10 @@ def parser() -> argparse.ArgumentParser:
     deploy.add_argument(
         "--stage-only",
         action="store_true",
-        help="stage and validate an exact revision without cutting over runtime state",
+        help=(
+            "stage and validate exact origin/main or the clean local HEAD without "
+            "cutting over runtime state"
+        ),
     )
     deploy.add_argument("--full", action="store_true")
     deploy.add_argument(
