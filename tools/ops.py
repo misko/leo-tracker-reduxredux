@@ -100,8 +100,15 @@ _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
 }
 _ADDITIVE_REVIEWED_ENVIRONMENT_KEYS = frozenset(
-    {"LEO_CAPTURE_PROFILE_5M", "LEO_MIXED_RATE_POLICY", "LEO_DIRECT_ASYNC_ENABLED"}
+    {
+        "LEO_CAPTURE_PROFILE_5M",
+        "LEO_MIXED_RATE_POLICY",
+        "LEO_DIRECT_ASYNC_ENABLED",
+        "LEO_SCANNER_RUN_SECONDS",
+    }
 )
+
+_CLI_NOT_FOUND_EXIT_CODE = 11
 
 
 class OpsError(RuntimeError):
@@ -2016,6 +2023,7 @@ def _fence_target_release_for_rollback(*, release: Path, target: str, previous: 
         replacement_revision=previous,
         operation_kind="rollback",
         operator="ops-rollback",
+        allow_absent=True,
     )
 
 
@@ -2026,6 +2034,7 @@ def _fence_active_release(
     replacement_revision: str,
     operation_kind: str,
     operator: str,
+    allow_absent: bool = False,
 ) -> None:
     operation_id = (
         f"{operation_kind}-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{fenced_revision}"
@@ -2046,7 +2055,28 @@ def _fence_active_release(
         "--yes",
         "--json",
     )
-    _run_as_leo(command, source_environment=True)
+    try:
+        _run_as_leo(
+            command,
+            source_environment=True,
+            capture_output=allow_absent,
+        )
+    except subprocess.CalledProcessError as error:
+        if not allow_absent or error.returncode != _CLI_NOT_FOUND_EXIT_CODE:
+            raise
+        try:
+            result = json.loads(error.stdout or "")
+        except (TypeError, ValueError) as decode_error:
+            raise error from decode_error
+        expected_message = f"pipeline release is absent: {fenced_revision}"
+        if (
+            result.get("command") != "process.stop-and-fence"
+            or result.get("exit_code") != _CLI_NOT_FOUND_EXIT_CODE
+            or result.get("message") != expected_message
+            or result.get("payload") is not None
+        ):
+            raise error
+        print(f"FENCE-NO-OP release={fenced_revision} reason=absent")
 
 
 def _install_units(release: Path) -> None:

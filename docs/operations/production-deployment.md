@@ -337,7 +337,7 @@ required_keys=(
   LEO_CAPTURE_PROFILE_5M LEO_MIXED_RATE_POLICY LEO_DIRECT_ASYNC_ENABLED
   LEO_CAPTURE_INTERVAL_SECONDS LEO_QUALIFICATION_PROFILE LEO_SOAK_PROFILE
   LEO_SCANNER_ENABLED LEO_SCANNER_RADIO_ID LEO_SCANNER_INTERVAL_SECONDS
-  LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_RUN_SECONDS LEO_SCANNER_DWELL_MS
+  LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_DWELL_MS
   LEO_SCANNER_GAIN_DB LEO_SCANNER_MARGIN_GATE LEO_SCANNER_REPORT_ROOT
 )
 for key in "${required_keys[@]}"; do
@@ -345,6 +345,12 @@ for key in "${required_keys[@]}"; do
     /etc/leo/leo.env)
   test "$count" -eq 1 || { echo "invalid environment binding count: $key=$count" >&2; exit 1; }
 done
+scanner_run_seconds_count=$(sudo awk -F= '$1 == "LEO_SCANNER_RUN_SECONDS" { count += 1 } END { print count + 0 }' \
+  /etc/leo/leo.env)
+test "$scanner_run_seconds_count" -le 1 || {
+  echo "invalid environment binding count: LEO_SCANNER_RUN_SECONDS=$scanner_run_seconds_count" >&2
+  exit 1
+}
 
 environment_snapshot=/etc/leo/leo.env.pre-$release_revision
 sudo test ! -e "$environment_snapshot"

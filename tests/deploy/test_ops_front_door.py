@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -806,6 +807,7 @@ def test_deployment_environment_adds_new_reviewed_rate_profile_bindings(
         "production-direct-async-2p5-10-15-25-hold-exact-lo-6-v2"
     )
     assert values["LEO_DIRECT_ASYNC_ENABLED"] == "true"
+    assert values["LEO_SCANNER_RUN_SECONDS"] == "300"
     assert values["LEO_PIPELINE_RELEASE_ID"] == target
 
 
@@ -1354,7 +1356,9 @@ def test_rollback_fence_cancels_only_active_target_release_work(
     monkeypatch.setattr(
         OPS,
         "_run_as_leo",
-        lambda command, *, source_environment: calls.append((command, source_environment)),
+        lambda command, *, source_environment, capture_output: calls.append(
+            (command, source_environment)
+        ),
     )
     target = "2" * 40
     previous = "1" * 40
@@ -1377,6 +1381,70 @@ def test_rollback_fence_cancels_only_active_target_release_work(
     assert "--all-active-for-release" in command
     assert "--yes" in command
     assert "--json" in command
+
+
+def test_rollback_fence_treats_exact_absent_target_release_as_noop(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    target = "2" * 40
+    previous = "1" * 40
+
+    def absent_target(*_args, **_kwargs):
+        document = {
+            "schema_version": 1,
+            "command": "process.stop-and-fence",
+            "ok": False,
+            "exit_code": 11,
+            "message": f"pipeline release is absent: {target}",
+            "payload": None,
+        }
+        raise subprocess.CalledProcessError(
+            11,
+            ("leo", "process", "stop-and-fence"),
+            output=json.dumps(document),
+        )
+
+    monkeypatch.setattr(OPS, "_run_as_leo", absent_target)
+
+    OPS._fence_target_release_for_rollback(
+        release=tmp_path / previous,
+        target=target,
+        previous=previous,
+    )
+
+    assert capsys.readouterr().out == f"FENCE-NO-OP release={target} reason=absent\n"
+
+
+def test_rollback_fence_rejects_unrelated_not_found(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    previous = "1" * 40
+
+    def unrelated_not_found(*_args, **_kwargs):
+        document = {
+            "command": "process.stop-and-fence",
+            "exit_code": 11,
+            "message": "database is absent",
+            "payload": None,
+        }
+        raise subprocess.CalledProcessError(
+            11,
+            ("leo", "process", "stop-and-fence"),
+            output=json.dumps(document),
+        )
+
+    monkeypatch.setattr(OPS, "_run_as_leo", unrelated_not_found)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        OPS._fence_target_release_for_rollback(
+            release=tmp_path / previous,
+            target=target,
+            previous=previous,
+        )
 
 
 def test_restored_runtime_verifies_divergent_selectors_and_service_health(
