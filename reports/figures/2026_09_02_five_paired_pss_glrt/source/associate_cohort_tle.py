@@ -60,9 +60,7 @@ def iso_utc(utc_ns: int) -> str:
 
 def latest_causal_tle(directory: Path, first_utc_ns: int) -> Path:
     candidates = [
-        path
-        for path in directory.glob("*.tle")
-        if path.stat().st_mtime_ns <= first_utc_ns
+        path for path in directory.glob("*.tle") if path.stat().st_mtime_ns <= first_utc_ns
     ]
     if not candidates:
         raise ValueError(f"no causal TLE snapshot in {directory}")
@@ -219,22 +217,20 @@ def load_glrt_measurements(
         if sha256(product_path) != path["sha256"]:
             raise ValueError("GLRT product changed after the cohort analysis")
         product = json.loads(product_path.read_text(encoding="utf-8"))
-        offset_s = (
-            int(product["source"]["timing"]["first_estimate_utc_ns"]) - native_first
-        ) / 1e9
+        offset_s = (int(product["source"]["timing"]["first_estimate_utc_ns"]) - native_first) / 1e9
         aligned_rows: list[tuple[float, float]] = []
         for track_row in family["tracks"]:
             track = glrt_hough_track(product, track_row["track_label"])
             for observation in track["observations"]:
-                canonical_cfo_hz = float(observation["raw_cfo_hz"]) - int(
-                    observation["alias_index"]
-                ) * GLRT_ALIAS_SPACING_HZ
+                canonical_cfo_hz = (
+                    float(observation["raw_cfo_hz"])
+                    - int(observation["alias_index"]) * GLRT_ALIAS_SPACING_HZ
+                )
                 aligned_rows.append(
                     (
                         float(observation["global_time_s"]) + offset_s,
                         canonical_cfo_hz
-                        + int(track_row["integer_alias_shift"])
-                        * GLRT_ALIAS_SPACING_HZ,
+                        + int(track_row["integer_alias_shift"]) * GLRT_ALIAS_SPACING_HZ,
                     )
                 )
         unique_rows = np.unique(np.asarray(aligned_rows, dtype=float), axis=0)
@@ -263,9 +259,7 @@ def load_glrt_anchor_measurements(
         if sha256(product_path) != path["sha256"]:
             raise ValueError("GLRT product changed after the cohort analysis")
         product = json.loads(product_path.read_text(encoding="utf-8"))
-        offset_s = (
-            int(product["source"]["timing"]["first_estimate_utc_ns"]) - native_first
-        ) / 1e9
+        offset_s = (int(product["source"]["timing"]["first_estimate_utc_ns"]) - native_first) / 1e9
         anchor_label = str(family["anchor_track_label"])
         track = glrt_hough_track(product, anchor_label)
         aligned_rows = np.asarray(
@@ -309,9 +303,7 @@ def candidate_specificity(
         "candidate_count": len(ranked),
         "best_score": best,
         "second_score": second,
-        "second_to_best_ratio": (
-            second / best if second is not None and best > 0.0 else None
-        ),
+        "second_to_best_ratio": (second / best if second is not None and best > 0.0 else None),
         "within_five_percent_of_best_count": near_tie_count,
         "specific": second is not None and second > best * 1.20,
     }
@@ -450,8 +442,7 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
                     "full_nuisance_coefficients_ascending_s": coefficients.tolist(),
                     "full_rms_us": rms(residuals) * 1e6,
                     "bidirectional_holdout_rms_us": float(holdout_result["rms"]) * 1e6,
-                    "holdout_rms_ratio_to_affine_null": float(holdout_result["rms"])
-                    / null_rms,
+                    "holdout_rms_ratio_to_affine_null": float(holdout_result["rms"]) / null_rms,
                     "holdout_mse_improvement_over_affine_null": 1.0
                     - (float(holdout_result["rms"]) / null_rms) ** 2,
                     "bidirectional_holdout": holdout_result,
@@ -480,24 +471,19 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
                     times_s,
                     degree=0,
                 )
-                null_rms = float(
-                    glrt_nulls[receiver_id]["bidirectional_holdout"]["rms"]
-                )
+                null_rms = float(glrt_nulls[receiver_id]["bidirectional_holdout"]["rms"])
                 receiver_results[label] = {
                     "full_constant_cfo_offset_hz": float(coefficients[0]),
                     "full_rms_hz": rms(residuals),
                     "bidirectional_holdout_rms_hz": float(holdout_result["rms"]),
-                    "holdout_rms_ratio_to_constant_null": float(holdout_result["rms"])
-                    / null_rms,
+                    "holdout_rms_ratio_to_constant_null": float(holdout_result["rms"]) / null_rms,
                     "holdout_mse_improvement_over_constant_null": 1.0
                     - (float(holdout_result["rms"]) / null_rms) ** 2,
                     "bidirectional_holdout": holdout_result,
                 }
             glrt_results[str(receiver_id)] = receiver_results
         glrt_anchor_results: dict[str, Any] = {}
-        for receiver_id, (times_s, observed_hz, rf_hz, anchor_label) in (
-            glrt_anchor.items()
-        ):
+        for receiver_id, (times_s, observed_hz, rf_hz, anchor_label) in glrt_anchor.items():
             physical_full = np.asarray(
                 doppler_shift_hz(rf_hz, fine_tracks.range_rate_km_s[track_row]),
                 dtype=float,
@@ -515,16 +501,13 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
                 times_s,
                 degree=0,
             )
-            null_rms = float(
-                glrt_anchor_nulls[receiver_id]["bidirectional_holdout"]["rms"]
-            )
+            null_rms = float(glrt_anchor_nulls[receiver_id]["bidirectional_holdout"]["rms"])
             glrt_anchor_results[str(receiver_id)] = {
                 "anchor_track_label": anchor_label,
                 "full_constant_cfo_offset_hz": float(coefficients[0]),
                 "full_rms_hz": rms(residuals),
                 "bidirectional_holdout_rms_hz": float(holdout_result["rms"]),
-                "holdout_rms_ratio_to_constant_null": float(holdout_result["rms"])
-                / null_rms,
+                "holdout_rms_ratio_to_constant_null": float(holdout_result["rms"]) / null_rms,
                 "holdout_mse_improvement_over_constant_null": 1.0
                 - (float(holdout_result["rms"]) / null_rms) ** 2,
                 "bidirectional_holdout": holdout_result,
@@ -547,13 +530,9 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
                     np.max(fine_tracks.elevation_deg[track_row, actual])
                 ),
                 "midpoint_azimuth_deg": float(fine_tracks.azimuth_deg[track_row, midpoint]),
-                "midpoint_elevation_deg": float(
-                    fine_tracks.elevation_deg[track_row, midpoint]
-                ),
+                "midpoint_elevation_deg": float(fine_tracks.elevation_deg[track_row, midpoint]),
                 "midpoint_range_km": float(fine_tracks.range_km[track_row, midpoint]),
-                "midpoint_range_rate_km_s": float(
-                    fine_tracks.range_rate_km_s[track_row, midpoint]
-                ),
+                "midpoint_range_rate_km_s": float(fine_tracks.range_rate_km_s[track_row, midpoint]),
                 "pss": pss_results,
                 "glrt": glrt_results,
                 "glrt_anchor_sensitivity": glrt_anchor_results,
@@ -601,26 +580,22 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
     for row in candidates:
         physical_ratios = np.asarray(
             [
-                row["glrt"][receiver]["physical_iq_sign"]
-                ["holdout_rms_ratio_to_constant_null"]
+                row["glrt"][receiver]["physical_iq_sign"]["holdout_rms_ratio_to_constant_null"]
                 for receiver in glrt_rankings
             ],
             dtype=float,
         )
         opposite_ratios = np.asarray(
             [
-                row["glrt"][receiver]["opposite_iq_sign_control"]
-                ["holdout_rms_ratio_to_constant_null"]
+                row["glrt"][receiver]["opposite_iq_sign_control"][
+                    "holdout_rms_ratio_to_constant_null"
+                ]
                 for receiver in glrt_rankings
             ],
             dtype=float,
         )
-        row["glrt_all_receiver_physical_score"] = float(
-            np.mean(np.square(physical_ratios))
-        )
-        row["glrt_all_receiver_opposite_control_score"] = float(
-            np.mean(np.square(opposite_ratios))
-        )
+        row["glrt_all_receiver_physical_score"] = float(np.mean(np.square(physical_ratios)))
+        row["glrt_all_receiver_opposite_control_score"] = float(np.mean(np.square(opposite_ratios)))
     glrt_all_receiver_physical = rank_rows(
         candidates,
         ("glrt_all_receiver_physical_score",),
@@ -646,15 +621,12 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
     for row in candidates:
         anchor_ratios = np.asarray(
             [
-                row["glrt_anchor_sensitivity"][receiver]
-                ["holdout_rms_ratio_to_constant_null"]
+                row["glrt_anchor_sensitivity"][receiver]["holdout_rms_ratio_to_constant_null"]
                 for receiver in glrt_anchor_rankings
             ],
             dtype=float,
         )
-        row["glrt_all_receiver_anchor_sensitivity_score"] = float(
-            np.mean(np.square(anchor_ratios))
-        )
+        row["glrt_all_receiver_anchor_sensitivity_score"] = float(np.mean(np.square(anchor_ratios)))
     glrt_all_receiver_anchor = rank_rows(
         candidates,
         ("glrt_all_receiver_anchor_sensitivity_score",),
@@ -665,28 +637,22 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
         for row in candidates:
             assert row["pss"] is not None
             pss_ratio = float(
-                row["pss"]["physical_arrival_delay"]
-                ["holdout_rms_ratio_to_affine_null"]
+                row["pss"]["physical_arrival_delay"]["holdout_rms_ratio_to_affine_null"]
             )
             glrt_ratio = float(
-                row["glrt"][best_receiver]["physical_iq_sign"]
-                ["holdout_rms_ratio_to_constant_null"]
+                row["glrt"][best_receiver]["physical_iq_sign"]["holdout_rms_ratio_to_constant_null"]
             )
             opposite_ratio = float(
-                row["glrt"][best_receiver]["opposite_iq_sign_control"]
-                ["holdout_rms_ratio_to_constant_null"]
+                row["glrt"][best_receiver]["opposite_iq_sign_control"][
+                    "holdout_rms_ratio_to_constant_null"
+                ]
             )
             mirrored_ratio = float(
-                row["pss"]["mirrored_sign_control"]
-                ["holdout_rms_ratio_to_affine_null"]
+                row["pss"]["mirrored_sign_control"]["holdout_rms_ratio_to_affine_null"]
             )
             row["joint_physical_score"] = pss_ratio**2 + glrt_ratio**2
-            row["joint_pss_physical_glrt_opposite_score"] = (
-                pss_ratio**2 + opposite_ratio**2
-            )
-            row["joint_mirrored_pss_glrt_physical_score"] = (
-                mirrored_ratio**2 + glrt_ratio**2
-            )
+            row["joint_pss_physical_glrt_opposite_score"] = pss_ratio**2 + opposite_ratio**2
+            row["joint_mirrored_pss_glrt_physical_score"] = mirrored_ratio**2 + glrt_ratio**2
             row["joint_pss_physical_all_receiver_glrt_score"] = (
                 pss_ratio**2 + row["glrt_all_receiver_physical_score"]
             )
@@ -822,9 +788,7 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
     ) -> dict[str, Any]:
         assert row["pss"] is not None
         track_row = fine_row_by_catalogue_index[int(row["catalogue_index"])]
-        geometric_delay_s = (
-            fine_tracks.range_km[track_row] * 1000.0 / LIGHT_SPEED_M_S
-        )
+        geometric_delay_s = fine_tracks.range_km[track_row] * 1000.0 / LIGHT_SPEED_M_S
         predicted_s = np.interp(pss_times_s, fine_times_s, geometric_delay_s)
         if model_label == "mirrored_sign_control":
             predicted_s = -predicted_s
@@ -905,9 +869,7 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
                 "curves": pss_curves,
             }
         )
-    diagnostic_receivers = (
-        [best_receiver] if has_pss else sorted(glrt_rankings, key=int)[:2]
-    )
+    diagnostic_receivers = [best_receiver] if has_pss else sorted(glrt_rankings, key=int)[:2]
     for receiver in diagnostic_receivers:
         independent = glrt_rankings[receiver]["physical"][0]
         glrt_curves = [
@@ -958,17 +920,12 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
                 str(receiver): int(values[0].size) for receiver, values in glrt.items()
             },
             "glrt_anchor_observation_count_by_receiver": {
-                str(receiver): int(values[0].size)
-                for receiver, values in glrt_anchor.items()
+                str(receiver): int(values[0].size) for receiver, values in glrt_anchor.items()
             },
         },
         "nulls": {
             "pss_affine": (
-                {
-                    key: value
-                    for key, value in pss_null.items()
-                    if not key.startswith("_")
-                }
+                {key: value for key, value in pss_null.items() if not key.startswith("_")}
                 if pss_null is not None
                 else None
             ),
@@ -984,21 +941,16 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
             "pss_physical_best": pss_physical[0] if pss_physical else None,
             "pss_mirrored_control_best": pss_mirrored[0] if pss_mirrored else None,
             "glrt_physical_best_by_receiver": {
-                receiver: rankings["physical"][0]
-                for receiver, rankings in glrt_rankings.items()
+                receiver: rankings["physical"][0] for receiver, rankings in glrt_rankings.items()
             },
             "glrt_opposite_control_best_by_receiver": {
-                receiver: rankings["opposite"][0]
-                for receiver, rankings in glrt_rankings.items()
+                receiver: rankings["opposite"][0] for receiver, rankings in glrt_rankings.items()
             },
             "glrt_all_receiver_physical_best": glrt_all_receiver_physical[0],
             "glrt_all_receiver_opposite_control_best": glrt_all_receiver_opposite[0],
-            "glrt_all_receiver_anchor_sensitivity_best": (
-                glrt_all_receiver_anchor[0]
-            ),
+            "glrt_all_receiver_anchor_sensitivity_best": (glrt_all_receiver_anchor[0]),
             "glrt_anchor_sensitivity_best_by_receiver": {
-                receiver: rankings[0]
-                for receiver, rankings in glrt_anchor_rankings.items()
+                receiver: rankings[0] for receiver, rankings in glrt_anchor_rankings.items()
             },
             "joint_physical_best": joint_physical[0] if joint_physical else None,
             "joint_glrt_opposite_control_best": (
@@ -1008,31 +960,25 @@ def evaluate_capture(capture: dict[str, Any], tle_path: Path) -> dict[str, Any]:
                 joint_pss_mirrored[0] if joint_pss_mirrored else None
             ),
             "joint_all_receiver_physical_best": (
-                joint_all_receiver_physical[0]
-                if joint_all_receiver_physical
-                else None
+                joint_all_receiver_physical[0] if joint_all_receiver_physical else None
             ),
             "joint_all_receiver_glrt_opposite_control_best": (
-                joint_all_receiver_glrt_opposite[0]
-                if joint_all_receiver_glrt_opposite
-                else None
+                joint_all_receiver_glrt_opposite[0] if joint_all_receiver_glrt_opposite else None
             ),
             "joint_all_receiver_pss_mirrored_control_best": (
-                joint_all_receiver_pss_mirrored[0]
-                if joint_all_receiver_pss_mirrored
-                else None
+                joint_all_receiver_pss_mirrored[0] if joint_all_receiver_pss_mirrored else None
             ),
             "cross_ranks": (
                 {
                     "pss_physical_best_primary_glrt_physical_rank": pss_physical[0][
                         f"glrt_rx{best_receiver}_physical_rank"
                     ],
-                    "primary_glrt_physical_best_pss_physical_rank": glrt_rankings[
-                        best_receiver
-                    ]["physical"][0]["pss_physical_rank"],
-                    "pss_physical_best_all_receiver_glrt_physical_rank": pss_physical[
-                        0
-                    ]["glrt_all_receiver_physical_rank"],
+                    "primary_glrt_physical_best_pss_physical_rank": glrt_rankings[best_receiver][
+                        "physical"
+                    ][0]["pss_physical_rank"],
+                    "pss_physical_best_all_receiver_glrt_physical_rank": pss_physical[0][
+                        "glrt_all_receiver_physical_rank"
+                    ],
                     "all_receiver_glrt_physical_best_pss_physical_rank": (
                         glrt_all_receiver_physical[0]["pss_physical_rank"]
                     ),
@@ -1243,8 +1189,9 @@ def render_cohort_summary(results: list[dict[str, Any]], path: Path) -> None:
     labels = [result["capture_id"].split("-")[-1] for result in results]
     pss_ratios = [
         (
-            result["headline"]["pss_physical_best"]["pss"]
-            ["physical_arrival_delay"]["holdout_rms_ratio_to_affine_null"]
+            result["headline"]["pss_physical_best"]["pss"]["physical_arrival_delay"][
+                "holdout_rms_ratio_to_affine_null"
+            ]
             if result["headline"]["pss_physical_best"] is not None
             else math.nan
         )
@@ -1252,8 +1199,9 @@ def render_cohort_summary(results: list[dict[str, Any]], path: Path) -> None:
     ]
     pss_mirrored_ratios = [
         (
-            result["headline"]["pss_mirrored_control_best"]["pss"]
-            ["mirrored_sign_control"]["holdout_rms_ratio_to_affine_null"]
+            result["headline"]["pss_mirrored_control_best"]["pss"]["mirrored_sign_control"][
+                "holdout_rms_ratio_to_affine_null"
+            ]
             if result["headline"]["pss_mirrored_control_best"] is not None
             else math.nan
         )
@@ -1265,19 +1213,16 @@ def render_cohort_summary(results: list[dict[str, Any]], path: Path) -> None:
     for result in results:
         glrt_ratios.append(
             math.sqrt(
-                result["headline"]["glrt_all_receiver_physical_best"]
-                ["glrt_all_receiver_physical_score"]
+                result["headline"]["glrt_all_receiver_physical_best"][
+                    "glrt_all_receiver_physical_score"
+                ]
             )
         )
         joint = result["headline"]["joint_all_receiver_physical_best"]
         joint_scores.append(
-            joint["joint_pss_physical_all_receiver_glrt_score"]
-            if joint is not None
-            else math.nan
+            joint["joint_pss_physical_all_receiver_glrt_score"] if joint is not None else math.nan
         )
-        joint_mirrored = result["headline"][
-            "joint_all_receiver_pss_mirrored_control_best"
-        ]
+        joint_mirrored = result["headline"]["joint_all_receiver_pss_mirrored_control_best"]
         joint_mirrored_scores.append(
             joint_mirrored["joint_mirrored_pss_all_receiver_glrt_physical_score"]
             if joint_mirrored is not None
@@ -1468,15 +1413,17 @@ def main() -> None:
                     (
                         {
                             "capture_id": result["capture_id"],
-                            "norad_id": result["headline"]
-                            ["joint_all_receiver_physical_best"]["norad_id"],
-                            "object_name": result["headline"]
-                            ["joint_all_receiver_physical_best"]["object_name"],
-                            "specific": result["specificity"]
-                            ["joint_all_receiver_physical"]["specific"],
+                            "norad_id": result["headline"]["joint_all_receiver_physical_best"][
+                                "norad_id"
+                            ],
+                            "object_name": result["headline"]["joint_all_receiver_physical_best"][
+                                "object_name"
+                            ],
+                            "specific": result["specificity"]["joint_all_receiver_physical"][
+                                "specific"
+                            ],
                         }
-                        if result["headline"]["joint_all_receiver_physical_best"]
-                        is not None
+                        if result["headline"]["joint_all_receiver_physical_best"] is not None
                         else {
                             "capture_id": result["capture_id"],
                             "norad_id": None,

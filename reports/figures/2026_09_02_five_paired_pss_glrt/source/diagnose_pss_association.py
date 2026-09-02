@@ -84,9 +84,7 @@ def evaluate(
     times_s = np.asarray([item.center_time_s for item in ordered], dtype=float)
     phases_s = np.asarray([item.median_frame_phase_s for item in ordered], dtype=float)
     period_s = 1.0 / 750.0
-    unwrapped_s = np.unwrap(phases_s / period_s * 2.0 * np.pi) * (
-        period_s / (2.0 * np.pi)
-    )
+    unwrapped_s = np.unwrap(phases_s / period_s * 2.0 * np.pi) * (period_s / (2.0 * np.pi))
     fitted_s = np.polyval(
         np.asarray(fitted.coefficients_descending_s, dtype=float),
         times_s - fitted.time_origin_s,
@@ -98,13 +96,9 @@ def evaluate(
             "span_s": fitted.time_stop_s - fitted.time_start_s,
             "cfo_min_hz": min(item.nominal_frequency_offset_hz for item in selected),
             "cfo_max_hz": max(item.nominal_frequency_offset_hz for item in selected),
-            "robust_z_median": float(
-                np.median([item.candidate.robust_z for item in selected])
-            ),
+            "robust_z_median": float(np.median([item.candidate.robust_z for item in selected])),
             "fit_rms_residual_us": fitted.rms_residual_s * 1e6,
-            "fit_maximum_absolute_residual_us": (
-                fitted.maximum_absolute_residual_s * 1e6
-            ),
+            "fit_maximum_absolute_residual_us": (fitted.maximum_absolute_residual_s * 1e6),
             "fit_time_origin_s": fitted.time_origin_s,
             "fit_coefficients_descending_s": list(fitted.coefficients_descending_s),
             "mode_ids": [item.mode_id for item in ordered],
@@ -187,11 +181,7 @@ def render(evidence: dict[str, Any], path: Path) -> None:
 def main() -> None:
     args = arguments()
     document = json.loads(args.input.read_text(encoding="utf-8"))
-    modes = tuple(
-        lightweight_mode(mode)
-        for block in document["blocks"]
-        for mode in block["modes"]
-    )
+    modes = tuple(lightweight_mode(mode) for block in document["blocks"] for mode in block["modes"])
     configurations = (
         ("published_default", 2.0, 150_000.0),
         ("phase_4us", 4.0, 150_000.0),
