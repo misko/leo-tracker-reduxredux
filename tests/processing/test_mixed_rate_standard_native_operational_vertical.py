@@ -704,10 +704,16 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
         ]
 
         seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
-        expected_product_count = 59 if high_rate_hz == 25_000_000 else 99
+        analyzed_path_count = 2 if high_rate_hz == 25_000_000 else 3
+        previous_product_count = 59 if high_rate_hz == 25_000_000 else 99
+        expected_product_count = previous_product_count + analyzed_path_count
         expected_png_count = 35 if high_rate_hz == 25_000_000 else 60
         assert len(seal.products) == expected_product_count
         assert sum(item.media_type == "image/png" for item in seal.products) == expected_png_count
+        assert (
+            sum(item.kind == "standard.glrt-fractional-epoch" for item in seal.products)
+            == analyzed_path_count
+        )
         assert {
             item.schema_version for item in seal.products if item.kind == "standard.path-report"
         } == {4}
@@ -809,12 +815,12 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
                 assert response.status_code == 200
                 payload = response.json()
                 expected_schema_version = (
-                    11
+                    13
                     if subject_id == low_radio_subject_id
                     else (
                         9
                         if high_rate_hz != 25_000_000 and subject_id == root_subject.subject_id
-                        else 10
+                        else 12
                     )
                 )
                 assert payload["schema_version"] == expected_schema_version
