@@ -76,6 +76,13 @@ active captures, and `leo acquire resume` to permit it again. Pausing the
 acquisition service therefore pauses scanner capture as well; there is no
 separate scanner service or timer to coordinate.
 
+For the initial two-rate canary, keep the service environment disabled and use
+the runbook's `leo acquire run --scanner-only --max-scanner-runs 2` procedure.
+This bounded mode never enqueues or claims ordinary dwells, but it still honors
+the durable pause state and global radio-owner lease. Do not enable unattended
+scanner slots until the scanner-IQ retention workflow has been reviewed and
+tested.
+
 The independent `leo-release-qualification.timer` owns no radio or production
 data. It runs the protected detector/processing corpus and compiled Chromium
 E2E against a dedicated PostgreSQL database, temporary RecordingStore roots,

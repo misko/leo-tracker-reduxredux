@@ -153,6 +153,58 @@ def test_two_workers_can_never_claim_radio_operations_concurrently(catalog_harne
     assert len(catalog_harness.repository.active_acquisition_operations()) == 2
 
 
+def test_kind_filtered_claim_skips_other_pending_work_but_keeps_global_mutex(
+    catalog_harness,
+) -> None:
+    dwell = _enqueue(catalog_harness, "dwell:older")
+    scan = _enqueue(catalog_harness, "scan:newer", "scanner_sweep")
+
+    visible = catalog_harness.repository.active_acquisition_operations(
+        kinds=("scanner_sweep",),
+    )
+    scanner_lease = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="scanner-canary",
+        lease_for=timedelta(minutes=2),
+        kinds=("scanner_sweep",),
+    )
+
+    assert [item.operation_id for item in visible] == [scan.operation_id]
+    assert scanner_lease is not None
+    assert scanner_lease.operation_id == scan.operation_id
+    assert (
+        catalog_harness.repository.claim_acquisition_operation(
+            worker_id="ordinary-worker",
+            lease_for=timedelta(minutes=2),
+            kinds=("scheduled_recording",),
+        )
+        is None
+    )
+
+    catalog_harness.repository.complete_acquisition_operation(
+        operation_id=scan.operation_id,
+        worker_id="scanner-canary",
+        outcome="scanner canary complete",
+    )
+    dwell_lease = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="ordinary-worker",
+        lease_for=timedelta(minutes=2),
+        kinds=("scheduled_recording",),
+    )
+    assert dwell_lease is not None
+    assert dwell_lease.operation_id == dwell.operation_id
+
+
+def test_empty_acquisition_operation_kind_filter_is_rejected(catalog_harness) -> None:
+    with pytest.raises(ValueError, match="kind filter cannot be empty"):
+        catalog_harness.repository.active_acquisition_operations(kinds=())
+    with pytest.raises(ValueError, match="kind filter cannot be empty"):
+        catalog_harness.repository.claim_acquisition_operation(
+            worker_id="worker",
+            lease_for=timedelta(minutes=1),
+            kinds=(),
+        )
+
+
 def test_expired_lease_is_recovered_without_dropping_the_intent(catalog_harness) -> None:
     operation = _enqueue(catalog_harness, "dwell:recover")
     lease = catalog_harness.repository.claim_acquisition_operation(

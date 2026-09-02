@@ -7,7 +7,7 @@ outside these methods while a worker holds a renewable lease.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -327,12 +327,16 @@ class CatalogRepository:
             return _acquisition_operation_record(operation)
 
     def active_acquisition_operations(
-        self, *, limit: int = 200
+        self,
+        *,
+        limit: int = 200,
+        kinds: Sequence[str] | None = None,
     ) -> tuple[AcquisitionOperationRecord, ...]:
         if limit < 1 or limit > 200:
             raise ValueError("active acquisition operation limit must be in [1, 200]")
+        selected_kinds = _acquisition_operation_kinds(kinds)
         with self._sessions() as session:
-            operations = session.scalars(
+            statement = (
                 select(AcquisitionOperation)
                 .where(AcquisitionOperation.state.in_(("pending", "leased")))
                 .order_by(
@@ -343,6 +347,9 @@ class CatalogRepository:
                 )
                 .limit(limit)
             )
+            if selected_kinds is not None:
+                statement = statement.where(AcquisitionOperation.kind.in_(selected_kinds))
+            operations = session.scalars(statement)
             return tuple(_acquisition_operation_record(item) for item in operations)
 
     def active_acquisition_operation_count(self) -> int:
@@ -357,13 +364,18 @@ class CatalogRepository:
             )
 
     def claim_acquisition_operation(
-        self, *, worker_id: str, lease_for: timedelta
+        self,
+        *,
+        worker_id: str,
+        lease_for: timedelta,
+        kinds: Sequence[str] | None = None,
     ) -> AcquisitionOperationLease | None:
         """Claim exactly one operation under a database-wide radio-owner mutex."""
 
         _require_positive_duration(lease_for)
         if not worker_id or len(worker_id) > 128:
             raise ValueError("acquisition worker ID must contain 1..128 characters")
+        selected_kinds = _acquisition_operation_kinds(kinds)
         with self._sessions.begin() as session:
             now = _database_now(session)
             # Claims and reclaim use the same transaction mutex. The partial
@@ -382,7 +394,7 @@ class CatalogRepository:
             )
             if int(active or 0) != 0:
                 return None
-            operation = session.scalar(
+            statement = (
                 select(AcquisitionOperation)
                 .where(
                     AcquisitionOperation.state == "pending",
@@ -396,6 +408,9 @@ class CatalogRepository:
                 .limit(1)
                 .with_for_update(skip_locked=True)
             )
+            if selected_kinds is not None:
+                statement = statement.where(AcquisitionOperation.kind.in_(selected_kinds))
+            operation = session.scalar(statement)
             if operation is None:
                 return None
             expires_at = now + lease_for
@@ -6788,6 +6803,17 @@ def _clear_acquisition_lease(operation: AcquisitionOperation) -> None:
 def _require_positive_duration(value: timedelta) -> None:
     if value <= timedelta(0):
         raise ValueError("lease duration must be positive")
+
+
+def _acquisition_operation_kinds(kinds: Sequence[str] | None) -> tuple[str, ...] | None:
+    if kinds is None:
+        return None
+    selected = tuple(dict.fromkeys(kinds))
+    if not selected:
+        raise ValueError("acquisition operation kind filter cannot be empty")
+    if any(not kind or kind != kind.strip() or len(kind) > 64 for kind in selected):
+        raise ValueError("acquisition operation kinds must contain 1..64 exact characters")
+    return selected
 
 
 def _require_aware(value: datetime) -> datetime:
