@@ -1018,6 +1018,17 @@ def test_deployment_environment_atomically_binds_reviewed_continuity_modes(
     assert environment.read_bytes() == original
 
 
+def test_deployment_scanner_authority_matches_the_environment_template() -> None:
+    template = OPS._environment_values((ROOT / "deploy/etc/leo/leo.env.example").read_bytes())
+    scanner_authority = {
+        key: value
+        for key, value in OPS._REVIEWED_CONTINUITY_ENVIRONMENT.items()
+        if key.startswith("LEO_SCANNER_")
+    }
+
+    assert {key: template[key] for key in scanner_authority} == scanner_authority
+
+
 def test_deployment_environment_refuses_missing_or_duplicate_reviewed_binding(
     tmp_path: Path,
 ) -> None:
