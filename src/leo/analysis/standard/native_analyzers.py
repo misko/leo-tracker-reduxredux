@@ -32,6 +32,9 @@ from leo.analysis.standard.native_glrt_epoch import (
     render_standard_native_glrt_epoch_rate_png,
     render_standard_native_glrt_epoch_timing_png,
 )
+from leo.analysis.standard.native_glrt_fractional import (
+    build_standard_native_glrt_fractional_epoch_v2,
+)
 from leo.analysis.standard.native_path_report import build_standard_native_path_report
 from leo.analysis.standard.native_pilot_doppler import (
     build_standard_native_pilot_doppler_segments_v3,
@@ -51,6 +54,7 @@ from leo.analysis.standard.native_products import (
     GLRT_EPOCH_TIMING_PNG_V2_PRODUCT,
     GLRT_EPOCH_TRACKING_V2_PRODUCT,
     GLRT_FRACTIONAL_EPOCH_V1_PRODUCT,
+    GLRT_FRACTIONAL_EPOCH_V2_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_PSS_GLRT_PRESENTATION_NATIVE_OUTPUTS,
@@ -107,7 +111,10 @@ from leo.contracts.standard_native import StandardProbeScheduleV4
 from leo.contracts.standard_native_glrt import (
     StandardNativeFullCaptureGlrt20msV2,
 )
-from leo.contracts.standard_native_glrt_fractional import StandardNativeGlrtFractionalEpochV1
+from leo.contracts.standard_native_glrt_fractional import (
+    StandardNativeGlrtFractionalEpochV1,
+    StandardNativeGlrtFractionalEpochV2,
+)
 from leo.contracts.standard_native_path_report import (
     StandardNativePathReportV4,
 )
@@ -223,8 +230,8 @@ class PathStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="path-standard-native",
-        algorithm_version="standard-native-evidence-v14",
-        configuration_schema="path-standard-native.evidence.v12",
+        algorithm_version="standard-native-evidence-v15",
+        configuration_schema="path-standard-native.evidence.v13",
         output_products=_NATIVE_EVIDENCE_PRODUCTS,
         resource_class=ResourceClass.HEAVY,
         accepted_outcomes=_NATIVE_OUTCOMES,
@@ -362,6 +369,20 @@ class PathStandardNativeEvidenceAnalyzer:
             dict[str, JsonValue],
             fractional_glrt_epoch.model_dump(mode="json"),
         )
+        fractional_glrt_epoch_v2 = build_standard_native_glrt_fractional_epoch_v2(
+            stateful_result=stateful_result,
+            stateful_path=stateful,
+            stateful_path_product_digest=stateful_product_digest,
+            probe_schedule=result.schedule,
+            full_capture_fractional=fractional_glrt_epoch,
+            full_capture_fractional_product_digest=canonical_digest(fractional_glrt_epoch_document),
+        )
+        if not isinstance(fractional_glrt_epoch_v2, StandardNativeGlrtFractionalEpochV2):
+            raise TypeError("native fractional GLRT V2 builder returned the wrong contract")
+        fractional_glrt_epoch_v2_document = cast(
+            dict[str, JsonValue],
+            fractional_glrt_epoch_v2.model_dump(mode="json"),
+        )
         path_report = build_standard_native_path_report(
             binding,
             quality=result.quality,
@@ -415,6 +436,10 @@ class PathStandardNativeEvidenceAnalyzer:
                 GLRT_FRACTIONAL_EPOCH_V1_PRODUCT,
                 fractional_glrt_epoch_document,
             ),
+            (
+                GLRT_FRACTIONAL_EPOCH_V2_PRODUCT,
+                fractional_glrt_epoch_v2_document,
+            ),
             (PATH_REPORT_V4_PRODUCT, path_report_document),
         )
         published = tuple(
@@ -460,6 +485,12 @@ class PathStandardNativeEvidenceAnalyzer:
                 "fractional_glrt_epoch_complete_count": fractional_glrt_epoch.complete_count,
                 "fractional_glrt_epoch_unbracketed_count": (
                     fractional_glrt_epoch.unbracketed_count
+                ),
+                "fractional_glrt_stateful_candidate_count": (
+                    fractional_glrt_epoch_v2.candidate_refinement_count
+                ),
+                "fractional_glrt_stateful_complete_count": (
+                    fractional_glrt_epoch_v2.complete_count
                 ),
                 "terminal_probe_analyzed_count": (
                     path_report.schedule_execution.accounting.analyzed_count

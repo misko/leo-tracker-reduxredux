@@ -34,6 +34,7 @@ class TrajectoryConditionedBaseline:
     association_error_hz: float
     trajectory_tracking_cfo_hz: float
     scores: tuple[PilotMethodScore, ...]
+    fractional_epoch_offset_samples: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,7 +99,7 @@ def _score(scores: tuple[PilotMethodScore, ...], method: PilotMethod) -> PilotMe
 
 def _candidate_inventory(
     detection: PilotProbeDetection,
-) -> tuple[tuple[int, int, float, tuple[PilotMethodScore, ...]], ...]:
+) -> tuple[tuple[int, int, float, tuple[PilotMethodScore, ...], float | None], ...]:
     if detection.candidates:
         return tuple(
             (
@@ -106,6 +107,7 @@ def _candidate_inventory(
                 candidate.local_epoch_sample,
                 candidate.acquired_cfo_hz,
                 candidate.scores,
+                candidate.fractional_epoch_offset_samples,
             )
             for candidate in detection.candidates
         )
@@ -114,7 +116,15 @@ def _candidate_inventory(
         and detection.local_epoch_sample is not None
         and detection.acquired_cfo_hz is not None
     ):
-        return ((0, detection.local_epoch_sample, detection.acquired_cfo_hz, detection.scores),)
+        return (
+            (
+                0,
+                detection.local_epoch_sample,
+                detection.acquired_cfo_hz,
+                detection.scores,
+                detection.fractional_epoch_offset_samples,
+            ),
+        )
     return ()
 
 
@@ -133,17 +143,45 @@ def associate_trajectory_baseline(
         raise ValueError("trajectory baseline association gate must be finite and positive")
     predicted_hz = float(trajectory.frequency_hz(detection.time_s)) + frequency_offset_hz
     choices: list[
-        tuple[float, int, int, float, PilotMethodScore, tuple[PilotMethodScore, ...]]
+        tuple[
+            float,
+            int,
+            int,
+            float,
+            PilotMethodScore,
+            tuple[PilotMethodScore, ...],
+            float | None,
+        ]
     ] = []
-    for rank, epoch_sample, acquired_cfo_hz, scores in _candidate_inventory(detection):
+    for rank, epoch_sample, acquired_cfo_hz, scores, fractional_offset in _candidate_inventory(
+        detection
+    ):
         trajectory_score = _score(scores, trajectory.method)
         if trajectory_score is None:
             continue
         error_hz = abs(trajectory_score.tracking_cfo_hz - predicted_hz)
-        choices.append((error_hz, rank, epoch_sample, acquired_cfo_hz, trajectory_score, scores))
+        choices.append(
+            (
+                error_hz,
+                rank,
+                epoch_sample,
+                acquired_cfo_hz,
+                trajectory_score,
+                scores,
+                fractional_offset,
+            )
+        )
     if not choices:
         return None
-    error_hz, rank, epoch_sample, acquired_cfo_hz, trajectory_score, scores = min(
+    (
+        error_hz,
+        rank,
+        epoch_sample,
+        acquired_cfo_hz,
+        trajectory_score,
+        scores,
+        fractional_offset,
+    ) = min(
         choices,
         key=lambda item: (item[0], item[1]),
     )
@@ -156,6 +194,7 @@ def associate_trajectory_baseline(
         association_error_hz=error_hz,
         trajectory_tracking_cfo_hz=trajectory_score.tracking_cfo_hz,
         scores=scores,
+        fractional_epoch_offset_samples=fractional_offset,
     )
 
 

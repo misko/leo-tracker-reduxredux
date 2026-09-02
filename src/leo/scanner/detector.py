@@ -12,7 +12,7 @@ from leo.analysis.starlink import (
     SymbolwiseAcquisitionConfig,
 )
 from leo.analysis.starlink.acquisition import acquire_symbolwise
-from leo.analysis.starlink.pilot_methods import conditioned_glrt64_score
+from leo.analysis.starlink.pilot_methods import conditioned_glrt64_scores, refine_glrt64_epochs
 from leo.scanner.models import Glrt64FirstDetection, ScannerConfiguration
 
 _ZERO_CALIBRATION_SHA256 = "0" * 64
@@ -44,6 +44,11 @@ class Glrt64CandidateResponse:
     control_score: float
     margin: float
     passed_margin_gate: bool
+    fractional_epoch_status: str = "not_evaluated"
+    fractional_epoch_offset_samples: float | None = None
+    fractional_frame_phase_sample: float | None = None
+    fractional_exact_score: float | None = None
+    fractional_control_score: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,15 +127,28 @@ def analyze_glrt64_dwell(
                 edge=edge,
                 config=acquisition_config,
             )
+            retained = acquired.candidates[: configuration.maximum_acquisition_candidates]
+            integer_scores = conditioned_glrt64_scores(
+                probe,
+                configuration.sample_rate_hz,
+                epoch_samples=tuple(candidate.refined_epoch_sample for candidate in retained),
+                acquired_cfo_hz=tuple(candidate.absolute_cfo_hz for candidate in retained),
+                edge=edge,
+            )
+            fractional_refinements = refine_glrt64_epochs(
+                probe,
+                configuration.sample_rate_hz,
+                integer_epoch_samples=tuple(
+                    candidate.refined_epoch_sample for candidate in retained
+                ),
+                acquired_cfo_hz=tuple(candidate.absolute_cfo_hz for candidate in retained),
+                edge=edge,
+                expected_integer_scores=integer_scores,
+            )
             candidate_responses: list[Glrt64CandidateResponse] = []
-            for candidate in acquired.candidates[: configuration.maximum_acquisition_candidates]:
-                score = conditioned_glrt64_score(
-                    probe,
-                    configuration.sample_rate_hz,
-                    epoch_sample=candidate.refined_epoch_sample,
-                    acquired_cfo_hz=candidate.absolute_cfo_hz,
-                    edge=edge,
-                )
+            for candidate, score, fractional in zip(
+                retained, integer_scores, fractional_refinements, strict=True
+            ):
                 best = score.margin if best is None else max(best, score.margin)
                 passed = score.margin >= configuration.glrt64_margin_gate
                 candidate_responses.append(
@@ -144,6 +162,13 @@ def analyze_glrt64_dwell(
                         control_score=score.control_score or 0.0,
                         margin=score.margin,
                         passed_margin_gate=passed,
+                        fractional_epoch_status=fractional.status.value,
+                        fractional_epoch_offset_samples=(
+                            fractional.fractional_epoch_offset_samples
+                        ),
+                        fractional_frame_phase_sample=(fractional.fractional_frame_phase_sample),
+                        fractional_exact_score=fractional.fractional_exact_score,
+                        fractional_control_score=fractional.fractional_control_score,
                     )
                 )
                 if passed:

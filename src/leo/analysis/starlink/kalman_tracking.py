@@ -16,6 +16,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from leo.analysis.starlink.fractional_epoch import fractional_take, fractional_take_bounds
 from leo.analysis.starlink.pilot_methods import PilotMethodCandidate, PilotProbeDetection
 from leo.analysis.starlink.templates import (
     FRAME_RATE_HZ,
@@ -107,6 +108,7 @@ class KalmanFrameEstimate:
 class _CandidateSource:
     detection_sample_start: int
     local_epoch_sample: int
+    fractional_epoch_offset_samples: float | None = None
 
 
 def state_transition(dt_s: float) -> npt.NDArray[np.float64]:
@@ -288,6 +290,7 @@ def extract_probe_frame_measurements(
     pilot_symbol_count: int,
     start_time_s: float,
     end_time_s: float,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> tuple[RawFrameMeasurement, ...]:
     """Measure prompt phase and phase-slope Doppler on each complete pilot frame."""
 
@@ -296,6 +299,8 @@ def extract_probe_frame_measurements(
         raise ValueError("Kalman probe samples must be a nonempty vector")
     if sample_rate_hz <= 0 or probe_sample_start < 0:
         raise ValueError("Kalman probe geometry is invalid")
+    if not math.isfinite(fractional_epoch_offset_samples):
+        raise ValueError("Kalman fractional epoch offset must be finite")
     if not 8 <= pilot_symbol_count <= 300:
         raise ValueError("Kalman pilot symbol count must lie in 8..300")
     template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, edge), dtype=np.complex128)
@@ -304,14 +309,16 @@ def extract_probe_frame_measurements(
     local_starts = np.rint(symbols * symbol_period).astype(int)
     local_stops = np.minimum(np.rint((symbols + 1) * symbol_period).astype(int), len(template))
     frame_period = sample_rate_hz / FRAME_RATE_HZ
+    left_guard, right_guard = fractional_take_bounds(fractional_epoch_offset_samples)
     frame_starts: list[int] = []
     frame_number = 0
     while True:
         frame_start = local_epoch_sample + round(frame_number * frame_period)
-        if frame_start + int(local_stops[-1]) > len(values):
+        continuous_start = frame_start + fractional_epoch_offset_samples
+        if continuous_start + int(local_stops[-1]) - 1 >= len(values) - right_guard:
             break
         frame_number += 1
-        if frame_start >= 0:
+        if continuous_start + int(local_starts[0]) >= left_guard:
             frame_starts.append(frame_start)
     if not frame_starts:
         return ()
@@ -324,10 +331,14 @@ def extract_probe_frame_measurements(
             continue
         positions = np.flatnonzero(counts == count)
         symbol_offsets = local_starts[positions, None] + np.arange(int(count))[None, :]
-        indexes = starts[:, None, None] + symbol_offsets[None, :, :]
+        indexes = (
+            starts[:, None, None].astype(float)
+            + symbol_offsets[None, :, :]
+            + fractional_epoch_offset_samples
+        )
         absolute_samples = probe_sample_start + indexes
         times = absolute_samples / sample_rate_hz
-        corrected = values[indexes] * np.exp(-1j * model.phase_rad(times))
+        corrected = fractional_take(values, indexes) * np.exp(-1j * model.phase_rad(times))
         reference = template[symbol_offsets]
         correlations[:, positions] = np.sum(np.conj(reference)[None, :, :] * corrected, axis=2)
         moments[:, positions] = np.mean(times, axis=2)
@@ -529,7 +540,9 @@ def raw_candidate_sources(
                 }
             )
             result[observation_id] = _CandidateSource(
-                detection.sample_start, candidate.local_epoch_sample
+                detection.sample_start,
+                candidate.local_epoch_sample,
+                candidate.fractional_epoch_offset_samples,
             )
     return result
 

@@ -354,6 +354,7 @@ def analyze_contiguous_pilot_pnt_kalman(
     maximum_residual_cfo_hz: float = 2_000.0,
     expected_symbol_roll: int = 0,
     config: PilotPntKalmanConfig | None = None,
+    initial_fractional_epoch_offset_samples: float = 0.0,
 ) -> PilotPntKalmanResult:
     """Track pilot phase modulo pi, frequency/rate, and fractional timing."""
 
@@ -363,12 +364,21 @@ def analyze_contiguous_pilot_pnt_kalman(
         raise ValueError("samples must be one dimensional")
     if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
         raise ValueError("sample rate must be finite and positive")
-    if epoch_sample < 0 or not math.isfinite(initial_absolute_cfo_hz):
+    if (
+        epoch_sample < 0
+        or not math.isfinite(initial_absolute_cfo_hz)
+        or not math.isfinite(initial_fractional_epoch_offset_samples)
+    ):
         raise ValueError("epoch must be nonnegative and initial CFO finite")
     _validate_maximum_residual_cfo(maximum_residual_cfo_hz)
     if not isinstance(expected_symbol_roll, int):
         raise ValueError("expected symbol roll must be an integer")
-    starts = _complete_frame_starts(values.size, sample_rate_hz, epoch_sample)
+    starts = _complete_frame_starts(
+        values.size,
+        sample_rate_hz,
+        epoch_sample,
+        fractional_epoch_offset_samples=initial_fractional_epoch_offset_samples,
+    )
     if not starts:
         return _empty(
             NumericalStatus.INSUFFICIENT,
@@ -428,7 +438,16 @@ def analyze_contiguous_pilot_pnt_kalman(
     rate_bootstrap_frame_index: int | None = None
 
     for frame_index, (start, reference_sample) in enumerate(
-        zip(starts, (start + reference_offset_s * sample_rate_hz for start in starts), strict=True)
+        zip(
+            starts,
+            (
+                start
+                + initial_fractional_epoch_offset_samples
+                + reference_offset_s * sample_rate_hz
+                for start in starts
+            ),
+            strict=True,
+        )
     ):
         time_s = float(reference_sample / sample_rate_hz)
         if previous_time_s is not None:
@@ -458,7 +477,10 @@ def analyze_contiguous_pilot_pnt_kalman(
             selected_edge,
             initial_absolute_cfo_hz,
         )
-        pilots = demodulator.frame(start)
+        pilots = demodulator.frame(
+            start,
+            fractional_epoch_offset_samples=initial_fractional_epoch_offset_samples,
+        )
         fit = _fit_phase_slope_frame(
             pilots * np.conj(expected),
             pilots * np.conj(control),
@@ -730,7 +752,9 @@ def analyze_contiguous_pilot_pnt_kalman(
                 residual_cfo_measurement_hz=float(fit.residual_cfo_hz),
                 absolute_cfo_measurement_hz=absolute_cfo_measurement_hz,
                 frequency_innovation_hz=frequency_innovation_hz,
-                fractional_timing_measurement_samples=timing_measurement_s * sample_rate_hz,
+                fractional_timing_measurement_samples=(
+                    initial_fractional_epoch_offset_samples + timing_measurement_s * sample_rate_hz
+                ),
                 lattice_rounding_correction_samples=(
                     0.0
                     if channel_reference is None
@@ -747,7 +771,9 @@ def analyze_contiguous_pilot_pnt_kalman(
                 tracked_phase_modulo_pi_rad=_wrap_period(float(x[0]), math.pi),
                 tracked_absolute_cfo_hz=float(x[1] / (2 * math.pi)),
                 tracked_doppler_rate_hz_s=float(x[2] / (2 * math.pi)),
-                tracked_fractional_timing_samples=float(x[3] * sample_rate_hz),
+                tracked_fractional_timing_samples=float(
+                    initial_fractional_epoch_offset_samples + x[3] * sample_rate_hz
+                ),
                 tracked_timing_rate_s_s=float(x[4]),
                 phase_sigma_rad=float(math.sqrt(diagonal[0])),
                 frequency_sigma_hz=float(math.sqrt(diagonal[1]) / (2 * math.pi)),
@@ -811,6 +837,7 @@ def analyze_contiguous_pilot_pnt_kalman_v2(
     maximum_residual_cfo_hz: float = 2_000.0,
     expected_symbol_roll: int = 0,
     config: PilotPntKalmanConfigV2 | None = None,
+    initial_fractional_epoch_offset_samples: float = 0.0,
 ) -> PilotPntKalmanResult:
     """Run the corrected independently reacquiring modulo-pi tracker.
 
@@ -832,6 +859,7 @@ def analyze_contiguous_pilot_pnt_kalman_v2(
         maximum_residual_cfo_hz=maximum_residual_cfo_hz,
         expected_symbol_roll=expected_symbol_roll,
         config=settings,
+        initial_fractional_epoch_offset_samples=initial_fractional_epoch_offset_samples,
     )
 
 

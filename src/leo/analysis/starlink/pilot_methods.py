@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -18,6 +18,14 @@ from leo.analysis.starlink.acquisition import (
     ReceiverFrequencyCalibration,
     SymbolwiseAcquisitionConfig,
     acquire_symbolwise,
+)
+from leo.analysis.starlink.fractional_epoch import (
+    FRACTIONAL_GLRT_GRID_OFFSETS,
+    FractionalEpochRefinement,
+    build_fractional_epoch_refinement,
+    circular_epoch_grid,
+    fractional_take,
+    fractional_take_bounds,
 )
 from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
@@ -76,6 +84,9 @@ class PilotProbeDetection:
     source_candidate_count: int = 0
     truncated_candidate_count: int = 0
     candidates: tuple[PilotMethodCandidate, ...] = ()
+    fractional_epoch_offset_samples: float | None = None
+    fractional_epoch_status: str = "not_evaluated"
+    fractional_epoch: FractionalEpochRefinement | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +99,9 @@ class PilotMethodCandidate:
     scores: tuple[PilotMethodScore, ...]
     qam_accuracy: float | None
     qam_evm: float | None
+    fractional_epoch_offset_samples: float | None = None
+    fractional_epoch_status: str = "not_evaluated"
+    fractional_epoch: FractionalEpochRefinement | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +154,31 @@ class _ConditionedCorrelationWorkspace:
         )
 
 
+def integer_epoch_detection_document(detection: PilotProbeDetection) -> dict[str, object]:
+    """Return the immutable pre-fractional persisted detection projection."""
+
+    document = asdict(detection)
+    document.pop("fractional_epoch_offset_samples", None)
+    document.pop("fractional_epoch_status", None)
+    document.pop("fractional_epoch", None)
+    candidates = document.get("candidates")
+    if isinstance(candidates, tuple):
+        document["candidates"] = tuple(
+            {
+                key: value
+                for key, value in candidate.items()
+                if key
+                not in {
+                    "fractional_epoch_offset_samples",
+                    "fractional_epoch_status",
+                    "fractional_epoch",
+                }
+            }
+            for candidate in candidates
+        )
+    return document
+
+
 def detect_pilot_methods(
     samples: np.ndarray,
     sample_rate_hz: int,
@@ -187,6 +226,9 @@ def detect_pilot_methods(
         candidate.qam_accuracy,
         candidate.qam_evm,
         "known-pilot detector family; candidate-only and payload was not decoded",
+        fractional_epoch_offset_samples=candidate.fractional_epoch_offset_samples,
+        fractional_epoch_status=candidate.fractional_epoch_status,
+        fractional_epoch=candidate.fractional_epoch,
     )
 
 
@@ -256,6 +298,17 @@ def detect_pilot_method_candidates(
             )
             for candidate in retained
         )
+    minimum_refinement_samples = round(
+        sample_rate_hz * (302 * OFDM_SYMBOL_DURATION_S + 1.0 / FRAME_RATE_HZ)
+    )
+    if len(values) >= minimum_refinement_samples:
+        candidates = _with_fractional_candidate_refinements(
+            values,
+            sample_rate_hz,
+            candidates,
+            edge=edge,
+            glrt_size=glrt_size,
+        )
     primary = candidates[0]
     return PilotProbeDetection(
         NumericalStatus.COMPLETE,
@@ -270,6 +323,9 @@ def detect_pilot_method_candidates(
         source_candidate_count=len(acquisition.candidates),
         truncated_candidate_count=len(acquisition.candidates) - len(candidates),
         candidates=candidates,
+        fractional_epoch_offset_samples=primary.fractional_epoch_offset_samples,
+        fractional_epoch_status=primary.fractional_epoch_status,
+        fractional_epoch=primary.fractional_epoch,
     )
 
 
@@ -309,6 +365,7 @@ def _evaluate_standard_candidate(
         standard_cutline=True,
         glrt_size=glrt_size,
         primary_qam_observer=primary_qam_observer,
+        refine_fractional_epoch=False,
     )
 
 
@@ -322,15 +379,46 @@ def _evaluate_candidate_with_policy(
     standard_cutline: bool,
     glrt_size: int,
     primary_qam_observer: PrimaryQamObserver | None = None,
+    refine_fractional_epoch: bool = True,
 ) -> PilotMethodCandidate:
     # Keep QAM behind the numerical call boundary: QAM itself imports these
     # acquisition primitives, and an eager package-level import makes import
     # success depend on whether callers import QAM or Starlink first.
     from leo.analysis.qam import analyze_pilot_qam
 
+    scores = conditioned_pilot_method_scores(
+        values,
+        sample_rate_hz,
+        epoch_sample=candidate.refined_epoch_sample,
+        acquired_cfo_hz=candidate.absolute_cfo_hz,
+        symbolwise_exact=candidate.verify_score,
+        symbolwise_control=candidate.conditioned_control_score,
+        qam_accuracy=None,
+        edge=edge,
+        standard_cutline=standard_cutline,
+        glrt_size=glrt_size,
+    )
+    integer_glrt = next(item for item in scores if item.method is PilotMethod.GLRT64)
+    fractional = (
+        refine_glrt64_epoch(
+            values,
+            sample_rate_hz,
+            integer_epoch_sample=candidate.refined_epoch_sample,
+            acquired_cfo_hz=candidate.absolute_cfo_hz,
+            edge=edge,
+            glrt_size=glrt_size,
+            expected_integer_score=integer_glrt,
+        )
+        if refine_fractional_epoch
+        else None
+    )
+    fractional_offset = None if fractional is None else fractional.fractional_epoch_offset_samples
+
     # QAM is an independent confirmer, not a trajectory proposal. Evaluate it
     # once on the primary acquisition basin instead of repeating the same
-    # expensive frame solve for every ranked alternative.
+    # expensive frame solve for every ranked alternative. Published QAM V1
+    # remains on the integer anchor; a future QAM major may consume the additive
+    # fractional evidence without silently changing historical semantics.
     if include_qam:
         qam = analyze_pilot_qam(
             values,
@@ -346,18 +434,18 @@ def _evaluate_candidate_with_policy(
     else:
         qam_accuracy = None
         qam_evm = None
-    scores = conditioned_pilot_method_scores(
-        values,
-        sample_rate_hz,
-        epoch_sample=candidate.refined_epoch_sample,
-        acquired_cfo_hz=candidate.absolute_cfo_hz,
-        symbolwise_exact=candidate.verify_score,
-        symbolwise_control=candidate.conditioned_control_score,
-        qam_accuracy=qam_accuracy,
-        edge=edge,
-        standard_cutline=standard_cutline,
-        glrt_size=glrt_size,
-    )
+    if qam_accuracy is not None and not standard_cutline:
+        scores = (
+            *scores,
+            PilotMethodScore(
+                PilotMethod.QAM_ACCURACY,
+                qam_accuracy,
+                None,
+                qam_accuracy,
+                0.0,
+                candidate.absolute_cfo_hz,
+            ),
+        )
     return PilotMethodCandidate(
         rank=candidate.rank,
         local_epoch_sample=candidate.refined_epoch_sample,
@@ -365,7 +453,125 @@ def _evaluate_candidate_with_policy(
         scores=scores,
         qam_accuracy=qam_accuracy,
         qam_evm=qam_evm,
+        fractional_epoch_offset_samples=fractional_offset,
+        fractional_epoch_status=(
+            "not_evaluated" if fractional is None else fractional.status.value
+        ),
+        fractional_epoch=fractional,
     )
+
+
+def _with_fractional_candidate_refinements(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    candidates: tuple[PilotMethodCandidate, ...],
+    *,
+    edge: StarlinkEdge,
+    glrt_size: int,
+) -> tuple[PilotMethodCandidate, ...]:
+    """Evaluate all five-cell candidate surfaces in one bounded GLRT batch."""
+
+    if not candidates:
+        return ()
+    refinements = refine_glrt64_epochs(
+        samples,
+        sample_rate_hz,
+        integer_epoch_samples=tuple(candidate.local_epoch_sample for candidate in candidates),
+        acquired_cfo_hz=tuple(candidate.acquired_cfo_hz for candidate in candidates),
+        edge=edge,
+        glrt_size=glrt_size,
+        expected_integer_scores=tuple(
+            next(item for item in candidate.scores if item.method is PilotMethod.GLRT64)
+            for candidate in candidates
+        ),
+    )
+    return tuple(
+        replace(
+            candidate,
+            fractional_epoch_offset_samples=fractional.fractional_epoch_offset_samples,
+            fractional_epoch_status=fractional.status.value,
+            fractional_epoch=fractional,
+        )
+        for candidate, fractional in zip(candidates, refinements, strict=True)
+    )
+
+
+def refine_glrt64_epochs(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    *,
+    integer_epoch_samples: Sequence[int],
+    acquired_cfo_hz: Sequence[float],
+    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    glrt_size: int = _GLRT_SIZE,
+    expected_integer_scores: Sequence[PilotMethodScore] | None = None,
+) -> tuple[FractionalEpochRefinement, ...]:
+    """Refine several integer GLRT anchors with one circular grid batch."""
+
+    anchors = tuple(int(epoch) for epoch in integer_epoch_samples)
+    frequencies = tuple(float(frequency) for frequency in acquired_cfo_hz)
+    if len(anchors) != len(frequencies):
+        raise ValueError("integer epochs and CFOs must be equally sized vectors")
+    expected = None if expected_integer_scores is None else tuple(expected_integer_scores)
+    if expected is not None and len(expected) != len(anchors):
+        raise ValueError("expected integer scores must match the anchor count")
+    if not anchors:
+        return ()
+    grid_epochs = tuple(
+        epoch for anchor in anchors for epoch in circular_epoch_grid(anchor, sample_rate_hz)
+    )
+    grid_frequencies = tuple(
+        frequency for frequency in frequencies for _ in FRACTIONAL_GLRT_GRID_OFFSETS
+    )
+    grid_scores = conditioned_glrt64_scores(
+        samples,
+        sample_rate_hz,
+        epoch_samples=grid_epochs,
+        acquired_cfo_hz=grid_frequencies,
+        edge=edge,
+        glrt_size=glrt_size,
+    )
+    width = len(FRACTIONAL_GLRT_GRID_OFFSETS)
+    refinements: list[FractionalEpochRefinement] = []
+    for index, (anchor, frequency) in enumerate(zip(anchors, frequencies, strict=True)):
+        group = grid_scores[index * width : (index + 1) * width]
+        exact = tuple(float(item.exact_score) for item in group)
+        control = tuple(float(item.control_score or 0.0) for item in group)
+        if expected is not None:
+            integer_score = expected[index]
+            if not math.isclose(
+                exact[width // 2], integer_score.exact_score, rel_tol=0.0, abs_tol=1e-12
+            ) or not math.isclose(
+                control[width // 2],
+                float(integer_score.control_score or 0.0),
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ):
+                raise ValueError("fractional GLRT center differs from its integer anchor")
+        fractional = build_fractional_epoch_refinement(
+            integer_epoch_sample=anchor,
+            sample_rate_hz=sample_rate_hz,
+            exact_score_grid=exact,
+            control_score_grid=control,
+        )
+        offset = fractional.fractional_epoch_offset_samples
+        if offset is not None:
+            continuous = conditioned_glrt64_score(
+                samples,
+                sample_rate_hz,
+                epoch_sample=anchor,
+                acquired_cfo_hz=frequency,
+                edge=edge,
+                glrt_size=glrt_size,
+                fractional_epoch_offset_samples=offset,
+            )
+            fractional = replace(
+                fractional,
+                fractional_exact_score=continuous.exact_score,
+                fractional_control_score=continuous.control_score,
+            )
+        refinements.append(fractional)
+    return tuple(refinements)
 
 
 def conditioned_pilot_method_scores(
@@ -380,6 +586,7 @@ def conditioned_pilot_method_scores(
     edge: StarlinkEdge,
     standard_cutline: bool = False,
     glrt_size: int = _GLRT_SIZE,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> tuple[PilotMethodScore, ...]:
     """Evaluate all confirmers at one already-acquired epoch and CFO."""
 
@@ -417,6 +624,7 @@ def conditioned_pilot_method_scores(
         acquired_cfo_hz,
         edge=edge,
         selected_symbols=np.unique(np.concatenate(tuple(requested.values()))),
+        fractional_epoch_offset_samples=fractional_epoch_offset_samples,
     )
     exact = {method: workspace.select(symbols) for method, symbols in requested.items()}
     control = {
@@ -519,6 +727,7 @@ def conditioned_glrt64_score(
     acquired_cfo_hz: float,
     edge: StarlinkEdge | str = StarlinkEdge.LOWER,
     glrt_size: int = _GLRT_SIZE,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> PilotMethodScore:
     """Evaluate only GLRT-64 at one acquired epoch/CFO.
 
@@ -532,6 +741,8 @@ def conditioned_glrt64_score(
         raise ValueError("conditioned pilot samples must be a nonempty vector")
     if not math.isfinite(acquired_cfo_hz):
         raise ValueError("acquired CFO must be finite")
+    if not math.isfinite(fractional_epoch_offset_samples):
+        raise ValueError("fractional epoch offset must be finite")
     if isinstance(glrt_size, bool) or not isinstance(glrt_size, int) or glrt_size < 2:
         raise ValueError("GLRT size must be an integer of at least two")
     selected_edge = StarlinkEdge(edge)
@@ -543,6 +754,7 @@ def conditioned_glrt64_score(
         acquired_cfo_hz,
         selected_symbols=symbols,
         edge=selected_edge,
+        fractional_epoch_offset_samples=fractional_epoch_offset_samples,
     )
     exact = workspace.select(symbols)
     control = workspace.select(symbols, control=True)
@@ -554,6 +766,34 @@ def conditioned_glrt64_score(
         residual_cfo_hz,
         acquired_cfo_hz,
     )
+
+
+def refine_glrt64_epoch(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    *,
+    integer_epoch_sample: int,
+    acquired_cfo_hz: float,
+    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    glrt_size: int = _GLRT_SIZE,
+    expected_integer_score: PilotMethodScore | None = None,
+) -> FractionalEpochRefinement:
+    """Refine one integer GLRT anchor across the circular frame seam.
+
+    The five integer cells preserve the reviewed GLRT surface and candidate
+    decision.  Once bracketed, the returned exact/control values are also
+    evaluated at the continuous peak with the shared band-limited sampler.
+    """
+
+    return refine_glrt64_epochs(
+        samples,
+        sample_rate_hz,
+        integer_epoch_samples=(integer_epoch_sample,),
+        acquired_cfo_hz=(acquired_cfo_hz,),
+        edge=edge,
+        glrt_size=glrt_size,
+        expected_integer_scores=(expected_integer_score,) if expected_integer_score else None,
+    )[0]
 
 
 def conditioned_glrt64_scores(
@@ -841,6 +1081,7 @@ def _conditioned_correlation_workspace(
     *,
     edge: StarlinkEdge,
     selected_symbols: np.ndarray | None = None,
+    fractional_epoch_offset_samples: float = 0.0,
 ) -> _ConditionedCorrelationWorkspace:
     """Correlate exact/control pilots once, retaining per-symbol frame support."""
 
@@ -867,11 +1108,16 @@ def _conditioned_correlation_workspace(
         np.rint((symbols + 1) * symbol_period).astype(int), len(exact_template)
     )
     counts = local_stops - local_starts
+    if not math.isfinite(fractional_epoch_offset_samples):
+        raise ValueError("fractional epoch offset must be finite")
+    left_guard, right_guard = fractional_take_bounds(fractional_epoch_offset_samples)
     frame_starts = []
     frame = 0
     while True:
         frame_start = epoch_sample + round(frame * frame_period)
-        if frame_start >= len(samples) or frame_start + local_starts[0] >= len(samples):
+        if frame_start + fractional_epoch_offset_samples >= len(
+            samples
+        ) or frame_start + local_starts[0] + fractional_epoch_offset_samples >= len(samples):
             break
         frame_starts.append(frame_start)
         frame += 1
@@ -895,17 +1141,26 @@ def _conditioned_correlation_workspace(
         control_energy = np.sum(np.abs(control_reference) ** 2, axis=1)
         for frame_index, frame_start in enumerate(frame_starts):
             starts = frame_start + local_starts[positions]
-            valid = (starts >= 0) & (starts + count <= len(samples))
+            continuous_starts = starts.astype(float) + fractional_epoch_offset_samples
+            valid = (continuous_starts >= left_guard) & (
+                continuous_starts + count - 1 < len(samples) - right_guard
+            )
             if not np.any(valid):
                 continue
             active_positions = positions[valid]
-            absolute = frame_start + relative[valid]
-            # The frame start contributes one common phase to every symbol in
-            # that frame. Factor it from the cached within-frame rotations
-            # instead of evaluating one exponential per received sample.
-            frame_rotation = np.exp(-2j * np.pi * cfo_hz * frame_start / sample_rate_hz)
-            received = samples[absolute]
-            corrected = received * relative_rotation[valid] * frame_rotation
+            if math.isclose(fractional_epoch_offset_samples, 0.0, rel_tol=0.0, abs_tol=1e-12):
+                absolute_integer = frame_start + relative[valid]
+                # Preserve the reviewed integer scorer byte-for-byte.  The
+                # frame phase is common to every symbol and can be factored.
+                frame_rotation = np.exp(-2j * np.pi * cfo_hz * frame_start / sample_rate_hz)
+                received = samples[absolute_integer]
+                corrected = received * relative_rotation[valid] * frame_rotation
+            else:
+                absolute = (
+                    frame_start + relative[valid].astype(float) + fractional_epoch_offset_samples
+                )
+                received = fractional_take(samples, absolute)
+                corrected = received * np.exp(-2j * np.pi * cfo_hz * absolute / sample_rate_hz)
             received_energy = np.sum(np.abs(received) ** 2, axis=1)
             exact_correlation = np.sum(np.conj(exact_reference[valid]) * corrected, axis=1)
             control_correlation = np.sum(np.conj(control_reference[valid]) * corrected, axis=1)
@@ -918,7 +1173,7 @@ def _conditioned_correlation_workspace(
                 control_correlation
             ) ** 2 / np.maximum(control_energy[valid] * received_energy, 1e-20)
             time_matrix[frame_index, active_positions] = (
-                starts[valid] + (count - 1) / 2
+                continuous_starts[valid] + (count - 1) / 2
             ) / sample_rate_hz
             valid_matrix[frame_index, active_positions] = True
 

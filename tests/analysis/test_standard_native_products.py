@@ -17,6 +17,7 @@ from leo.analysis.standard.native_products import (
     GLRT_EPOCH_TIMING_PNG_V2_PRODUCT,
     GLRT_EPOCH_TRACKING_V2_PRODUCT,
     GLRT_FRACTIONAL_EPOCH_V1_PRODUCT,
+    GLRT_FRACTIONAL_EPOCH_V2_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_PSS_GLRT_PRESENTATION_NATIVE_OUTPUTS,
@@ -50,11 +51,12 @@ def test_native_product_inventory_is_additive_and_closed() -> None:
     assert PATH_INPUT_BIND_PRODUCT.schema_version == 3
     assert PATH_INPUT_BIND_V4_PRODUCT.schema_version == 4
     assert PATH_INPUT_BIND_V5_PRODUCT.schema_version == 5
-    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 42
-    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 9
+    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 43
+    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 10
     assert len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 17
     assert FULL_CAPTURE_GLRT20MS_V2_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert GLRT_FRACTIONAL_EPOCH_V1_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
+    assert GLRT_FRACTIONAL_EPOCH_V2_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V1_PRODUCT.schema_version == 1
     assert STATEFUL_PATH_V1_PRODUCT not in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V3_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
@@ -114,13 +116,14 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         PILOT_DOPPLER_SEGMENTS_V4_PRODUCT,
         FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
         GLRT_FRACTIONAL_EPOCH_V1_PRODUCT,
+        GLRT_FRACTIONAL_EPOCH_V2_PRODUCT,
         PATH_REPORT_V4_PRODUCT,
     )
     assert registry.get("path-standard-native").spec.algorithm_version == (
-        "standard-native-evidence-v14"
+        "standard-native-evidence-v15"
     )
     assert registry.get("path-standard-native").spec.configuration_schema == (
-        "path-standard-native.evidence.v12"
+        "path-standard-native.evidence.v13"
     )
     assert registry.get("path-pss-native").spec.output_products == PATH_PSS_NATIVE_OUTPUTS
     assert registry.get("path-pss-native").spec.algorithm_version == ("standard-native-path-pss-v1")
@@ -169,5 +172,5 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
             PATH_REPORT_V4_PRODUCT,
         )
     )
-    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 42
-    assert len(registry.get("path-standard-native").spec.output_products) == 9
+    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 43
+    assert len(registry.get("path-standard-native").spec.output_products) == 10

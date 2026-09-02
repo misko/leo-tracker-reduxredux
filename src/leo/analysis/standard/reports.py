@@ -16,6 +16,7 @@ from leo.analysis.starlink.pilot_methods import (
     STANDARD_PILOT_METHODS,
     PilotMethod,
     PilotProbeDetection,
+    integer_epoch_detection_document,
 )
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
@@ -387,7 +388,7 @@ def standard_v2_trajectory_documents(
         "probe_samples": probe_samples,
         "maximum_scored_candidates_per_probe": maximum_scored_candidates_per_probe,
         "methods": [method.value for method in STANDARD_PILOT_METHODS],
-        "detections": [asdict(item) for item in detections],
+        "detections": [integer_epoch_detection_document(item) for item in detections],
     }
     pilot_document = json.loads(canonical_json_bytes(pilot_document))
     bank_document = {
