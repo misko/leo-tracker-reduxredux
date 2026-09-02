@@ -50,6 +50,35 @@ def test_postgres_gate_refuses_production_before_subprocess(
         OPS.safe_child_environment(needs_postgres=True)
 
 
+def test_delegated_postgres_gate_holds_shared_qualification_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[tuple[str, ...]] = []
+    monkeypatch.setattr(
+        OPS,
+        "safe_child_environment",
+        lambda **_kwargs: {"LEO_TEST_DATABASE_URL": "postgresql+psycopg:///leo_qualification"},
+    )
+    monkeypatch.setattr(OPS, "_local_service_test_delegation_available", lambda _env: True)
+    monkeypatch.setattr(OPS, "_service_account_uid", lambda: 123)
+
+    def run(command: tuple[str, ...], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        observed.append(tuple(command))
+        return subprocess.CompletedProcess(command, 0, stdout="passed\n")
+
+    monkeypatch.setattr(OPS.subprocess, "run", run)
+
+    result = OPS._execute_gate(OPS.Gate("postgres", ("/bin/true",), needs_postgres=True))
+
+    assert result["exit_code"] == 0
+    assert observed[0][4:8] == (
+        "/usr/bin/flock",
+        "--shared",
+        str(OPS.QUALIFICATION_DATABASE_LOCK),
+        "/usr/bin/env",
+    )
+
+
 def test_run_as_leo_forces_bytecode_suppression_in_direct_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

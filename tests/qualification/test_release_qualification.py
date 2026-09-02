@@ -375,6 +375,21 @@ def test_release_lane_rejects_database_with_preexisting_test_schema(
         )
 
 
+def test_cleanup_validation_never_deletes_another_process_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        release,
+        "_qualification_schemas",
+        lambda _url: ("leo_processing_concurrent", "public"),
+    )
+
+    error = release._validate_database_cleanup("postgresql+psycopg:///leo_qualification")
+
+    assert error is not None
+    assert "automatic cross-process deletion is forbidden" in error
+
+
 def test_release_lane_refuses_qnap_roots(tmp_path: Path) -> None:
     project, _corpus, evidence = _project(tmp_path)
     with pytest.raises(ValueError, match="cannot be beneath /mnt/qnap01"):
