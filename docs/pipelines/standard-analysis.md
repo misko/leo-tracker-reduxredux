@@ -249,12 +249,29 @@ versions remain part of persisted identity even when omitted here for clarity.
 | Selection accounting | `standard.trajectory-conditioned-accounting`, matching PNG | Where conditioned replay retained or lost evidence |
 | Alias/lift | `standard.cfo-alias-map`, `standard.dealiased-trajectory-bank`, `standard.cfo-lift-replay` | Canonical identity and absolute correction evidence |
 | Final candidates | `standard.final-trajectory-bank`, `standard.glrt64-final-trajectory-table` | Replay-qualified candidate inventory |
-| Dynamic models | `standard.kalman-tracking`, `standard.pilot-doppler-segments`, overview/carrier-tracking/segment-rate PNGs | Historical long model and gated local model |
+| Dynamic models | `standard.kalman-tracking`, `standard.pilot-doppler-segments`, `standard.glrt-epoch-tracking`, overview/carrier-tracking/segment-rate/GLRT-epoch PNGs | Historical long model, gated local model, and continuity-local frame-arrival timing fits |
 | Path summary | `standard.path-report`, `standard.path-presentation` | Bounded reader-facing synthesis |
-| Path PNGs | waterfall, pilot methods, raw/de-aliased/final CFO PNGs, `standard.full-capture-glrt20ms-png` | Persisted rendering of durable science. CFO evidence uses the Variant B style: orange X observations with confidence-weighted opacity and colored linear tracks on top; the full-capture PNG is emitted separately for every receiver path |
+| Path PNGs | waterfall, pilot methods, raw/de-aliased/final CFO PNGs, `standard.full-capture-glrt20ms-png`, GLRT epoch timing and rate PNGs | Persisted rendering of durable science. CFO evidence uses the Variant B style: orange X observations with confidence-weighted opacity and colored linear tracks on top; full-capture and epoch PNGs are emitted separately for every receiver path |
 
 The alternate job adds `standard.alternate-cfo-track-bank` and its PNG using
-the persisted pilot scan only. Radio reducers publish one scientific report
+persisted path evidence only. It also derives `standard.glrt-epoch-tracking`
+from the immutable 2.5 MS/s full-capture GLRT windows without re-reading IQ or
+running GLRT on a high-rate path. CFO-only Hough membership is canonicalized
+with its persisted alias index before robust branch filtering; epoch values do
+not choose membership. Fits reset at continuity boundaries and split after
+long observation gaps. The published timing product carries common-support
+linear and quadratic residuals, the physical frame-arrival minus-sign
+conversion to equivalent Doppler and Doppler rate, and explicit sample-clock,
+acquisition-bias, overlap-correlation, and source-identity limitations.
+
+The native PSS search retains its 250 ms policy ceiling, but each IQ read is
+also capped at 1,048,576 input samples, the bounded validity-reader limit. The
+effective maximum PSS window is therefore
+`min(250 ms, 1,048,576 / sample_rate_hz)`. Every published search block records
+its exact input device-sample bounds, and short tails are rebalanced without
+crossing a continuity boundary or exceeding the reader cap.
+
+Radio reducers publish one scientific report
 plus five PNGs; the paired scientific reducer publishes one report; paired
 presentation publishes five pair-level PNGs.
 

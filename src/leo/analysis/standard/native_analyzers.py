@@ -27,6 +27,11 @@ from leo.analysis.standard.native_full_capture_glrt import (
     StandardNativeFullCaptureGlrtRunner,
     native_full_capture_glrt_configuration_digest,
 )
+from leo.analysis.standard.native_glrt_epoch import (
+    build_standard_native_glrt_epoch_tracking_v1,
+    render_standard_native_glrt_epoch_rate_png,
+    render_standard_native_glrt_epoch_timing_png,
+)
 from leo.analysis.standard.native_path_report import build_standard_native_path_report
 from leo.analysis.standard.native_pilot_doppler import (
     build_standard_native_pilot_doppler_segments_v3,
@@ -42,6 +47,9 @@ from leo.analysis.standard.native_products import (
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
+    GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
+    GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+    GLRT_EPOCH_TRACKING_V1_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_REPORT_V7_PRODUCT,
@@ -201,8 +209,8 @@ class PathStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="path-standard-native",
-        algorithm_version="standard-native-evidence-v11",
-        configuration_schema="path-standard-native.evidence.v9",
+        algorithm_version="standard-native-evidence-v12",
+        configuration_schema="path-standard-native.evidence.v10",
         output_products=_NATIVE_EVIDENCE_PRODUCTS,
         resource_class=ResourceClass.HEAVY,
         accepted_outcomes=_NATIVE_OUTCOMES,
@@ -463,8 +471,8 @@ class PathAlternateTracksNativeAnalyzer:
 
     spec = StageSpec(
         key="path-alternate-tracks-native",
-        algorithm_version="standard-native-path-projection-v5",
-        configuration_schema="path-alternate-tracks-native.projection.v5",
+        algorithm_version="standard-native-path-projection-v6",
+        configuration_schema="path-alternate-tracks-native.projection.v6",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),
@@ -560,6 +568,10 @@ class PathAlternateTracksNativeAnalyzer:
             ).products.full_capture_glrt20ms_product_digest
         ):
             raise ValueError("native GLRT projection lineage does not close")
+        epoch_tracking = build_standard_native_glrt_epoch_tracking_v1(
+            glrt,
+            source_glrt_product_digest=glrt_item.product_digest,
+        )
         documents = (
             (
                 ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT,
@@ -568,6 +580,10 @@ class PathAlternateTracksNativeAnalyzer:
             (
                 TRAJECTORY_CONDITIONED_ACCOUNTING_V4_PRODUCT,
                 cast(dict[str, JsonValue], accounting.model_dump(mode="json")),
+            ),
+            (
+                GLRT_EPOCH_TRACKING_V1_PRODUCT,
+                cast(dict[str, JsonValue], epoch_tracking.model_dump(mode="json")),
             ),
         )
         payloads = (
@@ -591,6 +607,20 @@ class PathAlternateTracksNativeAnalyzer:
                     path_label=path_label,
                 ),
             ),
+            (
+                GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+                render_standard_native_glrt_epoch_timing_png(
+                    epoch_tracking,
+                    path_label=path_label,
+                ),
+            ),
+            (
+                GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
+                render_standard_native_glrt_epoch_rate_png(
+                    epoch_tracking,
+                    path_label=path_label,
+                ),
+            ),
             (PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT, pilot_pngs[0]),
             (PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT, pilot_pngs[1]),
             (PILOT_SEGMENT_RATES_PNG_V4_PRODUCT, pilot_pngs[2]),
@@ -609,6 +639,10 @@ class PathAlternateTracksNativeAnalyzer:
                 "source_observation_count": bank.source_observation_count,
                 "detected_track_count": bank.detected_track_count,
                 "returned_track_count": bank.returned_track_count,
+                "glrt_epoch_locklet_count": len(epoch_tracking.locklets),
+                "glrt_epoch_complete_locklet_count": sum(
+                    item.status.value == "complete" for item in epoch_tracking.locklets
+                ),
                 "truncated_track_count": bank.truncated_track_count,
                 "stateful_science_status": bank.stateful_science_status,
                 "native_evidence_only": True,

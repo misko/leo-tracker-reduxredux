@@ -75,7 +75,7 @@ def test_standard_pss_contract_rejects_digest_tampering() -> None:
         StandardNativePssFrameTimingV1.model_validate(document)
 
 
-def test_continuity_blocking_merges_a_short_tail_without_crossing_a_gap() -> None:
+def test_continuity_blocking_borrows_for_a_short_tail_without_exceeding_reader_cap() -> None:
     assert _continuity_blocks(
         segment_index=4,
         device_sample_start=100,
@@ -84,8 +84,50 @@ def test_continuity_blocking_merges_a_short_tail_without_crossing_a_gap() -> Non
         minimum_samples=100,
     ) == (
         (4, 100, 1_000),
-        (4, 1_100, 1_050),
+        (4, 1_100, 950),
+        (4, 2_050, 100),
     )
+
+
+@pytest.mark.parametrize("sample_rate_hz", (10_000_000, 15_000_000, 20_000_000, 25_000_000))
+def test_pss_block_policy_stays_within_the_validity_reader_limit(sample_rate_hz: int) -> None:
+    config = StandardNativePssConfig()
+    maximum_samples = min(
+        config.maximum_input_block_samples,
+        round(config.maximum_block_duration_s * sample_rate_hz),
+    )
+
+    blocks = _continuity_blocks(
+        segment_index=0,
+        device_sample_start=0,
+        sample_count=sample_rate_hz,
+        maximum_samples=maximum_samples,
+        minimum_samples=100_000,
+    )
+
+    assert blocks
+    assert blocks[0][1] == 0
+    assert blocks[-1][1] + blocks[-1][2] == sample_rate_hz
+    assert all(100_000 <= count <= 1_048_576 for _, _, count in blocks)
+    assert all(
+        left_start + left_count == right_start
+        for (_, left_start, left_count), (_, right_start, _) in zip(
+            blocks[:-1],
+            blocks[1:],
+            strict=True,
+        )
+    )
+
+
+def test_continuity_blocking_rejects_a_minimum_larger_than_the_reader_cap() -> None:
+    with pytest.raises(ValueError, match="block bounds"):
+        _continuity_blocks(
+            segment_index=0,
+            device_sample_start=0,
+            sample_count=2_000,
+            maximum_samples=999,
+            minimum_samples=1_000,
+        )
 
 
 def test_standard_runner_searches_only_observed_continuity_blocks() -> None:

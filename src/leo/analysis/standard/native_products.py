@@ -63,6 +63,7 @@ FULL_CAPTURE_GLRT20MS_V1_PRODUCT = ProductSpec(
 FULL_CAPTURE_GLRT20MS_V2_PRODUCT = ProductSpec(
     kind="standard.full-capture-glrt20ms", schema_version=2
 )
+GLRT_EPOCH_TRACKING_V1_PRODUCT = ProductSpec(kind="standard.glrt-epoch-tracking", schema_version=1)
 PSS_FRAME_TIMING_V1_PRODUCT = ProductSpec(kind="standard.pss-frame-timing", schema_version=1)
 PATH_REPORT_V3_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=3)
 PATH_REPORT_V4_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=4)
@@ -98,6 +99,8 @@ PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT = _png("standard.pilot-doppler-segments-pn
 PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT = _png("standard.pilot-carrier-tracking-png", 4)
 PILOT_SEGMENT_RATES_PNG_V4_PRODUCT = _png("standard.pilot-segment-rates-png", 4)
 FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT = _png("standard.full-capture-glrt20ms-png", 2)
+GLRT_EPOCH_TIMING_PNG_V1_PRODUCT = _png("standard.glrt-epoch-timing-png", 1)
+GLRT_EPOCH_RATE_PNG_V1_PRODUCT = _png("standard.glrt-epoch-rate-png", 1)
 
 STANDARD_NATIVE_PNG_PRODUCTS = (
     WATERFALL_PNG_V2_PRODUCT,
@@ -137,6 +140,9 @@ PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS = (
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
     FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
+    GLRT_EPOCH_TRACKING_V1_PRODUCT,
+    GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+    GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT,
     PILOT_CARRIER_TRACKING_PNG_V4_PRODUCT,
     PILOT_SEGMENT_RATES_PNG_V4_PRODUCT,
@@ -165,5 +171,5 @@ STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT = sum(
         PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     )
 )
-if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 37:
+if STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT != 40:
     raise RuntimeError("Standard-native-v1 output inventory changed")

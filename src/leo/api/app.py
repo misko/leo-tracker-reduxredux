@@ -93,6 +93,7 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactInventoryV8,
     StandardNativePngArtifactInventoryV9,
+    StandardNativePngArtifactInventoryV10,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
@@ -936,6 +937,8 @@ def create_app(
             "pilot-carrier-tracking",
             "pilot-segment-rates",
             "full-capture-glrt20ms",
+            "glrt-epoch-timing",
+            "glrt-epoch-rate",
         ],
     ) -> Response:
         """Serve an already-published presentation PNG; never render on request."""
@@ -973,6 +976,7 @@ def create_app(
             | StandardNativePngArtifactInventoryV7
             | StandardNativePngArtifactInventoryV8
             | StandardNativePngArtifactInventoryV9
+            | StandardNativePngArtifactInventoryV10
         ),
     )
     def standard_subject_png_inventory(
@@ -986,8 +990,9 @@ def create_app(
         | StandardNativePngArtifactInventoryV7
         | StandardNativePngArtifactInventoryV8
         | StandardNativePngArtifactInventoryV9
+        | StandardNativePngArtifactInventoryV10
     ):
-        """Return the sealed native 11/5/5 PNG inventory for one subject."""
+        """Return the sealed versioned native PNG inventory for one subject."""
 
         hierarchy = _visible_hierarchy(session_id, include_test=include_test)
         if not isinstance(
@@ -1014,6 +1019,8 @@ def create_app(
         if inventory is None:
             raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
         try:
+            if isinstance(inventory, StandardNativePngArtifactInventoryV10):
+                return StandardNativePngArtifactInventoryV10.model_validate(inventory.model_dump())
             if isinstance(inventory, StandardNativePngArtifactInventoryV9):
                 return StandardNativePngArtifactInventoryV9.model_validate(inventory.model_dump())
             if isinstance(inventory, StandardNativePngArtifactInventoryV8):
