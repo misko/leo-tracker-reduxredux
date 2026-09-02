@@ -5,10 +5,10 @@
       "name": "test-infrastructure",
       "patterns": ["ops", "tools/ops.py", "config/ops-components.json", "tests/conftest.py", "tests/postgres_support.py", "tests/test_postgres_test_safety.py", "tests/deploy/test_ops_front_door.py", "tests/deploy/test_release_retention.py", "tests/catalog/conftest.py", "tests/processing/conftest.py", "tests/operations/conftest.py", "tests/integration/test_read_vertical.py", "tests/qualification/test_soak_acceptance_postgres.py", "tests/qualification/test_trusted_campaign_store.py", "tests/e2e/server.py"],
       "tests": ["tests/test_postgres_test_safety.py", "tests/deploy/test_ops_front_door.py", "tests/deploy/test_release_retention.py"],
-      "runtime_patterns": ["ops", "tools/ops.py", "config/ops-components.json"],
+      "runtime_patterns": [],
       "postgres": false,
       "exclusive": true,
-      "impact": ["deployment"]
+      "impact": []
     },
     {
       "name": "analysis",
@@ -96,7 +96,7 @@
       "name": "python-general",
       "patterns": ["src/leo/**", "tests/**", "tools/**"],
       "tests": [],
-      "runtime_patterns": ["src/leo/**", "tools/**"],
+      "runtime_patterns": ["src/leo/**", "tools/native_evidence_worker.py"],
       "fallback": true,
       "impact": ["api", "worker"]
     },

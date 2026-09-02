@@ -70,7 +70,9 @@ deploy/scripts/stage-production-release \
 ```
 
 After reviewing its exact target, use the deployment front door to stage it on
-an existing production installation:
+an existing production installation. The revision may be the fetched
+`origin/main` or the clean local `HEAD`; no other unpublished revision is
+accepted:
 
 ```text
 sudo ./ops deploy --stage-only --revision "$release_revision"
@@ -82,7 +84,9 @@ cannot touch systemd, `/etc/leo/leo.env`, component selectors, services,
 PostgreSQL, `/srv/bulk/leo`, or QNAP. Repeating it for an existing immutable
 target revalidates that target and changes no runtime state. It uses the sealed
 `uv` from the current immutable release, so an existing global release selector
-is required. Initial host bootstrap instead uses the reviewed raw stager with
+is required. This permits staging to run alongside the exact developer gates;
+ordinary cutover still requires the same revision to be published as
+`origin/main`. Initial host bootstrap instead uses the reviewed raw stager with
 an explicit tool path:
 
 ```text
@@ -315,23 +319,49 @@ time. They must never name `/mnt/qnap01`.
 
 Once `/etc/leo/leo.env`, the production database, and component selectors
 already exist, do **not** execute the manual selector/start sequence in the
-remainder of Stages 4–6. Use the audited deployment transaction. It snapshots
-the original environment bytes and all four selectors, qualifies the target,
-quiesces every shipped LEO service/timer and worker, applies the exact reviewed
-continuity environment, fences old-release work, switches the four component
-selectors, installs units, starts the runtime, and verifies health. Automatic
-rollback performs those operations in reverse before it starts the prior code.
+remainder of Stages 4–6. Use the audited deployment transaction. It selects a
+no-op, API, worker, acquisition, or guarded full path from the exact changed
+files. A full cutover snapshots the original environment bytes and all four
+selectors, qualifies the target, quiesces every shipped LEO service/timer and
+worker, applies the exact reviewed continuity environment, fences old-release
+work, switches the component selectors, installs units, starts the runtime, and
+verifies health. Automatic rollback performs those operations in reverse before
+it starts the prior code.
 
-From a clean target worktree:
+From a clean target worktree, run the exact gates and the non-selecting stage in
+parallel. The example waits for both and refuses to continue if either fails:
 
 ```text
 git fetch origin main
 release_revision=$(git rev-parse HEAD)
-test "$release_revision" = "$(git rev-parse origin/main)"
+base_revision=$(basename "$(readlink -f /opt/leo-tracker/current)")
 test -z "$(git status --porcelain)"
-LEO_TEST_DATABASE_URL=postgresql+psycopg:///leo_qualification ./ops test --release
-sudo ./ops deploy --stage-only --revision "$release_revision"
+set +e
+LEO_TEST_DATABASE_URL=postgresql+psycopg:///leo_qualification \
+  ./ops test --base "$base_revision" & test_pid=$!
+sudo ./ops deploy --stage-only --revision "$release_revision" & stage_pid=$!
+wait "$test_pid"; test_status=$?
+wait "$stage_pid"; stage_status=$?
+set -e
+test "$test_status" -eq 0
+test "$stage_status" -eq 0
+```
 
+Publish or merge that exact commit only after both commands pass, then refresh
+the remote identity before cutover:
+
+```text
+git fetch origin main
+test "$release_revision" = "$(git rev-parse origin/main)"
+./ops deploy --plan
+```
+
+The default gate shards the current direct-async 10, 15, and 25 MS/s PostgreSQL
+verticals into independent bounded processes. Historical single-RX format
+matrices are not part of deployment authority; run the explicit historical
+qualification lane only when investigating retained evidence.
+
+```text
 required_keys=(
   LEO_DATABASE_URL LEO_PIPELINE_RELEASE_ID LEO_CAPTURE_PROFILE
   LEO_CAPTURE_PROFILE_5M LEO_MIXED_RATE_POLICY LEO_DIRECT_ASYNC_ENABLED
@@ -357,8 +387,7 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-./ops deploy --plan --revision "$release_revision"
-sudo ./ops deploy --full --revision "$release_revision"
+sudo ./ops deploy
 ```
 
 The full-cutover transaction runs any required `alembic upgrade head` while
