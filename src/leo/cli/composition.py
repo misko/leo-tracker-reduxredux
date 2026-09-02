@@ -259,7 +259,7 @@ class CliSettings:
     scanner_enabled: bool = False
     scanner_radio_id: str | None = None
     scanner_interval_seconds: float = 1_200.0
-    scanner_maximum_lateness_seconds: float = 120.0
+    scanner_maximum_lateness_seconds: float = 300.0
     scanner_run_seconds: float = 300.0
     scanner_dwell_ms: int = 120
     scanner_gain_db: float = 40.0
@@ -379,7 +379,7 @@ class CliSettings:
                 scanner_radio_id=values.get("LEO_SCANNER_RADIO_ID"),
                 scanner_interval_seconds=float(values.get("LEO_SCANNER_INTERVAL_SECONDS", "1200")),
                 scanner_maximum_lateness_seconds=float(
-                    values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "120")
+                    values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "300")
                 ),
                 scanner_run_seconds=float(values.get("LEO_SCANNER_RUN_SECONDS", "300")),
                 scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "120")),
@@ -920,6 +920,7 @@ class LocalAcquisitionBackend:
         kind: str,
         payload: dict[str, object],
         scheduled_for: datetime,
+        priority: int = 0,
         coalesce_pending_kind: bool = False,
     ) -> AcquisitionOperationRecord:
         return self._acquisition_operation_catalog().enqueue_acquisition_operation(
@@ -927,6 +928,7 @@ class LocalAcquisitionBackend:
             kind=kind,
             payload=payload,
             scheduled_for=scheduled_for,
+            priority=priority,
             coalesce_pending_kind=coalesce_pending_kind,
         )
 

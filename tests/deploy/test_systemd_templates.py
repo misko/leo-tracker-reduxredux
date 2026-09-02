@@ -460,7 +460,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_SCANNER_ENABLED"] == "false"
     assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_5d4d"
     assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "1200"
-    assert values["LEO_SCANNER_MAXIMUM_LATENESS_SECONDS"] == "120"
+    assert values["LEO_SCANNER_MAXIMUM_LATENESS_SECONDS"] == "300"
     assert values["LEO_SCANNER_RUN_SECONDS"] == "300"
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
     assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"

@@ -186,6 +186,7 @@ class _DurableSupervisorBackend(_SupervisorBackend):
         kind,
         payload,
         scheduled_for,
+        priority=0,
         coalesce_pending_kind=False,
     ):
         existing = next(
@@ -207,6 +208,7 @@ class _DurableSupervisorBackend(_SupervisorBackend):
             kind=kind,
             payload=payload,
             scheduled_for=scheduled_for,
+            priority=priority,
             state="pending",
             worker_id=None,
             attempt_count=0,
@@ -813,6 +815,10 @@ def test_durable_supervisor_persists_independent_dwell_and_scanner_cadences() ->
         "pending",
     ]
     scanner_payloads = [item.payload for item in backend.operations if item.kind == "scanner_sweep"]
+    assert {item.priority for item in backend.operations if item.kind == "scheduled_recording"} == {
+        0
+    }
+    assert {item.priority for item in backend.operations if item.kind == "scanner_sweep"} == {1}
     assert [item["configuration"]["sample_rate_hz"] for item in scanner_payloads] == [
         2_500_000,
         5_000_000,

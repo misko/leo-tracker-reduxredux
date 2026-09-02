@@ -1239,7 +1239,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_SCANNER_ENABLED=false",
             "LEO_SCANNER_RADIO_ID=radio_pluto_5d4d",
             "LEO_SCANNER_INTERVAL_SECONDS=1200",
-            "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=120",
+            "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=300",
             "LEO_SCANNER_RUN_SECONDS=300",
             "LEO_SCANNER_DWELL_MS=120",
             "LEO_SCANNER_GAIN_DB=40.0",

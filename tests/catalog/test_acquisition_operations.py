@@ -410,15 +410,22 @@ def test_retryable_failure_of_older_cadence_yields_to_newer_pending(
     )
 
 
-def test_completion_releases_global_owner_and_preserves_fifo_alternation(
+def test_completion_releases_global_owner_and_prioritizes_a_due_scanner(
     catalog_harness,
 ) -> None:
     dwell = _enqueue(catalog_harness, "dwell:alternate")
-    scan = _enqueue(catalog_harness, "scan:alternate", "scanner_sweep")
+    due = datetime(2026, 8, 21, 8, 20, tzinfo=UTC)
+    scan = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="scan:alternate",
+        kind="scanner_sweep",
+        payload={"slot": "scanner"},
+        scheduled_for=due,
+        priority=1,
+    )
     first = catalog_harness.repository.claim_acquisition_operation(
         worker_id="supervisor", lease_for=timedelta(minutes=1)
     )
-    assert first is not None and first.operation_id == dwell.operation_id
+    assert first is not None and first.operation_id == scan.operation_id
 
     catalog_harness.repository.complete_acquisition_operation(
         operation_id=first.operation_id,
@@ -428,7 +435,7 @@ def test_completion_releases_global_owner_and_preserves_fifo_alternation(
     second = catalog_harness.repository.claim_acquisition_operation(
         worker_id="supervisor", lease_for=timedelta(minutes=1)
     )
-    assert second is not None and second.operation_id == scan.operation_id
+    assert second is not None and second.operation_id == dwell.operation_id
 
 
 def test_stale_worker_cannot_complete_recovered_operation(catalog_harness) -> None:

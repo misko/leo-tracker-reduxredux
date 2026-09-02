@@ -341,8 +341,8 @@ class CatalogRepository:
                 .where(AcquisitionOperation.state.in_(("pending", "leased")))
                 .order_by(
                     case((AcquisitionOperation.state == "leased", 0), else_=1),
-                    AcquisitionOperation.scheduled_for,
                     AcquisitionOperation.priority.desc(),
+                    AcquisitionOperation.scheduled_for,
                     AcquisitionOperation.id,
                 )
                 .limit(limit)
@@ -401,8 +401,8 @@ class CatalogRepository:
                     AcquisitionOperation.available_at <= now,
                 )
                 .order_by(
-                    AcquisitionOperation.scheduled_for,
                     AcquisitionOperation.priority.desc(),
+                    AcquisitionOperation.scheduled_for,
                     AcquisitionOperation.id,
                 )
                 .limit(1)

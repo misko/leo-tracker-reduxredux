@@ -135,7 +135,7 @@ Do not collect scanner RF without explicit operator authorization for that
 specific run. Keep `LEO_SCANNER_ENABLED=false` in `/etc/leo/leo.env` while
 qualifying the scanner. A canary consists of two adjacent UTC scanner slots:
 one 300-second 2.5 MS/s run and one 300-second 5 MS/s run. Start within the
-configured 120-second lateness allowance after a 20-minute UTC boundary; the
+configured 300-second lateness allowance after a 20-minute UTC boundary; the
 second run then finishes about 25 minutes after that boundary.
 
 First pause and drain the shared capture authority, then stop the normal
