@@ -1,38 +1,35 @@
 # Protected corpus and browser qualification
 
 `leo-release-qualify` is the supported nightly/release gate for the protected
-real-IQ detector smoke, the frozen Standard path, native 2.5/3/5 MS/s science,
-the native PostgreSQL operational graph, executable native-rate real IQ, and
-the production-built Chromium UI. Release-qualification V2 runs these six
-commands in exact order:
+real-IQ detector smoke, current native science, the direct-async PostgreSQL
+operational graph, and the production-built web and Chromium UI.
+Release-qualification V3 runs these five release-blocking lanes:
 
-1. `protected-real-corpus` — the bounded protected science smoke and frozen
-   Standard four-path operational vertical;
-2. `standard-native-science` — native-rate scientific equivalence, state-reset,
+1. `protected-real-corpus` — the bounded protected science smoke;
+2. `current-native-science` — native-rate scientific equivalence, state-reset,
    full-capture GLRT, QAM, and terminal path-report gates;
-3. `standard-native-postgresql` — the real PostgreSQL common-rate and mixed
-   2.5/5 MS/s two-radio x two-RX native operational verticals plus the promoted
-   Current native-presentation vertical. The mixed gate proves exact per-leg RF
-   bandwidth/IF authority, no resampling, 102 sealed products, all 59 PNGs, and
-   HTTP/browser artifact delivery;
-4. `standard-native-real-corpus` — explicit read-only 2.5/3/5 corpus admission,
-   exact 5 MS/s validity/digest closure, truncated-capture refusal, and bounded
-   production detector execution on real 3 and 5 MS/s IQ;
-5. `production-web-build` — the production web Vitest suite, TypeScript compile,
+3. `current-native-postgresql` — the direct-async V6 mixed-rate PostgreSQL
+   capture, analysis, PNG, and browser-artifact vertical;
+4. `production-web-build` — the production web Vitest suite, TypeScript compile,
    and Vite build through the canonical `qualify:release` script; and
-6. `production-chromium-e2e`.
+5. `production-chromium-e2e`.
 
-The four pytest commands must each produce a bounded, nonempty JUnit result with
+The three pytest commands must each produce a bounded, nonempty JUnit result with
 zero failures, errors, or skipped tests. Missing or corrupt required corpus
-bytes fail closed; J1 remains explicit, non-executable
-`UNAVAILABLE_HISTORICAL_EVIDENCE` and can never count as a passing lane.
+bytes fail closed. Historical V3/V5 recording checks are excluded from release
+authority; `--include-historical` runs them explicitly as a non-blocking lane.
+
+Independent lanes run concurrently within a bounded two-to-four-unit scheduler.
+A lane may reuse a sealed passing result from the prior 72 hours only when its
+command, bounded input closure, runtime identity, and retained evidence all
+match exactly. PostgreSQL lanes remain mutually exclusive, and Chromium waits
+for its matching web build.
 
 ## Isolation and safety
 
-The lane does not import corpus data and never accesses `/mnt/qnap01`. Its
-scientific inputs are the already materialized protected TEST corpus at
-`/srv/bulk/leo/test-corpus` and the reviewed native-rate corpus beneath
-`/srv/bulk/leo/recordings`; both are read-only. PostgreSQL tests create and drop
+The default lanes do not import corpus data and never access `/mnt/qnap01`.
+Their only persisted scientific input is the protected TEST corpus at
+`/srv/bulk/leo/test-corpus`, mounted read-only. PostgreSQL tests create and drop
 unique test-owned schemas and write generated recordings and analysis artifacts
 beneath private temporary roots. The browser composition independently uses a
 unique schema, generated TEST recordings, and the exact compiled scratch build.
@@ -62,14 +59,13 @@ database-using command, including failures.
 
 ## Manual release run
 
-Run from a clean, deployed Git checkout with locked Python and npm dependencies
-already installed and Chromium provisioned. A dirty checkout is rejected so a
-receipt always identifies one exact revision.
+Run from an immutable staged or selected release with locked Python and npm
+dependencies already installed and Chromium provisioned. The Git-free release
+marker binds the receipt to one exact revision and source tree.
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
   export PATH=/opt/leo-tracker/current/.release-tools:/opt/leo-tracker/current/.venv/bin:/opt/leo-tracker/current/web/node_modules/.bin:/usr/local/bin:/usr/bin; \
-  export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/opt/leo-tracker/current; \
   exec /opt/leo-tracker/current/.venv/bin/leo-release-qualify \
     --project-root /opt/leo-tracker/current'
 ```
@@ -79,8 +75,6 @@ an absolute path: its isolated commands invoke the exact `uv` executable sealed
 inside that immutable release. A later stage therefore cannot invalidate an
 older rollback candidate by replacing shared tooling. The reviewed
 environment supplies the same `PLAYWRIGHT_BROWSERS_PATH` used while staging.
-The command-scoped Git configuration trusts only the root-owned selected
-release; it does not modify global or service-account Git configuration.
 
 For an explicitly named release, add `--run-id release-2026-08-19`. Run IDs are
 unique: an existing evidence directory is never resumed or overwritten. The
@@ -93,28 +87,26 @@ Each run has this stable layout:
 /srv/bulk/leo/qualification/release/RUN_ID/
   definition.json
   logs/01-protected-real-corpus.log
-  logs/02-standard-native-science.log
-  logs/03-standard-native-postgresql.log
-  logs/04-standard-native-real-corpus.log
-  logs/05-production-web-build.log
-  logs/06-production-chromium-e2e.log
-  results/real-corpus.junit.xml
-  results/real-corpus.junit.summary.json
-  results/standard-native-science.junit.xml
-  results/standard-native-science.junit.summary.json
-  results/standard-native-postgresql.junit.xml
-  results/standard-native-postgresql.junit.summary.json
-  results/standard-native-real-corpus.junit.xml
-  results/standard-native-real-corpus.junit.summary.json
+  logs/02-current-native-science.log
+  logs/03-current-native-postgresql.log
+  logs/04-production-web-build.log
+  logs/05-production-chromium-e2e.log
+  results/protected-real-corpus.junit.xml
+  results/protected-real-corpus.junit.summary.json
+  results/current-native-science.junit.xml
+  results/current-native-science.junit.summary.json
+  results/current-native-postgresql.junit.xml
+  results/current-native-postgresql.junit.summary.json
   results/web-build.json             # hashes of the exact compiled assets
   results/browser-e2e.json
   results/playwright/                 # retained traces/screenshots on failure
   receipt.json
 ```
 
-`definition.json` records the Git revision, lockfile and corpus-declaration
-digests, redacted qualification database identity, both read-only corpus roots,
-the exact six commands, and safety boundaries. `receipt.json` records one
+`definition.json` records the source revision and tree, lockfile and
+corpus-declaration digests, redacted qualification database identity, the
+read-only corpus root, the exact five commands, lane input closures, and safety
+boundaries. `receipt.json` records one
 closed, ordered outcome per command, exact timing and exit status, semantic
 JUnit/result summaries, and SHA-256 for the complete durable evidence
 inventory. The definition, results, and evidence tree must be regular
