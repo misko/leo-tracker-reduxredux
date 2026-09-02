@@ -12,6 +12,8 @@ import type {
   StandardNativePngArtifactInventoryV9,
   StandardNativePngArtifactInventoryV10,
   StandardNativePngArtifactInventoryV11,
+  StandardNativePngArtifactInventoryV12,
+  StandardNativePngArtifactInventoryV13,
   StandardNativeScientificDispositionV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectDetailV4,
@@ -87,6 +89,16 @@ const nativeArtifactDefinitionsV11 = [
   ...nativeArtifactDefinitionsV8.slice(0, 6),
   ["pss-glrt-frame-comparison", "standard.pss-glrt-frame-comparison-png", 1, "artifacts/pss-glrt-frame-comparison.png"],
 ] as const;
+const nativeArtifactDefinitionsV12 = nativeArtifactDefinitionsV10.map((definition) => (
+  definition[0] === "glrt-epoch-timing" || definition[0] === "glrt-epoch-rate"
+    ? [definition[0], definition[1], 2, definition[3]] as const
+    : definition
+));
+const nativeArtifactDefinitionsV13 = nativeArtifactDefinitionsV11.map((definition) => (
+  definition[0] === "pss-glrt-frame-comparison"
+    ? [definition[0], definition[1], 2, definition[3]] as const
+    : definition
+));
 const scienceStates: StandardNativeScientificDispositionV3[] = [
   "candidate",
   "no_candidate",
@@ -1557,9 +1569,9 @@ export function parseStandardPlotView(value: unknown): StandardPlotView {
 
 export function parseStandardNativePngArtifactInventory(
   value: unknown,
-): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 | StandardNativePngArtifactInventoryV8 | StandardNativePngArtifactInventoryV9 | StandardNativePngArtifactInventoryV10 | StandardNativePngArtifactInventoryV11 {
+): StandardNativePngArtifactInventoryV4 | StandardNativePngArtifactInventoryV5 | StandardNativePngArtifactInventoryV6 | StandardNativePngArtifactInventoryV7 | StandardNativePngArtifactInventoryV8 | StandardNativePngArtifactInventoryV9 | StandardNativePngArtifactInventoryV10 | StandardNativePngArtifactInventoryV11 | StandardNativePngArtifactInventoryV12 | StandardNativePngArtifactInventoryV13 {
   const item = object(value, "native PNG artifact inventory");
-  const version = oneOf(item.schema_version, [4, 5, 6, 7, 8, 9, 10, 11], "native PNG artifact inventory.schema_version");
+  const version = oneOf(item.schema_version, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13], "native PNG artifact inventory.schema_version");
   const path = `native PNG artifact inventory V${version}`;
   exactKeys(item, [
     "schema_version", "session_id", "subject_id", "subject_kind", "run_id",
@@ -1574,11 +1586,11 @@ export function parseStandardNativePngArtifactInventory(
     ["receiver_path", "radio", "paired"],
     `${path}.subject_kind`,
   );
-  if (version === 10 && subjectKind !== "receiver_path") {
-    fail(path, "V10 epoch inventory is path-only");
+  if ((version === 10 || version === 12) && subjectKind !== "receiver_path") {
+    fail(path, `V${version} epoch inventory is path-only`);
   }
-  if (version === 11 && subjectKind !== "radio") {
-    fail(path, "V11 PSS/GLRT comparison inventory is low-radio-only");
+  if ((version === 11 || version === 13) && subjectKind !== "radio") {
+    fail(path, `V${version} PSS/GLRT comparison inventory is low-radio-only`);
   }
   string(item.run_id, `${path}.run_id`);
   string(item.run_manifest_digest, `${path}.run_manifest_digest`);
@@ -1587,13 +1599,16 @@ export function parseStandardNativePngArtifactInventory(
   } else {
     const rates = array(item.sample_rates_hz, `${path}.sample_rates_hz`);
     if (rates.length < 1 || rates.length > 2) fail(path, "rate inventory is invalid");
-    if (version === 10 && rates.length !== 1) fail(path, "V10 path inventory must carry one rate");
-    if (version === 11 && (rates.length !== 2 || rates[0] !== 2_500_000 || rates[1] !== 25_000_000)) {
-      fail(path, "V11 paired inventory must carry the exact 2.5/25 MS/s rate pair");
+    if ((version === 10 || version === 12) && rates.length !== 1) {
+      fail(path, `V${version} path inventory must carry one rate`);
+    }
+    if ((version === 11 || version === 13)
+      && (rates.length !== 2 || rates[0] !== 2_500_000 || rates[1] !== 25_000_000)) {
+      fail(path, `V${version} paired inventory must carry the exact 2.5/25 MS/s rate pair`);
     }
     const allowedRates = version === 5
       ? mixedSampleRates
-      : version === 9 || version === 10 || version === 11
+      : version === 9 || version === 10 || version === 11 || version === 12 || version === 13
         ? [3_000_000, ...productionSampleRatesV6]
         : version === 7 || version === 8
           ? [3_000_000, ...productionSampleRatesV5]
@@ -1610,16 +1625,20 @@ export function parseStandardNativePngArtifactInventory(
     `${path}.coverage_status`,
   );
   const rows = array(item.artifacts, `${path}.artifacts`);
-  const definitions = version === 11
-    ? nativeArtifactDefinitionsV11
-    : version === 10
-      ? nativeArtifactDefinitionsV10
+  const definitions = version === 13
+    ? nativeArtifactDefinitionsV13
+    : version === 12
+      ? nativeArtifactDefinitionsV12
+      : version === 11
+        ? nativeArtifactDefinitionsV11
+        : version === 10
+          ? nativeArtifactDefinitionsV10
     : version === 8 || version === 9
     ? nativeArtifactDefinitionsV8
     : version === 7
       ? nativeArtifactDefinitionsV7
       : nativeArtifactDefinitionsV4;
-  const expected = version === 11
+  const expected = version === 11 || version === 13
     ? definitions
     : subjectKind === "receiver_path"
     ? definitions
@@ -1636,7 +1655,7 @@ export function parseStandardNativePngArtifactInventory(
     ], `${path}.artifacts[${index}]`);
     const [name, catalogKind, schemaVersion, suffix] = expected[index];
     const rowPath = `native PNG artifact inventory V${version}.artifacts[${index}]`;
-    literal(row.schema_version, version === 11 ? 11 : version === 10 ? 10 : version === 8 || version === 9 ? 8 : 4, `${rowPath}.schema_version`);
+    literal(row.schema_version, version === 13 ? 13 : version === 12 ? 12 : version === 11 ? 11 : version === 10 ? 10 : version === 8 || version === 9 ? 8 : 4, `${rowPath}.schema_version`);
     literal(row.name, name, `${rowPath}.name`);
     string(row.label, `${rowPath}.label`);
     string(row.description, `${rowPath}.description`);
@@ -1657,7 +1676,9 @@ export function parseStandardNativePngArtifactInventory(
     | StandardNativePngArtifactInventoryV8
     | StandardNativePngArtifactInventoryV9
     | StandardNativePngArtifactInventoryV10
-    | StandardNativePngArtifactInventoryV11;
+    | StandardNativePngArtifactInventoryV11
+    | StandardNativePngArtifactInventoryV12
+    | StandardNativePngArtifactInventoryV13;
 }
 
 export function assertMatchingStandardMajor(
