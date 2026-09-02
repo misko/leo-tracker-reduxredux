@@ -19,6 +19,7 @@ import type {
   StandardNativePngArtifactInventoryV7,
   StandardNativePngArtifactInventoryV8,
   StandardNativePngArtifactInventoryV9,
+  StandardNativePngArtifactInventoryV10,
   StandardNativePlotViewV5,
   StandardNativePlotViewV6,
   StandardNativePlotViewV3,
@@ -455,6 +456,82 @@ function nativeArtifactInventory(
       media_type: "image/png",
     })),
     content_digest: `sha256:${"e".repeat(64)}`,
+  };
+}
+
+function epochArtifactInventory(
+  detail: StandardNativeSubjectDetailV3,
+): StandardNativePngArtifactInventoryV10 {
+  const legacy = nativeArtifactInventory(detail);
+  const base = `/api/v2/recordings/${encodeURIComponent(detail.subject.session_id)}/standard-subjects/${encodeURIComponent(detail.subject.subject_id)}`;
+  const upgraded = legacy.artifacts.map((artifact) => ({
+    ...artifact,
+    schema_version: 10 as const,
+    description: artifact.name === "pilot-doppler"
+      ? "Independent local Doppler and held-out adjacent phase evidence"
+      : artifact.name === "pilot-carrier-tracking"
+        ? "Prefix-trained modulo-pi nuisance and later one-step innovations"
+        : artifact.name === "pilot-segment-rates"
+          ? "Independent direct rates remain separate across continuity segments"
+          : artifact.description,
+    product_schema_version: [
+      "pilot-doppler", "pilot-carrier-tracking", "pilot-segment-rates",
+    ].includes(artifact.name) ? 4 : artifact.product_schema_version,
+  }));
+  const existing = [
+    upgraded[0],
+    {
+      schema_version: 10 as const,
+      name: "doppler-waterfall" as const,
+      label: "Doppler diagnostic — target-band waterfall and GLRT fits",
+      description: "Rate-normalized common-frequency crop with segment-local candidate tracks and resets",
+      href: `${base}/artifacts/doppler-waterfall.png`,
+      catalog_kind: "standard.doppler-waterfall-png",
+      product_schema_version: 1,
+      digest: `sha256:${"9".repeat(64)}`,
+      byte_size: 2048,
+      media_type: "image/png" as const,
+    },
+    ...upgraded.slice(1),
+  ];
+  return {
+    schema_version: 10,
+    session_id: legacy.session_id,
+    subject_id: detail.subject.subject_id,
+    subject_kind: "receiver_path",
+    run_id: legacy.run_id,
+    run_manifest_digest: legacy.run_manifest_digest,
+    sample_rates_hz: [3_000_000],
+    coverage_status: legacy.coverage_status,
+    artifacts: [
+      ...existing.slice(0, 9),
+      {
+        schema_version: 10,
+        name: "glrt-epoch-timing",
+        label: "GLRT frame-epoch timing fits",
+        description: "CFO-selected, continuity-local linear and quadratic timing residuals",
+        href: `${base}/artifacts/glrt-epoch-timing.png`,
+        catalog_kind: "standard.glrt-epoch-timing-png",
+        product_schema_version: 1,
+        digest: `sha256:${"a".repeat(64)}`,
+        byte_size: 4096,
+        media_type: "image/png",
+      },
+      {
+        schema_version: 10,
+        name: "glrt-epoch-rate",
+        label: "GLRT epoch/CFO Doppler-rate consistency",
+        description: "Physical-minus-sign epoch curvature versus canonical GLRT CFO derivatives",
+        href: `${base}/artifacts/glrt-epoch-rate.png`,
+        catalog_kind: "standard.glrt-epoch-rate-png",
+        product_schema_version: 1,
+        digest: `sha256:${"b".repeat(64)}`,
+        byte_size: 4097,
+        media_type: "image/png",
+      },
+      ...existing.slice(9),
+    ],
+    content_digest: legacy.content_digest,
   };
 }
 
@@ -1070,9 +1147,9 @@ test("renders native Current and registered PNGs without a waterfall cell table"
     requested.push(url);
     if (url.includes("/artifacts?")) {
       const pathSelected = url.includes(encodeURIComponent(nativePathSubjects[0].subject_id));
-      return new Response(JSON.stringify(nativeArtifactInventory(
-        pathSelected ? nativePathDetail : nativeDetail,
-      )), {
+      return new Response(JSON.stringify(pathSelected
+        ? epochArtifactInventory(nativePathDetail)
+        : nativeArtifactInventory(nativeDetail)), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
@@ -1149,7 +1226,11 @@ test("renders native Current and registered PNGs without a waterfall cell table"
     `/api/v2/recordings/T1/standard-subjects/${encodeURIComponent(nativePathSubjects[0].subject_id)}/artifacts/cfo-alternate.png`,
   );
   await waitFor(() => expect(screen.getByRole("region", { name: "Registered native image artifacts" })
-    .querySelectorAll("img")).toHaveLength(11));
+    .querySelectorAll("img")).toHaveLength(14));
+  expect(screen.getByRole("img", { name: /GLRT frame-epoch timing fits/ }))
+    .toHaveAttribute("src", expect.stringContaining("glrt-epoch-timing.png"));
+  expect(screen.getByRole("img", { name: /GLRT epoch\/CFO Doppler-rate consistency/ }))
+    .toHaveAttribute("src", expect.stringContaining("glrt-epoch-rate.png"));
   expect(screen.getByRole("img", { name: /Pilot Doppler qualification overview/ }))
     .toBeInTheDocument();
   expect(screen.getByRole("img", { name: /Doppler rates across/ })).toBeInTheDocument();
@@ -1427,7 +1508,7 @@ test.each([
   expect(() => parseStandardSubjectHierarchy(document)).toThrow(/contract is invalid/);
 });
 
-test("accepts additive phase and Doppler inventories and rejects future versions", () => {
+test("accepts additive phase, Doppler, and epoch inventories and rejects future versions", () => {
   const phase = parseStandardNativePngArtifactInventory(phaseArtifactInventory());
   expect(phase.schema_version).toBe(7);
   expect(phase.artifacts.filter((item) => item.name.startsWith("pilot-")).map(
@@ -1438,10 +1519,16 @@ test("accepts additive phase and Doppler inventories and rejects future versions
   const doppler = parseStandardNativePngArtifactInventory(dopplerArtifactInventory());
   expect(doppler.schema_version).toBe(8);
   expect(doppler.artifacts[1].name).toBe("doppler-waterfall");
+  const epoch = parseStandardNativePngArtifactInventory(epochArtifactInventory(nativePathDetail));
+  expect(epoch.schema_version).toBe(10);
+  expect(epoch.artifacts.slice(9, 11).map((item) => item.name)).toEqual([
+    "glrt-epoch-timing",
+    "glrt-epoch-rate",
+  ]);
   expect(() => parseStandardNativePngArtifactInventory({
     ...productionArtifactInventory(),
-    schema_version: 10,
-  })).toThrow(/expected one of 4, 5, 6, 7, 8, 9/);
+    schema_version: 11,
+  })).toThrow(/expected one of 4, 5, 6, 7, 8, 9, 10/);
 });
 
 test("rejects mixed Current when sealed RF bandwidth does not match its native sample rate", () => {

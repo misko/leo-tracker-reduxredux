@@ -1112,4 +1112,4 @@ def test_native_path_projection_declares_exact_sealed_predecessor_inventory() ->
         "standard.path-report",
     )
     assert all(item.producer_stage_key == "path-standard-native" for item in spec.input_products)
-    assert len(spec.output_products) == 14
+    assert len(spec.output_products) == 17

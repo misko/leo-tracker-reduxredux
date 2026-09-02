@@ -10,16 +10,20 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V10,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactInventoryV8,
+    StandardNativePngArtifactInventoryV10,
     StandardNativePngArtifactV4,
     StandardNativePngArtifactV8,
+    StandardNativePngArtifactV10,
 )
 from leo.presentation.standard_pipeline import StandardSubjectKindV2
 
@@ -236,4 +240,57 @@ def test_additive_doppler_inventory_is_exact_and_keeps_v7_readable(
 
     assert tuple(item.name for item in inventory.artifacts) == expected_names
     assert inventory.artifacts[1].catalog_kind == "standard.doppler-waterfall-png"
+    assert StandardNativePngArtifactInventoryV4.model_validate(legacy.model_dump()) == legacy
+
+
+def test_additive_epoch_inventory_is_path_only_and_keeps_v8_readable() -> None:
+    legacy = _inventory(StandardSubjectKindV2.RECEIVER_PATH)
+    base = (
+        f"/api/v2/recordings/{quote(legacy.session_id, safe='')}/standard-subjects/"
+        f"{quote(legacy.subject_id, safe='')}"
+    )
+    artifacts = []
+    for index, name in enumerate(STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10):
+        label, description, catalog_kind, schema_version, view_name = (
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V10[name]
+        )
+        artifacts.append(
+            StandardNativePngArtifactV10(
+                name=name,
+                label=label,
+                description=description,
+                href=(
+                    f"{base}/views/{view_name}.png"
+                    if view_name is not None
+                    else f"{base}/artifacts/{name}.png"
+                ),
+                catalog_kind=catalog_kind,
+                product_schema_version=schema_version,
+                digest=canonical_digest({"v10-artifact": name}),
+                byte_size=3000 + index,
+            )
+        )
+    values = {
+        "schema_version": 10,
+        "session_id": legacy.session_id,
+        "subject_id": legacy.subject_id,
+        "subject_kind": StandardSubjectKindV2.RECEIVER_PATH.value,
+        "run_id": legacy.run_id,
+        "run_manifest_digest": legacy.run_manifest_digest,
+        "sample_rates_hz": (2_500_000,),
+        "coverage_status": legacy.coverage_status,
+        "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
+    }
+
+    inventory = StandardNativePngArtifactInventoryV10.model_validate(
+        {**values, "content_digest": canonical_digest(values)}
+    )
+
+    assert tuple(item.name for item in inventory.artifacts) == (
+        STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10
+    )
+    assert tuple(item.name for item in inventory.artifacts[9:11]) == (
+        "glrt-epoch-timing",
+        "glrt-epoch-rate",
+    )
     assert StandardNativePngArtifactInventoryV4.model_validate(legacy.model_dump()) == legacy

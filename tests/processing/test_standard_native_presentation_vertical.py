@@ -30,9 +30,10 @@ from leo.contracts.standard_native_terminal import StandardNativePairedReportV7
 from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
-    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV8,
+    StandardNativePngArtifactInventoryV10,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
@@ -221,9 +222,9 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
             bundle.manifest.session_id,
             path_subject.subject_id,
         )
-        assert isinstance(path_inventory, StandardNativePngArtifactInventoryV8)
+        assert isinstance(path_inventory, StandardNativePngArtifactInventoryV10)
         assert tuple(item.name for item in path_inventory.artifacts) == (
-            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10
         )
 
         # Simulate an already sealed pre-V9 Current run.  The API upgrade must
@@ -243,7 +244,12 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
                 and product.schema_version == 4
                 else product
                 for product in projection.products
-                if product.kind != "standard.doppler-waterfall-png"
+                if product.kind
+                not in {
+                    "standard.doppler-waterfall-png",
+                    "standard.glrt-epoch-timing-png",
+                    "standard.glrt-epoch-rate-png",
+                }
             ),
         )
         legacy_native = CatalogStandardNativePresentationRepository(
@@ -335,7 +341,7 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
             assert response.content.startswith(b"\x89PNG")
             for subject, expected_names in (
                 (paired, STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8),
-                (path_subject, STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8),
+                (path_subject, STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10),
             ):
                 inventory_path = f"{base}/{subject.subject_id}/artifacts"
                 response = client.get(inventory_path)

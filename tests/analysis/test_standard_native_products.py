@@ -13,6 +13,9 @@ from leo.analysis.standard.native_products import (
     ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT,
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
+    GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
+    GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+    GLRT_EPOCH_TRACKING_V1_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_REPORT_V7_PRODUCT,
@@ -43,15 +46,18 @@ def test_native_product_inventory_is_additive_and_closed() -> None:
     assert PATH_INPUT_BIND_PRODUCT.schema_version == 3
     assert PATH_INPUT_BIND_V4_PRODUCT.schema_version == 4
     assert PATH_INPUT_BIND_V5_PRODUCT.schema_version == 5
-    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 37
+    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 40
     assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 9
-    assert len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 14
+    assert len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 17
     assert FULL_CAPTURE_GLRT20MS_V2_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V1_PRODUCT.schema_version == 1
     assert STATEFUL_PATH_V1_PRODUCT not in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V3_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert PILOT_DOPPLER_SEGMENTS_V4_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert PSS_FRAME_TIMING_V1_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
+    assert GLRT_EPOCH_TRACKING_V1_PRODUCT in PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
+    assert GLRT_EPOCH_TIMING_PNG_V1_PRODUCT in PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
+    assert GLRT_EPOCH_RATE_PNG_V1_PRODUCT in PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
 
     identities = tuple(
         (item.kind, item.schema_version, item.role.value, item.media_type)
@@ -99,10 +105,10 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         PATH_REPORT_V4_PRODUCT,
     )
     assert registry.get("path-standard-native").spec.algorithm_version == (
-        "standard-native-evidence-v11"
+        "standard-native-evidence-v12"
     )
     assert registry.get("path-standard-native").spec.configuration_schema == (
-        "path-standard-native.evidence.v9"
+        "path-standard-native.evidence.v10"
     )
     assert (
         registry.get("radio-scientific-report-native").spec.output_products
@@ -119,8 +125,8 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
     assert alternate.output_products == PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
     assert ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT in alternate.output_products
     assert ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT in alternate.output_products
-    assert alternate.algorithm_version == "standard-native-path-projection-v5"
-    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v5"
+    assert alternate.algorithm_version == "standard-native-path-projection-v6"
+    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v6"
     assert alternate.accepted_outcomes == (
         StageOutcome.COMPLETE,
         StageOutcome.NO_RESULT,
@@ -144,5 +150,5 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
             PATH_REPORT_V4_PRODUCT,
         )
     )
-    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 37
+    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 40
     assert len(registry.get("path-standard-native").spec.output_products) == 9

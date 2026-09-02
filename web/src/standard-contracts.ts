@@ -293,6 +293,10 @@ export type StandardNativePngArtifactNameV4 =
 export type StandardNativePngArtifactNameV8 =
   | StandardNativePngArtifactNameV4
   | "doppler-waterfall";
+export type StandardNativePngArtifactNameV10 =
+  | StandardNativePngArtifactNameV8
+  | "glrt-epoch-timing"
+  | "glrt-epoch-rate";
 
 export interface StandardNativePngArtifactV4 {
   schema_version: 4;
@@ -311,6 +315,12 @@ export interface StandardNativePngArtifactV8
   extends Omit<StandardNativePngArtifactV4, "schema_version" | "name"> {
   schema_version: 8;
   name: StandardNativePngArtifactNameV8;
+}
+
+export interface StandardNativePngArtifactV10
+  extends Omit<StandardNativePngArtifactV8, "schema_version" | "name"> {
+  schema_version: 10;
+  name: StandardNativePngArtifactNameV10;
 }
 
 export interface StandardNativePngArtifactInventoryV4 {
@@ -371,6 +381,16 @@ export interface StandardNativePngArtifactInventoryV9
   sample_rates_hz: Array<
     2_500_000 | 3_000_000 | 5_000_000 | 10_000_000 | 15_000_000 | 20_000_000 | 25_000_000
   >;
+}
+
+export interface StandardNativePngArtifactInventoryV10
+  extends Omit<
+    StandardNativePngArtifactInventoryV9,
+    "schema_version" | "subject_kind" | "artifacts"
+  > {
+  schema_version: 10;
+  subject_kind: "receiver_path";
+  artifacts: StandardNativePngArtifactV10[];
 }
 
 export interface StandardNativePipelineReleaseV3 {

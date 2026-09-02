@@ -17,6 +17,8 @@ from leo.analysis.standard.native_products import (
     FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V2_PRODUCT,
+    GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
+    GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
     NUMERICAL_WATERFALL_V4_PRODUCT,
     PAIRED_REPORT_V4_PRODUCT,
@@ -86,19 +88,24 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V7,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V10,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10,
     StandardNativePngArtifactInventoryV4,
     StandardNativePngArtifactInventoryV5,
     StandardNativePngArtifactInventoryV6,
     StandardNativePngArtifactInventoryV7,
     StandardNativePngArtifactInventoryV8,
     StandardNativePngArtifactInventoryV9,
+    StandardNativePngArtifactInventoryV10,
     StandardNativePngArtifactNameV4,
+    StandardNativePngArtifactNameV8,
     StandardNativePngArtifactV4,
     StandardNativePngArtifactV8,
+    StandardNativePngArtifactV10,
 )
 from leo.presentation.standard_native_pipeline import (
     NativeArtifactNameV3,
@@ -442,9 +449,10 @@ class CatalogStandardNativePresentationRepository:
         | StandardNativePngArtifactInventoryV7
         | StandardNativePngArtifactInventoryV8
         | StandardNativePngArtifactInventoryV9
+        | StandardNativePngArtifactInventoryV10
         | None
     ):
-        """Return the complete sealed 11/5/5 artifact inventory, if present."""
+        """Return the complete sealed versioned artifact inventory, if present."""
 
         loaded = self._load(session_id)
         if loaded is None or subject_id not in loaded.subjects:
@@ -459,8 +467,27 @@ class CatalogStandardNativePresentationRepository:
             )
             is not None
         )
+        epoch_pngs_present = (
+            subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
+            and self._png_product(
+                loaded,
+                subject,
+                GLRT_EPOCH_TIMING_PNG_V1_PRODUCT.kind,
+                GLRT_EPOCH_TIMING_PNG_V1_PRODUCT.schema_version,
+            )
+            is not None
+            and self._png_product(
+                loaded,
+                subject,
+                GLRT_EPOCH_RATE_PNG_V1_PRODUCT.kind,
+                GLRT_EPOCH_RATE_PNG_V1_PRODUCT.schema_version,
+            )
+            is not None
+        )
         names = (
-            (
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10
+            if epoch_pngs_present
+            else (
                 STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8
                 if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
                 else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8
@@ -485,6 +512,8 @@ class CatalogStandardNativePresentationRepository:
             "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
             "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
             "full-capture-glrt20ms": FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
+            "glrt-epoch-timing": GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,
+            "glrt-epoch-rate": GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
             "pilot-doppler": (
                 PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT
                 if pilot_png_schema == 4
@@ -501,16 +530,27 @@ class CatalogStandardNativePresentationRepository:
                 else PILOT_SEGMENT_RATES_PNG_V3_PRODUCT
             ),
         }
-        artifacts: list[StandardNativePngArtifactV4 | StandardNativePngArtifactV8] = []
+        artifacts: list[
+            StandardNativePngArtifactV4 | StandardNativePngArtifactV8 | StandardNativePngArtifactV10
+        ] = []
         for name in names:
             spec = product_specs[name]
             product = self._png_product(loaded, subject, spec.kind, spec.schema_version)
             if product is None:
                 return None
-            artifact: StandardNativePngArtifactV4 | StandardNativePngArtifactV8
-            if doppler_waterfall_present:
+            artifact: (
+                StandardNativePngArtifactV4
+                | StandardNativePngArtifactV8
+                | StandardNativePngArtifactV10
+            )
+            if epoch_pngs_present:
                 label, description, kind, schema_version, view_name = (
-                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8[name]
+                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V10[name]
+                )
+            elif doppler_waterfall_present:
+                doppler_name = cast(StandardNativePngArtifactNameV8, name)
+                label, description, kind, schema_version, view_name = (
+                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V8[doppler_name]
                 )
             else:
                 legacy_name = cast(StandardNativePngArtifactNameV4, name)
@@ -531,9 +571,20 @@ class CatalogStandardNativePresentationRepository:
                 if view_name is not None
                 else f"{base}/artifacts/{name}.png"
             )
-            if doppler_waterfall_present:
-                artifact = StandardNativePngArtifactV8(
+            if epoch_pngs_present:
+                artifact = StandardNativePngArtifactV10(
                     name=name,
+                    label=label,
+                    description=description,
+                    href=href,
+                    catalog_kind=kind,
+                    product_schema_version=schema_version,
+                    digest=product.digest,
+                    byte_size=product.byte_size,
+                )
+            elif doppler_waterfall_present:
+                artifact = StandardNativePngArtifactV8(
+                    name=doppler_name,
                     label=label,
                     description=description,
                     href=href,
@@ -563,6 +614,45 @@ class CatalogStandardNativePresentationRepository:
             "coverage_status": subject.coverage_status,
             "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
         }
+        if epoch_pngs_present:
+            epoch_sample_rates_hz = cast(
+                tuple[
+                    Literal[
+                        2_500_000,
+                        3_000_000,
+                        5_000_000,
+                        10_000_000,
+                        15_000_000,
+                        20_000_000,
+                        25_000_000,
+                    ],
+                    ...,
+                ],
+                tuple(
+                    sorted(
+                        {
+                            path.report.source.sample_rate_hz
+                            for path in self._subject_paths(loaded, subject)
+                        }
+                    )
+                ),
+            )
+            content_values_v10 = {
+                "schema_version": 10,
+                **common_values,
+                "sample_rates_hz": epoch_sample_rates_hz,
+            }
+            return StandardNativePngArtifactInventoryV10(
+                session_id=session_id,
+                subject_id=subject.subject_id,
+                subject_kind=StandardSubjectKindV2.RECEIVER_PATH,
+                run_id=loaded.run_id,
+                run_manifest_digest=loaded.manifest_digest,
+                sample_rates_hz=epoch_sample_rates_hz,
+                coverage_status=subject.coverage_status,
+                artifacts=tuple(cast(StandardNativePngArtifactV10, item) for item in artifacts),
+                content_digest=canonical_digest(content_values_v10),
+            )
         if doppler_waterfall_present:
             if isinstance(subject, StandardNativeSubjectSummaryV6):
                 direct_sample_rates_hz = cast(
@@ -832,6 +922,8 @@ class CatalogStandardNativePresentationRepository:
             "cfo-alternate": (ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,),
             "trajectory-accounting": (TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,),
             "full-capture-glrt20ms": (FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,),
+            "glrt-epoch-timing": (GLRT_EPOCH_TIMING_PNG_V1_PRODUCT,),
+            "glrt-epoch-rate": (GLRT_EPOCH_RATE_PNG_V1_PRODUCT,),
             "pilot-doppler": (
                 PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT,
                 PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
@@ -2657,6 +2749,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         | StandardNativePngArtifactInventoryV7
         | StandardNativePngArtifactInventoryV8
         | StandardNativePngArtifactInventoryV9
+        | StandardNativePngArtifactInventoryV10
         | None
     ):
         if not self._native(session_id):

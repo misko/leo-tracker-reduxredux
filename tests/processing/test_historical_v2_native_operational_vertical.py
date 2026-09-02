@@ -337,8 +337,8 @@ def test_real_postgres_historical_v2_runs_through_native_v4_graph(
             StageOutcome.INSUFFICIENT_DATA.value: 4,
         }
         assert Counter(item.kind for item in seal.products) == expected_product_kinds
-        assert len(seal.products) == 109
-        assert sum(item.media_type == "image/png" for item in seal.products) == 66
+        assert len(seal.products) == 125
+        assert sum(item.media_type == "image/png" for item in seal.products) == 74
         for product in seal.products:
             if product.scope is None or product.scope.kind.value != "receiver_path":
                 continue

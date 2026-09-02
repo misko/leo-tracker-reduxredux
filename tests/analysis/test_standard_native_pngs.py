@@ -21,6 +21,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_native_accounting import (
     StandardNativeTrajectoryConditionedAccountingV4,
 )
+from leo.contracts.standard_native_glrt_epoch import StandardNativeGlrtEpochTrackingV1
 from leo.contracts.standard_native_stateful import (
     NativeConditionedHoughReplayRowV1,
     NativePilotCandidateV1,
@@ -57,7 +58,7 @@ def _no_result_probe(item: Any, config: Any, edge: Any) -> PilotProbeDetection:
     )
 
 
-def test_native_path_projection_publishes_accounting_and_all_twelve_pngs() -> None:
+def test_native_path_projection_publishes_epoch_tracking_and_all_fourteen_pngs() -> None:
     inventory = _inventory()
     values = _values(2_500_000)
     values.update(
@@ -144,13 +145,18 @@ def test_native_path_projection_publishes_accounting_and_all_twelve_pngs() -> No
     )
 
     assert result.outcome is StageOutcome.PARTIAL_COVERAGE
-    assert len(result.products) == len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 14
+    assert len(result.products) == len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 17
     accounting = StandardNativeTrajectoryConditionedAccountingV4.model_validate(
         projection_outputs.documents[("standard.trajectory-conditioned-accounting", 4)]
     )
     assert accounting.source.path_input_binding_digest == binding.binding_digest
     assert accounting.cross_segment_association_permitted is False
-    assert len(projection_outputs.payloads) == 12
+    epoch = StandardNativeGlrtEpochTrackingV1.model_validate(
+        projection_outputs.documents[("standard.glrt-epoch-tracking", 1)]
+    )
+    assert epoch.source.path_input_binding_digest == binding.binding_digest
+    assert epoch.locklets == ()
+    assert len(projection_outputs.payloads) == 14
     assert set(STANDARD_NATIVE_PNG_PRODUCTS) <= {
         product for product in PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
     }

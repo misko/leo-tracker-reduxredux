@@ -26,6 +26,7 @@ import type {
   StandardNativePngArtifactInventoryV7,
   StandardNativePngArtifactInventoryV8,
   StandardNativePngArtifactInventoryV9,
+  StandardNativePngArtifactInventoryV10,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
@@ -55,7 +56,8 @@ type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV6
   | StandardNativePngArtifactInventoryV7
   | StandardNativePngArtifactInventoryV8
-  | StandardNativePngArtifactInventoryV9;
+  | StandardNativePngArtifactInventoryV9
+  | StandardNativePngArtifactInventoryV10;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
@@ -1075,7 +1077,11 @@ function nativeInventoryMatchesDetail(
     if (inventory.schema_version === 4) {
       return inventory.sample_rate_hz === detail.subject.eligibility.sample_rate_hz;
     }
-    if (inventory.schema_version !== 7 && inventory.schema_version !== 8) return false;
+    if (
+      inventory.schema_version !== 7
+      && inventory.schema_version !== 8
+      && inventory.schema_version !== 10
+    ) return false;
     return inventory.sample_rates_hz.length === 1
       && inventory.sample_rates_hz[0] === detail.subject.eligibility.sample_rate_hz;
   }
@@ -1084,12 +1090,14 @@ function nativeInventoryMatchesDetail(
       inventory.schema_version !== 5
       && inventory.schema_version !== 7
       && inventory.schema_version !== 8
+      && inventory.schema_version !== 10
     ) return false;
   } else if (
     inventory.schema_version !== 6
     && inventory.schema_version !== 7
     && inventory.schema_version !== 8
     && inventory.schema_version !== 9
+    && inventory.schema_version !== 10
   ) {
     return false;
   }

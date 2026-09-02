@@ -57,6 +57,7 @@ class StandardNativePssConfig:
     """Release-bound PSS policy shared by every reviewed native rate."""
 
     maximum_block_duration_s: float = 0.25
+    maximum_input_block_samples: int = 1_048_576
     canonical_projection_sample_rate_hz: int = 2_500_000
     projection_edge_trim_output_samples: int = 64
     timing: PssTimingSearchConfig = field(default_factory=PssTimingSearchConfig)
@@ -77,6 +78,7 @@ class StandardNativePssConfig:
             raise ValueError("native PSS search bounds must be finite and positive")
         if (
             self.canonical_projection_sample_rate_hz <= 0
+            or self.maximum_input_block_samples <= 0
             or self.projection_edge_trim_output_samples < 0
             or self.glrt_bootstrap_minimum_pairs < 1
         ):
@@ -187,7 +189,10 @@ class StandardNativePssRunner:
         dict[int, object],
     ]:
         config = self._config
-        maximum_samples = max(1, round(config.maximum_block_duration_s * binding.sample_rate_hz))
+        maximum_samples = min(
+            config.maximum_input_block_samples,
+            max(1, round(config.maximum_block_duration_s * binding.sample_rate_hz)),
+        )
         template = pss_subband_template(
             projection.output_sample_rate_hz,
             slice_center_offset_hz=projection.slice_center_offset_hz,
@@ -381,6 +386,8 @@ def _continuity_blocks(
     maximum_samples: int,
     minimum_samples: int,
 ) -> tuple[tuple[int, int, int], ...]:
+    if maximum_samples < minimum_samples or minimum_samples <= 0:
+        raise ValueError("PSS continuity block bounds are invalid")
     output: list[tuple[int, int, int]] = []
     cursor = device_sample_start
     remaining = sample_count
@@ -388,7 +395,9 @@ def _continuity_blocks(
         count = min(remaining, maximum_samples)
         trailing = remaining - count
         if 0 < trailing < minimum_samples:
-            count = remaining
+            borrowed = minimum_samples - trailing
+            if count - borrowed >= minimum_samples:
+                count -= borrowed
         output.append((segment_index, cursor, count))
         cursor += count
         remaining -= count

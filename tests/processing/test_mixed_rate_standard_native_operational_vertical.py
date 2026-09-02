@@ -69,6 +69,7 @@ from leo.pipeline import standard_native as standard_native_pipeline
 from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV8,
     StandardNativePngArtifactInventoryV9,
+    StandardNativePngArtifactInventoryV10,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV4,
@@ -595,8 +596,8 @@ def test_real_postgres_mixed_capture_standard_png_and_browser_vertical(
         )
 
         seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
-        assert len(seal.products) == 109
-        assert sum(item.media_type == "image/png" for item in seal.products) == 66
+        assert len(seal.products) == 125
+        assert sum(item.media_type == "image/png" for item in seal.products) == 74
         assert processing_database.catalog.current_run_id(manifest.session_id) == queued.run_id
         path_reports = tuple(
             StandardNativePathReportV4.model_validate(
@@ -1049,8 +1050,8 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
         ]
 
         seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
-        assert len(seal.products) == 87
-        assert sum(item.media_type == "image/png" for item in seal.products) == 54
+        assert len(seal.products) == 99
+        assert sum(item.media_type == "image/png" for item in seal.products) == 60
         assert {
             item.schema_version for item in seal.products if item.kind == "standard.path-report"
         } == {4}
@@ -1078,11 +1079,14 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
         assert isinstance(detail, StandardNativeSubjectDetailV6)
         subject_inventory_counts = {
             paired_subject.subject_id: 6,
-            **{item.subject_id: 12 for item in detail.receiver_path_expansions},
+            **{item.subject_id: 14 for item in detail.receiver_path_expansions},
         }
         for subject_id, expected_count in subject_inventory_counts.items():
             inventory = repository.subject_png_inventory(manifest.session_id, subject_id)
-            assert isinstance(inventory, StandardNativePngArtifactInventoryV9)
+            if subject_id == paired_subject.subject_id:
+                assert isinstance(inventory, StandardNativePngArtifactInventoryV9)
+            else:
+                assert isinstance(inventory, StandardNativePngArtifactInventoryV10)
             assert len(inventory.artifacts) == expected_count
             assert sorted(inventory.sample_rates_hz) in (
                 [2_500_000],
@@ -1118,7 +1122,9 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
                 response = client.get(f"{base}/{subject_id}/artifacts")
                 assert response.status_code == 200
                 payload = response.json()
-                assert payload["schema_version"] == 9
+                assert payload["schema_version"] == (
+                    9 if subject_id == paired_subject.subject_id else 10
+                )
                 assert len(payload["artifacts"]) == expected_count
                 for item in payload["artifacts"]:
                     png = client.get(item["href"])
