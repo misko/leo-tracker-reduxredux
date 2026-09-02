@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -52,6 +54,26 @@ def _published_fixture(tmp_path: Path) -> tuple[Path, Path, str]:
     return deployment, metadata, revision
 
 
+def _make_git_free(deployment: Path, revision: str) -> tuple[Path, str]:
+    release = deployment / "releases" / revision
+    tree = _run("git", "rev-parse", "HEAD^{tree}", cwd=release)
+    shutil.rmtree(release / ".git")
+    marker = release / ".leo-release-source.json"
+    marker.write_text(
+        json.dumps(
+            {
+                "schema": "org.leo.release-source/v1",
+                "revision": revision,
+                "tree": tree,
+            },
+            separators=(",", ":"),
+        )
+        + "\n"
+    )
+    marker.chmod(0o440)
+    return marker, tree
+
+
 def test_current_release_loader_derives_exact_validated_identities(tmp_path: Path) -> None:
     deployment, metadata, revision = _published_fixture(tmp_path)
     observed: list[tuple[Path, str]] = []
@@ -78,6 +100,88 @@ def test_current_release_loader_derives_exact_validated_identities(tmp_path: Pat
     assert evidence.release_metadata_digest == sha256_digest(metadata.read_bytes())
     assert evidence.source_tree_digest.startswith("sha256:")
     assert evidence.release_path == str(deployment / "releases" / revision)
+
+
+def test_current_release_loader_uses_sealed_git_free_source_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    marker, tree = _make_git_free(deployment, revision)
+
+    def forbid_git(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("Git-free release authority invoked git")
+
+    monkeypatch.setattr(native_release, "_git", forbid_git)
+    evidence = load_trusted_current_release(
+        pipeline_release="science-release",
+        current_link=deployment / "current",
+        deployment_root=deployment,
+        validator=lambda _release, _revision: None,
+    )
+
+    assert evidence.source_revision == revision
+    assert evidence.git_tree == tree
+    assert evidence.source_tree_digest == sha256_digest(f"git-tree:{tree}".encode())
+    native_release.assert_trusted_current_release_unchanged(
+        evidence,
+        current_link=deployment / "current",
+        deployment_root=deployment,
+    )
+
+    marker.chmod(0o640)
+    marker.write_text(
+        json.dumps(
+            {
+                "schema": "org.leo.release-source/v1",
+                "revision": revision,
+                "tree": "f" * 40,
+            },
+            separators=(",", ":"),
+        )
+        + "\n"
+    )
+    marker.chmod(0o440)
+    with pytest.raises(ValueError, match="git_tree|source_tree_digest"):
+        native_release.assert_trusted_current_release_unchanged(
+            evidence,
+            current_link=deployment / "current",
+            deployment_root=deployment,
+        )
+
+
+@pytest.mark.parametrize(
+    "document",
+    (
+        {"schema": "org.leo.release-source/v1", "revision": "0" * 40, "tree": "e" * 40},
+        {"schema": "org.leo.release-source/v2", "revision": "a" * 40, "tree": "e" * 40},
+        {
+            "schema": "org.leo.release-source/v1",
+            "revision": "a" * 40,
+            "tree": "e" * 40,
+            "extra": True,
+        },
+    ),
+)
+def test_current_release_loader_rejects_malformed_git_free_identity(
+    tmp_path: Path,
+    document: dict[str, object],
+) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    marker, _tree = _make_git_free(deployment, revision)
+    if document.get("revision") == "a" * 40:
+        document = {**document, "revision": revision}
+    marker.chmod(0o640)
+    marker.write_text(json.dumps(document, separators=(",", ":")) + "\n")
+    marker.chmod(0o440)
+
+    with pytest.raises(ValueError, match="source marker"):
+        load_trusted_current_release(
+            pipeline_release="science-release",
+            current_link=deployment / "current",
+            deployment_root=deployment,
+            validator=lambda _release, _revision: None,
+        )
 
 
 def test_selected_current_revision_is_a_bounded_no_validator_read(tmp_path: Path) -> None:
