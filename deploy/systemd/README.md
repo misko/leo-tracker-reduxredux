@@ -41,12 +41,15 @@ The acquisition service also schedules the configured Starlink scanner when
 all acquisition entry points share a durable capture authority and kernel-held
 per-radio leases, so ordinary, scanner, soak, qualification, probe, and manual
 captures cannot overlap on the same physical radio. Scanner slots are anchored
-to UTC every 20 minutes and alternate deterministically between 2.5 MS/s with a
-2.5 MHz RF bandwidth and 5 MS/s with a 5 MHz RF bandwidth. Each slot opens and
-configures the radio once, then captures complete eight-target sweeps for 300
-seconds at 120 ms per target in CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U
-order. Every target uses the maximum-coverage IF for that slot's admitted
-bandwidth.
+to UTC every 20 minutes. A due scanner outranks queued ordinary cadence work
+because it has a bounded start window; an already leased radio operation is
+never preempted. The 300-second lateness allowance covers the measured tail of
+one in-flight ordinary operation without permitting stale scanner backfill.
+Slots alternate deterministically between 2.5 MS/s with a 2.5 MHz RF bandwidth
+and 5 MS/s with a 5 MHz RF bandwidth. Each slot opens and configures the radio
+once, then captures complete eight-target sweeps for 300 seconds at 120 ms per
+target in CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U order. Every target
+uses the maximum-coverage IF for that slot's admitted bandwidth.
 
 Each completed sweep is independently committed as a framed, digest-verified
 CI16 bundle beneath `$LEO_BULK_ROOT/scanner-recordings/YYYY/MM/DD/<scan-id>/`;

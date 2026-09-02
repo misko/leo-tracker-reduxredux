@@ -104,6 +104,7 @@ _PRODUCTION_RATE_POLICIES_V3 = frozenset(
 _PRODUCTION_RATE_POLICIES = _PRODUCTION_RATE_POLICIES_V2 | _PRODUCTION_RATE_POLICIES_V3
 ProfileSelector = Callable[[tuple[str, ...], str], str]
 RunData = RunDataV1 | RunDataV2 | ScannerRunDataV1
+_SCANNER_CADENCE_PRIORITY = 1
 
 _RUNNING_CONTROL = CaptureControlStateV1(
     generation=0,
@@ -467,6 +468,7 @@ class ContinuousAcquisitionRunner:
                         kind=CaptureTaskKind.SCANNER_SWEEP.value,
                         payload=scanner_intent.model_dump(mode="json"),
                         scheduled_for=next_scanner_due,
+                        priority=_SCANNER_CADENCE_PRIORITY,
                         coalesce_pending_kind=False,
                     )
                     next_scanner_due += timedelta(seconds=scanner_configuration.interval_seconds)

@@ -129,7 +129,7 @@ def test_scheduled_scanner_environment_defaults_are_the_reviewed_cadence() -> No
     settings = CliSettings.from_environ({})
 
     assert settings.scanner_interval_seconds == 1_200
-    assert settings.scanner_maximum_lateness_seconds == 120
+    assert settings.scanner_maximum_lateness_seconds == 300
     assert settings.scanner_run_seconds == 300
     assert settings.scanner_dwell_ms == 120
 
