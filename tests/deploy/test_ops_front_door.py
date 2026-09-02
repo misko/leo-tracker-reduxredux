@@ -1643,6 +1643,41 @@ def test_rollback_fence_treats_exact_absent_target_release_as_noop(
     assert capsys.readouterr().out == f"FENCE-NO-OP release={target} reason=absent\n"
 
 
+def test_rollback_fence_reads_trailing_json_after_validator_prelude(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    target = "2" * 40
+    previous = "1" * 40
+    document = {
+        "schema_version": 1,
+        "command": "process.stop-and-fence",
+        "ok": False,
+        "exit_code": 11,
+        "message": f"pipeline release is absent: {target}",
+        "payload": None,
+    }
+
+    def absent_target(*_args, **_kwargs):
+        prelude = "PRODUCTION ENVIRONMENT VALIDATED\n- release selector is exact\n"
+        raise subprocess.CalledProcessError(
+            11,
+            ("leo", "process", "stop-and-fence"),
+            output=prelude + json.dumps(document, indent=2) + "\n",
+        )
+
+    monkeypatch.setattr(OPS, "_run_as_leo", absent_target)
+
+    OPS._fence_target_release_for_rollback(
+        release=tmp_path / previous,
+        target=target,
+        previous=previous,
+    )
+
+    assert capsys.readouterr().out == f"FENCE-NO-OP release={target} reason=absent\n"
+
+
 def test_rollback_fence_rejects_unrelated_not_found(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

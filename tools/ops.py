@@ -2235,6 +2235,24 @@ def _fence_target_release_for_rollback(*, release: Path, target: str, previous: 
     )
 
 
+def _trailing_json_command_result(output: str | None) -> dict[str, Any]:
+    """Decode the final JSON object without treating validator prelude lines as JSON."""
+
+    if not isinstance(output, str):
+        raise ValueError("command output is not text")
+    decoder = json.JSONDecoder()
+    candidate_offsets = tuple(match.end() for match in re.finditer(r"(?m)^[ \t]*(?=\{)", output))
+    for offset in reversed(candidate_offsets):
+        try:
+            result, end = decoder.raw_decode(output, offset)
+        except json.JSONDecodeError:
+            continue
+        if output[end:].strip() or not isinstance(result, dict):
+            continue
+        return result
+    raise ValueError("command output has no trailing JSON object")
+
+
 def _fence_active_release(
     *,
     release: Path,
@@ -2273,7 +2291,7 @@ def _fence_active_release(
         if not allow_absent or error.returncode != _CLI_NOT_FOUND_EXIT_CODE:
             raise
         try:
-            result = json.loads(error.stdout or "")
+            result = _trailing_json_command_result(error.stdout)
         except (TypeError, ValueError) as decode_error:
             raise error from decode_error
         expected_message = f"pipeline release is absent: {fenced_revision}"
