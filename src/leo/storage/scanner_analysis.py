@@ -19,6 +19,7 @@ from leo.scanner.analysis_models import (
     ScannerAnalysisBundleManifestV3,
     ScannerAnalysisBundleManifestV4,
     ScannerAnalysisBundleManifestV5,
+    ScannerAnalysisBundleManifestV6,
     ScannerAnalysisHistoryItemV1,
     ScannerAnalysisHistoryItemV2,
     ScannerAnalysisHistoryItemV3,
@@ -29,9 +30,16 @@ from leo.scanner.analysis_models import (
     ScannerAnalysisMetricsV1,
     ScannerAnalysisMetricsV2,
     ScannerAnalysisMetricsV3,
+    ScannerAnalysisMetricsV4,
     ScannerPilotDopplerSegmentsV1,
 )
-from leo.scanner.models import ScannerReport, ScannerReportLike, ScannerReportV2, ScannerReportV4
+from leo.scanner.models import (
+    ScannerReport,
+    ScannerReportLike,
+    ScannerReportV2,
+    ScannerReportV4,
+    ScannerReportV5,
+)
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError
 from leo.storage.uri import BulkUriResolver, confined_path
 from leo.storage.writer import _fsync_directory
@@ -96,9 +104,24 @@ class ScannerAnalysisStore:
                 raise ValueError(f"{label} ID is not one safe persisted identifier")
         if report.scan_id != metrics.scan_id:
             raise ValueError("scanner report and metrics scan IDs disagree")
-        abi3 = isinstance(report, ScannerReportV4) or isinstance(metrics, ScannerAnalysisMetricsV3)
+        scanner_v3 = isinstance(report, ScannerReportV5) or isinstance(
+            metrics, ScannerAnalysisMetricsV4
+        )
+        if scanner_v3 and not (
+            isinstance(report, ScannerReportV5) and isinstance(metrics, ScannerAnalysisMetricsV4)
+        ):
+            raise ValueError("scanner V3 report and metrics versions disagree")
+        abi3 = (
+            scanner_v3
+            or isinstance(report, ScannerReportV4)
+            or isinstance(metrics, ScannerAnalysisMetricsV3)
+        )
         if abi3 and not (
-            isinstance(report, ScannerReportV4) and isinstance(metrics, ScannerAnalysisMetricsV3)
+            scanner_v3
+            or (
+                isinstance(report, ScannerReportV4)
+                and isinstance(metrics, ScannerAnalysisMetricsV3)
+            )
         ):
             raise ValueError("scanner report and metrics ABI 3 versions disagree")
         v2 = isinstance(report, ScannerReportV2) or isinstance(metrics, ScannerAnalysisMetricsV2)
@@ -112,8 +135,11 @@ class ScannerAnalysisStore:
         ):
             raise ValueError("scanner report and metrics continuity versions disagree")
         if (
-            isinstance(report, (ScannerReportV2, ScannerReportV4))
-            and isinstance(metrics, (ScannerAnalysisMetricsV2, ScannerAnalysisMetricsV3))
+            isinstance(report, (ScannerReportV2, ScannerReportV4, ScannerReportV5))
+            and isinstance(
+                metrics,
+                (ScannerAnalysisMetricsV2, ScannerAnalysisMetricsV3, ScannerAnalysisMetricsV4),
+            )
             and (
                 report.configuration != metrics.configuration
                 or report.continuity_evidence != metrics.continuity_evidence
@@ -163,14 +189,18 @@ class ScannerAnalysisStore:
             report_payload = canonical_json_bytes(report.model_dump(mode="json"))
             metrics_payload = canonical_json_bytes(metrics.model_dump(mode="json"))
             report_name = (
-                "scanner-report.v4.json"
+                "scanner-report.v5.json"
+                if scanner_v3
+                else "scanner-report.v4.json"
                 if abi3
                 else "scanner-report.v2.json"
                 if v2
                 else "scanner-report.v1.json"
             )
             metrics_name = (
-                "scanner-metrics.v3.json"
+                "scanner-metrics.v4.json"
+                if scanner_v3
+                else "scanner-metrics.v3.json"
                 if abi3
                 else "scanner-metrics.v2.json"
                 if v2
@@ -222,7 +252,11 @@ class ScannerAnalysisStore:
                         pilot_segment_rates_png
                     )
                     manifest_type = (
-                        ScannerAnalysisBundleManifestV5 if abi3 else ScannerAnalysisBundleManifestV4
+                        ScannerAnalysisBundleManifestV6
+                        if scanner_v3
+                        else ScannerAnalysisBundleManifestV5
+                        if abi3
+                        else ScannerAnalysisBundleManifestV4
                     )
                     manifest = manifest_type.model_validate(
                         {
@@ -307,6 +341,7 @@ class ScannerAnalysisStore:
                 ScannerAnalysisBundleManifestV3,
                 ScannerAnalysisBundleManifestV4,
                 ScannerAnalysisBundleManifestV5,
+                ScannerAnalysisBundleManifestV6,
             ),
         ):
             pilot_payload = self._verified(
@@ -325,6 +360,7 @@ class ScannerAnalysisStore:
                 ScannerAnalysisBundleManifestV3,
                 ScannerAnalysisBundleManifestV4,
                 ScannerAnalysisBundleManifestV5,
+                ScannerAnalysisBundleManifestV6,
             ),
         ):
             self._verified(
@@ -340,7 +376,10 @@ class ScannerAnalysisStore:
         report: ScannerReportLike
         metrics: ScannerAnalysisMetricsLike
         try:
-            if isinstance(manifest, ScannerAnalysisBundleManifestV5):
+            if isinstance(manifest, ScannerAnalysisBundleManifestV6):
+                report = ScannerReportV5.model_validate_json(report_payload)
+                metrics = ScannerAnalysisMetricsV4.model_validate_json(metrics_payload)
+            elif isinstance(manifest, ScannerAnalysisBundleManifestV5):
                 report = ScannerReportV4.model_validate_json(report_payload)
                 metrics = ScannerAnalysisMetricsV3.model_validate_json(metrics_payload)
             elif isinstance(manifest, ScannerAnalysisBundleManifestV4):
@@ -356,6 +395,7 @@ class ScannerAnalysisStore:
                     ScannerAnalysisBundleManifestV3,
                     ScannerAnalysisBundleManifestV4,
                     ScannerAnalysisBundleManifestV5,
+                    ScannerAnalysisBundleManifestV6,
                 ),
             ):
                 pilot_doppler = ScannerPilotDopplerSegmentsV1.model_validate_json(pilot_payload)
@@ -385,7 +425,11 @@ class ScannerAnalysisStore:
             for item in self._ordered_latest_bundles()
             if not isinstance(
                 self._manifest(item[3], item[1], item[2])[1],
-                (ScannerAnalysisBundleManifestV4, ScannerAnalysisBundleManifestV5),
+                (
+                    ScannerAnalysisBundleManifestV4,
+                    ScannerAnalysisBundleManifestV5,
+                    ScannerAnalysisBundleManifestV6,
+                ),
             )
         ]
         selected = bundles[cursor : cursor + limit]
@@ -429,7 +473,11 @@ class ScannerAnalysisStore:
         for modified_ns, scan_id, analysis_id, path in self._ordered_latest_bundles():
             if isinstance(
                 self._manifest(path, scan_id, analysis_id)[1],
-                (ScannerAnalysisBundleManifestV4, ScannerAnalysisBundleManifestV5),
+                (
+                    ScannerAnalysisBundleManifestV4,
+                    ScannerAnalysisBundleManifestV5,
+                    ScannerAnalysisBundleManifestV6,
+                ),
             ):
                 continue
             try:
@@ -493,9 +541,12 @@ class ScannerAnalysisStore:
             report_payload = self._verified(
                 path, manifest.report_relative_path, manifest.report_sha256
             )
+            report: ScannerReportLike
             try:
-                if isinstance(manifest, ScannerAnalysisBundleManifestV5):
-                    report: ScannerReportLike = ScannerReportV4.model_validate_json(report_payload)
+                if isinstance(manifest, ScannerAnalysisBundleManifestV6):
+                    report = ScannerReportV5.model_validate_json(report_payload)
+                elif isinstance(manifest, ScannerAnalysisBundleManifestV5):
+                    report = ScannerReportV4.model_validate_json(report_payload)
                 elif isinstance(manifest, ScannerAnalysisBundleManifestV4):
                     report = ScannerReportV2.model_validate_json(report_payload)
                 else:
@@ -561,6 +612,7 @@ class ScannerAnalysisStore:
                 ScannerAnalysisBundleManifestV3,
                 ScannerAnalysisBundleManifestV4,
                 ScannerAnalysisBundleManifestV5,
+                ScannerAnalysisBundleManifestV6,
             ),
         ):
             relative, digest = (
@@ -573,6 +625,7 @@ class ScannerAnalysisStore:
                 ScannerAnalysisBundleManifestV3,
                 ScannerAnalysisBundleManifestV4,
                 ScannerAnalysisBundleManifestV5,
+                ScannerAnalysisBundleManifestV6,
             ),
         ):
             relative, digest = (
@@ -586,6 +639,7 @@ class ScannerAnalysisStore:
                 ScannerAnalysisBundleManifestV3,
                 ScannerAnalysisBundleManifestV4,
                 ScannerAnalysisBundleManifestV5,
+                ScannerAnalysisBundleManifestV6,
             ),
         ):
             relative, digest = (
@@ -631,6 +685,8 @@ class ScannerAnalysisStore:
                 manifest = ScannerAnalysisBundleManifestV4.model_validate_json(manifest_payload)
             elif schema_version == 5:
                 manifest = ScannerAnalysisBundleManifestV5.model_validate_json(manifest_payload)
+            elif schema_version == 6:
+                manifest = ScannerAnalysisBundleManifestV6.model_validate_json(manifest_payload)
             else:
                 raise ValueError("unsupported scanner analysis manifest schema")
         except Exception as error:

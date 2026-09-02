@@ -137,6 +137,7 @@ from leo.scanner import (
     ScannerReportV2,
     ScannerReportV3,
     ScannerReportV4,
+    ScannerReportV5,
 )
 
 
@@ -381,7 +382,9 @@ def create_app(
     @v3_router.api_route(
         "/scanner/latest",
         methods=["GET", "HEAD"],
-        response_model=ScannerReport | ScannerReportV2 | ScannerReportV3 | ScannerReportV4,
+        response_model=(
+            ScannerReport | ScannerReportV2 | ScannerReportV3 | ScannerReportV4 | ScannerReportV5
+        ),
     )
     def latest_scanner_report_v3() -> ScannerCaptureReportLike:
         if scanner_reports is None:

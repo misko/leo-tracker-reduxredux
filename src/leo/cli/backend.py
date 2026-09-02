@@ -62,20 +62,28 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
 )
-from leo.scanner import CapturedScannerSweep, ScannerCaptureBurstReportLike
-from leo.storage import PublishedScannerIqBundle
+from leo.scanner import (
+    CapturedScannerSweep,
+    ScannerCaptureBurstReportLike,
+    ScannerCaptureReportLike,
+    ScheduledScannerRunIntentV1,
+)
+from leo.storage import PublishedScannerIqBundle, PublishedScannerRun
 
 
 @dataclass(frozen=True, slots=True)
 class ScheduledScannerConfiguration:
     interval_seconds: float
     maximum_lateness_seconds: float
+    run_duration_seconds: float = 300.0
 
     def __post_init__(self) -> None:
         if self.interval_seconds <= 0:
             raise ValueError("scanner interval must be positive")
         if self.maximum_lateness_seconds < 0:
             raise ValueError("scanner maximum lateness cannot be negative")
+        if not 0 < self.run_duration_seconds <= 1_800:
+            raise ValueError("scanner run duration is outside its operational bound")
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +104,36 @@ class ScheduledScannerBurst:
             raise ValueError("scheduled scanner burst must contain exactly four scans")
         if len({capture.scan_id for capture in self.captures}) != 4:
             raise ValueError("scheduled scanner burst scan IDs must be unique")
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledScannerSweepReference:
+    scan_id: str
+    output_path: Path
+    capture_elapsed_ms: float
+    iq_bundle: PublishedScannerIqBundle | None
+    fallback_report: ScannerCaptureReportLike | None = None
+
+    def __post_init__(self) -> None:
+        if self.capture_elapsed_ms < 0:
+            raise ValueError("scheduled scanner sweep elapsed time cannot be negative")
+        if (self.iq_bundle is None) == (self.fallback_report is None):
+            raise ValueError("scanner sweep requires exactly one IQ bundle or fallback report")
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledScannerRun:
+    intent: ScheduledScannerRunIntentV1
+    published: PublishedScannerRun
+    sweeps: tuple[ScheduledScannerSweepReference, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledScannerRunAnalysis:
+    run_id: str
+    sweep_count: int
+    active_edge_count: int
+    failed_sweep_count: int
 
 
 class CliBackendError(RuntimeError):
@@ -245,11 +283,17 @@ class ScheduledScannerPort(Protocol):
 
     def scanner_schedule(self) -> ScheduledScannerConfiguration | None: ...
 
-    def capture_scheduled_scanner(self) -> ScheduledScannerBurst: ...
+    def scheduled_scanner_intent(
+        self, *, operation_key: str, scheduled_for: datetime
+    ) -> ScheduledScannerRunIntentV1: ...
+
+    def capture_scheduled_scanner(
+        self, intent: ScheduledScannerRunIntentV1, *, cancel: Event
+    ) -> ScheduledScannerRun: ...
 
     def analyze_scheduled_scanner(
-        self, burst: ScheduledScannerBurst
-    ) -> ScannerCaptureBurstReportLike: ...
+        self, run: ScheduledScannerRun
+    ) -> ScheduledScannerRunAnalysis: ...
 
 
 class ProcessingCliBackend(Protocol):

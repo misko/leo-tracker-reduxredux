@@ -41,6 +41,7 @@ from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
     ScheduledScannerPort,
+    ScheduledScannerRunAnalysis,
 )
 from leo.cli.models import (
     CaptureDataV1,
@@ -67,7 +68,7 @@ from leo.contracts.mixed_rate_schedule import (
     ProductionDwellIntentV3,
 )
 from leo.contracts.states import CaptureState
-from leo.scanner import ScannerCaptureBurstReportLike
+from leo.scanner import ScheduledScannerRunIntentV1
 
 logger = logging.getLogger(__name__)
 _MIXED_RATE_POLICIES = frozenset(
@@ -243,9 +244,15 @@ class ContinuousAcquisitionRunner:
         scanner_configuration = scanner.scanner_schedule()
         if scanner_configuration is not None:
             scanner.reconcile_scanner_recordings()
+        next_scanner_due = (
+            None
+            if scanner_configuration is None
+            else _cadence_floor(self._utc_now(), scanner_configuration.interval_seconds)
+        )
         count = committed = degraded = failed = 0
         last: CaptureDataV1 | None = None
         next_due = _cadence_floor(self._utc_now(), interval_seconds)
+        scanner_analysis: Future[ScheduledScannerRunAnalysis] | None = None
         rate_profile_authority = (
             None
             if mixed_rate_policy is None or mixed_rate_policy in _PRODUCTION_RATE_POLICIES
@@ -258,8 +265,15 @@ class ContinuousAcquisitionRunner:
         )
 
         queue.reclaim_expired_acquisition_operations()
-        with cancellation_signals(cancel):
+        with (
+            cancellation_signals(cancel),
+            ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix="leo-scanner-analysis",
+            ) as scanner_analysis_pool,
+        ):
             while not cancel.is_set():
+                scanner_analysis = _reap_scanner_run_analysis(scanner_analysis)
                 now_utc = self._utc_now()
                 if now_utc >= next_due:
                     key_profiles = (
@@ -415,6 +429,25 @@ class ContinuousAcquisitionRunner:
                         else now_utc + timedelta(microseconds=1)
                     )
 
+                if (
+                    scanner_configuration is not None
+                    and next_scanner_due is not None
+                    and now_utc >= next_scanner_due
+                ):
+                    operation_key = _scheduled_scanner_key(next_scanner_due)
+                    scanner_intent = scanner.scheduled_scanner_intent(
+                        operation_key=operation_key,
+                        scheduled_for=next_scanner_due,
+                    )
+                    queue.enqueue_acquisition_operation(
+                        operation_key=operation_key,
+                        kind=CaptureTaskKind.SCANNER_SWEEP.value,
+                        payload=scanner_intent.model_dump(mode="json"),
+                        scheduled_for=next_scanner_due,
+                        coalesce_pending_kind=False,
+                    )
+                    next_scanner_due += timedelta(seconds=scanner_configuration.interval_seconds)
+
                 control = self._capture_control_snapshot()
                 if control is None or control.desired_state is CaptureDesiredState.PAUSED:
                     if cancel.wait(self._capture_control_poll_seconds):
@@ -510,25 +543,6 @@ class ContinuousAcquisitionRunner:
                                 worker_id=worker_id,
                                 outcome=f"capture {last.session_id} {last.state.value}",
                             )
-                        if (
-                            scanner_configuration is not None
-                            and health_failure is None
-                            and last.state
-                            in {
-                                CaptureState.COMMITTED,
-                                CaptureState.DEGRADED,
-                            }
-                        ):
-                            queue.enqueue_acquisition_operation(
-                                operation_key=f"scan-after:{lease.operation_key}",
-                                kind=CaptureTaskKind.SCANNER_SWEEP.value,
-                                payload={"after_operation_id": lease.operation_id},
-                                # Place the scan immediately after its parent
-                                # even when several overdue cadence slots were
-                                # materialized during backpressure.
-                                scheduled_for=lease.scheduled_for + timedelta(microseconds=1),
-                                coalesce_pending_kind=True,
-                            )
                         if maximum_captures is not None and count >= maximum_captures:
                             return _run_result(
                                 profile_names,
@@ -540,17 +554,50 @@ class ContinuousAcquisitionRunner:
                                 last,
                             )
                     elif lease.kind == CaptureTaskKind.SCANNER_SWEEP.value:
-                        captured = scanner.capture_scheduled_scanner()
-                        burst = scanner.analyze_scheduled_scanner(captured)
-                        queue.complete_acquisition_operation(
-                            operation_id=lease.operation_id,
-                            worker_id=worker_id,
-                            outcome=(
-                                f"scan burst {burst.burst_id} published; "
-                                f"scans={len(burst.reports)}; "
-                                f"active_edges={burst.active_edge_count}"
-                            ),
-                        )
+                        scanner_intent = ScheduledScannerRunIntentV1.model_validate(lease.payload)
+                        lateness = (self._utc_now() - scanner_intent.scheduled_for).total_seconds()
+                        if lateness > scanner_intent.maximum_lateness_seconds:
+                            queue.complete_acquisition_operation(
+                                operation_id=lease.operation_id,
+                                worker_id=worker_id,
+                                outcome=(
+                                    f"scanner slot skipped late; lateness_seconds={lateness:.3f}"
+                                ),
+                            )
+                        else:
+                            captured = scanner.capture_scheduled_scanner(
+                                scanner_intent,
+                                cancel=cancel,
+                            )
+                            run_manifest = captured.published.manifest
+                            if run_manifest.status == "failed":
+                                queue.fail_acquisition_operation(
+                                    operation_id=lease.operation_id,
+                                    worker_id=worker_id,
+                                    error=run_manifest.stop_reason,
+                                    retryable=False,
+                                )
+                            else:
+                                queue.complete_acquisition_operation(
+                                    operation_id=lease.operation_id,
+                                    worker_id=worker_id,
+                                    outcome=(
+                                        f"scan run {captured.published.run_id} published; "
+                                        f"sweeps={len(captured.sweeps)}; "
+                                        f"status={run_manifest.status}"
+                                    ),
+                                )
+                            if scanner_analysis is None:
+                                scanner_analysis = scanner_analysis_pool.submit(
+                                    scanner.analyze_scheduled_scanner,
+                                    captured,
+                                )
+                            else:
+                                logger.info(
+                                    "scheduled_scanner_analysis_deferred "
+                                    "reason=analysis_busy run_id=%s",
+                                    captured.published.run_id,
+                                )
                     else:
                         queue.fail_acquisition_operation(
                             operation_id=lease.operation_id,
@@ -580,7 +627,7 @@ class ContinuousAcquisitionRunner:
                         retryable=retryable,
                         retry_after=timedelta(seconds=self._radio_busy_retry_seconds),
                     )
-                    if not retryable:
+                    if not retryable and lease.kind != CaptureTaskKind.SCANNER_SWEEP.value:
                         return _run_result(
                             profile_names,
                             "error",
@@ -591,6 +638,8 @@ class ContinuousAcquisitionRunner:
                             last,
                             error=str(error),
                         )
+                    if not retryable:
+                        logger.error("scheduled_scanner_operation_failed reason=%s", error)
                 except Exception as error:
                     queue.fail_acquisition_operation(
                         operation_id=lease.operation_id,
@@ -690,11 +739,15 @@ class ContinuousAcquisitionRunner:
         scanner_configuration = scanner.scanner_schedule() if scanner is not None else None
         if scanner is not None and scanner_configuration is not None:
             scanner.reconcile_scanner_recordings()
-        next_scanner_due: float | None = None
-        last_scanner_capture: float | None = None
+        next_scanner_slot = (
+            None
+            if scanner_configuration is None
+            else _cadence_floor(self._utc_now(), scanner_configuration.interval_seconds)
+        )
+        next_scanner_due: float | None = now if next_scanner_slot is not None else None
         pause_observed = False
         pending_profile_name: str | None = None
-        analysis: Future[ScannerCaptureBurstReportLike] | None = None
+        analysis: Future[ScheduledScannerRunAnalysis] | None = None
 
         with (
             cancellation_signals(cancel),
@@ -704,7 +757,7 @@ class ContinuousAcquisitionRunner:
             ) as analysis_pool,
         ):
             while not cancel.is_set():
-                analysis = _reap_scanner_analysis(analysis)
+                analysis = _reap_scanner_run_analysis(analysis)
                 control = self._capture_control_snapshot()
                 if control is None or control.desired_state is CaptureDesiredState.PAUSED:
                     pause_observed = True
@@ -715,8 +768,12 @@ class ContinuousAcquisitionRunner:
                 now = self._clock()
                 if pause_observed:
                     next_capture_due = now
-                    next_scanner_due = None
-                    last_scanner_capture = None
+                    next_scanner_slot = (
+                        None
+                        if scanner_configuration is None
+                        else _cadence_floor(self._utc_now(), scanner_configuration.interval_seconds)
+                    )
+                    next_scanner_due = now if next_scanner_slot is not None else None
                     pending_profile_name = None
                     pause_observed = False
 
@@ -779,39 +836,39 @@ class ContinuousAcquisitionRunner:
                         if interval_seconds > 0
                         else self._clock()
                     )
-                    if scanner_configuration is not None and last.state in {
-                        CaptureState.COMMITTED,
-                        CaptureState.DEGRADED,
-                    }:
-                        captured_at = self._clock()
-                        next_scanner_due = (
-                            captured_at
-                            if last_scanner_capture is None
-                            else max(
-                                captured_at,
-                                last_scanner_capture + scanner_configuration.interval_seconds,
-                            )
-                        )
                     continue
 
                 if (
                     scanner is not None
                     and scanner_configuration is not None
                     and next_scanner_due is not None
+                    and next_scanner_slot is not None
                     and now >= next_scanner_due
                 ):
-                    lateness = now - next_scanner_due
+                    operation_key = _scheduled_scanner_key(next_scanner_slot)
+                    scanner_intent = scanner.scheduled_scanner_intent(
+                        operation_key=operation_key,
+                        scheduled_for=next_scanner_slot,
+                    )
+                    lateness = (self._utc_now() - scanner_intent.scheduled_for).total_seconds()
                     if lateness > scanner_configuration.maximum_lateness_seconds:
                         logger.warning(
-                            "scheduled_scanner_late lateness_seconds=%.3f",
+                            "scheduled_scanner_skipped_late lateness_seconds=%.3f",
                             lateness,
                         )
-                    if analysis is not None:
-                        next_scanner_due = now + self._radio_busy_retry_seconds
-                        logger.info("scheduled_scanner_deferred reason=analysis_busy")
+                        next_scanner_slot += timedelta(
+                            seconds=scanner_configuration.interval_seconds
+                        )
+                        next_scanner_due = self._clock() + max(
+                            0.0,
+                            (next_scanner_slot - self._utc_now()).total_seconds(),
+                        )
                     else:
                         try:
-                            captured = scanner.capture_scheduled_scanner()
+                            captured = scanner.capture_scheduled_scanner(
+                                scanner_intent,
+                                cancel=cancel,
+                            )
                         except CliBackendError as error:
                             level = (
                                 logging.INFO
@@ -821,12 +878,24 @@ class ContinuousAcquisitionRunner:
                             logger.log(level, "scheduled_scanner_not_started reason=%s", error)
                             next_scanner_due = now + self._radio_busy_retry_seconds
                         else:
-                            last_scanner_capture = now
-                            next_scanner_due = None
-                            analysis = analysis_pool.submit(
-                                scanner.analyze_scheduled_scanner,
-                                captured,
+                            next_scanner_slot += timedelta(
+                                seconds=scanner_configuration.interval_seconds
                             )
+                            next_scanner_due = self._clock() + max(
+                                0.0,
+                                (next_scanner_slot - self._utc_now()).total_seconds(),
+                            )
+                            if analysis is None:
+                                analysis = analysis_pool.submit(
+                                    scanner.analyze_scheduled_scanner,
+                                    captured,
+                                )
+                            else:
+                                logger.info(
+                                    "scheduled_scanner_analysis_deferred "
+                                    "reason=analysis_busy run_id=%s",
+                                    captured.published.run_id,
+                                )
                     continue
 
                 due = [next_capture_due]
@@ -932,6 +1001,7 @@ def _scheduled_scanner(backend: AcquisitionCliBackend) -> ScheduledScannerPort |
     required = (
         "reconcile_scanner_recordings",
         "scanner_schedule",
+        "scheduled_scanner_intent",
         "capture_scheduled_scanner",
         "analyze_scheduled_scanner",
     )
@@ -1000,6 +1070,13 @@ def _scheduled_dwell_key(
     return f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='seconds')}"
 
 
+def _scheduled_scanner_key(scheduled_for: datetime) -> str:
+    if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
+        raise ValueError("scanner scheduling clock must be timezone-aware")
+    canonical = scheduled_for.astimezone(UTC)
+    return f"scheduled-scanner:{canonical.strftime('%Y%m%dT%H%M%SZ')}"
+
+
 def _production_profile_authority_identity(
     authority: Mapping[
         tuple[int, tuple[int, ...], bool],
@@ -1019,21 +1096,22 @@ def _production_profile_authority_identity(
     return f"production-profile-authority-v1:{digest.hexdigest()}"
 
 
-def _reap_scanner_analysis(
-    future: Future[ScannerCaptureBurstReportLike] | None,
-) -> Future[ScannerCaptureBurstReportLike] | None:
+def _reap_scanner_run_analysis(
+    future: Future[ScheduledScannerRunAnalysis] | None,
+) -> Future[ScheduledScannerRunAnalysis] | None:
     if future is None or not future.done():
         return future
     try:
-        burst = future.result()
+        run = future.result()
     except Exception:
         logger.exception("scheduled_scanner_analysis_failed")
     else:
         logger.info(
-            "scheduled_scanner_completed burst_id=%s scans=%d active_edges=%d",
-            burst.burst_id,
-            len(burst.reports),
-            burst.active_edge_count,
+            "scheduled_scanner_completed run_id=%s sweeps=%d active_edges=%d failed_sweeps=%d",
+            run.run_id,
+            run.sweep_count,
+            run.active_edge_count,
+            run.failed_sweep_count,
         )
     return None
 

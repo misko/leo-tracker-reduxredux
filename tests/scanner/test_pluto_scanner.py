@@ -6,7 +6,12 @@ import numpy as np
 import pytest
 
 from leo.radio.pluto_scanner import PlutoScannerError, PlutoSequentialScanRadio
-from leo.scanner import ScannerConfigurationV2, current_low_band_targets
+from leo.scanner import (
+    ScannerConfigurationV2,
+    ScannerConfigurationV3,
+    current_low_band_targets,
+    scheduled_low_band_targets,
+)
 
 
 class MetadataSession:
@@ -89,6 +94,7 @@ class StubDevice:
         self.tune_offset_hz = tune_offset_hz
         self.events: list[object] = []
         self.factory_arguments: tuple[tuple[object, ...], dict[str, object]] | None = None
+        self.applied_settings = None
         self.session_count = 0
 
     @property
@@ -104,6 +110,7 @@ class StubDevice:
 
     def apply_settings(self, settings):
         self.events.append(("apply", settings.center_frequency_hz))
+        self.applied_settings = settings
         return settings
 
     def reset_receive_buffer(self):
@@ -199,6 +206,27 @@ def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_targe
         "reset",
         "close",
     ]
+
+
+@pytest.mark.parametrize("sample_rate_hz", [2_500_000, 5_000_000])
+def test_pluto_scanner_applies_matching_native_bandwidth_for_scheduled_rates(
+    sample_rate_hz: int,
+) -> None:
+    device = StubDevice(metadata_abi=3)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV3(
+        sample_rate_hz=sample_rate_hz,
+        bandwidth_hz=sample_rate_hz,
+        targets=scheduled_low_band_targets(bandwidth_hz=sample_rate_hz),
+    )
+
+    radio.open()
+    radio.configure_once(configuration)
+    radio.close()
+
+    assert device.applied_settings.sample_rate_hz == sample_rate_hz
+    assert device.applied_settings.bandwidth_hz == sample_rate_hz
+    assert device.applied_settings.center_frequency_hz == configuration.targets[0].if_center_hz
 
 
 @pytest.mark.parametrize("metadata_abi", [None, 0, 1, 2])

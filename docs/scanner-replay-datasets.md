@@ -116,12 +116,15 @@ analysis without recapturing RF data. Existing products are digest-verified and 
 repair pass is idempotent. Replay processing uses the same analyzer and renderers through the
 read-only replay adapter.
 
-Each interactive scanner command and each scheduled scanner slot is one capture-first burst of
-four independent scans. The scanner holds one radio lease while it captures all four sweeps in
-sequence, then releases the radio before compression and Standard analysis. Every sweep keeps its
-own scan ID, IQ bundle, report, waterfall, GLRT response, and Scanner UI row; the burst contract is
-only an orchestration summary. Storage admission reserves the raw-IQ requirement for all four
-scans before the first sweep starts.
+Each interactive scanner command remains one capture-first burst of four independent scans. A
+scheduled scanner slot is instead one bounded 300-second run of complete eight-target sweeps. It
+opens and configures the selected radio once, alternates 2.5 MS/s and 5 MS/s by UTC slot, and uses
+matching 2.5 MHz and 5 MHz RF bandwidths with maximum-coverage IF centers. Completed sweeps keep
+their own scan ID, IQ bundle, report, waterfall, GLRT response, and Scanner UI row. A terminal run
+manifest references those immutable sweeps, while admission conservatively reserves the exact
+raw-IQ upper bound before the radio is opened. Compression may overlap the next sweep with one
+worker, but at most two sweeps of IQ are resident and Standard analysis begins only after RF
+release.
 
 The Scanner tab reads these immutable bundles through `/api/v1/scanner/analyses`. Its left-hand
 table selects the newest published analysis variant for each scan; the central pane loads the

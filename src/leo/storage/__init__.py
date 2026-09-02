@@ -20,6 +20,7 @@ from leo.storage.scanner_replay import (
     RecordingScannerReplaySource,
     ScannerReplayStore,
 )
+from leo.storage.scanner_run import PublishedScannerRun, ScannerRunStore
 from leo.storage.store import (
     DeviceIqSpan,
     ReconcileIssue,
@@ -54,6 +55,7 @@ __all__ = [
     "PublishedScannerIqBundle",
     "PublishedScannerReplayDataset",
     "PublishedScannerReplaySweep",
+    "PublishedScannerRun",
     "PinnedLocalRoot",
     "ReconcileIssue",
     "ReconcileIssueKind",
@@ -66,6 +68,7 @@ __all__ = [
     "ScannerIqStore",
     "ScannerAnalysisStore",
     "ScannerReplayStore",
+    "ScannerRunStore",
     "StreamBundleWriter",
     "StreamWriteReceipt",
     "VerificationReport",

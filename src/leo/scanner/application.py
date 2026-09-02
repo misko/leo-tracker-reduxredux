@@ -18,6 +18,7 @@ from leo.scanner.models import (
     ScannerCloseFailureEvidenceV1,
     ScannerConfigurationLike,
     ScannerConfigurationV2,
+    ScannerConfigurationV3,
     ScannerFrameContinuityEvidenceLike,
     ScannerFrameContinuityEvidenceV1,
     ScannerFrameContinuityEvidenceV2,
@@ -25,6 +26,7 @@ from leo.scanner.models import (
     ScannerReportV2,
     ScannerReportV3,
     ScannerReportV4,
+    ScannerReportV5,
     ScanTarget,
 )
 from leo.scanner.ports import (
@@ -90,31 +92,31 @@ def capture_scan_sweep(
 ) -> CapturedScannerSweep:
     """Capture and close every tuning without performing detector work."""
 
-    captured: list[CapturedScanTarget] = []
     close_failure: ScannerCloseFailureEvidenceV1 | None = None
     identity = radio.identity
     capture_started = time.perf_counter()
+    captured: tuple[CapturedScanTarget, ...] = ()
     try:
         identity = radio.open()
         if isinstance(configuration, ScannerConfigurationV2):
             cast(SequentialScanRadioV2, radio).configure_once(configuration)
         else:
             cast(SequentialScanRadio, radio).configure_once(configuration)
-        for target in configuration.targets:
-            try:
-                block = radio.tune_and_read(target.if_center_hz, configuration.dwell_samples)
-                captured.append(CapturedScanTarget(target, block, None))
-            except Exception as error:
-                captured.append(
-                    CapturedScanTarget(target, None, f"{type(error).__name__}: {error}")
-                )
+        captured = capture_configured_scan_sweep(
+            radio,
+            configuration,
+            identity=identity,
+        ).targets
     except Exception as error:
         reason = f"{type(error).__name__}: {error}"
         completed = {item.target for item in captured}
-        captured.extend(
-            CapturedScanTarget(target, None, reason)
-            for target in configuration.targets
-            if target not in completed
+        captured = (
+            *captured,
+            *(
+                CapturedScanTarget(target, None, reason)
+                for target in configuration.targets
+                if target not in completed
+            ),
         )
     finally:
         try:
@@ -129,8 +131,32 @@ def capture_scan_sweep(
         identity=identity,
         configuration=configuration,
         capture_elapsed_ms=capture_elapsed_ms,
-        targets=tuple(captured),
+        targets=captured,
         close_failure=close_failure,
+    )
+
+
+def capture_configured_scan_sweep(
+    radio: SequentialScanRadioLike,
+    configuration: ScannerConfigurationLike,
+    *,
+    identity: ScanRadioIdentity,
+) -> CapturedScannerSweep:
+    """Capture one complete sweep from an already-open, configured radio."""
+
+    capture_started = time.perf_counter()
+    captured: list[CapturedScanTarget] = []
+    for target in configuration.targets:
+        try:
+            block = radio.tune_and_read(target.if_center_hz, configuration.dwell_samples)
+            captured.append(CapturedScanTarget(target, block, None))
+        except Exception as error:
+            captured.append(CapturedScanTarget(target, None, f"{type(error).__name__}: {error}"))
+    return CapturedScannerSweep(
+        identity=identity,
+        configuration=configuration,
+        capture_elapsed_ms=(time.perf_counter() - capture_started) * 1_000,
+        targets=tuple(captured),
     )
 
 
@@ -201,6 +227,19 @@ def analyze_scan_sweep(
     if isinstance(captured.configuration, ScannerConfigurationV2):
         continuity_evidence = _continuity_evidence(captured)
         continuity_observable = any(item.status == "attested" for item in continuity_evidence)
+        if isinstance(captured.configuration, ScannerConfigurationV3):
+            return ScannerReportV5(
+                scan_id=report_id,
+                radio_id=captured.identity.radio_id,
+                radio_serial=captured.identity.serial,
+                configuration=captured.configuration,
+                capture_elapsed_ms=captured.capture_elapsed_ms,
+                analysis_elapsed_ms=analysis_elapsed_ms,
+                results=tuple(results),
+                continuity_evidence=continuity_evidence,
+                continuity_observable=continuity_observable,
+                close_failure=captured.close_failure,
+            )
         if any(isinstance(item, ScannerFrameContinuityEvidenceV2) for item in continuity_evidence):
             return ScannerReportV4(
                 scan_id=report_id,

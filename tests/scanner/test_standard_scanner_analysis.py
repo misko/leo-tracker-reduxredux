@@ -19,6 +19,7 @@ from leo.presentation.scanner_analysis import (
 from leo.scanner.analysis_models import (
     ScannerAnalysisMetricsV2,
     ScannerAnalysisMetricsV3,
+    ScannerAnalysisMetricsV4,
     ScannerFrameContinuityEvidenceV1,
     ScannerFrameContinuityEvidenceV2,
     ScannerPilotDopplerConfigV1,
@@ -32,9 +33,12 @@ from leo.scanner.models import (
     Glrt64FirstDetection,
     ScannerConfiguration,
     ScannerConfigurationV2,
+    ScannerConfigurationV3,
     ScannerReportV2,
     ScannerReportV4,
+    ScannerReportV5,
     ScanTarget,
+    scheduled_low_band_targets,
 )
 from leo.scanner.pilot_doppler import _window_samples
 from leo.scanner.ports import ScanRadioIdentity
@@ -58,33 +62,49 @@ def test_scanner_pilot_window_policy_preserves_historical_and_current_geometry()
     assert _window_samples(200_000, 2_500_000, 40, config) is None
 
 
-def _source(*, v2: bool = False, abi3: bool = False) -> SegmentedScannerSource:
-    targets = (
-        ScanTarget(
-            channel=1,
-            edge=StarlinkEdge.LOWER,
-            rf_center_hz=10_000,
-            if_center_hz=1_000,
-        ),
-        ScanTarget(
-            channel=1,
-            edge=StarlinkEdge.UPPER,
-            rf_center_hz=11_000,
-            if_center_hz=2_000,
-        ),
-    )
-    configuration_type = ScannerConfigurationV2 if v2 else ScannerConfiguration
-    configuration = configuration_type(
-        lnb_lo_hz=9_000,
-        sample_rate_hz=1_000,
-        bandwidth_hz=1_000,
-        dwell_ms=20,
-        receiver_ids=(0, 1),
-        targets=targets,
-    )
+def _source(
+    *,
+    v2: bool = False,
+    abi3: bool = False,
+    scanner_v3: bool = False,
+) -> SegmentedScannerSource:
+    if scanner_v3:
+        targets = scheduled_low_band_targets(bandwidth_hz=2_500_000)
+        configuration: ScannerConfiguration = ScannerConfigurationV3(
+            sample_rate_hz=2_500_000,
+            bandwidth_hz=2_500_000,
+            dwell_ms=20,
+            receiver_ids=(0, 1),
+            targets=targets,
+        )
+    else:
+        targets = (
+            ScanTarget(
+                channel=1,
+                edge=StarlinkEdge.LOWER,
+                rf_center_hz=10_000,
+                if_center_hz=1_000,
+            ),
+            ScanTarget(
+                channel=1,
+                edge=StarlinkEdge.UPPER,
+                rf_center_hz=11_000,
+                if_center_hz=2_000,
+            ),
+        )
+        configuration_type = ScannerConfigurationV2 if v2 else ScannerConfiguration
+        configuration = configuration_type(
+            lnb_lo_hz=9_000,
+            sample_rate_hz=1_000,
+            bandwidth_hz=1_000,
+            dwell_ms=20,
+            receiver_ids=(0, 1),
+            targets=targets,
+        )
+    sample_count = configuration.dwell_samples
     frames = []
     for index, target in enumerate(targets):
-        values = np.full((20, 2, 2), 100 + 100 * index, dtype="<i2")
+        values = np.full((sample_count, 2, 2), 100 + 100 * index, dtype="<i2")
         continuity = (
             (ScannerFrameContinuityEvidenceV2 if abi3 else ScannerFrameContinuityEvidenceV1)(
                 status="attested",
@@ -94,10 +114,10 @@ def _source(*, v2: bool = False, abi3: bool = False) -> SegmentedScannerSource:
                 stream_generation=str(index + 1),
                 buffer_sequence=0,
                 source_sequence=0,
-                first_sample_sequence=index * 100,
-                last_sample_sequence_exclusive=index * 100 + 20,
-                device_sample_counter=index * 100,
-                device_sample_counter_end_exclusive=index * 100 + 20,
+                first_sample_sequence=index * sample_count,
+                last_sample_sequence_exclusive=(index + 1) * sample_count,
+                device_sample_counter=index * sample_count,
+                device_sample_counter_end_exclusive=(index + 1) * sample_count,
                 metadata_flags=0x200013,
                 sample_time_realtime_start_ns=1_700_000_000_000_000_000 + index * 20_000_000,
                 sample_time_realtime_end_ns=1_700_000_000_020_000_000 + index * 20_000_000,
@@ -111,14 +131,14 @@ def _source(*, v2: bool = False, abi3: bool = False) -> SegmentedScannerSource:
                 within_frame_continuity="proven_within_returned_buffer",
                 reason="test metadata",
             )
-            if v2
+            if v2 or scanner_v3
             else None
         )
         frames.append(
             ScannerAnalysisFrameInput(
                 target_index=index,
                 target=target,
-                source_sample_start=index * 20,
+                source_sample_start=index * sample_count,
                 requested_if_center_hz=target.if_center_hz,
                 actual_if_center_hz=target.if_center_hz + index,
                 tune_ms=1.0,
@@ -204,9 +224,18 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
 
 
 @pytest.mark.parametrize(
-    ("abi3", "report_type", "metrics_type", "manifest_version", "report_name", "metrics_name"),
+    (
+        "scanner_v3",
+        "abi3",
+        "report_type",
+        "metrics_type",
+        "manifest_version",
+        "report_name",
+        "metrics_name",
+    ),
     (
         (
+            False,
             False,
             ScannerReportV2,
             ScannerAnalysisMetricsV2,
@@ -215,6 +244,7 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
             "scanner-metrics.v2.json",
         ),
         (
+            False,
             True,
             ScannerReportV4,
             ScannerAnalysisMetricsV3,
@@ -222,11 +252,21 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
             "scanner-report.v4.json",
             "scanner-metrics.v3.json",
         ),
+        (
+            True,
+            True,
+            ScannerReportV5,
+            ScannerAnalysisMetricsV4,
+            6,
+            "scanner-report.v5.json",
+            "scanner-metrics.v4.json",
+        ),
     ),
 )
 def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(
     monkeypatch,
     tmp_path,
+    scanner_v3,
     abi3,
     report_type,
     metrics_type,
@@ -234,7 +274,7 @@ def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(
     report_name,
     metrics_name,
 ) -> None:
-    source = _source(v2=True, abi3=abi3)
+    source = _source(v2=True, abi3=abi3, scanner_v3=scanner_v3)
 
     def no_detection(_samples, configuration, *, edge):
         del edge
@@ -264,11 +304,12 @@ def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(
 
     assert isinstance(result.report, report_type)
     assert isinstance(result.metrics, metrics_type)
-    assert [item.status for item in result.metrics.continuity_evidence] == [
-        "attested",
-        "attested",
-    ]
-    assert [item.reset_episode for item in result.metrics.continuity_evidence] == [1, 2]
+    assert [item.status for item in result.metrics.continuity_evidence] == ["attested"] * len(
+        source.frames
+    )
+    assert [item.reset_episode for item in result.metrics.continuity_evidence] == list(
+        range(1, len(source.frames) + 1)
+    )
     product = result.pilot_doppler
     store = ScannerAnalysisStore(tmp_path)
     published = store.publish(

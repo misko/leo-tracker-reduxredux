@@ -48,6 +48,7 @@ the local RAID mounted at `/srv/bulk`, and working LAN routes to the radios.
    sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/trash
    sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/scanner-recordings
    sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/scanner-reports
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/scanner-runs
    sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/test-corpus
    sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/qualification/acquisition
    sudo install -d -o root -g leo -m 0750 /etc/leo

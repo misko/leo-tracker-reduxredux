@@ -30,7 +30,7 @@ UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
 ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
 RUNTIME_DATA_ROOT = Path("/srv/bulk/leo")
-REQUIRED_SCANNER_DIRECTORIES = ("scanner-recordings", "scanner-reports")
+REQUIRED_SCANNER_DIRECTORIES = ("scanner-recordings", "scanner-reports", "scanner-runs")
 CONTIGUOUS_RATE_3M_RECEIPT_ROOT = Path("/srv/bulk/leo/qualification/sample-rate-3m/accepted")
 NATIVE_BANDWIDTH_RECEIPT_ROOT = Path("/srv/bulk/leo/qualification/native-bandwidth/accepted")
 CONTIGUOUS_RATE_3M_PROFILE_DIGEST = (
@@ -1244,15 +1244,16 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
     expected_scanner = {
         "LEO_SCANNER_ENABLED": "false",
         "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
-        "LEO_SCANNER_INTERVAL_SECONDS": "180",
-        "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "180",
+        "LEO_SCANNER_INTERVAL_SECONDS": "1200",
+        "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "120",
+        "LEO_SCANNER_RUN_SECONDS": "300",
         "LEO_SCANNER_DWELL_MS": "120",
         "LEO_SCANNER_GAIN_DB": "40.0",
         "LEO_SCANNER_MARGIN_GATE": "0.025",
         "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
     }
     if any(environment.get(key) != value for key, value in expected_scanner.items()):
-        raise ValueError("production scanner configuration is not the reviewed V2 deployment")
+        raise ValueError("production scanner configuration is not the reviewed V3 deployment")
     try:
         radios = json.loads(environment.get("LEO_RADIOS_JSON", ""))
     except json.JSONDecodeError as error:

@@ -22,10 +22,12 @@ from leo.domain.iq import receiver_major_complex_to_ci16
 from leo.scanner.application import CapturedScannerSweep
 from leo.scanner.models import (
     ScannerConfigurationV2,
+    ScannerConfigurationV3,
     ScannerIqBundleManifestLike,
     ScannerIqBundleManifestV1,
     ScannerIqBundleManifestV2,
     ScannerIqBundleManifestV3,
+    ScannerIqBundleManifestV4,
     ScannerIqCaptureFailureV1,
     ScannerIqFrameV1,
     ScannerIqFrameV2,
@@ -217,7 +219,14 @@ class ScannerIqStore:
             "compression": selected_compression,
         }
         manifest: ScannerIqBundleManifestLike
-        if any(isinstance(frame, ScannerIqFrameV3) for frame in frames):
+        if isinstance(captured.configuration, ScannerConfigurationV3):
+            manifest = ScannerIqBundleManifestV4.model_validate(
+                {
+                    **manifest_common,
+                    "retune_boundary_count": max(0, len(frames) - 1),
+                }
+            )
+        elif any(isinstance(frame, ScannerIqFrameV3) for frame in frames):
             manifest = ScannerIqBundleManifestV3.model_validate(
                 {
                     **manifest_common,
@@ -285,6 +294,8 @@ class ScannerIqStore:
                 manifest = ScannerIqBundleManifestV2.model_validate(document)
             elif schema_version == 3:
                 manifest = ScannerIqBundleManifestV3.model_validate(document)
+            elif schema_version == 4:
+                manifest = ScannerIqBundleManifestV4.model_validate(document)
             else:
                 raise ValueError(f"unsupported scanner IQ manifest schema {schema_version!r}")
         except Exception as error:

@@ -21,8 +21,8 @@ from leo.acquisition.mixed_rate_schedule import (
 from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
-    ScheduledScannerBurst,
     ScheduledScannerConfiguration,
+    ScheduledScannerRunAnalysis,
 )
 from leo.cli.models import CaptureDataV1, ExitCode, RunDataV2
 from leo.cli.runner import ContinuousAcquisitionRunner
@@ -46,7 +46,7 @@ from leo.contracts.mixed_rate_schedule import (
     ProductionDwellIntentV3,
 )
 from leo.contracts.states import CaptureState, StarlinkEdge
-from leo.scanner import ScannerBurstReportV1
+from leo.scanner import compile_scheduled_scanner_run_intent_v1
 
 
 class _Clock:
@@ -114,6 +114,22 @@ class _SupervisorBackend:
         return ScheduledScannerConfiguration(
             interval_seconds=5.0,
             maximum_lateness_seconds=1.0,
+            run_duration_seconds=0.16,
+        )
+
+    def scheduled_scanner_intent(self, *, operation_key, scheduled_for):
+        return compile_scheduled_scanner_run_intent_v1(
+            operation_key=operation_key,
+            radio_id="radio-a",
+            radio_serial="serial-a",
+            scheduled_for=scheduled_for,
+            interval_seconds=5.0,
+            maximum_lateness_seconds=1.0,
+            run_duration_seconds=0.16,
+            dwell_ms=20,
+            gain_db=40.0,
+            margin_gate=0.025,
+            maximum_acquisition_candidates=8,
         )
 
     def capture_once(self, profile_name: str, **_kwargs) -> CaptureDataV1:
@@ -129,20 +145,24 @@ class _SupervisorBackend:
             available_free_bytes=1024,
         )
 
-    def capture_scheduled_scanner(self) -> ScheduledScannerBurst:
+    def capture_scheduled_scanner(self, _intent, *, cancel):
         self.scanner_capture_times.append(self.clock())
         self.events.append("scan")
-        return cast(ScheduledScannerBurst, SimpleNamespace())
-
-    def analyze_scheduled_scanner(self, _capture: ScheduledScannerBurst) -> ScannerBurstReportV1:
-        assert self.analyzed.wait(timeout=2.0)
-        return cast(
-            ScannerBurstReportV1,
-            SimpleNamespace(
-                burst_id="burst-1",
-                reports=(1, 2, 3, 4),
-                active_edge_count=1,
+        return SimpleNamespace(
+            published=SimpleNamespace(
+                run_id=f"run-{len(self.scanner_capture_times)}",
+                manifest=SimpleNamespace(status="complete", stop_reason="complete"),
             ),
+            sweeps=(1,),
+        )
+
+    def analyze_scheduled_scanner(self, capture) -> ScheduledScannerRunAnalysis:
+        assert self.analyzed.wait(timeout=2.0)
+        return ScheduledScannerRunAnalysis(
+            run_id=capture.published.run_id,
+            sweep_count=1,
+            active_edge_count=1,
+            failed_sweep_count=0,
         )
 
 
@@ -650,6 +670,7 @@ def test_production_profile_revision_change_supersedes_same_slot_pending_intent(
 def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis() -> None:
     clock = _Clock()
     backend = _SupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
 
     original_capture = backend.capture_once
 
@@ -663,6 +684,7 @@ def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis()
     summary = ContinuousAcquisitionRunner(
         cast(AcquisitionCliBackend, backend),
         clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
     ).run(
         "test-profile",
         radio_ids=("radio-a",),
@@ -674,32 +696,32 @@ def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis()
 
     assert summary.capture_count == 2
     assert backend.capture_times == [0.0, 10.0]
-    assert backend.scanner_capture_times == [0.0]
-    assert backend.events == ["reconcile", "dwell", "scan", "dwell"]
+    assert backend.scanner_capture_times == [0.0, 5.0]
+    assert backend.events == ["reconcile", "dwell", "scan", "scan", "dwell"]
 
 
-def test_supervisor_runs_one_scan_burst_after_each_eligible_dwell() -> None:
+def test_supervisor_runs_scans_on_the_independent_utc_cadence() -> None:
     clock = _Clock()
     backend = _SupervisorBackend(clock)
     backend.analyzed.set()
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
     analyses = 0
 
-    def analyze(_capture: ScheduledScannerBurst) -> ScannerBurstReportV1:
+    def analyze(capture) -> ScheduledScannerRunAnalysis:
         nonlocal analyses
         analyses += 1
-        return cast(
-            ScannerBurstReportV1,
-            SimpleNamespace(
-                burst_id=f"burst-{analyses}",
-                reports=(1, 2, 3, 4),
-                active_edge_count=0,
-            ),
+        return ScheduledScannerRunAnalysis(
+            run_id=capture.published.run_id,
+            sweep_count=1,
+            active_edge_count=0,
+            failed_sweep_count=0,
         )
 
     backend.analyze_scheduled_scanner = analyze  # type: ignore[method-assign]
     summary = ContinuousAcquisitionRunner(
         cast(AcquisitionCliBackend, backend),
         clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
     ).run(
         "test-profile",
         radio_ids=("radio-a",),
@@ -710,10 +732,19 @@ def test_supervisor_runs_one_scan_burst_after_each_eligible_dwell() -> None:
     )
 
     assert summary.capture_count == 3
-    assert backend.events == ["reconcile", "dwell", "scan", "dwell", "scan", "dwell"]
+    assert backend.events == [
+        "reconcile",
+        "dwell",
+        "scan",
+        "scan",
+        "dwell",
+        "scan",
+        "scan",
+        "dwell",
+    ]
 
 
-def test_durable_supervisor_persists_and_alternates_dwell_scan_operations() -> None:
+def test_durable_supervisor_persists_independent_dwell_and_scanner_cadences() -> None:
     clock = _Clock()
     backend = _DurableSupervisorBackend(clock)
     backend.analyzed.set()
@@ -733,14 +764,43 @@ def test_durable_supervisor_persists_and_alternates_dwell_scan_operations() -> N
     )
 
     assert summary.capture_count == 3
-    assert backend.events == ["reconcile", "dwell", "scan", "dwell", "scan", "dwell"]
+    assert backend.events == [
+        "reconcile",
+        "dwell",
+        "scan",
+        "scan",
+        "dwell",
+        "scan",
+        "scan",
+        "dwell",
+    ]
     assert [item.kind for item in backend.operations] == [
         "scheduled_recording",
         "scanner_sweep",
-        "scheduled_recording",
         "scanner_sweep",
         "scheduled_recording",
         "scanner_sweep",
+        "scanner_sweep",
+        "scheduled_recording",
+        "scanner_sweep",
+    ]
+    assert [item.state for item in backend.operations] == [
+        "succeeded",
+        "succeeded",
+        "succeeded",
+        "succeeded",
+        "succeeded",
+        "succeeded",
+        "succeeded",
+        "pending",
+    ]
+    scanner_payloads = [item.payload for item in backend.operations if item.kind == "scanner_sweep"]
+    assert [item["configuration"]["sample_rate_hz"] for item in scanner_payloads] == [
+        2_500_000,
+        5_000_000,
+        2_500_000,
+        5_000_000,
+        2_500_000,
     ]
     first_dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
     assert first_dwell.payload == {
@@ -748,6 +808,62 @@ def test_durable_supervisor_persists_and_alternates_dwell_scan_operations() -> N
         "radio_ids": ["radio-a"],
         "extra_tags": [],
     }
+
+
+def test_durable_supervisor_audits_a_late_slot_without_recapturing_it() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    start = datetime(2026, 8, 21, 8, 0, 2, tzinfo=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=2,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    scanner = [item for item in backend.operations if item.kind == "scanner_sweep"]
+    assert summary.capture_count == 2
+    assert scanner[0].state == "succeeded"
+    assert "skipped late" in scanner[0].outcome
+    assert backend.scanner_capture_times == [3.0]
+
+
+def test_durable_scanner_admission_failure_does_not_stop_ordinary_capture() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+
+    def reject_scanner(_intent, *, cancel):
+        del cancel
+        raise CliBackendError("scanner storage admission rejected", ExitCode.ADMISSION_REJECTED)
+
+    backend.capture_scheduled_scanner = reject_scanner  # type: ignore[method-assign]
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=2,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    scanner = [item for item in backend.operations if item.kind == "scanner_sweep"]
+    assert summary.capture_count == 2
+    assert backend.capture_times == [0.0, 10.0]
+    assert [item.state for item in scanner[:2]] == ["failed", "failed"]
+    assert all(item.retryable is False for item in scanner[:2])
 
 
 def test_durable_multi_profile_dwell_persists_one_selection_for_both_radios_and_retry() -> None:
@@ -1053,7 +1169,10 @@ def test_durable_terminal_or_truncated_capture_preserves_evidence_but_fails_heal
     assert dwell.retryable is False
     assert "scheduled capture health rejected terminal or truncated evidence" in dwell.error
     assert capture_error in dwell.error
-    assert not any(item.kind == "scanner_sweep" for item in backend.operations)
+    scanner = [item for item in backend.operations if item.kind == "scanner_sweep"]
+    assert len(scanner) == 1
+    assert scanner[0].state == "pending"
+    assert "scan" not in backend.events
 
 
 def test_durable_full_span_segmented_capture_remains_successful_and_scanner_eligible() -> None:
@@ -1143,4 +1262,7 @@ def test_durable_poisoned_supervisor_fails_operation_and_terminates_before_next_
     assert dwells[0].retryable is False
     assert "AcquisitionSupervisorPoisoned" in dwells[0].error
     assert "bounded timeout" in dwells[0].error
-    assert not any(item.kind == "scanner_sweep" for item in backend.operations)
+    scanner = [item for item in backend.operations if item.kind == "scanner_sweep"]
+    assert len(scanner) == 1
+    assert scanner[0].state == "pending"
+    assert "scan" not in backend.events
