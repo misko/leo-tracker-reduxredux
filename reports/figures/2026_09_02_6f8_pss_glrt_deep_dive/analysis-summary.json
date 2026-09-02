@@ -1,0 +1,364 @@
+{
+  "analysis_kind": "6f8ad3b4fb91-pss-glrt-deep-dive",
+  "analysis_run_id": "reprocess-31d8aeb5a7f547b9a29aa04949c9d88c",
+  "capture_id": "cap-20260902T134107-6f8ad3b4fb91",
+  "cfo_alias_transitions": {
+    "RX0": {
+      "by_locklet": [
+        {
+          "hough_label": "H1",
+          "locklet_index": 0,
+          "transition_count": 0
+        },
+        {
+          "hough_label": "H2",
+          "locklet_index": 1,
+          "transition_count": 0
+        },
+        {
+          "hough_label": "H3",
+          "locklet_index": 2,
+          "transition_count": 88
+        },
+        {
+          "hough_label": "H5",
+          "locklet_index": 4,
+          "transition_count": 389
+        },
+        {
+          "hough_label": "H6",
+          "locklet_index": 5,
+          "transition_count": 54
+        },
+        {
+          "hough_label": "H7",
+          "locklet_index": 6,
+          "transition_count": 142
+        }
+      ],
+      "median_absolute_canonical_cfo_jump_hz": 125.20579412879306,
+      "median_absolute_raw_cfo_jump_hz": 227235.30418851256,
+      "median_absolute_timing_residual_jump_us": 0.19255051879221546,
+      "median_steady_absolute_timing_residual_jump_us": 0.09611008138237127,
+      "transition_count": 673
+    },
+    "RX1": {
+      "by_locklet": [
+        {
+          "hough_label": "H1",
+          "locklet_index": 0,
+          "transition_count": 2
+        },
+        {
+          "hough_label": "H2",
+          "locklet_index": 1,
+          "transition_count": 6
+        },
+        {
+          "hough_label": "H3",
+          "locklet_index": 2,
+          "transition_count": 0
+        },
+        {
+          "hough_label": "H4",
+          "locklet_index": 3,
+          "transition_count": 0
+        },
+        {
+          "hough_label": "H5",
+          "locklet_index": 4,
+          "transition_count": 0
+        },
+        {
+          "hough_label": "H6",
+          "locklet_index": 5,
+          "transition_count": 0
+        },
+        {
+          "hough_label": "H7",
+          "locklet_index": 6,
+          "transition_count": 0
+        },
+        {
+          "hough_label": "H8",
+          "locklet_index": 7,
+          "transition_count": 0
+        }
+      ],
+      "median_absolute_canonical_cfo_jump_hz": 96.67586457190919,
+      "median_absolute_raw_cfo_jump_hz": 227334.65019691156,
+      "median_absolute_timing_residual_jump_us": 0.17164135662892013,
+      "median_steady_absolute_timing_residual_jump_us": 0.16779276739353408,
+      "transition_count": 8
+    }
+  },
+  "conclusions": [
+    "The apparent frequency-sign opposition is a convention/calibration issue, not a timing-fit sign reversal.",
+    "Most GLRT quadratic residual RMS values sit at the 2.5 MS/s integer-epoch quantization floor.",
+    "Raw CFO alias jumps are removed by canonicalization and do not create comparable epoch jumps.",
+    "A common approximately 1.0 to 1.1 microsecond timing-state step appears in PSS and both GLRT receivers inside continuous capture support.",
+    "Multiple GLRT arcs are separately fitted Hough locklets; the production comparison shows only one selected PSS track even though five were persisted."
+  ],
+  "configuration": {
+    "glrt_epoch_sample_spacing_us": 0.4,
+    "glrt_integer_epoch_uniform_quantization_rms_us": 0.11547005383792516,
+    "glrt_sample_rate_hz": 2500000,
+    "glrt_stride_ms": 10,
+    "glrt_window_ms": 20,
+    "pss_decimation_factor": 1,
+    "pss_sample_rate_hz": 25000000,
+    "pss_stride_ms": 62.5,
+    "pss_window_ms": 125.0
+  },
+  "frequency_sign": {
+    "common_rf_reference_hz": 11209687500.0,
+    "glrt_overlap_rate": {
+      "RX0": {
+        "mean_hz_s": -2884.7306753648877,
+        "median_hz_s": -2902.7807494093568,
+        "support_point_count": 1502
+      },
+      "RX1": {
+        "mean_hz_s": -2693.389123266429,
+        "median_hz_s": -2715.2024257110165,
+        "support_point_count": 2887
+      }
+    },
+    "interpretation": "The current physical arrival-delay minus sign mirrors the observed IQ CFO sign. The same-coordinate PSS derivative agrees in sign and scale, but absolute RF/IQ sign remains uncalibrated.",
+    "pss_physical_minus_sign_rate_hz_s": 2739.5930949579765,
+    "pss_same_coordinate_rate_hz_s": -2739.5930949579765,
+    "pss_timing_curvature_s_s2": -2.4439513545386315e-07
+  },
+  "glrt_locklets": {
+    "RX0": [
+      {
+        "hough_label": "H1",
+        "locklet_index": 0,
+        "point_count": 70,
+        "quadratic_rms_us": 0.09087762967750602,
+        "rms_over_integer_quantization_floor": 0.7870233593643483,
+        "start_s": 20.47,
+        "stop_s": 28.939999999999998
+      },
+      {
+        "hough_label": "H2",
+        "locklet_index": 1,
+        "point_count": 78,
+        "quadratic_rms_us": 0.10348865211514542,
+        "rms_over_integer_quantization_floor": 0.8962380173512611,
+        "start_s": 29.799999999999997,
+        "stop_s": 41.05
+      },
+      {
+        "hough_label": "H3",
+        "locklet_index": 2,
+        "point_count": 243,
+        "quadratic_rms_us": 0.3528427570842311,
+        "rms_over_integer_quantization_floor": 3.055707911762858,
+        "start_s": 34.94,
+        "stop_s": 47.07
+      },
+      {
+        "hough_label": "H5",
+        "locklet_index": 4,
+        "point_count": 769,
+        "quadratic_rms_us": 0.11946431164591348,
+        "rms_over_integer_quantization_floor": 1.0345912873098222,
+        "start_s": 41.9,
+        "stop_s": 54.9
+      },
+      {
+        "hough_label": "H6",
+        "locklet_index": 5,
+        "point_count": 124,
+        "quadratic_rms_us": 0.11470233064470767,
+        "rms_over_integer_quantization_floor": 0.9933513221159914,
+        "start_s": 46.96,
+        "stop_s": 51.769999999999996
+      },
+      {
+        "hough_label": "H7",
+        "locklet_index": 6,
+        "point_count": 278,
+        "quadratic_rms_us": 0.11445260993290597,
+        "rms_over_integer_quantization_floor": 0.9911886773132774,
+        "start_s": 51.6,
+        "stop_s": 56.760000000000005
+      }
+    ],
+    "RX1": [
+      {
+        "hough_label": "H1",
+        "locklet_index": 0,
+        "point_count": 259,
+        "quadratic_rms_us": 0.11907229859277894,
+        "rms_over_integer_quantization_floor": 1.0311963546835263,
+        "start_s": 11.870000000000001,
+        "stop_s": 15.46
+      },
+      {
+        "hough_label": "H2",
+        "locklet_index": 1,
+        "point_count": 763,
+        "quadratic_rms_us": 0.11658581568682334,
+        "rms_over_integer_quantization_floor": 1.0096627810571932,
+        "start_s": 14.41,
+        "stop_s": 24.18
+      },
+      {
+        "hough_label": "H3",
+        "locklet_index": 2,
+        "point_count": 263,
+        "quadratic_rms_us": 0.11588519547362575,
+        "rms_over_integer_quantization_floor": 1.0035952320268533,
+        "start_s": 22.689999999999998,
+        "stop_s": 26.799999999999997
+      },
+      {
+        "hough_label": "H4",
+        "locklet_index": 3,
+        "point_count": 315,
+        "quadratic_rms_us": 0.11704010727727436,
+        "rms_over_integer_quantization_floor": 1.0135970616377554,
+        "start_s": 26.83,
+        "stop_s": 29.97
+      },
+      {
+        "hough_label": "H5",
+        "locklet_index": 4,
+        "point_count": 618,
+        "quadratic_rms_us": 0.11576698525554832,
+        "rms_over_integer_quantization_floor": 1.0025715015084338,
+        "start_s": 30.65,
+        "stop_s": 37.22
+      },
+      {
+        "hough_label": "H6",
+        "locklet_index": 5,
+        "point_count": 937,
+        "quadratic_rms_us": 0.2953858082648399,
+        "rms_over_integer_quantization_floor": 2.5581161387475073,
+        "start_s": 36.36,
+        "stop_s": 46.44
+      },
+      {
+        "hough_label": "H7",
+        "locklet_index": 6,
+        "point_count": 729,
+        "quadratic_rms_us": 0.11666787298972649,
+        "rms_over_integer_quantization_floor": 1.0103734181459947,
+        "start_s": 46.45,
+        "stop_s": 53.83
+      },
+      {
+        "hough_label": "H8",
+        "locklet_index": 7,
+        "point_count": 304,
+        "quadratic_rms_us": 0.1167823421424782,
+        "rms_over_integer_quantization_floor": 1.0113647500883214,
+        "start_s": 53.480000000000004,
+        "stop_s": 56.8
+      }
+    ]
+  },
+  "pss_track_inventory": {
+    "global_quadratic_rms_us": 0.48775651330361697,
+    "mode_counts": [
+      36,
+      278,
+      23,
+      11,
+      15
+    ],
+    "selected_mode_count": 278,
+    "selected_start_s": 27.2225,
+    "selected_stop_s": 57.0625,
+    "selected_track_id": "sha256:558cfe91d02066bef3bfc31de51053ef9045f7973b31bc82acf948639797458f",
+    "track_count": 5
+  },
+  "schema_version": 1,
+  "source_product_digests": {
+    "glrt_epoch_RX0": "sha256:8581884992f94db9e315a54684d2b300446a79a84c31e206e755e3a3788dde38",
+    "glrt_epoch_RX1": "sha256:43e0bcc1333905846c2ff0b06badc48584cf2e1b11f8326acd7e98cc82cd21ce",
+    "pss_result": "sha256:65cecba1646fccf933b9ede8549a4c4eacd03dc0b2b62983aaacbb6bb8ac19ed"
+  },
+  "timing_event": {
+    "first_sample_half_width_uncertainty_us": {
+      "RX0": 526.592,
+      "RX1": 526.592,
+      "native25": 1336.064
+    },
+    "glrt": {
+      "RX0": {
+        "adjacent_observations": {
+          "after_alias_index": 2,
+          "after_time_s": 42.10033284187317,
+          "before_alias_index": 2,
+          "before_time_s": 42.02033284187317,
+          "canonical_cfo_jump_hz": -287.26350889739115,
+          "quadratic_timing_residual_jump_us": 1.0265344754302768,
+          "raw_cfo_jump_hz": -287.26350889739115
+        },
+        "fitted_step_us": 1.0406508648111608,
+        "fixed_event_piecewise_quadratic_rms_us": 0.10430081992999103,
+        "global_quadratic_rms_us": 0.3528427570842311,
+        "hough_label": "H3",
+        "locklet_index": 2,
+        "point_count": 243
+      },
+      "RX1": {
+        "adjacent_observations": {
+          "after_alias_index": 0,
+          "after_time_s": 42.07033284187317,
+          "before_alias_index": 0,
+          "before_time_s": 42.05033284187317,
+          "canonical_cfo_jump_hz": -55.18762523657642,
+          "quadratic_timing_residual_jump_us": 1.0564902986370155,
+          "raw_cfo_jump_hz": -55.18762523657642
+        },
+        "fitted_step_us": 1.0894203302873025,
+        "fixed_event_piecewise_quadratic_rms_us": 0.11584551945249495,
+        "global_quadratic_rms_us": 0.2953858082648399,
+        "hough_label": "H6",
+        "locklet_index": 5,
+        "point_count": 937
+      }
+    },
+    "native25_continuity": {
+      "distance_from_start_s": 1.78125,
+      "distance_to_stop_s": 1.2587499999999991,
+      "segment_index": 12,
+      "start_s": 40.28,
+      "stop_s": 43.32
+    },
+    "pss_adjacent_mode_state": [
+      {
+        "center_time_s": 42.03,
+        "nominal_frequency_offset_hz": 200000.0,
+        "robust_z": 13.856317425159235,
+        "selected_frequency_offset_hz": 200000.0,
+        "strong_window_count": 91,
+        "window_count": 94
+      },
+      {
+        "center_time_s": 42.0925,
+        "nominal_frequency_offset_hz": 200000.0,
+        "robust_z": 14.06809004446104,
+        "selected_frequency_offset_hz": 200000.0,
+        "strong_window_count": 91,
+        "window_count": 94
+      }
+    ],
+    "pss_fitted_step_us": 0.9351971045395893,
+    "pss_global_quadratic_rms_us": 0.48775651330361697,
+    "pss_piecewise_quadratic_rms_us": 0.10073332696822576,
+    "pss_split_left_s": 42.03,
+    "pss_split_midpoint_s": 42.06125,
+    "pss_split_right_s": 42.0925,
+    "utc_bracket": [
+      "2026-09-02T13:41:56.982556+00:00",
+      "2026-09-02T13:41:57.045056+00:00"
+    ],
+    "utc_midpoint": "2026-09-02T13:41:57.013806+00:00"
+  }
+}
