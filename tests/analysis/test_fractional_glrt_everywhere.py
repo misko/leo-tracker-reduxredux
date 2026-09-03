@@ -6,7 +6,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-import leo.analysis.starlink.pilot_methods as pilot_methods_module
 from leo.analysis.standard.native_glrt_fractional import (
     build_standard_native_glrt_fractional_epoch_v2,
 )
@@ -130,42 +129,6 @@ def test_raw_iq_fractional_glrt_refines_across_frame_seam() -> None:
     assert refinement.wrapped_epoch_samples == (3_998, 3_999, 0, 1, 2)
     assert refinement.fractional_epoch_offset_samples == pytest.approx(-0.49, abs=0.08)
     assert refinement.fractional_frame_phase_sample == pytest.approx(3_999.51, abs=0.08)
-
-
-def test_native_qam_handoff_samples_iq_at_fractional_glrt_epoch(monkeypatch) -> None:
-    observed_offsets: list[float] = []
-    qam_result = SimpleNamespace(metrics=SimpleNamespace(hard_symbol_accuracy=0.91, rms_evm=0.12))
-
-    def analyze(*_args, fractional_epoch_offset_samples, **_kwargs):
-        observed_offsets.append(fractional_epoch_offset_samples)
-        return qam_result
-
-    monkeypatch.setattr("leo.analysis.qam.analyze_pilot_qam", analyze)
-    candidate = PilotMethodCandidate(
-        rank=0,
-        local_epoch_sample=11,
-        acquired_cfo_hz=25_000.0,
-        scores=(),
-        qam_accuracy=0.25,
-        qam_evm=0.5,
-        fractional_epoch_offset_samples=0.375,
-        fractional_epoch_status=FractionalEpochStatus.COMPLETE.value,
-    )
-    observed_qam = []
-
-    result = pilot_methods_module._observe_fractional_primary_qam(
-        np.ones(100, dtype=np.complex128),
-        2_500_000,
-        (candidate,),
-        edge=StarlinkEdge.LOWER,
-        primary_qam_observer=observed_qam.append,
-    )
-
-    assert observed_offsets == [0.375]
-    assert observed_qam == [qam_result]
-    assert result is None
-    assert candidate.qam_accuracy == pytest.approx(0.25)
-    assert candidate.qam_evm == pytest.approx(0.5)
 
 
 def test_v2_evidence_closes_one_complete_stateful_candidate() -> None:

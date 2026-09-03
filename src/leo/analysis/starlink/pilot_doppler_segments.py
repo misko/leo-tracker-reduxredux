@@ -64,7 +64,6 @@ class _WindowRequest:
     probe_sample_start: int
     local_epoch_sample: int
     model: PolynomialFrequencyModel
-    fractional_epoch_offset_samples: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -244,7 +243,6 @@ def _build_standard_pilot_doppler_segments(
                     probe_sample_start=probe_start,
                     local_epoch_sample=source.local_epoch_sample,
                     model=model,
-                    fractional_epoch_offset_samples=(source.fractional_epoch_offset_samples),
                 )
             )
         separated: list[_WindowRequest] = []
@@ -282,9 +280,6 @@ def _build_standard_pilot_doppler_segments(
                 edge=edge,
                 maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
                 config=PilotPntKalmanConfigV2(),
-                initial_fractional_epoch_offset_samples=float(
-                    request.fractional_epoch_offset_samples or 0.0
-                ),
             )
             if phase_config is not None:
                 phase_by_request[(request.source_trajectory_id, request.probe_sample_start)] = (
@@ -296,9 +291,6 @@ def _build_standard_pilot_doppler_segments(
                         edge=edge,
                         maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
                         config=phase_config,
-                        initial_fractional_epoch_offset_samples=float(
-                            request.fractional_epoch_offset_samples or 0.0
-                        ),
                     )
                 )
         else:
@@ -310,9 +302,6 @@ def _build_standard_pilot_doppler_segments(
                 edge=edge,
                 maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
                 config=PilotPntKalmanConfig(),
-                initial_fractional_epoch_offset_samples=float(
-                    request.fractional_epoch_offset_samples or 0.0
-                ),
             )
         analyzed_by_track[request.source_trajectory_id].append(
             _segment_document(

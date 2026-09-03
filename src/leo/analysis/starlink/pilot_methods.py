@@ -273,12 +273,7 @@ def detect_pilot_method_candidates(
             "symbolwise acquisition produced no candidate",
         )
     retained = acquisition.candidates[:maximum_scored_candidates]
-    minimum_refinement_samples = round(
-        sample_rate_hz * (302 * OFDM_SYMBOL_DURATION_S + 1.0 / FRAME_RATE_HZ)
-    )
-    refine_candidates = len(values) >= minimum_refinement_samples
-    evaluation_observer = None if refine_candidates else primary_qam_observer
-    if evaluation_observer is None:
+    if primary_qam_observer is None:
         # Preserve the historical private-call shape for callers and tests that
         # replace the evaluator while keeping all persisted outputs byte-stable.
         candidates = tuple(
@@ -299,11 +294,14 @@ def detect_pilot_method_candidates(
                 candidate,
                 edge=edge,
                 glrt_size=glrt_size,
-                primary_qam_observer=evaluation_observer,
+                primary_qam_observer=primary_qam_observer,
             )
             for candidate in retained
         )
-    if refine_candidates:
+    minimum_refinement_samples = round(
+        sample_rate_hz * (302 * OFDM_SYMBOL_DURATION_S + 1.0 / FRAME_RATE_HZ)
+    )
+    if len(values) >= minimum_refinement_samples:
         candidates = _with_fractional_candidate_refinements(
             values,
             sample_rate_hz,
@@ -311,14 +309,6 @@ def detect_pilot_method_candidates(
             edge=edge,
             glrt_size=glrt_size,
         )
-        if primary_qam_observer is not None:
-            _observe_fractional_primary_qam(
-                values,
-                sample_rate_hz,
-                candidates,
-                edge=edge,
-                primary_qam_observer=primary_qam_observer,
-            )
     primary = candidates[0]
     return PilotProbeDetection(
         NumericalStatus.COMPLETE,
@@ -337,32 +327,6 @@ def detect_pilot_method_candidates(
         fractional_epoch_status=primary.fractional_epoch_status,
         fractional_epoch=primary.fractional_epoch,
     )
-
-
-def _observe_fractional_primary_qam(
-    samples: np.ndarray,
-    sample_rate_hz: int,
-    candidates: tuple[PilotMethodCandidate, ...],
-    *,
-    edge: StarlinkEdge,
-    primary_qam_observer: PrimaryQamObserver,
-) -> None:
-    """Emit native QAM evidence at the continuous epoch without mutating legacy rows."""
-
-    if not candidates:
-        return
-    from leo.analysis.qam import analyze_pilot_qam
-
-    primary = candidates[0]
-    qam = analyze_pilot_qam(
-        samples,
-        sample_rate_hz,
-        epoch_sample=primary.local_epoch_sample,
-        absolute_cfo_hz=primary.acquired_cfo_hz,
-        edge=edge,
-        fractional_epoch_offset_samples=float(primary.fractional_epoch_offset_samples or 0.0),
-    )
-    primary_qam_observer(qam)
 
 
 def _evaluate_candidate(
@@ -453,8 +417,9 @@ def _evaluate_candidate_with_policy(
     # QAM is an independent confirmer, not a trajectory proposal. Evaluate it
     # once on the primary acquisition basin instead of repeating the same
     # expensive frame solve for every ranked alternative. Published candidate
-    # rows retain their historical integer-anchor QAM values. Native v16 QAM
-    # evidence is emitted separately at the fractional coordinate above.
+    # rows and their same-call QAM evidence retain the immutable integer-anchor
+    # semantics. Fractional GLRT timing is published by its separate V1/V2
+    # products and must not be smuggled into this legacy QAM contract.
     if include_qam:
         qam = analyze_pilot_qam(
             values,
