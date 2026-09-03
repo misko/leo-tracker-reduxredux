@@ -252,6 +252,7 @@ def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate(
     acquisition = _unit("leo-acquisition.service")["Service"]
     analysis = _unit("leo-persistent-hop-analysis.service")["Service"]
     timer = _unit("leo-persistent-hop-analysis.timer")["Timer"]
+    analysis_text = (UNIT_ROOT / "leo-persistent-hop-analysis.service").read_text()
 
     assert "--maximum-sessions 1" in analysis["ExecStart"]
     assert "--maximum-workers 2" in analysis["ExecStart"]
@@ -260,6 +261,14 @@ def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate(
     assert int(analysis["IOWeight"]) < int(acquisition["IOWeight"])
     assert int(analysis["Nice"]) > int(acquisition["Nice"])
     assert analysis["IOSchedulingClass"] == "idle"
+    assert analysis_text.count("ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750") == 4
+    for directory in (
+        "/srv/bulk/leo/scanner-hop-analysis",
+        "/srv/bulk/leo/scanner-hop-analysis-work",
+        "/srv/bulk/leo/control/persistent-hop-analysis",
+        "/srv/bulk/leo/presentation-cache/matplotlib",
+    ):
+        assert directory in analysis_text
     assert timer.getboolean("Persistent")
     assert timer["OnUnitInactiveSec"] == "1min"
     assert timer["Unit"] == "leo-persistent-hop-analysis.service"

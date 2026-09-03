@@ -2555,12 +2555,51 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
     ).stdout.splitlines()
     if states != ["active"] * len(expected_active_units):
         raise OpsError(f"runtime service state is not active: {states}")
+    if _release_ships_persistent_hop_analysis(selector_revisions["global"]):
+        _verify_persistent_hop_analysis_startup()
 
 
 def _release_ships_persistent_hop_analysis(revision: str) -> bool:
     return (
         RELEASE_ROOT / "releases" / revision / "deploy/systemd/leo-persistent-hop-analysis.timer"
     ).is_file()
+
+
+def _verify_persistent_hop_analysis_startup(*, observation_seconds: float = 3.0) -> None:
+    deadline = time.monotonic() + observation_seconds
+    while True:
+        completed = subprocess.run(
+            (
+                "/usr/bin/systemctl",
+                "show",
+                "leo-persistent-hop-analysis.service",
+                "-p",
+                "ActiveState",
+                "-p",
+                "SubState",
+                "-p",
+                "Result",
+                "-p",
+                "ExecMainStatus",
+            ),
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        )
+        values = dict(line.split("=", 1) for line in completed.stdout.splitlines() if "=" in line)
+        state = values.get("ActiveState")
+        result = values.get("Result")
+        main_status = values.get("ExecMainStatus")
+        if state == "failed" or result not in {"success", ""} or main_status not in {"0", ""}:
+            raise OpsError(
+                "persistent-hop analysis failed its bounded startup observation: "
+                f"state={state} result={result} status={main_status}"
+            )
+        if time.monotonic() >= deadline:
+            if state not in {"inactive", "activating", "active", "deactivating"}:
+                raise OpsError(f"persistent-hop analysis has an unsupported startup state: {state}")
+            return
+        time.sleep(0.25)
 
 
 def _verify_acquisition_environment_revision(expected: str) -> None:

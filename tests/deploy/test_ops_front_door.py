@@ -1923,6 +1923,11 @@ def test_restored_runtime_verifies_divergent_selectors_and_service_health(
     monkeypatch.setattr(OPS, "_verify_acquisition_environment_revision", lambda _revision: None)
     monkeypatch.setattr(OPS, "_release_ships_persistent_hop_analysis", lambda _revision: True)
     monkeypatch.setattr(
+        OPS,
+        "_verify_persistent_hop_analysis_startup",
+        lambda: health.append("persistent-analysis"),
+    )
+    monkeypatch.setattr(
         OPS.subprocess,
         "run",
         lambda *_args, **_kwargs: type(
@@ -1932,10 +1937,31 @@ def test_restored_runtime_verifies_divergent_selectors_and_service_health(
 
     OPS._verify_restored_runtime(selectors)
 
-    assert health == ["api"]
+    assert health == ["api", "persistent-analysis"]
     observed_components["api"] = "4" * 40
     with pytest.raises(OPS.OpsError, match="api selector"):
         OPS._verify_restored_runtime(selectors)
+
+
+def test_persistent_analysis_startup_verification_fails_on_service_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        OPS.subprocess,
+        "run",
+        lambda *_args, **_kwargs: type(
+            "Result",
+            (),
+            {
+                "stdout": (
+                    "ActiveState=failed\nSubState=failed\nResult=exit-code\nExecMainStatus=1\n"
+                )
+            },
+        )(),
+    )
+
+    with pytest.raises(OPS.OpsError, match="failed its bounded startup"):
+        OPS._verify_persistent_hop_analysis_startup(observation_seconds=0.0)
 
 
 def test_api_health_wait_retries_boundedly(monkeypatch: pytest.MonkeyPatch) -> None:
