@@ -62,9 +62,11 @@ def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> N
         *,
         edge,
         glrt_size,
+        evaluate_qam,
     ) -> PilotMethodCandidate:
         assert edge is StarlinkEdge.LOWER
         assert glrt_size == 4_096
+        assert evaluate_qam
         score = PilotMethodScore(
             PilotMethod.GLRT64,
             0.9 - candidate.rank * 0.1,

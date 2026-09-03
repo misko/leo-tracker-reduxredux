@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+import leo.scanner.pilot_doppler as pilot_doppler_module
 import leo.scanner.standard_analysis as analysis_module
 from leo.analysis.starlink import qin_edge_pilot_frame
 from leo.analysis.starlink.templates import FRAME_RATE_HZ
@@ -432,6 +433,8 @@ def test_standard_scanner_analysis_publishes_one_retune_bounded_pilot_segment(
                         control_score=0.1,
                         margin=0.7,
                         passed_margin_gate=True,
+                        fractional_epoch_status="complete",
+                        fractional_epoch_offset_samples=0.375,
                     ),
                 )
                 if probe_index in (0, 2)
@@ -467,6 +470,22 @@ def test_standard_scanner_analysis_publishes_one_retune_bounded_pilot_segment(
         )
 
     monkeypatch.setattr(analysis_module, "analyze_glrt64_dwell", confirmed)
+    original_tracker = pilot_doppler_module.analyze_contiguous_pilot_pnt_kalman
+    observed_fractional_offsets: list[float] = []
+
+    def track(*args, initial_fractional_epoch_offset_samples, **kwargs):
+        observed_fractional_offsets.append(initial_fractional_epoch_offset_samples)
+        return original_tracker(
+            *args,
+            initial_fractional_epoch_offset_samples=0.0,
+            **kwargs,
+        )
+
+    monkeypatch.setattr(
+        pilot_doppler_module,
+        "analyze_contiguous_pilot_pnt_kalman",
+        track,
+    )
     result = analyze_standard_scanner(
         source,
         config=StandardScannerAnalysisConfig(
@@ -482,6 +501,7 @@ def test_standard_scanner_analysis_publishes_one_retune_bounded_pilot_segment(
     )
 
     product = result.pilot_doppler
+    assert observed_fractional_offsets == [0.375]
     assert product.analyzed_segment_count == 1
     assert product.fallback_window_segment_count == 1
     assert product.preferred_window_segment_count == 0

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import cast
 
 import numpy as np
@@ -299,6 +300,52 @@ def test_separated_batch_winner_only_rescores_published_geometry(monkeypatch) ->
     assert candidate.rank == 0
     assert result is published
     assert calls == [10_000.0]
+
+
+def test_full_capture_phase_slope_handoff_uses_fractional_glrt_epoch(monkeypatch) -> None:
+    candidate = _candidate(0, 17, 10_000.0)
+    score = _score(0.3, 10_000.0)
+    monkeypatch.setattr(
+        full_capture,
+        "acquire_symbolwise",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            candidates=(candidate,),
+            status=full_capture.NumericalStatus.COMPLETE,
+            reason="fixture",
+        ),
+    )
+    monkeypatch.setattr(
+        full_capture,
+        "_winning_candidate_glrt64",
+        lambda *_args, **_kwargs: (candidate, score),
+    )
+    monkeypatch.setattr(
+        full_capture,
+        "_fractional_glrt_epoch",
+        lambda *_args, **_kwargs: ("complete", 0.375, (0.1, 0.2, 0.3, 0.2, 0.1)),
+    )
+    observed_offsets: list[float] = []
+
+    def phase_slope(*_args, fractional_epoch_offset_samples, **_kwargs):
+        observed_offsets.append(fractional_epoch_offset_samples)
+        return SimpleNamespace(frames=())
+
+    monkeypatch.setattr(full_capture, "analyze_pilot_phase_slope", phase_slope)
+
+    result = full_capture._analyze_window(
+        0,
+        0,
+        np.ones(50_000, dtype=np.complex128),
+        sample_rate_hz=2_500_000,
+        edge=StarlinkEdge.LOWER,
+        acquisition_config=full_capture.SymbolwiseAcquisitionConfig(maximum_probe_samples=50_000),
+        glrt_size=512,
+        margin_gate=0.025,
+        refine_fractional_epoch=True,
+    )
+
+    assert observed_offsets == [0.375]
+    assert result.fractional_epoch_offset_samples == pytest.approx(0.375)
 
 
 def _scalar_winner(

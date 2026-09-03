@@ -190,6 +190,7 @@ def analyze_standard_scanner(
     analysis_started = time.perf_counter()
     metrics_frames: list[ScannerFrameAnalysisV1] = []
     report_results: list[ScanEdgeResult] = []
+    fractional_epoch_offsets: dict[tuple[int, int, int, int], float] = {}
     for frame in source.frames:
         if frame.samples is None:
             reason = frame.error or "capture failed"
@@ -271,6 +272,17 @@ def analyze_standard_scanner(
             )
             for probe in detection.probes
         )
+        for probe in detection.probes:
+            for candidate in probe.candidates:
+                if candidate.fractional_epoch_offset_samples is not None:
+                    fractional_epoch_offsets[
+                        (
+                            frame.target_index,
+                            probe.receiver_id,
+                            probe.probe_index,
+                            candidate.candidate_rank,
+                        )
+                    ] = candidate.fractional_epoch_offset_samples
         ci16_digest = sha256_digest(frame.samples.tobytes(order="C"))
         metrics_frames.append(
             ScannerFrameAnalysisV1(
@@ -337,6 +349,7 @@ def analyze_standard_scanner(
         source,
         metrics,
         config=resolved.pilot_doppler,
+        fractional_epoch_offsets=fractional_epoch_offsets,
     )
     analysis_elapsed_ms = (time.perf_counter() - analysis_started) * 1_000
     if isinstance(source.configuration, ScannerConfigurationV2):

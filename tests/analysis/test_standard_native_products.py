@@ -120,10 +120,10 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
         PATH_REPORT_V4_PRODUCT,
     )
     assert registry.get("path-standard-native").spec.algorithm_version == (
-        "standard-native-evidence-v15"
+        "standard-native-evidence-v16"
     )
     assert registry.get("path-standard-native").spec.configuration_schema == (
-        "path-standard-native.evidence.v13"
+        "path-standard-native.evidence.v14"
     )
     assert registry.get("path-pss-native").spec.output_products == PATH_PSS_NATIVE_OUTPUTS
     assert registry.get("path-pss-native").spec.algorithm_version == ("standard-native-path-pss-v1")
