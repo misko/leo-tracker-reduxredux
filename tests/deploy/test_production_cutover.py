@@ -1237,6 +1237,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
             "LEO_SCANNER_ENABLED=false",
+            "LEO_SCANNER_CAPTURE_MODE=sequential",
             "LEO_SCANNER_RADIO_ID=radio_pluto_5d4d",
             "LEO_SCANNER_INTERVAL_SECONDS=1200",
             "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=300",
@@ -1245,6 +1246,10 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_SCANNER_GAIN_DB=40.0",
             "LEO_SCANNER_MARGIN_GATE=0.025",
             "LEO_SCANNER_REPORT_ROOT=/srv/bulk/leo/scanner-reports",
+            "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US=11000",
+            "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK=131072",
+            "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS=8",
+            "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS=16",
             f"LEO_PIPELINE_RELEASE_ID={revision}",
             f"LEO_RADIOS_JSON='{json.dumps(radios, separators=(',', ':'))}'",
         )
