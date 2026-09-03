@@ -219,6 +219,40 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
     radio.close()
 
 
+def test_adapter_builds_the_exact_installed_ppu_plan_without_hardware() -> None:
+    plan, _source_blocks, upstream = _cancelled_source(visit_count=0)
+    client = _Client(upstream, persistent_hop_wire_session_id("adapter-session"))
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        client_factory=lambda uri, serial: client,
+    )
+
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    with pytest.raises(StopIteration):
+        session.read_visit()
+    session.finish()
+    upstream_plan, tandem = client.start_arguments
+
+    assert upstream_plan.sample_rate_hz == plan.sample_rate_hz
+    assert upstream_plan.rf_bandwidth_hz == plan.bandwidth_hz
+    assert upstream_plan.manual_gain_db == plan.gain_db
+    assert [profile.target.name for profile in upstream_plan.profiles] == [
+        "CH1L",
+        "CH2L",
+        "CH3L",
+        "CH4L",
+        "CH1U",
+        "CH2U",
+        "CH3U",
+        "CH4U",
+    ]
+    assert tandem.mode.name == "HOLD"
+    radio.close()
+
+
 @pytest.mark.parametrize("host", ["localhost", "192.168.2.18", "ip:192.168.1.18"])
 def test_adapter_rejects_nonliteral_or_nonlocal_lan_hosts(host: str) -> None:
     with pytest.raises(ValueError, match="192.168.1"):
