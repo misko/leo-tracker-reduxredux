@@ -246,6 +246,9 @@ def test_primary_qam_observer_preserves_legacy_detection_output() -> None:
     assert observed == baseline
     assert capture.result is not None
     assert capture.result.metrics is not None
+    assert observed.fractional_epoch_status != "not_evaluated"
+    assert observed.qam_accuracy == capture.result.metrics.hard_symbol_accuracy
+    assert observed.qam_evm == capture.result.metrics.rms_evm
     captured_statistics = native_qam_sufficient_statistics(capture.result)
     assert captured_statistics.hard_symbol_accuracy is not None
     assert captured_statistics.rms_evm is not None
