@@ -121,8 +121,10 @@ windows when its multi-hour cost is intentional.
 After the fractional product seals, the same bounded worker projects only
 margin-passing fractional candidates with qualified device-counter/UTC timing,
 reconstructs alias-aware trajectories before opening a catalogue, and compares
-at most eight physical groups with the reviewed `spinnaker-sausalito` observer
-preset. It selects the newest TLE snapshot strictly before the earliest
+at most four physical groups with the reviewed `spinnaker-sausalito` observer
+preset. The bounded four-group policy keeps the measured full-catalogue work plus
+fractional analysis near the 20-minute capture cadence; additional reconstructed
+groups remain explicitly counted as unscored. It selects the newest TLE snapshot strictly before the earliest
 minus-500-second control field, fits catalogue/tau/offset only on the first 60%
 of each track, and scores the future 40% once alongside a radio-polynomial null
 and ±500-second wrong-time controls. Publications live beneath

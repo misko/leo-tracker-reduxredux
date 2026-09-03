@@ -92,7 +92,7 @@ class PersistentHopTrackingService:
         renderer: PersistentHopTrackingRenderer,
         projection_config: PersistentHopTrajectoryProjectionConfig | None = None,
         trajectory_config: PersistentHopTrajectoryConfig | None = None,
-        maximum_physical_groups: int = 8,
+        maximum_physical_groups: int = 4,
         matcher: PersistentHopTleMatcher = match_persistent_hop_track_to_tles,
     ) -> None:
         if not 1 <= maximum_physical_groups <= 32:
@@ -124,10 +124,15 @@ class PersistentHopTrackingService:
                 outcome="unsupported",
                 reason="utc-timing-authority-unavailable-in-capture-manifest-v1",
             )
+        if analysis.manifest.input_manifest_sha256 != capture.manifest_sha256:
+            raise ValueError(
+                "fractional analysis input digest does not match the inspected capture"
+            )
         try:
             projection = project_fractional_persistent_hop_candidates(
                 capture.manifest,
                 self._analyses.published_chunks(session_id),
+                input_manifest_sha256=capture.manifest_sha256,
                 config=self._projection_config,
             )
         except PersistentHopTrajectoryProjectionError as error:
@@ -263,7 +268,9 @@ class PersistentHopTrackingService:
         ready = tuple(
             item
             for item in candidates
-            if self._analyses.is_complete(item) and not self._products.is_terminal(item)
+            if self._analyses.is_complete(item)
+            and not self._products.is_terminal(item)
+            and (session_id is not None or self._products.status(item).state != "failed")
         )
         selected = ready[:maximum_sessions]
         completed: list[str] = []

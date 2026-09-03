@@ -16,7 +16,7 @@ ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/control/pe
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-hop-tracking
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/control/persistent-hop-tracking
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/presentation-cache/matplotlib
-ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current/.venv/bin/leo-persistent-hop-analysis --maximum-sessions 1 --maximum-workers 2 --probe-stride-ms 120 --site spinnaker-sausalito --maximum-tracking-groups 8 --json
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current/.venv/bin/leo-persistent-hop-analysis --maximum-sessions 1 --maximum-workers 2 --probe-stride-ms 120 --site spinnaker-sausalito --maximum-tracking-groups 4 --json
 TimeoutStartSec=2h
 Nice=15
 CPUWeight=25
