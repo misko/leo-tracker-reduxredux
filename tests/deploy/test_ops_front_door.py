@@ -29,6 +29,24 @@ def test_unknown_path_fails_closed() -> None:
         OPS.components_for_paths(("unknown/new-surface.bin",), OPS.load_components())
 
 
+def test_scanner_iiod_release_assets_select_acquisition_and_deployment_gates() -> None:
+    paths = ("runtime/scanner-iiod/iiod", "runtime/scanner-iiod/provenance.json")
+
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    assert {component.name for component in selected} == {"acquisition", "deployment"}
+    assert OPS.runtime_impacts_for_paths(paths, selected) == ("acquisition",)
+    gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
+    pytest_targets = {
+        target
+        for gate in gates
+        if gate.name.startswith("pytest-components-")
+        for target in gate.command
+    }
+    assert any(target.startswith("tests/acquisition/") for target in pytest_targets)
+    assert any(target.startswith("tests/deploy/") for target in pytest_targets)
+
+
 def test_child_environment_removes_application_database(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
