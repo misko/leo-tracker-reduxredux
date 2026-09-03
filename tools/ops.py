@@ -2604,7 +2604,12 @@ def _verify_persistent_hop_analysis_startup(*, observation_seconds: float = 3.0)
         state = values.get("ActiveState")
         result = values.get("Result")
         main_status = values.get("ExecMainStatus")
-        if state == "failed" or result not in {"success", ""} or main_status not in {"0", ""}:
+        # systemd retains ExecMainStatus from an intentionally stopped oneshot
+        # even after reset-failed changes its inactive Result to success.  For
+        # an inactive unit, Result is the authoritative terminal health field;
+        # a running/deactivating unit must still have a clean live status.
+        live_nonzero_status = state != "inactive" and main_status not in {"0", ""}
+        if state == "failed" or result not in {"success", ""} or live_nonzero_status:
             raise OpsError(
                 "persistent-hop analysis failed its bounded startup observation: "
                 f"state={state} result={result} status={main_status}"
