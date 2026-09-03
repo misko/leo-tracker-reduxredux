@@ -316,7 +316,7 @@ class FakePersistentHopSession:
             target_index=profile.target_index,
             fastlock_profile_index=profile.fastlock_profile_index,
             event_sequence=self._next_event_sequence,
-            device_event_id=self._next_event_sequence,
+            device_event_id=self._next_event_sequence + 1,
             fastlock_slot=profile.fastlock_profile_index,
             target=profile.target,
             requested_if_center_hz=profile.target.if_center_hz,
@@ -425,7 +425,7 @@ class FakePersistentHopSession:
                 else "completed"
             ),
             reason=reason,
-            error_code=0 if capture_outcome == "complete" else 1,
+            error_code=-5 if capture_outcome == "failed" else 0,
             flags=terminal_flags,
             session_id=self._wire_session_id(),
             visits_started=len(visits),
@@ -438,7 +438,7 @@ class FakePersistentHopSession:
             restore_before_counter=self._next_counter,
             restore_after_counter=self._next_counter,
             restored_lo_frequency_hz=restored_lo,
-            restore_error_code=0 if restoration.status == "restored" else 1,
+            restore_error_code=0 if restoration.status == "restored" else -5,
             active_profile_index=(visits[-1].fastlock_profile_index if visits else None),
             restored_profile_index=None,
             startup_invalid_start_counter=(
