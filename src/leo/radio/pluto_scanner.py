@@ -6,6 +6,7 @@ import importlib
 import time
 from collections.abc import Callable
 from contextlib import suppress
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -17,9 +18,29 @@ from leo.scanner.ports import ScanRadioBlockV2, ScanRadioIdentity
 
 _LO_READBACK_TOLERANCE_HZ = 10
 _EXPECTED_METADATA_ABI = 3
+_QUALIFIED_METADATA_BATCH_FRAMES = 12
+_QUALIFIED_BATCH_GEOMETRIES = {(2_500_000, 120), (5_000_000, 120)}
 
 DeviceFactory = Callable[..., Any]
 SettingsFactory = Callable[..., Any]
+
+
+@dataclass(frozen=True, slots=True)
+class _AggregatedMetadataBlock:
+    samples: np.ndarray
+    metadata_abi: int
+    stream_id: int
+    stream_generation: int
+    buffer_sequence: int
+    first_sample_sequence: int
+    metadata_flags: int
+    missing_samples_before: int
+    overflow_observed: bool
+    sample_time_realtime_start_ns: int
+    sample_time_realtime_end_ns: int
+    sample_time_monotonic_start_ns: int
+    sample_time_monotonic_end_ns: int
+    sample_time_uncertainty_ns: int
 
 
 class PlutoScannerError(RuntimeError):
@@ -154,13 +175,15 @@ class PlutoSequentialScanRadio:
                 raise PlutoScannerError(f"RX LO readback is {actual}, requested {if_center_hz}")
             self._sleep(configuration.tuning_settle_us / 1_000_000)
 
+            subframe_samples, batch_frames = _metadata_batch_geometry(configuration)
             listen_started = time.perf_counter()
             utc_before = self._utc_ns()
             monotonic_before = self._monotonic_ns()
             with device.begin_metadata_capture(
-                sample_count,
+                subframe_samples,
                 kernel_buffers=configuration.kernel_buffers,
-                tandem_request=_scanner_tandem_hold_request(sample_count),
+                batch_frames=batch_frames,
+                tandem_request=_scanner_tandem_hold_request(subframe_samples),
             ) as capture:
                 kernel_buffers_readback = int(capture.kernel_buffers)
                 if kernel_buffers_readback != configuration.kernel_buffers:
@@ -168,7 +191,19 @@ class PlutoSequentialScanRadio:
                         "RX kernel buffer readback is "
                         f"{kernel_buffers_readback}, expected {configuration.kernel_buffers}"
                     )
-                upstream = capture.read_block()
+                batch_frames_readback = int(capture.batch_frames)
+                if batch_frames_readback != batch_frames:
+                    raise PlutoScannerError(
+                        "metadata batch readback is "
+                        f"{batch_frames_readback}, expected {batch_frames}"
+                    )
+                upstream = _read_metadata_batch(
+                    capture,
+                    configuration=configuration,
+                    metadata_abi_version=metadata_abi,
+                    subframe_samples=subframe_samples,
+                    batch_frames=batch_frames,
+                )
                 stream_generation = _required_stream_generation(upstream)
                 if stream_generation in self._stream_generations:
                     raise PlutoScannerError(
@@ -218,6 +253,136 @@ class PlutoSequentialScanRadio:
         if self._device is None:
             raise PlutoScannerError("scanner radio is not open")
         return self._device
+
+
+def _metadata_batch_geometry(
+    configuration: ScannerConfigurationV2 | ScannerConfigurationV3,
+) -> tuple[int, int]:
+    """Use the hardware-qualified 10 ms subframes for the production dwell."""
+
+    total_samples = configuration.dwell_samples
+    if (configuration.sample_rate_hz, configuration.dwell_ms) not in (
+        _QUALIFIED_BATCH_GEOMETRIES
+    ):
+        return total_samples, 1
+    subframe_samples, remainder = divmod(total_samples, _QUALIFIED_METADATA_BATCH_FRAMES)
+    if remainder:  # pragma: no cover - protected by the frozen qualified geometries
+        raise PlutoScannerError("qualified scanner dwell does not divide into 12 subframes")
+    return subframe_samples, _QUALIFIED_METADATA_BATCH_FRAMES
+
+
+def _read_metadata_batch(
+    capture: Any,
+    *,
+    configuration: ScannerConfigurationV2 | ScannerConfigurationV3,
+    metadata_abi_version: int,
+    subframe_samples: int,
+    batch_frames: int,
+) -> _AggregatedMetadataBlock:
+    receivers = len(configuration.receiver_ids)
+    samples = np.empty((receivers, configuration.dwell_samples), dtype=np.complex64)
+    stream_generation: int | None = None
+    first_sample_sequence: int | None = None
+    expected_sample_sequence: int | None = None
+    metadata_flags = 0
+    realtime_start_ns: int | None = None
+    realtime_end_ns: int | None = None
+    monotonic_start_ns: int | None = None
+    monotonic_end_ns: int | None = None
+    maximum_uncertainty_ns = 0
+
+    for index in range(batch_frames):
+        upstream = capture.read_block()
+        raw_block_abi = getattr(upstream, "metadata_abi", None)
+        if not isinstance(raw_block_abi, int) or raw_block_abi != metadata_abi_version:
+            raise PlutoScannerError(
+                "metadata subframe ABI disagrees with the capture context"
+            )
+        values = np.asarray(upstream.samples)
+        expected_shape = (receivers, subframe_samples)
+        if values.shape != expected_shape:
+            raise PlutoScannerError(
+                f"Pluto returned subframe {values.shape}, expected {expected_shape} "
+                "receiver/sample IQ"
+            )
+        generation = _required_stream_generation(upstream)
+        if stream_generation is None:
+            stream_generation = generation
+        elif generation != stream_generation:
+            raise PlutoScannerError("metadata stream changed within one batched dwell")
+
+        buffer_sequence = int(upstream.buffer_sequence)
+        if buffer_sequence != index:
+            if index == 0:
+                raise PlutoScannerError("metadata first buffer sequence must be zero after reset")
+            raise PlutoScannerError(
+                "metadata buffer sequence is not contiguous within batched dwell"
+            )
+        block_first_sample = int(upstream.first_sample_sequence)
+        if first_sample_sequence is None:
+            first_sample_sequence = block_first_sample
+        elif block_first_sample != expected_sample_sequence:
+            raise PlutoScannerError(
+                "metadata sample counter is not contiguous within batched dwell"
+            )
+        expected_sample_sequence = block_first_sample + subframe_samples
+
+        missing_samples = int(upstream.missing_samples_before)
+        if missing_samples:
+            raise PlutoScannerError(f"metadata reports {missing_samples} missing samples")
+        block_flags = int(upstream.metadata_flags)
+        overflow_from_flags = metadata_reports_rx_overflow(block_flags)
+        raw_overflow = getattr(upstream, "overflow_observed", None)
+        if not isinstance(raw_overflow, bool):
+            raise PlutoScannerError("metadata capture omitted the canonical overflow boolean")
+        if raw_overflow != overflow_from_flags:
+            raise PlutoScannerError("metadata overflow boolean disagrees with flags bit 11")
+        if overflow_from_flags:
+            raise PlutoScannerError("metadata reports an RX overflow")
+
+        realtime = _required_interval(
+            upstream,
+            "sample_time_realtime_start_ns",
+            "sample_time_realtime_end_ns",
+        )
+        monotonic = _required_interval(
+            upstream,
+            "sample_time_monotonic_start_ns",
+            "sample_time_monotonic_end_ns",
+        )
+        uncertainty = getattr(upstream, "sample_time_uncertainty_ns", None)
+        if not isinstance(uncertainty, int) or uncertainty < 0:
+            raise PlutoScannerError("metadata capture lacks sample-time uncertainty")
+
+        offset = index * subframe_samples
+        samples[:, offset : offset + subframe_samples] = values
+        metadata_flags |= block_flags
+        realtime_start_ns = realtime[0] if realtime_start_ns is None else realtime_start_ns
+        realtime_end_ns = realtime[1]
+        monotonic_start_ns = monotonic[0] if monotonic_start_ns is None else monotonic_start_ns
+        monotonic_end_ns = monotonic[1]
+        maximum_uncertainty_ns = max(maximum_uncertainty_ns, uncertainty)
+
+    assert stream_generation is not None
+    assert first_sample_sequence is not None
+    assert realtime_start_ns is not None and realtime_end_ns is not None
+    assert monotonic_start_ns is not None and monotonic_end_ns is not None
+    return _AggregatedMetadataBlock(
+        samples=samples,
+        metadata_abi=metadata_abi_version,
+        stream_id=stream_generation,
+        stream_generation=stream_generation,
+        buffer_sequence=0,
+        first_sample_sequence=first_sample_sequence,
+        metadata_flags=metadata_flags,
+        missing_samples_before=0,
+        overflow_observed=False,
+        sample_time_realtime_start_ns=realtime_start_ns,
+        sample_time_realtime_end_ns=realtime_end_ns,
+        sample_time_monotonic_start_ns=monotonic_start_ns,
+        sample_time_monotonic_end_ns=monotonic_end_ns,
+        sample_time_uncertainty_ns=maximum_uncertainty_ns,
+    )
 
 
 def _map_metadata_block(
