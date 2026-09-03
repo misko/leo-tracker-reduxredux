@@ -254,6 +254,7 @@ Enable services in dependency order:
 ```text
 sudo systemctl enable --now leo-reconcile.timer
 sudo systemctl start leo-reconcile.service
+sudo systemctl enable --now leo-persistent-hop-analysis.timer
 sudo systemctl enable --now leo-worker@1.service leo-worker@2.service
 sudo systemctl enable --now leo-api.service
 sudo systemctl enable --now leo-acquisition.service

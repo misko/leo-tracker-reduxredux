@@ -1,0 +1,12 @@
+[Unit]
+Description=Continue persistent-hop scanner analysis backfill
+
+[Timer]
+OnBootSec=3min
+OnUnitInactiveSec=1min
+AccuracySec=15s
+Persistent=true
+Unit=leo-persistent-hop-analysis.service
+
+[Install]
+WantedBy=timers.target

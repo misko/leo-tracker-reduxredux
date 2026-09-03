@@ -8,8 +8,12 @@ from fastapi.testclient import TestClient
 from leo.api.app import create_app
 from leo.presentation.fixtures import build_fixture_repository
 from leo.scanner import (
+    PersistentHopAnalysisStatusV1,
     PersistentHopHistoryItemV1,
+    PersistentHopHistoryItemV2,
     PersistentHopHistoryPageV1,
+    PersistentHopHistoryPageV2,
+    PersistentHopSessionDetailV1,
     compile_persistent_hop_plan_v1,
 )
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
@@ -29,6 +33,35 @@ class _HistoryReader:
             next_cursor=None,
             items=(self.item,) if cursor == 0 else (),
         )
+
+
+class _PresentationReader:
+    def __init__(self, item: PersistentHopHistoryItemV1) -> None:
+        self.item = item
+        self.status = PersistentHopAnalysisStatusV1(
+            session_id=item.session_id,
+            state="pending",
+            total_visits=item.visit_count,
+            analyzed_visits=0,
+            updated_at=item.finalized_at,
+        )
+
+    def page_v2(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV2:
+        return PersistentHopHistoryPageV2(
+            cursor=cursor,
+            limit=limit,
+            total=1,
+            next_cursor=None,
+            items=(PersistentHopHistoryItemV2(capture=self.item, analysis=self.status),),
+        )
+
+    def detail(self, session_id: str) -> PersistentHopSessionDetailV1 | None:
+        if session_id != self.item.session_id:
+            return None
+        return PersistentHopSessionDetailV1(capture=self.item, analysis=self.status)
+
+    def artifact(self, session_id: str, artifact: str) -> bytes | None:
+        return None
 
 
 def _history_item() -> PersistentHopHistoryItemV1:
@@ -112,3 +145,28 @@ def test_persistent_hop_history_api_is_explicitly_unavailable_without_reader(
 
     assert response.status_code == 404
     assert response.json()["detail"] == "persistent-hop session history is not available"
+
+
+def test_persistent_hop_v2_detail_returns_pending_as_success_without_requesting_artifacts(
+    tmp_path: Path,
+) -> None:
+    bulk = tmp_path / "bulk"
+    bulk.mkdir()
+    reader = _PresentationReader(_history_item())
+    client = TestClient(
+        create_app(
+            build_fixture_repository(bulk),
+            artifact_root=bulk,
+            persistent_hop_presentations=reader,
+        )
+    )
+
+    page = client.get("/api/v2/scanner/persistent-sessions?cursor=0&limit=5")
+    detail = client.get("/api/v2/scanner/persistent-sessions/scan-hop-history")
+    missing = client.get("/api/v2/scanner/persistent-sessions/scan-hop-history/coverage.png")
+
+    assert page.status_code == 200
+    assert page.json()["items"][0]["analysis"]["state"] == "pending"
+    assert detail.status_code == 200
+    assert detail.json()["product"] is None
+    assert missing.status_code == 404

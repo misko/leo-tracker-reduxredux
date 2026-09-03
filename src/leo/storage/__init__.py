@@ -17,7 +17,13 @@ from leo.storage.persistent_hop import (
     PublishedPersistentHopIqSession,
     QueuedPersistentHopSessionWriter,
 )
+from leo.storage.persistent_hop_analysis import (
+    PersistentHopAnalysisStore,
+    PersistentHopPresentationStore,
+    PublishedPersistentHopAnalysis,
+)
 from leo.storage.persistent_hop_analysis_source import (
+    PersistentHopAnalysisInputStore,
     persisted_persistent_hop_analysis_source,
 )
 from leo.storage.persistent_hop_capture import capture_persistent_hop_to_store
@@ -70,6 +76,9 @@ __all__ = [
     "FallbackScannerCaptureTimeReader",
     "PathConfinementError",
     "PersistentHopIqChunkV1",
+    "PersistentHopAnalysisInputStore",
+    "PersistentHopAnalysisStore",
+    "PersistentHopPresentationStore",
     "PersistentHopIqSessionManifestV1",
     "PersistentHopIqStore",
     "PersistentHopQueueTelemetryV1",
@@ -77,6 +86,7 @@ __all__ = [
     "PersistentHopStoredCi16Reader",
     "PublishedBundle",
     "PublishedPersistentHopIqSession",
+    "PublishedPersistentHopAnalysis",
     "QueuedPersistentHopSessionWriter",
     "PublishedScannerAnalysisBundle",
     "PublishedScannerIqBundle",

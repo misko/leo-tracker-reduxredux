@@ -107,6 +107,17 @@ storage queue telemetry, and two-layer restoration. Persistent analysis reads
 that additive contract and never presents the stream as a legacy fresh-buffer
 sweep.
 
+`leo-persistent-hop-analysis.timer` advances one long session at a time through
+sweep-sized, digest-verified checkpoints. The worker admits at most two analysis
+threads and runs at idle I/O priority so capture remains favored. Enable the timer
+with the API deployment; pending and running sessions remain selectable in the UI,
+while PNG URLs are exposed only after the immutable analysis manifest seals.
+The unattended profile records one 20 ms GLRT64 window per 120 ms valid visit;
+that explicit policy spans every visit and both receivers while remaining ahead
+of the alternating 20-minute capture cadence. The full IQ is retained, and a
+manual `--probe-stride-ms 10` run remains available for exhaustive overlapping
+windows when its multi-hour cost is intentional.
+
 Sequential admission rounds the 300-second window up to 313 complete sweeps. Before opening
 the radio it therefore requires, in addition to the configured safety reserve,
 6,009,600,000 raw bytes for a 2.5 MS/s slot or 12,019,200,000 raw bytes for a
@@ -170,6 +181,7 @@ Only after its preflight passes should the normal services be activated:
 systemd-analyze verify /etc/systemd/system/leo-*.service /etc/systemd/system/leo-*.timer
 systemctl daemon-reload
 systemctl enable --now leo-reconcile.timer
+systemctl enable --now leo-persistent-hop-analysis.timer
 systemctl enable --now leo-worker@1.service leo-worker@2.service
 systemctl enable --now leo-api.service leo-acquisition.service
 systemctl enable --now leo-retention.timer

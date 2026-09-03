@@ -168,6 +168,7 @@ class PersistentHopGlrt64Configuration:
 
     plan: PersistentHopPlanV1
     probe_ms: int = 20
+    probe_stride_ms: int = 10
     glrt64_margin_gate: float = 0.025
     maximum_acquisition_candidates: int = 8
 
@@ -176,6 +177,8 @@ class PersistentHopGlrt64Configuration:
             raise ValueError("persistent-hop GLRT probe must divide one valid visit")
         if self.probe_ms % 2:
             raise ValueError("persistent-hop GLRT probe must have an integral half-window stride")
+        if not self.probe_ms // 2 <= self.probe_stride_ms <= self.plan.valid_visit_ms:
+            raise ValueError("persistent-hop GLRT probe stride is outside the valid visit")
         if not math.isfinite(self.glrt64_margin_gate) or self.glrt64_margin_gate <= 0:
             raise ValueError("persistent-hop GLRT margin gate must be finite and positive")
         if not 1 <= self.maximum_acquisition_candidates <= 16:
@@ -196,10 +199,6 @@ class PersistentHopGlrt64Configuration:
     @property
     def probe_samples(self) -> int:
         return self.sample_rate_hz * self.probe_ms // 1_000
-
-    @property
-    def probe_stride_ms(self) -> int:
-        return self.probe_ms // 2
 
     @property
     def probe_stride_samples(self) -> int:

@@ -13,6 +13,10 @@ from leo.scanner.persistent_hop import (
     PersistentHopTargetCoverageV1,
     PersistentHopTerminalReason,
 )
+from leo.scanner.persistent_hop_products import (
+    PersistentHopAnalysisManifestV1,
+    PersistentHopAnalysisStatusV1,
+)
 
 
 class PersistentHopHistoryItemV1(ScannerModel):
@@ -78,3 +82,64 @@ class PersistentHopHistoryReader(Protocol):
     """Narrow API port for immutable persistent-hop capture summaries."""
 
     def page(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV1: ...
+
+
+class PersistentHopHistoryItemV2(ScannerModel):
+    """Additive long-session summary with truthful analysis readiness."""
+
+    schema_version: Literal[2] = 2
+    capture: PersistentHopHistoryItemV1
+    analysis: PersistentHopAnalysisStatusV1
+    available_artifacts: tuple[Literal["coverage", "glrt64-response", "cfo-trajectories"], ...] = ()
+
+    @model_validator(mode="after")
+    def _analysis_matches_capture(self) -> PersistentHopHistoryItemV2:
+        if (
+            self.capture.session_id != self.analysis.session_id
+            or self.capture.visit_count != self.analysis.total_visits
+        ):
+            raise ValueError("persistent-hop history analysis binding disagrees with capture")
+        if self.analysis.state == "complete" and len(self.available_artifacts) != 3:
+            raise ValueError("complete persistent-hop history lacks its artifact inventory")
+        if self.analysis.state != "complete" and self.available_artifacts:
+            raise ValueError("unsealed persistent-hop history exposes artifacts")
+        return self
+
+
+class PersistentHopHistoryPageV2(ScannerModel):
+    schema_version: Literal[2] = 2
+    cursor: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=20)]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: int | None
+    items: tuple[PersistentHopHistoryItemV2, ...]
+
+
+class PersistentHopSessionDetailV1(ScannerModel):
+    """One selectable long scan; pending analysis is a successful response."""
+
+    schema_version: Literal[1] = 1
+    capture: PersistentHopHistoryItemV1
+    analysis: PersistentHopAnalysisStatusV1
+    product: PersistentHopAnalysisManifestV1 | None = None
+
+    @model_validator(mode="after")
+    def _detail_is_bound(self) -> PersistentHopSessionDetailV1:
+        if self.capture.session_id != self.analysis.session_id:
+            raise ValueError("persistent-hop detail status disagrees with capture")
+        if (self.analysis.state == "complete") != (self.product is not None):
+            raise ValueError("persistent-hop detail readiness disagrees with product")
+        if self.product is not None and (
+            self.product.session_id != self.capture.session_id
+            or self.product.visit_count != self.capture.visit_count
+        ):
+            raise ValueError("persistent-hop detail product disagrees with capture")
+        return self
+
+
+class PersistentHopPresentationReader(Protocol):
+    def page_v2(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV2: ...
+
+    def detail(self, session_id: str) -> PersistentHopSessionDetailV1 | None: ...
+
+    def artifact(self, session_id: str, artifact: str) -> bytes | None: ...

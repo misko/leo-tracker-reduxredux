@@ -1602,6 +1602,7 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
         ),
     ]
     assert {
+        "leo-persistent-hop-analysis.service",
         "leo-acquisition-soak.service",
         "leo-qualification.service",
         "leo-release-qualification.service",
@@ -1610,6 +1611,7 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
         "leo-tle-collection.service",
     } <= set(OPS._LEO_SERVICE_UNITS)
     assert {
+        "leo-persistent-hop-analysis.timer",
         "leo-qualification.timer",
         "leo-release-qualification.timer",
         "leo-reconcile.timer",

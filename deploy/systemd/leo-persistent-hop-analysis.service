@@ -1,0 +1,32 @@
+[Unit]
+Description=LEO Tracker persistent-hop scanner analysis backfill
+After=local-fs.target
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker/current
+EnvironmentFile=/etc/leo/leo.env
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current/.venv/bin/leo-persistent-hop-analysis --maximum-sessions 1 --maximum-workers 2 --probe-stride-ms 120 --json
+TimeoutStartSec=2h
+Nice=15
+CPUWeight=25
+IOWeight=25
+IOSchedulingClass=idle
+OOMScoreAdjust=500
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo
+InaccessiblePaths=/mnt/qnap01
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target
