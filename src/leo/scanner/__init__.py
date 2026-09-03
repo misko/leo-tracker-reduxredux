@@ -66,6 +66,7 @@ from leo.scanner.models import (
     scheduled_low_band_targets,
 )
 from leo.scanner.persistent_hop import (
+    PERSISTENT_HOP_HIGH_DUTY_ACCEPTANCE_PPM,
     PERSISTENT_HOP_LNB_LO_HZ,
     PERSISTENT_HOP_MINIMUM_VALID_DUTY_PPM,
     PERSISTENT_HOP_NOMINAL_DURATION_SECONDS,
@@ -144,6 +145,7 @@ from leo.scanner.standard_analysis import (
 
 __all__ = [
     "CapturedScannerSweep",
+    "PERSISTENT_HOP_HIGH_DUTY_ACCEPTANCE_PPM",
     "PERSISTENT_HOP_LNB_LO_HZ",
     "PERSISTENT_HOP_MINIMUM_VALID_DUTY_PPM",
     "PERSISTENT_HOP_NOMINAL_DURATION_SECONDS",

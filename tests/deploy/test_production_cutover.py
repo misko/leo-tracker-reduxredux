@@ -1246,7 +1246,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_SCANNER_GAIN_DB=40.0",
             "LEO_SCANNER_MARGIN_GATE=0.025",
             "LEO_SCANNER_REPORT_ROOT=/srv/bulk/leo/scanner-reports",
-            "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US=5000",
+            "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US=1000",
             "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK=131072",
             "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS=8",
             "LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS=8",

@@ -495,7 +495,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "1200"
     assert values["LEO_SCANNER_MAXIMUM_LATENESS_SECONDS"] == "300"
     assert values["LEO_SCANNER_RUN_SECONDS"] == "300"
-    assert values["LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US"] == "5000"
+    assert values["LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US"] == "1000"
     assert values["LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS"] == "8"
     assert values["LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS"] == "64"
     assert values["LEO_SCANNER_PERSISTENT_IIOD_PORT"] == "30432"

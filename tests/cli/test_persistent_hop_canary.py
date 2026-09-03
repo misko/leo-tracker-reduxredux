@@ -37,7 +37,9 @@ class _Store:
         return published
 
 
-def _published(plan, root: Path):
+def _published(plan, root: Path, *, valid_duty_ppm: int = 960_000):
+    denominator = 625_000
+    valid_samples = denominator * valid_duty_ppm // 1_000_000
     receipt = SimpleNamespace(
         qualified=True,
         radio_id="radio-a",
@@ -48,11 +50,11 @@ def _published(plan, root: Path):
         target_coverage=tuple(
             SimpleNamespace(target=profile.target, visit_count=2) for profile in plan.profiles
         ),
-        valid_sample_count=600_000,
-        transition_invalid_sample_count=25_000,
-        duty_denominator_sample_count=625_000,
-        valid_duty_ppm=960_000,
-        valid_duty_percent=96.0,
+        valid_sample_count=valid_samples,
+        transition_invalid_sample_count=denominator - valid_samples,
+        duty_denominator_sample_count=denominator,
+        valid_duty_ppm=valid_duty_ppm,
+        valid_duty_percent=valid_duty_ppm / 10_000,
         duty_target_met=True,
         continuity_attested=True,
         missing_sample_count=0,
@@ -133,6 +135,8 @@ def test_canary_uses_alternate_endpoint_and_verifies_published_scanner_history(t
     ]
     assert stores[0].verified
     assert summary["passed"] is True
+    assert summary["high_duty_acceptance_ppm"] == 950_000
+    assert summary["high_duty_target_met"] is True
     assert summary["radio_uri"] == "ip:192.168.1.18:30432"
     assert summary["rf_bandwidth_hz"] == summary["sample_rate_hz"] == 2_500_000
     assert summary["samples_per_block"] == 131_072
@@ -156,6 +160,32 @@ def test_canary_refuses_insufficient_space_before_constructing_radio(tmp_path) -
             disk_usage=lambda _root: SimpleNamespace(free=7_073_741_823),
             capture=lambda *_args, **_kwargs: pytest.fail("capture started"),
         )
+
+
+def test_canary_fails_high_duty_release_gate_below_ninety_five_percent(tmp_path) -> None:
+    stores = []
+
+    def store_factory(root):
+        store = _Store(root, None)
+        stores.append(store)
+        return store
+
+    def capture(_radio, plan, **_kwargs):
+        stores[0].published = _published(plan, stores[0].root, valid_duty_ppm=949_999)
+        return stores[0].published
+
+    summary = run_persistent_hop_canary(
+        _settings(tmp_path),
+        radio_factory=lambda *_args, **_kwargs: "radio",
+        store_factory=store_factory,
+        disk_usage=lambda _root: SimpleNamespace(free=20_000_000_000),
+        capture=capture,
+        monotonic=lambda: 10.0,
+    )
+
+    assert summary["duty_target_met"] is True
+    assert summary["high_duty_target_met"] is False
+    assert summary["passed"] is False
 
 
 def test_canary_refuses_unwritable_publication_root_before_radio(tmp_path, monkeypatch) -> None:
@@ -199,7 +229,7 @@ def test_canary_cli_makes_alternate_port_explicit_and_keeps_exact_defaults(tmp_p
     )
 
     assert args.iiod_port == 30_432
-    assert args.transition_guard_us == 5_000
+    assert args.transition_guard_us == 1_000
     assert args.samples_per_block == 131_072
     assert args.kernel_buffers == 8
     assert args.read_ahead_visits == 8

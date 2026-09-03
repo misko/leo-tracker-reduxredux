@@ -17,7 +17,11 @@ from threading import Event
 from typing import Any, Literal
 
 from leo.radio.pluto_persistent_hop import PlutoPersistentHopRadio
-from leo.scanner.persistent_hop import PersistentHopPlanV1, compile_persistent_hop_plan_v1
+from leo.scanner.persistent_hop import (
+    PERSISTENT_HOP_HIGH_DUTY_ACCEPTANCE_PPM,
+    PersistentHopPlanV1,
+    compile_persistent_hop_plan_v1,
+)
 from leo.storage.errors import BundleNotFoundError
 from leo.storage.persistent_hop import PersistentHopIqStore, PublishedPersistentHopIqSession
 from leo.storage.persistent_hop_capture import capture_persistent_hop_to_store
@@ -36,7 +40,7 @@ class PersistentHopCanarySettings:
     sample_rate_hz: Literal[2_500_000, 5_000_000]
     session_id: str
     iiod_port: int | None = None
-    transition_guard_us: int = 5_000
+    transition_guard_us: int = 1_000
     samples_per_block: int = 131_072
     kernel_buffers: int = 8
     gain_db: float = 40.0
@@ -144,9 +148,10 @@ def _summary(
     manifest = published.manifest
     receipt = manifest.receipt
     queue = manifest.queue_telemetry
+    high_duty_target_met = receipt.valid_duty_ppm >= PERSISTENT_HOP_HIGH_DUTY_ACCEPTANCE_PPM
     return {
         "schema": "org.leo.persistent-hop-durable-canary/v1",
-        "passed": receipt.qualified,
+        "passed": receipt.qualified and high_duty_target_met,
         "session_id": published.session_id,
         "sample_rate_hz": manifest.plan.sample_rate_hz,
         "rf_bandwidth_hz": manifest.plan.bandwidth_hz,
@@ -168,6 +173,8 @@ def _summary(
         "valid_duty_ppm": receipt.valid_duty_ppm,
         "valid_duty_percent": receipt.valid_duty_percent,
         "duty_target_met": receipt.duty_target_met,
+        "high_duty_acceptance_ppm": PERSISTENT_HOP_HIGH_DUTY_ACCEPTANCE_PPM,
+        "high_duty_target_met": high_duty_target_met,
         "continuity_attested": receipt.continuity_attested,
         "missing_sample_count": receipt.missing_sample_count,
         "overflow_count": receipt.overflow_count,
@@ -238,7 +245,7 @@ def _parser() -> argparse.ArgumentParser:
         help="opt-in alternate iiOD port; omission preserves the production endpoint",
     )
     parser.add_argument("--session-id", help="unique durable session ID")
-    parser.add_argument("--transition-guard-us", type=_positive_integer, default=5_000)
+    parser.add_argument("--transition-guard-us", type=_positive_integer, default=1_000)
     parser.add_argument("--samples-per-block", type=_positive_integer, default=131_072)
     parser.add_argument("--kernel-buffers", type=_positive_integer, default=8)
     parser.add_argument("--gain-db", type=float, default=40.0)

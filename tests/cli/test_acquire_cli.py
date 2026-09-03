@@ -58,7 +58,7 @@ def test_cli_qualification_defaults_follow_the_configured_bulk_root(tmp_path: Pa
     assert settings.capture_evidence_root == bulk / "qualification" / "capture"
     assert settings.legacy_evidence_root == bulk / "qualification" / "legacy"
     assert settings.scanner_dwell_ms == 120
-    assert settings.scanner_persistent_transition_guard_us == 5_000
+    assert settings.scanner_persistent_transition_guard_us == 1_000
     assert settings.scanner_persistent_read_ahead_visits == 8
     assert settings.scanner_persistent_queue_capacity_visits == 64
     assert settings.scanner_persistent_iiod_port == 30_432
