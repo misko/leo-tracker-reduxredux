@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from threading import Event
 
+import pytest
+
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
 from leo.scanner.persistent_hop import compile_persistent_hop_plan_v1
 from leo.storage.persistent_hop import PersistentHopIqStore
@@ -51,6 +53,20 @@ class _OneVisitRadio:
         self.opened = False
 
 
+class _FailingRadio:
+    def __init__(self, identity) -> None:
+        self.identity = identity
+
+    def open(self):
+        raise RuntimeError("injected provider admission failure")
+
+    def begin_session(self, plan, *, session_id: str):
+        raise AssertionError("failed open cannot begin a session")
+
+    def close(self) -> None:
+        raise AssertionError("failed open cannot close an unopened radio")
+
+
 def test_capture_publishes_only_after_receipt_and_iq_are_closed(tmp_path) -> None:
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
     source = FakePersistentHopRadio()
@@ -78,3 +94,22 @@ def test_capture_publishes_only_after_receipt_and_iq_are_closed(tmp_path) -> Non
     assert published.manifest.queue_telemetry.enqueue_failure_count == 0
     assert store.inspect("stored-session").manifest_sha256 == published.manifest_sha256
     assert radio.opened is False
+
+
+def test_aborted_spool_is_forensic_but_does_not_block_a_retry(tmp_path) -> None:
+    plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+    identity = FakePersistentHopRadio().identity
+    store = PersistentHopIqStore(tmp_path / "bulk")
+
+    for _attempt in range(2):
+        with pytest.raises(RuntimeError, match="provider admission"):
+            capture_persistent_hop_to_store(
+                _FailingRadio(identity),
+                plan,
+                session_id="retryable-session",
+                store=store,
+                cancel=Event(),
+                queue_capacity_visits=2,
+            )
+
+    assert len(tuple(store.spool_root.glob("retryable-session.*.partial"))) == 2
