@@ -265,9 +265,7 @@ def match_persistent_hop_track_to_tles(
             wrong_winner.heldout_predictive_negative_log_score
             <= nominal_training_winner.heldout_predictive_negative_log_score
         ):
-            reasons.append(
-                f"wrong-time-{field_match.field_delta_s:+d}s-not-worse-on-heldout"
-            )
+            reasons.append(f"wrong-time-{field_match.field_delta_s:+d}s-not-worse-on-heldout")
     reasons = sorted(set(reasons))
 
     payload = {
@@ -287,11 +285,11 @@ def match_persistent_hop_track_to_tles(
                 "candidate_universe_digest": item.candidate_universe_digest,
                 "prediction_bank_digest": item.prediction_bank_digest,
                 "candidate_count": item.candidate_count,
-                "association_partition_digest": item.association.observation_partition_digest,
+                "association": asdict(item.association),
             }
             for item in field_matches
         ],
-        "radio_null_partition_digest": radio_null.observation_partition_digest,
+        "radio_polynomial_null": asdict(radio_null),
         "leading_catalog_number": leading_catalog_number,
         "leading_candidate_persisted_on_heldout": persisted,
         "abstention_recommended": bool(reasons),

@@ -139,6 +139,9 @@ def test_v2_publication_is_separate_from_immutable_v1(
     assert legacy_publication.path != publication.path
     assert (publication.path / "metrics-sweep-000000.v2.json.zst").is_file()
     assert (publication.path / "work-manifest.v2.json").is_file()
+    sealed_chunks = current.published_chunks("hop-fractional-v2")
+    assert len(sealed_chunks) == 1
+    assert sealed_chunks[0].session_id == "hop-fractional-v2"
     for artifact in ("coverage", "glrt64-response", "cfo-trajectories"):
         payload = current.artifact("hop-fractional-v2", artifact)
         assert payload is not None and payload.startswith(b"\x89PNG\r\n\x1a\n")

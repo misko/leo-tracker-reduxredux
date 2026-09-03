@@ -51,9 +51,7 @@ class PersistentHopTrajectoryProjectionConfig:
             {
                 "algorithm_version": _ALGORITHM_VERSION,
                 "base_standard_uncertainty_hz": self.base_standard_uncertainty_hz,
-                "maximum_abs_doppler_rate_hz_per_s": (
-                    self.maximum_abs_doppler_rate_hz_per_s
-                ),
+                "maximum_abs_doppler_rate_hz_per_s": (self.maximum_abs_doppler_rate_hz_per_s),
                 "require_complete_capture": self.require_complete_capture,
                 "require_continuity_attestation": self.require_continuity_attestation,
                 "require_qualified_utc": self.require_qualified_utc,
@@ -72,9 +70,9 @@ class PersistentHopTrajectoryProjection:
     input_manifest_digest: Sha256Digest
     raw_recording_authority_digest: Sha256Digest
     config_digest: Sha256Digest
-    algorithm_version: Literal[
+    algorithm_version: Literal["persistent-hop-fractional-chunk-trajectory-projection-v1"] = (
         "persistent-hop-fractional-chunk-trajectory-projection-v1"
-    ] = "persistent-hop-fractional-chunk-trajectory-projection-v1"
+    )
     integer_decision_values_consumed: Literal[False] = False
     overlapping_probe_evidence_consumed: Literal[False] = False
 
@@ -193,9 +191,7 @@ def project_fractional_persistent_hop_candidates(
             geometry = _fractional_glrt64_support_geometry(
                 candidate,
                 sample_rate_hz=receipt.plan.sample_rate_hz,
-                probe_sample_count=receipt.plan.sample_rate_hz
-                * configuration.probe_ms
-                // 1_000,
+                probe_sample_count=receipt.plan.sample_rate_hz * configuration.probe_ms // 1_000,
             )
             source_start = (
                 payload_start_by_visit[probe.visit_index]
@@ -337,12 +333,9 @@ def _fractional_glrt64_support_geometry(
     template_count = round(frame_period)
     local_starts = tuple(round(symbol * symbol_period) for symbol in _GLRT64_SYMBOLS)
     local_stops = tuple(
-        min(round((symbol + 1) * symbol_period), template_count)
-        for symbol in _GLRT64_SYMBOLS
+        min(round((symbol + 1) * symbol_period), template_count) for symbol in _GLRT64_SYMBOLS
     )
-    left_guard, right_guard = fractional_take_bounds(
-        candidate.fractional_epoch_offset_samples
-    )
+    left_guard, right_guard = fractional_take_bounds(candidate.fractional_epoch_offset_samples)
     centers: list[float] = []
     source_starts: list[int] = []
     source_ends: list[int] = []
@@ -351,9 +344,7 @@ def _fractional_glrt64_support_geometry(
         frame_start = candidate.integer_epoch_sample + round(frame * frame_period)
         if (
             frame_start + candidate.fractional_epoch_offset_samples >= probe_sample_count
-            or frame_start
-            + local_starts[0]
-            + candidate.fractional_epoch_offset_samples
+            or frame_start + local_starts[0] + candidate.fractional_epoch_offset_samples
             >= probe_sample_count
         ):
             break
@@ -361,18 +352,14 @@ def _fractional_glrt64_support_geometry(
             count = local_stop - local_start
             if count < 2:
                 continue
-            continuous_start = (
-                frame_start + local_start + candidate.fractional_epoch_offset_samples
-            )
+            continuous_start = frame_start + local_start + candidate.fractional_epoch_offset_samples
             if continuous_start < left_guard or (
                 continuous_start + count - 1 >= probe_sample_count - right_guard
             ):
                 continue
             centers.append(continuous_start + (count - 1) / 2.0)
             source_starts.append(math.floor(continuous_start) - left_guard)
-            source_ends.append(
-                math.floor(continuous_start + count - 1) + right_guard + 1
-            )
+            source_ends.append(math.floor(continuous_start + count - 1) + right_guard + 1)
         frame += 1
     if len(centers) < 2:
         raise PersistentHopTrajectoryProjectionError(

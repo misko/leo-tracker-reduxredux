@@ -149,6 +149,11 @@ from leo.scanner import (
     ScannerReportV4,
     ScannerReportV5,
 )
+from leo.scanner.persistent_hop_tracking import (
+    PersistentHopCandidateRecurrencePageV1,
+    PersistentHopTrackingDetailV1,
+    PersistentHopTrackingPresentationReader,
+)
 
 
 def create_app(
@@ -169,6 +174,7 @@ def create_app(
     persistent_hop_sessions: PersistentHopHistoryReader | None = None,
     persistent_hop_presentations: PersistentHopPresentationReader | None = None,
     persistent_hop_presentations_v2: PersistentHopPresentationReaderV2 | None = None,
+    persistent_hop_tracking: PersistentHopTrackingPresentationReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -185,6 +191,7 @@ def create_app(
     router = APIRouter(prefix="/api/v1")
     v2_router = APIRouter(prefix="/api/v2")
     v3_router = APIRouter(prefix="/api/v3")
+    v4_router = APIRouter(prefix="/api/v4")
 
     @router.api_route(
         "/recordings",
@@ -660,6 +667,74 @@ def create_app(
             },
         )
 
+    @v4_router.api_route(
+        "/scanner/persistent-sessions/{session_id}/tracking",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopTrackingDetailV1,
+    )
+    def persistent_hop_tracking_detail_v4(
+        session_id: str,
+    ) -> PersistentHopTrackingDetailV1:
+        if persistent_hop_tracking is None:
+            raise HTTPException(status_code=404, detail="persistent-hop tracking is unavailable")
+        try:
+            detail = persistent_hop_tracking.detail(session_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409,
+                detail="persistent-hop tracking detail is unavailable",
+            ) from error
+        if detail is None:
+            raise HTTPException(status_code=404, detail="persistent-hop session not found")
+        return detail
+
+    @v4_router.api_route(
+        "/scanner/persistent-sessions/{session_id}/trajectory-tle.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def persistent_hop_tracking_png_v4(session_id: str) -> Response:
+        if persistent_hop_tracking is None:
+            raise HTTPException(status_code=404, detail="persistent-hop tracking is unavailable")
+        try:
+            content = persistent_hop_tracking.artifact(session_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="persistent-hop tracking artifact is unavailable",
+            ) from error
+        if content is None:
+            raise HTTPException(
+                status_code=404,
+                detail="persistent-hop tracking artifact not found",
+            )
+        return Response(
+            content=content,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": 'inline; filename="persistent-hop-trajectory-tle.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
+            },
+        )
+
+    @v4_router.api_route(
+        "/scanner/tle-candidate-recurrences",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopCandidateRecurrencePageV1,
+    )
+    def persistent_hop_tle_recurrences_v4() -> PersistentHopCandidateRecurrencePageV1:
+        if persistent_hop_tracking is None:
+            raise HTTPException(status_code=404, detail="persistent-hop tracking is unavailable")
+        try:
+            return persistent_hop_tracking.recurrences()
+        except Exception as error:
+            raise HTTPException(
+                status_code=409,
+                detail="persistent-hop TLE recurrence view is unavailable",
+            ) from error
+
     @router.api_route(
         "/scanner/analyses/{scan_id}/{analysis_id}/{artifact}.png",
         methods=["GET", "HEAD"],
@@ -722,6 +797,7 @@ def create_app(
     app.include_router(router)
     app.include_router(v2_router)
     app.include_router(v3_router)
+    app.include_router(v4_router)
 
     standard_router = APIRouter(prefix="/api/v2")
 

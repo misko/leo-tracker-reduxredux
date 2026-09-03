@@ -55,9 +55,7 @@ def _chunk(publication) -> PersistentHopAnalysisChunkV2:  # type: ignore[no-unty
         probe_start_sample = probe_start_ms * receipt.plan.sample_rate_hz // 1_000
         for receiver_id in receipt.plan.receiver_ids:
             integer_counter = visit.valid_device_sample_counter + probe_start_sample + 100
-            integer_session_sample = (
-                integer_counter - receipt.session_start_device_sample_counter
-            )
+            integer_session_sample = integer_counter - receipt.session_start_device_sample_counter
             candidate = PersistentHopCandidateV2(
                 candidate_rank=0,
                 integer_epoch_sample=100,
@@ -66,8 +64,7 @@ def _chunk(publication) -> PersistentHopAnalysisChunkV2:  # type: ignore[no-unty
                 fractional_device_sample_counter=integer_counter + 0.25,
                 integer_session_sample=integer_session_sample,
                 fractional_session_sample=integer_session_sample + 0.25,
-                fractional_time_s=(integer_session_sample + 0.25)
-                / receipt.plan.sample_rate_hz,
+                fractional_time_s=(integer_session_sample + 0.25) / receipt.plan.sample_rate_hz,
                 acquired_cfo_hz=1_000.0,
                 integer_residual_cfo_hz=20.0,
                 integer_tracking_cfo_hz=9_999.0,

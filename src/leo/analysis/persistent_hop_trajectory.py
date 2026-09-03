@@ -42,7 +42,11 @@ class PersistentHopTrajectoryConfig:
     minimum_span_s: float = 8.0
     minimum_support: int = 8
     minimum_point_weight: float = 0.1
-    slope_bins: int = 121
+    # A 30 kHz/s search over 300 s needs <= 16.7 Hz/s spacing so the
+    # worst half-bin drift remains inside the 2.5 kHz residual gate.  3,601
+    # bins provide 8.33 Hz/s spacing and let the refined fit see the complete
+    # long arc instead of breaking it into locally valid fragments.
+    slope_bins: int = 3_601
     intercept_bins: int = 512
     peak_candidates: int = 64
     maximum_tracks_per_lane: int = 8
@@ -64,9 +68,7 @@ class PersistentHopTrajectoryConfig:
             self.cross_lane_rate_gate_hz_per_s,
         )
         if any(not math.isfinite(value) or value <= 0.0 for value in finite_positive):
-            raise PersistentHopTrajectoryInputError(
-                "trajectory positive controls must be finite"
-            )
+            raise PersistentHopTrajectoryInputError("trajectory positive controls must be finite")
         if (
             not math.isfinite(self.minimum_slope_hz_per_s)
             or not math.isfinite(self.maximum_slope_hz_per_s)
@@ -93,9 +95,7 @@ class PersistentHopTrajectoryConfig:
 
     @property
     def digest(self) -> Sha256Digest:
-        return canonical_digest(
-            {name: getattr(self, name) for name in self.__dataclass_fields__}
-        )
+        return canonical_digest({name: getattr(self, name) for name in self.__dataclass_fields__})
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,9 +144,7 @@ class PersistentHopCfoCandidate:
         if self.source_sample_start < 0 or self.source_sample_end <= self.source_sample_start:
             raise PersistentHopTrajectoryInputError("trajectory source support is invalid")
         if not (
-            0 < self.support_start_utc_ns
-            <= self.support_center_utc_ns
-            < self.support_end_utc_ns
+            0 < self.support_start_utc_ns <= self.support_center_utc_ns < self.support_end_utc_ns
         ):
             raise PersistentHopTrajectoryInputError("trajectory UTC support is invalid")
         values = (
@@ -249,9 +247,9 @@ class PersistentHopTrajectoryResult:
     used_candidate_count: int
     config_digest: Sha256Digest
     canonical_rf_hz: float
-    algorithm_version: Literal[
+    algorithm_version: Literal["persistent-hop-normalized-hough-episode-graph-v1"] = (
         "persistent-hop-normalized-hough-episode-graph-v1"
-    ] = "persistent-hop-normalized-hough-episode-graph-v1"
+    )
     tle_blind: Literal[True] = True
     candidate_only: Literal[True] = True
     identity_claimed: Literal[False] = False
@@ -428,9 +426,7 @@ def _lane_tracklets(
         for point_id in segment.point_ids:
             point = point_by_id[point_id]
             prediction = segment.slope_hz_per_s * point.time_s + segment.intercept_hz
-            alias_index = round(
-                (point.frequency_hz - prediction) / common.alias_spacing_hz
-            )
+            alias_index = round((point.frequency_hz - prediction) / common.alias_spacing_hz)
             track_points.append(
                 PersistentHopTrackPoint(
                     candidate_id=point_id,
@@ -494,9 +490,7 @@ def _physical_groups(
                 left.start_utc_ns, right.start_utc_ns
             )
             overlap_s = overlap_ns / 1e9
-            rate_difference = abs(
-                left.normalized_rate_hz_per_s - right.normalized_rate_hz_per_s
-            )
+            rate_difference = abs(left.normalized_rate_hz_per_s - right.normalized_rate_hz_per_s)
             if (
                 overlap_s >= config.cross_lane_minimum_overlap_s
                 and rate_difference <= config.cross_lane_rate_gate_hz_per_s
@@ -568,8 +562,7 @@ def _trajectory_hypothesis_tracklets(
     sources_by_tracklet: dict[Sha256Digest, frozenset[Sha256Digest]] = {}
     for tracklet in tracklets:
         sources = tuple(
-            candidate_by_id[point.candidate_id].source_group_id
-            for point in tracklet.points
+            candidate_by_id[point.candidate_id].source_group_id for point in tracklet.points
         )
         if len(set(sources)) != len(sources):
             raise PersistentHopTrajectoryInputError(
@@ -615,11 +608,7 @@ def _trajectory_hypothesis_tracklets(
             key=lambda items: (
                 -sum(item.weighted_support for item in items),
                 -len(
-                    {
-                        source
-                        for item in items
-                        for source in sources_by_tracklet[item.tracklet_id]
-                    }
+                    {source for item in items for source in sources_by_tracklet[item.tracklet_id]}
                 ),
                 tuple(item.tracklet_id for item in items),
             ),
@@ -654,9 +643,7 @@ def _trajectory_hypothesis(
     bindings = tuple(
         PersistentHopTrackletEpisodeBinding(
             tracklet_id=item.tracklet_id,
-            episode_id=canonical_digest(
-                {"tracklet_id": item.tracklet_id, "dwell_id": dwell_id}
-            ),
+            episode_id=canonical_digest({"tracklet_id": item.tracklet_id, "dwell_id": dwell_id}),
         )
         for item in tracklets
     )
@@ -686,17 +673,11 @@ def persistent_hop_tracklet_graph(
 
     episode_by_id = {item.episode_id: item for item in hypothesis.graph.episodes}
     binding = next(
-        (
-            item
-            for item in hypothesis.tracklet_episode_bindings
-            if item.tracklet_id == tracklet_id
-        ),
+        (item for item in hypothesis.tracklet_episode_bindings if item.tracklet_id == tracklet_id),
         None,
     )
     if binding is None or binding.episode_id not in episode_by_id:
-        raise PersistentHopTrajectoryInputError(
-            "tracklet is absent from the trajectory hypothesis"
-        )
+        raise PersistentHopTrajectoryInputError("tracklet is absent from the trajectory hypothesis")
     episode = episode_by_id[binding.episode_id]
     selected_ids = set(episode.observation_ids)
     observations = tuple(
@@ -730,9 +711,7 @@ def _episode_graph(
     session_id, manifest_digest, raw_authority_digest, radio_id, stream_generation = authority
     candidate_by_id = {item.candidate_id: item for item in candidates}
     group_by_tracklet = {
-        tracklet_id: group
-        for group in groups
-        for tracklet_id in group.tracklet_ids
+        tracklet_id: group for group in groups for tracklet_id in group.tracklet_ids
     }
     observations: list[SupportIntegratedCfoObservationV1] = []
     episodes: list[PhysicalCfoEpisodeV1] = []
@@ -744,9 +723,7 @@ def _episode_graph(
         }
     )
     for tracklet in tracklets:
-        episode_id = canonical_digest(
-            {"tracklet_id": tracklet.tracklet_id, "dwell_id": dwell_id}
-        )
+        episode_id = canonical_digest({"tracklet_id": tracklet.tracklet_id, "dwell_id": dwell_id})
         channel, edge, receiver_id, actual_rf_hz = tracklet.lane_key
         lane_authority = {
             "radio_id": radio_id,
@@ -780,7 +757,8 @@ def _episode_graph(
                     episode_id=episode_id,
                     receiver_path_id=receiver_path_id,
                     hardware_epoch_id=(
-                        "hw-" + canonical_digest(
+                        "hw-"
+                        + canonical_digest(
                             {"radio_id": radio_id, "stream_generation": stream_generation}
                         ).split(":", 1)[1][:32]
                     ),

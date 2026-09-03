@@ -118,6 +118,20 @@ of the alternating 20-minute capture cadence. The full IQ is retained, and a
 manual `--probe-stride-ms 10` run remains available for exhaustive overlapping
 windows when its multi-hour cost is intentional.
 
+After the fractional product seals, the same bounded worker projects only
+margin-passing fractional candidates with qualified device-counter/UTC timing,
+reconstructs alias-aware trajectories before opening a catalogue, and compares
+at most eight physical groups with the reviewed `spinnaker-sausalito` observer
+preset. It selects the newest TLE snapshot strictly before the earliest
+minus-500-second control field, fits catalogue/tau/offset only on the first 60%
+of each track, and scores the future 40% once alongside a radio-polynomial null
+and ±500-second wrong-time controls. Publications live beneath
+`scanner-hop-tracking/`; mutable progress lives beneath
+`control/persistent-hop-tracking/`. Legacy captures without the additive UTC
+timing authority are sealed as explicitly unsupported rather than assigned an
+invented wall clock. The V4 API/UI presents NORAD numbers as candidates only;
+single-scan and cross-scan recurrence views never assert satellite identity.
+
 Sequential admission rounds the 300-second window up to 313 complete sweeps. Before opening
 the radio it therefore requires, in addition to the configured safety reserve,
 6,009,600,000 raw bytes for a 2.5 MS/s slot or 12,019,200,000 raw bytes for a

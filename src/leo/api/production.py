@@ -45,6 +45,8 @@ from leo.storage import (
     PersistentHopIqStore,
     PersistentHopPresentationStore,
     PersistentHopPresentationStoreV2,
+    PersistentHopTrackingPresentationStore,
+    PersistentHopTrackingStore,
     PinnedLocalRoot,
     RecordingStore,
     ScannerAnalysisStore,
@@ -102,6 +104,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
     persistent_hop_iq = PersistentHopIqStore.open_read_only(configured.bulk_root)
     persistent_hop_analysis = PersistentHopAnalysisStore.open_read_only(configured.bulk_root)
     persistent_hop_analysis_v2 = PersistentHopAnalysisStoreV2.open_read_only(configured.bulk_root)
+    persistent_hop_tracking = PersistentHopTrackingStore.open_read_only(configured.bulk_root)
     try:
         qualification_pin = PinnedLocalRoot(qualification_root)
     except Exception:
@@ -212,6 +215,10 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             persistent_hop_presentations_v2=PersistentHopPresentationStoreV2(
                 persistent_hop_iq,
                 persistent_hop_analysis_v2,
+            ),
+            persistent_hop_tracking=PersistentHopTrackingPresentationStore(
+                persistent_hop_iq,
+                persistent_hop_tracking,
             ),
             capture_control=OperatorCaptureControl(
                 # The global operation lock is sufficient for this control-only

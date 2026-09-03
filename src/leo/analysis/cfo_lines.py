@@ -382,10 +382,13 @@ def weighted_hough_lines(
             break
         accumulator = np.zeros((slopes.size, config.intercept_bins), dtype=float)
         for slope_index, slope_value in enumerate(slopes):
-            bins = np.floor(
-                ((frequency[chosen] - slope_value * times[chosen]) % common.alias_spacing_hz)
-                / bin_width
-            ).astype(int)
+            bins = (
+                np.floor(
+                    ((frequency[chosen] - slope_value * times[chosen]) % common.alias_spacing_hz)
+                    / bin_width
+                ).astype(int)
+                % config.intercept_bins
+            )
             accumulator[slope_index] = np.bincount(
                 bins,
                 weights=weights[chosen],
