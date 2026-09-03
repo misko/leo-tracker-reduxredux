@@ -4,6 +4,7 @@ import {
   getAcquisitionQueue,
   getCaptureControl,
   getControlStatus,
+  getPersistentHopSessions,
   getScannerAnalyses,
   getScannerReports,
   getProductContent,
@@ -19,6 +20,7 @@ import {
 } from "./api";
 import type {
   CaptureControlStateV1,
+  PersistentHopHistoryPageV1,
   ScannerAnalysisHistoryPageV3,
   ScannerHistoryPageV3,
 } from "./api";
@@ -413,6 +415,7 @@ const scannerArtifactDetails: Record<ScannerArtifact, { title: string; caption: 
 function ScannerView() {
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
   const [attempts, setAttempts] = useState<ScannerHistoryPageV3 | null>(null);
+  const [persistentPage, setPersistentPage] = useState<PersistentHopHistoryPageV1 | null>(null);
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<ScannerArtifact>("waterfall");
@@ -422,9 +425,11 @@ function ScannerView() {
     const refresh = () => Promise.all([
       getScannerAnalyses(cursor, 20, controller.signal),
       getScannerReports(0, 20, controller.signal),
-    ]).then(([result, attemptResult]) => {
+      getPersistentHopSessions(0, 5, controller.signal),
+    ]).then(([result, attemptResult, persistentResult]) => {
       setPage(result);
       setAttempts(attemptResult);
+      setPersistentPage(persistentResult);
       setSelectedScanId((current) => current && result.items.some((item) => item.scan_id === current)
         ? current
         : result.items[0]?.scan_id ?? null);
@@ -464,6 +469,32 @@ function ScannerView() {
         <div><p className="section-label">INTER-DWELL SCANNER</p><strong>{page === null ? "Loading…" : `${page.total} scans`}</strong></div>
       </div>
       {error ? <ErrorBanner message={error} /> : null}
+      <section className="persistent-hop-history" aria-labelledby="persistent-hop-history-heading">
+        <header>
+          <div><span>PERSISTENT HOP CAPTURES</span><h3 id="persistent-hop-history-heading">300-second sessions</h3></div>
+          <strong>{persistentPage === null ? "Loading…" : `${persistentPage.total} sessions`}</strong>
+        </header>
+        {persistentPage && persistentPage.items.length === 0 ? <p className="empty-list">No persistent-hop session has been published yet.</p> : null}
+        {persistentPage && persistentPage.items.length > 0 ? <div className="persistent-hop-scroll"><table className="scanner-history-table" aria-label="Persistent hop history">
+          <thead><tr><th>Capture</th><th>Duty</th></tr></thead>
+          <tbody>{persistentPage.items.map((item) => {
+            const coverage = item.target_coverage.map(({ target, visit_count: visits }) => (
+              `CH${target.channel}${target.edge === "lower" ? "L" : "U"} ${visits}`
+            )).join(" · ");
+            const state = item.qualified ? "complete" : item.terminal_state === "failed" ? "failed" : "partial";
+            return <tr key={item.session_id}>
+              <td><div className="scanner-row-button persistent-hop-row">
+                <time title="RF capture start">{new Date(item.captured_at).toLocaleString()}</time>
+                <code>{item.session_id}</code>
+                <small>{item.radio_id} · {(item.sample_rate_hz / 1_000_000).toFixed(1)} MS/s · {(item.bandwidth_hz / 1_000_000).toFixed(1)} MHz BW · {formatNumber(item.visit_count)} visits</small>
+                <small title="Valid visit counts in fixed CH1L through CH4U order">{coverage}</small>
+                <small>{item.analysis_state.replaceAll("_", " ")} · {item.analysis_reason}</small>
+              </div></td>
+              <td><strong>{(item.valid_duty_ppm / 10_000).toFixed(1)}%</strong><StatusBadge value={state} /><small className="persistent-terminal-state">{item.terminal_state}</small></td>
+            </tr>;
+          })}</tbody>
+        </table></div> : null}
+      </section>
       {page && page.items.length === 0 ? <p className="empty-list">No Standard scanner analysis has been published yet.</p> : null}
       {page && page.items.length > 0 ? <>
         <div className="scanner-history-scroll"><table className="scanner-history-table" aria-label="Scanner history">

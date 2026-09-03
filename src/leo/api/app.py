@@ -130,6 +130,8 @@ from leo.presentation.standard_repository import (
     validate_standard_view_binding,
 )
 from leo.scanner import (
+    PersistentHopHistoryPageV1,
+    PersistentHopHistoryReader,
     ScannerAnalysisHistoryPageV1,
     ScannerAnalysisHistoryPageV2,
     ScannerAnalysisHistoryPageV3,
@@ -158,6 +160,7 @@ def create_app(
     research_reprocessor: ResearchReprocessor | None = None,
     scanner_reports: ScannerReportStore | None = None,
     scanner_analyses: ScannerAnalysisReader | None = None,
+    persistent_hop_sessions: PersistentHopHistoryReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -469,6 +472,28 @@ def create_app(
         except Exception as error:
             raise HTTPException(
                 status_code=409, detail="scanner analysis page is unavailable"
+            ) from error
+
+    @router.api_route(
+        "/scanner/persistent-sessions",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopHistoryPageV1,
+    )
+    def persistent_hop_session_history(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    ) -> PersistentHopHistoryPageV1:
+        if persistent_hop_sessions is None:
+            raise HTTPException(
+                status_code=404,
+                detail="persistent-hop session history is not available",
+            )
+        try:
+            return persistent_hop_sessions.page(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409,
+                detail="persistent-hop session page is unavailable",
             ) from error
 
     @router.api_route(

@@ -236,6 +236,47 @@ export interface ScannerAnalysisHistoryPageV3 {
   }>;
 }
 
+export interface PersistentHopHistoryPageV1 {
+  schema_version: 1;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{
+    schema_version: 1;
+    captured_at: string;
+    finalized_at: string;
+    session_id: string;
+    radio_id: string;
+    nominal_duration_seconds: 300;
+    valid_visit_ms: 120;
+    sample_rate_hz: 2500000 | 5000000;
+    bandwidth_hz: 2500000 | 5000000;
+    visit_count: number;
+    target_coverage: Array<{
+      schema_version: 1;
+      target_index: number;
+      target: {
+        channel: number;
+        edge: "lower" | "upper";
+        rf_center_hz: number;
+        if_center_hz: number;
+      };
+      visit_count: number;
+      valid_sample_count: number;
+    }>;
+    capture_outcome: "complete" | "cancelled" | "failed";
+    terminal_state: "completed" | "cancelled" | "failed";
+    terminal_reason: string;
+    valid_duty_ppm: number;
+    continuity_attested: boolean;
+    restoration_status: "restored" | "failed";
+    qualified: boolean;
+    analysis_state: "pending_backpressure";
+    analysis_reason: string;
+  }>;
+}
+
 export function getScannerReports(
   cursor = 0,
   limit = 20,
@@ -252,6 +293,15 @@ export function getScannerAnalyses(
 ): Promise<ScannerAnalysisHistoryPageV3> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
   return getJson<ScannerAnalysisHistoryPageV3>(`/api/v3/scanner/analyses?${params}`, signal);
+}
+
+export function getPersistentHopSessions(
+  cursor = 0,
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<PersistentHopHistoryPageV1> {
+  const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
+  return getJson<PersistentHopHistoryPageV1>(`/api/v1/scanner/persistent-sessions?${params}`, signal);
 }
 
 export function scannerAnalysisPngUrl(
