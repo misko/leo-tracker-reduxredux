@@ -25,7 +25,9 @@ file was changed during this work.
 - Dwell: 120 ms per target
 - Rates and RF bandwidths: 2.5 MS/s + 2.5 MHz; 5 MS/s + 5 MHz
 - Gain: manual 40 dB during each canary
-- Each reported C result: 32 targets, four complete sweeps per rate
+- Short-run C results: 32 targets, four complete sweeps per rate
+- Long-run C result: 2,500 targets and exactly 300.000 requested listen
+  seconds per rate
 - Total new RF time: bounded below 30 minutes
 
 The radio started and ended at the same complete settings readback:
@@ -44,6 +46,31 @@ were removed.
 | Radio-loopback `iiOD`, one 120 ms metadata buffer | ABI-3 attested, 64/64 frames valid | 30.99% | 28.00% |
 | Radio-local ordinary DMA, one 120 ms buffer + Fast Lock | Timing ceiling only | 92.48% | 87.91% |
 | Radio-local ordinary DMA, 12 × 10 ms refills + Fast Lock | Timing ceiling only | **97.17%** | **96.63%** |
+
+### 300-second timing canary
+
+The winning local ordinary-DMA path was repeated for exactly 2,500 120 ms
+target visits per rate, or 300.000 seconds of requested listening at each
+rate. Every visit completed and every refill returned its exact expected
+payload size. The run covered 312 complete eight-target sweeps plus CH1L
+through CH4L of the next sweep per rate.
+
+| Rate / RF bandwidth | Listen | Wall | Duty | Whole-target p95 / max |
+| --- | ---: | ---: | ---: | ---: |
+| 2.5 MS/s / 2.5 MHz | 300.000 s | 308.668 s | **97.192%** | 123.670 / 124.638 ms |
+| 5 MS/s / 5 MHz | 300.000 s | 310.367 s | **96.660%** | 124.360 / 125.678 ms |
+| Combined | 600.000 s | 619.034 s | **96.925%** | — |
+
+The radio was restored to the exact pre-run readback: 30.72 MS/s, 18 MHz
+bandwidth, 2.4 GHz LO, slow-attack gain on both receivers, and 71 dB gain on
+both receivers. The temporary radio executable was removed. The machine-
+readable result is
+`reports/figures/2026_09_03_scanner_300s_canary/raw_300s_per_rate.json`.
+
+This passes the 300-second duration and timing-duty portion of the canary. It
+does **not** close the production qualification gate: ordinary local DMA has
+no atomic ABI-3 metadata, device/FPGA counter attestation, Ethernet transport,
+durable persistence, or backpressure exercised by this test.
 
 The two host-batch figures measure different boundaries. The microbenchmark
 times only the isolated per-target stages; the Leo adapter result includes the

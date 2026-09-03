@@ -19,7 +19,9 @@
 #include <time.h>
 
 #define ARRAY_SIZE(value) (sizeof(value) / sizeof((value)[0]))
+#ifndef FRAMES_PER_RATE
 #define FRAMES_PER_RATE 32U
+#endif
 #define DWELL_MS 120U
 #define SETTLE_US 250U
 #define METADATA_CAPACITY (64U * 1024U)
