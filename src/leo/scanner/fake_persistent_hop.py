@@ -106,6 +106,11 @@ class FakePersistentHopRadio:
             raise FakePersistentHopError("fake persistent-hop radio is not open")
         if self._active_session is not None:
             raise FakePersistentHopError("fake persistent-hop radio already has an active session")
+        transition_invalid_samples = plan.sample_rate_hz * self._transition_invalid_ms // 1_000
+        if transition_invalid_samples <= plan.transition_guard_samples:
+            raise FakePersistentHopError(
+                "fake transition interval must exceed the plan's post-transition guard"
+            )
         original = self._settings
         self._settings = RadioSettingsV1(
             center_frequency_hz=plan.profiles[0].target.if_center_hz,
@@ -127,7 +132,7 @@ class FakePersistentHopRadio:
             plan,
             session_id=session_id,
             original_settings=original,
-            transition_invalid_samples=plan.sample_rate_hz * self._transition_invalid_ms // 1_000,
+            transition_invalid_samples=transition_invalid_samples,
             first_device_sample_counter=self._first_device_sample_counter,
             gaps_before_visits=self._gaps_before_visits,
             overflow_visits=self._overflow_visits,
@@ -290,13 +295,7 @@ class FakePersistentHopSession:
 
         profile = self.plan.profiles[visit_index % len(self.plan.profiles)]
         invalid_start = self._next_counter
-        transition_samples = max(
-            1,
-            min(
-                self._transition_invalid_samples - self.plan.transition_guard_samples,
-                self.plan.sample_rate_hz // 1_000,
-            ),
-        )
+        transition_samples = self._transition_invalid_samples - self.plan.transition_guard_samples
         transition_after = invalid_start + transition_samples
         invalid_end = transition_after + self.plan.transition_guard_samples
         transition = PersistentHopTransitionInvalidSpanV1(
