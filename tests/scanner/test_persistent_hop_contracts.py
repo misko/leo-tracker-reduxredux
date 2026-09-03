@@ -18,6 +18,7 @@ from leo.scanner import (
     compile_persistent_hop_plan_v1,
     compile_scheduled_persistent_hop_plan_v1,
     compile_scheduled_scanner_run_intent_v1,
+    persistent_hop_wire_session_id,
 )
 from leo.scanner.fake_persistent_hop import (
     FakePersistentHopError,
@@ -78,6 +79,7 @@ def test_plan_supports_sample_exact_five_millisecond_guard_candidate() -> None:
 
     assert plan.transition_guard_samples == 25_000
     assert plan.planned_valid_duty_ppm == 960_000
+    assert persistent_hop_wire_session_id("stable-session") == 3_307_769_054_751_132_897
 
 
 def test_scheduled_plan_preserves_twenty_minute_fifty_fifty_rate_slots() -> None:

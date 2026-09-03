@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
 from collections import defaultdict
 from typing import Annotated, Literal, Self
@@ -30,6 +31,15 @@ PersistentHopTerminalReason = Literal[
     "protocol",
     "restore_error",
 ]
+
+
+def persistent_hop_wire_session_id(session_id: str) -> int:
+    """Derive the stable nonzero uint64 carried by HOPR/HOPS/HOPT."""
+
+    if not isinstance(session_id, str) or not session_id:
+        raise ValueError("persistent-hop session ID must be nonempty")
+    digest = hashlib.sha256(session_id.encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], "little") or 1
 
 
 class PersistentHopProfileV1(ScannerModel):
