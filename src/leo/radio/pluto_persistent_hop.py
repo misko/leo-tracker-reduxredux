@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import importlib
 import ipaddress
-from collections.abc import Callable, Iterator
+import queue
+import threading
+import time
+from collections.abc import Callable
+from contextlib import suppress
 from typing import Any, Literal, cast
 
 import numpy as np
@@ -30,6 +34,10 @@ from leo.scanner.persistent_hop_ports import (
 from leo.scanner.ports import ScanRadioIdentity
 
 PERSISTENT_HOP_EXCLUDED_SERIAL = "104000bac4950008230026001b440a003a"
+_DEFAULT_READ_AHEAD_VISITS = 8
+_MAXIMUM_READ_AHEAD_VISITS = 64
+_PRODUCER_POLL_SECONDS = 0.05
+_PRODUCER_JOIN_TIMEOUT_SECONDS = 15.0
 
 PersistentHopClientFactory = Callable[[str, str], Any]
 PersistentHopPlanFactory = Callable[[PersistentHopPlanV1], Any]
@@ -54,22 +62,31 @@ class PlutoPersistentHopRadio:
         *,
         expected_serial: str,
         radio_id: str,
+        iiod_port: int | None = None,
+        read_ahead_visits: int = _DEFAULT_READ_AHEAD_VISITS,
         client_factory: PersistentHopClientFactory | None = None,
         plan_factory: PersistentHopPlanFactory | None = None,
         tandem_request_factory: TandemRequestFactory | None = None,
     ) -> None:
-        self._uri = _physical_lan_uri(host)
+        self._uri = _physical_lan_uri(host, iiod_port=iiod_port)
         if not expected_serial or expected_serial != expected_serial.strip():
             raise ValueError("persistent-hop serial must be one trimmed nonempty value")
         if expected_serial == PERSISTENT_HOP_EXCLUDED_SERIAL:
             raise ValueError("the excluded Pluto serial cannot run persistent hopping")
         if not radio_id or radio_id != radio_id.strip():
             raise ValueError("persistent-hop radio ID must be one trimmed nonempty value")
+        if (
+            not isinstance(read_ahead_visits, int)
+            or isinstance(read_ahead_visits, bool)
+            or not 1 <= read_ahead_visits <= _MAXIMUM_READ_AHEAD_VISITS
+        ):
+            raise ValueError("persistent-hop read-ahead visits must be within 1..64")
         self._expected_serial = expected_serial
         self._identity = ScanRadioIdentity(radio_id, expected_serial, self._uri)
         self._client_factory = client_factory or _load_client
         self._plan_factory = plan_factory or _load_plan
         self._tandem_request_factory = tandem_request_factory or _load_tandem_hold_request
+        self._read_ahead_visits = read_ahead_visits
         self._opened = False
         self._session: _PlutoPersistentHopSession | None = None
 
@@ -111,6 +128,7 @@ class PlutoPersistentHopRadio:
             identity=self._identity,
             session_id=session_id,
             wire_session_id=wire_session_id,
+            read_ahead_visits=self._read_ahead_visits,
         )
         self._session = session
         return session
@@ -137,15 +155,28 @@ class _PlutoPersistentHopSession:
         identity: ScanRadioIdentity,
         session_id: str,
         wire_session_id: int,
+        read_ahead_visits: int,
     ) -> None:
         self._upstream = upstream
         self._plan = plan
         self._identity = identity
         self._session_id = session_id
         self._wire_session_id = wire_session_id
-        self._visits: Iterator[Any] = iter(upstream.visits())
-        self._complete = False
+        self._visits: queue.Queue[PersistentHopVisitBlock] = queue.Queue(maxsize=read_ahead_visits)
+        self._cancel_requested = threading.Event()
+        self._producer_done = threading.Event()
+        self._producer_error: BaseException | None = None
+        self._producer_error_observed = False
         self._receipt: PersistentHopSessionReceiptV1 | None = None
+        self._produced_evidence: list[PersistentHopVisitV1] = []
+        self._upstream_cancel_called = False
+        self._upstream_terminal = False
+        self._producer = threading.Thread(
+            target=self._run_producer,
+            name=f"leo-hop-radio-{session_id}",
+            daemon=False,
+        )
+        self._producer.start()
 
     @property
     def plan(self) -> PersistentHopPlanV1:
@@ -153,17 +184,70 @@ class _PlutoPersistentHopSession:
 
     @property
     def complete(self) -> bool:
-        return self._complete
+        return self._producer_done.is_set() and self._visits.empty()
 
     def read_visit(self) -> PersistentHopVisitBlock:
-        if self._complete:
-            raise StopIteration
+        while True:
+            try:
+                return self._visits.get(timeout=_PRODUCER_POLL_SECONDS)
+            except queue.Empty:
+                if not self._producer_done.is_set():
+                    continue
+                self._join_producer()
+                self._raise_producer_error()
+                if self._receipt is None:
+                    raise PlutoPersistentHopError(
+                        "persistent-hop producer ended without terminal evidence"
+                    ) from None
+                raise StopIteration from None
+
+    def request_cancel(self) -> None:
+        if not self.complete:
+            self._cancel_requested.set()
+
+    def finish(self) -> PersistentHopSessionReceiptV1:
+        if not self.complete:
+            if not self._cancel_requested.is_set():
+                raise PlutoPersistentHopError(
+                    "persistent-hop finish requires a server-attested terminal receipt"
+                )
+            self._drain_recovery_visits()
+        self._join_producer()
+        self._raise_producer_error()
+        if self._receipt is None:
+            raise PlutoPersistentHopError(
+                "persistent-hop finish requires a server-attested terminal receipt"
+            )
+        return self._receipt
+
+    def _run_producer(self) -> None:
         try:
-            sampled = next(self._visits)
-        except StopIteration:
-            self._complete = True
-            self._receipt = self._map_receipt()
-            raise
+            visits = iter(self._upstream.visits())
+            while True:
+                if self._cancel_requested.is_set():
+                    self._cancel_upstream()
+                    self._receipt = self._map_receipt()
+                    return
+                try:
+                    sampled = next(visits)
+                except StopIteration:
+                    self._upstream_terminal = True
+                    self._receipt = self._map_receipt()
+                    return
+                block = self._map_sampled_visit(sampled)
+                self._put_completed_visit(block)
+                self._produced_evidence.append(block.evidence)
+                if self._cancel_requested.is_set():
+                    self._cancel_upstream()
+                    self._receipt = self._map_receipt()
+                    return
+        except BaseException as error:
+            self._recover_terminal_after_failure(error)
+            self._producer_error = error
+        finally:
+            self._producer_done.set()
+
+    def _map_sampled_visit(self, sampled: Any) -> PersistentHopVisitBlock:
         evidence = _map_visit(sampled.visit, self._plan)
         values = np.asarray(sampled.samples)
         expected = (len(self._plan.receiver_ids), evidence.valid_sample_count)
@@ -178,34 +262,70 @@ class _PlutoPersistentHopSession:
             evidence=evidence,
         )
 
-    def request_cancel(self) -> None:
-        if self._complete:
-            return
+    def _put_completed_visit(self, block: PersistentHopVisitBlock) -> None:
+        while True:
+            try:
+                self._visits.put(block, timeout=_PRODUCER_POLL_SECONDS)
+                return
+            except queue.Full:
+                continue
+
+    def _cancel_upstream(self) -> None:
+        self._upstream_cancel_called = True
         try:
             self._upstream.cancel()
-            self._receipt = self._map_receipt()
-            self._complete = True
         except Exception as error:
             raise PlutoPersistentHopError(
                 f"persistent-hop in-band cancellation failed: {type(error).__name__}: {error}"
             ) from error
+        self._upstream_terminal = True
 
-    def finish(self) -> PersistentHopSessionReceiptV1:
-        if not self._complete or self._receipt is None:
-            raise PlutoPersistentHopError(
-                "persistent-hop finish requires a server-attested terminal receipt"
+    def _recover_terminal_after_failure(self, primary: BaseException) -> None:
+        try:
+            if not self._upstream_terminal and not self._upstream_cancel_called:
+                self._cancel_upstream()
+            if self._upstream_terminal and self._receipt is None:
+                self._receipt = self._map_receipt()
+        except BaseException as cleanup:
+            primary.add_note(
+                "persistent-hop producer terminal recovery failed: "
+                f"{type(cleanup).__name__}: {cleanup}"
             )
-        return self._receipt
+
+    def _drain_recovery_visits(self) -> None:
+        deadline = time.monotonic() + _PRODUCER_JOIN_TIMEOUT_SECONDS
+        while not self.complete:
+            with suppress(queue.Empty):
+                self._visits.get(timeout=_PRODUCER_POLL_SECONDS)
+            if time.monotonic() >= deadline:
+                raise PlutoPersistentHopError(
+                    "persistent-hop producer did not stop after cancellation"
+                )
+
+    def _join_producer(self) -> None:
+        self._producer.join(timeout=_PRODUCER_JOIN_TIMEOUT_SECONDS)
+        if self._producer.is_alive():
+            raise PlutoPersistentHopError("persistent-hop producer did not stop after cancellation")
+
+    def _raise_producer_error(self) -> None:
+        if self._producer_error is not None and not self._producer_error_observed:
+            self._producer_error_observed = True
+            raise self._producer_error
 
     def _map_receipt(self) -> PersistentHopSessionReceiptV1:
         try:
-            return _map_receipt(
+            receipt = _map_receipt(
                 self._upstream.receipt,
                 plan=self._plan,
                 identity=self._identity,
                 session_id=self._session_id,
                 wire_session_id=self._wire_session_id,
             )
+            if receipt.visits != tuple(self._produced_evidence):
+                raise PlutoPersistentHopError(
+                    "PPU terminal visits disagree with produced IQ visits"
+                )
+            return receipt
         except PlutoPersistentHopError:
             raise
         except Exception as error:
@@ -482,7 +602,7 @@ def _load_tandem_hold_request() -> Any:
     return module.TandemSessionRequestV1(mode=module.TandemMode.HOLD)
 
 
-def _physical_lan_uri(host: str) -> str:
+def _physical_lan_uri(host: str, *, iiod_port: int | None = None) -> str:
     if not host or host != host.strip() or host.startswith("ip:"):
         raise ValueError("persistent-hop host must be a literal 192.168.1.* address")
     try:
@@ -492,7 +612,14 @@ def _physical_lan_uri(host: str) -> str:
     network = ipaddress.IPv4Network("192.168.1.0/24")
     if str(address) != host or address not in network or address in {network[0], network[-1]}:
         raise ValueError("persistent-hop host must be a usable literal 192.168.1.* address")
-    return f"ip:{address}"
+    if iiod_port is not None and (
+        not isinstance(iiod_port, int)
+        or isinstance(iiod_port, bool)
+        or not 1 <= iiod_port <= 65_535
+    ):
+        raise ValueError("persistent-hop iiOD port must be an integer within 1..65535")
+    suffix = "" if iiod_port is None else f":{iiod_port}"
+    return f"ip:{address}{suffix}"
 
 
 def _exact_integer(value: Any, name: str) -> int:

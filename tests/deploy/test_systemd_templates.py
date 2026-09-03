@@ -15,6 +15,7 @@ from leo.cli import create_cli
 PROJECT_ROOT = Path(__file__).parents[2]
 UNIT_ROOT = PROJECT_ROOT / "deploy" / "systemd"
 ENV_EXAMPLE = PROJECT_ROOT / "deploy" / "etc" / "leo" / "leo.env.example"
+ACQUISITION_ENV_EXAMPLE = PROJECT_ROOT / "deploy" / "etc" / "leo" / "acquisition.env.example"
 RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "runbook.md"
 RELEASE_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "release-qualification.md"
 DEPLOYMENT_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "production-deployment.md"
@@ -333,6 +334,30 @@ def test_scanner_is_scheduled_by_the_capture_supervisor() -> None:
     assert "leo acquire pause" in readme
 
 
+def test_acquisition_loads_fixed_scanner_iiod_credentials_and_release_binary() -> None:
+    service = (UNIT_ROOT / "leo-acquisition.service").read_text()
+    acquisition_environment = ACQUISITION_ENV_EXAMPLE.read_text()
+
+    assert (
+        "LoadCredential=scanner-iiod-ssh-known-hosts:"
+        "/etc/leo/credentials/scanner-iiod-ssh-known-hosts"
+    ) in service
+    assert (
+        "LoadCredential=scanner-iiod-ssh-password:/etc/leo/credentials/scanner-iiod-ssh-password"
+    ) in service
+    assert "CREDENTIALS_DIRECTORY" not in acquisition_environment
+    assert "LEO_SCANNER_ENABLED=false" in acquisition_environment
+    assert (
+        "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
+        "/opt/leo-tracker/releases/REPLACE_WITH_SELECTED_ACQUISITION_SHA/"
+        "runtime/scanner-iiod/iiod"
+    ) in acquisition_environment
+    stage_script = STAGE_SCRIPT.read_text()
+    assert "runtime/scanner-iiod/iiod" in stage_script
+    assert "runtime/scanner-iiod/provenance.json" in stage_script
+    assert 'chmod 0550 "$scanner_iiod"' in stage_script
+
+
 def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     service = _unit("leo-release-qualification.service")["Service"]
 
@@ -417,7 +442,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US",
         "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK",
         "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS",
+        "LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS",
         "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS",
+        "LEO_SCANNER_PERSISTENT_IIOD_PORT",
         "LEO_PIPELINE_RELEASE_ID",
         "LEO_WORKER_POLL_SECONDS",
         "LEO_API_PORT",
@@ -463,15 +490,17 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_SOAK_PROFILE"] == "starlink-ch4-lower-2p5m-60s-continuity-v2"
     assert values["LEO_CAPTURE_INTERVAL_SECONDS"] == "180"
     assert values["LEO_SCANNER_ENABLED"] == "false"
-    assert values["LEO_SCANNER_CAPTURE_MODE"] == "sequential"
+    assert values["LEO_SCANNER_CAPTURE_MODE"] == "persistent_hop"
     assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_5d4d"
     assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "1200"
     assert values["LEO_SCANNER_MAXIMUM_LATENESS_SECONDS"] == "300"
     assert values["LEO_SCANNER_RUN_SECONDS"] == "300"
-    assert values["LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US"] == "11000"
+    assert values["LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US"] == "5000"
+    assert values["LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS"] == "8"
+    assert values["LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS"] == "64"
+    assert values["LEO_SCANNER_PERSISTENT_IIOD_PORT"] == "30432"
     assert values["LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK"] == "131072"
     assert values["LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS"] == "8"
-    assert values["LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS"] == "16"
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
     assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"
     assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/current/web/dist"

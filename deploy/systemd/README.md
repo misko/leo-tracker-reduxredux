@@ -51,14 +51,42 @@ once, then captures complete eight-target sweeps for 300 seconds at 120 ms per
 target in CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U order. Every target
 uses the maximum-coverage IF for that slot's admitted bandwidth.
 
-`LEO_SCANNER_CAPTURE_MODE=sequential` remains the deployment default. The
-additive `persistent_hop` mode is admitted only with the same exact 20-minute,
+The reviewed deployment preconfigures `LEO_SCANNER_CAPTURE_MODE=persistent_hop`
+while retaining `LEO_SCANNER_ENABLED=false` as the release-A safety gate. Leo's
+acquisition composition owns a narrow no-flash iiOD lifecycle and lazily adapts
+the installed `pluto-plus-utils` provider. The scanner may be enabled only after
+that provider and its sealed ARM binary are installed and verified. Persistent
+mode is admitted only with the exact 20-minute,
 300-second, 120 ms cadence and an `ip:192.168.1.*` radio whose configured serial
 is not the hard-denied test serial. It requires the exact device-hop protocol,
 metadata, status, cancellation, and restoration capabilities; older firmware
 fails closed instead of silently reverting to sequential or USB capture.
-Guard, kernel depth, refill size, and host queue capacity remain explicit until
-a candidate passes the staged qualification ladder at both sample rates.
+The qualified runtime uses alternate iiOD port 30432, a 5 ms transition guard,
+131072 samples per refill, eight kernel buffers, eight visits of radio read-ahead,
+and a 64-visit storage queue. The 16-visit storage queue is forbidden because it
+exhausted the kernel buffers during the first durable 2.5 MS/s attempt.
+
+The release-specific acquisition environment binds
+`LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH` to
+`/opt/leo-tracker/releases/FULL_SHA/runtime/scanner-iiod/iiod`; a `current*`
+symlink is not accepted as that authority. The service loads the fixed systemd
+credentials `scanner-iiod-ssh-known-hosts` and `scanner-iiod-ssh-password` from
+`/etc/leo/credentials`; application configuration derives their runtime paths
+only from `CREDENTIALS_DIRECTORY`. Persistent mode fails closed before capture
+if the binary or either credential is absent, empty, a symlink, or not a regular
+file.
+
+The no-flash lifecycle runs inside the existing acquisition radio claim. It may
+place the exact hash-attested iiOD bundle only beneath `/tmp`, start it only on
+port 30432, verify the configured radio serial and hop capabilities, and stop
+that exact PID before releasing the claim. Cleanup is attempted exactly once
+after any startup or capture failure. On success it must verify port 30432 is
+closed and stock iiOD on 30431 remains healthy before the IQ store publishes;
+only then may the capture claim be released. A cleanup failure therefore leaves
+the session unpublished and fails the operation. An already published session
+is reused without constructing or starting a lifecycle. The lifecycle must
+never write QSPI, a firmware image, boot configuration, or the persistent radio
+rootfs.
 
 Each completed sweep is independently committed as a framed, digest-verified
 CI16 bundle beneath `$LEO_BULK_ROOT/scanner-recordings/YYYY/MM/DD/<scan-id>/`;
@@ -133,6 +161,9 @@ Do not copy a mutable home-directory checkout into `/opt`. Use
 `deploy/scripts/stage-production-release` with one full commit SHA, qualify
 that exact staged revision, and follow the guarded cutover in
 [`docs/operations/production-deployment.md`](../../docs/operations/production-deployment.md).
+The staged commit must contain `runtime/scanner-iiod/iiod` and its
+`provenance.json`; publication validates the reviewed ARM EABI5 identity and
+seals both hashes while the scanner remains disabled.
 Only after its preflight passes should the normal services be activated:
 
 ```text
