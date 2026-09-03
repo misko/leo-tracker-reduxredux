@@ -54,7 +54,7 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
 .persistent-hop-history > header h3 { margin: 3px 0 0; color: var(--bright); font-size: 13px; }
 .persistent-hop-history > header strong { color: var(--muted); font: 600 9px "IBM Plex Mono", monospace; white-space: nowrap; }
 .persistent-hop-scroll { max-height: 330px; overflow: auto; border-top: 1px solid var(--line-soft); }
-.persistent-hop-row { cursor: default; }
+.persistent-hop-row { cursor: pointer; }
 .persistent-terminal-state { display: block; margin-top: 6px; color: var(--muted); font: 8px "IBM Plex Mono", monospace; text-transform: uppercase; }
 .scanner-history-scroll { max-height: calc(100vh - 210px); overflow: auto; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
 .scanner-history-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -74,6 +74,11 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
 .scanner-results-panel > header span { color: var(--green); font: 600 9px "IBM Plex Mono", monospace; letter-spacing: .1em; }
 .scanner-results-panel > header h3 { margin: 4px 0 0; color: var(--bright); font-size: 15px; }
 .scanner-results-panel > header small { color: var(--muted); font: 9px "IBM Plex Mono", monospace; text-align: right; }
+.persistent-coverage-table { min-width: 42rem; }
+.scanner-analysis-state { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; margin: 18px 30px; padding: 18px; border: 1px solid var(--line); background: #071216; }
+.scanner-analysis-state strong, .scanner-analysis-state span { display: block; }
+.scanner-analysis-state span { color: var(--muted); font-size: 12px; }
+.scanner-analysis-state progress { grid-column: 1 / -1; width: 100%; accent-color: var(--green); }
 .scanner-artifact-panel { margin: 18px 30px; overflow: hidden; border: 1px solid var(--line); background: #071216; }
 .scanner-artifact-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 15px; border-bottom: 1px solid var(--line-soft); }
 .scanner-artifact-panel > header span { color: var(--green); font: 600 9px "IBM Plex Mono", monospace; letter-spacing: .1em; }

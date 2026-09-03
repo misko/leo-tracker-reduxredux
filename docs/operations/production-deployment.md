@@ -640,6 +640,7 @@ swap, and kernel-storage evidence:
 
 ```text
 sudo systemctl enable --now leo-reconcile.timer
+sudo systemctl enable --now leo-persistent-hop-analysis.timer
 sudo systemctl enable --now leo-worker@{1..20}.service
 sudo systemctl enable --now leo-api.service
 sudo systemctl enable --now leo-acquisition.service

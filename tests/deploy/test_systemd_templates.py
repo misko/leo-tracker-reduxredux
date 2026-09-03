@@ -53,6 +53,8 @@ def test_expected_service_and_timer_templates_exist() -> None:
         "leo-api.service",
         "leo-reconcile.service",
         "leo-reconcile.timer",
+        "leo-persistent-hop-analysis.service",
+        "leo-persistent-hop-analysis.timer",
         "leo-retention.service",
         "leo-retention.timer",
         "leo-qualification.service",
@@ -244,6 +246,23 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert api["IOWeight"] == "200"
     assert api["OOMScoreAdjust"] == "400"
     assert api["ReadWritePaths"] == "/srv/bulk/leo/control"
+
+
+def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate() -> None:
+    acquisition = _unit("leo-acquisition.service")["Service"]
+    analysis = _unit("leo-persistent-hop-analysis.service")["Service"]
+    timer = _unit("leo-persistent-hop-analysis.timer")["Timer"]
+
+    assert "--maximum-sessions 1" in analysis["ExecStart"]
+    assert "--maximum-workers 2" in analysis["ExecStart"]
+    assert "--probe-stride-ms 120" in analysis["ExecStart"]
+    assert int(analysis["CPUWeight"]) < int(acquisition["CPUWeight"])
+    assert int(analysis["IOWeight"]) < int(acquisition["IOWeight"])
+    assert int(analysis["Nice"]) > int(acquisition["Nice"])
+    assert analysis["IOSchedulingClass"] == "idle"
+    assert timer.getboolean("Persistent")
+    assert timer["OnUnitInactiveSec"] == "1min"
+    assert timer["Unit"] == "leo-persistent-hop-analysis.service"
 
 
 def test_worker_allows_ten_numerical_threads_at_the_exec_boundary() -> None:

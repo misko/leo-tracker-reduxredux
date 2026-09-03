@@ -131,7 +131,10 @@ from leo.presentation.standard_repository import (
 )
 from leo.scanner import (
     PersistentHopHistoryPageV1,
+    PersistentHopHistoryPageV2,
     PersistentHopHistoryReader,
+    PersistentHopPresentationReader,
+    PersistentHopSessionDetailV1,
     ScannerAnalysisHistoryPageV1,
     ScannerAnalysisHistoryPageV2,
     ScannerAnalysisHistoryPageV3,
@@ -161,6 +164,7 @@ def create_app(
     scanner_reports: ScannerReportStore | None = None,
     scanner_analyses: ScannerAnalysisReader | None = None,
     persistent_hop_sessions: PersistentHopHistoryReader | None = None,
+    persistent_hop_presentations: PersistentHopPresentationReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -495,6 +499,84 @@ def create_app(
                 status_code=409,
                 detail="persistent-hop session page is unavailable",
             ) from error
+
+    @v2_router.api_route(
+        "/scanner/persistent-sessions",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopHistoryPageV2,
+    )
+    def persistent_hop_session_history_v2(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    ) -> PersistentHopHistoryPageV2:
+        if persistent_hop_presentations is None:
+            raise HTTPException(
+                status_code=404,
+                detail="persistent-hop analysis presentation is not available",
+            )
+        try:
+            return persistent_hop_presentations.page_v2(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409,
+                detail="persistent-hop analysis page is unavailable",
+            ) from error
+
+    @v2_router.api_route(
+        "/scanner/persistent-sessions/{session_id}",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopSessionDetailV1,
+    )
+    def persistent_hop_session_detail_v2(session_id: str) -> PersistentHopSessionDetailV1:
+        if persistent_hop_presentations is None:
+            raise HTTPException(
+                status_code=404,
+                detail="persistent-hop analysis presentation is not available",
+            )
+        try:
+            detail = persistent_hop_presentations.detail(session_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409,
+                detail="persistent-hop analysis detail is unavailable",
+            ) from error
+        if detail is None:
+            raise HTTPException(status_code=404, detail="persistent-hop session not found")
+        return detail
+
+    @v2_router.api_route(
+        "/scanner/persistent-sessions/{session_id}/{artifact}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def persistent_hop_analysis_png_v2(
+        session_id: str,
+        artifact: Literal["coverage", "glrt64-response", "cfo-trajectories"],
+    ) -> Response:
+        if persistent_hop_presentations is None:
+            raise HTTPException(
+                status_code=404,
+                detail="persistent-hop analysis presentation is not available",
+            )
+        try:
+            content = persistent_hop_presentations.artifact(session_id, artifact)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="persistent-hop analysis artifact is unavailable",
+            ) from error
+        if content is None:
+            raise HTTPException(status_code=404, detail="persistent-hop artifact not found")
+        return Response(
+            content=content,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="persistent-hop-{artifact}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
+            },
+        )
 
     @router.api_route(
         "/scanner/analyses/{scan_id}/{analysis_id}/{artifact}.png",

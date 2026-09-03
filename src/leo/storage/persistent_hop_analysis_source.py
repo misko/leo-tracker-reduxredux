@@ -12,6 +12,19 @@ from leo.storage.persistent_hop import (
 )
 
 
+class PersistentHopAnalysisInputStore:
+    """Narrow read adapter used by the restartable analysis worker."""
+
+    def __init__(self, store: PersistentHopIqStore) -> None:
+        self._store = store
+
+    def session_ids(self) -> tuple[str, ...]:
+        return self._store.session_ids()
+
+    def source(self, session_id: str) -> PersistentHopAnalysisSource:
+        return persisted_persistent_hop_analysis_source(self._store, session_id)
+
+
 def persisted_persistent_hop_analysis_source(
     store: PersistentHopIqStore,
     session: PublishedPersistentHopIqSession | str,

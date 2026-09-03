@@ -125,13 +125,7 @@ const scannerReport = {
   })),
 };
 
-const persistentHopHistory = {
-  schema_version: 1 as const,
-  cursor: 0,
-  limit: 5,
-  total: 1,
-  next_cursor: null,
-  items: [{
+const persistentHopCapture = {
     schema_version: 1 as const,
     captured_at: "2026-09-03T02:20:00Z",
     finalized_at: "2026-09-03T02:25:01Z",
@@ -163,7 +157,38 @@ const persistentHopHistory = {
     qualified: true,
     analysis_state: "pending_backpressure" as const,
     analysis_reason: "Full GLRT/CFO analysis awaits a bounded backpressure-aware worker.",
+};
+
+const persistentHopStatus = {
+  schema_version: 1 as const,
+  session_id: persistentHopCapture.session_id,
+  analysis_id: "persistent-hop-glrt64-cfo-v1" as const,
+  state: "pending" as const,
+  total_visits: persistentHopCapture.visit_count,
+  analyzed_visits: 0,
+  updated_at: "2026-09-03T02:25:01Z",
+  failure_summary: null,
+};
+
+const persistentHopHistory = {
+  schema_version: 2 as const,
+  cursor: 0,
+  limit: 5,
+  total: 1,
+  next_cursor: null,
+  items: [{
+    schema_version: 2 as const,
+    capture: persistentHopCapture,
+    analysis: persistentHopStatus,
+    available_artifacts: [],
   }],
+};
+
+const persistentHopDetail = {
+  schema_version: 1 as const,
+  capture: persistentHopCapture,
+  analysis: persistentHopStatus,
+  product: null,
 };
 
 const detail: RecordingDetailV1 = {
@@ -392,7 +417,8 @@ describe("Observation Console", () => {
             },
           ],
         }
-        : path === "/api/v1/scanner/persistent-sessions" ? persistentHopHistory
+        : path === "/api/v2/scanner/persistent-sessions" ? persistentHopHistory
+        : path === `/api/v2/scanner/persistent-sessions/${persistentHopCapture.session_id}` ? persistentHopDetail
         : path === "/api/v1/acquisition-queue" ? acquisitionQueue
         : path === "/api/v1/queue" ? activeQueue
         : url.includes("/content") ? {
@@ -607,7 +633,13 @@ describe("Observation Console", () => {
     expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("2.5 MS/s · 2.5 MHz BW · 2,288 visits");
     expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("CH1L 286 · CH2L 286 · CH3L 286 · CH4L 286 · CH1U 286 · CH2U 286 · CH3U 286 · CH4U 286");
     expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("90.9%");
-    expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("pending backpressure");
+    expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("pending analysis");
+    fireEvent.click(screen.getByRole("button", { name: /scan-hop-2d0e49b94b3e4cdf/ }));
+    expect(await screen.findByRole("heading", { name: "300-second channel scan" })).toBeInTheDocument();
+    expect(screen.getByText("Analysis is queued")).toBeInTheDocument();
+    expect(screen.getByLabelText("Persistent hop summary")).toHaveTextContent("90.91%");
+    expect(screen.queryByRole("img", { name: /Persistent-hop/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /scan-2d0e49b94b3e4cdf/ }));
     expect(screen.getAllByText("scan-2d0e49b94b3e4cdf")).toHaveLength(3);
     expect(screen.getByRole("table", { name: "Scanner history" })).toHaveTextContent("scan-older");
     expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("CH4");
@@ -642,6 +674,80 @@ describe("Observation Console", () => {
     fireEvent.click(screen.getByRole("button", { name: /scan-older/ }));
     expect(screen.getByLabelText("Scanner summary")).toHaveTextContent("scan-older");
     expect(screen.queryByRole("tab", { name: "Pilot phase / Doppler" })).not.toBeInTheDocument();
+  });
+
+  it("opens sealed long-scan coverage, GLRT, and CFO artifacts", async () => {
+    const normalFetch = fetch as ReturnType<typeof vi.fn>;
+    const completeStatus = {
+      ...persistentHopStatus,
+      state: "complete" as const,
+      analyzed_visits: persistentHopCapture.visit_count,
+    };
+    const completeHistory = {
+      ...persistentHopHistory,
+      items: [{
+        ...persistentHopHistory.items[0],
+        analysis: completeStatus,
+        available_artifacts: ["coverage", "glrt64-response", "cfo-trajectories"],
+      }],
+    };
+    const completeDetail = {
+      ...persistentHopDetail,
+      analysis: completeStatus,
+      product: {
+        schema_version: 1,
+        analysis_id: "persistent-hop-glrt64-cfo-v1",
+        session_id: persistentHopCapture.session_id,
+        completed_at: "2026-09-03T03:00:00Z",
+        sample_rate_hz: 2500000,
+        bandwidth_hz: 2500000,
+        configuration: {
+          probe_ms: 20,
+          probe_stride_ms: 120,
+          glrt64_margin_gate: 0.025,
+          maximum_acquisition_candidates: 8,
+        },
+        visit_count: persistentHopCapture.visit_count,
+        sweep_count: 286,
+        probe_count: 50_336,
+        passed_best_count: 742,
+        artifacts: [
+          { name: "coverage", byte_count: 10_000, sha256: `sha256:${"1".repeat(64)}` },
+          { name: "glrt64-response", byte_count: 20_000, sha256: `sha256:${"2".repeat(64)}` },
+          { name: "cfo-trajectories", byte_count: 30_000, sha256: `sha256:${"3".repeat(64)}` },
+        ],
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input), "http://localhost").pathname;
+      if (path === "/api/v2/scanner/persistent-sessions") {
+        return new Response(JSON.stringify(completeHistory), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (path === `/api/v2/scanner/persistent-sessions/${persistentHopCapture.session_id}`) {
+        return new Response(JSON.stringify(completeDetail), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return normalFetch(input, init);
+    }));
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(await screen.findByRole("button", { name: /scan-hop-2d0e49b94b3e4cdf/ }));
+
+    expect(await screen.findByRole("img", { name: /Persistent-hop capture coverage/ })).toHaveAttribute(
+      "src",
+      "/api/v2/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/coverage.png",
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "GLRT64 vs time" }));
+    expect(screen.getByRole("img", { name: /GLRT64 response over time/ })).toHaveAttribute(
+      "src",
+      "/api/v2/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/glrt64-response.png",
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "CFO vs time" }));
+    expect(screen.getByRole("img", { name: /CFO windows over time/ })).toHaveAttribute(
+      "src",
+      "/api/v2/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/cfo-trajectories.png",
+    );
+    expect(screen.getByText(/50,336 receiver\/probe evaluations/)).toBeInTheDocument();
   });
 
   it("loudly exposes an immutable all-target scanner capture failure", async () => {

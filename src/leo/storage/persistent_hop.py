@@ -167,6 +167,8 @@ class PersistentHopStoredCi16Reader:
     ) -> None:
         self._store = store
         self._session = session
+        self._cached_sweep_index: int | None = None
+        self._cached_sweep_values: npt.NDArray[np.int16] | None = None
 
     @property
     def sample_count(self) -> int:
@@ -195,10 +197,15 @@ class PersistentHopStoredCi16Reader:
                 continue
             if chunk.sample_start >= sample_end:
                 break
-            _visits, values = self._store.read_sweep_ci16(
-                self._session,
-                chunk.sweep_index,
-            )
+            if self._cached_sweep_index != chunk.sweep_index:
+                _visits, values = self._store.read_sweep_ci16(
+                    self._session,
+                    chunk.sweep_index,
+                )
+                self._cached_sweep_index = chunk.sweep_index
+                self._cached_sweep_values = values
+            assert self._cached_sweep_values is not None
+            values = self._cached_sweep_values
             local_start = max(sample_start, chunk.sample_start) - chunk.sample_start
             local_end = min(sample_end, chunk_end) - chunk.sample_start
             if chunk.sample_start + local_start != covered:
@@ -642,35 +649,7 @@ class PersistentHopIqStore:
             raise ValueError("persistent-hop history page is outside its bounded range")
         session_ids = self.session_ids()
         selected = session_ids[cursor : cursor + limit]
-        items: list[PersistentHopHistoryItemV1] = []
-        for session_id in selected:
-            manifest = self.inspect(session_id).manifest
-            receipt = manifest.receipt
-            items.append(
-                PersistentHopHistoryItemV1(
-                    captured_at=datetime.fromtimestamp(
-                        manifest.created_utc_ns / 1_000_000_000,
-                        tz=UTC,
-                    ),
-                    finalized_at=datetime.fromtimestamp(
-                        manifest.finalized_utc_ns / 1_000_000_000,
-                        tz=UTC,
-                    ),
-                    session_id=session_id,
-                    radio_id=receipt.radio_id,
-                    sample_rate_hz=manifest.plan.sample_rate_hz,
-                    bandwidth_hz=manifest.plan.bandwidth_hz,
-                    visit_count=len(receipt.visits),
-                    target_coverage=receipt.target_coverage,
-                    capture_outcome=receipt.capture_outcome,
-                    terminal_state=receipt.terminal_status.state,
-                    terminal_reason=receipt.terminal_status.reason,
-                    valid_duty_ppm=receipt.valid_duty_ppm,
-                    continuity_attested=receipt.continuity_attested,
-                    restoration_status=receipt.restoration.status,
-                    qualified=receipt.qualified,
-                )
-            )
+        items = [self.history_item(session_id) for session_id in selected]
         next_cursor = cursor + len(items) if cursor + len(items) < len(session_ids) else None
         return PersistentHopHistoryPageV1(
             cursor=cursor,
@@ -678,6 +657,35 @@ class PersistentHopIqStore:
             total=len(session_ids),
             next_cursor=next_cursor,
             items=tuple(items),
+        )
+
+    def history_item(self, session_id: str) -> PersistentHopHistoryItemV1:
+        """Project one capture manifest without reading any multi-GB IQ chunk."""
+
+        manifest = self.inspect(session_id).manifest
+        receipt = manifest.receipt
+        return PersistentHopHistoryItemV1(
+            captured_at=datetime.fromtimestamp(
+                manifest.created_utc_ns / 1_000_000_000,
+                tz=UTC,
+            ),
+            finalized_at=datetime.fromtimestamp(
+                manifest.finalized_utc_ns / 1_000_000_000,
+                tz=UTC,
+            ),
+            session_id=session_id,
+            radio_id=receipt.radio_id,
+            sample_rate_hz=manifest.plan.sample_rate_hz,
+            bandwidth_hz=manifest.plan.bandwidth_hz,
+            visit_count=len(receipt.visits),
+            target_coverage=receipt.target_coverage,
+            capture_outcome=receipt.capture_outcome,
+            terminal_state=receipt.terminal_status.state,
+            terminal_reason=receipt.terminal_status.reason,
+            valid_duty_ppm=receipt.valid_duty_ppm,
+            continuity_attested=receipt.continuity_attested,
+            restoration_status=receipt.restoration.status,
+            qualified=receipt.qualified,
         )
 
     def verify(

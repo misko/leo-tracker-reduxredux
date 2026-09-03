@@ -4,6 +4,7 @@ import {
   getAcquisitionQueue,
   getCaptureControl,
   getControlStatus,
+  getPersistentHopSession,
   getPersistentHopSessions,
   getScannerAnalyses,
   getScannerReports,
@@ -15,12 +16,15 @@ import {
   runResearchAnalysis,
   searchRecordings,
   scannerAnalysisPngUrl,
+  persistentHopAnalysisPngUrl,
   startCapture,
   stopCapture,
 } from "./api";
 import type {
   CaptureControlStateV1,
-  PersistentHopHistoryPageV1,
+  PersistentHopArtifact,
+  PersistentHopHistoryPageV2,
+  PersistentHopSessionDetailV1,
   ScannerAnalysisHistoryPageV3,
   ScannerHistoryPageV3,
 } from "./api";
@@ -412,10 +416,32 @@ const scannerArtifactDetails: Record<ScannerArtifact, { title: string; caption: 
   },
 };
 
+const persistentArtifactDetails: Record<PersistentHopArtifact, { title: string; caption: string; alt: string }> = {
+  coverage: {
+    title: "Capture coverage",
+    caption: "Counter-authoritative valid visits and retune-invalid windows",
+    alt: "Persistent-hop capture coverage",
+  },
+  "glrt64-response": {
+    title: "Full-session GLRT64 response",
+    caption: "Strongest retained candidate wherever a receiver's 20 ms probe produced one",
+    alt: "Persistent-hop GLRT64 response over time",
+  },
+  "cfo-trajectories": {
+    title: "CFO windows",
+    caption: "Passed candidates separated by channel, edge, and receiver",
+    alt: "Persistent-hop CFO windows over time",
+  },
+};
+
 function ScannerView() {
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
   const [attempts, setAttempts] = useState<ScannerHistoryPageV3 | null>(null);
-  const [persistentPage, setPersistentPage] = useState<PersistentHopHistoryPageV1 | null>(null);
+  const [persistentPage, setPersistentPage] = useState<PersistentHopHistoryPageV2 | null>(null);
+  const [persistentCursor, setPersistentCursor] = useState(0);
+  const [selectedPersistentId, setSelectedPersistentId] = useState<string | null>(null);
+  const [persistentDetail, setPersistentDetail] = useState<PersistentHopSessionDetailV1 | null>(null);
+  const [persistentArtifact, setPersistentArtifact] = useState<PersistentHopArtifact>("coverage");
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<ScannerArtifact>("waterfall");
@@ -425,14 +451,16 @@ function ScannerView() {
     const refresh = () => Promise.all([
       getScannerAnalyses(cursor, 20, controller.signal),
       getScannerReports(0, 20, controller.signal),
-      getPersistentHopSessions(0, 5, controller.signal),
+      getPersistentHopSessions(persistentCursor, 5, controller.signal),
     ]).then(([result, attemptResult, persistentResult]) => {
       setPage(result);
       setAttempts(attemptResult);
       setPersistentPage(persistentResult);
-      setSelectedScanId((current) => current && result.items.some((item) => item.scan_id === current)
-        ? current
-        : result.items[0]?.scan_id ?? null);
+      setSelectedScanId((current) => selectedPersistentId !== null
+        ? null
+        : current && result.items.some((item) => item.scan_id === current)
+          ? current
+          : result.items[0]?.scan_id ?? null);
       setError(null);
     }).catch((reason: Error) => {
       if (reason.name !== "AbortError") setError(reason.message);
@@ -443,7 +471,24 @@ function ScannerView() {
       window.clearInterval(timer);
       controller.abort();
     };
-  }, [cursor]);
+  }, [cursor, persistentCursor, selectedPersistentId]);
+  const selectedPersistentSummary = persistentPage?.items.find(
+    (item) => item.capture.session_id === selectedPersistentId,
+  ) ?? null;
+  useEffect(() => {
+    if (selectedPersistentId === null) {
+      setPersistentDetail(null);
+      return;
+    }
+    setPersistentDetail(null);
+    const controller = new AbortController();
+    getPersistentHopSession(selectedPersistentId, controller.signal).then((detail) => {
+      setPersistentDetail(detail);
+    }).catch((reason: Error) => {
+      if (reason.name !== "AbortError") setError(reason.message);
+    });
+    return () => controller.abort();
+  }, [selectedPersistentId, selectedPersistentSummary?.analysis.updated_at]);
   const selected = page?.items.find((item) => item.scan_id === selectedScanId) ?? null;
   const hasFocusedPilotPlots = selected?.analysis_id === "standard-scan-analysis-pilot-plots-v1"
     || selected?.analysis_id === "standard-scan-analysis-continuity-v2";
@@ -478,22 +523,36 @@ function ScannerView() {
         {persistentPage && persistentPage.items.length > 0 ? <div className="persistent-hop-scroll"><table className="scanner-history-table" aria-label="Persistent hop history">
           <thead><tr><th>Capture</th><th>Duty</th></tr></thead>
           <tbody>{persistentPage.items.map((item) => {
-            const coverage = item.target_coverage.map(({ target, visit_count: visits }) => (
+            const capture = item.capture;
+            const coverage = capture.target_coverage.map(({ target, visit_count: visits }) => (
               `CH${target.channel}${target.edge === "lower" ? "L" : "U"} ${visits}`
             )).join(" · ");
-            const state = item.qualified ? "complete" : item.terminal_state === "failed" ? "failed" : "partial";
-            return <tr key={item.session_id}>
-              <td><div className="scanner-row-button persistent-hop-row">
-                <time title="RF capture start">{new Date(item.captured_at).toLocaleString()}</time>
-                <code>{item.session_id}</code>
-                <small>{item.radio_id} · {(item.sample_rate_hz / 1_000_000).toFixed(1)} MS/s · {(item.bandwidth_hz / 1_000_000).toFixed(1)} MHz BW · {formatNumber(item.visit_count)} visits</small>
+            const progress = item.analysis.total_visits === 0
+              ? 0
+              : 100 * item.analysis.analyzed_visits / item.analysis.total_visits;
+            return <tr key={capture.session_id} className={selectedPersistentId === capture.session_id ? "selected" : undefined}>
+              <td><button className="scanner-row-button persistent-hop-row" type="button" onClick={() => {
+                setSelectedPersistentId(capture.session_id);
+                setSelectedScanId(null);
+                setPersistentArtifact("coverage");
+              }}>
+                <time title="RF capture start">{new Date(capture.captured_at).toLocaleString()}</time>
+                <code>{capture.session_id}</code>
+                <small>{capture.radio_id} · {(capture.sample_rate_hz / 1_000_000).toFixed(1)} MS/s · {(capture.bandwidth_hz / 1_000_000).toFixed(1)} MHz BW · {formatNumber(capture.visit_count)} visits</small>
                 <small title="Valid visit counts in fixed CH1L through CH4U order">{coverage}</small>
-                <small>{item.analysis_state.replaceAll("_", " ")} · {item.analysis_reason}</small>
-              </div></td>
-              <td><strong>{(item.valid_duty_ppm / 10_000).toFixed(1)}%</strong><StatusBadge value={state} /><small className="persistent-terminal-state">{item.terminal_state}</small></td>
+                <small>{item.analysis.state === "running" ? `${progress.toFixed(1)}% analyzed` : item.analysis.failure_summary ?? `${item.analysis.state} analysis`}</small>
+              </button></td>
+              <td><strong>{(capture.valid_duty_ppm / 10_000).toFixed(1)}%</strong><StatusBadge value={item.analysis.state} /><small className="persistent-terminal-state">{capture.terminal_state}</small></td>
             </tr>;
           })}</tbody>
         </table></div> : null}
+        {persistentPage && persistentPage.total > persistentPage.limit ? <div className="candidate-pagination scanner-pagination" aria-label="Persistent hop history pagination">
+          <span>Showing {persistentPage.cursor + 1}–{persistentPage.cursor + persistentPage.items.length} of {persistentPage.total}</span>
+          <div>
+            <button type="button" disabled={persistentPage.cursor === 0} onClick={() => setPersistentCursor(Math.max(0, persistentPage.cursor - persistentPage.limit))}>Previous</button>
+            <button type="button" disabled={persistentPage.next_cursor === null} onClick={() => persistentPage.next_cursor !== null && setPersistentCursor(persistentPage.next_cursor)}>Next</button>
+          </div>
+        </div> : null}
       </section>
       {page && page.items.length === 0 ? <p className="empty-list">No Standard scanner analysis has been published yet.</p> : null}
       {page && page.items.length > 0 ? <>
@@ -505,6 +564,7 @@ function ScannerView() {
             return <tr key={item.scan_id} className={selectedScanId === item.scan_id ? "selected" : undefined}>
               <td><button className="scanner-row-button" type="button" onClick={() => {
                 setSelectedScanId(item.scan_id);
+                setSelectedPersistentId(null);
                 const supportsPilot = item.analysis_id === "standard-scan-analysis-pilot-v1"
                   || item.analysis_id === "standard-scan-analysis-pilot-plots-v1"
                   || item.analysis_id === "standard-scan-analysis-continuity-v2";
@@ -533,11 +593,15 @@ function ScannerView() {
       </> : null}
     </aside>
     <section className="detail-pane scanner-analysis-detail" aria-label="Scanner analysis detail">
-      {failedAttempt ? <div className="error-banner" role="alert">
+      {selectedPersistentId === null && persistentDetail === null && failedAttempt ? <div className="error-banner" role="alert">
         <strong>Scanner capture failure · {failedAttempt.report.scan_id}</strong>
         <span>{failedAttemptDetail} The immutable attempt report remains available through scanner history.</span>
       </div> : null}
-      {report && selected ? <>
+      {persistentDetail ? <PersistentHopAnalysisDetail
+        detail={persistentDetail}
+        artifact={persistentArtifact}
+        onArtifact={setPersistentArtifact}
+      /> : report && selected ? <>
         <header className="recording-heading scanner-heading">
           <div><p className="section-label">STANDARD SCAN ANALYSIS</p><h2>Starlink channel scans</h2><p className="recording-subtitle">{report.scan_id}</p></div>
           <div className="run-card"><span>CAPTURED AT</span><strong>{new Date(selected.captured_at).toLocaleString()}</strong><small>{selected.analysis_id}</small></div>
@@ -591,9 +655,77 @@ function ScannerView() {
           </div>
           <p className="scanner-artifact-caption">{artifactDetails.caption} · red lines mark retunes</p>
         </section>
-      </> : <div className="empty-detail"><strong>{page === null ? "Loading scans…" : "Select a scan"}</strong><span>Standard waterfall and GLRT64 artifacts will appear here.</span></div>}
+      </> : <div className="empty-detail"><strong>{page === null || selectedPersistentId !== null ? "Loading scan…" : "Select a scan"}</strong><span>Standard and 300-second persistent-hop analysis artifacts will appear here.</span></div>}
     </section>
   </main>;
+}
+
+function PersistentHopAnalysisDetail({
+  detail,
+  artifact,
+  onArtifact,
+}: {
+  detail: PersistentHopSessionDetailV1;
+  artifact: PersistentHopArtifact;
+  onArtifact: (artifact: PersistentHopArtifact) => void;
+}) {
+  const { capture, analysis, product } = detail;
+  const progress = analysis.total_visits === 0
+    ? 0
+    : 100 * analysis.analyzed_visits / analysis.total_visits;
+  const artifactDetails = persistentArtifactDetails[artifact];
+  return <>
+    <header className="recording-heading scanner-heading">
+      <div><p className="section-label">PERSISTENT HOP ANALYSIS</p><h2>300-second channel scan</h2><p className="recording-subtitle">{capture.session_id}</p></div>
+      <div className="run-card"><span>CAPTURED AT</span><strong>{new Date(capture.captured_at).toLocaleString()}</strong><small>{analysis.analysis_id}</small></div>
+    </header>
+    <section className="scanner-summary" aria-label="Persistent hop summary">
+      <DataPair label="Session" value={capture.session_id} />
+      <DataPair label="Radio" value={capture.radio_id} />
+      <DataPair label="Rate / bandwidth" value={`${(capture.sample_rate_hz / 1_000_000).toFixed(1)} MS/s · ${(capture.bandwidth_hz / 1_000_000).toFixed(1)} MHz`} />
+      <DataPair label="Usable duty" value={`${(capture.valid_duty_ppm / 10_000).toFixed(2)}%`} />
+      <DataPair label="Visits" value={formatNumber(capture.visit_count)} />
+      <DataPair label="Continuity" value={capture.continuity_attested ? "Device-counter attested" : "Not attested"} />
+      <DataPair label="Analysis" value={analysis.state === "running" ? `${progress.toFixed(1)}% · ${formatNumber(analysis.analyzed_visits)}/${formatNumber(analysis.total_visits)} visits` : analysis.state} />
+      <DataPair label="Evidence" value="Candidate-only GLRT64; no phase continuity across retunes" />
+    </section>
+    <section className="scanner-results-panel" aria-labelledby="persistent-coverage-heading">
+      <header>
+        <div><span>CAPTURE DETAILS</span><h3 id="persistent-coverage-heading">Channel coverage</h3></div>
+        <small>{capture.nominal_duration_seconds} seconds nominal · {capture.valid_visit_ms} ms valid per hop</small>
+      </header>
+      <div className="queue-table-scroll scanner-results-scroll"><table className="queue-table scanner-table persistent-coverage-table" aria-label="Persistent hop channel coverage">
+        <thead><tr><th>Target</th><th>RF center</th><th>IF center</th><th>Visits</th><th>Valid samples</th></tr></thead>
+        <tbody>{capture.target_coverage.map((item) => <tr key={item.target_index}>
+          <td>CH{item.target.channel}{item.target.edge === "lower" ? "L" : "U"}</td>
+          <td>{formatFrequency(item.target.rf_center_hz)}</td>
+          <td>{formatFrequency(item.target.if_center_hz)}</td>
+          <td>{formatNumber(item.visit_count)}</td>
+          <td>{formatNumber(item.valid_sample_count)}</td>
+        </tr>)}</tbody>
+      </table></div>
+    </section>
+    {analysis.state !== "complete" || product === null ? <section className="scanner-analysis-state" aria-live="polite">
+      <StatusBadge value={analysis.state} />
+      <strong>{analysis.state === "failed" ? "Analysis paused after an error" : analysis.state === "running" ? "Analysis is running" : "Analysis is queued"}</strong>
+      <span>{analysis.failure_summary ?? `${formatNumber(analysis.analyzed_visits)} of ${formatNumber(analysis.total_visits)} visits analyzed. Progress resumes from the last sealed sweep.`}</span>
+      <progress max={Math.max(analysis.total_visits, 1)} value={analysis.analyzed_visits}>{progress.toFixed(1)}%</progress>
+    </section> : <section className="scanner-artifact-panel" aria-label="Persistent hop artifacts">
+      <header>
+        <div><span>FULL-SESSION PNG</span><h3>{artifactDetails.title}</h3></div>
+        <div className="scanner-artifact-tabs" role="tablist" aria-label="Persistent hop artifact">
+          <button id="persistent-artifact-tab-coverage" type="button" role="tab" aria-selected={artifact === "coverage"} aria-controls="persistent-artifact-image" onClick={() => onArtifact("coverage")}>Coverage</button>
+          <button id="persistent-artifact-tab-glrt64-response" type="button" role="tab" aria-selected={artifact === "glrt64-response"} aria-controls="persistent-artifact-image" onClick={() => onArtifact("glrt64-response")}>GLRT64 vs time</button>
+          <button id="persistent-artifact-tab-cfo-trajectories" type="button" role="tab" aria-selected={artifact === "cfo-trajectories"} aria-controls="persistent-artifact-image" onClick={() => onArtifact("cfo-trajectories")}>CFO vs time</button>
+        </div>
+      </header>
+      <div className="scanner-artifact-viewport" id="persistent-artifact-image" role="tabpanel" aria-labelledby={`persistent-artifact-tab-${artifact}`}>
+        <img loading="lazy" src={persistentHopAnalysisPngUrl(capture.session_id, artifact)} alt={`${artifactDetails.alt} for ${capture.session_id}`} />
+      </div>
+      <p className="scanner-artifact-caption">{artifactDetails.caption} · {formatNumber(product.probe_count)} receiver/probe evaluations · {formatNumber(product.passed_best_count)} passing best candidates</p>
+      <p className="scanner-artifact-caption">Analysis geometry: {product.configuration.probe_ms} ms windows every {product.configuration.probe_stride_ms} ms. The full captured IQ remains available for exhaustive reanalysis.</p>
+    </section>}
+  </>;
 }
 
 function QueueView() {

@@ -40,7 +40,9 @@ from leo.presentation.scanner import ScannerReportStore
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.storage import (
     FallbackScannerCaptureTimeReader,
+    PersistentHopAnalysisStore,
     PersistentHopIqStore,
+    PersistentHopPresentationStore,
     PinnedLocalRoot,
     RecordingStore,
     ScannerAnalysisStore,
@@ -96,6 +98,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
     bulk_pin = PinnedLocalRoot(configured.bulk_root)
     scanner_iq = ScannerIqStore(configured.bulk_root)
     persistent_hop_iq = PersistentHopIqStore.open_read_only(configured.bulk_root)
+    persistent_hop_analysis = PersistentHopAnalysisStore.open_read_only(configured.bulk_root)
     try:
         qualification_pin = PinnedLocalRoot(qualification_root)
     except Exception:
@@ -199,6 +202,10 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
                 ),
             ),
             persistent_hop_sessions=persistent_hop_iq,
+            persistent_hop_presentations=PersistentHopPresentationStore(
+                persistent_hop_iq,
+                persistent_hop_analysis,
+            ),
             capture_control=OperatorCaptureControl(
                 # The global operation lock is sufficient for this control-only
                 # adapter to observe an active dwell. Radio ownership remains

@@ -67,6 +67,7 @@ _SELECTOR_COMPONENTS = ("global", "api", "worker", "acquisition")
 _WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
 _WORKER_UNIT_PATTERN = "leo-worker@*.service"
 _LEO_TIMER_UNITS = (
+    "leo-persistent-hop-analysis.timer",
     "leo-qualification.timer",
     "leo-reconcile.timer",
     "leo-release-qualification.timer",
@@ -77,6 +78,7 @@ _LEO_SERVICE_UNITS = (
     "leo-acquisition.service",
     "leo-acquisition-soak.service",
     "leo-api.service",
+    "leo-persistent-hop-analysis.service",
     "leo-qualification.service",
     "leo-reconcile.service",
     "leo-release-qualification.service",

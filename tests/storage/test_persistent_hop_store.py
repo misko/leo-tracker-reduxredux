@@ -31,7 +31,9 @@ def _cancelled_capture(tmp_path, *, visit_count: int = 9):
     return store, published, blocks
 
 
-def test_persistent_hop_store_streams_sweep_chunks_and_reopens(tmp_path) -> None:
+def test_persistent_hop_store_streams_sweep_chunks_and_reopens(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     store, published, blocks = _cancelled_capture(tmp_path)
 
     assert published.manifest.receipt.capture_outcome == "cancelled"
@@ -71,6 +73,19 @@ def test_persistent_hop_store_streams_sweep_chunks_and_reopens(tmp_path) -> None
         [[1, 1], [1, 2]],
     ]
     assert not crossing.flags.writeable
+
+    sweep_reads: list[int] = []
+    original_read_sweep = store.read_sweep_ci16
+
+    def counted_read_sweep(session, sweep_index, *, verify=True):
+        sweep_reads.append(sweep_index)
+        return original_read_sweep(session, sweep_index, verify=verify)
+
+    monkeypatch.setattr(store, "read_sweep_ci16", counted_read_sweep)
+    cached_reader = store.valid_ci16_reader(reopened)
+    cached_reader.read_valid_ci16(0, 300_000)
+    cached_reader.read_valid_ci16(300_000, 300_000)
+    assert sweep_reads == [0]
 
     with pytest.raises(ValueError, match="exceeds"):
         reader.read_valid_ci16(reader.sample_count - 1, 2)

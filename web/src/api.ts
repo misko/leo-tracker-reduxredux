@@ -277,6 +277,60 @@ export interface PersistentHopHistoryPageV1 {
   }>;
 }
 
+export type PersistentHopCaptureV1 = PersistentHopHistoryPageV1["items"][number];
+
+export interface PersistentHopAnalysisStatusV1 {
+  schema_version: 1;
+  session_id: string;
+  analysis_id: "persistent-hop-glrt64-cfo-v1";
+  state: "pending" | "running" | "complete" | "failed";
+  total_visits: number;
+  analyzed_visits: number;
+  updated_at: string;
+  failure_summary: string | null;
+}
+
+export type PersistentHopArtifact = "coverage" | "glrt64-response" | "cfo-trajectories";
+
+export interface PersistentHopHistoryPageV2 {
+  schema_version: 2;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{
+    schema_version: 2;
+    capture: PersistentHopCaptureV1;
+    analysis: PersistentHopAnalysisStatusV1;
+    available_artifacts: PersistentHopArtifact[];
+  }>;
+}
+
+export interface PersistentHopSessionDetailV1 {
+  schema_version: 1;
+  capture: PersistentHopCaptureV1;
+  analysis: PersistentHopAnalysisStatusV1;
+  product: null | {
+    schema_version: 1;
+    analysis_id: "persistent-hop-glrt64-cfo-v1";
+    session_id: string;
+    completed_at: string;
+    sample_rate_hz: 2500000 | 5000000;
+    bandwidth_hz: 2500000 | 5000000;
+    configuration: {
+      probe_ms: number;
+      probe_stride_ms: number;
+      glrt64_margin_gate: number;
+      maximum_acquisition_candidates: number;
+    };
+    visit_count: number;
+    sweep_count: number;
+    probe_count: number;
+    passed_best_count: number;
+    artifacts: Array<{ name: PersistentHopArtifact; byte_count: number; sha256: string }>;
+  };
+}
+
 export function getScannerReports(
   cursor = 0,
   limit = 20,
@@ -299,9 +353,26 @@ export function getPersistentHopSessions(
   cursor = 0,
   limit = 20,
   signal?: AbortSignal,
-): Promise<PersistentHopHistoryPageV1> {
+): Promise<PersistentHopHistoryPageV2> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
-  return getJson<PersistentHopHistoryPageV1>(`/api/v1/scanner/persistent-sessions?${params}`, signal);
+  return getJson<PersistentHopHistoryPageV2>(`/api/v2/scanner/persistent-sessions?${params}`, signal);
+}
+
+export function getPersistentHopSession(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<PersistentHopSessionDetailV1> {
+  return getJson<PersistentHopSessionDetailV1>(
+    `/api/v2/scanner/persistent-sessions/${encodeURIComponent(sessionId)}`,
+    signal,
+  );
+}
+
+export function persistentHopAnalysisPngUrl(
+  sessionId: string,
+  artifact: PersistentHopArtifact,
+): string {
+  return `/api/v2/scanner/persistent-sessions/${encodeURIComponent(sessionId)}/${artifact}.png`;
 }
 
 export function scannerAnalysisPngUrl(
