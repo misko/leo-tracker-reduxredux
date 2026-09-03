@@ -99,6 +99,11 @@ from leo.scanner.persistent_hop_application import (
     PersistentHopCaptureError,
     capture_persistent_hop_session,
 )
+from leo.scanner.persistent_hop_history import (
+    PersistentHopHistoryItemV1,
+    PersistentHopHistoryPageV1,
+    PersistentHopHistoryReader,
+)
 from leo.scanner.persistent_hop_ports import (
     PersistentHopRadio,
     PersistentHopSession,
@@ -152,6 +157,9 @@ __all__ = [
     "PersistentHopCaptureError",
     "PersistentHopGlrt64CfoObservation",
     "PersistentHopGlrt64Configuration",
+    "PersistentHopHistoryItemV1",
+    "PersistentHopHistoryPageV1",
+    "PersistentHopHistoryReader",
     "PersistentHopPlanV1",
     "PersistentHopProfileV1",
     "PersistentHopRadio",

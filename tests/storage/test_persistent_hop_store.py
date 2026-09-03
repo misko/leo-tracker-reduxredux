@@ -82,6 +82,47 @@ def test_persistent_hop_store_streams_sweep_chunks_and_reopens(tmp_path) -> None
     assert visit.samples_ci16[0].tolist() == [[1, 1], [1, 2]]
 
 
+def test_persistent_hop_store_exposes_bounded_truthful_history_without_reading_iq(
+    tmp_path, monkeypatch
+) -> None:
+    store, published, _blocks = _cancelled_capture(tmp_path, visit_count=1)
+
+    def unexpected_read(*_args, **_kwargs):
+        raise AssertionError("history must not decompress persistent-hop IQ")
+
+    monkeypatch.setattr(store, "read_sweep_ci16", unexpected_read)
+    page = store.page(cursor=0, limit=20)
+
+    assert store.session_ids() == ("hop-storage-test",)
+    assert page.total == 1
+    assert page.next_cursor is None
+    assert len(page.items) == 1
+    item = page.items[0]
+    assert item.session_id == published.session_id
+    assert item.captured_at <= item.finalized_at
+    assert item.sample_rate_hz == item.bandwidth_hz == 2_500_000
+    assert item.valid_visit_ms == 120
+    assert item.visit_count == 1
+    assert [coverage.visit_count for coverage in item.target_coverage] == [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ]
+    assert item.capture_outcome == "cancelled"
+    assert item.terminal_state == "cancelled"
+    assert item.valid_duty_ppm == published.manifest.receipt.valid_duty_ppm
+    assert item.qualified is False
+    assert item.analysis_state == "pending_backpressure"
+
+    with pytest.raises(ValueError, match="bounded range"):
+        store.page(cursor=-1, limit=20)
+
+
 def test_persistent_hop_store_publishes_attested_zero_visit_cancellation(tmp_path) -> None:
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000, kernel_buffers=2)
     radio = FakePersistentHopRadio()
