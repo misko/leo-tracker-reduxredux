@@ -8,7 +8,7 @@ import pytest
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
 from leo.scanner.persistent_hop import compile_persistent_hop_plan_v1
 from leo.scanner.persistent_hop_ports import PersistentHopVisitBlock
-from leo.storage import PersistentHopIqStore
+from leo.storage import PersistentHopIqStore, persisted_persistent_hop_analysis_source
 from leo.storage.errors import BundleCorruptionError, BundleStateError
 
 
@@ -74,6 +74,12 @@ def test_persistent_hop_store_streams_sweep_chunks_and_reopens(tmp_path) -> None
 
     with pytest.raises(ValueError, match="exceeds"):
         reader.read_valid_ci16(reader.sample_count - 1, 2)
+
+    source = persisted_persistent_hop_analysis_source(store, reopened)
+    visit = source.read_visit(8)
+    assert visit.span.evidence == blocks[8].evidence
+    assert visit.samples_ci16.shape == (300_000, 2, 2)
+    assert visit.samples_ci16[0].tolist() == [[1, 1], [1, 2]]
 
 
 def test_persistent_hop_store_publishes_attested_zero_visit_cancellation(tmp_path) -> None:
