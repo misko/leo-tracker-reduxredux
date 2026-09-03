@@ -23,8 +23,8 @@ import {
 import type {
   CaptureControlStateV1,
   PersistentHopArtifact,
-  PersistentHopHistoryPageV2,
-  PersistentHopSessionDetailV1,
+  PersistentHopHistoryPageV3,
+  PersistentHopSessionDetailV2,
   ScannerAnalysisHistoryPageV3,
   ScannerHistoryPageV3,
 } from "./api";
@@ -423,13 +423,13 @@ const persistentArtifactDetails: Record<PersistentHopArtifact, { title: string; 
     alt: "Persistent-hop capture coverage",
   },
   "glrt64-response": {
-    title: "Full-session GLRT64 response",
-    caption: "Strongest retained candidate wherever a receiver's 20 ms probe produced one",
+    title: "Fractional GLRT64 response",
+    caption: "Strongest fractionally rescored candidate wherever a receiver's 20 ms probe produced one",
     alt: "Persistent-hop GLRT64 response over time",
   },
   "cfo-trajectories": {
-    title: "CFO windows",
-    caption: "Passed candidates separated by channel, edge, and receiver",
+    title: "Fractional-epoch CFO windows",
+    caption: "Fractionally gated candidates separated by channel, edge, and receiver",
     alt: "Persistent-hop CFO windows over time",
   },
 };
@@ -437,10 +437,10 @@ const persistentArtifactDetails: Record<PersistentHopArtifact, { title: string; 
 function ScannerView() {
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
   const [attempts, setAttempts] = useState<ScannerHistoryPageV3 | null>(null);
-  const [persistentPage, setPersistentPage] = useState<PersistentHopHistoryPageV2 | null>(null);
+  const [persistentPage, setPersistentPage] = useState<PersistentHopHistoryPageV3 | null>(null);
   const [persistentCursor, setPersistentCursor] = useState(0);
   const [selectedPersistentId, setSelectedPersistentId] = useState<string | null>(null);
-  const [persistentDetail, setPersistentDetail] = useState<PersistentHopSessionDetailV1 | null>(null);
+  const [persistentDetail, setPersistentDetail] = useState<PersistentHopSessionDetailV2 | null>(null);
   const [persistentArtifact, setPersistentArtifact] = useState<PersistentHopArtifact>("coverage");
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
@@ -665,7 +665,7 @@ function PersistentHopAnalysisDetail({
   artifact,
   onArtifact,
 }: {
-  detail: PersistentHopSessionDetailV1;
+  detail: PersistentHopSessionDetailV2;
   artifact: PersistentHopArtifact;
   onArtifact: (artifact: PersistentHopArtifact) => void;
 }) {
@@ -687,7 +687,7 @@ function PersistentHopAnalysisDetail({
       <DataPair label="Visits" value={formatNumber(capture.visit_count)} />
       <DataPair label="Continuity" value={capture.continuity_attested ? "Device-counter attested" : "Not attested"} />
       <DataPair label="Analysis" value={analysis.state === "running" ? `${progress.toFixed(1)}% · ${formatNumber(analysis.analyzed_visits)}/${formatNumber(analysis.total_visits)} visits` : analysis.state} />
-      <DataPair label="Evidence" value="Candidate-only GLRT64; no phase continuity across retunes" />
+      <DataPair label="Evidence" value="Fractionally rescored GLRT64; integer anchors retained; no phase continuity across retunes" />
     </section>
     <section className="scanner-results-panel" aria-labelledby="persistent-coverage-heading">
       <header>
@@ -722,7 +722,7 @@ function PersistentHopAnalysisDetail({
       <div className="scanner-artifact-viewport" id="persistent-artifact-image" role="tabpanel" aria-labelledby={`persistent-artifact-tab-${artifact}`}>
         <img loading="lazy" src={persistentHopAnalysisPngUrl(capture.session_id, artifact)} alt={`${artifactDetails.alt} for ${capture.session_id}`} />
       </div>
-      <p className="scanner-artifact-caption">{artifactDetails.caption} · {formatNumber(product.probe_count)} receiver/probe evaluations · {formatNumber(product.passed_best_count)} passing best candidates</p>
+      <p className="scanner-artifact-caption">{artifactDetails.caption} · {formatNumber(product.probe_count)} receiver/probe evaluations · {formatNumber(product.passed_fractional_best_count)} passing fractional winners</p>
       <p className="scanner-artifact-caption">Analysis geometry: {product.configuration.probe_ms} ms windows every {product.configuration.probe_stride_ms} ms. The full captured IQ remains available for exhaustive reanalysis.</p>
     </section>}
   </>;

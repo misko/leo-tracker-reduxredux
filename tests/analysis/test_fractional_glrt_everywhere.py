@@ -102,6 +102,17 @@ def test_raw_iq_fractional_glrt_refinement_is_available_at_every_native_rate(
     assert refinement.fractional_epoch_offset_samples is not None
     assert refinement.fractional_exact_score is not None
     assert refinement.fractional_exact_score >= integer_score.exact_score - 1e-12
+    assert refinement.fractional_control_score is not None
+    assert refinement.fractional_residual_cfo_hz is not None
+    assert refinement.fractional_tracking_cfo_hz is not None
+    assert refinement.fractional_margin == pytest.approx(
+        refinement.fractional_exact_score - refinement.fractional_control_score,
+        abs=1e-12,
+    )
+    assert refinement.fractional_tracking_cfo_hz == pytest.approx(
+        winner.absolute_cfo_hz + refinement.fractional_residual_cfo_hz,
+        abs=1e-12,
+    )
     assert refinement.exact_score_grid[2] == pytest.approx(integer_score.exact_score, abs=1e-12)
 
 

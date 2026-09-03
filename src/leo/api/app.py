@@ -132,9 +132,12 @@ from leo.presentation.standard_repository import (
 from leo.scanner import (
     PersistentHopHistoryPageV1,
     PersistentHopHistoryPageV2,
+    PersistentHopHistoryPageV3,
     PersistentHopHistoryReader,
     PersistentHopPresentationReader,
+    PersistentHopPresentationReaderV2,
     PersistentHopSessionDetailV1,
+    PersistentHopSessionDetailV2,
     ScannerAnalysisHistoryPageV1,
     ScannerAnalysisHistoryPageV2,
     ScannerAnalysisHistoryPageV3,
@@ -165,6 +168,7 @@ def create_app(
     scanner_analyses: ScannerAnalysisReader | None = None,
     persistent_hop_sessions: PersistentHopHistoryReader | None = None,
     persistent_hop_presentations: PersistentHopPresentationReader | None = None,
+    persistent_hop_presentations_v2: PersistentHopPresentationReaderV2 | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -564,6 +568,84 @@ def create_app(
             raise HTTPException(
                 status_code=503,
                 detail="persistent-hop analysis artifact is unavailable",
+            ) from error
+        if content is None:
+            raise HTTPException(status_code=404, detail="persistent-hop artifact not found")
+        return Response(
+            content=content,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="persistent-hop-{artifact}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
+            },
+        )
+
+    @v3_router.api_route(
+        "/scanner/persistent-sessions",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopHistoryPageV3,
+    )
+    def persistent_hop_session_history_v3(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    ) -> PersistentHopHistoryPageV3:
+        if persistent_hop_presentations_v2 is None:
+            raise HTTPException(
+                status_code=404,
+                detail="fractional persistent-hop analysis presentation is not available",
+            )
+        try:
+            return persistent_hop_presentations_v2.page_v3(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409,
+                detail="fractional persistent-hop analysis page is unavailable",
+            ) from error
+
+    @v3_router.api_route(
+        "/scanner/persistent-sessions/{session_id}",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopSessionDetailV2,
+    )
+    def persistent_hop_session_detail_v3(session_id: str) -> PersistentHopSessionDetailV2:
+        if persistent_hop_presentations_v2 is None:
+            raise HTTPException(
+                status_code=404,
+                detail="fractional persistent-hop analysis presentation is not available",
+            )
+        try:
+            detail = persistent_hop_presentations_v2.detail_v2(session_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409,
+                detail="fractional persistent-hop analysis detail is unavailable",
+            ) from error
+        if detail is None:
+            raise HTTPException(status_code=404, detail="persistent-hop session not found")
+        return detail
+
+    @v3_router.api_route(
+        "/scanner/persistent-sessions/{session_id}/{artifact}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def persistent_hop_analysis_png_v3(
+        session_id: str,
+        artifact: Literal["coverage", "glrt64-response", "cfo-trajectories"],
+    ) -> Response:
+        if persistent_hop_presentations_v2 is None:
+            raise HTTPException(
+                status_code=404,
+                detail="fractional persistent-hop analysis presentation is not available",
+            )
+        try:
+            content = persistent_hop_presentations_v2.artifact(session_id, artifact)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="fractional persistent-hop analysis artifact is unavailable",
             ) from error
         if content is None:
             raise HTTPException(status_code=404, detail="persistent-hop artifact not found")

@@ -84,6 +84,9 @@ class Glrt64CandidateResponse:
     fractional_frame_phase_sample: float | None = None
     fractional_exact_score: float | None = None
     fractional_control_score: float | None = None
+    fractional_residual_cfo_hz: float | None = None
+    fractional_tracking_cfo_hz: float | None = None
+    fractional_margin: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -204,6 +207,13 @@ def analyze_glrt64_dwell(
                         fractional_frame_phase_sample=(fractional.fractional_frame_phase_sample),
                         fractional_exact_score=fractional.fractional_exact_score,
                         fractional_control_score=fractional.fractional_control_score,
+                        fractional_residual_cfo_hz=getattr(
+                            fractional, "fractional_residual_cfo_hz", None
+                        ),
+                        fractional_tracking_cfo_hz=getattr(
+                            fractional, "fractional_tracking_cfo_hz", None
+                        ),
+                        fractional_margin=getattr(fractional, "fractional_margin", None),
                     )
                 )
                 if passed:

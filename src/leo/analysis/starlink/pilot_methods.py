@@ -570,6 +570,9 @@ def refine_glrt64_epochs(
                 fractional,
                 fractional_exact_score=continuous.exact_score,
                 fractional_control_score=continuous.control_score,
+                fractional_residual_cfo_hz=continuous.residual_cfo_hz,
+                fractional_tracking_cfo_hz=continuous.tracking_cfo_hz,
+                fractional_margin=continuous.margin,
             )
         refinements.append(fractional)
     return tuple(refinements)

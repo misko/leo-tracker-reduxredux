@@ -160,9 +160,9 @@ const persistentHopCapture = {
 };
 
 const persistentHopStatus = {
-  schema_version: 1 as const,
+  schema_version: 2 as const,
   session_id: persistentHopCapture.session_id,
-  analysis_id: "persistent-hop-glrt64-cfo-v1" as const,
+  analysis_id: "persistent-hop-fractional-glrt64-cfo-v2" as const,
   state: "pending" as const,
   total_visits: persistentHopCapture.visit_count,
   analyzed_visits: 0,
@@ -171,13 +171,13 @@ const persistentHopStatus = {
 };
 
 const persistentHopHistory = {
-  schema_version: 2 as const,
+  schema_version: 3 as const,
   cursor: 0,
   limit: 5,
   total: 1,
   next_cursor: null,
   items: [{
-    schema_version: 2 as const,
+    schema_version: 3 as const,
     capture: persistentHopCapture,
     analysis: persistentHopStatus,
     available_artifacts: [],
@@ -185,7 +185,7 @@ const persistentHopHistory = {
 };
 
 const persistentHopDetail = {
-  schema_version: 1 as const,
+  schema_version: 2 as const,
   capture: persistentHopCapture,
   analysis: persistentHopStatus,
   product: null,
@@ -417,8 +417,8 @@ describe("Observation Console", () => {
             },
           ],
         }
-        : path === "/api/v2/scanner/persistent-sessions" ? persistentHopHistory
-        : path === `/api/v2/scanner/persistent-sessions/${persistentHopCapture.session_id}` ? persistentHopDetail
+        : path === "/api/v3/scanner/persistent-sessions" ? persistentHopHistory
+        : path === `/api/v3/scanner/persistent-sessions/${persistentHopCapture.session_id}` ? persistentHopDetail
         : path === "/api/v1/acquisition-queue" ? acquisitionQueue
         : path === "/api/v1/queue" ? activeQueue
         : url.includes("/content") ? {
@@ -695,8 +695,8 @@ describe("Observation Console", () => {
       ...persistentHopDetail,
       analysis: completeStatus,
       product: {
-        schema_version: 1,
-        analysis_id: "persistent-hop-glrt64-cfo-v1",
+        schema_version: 2,
+        analysis_id: "persistent-hop-fractional-glrt64-cfo-v2",
         session_id: persistentHopCapture.session_id,
         completed_at: "2026-09-03T03:00:00Z",
         sample_rate_hz: 2500000,
@@ -706,11 +706,17 @@ describe("Observation Console", () => {
           probe_stride_ms: 120,
           glrt64_margin_gate: 0.025,
           maximum_acquisition_candidates: 8,
+          timing_refinement: "circular-five-cell-log-parabola-plus-lanczos16-v1",
+          decision_score: "fractional-epoch-conditioned-glrt64-v1",
+          require_fractional_epoch_for_decision: true,
         },
         visit_count: persistentHopCapture.visit_count,
         sweep_count: 286,
         probe_count: 50_336,
-        passed_best_count: 742,
+        fractionally_scored_candidate_count: 4_000,
+        passed_fractional_candidate_count: 1_400,
+        fractionally_scored_best_count: 1_000,
+        passed_fractional_best_count: 742,
         artifacts: [
           { name: "coverage", byte_count: 10_000, sha256: `sha256:${"1".repeat(64)}` },
           { name: "glrt64-response", byte_count: 20_000, sha256: `sha256:${"2".repeat(64)}` },
@@ -720,10 +726,10 @@ describe("Observation Console", () => {
     };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), "http://localhost").pathname;
-      if (path === "/api/v2/scanner/persistent-sessions") {
+      if (path === "/api/v3/scanner/persistent-sessions") {
         return new Response(JSON.stringify(completeHistory), { status: 200, headers: { "Content-Type": "application/json" } });
       }
-      if (path === `/api/v2/scanner/persistent-sessions/${persistentHopCapture.session_id}`) {
+      if (path === `/api/v3/scanner/persistent-sessions/${persistentHopCapture.session_id}`) {
         return new Response(JSON.stringify(completeDetail), { status: 200, headers: { "Content-Type": "application/json" } });
       }
       return normalFetch(input, init);
@@ -735,17 +741,17 @@ describe("Observation Console", () => {
 
     expect(await screen.findByRole("img", { name: /Persistent-hop capture coverage/ })).toHaveAttribute(
       "src",
-      "/api/v2/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/coverage.png",
+      "/api/v3/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/coverage.png",
     );
     fireEvent.click(screen.getByRole("tab", { name: "GLRT64 vs time" }));
     expect(screen.getByRole("img", { name: /GLRT64 response over time/ })).toHaveAttribute(
       "src",
-      "/api/v2/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/glrt64-response.png",
+      "/api/v3/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/glrt64-response.png",
     );
     fireEvent.click(screen.getByRole("tab", { name: "CFO vs time" }));
     expect(screen.getByRole("img", { name: /CFO windows over time/ })).toHaveAttribute(
       "src",
-      "/api/v2/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/cfo-trajectories.png",
+      "/api/v3/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/cfo-trajectories.png",
     );
     expect(screen.getByText(/50,336 receiver\/probe evaluations/)).toBeInTheDocument();
   });
