@@ -120,7 +120,7 @@ class FakePersistentHopRadio:
             gain_mode=original.gain_mode,
             gains=(
                 tuple(
-                    ReceiverGainV1(receiver_id=receiver_id, gain_db=40.0)
+                    ReceiverGainV1(receiver_id=receiver_id, gain_db=plan.gain_db)
                     for receiver_id in plan.receiver_ids
                 )
                 if original.gain_mode is GainMode.MANUAL

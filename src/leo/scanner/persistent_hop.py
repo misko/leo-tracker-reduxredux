@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
 
 from leo.contracts.radio import RadioSettingsV1
+from leo.contracts.states import GainMode
 from leo.scanner.models import ScannerModel, ScanTarget, scheduled_low_band_targets
 
 PERSISTENT_HOP_NOMINAL_DURATION_SECONDS = 300
@@ -49,6 +51,8 @@ class PersistentHopPlanV1(ScannerModel):
     bandwidth_hz: Literal[2_500_000, 5_000_000]
     lnb_lo_hz: Literal[9_750_000_000] = 9_750_000_000
     receiver_ids: tuple[Literal[0], Literal[1]] = (0, 1)
+    gain_mode: Literal[GainMode.MANUAL] = GainMode.MANUAL
+    gain_db: float = 40.0
     kernel_buffers: Annotated[int, Field(ge=2, le=64)] = 8
     transition_guard_samples: Annotated[int, Field(gt=0)]
     maximum_visit_count: Literal[2_500] = 2_500
@@ -59,6 +63,8 @@ class PersistentHopPlanV1(ScannerModel):
     def _geometry_is_exact(self) -> Self:
         if self.bandwidth_hz != self.sample_rate_hz:
             raise ValueError("persistent-hop bandwidth must equal sample rate")
+        if not math.isfinite(self.gain_db):
+            raise ValueError("persistent-hop gain must be finite")
         if self.transition_guard_samples >= self.valid_visit_samples:
             raise ValueError("persistent-hop transition guard must be shorter than a visit")
         if self.planned_valid_duty_ppm < self.minimum_valid_duty_ppm:
@@ -104,6 +110,7 @@ def compile_persistent_hop_plan_v1(
     sample_rate_hz: Literal[2_500_000, 5_000_000],
     kernel_buffers: int = 8,
     transition_guard_us: int = 11_000,
+    gain_db: float = 40.0,
 ) -> PersistentHopPlanV1:
     """Build the only admitted profile order for one supported native rate."""
 
@@ -119,6 +126,7 @@ def compile_persistent_hop_plan_v1(
     return PersistentHopPlanV1(
         sample_rate_hz=sample_rate_hz,
         bandwidth_hz=sample_rate_hz,
+        gain_db=gain_db,
         kernel_buffers=kernel_buffers,
         transition_guard_samples=guard_numerator // 1_000_000,
         profiles=tuple(
