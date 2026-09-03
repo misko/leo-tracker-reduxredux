@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from threading import Event
 
-from leo.scanner.persistent_hop import PersistentHopPlanV1, PersistentHopSessionReceiptV1
+from leo.scanner.persistent_hop import (
+    PersistentHopPlanV1,
+    PersistentHopSessionReceiptV1,
+    PersistentHopUtcTimingAuthorityV1,
+)
 from leo.scanner.persistent_hop_ports import (
     PersistentHopRadio,
     PersistentHopSession,
@@ -37,6 +42,9 @@ def capture_persistent_hop_session(
     session_id: str,
     visit_sink: Callable[[PersistentHopVisitBlock], None],
     cancel: Event,
+    timing_sink: Callable[[PersistentHopUtcTimingAuthorityV1], None] | None = None,
+    realtime_ns: Callable[[], int] = time.time_ns,
+    monotonic_ns: Callable[[], int] = time.monotonic_ns,
 ) -> PersistentHopSessionReceiptV1:
     """Drain valid visits and return only a server-attested terminal receipt.
 
@@ -54,11 +62,21 @@ def capture_persistent_hop_session(
     recovery_error: Exception | None = None
     close_error: Exception | None = None
     opened = False
+    begin_before_realtime_ns: int | None = None
+    begin_before_monotonic_ns: int | None = None
+    begin_after_realtime_ns: int | None = None
+    begin_after_monotonic_ns: int | None = None
+    terminal_realtime_ns: int | None = None
+    terminal_monotonic_ns: int | None = None
     identity = radio.identity
     try:
         identity = radio.open()
         opened = True
+        begin_before_monotonic_ns = monotonic_ns()
+        begin_before_realtime_ns = realtime_ns()
         session = radio.begin_session(plan, session_id=session_id)
+        begin_after_realtime_ns = realtime_ns()
+        begin_after_monotonic_ns = monotonic_ns()
         cancel_requested = False
         while not session.complete:
             if cancel.is_set() and not cancel_requested:
@@ -74,6 +92,8 @@ def capture_persistent_hop_session(
                 break
             visit_sink(block)
         receipt = session.finish()
+        terminal_realtime_ns = realtime_ns()
+        terminal_monotonic_ns = monotonic_ns()
         if (
             receipt.session_id != session_id
             or receipt.plan != plan
@@ -116,4 +136,38 @@ def capture_persistent_hop_session(
             raise failure from primary_error
         raise failure from close_error
     assert receipt is not None
+    if timing_sink is not None:
+        if None in (
+            begin_before_realtime_ns,
+            begin_before_monotonic_ns,
+            begin_after_realtime_ns,
+            begin_after_monotonic_ns,
+            terminal_realtime_ns,
+            terminal_monotonic_ns,
+        ):
+            raise PersistentHopCaptureError(
+                "persistent-hop capture completed without a full host timing bracket",
+                terminal_receipt=receipt,
+            )
+        assert begin_before_realtime_ns is not None
+        assert begin_before_monotonic_ns is not None
+        assert begin_after_realtime_ns is not None
+        assert begin_after_monotonic_ns is not None
+        assert terminal_realtime_ns is not None
+        assert terminal_monotonic_ns is not None
+        timing_sink(
+            PersistentHopUtcTimingAuthorityV1.from_host_bracket(
+                session_id=session_id,
+                session_start_device_sample_counter=(
+                    receipt.session_start_device_sample_counter
+                ),
+                sample_rate_hz=plan.sample_rate_hz,
+                begin_before_realtime_ns=begin_before_realtime_ns,
+                begin_before_monotonic_ns=begin_before_monotonic_ns,
+                begin_after_realtime_ns=begin_after_realtime_ns,
+                begin_after_monotonic_ns=begin_after_monotonic_ns,
+                terminal_realtime_ns=terminal_realtime_ns,
+                terminal_monotonic_ns=terminal_monotonic_ns,
+            )
+        )
     return receipt

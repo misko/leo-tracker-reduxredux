@@ -89,6 +89,13 @@ def test_capture_publishes_only_after_receipt_and_iq_are_closed(tmp_path) -> Non
     )
 
     assert published.manifest.receipt == receipt
+    assert published.manifest.schema_version == 2
+    assert published.manifest.timing.session_id == receipt.session_id
+    assert (
+        published.manifest.timing.session_start_device_sample_counter
+        == receipt.session_start_device_sample_counter
+    )
+    assert published.manifest.timing.qualified
     assert published.manifest.total_sample_count == plan.valid_visit_samples
     assert published.manifest.queue_telemetry is not None
     assert published.manifest.queue_telemetry.enqueue_failure_count == 0

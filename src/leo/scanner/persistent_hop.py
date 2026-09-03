@@ -37,6 +37,123 @@ PersistentHopTerminalReason = Literal[
 ]
 
 
+class PersistentHopUtcTimingAuthorityV1(ScannerModel):
+    """Host-bracketed UTC authority for the first persistent-hop sample.
+
+    ``begin_session`` starts device sampling before it returns.  The first
+    device counter is therefore bounded by the host clock samples immediately
+    before and after that call.  A terminal clock sample makes wall-clock
+    steps during the 300-second capture visible instead of silently folding
+    them into catalogue time.
+    """
+
+    schema_version: Literal[1] = 1
+    algorithm_version: Literal["host-bracketed-device-counter-utc-v1"] = (
+        "host-bracketed-device-counter-utc-v1"
+    )
+    session_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
+    session_start_device_sample_counter: Annotated[int, Field(ge=0)]
+    sample_rate_hz: Literal[2_500_000, 5_000_000]
+    begin_before_realtime_ns: Annotated[int, Field(gt=0)]
+    begin_before_monotonic_ns: Annotated[int, Field(gt=0)]
+    begin_after_realtime_ns: Annotated[int, Field(gt=0)]
+    begin_after_monotonic_ns: Annotated[int, Field(gt=0)]
+    terminal_realtime_ns: Annotated[int, Field(gt=0)]
+    terminal_monotonic_ns: Annotated[int, Field(gt=0)]
+    first_sample_earliest_utc_ns: Annotated[int, Field(gt=0)]
+    first_sample_estimate_utc_ns: Annotated[int, Field(gt=0)]
+    first_sample_latest_utc_ns: Annotated[int, Field(gt=0)]
+    first_sample_bracket_width_ns: Annotated[int, Field(ge=0)]
+    maximum_realtime_monotonic_offset_spread_ns: Annotated[int, Field(ge=0)]
+    qualification_limit_ns: Annotated[int, Field(gt=0)]
+    qualified: bool
+    reason: Annotated[str, Field(min_length=1, max_length=512)]
+
+    @classmethod
+    def from_host_bracket(
+        cls,
+        *,
+        session_id: str,
+        session_start_device_sample_counter: int,
+        sample_rate_hz: Literal[2_500_000, 5_000_000],
+        begin_before_realtime_ns: int,
+        begin_before_monotonic_ns: int,
+        begin_after_realtime_ns: int,
+        begin_after_monotonic_ns: int,
+        terminal_realtime_ns: int,
+        terminal_monotonic_ns: int,
+        qualification_limit_ns: int = 50_000_000,
+    ) -> PersistentHopUtcTimingAuthorityV1:
+        offsets = (
+            begin_before_realtime_ns - begin_before_monotonic_ns,
+            begin_after_realtime_ns - begin_after_monotonic_ns,
+            terminal_realtime_ns - terminal_monotonic_ns,
+        )
+        spread = max(offsets) - min(offsets)
+        earliest = begin_before_monotonic_ns + min(offsets)
+        latest = begin_after_monotonic_ns + max(offsets)
+        bracket_width = latest - earliest
+        estimate = (earliest + latest) // 2
+        qualified = max(spread, bracket_width) <= qualification_limit_ns
+        return cls(
+            session_id=session_id,
+            session_start_device_sample_counter=session_start_device_sample_counter,
+            sample_rate_hz=sample_rate_hz,
+            begin_before_realtime_ns=begin_before_realtime_ns,
+            begin_before_monotonic_ns=begin_before_monotonic_ns,
+            begin_after_realtime_ns=begin_after_realtime_ns,
+            begin_after_monotonic_ns=begin_after_monotonic_ns,
+            terminal_realtime_ns=terminal_realtime_ns,
+            terminal_monotonic_ns=terminal_monotonic_ns,
+            first_sample_earliest_utc_ns=earliest,
+            first_sample_estimate_utc_ns=estimate,
+            first_sample_latest_utc_ns=latest,
+            first_sample_bracket_width_ns=bracket_width,
+            maximum_realtime_monotonic_offset_spread_ns=spread,
+            qualification_limit_ns=qualification_limit_ns,
+            qualified=qualified,
+            reason=(
+                "first device sample is host-bracketed and the realtime/monotonic "
+                "offset and first-sample bracket remained inside the qualification limit"
+                if qualified
+                else "host clock offset or first-sample bracket exceeded the "
+                "qualification limit; "
+                "catalogue identity must abstain"
+            ),
+        )
+
+    @model_validator(mode="after")
+    def _authority_is_reproducible(self) -> Self:
+        if self.begin_after_monotonic_ns < self.begin_before_monotonic_ns:
+            raise ValueError("persistent-hop begin monotonic bracket is reversed")
+        if self.terminal_monotonic_ns < self.begin_after_monotonic_ns:
+            raise ValueError("persistent-hop terminal monotonic time precedes begin")
+        offsets = (
+            self.begin_before_realtime_ns - self.begin_before_monotonic_ns,
+            self.begin_after_realtime_ns - self.begin_after_monotonic_ns,
+            self.terminal_realtime_ns - self.terminal_monotonic_ns,
+        )
+        spread = max(offsets) - min(offsets)
+        earliest = self.begin_before_monotonic_ns + min(offsets)
+        latest = self.begin_after_monotonic_ns + max(offsets)
+        bracket_width = latest - earliest
+        if (
+            self.maximum_realtime_monotonic_offset_spread_ns != spread
+            or self.first_sample_bracket_width_ns != bracket_width
+            or self.first_sample_earliest_utc_ns != earliest
+            or self.first_sample_latest_utc_ns != latest
+            or self.first_sample_estimate_utc_ns != (earliest + latest) // 2
+        ):
+            raise ValueError("persistent-hop UTC authority does not match its raw clock bracket")
+        if not earliest <= self.first_sample_estimate_utc_ns <= latest:
+            raise ValueError("persistent-hop UTC estimate escapes its bracket")
+        if self.qualified != (
+            max(spread, bracket_width) <= self.qualification_limit_ns
+        ):
+            raise ValueError("persistent-hop UTC qualification disagrees with clock evidence")
+        return self
+
+
 def persistent_hop_wire_session_id(session_id: str) -> int:
     """Derive the stable nonzero uint64 carried by HOPR/HOPS/HOPT."""
 

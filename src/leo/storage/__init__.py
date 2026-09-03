@@ -10,6 +10,7 @@ from leo.storage.errors import (
 from leo.storage.persistent_hop import (
     PersistentHopIqChunkV1,
     PersistentHopIqSessionManifestV1,
+    PersistentHopIqSessionManifestV2,
     PersistentHopIqStore,
     PersistentHopQueueTelemetryV1,
     PersistentHopSessionWriter,
@@ -80,6 +81,7 @@ __all__ = [
     "PersistentHopAnalysisStore",
     "PersistentHopPresentationStore",
     "PersistentHopIqSessionManifestV1",
+    "PersistentHopIqSessionManifestV2",
     "PersistentHopIqStore",
     "PersistentHopQueueTelemetryV1",
     "PersistentHopSessionWriter",
