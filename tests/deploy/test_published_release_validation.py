@@ -14,7 +14,7 @@ GLOBALS = runpy.run_path(str(VALIDATOR))
 
 
 def test_ppu_pin_is_one_exact_dependency_authority() -> None:
-    expected = "78f72e53551be3107565b0f6d4f815d4495c3c0b"
+    expected = "530558402176cd2199553a7faf37c915443fdef2"
     with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
     provenance = json.loads((PROJECT_ROOT / "docs/dependencies/pluto-plus-utils.json").read_text())
@@ -134,7 +134,7 @@ def test_metadata_runtime_validation_scrubs_ambient_loader_state(
 def test_published_release_closes_installed_ppu_against_exact_uv_revision(
     tmp_path: Path, monkeypatch
 ) -> None:  # noqa: ANN001
-    expected = "78f72e53551be3107565b0f6d4f815d4495c3c0b"
+    expected = "530558402176cd2199553a7faf37c915443fdef2"
     release = tmp_path / "release"
     release.mkdir()
     (release / "pyproject.toml").write_text(
