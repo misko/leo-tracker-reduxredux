@@ -90,9 +90,7 @@ def _upstream_visit(visit):
             device_sample_counter_end_exclusive=invalid.device_sample_counter_end_exclusive,
         ),
         valid_device_sample_counter=visit.valid_device_sample_counter,
-        valid_device_sample_counter_end_exclusive=(
-            visit.valid_device_sample_counter_end_exclusive
-        ),
+        valid_device_sample_counter_end_exclusive=(visit.valid_device_sample_counter_end_exclusive),
         valid_sample_count=visit.valid_sample_count,
     )
 
@@ -181,9 +179,7 @@ def _upstream_receipt(receipt: PersistentHopSessionReceiptV1):
                 0xFF if status.restored_profile_index is None else status.restored_profile_index
             ),
             startup_invalid_start_counter=status.startup_invalid_start_counter,
-            startup_invalid_end_counter_exclusive=(
-                status.startup_invalid_end_counter_exclusive
-            ),
+            startup_invalid_end_counter_exclusive=(status.startup_invalid_end_counter_exclusive),
             device_dropped_events=status.device_dropped_events,
         ),
     )
@@ -259,9 +255,7 @@ def test_adapter_maps_cancel_after_next_transition_without_forging_a_visit() -> 
     assert receipt.terminal_incomplete_visit_count == 1
     assert receipt.terminal_unretained_invalid_sample_count == plan.transition_guard_samples
     assert receipt.terminal_unretained_valid_sample_count == 0
-    assert receipt.duty_target_met == (
-        receipt.valid_duty_ppm >= plan.minimum_valid_duty_ppm
-    )
+    assert receipt.duty_target_met == (receipt.valid_duty_ppm >= plan.minimum_valid_duty_ppm)
     radio.close()
 
 
