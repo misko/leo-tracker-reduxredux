@@ -26,6 +26,11 @@ from leo.storage.persistent_hop_analysis_source import (
     PersistentHopAnalysisInputStore,
     persisted_persistent_hop_analysis_source,
 )
+from leo.storage.persistent_hop_analysis_v2 import (
+    PersistentHopAnalysisStoreV2,
+    PersistentHopPresentationStoreV2,
+    PublishedPersistentHopAnalysisV2,
+)
 from leo.storage.persistent_hop_capture import capture_persistent_hop_to_store
 from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
@@ -78,7 +83,9 @@ __all__ = [
     "PersistentHopIqChunkV1",
     "PersistentHopAnalysisInputStore",
     "PersistentHopAnalysisStore",
+    "PersistentHopAnalysisStoreV2",
     "PersistentHopPresentationStore",
+    "PersistentHopPresentationStoreV2",
     "PersistentHopIqSessionManifestV1",
     "PersistentHopIqStore",
     "PersistentHopQueueTelemetryV1",
@@ -87,6 +94,7 @@ __all__ = [
     "PublishedBundle",
     "PublishedPersistentHopIqSession",
     "PublishedPersistentHopAnalysis",
+    "PublishedPersistentHopAnalysisV2",
     "QueuedPersistentHopSessionWriter",
     "PublishedScannerAnalysisBundle",
     "PublishedScannerIqBundle",

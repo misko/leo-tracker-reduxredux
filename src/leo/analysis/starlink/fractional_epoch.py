@@ -38,6 +38,9 @@ class FractionalEpochRefinement:
     log_curvature: float | None
     fractional_exact_score: float | None = None
     fractional_control_score: float | None = None
+    fractional_residual_cfo_hz: float | None = None
+    fractional_tracking_cfo_hz: float | None = None
+    fractional_margin: float | None = None
 
     @property
     def fractional_frame_phase_sample(self) -> float | None:
