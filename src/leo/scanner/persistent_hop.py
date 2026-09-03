@@ -442,6 +442,9 @@ class PersistentHopSessionReceiptV1(ScannerModel):
     ]
     valid_sample_count: Annotated[int, Field(ge=0)]
     transition_invalid_sample_count: Annotated[int, Field(ge=0)]
+    terminal_incomplete_visit_count: Annotated[int, Field(ge=0, le=1)] = 0
+    terminal_unretained_invalid_sample_count: Annotated[int, Field(ge=0)] = 0
+    terminal_unretained_valid_sample_count: Annotated[int, Field(ge=0)] = 0
     missing_sample_count: Annotated[int, Field(ge=0)]
     overflow_count: Annotated[int, Field(ge=0)]
     hop_event_sequence_gap_count: Annotated[int, Field(ge=0)]
@@ -480,6 +483,17 @@ class PersistentHopSessionReceiptV1(ScannerModel):
             raise ValueError("persistent-hop device-counter session interval is reversed")
         if self.capture_outcome == "complete" and not self.visits:
             raise ValueError("complete persistent-hop session has no visits")
+        if self.capture_outcome == "complete" and (
+            self.terminal_incomplete_visit_count
+            or self.terminal_unretained_invalid_sample_count
+            or self.terminal_unretained_valid_sample_count
+        ):
+            raise ValueError("complete persistent-hop session retains an incomplete visit")
+        if not self.terminal_incomplete_visit_count and (
+            self.terminal_unretained_invalid_sample_count
+            or self.terminal_unretained_valid_sample_count
+        ):
+            raise ValueError("persistent-hop trailing samples lack an incomplete visit")
         if len(self.visits) > plan.maximum_visit_count:
             raise ValueError("persistent-hop session exceeds its finite visit bound")
         if self.capture_outcome == "complete" and self.duty_denominator_sample_count < (
@@ -583,18 +597,23 @@ class PersistentHopSessionReceiptV1(ScannerModel):
             visit_counts[visit.target_index] += 1
             target_samples[visit.target_index] += visit.valid_sample_count
 
+        terminal_accounted_counter = (
+            expected_counter
+            + self.terminal_unretained_invalid_sample_count
+            + self.terminal_unretained_valid_sample_count
+        )
         terminal_missing = missing_by_visit.get(len(self.visits), [])
         if terminal_missing:
             if len(terminal_missing) != 1:
                 raise ValueError("persistent-hop terminal counter gap has duplicate faults")
             fault = terminal_missing[0]
             if (
-                fault.expected_device_sample_counter != expected_counter
+                fault.expected_device_sample_counter != terminal_accounted_counter
                 or fault.actual_device_sample_counter
                 != self.session_end_device_sample_counter_exclusive
             ):
                 raise ValueError("persistent-hop terminal counter gap disagrees with its fault")
-        elif expected_counter != self.session_end_device_sample_counter_exclusive:
+        elif terminal_accounted_counter != self.session_end_device_sample_counter_exclusive:
             raise ValueError("persistent-hop terminal counter disagrees with its final visit")
         terminal_event_faults = event_by_visit.get(len(self.visits), [])
         if terminal_event_faults:
@@ -633,7 +652,13 @@ class PersistentHopSessionReceiptV1(ScannerModel):
             self.session_end_device_sample_counter_exclusive
             - self.session_start_device_sample_counter
         )
-        if device_span != valid_samples + transition_samples + missing_samples:
+        transition_samples += self.terminal_unretained_invalid_sample_count
+        if device_span != (
+            valid_samples
+            + transition_samples
+            + self.terminal_unretained_valid_sample_count
+            + missing_samples
+        ):
             raise ValueError("persistent-hop duty denominator leaves device samples unaccounted")
         expected_duty_ppm = valid_samples * 1_000_000 // device_span if device_span else 0
         if (
@@ -655,9 +680,16 @@ class PersistentHopSessionReceiptV1(ScannerModel):
         if (
             status.first_counter != self.session_start_device_sample_counter
             or status.final_counter != self.session_end_device_sample_counter_exclusive
-            or status.visits_started != len(self.visits)
-            or status.events_emitted != len(self.visits)
-            or status.next_event_sequence != len(self.visits) + self.hop_event_sequence_gap_count
+            or status.visits_started
+            != len(self.visits) + self.terminal_incomplete_visit_count
+            or status.events_emitted
+            != len(self.visits) + self.terminal_incomplete_visit_count
+            or status.next_event_sequence
+            != (
+                len(self.visits)
+                + self.terminal_incomplete_visit_count
+                + self.hop_event_sequence_gap_count
+            )
             or status.planned_dwells != plan.maximum_visit_count
         ):
             raise ValueError("persistent-hop terminal status disagrees with session evidence")
@@ -671,7 +703,11 @@ class PersistentHopSessionReceiptV1(ScannerModel):
                 raise ValueError(
                     "persistent-hop terminal startup interval disagrees with first visit"
                 )
-        elif status.startup_invalid_start_counter != status.startup_invalid_end_counter_exclusive:
+        elif (
+            not self.terminal_incomplete_visit_count
+            and status.startup_invalid_start_counter
+            != status.startup_invalid_end_counter_exclusive
+        ):
             raise ValueError("empty persistent-hop session claims a startup invalid interval")
         if status.device_dropped_events != self.hop_event_sequence_gap_count:
             raise ValueError("persistent-hop terminal dropped-event count disagrees with faults")
