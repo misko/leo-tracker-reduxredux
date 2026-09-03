@@ -209,12 +209,19 @@ class PersistentHopPhysicalGroup:
 
 
 @dataclass(frozen=True, slots=True)
+class PersistentHopTrackletEpisodeBinding:
+    tracklet_id: Sha256Digest
+    episode_id: Sha256Digest
+
+
+@dataclass(frozen=True, slots=True)
 class PersistentHopTrajectoryHypothesis:
     """One source-disjoint interpretation of competing per-probe candidates."""
 
     hypothesis_id: Sha256Digest
     graph: PhysicalEpisodeGraphV1
     tracklet_ids: tuple[Sha256Digest, ...]
+    tracklet_episode_bindings: tuple[PersistentHopTrackletEpisodeBinding, ...]
     physical_groups: tuple[PersistentHopPhysicalGroup, ...]
     aggregate_weighted_support: float
     source_group_count: int
@@ -635,6 +642,16 @@ def _trajectory_hypothesis(
         for point in item.points
     }
     tracklet_ids = tuple(item.tracklet_id for item in tracklets)
+    dwell_id = graph.episodes[0].dwell_id
+    bindings = tuple(
+        PersistentHopTrackletEpisodeBinding(
+            tracklet_id=item.tracklet_id,
+            episode_id=canonical_digest(
+                {"tracklet_id": item.tracklet_id, "dwell_id": dwell_id}
+            ),
+        )
+        for item in tracklets
+    )
     return PersistentHopTrajectoryHypothesis(
         hypothesis_id=canonical_digest(
             {
@@ -646,9 +663,51 @@ def _trajectory_hypothesis(
         ),
         graph=graph,
         tracklet_ids=tracklet_ids,
+        tracklet_episode_bindings=bindings,
         physical_groups=groups,
         aggregate_weighted_support=sum(item.weighted_support for item in tracklets),
         source_group_count=len(source_groups),
+    )
+
+
+def persistent_hop_tracklet_graph(
+    hypothesis: PersistentHopTrajectoryHypothesis,
+    tracklet_id: Sha256Digest,
+) -> PhysicalEpisodeGraphV1:
+    """Project one path-local tracklet for heldout catalogue matching."""
+
+    episode_by_id = {item.episode_id: item for item in hypothesis.graph.episodes}
+    binding = next(
+        (
+            item
+            for item in hypothesis.tracklet_episode_bindings
+            if item.tracklet_id == tracklet_id
+        ),
+        None,
+    )
+    if binding is None or binding.episode_id not in episode_by_id:
+        raise PersistentHopTrajectoryInputError(
+            "tracklet is absent from the trajectory hypothesis"
+        )
+    episode = episode_by_id[binding.episode_id]
+    selected_ids = set(episode.observation_ids)
+    observations = tuple(
+        item for item in hypothesis.graph.observations if item.observation_id in selected_ids
+    )
+    return PhysicalEpisodeGraphV1.create(
+        observations=observations,
+        episodes=(
+            PhysicalCfoEpisodeV1(
+                episode_id=episode.episode_id,
+                dwell_id=episode.dwell_id,
+                lane_id=episode.lane_id,
+                order_index=0,
+                continuity_component_id=episode.continuity_component_id,
+                observation_ids=episode.observation_ids,
+                replica_group_id=None,
+                exclusion_group_ids=episode.exclusion_group_ids,
+            ),
+        ),
     )
 
 
@@ -787,10 +846,12 @@ __all__ = [
     "PersistentHopCfoCandidate",
     "PersistentHopPhysicalGroup",
     "PersistentHopTrackPoint",
+    "PersistentHopTrackletEpisodeBinding",
     "PersistentHopTracklet",
     "PersistentHopTrajectoryConfig",
     "PersistentHopTrajectoryHypothesis",
     "PersistentHopTrajectoryInputError",
     "PersistentHopTrajectoryResult",
+    "persistent_hop_tracklet_graph",
     "reconstruct_persistent_hop_trajectories",
 ]

@@ -82,7 +82,7 @@ def _zero_response_graph(payload: str) -> PhysicalEpisodeGraphV1:
             standard_uncertainty_hz=400.0,
             factorial_support_moments_s=(1.0, 0.0, 1.0 / 60_000.0, 0.0),
         )
-        for index in range(30)
+        for index in range(151)
     )
     episode = PhysicalCfoEpisodeV1(
         episode_id=episode_id,
@@ -161,7 +161,9 @@ def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining()
     assert result.candidate_only
     assert result.identity_claimed is False
     assert result.all_banks_built_before_response_scoring
-    assert result.scored_observation_count == 30
+    assert result.source_observation_count == 151
+    assert result.scored_observation_count == 128
+    assert result.support_span_s == 300.02
 
 
 def test_time_balanced_scoring_keeps_the_endpoints_and_work_bound() -> None:
@@ -224,9 +226,9 @@ def test_time_balanced_scoring_keeps_the_endpoints_and_work_bound() -> None:
         config=config,
     )
 
-    assert result.source_observation_count == 30
+    assert result.source_observation_count == 151
     assert result.scored_observation_count == 20
-    assert result.support_span_s == 58.02
+    assert result.support_span_s == 300.02
 
 
 def test_restricted_null_track_abstains_instead_of_forcing_a_norad() -> None:
