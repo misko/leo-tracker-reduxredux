@@ -1527,7 +1527,7 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         "LEO_SCANNER_GAIN_DB": "40.0",
         "LEO_SCANNER_MARGIN_GATE": "0.025",
         "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
-        "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US": "5000",
+        "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US": "1000",
         "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK": "131072",
         "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS": "8",
         "LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS": "8",
@@ -1535,7 +1535,9 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         "LEO_SCANNER_PERSISTENT_IIOD_PORT": "30432",
     }
     if any(environment.get(key) != value for key, value in expected_scanner.items()):
-        raise ValueError("production scanner configuration is not the reviewed V3 deployment")
+        raise ValueError(
+            "production scanner configuration is not the reviewed high-duty deployment"
+        )
     try:
         radios = json.loads(environment.get("LEO_RADIOS_JSON", ""))
     except json.JSONDecodeError as error:

@@ -82,6 +82,17 @@ def test_plan_supports_sample_exact_five_millisecond_guard_candidate() -> None:
     assert persistent_hop_wire_session_id("stable-session") == 3_307_769_054_751_132_897
 
 
+@pytest.mark.parametrize("sample_rate_hz", (2_500_000, 5_000_000))
+def test_plan_supports_high_duty_one_millisecond_guard(sample_rate_hz: int) -> None:
+    plan = compile_persistent_hop_plan_v1(
+        sample_rate_hz=sample_rate_hz,
+        transition_guard_us=1_000,
+    )
+
+    assert plan.transition_guard_samples == sample_rate_hz // 1_000
+    assert plan.planned_valid_duty_ppm == 991_735
+
+
 def test_scheduled_plan_preserves_twenty_minute_fifty_fifty_rate_slots() -> None:
     first_time = datetime(2026, 9, 3, 0, 0, tzinfo=UTC)
     rates = []

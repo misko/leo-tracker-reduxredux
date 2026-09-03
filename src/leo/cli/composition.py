@@ -286,7 +286,7 @@ class CliSettings:
     scanner_dwell_ms: int = 120
     scanner_gain_db: float = 40.0
     scanner_margin_gate: float = 0.025
-    scanner_persistent_transition_guard_us: int = 5_000
+    scanner_persistent_transition_guard_us: int = 1_000
     scanner_persistent_samples_per_block: int = 131_072
     scanner_persistent_kernel_buffers: int = 8
     scanner_persistent_read_ahead_visits: int = 8
@@ -518,7 +518,7 @@ class CliSettings:
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
                 scanner_persistent_transition_guard_us=int(
-                    values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "5000")
+                    values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "1000")
                 ),
                 scanner_persistent_samples_per_block=int(
                     values.get("LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK", "131072")

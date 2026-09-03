@@ -214,7 +214,11 @@ sample-rate set is `{2500000, 5000000}`, each RF bandwidth equals its sample
 rate, each dwell is 120 ms, every run lasts approximately 300 seconds, and the
 target order is CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U. Also verify
 every referenced sweep bundle opens with its recorded manifest digest and that
-startup reconciliation completes Standard analysis for every sweep. Leave
+each rate reports at least 950000 valid-duty ppm, zero missing samples, zero
+overflows, zero hop-event sequence gaps, and exact receiver restoration. The
+V1 manifest's 900000 ppm field remains a compatibility floor for historical
+sessions and is not the high-duty release gate. Verify that startup
+reconciliation completes Standard analysis for every sweep. Leave
 recurring scanning disabled until scanner IQ has passed the scanner-retention
 checks below; at the configured cadence its
 conservative raw growth is 649,036,800,000 bytes/day.

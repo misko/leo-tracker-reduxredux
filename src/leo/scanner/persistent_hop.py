@@ -17,6 +17,10 @@ from leo.scanner.schedule import ScheduledScannerRunIntentV1
 PERSISTENT_HOP_NOMINAL_DURATION_SECONDS = 300
 PERSISTENT_HOP_VALID_VISIT_MS = 120
 PERSISTENT_HOP_RATE_HZ = (2_500_000, 5_000_000)
+# V1 receipts retain their original 90% compatibility floor.  New production
+# qualification uses this additive threshold so historical manifests remain
+# readable while releases can require the stricter objective.
+PERSISTENT_HOP_HIGH_DUTY_ACCEPTANCE_PPM = 950_000
 PERSISTENT_HOP_MINIMUM_VALID_DUTY_PPM = 900_000
 PERSISTENT_HOP_LNB_LO_HZ = 9_750_000_000
 PersistentHopCaptureOutcome = Literal["complete", "cancelled", "failed"]
