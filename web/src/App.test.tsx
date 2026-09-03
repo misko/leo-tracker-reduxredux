@@ -750,7 +750,7 @@ describe("Observation Console", () => {
         projected_candidate_count: 1_000,
         trajectory_hypothesis_count: 1,
         physical_group_count: 1,
-        tle_matching_group_limit: 8,
+        tle_matching_group_limit: 4,
         tle_matching_attempted_group_count: 1,
         unscored_physical_group_count: 0,
         tracklets: [],

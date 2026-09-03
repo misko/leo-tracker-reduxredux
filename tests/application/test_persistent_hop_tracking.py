@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ from leo.scanner.detector import (
 )
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
 from leo.scanner.persistent_hop import compile_persistent_hop_plan_v1
+from leo.scanner.persistent_hop_tracking import PersistentHopTrackingStatusV1
 from leo.storage.persistent_hop import PersistentHopIqStore
 from leo.storage.persistent_hop_analysis_source import PersistentHopAnalysisInputStore
 from leo.storage.persistent_hop_analysis_v2 import PersistentHopAnalysisStoreV2
@@ -102,7 +104,21 @@ def test_legacy_capture_is_terminally_unsupported_instead_of_inventing_utc(
         renderer=lambda *_args: pytest.fail("legacy captures must not be rendered"),
     )
 
-    summary = service.run_pending(maximum_sessions=1)
+    products.write_status(
+        PersistentHopTrackingStatusV1(
+            session_id="scan-hop-legacy-tracking",
+            state="failed",
+            phase="waiting",
+            updated_at=datetime.now(tz=UTC),
+            failure_summary="deterministic failure is quarantined",
+        )
+    )
+    assert service.run_pending(maximum_sessions=1).requested_session_count == 0
+
+    summary = service.run_pending(
+        maximum_sessions=1,
+        session_id="scan-hop-legacy-tracking",
+    )
 
     assert summary.failures == ()
     assert summary.unsupported_session_ids == ("scan-hop-legacy-tracking",)

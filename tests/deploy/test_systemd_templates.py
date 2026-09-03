@@ -258,7 +258,7 @@ def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate(
     assert "--maximum-workers 2" in analysis["ExecStart"]
     assert "--probe-stride-ms 120" in analysis["ExecStart"]
     assert "--site spinnaker-sausalito" in analysis["ExecStart"]
-    assert "--maximum-tracking-groups 8" in analysis["ExecStart"]
+    assert "--maximum-tracking-groups 4" in analysis["ExecStart"]
     assert int(analysis["CPUWeight"]) < int(acquisition["CPUWeight"])
     assert int(analysis["IOWeight"]) < int(acquisition["IOWeight"])
     assert int(analysis["Nice"]) > int(acquisition["Nice"])

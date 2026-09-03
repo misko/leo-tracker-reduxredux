@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 from leo.application.persistent_hop_trajectory import (
     PersistentHopTrajectoryProjectionConfig,
+    PersistentHopTrajectoryProjectionError,
     project_fractional_persistent_hop_candidates,
 )
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
@@ -113,6 +116,7 @@ def test_projects_only_nonoverlapping_fractional_evidence_with_exact_support(tmp
     result = project_fractional_persistent_hop_candidates(
         publication.manifest,
         (chunk,),
+        input_manifest_sha256=publication.manifest_sha256,
         config=PersistentHopTrajectoryProjectionConfig(require_complete_capture=False),
     )
 
@@ -136,4 +140,20 @@ def test_projects_only_nonoverlapping_fractional_evidence_with_exact_support(tmp
         assert all(
             right.source_sample_start >= left.source_sample_end
             for left, right in zip(rows, rows[1:], strict=False)
+        )
+
+
+def test_projection_rejects_chunks_bound_to_a_different_capture(tmp_path) -> None:
+    publication = _one_visit_manifest(tmp_path)
+    chunk = _chunk(publication)
+
+    with pytest.raises(
+        PersistentHopTrajectoryProjectionError,
+        match="do not bind the inspected capture manifest",
+    ):
+        project_fractional_persistent_hop_candidates(
+            publication.manifest,
+            (chunk,),
+            input_manifest_sha256="sha256:" + "0" * 64,
+            config=PersistentHopTrajectoryProjectionConfig(require_complete_capture=False),
         )

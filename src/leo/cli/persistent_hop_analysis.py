@@ -52,7 +52,7 @@ def main() -> None:
         required=True,
         help="Reviewed observer-site authority used for causal TLE prediction.",
     )
-    parser.add_argument("--maximum-tracking-groups", type=int, default=8)
+    parser.add_argument("--maximum-tracking-groups", type=int, default=4)
     parser.add_argument("--json", action="store_true")
     arguments = parser.parse_args()
 

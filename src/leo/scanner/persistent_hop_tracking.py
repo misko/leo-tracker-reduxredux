@@ -174,7 +174,7 @@ class PersistentHopTrackingManifestV1(ScannerModel):
     projected_candidate_count: Annotated[int, Field(ge=0)] = 0
     trajectory_hypothesis_count: Annotated[int, Field(ge=0, le=16)] = 0
     physical_group_count: Annotated[int, Field(ge=0, le=4096)] = 0
-    tle_matching_group_limit: Annotated[int, Field(ge=1, le=32)] = 8
+    tle_matching_group_limit: Annotated[int, Field(ge=1, le=32)] = 4
     tle_matching_attempted_group_count: Annotated[int, Field(ge=0, le=32)] = 0
     tracklets: Annotated[tuple[PersistentHopTrajectoryTrackletV1, ...], Field(max_length=128)] = ()
     tle_candidates: Annotated[tuple[PersistentHopTleCandidateV1, ...], Field(max_length=32)] = ()

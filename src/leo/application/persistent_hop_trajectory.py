@@ -89,6 +89,7 @@ def project_fractional_persistent_hop_candidates(
     manifest: PersistentHopIqSessionManifestV2,
     chunks: tuple[PersistentHopAnalysisChunkV2, ...],
     *,
+    input_manifest_sha256: Sha256Digest,
     config: PersistentHopTrajectoryProjectionConfig | None = None,
 ) -> PersistentHopTrajectoryProjection:
     """Project all passing fractional candidates from independent 20 ms probes."""
@@ -110,6 +111,10 @@ def project_fractional_persistent_hop_candidates(
         )
     if not chunks:
         raise PersistentHopTrajectoryProjectionError("fractional trajectory chunks are empty")
+    if chunks[0].input_manifest_sha256 != input_manifest_sha256:
+        raise PersistentHopTrajectoryProjectionError(
+            "fractional chunks do not bind the inspected capture manifest"
+        )
     if any(
         item.session_id != manifest.session_id
         or item.input_manifest_sha256 != chunks[0].input_manifest_sha256
