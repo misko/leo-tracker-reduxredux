@@ -34,6 +34,8 @@ def test_plan_freezes_duration_rate_bandwidth_and_profile_order(sample_rate_hz: 
     assert plan.maximum_visit_count == 2_500
     assert plan.bandwidth_hz == sample_rate_hz
     assert plan.valid_visit_samples == sample_rate_hz * 120 // 1_000
+    assert plan.transition_guard_samples == sample_rate_hz * 11 // 1_000
+    assert plan.planned_valid_duty_ppm == 916_030
     assert plan.nominal_device_sample_count == sample_rate_hz * 300
     assert [
         (profile.fastlock_profile_index, profile.target.channel, profile.target.edge.value)
