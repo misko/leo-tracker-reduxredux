@@ -447,6 +447,9 @@ def build_standard_kalman_tracking(
                 pilot_symbol_count=config.pilot_symbol_count,
                 start_time_s=track.start_s,
                 end_time_s=track.end_s,
+                fractional_epoch_offset_samples=float(
+                    source.fractional_epoch_offset_samples or 0.0
+                ),
             )
             source_frame_counts[trajectory_id] += len(measured)
             remaining = config.maximum_source_frames_per_track - len(raw_by_track[trajectory_id])

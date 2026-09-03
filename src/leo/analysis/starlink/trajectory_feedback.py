@@ -1755,6 +1755,9 @@ def _replay_batch(
                     acquired_cfo_hz=conditioned_seed_cfo_hz,
                     edge=edge,
                     glrt_size=conditioned_glrt_size,
+                    fractional_epoch_offset_samples=float(
+                        match.fractional_epoch_offset_samples or 0.0
+                    ),
                 )
             original = {score.method: score for score in baseline[sample_start].scores}
             for score in detected.scores:

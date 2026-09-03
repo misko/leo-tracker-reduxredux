@@ -1836,6 +1836,9 @@ def _build_standard_kalman_tracking_at_global_probe_windows(
                 pilot_symbol_count=kalman_config.pilot_symbol_count,
                 start_time_s=track.start_s,
                 end_time_s=track.end_s,
+                fractional_epoch_offset_samples=float(
+                    source.fractional_epoch_offset_samples or 0.0
+                ),
             )
             source_frame_counts[trajectory_id] += len(measured)
             remaining = kalman_config.maximum_source_frames_per_track - len(

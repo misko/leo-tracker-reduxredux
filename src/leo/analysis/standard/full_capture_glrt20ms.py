@@ -47,6 +47,7 @@ from leo.analysis.starlink.pilot_methods import (
     PilotProbeDetection,
     conditioned_glrt64_score,
     conditioned_glrt64_scores,
+    refine_glrt64_epoch,
 )
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
@@ -280,24 +281,20 @@ def _fractional_glrt_epoch(
     edge: StarlinkEdge,
     glrt_size: int,
 ) -> tuple[str, float | None, tuple[float, ...]]:
-    epoch = candidate.refined_epoch_sample
-    if epoch + _FRACTIONAL_EPOCH_GRID_OFFSETS[0] < 0:
-        return "unavailable", None, ()
-    scores = conditioned_glrt64_scores(
+    refinement = refine_glrt64_epoch(
         samples,
         sample_rate_hz,
-        epoch_samples=tuple(epoch + item for item in _FRACTIONAL_EPOCH_GRID_OFFSETS),
-        acquired_cfo_hz=tuple(
-            candidate.absolute_cfo_hz for _item in _FRACTIONAL_EPOCH_GRID_OFFSETS
-        ),
+        integer_epoch_sample=candidate.refined_epoch_sample,
+        acquired_cfo_hz=candidate.absolute_cfo_hz,
         edge=edge,
         glrt_size=glrt_size,
+        expected_integer_score=score,
     )
-    exact = tuple(float(item.exact_score) for item in scores)
-    if not math.isclose(exact[2], score.exact_score, rel_tol=0.0, abs_tol=1e-12):
-        raise ValueError("fractional GLRT center score differs from the selected candidate")
-    offset = fractional_log_peak_offset(exact)
-    return ("complete", offset, exact) if offset is not None else ("unbracketed", None, exact)
+    return (
+        refinement.status.value,
+        refinement.fractional_epoch_offset_samples,
+        refinement.exact_score_grid,
+    )
 
 
 def _analyze_window(
@@ -384,6 +381,7 @@ def _analyze_window(
         absolute_cfo_hz=score.tracking_cfo_hz,
         edge=edge,
         maximum_residual_cfo_hz=2_000.0,
+        fractional_epoch_offset_samples=float(fractional_offset or 0.0),
     )
     frames = frame_result.frames
     times = np.asarray([item.reference_sample / sample_rate_hz for item in frames], dtype=float)

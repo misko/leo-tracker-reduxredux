@@ -230,8 +230,8 @@ class PathStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="path-standard-native",
-        algorithm_version="standard-native-evidence-v15",
-        configuration_schema="path-standard-native.evidence.v13",
+        algorithm_version="standard-native-evidence-v16",
+        configuration_schema="path-standard-native.evidence.v14",
         output_products=_NATIVE_EVIDENCE_PRODUCTS,
         resource_class=ResourceClass.HEAVY,
         accepted_outcomes=_NATIVE_OUTCOMES,

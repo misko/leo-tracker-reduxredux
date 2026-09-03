@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, cast
 
@@ -54,6 +55,7 @@ def build_scanner_pilot_doppler_segments(
     metrics: ScannerAnalysisMetricsV1,
     *,
     config: ScannerPilotDopplerConfigV1 | None = None,
+    fractional_epoch_offsets: Mapping[tuple[int, int, int, int], float] | None = None,
 ) -> ScannerPilotDopplerSegmentsV1:
     """Track complete pilot frames without crossing a scanner retune boundary."""
 
@@ -97,6 +99,19 @@ def build_scanner_pilot_doppler_segments(
                 duration_samples=duration_samples,
                 config=resolved,
                 segment_index=len(segments),
+                fractional_epoch_offset_samples=(
+                    0.0
+                    if fractional_epoch_offsets is None
+                    else fractional_epoch_offsets.get(
+                        (
+                            source_frame.target_index,
+                            seed.source.receiver_id,
+                            seed.source.probe_index,
+                            seed.source.candidate.candidate_rank,
+                        ),
+                        0.0,
+                    )
+                ),
             )
             segments.append(segment)
         unavailable_count += max(0, len(seeds) - resolved.maximum_segments_per_frame)
@@ -235,6 +250,7 @@ def _analyze_segment(
     duration_samples: int,
     config: ScannerPilotDopplerConfigV1,
     segment_index: int,
+    fractional_epoch_offset_samples: float,
 ) -> ScannerPilotDopplerSegmentV1:
     start_sample = seed.source.probe_start_ms * sample_rate_hz // 1_000
     stop_sample = start_sample + duration_samples
@@ -251,6 +267,7 @@ def _analyze_segment(
             phase_innovation_gate_rad=config.phase_innovation_gate_rad,
             timing_innovation_gate_sigma=config.timing_innovation_gate_sigma,
         ),
+        initial_fractional_epoch_offset_samples=fractional_epoch_offset_samples,
     )
     lattice_count = complete_lattice_count(
         duration_samples,
@@ -333,6 +350,7 @@ def _analyze_segment(
             "receiver_id": seed.source.receiver_id,
             "source_probe_index": seed.source.probe_index,
             "source_candidate_rank": seed.source.candidate.candidate_rank,
+            "source_fractional_epoch_offset_samples": fractional_epoch_offset_samples,
             "window_start_sample": start_sample,
             "window_sample_count": duration_samples,
             "config": config.model_dump(mode="json"),

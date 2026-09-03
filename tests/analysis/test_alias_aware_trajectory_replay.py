@@ -453,9 +453,10 @@ def test_conditioned_replay_transports_epoch_when_independent_winner_moves(monke
         None,
         None,
         "fixture",
+        fractional_epoch_offset_samples=0.375,
     )
     independent = PilotMethodScore(PilotMethod.GLRT64, 0.04, 0.04, 0.0, 50_000.0, 50_000.0)
-    observed_conditioning: list[tuple[int, float, int]] = []
+    observed_conditioning: list[tuple[int, float, int, float]] = []
 
     def probe_batches(*_args, **_kwargs) -> Iterator[tuple[tuple[int, np.ndarray], ...]]:
         yield ((0, np.ones(100, dtype=np.complex128)),)
@@ -490,9 +491,12 @@ def test_conditioned_replay_transports_epoch_when_independent_winner_moves(monke
         acquired_cfo_hz,
         edge,
         glrt_size,
+        fractional_epoch_offset_samples,
     ) -> PilotMethodScore:
         del edge
-        observed_conditioning.append((epoch_sample, acquired_cfo_hz, glrt_size))
+        observed_conditioning.append(
+            (epoch_sample, acquired_cfo_hz, glrt_size, fractional_epoch_offset_samples)
+        )
         return PilotMethodScore(PilotMethod.GLRT64, 0.45, 0.04, 0.41, 0.0, 0.0)
 
     monkeypatch.setattr(
@@ -524,10 +528,11 @@ def test_conditioned_replay_transports_epoch_when_independent_winner_moves(monke
 
     glrt = next(row for row in rows if row["detector_method"] == "glrt64")
     assert len(observed_conditioning) == 1
-    epoch, seed_cfo_hz, glrt_size = observed_conditioning[0]
+    epoch, seed_cfo_hz, glrt_size, fractional_offset = observed_conditioning[0]
     assert epoch == 73
     assert abs(seed_cfo_hz) < 1.0
     assert glrt_size == 4_096
+    assert fractional_offset == pytest.approx(0.375)
     assert glrt["corrected_margin"] == 0.0
     assert glrt["conditioned_corrected_margin"] == 0.41
     assert glrt["conditioned_epoch_sample"] == 73
