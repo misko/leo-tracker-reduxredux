@@ -112,6 +112,9 @@ def test_persistent_hop_store_rejects_tampered_sweep(tmp_path) -> None:
     with pytest.raises(BundleCorruptionError, match="compressed digest mismatch"):
         store.read_sweep_ci16(published, 0)
 
+    with pytest.raises(BundleCorruptionError, match="compressed digest mismatch"):
+        store.verify("hop-storage-test")
+
 
 def test_queued_persistent_hop_writer_surfaces_conversion_failure(tmp_path) -> None:
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000, kernel_buffers=2)

@@ -165,6 +165,7 @@ from leo.scanner import (
     ScheduledScannerRunIntentV1,
     SequentialScanRadioLike,
     analyze_scan_sweep,
+    canonical_scheduled_scanner_operation_key,
     capture_configured_scan_sweep,
     compile_scheduled_persistent_hop_plan_v1,
     compile_scheduled_scanner_run_intent_v1,
@@ -1169,6 +1170,7 @@ class LocalAcquisitionBackend:
             interval_seconds=self.settings.scanner_interval_seconds,
             maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
             run_duration_seconds=self.settings.scanner_run_seconds,
+            requires_durable_queue=self.settings.scanner_capture_mode == "persistent_hop",
         )
 
     def scheduled_scanner_intent(
@@ -1179,6 +1181,12 @@ class LocalAcquisitionBackend:
     ) -> ScheduledScannerRunIntentV1:
         if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
+        expected_operation_key = canonical_scheduled_scanner_operation_key(scheduled_for)
+        if operation_key != expected_operation_key:
+            raise CliBackendError(
+                "scheduled scanner operation key disagrees with its UTC cadence slot",
+                ExitCode.INVALID_CONFIGURATION,
+            )
         assert self.settings.scanner_radio_id is not None
         configured = next(
             radio
@@ -1399,7 +1407,7 @@ class LocalAcquisitionBackend:
         session_id = f"scan-hop-{intent.intent_digest.removeprefix('sha256:')[:16]}"
         store = self._persistent_hop_iq_store()
         try:
-            existing = store.inspect(session_id)
+            existing = store.verify(session_id)
         except BundleNotFoundError:
             pass
         else:

@@ -766,6 +766,34 @@ def test_supervisor_runs_scans_on_the_independent_utc_cadence() -> None:
     ]
 
 
+def test_persistent_hop_never_uses_the_non_durable_supervisor() -> None:
+    clock = _Clock()
+    backend = _SupervisorBackend(clock)
+    backend.scanner_schedule = lambda: ScheduledScannerConfiguration(  # type: ignore[method-assign]
+        interval_seconds=1_200,
+        maximum_lateness_seconds=300,
+        run_duration_seconds=300,
+        requires_durable_queue=True,
+    )
+
+    with pytest.raises(ValueError, match="persistent hopping requires the durable"):
+        ContinuousAcquisitionRunner(
+            cast(AcquisitionCliBackend, backend),
+            clock=clock,
+            utc_now=lambda: datetime(2026, 9, 2, tzinfo=UTC),
+        ).run(
+            "test-profile",
+            radio_ids=("radio-a",),
+            extra_tags=(),
+            interval_seconds=10,
+            maximum_captures=1,
+            cancel=Event(),
+        )
+
+    assert backend.capture_times == []
+    assert backend.scanner_capture_times == []
+
+
 def test_durable_supervisor_persists_independent_dwell_and_scanner_cadences() -> None:
     clock = _Clock()
     backend = _DurableSupervisorBackend(clock)

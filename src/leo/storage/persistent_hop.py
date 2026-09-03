@@ -573,6 +573,17 @@ class PersistentHopIqStore:
             manifest_sha256=sha256_digest(payload),
         )
 
+    def verify(
+        self,
+        session: PublishedPersistentHopIqSession | str,
+    ) -> PublishedPersistentHopIqSession:
+        """Re-read and hash every IQ chunk before trusting a published session."""
+
+        inspected = self.inspect(session) if isinstance(session, str) else session
+        for sweep_index in range(len(inspected.manifest.chunks)):
+            self.read_sweep_ci16(inspected, sweep_index, verify=True)
+        return inspected
+
     def read_sweep_ci16(
         self,
         session: PublishedPersistentHopIqSession | str,
