@@ -80,6 +80,7 @@ class ScheduledScannerConfiguration:
     interval_seconds: float
     maximum_lateness_seconds: float
     run_duration_seconds: float = 300.0
+    requires_durable_queue: bool = False
 
     def __post_init__(self) -> None:
         if self.interval_seconds <= 0:

@@ -70,7 +70,10 @@ from leo.contracts.mixed_rate_schedule import (
     ProductionDwellIntentV3,
 )
 from leo.contracts.states import CaptureState
-from leo.scanner import ScheduledScannerRunIntentV1
+from leo.scanner import (
+    ScheduledScannerRunIntentV1,
+    canonical_scheduled_scanner_operation_key,
+)
 
 logger = logging.getLogger(__name__)
 _MIXED_RATE_POLICIES = frozenset(
@@ -206,9 +209,16 @@ class ContinuousAcquisitionRunner:
         ):
             raise ValueError("multi-profile acquisition requires exactly two unique radios")
         scanner = _scheduled_scanner(self.backend)
-        if scanner_only and (scanner is None or scanner.scanner_schedule() is None):
+        scanner_configuration = scanner.scanner_schedule() if scanner is not None else None
+        if scanner_only and scanner_configuration is None:
             raise ValueError("scanner-only acquisition requires an enabled scanner schedule")
         durable_queue = _durable_acquisition_queue(self.backend)
+        if (
+            scanner_configuration is not None
+            and scanner_configuration.requires_durable_queue
+            and not durable_queue
+        ):
+            raise ValueError("persistent hopping requires the durable acquisition queue")
         if scanner_only and not durable_queue:
             raise ValueError("scanner-only acquisition requires the durable acquisition queue")
         if scanner is not None and durable_queue:
@@ -459,7 +469,7 @@ class ContinuousAcquisitionRunner:
                     and next_scanner_due is not None
                     and now_utc >= next_scanner_due
                 ):
-                    operation_key = _scheduled_scanner_key(next_scanner_due)
+                    operation_key = canonical_scheduled_scanner_operation_key(next_scanner_due)
                     scanner_intent = scanner.scheduled_scanner_intent(
                         operation_key=operation_key,
                         scheduled_for=next_scanner_due,
@@ -965,7 +975,7 @@ class ContinuousAcquisitionRunner:
                     and next_scanner_slot is not None
                     and now >= next_scanner_due
                 ):
-                    operation_key = _scheduled_scanner_key(next_scanner_slot)
+                    operation_key = canonical_scheduled_scanner_operation_key(next_scanner_slot)
                     scanner_intent = scanner.scheduled_scanner_intent(
                         operation_key=operation_key,
                         scheduled_for=next_scanner_slot,
@@ -1194,13 +1204,6 @@ def _scheduled_dwell_key(
             f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='microseconds')}"
         )
     return f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='seconds')}"
-
-
-def _scheduled_scanner_key(scheduled_for: datetime) -> str:
-    if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
-        raise ValueError("scanner scheduling clock must be timezone-aware")
-    canonical = scheduled_for.astimezone(UTC)
-    return f"scheduled-scanner:{canonical.strftime('%Y%m%dT%H%M%SZ')}"
 
 
 def _production_profile_authority_identity(

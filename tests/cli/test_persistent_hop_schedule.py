@@ -5,7 +5,7 @@ from threading import Event
 
 import pytest
 
-from leo.cli.backend import ScheduledPersistentHopRun
+from leo.cli.backend import CliBackendError, ScheduledPersistentHopRun
 from leo.cli.composition import (
     CliSettings,
     CompositionHooks,
@@ -124,7 +124,7 @@ def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path) -> 
     )
     scheduled_for = datetime(2026, 9, 2, 0, 20, tzinfo=UTC)
     intent = backend.scheduled_scanner_intent(
-        operation_key="scheduled-scanner:20260903T012000Z",
+        operation_key="scheduled-scanner:20260902T002000Z",
         scheduled_for=scheduled_for,
     )
 
@@ -140,3 +140,14 @@ def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path) -> 
     assert first.published.manifest.queue_telemetry is not None
     assert second.published.manifest_sha256 == first.published.manifest_sha256
     assert (radio.open_count, radio.close_count) == (1, 1)
+
+
+def test_scheduled_persistent_hop_rejects_noncanonical_slot_identity(tmp_path) -> None:
+    backend = LocalAcquisitionBackend(_settings(tmp_path))
+    scheduled_for = datetime(2026, 9, 2, 0, 20, tzinfo=UTC)
+
+    with pytest.raises(CliBackendError, match="operation key disagrees"):
+        backend.scheduled_scanner_intent(
+            operation_key="scheduled-scanner:20260903T012000Z",
+            scheduled_for=scheduled_for,
+        )

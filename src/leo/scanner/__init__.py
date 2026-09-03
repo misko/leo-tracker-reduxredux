@@ -126,6 +126,7 @@ from leo.scanner.schedule import (
     ScannerRunManifestV1,
     ScannerRunSweepEntryV1,
     ScheduledScannerRunIntentV1,
+    canonical_scheduled_scanner_operation_key,
     compile_scheduled_scanner_run_intent_v1,
 )
 from leo.scanner.standard_analysis import (
@@ -241,6 +242,7 @@ __all__ = [
     "capture_configured_scan_sweep",
     "capture_persistent_hop_session",
     "build_persistent_hop_analysis_source",
+    "canonical_scheduled_scanner_operation_key",
     "compile_scheduled_scanner_run_intent_v1",
     "compile_persistent_hop_plan_v1",
     "compile_scheduled_persistent_hop_plan_v1",
