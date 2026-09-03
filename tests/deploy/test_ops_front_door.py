@@ -1640,6 +1640,45 @@ def test_quiesce_fails_closed_when_any_leo_unit_remains_active(
         OPS._quiesce_runtime()
 
 
+def test_runtime_start_enables_persistent_analysis_only_for_a_release_that_ships_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    revision = "2" * 40
+    calls: list[tuple[str, ...]] = []
+
+    def run(command, **_kwargs):
+        calls.append(tuple(command))
+        return type("Result", (), {"returncode": 0, "stdout": ""})()
+
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: revision)
+    monkeypatch.setattr(OPS, "_release_ships_persistent_hop_analysis", lambda _revision: True)
+    monkeypatch.setattr(OPS.subprocess, "run", run)
+
+    OPS._start_runtime()
+
+    assert calls[-1] == (
+        "/usr/bin/systemctl",
+        "enable",
+        "--now",
+        "leo-reconcile.timer",
+        "leo-persistent-hop-analysis.timer",
+        "leo-retention.timer",
+        "leo-tle-collection.timer",
+    )
+
+    calls.clear()
+    monkeypatch.setattr(OPS, "_release_ships_persistent_hop_analysis", lambda _revision: False)
+    OPS._start_runtime()
+
+    assert (
+        "/usr/bin/systemctl",
+        "disable",
+        "--now",
+        "leo-persistent-hop-analysis.timer",
+    ) in calls
+    assert "leo-persistent-hop-analysis.timer" not in calls[-1]
+
+
 def test_restore_refuses_to_mutate_previous_runtime_until_target_is_stopped(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1882,11 +1921,12 @@ def test_restored_runtime_verifies_divergent_selectors_and_service_health(
     monkeypatch.setattr(OPS, "_wait_for_api", lambda: health.append("api"))
     monkeypatch.setattr(OPS, "_verify_worker_environment_revision", lambda _revision: None)
     monkeypatch.setattr(OPS, "_verify_acquisition_environment_revision", lambda _revision: None)
+    monkeypatch.setattr(OPS, "_release_ships_persistent_hop_analysis", lambda _revision: True)
     monkeypatch.setattr(
         OPS.subprocess,
         "run",
         lambda *_args, **_kwargs: type(
-            "Result", (), {"stdout": "active\nactive\nactive\nactive\n"}
+            "Result", (), {"stdout": "active\nactive\nactive\nactive\nactive\n"}
         )(),
     )
 
