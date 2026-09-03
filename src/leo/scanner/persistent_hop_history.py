@@ -15,7 +15,9 @@ from leo.scanner.persistent_hop import (
 )
 from leo.scanner.persistent_hop_products import (
     PersistentHopAnalysisManifestV1,
+    PersistentHopAnalysisManifestV2,
     PersistentHopAnalysisStatusV1,
+    PersistentHopAnalysisStatusV2,
 )
 
 
@@ -141,5 +143,66 @@ class PersistentHopPresentationReader(Protocol):
     def page_v2(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV2: ...
 
     def detail(self, session_id: str) -> PersistentHopSessionDetailV1 | None: ...
+
+    def artifact(self, session_id: str, artifact: str) -> bytes | None: ...
+
+
+class PersistentHopHistoryItemV3(ScannerModel):
+    """Current fractional-analysis readiness without changing the V2 read model."""
+
+    schema_version: Literal[3] = 3
+    capture: PersistentHopHistoryItemV1
+    analysis: PersistentHopAnalysisStatusV2
+    available_artifacts: tuple[Literal["coverage", "glrt64-response", "cfo-trajectories"], ...] = ()
+
+    @model_validator(mode="after")
+    def _analysis_matches_capture(self) -> PersistentHopHistoryItemV3:
+        if (
+            self.capture.session_id != self.analysis.session_id
+            or self.capture.visit_count != self.analysis.total_visits
+        ):
+            raise ValueError("persistent-hop V3 history binding disagrees with capture")
+        if self.analysis.state == "complete" and len(self.available_artifacts) != 3:
+            raise ValueError("complete persistent-hop V3 history lacks artifacts")
+        if self.analysis.state != "complete" and self.available_artifacts:
+            raise ValueError("unsealed persistent-hop V3 history exposes artifacts")
+        return self
+
+
+class PersistentHopHistoryPageV3(ScannerModel):
+    schema_version: Literal[3] = 3
+    cursor: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=20)]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: int | None
+    items: tuple[PersistentHopHistoryItemV3, ...]
+
+
+class PersistentHopSessionDetailV2(ScannerModel):
+    """Current long-scan detail bound to the fractional V2 product."""
+
+    schema_version: Literal[2] = 2
+    capture: PersistentHopHistoryItemV1
+    analysis: PersistentHopAnalysisStatusV2
+    product: PersistentHopAnalysisManifestV2 | None = None
+
+    @model_validator(mode="after")
+    def _detail_is_bound(self) -> PersistentHopSessionDetailV2:
+        if self.capture.session_id != self.analysis.session_id:
+            raise ValueError("persistent-hop V2 detail status disagrees with capture")
+        if (self.analysis.state == "complete") != (self.product is not None):
+            raise ValueError("persistent-hop V2 detail readiness disagrees with product")
+        if self.product is not None and (
+            self.product.session_id != self.capture.session_id
+            or self.product.visit_count != self.capture.visit_count
+        ):
+            raise ValueError("persistent-hop V2 detail product disagrees with capture")
+        return self
+
+
+class PersistentHopPresentationReaderV2(Protocol):
+    def page_v3(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV3: ...
+
+    def detail_v2(self, session_id: str) -> PersistentHopSessionDetailV2 | None: ...
 
     def artifact(self, session_id: str, artifact: str) -> bytes | None: ...

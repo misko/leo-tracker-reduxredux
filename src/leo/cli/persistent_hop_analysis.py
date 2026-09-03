@@ -8,11 +8,11 @@ import os
 from dataclasses import asdict
 from pathlib import Path
 
-from leo.application.persistent_hop_analysis import PersistentHopAnalysisService
-from leo.presentation.persistent_hop_analysis import render_persistent_hop_analysis_pngs
+from leo.application.persistent_hop_analysis_v2 import PersistentHopAnalysisServiceV2
+from leo.presentation.persistent_hop_analysis_v2 import render_persistent_hop_analysis_pngs_v2
 from leo.storage.persistent_hop import PersistentHopIqStore
-from leo.storage.persistent_hop_analysis import PersistentHopAnalysisStore
 from leo.storage.persistent_hop_analysis_source import PersistentHopAnalysisInputStore
+from leo.storage.persistent_hop_analysis_v2 import PersistentHopAnalysisStoreV2
 
 
 def main() -> None:
@@ -39,11 +39,11 @@ def main() -> None:
     arguments = parser.parse_args()
 
     captures = PersistentHopIqStore.open_read_only(arguments.bulk_root)
-    products = PersistentHopAnalysisStore(arguments.bulk_root)
-    service = PersistentHopAnalysisService(
+    products = PersistentHopAnalysisStoreV2(arguments.bulk_root)
+    service = PersistentHopAnalysisServiceV2(
         inputs=PersistentHopAnalysisInputStore(captures),
         products=products,
-        renderer=render_persistent_hop_analysis_pngs,
+        renderer=render_persistent_hop_analysis_pngs_v2,
         probe_stride_ms=arguments.probe_stride_ms,
         maximum_workers=arguments.maximum_workers,
     )
