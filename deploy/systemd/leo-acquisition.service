@@ -10,6 +10,8 @@ User=leo
 Group=leo
 WorkingDirectory=/opt/leo-tracker/current-acquisition
 EnvironmentFile=/etc/leo/leo.env
+LoadCredential=scanner-iiod-ssh-known-hosts:/etc/leo/credentials/scanner-iiod-ssh-known-hosts
+LoadCredential=scanner-iiod-ssh-password:/etc/leo/credentials/scanner-iiod-ssh-password
 ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} --profile ${LEO_CAPTURE_PROFILE_5M} --radio radio_pluto_5d4d --radio radio_pluto_19f2 --interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS} --mixed-rate-policy ${LEO_MIXED_RATE_POLICY}
 Restart=on-failure
 RestartSec=5s

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from threading import Event
 
 from leo.scanner.persistent_hop import PersistentHopPlanV1
@@ -21,8 +22,9 @@ def capture_persistent_hop_to_store(
     store: PersistentHopIqStore,
     cancel: Event,
     queue_capacity_visits: int = 16,
+    before_publish: Callable[[], None] | None = None,
 ) -> PublishedPersistentHopIqSession:
-    """Publish only after terminal evidence and all valid IQ are durable."""
+    """Publish only after terminal evidence and the external safety barrier."""
 
     writer = store.begin_queued(
         session_id,
@@ -37,6 +39,8 @@ def capture_persistent_hop_to_store(
             visit_sink=writer.append,
             cancel=cancel,
         )
+        if before_publish is not None:
+            before_publish()
         return writer.finish(receipt)
     except BaseException:
         writer.abort()

@@ -260,6 +260,18 @@ git -C "$source_real" archive --format=tar "$revision" -- . ':(exclude)reports' 
   | tar -x --no-same-owner -C "$staging_dir"
 printf '{"schema":"org.leo.release-source/v1","revision":"%s","tree":"%s"}\n' \
   "$revision" "$source_tree" >"$staging_dir/$source_identity_name"
+scanner_iiod=$staging_dir/runtime/scanner-iiod/iiod
+scanner_iiod_provenance=$staging_dir/runtime/scanner-iiod/provenance.json
+[[ -f "$scanner_iiod" && ! -L "$scanner_iiod" ]] || {
+  echo "release source lacks the canonical scanner iiOD binary" >&2
+  exit 65
+}
+[[ -f "$scanner_iiod_provenance" && ! -L "$scanner_iiod_provenance" ]] || {
+  echo "release source lacks the canonical scanner iiOD provenance" >&2
+  exit 65
+}
+chmod 0550 "$scanner_iiod"
+chmod 0440 "$scanner_iiod_provenance"
 "$staging_dir/deploy/scripts/check-staged-release" "$staging_dir" "$revision"
 chown -R leo:leo "$staging_dir"
 chmod -R o-rwx "$staging_dir"
@@ -349,7 +361,10 @@ mapfile -t metadata_runtime_paths <<<"$metadata_runtime_path_text"
   printf 'python_version=%s\n' "$python_version"
   sha256sum "$python_bin" "$release_uv" "$release_dir/$source_identity_name" \
     "$release_dir/uv.lock" \
-    "$release_dir/web/package-lock.json" "${metadata_runtime_paths[@]}"
+    "$release_dir/web/package-lock.json" \
+    "$release_dir/runtime/scanner-iiod/iiod" \
+    "$release_dir/runtime/scanner-iiod/provenance.json" \
+    "${metadata_runtime_paths[@]}"
 } >"$metadata_temp"
 chown root:leo "$metadata_temp"
 chmod 0440 "$metadata_temp"

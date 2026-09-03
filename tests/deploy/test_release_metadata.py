@@ -45,6 +45,11 @@ def _published(
     python.chmod(0o755)
     (release / "uv.lock").write_text("python-lock\n")
     (release / "web/package-lock.json").write_text("node-lock\n")
+    scanner_iiod = release / "runtime/scanner-iiod/iiod"
+    scanner_iiod_provenance = release / "runtime/scanner-iiod/provenance.json"
+    scanner_iiod.parent.mkdir(parents=True)
+    scanner_iiod.write_bytes(b"reviewed scanner iiod fixture")
+    scanner_iiod_provenance.write_text('{"schema":"fixture"}\n')
     native = release / ".venv/lib/libiio.so.0.25"
     binding = release / ".venv/lib/python3.14/site-packages/iio.py"
     receipt = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
@@ -70,6 +75,8 @@ def _published(
         source_identity,
         release / "uv.lock",
         release / "web/package-lock.json",
+        scanner_iiod,
+        scanner_iiod_provenance,
         receipt,
         native,
         binding,

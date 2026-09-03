@@ -23,6 +23,7 @@ WARNING_WATERMARK = 0.75
 ADMISSION_STOP_WATERMARK = 0.80
 _FORBIDDEN_DESTRUCTIVE_ROOT = Path("/mnt/qnap01")
 _MAX_SCANNER_TOMBSTONE_BYTES = 17 * 1024 * 1024
+_MAX_PERSISTENT_HOP_TOMBSTONE_BYTES = 40 * 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -316,8 +317,147 @@ class ScannerPurgeTombstoneStore:
 
 
 @dataclass(frozen=True, slots=True)
+class PersistentHopPurgeTombstone:
+    """Durable evidence that one qualified persistent-hop IQ bundle was purged."""
+
+    schema_version: Literal[1]
+    session_id: str
+    claim_token: str
+    iq_bundle_uri: str
+    iq_manifest_sha256: str
+    iq_manifest: dict[str, Any]
+    original_path: str
+    staged_bytes: int
+    purged_utc_ns: int
+
+    def __post_init__(self) -> None:
+        if self.schema_version != 1:
+            raise ValueError("persistent-hop tombstone schema version must be 1")
+        _validate_identifier(self.session_id)
+        _validate_identifier(self.claim_token)
+        if not self.iq_bundle_uri.startswith("bulk://scanner-hop-recordings/"):
+            raise ValueError("persistent-hop tombstone has an invalid IQ bundle URI")
+        if sha256_digest(canonical_json_bytes(self.iq_manifest)) != self.iq_manifest_sha256:
+            raise ValueError("persistent-hop tombstone IQ manifest digest disagrees")
+        if self.staged_bytes < 0 or self.purged_utc_ns < 0:
+            raise ValueError("persistent-hop tombstone bytes and time cannot be negative")
+
+
+class PersistentHopPurgeTombstoneStore:
+    """Append-only local availability evidence for persistent-hop retention."""
+
+    def __init__(self, bulk_root: Path) -> None:
+        self.bulk_root = _validated_local_bulk_root(bulk_root)
+        control_root = self.bulk_root / "control"
+        control_root.mkdir(exist_ok=True)
+        if control_root.is_symlink():
+            raise ValueError("persistent-hop tombstone control root cannot be a symlink")
+        control_root = _validated_local_bulk_root(control_root)
+        _strict_descendant(self.bulk_root, control_root)
+        self.root = control_root / "persistent-hop-purges"
+        self.root.mkdir(exist_ok=True)
+        if self.root.is_symlink():
+            raise ValueError("persistent-hop tombstone root cannot be a symlink")
+        self.root = _validated_local_bulk_root(self.root)
+        _strict_descendant(self.bulk_root, self.root)
+
+    def put(self, tombstone: PersistentHopPurgeTombstone) -> Path:
+        self._validate(tombstone)
+        destination = self._path(tombstone.session_id)
+        payload = json.dumps(asdict(tombstone), sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+        temporary = self.root / f".{tombstone.session_id}.{uuid.uuid4().hex}.json.partial"
+        with temporary.open("xb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        try:
+            os.link(temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+        _fsync_directory(self.root)
+        return destination
+
+    def get(self, session_id: str) -> PersistentHopPurgeTombstone | None:
+        path = self._path(session_id)
+        if not path.exists():
+            return None
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("persistent-hop purge tombstone must be a real file")
+        document = json.loads(self._read_regular(path))
+        tombstone = PersistentHopPurgeTombstone(**document)
+        if tombstone.session_id != session_id:
+            raise ValueError("persistent-hop purge tombstone identity disagrees with filename")
+        self._validate(tombstone)
+        return tombstone
+
+    def commits(self, receipt: PurgeReceipt) -> bool:
+        if receipt.kind != "persistent-hop":
+            raise ValueError("persistent-hop tombstones only commit persistent-hop receipts")
+        tombstone = self.get(receipt.item_id)
+        return tombstone is not None and (
+            tombstone.session_id == receipt.item_id
+            and tombstone.claim_token == receipt.claim_token
+            and tombstone.original_path == receipt.original_path
+            and tombstone.staged_bytes == receipt.staged_bytes
+        )
+
+    def _path(self, session_id: str) -> Path:
+        _validate_identifier(session_id)
+        return self.root / f"{session_id}.json"
+
+    def _validate(self, tombstone: PersistentHopPurgeTombstone) -> None:
+        original = Path(tombstone.original_path)
+        persistent_hop_root = self.bulk_root / "scanner-hop-recordings"
+        try:
+            relative = original.relative_to(persistent_hop_root)
+        except ValueError as error:
+            raise ValueError("persistent-hop tombstone path escapes its IQ root") from error
+        if len(relative.parts) != 4 or relative.parts[-1] != tombstone.session_id:
+            raise ValueError("persistent-hop tombstone path is not one dated IQ bundle")
+        expected_uri = f"bulk://scanner-hop-recordings/{'/'.join(relative.parts)}"
+        if tombstone.iq_bundle_uri != expected_uri:
+            raise ValueError("persistent-hop tombstone URI disagrees with its original path")
+        if tombstone.iq_manifest.get("session_id") != tombstone.session_id:
+            raise ValueError("persistent-hop tombstone manifest identity disagrees")
+
+    @staticmethod
+    def _read_regular(path: Path) -> bytes:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            before = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(before.st_mode)
+                or before.st_nlink != 1
+                or not 0 < before.st_size <= _MAX_PERSISTENT_HOP_TOMBSTONE_BYTES
+            ):
+                raise ValueError("persistent-hop purge tombstone inode is invalid")
+            chunks: list[bytes] = []
+            remaining = before.st_size + 1
+            while remaining:
+                chunk = os.read(descriptor, min(1024 * 1024, remaining))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            payload = b"".join(chunks)
+            after = os.fstat(descriptor)
+            if len(payload) != before.st_size or (
+                before.st_dev,
+                before.st_ino,
+                before.st_size,
+                before.st_mtime_ns,
+            ) != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
+                raise ValueError("persistent-hop purge tombstone changed while reading")
+            return payload
+        finally:
+            os.close(descriptor)
+
+
+@dataclass(frozen=True, slots=True)
 class PurgeReceipt:
-    kind: Literal["session", "artifact", "scanner"]
+    kind: Literal["session", "artifact", "scanner", "persistent-hop"]
     item_id: str
     session_id: str
     claim_token: str
@@ -335,6 +475,12 @@ class PurgeExecutor:
         self.scanner_root = self.bulk_root / "scanner-recordings"
         self.scanner_root.mkdir(parents=True, exist_ok=True)
         self.scanner_root = _validated_local_bulk_root(self.scanner_root)
+        self.persistent_hop_root = self.bulk_root / "scanner-hop-recordings"
+        self.persistent_hop_root.mkdir(parents=True, exist_ok=True)
+        if self.persistent_hop_root.is_symlink():
+            raise ValueError("persistent-hop recording root cannot be a symlink")
+        self.persistent_hop_root = _validated_local_bulk_root(self.persistent_hop_root)
+        _strict_descendant(self.bulk_root, self.persistent_hop_root)
         self.analysis_root = self.bulk_root / "analysis"
         self.analysis_root.mkdir(parents=True, exist_ok=True)
         self.analysis_root = self.analysis_root.resolve(strict=True)
@@ -349,13 +495,15 @@ class PurgeExecutor:
             for path in (
                 self.recordings_root,
                 self.scanner_root,
+                self.persistent_hop_root,
                 self.analysis_root,
                 self.trash_root,
             )
         }
         if len(devices) != 1:
             raise ValueError(
-                "recording, scanner, analysis, and trash roots must share one filesystem"
+                "recording, scanner, persistent-hop, analysis, and trash roots must share "
+                "one filesystem"
             )
 
     def stage(self, bundle_path: Path, session_id: str, claim_token: str) -> PurgeReceipt:
@@ -420,6 +568,40 @@ class PurgeExecutor:
         _fsync_directory(self.trash_root)
         return receipt
 
+    def stage_persistent_hop(
+        self,
+        bundle_path: Path,
+        *,
+        session_id: str,
+        claim_token: str,
+    ) -> PurgeReceipt:
+        _validate_identifier(session_id)
+        _validate_identifier(claim_token)
+        resolved = bundle_path.resolve(strict=True)
+        relative = _strict_descendant(self.persistent_hop_root, resolved)
+        if len(relative.parts) != 4 or relative.parts[-1] != session_id:
+            raise ValueError("persistent-hop purge target must be one dated IQ bundle")
+        if resolved.is_symlink() or not resolved.is_dir():
+            raise ValueError("persistent-hop purge target must be a real recording directory")
+        destination = self.trash_root / f"persistent-hop.{session_id}.{claim_token}"
+        if destination.exists() or destination.is_symlink():
+            raise FileExistsError(f"purge staging target already exists: {destination}")
+        staged_bytes = _allocated_bytes(resolved)
+        receipt = PurgeReceipt(
+            kind="persistent-hop",
+            item_id=session_id,
+            session_id=session_id,
+            claim_token=claim_token,
+            original_path=str(resolved),
+            staged_path=str(destination),
+            staged_bytes=staged_bytes,
+        )
+        self._write_journal(receipt)
+        os.rename(resolved, destination)
+        _fsync_directory(resolved.parent)
+        _fsync_directory(self.trash_root)
+        return receipt
+
     def stage_artifact(
         self,
         artifact_path: Path,
@@ -466,7 +648,7 @@ class PurgeExecutor:
             _strict_descendant(self.trash_root, resolved)
             if resolved.is_symlink():
                 raise ValueError("staged purge target cannot be a symlink")
-            if receipt.kind in {"session", "scanner"} and resolved.is_dir():
+            if receipt.kind in {"session", "scanner", "persistent-hop"} and resolved.is_dir():
                 shutil.rmtree(resolved)
             elif receipt.kind == "artifact" and resolved.is_file():
                 resolved.unlink()
@@ -488,6 +670,8 @@ class PurgeExecutor:
             if receipt.kind == "session"
             else self.scanner_root
             if receipt.kind == "scanner"
+            else self.persistent_hop_root
+            if receipt.kind == "persistent-hop"
             else self.analysis_root
         )
         _strict_descendant(allowed_root, destination)
@@ -534,11 +718,13 @@ class PurgeExecutor:
     def _journal_path(self, receipt: PurgeReceipt) -> Path:
         _validate_identifier(receipt.session_id)
         _validate_identifier(receipt.claim_token)
-        if receipt.kind not in {"session", "artifact", "scanner"}:
+        if receipt.kind not in {"session", "artifact", "scanner", "persistent-hop"}:
             raise ValueError("unknown purge receipt kind")
         if receipt.kind == "artifact" and not receipt.item_id.isdigit():
             raise ValueError("artifact receipt item ID must be numeric")
-        if receipt.kind in {"session", "scanner"} and receipt.item_id != receipt.session_id:
+        if receipt.kind in {"session", "scanner", "persistent-hop"} and (
+            receipt.item_id != receipt.session_id
+        ):
             raise ValueError("directory receipt identity disagrees")
         return self.journal_root / f"{receipt.kind}.{receipt.item_id}.{receipt.claim_token}.json"
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import runpy
 import stat
+import struct
 import subprocess
 import tomllib
 from contextlib import suppress
@@ -14,7 +15,7 @@ GLOBALS = runpy.run_path(str(VALIDATOR))
 
 
 def test_ppu_pin_is_one_exact_dependency_authority() -> None:
-    expected = "e7990eb3b7adfdb9a20d92bf2945c890727d2979"
+    expected = "5790a39705e9e598ef048ec773e0227cf9ac1808"
     with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
     provenance = json.loads((PROJECT_ROOT / "docs/dependencies/pluto-plus-utils.json").read_text())
@@ -94,6 +95,9 @@ def test_runtime_validation_disables_bytecode_for_entrypoints(tmp_path: Path, mo
         return subprocess.CompletedProcess((), 0, stdout="uv test\n")
 
     monkeypatch.setattr(GLOBALS["subprocess"], "run", execute)
+    validate_globals = GLOBALS["validate"].__globals__
+    monkeypatch.setitem(validate_globals, "validate_scanner_iiod_binary", lambda _release: None)
+    monkeypatch.setitem(validate_globals, "validate_scanner_iiod_provenance", lambda _release: None)
 
     # The current checkout's module identity is intentionally outside the fake
     # venv, so validation stops after exercising all three entrypoints.
@@ -134,7 +138,7 @@ def test_metadata_runtime_validation_scrubs_ambient_loader_state(
 def test_published_release_closes_installed_ppu_against_exact_uv_revision(
     tmp_path: Path, monkeypatch
 ) -> None:  # noqa: ANN001
-    expected = "e7990eb3b7adfdb9a20d92bf2945c890727d2979"
+    expected = "5790a39705e9e598ef048ec773e0227cf9ac1808"
     release = tmp_path / "release"
     release.mkdir()
     (release / "pyproject.toml").write_text(
@@ -174,3 +178,69 @@ def test_published_release_closes_installed_ppu_against_exact_uv_revision(
         assert "differs from uv authority" in str(error)
     else:
         raise AssertionError("a mismatched installed pluto-plus-utils revision was accepted")
+
+
+def _scanner_iiod_fixture(release: Path, *, machine: int = 40) -> Path:
+    binary = release / "runtime/scanner-iiod/iiod"
+    binary.parent.mkdir(parents=True)
+    payload = bytearray(52)
+    payload[:7] = b"\x7fELF\x01\x01\x01"
+    payload[7] = 0
+    struct.pack_into("<HHI", payload, 16, 3, machine, 1)
+    struct.pack_into("<I", payload, 36, 0x05000400)
+    payload.extend(b"scanner-iiod-test")
+    binary.write_bytes(payload)
+    binary.chmod(0o550)
+    return binary
+
+
+def test_scanner_iiod_validator_accepts_sealed_arm_eabi5_artifact(tmp_path: Path) -> None:
+    release = tmp_path / "release"
+    binary = _scanner_iiod_fixture(release)
+
+    observed = GLOBALS["validate_scanner_iiod_binary"](
+        release,
+        expected_uid=binary.stat().st_uid,
+        expected_gid=binary.stat().st_gid,
+        expected_sha256=GLOBALS["_sha256"](binary),
+        expected_size=binary.stat().st_size,
+    )
+
+    assert observed == GLOBALS["_sha256"](binary)
+
+
+def test_scanner_iiod_validator_rejects_wrong_architecture(tmp_path: Path) -> None:
+    release = tmp_path / "release"
+    binary = _scanner_iiod_fixture(release, machine=62)
+
+    try:
+        GLOBALS["validate_scanner_iiod_binary"](
+            release,
+            expected_uid=binary.stat().st_uid,
+            expected_gid=binary.stat().st_gid,
+            expected_sha256=GLOBALS["_sha256"](binary),
+            expected_size=binary.stat().st_size,
+        )
+    except ValueError as error:
+        assert "executable ARM ELF" in str(error)
+    else:
+        raise AssertionError("a non-ARM scanner iiOD was accepted")
+
+
+def test_scanner_iiod_validator_rejects_wrong_mode(tmp_path: Path) -> None:
+    release = tmp_path / "release"
+    binary = _scanner_iiod_fixture(release)
+    binary.chmod(0o750)
+
+    try:
+        GLOBALS["validate_scanner_iiod_binary"](
+            release,
+            expected_uid=binary.stat().st_uid,
+            expected_gid=binary.stat().st_gid,
+            expected_sha256=GLOBALS["_sha256"](binary),
+            expected_size=binary.stat().st_size,
+        )
+    except ValueError as error:
+        assert "mode must be 0550" in str(error)
+    else:
+        raise AssertionError("a scanner iiOD with the wrong mode was accepted")

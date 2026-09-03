@@ -32,7 +32,12 @@ UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
 ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
 RUNTIME_DATA_ROOT = Path("/srv/bulk/leo")
-REQUIRED_SCANNER_DIRECTORIES = ("scanner-recordings", "scanner-reports", "scanner-runs")
+REQUIRED_SCANNER_DIRECTORIES = (
+    "scanner-recordings",
+    "scanner-reports",
+    "scanner-runs",
+    "scanner-hop-recordings",
+)
 CONTIGUOUS_RATE_3M_RECEIPT_ROOT = Path("/srv/bulk/leo/qualification/sample-rate-3m/accepted")
 NATIVE_BANDWIDTH_RECEIPT_ROOT = Path("/srv/bulk/leo/qualification/native-bandwidth/accepted")
 CONTIGUOUS_RATE_3M_PROFILE_DIGEST = (
@@ -1513,7 +1518,7 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         raise ValueError("qualification and soak profiles must be counter-authoritative V2")
     expected_scanner = {
         "LEO_SCANNER_ENABLED": "false",
-        "LEO_SCANNER_CAPTURE_MODE": "sequential",
+        "LEO_SCANNER_CAPTURE_MODE": "persistent_hop",
         "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
         "LEO_SCANNER_INTERVAL_SECONDS": "1200",
         "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "300",
@@ -1522,10 +1527,12 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         "LEO_SCANNER_GAIN_DB": "40.0",
         "LEO_SCANNER_MARGIN_GATE": "0.025",
         "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
-        "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US": "11000",
+        "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US": "5000",
         "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK": "131072",
         "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS": "8",
-        "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS": "16",
+        "LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS": "8",
+        "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS": "64",
+        "LEO_SCANNER_PERSISTENT_IIOD_PORT": "30432",
     }
     if any(environment.get(key) != value for key, value in expected_scanner.items()):
         raise ValueError("production scanner configuration is not the reviewed V3 deployment")
@@ -1575,6 +1582,7 @@ def _component_environment_revision(component: str, revision: str) -> Path:
     if mode & 0o007 or mode & 0o020:
         raise ValueError(f"{component} environment permissions are too broad: {mode:o}")
     bindings: list[str] = []
+    environment: dict[str, str] = {}
     for raw_line in safe.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#"):
@@ -1582,10 +1590,21 @@ def _component_environment_revision(component: str, revision: str) -> Path:
         if "=" not in line:
             raise ValueError(f"{component} environment contains a malformed line")
         name, value = line.split("=", 1)
+        environment[name.strip()] = value.strip().strip("'\"")
         if name.strip() == key:
             bindings.append(value.strip().strip("'\""))
     if bindings != [revision]:
         raise ValueError(f"{component} environment does not bind the exact target release")
+    if component == "acquisition":
+        expected_binary = str(
+            RELEASE_ROOT / revision / "runtime" / "scanner-iiod" / "iiod"
+        )
+        if environment.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH") != expected_binary:
+            raise ValueError(
+                "acquisition environment does not bind the exact release-local iiOD binary"
+            )
+        if environment.get("LEO_SCANNER_ENABLED") != "false":
+            raise ValueError("release-A acquisition environment must keep scanner disabled")
     return safe
 
 
@@ -3761,6 +3780,13 @@ def _verify_component_preflight(component: str, release: Path, revision: str) ->
         or "InaccessiblePaths=/mnt/qnap01" not in unit_text
     ):
         raise ValueError(f"staged {component} unit does not use its confined component selector")
+    if component == "acquisition" and not {
+        "LoadCredential=scanner-iiod-ssh-known-hosts:"
+        "/etc/leo/credentials/scanner-iiod-ssh-known-hosts",
+        "LoadCredential=scanner-iiod-ssh-password:"
+        "/etc/leo/credentials/scanner-iiod-ssh-password",
+    } <= set(unit_text.splitlines()):
+        raise ValueError("staged acquisition unit lacks exact scanner iiOD credentials")
     if drop_in.read_text(encoding="utf-8").splitlines() != ["[Service]", expected_environment]:
         raise ValueError(f"staged {component} drop-in is not the exact environment authority")
     command("systemd-analyze", "verify", str(unit))

@@ -20,20 +20,26 @@ class MetadataSession:
         device: StubDevice,
         sample_count: int,
         kernel_buffers: int,
+        batch_frames: int,
         *,
         readback: int | None = None,
+        batch_readback: int | None = None,
         missing: int = 0,
         overflow: bool = False,
         overflow_flag: bool | None = None,
         buffer_sequence: int = 0,
+        counter_gap_at: int | None = None,
     ) -> None:
         self.device = device
         self.sample_count = sample_count
         self.kernel_buffers = kernel_buffers if readback is None else readback
+        self.batch_frames = batch_frames if batch_readback is None else batch_readback
         self.missing = missing
         self.overflow = overflow
         self.overflow_flag = overflow if overflow_flag is None else overflow_flag
         self.buffer_sequence = buffer_sequence
+        self.counter_gap_at = counter_gap_at
+        self.read_index = 0
 
     def __enter__(self):
         self.device.events.append(("session-enter", self.kernel_buffers))
@@ -42,26 +48,34 @@ class MetadataSession:
     def read_block(self):
         self.device.events.append(("read", self.sample_count))
         episode = self.device.session_count
+        index = self.read_index
+        self.read_index += 1
+        offset = index * self.sample_count
         samples = np.vstack(
             (
-                np.arange(self.sample_count, dtype=np.float32),
-                np.arange(self.sample_count, dtype=np.float32) + 1j,
+                np.arange(self.sample_count, dtype=np.float32) + offset,
+                np.arange(self.sample_count, dtype=np.float32) + offset + 1j,
             )
         ).astype(np.complex64)
+        interval_ns = 120_000_000 // self.batch_frames
+        interval_start_ns = 1_700_000_000_000_000_000 + episode * 1_000_000 + index * interval_ns
+        monotonic_start_ns = 1_000_000_000 + episode * 1_000_000 + index * interval_ns
         return SimpleNamespace(
             samples=samples,
             metadata_abi=self.device.metadata_abi,
             stream_id=(101 if self.device.reuse_generation else 100 + episode),
             stream_generation=(101 if self.device.reuse_generation else 100 + episode),
-            buffer_sequence=self.buffer_sequence,
-            first_sample_sequence=1_000_000 * episode,
+            buffer_sequence=self.buffer_sequence + index,
+            first_sample_sequence=(
+                1_000_000 * episode + offset + (1 if index == self.counter_gap_at else 0)
+            ),
             metadata_flags=0x200013 | ((1 << 11) if self.overflow_flag else 0),
             missing_samples_before=self.missing,
             overflow_observed=self.overflow,
-            sample_time_realtime_start_ns=1_700_000_000_000_000_000 + episode * 1_000_000,
-            sample_time_realtime_end_ns=1_700_000_000_120_000_000 + episode * 1_000_000,
-            sample_time_monotonic_start_ns=1_000_000_000 + episode * 1_000_000,
-            sample_time_monotonic_end_ns=1_120_000_000 + episode * 1_000_000,
+            sample_time_realtime_start_ns=interval_start_ns,
+            sample_time_realtime_end_ns=interval_start_ns + interval_ns,
+            sample_time_monotonic_start_ns=monotonic_start_ns,
+            sample_time_monotonic_end_ns=monotonic_start_ns + interval_ns,
             sample_time_uncertainty_ns=25_000,
         )
 
@@ -76,20 +90,24 @@ class StubDevice:
         serial: str = "serial",
         metadata_abi: int | None = 3,
         kernel_readback: int | None = None,
+        batch_readback: int | None = None,
         missing: int = 0,
         overflow: bool = False,
         overflow_flag: bool | None = None,
         buffer_sequence: int = 0,
+        counter_gap_at: int | None = None,
         reuse_generation: bool = False,
         tune_offset_hz: int = 0,
     ) -> None:
         self.serial = serial
         self.metadata_abi = metadata_abi
         self.kernel_readback = kernel_readback
+        self.batch_readback = batch_readback
         self.missing = missing
         self.overflow = overflow
         self.overflow_flag = overflow_flag
         self.buffer_sequence = buffer_sequence
+        self.counter_gap_at = counter_gap_at
         self.reuse_generation = reuse_generation
         self.tune_offset_hz = tune_offset_hz
         self.events: list[object] = []
@@ -120,18 +138,23 @@ class StubDevice:
         self.events.append(("tune", round(value)))
         return value + self.tune_offset_hz
 
-    def begin_metadata_capture(self, sample_count, *, kernel_buffers, tandem_request):
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers, batch_frames, tandem_request):
         self.session_count += 1
-        self.events.append(("begin", sample_count, kernel_buffers, tandem_request.mode.name))
+        self.events.append(
+            ("begin", sample_count, kernel_buffers, batch_frames, tandem_request.mode.name)
+        )
         return MetadataSession(
             self,
             sample_count,
             kernel_buffers,
+            batch_frames,
             readback=self.kernel_readback,
+            batch_readback=self.batch_readback,
             missing=self.missing,
             overflow=self.overflow,
             overflow_flag=self.overflow_flag,
             buffer_sequence=self.buffer_sequence,
+            counter_gap_at=self.counter_gap_at,
         )
 
     def close(self):
@@ -158,7 +181,7 @@ def radio_for(device: StubDevice, sleeps: list[float]) -> PlutoSequentialScanRad
     )
 
 
-def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_target() -> None:
+def test_pluto_scanner_batches_twelve_contiguous_subframes_per_target() -> None:
     device = StubDevice(metadata_abi=3)
     sleeps: list[float] = []
     radio = radio_for(device, sleeps)
@@ -183,6 +206,10 @@ def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_targe
     assert first.reset_episode == 1
     assert first.first_sample_sequence == 1_000_000
     assert first.last_sample_sequence_exclusive == 1_300_000
+    assert first.samples.shape == (300_000, 2)
+    assert first.samples[0, 0] == 0
+    assert first.samples[-1, 0] == 299_999
+    assert first.sample_time_realtime_ns[1] - first.sample_time_realtime_ns[0] == 120_000_000
     assert second.stream_id != first.stream_id
     assert second.reset_episode == 2
     assert sleeps == [0.00025, 0.00025]
@@ -193,15 +220,15 @@ def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_targe
         "reset",
         "reset",
         ("tune", 959_687_500),
-        ("begin", 300_000, 8, "HOLD"),
+        ("begin", 25_000, 8, 12, "HOLD"),
         ("session-enter", 8),
-        ("read", 300_000),
+        *[("read", 25_000)] * 12,
         "session-close",
         "reset",
         ("tune", 1_190_312_500),
-        ("begin", 300_000, 8, "HOLD"),
+        ("begin", 25_000, 8, 12, "HOLD"),
         ("session-enter", 8),
-        ("read", 300_000),
+        *[("read", 25_000)] * 12,
         "session-close",
         "reset",
         "close",
@@ -227,6 +254,44 @@ def test_pluto_scanner_applies_matching_native_bandwidth_for_scheduled_rates(
     assert device.applied_settings.sample_rate_hz == sample_rate_hz
     assert device.applied_settings.bandwidth_hz == sample_rate_hz
     assert device.applied_settings.center_frequency_hz == configuration.targets[0].if_center_hz
+
+
+def test_pluto_scanner_batches_the_five_msps_dwell_without_changing_its_size() -> None:
+    device = StubDevice(metadata_abi=3)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV3(
+        sample_rate_hz=5_000_000,
+        bandwidth_hz=5_000_000,
+        targets=scheduled_low_band_targets(bandwidth_hz=5_000_000),
+    )
+
+    radio.open()
+    radio.configure_once(configuration)
+    block = radio.tune_and_read(configuration.targets[0].if_center_hz, configuration.dwell_samples)
+
+    assert block.samples.shape == (600_000, 2)
+    assert ("begin", 50_000, 8, 12, "HOLD") in device.events
+    assert device.events.count(("read", 50_000)) == 12
+    radio.close()
+
+
+def test_pluto_scanner_keeps_one_frame_for_an_unqualified_rate() -> None:
+    device = StubDevice(metadata_abi=3)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(
+        sample_rate_hz=3_000_000,
+        bandwidth_hz=3_000_000,
+        targets=current_low_band_targets(),
+    )
+
+    radio.open()
+    radio.configure_once(configuration)
+    block = radio.tune_and_read(configuration.targets[0].if_center_hz, 360_000)
+
+    assert block.samples.shape == (360_000, 2)
+    assert ("begin", 360_000, 8, 1, "HOLD") in device.events
+    assert device.events.count(("read", 360_000)) == 1
+    radio.close()
 
 
 @pytest.mark.parametrize("metadata_abi", [None, 0, 1, 2])
@@ -258,6 +323,28 @@ def test_pluto_scanner_rejects_kernel_buffer_readback_mismatch() -> None:
     radio.configure_once(configuration)
 
     with pytest.raises(PlutoScannerError, match="readback is 4, expected 8"):
+        radio.tune_and_read(959_687_500, configuration.dwell_samples)
+
+
+def test_pluto_scanner_rejects_metadata_batch_readback_mismatch() -> None:
+    device = StubDevice(batch_readback=1)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    radio.open()
+    radio.configure_once(configuration)
+
+    with pytest.raises(PlutoScannerError, match="batch readback is 1, expected 12"):
+        radio.tune_and_read(959_687_500, configuration.dwell_samples)
+
+
+def test_pluto_scanner_rejects_a_counter_gap_inside_the_batch() -> None:
+    device = StubDevice(counter_gap_at=5)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    radio.open()
+    radio.configure_once(configuration)
+
+    with pytest.raises(PlutoScannerError, match="sample counter is not contiguous"):
         radio.tune_and_read(959_687_500, configuration.dwell_samples)
 
 
