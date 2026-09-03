@@ -216,6 +216,52 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
     assert receipt.stream_generation == "iio-0000000000000025"
     assert receipt.radio_id == "scanner-radio"
     assert receipt.valid_sample_count == sum(item.evidence.valid_sample_count for item in mapped)
+    assert receipt.valid_duty_ppm == 909_090
+    assert receipt.duty_target_met
+    radio.close()
+
+
+def test_adapter_maps_cancel_after_next_transition_without_forging_a_visit() -> None:
+    plan, source_blocks, upstream = _cancelled_source()
+    source = upstream.receipt
+    source.status.visits_started += 1
+    source.status.events_emitted += 1
+    source.status.next_event_sequence += 1
+    source.status.final_counter += plan.transition_guard_samples
+    source.status.restore_before_counter = source.status.final_counter
+    source.status.restore_after_counter = source.status.final_counter + 1
+    source.transition_invalid_sample_count += plan.transition_guard_samples
+    source.duty_denominator_sample_count += plan.transition_guard_samples
+    source.valid_duty_ppm = (
+        source.valid_sample_count * 1_000_000 // source.duty_denominator_sample_count
+    )
+    source.duty_target_met = source.valid_duty_ppm >= plan.minimum_valid_duty_ppm
+    wire_id = persistent_hop_wire_session_id("adapter-session")
+    client = _Client(upstream, wire_id)
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        client_factory=lambda uri, serial: client,
+        plan_factory=lambda selected: selected,
+        tandem_request_factory=lambda: "hold",
+    )
+
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    mapped = [session.read_visit(), session.read_visit()]
+    session.request_cancel()
+    receipt = session.finish()
+
+    assert [item.evidence for item in mapped] == [item.evidence for item in source_blocks]
+    assert receipt.capture_outcome == "cancelled"
+    assert len(receipt.visits) == 2
+    assert receipt.terminal_incomplete_visit_count == 1
+    assert receipt.terminal_unretained_invalid_sample_count == plan.transition_guard_samples
+    assert receipt.terminal_unretained_valid_sample_count == 0
+    assert receipt.duty_target_met == (
+        receipt.valid_duty_ppm >= plan.minimum_valid_duty_ppm
+    )
     radio.close()
 
 
