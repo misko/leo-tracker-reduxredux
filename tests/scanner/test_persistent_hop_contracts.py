@@ -176,6 +176,24 @@ def test_fake_visit_block_contains_only_valid_deterministic_iq() -> None:
     assert first.evidence.valid_sample_count == plan.valid_visit_samples
 
 
+def test_server_and_host_restoration_lo_evidence_are_distinct() -> None:
+    radio = FakePersistentHopRadio()
+    radio.open()
+    receipt = radio.begin_session(
+        compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000),
+        session_id="two-layer-restore",
+    ).run_to_completion()
+    document = receipt.model_dump(mode="python")
+    document["terminal_status"]["restored_lo_frequency_hz"] += 1_000_000
+
+    restored = PersistentHopSessionReceiptV1.model_validate(document)
+
+    assert (
+        restored.terminal_status.restored_lo_frequency_hz
+        != restored.restoration.original_settings.center_frequency_hz
+    )
+
+
 def test_visit_accepts_only_bounded_lossless_lo_quantization() -> None:
     radio = FakePersistentHopRadio()
     radio.open()
