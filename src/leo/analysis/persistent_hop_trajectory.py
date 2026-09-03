@@ -123,6 +123,7 @@ class PersistentHopCfoCandidate:
     support_end_utc_ns: int
     measured_cfo_hz: float
     standard_uncertainty_hz: float
+    factorial_support_moments_s: tuple[float, float, float, float]
     exact_score: float
     control_score: float
     margin: float
@@ -170,6 +171,17 @@ class PersistentHopCfoCandidate:
         ):
             raise PersistentHopTrajectoryInputError(
                 "trajectory candidate must carry a coherent positive margin"
+            )
+        moments = self.factorial_support_moments_s
+        if (
+            len(moments) != 4
+            or any(not math.isfinite(value) for value in moments)
+            or not math.isclose(moments[0], 1.0, rel_tol=0.0, abs_tol=1e-12)
+            or not math.isclose(moments[1], 0.0, rel_tol=0.0, abs_tol=1e-9)
+            or moments[2] < 0.0
+        ):
+            raise PersistentHopTrajectoryInputError(
+                "trajectory candidate support moments are invalid"
             )
 
     @property
@@ -334,11 +346,6 @@ def _validate_source_groups(
                 item.channel,
                 item.edge,
                 item.actual_rf_hz,
-                item.source_sample_start,
-                item.source_sample_end,
-                item.support_start_utc_ns,
-                item.support_center_utc_ns,
-                item.support_end_utc_ns,
             )
             for item in rows
         }
@@ -388,6 +395,7 @@ def _lane_tracklets(
             exact_score=item.exact_score,
             control_score=item.control_score,
             margin=item.margin,
+            source_group_id=item.source_group_id,
         )
         for item in candidates
     )
@@ -756,11 +764,6 @@ def _episode_graph(
         for point in tracklet.points:
             source = candidate_by_id[point.candidate_id]
             scale = config.canonical_rf_hz / source.actual_rf_hz
-            moments = _uniform_support_moments(
-                source.support_start_utc_ns,
-                source.support_center_utc_ns,
-                source.support_end_utc_ns,
-            )
             observation_id = canonical_digest(
                 {
                     "algorithm_version": _ALGORITHM_VERSION,
@@ -800,7 +803,7 @@ def _episode_graph(
                     support_end_utc_ns=source.support_end_utc_ns,
                     measured_cfo_hz=point.normalized_dealiased_cfo_hz,
                     standard_uncertainty_hz=source.standard_uncertainty_hz * scale,
-                    factorial_support_moments_s=moments,
+                    factorial_support_moments_s=source.factorial_support_moments_s,
                 )
             )
             observation_ids.append(observation_id)
@@ -822,24 +825,6 @@ def _episode_graph(
         observations=tuple(observations),
         episodes=tuple(episodes),
     )
-
-
-def _uniform_support_moments(
-    start_utc_ns: int,
-    center_utc_ns: int,
-    end_utc_ns: int,
-) -> tuple[float, float, float, float]:
-    lower = (start_utc_ns - center_utc_ns) / 1e9
-    upper = (end_utc_ns - center_utc_ns) / 1e9
-    width = upper - lower
-    raw_first = (lower + upper) / 2.0
-    if not math.isclose(raw_first, 0.0, rel_tol=0.0, abs_tol=1e-9):
-        raise PersistentHopTrajectoryInputError(
-            "uniform support center is not the interval midpoint"
-        )
-    raw_second = (upper**3 - lower**3) / (3.0 * width)
-    raw_third = (upper**4 - lower**4) / (4.0 * width)
-    return (1.0, 0.0, raw_second / 2.0, raw_third / 6.0)
 
 
 __all__ = [
