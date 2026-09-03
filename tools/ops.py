@@ -2473,6 +2473,20 @@ def _start_runtime() -> None:
     selected_revision = _selected_release_revision()
     if selected_revision is None:
         raise OpsError("global immutable release selector is unavailable")
+    ships_persistent_analysis = _release_ships_persistent_hop_analysis(selected_revision)
+    if ships_persistent_analysis:
+        # A guarded cutover intentionally stops an in-flight oneshot.  systemd
+        # retains that SIGTERM as Result=signal even after the unit is inactive,
+        # so clear only this stale operational result before startup health is
+        # evaluated.  A newly triggered failure still fails the observation.
+        subprocess.run(
+            (
+                "/usr/bin/systemctl",
+                "reset-failed",
+                "leo-persistent-hop-analysis.service",
+            ),
+            check=False,
+        )
     subprocess.run(
         (
             "/usr/bin/systemctl",
@@ -2484,7 +2498,7 @@ def _start_runtime() -> None:
         check=True,
     )
     persistent_analysis_timer = "leo-persistent-hop-analysis.timer"
-    if _release_ships_persistent_hop_analysis(selected_revision):
+    if ships_persistent_analysis:
         normal_timers = (
             "leo-reconcile.timer",
             persistent_analysis_timer,

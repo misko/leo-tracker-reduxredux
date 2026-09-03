@@ -1656,6 +1656,11 @@ def test_runtime_start_enables_persistent_analysis_only_for_a_release_that_ships
 
     OPS._start_runtime()
 
+    assert calls[0] == (
+        "/usr/bin/systemctl",
+        "reset-failed",
+        "leo-persistent-hop-analysis.service",
+    )
     assert calls[-1] == (
         "/usr/bin/systemctl",
         "enable",
@@ -1670,6 +1675,7 @@ def test_runtime_start_enables_persistent_analysis_only_for_a_release_that_ships
     monkeypatch.setattr(OPS, "_release_ships_persistent_hop_analysis", lambda _revision: False)
     OPS._start_runtime()
 
+    assert not any("reset-failed" in call for call in calls)
     assert (
         "/usr/bin/systemctl",
         "disable",
