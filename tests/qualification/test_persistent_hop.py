@@ -79,7 +79,10 @@ def _base_receipt(
     samples_per_block: int,
     sample_rate_hz: int,
 ) -> PersistentHopSessionReceiptV1:
-    radio = FakePersistentHopRadio(transition_invalid_ms=guard_ms)
+    # The guard begins after a non-zero retune bracket. Model one additional
+    # millisecond here instead of pretending the requested guard is the whole
+    # invalid interval.
+    radio = FakePersistentHopRadio(transition_invalid_ms=guard_ms + 1)
     radio.open()
     plan = _plan(
         guard_ms=guard_ms,
@@ -201,10 +204,10 @@ def test_guard_ladder_quantifies_90_and_95_percent_duty_thresholds() -> None:
     assert at_90.status == "qualified"
     assert at_90.selected_candidate == _candidate(guard_ms=3)
     assert {item.candidate.guard_ms: item.worst_valid_duty_ppm for item in at_90.candidates} == {
-        11: 916_030,
-        8: 937_500,
-        5: 960_000,
-        3: 975_609,
+        11: 909_090,
+        8: 930_232,
+        5: 952_380,
+        3: 967_741,
     }
     assert {item.candidate.guard_ms for item in at_90.candidates if item.qualified} == {
         11,
