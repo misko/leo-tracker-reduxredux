@@ -362,10 +362,10 @@ def test_evidence_ledger_inventory_includes_long_arc_reports() -> None:
     report_paths = tuple((ROOT / "reports").rglob("*.md"))
     top_level_paths = tuple((ROOT / "reports").glob("*.md"))
 
-    assert len(report_paths) == 146
-    assert len(top_level_paths) == 135
-    assert "all 146 tracked Markdown assets" in ledger
-    assert "135 top-level reports" in ledger
+    assert len(report_paths) == 159
+    assert len(top_level_paths) == 144
+    assert "all 159 tracked Markdown assets" in ledger
+    assert "144 top-level reports" in ledger
     assert "2026_08_26_post_fix_long_arc_research_cohort.md" in ledger
     assert "2026_08_26_wrong_time_specificity_and_orbital_time_shift.md" in ledger
     assert "2026_08_27_post_refill_edge_switching.md" in ledger

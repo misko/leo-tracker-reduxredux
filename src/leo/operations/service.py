@@ -28,6 +28,8 @@ from leo.operations.retention import (
     HIGH_WATERMARK,
     HoldReceipt,
     HoldReceiptStore,
+    PersistentHopPurgeTombstone,
+    PersistentHopPurgeTombstoneStore,
     PurgeExecutor,
     PurgeReceipt,
     RetentionCandidate,
@@ -40,6 +42,7 @@ from leo.operations.retention import (
 )
 from leo.station.resolver import ResolvedCaptureAuthority, UnreviewedTestFixtureAuthorityError
 from leo.storage import (
+    PersistentHopIqStore,
     PublishedBundle,
     ReconcileIssueKind,
     RecordingStore,
@@ -137,6 +140,8 @@ class CatalogRetentionService:
         scanner_runs: ScannerRunStore | None = None,
         scanner_tombstones: ScannerPurgeTombstoneStore | None = None,
         scanner_analysis_ids: tuple[str, ...] = (),
+        persistent_hop_iq: PersistentHopIqStore | None = None,
+        persistent_hop_tombstones: PersistentHopPurgeTombstoneStore | None = None,
         lease_for: timedelta = timedelta(minutes=10),
         failure_injector: FailureInjector | None = None,
     ) -> None:
@@ -162,6 +167,20 @@ class CatalogRetentionService:
                 raise ValueError("scanner retention components must share one local bulk root")
             if not scanner_analysis_ids:
                 raise ValueError("scanner retention requires allowed analysis IDs")
+        persistent_hop_components = (persistent_hop_iq, persistent_hop_tombstones)
+        if any(item is not None for item in persistent_hop_components) != all(
+            item is not None for item in persistent_hop_components
+        ):
+            raise ValueError("persistent-hop retention components must be configured together")
+        if persistent_hop_iq is not None:
+            assert persistent_hop_tombstones is not None
+            if (
+                persistent_hop_iq.root != executor.bulk_root
+                or persistent_hop_tombstones.bulk_root != executor.bulk_root
+            ):
+                raise ValueError(
+                    "persistent-hop retention components must share one local bulk root"
+                )
         self._catalog = catalog
         self._recordings = recordings
         self._holds = holds
@@ -171,6 +190,8 @@ class CatalogRetentionService:
         self._scanner_runs = scanner_runs
         self._scanner_tombstones = scanner_tombstones
         self._scanner_analysis_ids = scanner_analysis_ids
+        self._persistent_hop_iq = persistent_hop_iq
+        self._persistent_hop_tombstones = persistent_hop_tombstones
         self._lease_for = lease_for
         self._failure_injector = failure_injector
 
@@ -194,9 +215,14 @@ class CatalogRetentionService:
             for item in catalog_candidates
         ]
         scanner_inputs: dict[str, tuple[str, str]] = {}
+        persistent_hop_inputs: dict[str, tuple[str, str]] = {}
         if selected_usage.fraction >= HIGH_WATERMARK:
             scanner_candidates, scanner_inputs = self._scanner_retention_candidates()
             candidates.extend(scanner_candidates)
+            persistent_hop_candidates, persistent_hop_inputs = (
+                self._persistent_hop_retention_candidates()
+            )
+            candidates.extend(persistent_hop_candidates)
         decision = plan_retention(selected_usage, tuple(candidates))
         if dry_run or not decision.should_run:
             return RetentionRunResult(decision=decision, committed=(), failures=())
@@ -217,6 +243,16 @@ class CatalogRetentionService:
                             "scanner retention candidate lost its completed-run fence"
                         )
                     accepted = self._purge_scanner(item_id, expected_input=expected_input)
+                elif kind == "persistent-hop":
+                    expected_input = persistent_hop_inputs.get(item_id)
+                    if expected_input is None:
+                        raise InvalidStateError(
+                            "persistent-hop retention candidate lost its qualification fence"
+                        )
+                    accepted = self._purge_persistent_hop(
+                        item_id,
+                        expected_input=expected_input,
+                    )
                 else:
                     raise ValueError(f"unknown retention candidate kind: {kind}")
             except Exception as error:
@@ -234,6 +270,17 @@ class CatalogRetentionService:
         restored: list[str] = []
         discarded: list[str] = []
         for receipt in self._executor.pending():
+            if receipt.kind == "persistent-hop":
+                if self._persistent_hop_tombstones is None:
+                    raise RuntimeError("persistent-hop purge recovery is not configured")
+                identity = f"persistent-hop:{receipt.item_id}"
+                if self._persistent_hop_tombstones.commits(receipt):
+                    self._executor.discard_staged(receipt)
+                    discarded.append(identity)
+                else:
+                    self._executor.restore(receipt)
+                    restored.append(identity)
+                continue
             if receipt.kind == "scanner":
                 if self._scanner_tombstones is None:
                     raise RuntimeError("scanner purge recovery is not configured")
@@ -314,6 +361,28 @@ class CatalogRetentionService:
                 )
             )
         return tuple(candidates), completed_inputs
+
+    def _persistent_hop_retention_candidates(
+        self,
+    ) -> tuple[tuple[RetentionCandidate, ...], dict[str, tuple[str, str]]]:
+        if self._persistent_hop_iq is None:
+            return (), {}
+        candidates: list[RetentionCandidate] = []
+        qualified_inputs: dict[str, tuple[str, str]] = {}
+        for session_id in self._persistent_hop_iq.session_ids():
+            bundle = self._persistent_hop_iq.inspect(session_id)
+            if not bundle.manifest.receipt.qualified:
+                continue
+            qualified_inputs[session_id] = (bundle.uri, bundle.manifest_sha256)
+            candidates.append(
+                RetentionCandidate(
+                    session_id=f"persistent-hop:{session_id}",
+                    created_utc_ns=bundle.manifest.created_utc_ns,
+                    allocated_bytes=allocated_bytes(bundle.path),
+                    held=self._holds.contains(session_id),
+                )
+            )
+        return tuple(candidates), qualified_inputs
 
     def _purge_session(self, session_id: str) -> bool:
         token = uuid.uuid4().hex
@@ -429,6 +498,50 @@ class CatalogRetentionService:
             return True
         except Exception:
             if receipt is not None and not self._scanner_tombstones.commits(receipt):
+                self._executor.restore(receipt)
+            raise
+
+    def _purge_persistent_hop(
+        self,
+        session_id: str,
+        *,
+        expected_input: tuple[str, str],
+    ) -> bool:
+        if self._persistent_hop_iq is None or self._persistent_hop_tombstones is None:
+            raise RuntimeError("persistent-hop retention is not configured")
+        token = uuid.uuid4().hex
+        bundle = self._persistent_hop_iq.inspect(session_id)
+        if (bundle.uri, bundle.manifest_sha256) != expected_input:
+            raise InvalidStateError("persistent-hop IQ changed after retention selection")
+        if not bundle.manifest.receipt.qualified or self._holds.contains(session_id):
+            return False
+        receipt: PurgeReceipt | None = None
+        try:
+            receipt = self._executor.stage_persistent_hop(
+                bundle.path,
+                session_id=session_id,
+                claim_token=token,
+            )
+            self._inject("persistent-hop:after_stage")
+            if self._holds.contains(session_id):
+                raise InvalidStateError("durable hold won the persistent-hop purge fence")
+            self._persistent_hop_tombstones.put(
+                PersistentHopPurgeTombstone(
+                    schema_version=1,
+                    session_id=session_id,
+                    claim_token=token,
+                    iq_bundle_uri=bundle.uri,
+                    iq_manifest_sha256=bundle.manifest_sha256,
+                    iq_manifest=bundle.manifest.model_dump(mode="json"),
+                    original_path=receipt.original_path,
+                    staged_bytes=receipt.staged_bytes,
+                    purged_utc_ns=time.time_ns(),
+                )
+            )
+            self._inject("persistent-hop:after_commit")
+            return True
+        except Exception:
+            if receipt is not None and not self._persistent_hop_tombstones.commits(receipt):
                 self._executor.restore(receipt)
             raise
 

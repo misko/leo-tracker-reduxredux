@@ -261,9 +261,7 @@ def _metadata_batch_geometry(
     """Use the hardware-qualified 10 ms subframes for the production dwell."""
 
     total_samples = configuration.dwell_samples
-    if (configuration.sample_rate_hz, configuration.dwell_ms) not in (
-        _QUALIFIED_BATCH_GEOMETRIES
-    ):
+    if (configuration.sample_rate_hz, configuration.dwell_ms) not in (_QUALIFIED_BATCH_GEOMETRIES):
         return total_samples, 1
     subframe_samples, remainder = divmod(total_samples, _QUALIFIED_METADATA_BATCH_FRAMES)
     if remainder:  # pragma: no cover - protected by the frozen qualified geometries
@@ -295,9 +293,7 @@ def _read_metadata_batch(
         upstream = capture.read_block()
         raw_block_abi = getattr(upstream, "metadata_abi", None)
         if not isinstance(raw_block_abi, int) or raw_block_abi != metadata_abi_version:
-            raise PlutoScannerError(
-                "metadata subframe ABI disagrees with the capture context"
-            )
+            raise PlutoScannerError("metadata subframe ABI disagrees with the capture context")
         values = np.asarray(upstream.samples)
         expected_shape = (receivers, subframe_samples)
         if values.shape != expected_shape:

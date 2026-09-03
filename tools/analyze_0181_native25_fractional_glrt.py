@@ -149,8 +149,7 @@ def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("expected one selected CI16 receiver")
     return np.ascontiguousarray(
-        (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64))
-        / 32_768.0
+        (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 32_768.0
     )
 
 
@@ -319,13 +318,9 @@ def _quadratic_fit(times_s: FloatArray, phases_s: FloatArray) -> tuple[Json, Flo
         "timing_drift_s_s": float(coefficients[1]),
         "timing_curvature_s_s2": float(coefficients[2]),
         "equivalent_doppler_rate_hz_s": float(-RF_REFERENCE_HZ * coefficients[2]),
-        "formal_equivalent_doppler_rate_sigma_hz_s": float(
-            RF_REFERENCE_HZ * curvature_sigma
-        ),
+        "formal_equivalent_doppler_rate_sigma_hz_s": float(RF_REFERENCE_HZ * curvature_sigma),
         "residual_rms_us": float(np.sqrt(np.mean(residual**2)) * 1e6),
-        "residual_mad_us": float(
-            1.4826 * np.median(np.abs(residual - np.median(residual))) * 1e6
-        ),
+        "residual_mad_us": float(1.4826 * np.median(np.abs(residual - np.median(residual))) * 1e6),
         "maximum_absolute_residual_us": float(np.max(np.abs(residual)) * 1e6),
     }, residual * 1e6
 
@@ -352,9 +347,8 @@ def _robust_native_mask(
             + 0.5 * float(timing_all_fit["timing_curvature_s_s2"]) * (times - ref) ** 2
         )
         timing_all = (phase - model) * 1e6
-        updated = (
-            (np.abs(cfo_residual) <= max(500.0, 6.0 * cfo_scale))
-            & (np.abs(timing_all - timing_center) <= max(0.25, 6.0 * timing_scale))
+        updated = (np.abs(cfo_residual) <= max(500.0, 6.0 * cfo_scale)) & (
+            np.abs(timing_all - timing_center) <= max(0.25, 6.0 * timing_scale)
         )
         if np.array_equal(updated, mask):
             break
@@ -397,12 +391,20 @@ def _plot_comparison(
     )
     for key, color, label in methods:
         axes[0, 0].scatter(
-            arrays[f"{key}_times"], arrays[f"{key}_linear_residual_us"],
-            s=16, color=color, alpha=0.78, label=label,
+            arrays[f"{key}_times"],
+            arrays[f"{key}_linear_residual_us"],
+            s=16,
+            color=color,
+            alpha=0.78,
+            label=label,
         )
         axes[0, 1].scatter(
-            arrays[f"{key}_times"], arrays[f"{key}_quadratic_residual_us"],
-            s=16, color=color, alpha=0.78, label=label,
+            arrays[f"{key}_times"],
+            arrays[f"{key}_quadratic_residual_us"],
+            s=16,
+            color=color,
+            alpha=0.78,
+            label=label,
         )
     for axis in axes[0]:
         axis.axhline(0.0, color="black", linewidth=0.8)
@@ -419,10 +421,20 @@ def _plot_comparison(
     ):
         times = arrays[f"{key}_cfo_times"]
         fit = arrays[f"{key}_cfo_fit"]
-        axes[1, 0].plot(times, (fit - np.interp(reference, times, fit)) / 1e3,
-                        color=color, linewidth=2.2, label=label)
-        axes[1, 0].scatter(times, (arrays[f"{key}_cfo"] - np.interp(reference, times, fit)) / 1e3,
-                           s=11, color=color, alpha=0.45)
+        axes[1, 0].plot(
+            times,
+            (fit - np.interp(reference, times, fit)) / 1e3,
+            color=color,
+            linewidth=2.2,
+            label=label,
+        )
+        axes[1, 0].scatter(
+            times,
+            (arrays[f"{key}_cfo"] - np.interp(reference, times, fit)) / 1e3,
+            s=11,
+            color=color,
+            alpha=0.45,
+        )
     axes[1, 0].axhline(0.0, color="black", linewidth=0.8)
     axes[1, 0].set_xlabel("Seconds from native-25 stream start")
     axes[1, 0].set_ylabel("CFO change from common reference (kHz)")
@@ -439,8 +451,14 @@ def _plot_comparison(
     ]
     bars = axes[1, 1].bar(labels, rms, color=["#94a3b8", "#111827", "#2563eb", "#f97316"])
     for bar, value in zip(bars, rms, strict=True):
-        axes[1, 1].text(bar.get_x() + bar.get_width() / 2, value, f"{value:.3f}",
-                        ha="center", va="bottom", fontsize=9)
+        axes[1, 1].text(
+            bar.get_x() + bar.get_width() / 2,
+            value,
+            f"{value:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
     axes[1, 1].set_ylabel("Quadratic timing-fit RMS (µs)")
     axes[1, 1].set_title("D · Fractional timing precision (lower is better)")
     axes[1, 1].grid(axis="y", alpha=0.22)
@@ -456,10 +474,22 @@ def _plot_comparison(
 def _plot_detail(path: Path, arrays: dict[str, FloatArray], facts: Json) -> None:
     times = arrays["native25_times"]
     figure, axes = plt.subplots(3, 1, figsize=(16, 12), constrained_layout=True)
-    axes[0].scatter(times, arrays["native25_integer_residual_us"], s=18, color="#94a3b8",
-                    alpha=0.7, label="integer 25M epoch")
-    axes[0].scatter(times, arrays["native25_quadratic_residual_us"], s=18, color="#111827",
-                    alpha=0.82, label="fractional 25M epoch")
+    axes[0].scatter(
+        times,
+        arrays["native25_integer_residual_us"],
+        s=18,
+        color="#94a3b8",
+        alpha=0.7,
+        label="integer 25M epoch",
+    )
+    axes[0].scatter(
+        times,
+        arrays["native25_quadratic_residual_us"],
+        s=18,
+        color="#111827",
+        alpha=0.82,
+        label="fractional 25M epoch",
+    )
     axes[0].axhline(0.0, color="black", linewidth=0.8)
     axes[0].set_ylabel("Quadratic residual (µs)")
     axes[0].set_title("A · Direct fractional evaluation versus the 40 ns integer grid")
@@ -472,12 +502,15 @@ def _plot_detail(path: Path, arrays: dict[str, FloatArray], facts: Json) -> None
     axes[1].set_title("B · Fractional offset from independently acquired integer epoch")
     axes[1].grid(alpha=0.22)
 
-    axes[2].scatter(times, arrays["native25_exact"], s=17, color="#059669", alpha=0.75,
-                    label="exact score")
-    axes[2].scatter(times, arrays["native25_control"], s=17, color="#dc2626", alpha=0.7,
-                    label="rolled control")
-    axes[2].scatter(times, arrays["native25_margin"], s=17, color="#2563eb", alpha=0.7,
-                    label="exact − control")
+    axes[2].scatter(
+        times, arrays["native25_exact"], s=17, color="#059669", alpha=0.75, label="exact score"
+    )
+    axes[2].scatter(
+        times, arrays["native25_control"], s=17, color="#dc2626", alpha=0.7, label="rolled control"
+    )
+    axes[2].scatter(
+        times, arrays["native25_margin"], s=17, color="#2563eb", alpha=0.7, label="exact − control"
+    )
     axes[2].axhline(0.025, color="black", linestyle="--", linewidth=1, label="production gate")
     axes[2].set_xlabel("Seconds from native-25 stream start")
     axes[2].set_ylabel("Normalized GLRT score")
@@ -500,7 +533,8 @@ def main() -> int:
     low_epoch = _load(args.low_epoch_product)
     pss_track, modes, pss_phase = _select_pss_track(pss)
     low_locklet, low_times = _select_low_locklet(
-        low_epoch, float(min(item["center_time_s"] for item in modes)),
+        low_epoch,
+        float(min(item["center_time_s"] for item in modes)),
         float(max(item["center_time_s"] for item in modes)),
     )
     rows, runtime = _run_native25(args.recordings_root, modes, workers=args.workers)
@@ -528,12 +562,17 @@ def main() -> int:
     native_cfo = native_cfo[native_mask]
 
     low_observations = [
-        item for item in low_locklet["observations"]
+        item
+        for item in low_locklet["observations"]
         if item["epoch_fit_inlier"] and item["cfo_branch_inlier"]
     ]
     low_times_all = np.asarray(
-        [time for item, time in zip(low_locklet["observations"], low_times, strict=True)
-         if item["epoch_fit_inlier"] and item["cfo_branch_inlier"]], dtype=float
+        [
+            time
+            for item, time in zip(low_locklet["observations"], low_times, strict=True)
+            if item["epoch_fit_inlier"] and item["cfo_branch_inlier"]
+        ],
+        dtype=float,
     )
     common = (low_times_all >= native_times.min()) & (low_times_all <= native_times.max())
     low_times_selected = low_times_all[common]
@@ -554,9 +593,7 @@ def main() -> int:
     fits["native25_fractional"], residuals["native25"] = _quadratic_fit(
         native_times, native_fractional
     )
-    fits["low_fractional"], residuals["low"] = _quadratic_fit(
-        low_times_selected, low_phase
-    )
+    fits["low_fractional"], residuals["low"] = _quadratic_fit(low_times_selected, low_phase)
     linear_residuals: dict[str, FloatArray] = {}
     for key, times, phase in (
         ("pss", native_times, pss_selected),
@@ -564,9 +601,7 @@ def main() -> int:
         ("low", low_times_selected, low_phase),
     ):
         local = times - float(np.mean(times))
-        linear_residuals[key] = (
-            phase - np.polyval(np.polyfit(local, phase, 1), local)
-        ) * 1e6
+        linear_residuals[key] = (phase - np.polyval(np.polyfit(local, phase, 1), local)) * 1e6
 
     reference = float(np.mean(native_times))
     native_cfo_fit, native_cfo_predicted = _cfo_fit(native_times, native_cfo, reference)
@@ -662,8 +697,13 @@ def main() -> int:
     (args.output_dir / "analysis-summary.json").write_text(
         json.dumps(facts, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    print(json.dumps({"runtime": facts["runtime"], "fits": fits, "comparison": comparison},
-                     indent=2, sort_keys=True))
+    print(
+        json.dumps(
+            {"runtime": facts["runtime"], "fits": fits, "comparison": comparison},
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 

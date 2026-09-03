@@ -58,9 +58,7 @@ class MetadataSession:
             )
         ).astype(np.complex64)
         interval_ns = 120_000_000 // self.batch_frames
-        interval_start_ns = (
-            1_700_000_000_000_000_000 + episode * 1_000_000 + index * interval_ns
-        )
+        interval_start_ns = 1_700_000_000_000_000_000 + episode * 1_000_000 + index * interval_ns
         monotonic_start_ns = 1_000_000_000 + episode * 1_000_000 + index * interval_ns
         return SimpleNamespace(
             samples=samples,
@@ -69,9 +67,7 @@ class MetadataSession:
             stream_generation=(101 if self.device.reuse_generation else 100 + episode),
             buffer_sequence=self.buffer_sequence + index,
             first_sample_sequence=(
-                1_000_000 * episode
-                + offset
-                + (1 if index == self.counter_gap_at else 0)
+                1_000_000 * episode + offset + (1 if index == self.counter_gap_at else 0)
             ),
             metadata_flags=0x200013 | ((1 << 11) if self.overflow_flag else 0),
             missing_samples_before=self.missing,
@@ -142,9 +138,7 @@ class StubDevice:
         self.events.append(("tune", round(value)))
         return value + self.tune_offset_hz
 
-    def begin_metadata_capture(
-        self, sample_count, *, kernel_buffers, batch_frames, tandem_request
-    ):
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers, batch_frames, tandem_request):
         self.session_count += 1
         self.events.append(
             ("begin", sample_count, kernel_buffers, batch_frames, tandem_request.mode.name)

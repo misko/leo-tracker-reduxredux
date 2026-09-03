@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import grp
+import hashlib
 import importlib.metadata
 import json
 import os
+import stat
+import struct
 import subprocess
 import sys
 import tomllib
@@ -14,6 +18,11 @@ from pathlib import Path
 
 QNAP = Path("/mnt/qnap01")
 PRODUCTION_METADATA_ABI = 3
+SCANNER_IIOD_RELATIVE_PATH = Path("runtime/scanner-iiod/iiod")
+SCANNER_IIOD_PROVENANCE_RELATIVE_PATH = Path("runtime/scanner-iiod/provenance.json")
+SCANNER_IIOD_SHA256 = "5d7ca0a04e93341bdcd28f1967f583f14389456ff4375362e394b7cc71af32ea"
+SCANNER_IIOD_SIZE_BYTES = 230_980
+SCANNER_IIOD_LIBIIO_REVISION = "c752ab684a4c9924ee362ccfb02a7ac65f7992f9"
 
 
 def _safe_absolute(path: Path, label: str) -> Path:
@@ -51,6 +60,93 @@ def find_forbidden_reference(root: Path, forbidden: str) -> Path | None:
         if _contains_bytes(path, needle):
             return path
     return None
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while block := stream.read(1024 * 1024):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def validate_scanner_iiod_binary(
+    release: Path,
+    *,
+    expected_uid: int = 0,
+    expected_gid: int | None = None,
+    expected_sha256: str = SCANNER_IIOD_SHA256,
+    expected_size: int = SCANNER_IIOD_SIZE_BYTES,
+) -> str:
+    """Validate the sealed ARM userspace iiOD without ever executing it."""
+
+    binary = release / SCANNER_IIOD_RELATIVE_PATH
+    info = binary.lstat()
+    group = grp.getgrnam("leo").gr_gid if expected_gid is None else expected_gid
+    if (
+        not stat.S_ISREG(info.st_mode)
+        or info.st_nlink != 1
+        or info.st_uid != expected_uid
+        or info.st_gid != group
+    ):
+        raise ValueError("scanner iiOD must be a singly-linked root:leo regular file")
+    if stat.S_IMODE(info.st_mode) != 0o550:
+        raise ValueError("scanner iiOD mode must be 0550")
+    if info.st_size != expected_size:
+        raise ValueError("scanner iiOD size differs from the reviewed artifact")
+    with binary.open("rb") as stream:
+        header = stream.read(52)
+    if (
+        len(header) != 52
+        or header[:7] != b"\x7fELF\x01\x01\x01"
+        or header[7] not in (0, 3)
+    ):
+        raise ValueError("scanner iiOD is not an ELF32 little-endian System V/GNU artifact")
+    elf_type, machine, version = struct.unpack_from("<HHI", header, 16)
+    flags = struct.unpack_from("<I", header, 36)[0]
+    if elf_type not in (2, 3) or machine != 40 or version != 1:
+        raise ValueError("scanner iiOD is not an executable ARM ELF")
+    if flags & 0xFF000000 != 0x05000000:
+        raise ValueError("scanner iiOD is not ARM EABI5")
+    observed_sha256 = _sha256(binary)
+    if observed_sha256 != expected_sha256:
+        raise ValueError("scanner iiOD digest differs from the reviewed artifact")
+    return observed_sha256
+
+
+def validate_scanner_iiod_provenance(release: Path) -> None:
+    provenance = release / SCANNER_IIOD_PROVENANCE_RELATIVE_PATH
+    info = provenance.lstat()
+    if not stat.S_ISREG(info.st_mode) or stat.S_IMODE(info.st_mode) != 0o440:
+        raise ValueError("scanner iiOD provenance must be a 0440 regular file")
+    try:
+        document = json.loads(provenance.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("scanner iiOD provenance is unreadable") from error
+    if not isinstance(document, dict):
+        raise ValueError("scanner iiOD provenance is not an object")
+    artifact = document.get("artifact")
+    source = document.get("source")
+    runtime = document.get("runtime")
+    if (
+        document.get("schema") != "spf.iiod-build-provenance.v1"
+        or document.get("hardware_accessed") is not False
+        or not isinstance(artifact, dict)
+        or artifact.get("sha256") != SCANNER_IIOD_SHA256
+        or artifact.get("size_bytes") != SCANNER_IIOD_SIZE_BYTES
+        or artifact.get("elf_machine") != "ARM"
+        or artifact.get("libiio_linkage") != "static"
+        or artifact.get("undefined_iio_symbol_count") != 0
+        or not isinstance(source, dict)
+        or source.get("head") != SCANNER_IIOD_LIBIIO_REVISION
+        or source.get("origin_master") != SCANNER_IIOD_LIBIIO_REVISION
+        or source.get("worktree_clean") is not True
+        or not isinstance(runtime, dict)
+        or runtime.get("recommended_release_relative_path")
+        != SCANNER_IIOD_RELATIVE_PATH.as_posix()
+        or runtime.get("interactive_flag_must_be_absent") is not True
+    ):
+        raise ValueError("scanner iiOD provenance does not identify the reviewed artifact")
 
 
 def validate_release_uv(release: Path) -> str:
@@ -117,6 +213,8 @@ def validate_pluto_plus_utils_revision(release: Path) -> str:
 
 def validate(release: Path, forbidden_path: str) -> None:
     release = _safe_absolute(release, "release")
+    validate_scanner_iiod_binary(release)
+    validate_scanner_iiod_provenance(release)
     validate_release_uv(release)
     venv = _safe_absolute(release / ".venv", "release venv")
     python = venv / "bin/python"

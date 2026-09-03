@@ -101,6 +101,7 @@ from leo.operations import (
     CatalogReconciliationService,
     CatalogRetentionService,
     HoldReceiptStore,
+    PersistentHopPurgeTombstoneStore,
     PurgeExecutor,
     RetentionRunResult,
     ScannerPurgeTombstoneStore,
@@ -144,6 +145,7 @@ from leo.station.resolver import (
     PinnedCaptureAuthorityResolver,
 )
 from leo.storage import (
+    PersistentHopIqStore,
     PinnedLocalRoot,
     PublishedBundle,
     RecordingStore,
@@ -1156,6 +1158,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
     scanner_iq = ScannerIqStore(settings.bulk_root)
     scanner_analysis = ScannerAnalysisStore(settings.bulk_root)
     scanner_runs = ScannerRunStore(settings.bulk_root)
+    persistent_hop_iq = PersistentHopIqStore.open_read_only(settings.bulk_root)
     services = ProcessingServices(
         catalog=catalog,
         recordings=recordings,
@@ -1184,6 +1187,8 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                 STANDARD_SCANNER_ANALYSIS_ID,
                 *LEGACY_STANDARD_SCANNER_ANALYSIS_IDS,
             ),
+            persistent_hop_iq=persistent_hop_iq,
+            persistent_hop_tombstones=PersistentHopPurgeTombstoneStore(settings.bulk_root),
         ),
         reconciliation=CatalogReconciliationService(
             catalog,

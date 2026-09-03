@@ -3,6 +3,8 @@
 from leo.operations.retention import (
     HoldReceipt,
     HoldReceiptStore,
+    PersistentHopPurgeTombstone,
+    PersistentHopPurgeTombstoneStore,
     PurgeExecutor,
     PurgeReceipt,
     RetentionCandidate,
@@ -25,6 +27,8 @@ from leo.operations.service import (
 __all__ = [
     "HoldReceipt",
     "HoldReceiptStore",
+    "PersistentHopPurgeTombstone",
+    "PersistentHopPurgeTombstoneStore",
     "PurgeExecutor",
     "PurgeReceipt",
     "RetentionCandidate",

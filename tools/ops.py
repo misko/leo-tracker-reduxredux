@@ -92,7 +92,7 @@ _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
     "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
     "LEO_SCANNER_ENABLED": "false",
-    "LEO_SCANNER_CAPTURE_MODE": "sequential",
+    "LEO_SCANNER_CAPTURE_MODE": "persistent_hop",
     "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
     "LEO_SCANNER_INTERVAL_SECONDS": "1200",
     "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "300",
@@ -101,10 +101,12 @@ _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_SCANNER_GAIN_DB": "40.0",
     "LEO_SCANNER_MARGIN_GATE": "0.025",
     "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
-    "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US": "11000",
+    "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US": "5000",
     "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK": "131072",
     "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS": "8",
-    "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS": "16",
+    "LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS": "8",
+    "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS": "64",
+    "LEO_SCANNER_PERSISTENT_IIOD_PORT": "30432",
 }
 _ADDITIVE_REVIEWED_ENVIRONMENT_KEYS = frozenset(
     {
@@ -116,7 +118,9 @@ _ADDITIVE_REVIEWED_ENVIRONMENT_KEYS = frozenset(
         "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US",
         "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK",
         "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS",
+        "LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS",
         "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS",
+        "LEO_SCANNER_PERSISTENT_IIOD_PORT",
     }
 )
 
@@ -2086,18 +2090,30 @@ def _write_acquisition_release_environment(
     if path.read_bytes() != old_environment:
         raise OpsError("acquisition environment changed after the deployment snapshot")
     lines = old_environment.decode().splitlines()
-    locations = [
-        index
-        for index, line in enumerate(lines)
-        if not line.lstrip().startswith("#")
-        and line.partition("=")[1]
-        and line.partition("=")[0].strip() == "LEO_ACQUISITION_RELEASE_ID"
-    ]
-    if len(locations) != 1:
+    release_key = "LEO_ACQUISITION_RELEASE_ID"
+    binary_key = "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH"
+    locations = {
+        key: [
+            index
+            for index, line in enumerate(lines)
+            if not line.lstrip().startswith("#")
+            and line.partition("=")[1]
+            and line.partition("=")[0].strip() == key
+        ]
+        for key in (release_key, binary_key)
+    }
+    if len(locations[release_key]) != 1 or len(locations[binary_key]) > 1:
         raise OpsError(
-            "acquisition environment must contain exactly one LEO_ACQUISITION_RELEASE_ID binding"
+            "acquisition environment must contain exactly one release binding and at most "
+            "one persistent-hop iiOD binary binding"
         )
-    lines[locations[0]] = f"LEO_ACQUISITION_RELEASE_ID={target}"
+    binary_path = f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod"
+    release_location = locations[release_key][0]
+    lines[release_location] = f"{release_key}={target}"
+    if locations[binary_key]:
+        lines[locations[binary_key][0]] = f"{binary_key}={binary_path}"
+    else:
+        lines.insert(release_location + 1, f"{binary_key}={binary_path}")
     temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
     try:
         temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -2509,11 +2525,17 @@ def _verify_acquisition_environment_revision(expected: str) -> None:
     path = PRODUCTION_ACQUISITION_ENVIRONMENT
     if path.is_symlink() or not path.is_file():
         raise OpsError("acquisition environment must be a regular non-symlink file")
-    actual = _environment_values(path.read_bytes()).get("LEO_ACQUISITION_RELEASE_ID")
+    values = _environment_values(path.read_bytes())
+    actual = values.get("LEO_ACQUISITION_RELEASE_ID")
     if actual != expected:
         raise OpsError(
             "acquisition environment release does not match the selected acquisition component"
         )
+    expected_binary = f"/opt/leo-tracker/releases/{expected}/runtime/scanner-iiod/iiod"
+    if values.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH") != expected_binary:
+        raise OpsError("acquisition persistent-hop iiOD binary does not match the selected release")
+    if values.get("LEO_SCANNER_ENABLED") != "false":
+        raise OpsError("release-A acquisition environment must keep the scanner disabled")
 
 
 def _acquisition_desired_state(release: Path) -> str:

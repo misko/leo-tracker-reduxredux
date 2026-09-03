@@ -18,6 +18,10 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef WITH_LOCAL_METADATA_PROVIDER
+#include "buffer-metadata.h"
+#endif
+
 #define ARRAY_SIZE(value) (sizeof(value) / sizeof((value)[0]))
 #ifndef FRAMES_PER_RATE
 #define FRAMES_PER_RATE 32U
@@ -25,6 +29,8 @@
 #define DWELL_MS 120U
 #define SETTLE_US 250U
 #define METADATA_CAPACITY (64U * 1024U)
+#define MAX_STARTUP_DISCARDS 64U
+#define LOCAL_PROVIDER_KERNEL_BUFFERS 2U
 #define EXPECTED_SERIAL "1040007c4a94000211000b009186843ef2"
 #define METADATA_MAGIC 0x314d4753U
 #define METADATA_VERSION 6U
@@ -321,6 +327,320 @@ static int validate_metadata(
     return 0;
 }
 
+#ifdef WITH_LOCAL_METADATA_PROVIDER
+static int validate_local_provider_metadata(
+    const uint8_t *metadata,
+    size_t metadata_bytes,
+    size_t samples,
+    unsigned int subframe_index,
+    uint64_t *session_stream_id,
+    uint64_t *previous_end,
+    uint64_t *stream_ids,
+    unsigned int stream_count)
+{
+    uint16_t header_bytes;
+    uint32_t flags, expected_crc, actual_crc;
+    uint64_t stream_id, buffer_sequence, first_sample, missing_samples;
+    unsigned int index;
+
+    if (metadata_bytes < 124U) {
+        fprintf(stderr, "short local-provider metadata header: %zu bytes\n",
+            metadata_bytes);
+        return -1;
+    }
+    header_bytes = read_le16(metadata + 6);
+    expected_crc = read_le32(metadata + metadata_bytes - 4U);
+    actual_crc = crc32_bytes(metadata, metadata_bytes);
+    flags = read_le32(metadata + 12);
+    stream_id = read_le64(metadata + 16);
+    buffer_sequence = read_le64(metadata + 24);
+    first_sample = read_le64(metadata + 32);
+    missing_samples = read_le64(metadata + 116);
+    if (read_le32(metadata) != METADATA_MAGIC ||
+        read_le16(metadata + 4) != METADATA_VERSION ||
+        header_bytes != metadata_bytes || actual_crc != expected_crc ||
+        !stream_id || buffer_sequence != subframe_index ||
+        read_le32(metadata + 40) != samples ||
+        read_le32(metadata + 44) != samples * 8U ||
+        read_le32(metadata + 48) != 0x0fU || metadata[54] != 2U ||
+        missing_samples != 0U) {
+        fprintf(stderr,
+            "local-provider metadata identity/sequence/geometry check failed\n");
+        return -1;
+    }
+    if ((flags & (FLAG_SAMPLE_SEQUENCE_VALID |
+            FLAG_HARDWARE_SAMPLE_COUNTER_VALID |
+            FLAG_TANDEM_METADATA_VALID)) !=
+            (FLAG_SAMPLE_SEQUENCE_VALID |
+             FLAG_HARDWARE_SAMPLE_COUNTER_VALID |
+             FLAG_TANDEM_METADATA_VALID) ||
+        flags & (FLAG_DEVICE_IIO_OVERFLOW | FLAG_FPGA_EVENT_OVERFLOW |
+            FLAG_GAIN_OBSERVATION_OVERFLOW | FLAG_SAMPLE_GAP_BEFORE)) {
+        fprintf(stderr,
+            "local-provider metadata validity/overflow flags rejected: %08" PRIx32 "\n",
+            flags);
+        return -1;
+    }
+    if (subframe_index == 0U) {
+        for (index = 0; index < stream_count; ++index) {
+            if (stream_ids[index] == stream_id) {
+                fprintf(stderr, "local-provider stream ID was reused\n");
+                return -1;
+            }
+        }
+        stream_ids[stream_count] = stream_id;
+        *session_stream_id = stream_id;
+    } else if (stream_id != *session_stream_id || first_sample != *previous_end) {
+        fprintf(stderr, "local-provider stream or sample counter is discontinuous\n");
+        return -1;
+    }
+    *previous_end = first_sample + samples;
+    return 0;
+}
+
+static int run_local_provider_rate(
+    struct iio_device *rx,
+    struct iio_channel *lo,
+    struct iio_channel *rx_phy[2],
+    long long sample_rate,
+    bool reuse_provider,
+    uint32_t *checksum)
+{
+    const size_t dwell_samples = (size_t)(sample_rate * DWELL_MS / 1000LL);
+    const size_t buffer_samples = (size_t)(sample_rate * 10LL / 1000LL);
+    const unsigned int refills_per_target = DWELL_MS / 10U;
+    struct timings tune = {0}, provider_open = {0}, create = {0};
+    struct timings refill = {0}, touch = {0}, close = {0}, whole = {0};
+    uint64_t stream_ids[FRAMES_PER_RATE] = {0};
+    uint64_t payload_bytes = 0;
+    uint64_t startup_discard_samples = 0;
+    unsigned int startup_discards = 0;
+    struct iiod_buffer_burst_plan shared_burst_plan = {0};
+    void *shared_provider = NULL;
+    size_t shared_extra_samples = 0;
+    double run_start, before, after, frame_start, wall_seconds;
+    unsigned int frame_index;
+
+    if (iio_channel_attr_write_longlong(rx_phy[0], "sampling_frequency",
+            sample_rate) < 0 ||
+        iio_channel_attr_write_longlong(rx_phy[0], "rf_bandwidth", sample_rate) < 0) {
+        fprintf(stderr, "failed to configure provider-local rate %lld: %s\n",
+            sample_rate, strerror(errno));
+        return -1;
+    }
+
+    run_start = now_seconds();
+    if (reuse_provider) {
+        uint32_t mask = UINT32_C(0x0f);
+        int open_ret;
+
+        before = now_seconds();
+        open_ret = iiod_buffer_metadata_open(rx, buffer_samples, &mask, 1U, 8U,
+            tandem_hold_request, sizeof(tandem_hold_request), &shared_provider,
+            &shared_extra_samples, &shared_burst_plan);
+        after = now_seconds();
+        provider_open.values[0] = after - before;
+        if (open_ret < 0 || !shared_provider || shared_extra_samples != 1U ||
+            shared_burst_plan.requested_iq_bytes ||
+            shared_burst_plan.ring_capacity_iq_bytes ||
+            shared_burst_plan.ring_capture_frames || shared_burst_plan.ring_flags ||
+            shared_burst_plan.metadata_capacity) {
+            fprintf(stderr,
+                "provider-local shared metadata open failed: %d (%s), extra=%zu\n",
+                open_ret, open_ret < 0 ? strerror(-open_ret) : "invalid plan",
+                shared_extra_samples);
+            if (shared_provider)
+                iiod_buffer_metadata_close(shared_provider);
+            return -1;
+        }
+    }
+    for (frame_index = 0; frame_index < FRAMES_PER_RATE; ++frame_index) {
+        struct iiod_buffer_burst_plan burst_plan = {0};
+        struct iio_buffer *buffer = NULL;
+        void *provider = reuse_provider ? shared_provider : NULL;
+        uint8_t metadata[METADATA_CAPACITY];
+        uint32_t mask = UINT32_C(0x0f);
+        uint64_t session_stream_id = 0, previous_end = 0;
+        size_t extra_samples = reuse_provider ? shared_extra_samples : 0;
+        double refill_total = 0.0, touch_total = 0.0;
+        unsigned int accepted = 0, discarded = 0;
+        int ret;
+
+        frame_start = now_seconds();
+        before = now_seconds();
+        if (iio_channel_attr_write_longlong(lo, "fastlock_recall",
+                frame_index % ARRAY_SIZE(frequencies_hz)) < 0) {
+            fprintf(stderr, "provider-local frame %u tune failed: %s\n",
+                frame_index, strerror(errno));
+            return -1;
+        }
+        after = now_seconds();
+        tune.values[frame_index] = after - before;
+        sleep_microseconds(SETTLE_US);
+
+        if (!reuse_provider) {
+            before = now_seconds();
+            ret = iiod_buffer_metadata_open(rx, buffer_samples, &mask, 1U, 8U,
+                tandem_hold_request, sizeof(tandem_hold_request), &provider,
+                &extra_samples, &burst_plan);
+            after = now_seconds();
+            provider_open.values[frame_index] = after - before;
+            if (ret < 0 || !provider || extra_samples != 1U ||
+                burst_plan.requested_iq_bytes || burst_plan.ring_capacity_iq_bytes ||
+                burst_plan.ring_capture_frames || burst_plan.ring_flags ||
+                burst_plan.metadata_capacity) {
+                fprintf(stderr,
+                    "provider-local frame %u metadata open failed: %d (%s), extra=%zu\n",
+                    frame_index, ret, ret < 0 ? strerror(-ret) : "invalid plan",
+                    extra_samples);
+                if (provider)
+                    iiod_buffer_metadata_close(provider);
+                return -1;
+            }
+        }
+
+        before = now_seconds();
+        buffer = iio_device_create_buffer(rx, buffer_samples + extra_samples, false);
+        if (!buffer) {
+            fprintf(stderr, "provider-local frame %u buffer create failed: %s\n",
+                frame_index, strerror(errno));
+            iiod_buffer_metadata_close(provider);
+            return -1;
+        }
+        ret = iiod_buffer_metadata_buffer_opened(provider,
+            LOCAL_PROVIDER_KERNEL_BUFFERS);
+        after = now_seconds();
+        create.values[frame_index] = after - before;
+        if (ret < 0) {
+            fprintf(stderr,
+                "provider-local frame %u tandem acquire failed: %d (%s)\n",
+                frame_index, ret, strerror(-ret));
+            iio_buffer_destroy(buffer);
+            iiod_buffer_metadata_close(provider);
+            return -1;
+        }
+
+        while (accepted < refills_per_target) {
+            const uint8_t *raw;
+            size_t iq_offset = 0, iq_bytes = 0;
+            ssize_t metadata_bytes, raw_bytes;
+
+            before = now_seconds();
+            ret = iiod_buffer_metadata_before_refill(provider);
+            raw_bytes = ret < 0 ? ret : iio_buffer_refill(buffer);
+            if (ret >= 0)
+                ret = iiod_buffer_metadata_after_refill(provider);
+            after = now_seconds();
+            refill_total += after - before;
+            if (raw_bytes < 0 || ret < 0 ||
+                (size_t)raw_bytes != (buffer_samples + extra_samples) * 8U) {
+                fprintf(stderr,
+                    "provider-local frame %u refill failed: raw=%zd provider=%d\n",
+                    frame_index, raw_bytes, ret);
+                iio_buffer_destroy(buffer);
+                iiod_buffer_metadata_close(provider);
+                return -1;
+            }
+            metadata_bytes = iiod_buffer_metadata_get(provider, rx, buffer,
+                (size_t)raw_bytes, metadata, sizeof(metadata), &iq_offset,
+                &iq_bytes);
+            if (metadata_bytes == -EAGAIN) {
+                if (++discarded > MAX_STARTUP_DISCARDS) {
+                    fprintf(stderr,
+                        "provider-local frame %u exceeded startup discards\n",
+                        frame_index);
+                    iio_buffer_destroy(buffer);
+                    iiod_buffer_metadata_close(provider);
+                    return -1;
+                }
+                startup_discards++;
+                startup_discard_samples += buffer_samples;
+                continue;
+            }
+            if (metadata_bytes < 0 || iq_offset != 8U ||
+                iq_bytes != buffer_samples * 8U ||
+                validate_local_provider_metadata(metadata,
+                    (size_t)metadata_bytes, buffer_samples, accepted,
+                    &session_stream_id, &previous_end, stream_ids,
+                    frame_index) < 0) {
+                fprintf(stderr,
+                    "provider-local frame %u metadata build/validation failed: %zd\n",
+                    frame_index, metadata_bytes);
+                iio_buffer_destroy(buffer);
+                iiod_buffer_metadata_close(provider);
+                return -1;
+            }
+
+            before = now_seconds();
+            raw = (const uint8_t *)iio_buffer_start(buffer) + iq_offset;
+            *checksum = (*checksum ^ raw[0]) * 16777619U;
+            *checksum = (*checksum ^ raw[iq_bytes / 2U]) * 16777619U;
+            *checksum = (*checksum ^ raw[iq_bytes - 1U]) * 16777619U;
+            after = now_seconds();
+            touch_total += after - before;
+            payload_bytes += iq_bytes;
+            accepted++;
+        }
+        refill.values[frame_index] = refill_total;
+        touch.values[frame_index] = touch_total;
+
+        before = now_seconds();
+        iio_buffer_destroy(buffer);
+        if (reuse_provider) {
+            ret = iiod_buffer_metadata_buffer_closed(provider);
+            if (ret < 0) {
+                fprintf(stderr,
+                    "provider-local frame %u metadata buffer close failed: %d (%s)\n",
+                    frame_index, ret, strerror(-ret));
+                iiod_buffer_metadata_close(provider);
+                return -1;
+            }
+        } else {
+            iiod_buffer_metadata_close(provider);
+        }
+        after = now_seconds();
+        close.values[frame_index] = after - before;
+        whole.values[frame_index] = now_seconds() - frame_start;
+    }
+    if (reuse_provider)
+        iiod_buffer_metadata_close(shared_provider);
+    wall_seconds = now_seconds() - run_start;
+
+    printf("    {\n");
+    printf("      \"sample_rate_hz\": %lld,\n", sample_rate);
+    printf("      \"rf_bandwidth_hz\": %lld,\n", sample_rate);
+    printf("      \"dwell_samples_per_channel\": %zu,\n", dwell_samples);
+    printf("      \"buffer_samples_per_channel\": %zu,\n", buffer_samples);
+    printf("      \"refills_per_target\": %u,\n", refills_per_target);
+    printf("      \"kernel_buffers\": %u,\n", LOCAL_PROVIDER_KERNEL_BUFFERS);
+    printf("      \"provider_reused_across_dwells\": %s,\n",
+        reuse_provider ? "true" : "false");
+    printf("      \"frames_completed\": %u,\n", FRAMES_PER_RATE);
+    printf("      \"full_scans_completed\": %u,\n",
+        FRAMES_PER_RATE / (unsigned int)ARRAY_SIZE(frequencies_hz));
+    printf("      \"startup_discards\": %u,\n", startup_discards);
+    printf("      \"startup_discard_samples\": %" PRIu64 ",\n",
+        startup_discard_samples);
+    printf("      \"listen_seconds\": %.9f,\n",
+        FRAMES_PER_RATE * DWELL_MS / 1000.0);
+    printf("      \"wall_seconds\": %.9f,\n", wall_seconds);
+    printf("      \"listening_duty_cycle\": %.9f,\n",
+        (FRAMES_PER_RATE * DWELL_MS / 1000.0) / wall_seconds);
+    printf("      \"payload_bytes_acquired\": %" PRIu64 ",\n", payload_bytes);
+    printf("      \"timings\": {\n");
+    print_stats("tune", &tune, true);
+    print_stats("provider_open", &provider_open, true);
+    print_stats("buffer_create_and_acquire", &create, true);
+    print_stats("buffer_refill_and_metadata", &refill, true);
+    print_stats("payload_touch", &touch, true);
+    print_stats("buffer_and_provider_close", &close, true);
+    print_stats("whole_target", &whole, false);
+    printf("      }\n");
+    printf("    }");
+    return 0;
+}
+#endif
+
 static int run_rate(
     struct iio_device *rx,
     struct iio_channel *lo,
@@ -486,6 +806,8 @@ int main(int argc, char **argv)
     unsigned int channel_index, rate_index;
     static const long long sample_rates[] = {2500000LL, 5000000LL};
     bool metadata_mode = true;
+    bool provider_local = false;
+    bool provider_reuse = false;
     unsigned int refill_ms = DWELL_MS;
     int ret = EXIT_FAILURE;
     bool preserved = false;
@@ -496,8 +818,25 @@ int main(int argc, char **argv)
         metadata_mode = false;
         refill_ms = 10U;
     }
+#ifdef WITH_LOCAL_METADATA_PROVIDER
+    else if (argc == 2 && !strcmp(argv[1], "provider-local-small-buffer")) {
+        metadata_mode = false;
+        provider_local = true;
+        refill_ms = 10U;
+    }
+    else if (argc == 2 && !strcmp(argv[1], "provider-local-reuse")) {
+        metadata_mode = false;
+        provider_local = true;
+        provider_reuse = true;
+        refill_ms = 10U;
+    }
+#endif
     else if (argc != 1) {
-        fprintf(stderr, "usage: %s [ordinary-local|ordinary-local-small-buffer]\n",
+        fprintf(stderr, "usage: %s [ordinary-local|ordinary-local-small-buffer"
+#ifdef WITH_LOCAL_METADATA_PROVIDER
+            "|provider-local-small-buffer|provider-local-reuse"
+#endif
+            "]\n",
             argv[0]);
         goto out;
     }
@@ -547,7 +886,9 @@ int main(int argc, char **argv)
             iio_device_get_sample_size(rx));
         goto restore;
     }
-    if (iio_device_set_kernel_buffers_count(rx, metadata_mode ? 8U : 1U) < 0) {
+    if (iio_device_set_kernel_buffers_count(rx,
+            provider_local ? LOCAL_PROVIDER_KERNEL_BUFFERS :
+            (metadata_mode ? 8U : 1U)) < 0) {
         fprintf(stderr, "failed to set capture kernel-buffer depth: %s\n",
             strerror(errno));
         goto restore;
@@ -565,9 +906,13 @@ int main(int argc, char **argv)
         goto restore;
 
     printf("{\n");
-    printf("  \"implementation\": \"%s\",\n", metadata_mode
-        ? "pluto-loopback-iiod-c-metadata-abi3-prototype"
-        : "pluto-local-c-ordinary-dma-ceiling-prototype");
+    printf("  \"implementation\": \"%s\",\n", provider_reuse
+        ? "pluto-local-c-reused-iiod-provider-metadata-abi3-prototype"
+        : (provider_local
+        ? "pluto-local-c-iiod-provider-metadata-abi3-prototype"
+        : (metadata_mode
+            ? "pluto-loopback-iiod-c-metadata-abi3-prototype"
+            : "pluto-local-c-ordinary-dma-ceiling-prototype")));
     printf("  \"radio_serial\": \"%s\",\n", serial);
     printf("  \"dwell_ms\": %u,\n", DWELL_MS);
     printf("  \"settle_guard_us\": %u,\n", SETTLE_US);
@@ -576,6 +921,15 @@ int main(int argc, char **argv)
     printf("  \"iq_transport_or_persistence_included\": false,\n");
     printf("  \"rates\": [\n");
     for (rate_index = 0; rate_index < ARRAY_SIZE(sample_rates); ++rate_index) {
+#ifdef WITH_LOCAL_METADATA_PROVIDER
+        if (provider_local) {
+            if (run_local_provider_rate(rx, lo, rx_phy, sample_rates[rate_index],
+                    provider_reuse, &checksum) < 0) {
+                printf("\n");
+                goto restore;
+            }
+        } else
+#endif
         if (run_rate(rx, lo, rx_phy, sample_rates[rate_index], metadata_mode,
                 refill_ms, &checksum) < 0) {
             printf("\n");
@@ -585,7 +939,7 @@ int main(int argc, char **argv)
     }
     printf("  ],\n");
     printf("  \"checksum\": %u,\n", checksum);
-    if (metadata_mode)
+    if (metadata_mode || provider_local)
         printf("  \"metadata_attestation\": "
                "\"all frames CRC-valid, exact-size, gap-free, overflow-free, unique-stream\"\n");
     else
