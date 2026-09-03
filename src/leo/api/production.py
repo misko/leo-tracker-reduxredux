@@ -95,7 +95,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
     qualification_root = configured.qualification_root or configured.bulk_root / "qualification"
     bulk_pin = PinnedLocalRoot(configured.bulk_root)
     scanner_iq = ScannerIqStore(configured.bulk_root)
-    persistent_hop_iq = PersistentHopIqStore(configured.bulk_root)
+    persistent_hop_iq = PersistentHopIqStore.open_read_only(configured.bulk_root)
     try:
         qualification_pin = PinnedLocalRoot(qualification_root)
     except Exception:
