@@ -71,6 +71,13 @@ the local RAID mounted at `/srv/bulk`, and working LAN routes to the radios.
      --uv-bin /home/mouse9911/.local/bin/uv --execute
    ```
 
+   Staging fails unless that commit contains the reviewed userspace iiOD and
+   its provenance at `runtime/scanner-iiod/iiod` and
+   `runtime/scanner-iiod/provenance.json`. Publication verifies the exact
+   SHA-256/size, ARM EABI5 ELF header, 0550 release mode, and provenance, then
+   seals both file hashes in the external release metadata. The ARM binary is
+   inspected as data on the host and is never executed during staging.
+
 3. Copy `deploy/etc/leo/leo.env.example` to `/etc/leo/leo.env`. Replace both
    documentation IP addresses, both serial placeholders, and the capture
    profile. Keep the file non-secret by using local PostgreSQL peer
@@ -137,6 +144,30 @@ qualifying the scanner. A canary consists of two adjacent UTC scanner slots:
 one 300-second 2.5 MS/s run and one 300-second 5 MS/s run. Start within the
 configured 300-second lateness allowance after a 20-minute UTC boundary; the
 second run then finishes about 25 minutes after that boundary.
+
+Do not start this canary unless the staged acquisition release owns the
+complete no-flash alternate-iiOD lifecycle. Its exact binary must be sealed at
+`/opt/leo-tracker/releases/$LEO_ACQUISITION_RELEASE_ID/runtime/scanner-iiod/iiod`,
+and `LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH` must name that path rather than a
+`current*` selector. The acquisition unit supplies the fixed
+`scanner-iiod-ssh-known-hosts` and `scanner-iiod-ssh-password` credentials;
+their in-service paths are derived only from `CREDENTIALS_DIRECTORY`.
+
+Within the existing radio claim the lifecycle must upload and hash-attest the
+matched iiOD bundle beneath `/tmp`, start only port 30432, serial- and
+capability-attest that endpoint, and tear down that exact process after HOPT
+restoration. Cleanup is attempted exactly once after startup or capture failure
+and must confirm port 30432 is closed and stock iiOD on 30431 is healthy before
+the IQ session is published and before the claim is released. A cleanup failure
+leaves the session unpublished. Reusing an already published session performs
+no lifecycle startup. Writing QSPI, firmware, boot configuration, or the
+persistent radio rootfs is forbidden. A pre-existing or foreign process on
+30432 is a hard stop, not something the scanner may replace.
+
+The qualified scanner environment is exactly a 5 ms guard, 131072 samples per
+refill, eight kernel buffers, eight visits of radio read-ahead, and a 64-visit
+storage queue. Do not reduce the storage queue to 16: that depth filled during
+the first durable 2.5 MS/s attempt and exhausted the radio's kernel buffers.
 
 First pause and drain the shared capture authority, then stop the normal
 supervisor. Verify that no acquisition operation remains leased:
@@ -390,6 +421,16 @@ reports, Standard products, and UI history are retained. Unanalyzed,
 cancelled-run, failed-run, partial-spool, corrupt, or QNAP data fails closed and
 is never selected.
 
+Published persistent-hop IQ under `scanner-hop-recordings/` is covered by the
+same watermarks and recoverable stage/commit/discard sequence. Only sessions
+whose immutable terminal receipt is qualified are eligible; partial spools,
+cancelled or failed sessions, continuity/duty/restoration failures, and sessions
+with a durable hold fail closed. Retention re-inspects the exact URI and manifest
+digest immediately before staging the dated bundle, then writes the complete
+manifest to the append-only `control/persistent-hop-purges/` namespace before
+trash removal. Persistent-hop retention roots must be real directories on the
+local bulk filesystem and can never resolve beneath `/mnt/qnap01`.
+
 Always inspect status and a dry run first:
 
 ```text
@@ -406,6 +447,7 @@ confinement, and QNAP rejection without touching production evidence:
 uv run pytest -q \
   tests/operations/test_retention.py \
   tests/operations/test_scanner_retention.py \
+  tests/operations/test_persistent_hop_retention.py \
   tests/storage/test_scanner_run_store.py
 ```
 

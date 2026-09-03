@@ -142,11 +142,16 @@ from leo.qualification import (
 )
 from leo.radio import (
     PERSISTENT_HOP_EXCLUDED_SERIAL,
+    PERSISTENT_HOP_IIOD_KNOWN_HOSTS_CREDENTIAL,
+    PERSISTENT_HOP_IIOD_PASSWORD_CREDENTIAL,
     FakeRadioSource,
+    PersistentHopIiodLifecycle,
+    PersistentHopIiodLifecycleConfiguration,
     PlutoIioRadioSource,
     PlutoPersistentHopRadio,
     PlutoSequentialScanRadio,
     RadioSource,
+    create_pluto_userspace_iiod_lifecycle,
 )
 from leo.scanner import (
     PersistentHopPlanV1,
@@ -187,6 +192,9 @@ from leo.storage.errors import BundleNotFoundError
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
 ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadioLike]
 PersistentHopRadioFactory = Callable[["RadioConfigurationV1"], PersistentHopRadio]
+PersistentHopIiodLifecycleFactory = Callable[
+    [PersistentHopIiodLifecycleConfiguration], PersistentHopIiodLifecycle
+]
 ScannerRadioSelector = Callable[[tuple["RadioConfigurationV1", ...]], "RadioConfigurationV1"]
 RecordingStoreFactory = Callable[[Path], RecordingStore]
 ScannerIqStoreFactory = Callable[[Path], ScannerIqStore]
@@ -278,10 +286,14 @@ class CliSettings:
     scanner_dwell_ms: int = 120
     scanner_gain_db: float = 40.0
     scanner_margin_gate: float = 0.025
-    scanner_persistent_transition_guard_us: int = 11_000
+    scanner_persistent_transition_guard_us: int = 5_000
     scanner_persistent_samples_per_block: int = 131_072
     scanner_persistent_kernel_buffers: int = 8
-    scanner_persistent_queue_capacity_visits: int = 16
+    scanner_persistent_read_ahead_visits: int = 8
+    scanner_persistent_queue_capacity_visits: int = 64
+    scanner_persistent_iiod_port: int = 30_432
+    scanner_persistent_iiod_binary_path: Path | None = None
+    scanner_persistent_credentials_directory: Path | None = None
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
     ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
     direct_async_enabled: bool = False
@@ -332,11 +344,32 @@ class CliSettings:
                     self.scanner_interval_seconds != 1_200
                     or self.scanner_run_seconds != 300
                     or self.scanner_dwell_ms != 120
+                    or self.scanner_persistent_iiod_port != 30_432
                 ):
                     raise ValueError(
                         "persistent hopping requires 1200-second cadence, 300-second runs, "
-                        "and 120 ms valid visits"
+                        "120 ms valid visits, and alternate iiOD port 30432"
                     )
+                binary = self.scanner_persistent_iiod_binary_path
+                known_hosts = self.scanner_persistent_iiod_known_hosts_path
+                password = self.scanner_persistent_iiod_password_path
+                if binary is None:
+                    raise ValueError(
+                        "persistent hopping requires an exact release-local iiOD binary"
+                    )
+                self._require_runtime_file(binary, "persistent-hop iiOD binary")
+                if not os.access(binary, os.X_OK):
+                    raise ValueError("persistent-hop iiOD binary is not executable")
+                if known_hosts is None or password is None:
+                    raise ValueError("persistent hopping requires systemd-managed SSH credentials")
+                self._require_runtime_file(
+                    known_hosts,
+                    f"systemd credential {PERSISTENT_HOP_IIOD_KNOWN_HOSTS_CREDENTIAL}",
+                )
+                self._require_runtime_file(
+                    password,
+                    f"systemd credential {PERSISTENT_HOP_IIOD_PASSWORD_CREDENTIAL}",
+                )
         if self.scanner_interval_seconds <= 0:
             raise ValueError("scanner interval must be positive")
         if self.scanner_maximum_lateness_seconds < 0:
@@ -353,14 +386,49 @@ class CliSettings:
             raise ValueError("persistent-hop block samples are outside the supported bound")
         if not 2 <= self.scanner_persistent_kernel_buffers <= 64:
             raise ValueError("persistent-hop kernel buffers are outside the supported bound")
+        if not 1 <= self.scanner_persistent_read_ahead_visits <= 64:
+            raise ValueError("persistent-hop read-ahead visits are outside the supported bound")
         if self.scanner_persistent_queue_capacity_visits <= 0:
             raise ValueError("persistent-hop storage queue capacity must be positive")
+        if not 1 <= self.scanner_persistent_iiod_port <= 65_535:
+            raise ValueError("persistent-hop iiOD port is outside the supported bound")
+        if (
+            self.scanner_persistent_iiod_binary_path is not None
+            and not self.scanner_persistent_iiod_binary_path.is_absolute()
+        ):
+            raise ValueError("persistent-hop iiOD binary path must be absolute")
+        if (
+            self.scanner_persistent_credentials_directory is not None
+            and not self.scanner_persistent_credentials_directory.is_absolute()
+        ):
+            raise ValueError("systemd credentials directory must be absolute")
         if not self.scanner_report_root.is_absolute():
             raise ValueError("scanner report root must be absolute")
         if self.scanner_report_root == Path("/mnt/qnap01") or str(
             self.scanner_report_root
         ).startswith("/mnt/qnap01/"):
             raise ValueError("scanner reports cannot be written beneath QNAP")
+
+    @property
+    def scanner_persistent_iiod_known_hosts_path(self) -> Path | None:
+        directory = self.scanner_persistent_credentials_directory
+        if directory is None:
+            return None
+        return directory / PERSISTENT_HOP_IIOD_KNOWN_HOSTS_CREDENTIAL
+
+    @property
+    def scanner_persistent_iiod_password_path(self) -> Path | None:
+        directory = self.scanner_persistent_credentials_directory
+        if directory is None:
+            return None
+        return directory / PERSISTENT_HOP_IIOD_PASSWORD_CREDENTIAL
+
+    @staticmethod
+    def _require_runtime_file(path: Path, label: str) -> None:
+        if not path.is_absolute() or path.is_symlink() or not path.is_file():
+            raise ValueError(f"{label} must be an absolute regular non-symlink file")
+        if path.stat().st_size <= 0:
+            raise ValueError(f"{label} must not be empty")
 
     @classmethod
     def from_environ(cls, environ: Mapping[str, str] | None = None) -> CliSettings:
@@ -450,7 +518,7 @@ class CliSettings:
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
                 scanner_persistent_transition_guard_us=int(
-                    values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "11000")
+                    values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "5000")
                 ),
                 scanner_persistent_samples_per_block=int(
                     values.get("LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK", "131072")
@@ -458,8 +526,24 @@ class CliSettings:
                 scanner_persistent_kernel_buffers=int(
                     values.get("LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS", "8")
                 ),
+                scanner_persistent_read_ahead_visits=int(
+                    values.get("LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS", "8")
+                ),
                 scanner_persistent_queue_capacity_visits=int(
-                    values.get("LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS", "16")
+                    values.get("LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS", "64")
+                ),
+                scanner_persistent_iiod_port=int(
+                    values.get("LEO_SCANNER_PERSISTENT_IIOD_PORT", "30432")
+                ),
+                scanner_persistent_iiod_binary_path=(
+                    None
+                    if values.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH") is None
+                    else Path(values["LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH"])
+                ),
+                scanner_persistent_credentials_directory=(
+                    None
+                    if values.get("CREDENTIALS_DIRECTORY") is None
+                    else Path(values["CREDENTIALS_DIRECTORY"])
                 ),
                 scanner_report_root=Path(
                     values.get(
@@ -482,6 +566,9 @@ class CompositionHooks:
     radio_source_factory: RadioSourceFactory | None = None
     scanner_radio_factory: ScannerRadioFactory | None = None
     persistent_hop_radio_factory: PersistentHopRadioFactory | None = None
+    persistent_hop_iiod_lifecycle_factory: PersistentHopIiodLifecycleFactory = (
+        create_pluto_userspace_iiod_lifecycle
+    )
     scanner_radio_selector: ScannerRadioSelector = secrets.choice
     recording_store_factory: RecordingStoreFactory = RecordingStore
     scanner_iq_store_factory: ScannerIqStoreFactory = ScannerIqStore
@@ -1430,14 +1517,42 @@ class LocalAcquisitionBackend:
                 task_id=session_id,
                 task_kind=CaptureTaskKind.SCANNER_SWEEP,
             ):
-                published = capture_persistent_hop_to_store(
-                    radio,
-                    plan,
-                    session_id=session_id,
-                    store=store,
-                    cancel=cancel,
-                    queue_capacity_visits=(self.settings.scanner_persistent_queue_capacity_visits),
-                )
+                lifecycle = self._persistent_hop_iiod_lifecycle(configured)
+                lifecycle_active = False
+                cleanup_attempted = False
+
+                def cleanup_before_publish() -> None:
+                    nonlocal cleanup_attempted, lifecycle_active
+                    if not lifecycle_active or cleanup_attempted:
+                        return
+                    # Mark the attempt first: ownership-sensitive cleanup is
+                    # never retried blindly after an indeterminate failure.
+                    cleanup_attempted = True
+                    lifecycle.exit_and_verify()
+                    lifecycle_active = False
+
+                try:
+                    lifecycle.enter_and_attest()
+                    lifecycle_active = True
+                    published = capture_persistent_hop_to_store(
+                        radio,
+                        plan,
+                        session_id=session_id,
+                        store=store,
+                        cancel=cancel,
+                        queue_capacity_visits=(
+                            self.settings.scanner_persistent_queue_capacity_visits
+                        ),
+                        before_publish=cleanup_before_publish,
+                    )
+                except BaseException as primary:
+                    try:
+                        cleanup_before_publish()
+                    except BaseException as cleanup:
+                        primary.add_note(
+                            f"alternate iiOD cleanup failed: {type(cleanup).__name__}: {cleanup}"
+                        )
+                    raise
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         return ScheduledPersistentHopRun(intent=intent, published=published)
@@ -2531,6 +2646,33 @@ class LocalAcquisitionBackend:
             configuration.host,
             expected_serial=configuration.serial,
             radio_id=configuration.radio_id,
+            iiod_port=self.settings.scanner_persistent_iiod_port,
+            read_ahead_visits=self.settings.scanner_persistent_read_ahead_visits,
+        )
+
+    def _persistent_hop_iiod_lifecycle(
+        self,
+        configuration: RadioConfigurationV1,
+    ) -> PersistentHopIiodLifecycle:
+        factory = self.hooks.persistent_hop_iiod_lifecycle_factory
+        binary = self.settings.scanner_persistent_iiod_binary_path
+        known_hosts = self.settings.scanner_persistent_iiod_known_hosts_path
+        password = self.settings.scanner_persistent_iiod_password_path
+        assert configuration.host is not None
+        assert configuration.serial is not None
+        assert binary is not None
+        assert known_hosts is not None
+        assert password is not None
+        return factory(
+            PersistentHopIiodLifecycleConfiguration(
+                radio_id=configuration.radio_id,
+                expected_serial=configuration.serial,
+                host=configuration.host,
+                port=self.settings.scanner_persistent_iiod_port,
+                binary_path=binary,
+                known_hosts_path=known_hosts,
+                password_path=password,
+            )
         )
 
     def _selected_radios(

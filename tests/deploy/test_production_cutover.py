@@ -1237,7 +1237,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
             "LEO_SCANNER_ENABLED=false",
-            "LEO_SCANNER_CAPTURE_MODE=sequential",
+            "LEO_SCANNER_CAPTURE_MODE=persistent_hop",
             "LEO_SCANNER_RADIO_ID=radio_pluto_5d4d",
             "LEO_SCANNER_INTERVAL_SECONDS=1200",
             "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=300",
@@ -1246,10 +1246,12 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_SCANNER_GAIN_DB=40.0",
             "LEO_SCANNER_MARGIN_GATE=0.025",
             "LEO_SCANNER_REPORT_ROOT=/srv/bulk/leo/scanner-reports",
-            "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US=11000",
+            "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US=5000",
             "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK=131072",
             "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS=8",
-            "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS=16",
+            "LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS=8",
+            "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS=64",
+            "LEO_SCANNER_PERSISTENT_IIOD_PORT=30432",
             f"LEO_PIPELINE_RELEASE_ID={revision}",
             f"LEO_RADIOS_JSON='{json.dumps(radios, separators=(',', ':'))}'",
         )
@@ -1390,7 +1392,12 @@ def test_installed_station_authority_requires_exact_inode_and_digest(tmp_path: P
 def test_scanner_data_directories_must_be_installed_exactly(tmp_path: Path) -> None:
     root = tmp_path / "bulk"
     root.mkdir()
-    for relative in ("scanner-recordings", "scanner-reports", "scanner-runs"):
+    for relative in (
+        "scanner-recordings",
+        "scanner-reports",
+        "scanner-runs",
+        "scanner-hop-recordings",
+    ):
         path = root / relative
         path.mkdir(mode=0o770)
         path.chmod(0o2770)
@@ -2693,14 +2700,31 @@ def test_narrow_component_preflight_requires_exact_environment_and_unit(
         (
             "[Service]\n"
             f"WorkingDirectory=/opt/leo-tracker/{selector}\n"
-            f"ExecStart=/opt/leo-tracker/{selector}/.venv/bin/{invocation}\n"
-            "InaccessiblePaths=/mnt/qnap01\n"
+            + (
+                "LoadCredential=scanner-iiod-ssh-known-hosts:"
+                "/etc/leo/credentials/scanner-iiod-ssh-known-hosts\n"
+                "LoadCredential=scanner-iiod-ssh-password:"
+                "/etc/leo/credentials/scanner-iiod-ssh-password\n"
+                if component == "acquisition"
+                else ""
+            )
+            + f"ExecStart=/opt/leo-tracker/{selector}/.venv/bin/{invocation}\n"
+            + "InaccessiblePaths=/mnt/qnap01\n"
         ).encode(),
     )
     environment_name = "worker.env" if component == "worker" else "acquisition.env"
     _write(drop_in, f"[Service]\nEnvironmentFile=/etc/leo/{environment_name}\n".encode())
     environment = tmp_path / environment_name
-    environment.write_text(f"{key}={revision}\n")
+    environment.write_text(
+        f"{key}={revision}\n"
+        + (
+            "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
+            f"/opt/leo-tracker/releases/{revision}/runtime/scanner-iiod/iiod\n"
+            "LEO_SCANNER_ENABLED=false\n"
+            if component == "acquisition"
+            else ""
+        )
+    )
     environment.chmod(0o640)
     preflight = SCRIPT_GLOBALS["_verify_component_preflight"]
     monkeypatch.setitem(
@@ -2720,7 +2744,16 @@ def test_narrow_component_preflight_requires_exact_environment_and_unit(
     assert commands == [("systemd-analyze", "verify", str(unit))]
     assert any("intentionally not probed" in item for item in result)
 
-    environment.write_text(f"{key}={'b' * 40}\n")
+    environment.write_text(
+        f"{key}={'b' * 40}\n"
+        + (
+            "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
+            f"/opt/leo-tracker/releases/{revision}/runtime/scanner-iiod/iiod\n"
+            "LEO_SCANNER_ENABLED=false\n"
+            if component == "acquisition"
+            else ""
+        )
+    )
     with pytest.raises(ValueError, match="does not bind the exact target"):
         preflight(component, release, revision)
 

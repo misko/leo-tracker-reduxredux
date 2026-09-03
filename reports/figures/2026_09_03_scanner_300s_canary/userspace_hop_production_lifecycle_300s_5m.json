@@ -1,0 +1,89 @@
+{
+  "schema": "org.leo.persistent-hop-production-lifecycle-canary/v1",
+  "captured_at_utc": "2026-09-03T08:30:29.037548Z",
+  "finalized_at_utc": "2026-09-03T08:35:31.245852Z",
+  "session_id": "canary-hop-20260903T083027Z-5m-prod-lifecycle-guard5ms",
+  "source": {
+    "leo_head": "33011576",
+    "leo_worktree_clean": false,
+    "pluto_plus_utils_revision": "5790a39705e9e598ef048ec773e0227cf9ac1808",
+    "iiod_sha256": "5d7ca0a04e93341bdcd28f1967f583f14389456ff4375362e394b7cc71af32ea",
+    "iiod_size_bytes": 230980
+  },
+  "radio": {
+    "radio_id": "radio_pluto_5d4d",
+    "serial": "1040005e0b100007100010000bf33a5d4d",
+    "host": "192.168.1.20",
+    "capture_uri": "ip:192.168.1.20:30432",
+    "stock_iiod_port": 30431,
+    "userspace_iiod_port": 30432
+  },
+  "settings": {
+    "sample_rate_hz": 5000000,
+    "rf_bandwidth_hz": 5000000,
+    "nominal_duration_seconds": 300,
+    "valid_visit_ms": 120,
+    "transition_guard_us": 5000,
+    "samples_per_block": 131072,
+    "kernel_buffers": 8,
+    "read_ahead_visits": 8,
+    "storage_queue_capacity_visits": 64,
+    "gain_mode": "manual",
+    "gain_db": 40.0
+  },
+  "result": {
+    "passed": true,
+    "capture_outcome": "complete",
+    "capture_and_publication_seconds": 302.4027974079945,
+    "full_chunk_verification_seconds": 16.8822673530085,
+    "valid_duty_percent": 92.2682599711378,
+    "valid_duty_ppm": 922682,
+    "visit_count": 2307,
+    "valid_sample_count": 1384200000,
+    "transition_invalid_sample_count": 115990857,
+    "duty_denominator_sample_count": 1500190857,
+    "missing_sample_count": 0,
+    "overflow_count": 0,
+    "hop_event_sequence_gap_count": 0,
+    "continuity_attested": true,
+    "restoration_status": "restored",
+    "target_visits": {
+      "CH1L": 289,
+      "CH2L": 289,
+      "CH3L": 289,
+      "CH4L": 288,
+      "CH1U": 288,
+      "CH2U": 288,
+      "CH3U": 288,
+      "CH4U": 288
+    }
+  },
+  "storage": {
+    "uri": "bulk://scanner-hop-recordings/2026/09/03/canary-hop-20260903T083027Z-5m-prod-lifecycle-guard5ms",
+    "manifest_sha256": "216a42bb163c24058e4919a12499fb79825b83ff7f9311e0a4903248f7b60e69",
+    "chunk_count": 289,
+    "uncompressed_bytes": 11073600000,
+    "compressed_bytes": 4371178829,
+    "uncompressed_sha256": "e2bc1571c105c4795a050ace299989138f19218e7500e3a3ab16b69f8f0b31fc",
+    "full_chunk_verification_passed": true,
+    "owner": "leo:leo"
+  },
+  "storage_queue": {
+    "capacity_visits": 64,
+    "high_water_visits": 2,
+    "enqueue_failure_count": 0,
+    "maximum_enqueue_wait_ns": 33100,
+    "maximum_writer_service_ns": 383046400
+  },
+  "lifecycle": {
+    "systemd_credentials_used": true,
+    "userspace_iiod_attested": true,
+    "owned_process_stopped": true,
+    "owned_temporary_files_removed": true,
+    "alternate_port_closed_after_capture": true,
+    "stock_endpoint_healthy_after_capture": true,
+    "production_services_restored": true,
+    "scanner_history_api_qualified": true,
+    "firmware_or_fpga_changed": false
+  }
+}

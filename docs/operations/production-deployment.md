@@ -102,7 +102,11 @@ installs the locked hardware/Python dependencies, runs `npm ci`, provisions
 Chromium for the `leo` account, builds the UI, verifies the installed
 entrypoints, makes the tree root-owned and non-writable, and seals the
 release-local copied `uv`
-executable and lockfile hashes in external publication metadata. The helper
+executable, lockfiles, and scanner-iiOD binary/provenance hashes in external
+publication metadata. Before publication it also requires the canonical iiOD
+to be the reviewed 230980-byte ARM EABI5 artifact, normalizes its mode to 0550,
+and validates its build-provenance receipt without executing the ARM binary.
+The helper
 seals `uv` at `.release-tools/uv` inside this exact release before running it as
 `leo`. Older rollback candidates therefore never depend on mutable shared
 tooling. The underlying stager's `--python-bin` is mandatory and accepts only
@@ -241,7 +245,7 @@ Create only the canonical local directories. Confirm all public stores share
 one filesystem before changing access:
 
 ```text
-sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs,scanner-hop-recordings}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
 sudo install -d -o root -g leo -m 2770 \
@@ -261,10 +265,11 @@ sudo setfacl -R -m u:leo:rX /srv/bulk/leo/recordings /srv/bulk/leo/analysis \
   /srv/bulk/leo/test-corpus /srv/bulk/leo/qualification
 sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control \
   /srv/bulk/leo/trash /srv/bulk/leo/presentation-cache \
-  /srv/bulk/leo/scanner-recordings /srv/bulk/leo/scanner-reports /srv/bulk/leo/scanner-runs
+  /srv/bulk/leo/scanner-recordings /srv/bulk/leo/scanner-reports \
+  /srv/bulk/leo/scanner-runs /srv/bulk/leo/scanner-hop-recordings
 sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
   -exec setfacl -m u:leo:rwx {} +
-sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs}
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs,scanner-hop-recordings}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx \
   /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-configs,wp11-plans,trusted-campaigns}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/wp11-plan-runs
@@ -275,6 +280,7 @@ sudo -u leo test -w /srv/bulk/leo/spool
 sudo -u leo test -w /srv/bulk/leo/scanner-recordings
 sudo -u leo test -w /srv/bulk/leo/scanner-reports
 sudo -u leo test -w /srv/bulk/leo/scanner-runs
+sudo -u leo test -w /srv/bulk/leo/scanner-hop-recordings
 for path in release capture legacy frequency-calibration-plans \
   frequency-calibration-promotions wp11-configs wp11-plans trusted-campaigns; do
   sudo -u leo test -w "/srv/bulk/leo/qualification/$path"
@@ -366,22 +372,27 @@ required_keys=(
   LEO_DATABASE_URL LEO_PIPELINE_RELEASE_ID LEO_CAPTURE_PROFILE
   LEO_CAPTURE_PROFILE_5M LEO_MIXED_RATE_POLICY LEO_DIRECT_ASYNC_ENABLED
   LEO_CAPTURE_INTERVAL_SECONDS LEO_QUALIFICATION_PROFILE LEO_SOAK_PROFILE
-  LEO_SCANNER_ENABLED LEO_SCANNER_RADIO_ID LEO_SCANNER_INTERVAL_SECONDS
-  LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_DWELL_MS
-  LEO_SCANNER_GAIN_DB LEO_SCANNER_MARGIN_GATE LEO_SCANNER_REPORT_ROOT
+  LEO_SCANNER_ENABLED LEO_SCANNER_CAPTURE_MODE LEO_SCANNER_RADIO_ID
+  LEO_SCANNER_INTERVAL_SECONDS LEO_SCANNER_MAXIMUM_LATENESS_SECONDS
+  LEO_SCANNER_RUN_SECONDS LEO_SCANNER_DWELL_MS LEO_SCANNER_GAIN_DB
+  LEO_SCANNER_MARGIN_GATE LEO_SCANNER_REPORT_ROOT
+  LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US
+  LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK
+  LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS
+  LEO_SCANNER_PERSISTENT_READ_AHEAD_VISITS
+  LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS
+  LEO_SCANNER_PERSISTENT_IIOD_PORT
 )
 for key in "${required_keys[@]}"; do
   count=$(sudo awk -F= -v expected="$key" '$1 == expected { count += 1 } END { print count + 0 }' \
     /etc/leo/leo.env)
   test "$count" -eq 1 || { echo "invalid environment binding count: $key=$count" >&2; exit 1; }
 done
-scanner_run_seconds_count=$(sudo awk -F= '$1 == "LEO_SCANNER_RUN_SECONDS" { count += 1 } END { print count + 0 }' \
-  /etc/leo/leo.env)
-test "$scanner_run_seconds_count" -le 1 || {
-  echo "invalid environment binding count: LEO_SCANNER_RUN_SECONDS=$scanner_run_seconds_count" >&2
-  exit 1
-}
-
+acquisition_binary=/opt/leo-tracker/releases/$release_revision/runtime/scanner-iiod/iiod
+sudo awk -F= -v expected="$acquisition_binary" '
+  $1 == "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH" && $2 == expected { count += 1 }
+  END { exit count == 1 ? 0 : 1 }
+' /etc/leo/acquisition.env
 environment_snapshot=/etc/leo/leo.env.pre-$release_revision
 sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
@@ -389,6 +400,27 @@ sudo sha256sum "$environment_snapshot"
 
 sudo ./ops deploy
 ```
+
+Before installing the acquisition unit, provision its two root-owned source
+credentials without placing secrets in either environment file. The known-hosts
+file must contain only the pinned literal `192.168.1.20` host key; the password
+file contains one newline-terminated password. `LoadCredential=` copies them
+into the service's private credential directory, and Leo derives the two paths
+from `CREDENTIALS_DIRECTORY` using fixed names:
+
+```text
+sudo install -d -o root -g root -m 0700 /etc/leo/credentials
+sudo install -o root -g root -m 0400 SCANNER_KNOWN_HOSTS \
+  /etc/leo/credentials/scanner-iiod-ssh-known-hosts
+sudo install -o root -g root -m 0400 SCANNER_PASSWORD \
+  /etc/leo/credentials/scanner-iiod-ssh-password
+```
+
+Release A remains `LEO_SCANNER_ENABLED=false`, but every newly staged release
+must already contain the sealed binary and build-provenance receipt. Packaging
+the dormant assets does not start the alternate daemon or access a radio.
+Enabling persistent mode still fails closed unless that exact non-symlink
+executable and both systemd credentials are available.
 
 The full-cutover transaction runs any required `alembic upgrade head` while
 every LEO unit is quiescent. Before starting any worker, its cutover preflight reads

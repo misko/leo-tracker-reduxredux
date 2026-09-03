@@ -19,10 +19,11 @@ Chronology alone does not tell a reader which conclusion still governs.
 
 This page maps each current scientific claim to its strongest versioned
 evidence, controls, caveats, implementation status, and next falsifier. In the
-campaign-finalization tree, it also indexes all 146 tracked Markdown assets
-under `reports/`: 135 top-level reports, seven documents in the post-refill
-retrospective bundle, three scanner-rendered samples, and one TLE figure
-README. Canonical concept and pipeline pages link here for provenance; reports
+campaign-finalization tree, it also indexes all 159 tracked Markdown assets
+under `reports/`: 144 top-level reports, seven documents in the post-refill
+retrospective bundle, three scanner-rendered samples, four mixed-rate timing
+figure notes, and one TLE figure README. Canonical concept and pipeline pages
+link here for provenance; reports
 remain dated receipts.
 
 ## Method

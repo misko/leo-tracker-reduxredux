@@ -1081,6 +1081,7 @@ def test_acquisition_environment_atomically_binds_selected_release(
     original = (
         "# preserved acquisition override\n"
         f"LEO_ACQUISITION_RELEASE_ID={'1' * 40}\n"
+        "LEO_SCANNER_ENABLED=false\n"
         "LEO_MIXED_RATE_POLICY=fixed-2p5-25\n"
     ).encode()
     environment.write_bytes(original)
@@ -1091,7 +1092,11 @@ def test_acquisition_environment_atomically_binds_selected_release(
 
     values = OPS._environment_values(environment.read_bytes())
     assert values["LEO_ACQUISITION_RELEASE_ID"] == target
+    assert values["LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH"] == (
+        f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod"
+    )
     assert values["LEO_MIXED_RATE_POLICY"] == "fixed-2p5-25"
+    assert values["LEO_SCANNER_ENABLED"] == "false"
     assert environment.read_text().startswith("# preserved acquisition override\n")
     monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", environment)
     OPS._verify_acquisition_environment_revision(target)

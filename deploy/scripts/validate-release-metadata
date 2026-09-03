@@ -177,6 +177,8 @@ def validate(
         release / ".leo-release-source.json",
         release / "uv.lock",
         release / "web/package-lock.json",
+        release / "runtime/scanner-iiod/iiod",
+        release / "runtime/scanner-iiod/provenance.json",
         *runtime_paths,
     )
     if len(lines) != 3 + len(expected_paths):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from threading import Event, get_ident
 from types import SimpleNamespace
 
 import numpy as np
@@ -45,6 +46,65 @@ class _Client:
         assert session_id == self.expected_wire_id
         self.start_arguments = (plan, tandem_request)
         return self.session
+
+
+class _HeldVisitUpstream(_UpstreamSession):
+    def __init__(self, blocks, receipt) -> None:
+        super().__init__(blocks, receipt)
+        self.visit_entered = Event()
+        self.release_visit = Event()
+        self.visit_thread_id = None
+        self.cancel_thread_id = None
+
+    def visits(self):
+        self.visit_thread_id = get_ident()
+        self.visit_entered.set()
+        assert self.release_visit.wait(timeout=2)
+        yield from self._blocks
+
+    def cancel(self) -> None:
+        self.cancel_thread_id = get_ident()
+        super().cancel()
+
+
+class _QueueFullUpstream(_UpstreamSession):
+    def __init__(self, blocks, receipt) -> None:
+        super().__init__(blocks, receipt)
+        self.second_visit_pulled = Event()
+        self.cancel_thread_id = None
+        self.visit_thread_id = None
+
+    def visits(self):
+        self.visit_thread_id = get_ident()
+        for index, block in enumerate(self._blocks):
+            if index == 1:
+                self.second_visit_pulled.set()
+            yield block
+
+    def cancel(self) -> None:
+        self.cancel_thread_id = get_ident()
+        super().cancel()
+
+
+class _ProducerFailure(RuntimeError):
+    pass
+
+
+class _FailingUpstream(_UpstreamSession):
+    def __init__(self, blocks, receipt, error) -> None:
+        super().__init__(blocks, receipt)
+        self.error = error
+        self.visit_thread_id = None
+        self.cancel_thread_id = None
+
+    def visits(self):
+        self.visit_thread_id = get_ident()
+        yield from self._blocks
+        raise self.error
+
+    def cancel(self) -> None:
+        self.cancel_thread_id = get_ident()
+        super().cancel()
 
 
 def _cancelled_source(*, visit_count: int = 2):
@@ -217,6 +277,28 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
     radio.close()
 
 
+def test_adapter_targets_one_explicit_alternate_iiod_port() -> None:
+    plan, _source_blocks, upstream = _cancelled_source(visit_count=0)
+    upstream.receipt.radio_uri = "ip:192.168.1.18:30432"
+    client = _Client(upstream, persistent_hop_wire_session_id("adapter-session"))
+    opened: list[tuple[str, str]] = []
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        iiod_port=30_432,
+        client_factory=lambda uri, serial: opened.append((uri, serial)) or client,
+    )
+
+    assert radio.open().uri == "ip:192.168.1.18:30432"
+    session = radio.begin_session(plan, session_id="adapter-session")
+    with pytest.raises(StopIteration):
+        session.read_visit()
+    assert session.finish().radio_uri == "ip:192.168.1.18:30432"
+    assert opened == [("ip:192.168.1.18:30432", "allowed-serial")]
+    radio.close()
+
+
 def test_adapter_maps_cancel_after_next_transition_without_forging_a_visit() -> None:
     plan, source_blocks, upstream = _cancelled_source()
     source = upstream.receipt
@@ -256,6 +338,97 @@ def test_adapter_maps_cancel_after_next_transition_without_forging_a_visit() -> 
     assert receipt.terminal_unretained_invalid_sample_count == plan.transition_guard_samples
     assert receipt.terminal_unretained_valid_sample_count == 0
     assert receipt.duty_target_met == (receipt.valid_duty_ppm >= plan.minimum_valid_duty_ppm)
+    radio.close()
+
+
+def test_adapter_cancel_is_producer_owned_and_retains_current_completed_visit() -> None:
+    plan, source_blocks, source = _cancelled_source(visit_count=1)
+    upstream = _HeldVisitUpstream(source._blocks, source.receipt)
+    client = _Client(upstream, persistent_hop_wire_session_id("adapter-session"))
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        read_ahead_visits=1,
+        client_factory=lambda uri, serial: client,
+        plan_factory=lambda selected: selected,
+        tandem_request_factory=lambda: "hold",
+    )
+
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    assert upstream.visit_entered.wait(timeout=2)
+    session.request_cancel()
+    assert not upstream.cancelled
+    upstream.release_visit.set()
+
+    block = session.read_visit()
+    with pytest.raises(StopIteration):
+        session.read_visit()
+    receipt = session.finish()
+
+    assert block.evidence == source_blocks[0].evidence
+    assert receipt.visits == (source_blocks[0].evidence,)
+    assert upstream.cancelled
+    assert upstream.cancel_thread_id == upstream.visit_thread_id
+    assert upstream.cancel_thread_id != get_ident()
+    radio.close()
+
+
+def test_adapter_finish_drains_a_full_read_ahead_queue_for_recovery() -> None:
+    plan, source_blocks, source = _cancelled_source(visit_count=2)
+    upstream = _QueueFullUpstream(source._blocks, source.receipt)
+    client = _Client(upstream, persistent_hop_wire_session_id("adapter-session"))
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        read_ahead_visits=1,
+        client_factory=lambda uri, serial: client,
+        plan_factory=lambda selected: selected,
+        tandem_request_factory=lambda: "hold",
+    )
+
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    assert upstream.second_visit_pulled.wait(timeout=2)
+    session.request_cancel()
+    receipt = session.finish()
+
+    assert receipt.visits == tuple(item.evidence for item in source_blocks)
+    assert upstream.cancelled
+    assert upstream.cancel_thread_id == upstream.visit_thread_id
+    assert session.complete
+    radio.close()
+
+
+def test_adapter_propagates_producer_error_after_preserving_terminal_receipt() -> None:
+    plan, source_blocks, source = _cancelled_source(visit_count=1)
+    failure = _ProducerFailure("refill failed")
+    upstream = _FailingUpstream(source._blocks, source.receipt, failure)
+    client = _Client(upstream, persistent_hop_wire_session_id("adapter-session"))
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        read_ahead_visits=1,
+        client_factory=lambda uri, serial: client,
+        plan_factory=lambda selected: selected,
+        tandem_request_factory=lambda: "hold",
+    )
+
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    assert session.read_visit().evidence == source_blocks[0].evidence
+    with pytest.raises(_ProducerFailure, match="refill failed") as raised:
+        session.read_visit()
+    session.request_cancel()
+    receipt = session.finish()
+
+    assert raised.value is failure
+    assert receipt.visits == (source_blocks[0].evidence,)
+    assert upstream.cancelled
+    assert upstream.cancel_thread_id == upstream.visit_thread_id
     radio.close()
 
 
@@ -305,4 +478,26 @@ def test_adapter_hard_denies_excluded_serial() -> None:
             "192.168.1.18",
             expected_serial=PERSISTENT_HOP_EXCLUDED_SERIAL,
             radio_id="scanner",
+        )
+
+
+@pytest.mark.parametrize("port", [0, 65_536, True, "30432"])
+def test_adapter_rejects_invalid_alternate_iiod_ports(port) -> None:
+    with pytest.raises(ValueError, match="port"):
+        PlutoPersistentHopRadio(
+            "192.168.1.18",
+            expected_serial="allowed",
+            radio_id="scanner",
+            iiod_port=port,
+        )
+
+
+@pytest.mark.parametrize("read_ahead", [0, 65, True, "8"])
+def test_adapter_rejects_unbounded_or_invalid_read_ahead(read_ahead) -> None:
+    with pytest.raises(ValueError, match="read-ahead"):
+        PlutoPersistentHopRadio(
+            "192.168.1.18",
+            expected_serial="allowed",
+            radio_id="scanner",
+            read_ahead_visits=read_ahead,
         )
