@@ -26,9 +26,9 @@
     },
     {
       "name": "acquisition",
-      "patterns": ["src/leo/acquisition/**", "src/leo/radio/**", "src/leo/scanner/**", "src/leo/station/**", "tests/acquisition/**", "tests/scanner/**", "tests/station/**", "profiles/**", "deploy/station/**"],
+      "patterns": ["src/leo/acquisition/**", "src/leo/radio/**", "src/leo/scanner/**", "src/leo/station/**", "tests/acquisition/**", "tests/scanner/**", "tests/station/**", "profiles/**", "deploy/station/**", "runtime/scanner-iiod/**"],
       "tests": ["tests/acquisition", "tests/scanner", "tests/station"],
-      "runtime_patterns": ["src/leo/acquisition/**", "src/leo/radio/**", "src/leo/scanner/**", "src/leo/station/**", "profiles/**", "deploy/station/**"],
+      "runtime_patterns": ["src/leo/acquisition/**", "src/leo/radio/**", "src/leo/scanner/**", "src/leo/station/**", "profiles/**", "deploy/station/**", "runtime/scanner-iiod/**"],
       "impact": ["acquisition"]
     },
     {
@@ -87,7 +87,7 @@
     },
     {
       "name": "deployment",
-      "patterns": ["deploy/**", "tests/deploy/**", ".github/**", "pyproject.toml", "uv.lock", "setup.py"],
+      "patterns": ["deploy/**", "tests/deploy/**", ".github/**", "pyproject.toml", "uv.lock", "setup.py", "runtime/scanner-iiod/**"],
       "tests": ["tests/deploy", "tests/test_postgres_test_safety.py"],
       "runtime_patterns": ["deploy/**", ".github/**", "pyproject.toml", "uv.lock", "setup.py"],
       "impact": ["api", "worker", "acquisition", "deployment"]
