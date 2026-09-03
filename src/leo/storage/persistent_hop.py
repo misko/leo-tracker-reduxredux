@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
+from uuid import uuid4
 
 import numpy as np
 import numpy.typing as npt
@@ -233,7 +234,9 @@ class PersistentHopSessionWriter:
         self.session_id = session_id
         self.plan = plan
         self.compression = compression
-        self._spool_path = store.spool_root / f"{session_id}.persistent-hop.partial"
+        self._spool_path = store.spool_root / (
+            f"{session_id}.{os.getpid()}.{uuid4().hex}.persistent-hop.partial"
+        )
         self._spool_path.mkdir(exist_ok=False)
         _fsync_directory(store.spool_root)
         self._created_utc_ns = time.time_ns()
