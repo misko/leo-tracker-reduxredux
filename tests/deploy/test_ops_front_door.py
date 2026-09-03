@@ -1970,6 +1970,26 @@ def test_persistent_analysis_startup_verification_fails_on_service_error(
         OPS._verify_persistent_hop_analysis_startup(observation_seconds=0.0)
 
 
+def test_persistent_analysis_startup_accepts_an_intentionally_stopped_inactive_oneshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        OPS.subprocess,
+        "run",
+        lambda *_args, **_kwargs: type(
+            "Result",
+            (),
+            {
+                "stdout": (
+                    "ActiveState=inactive\nSubState=dead\nResult=success\nExecMainStatus=15\n"
+                )
+            },
+        )(),
+    )
+
+    OPS._verify_persistent_hop_analysis_startup(observation_seconds=0.0)
+
+
 def test_api_health_wait_retries_boundedly(monkeypatch: pytest.MonkeyPatch) -> None:
     return_codes = iter((7, 7, 0))
     sleeps: list[float] = []
