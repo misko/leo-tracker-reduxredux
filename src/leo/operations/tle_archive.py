@@ -131,6 +131,38 @@ class TleArchiveReader:
             ),
         )
 
+    def select_latest_before(
+        self,
+        measurement_start_utc_ns: int,
+        provider: str | None = None,
+    ) -> TleSnapshotRef:
+        """Resolve the newest snapshot strictly preceding a measurement.
+
+        Scientific association must not borrow a catalogue collected after the
+        RF observation.  This separate API keeps that causal policy explicit;
+        interactive sky browsing can continue to use nearest-snapshot lookup.
+        """
+
+        snapshots = tuple(
+            item
+            for item in self.list_snapshots(provider)
+            if item.collected_utc_ns < measurement_start_utc_ns
+        )
+        if not snapshots:
+            raise TleArchiveError(
+                "no causal TLE snapshot is available before "
+                f"{measurement_start_utc_ns} beneath {self._root}"
+                + ("" if provider is None else f" for provider {provider!r}")
+            )
+        return max(
+            snapshots,
+            key=lambda item: (
+                item.collected_utc_ns,
+                item.provider,
+                item.sha256,
+            ),
+        )
+
     def read(self, snapshot: TleSnapshotRef) -> str:
         """Return the snapshot text after re-verifying its digest.
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import queue
 import re
@@ -28,6 +29,7 @@ from leo.scanner.models import ScannerModel
 from leo.scanner.persistent_hop import (
     PersistentHopPlanV1,
     PersistentHopSessionReceiptV1,
+    PersistentHopUtcTimingAuthorityV1,
     PersistentHopVisitV1,
 )
 from leo.scanner.persistent_hop_history import (
@@ -148,12 +150,61 @@ class PersistentHopIqSessionManifestV1(ScannerModel):
         return self
 
 
+class PersistentHopIqSessionManifestV2(ScannerModel):
+    """V1 IQ geometry plus an authoritative device-counter/UTC binding."""
+
+    schema_version: Literal[2] = 2
+    kind: Literal["starlink_persistent_hop_iq"] = "starlink_persistent_hop_iq"
+    session_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
+    created_utc_ns: Annotated[int, Field(ge=0)]
+    finalized_utc_ns: Annotated[int, Field(ge=0)]
+    plan: PersistentHopPlanV1
+    receipt: PersistentHopSessionReceiptV1
+    timing: PersistentHopUtcTimingAuthorityV1
+    receiver_ids: tuple[int, ...]
+    sample_format: Literal["ci16_le"] = "ci16_le"
+    sample_layout: Literal["sample_receiver_iq"] = "sample_receiver_iq"
+    chunks: tuple[PersistentHopIqChunkV1, ...]
+    total_sample_count: Annotated[int, Field(ge=0)]
+    uncompressed_bytes: Annotated[int, Field(ge=0)]
+    compressed_bytes: Annotated[int, Field(ge=0)]
+    uncompressed_sha256: Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
+    compression: CompressionSettingsV1
+    queue_telemetry: PersistentHopQueueTelemetryV1 | None = None
+
+    @model_validator(mode="after")
+    def _content_is_closed(self) -> Self:
+        legacy = PersistentHopIqSessionManifestV1(
+            session_id=self.receipt.session_id,
+            created_utc_ns=self.created_utc_ns,
+            finalized_utc_ns=self.finalized_utc_ns,
+            plan=self.plan,
+            receipt=self.receipt,
+            receiver_ids=self.receiver_ids,
+            chunks=self.chunks,
+            total_sample_count=self.total_sample_count,
+            uncompressed_bytes=self.uncompressed_bytes,
+            compressed_bytes=self.compressed_bytes,
+            uncompressed_sha256=self.uncompressed_sha256,
+            compression=self.compression,
+            queue_telemetry=self.queue_telemetry,
+        )
+        if (
+            self.timing.session_id != legacy.session_id
+            or self.timing.session_start_device_sample_counter
+            != legacy.receipt.session_start_device_sample_counter
+            or self.timing.sample_rate_hz != legacy.plan.sample_rate_hz
+        ):
+            raise ValueError("persistent-hop timing authority disagrees with IQ evidence")
+        return self
+
+
 @dataclass(frozen=True, slots=True)
 class PublishedPersistentHopIqSession:
     session_id: str
     path: Path
     uri: str
-    manifest: PersistentHopIqSessionManifestV1
+    manifest: PersistentHopIqSessionManifestV1 | PersistentHopIqSessionManifestV2
     manifest_sha256: str
 
 
@@ -311,6 +362,7 @@ class PersistentHopSessionWriter:
         receipt: PersistentHopSessionReceiptV1,
         *,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
+        timing: PersistentHopUtcTimingAuthorityV1 | None = None,
     ) -> PublishedPersistentHopIqSession:
         if self._closed:
             raise BundleStateError("persistent-hop session writer is closed")
@@ -321,7 +373,7 @@ class PersistentHopSessionWriter:
         ):
             raise ValueError("persistent-hop receipt disagrees with appended IQ")
         self._finish_current_sweep()
-        manifest = PersistentHopIqSessionManifestV1(
+        manifest_values = dict(
             session_id=self.session_id,
             created_utc_ns=self._created_utc_ns,
             finalized_utc_ns=max(self._created_utc_ns, time.time_ns()),
@@ -336,6 +388,13 @@ class PersistentHopSessionWriter:
             compression=self.compression,
             queue_telemetry=queue_telemetry,
         )
+        manifest: PersistentHopIqSessionManifestV1 | PersistentHopIqSessionManifestV2
+        if timing is None:
+            manifest = PersistentHopIqSessionManifestV1.model_validate(manifest_values)
+        else:
+            manifest = PersistentHopIqSessionManifestV2.model_validate(
+                {**manifest_values, "timing": timing}
+            )
         payload = canonical_json_bytes(manifest.model_dump(mode="json"))
         partial_manifest = self._spool_path / "manifest.json.partial"
         with partial_manifest.open("xb") as stream:
@@ -455,6 +514,8 @@ class QueuedPersistentHopSessionWriter:
     def finish(
         self,
         receipt: PersistentHopSessionReceiptV1,
+        *,
+        timing: PersistentHopUtcTimingAuthorityV1 | None = None,
     ) -> PublishedPersistentHopIqSession:
         if self._closed:
             raise BundleStateError("queued persistent-hop writer is closed")
@@ -462,7 +523,11 @@ class QueuedPersistentHopSessionWriter:
             self._put(self._STOP)
             self._worker.join()
             self._raise_worker_error()
-            published = self._writer.finish(receipt, queue_telemetry=self.telemetry)
+            published = self._writer.finish(
+                receipt,
+                queue_telemetry=self.telemetry,
+                timing=timing,
+            )
         except Exception:
             self._writer.abort()
             self._closed = True
@@ -591,7 +656,14 @@ class PersistentHopIqStore:
         path = confined_path(self.bundles_root, matches[0], must_exist=True)
         payload = self._read_regular(path / "manifest.json", _MAX_MANIFEST_BYTES)
         try:
-            manifest = PersistentHopIqSessionManifestV1.model_validate_json(payload)
+            header = json.loads(payload)
+            schema_version = header.get("schema_version") if isinstance(header, dict) else None
+            manifest_type = (
+                PersistentHopIqSessionManifestV2
+                if schema_version == 2
+                else PersistentHopIqSessionManifestV1
+            )
+            manifest = manifest_type.model_validate_json(payload)
         except Exception as error:
             raise BundleCorruptionError(f"invalid persistent-hop IQ manifest: {error}") from error
         if manifest.session_id != session_id:

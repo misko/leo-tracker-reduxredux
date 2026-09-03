@@ -86,6 +86,17 @@ def test_nearest_selection_breaks_ties_reproducibly(tmp_path: Path) -> None:
     assert chosen == {1_000}
 
 
+def test_causal_selection_never_uses_a_post_measurement_snapshot(tmp_path: Path) -> None:
+    _store(tmp_path, "space-track", 1_000, ELEMENT_SET)
+    _store(tmp_path, "space-track", 9_000, ELEMENT_SET + "\n")
+    reader = TleArchiveReader(tmp_path)
+
+    assert reader.select_latest_before(8_000).collected_utc_ns == 1_000
+    assert reader.select_latest_before(10_000).collected_utc_ns == 9_000
+    with pytest.raises(TleArchiveError, match="no causal TLE snapshot"):
+        reader.select_latest_before(1_000)
+
+
 def test_empty_archive_is_unavailable_not_an_empty_constellation(tmp_path: Path) -> None:
     reader = TleArchiveReader(tmp_path)
     with pytest.raises(TleArchiveError, match="no TLE snapshot is available"):

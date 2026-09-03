@@ -37,6 +37,7 @@ def test_persistent_hop_store_streams_sweep_chunks_and_reopens(
     store, published, blocks = _cancelled_capture(tmp_path)
 
     assert published.manifest.receipt.capture_outcome == "cancelled"
+    assert published.manifest.schema_version == 1
     assert published.manifest.total_sample_count == 9 * 300_000
     assert [(chunk.sweep_index, chunk.visit_count) for chunk in published.manifest.chunks] == [
         (0, 8),
