@@ -2470,6 +2470,9 @@ def _verify_cutover(
 
 
 def _start_runtime() -> None:
+    selected_revision = _selected_release_revision()
+    if selected_revision is None:
+        raise OpsError("global immutable release selector is unavailable")
     subprocess.run(
         (
             "/usr/bin/systemctl",
@@ -2480,14 +2483,30 @@ def _start_runtime() -> None:
         ),
         check=True,
     )
+    persistent_analysis_timer = "leo-persistent-hop-analysis.timer"
+    if _release_ships_persistent_hop_analysis(selected_revision):
+        normal_timers = (
+            "leo-reconcile.timer",
+            persistent_analysis_timer,
+            "leo-retention.timer",
+            "leo-tle-collection.timer",
+        )
+    else:
+        subprocess.run(
+            ("/usr/bin/systemctl", "disable", "--now", persistent_analysis_timer),
+            check=False,
+        )
+        normal_timers = (
+            "leo-reconcile.timer",
+            "leo-retention.timer",
+            "leo-tle-collection.timer",
+        )
     subprocess.run(
         (
             "/usr/bin/systemctl",
             "enable",
             "--now",
-            "leo-reconcile.timer",
-            "leo-retention.timer",
-            "leo-tle-collection.timer",
+            *normal_timers,
         ),
         check=True,
     )
@@ -2516,21 +2535,35 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
     _verify_worker_environment_revision(selector_revisions["worker"])
     _verify_acquisition_environment_revision(selector_revisions["acquisition"])
     _wait_for_api()
+    expected_active_units = [
+        "leo-api.service",
+        "leo-acquisition.service",
+        "leo-worker@1.service",
+        "leo-worker@20.service",
+    ]
+    if _release_ships_persistent_hop_analysis(selector_revisions["global"]):
+        expected_active_units.append("leo-persistent-hop-analysis.timer")
     states = subprocess.run(
         (
             "/usr/bin/systemctl",
             "is-active",
-            "leo-api.service",
-            "leo-acquisition.service",
-            "leo-worker@1.service",
-            "leo-worker@20.service",
+            *expected_active_units,
         ),
         check=True,
         text=True,
         stdout=subprocess.PIPE,
     ).stdout.splitlines()
-    if states != ["active"] * 4:
+    if states != ["active"] * len(expected_active_units):
         raise OpsError(f"runtime service state is not active: {states}")
+
+
+def _release_ships_persistent_hop_analysis(revision: str) -> bool:
+    return (
+        RELEASE_ROOT
+        / "releases"
+        / revision
+        / "deploy/systemd/leo-persistent-hop-analysis.timer"
+    ).is_file()
 
 
 def _verify_acquisition_environment_revision(expected: str) -> None:
