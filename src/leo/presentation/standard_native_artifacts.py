@@ -930,10 +930,90 @@ class StandardNativePngArtifactInventoryV13(ContractModel):
         return self
 
 
+# V13 remains the immutable fractional-timing comparison rendered with mixed
+# physical-arrival and receiver-IQ signs.  V14 places both traces in the
+# explicitly non-physical receiver coordinate so their shape can be compared.
+StandardNativePngArtifactNameV14 = StandardNativePngArtifactNameV13
+STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V14 = STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13
+STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V14 = cast(
+    dict[StandardNativePngArtifactNameV14, tuple[str, str, str, int, str | None]],
+    {
+        **STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13,
+        "pss-glrt-frame-comparison": (
+            "Native-25 PSS versus dual 2.5 MS/s fractional GLRT",
+            "Template-relative PSS phase and fractional GLRT CFO in the common receiver coordinate",
+            "standard.pss-glrt-frame-comparison-png",
+            3,
+            None,
+        ),
+    },
+)
+
+
+class StandardNativePngArtifactV14(ContractModel):
+    """One immutable PNG descriptor in the receiver-coordinate paired inventory."""
+
+    schema_version: Literal[14] = 14
+    name: StandardNativePngArtifactNameV14
+    label: BoundedText
+    description: BoundedText
+    href: ApiHref
+    catalog_kind: Identifier
+    product_schema_version: Annotated[int, Field(gt=0)]
+    digest: Sha256Digest
+    byte_size: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+    media_type: Literal["image/png"] = "image/png"
+
+
+class StandardNativePngArtifactInventoryV14(ContractModel):
+    """Exact 2.5/25 inventory with a common-coordinate PSS/GLRT comparison."""
+
+    schema_version: Literal[14] = 14
+    session_id: Identifier
+    subject_id: Identifier
+    subject_kind: Literal[StandardSubjectKindV2.RADIO]
+    run_id: Identifier
+    run_manifest_digest: Sha256Digest
+    sample_rates_hz: tuple[Literal[2_500_000, 25_000_000], Literal[2_500_000, 25_000_000]]
+    coverage_status: Literal["complete", "partial_coverage", "insufficient_data"]
+    artifacts: tuple[StandardNativePngArtifactV14, ...] = Field(min_length=7, max_length=7)
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _inventory_is_exact(self) -> Self:
+        if self.sample_rates_hz != (2_500_000, 25_000_000):
+            raise ValueError("V14 native PNG rates must be the exact 2.5/25 pair")
+        if tuple(item.name for item in self.artifacts) != STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V14:
+            raise ValueError("V14 native PNG artifact inventory is not the exact paired set")
+        _validate_artifact_descriptors(
+            self.session_id,
+            self.subject_id,
+            self.artifacts,
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V14,
+        )
+        values = {
+            "schema_version": self.schema_version,
+            "session_id": self.session_id,
+            "subject_id": self.subject_id,
+            "subject_kind": self.subject_kind.value,
+            "run_id": self.run_id,
+            "run_manifest_digest": self.run_manifest_digest,
+            "sample_rates_hz": self.sample_rates_hz,
+            "coverage_status": self.coverage_status,
+            "artifacts": tuple(item.model_dump(mode="json") for item in self.artifacts),
+        }
+        if self.content_digest != canonical_digest(values):
+            raise ValueError("V14 native PNG artifact inventory digest does not match")
+        return self
+
+
 def _validate_artifact_descriptors(
     session_id: str,
     subject_id: str,
-    artifacts: tuple[StandardNativePngArtifactV12 | StandardNativePngArtifactV13, ...],
+    artifacts: tuple[
+        StandardNativePngArtifactV12 | StandardNativePngArtifactV13 | StandardNativePngArtifactV14,
+        ...,
+    ],
     definitions: Mapping[Any, tuple[str, str, str, int, str | None]],
 ) -> None:
     base = (

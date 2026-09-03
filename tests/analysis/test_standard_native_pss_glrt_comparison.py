@@ -4,11 +4,13 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import numpy as np
+import pytest
 
 from leo.analysis.standard.native_glrt_epoch import (
     build_standard_native_glrt_epoch_tracking_v1,
 )
 from leo.analysis.standard.native_pss_glrt_comparison import (
+    _template_phase_cfo_change_hz,
     render_native25_pss_vs_2p5_glrt_png,
 )
 from leo.contracts.standard_native_glrt_epoch import StandardNativeGlrtEpochTrackingV1
@@ -72,3 +74,19 @@ def test_native25_pss_glrt_comparison_publishes_an_empty_diagnostic() -> None:
     )
 
     assert payload.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_pss_phase_is_mapped_to_the_same_receiver_coordinate_as_glrt_cfo() -> None:
+    rf_reference_hz = 10.0e9
+    times_s = np.asarray([-2.0, 0.0, 2.0])
+    pss_curvature_s_s2 = -3.0e-7
+    drift = pss_curvature_s_s2 * times_s
+
+    change_hz = _template_phase_cfo_change_hz(
+        drift,
+        reference_drift=0.0,
+        rf_reference_hz=rf_reference_hz,
+    )
+
+    assert change_hz.tolist() == [6000.0, 0.0, -6000.0]
+    assert np.polyfit(times_s, change_hz, 1)[0] == pytest.approx(-3000.0)

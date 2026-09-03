@@ -97,6 +97,7 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV11,
     StandardNativePngArtifactInventoryV12,
     StandardNativePngArtifactInventoryV13,
+    StandardNativePngArtifactInventoryV14,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
@@ -1252,6 +1253,7 @@ def create_app(
             | StandardNativePngArtifactInventoryV11
             | StandardNativePngArtifactInventoryV12
             | StandardNativePngArtifactInventoryV13
+            | StandardNativePngArtifactInventoryV14
         ),
     )
     def standard_subject_png_inventory(
@@ -1269,6 +1271,7 @@ def create_app(
         | StandardNativePngArtifactInventoryV11
         | StandardNativePngArtifactInventoryV12
         | StandardNativePngArtifactInventoryV13
+        | StandardNativePngArtifactInventoryV14
     ):
         """Return the sealed versioned native PNG inventory for one subject."""
 
@@ -1297,6 +1300,8 @@ def create_app(
         if inventory is None:
             raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
         try:
+            if isinstance(inventory, StandardNativePngArtifactInventoryV14):
+                return StandardNativePngArtifactInventoryV14.model_validate(inventory.model_dump())
             if isinstance(inventory, StandardNativePngArtifactInventoryV13):
                 return StandardNativePngArtifactInventoryV13.model_validate(inventory.model_dump())
             if isinstance(inventory, StandardNativePngArtifactInventoryV12):

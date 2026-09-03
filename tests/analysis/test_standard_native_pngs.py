@@ -103,7 +103,7 @@ def test_native_path_projection_publishes_epoch_tracking_and_all_fourteen_pngs()
     assert science_result.outcome is StageOutcome.PARTIAL_COVERAGE
 
     upstream = {
-        product.kind: UpstreamJsonProduct(
+        (product.kind, product.schema_version): UpstreamJsonProduct(
             producer_node_id="path-node",
             producer_scope=scope,
             outcome=science_result.outcome,
@@ -120,7 +120,7 @@ def test_native_path_projection_publishes_epoch_tracking_and_all_fourteen_pngs()
     class _Products:
         def read_json_many(self, requirement: Any, *, producer_node_ids: tuple[str, ...]):
             assert producer_node_ids == ("path-node",)
-            return (upstream[requirement.kind],)
+            return (upstream[(requirement.kind, requirement.accepted_schema_versions[0])],)
 
     projection_outputs = _OutputSink()
     result = (

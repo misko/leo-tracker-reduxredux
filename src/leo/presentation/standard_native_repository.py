@@ -15,6 +15,7 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV11,
     StandardNativePngArtifactInventoryV12,
     StandardNativePngArtifactInventoryV13,
+    StandardNativePngArtifactInventoryV14,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
@@ -131,6 +132,7 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         | StandardNativePngArtifactInventoryV11
         | StandardNativePngArtifactInventoryV12
         | StandardNativePngArtifactInventoryV13
+        | StandardNativePngArtifactInventoryV14
         | None
     ): ...
 
