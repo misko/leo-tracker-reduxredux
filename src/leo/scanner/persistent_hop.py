@@ -50,6 +50,7 @@ class PersistentHopPlanV1(ScannerModel):
     lnb_lo_hz: Literal[9_750_000_000] = 9_750_000_000
     receiver_ids: tuple[Literal[0], Literal[1]] = (0, 1)
     kernel_buffers: Annotated[int, Field(ge=2, le=64)] = 8
+    transition_guard_samples: Annotated[int, Field(gt=0)]
     maximum_visit_count: Literal[2_500] = 2_500
     minimum_valid_duty_ppm: Literal[900_000] = 900_000
     profiles: Annotated[tuple[PersistentHopProfileV1, ...], Field(min_length=8, max_length=8)]
@@ -58,6 +59,10 @@ class PersistentHopPlanV1(ScannerModel):
     def _geometry_is_exact(self) -> Self:
         if self.bandwidth_hz != self.sample_rate_hz:
             raise ValueError("persistent-hop bandwidth must equal sample rate")
+        if self.transition_guard_samples >= self.valid_visit_samples:
+            raise ValueError("persistent-hop transition guard must be shorter than a visit")
+        if self.planned_valid_duty_ppm < self.minimum_valid_duty_ppm:
+            raise ValueError("persistent-hop transition guard cannot meet minimum valid duty")
         targets = scheduled_low_band_targets(
             bandwidth_hz=self.bandwidth_hz,
             lnb_lo_hz=self.lnb_lo_hz,
@@ -85,12 +90,28 @@ class PersistentHopPlanV1(ScannerModel):
     def nominal_device_sample_count(self) -> int:
         return self.sample_rate_hz * self.nominal_duration_seconds
 
+    @property
+    def planned_valid_duty_ppm(self) -> int:
+        return (
+            self.valid_visit_samples
+            * 1_000_000
+            // (self.valid_visit_samples + self.transition_guard_samples)
+        )
+
 
 def compile_persistent_hop_plan_v1(
-    *, sample_rate_hz: Literal[2_500_000, 5_000_000], kernel_buffers: int = 8
+    *,
+    sample_rate_hz: Literal[2_500_000, 5_000_000],
+    kernel_buffers: int = 8,
+    transition_guard_us: int = 11_000,
 ) -> PersistentHopPlanV1:
     """Build the only admitted profile order for one supported native rate."""
 
+    if transition_guard_us <= 0:
+        raise ValueError("persistent-hop transition guard must be positive")
+    guard_numerator = sample_rate_hz * transition_guard_us
+    if guard_numerator % 1_000_000:
+        raise ValueError("persistent-hop transition guard must be sample-exact")
     targets = scheduled_low_band_targets(
         bandwidth_hz=sample_rate_hz,
         lnb_lo_hz=PERSISTENT_HOP_LNB_LO_HZ,
@@ -99,6 +120,7 @@ def compile_persistent_hop_plan_v1(
         sample_rate_hz=sample_rate_hz,
         bandwidth_hz=sample_rate_hz,
         kernel_buffers=kernel_buffers,
+        transition_guard_samples=guard_numerator // 1_000_000,
         profiles=tuple(
             PersistentHopProfileV1(
                 target_index=index,

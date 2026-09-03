@@ -292,10 +292,13 @@ class FakePersistentHopSession:
         invalid_start = self._next_counter
         transition_samples = max(
             1,
-            min(self._transition_invalid_samples, self.plan.sample_rate_hz // 1_000),
+            min(
+                self._transition_invalid_samples - self.plan.transition_guard_samples,
+                self.plan.sample_rate_hz // 1_000,
+            ),
         )
         transition_after = invalid_start + transition_samples
-        invalid_end = invalid_start + self._transition_invalid_samples
+        invalid_end = transition_after + self.plan.transition_guard_samples
         transition = PersistentHopTransitionInvalidSpanV1(
             kind="startup_prime" if visit_index == 0 else "retune_and_settle",
             visit_index=visit_index,
