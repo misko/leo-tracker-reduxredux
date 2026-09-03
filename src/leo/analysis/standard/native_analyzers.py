@@ -70,7 +70,7 @@ from leo.analysis.standard.native_products import (
     POWER_TIMELINE_V4_PRODUCT,
     PROBE_SCHEDULE_V4_PRODUCT,
     PSS_FRAME_TIMING_V1_PRODUCT,
-    PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT,
+    PSS_GLRT_FRAME_COMPARISON_PNG_V3_PRODUCT,
     QUALITY_V3_PRODUCT,
     RADIO_REPORT_V6_PRODUCT,
     RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
@@ -1057,8 +1057,8 @@ class PairedStandardNativePssGlrtPresentationAnalyzer:
 
     spec = StageSpec(
         key="paired-pss-glrt-presentation-native",
-        algorithm_version="standard-native-paired-pss-glrt-presentation-v2",
-        configuration_schema="paired-pss-glrt-presentation-native.evidence.v2",
+        algorithm_version="standard-native-paired-pss-glrt-presentation-v3",
+        configuration_schema="paired-pss-glrt-presentation-native.evidence.v3",
         dependencies=("path-pss-native", "path-standard-native"),
         input_products=(
             _require_native_product(PSS_FRAME_TIMING_V1_PRODUCT, "path-pss-native"),
@@ -1150,7 +1150,7 @@ class PairedStandardNativePssGlrtPresentationAnalyzer:
             native_pss,
             tuple(glrt_epoch_products),
         )
-        published = outputs.publish_bytes(PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT, payload)
+        published = outputs.publish_bytes(PSS_GLRT_FRAME_COMPARISON_PNG_V3_PRODUCT, payload)
         outcome = (
             StageOutcome.COMPLETE
             if native_pss[0].source.missing_sample_count == 0
@@ -1169,7 +1169,7 @@ class PairedStandardNativePssGlrtPresentationAnalyzer:
             },
             message=(
                 "Published the native 25 MS/s PSS versus dual 2.5 MS/s GLRT comparison "
-                "without running GLRT on the 25 MS/s stream."
+                "in their common receiver coordinate without running GLRT on the 25 MS/s stream."
             ),
         )
 

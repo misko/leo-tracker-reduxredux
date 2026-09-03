@@ -30,6 +30,7 @@ import type {
   StandardNativePngArtifactInventoryV11,
   StandardNativePngArtifactInventoryV12,
   StandardNativePngArtifactInventoryV13,
+  StandardNativePngArtifactInventoryV14,
   StandardNativeSubjectSummaryV3,
   StandardNativeSubjectSummaryV4,
   StandardNativeSubjectSummaryV5,
@@ -63,7 +64,8 @@ type StandardNativeInventory =
   | StandardNativePngArtifactInventoryV10
   | StandardNativePngArtifactInventoryV11
   | StandardNativePngArtifactInventoryV12
-  | StandardNativePngArtifactInventoryV13;
+  | StandardNativePngArtifactInventoryV13
+  | StandardNativePngArtifactInventoryV14;
 
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
@@ -1109,10 +1111,15 @@ function nativeInventoryMatchesDetail(
     && inventory.schema_version !== 11
     && inventory.schema_version !== 12
     && inventory.schema_version !== 13
+    && inventory.schema_version !== 14
   ) {
     return false;
   }
-  if (inventory.schema_version === 11 || inventory.schema_version === 13) {
+  if (
+    inventory.schema_version === 11
+    || inventory.schema_version === 13
+    || inventory.schema_version === 14
+  ) {
     const expectedRates = [...new Set(
       detail.subject.eligibility.legs.map((leg) => leg.sample_rate_hz),
     )].sort((left, right) => left - right);

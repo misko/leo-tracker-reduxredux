@@ -14,10 +14,12 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V11,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V14,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11,
     STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13,
+    STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V14,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10,
@@ -30,12 +32,14 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV11,
     StandardNativePngArtifactInventoryV12,
     StandardNativePngArtifactInventoryV13,
+    StandardNativePngArtifactInventoryV14,
     StandardNativePngArtifactV4,
     StandardNativePngArtifactV8,
     StandardNativePngArtifactV10,
     StandardNativePngArtifactV11,
     StandardNativePngArtifactV12,
     StandardNativePngArtifactV13,
+    StandardNativePngArtifactV14,
 )
 from leo.presentation.standard_pipeline import StandardSubjectKindV2
 
@@ -363,7 +367,15 @@ def test_additive_v11_inventory_closes_the_exact_low_radio_2p5_x25_comparison() 
 
 
 @pytest.mark.parametrize(
-    ("schema_version", "names", "definitions", "artifact_type", "inventory_type", "kind"),
+    (
+        "schema_version",
+        "names",
+        "definitions",
+        "artifact_type",
+        "inventory_type",
+        "kind",
+        "expected_product_version",
+    ),
     (
         (
             12,
@@ -372,6 +384,7 @@ def test_additive_v11_inventory_closes_the_exact_low_radio_2p5_x25_comparison() 
             StandardNativePngArtifactV12,
             StandardNativePngArtifactInventoryV12,
             StandardSubjectKindV2.RECEIVER_PATH,
+            2,
         ),
         (
             13,
@@ -380,6 +393,16 @@ def test_additive_v11_inventory_closes_the_exact_low_radio_2p5_x25_comparison() 
             StandardNativePngArtifactV13,
             StandardNativePngArtifactInventoryV13,
             StandardSubjectKindV2.RADIO,
+            2,
+        ),
+        (
+            14,
+            STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V14,
+            STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V14,
+            StandardNativePngArtifactV14,
+            StandardNativePngArtifactInventoryV14,
+            StandardSubjectKindV2.RADIO,
+            3,
         ),
     ),
 )
@@ -387,11 +410,16 @@ def test_fractional_glrt_png_inventories_are_additive_and_closed(
     schema_version: int,
     names: tuple[str, ...],
     definitions: dict[str, tuple[str, str, str, int, str | None]],
-    artifact_type: type[StandardNativePngArtifactV12 | StandardNativePngArtifactV13],
+    artifact_type: type[
+        StandardNativePngArtifactV12 | StandardNativePngArtifactV13 | StandardNativePngArtifactV14
+    ],
     inventory_type: type[
-        StandardNativePngArtifactInventoryV12 | StandardNativePngArtifactInventoryV13
+        StandardNativePngArtifactInventoryV12
+        | StandardNativePngArtifactInventoryV13
+        | StandardNativePngArtifactInventoryV14
     ],
     kind: StandardSubjectKindV2,
+    expected_product_version: int,
 ) -> None:
     session_id = "cap-fractional-glrt"
     subject_id = "path:radio-0:rx0" if kind is StandardSubjectKindV2.RECEIVER_PATH else "radio:0"
@@ -439,7 +467,7 @@ def test_fractional_glrt_png_inventories_are_additive_and_closed(
         else "pss-glrt-frame-comparison"
     )
     fractional_index = names.index(fractional_name)
-    assert inventory.artifacts[fractional_index].product_schema_version == 2
+    assert inventory.artifacts[fractional_index].product_schema_version == expected_product_version
     tampered = inventory.model_dump(mode="json")
     tampered["artifacts"][fractional_index]["product_schema_version"] = 1
     with pytest.raises(ValidationError):

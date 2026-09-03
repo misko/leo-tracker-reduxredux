@@ -1,4 +1,4 @@
-"""Paired native-25 PSS versus 2.5 MS/s GLRT frame-timing diagnostic."""
+"""Paired native-25 PSS versus 2.5 MS/s GLRT common-coordinate diagnostic."""
 
 from __future__ import annotations
 
@@ -33,11 +33,13 @@ def render_native25_pss_vs_2p5_glrt_png(
         StandardNativeGlrtEpochTrackingV1 | StandardNativeGlrtEpochTrackingV2, ...
     ],
 ) -> bytes:
-    """Render same-dimension timing residuals and frequency-change agreement.
+    """Render timing residuals and receiver-coordinate frequency-change agreement.
 
     PSS selection is blind-only.  GLRT is selected independently on each 2.5
     MS/s receiver path.  The sensors are joined only for this presentation and
-    are never used to acquire or choose one another's observations.
+    are never used to acquire or choose one another's observations.  The PSS
+    phase derivative is shown as a template-phase CFO proxy; neither trace is
+    relabeled as calibrated physical Doppler.
     """
 
     session_ids = {
@@ -163,15 +165,19 @@ def render_native25_pss_vs_2p5_glrt_png(
             + coefficients[1]
         )
         pss_drift = 2.0 * coefficients[0] * pss_local + coefficients[1]
-        pss_frequency_change_hz = -rf_reference_hz * (pss_drift - pss_drift_at_reference)
+        pss_frequency_change_hz = _template_phase_cfo_change_hz(
+            pss_drift,
+            reference_drift=pss_drift_at_reference,
+            rf_reference_hz=rf_reference_hz,
+        )
         axes[2].plot(
             pss_plot_time,
             pss_frequency_change_hz / 1e3,
             color="#f97316",
             linewidth=2.2,
             label=(
-                "native-25 PSS phase derivative · "
-                f"rate {-rf_reference_hz * pss_curvature / 1e3:+.3f} kHz/s"
+                "native-25 PSS template-phase CFO proxy · "
+                f"rate {rf_reference_hz * pss_curvature / 1e3:+.3f} kHz/s"
             ),
         )
 
@@ -213,7 +219,7 @@ def render_native25_pss_vs_2p5_glrt_png(
                 color=color,
                 linestyle="--",
                 linewidth=1.6,
-                label=f"{label} canonical CFO",
+                label=f"{label} canonical CFO (receiver/IQ sign)",
             )
 
         if not overlapping_glrt:
@@ -231,13 +237,13 @@ def render_native25_pss_vs_2p5_glrt_png(
         axes[0].set_title("A · Same-dimension frame timing after independent affine fits")
         axes[1].set_ylabel("Quadratic-fit residual (µs)")
         axes[1].set_title("B · Independent quadratic timing residuals")
-        axes[2].set_ylabel("Change from common reference (kHz)")
+        axes[2].set_ylabel("Receiver-coordinate change from common reference (kHz)")
         axes[2].set_xlabel("Seconds from earliest stream first-sample estimate")
-        axes[2].set_title("C · PSS phase-derived frequency change versus canonical GLRT CFO")
+        axes[2].set_title("C · PSS template-phase CFO proxy versus canonical GLRT CFO")
         figure.suptitle(
             f"{session_id} · native 25 MS/s PSS versus dual 2.5 MS/s GLRT\n"
             "PSS: 125 ms windows / 62.5 ms stride · GLRT: fractional exact-score peaks · "
-            "independent acquisition · no clipped blocks"
+            "independent acquisition · common receiver coordinate, not calibrated physical sign"
         )
         return _save(figure)
 
@@ -274,3 +280,22 @@ def _required_residual(value: float | None) -> float:
     if value is None:
         raise ValueError("GLRT epoch inlier omitted its required residual")
     return value
+
+
+def _template_phase_cfo_change_hz(
+    drift_s_s: np.ndarray,
+    *,
+    reference_drift: float,
+    rf_reference_hz: float,
+) -> np.ndarray:
+    """Map template-relative PSS phase drift into the GLRT receiver coordinate.
+
+    The PSS contract records template-relative frame phase, not a calibrated
+    physical propagation delay.  Its empirically closed comparison with the
+    receiver/IQ GLRT coordinate is therefore the same-sign mapping.  The
+    physical arrival-delay convention remains the separately declared
+    ``-rf_reference_hz * drift`` diagnostic until a known-sign calibration is
+    available.
+    """
+
+    return rf_reference_hz * (drift_s_s - reference_drift)

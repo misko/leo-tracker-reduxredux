@@ -351,6 +351,14 @@ export interface StandardNativePngArtifactV13
   name: StandardNativePngArtifactNameV13;
 }
 
+export type StandardNativePngArtifactNameV14 = StandardNativePngArtifactNameV13;
+
+export interface StandardNativePngArtifactV14
+  extends Omit<StandardNativePngArtifactV13, "schema_version" | "name"> {
+  schema_version: 14;
+  name: StandardNativePngArtifactNameV14;
+}
+
 export interface StandardNativePngArtifactInventoryV4 {
   schema_version: 4;
   session_id: string;
@@ -442,6 +450,12 @@ export interface StandardNativePngArtifactInventoryV13
   extends Omit<StandardNativePngArtifactInventoryV11, "schema_version" | "artifacts"> {
   schema_version: 13;
   artifacts: StandardNativePngArtifactV13[];
+}
+
+export interface StandardNativePngArtifactInventoryV14
+  extends Omit<StandardNativePngArtifactInventoryV13, "schema_version" | "artifacts"> {
+  schema_version: 14;
+  artifacts: StandardNativePngArtifactV14[];
 }
 
 export interface StandardNativePipelineReleaseV3 {

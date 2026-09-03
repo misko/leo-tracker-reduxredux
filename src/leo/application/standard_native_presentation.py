@@ -40,6 +40,7 @@ from leo.analysis.standard.native_products import (
     POWER_TIMELINE_V4_PRODUCT,
     PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,
     PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT,
+    PSS_GLRT_FRAME_COMPARISON_PNG_V3_PRODUCT,
     RADIO_REPORT_V4_PRODUCT,
     RADIO_REPORT_V5_PRODUCT,
     RADIO_REPORT_V6_PRODUCT,
@@ -96,10 +97,12 @@ from leo.presentation.standard_native_artifacts import (
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V11,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V12,
     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13,
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V14,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11,
     STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13,
+    STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V14,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V8,
     STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V10,
@@ -114,18 +117,21 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV11,
     StandardNativePngArtifactInventoryV12,
     StandardNativePngArtifactInventoryV13,
+    StandardNativePngArtifactInventoryV14,
     StandardNativePngArtifactNameV4,
     StandardNativePngArtifactNameV8,
     StandardNativePngArtifactNameV10,
     StandardNativePngArtifactNameV11,
     StandardNativePngArtifactNameV12,
     StandardNativePngArtifactNameV13,
+    StandardNativePngArtifactNameV14,
     StandardNativePngArtifactV4,
     StandardNativePngArtifactV8,
     StandardNativePngArtifactV10,
     StandardNativePngArtifactV11,
     StandardNativePngArtifactV12,
     StandardNativePngArtifactV13,
+    StandardNativePngArtifactV14,
 )
 from leo.presentation.standard_native_pipeline import (
     NativeArtifactNameV3,
@@ -473,6 +479,7 @@ class CatalogStandardNativePresentationRepository:
         | StandardNativePngArtifactInventoryV11
         | StandardNativePngArtifactInventoryV12
         | StandardNativePngArtifactInventoryV13
+        | StandardNativePngArtifactInventoryV14
         | None
     ):
         """Return the complete sealed versioned artifact inventory, if present."""
@@ -530,6 +537,16 @@ class CatalogStandardNativePresentationRepository:
             and isinstance(loaded.eligibility, StandardNativeEligibilityV6)
             and {leg.sample_rate_hz for leg in loaded.eligibility.legs} == {2_500_000, 25_000_000}
         )
+        receiver_coordinate_paired_comparison_present = (
+            paired_scope
+            and self._png_product(
+                loaded,
+                subject,
+                PSS_GLRT_FRAME_COMPARISON_PNG_V3_PRODUCT.kind,
+                PSS_GLRT_FRAME_COMPARISON_PNG_V3_PRODUCT.schema_version,
+            )
+            is not None
+        )
         fractional_paired_comparison_present = (
             paired_scope
             and self._png_product(
@@ -551,13 +568,19 @@ class CatalogStandardNativePresentationRepository:
             is not None
         )
         paired_comparison_present = (
-            fractional_paired_comparison_present or integer_paired_comparison_present
+            receiver_coordinate_paired_comparison_present
+            or fractional_paired_comparison_present
+            or integer_paired_comparison_present
         )
         names = (
             (
-                STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13
-                if fractional_paired_comparison_present
-                else STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11
+                STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V14
+                if receiver_coordinate_paired_comparison_present
+                else (
+                    STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V13
+                    if fractional_paired_comparison_present
+                    else STANDARD_NATIVE_PAIRED_ARTIFACT_NAMES_V11
+                )
             )
             if paired_comparison_present
             else (
@@ -604,9 +627,13 @@ class CatalogStandardNativePresentationRepository:
                 else GLRT_EPOCH_RATE_PNG_V1_PRODUCT
             ),
             "pss-glrt-frame-comparison": (
-                PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT
-                if fractional_paired_comparison_present
-                else PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT
+                PSS_GLRT_FRAME_COMPARISON_PNG_V3_PRODUCT
+                if receiver_coordinate_paired_comparison_present
+                else (
+                    PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT
+                    if fractional_paired_comparison_present
+                    else PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT
+                )
             ),
             "pilot-doppler": (
                 PILOT_DOPPLER_SEGMENTS_PNG_V4_PRODUCT
@@ -631,6 +658,7 @@ class CatalogStandardNativePresentationRepository:
             | StandardNativePngArtifactV11
             | StandardNativePngArtifactV12
             | StandardNativePngArtifactV13
+            | StandardNativePngArtifactV14
         ] = []
         for name in names:
             spec = product_specs[name]
@@ -644,8 +672,14 @@ class CatalogStandardNativePresentationRepository:
                 | StandardNativePngArtifactV11
                 | StandardNativePngArtifactV12
                 | StandardNativePngArtifactV13
+                | StandardNativePngArtifactV14
             )
-            if fractional_paired_comparison_present:
+            if receiver_coordinate_paired_comparison_present:
+                paired_name_v14 = cast(StandardNativePngArtifactNameV14, name)
+                label, description, kind, schema_version, view_name = (
+                    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V14[paired_name_v14]
+                )
+            elif fractional_paired_comparison_present:
                 paired_name_v13 = cast(StandardNativePngArtifactNameV13, name)
                 label, description, kind, schema_version, view_name = (
                     STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V13[paired_name_v13]
@@ -689,7 +723,18 @@ class CatalogStandardNativePresentationRepository:
                 if view_name is not None
                 else f"{base}/artifacts/{name}.png"
             )
-            if fractional_paired_comparison_present:
+            if receiver_coordinate_paired_comparison_present:
+                artifact = StandardNativePngArtifactV14(
+                    name=paired_name_v14,
+                    label=label,
+                    description=description,
+                    href=href,
+                    catalog_kind=kind,
+                    product_schema_version=schema_version,
+                    digest=product.digest,
+                    byte_size=product.byte_size,
+                )
+            elif fractional_paired_comparison_present:
                 artifact = StandardNativePngArtifactV13(
                     name=paired_name_v13,
                     label=label,
@@ -772,6 +817,28 @@ class CatalogStandardNativePresentationRepository:
             "coverage_status": inventory_coverage_status,
             "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
         }
+        if receiver_coordinate_paired_comparison_present:
+            paired_eligibility = cast(StandardNativeEligibilityV6, loaded.eligibility)
+            paired_sample_rates_hz = cast(
+                tuple[Literal[2_500_000, 25_000_000], Literal[2_500_000, 25_000_000]],
+                tuple(sorted({leg.sample_rate_hz for leg in paired_eligibility.legs})),
+            )
+            content_values_v14 = {
+                "schema_version": 14,
+                **common_values,
+                "sample_rates_hz": paired_sample_rates_hz,
+            }
+            return StandardNativePngArtifactInventoryV14(
+                session_id=session_id,
+                subject_id=subject.subject_id,
+                subject_kind=StandardSubjectKindV2.RADIO,
+                run_id=loaded.run_id,
+                run_manifest_digest=loaded.manifest_digest,
+                sample_rates_hz=paired_sample_rates_hz,
+                coverage_status=inventory_coverage_status,
+                artifacts=tuple(cast(StandardNativePngArtifactV14, item) for item in artifacts),
+                content_digest=canonical_digest(content_values_v14),
+            )
         if fractional_paired_comparison_present:
             paired_eligibility = cast(StandardNativeEligibilityV6, loaded.eligibility)
             paired_sample_rates_hz = cast(
@@ -1172,6 +1239,7 @@ class CatalogStandardNativePresentationRepository:
                 GLRT_EPOCH_RATE_PNG_V1_PRODUCT,
             ),
             "pss-glrt-frame-comparison": (
+                PSS_GLRT_FRAME_COMPARISON_PNG_V3_PRODUCT,
                 PSS_GLRT_FRAME_COMPARISON_PNG_V2_PRODUCT,
                 PSS_GLRT_FRAME_COMPARISON_PNG_V1_PRODUCT,
             ),
@@ -3007,6 +3075,7 @@ class DefinitionDispatchedStandardPresentationRepository:
         | StandardNativePngArtifactInventoryV11
         | StandardNativePngArtifactInventoryV12
         | StandardNativePngArtifactInventoryV13
+        | StandardNativePngArtifactInventoryV14
         | None
     ):
         if not self._native(session_id):
