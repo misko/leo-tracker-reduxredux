@@ -516,9 +516,7 @@ class PersistentHopAnalysisStore:
         for path in directory.glob(".*.partial"):
             metadata = path.stat(follow_symlinks=False)
             if path.is_symlink() or not stat.S_ISREG(metadata.st_mode):
-                raise BundleCorruptionError(
-                    "persistent-hop analysis partial is not a regular file"
-                )
+                raise BundleCorruptionError("persistent-hop analysis partial is not a regular file")
             path.unlink()
         _fsync_directory(directory)
 

@@ -201,9 +201,7 @@ class PersistentHopAnalysisManifestV1(ScannerModel):
     session_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
     input_uri: Annotated[str, Field(min_length=1)]
     input_manifest_sha256: Sha256Digest
-    checkpoint_binding_relative_path: Literal["work-manifest.v1.json"] = (
-        "work-manifest.v1.json"
-    )
+    checkpoint_binding_relative_path: Literal["work-manifest.v1.json"] = "work-manifest.v1.json"
     checkpoint_binding_sha256: Sha256Digest
     created_at: datetime
     completed_at: datetime
