@@ -54,6 +54,7 @@ class PersistentHopPlanV1(ScannerModel):
     receiver_ids: tuple[Literal[0], Literal[1]] = (0, 1)
     gain_mode: Literal[GainMode.MANUAL] = GainMode.MANUAL
     gain_db: float = 40.0
+    samples_per_block: Annotated[int, Field(ge=4_096, le=1_048_576)] = 131_072
     kernel_buffers: Annotated[int, Field(ge=2, le=64)] = 8
     transition_guard_samples: Annotated[int, Field(gt=0)]
     maximum_visit_count: Literal[2_500] = 2_500
@@ -112,6 +113,7 @@ def compile_persistent_hop_plan_v1(
     kernel_buffers: int = 8,
     transition_guard_us: int = 11_000,
     gain_db: float = 40.0,
+    samples_per_block: int = 131_072,
 ) -> PersistentHopPlanV1:
     """Build the only admitted profile order for one supported native rate."""
 
@@ -128,6 +130,7 @@ def compile_persistent_hop_plan_v1(
         sample_rate_hz=sample_rate_hz,
         bandwidth_hz=sample_rate_hz,
         gain_db=gain_db,
+        samples_per_block=samples_per_block,
         kernel_buffers=kernel_buffers,
         transition_guard_samples=guard_numerator // 1_000_000,
         profiles=tuple(
@@ -146,6 +149,7 @@ def compile_scheduled_persistent_hop_plan_v1(
     *,
     transition_guard_us: int = 11_000,
     kernel_buffers: int | None = None,
+    samples_per_block: int = 131_072,
 ) -> PersistentHopPlanV1:
     """Project one existing 20-minute scanner slot onto truthful persistent geometry."""
 
@@ -166,6 +170,7 @@ def compile_scheduled_persistent_hop_plan_v1(
         kernel_buffers=selected_buffers,
         transition_guard_us=transition_guard_us,
         gain_db=configuration.gain_db,
+        samples_per_block=samples_per_block,
     )
     if tuple(profile.target for profile in plan.profiles) != configuration.targets:
         raise ValueError("persistent hopping targets disagree with the scheduled scanner slot")

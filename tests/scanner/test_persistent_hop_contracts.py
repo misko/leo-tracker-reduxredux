@@ -38,6 +38,7 @@ def test_plan_freezes_duration_rate_bandwidth_and_profile_order(sample_rate_hz: 
     assert plan.bandwidth_hz == sample_rate_hz
     assert plan.gain_mode.value == "manual"
     assert plan.gain_db == 40.0
+    assert plan.samples_per_block == 131_072
     assert plan.valid_visit_samples == sample_rate_hz * 120 // 1_000
     assert plan.transition_guard_samples == sample_rate_hz * 11 // 1_000
     assert plan.planned_valid_duty_ppm == 916_030
