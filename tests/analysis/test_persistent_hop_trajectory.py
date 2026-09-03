@@ -8,6 +8,7 @@ from leo.analysis.persistent_hop_trajectory import (
     PersistentHopCfoCandidate,
     PersistentHopTrajectoryConfig,
     PersistentHopTrajectoryInputError,
+    persistent_hop_tracklet_graph,
     reconstruct_persistent_hop_trajectories,
 )
 from leo.contracts.digests import canonical_digest
@@ -107,6 +108,12 @@ def test_reconstructs_and_cross_links_normalized_alias_trajectories() -> None:
         for track in result.tracklets
         for point in track.points
     )
+    first_tracklet_graph = persistent_hop_tracklet_graph(
+        result.hypotheses[0], result.tracklets[0].tracklet_id
+    )
+    assert len(first_tracklet_graph.episodes) == 1
+    assert len(first_tracklet_graph.observations) == 31
+    assert first_tracklet_graph.episodes[0].replica_group_id is None
 
 
 def test_keeps_incompatible_normalized_rates_as_separate_physical_groups() -> None:
