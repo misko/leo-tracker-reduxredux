@@ -81,6 +81,7 @@ from leo.scanner.persistent_hop import (
     PersistentHopTransitionInvalidSpanV1,
     PersistentHopVisitV1,
     compile_persistent_hop_plan_v1,
+    compile_scheduled_persistent_hop_plan_v1,
 )
 from leo.scanner.persistent_hop_application import (
     PersistentHopCaptureError,
@@ -222,6 +223,7 @@ __all__ = [
     "capture_persistent_hop_session",
     "compile_scheduled_scanner_run_intent_v1",
     "compile_persistent_hop_plan_v1",
+    "compile_scheduled_persistent_hop_plan_v1",
     "current_low_band_targets",
     "scheduled_low_band_targets",
     "prepare_scanner_replay_dataset",
