@@ -17,6 +17,9 @@ from leo.storage.persistent_hop import (
     PublishedPersistentHopIqSession,
     QueuedPersistentHopSessionWriter,
 )
+from leo.storage.persistent_hop_analysis_source import (
+    persisted_persistent_hop_analysis_source,
+)
 from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
 from leo.storage.scanner_analysis import (
@@ -97,4 +100,5 @@ __all__ = [
     "VerificationReport",
     "live_scanner_analysis_source",
     "replay_scanner_analysis_source",
+    "persisted_persistent_hop_analysis_source",
 ]
