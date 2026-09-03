@@ -21,6 +21,7 @@ from leo.acquisition.mixed_rate_schedule import (
 from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
+    ScheduledPersistentHopRun,
     ScheduledScannerConfiguration,
     ScheduledScannerRunAnalysis,
 )
@@ -47,6 +48,7 @@ from leo.contracts.mixed_rate_schedule import (
 )
 from leo.contracts.states import CaptureState, StarlinkEdge
 from leo.scanner import compile_scheduled_scanner_run_intent_v1
+from leo.storage import PublishedPersistentHopIqSession
 
 
 class _Clock:
@@ -764,6 +766,34 @@ def test_supervisor_runs_scans_on_the_independent_utc_cadence() -> None:
     ]
 
 
+def test_persistent_hop_never_uses_the_non_durable_supervisor() -> None:
+    clock = _Clock()
+    backend = _SupervisorBackend(clock)
+    backend.scanner_schedule = lambda: ScheduledScannerConfiguration(  # type: ignore[method-assign]
+        interval_seconds=1_200,
+        maximum_lateness_seconds=300,
+        run_duration_seconds=300,
+        requires_durable_queue=True,
+    )
+
+    with pytest.raises(ValueError, match="persistent hopping requires the durable"):
+        ContinuousAcquisitionRunner(
+            cast(AcquisitionCliBackend, backend),
+            clock=clock,
+            utc_now=lambda: datetime(2026, 9, 2, tzinfo=UTC),
+        ).run(
+            "test-profile",
+            radio_ids=("radio-a",),
+            extra_tags=(),
+            interval_seconds=10,
+            maximum_captures=1,
+            cancel=Event(),
+        )
+
+    assert backend.capture_times == []
+    assert backend.scanner_capture_times == []
+
+
 def test_durable_supervisor_persists_independent_dwell_and_scanner_cadences() -> None:
     clock = _Clock()
     backend = _DurableSupervisorBackend(clock)
@@ -963,6 +993,104 @@ def test_scanner_only_stops_after_a_failed_started_run() -> None:
     assert backend.scanner_capture_times == [0.0]
     scanner = next(item for item in backend.operations if item.kind == "scanner_sweep")
     assert scanner.state == "failed"
+
+
+def test_cancelled_persistent_hop_does_not_complete_durable_scanner_slot() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+
+    def capture_cancelled(intent, *, cancel):
+        del cancel
+        backend.scanner_capture_times.append(clock())
+        return ScheduledPersistentHopRun(
+            intent=intent,
+            published=cast(
+                PublishedPersistentHopIqSession,
+                SimpleNamespace(
+                    session_id="cancelled-hop",
+                    manifest=SimpleNamespace(
+                        receipt=SimpleNamespace(
+                            capture_outcome="cancelled",
+                            visits=(1,),
+                            valid_duty_ppm=900_000,
+                            qualified=False,
+                        )
+                    ),
+                ),
+            ),
+        )
+
+    backend.capture_scheduled_scanner = capture_cancelled  # type: ignore[method-assign]
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=None,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        scanner_only=True,
+        maximum_scanner_runs=1,
+    )
+
+    scanner = next(item for item in backend.operations if item.kind == "scanner_sweep")
+    assert summary.stopped_reason == "error"
+    assert scanner.state == "failed"
+    assert scanner.retryable is False
+    assert scanner.outcome is None
+
+
+def test_complete_low_duty_persistent_hop_does_not_complete_durable_slot() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+
+    def capture_low_duty(intent, *, cancel):
+        del cancel
+        backend.scanner_capture_times.append(clock())
+        return ScheduledPersistentHopRun(
+            intent=intent,
+            published=cast(
+                PublishedPersistentHopIqSession,
+                SimpleNamespace(
+                    session_id="low-duty-hop",
+                    manifest=SimpleNamespace(
+                        receipt=SimpleNamespace(
+                            capture_outcome="complete",
+                            visits=(1,),
+                            valid_duty_ppm=899_999,
+                            qualified=False,
+                        )
+                    ),
+                ),
+            ),
+        )
+
+    backend.capture_scheduled_scanner = capture_low_duty  # type: ignore[method-assign]
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=None,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        scanner_only=True,
+        maximum_scanner_runs=1,
+    )
+
+    scanner = next(item for item in backend.operations if item.kind == "scanner_sweep")
+    assert summary.stopped_reason == "error"
+    assert scanner.state == "failed"
+    assert scanner.retryable is False
+    assert scanner.outcome is None
 
 
 def test_scanner_only_requires_an_explicit_positive_bound() -> None:

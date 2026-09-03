@@ -38,6 +38,15 @@ ReportFilename = Annotated[
 BoundedIdentity = Annotated[str, StringConstraints(min_length=1, max_length=128)]
 
 
+def canonical_scheduled_scanner_operation_key(scheduled_for: datetime) -> str:
+    """Return the only durable operation identity for one UTC scanner slot."""
+
+    if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
+        raise ValueError("scanner scheduling clock must be timezone-aware")
+    canonical = scheduled_for.astimezone(UTC)
+    return f"scheduled-scanner:{canonical.strftime('%Y%m%dT%H%M%SZ')}"
+
+
 class ScheduledScannerRunIntentV1(ScannerModel):
     """One fully resolved scanner slot persisted before radio admission."""
 
