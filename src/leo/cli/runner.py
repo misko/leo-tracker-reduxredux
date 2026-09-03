@@ -620,9 +620,10 @@ class ContinuousAcquisitionRunner:
                                     f"persistent scan {captured.published.session_id} "
                                     f"published; visits={len(receipt.visits)}; "
                                     f"status={receipt.capture_outcome}; "
-                                    f"duty_ppm={receipt.valid_duty_ppm}"
+                                    f"duty_ppm={receipt.valid_duty_ppm}; "
+                                    f"qualified={receipt.qualified}"
                                 )
-                                if receipt.capture_outcome == "complete":
+                                if receipt.qualified:
                                     queue.complete_acquisition_operation(
                                         operation_id=lease.operation_id,
                                         worker_id=worker_id,
@@ -641,8 +642,12 @@ class ContinuousAcquisitionRunner:
                                     "run_id=%s",
                                     captured.published.session_id,
                                 )
-                                run_status = receipt.capture_outcome
-                                stop_reason = f"persistent-hop capture {run_status}"
+                                run_status = "complete" if receipt.qualified else "failed"
+                                stop_reason = (
+                                    "persistent-hop capture qualified"
+                                    if receipt.qualified
+                                    else persistent_outcome
+                                )
                             else:
                                 run_manifest = captured.published.manifest
                                 run_status = run_manifest.status
