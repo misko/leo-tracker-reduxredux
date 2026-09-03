@@ -6,6 +6,11 @@ from leo.radio.pluto_adapter import (
     PlutoDependencyError,
     PlutoIioRadioSource,
 )
+from leo.radio.pluto_persistent_hop import (
+    PERSISTENT_HOP_EXCLUDED_SERIAL,
+    PlutoPersistentHopError,
+    PlutoPersistentHopRadio,
+)
 from leo.radio.pluto_scanner import PlutoScannerError, PlutoSequentialScanRadio
 from leo.radio.ports import RadioSource
 
@@ -15,6 +20,9 @@ __all__ = [
     "PlutoAdapterError",
     "PlutoDependencyError",
     "PlutoIioRadioSource",
+    "PERSISTENT_HOP_EXCLUDED_SERIAL",
+    "PlutoPersistentHopError",
+    "PlutoPersistentHopRadio",
     "RadioSource",
     "PlutoScannerError",
     "PlutoSequentialScanRadio",

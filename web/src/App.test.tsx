@@ -125,6 +125,47 @@ const scannerReport = {
   })),
 };
 
+const persistentHopHistory = {
+  schema_version: 1 as const,
+  cursor: 0,
+  limit: 5,
+  total: 1,
+  next_cursor: null,
+  items: [{
+    schema_version: 1 as const,
+    captured_at: "2026-09-03T02:20:00Z",
+    finalized_at: "2026-09-03T02:25:01Z",
+    session_id: "scan-hop-2d0e49b94b3e4cdf",
+    radio_id: "radio_pluto_5d4d",
+    nominal_duration_seconds: 300 as const,
+    valid_visit_ms: 120 as const,
+    sample_rate_hz: 2500000 as const,
+    bandwidth_hz: 2500000 as const,
+    visit_count: 2288,
+    target_coverage: Array.from({ length: 8 }, (_, index) => ({
+      schema_version: 1 as const,
+      target_index: index,
+      target: {
+        channel: index % 4 + 1,
+        edge: index < 4 ? "lower" as const : "upper" as const,
+        rf_center_hz: 10_709_687_500 + index * 230_625_000,
+        if_center_hz: 959_687_500 + index * 230_625_000,
+      },
+      visit_count: 286,
+      valid_sample_count: 85_800_000,
+    })),
+    capture_outcome: "complete" as const,
+    terminal_state: "completed" as const,
+    terminal_reason: "complete",
+    valid_duty_ppm: 909090,
+    continuity_attested: true,
+    restoration_status: "restored" as const,
+    qualified: true,
+    analysis_state: "pending_backpressure" as const,
+    analysis_reason: "Full GLRT/CFO analysis awaits a bounded backpressure-aware worker.",
+  }],
+};
+
 const detail: RecordingDetailV1 = {
   ...summary.items[0],
   profile: {
@@ -351,6 +392,7 @@ describe("Observation Console", () => {
             },
           ],
         }
+        : path === "/api/v1/scanner/persistent-sessions" ? persistentHopHistory
         : path === "/api/v1/acquisition-queue" ? acquisitionQueue
         : path === "/api/v1/queue" ? activeQueue
         : url.includes("/content") ? {
@@ -560,6 +602,12 @@ describe("Observation Console", () => {
     fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
     expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
     expect(screen.getByText("2 scans")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "300-second sessions" })).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("scan-hop-2d0e49b94b3e4cdf");
+    expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("2.5 MS/s · 2.5 MHz BW · 2,288 visits");
+    expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("CH1L 286 · CH2L 286 · CH3L 286 · CH4L 286 · CH1U 286 · CH2U 286 · CH3U 286 · CH4U 286");
+    expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("90.9%");
+    expect(screen.getByRole("table", { name: "Persistent hop history" })).toHaveTextContent("pending backpressure");
     expect(screen.getAllByText("scan-2d0e49b94b3e4cdf")).toHaveLength(3);
     expect(screen.getByRole("table", { name: "Scanner history" })).toHaveTextContent("scan-older");
     expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("CH4");

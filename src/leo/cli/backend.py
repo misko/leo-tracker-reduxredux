@@ -68,7 +68,11 @@ from leo.scanner import (
     ScannerCaptureReportLike,
     ScheduledScannerRunIntentV1,
 )
-from leo.storage import PublishedScannerIqBundle, PublishedScannerRun
+from leo.storage import (
+    PublishedPersistentHopIqSession,
+    PublishedScannerIqBundle,
+    PublishedScannerRun,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +80,7 @@ class ScheduledScannerConfiguration:
     interval_seconds: float
     maximum_lateness_seconds: float
     run_duration_seconds: float = 300.0
+    requires_durable_queue: bool = False
 
     def __post_init__(self) -> None:
         if self.interval_seconds <= 0:
@@ -126,6 +131,17 @@ class ScheduledScannerRun:
     intent: ScheduledScannerRunIntentV1
     published: PublishedScannerRun
     sweeps: tuple[ScheduledScannerSweepReference, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledPersistentHopRun:
+    """One scheduled slot published through the additive hopping contract."""
+
+    intent: ScheduledScannerRunIntentV1
+    published: PublishedPersistentHopIqSession
+
+
+ScheduledScannerRunLike = ScheduledScannerRun | ScheduledPersistentHopRun
 
 
 @dataclass(frozen=True, slots=True)
@@ -289,7 +305,7 @@ class ScheduledScannerPort(Protocol):
 
     def capture_scheduled_scanner(
         self, intent: ScheduledScannerRunIntentV1, *, cancel: Event
-    ) -> ScheduledScannerRun: ...
+    ) -> ScheduledScannerRunLike: ...
 
     def analyze_scheduled_scanner(
         self, run: ScheduledScannerRun

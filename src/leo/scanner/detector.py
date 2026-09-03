@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 import numpy as np
 
@@ -13,7 +14,7 @@ from leo.analysis.starlink import (
 )
 from leo.analysis.starlink.acquisition import acquire_symbolwise
 from leo.analysis.starlink.pilot_methods import conditioned_glrt64_scores, refine_glrt64_epochs
-from leo.scanner.models import Glrt64FirstDetection, ScannerConfiguration
+from leo.scanner.models import Glrt64FirstDetection
 
 _ZERO_CALIBRATION_SHA256 = "0" * 64
 _CONFIRMATION_CFO_GATE_HZ = 8_000.0
@@ -24,6 +25,40 @@ _CONFIRMATION_CFO_GATE_HZ = 8_000.0
 STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT = 10
 STANDARD_SCANNER_CANDIDATE_EPOCH_SEPARATION_SAMPLES = 5
 STANDARD_SCANNER_CANDIDATE_CFO_SEPARATION_HZ = 10_000.0
+
+
+class Glrt64DwellConfiguration(Protocol):
+    """Structural acquisition geometry shared by legacy and persistent dwells."""
+
+    @property
+    def dwell_samples(self) -> int: ...
+
+    @property
+    def probe_samples(self) -> int: ...
+
+    @property
+    def probe_stride_ms(self) -> int: ...
+
+    @property
+    def probe_stride_samples(self) -> int: ...
+
+    @property
+    def scheduled_probe_count(self) -> int: ...
+
+    @property
+    def sample_rate_hz(self) -> int: ...
+
+    @property
+    def receiver_ids(self) -> tuple[int, ...]: ...
+
+    @property
+    def probe_ms(self) -> int: ...
+
+    @property
+    def glrt64_margin_gate(self) -> float: ...
+
+    @property
+    def maximum_acquisition_candidates(self) -> int: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +105,7 @@ class DwellGlrt64Analysis:
 
 def detect_first_glrt64(
     samples: np.ndarray,
-    configuration: ScannerConfiguration,
+    configuration: Glrt64DwellConfiguration,
     *,
     edge: StarlinkEdge | str,
 ) -> DwellDetection:
@@ -86,7 +121,7 @@ def detect_first_glrt64(
 
 def analyze_glrt64_dwell(
     samples: np.ndarray,
-    configuration: ScannerConfiguration,
+    configuration: Glrt64DwellConfiguration,
     *,
     edge: StarlinkEdge | str,
 ) -> DwellGlrt64Analysis:

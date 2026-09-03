@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import math
@@ -46,9 +47,11 @@ from leo.cli.backend import (
     CliBackend,
     CliBackendError,
     ProcessingCliBackend,
+    ScheduledPersistentHopRun,
     ScheduledScannerConfiguration,
     ScheduledScannerRun,
     ScheduledScannerRunAnalysis,
+    ScheduledScannerRunLike,
     ScheduledScannerSweepReference,
 )
 from leo.cli.calibration import CalibrationCliBackend
@@ -138,12 +141,16 @@ from leo.qualification import (
     resolve_soak_evidence,
 )
 from leo.radio import (
+    PERSISTENT_HOP_EXCLUDED_SERIAL,
     FakeRadioSource,
     PlutoIioRadioSource,
+    PlutoPersistentHopRadio,
     PlutoSequentialScanRadio,
     RadioSource,
 )
 from leo.scanner import (
+    PersistentHopPlanV1,
+    PersistentHopRadio,
     ScannerCaptureBurstReportLike,
     ScannerCaptureReportLike,
     ScannerCloseFailureEvidenceV1,
@@ -158,28 +165,34 @@ from leo.scanner import (
     ScheduledScannerRunIntentV1,
     SequentialScanRadioLike,
     analyze_scan_sweep,
+    canonical_scheduled_scanner_operation_key,
     capture_configured_scan_sweep,
+    compile_scheduled_persistent_hop_plan_v1,
     compile_scheduled_scanner_run_intent_v1,
     current_low_band_targets,
 )
 from leo.station.resolver import FixtureAuthorityFileReference
 from leo.storage import (
+    PersistentHopIqStore,
     PublishedBundle,
     PublishedScannerIqBundle,
     RecordingStore,
     ScannerAnalysisStore,
     ScannerIqStore,
     ScannerRunStore,
+    capture_persistent_hop_to_store,
 )
 from leo.storage.errors import BundleNotFoundError
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
 ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadioLike]
+PersistentHopRadioFactory = Callable[["RadioConfigurationV1"], PersistentHopRadio]
 ScannerRadioSelector = Callable[[tuple["RadioConfigurationV1", ...]], "RadioConfigurationV1"]
 RecordingStoreFactory = Callable[[Path], RecordingStore]
 ScannerIqStoreFactory = Callable[[Path], ScannerIqStore]
 ScannerAnalysisStoreFactory = Callable[[Path], ScannerAnalysisStore]
 ScannerRunStoreFactory = Callable[[Path], ScannerRunStore]
+PersistentHopIqStoreFactory = Callable[[Path], PersistentHopIqStore]
 CaptureObserver = Callable[[CaptureSessionResult], None]
 
 _MAX_SCANNER_REPORT_BYTES = 4 * 1024 * 1024
@@ -257,6 +270,7 @@ class CliSettings:
     station_topology_file_digest: str | None = None
     fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
     scanner_enabled: bool = False
+    scanner_capture_mode: Literal["sequential", "persistent_hop"] = "sequential"
     scanner_radio_id: str | None = None
     scanner_interval_seconds: float = 1_200.0
     scanner_maximum_lateness_seconds: float = 300.0
@@ -264,6 +278,10 @@ class CliSettings:
     scanner_dwell_ms: int = 120
     scanner_gain_db: float = 40.0
     scanner_margin_gate: float = 0.025
+    scanner_persistent_transition_guard_us: int = 11_000
+    scanner_persistent_samples_per_block: int = 131_072
+    scanner_persistent_kernel_buffers: int = 8
+    scanner_persistent_queue_capacity_visits: int = 16
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
     ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
     direct_async_enabled: bool = False
@@ -287,6 +305,38 @@ class CliSettings:
                 raise ValueError("scheduled scanner requires the Pluto radio backend")
             if self.scanner_radio_id not in ids:
                 raise ValueError("scheduled scanner radio must be configured")
+            if self.scanner_capture_mode == "persistent_hop":
+                configured = next(
+                    radio for radio in self.radios if radio.radio_id == self.scanner_radio_id
+                )
+                if configured.serial is None or configured.host is None:
+                    raise ValueError("persistent hopping requires an exact serial and LAN host")
+                try:
+                    address = ipaddress.IPv4Address(configured.host)
+                except ipaddress.AddressValueError as error:
+                    raise ValueError(
+                        "persistent hopping requires a literal 192.168.1.* host"
+                    ) from error
+                network = ipaddress.IPv4Network("192.168.1.0/24")
+                if (
+                    str(address) != configured.host
+                    or address not in network
+                    or address in {network[0], network[-1]}
+                ):
+                    raise ValueError(
+                        "persistent hopping requires a usable literal 192.168.1.* host"
+                    )
+                if configured.serial == PERSISTENT_HOP_EXCLUDED_SERIAL:
+                    raise ValueError("persistent hopping cannot use the excluded Pluto serial")
+                if (
+                    self.scanner_interval_seconds != 1_200
+                    or self.scanner_run_seconds != 300
+                    or self.scanner_dwell_ms != 120
+                ):
+                    raise ValueError(
+                        "persistent hopping requires 1200-second cadence, 300-second runs, "
+                        "and 120 ms valid visits"
+                    )
         if self.scanner_interval_seconds <= 0:
             raise ValueError("scanner interval must be positive")
         if self.scanner_maximum_lateness_seconds < 0:
@@ -297,6 +347,14 @@ class CliSettings:
             raise ValueError("scanner dwell is outside its operational bound")
         if self.scanner_dwell_ms % 20:
             raise ValueError("scanner dwell must be a multiple of 20 ms")
+        if self.scanner_persistent_transition_guard_us <= 0:
+            raise ValueError("persistent-hop transition guard must be positive")
+        if not 4_096 <= self.scanner_persistent_samples_per_block <= 1_048_576:
+            raise ValueError("persistent-hop block samples are outside the supported bound")
+        if not 2 <= self.scanner_persistent_kernel_buffers <= 64:
+            raise ValueError("persistent-hop kernel buffers are outside the supported bound")
+        if self.scanner_persistent_queue_capacity_visits <= 0:
+            raise ValueError("persistent-hop storage queue capacity must be positive")
         if not self.scanner_report_root.is_absolute():
             raise ValueError("scanner report root must be absolute")
         if self.scanner_report_root == Path("/mnt/qnap01") or str(
@@ -316,6 +374,11 @@ class CliSettings:
             backend = values.get("LEO_RADIO_BACKEND", "fake")
             if backend not in {"fake", "pluto"}:
                 raise ValueError("LEO_RADIO_BACKEND must be fake or pluto")
+            scanner_capture_mode = values.get("LEO_SCANNER_CAPTURE_MODE", "sequential")
+            if scanner_capture_mode not in {"sequential", "persistent_hop"}:
+                raise ValueError(
+                    "LEO_SCANNER_CAPTURE_MODE must be sequential or persistent_hop"
+                )
             reserve = int(values.get("LEO_ACQUISITION_RESERVE_BYTES", str(1024**3)))
             raw_fixture_authorities = json.loads(
                 values.get("LEO_FIXTURE_PATH_AUTHORITIES_JSON", "[]")
@@ -376,6 +439,9 @@ class CliSettings:
                 station_topology_file_digest=values.get("LEO_STATION_TOPOLOGY_FILE_DIGEST"),
                 fixture_authorities=fixture_authorities,
                 scanner_enabled=_environment_bool(values, "LEO_SCANNER_ENABLED", False),
+                scanner_capture_mode=cast(
+                    Literal["sequential", "persistent_hop"], scanner_capture_mode
+                ),
                 scanner_radio_id=values.get("LEO_SCANNER_RADIO_ID"),
                 scanner_interval_seconds=float(values.get("LEO_SCANNER_INTERVAL_SECONDS", "1200")),
                 scanner_maximum_lateness_seconds=float(
@@ -385,6 +451,18 @@ class CliSettings:
                 scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "120")),
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
+                scanner_persistent_transition_guard_us=int(
+                    values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "11000")
+                ),
+                scanner_persistent_samples_per_block=int(
+                    values.get("LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK", "131072")
+                ),
+                scanner_persistent_kernel_buffers=int(
+                    values.get("LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS", "8")
+                ),
+                scanner_persistent_queue_capacity_visits=int(
+                    values.get("LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS", "16")
+                ),
                 scanner_report_root=Path(
                     values.get(
                         "LEO_SCANNER_REPORT_ROOT",
@@ -405,11 +483,13 @@ class CompositionHooks:
 
     radio_source_factory: RadioSourceFactory | None = None
     scanner_radio_factory: ScannerRadioFactory | None = None
+    persistent_hop_radio_factory: PersistentHopRadioFactory | None = None
     scanner_radio_selector: ScannerRadioSelector = secrets.choice
     recording_store_factory: RecordingStoreFactory = RecordingStore
     scanner_iq_store_factory: ScannerIqStoreFactory = ScannerIqStore
     scanner_analysis_store_factory: ScannerAnalysisStoreFactory = ScannerAnalysisStore
     scanner_run_store_factory: ScannerRunStoreFactory = ScannerRunStore
+    persistent_hop_store_factory: PersistentHopIqStoreFactory = PersistentHopIqStore
     scanner_monotonic: Callable[[], float] = time.monotonic
     scanner_utc_ns: Callable[[], int] = time.time_ns
     capture_observer: CaptureObserver = lambda _result: None
@@ -427,6 +507,7 @@ class LocalAcquisitionBackend:
         self._scanner_iq: ScannerIqStore | None = None
         self._scanner_analysis: ScannerAnalysisStore | None = None
         self._scanner_runs: ScannerRunStore | None = None
+        self._persistent_hop_store: PersistentHopIqStore | None = None
         self._capture_authority: LocalCaptureAuthority | None = None
         self._processing_backend: ProcessingCliBackend | None = None
         self._calibration_backend: CalibrationCliBackend | None = None
@@ -1089,6 +1170,7 @@ class LocalAcquisitionBackend:
             interval_seconds=self.settings.scanner_interval_seconds,
             maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
             run_duration_seconds=self.settings.scanner_run_seconds,
+            requires_durable_queue=self.settings.scanner_capture_mode == "persistent_hop",
         )
 
     def scheduled_scanner_intent(
@@ -1099,6 +1181,12 @@ class LocalAcquisitionBackend:
     ) -> ScheduledScannerRunIntentV1:
         if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
+        expected_operation_key = canonical_scheduled_scanner_operation_key(scheduled_for)
+        if operation_key != expected_operation_key:
+            raise CliBackendError(
+                "scheduled scanner operation key disagrees with its UTC cadence slot",
+                ExitCode.INVALID_CONFIGURATION,
+            )
         assert self.settings.scanner_radio_id is not None
         configured = next(
             radio
@@ -1138,7 +1226,7 @@ class LocalAcquisitionBackend:
         intent: ScheduledScannerRunIntentV1,
         *,
         cancel: Event,
-    ) -> ScheduledScannerRun:
+    ) -> ScheduledScannerRunLike:
         if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
         expected = self.scheduled_scanner_intent(
@@ -1150,6 +1238,8 @@ class LocalAcquisitionBackend:
                 "scheduled scanner intent disagrees with runtime policy",
                 ExitCode.INVALID_CONFIGURATION,
             )
+        if self.settings.scanner_capture_mode == "persistent_hop":
+            return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
         configured = next(
             radio for radio in self.settings.radios if radio.radio_id == intent.radio_id
         )
@@ -1298,6 +1388,63 @@ class LocalAcquisitionBackend:
         )
         published = self._scanner_run_store().publish(manifest)
         return ScheduledScannerRun(intent=intent, published=published, sweeps=tuple(references))
+
+    def _capture_scheduled_persistent_hop(
+        self,
+        intent: ScheduledScannerRunIntentV1,
+        *,
+        cancel: Event,
+    ) -> ScheduledPersistentHopRun:
+        configured = next(
+            radio for radio in self.settings.radios if radio.radio_id == intent.radio_id
+        )
+        plan = compile_scheduled_persistent_hop_plan_v1(
+            intent,
+            transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
+            kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
+            samples_per_block=self.settings.scanner_persistent_samples_per_block,
+        )
+        session_id = f"scan-hop-{intent.intent_digest.removeprefix('sha256:')[:16]}"
+        store = self._persistent_hop_iq_store()
+        try:
+            existing = store.verify(session_id)
+        except BundleNotFoundError:
+            pass
+        else:
+            receipt = existing.manifest.receipt
+            if (
+                existing.manifest.plan != plan
+                or receipt.radio_id != configured.radio_id
+                or receipt.radio_serial != intent.radio_serial
+                or receipt.capture_outcome not in {"complete", "cancelled"}
+            ):
+                raise CliBackendError(
+                    "persisted persistent-hop session disagrees with scheduled intent",
+                    ExitCode.CONFLICT,
+                )
+            return ScheduledPersistentHopRun(intent=intent, published=existing)
+
+        self._admit_persistent_hop_iq(plan)
+        radio = self._persistent_hop_radio(configured)
+        try:
+            with self._authority().claim(
+                (configured.radio_id,),
+                task_id=session_id,
+                task_kind=CaptureTaskKind.SCANNER_SWEEP,
+            ):
+                published = capture_persistent_hop_to_store(
+                    radio,
+                    plan,
+                    session_id=session_id,
+                    store=store,
+                    cancel=cancel,
+                    queue_capacity_visits=(
+                        self.settings.scanner_persistent_queue_capacity_visits
+                    ),
+                )
+        except CaptureAuthorityError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        return ScheduledPersistentHopRun(intent=intent, published=published)
 
     def analyze_scheduled_scanner(
         self,
@@ -2274,6 +2421,32 @@ class LocalAcquisitionBackend:
             self._scanner_runs = self.hooks.scanner_run_store_factory(self.settings.bulk_root)
         return self._scanner_runs
 
+    def _persistent_hop_iq_store(self) -> PersistentHopIqStore:
+        if self._persistent_hop_store is None:
+            self._persistent_hop_store = self.hooks.persistent_hop_store_factory(
+                self.settings.bulk_root
+            )
+        return self._persistent_hop_store
+
+    def _admit_persistent_hop_iq(self, plan: PersistentHopPlanV1) -> None:
+        # Admit against the uncompressed upper bound. RF is never opened on a
+        # speculative compression ratio.
+        raw_iq_bytes = (
+            plan.nominal_device_sample_count * len(plan.receiver_ids) * 4
+        )
+        required_free_bytes = raw_iq_bytes + self.settings.safety_reserve_bytes
+        available_free_bytes = max(0, int(shutil.disk_usage(self.settings.bulk_root).free))
+        policy = self._capture_storage_admission(self.settings.bulk_root)
+        if available_free_bytes >= required_free_bytes and policy.allowed:
+            return
+        policy_detail = f"; {policy.reason}" if policy.reason is not None else ""
+        raise CliBackendError(
+            "persistent-hop IQ storage admission rejected: "
+            f"need {required_free_bytes} free bytes, have {available_free_bytes}"
+            f"{policy_detail}",
+            ExitCode.ADMISSION_REJECTED,
+        )
+
     def _admit_scanner_iq(
         self, configuration: ScannerConfiguration, *, scan_count: int = 1
     ) -> None:
@@ -2342,6 +2515,27 @@ class LocalAcquisitionBackend:
         return PlutoSequentialScanRadio(
             configuration.host,
             expected_serial=configuration.serial or configuration.radio_id,
+            radio_id=configuration.radio_id,
+        )
+
+    def _persistent_hop_radio(
+        self,
+        configuration: RadioConfigurationV1,
+    ) -> PersistentHopRadio:
+        if self.hooks.persistent_hop_radio_factory is not None:
+            return self.hooks.persistent_hop_radio_factory(configuration)
+        if (
+            self.settings.radio_backend != "pluto"
+            or configuration.host is None
+            or configuration.serial is None
+        ):
+            raise CliBackendError(
+                "persistent hopping requires an exact Ethernet Pluto configuration",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        return PlutoPersistentHopRadio(
+            configuration.host,
+            expected_serial=configuration.serial,
             radio_id=configuration.radio_id,
         )
 

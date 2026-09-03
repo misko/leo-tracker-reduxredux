@@ -7,6 +7,20 @@ from leo.storage.errors import (
     PathConfinementError,
     RecordingStoreError,
 )
+from leo.storage.persistent_hop import (
+    PersistentHopIqChunkV1,
+    PersistentHopIqSessionManifestV1,
+    PersistentHopIqStore,
+    PersistentHopQueueTelemetryV1,
+    PersistentHopSessionWriter,
+    PersistentHopStoredCi16Reader,
+    PublishedPersistentHopIqSession,
+    QueuedPersistentHopSessionWriter,
+)
+from leo.storage.persistent_hop_analysis_source import (
+    persisted_persistent_hop_analysis_source,
+)
+from leo.storage.persistent_hop_capture import capture_persistent_hop_to_store
 from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
 from leo.storage.scanner_analysis import (
@@ -55,7 +69,15 @@ __all__ = [
     "DeviceIqSpan",
     "FallbackScannerCaptureTimeReader",
     "PathConfinementError",
+    "PersistentHopIqChunkV1",
+    "PersistentHopIqSessionManifestV1",
+    "PersistentHopIqStore",
+    "PersistentHopQueueTelemetryV1",
+    "PersistentHopSessionWriter",
+    "PersistentHopStoredCi16Reader",
     "PublishedBundle",
+    "PublishedPersistentHopIqSession",
+    "QueuedPersistentHopSessionWriter",
     "PublishedScannerAnalysisBundle",
     "PublishedScannerIqBundle",
     "PublishedScannerReplayDataset",
@@ -79,4 +101,6 @@ __all__ = [
     "VerificationReport",
     "live_scanner_analysis_source",
     "replay_scanner_analysis_source",
+    "persisted_persistent_hop_analysis_source",
+    "capture_persistent_hop_to_store",
 ]
