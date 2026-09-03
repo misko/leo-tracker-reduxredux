@@ -123,6 +123,22 @@ def test_persistent_hop_store_exposes_bounded_truthful_history_without_reading_i
         store.page(cursor=-1, limit=20)
 
 
+def test_persistent_hop_store_read_only_open_does_not_create_paths(tmp_path) -> None:
+    bulk_root = tmp_path / "bulk"
+    bulk_root.mkdir()
+
+    store = PersistentHopIqStore.open_read_only(bulk_root)
+
+    assert store.page(cursor=0, limit=20).items == ()
+    assert not store.spool_root.exists()
+    assert not store.bundles_root.exists()
+    with pytest.raises(BundleStateError, match="read-only"):
+        store.begin(
+            "hop-read-only",
+            compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000, kernel_buffers=2),
+        )
+
+
 def test_persistent_hop_store_publishes_attested_zero_visit_cancellation(tmp_path) -> None:
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000, kernel_buffers=2)
     radio = FakePersistentHopRadio()

@@ -511,16 +511,34 @@ class PersistentHopIqStore:
     """Own immutable persistent-hop IQ sessions below one local bulk root."""
 
     def __init__(self, root: Path) -> None:
+        self._configure(root, writable=True)
+
+    @classmethod
+    def open_read_only(cls, root: Path) -> Self:
+        """Open published sessions without creating or modifying storage paths."""
+
+        store = cls.__new__(cls)
+        store._configure(root, writable=False)
+        return store
+
+    def _configure(self, root: Path, *, writable: bool) -> None:
         if root == Path("/mnt/qnap01") or str(root).startswith("/mnt/qnap01/"):
             raise ValueError("persistent-hop IQ cannot be written beneath QNAP")
-        root.mkdir(parents=True, exist_ok=True)
+        if writable:
+            root.mkdir(parents=True, exist_ok=True)
         self.root = root.resolve(strict=True)
         self.spool_root = self.root / "spool"
         self.bundles_root = self.root / "scanner-hop-recordings"
-        self.spool_root.mkdir(exist_ok=True)
-        self.bundles_root.mkdir(exist_ok=True)
-        if os.stat(self.spool_root).st_dev != os.stat(self.bundles_root).st_dev:
-            raise ValueError("persistent-hop spool and bundle roots must share one filesystem")
+        self._writable = writable
+        if writable:
+            self.spool_root.mkdir(exist_ok=True)
+            self.bundles_root.mkdir(exist_ok=True)
+            if os.stat(self.spool_root).st_dev != os.stat(self.bundles_root).st_dev:
+                raise ValueError("persistent-hop spool and bundle roots must share one filesystem")
+        elif self.bundles_root.is_symlink():
+            raise BundleCorruptionError("persistent-hop bundle root must not be a symlink")
+        elif self.bundles_root.exists():
+            self._require_real_directory(self.bundles_root)
         self.resolver = BulkUriResolver(
             self.root,
             allowed_namespaces=("scanner-hop-recordings",),
@@ -533,6 +551,8 @@ class PersistentHopIqStore:
         *,
         compression: CompressionSettingsV1 | None = None,
     ) -> PersistentHopSessionWriter:
+        if not self._writable:
+            raise BundleStateError("persistent-hop IQ store is read-only")
         if not _IDENTIFIER.fullmatch(session_id):
             raise ValueError("persistent-hop session ID is not safe")
         selected = compression or CompressionSettingsV1(policy_id="zstd-128m-v1")
@@ -580,6 +600,8 @@ class PersistentHopIqStore:
     def session_ids(self) -> tuple[str, ...]:
         """Return published session IDs in deterministic newest-publication order."""
 
+        if not self.bundles_root.exists():
+            return ()
         entries: list[tuple[int, str]] = []
         seen: set[str] = set()
         for year in self.bundles_root.iterdir():
