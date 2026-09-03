@@ -67,6 +67,7 @@ def _candidate(
         support_end_utc_ns=center_ns + 10_000_000,
         measured_cfo_hz=measured_cfo_hz,
         standard_uncertainty_hz=400.0,
+        factorial_support_moments_s=(1.0, 0.0, 1.0 / 60_000.0, 0.0),
         exact_score=0.13,
         control_score=0.05,
         margin=0.08,

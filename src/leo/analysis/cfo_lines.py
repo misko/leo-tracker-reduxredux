@@ -27,6 +27,7 @@ class CfoPoint:
     exact_score: float
     control_score: float
     margin: float
+    source_group_id: str | None = None
 
     @property
     def weight(self) -> float:
@@ -160,10 +161,15 @@ def _one_per_time(
     residual: np.ndarray,
     weights: np.ndarray,
 ) -> np.ndarray:
-    best: dict[int, int] = {}
+    best: dict[tuple[str, int | str], int] = {}
     for raw_index in indexes:
         index = int(raw_index)
-        key = _time_key(points[index].time_s)
+        source_group_id = points[index].source_group_id
+        key: tuple[str, int | str]
+        if source_group_id is None:
+            key = ("time", _time_key(points[index].time_s))
+        else:
+            key = ("source", source_group_id)
         previous = best.get(key)
         rank = (-weights[index], abs(residual[index]), points[index].point_id)
         if previous is None:
