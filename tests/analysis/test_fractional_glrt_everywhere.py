@@ -132,7 +132,7 @@ def test_raw_iq_fractional_glrt_refines_across_frame_seam() -> None:
     assert refinement.fractional_frame_phase_sample == pytest.approx(3_999.51, abs=0.08)
 
 
-def test_primary_qam_handoff_samples_iq_at_fractional_glrt_epoch(monkeypatch) -> None:
+def test_native_qam_handoff_samples_iq_at_fractional_glrt_epoch(monkeypatch) -> None:
     observed_offsets: list[float] = []
     qam_result = SimpleNamespace(metrics=SimpleNamespace(hard_symbol_accuracy=0.91, rms_evm=0.12))
 
@@ -146,14 +146,14 @@ def test_primary_qam_handoff_samples_iq_at_fractional_glrt_epoch(monkeypatch) ->
         local_epoch_sample=11,
         acquired_cfo_hz=25_000.0,
         scores=(),
-        qam_accuracy=None,
-        qam_evm=None,
+        qam_accuracy=0.25,
+        qam_evm=0.5,
         fractional_epoch_offset_samples=0.375,
         fractional_epoch_status=FractionalEpochStatus.COMPLETE.value,
     )
     observed_qam = []
 
-    result = pilot_methods_module._with_fractional_primary_qam(
+    result = pilot_methods_module._observe_fractional_primary_qam(
         np.ones(100, dtype=np.complex128),
         2_500_000,
         (candidate,),
@@ -163,8 +163,9 @@ def test_primary_qam_handoff_samples_iq_at_fractional_glrt_epoch(monkeypatch) ->
 
     assert observed_offsets == [0.375]
     assert observed_qam == [qam_result]
-    assert result[0].qam_accuracy == pytest.approx(0.91)
-    assert result[0].qam_evm == pytest.approx(0.12)
+    assert result is None
+    assert candidate.qam_accuracy == pytest.approx(0.25)
+    assert candidate.qam_evm == pytest.approx(0.5)
 
 
 def test_v2_evidence_closes_one_complete_stateful_candidate() -> None:

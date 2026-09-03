@@ -288,7 +288,6 @@ def detect_pilot_method_candidates(
                 candidate,
                 edge=edge,
                 glrt_size=glrt_size,
-                evaluate_qam=not refine_candidates,
             )
             for candidate in retained
         )
@@ -301,7 +300,6 @@ def detect_pilot_method_candidates(
                 edge=edge,
                 glrt_size=glrt_size,
                 primary_qam_observer=evaluation_observer,
-                evaluate_qam=not refine_candidates,
             )
             for candidate in retained
         )
@@ -313,13 +311,14 @@ def detect_pilot_method_candidates(
             edge=edge,
             glrt_size=glrt_size,
         )
-        candidates = _with_fractional_primary_qam(
-            values,
-            sample_rate_hz,
-            candidates,
-            edge=edge,
-            primary_qam_observer=primary_qam_observer,
-        )
+        if primary_qam_observer is not None:
+            _observe_fractional_primary_qam(
+                values,
+                sample_rate_hz,
+                candidates,
+                edge=edge,
+                primary_qam_observer=primary_qam_observer,
+            )
     primary = candidates[0]
     return PilotProbeDetection(
         NumericalStatus.COMPLETE,
@@ -340,18 +339,18 @@ def detect_pilot_method_candidates(
     )
 
 
-def _with_fractional_primary_qam(
+def _observe_fractional_primary_qam(
     samples: np.ndarray,
     sample_rate_hz: int,
     candidates: tuple[PilotMethodCandidate, ...],
     *,
     edge: StarlinkEdge,
-    primary_qam_observer: PrimaryQamObserver | None,
-) -> tuple[PilotMethodCandidate, ...]:
-    """Re-evaluate only the primary QAM confirmer at its continuous epoch."""
+    primary_qam_observer: PrimaryQamObserver,
+) -> None:
+    """Emit native QAM evidence at the continuous epoch without mutating legacy rows."""
 
     if not candidates:
-        return ()
+        return
     from leo.analysis.qam import analyze_pilot_qam
 
     primary = candidates[0]
@@ -363,14 +362,7 @@ def _with_fractional_primary_qam(
         edge=edge,
         fractional_epoch_offset_samples=float(primary.fractional_epoch_offset_samples or 0.0),
     )
-    if primary_qam_observer is not None:
-        primary_qam_observer(qam)
-    qam_accuracy = None if qam.metrics is None else qam.metrics.hard_symbol_accuracy
-    qam_evm = None if qam.metrics is None else qam.metrics.rms_evm
-    return (
-        replace(primary, qam_accuracy=qam_accuracy, qam_evm=qam_evm),
-        *candidates[1:],
-    )
+    primary_qam_observer(qam)
 
 
 def _evaluate_candidate(
@@ -399,14 +391,13 @@ def _evaluate_standard_candidate(
     edge: StarlinkEdge,
     glrt_size: int,
     primary_qam_observer: PrimaryQamObserver | None = None,
-    evaluate_qam: bool = True,
 ) -> PilotMethodCandidate:
     return _evaluate_candidate_with_policy(
         values,
         sample_rate_hz,
         candidate,
         edge=edge,
-        include_qam=evaluate_qam and candidate.rank == 0,
+        include_qam=candidate.rank == 0,
         standard_cutline=True,
         glrt_size=glrt_size,
         primary_qam_observer=primary_qam_observer,
@@ -461,9 +452,9 @@ def _evaluate_candidate_with_policy(
 
     # QAM is an independent confirmer, not a trajectory proposal. Evaluate it
     # once on the primary acquisition basin instead of repeating the same
-    # expensive frame solve for every ranked alternative.  The integer epoch
-    # remains the acquisition identity, while the fractional offset controls
-    # the actual IQ sampling coordinate.
+    # expensive frame solve for every ranked alternative. Published candidate
+    # rows retain their historical integer-anchor QAM values. Native v16 QAM
+    # evidence is emitted separately at the fractional coordinate above.
     if include_qam:
         qam = analyze_pilot_qam(
             values,
@@ -471,7 +462,6 @@ def _evaluate_candidate_with_policy(
             epoch_sample=candidate.refined_epoch_sample,
             absolute_cfo_hz=candidate.absolute_cfo_hz,
             edge=edge,
-            fractional_epoch_offset_samples=float(fractional_offset or 0.0),
         )
         if primary_qam_observer is not None:
             primary_qam_observer(qam)
