@@ -13,6 +13,7 @@ from leo.storage.persistent_hop import (
     PersistentHopIqStore,
     PersistentHopQueueTelemetryV1,
     PersistentHopSessionWriter,
+    PersistentHopStoredCi16Reader,
     PublishedPersistentHopIqSession,
     QueuedPersistentHopSessionWriter,
 )
@@ -69,6 +70,7 @@ __all__ = [
     "PersistentHopIqStore",
     "PersistentHopQueueTelemetryV1",
     "PersistentHopSessionWriter",
+    "PersistentHopStoredCi16Reader",
     "PublishedBundle",
     "PublishedPersistentHopIqSession",
     "QueuedPersistentHopSessionWriter",

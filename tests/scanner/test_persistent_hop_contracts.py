@@ -64,6 +64,16 @@ def test_plan_rejects_rate_bandwidth_mismatch_and_profile_reordering() -> None:
         )
 
 
+def test_plan_supports_sample_exact_five_millisecond_guard_candidate() -> None:
+    plan = compile_persistent_hop_plan_v1(
+        sample_rate_hz=5_000_000,
+        transition_guard_us=5_000,
+    )
+
+    assert plan.transition_guard_samples == 25_000
+    assert plan.planned_valid_duty_ppm == 960_000
+
+
 @pytest.mark.parametrize("fixture_index", [0, 1])
 def test_fake_full_session_matches_shared_counter_and_duty_fixture(fixture_index: int) -> None:
     fixture = json.loads(FIXTURE_PATH.read_text())

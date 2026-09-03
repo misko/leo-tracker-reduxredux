@@ -59,6 +59,22 @@ def test_persistent_hop_store_streams_sweep_chunks_and_reopens(tmp_path) -> None
     assert not values.flags.writeable
     assert visits == tuple(block.evidence for block in blocks[:8])
 
+    reader = store.valid_ci16_reader(reopened)
+    assert reader.sample_count == 9 * 300_000
+    assert reader.receiver_ids == (0, 1)
+    crossing = reader.read_valid_ci16(8 * 300_000 - 2, 4)
+    assert crossing.shape == (4, 2, 2)
+    assert crossing.tolist() == [
+        [[8, 1], [8, 2]],
+        [[8, 1], [8, 2]],
+        [[1, 1], [1, 2]],
+        [[1, 1], [1, 2]],
+    ]
+    assert not crossing.flags.writeable
+
+    with pytest.raises(ValueError, match="exceeds"):
+        reader.read_valid_ci16(reader.sample_count - 1, 2)
+
 
 def test_persistent_hop_store_publishes_attested_zero_visit_cancellation(tmp_path) -> None:
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000, kernel_buffers=2)

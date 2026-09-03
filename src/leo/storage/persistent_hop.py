@@ -152,6 +152,61 @@ class PublishedPersistentHopIqSession:
     manifest_sha256: str
 
 
+class PersistentHopStoredCi16Reader:
+    """Read valid-only CI16 by the manifest's compact payload coordinate."""
+
+    def __init__(
+        self,
+        store: PersistentHopIqStore,
+        session: PublishedPersistentHopIqSession,
+    ) -> None:
+        self._store = store
+        self._session = session
+
+    @property
+    def sample_count(self) -> int:
+        return self._session.manifest.total_sample_count
+
+    @property
+    def receiver_ids(self) -> tuple[int, ...]:
+        return self._session.manifest.receiver_ids
+
+    def read_valid_ci16(
+        self,
+        sample_start: int,
+        sample_count: int,
+    ) -> npt.NDArray[np.int16]:
+        if sample_start < 0 or sample_count <= 0:
+            raise ValueError("persistent-hop valid CI16 range is invalid")
+        sample_end = sample_start + sample_count
+        if sample_end > self.sample_count:
+            raise ValueError("persistent-hop valid CI16 range exceeds the session")
+
+        pieces: list[npt.NDArray[np.int16]] = []
+        covered = sample_start
+        for chunk in self._session.manifest.chunks:
+            chunk_end = chunk.sample_start + chunk.sample_count
+            if chunk_end <= sample_start:
+                continue
+            if chunk.sample_start >= sample_end:
+                break
+            _visits, values = self._store.read_sweep_ci16(
+                self._session,
+                chunk.sweep_index,
+            )
+            local_start = max(sample_start, chunk.sample_start) - chunk.sample_start
+            local_end = min(sample_end, chunk_end) - chunk.sample_start
+            if chunk.sample_start + local_start != covered:
+                raise BundleCorruptionError("persistent-hop valid CI16 range has a gap")
+            pieces.append(values[local_start:local_end])
+            covered += local_end - local_start
+        if covered != sample_end:
+            raise BundleCorruptionError("persistent-hop valid CI16 range is incomplete")
+        output = np.ascontiguousarray(np.concatenate(pieces, axis=0), dtype="<i2")
+        output.setflags(write=False)
+        return output
+
+
 @dataclass(slots=True)
 class _OpenSweep:
     writer: _CompressedFileWriter
@@ -551,6 +606,13 @@ class PersistentHopIqStore:
         start = chunk.first_visit_index
         visits = inspected.manifest.receipt.visits[start : start + chunk.visit_count]
         return visits, values
+
+    def valid_ci16_reader(
+        self,
+        session: PublishedPersistentHopIqSession | str,
+    ) -> PersistentHopStoredCi16Reader:
+        inspected = self.inspect(session) if isinstance(session, str) else session
+        return PersistentHopStoredCi16Reader(self, inspected)
 
     @staticmethod
     def _read_regular(path: Path, maximum_bytes: int) -> bytes:
