@@ -1122,6 +1122,28 @@ def test_acquisition_environment_atomically_binds_selected_release(
         OPS._verify_acquisition_environment_revision("3" * 40)
 
 
+def test_legacy_acquisition_environment_without_scanner_binary_binding_is_restorable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy = "1" * 40
+    environment = tmp_path / "acquisition.env"
+    environment.write_text(f"LEO_ACQUISITION_RELEASE_ID={legacy}\nLEO_SCANNER_ENABLED=false\n")
+    monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", environment)
+
+    OPS._verify_acquisition_environment_revision(legacy)
+
+    binary = Path(f"/opt/leo-tracker/releases/{legacy}/runtime/scanner-iiod/iiod")
+    original_is_file = Path.is_file
+    monkeypatch.setattr(
+        OPS.Path,
+        "is_file",
+        lambda path: path == binary or original_is_file(path),
+    )
+    with pytest.raises(OPS.OpsError, match="persistent-hop iiOD binary"):
+        OPS._verify_acquisition_environment_revision(legacy)
+
+
 def test_worker_environment_is_created_and_atomically_binds_selected_release(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

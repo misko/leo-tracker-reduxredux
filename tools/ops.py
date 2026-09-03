@@ -1871,24 +1871,29 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
             )
             _start_runtime()
             _verify_runtime(target)
-        except Exception:
+        except Exception as cutover_error:
             if quiesced:
-                if migration_changed:
-                    # A previous release may not be compatible with the migrated
-                    # schema.  It is still mandatory to leave every target
-                    # process stopped instead of allowing a partial start to run.
-                    _quiesce_runtime()
-                else:
-                    _restore_full_release(
-                        selector_revisions=previous_selectors,
-                        selector_release=release,
-                        environment_path=environment_path,
-                        old_environment=old_environment,
-                        worker_environment_path=worker_environment_path,
-                        old_worker_environment=old_worker_environment,
-                        acquisition_environment_path=acquisition_environment_path,
-                        old_acquisition_environment=old_acquisition_environment,
-                    )
+                try:
+                    if migration_changed:
+                        # A previous release may not be compatible with the migrated
+                        # schema.  It is still mandatory to leave every target
+                        # process stopped instead of allowing a partial start to run.
+                        _quiesce_runtime()
+                    else:
+                        _restore_full_release(
+                            selector_revisions=previous_selectors,
+                            selector_release=release,
+                            environment_path=environment_path,
+                            old_environment=old_environment,
+                            worker_environment_path=worker_environment_path,
+                            old_worker_environment=old_worker_environment,
+                            acquisition_environment_path=acquisition_environment_path,
+                            old_acquisition_environment=old_acquisition_environment,
+                        )
+                except Exception as rollback_error:
+                    raise OpsError(
+                        f"cutover failed ({cutover_error}); rollback failed ({rollback_error})"
+                    ) from rollback_error
             raise
         receipt_path = _write_deployment_receipt(
             target=target,
@@ -2092,6 +2097,7 @@ def _write_acquisition_release_environment(
     lines = old_environment.decode().splitlines()
     release_key = "LEO_ACQUISITION_RELEASE_ID"
     binary_key = "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH"
+    scanner_key = "LEO_SCANNER_ENABLED"
     locations = {
         key: [
             index
@@ -2100,20 +2106,24 @@ def _write_acquisition_release_environment(
             and line.partition("=")[1]
             and line.partition("=")[0].strip() == key
         ]
-        for key in (release_key, binary_key)
+        for key in (release_key, binary_key, scanner_key)
     }
-    if len(locations[release_key]) != 1 or len(locations[binary_key]) > 1:
+    if len(locations[release_key]) != 1 or any(
+        len(locations[key]) > 1 for key in (binary_key, scanner_key)
+    ):
         raise OpsError(
             "acquisition environment must contain exactly one release binding and at most "
-            "one persistent-hop iiOD binary binding"
+            "one persistent-hop iiOD binary and scanner-enable binding"
         )
     binary_path = f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod"
     release_location = locations[release_key][0]
     lines[release_location] = f"{release_key}={target}"
-    if locations[binary_key]:
-        lines[locations[binary_key][0]] = f"{binary_key}={binary_path}"
-    else:
-        lines.insert(release_location + 1, f"{binary_key}={binary_path}")
+    updates = {binary_key: binary_path, scanner_key: "false"}
+    for key, value in updates.items():
+        if locations[key]:
+            lines[locations[key][0]] = f"{key}={value}"
+    additions = [f"{key}={value}" for key, value in updates.items() if not locations[key]]
+    lines[release_location + 1 : release_location + 1] = additions
     temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
     try:
         temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -2532,9 +2542,16 @@ def _verify_acquisition_environment_revision(expected: str) -> None:
             "acquisition environment release does not match the selected acquisition component"
         )
     expected_binary = f"/opt/leo-tracker/releases/{expected}/runtime/scanner-iiod/iiod"
-    if values.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH") != expected_binary:
+    configured_binary = values.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH")
+    release_has_binary = Path(expected_binary).is_file()
+    if configured_binary != expected_binary and (
+        configured_binary is not None or release_has_binary
+    ):
         raise OpsError("acquisition persistent-hop iiOD binary does not match the selected release")
-    if values.get("LEO_SCANNER_ENABLED") != "false":
+    scanner_enabled = values.get("LEO_SCANNER_ENABLED")
+    if (release_has_binary and scanner_enabled != "false") or (
+        not release_has_binary and scanner_enabled not in {None, "false"}
+    ):
         raise OpsError("release-A acquisition environment must keep the scanner disabled")
 
 
