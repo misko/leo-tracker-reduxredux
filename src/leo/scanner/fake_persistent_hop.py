@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 from contextlib import suppress
 
 import numpy as np
@@ -20,6 +19,7 @@ from leo.scanner.persistent_hop import (
     PersistentHopTerminalStatusV1,
     PersistentHopTransitionInvalidSpanV1,
     PersistentHopVisitV1,
+    persistent_hop_wire_session_id,
 )
 from leo.scanner.persistent_hop_ports import PersistentHopVisitBlock
 from leo.scanner.ports import ScanRadioIdentity
@@ -508,5 +508,4 @@ class FakePersistentHopSession:
         )
 
     def _wire_session_id(self) -> int:
-        digest = hashlib.sha256(self._session_id.encode("utf-8")).digest()
-        return int.from_bytes(digest[:8], "little") or 1
+        return persistent_hop_wire_session_id(self._session_id)

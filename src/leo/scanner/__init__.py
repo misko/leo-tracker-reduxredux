@@ -82,6 +82,7 @@ from leo.scanner.persistent_hop import (
     PersistentHopVisitV1,
     compile_persistent_hop_plan_v1,
     compile_scheduled_persistent_hop_plan_v1,
+    persistent_hop_wire_session_id,
 )
 from leo.scanner.persistent_hop_analysis import (
     PersistentHopAnalysisSource,
@@ -245,6 +246,7 @@ __all__ = [
     "compile_scheduled_persistent_hop_plan_v1",
     "current_low_band_targets",
     "group_persistent_hop_glrt64_cfo_by_channel",
+    "persistent_hop_wire_session_id",
     "scheduled_low_band_targets",
     "prepare_scanner_replay_dataset",
     "run_scan",
