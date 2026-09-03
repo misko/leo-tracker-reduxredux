@@ -334,6 +334,41 @@ def test_in_band_cancel_retains_terminal_status_and_exact_restoration(
     radio.close()
 
 
+def test_cancelled_receipt_accounts_for_one_unretained_partial_visit() -> None:
+    radio = FakePersistentHopRadio()
+    radio.open()
+    plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+    session = radio.begin_session(plan, session_id="cancel-partial")
+    for _ in range(3):
+        session.read_visit()
+    session.request_cancel()
+    receipt = session.finish()
+    document = receipt.model_dump(mode="python")
+    trailing_invalid = 100
+    trailing_valid = 200
+    trailing_total = trailing_invalid + trailing_valid
+    document["terminal_incomplete_visit_count"] = 1
+    document["terminal_unretained_invalid_sample_count"] = trailing_invalid
+    document["terminal_unretained_valid_sample_count"] = trailing_valid
+    document["transition_invalid_sample_count"] += trailing_invalid
+    document["session_end_device_sample_counter_exclusive"] += trailing_total
+    document["duty_denominator_sample_count"] += trailing_total
+    document["valid_duty_ppm"] = (
+        document["valid_sample_count"] * 1_000_000
+        // document["duty_denominator_sample_count"]
+    )
+    document["terminal_status"]["visits_started"] += 1
+    document["terminal_status"]["events_emitted"] += 1
+    document["terminal_status"]["next_event_sequence"] += 1
+    document["terminal_status"]["final_counter"] += trailing_total
+
+    partial = PersistentHopSessionReceiptV1.model_validate(document)
+
+    assert partial.terminal_incomplete_visit_count == 1
+    assert partial.valid_sample_count == receipt.valid_sample_count
+    assert partial.valid_duty_ppm < receipt.valid_duty_ppm
+
+
 def test_previsit_failure_receipt_can_retain_terminal_restoration_without_fake_iq() -> None:
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
     settings = default_fake_persistent_hop_settings()
