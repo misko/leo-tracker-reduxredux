@@ -210,8 +210,7 @@ class _PlutoPersistentHopSession:
             raise
         except Exception as error:
             raise PlutoPersistentHopError(
-                f"persistent-hop terminal evidence mapping failed: "
-                f"{type(error).__name__}: {error}"
+                f"persistent-hop terminal evidence mapping failed: {type(error).__name__}: {error}"
             ) from error
 
 
@@ -288,9 +287,7 @@ def _map_receipt(
         active_profile_index=_optional_profile(status.active_profile_index),
         restored_profile_index=_optional_profile(status.restored_profile_index),
         startup_invalid_start_counter=int(status.startup_invalid_start_counter),
-        startup_invalid_end_counter_exclusive=int(
-            status.startup_invalid_end_counter_exclusive
-        ),
+        startup_invalid_end_counter_exclusive=int(status.startup_invalid_end_counter_exclusive),
         device_dropped_events=int(status.device_dropped_events),
     )
     coverage = tuple(
@@ -370,9 +367,7 @@ def _map_visit(upstream: Any, plan: PersistentHopPlanV1) -> PersistentHopVisitV1
             transition_before_counter=int(invalid.transition_before_counter),
             transition_after_counter=int(invalid.transition_after_counter),
             device_sample_counter=int(invalid.device_sample_counter),
-            device_sample_counter_end_exclusive=int(
-                invalid.device_sample_counter_end_exclusive
-            ),
+            device_sample_counter_end_exclusive=int(invalid.device_sample_counter_end_exclusive),
         ),
         valid_device_sample_counter=int(upstream.valid_device_sample_counter),
         valid_device_sample_counter_end_exclusive=int(

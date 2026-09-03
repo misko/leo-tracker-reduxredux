@@ -376,9 +376,7 @@ class CliSettings:
                 raise ValueError("LEO_RADIO_BACKEND must be fake or pluto")
             scanner_capture_mode = values.get("LEO_SCANNER_CAPTURE_MODE", "sequential")
             if scanner_capture_mode not in {"sequential", "persistent_hop"}:
-                raise ValueError(
-                    "LEO_SCANNER_CAPTURE_MODE must be sequential or persistent_hop"
-                )
+                raise ValueError("LEO_SCANNER_CAPTURE_MODE must be sequential or persistent_hop")
             reserve = int(values.get("LEO_ACQUISITION_RESERVE_BYTES", str(1024**3)))
             raw_fixture_authorities = json.loads(
                 values.get("LEO_FIXTURE_PATH_AUTHORITIES_JSON", "[]")
@@ -1438,9 +1436,7 @@ class LocalAcquisitionBackend:
                     session_id=session_id,
                     store=store,
                     cancel=cancel,
-                    queue_capacity_visits=(
-                        self.settings.scanner_persistent_queue_capacity_visits
-                    ),
+                    queue_capacity_visits=(self.settings.scanner_persistent_queue_capacity_visits),
                 )
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
@@ -2431,9 +2427,7 @@ class LocalAcquisitionBackend:
     def _admit_persistent_hop_iq(self, plan: PersistentHopPlanV1) -> None:
         # Admit against the uncompressed upper bound. RF is never opened on a
         # speculative compression ratio.
-        raw_iq_bytes = (
-            plan.nominal_device_sample_count * len(plan.receiver_ids) * 4
-        )
+        raw_iq_bytes = plan.nominal_device_sample_count * len(plan.receiver_ids) * 4
         required_free_bytes = raw_iq_bytes + self.settings.safety_reserve_bytes
         available_free_bytes = max(0, int(shutil.disk_usage(self.settings.bulk_root).free))
         policy = self._capture_storage_admission(self.settings.bulk_root)

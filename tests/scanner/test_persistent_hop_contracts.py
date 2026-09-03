@@ -354,8 +354,7 @@ def test_cancelled_receipt_accounts_for_one_unretained_partial_visit() -> None:
     document["session_end_device_sample_counter_exclusive"] += trailing_total
     document["duty_denominator_sample_count"] += trailing_total
     document["valid_duty_ppm"] = (
-        document["valid_sample_count"] * 1_000_000
-        // document["duty_denominator_sample_count"]
+        document["valid_sample_count"] * 1_000_000 // document["duty_denominator_sample_count"]
     )
     document["terminal_status"]["visits_started"] += 1
     document["terminal_status"]["events_emitted"] += 1

@@ -680,10 +680,8 @@ class PersistentHopSessionReceiptV1(ScannerModel):
         if (
             status.first_counter != self.session_start_device_sample_counter
             or status.final_counter != self.session_end_device_sample_counter_exclusive
-            or status.visits_started
-            != len(self.visits) + self.terminal_incomplete_visit_count
-            or status.events_emitted
-            != len(self.visits) + self.terminal_incomplete_visit_count
+            or status.visits_started != len(self.visits) + self.terminal_incomplete_visit_count
+            or status.events_emitted != len(self.visits) + self.terminal_incomplete_visit_count
             or status.next_event_sequence
             != (
                 len(self.visits)
@@ -705,8 +703,7 @@ class PersistentHopSessionReceiptV1(ScannerModel):
                 )
         elif (
             not self.terminal_incomplete_visit_count
-            and status.startup_invalid_start_counter
-            != status.startup_invalid_end_counter_exclusive
+            and status.startup_invalid_start_counter != status.startup_invalid_end_counter_exclusive
         ):
             raise ValueError("empty persistent-hop session claims a startup invalid interval")
         if status.device_dropped_events != self.hop_event_sequence_gap_count:
