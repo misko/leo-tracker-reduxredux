@@ -675,12 +675,10 @@ class PersistentHopSessionReceiptV1(ScannerModel):
             raise ValueError("empty persistent-hop session claims a startup invalid interval")
         if status.device_dropped_events != self.hop_event_sequence_gap_count:
             raise ValueError("persistent-hop terminal dropped-event count disagrees with faults")
-        if (
-            self.restoration.status == "restored"
-            and status.restored_lo_frequency_hz
-            != self.restoration.original_settings.center_frequency_hz
-        ):
-            raise ValueError("persistent-hop terminal restored LO disagrees with original settings")
+        # HOPT attests restoration to the receiver state observed by iiOD at
+        # buffer OPEN.  The host lifecycle receipt separately attests exact
+        # restoration of the settings that preceded bufferless Fast Lock
+        # preparation.  Those LO values are intentionally allowed to differ.
         if self.duty_target_met != (expected_duty_ppm >= plan.minimum_valid_duty_ppm):
             raise ValueError("persistent-hop duty-target status disagrees with exact accounting")
         return self
