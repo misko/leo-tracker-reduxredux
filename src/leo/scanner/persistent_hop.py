@@ -11,6 +11,7 @@ from pydantic import Field, model_validator
 from leo.contracts.radio import RadioSettingsV1
 from leo.contracts.states import GainMode
 from leo.scanner.models import ScannerModel, ScanTarget, scheduled_low_band_targets
+from leo.scanner.schedule import ScheduledScannerRunIntentV1
 
 PERSISTENT_HOP_NOMINAL_DURATION_SECONDS = 300
 PERSISTENT_HOP_VALID_VISIT_MS = 120
@@ -138,6 +139,37 @@ def compile_persistent_hop_plan_v1(
             for index, target in enumerate(targets)
         ),
     )
+
+
+def compile_scheduled_persistent_hop_plan_v1(
+    intent: ScheduledScannerRunIntentV1,
+    *,
+    transition_guard_us: int = 11_000,
+    kernel_buffers: int | None = None,
+) -> PersistentHopPlanV1:
+    """Project one existing 20-minute scanner slot onto truthful persistent geometry."""
+
+    configuration = intent.configuration
+    if intent.interval_seconds != 1_200:
+        raise ValueError("persistent hopping requires the 20-minute scanner cadence")
+    if intent.run_duration_seconds != PERSISTENT_HOP_NOMINAL_DURATION_SECONDS:
+        raise ValueError("persistent hopping requires an exact 300-second capture")
+    if configuration.dwell_ms != PERSISTENT_HOP_VALID_VISIT_MS:
+        raise ValueError("persistent hopping requires exact 120 ms valid visits")
+    if configuration.gain_mode is not GainMode.MANUAL:
+        raise ValueError("persistent hopping requires an explicit manual gain")
+    if configuration.sample_rate_hz not in PERSISTENT_HOP_RATE_HZ:
+        raise ValueError("persistent hopping requires a native 2.5 or 5 MS/s slot")
+    selected_buffers = configuration.kernel_buffers if kernel_buffers is None else kernel_buffers
+    plan = compile_persistent_hop_plan_v1(
+        sample_rate_hz=configuration.sample_rate_hz,  # type: ignore[arg-type]
+        kernel_buffers=selected_buffers,
+        transition_guard_us=transition_guard_us,
+        gain_db=configuration.gain_db,
+    )
+    if tuple(profile.target for profile in plan.profiles) != configuration.targets:
+        raise ValueError("persistent hopping targets disagree with the scheduled scanner slot")
+    return plan
 
 
 class PersistentHopTransitionInvalidSpanV1(ScannerModel):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -15,6 +16,8 @@ from leo.scanner import (
     PersistentHopTerminalStatusV1,
     PersistentHopVisitV1,
     compile_persistent_hop_plan_v1,
+    compile_scheduled_persistent_hop_plan_v1,
+    compile_scheduled_scanner_run_intent_v1,
 )
 from leo.scanner.fake_persistent_hop import (
     FakePersistentHopError,
@@ -74,6 +77,36 @@ def test_plan_supports_sample_exact_five_millisecond_guard_candidate() -> None:
 
     assert plan.transition_guard_samples == 25_000
     assert plan.planned_valid_duty_ppm == 960_000
+
+
+def test_scheduled_plan_preserves_twenty_minute_fifty_fifty_rate_slots() -> None:
+    first_time = datetime(2026, 9, 3, 0, 0, tzinfo=UTC)
+    rates = []
+    for index in range(4):
+        scheduled_for = first_time + timedelta(minutes=20 * index)
+        intent = compile_scheduled_scanner_run_intent_v1(
+            operation_key=f"scanner:{index}",
+            radio_id="radio-a",
+            radio_serial="serial-a",
+            scheduled_for=scheduled_for,
+            interval_seconds=1_200,
+            maximum_lateness_seconds=300,
+            run_duration_seconds=300,
+            dwell_ms=120,
+            gain_db=40.0,
+            margin_gate=0.025,
+            maximum_acquisition_candidates=8,
+        )
+        plan = compile_scheduled_persistent_hop_plan_v1(intent)
+        rates.append(plan.sample_rate_hz)
+        assert plan.bandwidth_hz == plan.sample_rate_hz
+        assert plan.gain_db == 40.0
+        assert tuple(profile.target for profile in plan.profiles) == intent.configuration.targets
+
+    assert rates in (
+        [2_500_000, 5_000_000, 2_500_000, 5_000_000],
+        [5_000_000, 2_500_000, 5_000_000, 2_500_000],
+    )
 
 
 @pytest.mark.parametrize("fixture_index", [0, 1])
