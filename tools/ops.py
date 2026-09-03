@@ -2559,10 +2559,7 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
 
 def _release_ships_persistent_hop_analysis(revision: str) -> bool:
     return (
-        RELEASE_ROOT
-        / "releases"
-        / revision
-        / "deploy/systemd/leo-persistent-hop-analysis.timer"
+        RELEASE_ROOT / "releases" / revision / "deploy/systemd/leo-persistent-hop-analysis.timer"
     ).is_file()
 
 
