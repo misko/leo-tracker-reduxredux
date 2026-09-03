@@ -82,6 +82,10 @@ from leo.scanner.persistent_hop import (
     PersistentHopVisitV1,
     compile_persistent_hop_plan_v1,
 )
+from leo.scanner.persistent_hop_application import (
+    PersistentHopCaptureError,
+    capture_persistent_hop_session,
+)
 from leo.scanner.persistent_hop_ports import (
     PersistentHopRadio,
     PersistentHopSession,
@@ -127,6 +131,7 @@ __all__ = [
     "PERSISTENT_HOP_RATE_HZ",
     "PERSISTENT_HOP_VALID_VISIT_MS",
     "PersistentHopContinuityFaultV1",
+    "PersistentHopCaptureError",
     "PersistentHopPlanV1",
     "PersistentHopProfileV1",
     "PersistentHopRadio",
@@ -214,6 +219,7 @@ __all__ = [
     "analyze_standard_scanner",
     "capture_scan_sweep",
     "capture_configured_scan_sweep",
+    "capture_persistent_hop_session",
     "compile_scheduled_scanner_run_intent_v1",
     "compile_persistent_hop_plan_v1",
     "current_low_band_targets",

@@ -7,6 +7,15 @@ from leo.storage.errors import (
     PathConfinementError,
     RecordingStoreError,
 )
+from leo.storage.persistent_hop import (
+    PersistentHopIqChunkV1,
+    PersistentHopIqSessionManifestV1,
+    PersistentHopIqStore,
+    PersistentHopQueueTelemetryV1,
+    PersistentHopSessionWriter,
+    PublishedPersistentHopIqSession,
+    QueuedPersistentHopSessionWriter,
+)
 from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
 from leo.storage.scanner_analysis import (
@@ -55,7 +64,14 @@ __all__ = [
     "DeviceIqSpan",
     "FallbackScannerCaptureTimeReader",
     "PathConfinementError",
+    "PersistentHopIqChunkV1",
+    "PersistentHopIqSessionManifestV1",
+    "PersistentHopIqStore",
+    "PersistentHopQueueTelemetryV1",
+    "PersistentHopSessionWriter",
     "PublishedBundle",
+    "PublishedPersistentHopIqSession",
+    "QueuedPersistentHopSessionWriter",
     "PublishedScannerAnalysisBundle",
     "PublishedScannerIqBundle",
     "PublishedScannerReplayDataset",

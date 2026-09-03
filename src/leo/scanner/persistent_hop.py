@@ -155,7 +155,7 @@ class PersistentHopVisitV1(ScannerModel):
     target_index: Annotated[int, Field(ge=0, le=7)]
     fastlock_profile_index: Annotated[int, Field(ge=0, le=7)]
     event_sequence: Annotated[int, Field(ge=0)]
-    device_event_id: Annotated[int, Field(ge=0)]
+    device_event_id: Annotated[int, Field(gt=0)]
     device_event_flags: Literal[3] = 3
     fastlock_slot: Annotated[int, Field(ge=0, le=7)]
     target: ScanTarget
@@ -176,8 +176,6 @@ class PersistentHopVisitV1(ScannerModel):
             raise ValueError("persistent-hop transition profile disagrees with visit")
         if self.fastlock_slot != self.fastlock_profile_index:
             raise ValueError("persistent-hop Fast Lock slot disagrees with visit profile")
-        if self.device_event_id != self.event_sequence:
-            raise ValueError("persistent-hop device event ID disagrees with event sequence")
         if transition.device_sample_counter_end_exclusive != self.valid_device_sample_counter:
             raise ValueError("persistent-hop transition must end at the first valid sample")
         if (
@@ -292,7 +290,7 @@ class PersistentHopTerminalStatusV1(ScannerModel):
     schema_version: Literal[1] = 1
     state: Literal["completed", "cancelled", "failed"]
     reason: PersistentHopTerminalReason
-    error_code: Annotated[int, Field(ge=0)]
+    error_code: Annotated[int, Field(ge=-(1 << 31), lt=1 << 31)]
     flags: Annotated[int, Field(ge=0, le=63)]
     session_id: Annotated[int, Field(gt=0)]
     planned_dwells: Literal[2_500] = 2_500
@@ -306,7 +304,7 @@ class PersistentHopTerminalStatusV1(ScannerModel):
     restore_before_counter: Annotated[int, Field(ge=0)]
     restore_after_counter: Annotated[int, Field(ge=0)]
     restored_lo_frequency_hz: Annotated[int, Field(gt=0)]
-    restore_error_code: Annotated[int, Field(ge=0)]
+    restore_error_code: Annotated[int, Field(ge=-(1 << 31), lt=1 << 31)]
     active_profile_index: Annotated[int | None, Field(ge=0, le=7)] = None
     restored_profile_index: Annotated[int | None, Field(ge=0, le=7)] = None
     startup_invalid_start_counter: Annotated[int, Field(ge=0)]
@@ -329,6 +327,12 @@ class PersistentHopTerminalStatusV1(ScannerModel):
             raise ValueError("completed persistent-hop status lacks the complete reason")
         if self.reason == "complete" and self.state != "completed":
             raise ValueError("persistent-hop complete reason requires completed state")
+        if self.state in {"completed", "cancelled"} and self.error_code:
+            raise ValueError("successful or cancelled persistent-hop status has an error")
+        if self.state == "failed" and self.error_code >= 0:
+            raise ValueError("failed persistent-hop status requires a negative errno")
+        if self.restore_error_code > 0:
+            raise ValueError("persistent-hop restore errno cannot be positive")
         return self
 
 
@@ -435,6 +439,7 @@ class PersistentHopSessionReceiptV1(ScannerModel):
 
         expected_counter = self.session_start_device_sample_counter
         expected_event_id = 0
+        previous_device_event_id: int | None = None
         valid_samples = 0
         transition_samples = 0
         visit_counts = [0] * len(plan.profiles)
@@ -453,6 +458,12 @@ class PersistentHopSessionReceiptV1(ScannerModel):
                     "persistent-hop visits must follow the exact repeated profile plan"
                 )
             transition = visit.transition_invalid_before
+            if (
+                previous_device_event_id is not None
+                and visit.device_event_id <= previous_device_event_id
+            ):
+                raise ValueError("persistent-hop device event IDs must strictly increase")
+            previous_device_event_id = visit.device_event_id
             expected_from = None if index == 0 else self.visits[index - 1].fastlock_profile_index
             if transition.from_profile_index != expected_from:
                 raise ValueError("persistent-hop transition source profile is not the prior visit")

@@ -279,7 +279,7 @@ def test_previsit_failure_receipt_can_retain_terminal_restoration_without_fake_i
     terminal = PersistentHopTerminalStatusV1(
         state="failed",
         reason="device",
-        error_code=5,
+        error_code=-5,
         flags=1 | 8 | 16 | 32,
         session_id=1,
         visits_started=0,
