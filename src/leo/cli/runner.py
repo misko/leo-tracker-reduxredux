@@ -40,6 +40,7 @@ from leo.acquisition.mixed_rate_schedule import (
 from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
+    ScheduledPersistentHopRun,
     ScheduledScannerPort,
     ScheduledScannerRunAnalysis,
 )
@@ -613,48 +614,71 @@ class ContinuousAcquisitionRunner:
                                 scanner_intent,
                                 cancel=cancel,
                             )
-                            run_manifest = captured.published.manifest
-                            if run_manifest.status == "failed":
-                                queue.fail_acquisition_operation(
-                                    operation_id=lease.operation_id,
-                                    worker_id=worker_id,
-                                    error=run_manifest.stop_reason,
-                                    retryable=False,
-                                )
-                            else:
+                            if isinstance(captured, ScheduledPersistentHopRun):
+                                receipt = captured.published.manifest.receipt
                                 queue.complete_acquisition_operation(
                                     operation_id=lease.operation_id,
                                     worker_id=worker_id,
                                     outcome=(
-                                        f"scan run {captured.published.run_id} published; "
-                                        f"sweeps={len(captured.sweeps)}; "
-                                        f"status={run_manifest.status}"
+                                        f"persistent scan {captured.published.session_id} "
+                                        f"published; visits={len(receipt.visits)}; "
+                                        f"status={receipt.capture_outcome}; "
+                                        f"duty_ppm={receipt.valid_duty_ppm}"
                                     ),
                                 )
-                            if scanner_only:
                                 logger.info(
                                     "scheduled_scanner_analysis_deferred "
-                                    "reason=bounded_scanner_only run_id=%s",
-                                    captured.published.run_id,
+                                    "reason=persistent_hop_pipeline "
+                                    "run_id=%s",
+                                    captured.published.session_id,
                                 )
-                            elif scanner_analysis is None:
-                                scanner_analysis = scanner_analysis_pool.submit(
-                                    scanner.analyze_scheduled_scanner,
-                                    captured,
-                                )
+                                run_status = receipt.capture_outcome
+                                stop_reason = f"persistent-hop capture {run_status}"
                             else:
-                                logger.info(
-                                    "scheduled_scanner_analysis_deferred "
-                                    "reason=analysis_busy run_id=%s",
-                                    captured.published.run_id,
-                                )
-                            if scanner_only and run_manifest.status != "complete":
+                                run_manifest = captured.published.manifest
+                                run_status = run_manifest.status
+                                stop_reason = run_manifest.stop_reason
+                                if run_status == "failed":
+                                    queue.fail_acquisition_operation(
+                                        operation_id=lease.operation_id,
+                                        worker_id=worker_id,
+                                        error=stop_reason,
+                                        retryable=False,
+                                    )
+                                else:
+                                    queue.complete_acquisition_operation(
+                                        operation_id=lease.operation_id,
+                                        worker_id=worker_id,
+                                        outcome=(
+                                            f"scan run {captured.published.run_id} published; "
+                                            f"sweeps={len(captured.sweeps)}; "
+                                            f"status={run_status}"
+                                        ),
+                                    )
+                                if scanner_only:
+                                    logger.info(
+                                        "scheduled_scanner_analysis_deferred "
+                                        "reason=bounded_scanner_only run_id=%s",
+                                        captured.published.run_id,
+                                    )
+                                elif scanner_analysis is None:
+                                    scanner_analysis = scanner_analysis_pool.submit(
+                                        scanner.analyze_scheduled_scanner,
+                                        captured,
+                                    )
+                                else:
+                                    logger.info(
+                                        "scheduled_scanner_analysis_deferred "
+                                        "reason=analysis_busy run_id=%s",
+                                        captured.published.run_id,
+                                    )
+                            if scanner_only and run_status != "complete":
                                 if cancel.is_set():
                                     return _scanner_run_result("cancelled", scanner_run_count)
                                 return _scanner_run_result(
                                     "error",
                                     scanner_run_count,
-                                    error=run_manifest.stop_reason,
+                                    error=stop_reason,
                                 )
                     else:
                         queue.fail_acquisition_operation(
@@ -967,7 +991,13 @@ class ContinuousAcquisitionRunner:
                                 0.0,
                                 (next_scanner_slot - self._utc_now()).total_seconds(),
                             )
-                            if analysis is None:
+                            if isinstance(captured, ScheduledPersistentHopRun):
+                                logger.info(
+                                    "scheduled_scanner_analysis_deferred "
+                                    "reason=persistent_hop_pipeline run_id=%s",
+                                    captured.published.session_id,
+                                )
+                            elif analysis is None:
                                 analysis = analysis_pool.submit(
                                     scanner.analyze_scheduled_scanner,
                                     captured,
