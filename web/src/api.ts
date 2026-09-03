@@ -331,6 +331,62 @@ export interface PersistentHopSessionDetailV1 {
   };
 }
 
+export interface PersistentHopAnalysisStatusV2 {
+  schema_version: 2;
+  session_id: string;
+  analysis_id: "persistent-hop-fractional-glrt64-cfo-v2";
+  state: "pending" | "running" | "complete" | "failed";
+  total_visits: number;
+  analyzed_visits: number;
+  updated_at: string;
+  failure_summary: string | null;
+}
+
+export interface PersistentHopHistoryPageV3 {
+  schema_version: 3;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{
+    schema_version: 3;
+    capture: PersistentHopCaptureV1;
+    analysis: PersistentHopAnalysisStatusV2;
+    available_artifacts: PersistentHopArtifact[];
+  }>;
+}
+
+export interface PersistentHopSessionDetailV2 {
+  schema_version: 2;
+  capture: PersistentHopCaptureV1;
+  analysis: PersistentHopAnalysisStatusV2;
+  product: null | {
+    schema_version: 2;
+    analysis_id: "persistent-hop-fractional-glrt64-cfo-v2";
+    session_id: string;
+    completed_at: string;
+    sample_rate_hz: 2500000 | 5000000;
+    bandwidth_hz: 2500000 | 5000000;
+    configuration: {
+      probe_ms: number;
+      probe_stride_ms: number;
+      glrt64_margin_gate: number;
+      maximum_acquisition_candidates: number;
+      timing_refinement: "circular-five-cell-log-parabola-plus-lanczos16-v1";
+      decision_score: "fractional-epoch-conditioned-glrt64-v1";
+      require_fractional_epoch_for_decision: true;
+    };
+    visit_count: number;
+    sweep_count: number;
+    probe_count: number;
+    fractionally_scored_candidate_count: number;
+    passed_fractional_candidate_count: number;
+    fractionally_scored_best_count: number;
+    passed_fractional_best_count: number;
+    artifacts: Array<{ name: PersistentHopArtifact; byte_count: number; sha256: string }>;
+  };
+}
+
 export function getScannerReports(
   cursor = 0,
   limit = 20,
@@ -353,17 +409,17 @@ export function getPersistentHopSessions(
   cursor = 0,
   limit = 20,
   signal?: AbortSignal,
-): Promise<PersistentHopHistoryPageV2> {
+): Promise<PersistentHopHistoryPageV3> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
-  return getJson<PersistentHopHistoryPageV2>(`/api/v2/scanner/persistent-sessions?${params}`, signal);
+  return getJson<PersistentHopHistoryPageV3>(`/api/v3/scanner/persistent-sessions?${params}`, signal);
 }
 
 export function getPersistentHopSession(
   sessionId: string,
   signal?: AbortSignal,
-): Promise<PersistentHopSessionDetailV1> {
-  return getJson<PersistentHopSessionDetailV1>(
-    `/api/v2/scanner/persistent-sessions/${encodeURIComponent(sessionId)}`,
+): Promise<PersistentHopSessionDetailV2> {
+  return getJson<PersistentHopSessionDetailV2>(
+    `/api/v3/scanner/persistent-sessions/${encodeURIComponent(sessionId)}`,
     signal,
   );
 }
@@ -372,7 +428,7 @@ export function persistentHopAnalysisPngUrl(
   sessionId: string,
   artifact: PersistentHopArtifact,
 ): string {
-  return `/api/v2/scanner/persistent-sessions/${encodeURIComponent(sessionId)}/${artifact}.png`;
+  return `/api/v3/scanner/persistent-sessions/${encodeURIComponent(sessionId)}/${artifact}.png`;
 }
 
 export function scannerAnalysisPngUrl(
