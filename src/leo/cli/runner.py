@@ -616,16 +616,25 @@ class ContinuousAcquisitionRunner:
                             )
                             if isinstance(captured, ScheduledPersistentHopRun):
                                 receipt = captured.published.manifest.receipt
-                                queue.complete_acquisition_operation(
-                                    operation_id=lease.operation_id,
-                                    worker_id=worker_id,
-                                    outcome=(
-                                        f"persistent scan {captured.published.session_id} "
-                                        f"published; visits={len(receipt.visits)}; "
-                                        f"status={receipt.capture_outcome}; "
-                                        f"duty_ppm={receipt.valid_duty_ppm}"
-                                    ),
+                                persistent_outcome = (
+                                    f"persistent scan {captured.published.session_id} "
+                                    f"published; visits={len(receipt.visits)}; "
+                                    f"status={receipt.capture_outcome}; "
+                                    f"duty_ppm={receipt.valid_duty_ppm}"
                                 )
+                                if receipt.capture_outcome == "complete":
+                                    queue.complete_acquisition_operation(
+                                        operation_id=lease.operation_id,
+                                        worker_id=worker_id,
+                                        outcome=persistent_outcome,
+                                    )
+                                else:
+                                    queue.fail_acquisition_operation(
+                                        operation_id=lease.operation_id,
+                                        worker_id=worker_id,
+                                        error=persistent_outcome,
+                                        retryable=False,
+                                    )
                                 logger.info(
                                     "scheduled_scanner_analysis_deferred "
                                     "reason=persistent_hop_pipeline "
