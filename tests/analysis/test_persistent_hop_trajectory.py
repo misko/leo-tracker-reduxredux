@@ -105,9 +105,7 @@ def test_reconstructs_and_cross_links_normalized_alias_trajectories() -> None:
         for track, expected in zip(result.tracklets, (-2_000.0, -1_950.0), strict=True)
     )
     assert any(
-        point.relative_alias_index == 1
-        for track in result.tracklets
-        for point in track.points
+        point.relative_alias_index == 1 for track in result.tracklets for point in track.points
     )
     first_tracklet_graph = persistent_hop_tracklet_graph(
         result.hypotheses[0], result.tracklets[0].tracklet_id
@@ -115,6 +113,30 @@ def test_reconstructs_and_cross_links_normalized_alias_trajectories() -> None:
     assert len(first_tracklet_graph.episodes) == 1
     assert len(first_tracklet_graph.observations) == 31
     assert first_tracklet_graph.episodes[0].replica_group_id is None
+
+
+def test_reconstructs_one_cross_channel_trajectory_across_a_full_300_seconds() -> None:
+    candidates = tuple(
+        _candidate(
+            lane=lane,
+            point=point,
+            normalized_rate_hz_per_s=(-2_000.0, -1_950.0)[lane],
+            normalized_intercept_hz=(50_000.0, -80_000.0)[lane],
+            alias_index=0,
+        )
+        for lane in range(2)
+        for point in range(0, 301, 4)
+    )
+
+    result = reconstruct_persistent_hop_trajectories(
+        candidates,
+        config=PersistentHopTrajectoryConfig(maximum_gap_s=5.0),
+    )
+
+    assert len(result.tracklets) == 2
+    assert len(result.physical_groups) == 1
+    assert all((item.end_utc_ns - item.start_utc_ns) / 1e9 >= 299.0 for item in result.tracklets)
+    assert result.used_candidate_count == len(candidates)
 
 
 def test_keeps_incompatible_normalized_rates_as_separate_physical_groups() -> None:
@@ -176,9 +198,7 @@ def test_preserves_competing_per_probe_paths_as_source_disjoint_hypotheses() -> 
     alternative = tuple(
         replace(
             item,
-            candidate_id=canonical_digest(
-                {"alternative": item.source_group_id}
-            ),
+            candidate_id=canonical_digest({"alternative": item.source_group_id}),
             candidate_rank=1,
             measured_cfo_hz=item.measured_cfo_hz + 70_000.0,
             exact_score=0.12,

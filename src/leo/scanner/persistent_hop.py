@@ -147,9 +147,7 @@ class PersistentHopUtcTimingAuthorityV1(ScannerModel):
             raise ValueError("persistent-hop UTC authority does not match its raw clock bracket")
         if not earliest <= self.first_sample_estimate_utc_ns <= latest:
             raise ValueError("persistent-hop UTC estimate escapes its bracket")
-        if self.qualified != (
-            max(spread, bracket_width) <= self.qualification_limit_ns
-        ):
+        if self.qualified != (max(spread, bracket_width) <= self.qualification_limit_ns):
             raise ValueError("persistent-hop UTC qualification disagrees with clock evidence")
         return self
 

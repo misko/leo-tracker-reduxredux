@@ -34,9 +34,7 @@ def _snapshot_payload() -> str:
         catalog_number = 44714 + index
         first = _valid_element_line(f"1 {catalog_number:05d}{_BASE_LINE_ONE[7:]}")
         second = f"2 {catalog_number:05d}{_BASE_LINE_TWO[7:]}"
-        second = _valid_element_line(
-            second[:43] + f"{mean_anomaly_deg:8.4f}" + second[51:]
-        )
+        second = _valid_element_line(second[:43] + f"{mean_anomaly_deg:8.4f}" + second[51:])
         records.extend((f"STARLINK-{catalog_number}", first, second))
     return "\n".join(records) + "\n"
 
@@ -135,12 +133,10 @@ def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining()
     )
     expected = bank.candidates[0]
     predicted = {
-        item.observation_id: item.predicted_cfo_hz
-        for item in expected.tau_states[0].predictions
+        item.observation_id: item.predicted_cfo_hz for item in expected.tau_states[0].predictions
     }
     measured = tuple(
-        _with_cfo(item, predicted[item.observation_id] + 25_000.0)
-        for item in graph.observations
+        _with_cfo(item, predicted[item.observation_id] + 25_000.0) for item in graph.observations
     )
     measured_graph = PhysicalEpisodeGraphV1.create(
         observations=measured,
@@ -212,8 +208,7 @@ def test_time_balanced_scoring_keeps_the_endpoints_and_work_bound() -> None:
     }
     measured_graph = PhysicalEpisodeGraphV1.create(
         observations=tuple(
-            _with_cfo(item, predictions[item.observation_id])
-            for item in graph.observations
+            _with_cfo(item, predictions[item.observation_id]) for item in graph.observations
         ),
         episodes=graph.episodes,
     )

@@ -5,6 +5,7 @@ import {
   getCaptureControl,
   getControlStatus,
   getPersistentHopSession,
+  getPersistentHopTracking,
   getPersistentHopSessions,
   getScannerAnalyses,
   getScannerReports,
@@ -17,6 +18,7 @@ import {
   searchRecordings,
   scannerAnalysisPngUrl,
   persistentHopAnalysisPngUrl,
+  persistentHopTrackingPngUrl,
   startCapture,
   stopCapture,
 } from "./api";
@@ -25,6 +27,7 @@ import type {
   PersistentHopArtifact,
   PersistentHopHistoryPageV3,
   PersistentHopSessionDetailV2,
+  PersistentHopTrackingDetailV1,
   ScannerAnalysisHistoryPageV3,
   ScannerHistoryPageV3,
 } from "./api";
@@ -441,6 +444,7 @@ function ScannerView() {
   const [persistentCursor, setPersistentCursor] = useState(0);
   const [selectedPersistentId, setSelectedPersistentId] = useState<string | null>(null);
   const [persistentDetail, setPersistentDetail] = useState<PersistentHopSessionDetailV2 | null>(null);
+  const [persistentTracking, setPersistentTracking] = useState<PersistentHopTrackingDetailV1 | null>(null);
   const [persistentArtifact, setPersistentArtifact] = useState<PersistentHopArtifact>("coverage");
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
@@ -478,16 +482,34 @@ function ScannerView() {
   useEffect(() => {
     if (selectedPersistentId === null) {
       setPersistentDetail(null);
+      setPersistentTracking(null);
       return;
     }
     setPersistentDetail(null);
+    setPersistentTracking(null);
     const controller = new AbortController();
-    getPersistentHopSession(selectedPersistentId, controller.signal).then((detail) => {
-      setPersistentDetail(detail);
-    }).catch((reason: Error) => {
-      if (reason.name !== "AbortError") setError(reason.message);
-    });
-    return () => controller.abort();
+    const refresh = () => Promise.allSettled([
+        getPersistentHopSession(selectedPersistentId, controller.signal).then((detail) => {
+          setPersistentDetail(detail);
+        }),
+        getPersistentHopTracking(selectedPersistentId, controller.signal).then((detail) => {
+          if (detail?.status?.analysis_id === "persistent-hop-causal-tle-tracking-v1") {
+            setPersistentTracking(detail);
+          }
+        }),
+      ]).then((results) => {
+        const detailFailure = results[0];
+        if (detailFailure.status === "rejected") {
+          const reason = detailFailure.reason as Error;
+          if (reason.name !== "AbortError") setError(reason.message);
+        }
+      });
+    void refresh();
+    const timer = window.setInterval(refresh, 15_000);
+    return () => {
+      window.clearInterval(timer);
+      controller.abort();
+    };
   }, [selectedPersistentId, selectedPersistentSummary?.analysis.updated_at]);
   const selected = page?.items.find((item) => item.scan_id === selectedScanId) ?? null;
   const hasFocusedPilotPlots = selected?.analysis_id === "standard-scan-analysis-pilot-plots-v1"
@@ -599,6 +621,7 @@ function ScannerView() {
       </div> : null}
       {persistentDetail ? <PersistentHopAnalysisDetail
         detail={persistentDetail}
+        tracking={persistentTracking}
         artifact={persistentArtifact}
         onArtifact={setPersistentArtifact}
       /> : report && selected ? <>
@@ -662,10 +685,12 @@ function ScannerView() {
 
 function PersistentHopAnalysisDetail({
   detail,
+  tracking,
   artifact,
   onArtifact,
 }: {
   detail: PersistentHopSessionDetailV2;
+  tracking: PersistentHopTrackingDetailV1 | null;
   artifact: PersistentHopArtifact;
   onArtifact: (artifact: PersistentHopArtifact) => void;
 }) {
@@ -725,7 +750,43 @@ function PersistentHopAnalysisDetail({
       <p className="scanner-artifact-caption">{artifactDetails.caption} · {formatNumber(product.probe_count)} receiver/probe evaluations · {formatNumber(product.passed_fractional_best_count)} passing fractional winners</p>
       <p className="scanner-artifact-caption">Analysis geometry: {product.configuration.probe_ms} ms windows every {product.configuration.probe_stride_ms} ms. The full captured IQ remains available for exhaustive reanalysis.</p>
     </section>}
+    {tracking !== null ? <PersistentHopTrackingPanel detail={tracking} /> : null}
   </>;
+}
+
+function PersistentHopTrackingPanel({ detail }: { detail: PersistentHopTrackingDetailV1 }) {
+  const { status, product } = detail;
+  if (product === null) return <section className="scanner-analysis-state" aria-live="polite">
+    <StatusBadge value={status.state} />
+    <strong>Satellite trajectory tracking: {status.phase}</strong>
+    <span>{status.failure_summary ?? `${formatNumber(status.completed_groups)} of ${formatNumber(status.total_groups)} physical groups processed.`}</span>
+  </section>;
+  if (product.terminal_outcome !== "complete") return <section className="scanner-analysis-state" aria-live="polite">
+    <StatusBadge value="no_result" />
+    <strong>Satellite trajectory tracking is unavailable for this capture</strong>
+    <span>{product.terminal_reasons.join(" · ")}</span>
+  </section>;
+  return <section className="scanner-artifact-panel" aria-label="Satellite trajectory candidates">
+    <header>
+      <div><span>CAUSAL TLE COMPARISON</span><h3>Cross-channel Doppler trajectories</h3></div>
+      <small>{product.trajectory_hypothesis_count} hypotheses · {product.tle_candidates.length} matched groups · {product.unscored_physical_group_count} unscored · {product.tle_matching_attempted_group_count}/{product.physical_group_count} TLE comparisons attempted (limit {product.tle_matching_group_limit})</small>
+    </header>
+    {product.tle_candidates.length > 0 ? <div className="queue-table-scroll scanner-results-scroll"><table className="queue-table scanner-table" aria-label="TLE candidate diagnostics">
+      <thead><tr><th>Hypothesis</th><th>Candidate</th><th>Support</th><th>Heldout</th><th>Disposition</th></tr></thead>
+      <tbody>{product.tle_candidates.map((candidate) => <tr key={`${candidate.hypothesis_rank}-${candidate.physical_group_id}`}>
+        <td>H{candidate.hypothesis_rank}</td>
+        <td>{candidate.leading_catalog_number === null ? "Restricted null" : `NORAD ${candidate.leading_catalog_number}`}</td>
+        <td>{candidate.source_observation_count} points · {candidate.support_span_s.toFixed(1)} s</td>
+        <td>{candidate.leading_candidate_persisted_on_heldout ? `Persisted · rank ${candidate.training_leader_heldout_rank}` : `Did not persist · rank ${candidate.training_leader_heldout_rank}`}</td>
+        <td>{candidate.abstention_recommended ? `Abstain: ${candidate.abstention_reasons.join(", ")}` : "Candidate survived controls"}</td>
+      </tr>)}</tbody>
+    </table></div> : <p className="empty-list">No physical group met the frozen support requirements for TLE comparison.</p>}
+    {product.artifact !== null ? <div className="scanner-artifact-viewport">
+      <img loading="lazy" src={persistentHopTrackingPngUrl(product.session_id)} alt={`Cross-channel Doppler trajectories and TLE candidates for ${product.session_id}`} />
+    </div> : null}
+    <p className="scanner-artifact-caption">TLE snapshot: {product.tle_snapshot?.provider} · {product.tle_snapshot?.object_count.toLocaleString()} objects · observer {product.observer_site?.label}.</p>
+    <p className="scanner-artifact-caption">Candidate-only evidence: trajectories are reconstructed before catalogue access, fit on the chronological prefix, scored once on heldout future data, and checked against ±500 s wrong-time and radio-polynomial controls. No identity is asserted from one scan.</p>
+  </section>;
 }
 
 function QueueView() {

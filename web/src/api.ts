@@ -387,6 +387,66 @@ export interface PersistentHopSessionDetailV2 {
   };
 }
 
+export interface PersistentHopTrackingDetailV1 {
+  schema_version: 1;
+  status: {
+    schema_version: 1;
+    session_id: string;
+    analysis_id: "persistent-hop-causal-tle-tracking-v1";
+    state: "pending" | "running" | "complete" | "unsupported" | "failed";
+    phase: "waiting" | "projection" | "trajectory" | "tle-matching" | "complete";
+    completed_groups: number;
+    total_groups: number;
+    updated_at: string;
+    failure_summary: string | null;
+  };
+  product: null | {
+    schema_version: 1;
+    session_id: string;
+    terminal_outcome: "complete" | "no-trajectory" | "unsupported";
+    terminal_reasons: string[];
+    observer_site: null | { label: string; latitude_deg: number; longitude_deg: number; altitude_m: number };
+    tle_snapshot: null | { provider: string; collected_utc_ns: number; digest: string; object_count: number };
+    input_probe_count: number;
+    nonoverlapping_probe_count: number;
+    passing_fractional_candidate_count: number;
+    projected_candidate_count: number;
+    trajectory_hypothesis_count: number;
+    physical_group_count: number;
+    tle_matching_group_limit: number;
+    tle_matching_attempted_group_count: number;
+    unscored_physical_group_count: number;
+    tracklets: Array<{
+      tracklet_id: string;
+      channel: number;
+      edge: "lower" | "upper";
+      receiver_id: number;
+      observation_count: number;
+      normalized_rate_hz_per_s: number;
+      residual_rms_hz: number;
+    }>;
+    tle_candidates: Array<{
+      hypothesis_rank: number;
+      physical_group_id: string;
+      tracklet_ids: string[];
+      source_observation_count: number;
+      support_span_s: number;
+      nominal_candidate_count: number;
+      leading_catalog_number: number | null;
+      selected_tau_s: number | null;
+      training_leader_heldout_rank: number;
+      leading_candidate_persisted_on_heldout: boolean;
+      abstention_recommended: boolean;
+      abstention_reasons: string[];
+      candidate_only: true;
+      identity_claimed: false;
+    }>;
+    artifact: null | { name: "trajectory-tle"; byte_count: number; sha256: string };
+    candidate_only: true;
+    identity_claimed: false;
+  };
+}
+
 export function getScannerReports(
   cursor = 0,
   limit = 20,
@@ -422,6 +482,20 @@ export function getPersistentHopSession(
     `/api/v3/scanner/persistent-sessions/${encodeURIComponent(sessionId)}`,
     signal,
   );
+}
+
+export function getPersistentHopTracking(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<PersistentHopTrackingDetailV1> {
+  return getJson<PersistentHopTrackingDetailV1>(
+    `/api/v4/scanner/persistent-sessions/${encodeURIComponent(sessionId)}/tracking`,
+    signal,
+  );
+}
+
+export function persistentHopTrackingPngUrl(sessionId: string): string {
+  return `/api/v4/scanner/persistent-sessions/${encodeURIComponent(sessionId)}/trajectory-tle.png`;
 }
 
 export function persistentHopAnalysisPngUrl(

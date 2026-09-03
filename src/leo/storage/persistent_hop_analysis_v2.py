@@ -210,6 +210,36 @@ class PersistentHopAnalysisStoreV2:
             for index in self.completed_sweeps(session_id)
         )
 
+    def published_chunks(self, session_id: str) -> tuple[PersistentHopAnalysisChunkV2, ...]:
+        """Read every sealed chunk after verifying both manifest digests.
+
+        Downstream trajectory reconstruction consumes the exact fractional
+        products that were published, never a parallel re-analysis or an
+        unsealed checkpoint directory.
+        """
+
+        published = self.inspect(session_id)
+        chunks: list[PersistentHopAnalysisChunkV2] = []
+        for reference in published.manifest.chunks:
+            path = published.path / reference.relative_path
+            chunk, observed = self._read_chunk_file_v2(path)
+            if observed != reference:
+                raise BundleCorruptionError(
+                    "persistent-hop V2 published chunk digest disagrees with manifest"
+                )
+            if (
+                chunk.session_id != session_id
+                or chunk.input_manifest_sha256 != published.manifest.input_manifest_sha256
+                or chunk.configuration != published.manifest.configuration
+            ):
+                raise BundleCorruptionError("persistent-hop V2 published chunk authority disagrees")
+            chunks.append(chunk)
+        if tuple(item.sweep_index for item in chunks) != tuple(
+            range(published.manifest.sweep_count)
+        ):
+            raise BundleCorruptionError("persistent-hop V2 published chunks are not gapless")
+        return tuple(chunks)
+
     def publish(
         self,
         *,

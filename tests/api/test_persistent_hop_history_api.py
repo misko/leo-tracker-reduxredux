@@ -21,6 +21,11 @@ from leo.scanner import (
     compile_persistent_hop_plan_v1,
 )
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
+from leo.scanner.persistent_hop_tracking import (
+    PersistentHopCandidateRecurrencePageV1,
+    PersistentHopTrackingDetailV1,
+    PersistentHopTrackingStatusV1,
+)
 
 
 class _HistoryReader:
@@ -95,6 +100,31 @@ class _FractionalPresentationReader:
 
     def artifact(self, session_id: str, artifact: str) -> bytes | None:
         return None
+
+
+class _TrackingReader:
+    def __init__(self, item: PersistentHopHistoryItemV1) -> None:
+        self.item = item
+
+    def detail(self, session_id: str) -> PersistentHopTrackingDetailV1 | None:
+        if session_id != self.item.session_id:
+            return None
+        return PersistentHopTrackingDetailV1(
+            status=PersistentHopTrackingStatusV1(
+                session_id=session_id,
+                state="running",
+                phase="tle-matching",
+                completed_groups=1,
+                total_groups=3,
+                updated_at=self.item.finalized_at,
+            )
+        )
+
+    def artifact(self, session_id: str) -> bytes | None:
+        return None
+
+    def recurrences(self) -> PersistentHopCandidateRecurrencePageV1:
+        return PersistentHopCandidateRecurrencePageV1(items=())
 
 
 def _history_item() -> PersistentHopHistoryItemV1:
@@ -242,3 +272,30 @@ def test_persistent_hop_v3_exposes_fractional_analysis_without_changing_v2(
     }
     assert detail.status_code == 200 and detail.json()["schema_version"] == 2
     assert missing.status_code == 404
+
+
+def test_persistent_hop_v4_exposes_tracking_progress_and_recurrence(
+    tmp_path: Path,
+) -> None:
+    bulk = tmp_path / "bulk"
+    bulk.mkdir()
+    tracking = _TrackingReader(_history_item())
+    client = TestClient(
+        create_app(
+            build_fixture_repository(bulk),
+            artifact_root=bulk,
+            persistent_hop_tracking=tracking,
+        )
+    )
+
+    detail = client.get("/api/v4/scanner/persistent-sessions/scan-hop-history/tracking")
+    missing = client.get("/api/v4/scanner/persistent-sessions/scan-hop-history/trajectory-tle.png")
+    unknown = client.get("/api/v4/scanner/persistent-sessions/unknown/tracking")
+    recurrence = client.get("/api/v4/scanner/tle-candidate-recurrences")
+
+    assert detail.status_code == 200
+    assert detail.json()["status"]["phase"] == "tle-matching"
+    assert detail.json()["product"] is None
+    assert missing.status_code == 404
+    assert unknown.status_code == 404
+    assert recurrence.status_code == 200 and recurrence.json()["items"] == []

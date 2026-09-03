@@ -257,15 +257,19 @@ def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate(
     assert "--maximum-sessions 1" in analysis["ExecStart"]
     assert "--maximum-workers 2" in analysis["ExecStart"]
     assert "--probe-stride-ms 120" in analysis["ExecStart"]
+    assert "--site spinnaker-sausalito" in analysis["ExecStart"]
+    assert "--maximum-tracking-groups 8" in analysis["ExecStart"]
     assert int(analysis["CPUWeight"]) < int(acquisition["CPUWeight"])
     assert int(analysis["IOWeight"]) < int(acquisition["IOWeight"])
     assert int(analysis["Nice"]) > int(acquisition["Nice"])
     assert analysis["IOSchedulingClass"] == "idle"
-    assert analysis_text.count("ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750") == 4
+    assert analysis_text.count("ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750") == 6
     for directory in (
         "/srv/bulk/leo/scanner-hop-analysis",
         "/srv/bulk/leo/scanner-hop-analysis-work",
         "/srv/bulk/leo/control/persistent-hop-analysis",
+        "/srv/bulk/leo/scanner-hop-tracking",
+        "/srv/bulk/leo/control/persistent-hop-tracking",
         "/srv/bulk/leo/presentation-cache/matplotlib",
     ):
         assert directory in analysis_text

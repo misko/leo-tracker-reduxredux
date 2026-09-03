@@ -158,9 +158,7 @@ def capture_persistent_hop_session(
         timing_sink(
             PersistentHopUtcTimingAuthorityV1.from_host_bracket(
                 session_id=session_id,
-                session_start_device_sample_counter=(
-                    receipt.session_start_device_sample_counter
-                ),
+                session_start_device_sample_counter=(receipt.session_start_device_sample_counter),
                 sample_rate_hz=plan.sample_rate_hz,
                 begin_before_realtime_ns=begin_before_realtime_ns,
                 begin_before_monotonic_ns=begin_before_monotonic_ns,

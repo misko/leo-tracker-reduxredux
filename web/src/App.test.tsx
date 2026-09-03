@@ -724,6 +724,57 @@ describe("Observation Console", () => {
         ],
       },
     };
+    const trackingDetail = {
+      schema_version: 1,
+      status: {
+        schema_version: 1,
+        session_id: persistentHopCapture.session_id,
+        analysis_id: "persistent-hop-causal-tle-tracking-v1",
+        state: "complete",
+        phase: "complete",
+        completed_groups: 1,
+        total_groups: 1,
+        updated_at: "2026-09-03T03:01:00Z",
+        failure_summary: null,
+      },
+      product: {
+        schema_version: 1,
+        session_id: persistentHopCapture.session_id,
+        terminal_outcome: "complete",
+        terminal_reasons: [],
+        observer_site: { label: "Spinnaker, Sausalito", latitude_deg: 37.8, longitude_deg: -122.4, altitude_m: -29 },
+        tle_snapshot: { provider: "space-track", collected_utc_ns: 1_788_400_000_000_000_000, digest: `sha256:${"4".repeat(64)}`, object_count: 8_000 },
+        input_probe_count: 4_000,
+        nonoverlapping_probe_count: 4_000,
+        passing_fractional_candidate_count: 1_000,
+        projected_candidate_count: 1_000,
+        trajectory_hypothesis_count: 1,
+        physical_group_count: 1,
+        tle_matching_group_limit: 8,
+        tle_matching_attempted_group_count: 1,
+        unscored_physical_group_count: 0,
+        tracklets: [],
+        tle_candidates: [{
+          hypothesis_rank: 1,
+          physical_group_id: `sha256:${"5".repeat(64)}`,
+          tracklet_ids: [`sha256:${"6".repeat(64)}`],
+          source_observation_count: 128,
+          support_span_s: 287.4,
+          nominal_candidate_count: 48,
+          leading_catalog_number: 44714,
+          selected_tau_s: 0,
+          training_leader_heldout_rank: 1,
+          leading_candidate_persisted_on_heldout: true,
+          abstention_recommended: false,
+          abstention_reasons: [],
+          candidate_only: true,
+          identity_claimed: false,
+        }],
+        artifact: { name: "trajectory-tle", byte_count: 20_000, sha256: `sha256:${"7".repeat(64)}` },
+        candidate_only: true,
+        identity_claimed: false,
+      },
+    };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), "http://localhost").pathname;
       if (path === "/api/v3/scanner/persistent-sessions") {
@@ -731,6 +782,9 @@ describe("Observation Console", () => {
       }
       if (path === `/api/v3/scanner/persistent-sessions/${persistentHopCapture.session_id}`) {
         return new Response(JSON.stringify(completeDetail), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (path === `/api/v4/scanner/persistent-sessions/${persistentHopCapture.session_id}/tracking`) {
+        return new Response(JSON.stringify(trackingDetail), { status: 200, headers: { "Content-Type": "application/json" } });
       }
       return normalFetch(input, init);
     }));
@@ -754,6 +808,11 @@ describe("Observation Console", () => {
       "/api/v3/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/cfo-trajectories.png",
     );
     expect(screen.getByText(/50,336 receiver\/probe evaluations/)).toBeInTheDocument();
+    expect(await screen.findByText("NORAD 44714")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Cross-channel Doppler trajectories/ })).toHaveAttribute(
+      "src",
+      "/api/v4/scanner/persistent-sessions/scan-hop-2d0e49b94b3e4cdf/trajectory-tle.png",
+    );
   });
 
   it("loudly exposes an immutable all-target scanner capture failure", async () => {
