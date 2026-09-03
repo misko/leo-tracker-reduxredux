@@ -51,6 +51,15 @@ once, then captures complete eight-target sweeps for 300 seconds at 120 ms per
 target in CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U order. Every target
 uses the maximum-coverage IF for that slot's admitted bandwidth.
 
+`LEO_SCANNER_CAPTURE_MODE=sequential` remains the deployment default. The
+additive `persistent_hop` mode is admitted only with the same exact 20-minute,
+300-second, 120 ms cadence and an `ip:192.168.1.*` radio whose configured serial
+is not the hard-denied test serial. It requires the exact device-hop protocol,
+metadata, status, cancellation, and restoration capabilities; older firmware
+fails closed instead of silently reverting to sequential or USB capture.
+Guard, kernel depth, refill size, and host queue capacity remain explicit until
+a candidate passes the staged qualification ladder at both sample rates.
+
 Each completed sweep is independently committed as a framed, digest-verified
 CI16 bundle beneath `$LEO_BULK_ROOT/scanner-recordings/YYYY/MM/DD/<scan-id>/`;
 one terminal run manifest is committed beneath `$LEO_BULK_ROOT/scanner-runs/`.
@@ -63,12 +72,22 @@ restart retain their intents, slots over the configured lateness bound are
 explicitly skipped, and the global radio lease permits only one acquisition
 operation at a time.
 
-Admission rounds the 300-second window up to 313 complete sweeps. Before opening
+Persistent-hop IQ is committed as one counter-authoritative valid-only session
+beneath `$LEO_BULK_ROOT/scanner-hop-recordings/`. Its manifest retains every
+excluded transition interval, terminal HOPT receipt, exact usable-IQ duty,
+storage queue telemetry, and two-layer restoration. Persistent analysis reads
+that additive contract and never presents the stream as a legacy fresh-buffer
+sweep.
+
+Sequential admission rounds the 300-second window up to 313 complete sweeps. Before opening
 the radio it therefore requires, in addition to the configured safety reserve,
 6,009,600,000 raw bytes for a 2.5 MS/s slot or 12,019,200,000 raw bytes for a
 5 MS/s slot. At 72 slots per UTC day this is a conservative 649,036,800,000 raw
 bytes/day before compression; operational capacity and retention must be sized
 from that upper bound rather than an assumed compression ratio.
+Persistent-hop admission uses its uncompressed 300-second upper bound instead:
+6,000,000,000 bytes at 2.5 MS/s or 12,000,000,000 bytes at 5 MS/s, plus the
+configured safety reserve. It likewise never assumes that RF IQ compresses.
 
 Full recording reconciliation is recovery and maintenance work, not a readiness
 probe. API, workers, and acquisition do not order themselves behind

@@ -405,6 +405,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_CAPTURE_INTERVAL_SECONDS",
         "LEO_ACQUISITION_RESERVE_BYTES",
         "LEO_SCANNER_ENABLED",
+        "LEO_SCANNER_CAPTURE_MODE",
         "LEO_SCANNER_RADIO_ID",
         "LEO_SCANNER_INTERVAL_SECONDS",
         "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS",
@@ -413,6 +414,10 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_SCANNER_GAIN_DB",
         "LEO_SCANNER_MARGIN_GATE",
         "LEO_SCANNER_REPORT_ROOT",
+        "LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US",
+        "LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK",
+        "LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS",
+        "LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS",
         "LEO_PIPELINE_RELEASE_ID",
         "LEO_WORKER_POLL_SECONDS",
         "LEO_API_PORT",
@@ -458,10 +463,15 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_SOAK_PROFILE"] == "starlink-ch4-lower-2p5m-60s-continuity-v2"
     assert values["LEO_CAPTURE_INTERVAL_SECONDS"] == "180"
     assert values["LEO_SCANNER_ENABLED"] == "false"
+    assert values["LEO_SCANNER_CAPTURE_MODE"] == "sequential"
     assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_5d4d"
     assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "1200"
     assert values["LEO_SCANNER_MAXIMUM_LATENESS_SECONDS"] == "300"
     assert values["LEO_SCANNER_RUN_SECONDS"] == "300"
+    assert values["LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US"] == "11000"
+    assert values["LEO_SCANNER_PERSISTENT_SAMPLES_PER_BLOCK"] == "131072"
+    assert values["LEO_SCANNER_PERSISTENT_KERNEL_BUFFERS"] == "8"
+    assert values["LEO_SCANNER_PERSISTENT_QUEUE_CAPACITY_VISITS"] == "16"
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
     assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"
     assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/current/web/dist"
