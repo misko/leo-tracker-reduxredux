@@ -61,17 +61,14 @@ from leo.presentation.standard_native_artifacts import (
     StandardNativePngArtifactInventoryV8,
     StandardNativePngArtifactInventoryV9,
     StandardNativePngArtifactInventoryV12,
-    StandardNativePngArtifactInventoryV14,
 )
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV5,
     StandardNativePlotViewV6,
     StandardNativeSubjectDetailV5,
     StandardNativeSubjectDetailV6,
-    StandardNativeSubjectDetailV7,
     StandardNativeSubjectHierarchyV5,
     StandardNativeSubjectHierarchyV6,
-    StandardNativeSubjectHierarchyV7,
 )
 from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.processing import (
@@ -674,7 +671,7 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
             pipeline_release_id=_RELEASE,
         )
         queued = application.queue(manifest.session_id)
-        expected_job_count = 7 if high_rate_hz == 25_000_000 else 13
+        expected_job_count = 14 if high_rate_hz == 25_000_000 else 13
         assert queued.queued_job_count == expected_job_count
         bindings = CatalogSubjectBindingReader(processing_database.catalog)
         for stream in manifest.streams:
@@ -704,10 +701,10 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
         ]
 
         seal = processing_database.catalog.run_seal_snapshot(queued.run_id)
-        analyzed_path_count = 2 if high_rate_hz == 25_000_000 else 3
-        previous_product_count = 59 if high_rate_hz == 25_000_000 else 99
+        analyzed_path_count = 3
+        previous_product_count = 100 if high_rate_hz == 25_000_000 else 99
         expected_product_count = previous_product_count + 2 * analyzed_path_count
-        expected_png_count = 35 if high_rate_hz == 25_000_000 else 60
+        expected_png_count = 61 if high_rate_hz == 25_000_000 else 60
         assert len(seal.products) == expected_product_count
         assert sum(item.media_type == "image/png" for item in seal.products) == expected_png_count
         assert (
@@ -722,7 +719,7 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
         } == {6}
         assert {
             item.schema_version for item in seal.products if item.kind == "standard.paired-report"
-        } == (set() if high_rate_hz == 25_000_000 else {7})
+        } == {7}
 
         native_repository = CatalogStandardNativePresentationRepository(
             processing_database.catalog,
@@ -733,47 +730,19 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
             native_repository,
         )
         hierarchy = repository.subject_hierarchy(manifest.session_id)
-        assert isinstance(
-            hierarchy,
-            StandardNativeSubjectHierarchyV7
-            if high_rate_hz == 25_000_000
-            else StandardNativeSubjectHierarchyV6,
-        )
+        assert isinstance(hierarchy, StandardNativeSubjectHierarchyV6)
         assert hierarchy.eligibility.dwell_class == expected_dwell
         assert sorted(len(item.receiver_ids) for item in hierarchy.eligibility.legs) == [1, 2]
-        if high_rate_hz == 25_000_000:
-            assert isinstance(hierarchy, StandardNativeSubjectHierarchyV7)
-            low_stream_id = next(
-                item.stream_id
-                for item in authority.stream_authorities
-                if item.sample_rate_hz == 2_500_000
-            )
-            low_radio_subject_id = f"radio:{low_stream_id}"
-            assert hierarchy.analysis_selection.analyzed_stream_ids == (low_stream_id,)
-            assert hierarchy.rows[0].subject_id == low_radio_subject_id
-            root_subject = hierarchy.rows[0]
-            detail = repository.subject_detail(manifest.session_id, root_subject.subject_id)
-            assert isinstance(detail, StandardNativeSubjectDetailV7)
-            subject_inventory_counts = {
-                root_subject.subject_id: 7,
-                **{item.subject_id: 14 for item in detail.receiver_path_expansions},
-            }
-        else:
-            assert isinstance(hierarchy, StandardNativeSubjectHierarchyV6)
-            low_radio_subject_id = None
-            root_subject = hierarchy.rows[0]
-            detail = repository.subject_detail(manifest.session_id, root_subject.subject_id)
-            assert isinstance(detail, StandardNativeSubjectDetailV6)
-            subject_inventory_counts = {
-                root_subject.subject_id: 6,
-                **{item.subject_id: 14 for item in detail.receiver_path_expansions},
-            }
+        root_subject = hierarchy.rows[0]
+        detail = repository.subject_detail(manifest.session_id, root_subject.subject_id)
+        assert isinstance(detail, StandardNativeSubjectDetailV6)
+        subject_inventory_counts = {
+            root_subject.subject_id: 6,
+            **{item.subject_id: 14 for item in detail.receiver_path_expansions},
+        }
         for subject_id, expected_count in subject_inventory_counts.items():
             inventory = repository.subject_png_inventory(manifest.session_id, subject_id)
-            if subject_id == low_radio_subject_id:
-                assert isinstance(inventory, StandardNativePngArtifactInventoryV14)
-                assert inventory.artifacts[-1].name == "pss-glrt-frame-comparison"
-            elif high_rate_hz != 25_000_000 and subject_id == root_subject.subject_id:
+            if subject_id == root_subject.subject_id:
                 assert isinstance(inventory, StandardNativePngArtifactInventoryV9)
             else:
                 assert isinstance(inventory, StandardNativePngArtifactInventoryV12)
@@ -790,9 +759,7 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
             maximum_points=64,
         )
         assert isinstance(waterfall, StandardNativePlotViewV6)
-        assert sorted(waterfall.sample_rates_hz) == (
-            [2_500_000] if high_rate_hz == 25_000_000 else [2_500_000, high_rate_hz]
-        )
+        assert sorted(waterfall.sample_rates_hz) == [2_500_000, high_rate_hz]
 
         with TestClient(
             create_app(
@@ -809,20 +776,12 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
             base = f"/api/v2/recordings/{manifest.session_id}/standard-subjects"
             response = client.get(base)
             assert response.status_code == 200
-            assert response.json()["schema_version"] == (7 if high_rate_hz == 25_000_000 else 6)
+            assert response.json()["schema_version"] == 6
             for subject_id, expected_count in subject_inventory_counts.items():
                 response = client.get(f"{base}/{subject_id}/artifacts")
                 assert response.status_code == 200
                 payload = response.json()
-                expected_schema_version = (
-                    14
-                    if subject_id == low_radio_subject_id
-                    else (
-                        9
-                        if high_rate_hz != 25_000_000 and subject_id == root_subject.subject_id
-                        else 12
-                    )
-                )
+                expected_schema_version = 9 if subject_id == root_subject.subject_id else 12
                 assert payload["schema_version"] == expected_schema_version
                 assert len(payload["artifacts"]) == expected_count
                 for item in payload["artifacts"]:
