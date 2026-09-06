@@ -123,17 +123,6 @@ class PlutoPersistentHopRadio:
             raise PlutoPersistentHopError(
                 f"persistent-hop provider start failed: {type(error).__name__}: {error}"
             ) from error
-        upstream_start_clock_bracket = getattr(upstream, "start_clock_bracket", None)
-        start_clock_bracket = (
-            None
-            if upstream_start_clock_bracket is None
-            else PersistentHopStartClockBracketV1(
-                before_realtime_ns=upstream_start_clock_bracket.before_realtime_ns,
-                before_monotonic_ns=upstream_start_clock_bracket.before_monotonic_ns,
-                after_realtime_ns=upstream_start_clock_bracket.after_realtime_ns,
-                after_monotonic_ns=upstream_start_clock_bracket.after_monotonic_ns,
-            )
-        )
         session = _PlutoPersistentHopSession(
             upstream,
             plan=plan,
@@ -141,7 +130,6 @@ class PlutoPersistentHopRadio:
             session_id=session_id,
             wire_session_id=wire_session_id,
             read_ahead_visits=self._read_ahead_visits,
-            start_clock_bracket=start_clock_bracket,
         )
         self._session = session
         return session
@@ -169,14 +157,12 @@ class _PlutoPersistentHopSession:
         session_id: str,
         wire_session_id: int,
         read_ahead_visits: int,
-        start_clock_bracket: PersistentHopStartClockBracketV1 | None,
     ) -> None:
         self._upstream = upstream
         self._plan = plan
         self._identity = identity
         self._session_id = session_id
         self._wire_session_id = wire_session_id
-        self._start_clock_bracket = start_clock_bracket
         self._visits: queue.Queue[PersistentHopVisitBlock] = queue.Queue(maxsize=read_ahead_visits)
         self._cancel_requested = threading.Event()
         self._producer_done = threading.Event()
@@ -203,7 +189,15 @@ class _PlutoPersistentHopSession:
 
     @property
     def start_clock_bracket(self) -> PersistentHopStartClockBracketV1 | None:
-        return self._start_clock_bracket
+        upstream = getattr(self._upstream, "start_clock_bracket", None)
+        if upstream is None:
+            return None
+        return PersistentHopStartClockBracketV1(
+            before_realtime_ns=upstream.before_realtime_ns,
+            before_monotonic_ns=upstream.before_monotonic_ns,
+            after_realtime_ns=upstream.after_realtime_ns,
+            after_monotonic_ns=upstream.after_monotonic_ns,
+        )
 
     def read_visit(self) -> PersistentHopVisitBlock:
         while True:

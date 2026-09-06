@@ -274,6 +274,18 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
         after_realtime_ns=1_002_000_000,
         after_monotonic_ns=102_000_000,
     )
+    upstream.start_clock_bracket = SimpleNamespace(
+        before_realtime_ns=1_000_900_000,
+        before_monotonic_ns=100_900_000,
+        after_realtime_ns=1_001_100_000,
+        after_monotonic_ns=101_100_000,
+    )
+    assert session.start_clock_bracket == PersistentHopStartClockBracketV1(
+        before_realtime_ns=1_000_900_000,
+        before_monotonic_ns=100_900_000,
+        after_realtime_ns=1_001_100_000,
+        after_monotonic_ns=101_100_000,
+    )
     mapped = [session.read_visit(), session.read_visit()]
     with pytest.raises(StopIteration):
         session.read_visit()
