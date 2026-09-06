@@ -75,7 +75,7 @@ def test_current_native_dwell_is_queued_in_the_standard_lane(
     )
     monkeypatch.setattr(
         processing_module,
-        "compile_standard_native_automatic_run_plan",
+        "compile_standard_native_default_run_plan",
         lambda *_args, **_kwargs: plan,
     )
 
@@ -140,7 +140,7 @@ def test_v3_native_dispatch_allows_degraded_capture_only_evidence(
     )
     monkeypatch.setattr(
         processing_module,
-        "compile_standard_native_automatic_run_plan",
+        "compile_standard_native_default_run_plan",
         lambda *_args, **_kwargs: plan,
     )
 

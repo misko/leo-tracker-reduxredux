@@ -80,6 +80,12 @@ their current readers and execution paths.
 
 The low-rate profile remains
 `starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4`: 2.5 MS/s, 2.5 MHz native
+
+Production now selects the additive
+`starlink-ch4-lower-2p5m-60s-mixed-device-axis-v5` revision for the low-rate
+leg. It uses 262,144-sample refills and eight kernel buffers so each dual-RX
+contiguous DMA allocation is 2 MiB (16 MiB total), avoiding the 8 MiB
+allocation sensitivity of v4 while retaining v4 for historical manifests.
 bandwidth, RX0+RX1, 60 seconds, device-axis storage, segment-aware continuity,
 and fail-session peer semantics.
 

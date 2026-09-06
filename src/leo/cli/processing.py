@@ -115,7 +115,6 @@ from leo.operations.retention import (
 )
 from leo.pipeline import ExpandedRunPlanV1
 from leo.pipeline.standard_native import (
-    compile_standard_native_automatic_run_plan,
     compile_standard_native_default_run_plan,
     compile_standard_native_run_plan,
 )
@@ -906,7 +905,7 @@ class LocalProcessingBackend:
             raise ValueError("catalog and bundle manifest digests disagree")
         try:
             manifest = require_online_recording_manifest(bundle.manifest)
-            plan = compile_standard_native_automatic_run_plan(
+            plan = compile_standard_native_default_run_plan(
                 manifest,
                 manifest_digest=snapshot.manifest_digest,
                 pipeline_release_id=self.services.pipeline_release_id,

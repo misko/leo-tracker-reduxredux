@@ -209,6 +209,26 @@ def test_native_topology_admits_exact_maximum_bandwidth_profiles(
     assert len(plan.jobs) == 16
 
 
+def test_fragmentation_resistant_mixed_profile_uses_two_mib_dma_blocks() -> None:
+    profile_name = "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v5"
+    revision = load_profile_revision(_ROOT / "profiles" / f"{profile_name}.yaml")
+    profile = revision.profile
+
+    assert STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES[profile_name] == (
+        2_500_000,
+        (0, 1),
+        revision.revision_digest,
+        262_144,
+    )
+    assert profile.kernel_buffers == 8
+    assert profile.refill_queue_capacity == 32
+    assert profile.refill_samples * len(profile.receivers) * 4 == 2 * 1024 * 1024
+    assert (
+        profile.refill_samples * len(profile.receivers) * 4 * profile.kernel_buffers
+        == 16 * 1024 * 1024
+    )
+
+
 @pytest.mark.parametrize(
     ("rate_hz", "receiver_id"),
     tuple(

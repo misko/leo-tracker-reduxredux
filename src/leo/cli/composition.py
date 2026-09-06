@@ -838,7 +838,7 @@ class LocalAcquisitionBackend:
         profile_names: dict[tuple[int, tuple[int, ...], bool], str] = {
             (2_500_000, (0, 1), False): "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
             (5_000_000, (0, 1), False): "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
-            (2_500_000, (0, 1), True): "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
+            (2_500_000, (0, 1), True): "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v5",
             (5_000_000, (0, 1), True): "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
             **{
                 (rate, (receiver,), True): (

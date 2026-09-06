@@ -25,11 +25,34 @@ def test_rollout_selects_only_qualified_high_rate_profiles(tmp_path, maximum):
         }
     )
     authority = LocalAcquisitionBackend(settings).production_profile_authority()
-    for (rate, _receivers, _mixed), (name, digest, refill) in authority.items():
+    for (rate, _receivers, mixed), (name, digest, refill) in authority.items():
         expected = rate > 5_000_000 and rate <= maximum
         assert ("ddr-ring-v6" in name) is expected
-        assert refill == (1_000_000 if expected else 1_048_576)
+        if rate == 2_500_000 and mixed:
+            expected_refill = 262_144
+        elif expected:
+            expected_refill = 1_000_000
+        else:
+            expected_refill = 1_048_576
+        assert refill == expected_refill
         assert digest.startswith("sha256:")
+
+
+def test_production_low_rate_leg_selects_fragmentation_resistant_v5_profile(tmp_path):
+    settings = CliSettings.from_environ(
+        {
+            "LEO_PROFILE_ROOT": str(Path(__file__).parents[2] / "profiles"),
+            "LEO_BULK_ROOT": str(tmp_path),
+        }
+    )
+
+    name, digest, refill = LocalAcquisitionBackend(settings).production_profile_authority()[
+        (2_500_000, (0, 1), True)
+    ]
+
+    assert name == "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v5"
+    assert digest == "sha256:1db4639b577614e7e0246c369f74e11be87e0953848920248c2b5f8f82470ed0"
+    assert refill == 262_144
 
 
 def test_rollout_defaults_off_and_rejects_ambiguous_limit():
