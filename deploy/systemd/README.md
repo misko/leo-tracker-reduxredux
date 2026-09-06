@@ -61,7 +61,7 @@ mode is admitted only with the exact 20-minute,
 is not the hard-denied test serial. It requires the exact device-hop protocol,
 metadata, status, cancellation, and restoration capabilities; older firmware
 fails closed instead of silently reverting to sequential or USB capture.
-The qualified runtime uses alternate iiOD port 30432, a 5 ms transition guard,
+The qualified runtime uses alternate iiOD port 30432, a 1 ms transition guard,
 131072 samples per refill, eight kernel buffers, eight visits of radio read-ahead,
 and a 64-visit storage queue. The 16-visit storage queue is forbidden because it
 exhausted the kernel buffers during the first durable 2.5 MS/s attempt.

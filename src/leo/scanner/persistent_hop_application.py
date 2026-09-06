@@ -94,7 +94,7 @@ def capture_persistent_hop_session(
         receipt = session.finish()
         terminal_realtime_ns = realtime_ns()
         terminal_monotonic_ns = monotonic_ns()
-        precise_start = session.start_clock_bracket
+        precise_start = getattr(session, "start_clock_bracket", None)
         if precise_start is not None:
             begin_before_realtime_ns = precise_start.before_realtime_ns
             begin_before_monotonic_ns = precise_start.before_monotonic_ns

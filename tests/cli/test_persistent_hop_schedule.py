@@ -121,9 +121,9 @@ class _RecordingWriter:
     def append(self, block) -> None:
         self._writer.append(block)
 
-    def finish(self, receipt):
+    def finish(self, receipt, *, timing):
         self._events.append("store.publish")
-        return self._writer.finish(receipt)
+        return self._writer.finish(receipt, timing=timing)
 
     def abort(self) -> None:
         self._events.append("store.abort")
@@ -281,7 +281,7 @@ def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path) -> 
     assert isinstance(second, ScheduledPersistentHopRun)
     assert first.published.manifest.plan.sample_rate_hz == 5_000_000
     assert first.published.manifest.plan.bandwidth_hz == 5_000_000
-    assert first.published.manifest.plan.transition_guard_samples == 25_000
+    assert first.published.manifest.plan.transition_guard_samples == 5_000
     assert first.published.manifest.receipt.capture_outcome == "cancelled"
     assert first.published.manifest.receipt.valid_sample_count == 600_000
     assert first.published.manifest.queue_telemetry is not None
