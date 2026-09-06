@@ -16,6 +16,30 @@ from leo.scanner.ports import ScanRadioIdentity
 
 
 @dataclass(frozen=True, slots=True)
+class PersistentHopStartClockBracketV1:
+    """Host clocks measured immediately around the capture OPEN request."""
+
+    before_realtime_ns: int
+    before_monotonic_ns: int
+    after_realtime_ns: int
+    after_monotonic_ns: int
+
+    def __post_init__(self) -> None:
+        if (
+            min(
+                self.before_realtime_ns,
+                self.before_monotonic_ns,
+                self.after_realtime_ns,
+                self.after_monotonic_ns,
+            )
+            <= 0
+        ):
+            raise ValueError("persistent-hop start clocks must be positive")
+        if self.after_monotonic_ns < self.before_monotonic_ns:
+            raise ValueError("persistent-hop start monotonic bracket regressed")
+
+
+@dataclass(frozen=True, slots=True)
 class PersistentHopVisitBlock:
     """Only the valid IQ for one visit, bound to its counter evidence."""
 
@@ -50,6 +74,9 @@ class PersistentHopSession(Protocol):
 
     @property
     def complete(self) -> bool: ...
+
+    @property
+    def start_clock_bracket(self) -> PersistentHopStartClockBracketV1 | None: ...
 
     def read_visit(self) -> PersistentHopVisitBlock: ...
 

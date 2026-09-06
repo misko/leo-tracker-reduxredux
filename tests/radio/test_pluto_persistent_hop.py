@@ -16,6 +16,7 @@ from leo.scanner.persistent_hop import (
     compile_persistent_hop_plan_v1,
     persistent_hop_wire_session_id,
 )
+from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 
 
 class _Name:
@@ -28,6 +29,7 @@ class _UpstreamSession:
         self._blocks = blocks
         self.receipt = receipt
         self.cancelled = False
+        self.start_clock_bracket = None
 
     def visits(self):
         yield from self._blocks
@@ -247,6 +249,12 @@ def _upstream_receipt(receipt: PersistentHopSessionReceiptV1):
 
 def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
     plan, source_blocks, upstream = _cancelled_source()
+    upstream.start_clock_bracket = SimpleNamespace(
+        before_realtime_ns=1_000_000_000,
+        before_monotonic_ns=100_000_000,
+        after_realtime_ns=1_002_000_000,
+        after_monotonic_ns=102_000_000,
+    )
     wire_id = persistent_hop_wire_session_id("adapter-session")
     client = _Client(upstream, wire_id)
     radio = PlutoPersistentHopRadio(
@@ -260,6 +268,12 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
 
     assert radio.open().uri == "ip:192.168.1.18"
     session = radio.begin_session(plan, session_id="adapter-session")
+    assert session.start_clock_bracket == PersistentHopStartClockBracketV1(
+        before_realtime_ns=1_000_000_000,
+        before_monotonic_ns=100_000_000,
+        after_realtime_ns=1_002_000_000,
+        after_monotonic_ns=102_000_000,
+    )
     mapped = [session.read_visit(), session.read_visit()]
     with pytest.raises(StopIteration):
         session.read_visit()
