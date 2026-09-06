@@ -52,10 +52,11 @@ test("production dashboard reads an atomically promoted current-format live run"
   const coverage = page.getByRole("region", {
     name: "Production RF coverage authority",
   });
-  await expect(coverage).toContainText("Automatic analysis selected the 2.5 MS/s stream");
+  await expect(coverage).toContainText("25.0 MS/s");
+  await expect(coverage).toContainText("2.5 MS/s");
   const artifacts = page.getByRole("region", { name: "Registered native image artifacts" });
   await expect(artifacts).toBeVisible({ timeout: 15_000 });
-  await expect(artifacts.getByRole("img")).toHaveCount(7);
+  await expect(artifacts.getByRole("img")).toHaveCount(6);
   for (const image of await artifacts.getByRole("img").all()) {
     await expect(image).toBeVisible();
     await image.scrollIntoViewIfNeeded();
