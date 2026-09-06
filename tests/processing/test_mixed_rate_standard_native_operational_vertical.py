@@ -815,7 +815,7 @@ def test_real_postgres_direct_async_capture_analysis_png_and_browser_vertical(
                 assert response.status_code == 200
                 payload = response.json()
                 expected_schema_version = (
-                    13
+                    14
                     if subject_id == low_radio_subject_id
                     else (
                         9
