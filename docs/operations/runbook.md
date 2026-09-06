@@ -164,7 +164,7 @@ no lifecycle startup. Writing QSPI, firmware, boot configuration, or the
 persistent radio rootfs is forbidden. A pre-existing or foreign process on
 30432 is a hard stop, not something the scanner may replace.
 
-The qualified scanner environment is exactly a 5 ms guard, 131072 samples per
+The qualified scanner environment is exactly a 1 ms guard, 131072 samples per
 refill, eight kernel buffers, eight visits of radio read-ahead, and a 64-visit
 storage queue. Do not reduce the storage queue to 16: that depth filled during
 the first durable 2.5 MS/s attempt and exhausted the radio's kernel buffers.
