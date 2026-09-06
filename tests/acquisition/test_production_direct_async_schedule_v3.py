@@ -502,8 +502,8 @@ def test_bounded_live_2p5_x25_manifest_is_admitted_to_standard_analysis(
     assert {job.scope.stream_id for job in automatic.jobs if job.scope.stream_id is not None} == {
         stream.stream_id for stream in manifest.streams
     }
-    assert default == automatic
-    assert automatic != expanded
+    assert default == expanded
+    assert automatic != default
     rates_by_stream_id = {
         stream.stream_id: stream.applied_settings.sample_rate_hz for stream in manifest.streams
     }

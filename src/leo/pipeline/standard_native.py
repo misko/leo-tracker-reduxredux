@@ -72,11 +72,25 @@ STANDARD_NATIVE_MIXED_PROFILE_REVISION_DIGESTS = {
 STANDARD_NATIVE_MIXED_REFILL_SAMPLES = 1_048_576
 STANDARD_NATIVE_MIXED_KERNEL_BUFFERS = 4
 STANDARD_NATIVE_MIXED_QUEUE_CAPACITY = 32
+STANDARD_NATIVE_FRAGMENTATION_RESISTANT_PROFILE_GEOMETRIES = {
+    "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v5": (8, 32),
+}
 STANDARD_NATIVE_MIXED_PROFILE_NAMES = {
     2_500_000: "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v4",
     5_000_000: "starlink-ch4-lower-5m-60s-mixed-device-axis-v4",
     10_000_000: "starlink-ch4-lower-10m-60s-mixed-device-axis-v4",
 }
+
+
+def _production_ordinary_buffer_geometry(profile_name: str) -> tuple[int, int]:
+    """Return the reviewed ordinary-DMA buffer count and host queue capacity."""
+
+    return STANDARD_NATIVE_FRAGMENTATION_RESISTANT_PROFILE_GEOMETRIES.get(
+        profile_name,
+        (STANDARD_NATIVE_MIXED_KERNEL_BUFFERS, STANDARD_NATIVE_MIXED_QUEUE_CAPACITY),
+    )
+
+
 STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES = {
     "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4": (
         2_500_000,
@@ -95,6 +109,12 @@ STANDARD_NATIVE_PRODUCTION_PROFILE_IDENTITIES = {
         (0, 1),
         "sha256:e5f088ba153a893eb5f5324c6c411ebe189acc9de5bfa68211a841edc9bbdb44",
         1_048_576,
+    ),
+    "starlink-ch4-lower-2p5m-60s-mixed-device-axis-v5": (
+        2_500_000,
+        (0, 1),
+        "sha256:1db4639b577614e7e0246c369f74e11be87e0953848920248c2b5f8f82470ed0",
+        262_144,
     ),
     "starlink-ch4-lower-5m-60s-mixed-device-axis-v4": (
         5_000_000,
@@ -439,25 +459,9 @@ def compile_standard_native_default_run_plan(
     manifest_digest: str,
     pipeline_release_id: str,
 ) -> ExpandedRunPlanV1:
-    """Compile the production default while retaining explicit all-rate analysis.
+    """Compile the complete reviewed all-rate graph for production rendering."""
 
-    Exact paired 2.5/25 MS/s captures run Standard GLRT/stateful analysis only
-    on the 2.5 MS/s paths and native PSS only on the 25 MS/s paths.  Other
-    reviewed native geometries retain the complete all-rate graph compiled by
-    :func:`compile_standard_native_run_plan`.
-    """
-
-    _require_reviewed_native_geometry(manifest)
-    rates = {
-        (stream.applied_settings or stream.requested_settings).sample_rate_hz
-        for stream in manifest.streams
-    }
-    compiler = (
-        compile_standard_native_automatic_run_plan
-        if rates == {2_500_000, 25_000_000}
-        else compile_standard_native_run_plan
-    )
-    return compiler(
+    return compile_standard_native_run_plan(
         manifest,
         manifest_digest=manifest_digest,
         pipeline_release_id=pipeline_release_id,
@@ -886,8 +890,9 @@ def _require_reviewed_production_v5_geometry(manifest: RecordingManifestV5) -> N
         required_profile_tags: set[str] = set()
         if identity is not None:
             expected_rate, expected_receivers, expected_digest, expected_refill_samples = identity
-            expected_kernel_buffers = STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
-            expected_queue_capacity = STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
+            expected_kernel_buffers, expected_queue_capacity = _production_ordinary_buffer_geometry(
+                profile.name
+            )
         else:
             direct_identity = STANDARD_NATIVE_DIRECT_ASYNC_PROFILE_IDENTITIES.get(profile.name)
             if direct_identity is None:
@@ -1049,8 +1054,9 @@ def _require_reviewed_direct_async_v6_geometry(manifest: RecordingManifestV6) ->
                 expected_refill_samples,
             ) = production_identity
             expected_receivers = production_receivers
-            expected_kernel_buffers = STANDARD_NATIVE_MIXED_KERNEL_BUFFERS
-            expected_queue_capacity = STANDARD_NATIVE_MIXED_QUEUE_CAPACITY
+            expected_kernel_buffers, expected_queue_capacity = _production_ordinary_buffer_geometry(
+                profile.name
+            )
             required_profile_tags = set()
         settings = stream.applied_settings
         if (

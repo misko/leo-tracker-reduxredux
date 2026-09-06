@@ -1136,9 +1136,7 @@ class ProcessingService:
         else:  # pragma: no cover - finite enum, retained as a corruption boundary
             raise ValueError("Standard-native promotion policy is unsupported")
         expected_plan = (
-            compile_standard_native_automatic_run_plan
-            if trigger == "new_capture"
-            else compile_standard_native_default_run_plan
+            compile_standard_native_default_run_plan
             if canonical_promotion_policy is PromotionPolicy.CURRENT
             else compile_standard_native_run_plan
         )(
@@ -1147,13 +1145,17 @@ class ProcessingService:
             pipeline_release_id=plan.pipeline_release_id,
         )
         alternate_expected_plan = (
-            compile_standard_native_default_run_plan(
+            compile_standard_native_automatic_run_plan(
                 manifest,
                 manifest_digest=plan.manifest_digest,
                 pipeline_release_id=plan.pipeline_release_id,
             )
-            if trigger == "reprocess"
-            and canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY
+            if trigger == "new_capture"
+            and canonical_promotion_policy is PromotionPolicy.CURRENT
+            and any(
+                (stream.applied_settings or stream.requested_settings).sample_rate_hz == 2_500_000
+                for stream in manifest.streams
+            )
             else None
         )
         if plan != expected_plan and plan != alternate_expected_plan:
@@ -1308,15 +1310,22 @@ class ProcessingService:
                 manifest=source,
                 manifest_digest=execution.input_manifest_digest,
             )
-            expected_plan = (
-                compile_standard_native_automatic_run_plan
-                if execution.trigger == "new_capture"
-                else compile_standard_native_default_run_plan
-            )(
+            expected_plan = compile_standard_native_default_run_plan(
                 source,
                 manifest_digest=execution.input_manifest_digest,
                 pipeline_release_id=execution.pipeline_release_id,
             )
+            if execution.trigger == "new_capture" and any(
+                (stream.applied_settings or stream.requested_settings).sample_rate_hz == 2_500_000
+                for stream in source.streams
+            ):
+                legacy_automatic_plan = compile_standard_native_automatic_run_plan(
+                    source,
+                    manifest_digest=execution.input_manifest_digest,
+                    pipeline_release_id=execution.pipeline_release_id,
+                )
+                if execution.expanded_plan_digest == legacy_automatic_plan.plan_digest:
+                    expected_plan = legacy_automatic_plan
         except ValueError as error:
             raise RunRejectedError(str(error)) from error
         if expected_plan.plan_digest != execution.expanded_plan_digest:

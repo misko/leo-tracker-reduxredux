@@ -350,12 +350,7 @@ def _execute_run(
     reprocess: bool,
     pipeline_release_id: str = PIPELINE_RELEASE,
 ) -> None:
-    compiler = (
-        standard_native_pipeline.compile_standard_native_default_run_plan
-        if reprocess
-        else standard_native_pipeline.compile_standard_native_automatic_run_plan
-    )
-    plan = compiler(
+    plan = standard_native_pipeline.compile_standard_native_default_run_plan(
         source.manifest,
         manifest_digest=source.manifest_digest,
         pipeline_release_id=pipeline_release_id,
@@ -465,7 +460,7 @@ def _prepare() -> tuple[str, Path]:
         run_id=CURRENT_RUN_ID,
         reprocess=True,
     )
-    failed_plan = standard_native_pipeline.compile_standard_native_automatic_run_plan(
+    failed_plan = standard_native_pipeline.compile_standard_native_default_run_plan(
         failed.manifest,
         manifest_digest=failed.manifest_digest,
         pipeline_release_id=PIPELINE_RELEASE,
@@ -479,7 +474,7 @@ def _prepare() -> tuple[str, Path]:
         run_id="e2e-intentional-failure",
         failure="Intentional production E2E analysis failure",
     )
-    pending_plan = standard_native_pipeline.compile_standard_native_automatic_run_plan(
+    pending_plan = standard_native_pipeline.compile_standard_native_default_run_plan(
         pending.manifest,
         manifest_digest=pending.manifest_digest,
         pipeline_release_id=PIPELINE_RELEASE,

@@ -155,7 +155,7 @@ def test_native_plan_cannot_enter_research_lane() -> None:
     ),
 )
 @pytest.mark.parametrize("trigger", ("new_capture", "reprocess"))
-def test_exact_v3_native_plan_respects_automatic_2p5_only_policy(
+def test_exact_v3_native_plan_uses_complete_default_policy(
     monkeypatch: pytest.MonkeyPatch,
     profile_name: str,
     trigger: Literal["new_capture", "reprocess"],
@@ -165,23 +165,7 @@ def test_exact_v3_native_plan_respects_automatic_2p5_only_policy(
     manifest = _manifest(profile_name)
     manifest_digest = canonical_digest({"manifest": profile_name})
     rate_hz = manifest.capture_plan.profile_revision.profile.sample_rate_hz
-    compiler = (
-        compile_standard_native_automatic_run_plan
-        if trigger == "new_capture"
-        else compile_standard_native_run_plan
-    )
-    if trigger == "new_capture" and rate_hz != 2_500_000:
-        with pytest.raises(
-            ValueError,
-            match="automatic Standard-native analysis requires a 2.5 MS/s stream",
-        ):
-            compiler(
-                manifest,
-                manifest_digest=manifest_digest,
-                pipeline_release_id=_RELEASE,
-            )
-        return
-    plan = compiler(
+    plan = compile_standard_native_default_run_plan(
         manifest,
         manifest_digest=manifest_digest,
         pipeline_release_id=_RELEASE,
@@ -332,7 +316,7 @@ def test_exact_native_plan_reaches_evidence_only_persistence(
     assert len(catalog.created["jobs"]) == len(plan.jobs)
 
 
-def test_v6_automatic_run_revalidates_the_complete_2p5_x25_pair(
+def test_v6_default_run_revalidates_and_renders_the_complete_2p5_x25_pair(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -388,8 +372,8 @@ def test_v6_automatic_run_revalidates_the_complete_2p5_x25_pair(
     )
 
     service.create_expanded_run(
-        run_id="automatic-low-only-v6-run",
-        plan=automatic,
+        run_id="default-all-rate-v6-run",
+        plan=default,
         trigger="new_capture",
         promotion_policy="current",
     )
@@ -410,7 +394,8 @@ def test_v6_automatic_run_revalidates_the_complete_2p5_x25_pair(
     }
     assert automatic_rates == {2_500_000, 25_000_000}
     assert explicit_rates == {2_500_000, 25_000_000}
-    assert default == automatic
+    assert default == explicit
+    assert default != automatic
     assert Counter(job.stage_key for job in automatic.jobs) == Counter(
         {
             "path-standard-native": 2,
