@@ -21,7 +21,10 @@ from leo.scanner.persistent_hop import (
     PersistentHopVisitV1,
     persistent_hop_wire_session_id,
 )
-from leo.scanner.persistent_hop_ports import PersistentHopVisitBlock
+from leo.scanner.persistent_hop_ports import (
+    PersistentHopStartClockBracketV1,
+    PersistentHopVisitBlock,
+)
 from leo.scanner.ports import ScanRadioIdentity
 
 
@@ -59,6 +62,7 @@ class FakePersistentHopRadio:
         restoration_error: str | None = None,
         transport_loss_before_visit: int | None = None,
         first_device_sample_counter: int = 1_000_000,
+        start_clock_bracket: PersistentHopStartClockBracketV1 | None = None,
     ) -> None:
         if transition_invalid_ms <= 0:
             raise ValueError("fake persistent-hop transition interval must be positive")
@@ -80,6 +84,7 @@ class FakePersistentHopRadio:
         self._restoration_error = restoration_error
         self._transport_loss_before_visit = transport_loss_before_visit
         self._first_device_sample_counter = first_device_sample_counter
+        self._start_clock_bracket = start_clock_bracket
         self._is_open = False
         self._active_session: FakePersistentHopSession | None = None
         self.lifecycle: list[str] = []
@@ -139,6 +144,7 @@ class FakePersistentHopRadio:
             hop_event_sequence_gaps_before_visits=self._hop_event_sequence_gaps,
             restoration_error=self._restoration_error,
             transport_loss_before_visit=self._transport_loss_before_visit,
+            start_clock_bracket=self._start_clock_bracket,
         )
         self._active_session = session
         self.lifecycle.append(f"begin_session:{session_id}")
@@ -182,6 +188,7 @@ class FakePersistentHopSession:
         hop_event_sequence_gaps_before_visits: dict[int, int],
         restoration_error: str | None,
         transport_loss_before_visit: int | None,
+        start_clock_bracket: PersistentHopStartClockBracketV1 | None,
     ) -> None:
         self._radio = radio
         self._plan = plan
@@ -196,6 +203,7 @@ class FakePersistentHopSession:
         self._hop_event_sequence_gaps = hop_event_sequence_gaps_before_visits
         self._restoration_error = restoration_error
         self._transport_loss_before_visit = transport_loss_before_visit
+        self._start_clock_bracket = start_clock_bracket
         self._visits: list[PersistentHopVisitV1] = []
         self._faults: list[PersistentHopContinuityFaultV1] = []
         self._sample_cache: dict[int, np.ndarray] = {}
@@ -211,6 +219,10 @@ class FakePersistentHopSession:
     @property
     def complete(self) -> bool:
         return self._terminal
+
+    @property
+    def start_clock_bracket(self) -> PersistentHopStartClockBracketV1 | None:
+        return self._start_clock_bracket
 
     def read_visit(self) -> PersistentHopVisitBlock:
         if self._terminal and not self._transport_lost:

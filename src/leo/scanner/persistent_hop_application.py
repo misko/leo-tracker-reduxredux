@@ -77,6 +77,12 @@ def capture_persistent_hop_session(
         session = radio.begin_session(plan, session_id=session_id)
         begin_after_realtime_ns = realtime_ns()
         begin_after_monotonic_ns = monotonic_ns()
+        precise_start = session.start_clock_bracket
+        if precise_start is not None:
+            begin_before_realtime_ns = precise_start.before_realtime_ns
+            begin_before_monotonic_ns = precise_start.before_monotonic_ns
+            begin_after_realtime_ns = precise_start.after_realtime_ns
+            begin_after_monotonic_ns = precise_start.after_monotonic_ns
         cancel_requested = False
         while not session.complete:
             if cancel.is_set() and not cancel_requested:

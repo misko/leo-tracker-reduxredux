@@ -10,6 +10,7 @@ from leo.scanner.persistent_hop_application import (
     PersistentHopCaptureError,
     capture_persistent_hop_session,
 )
+from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 
 
 def test_persistent_hop_application_drains_complete_300_second_session() -> None:
@@ -90,6 +91,42 @@ def test_persistent_hop_application_emits_qualified_utc_timing_authority() -> No
     assert timing.first_sample_earliest_utc_ns == 1_000_000_000_000
     assert timing.first_sample_latest_utc_ns == 1_000_002_000_000
     assert timing.first_sample_estimate_utc_ns == 1_000_001_000_000
+
+
+def test_persistent_hop_application_prefers_precise_capture_open_bracket() -> None:
+    radio = FakePersistentHopRadio(
+        start_clock_bracket=PersistentHopStartClockBracketV1(
+            before_realtime_ns=1_002_700_000_000,
+            before_monotonic_ns=102_700_000_000,
+            after_realtime_ns=1_002_702_000_000,
+            after_monotonic_ns=102_702_000_000,
+        )
+    )
+    plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+    cancel = Event()
+    timings = []
+    realtime_values = iter((1_000_000_000_000, 1_002_800_000_000, 1_302_700_000_000))
+    monotonic_values = iter((100_000_000_000, 102_800_000_000, 402_700_000_000))
+
+    def retain_one(_block) -> None:
+        cancel.set()
+
+    capture_persistent_hop_session(
+        radio,
+        plan,
+        session_id="hop-precisely-timed",
+        visit_sink=retain_one,
+        cancel=cancel,
+        timing_sink=timings.append,
+        realtime_ns=lambda: next(realtime_values),
+        monotonic_ns=lambda: next(monotonic_values),
+    )
+
+    timing = timings[0]
+    assert timing.qualified is True
+    assert timing.first_sample_bracket_width_ns == 2_000_000
+    assert timing.first_sample_earliest_utc_ns == 1_002_700_000_000
+    assert timing.first_sample_latest_utc_ns == 1_002_702_000_000
 
 
 def test_persistent_hop_utc_authority_detects_wall_clock_step() -> None:
