@@ -412,6 +412,7 @@ def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     assert ".release-tools/" in (PROJECT_ROOT / ".gitignore").read_text().splitlines()
     playwright = (PROJECT_ROOT / "web/playwright.config.ts").read_text()
     assert "uv run --frozen --no-sync uvicorn" in playwright
+    assert "timeout: 180_000" in playwright
 
 
 def test_api_is_open_lan_read_only_and_services_fail_closed_without_env() -> None:
