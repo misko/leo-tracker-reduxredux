@@ -1,0 +1,1389 @@
+{
+  "candidate_only": true,
+  "causal_starlink_element_count": 11087,
+  "coarse_horizon_candidate_count": 796,
+  "frequency_nuisance": "one constant offset learned per source tracklet; no scale, slope, acceleration, or jerk adjustment is allowed for a TLE curve",
+  "identity_claimed": false,
+  "method": "causal pre-recording Starlink TLEs; SGP4 at 11.2 GHz; per-tracklet constant offsets; stratified 60/40 chronological holdout; bounded shared tau",
+  "observer_site": {
+    "altitude_m": -29.0,
+    "label": "Spinnaker, Sausalito",
+    "latitude_deg": 37.858988,
+    "longitude_deg": -122.478103,
+    "schema_version": 1
+  },
+  "orbital_time_adjustment": {
+    "heldout_rows_used_for_selection": false,
+    "maximum_s": 5.0,
+    "meaning": "common equivalent along-track epoch sensitivity applied to every source tracklet in one association",
+    "minimum_s": -5.0,
+    "selected_using": "first 60 percent of every source tracklet only",
+    "state_count": 41,
+    "step_s": 0.25
+  },
+  "recording_earliest_support_utc": "2026-09-07T02:00:12.880529478Z",
+  "recording_latest_support_utc": "2026-09-07T02:05:04.497311478Z",
+  "results": [
+    {
+      "abstention_reasons": [
+        "left-channel cubic extrapolation was not worse after the handoff"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 202.20746580762523,
+            "right_heldout_rms_hz": 170.79175186286403
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 350.8655092278564,
+            "right_heldout_rms_hz": 2796.289154730999
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 149.31168738440564,
+            "right_heldout_rms_hz": 92.86768052360807
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-34856",
+          "norad_id": 65687,
+          "right_heldout_rms_hz": 112.7774382555792
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": false,
+        "winner": {
+          "left_runner_rms_gap_hz": 436.0390282607395,
+          "left_training_rms_hz": 112.68761937458822,
+          "name": "STARLINK-34856",
+          "norad_id": 65687,
+          "right_heldout_rank": 1,
+          "right_heldout_rms_hz": 112.7774382555792,
+          "tau_s": -0.5
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-34856",
+        "norad_id": 65687,
+        "rms_hz": 107.73785554915952,
+        "tau_s": -0.75
+      },
+      "eligible_causal_tle_count": 496,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-34856",
+        "norad_id": 65687,
+        "rms_hz": 112.57557729548635
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 62,
+      "heldout_winner": {
+        "heldout_rms_hz": 138.40597427623067,
+        "name": "STARLINK-34856",
+        "norad_id": 65687
+      },
+      "label": "CH1LU RX0+1 \u2192 CH2U RX0+1",
+      "left_label": "CH1LU RX0+1",
+      "observation_count": 149,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 2248.25147637711,
+          "training_rms_hz": 416.8669449372345
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 1307.5537730696726,
+          "training_rms_hz": 285.4024002819004
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 153.2190337911156,
+          "training_rms_hz": 109.39011833344483
+        }
+      ],
+      "rank": 1,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 1.3861961802454061,
+        "candidate_count_within_100_hz_per_s": 5,
+        "name": "STARLINK-34856",
+        "norad_id": 65687
+      },
+      "rf_join_shared_minus_independent_bic": -12.61174158197241,
+      "rf_join_supported": true,
+      "right_label": "CH2U RX0+1",
+      "source_tracklet_count": 6,
+      "support_s": [
+        140.655999566,
+        183.477836935
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": true,
+      "training_observation_count": 87,
+      "training_runner": {
+        "name": "STARLINK-34997",
+        "norad_id": 65418,
+        "tau_s": -1.25,
+        "training_rms_hz": 368.53695451191334,
+        "winner_to_runner_rms_gap_hz": 259.1692332774273
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 68380.80914354324,
+        "element_epoch_utc": "2026-09-06T07:02:44.567232000Z",
+        "heldout_rank": 1,
+        "heldout_rms_hz": 138.40597427623067,
+        "name": "STARLINK-34856",
+        "norad_id": 65687,
+        "tau_boundary": false,
+        "tau_s": -0.75,
+        "training_rms_hz": 109.36772123448604
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "training TLE did not remain heldout rank one",
+        "left-channel-only TLE winner disagreed with stratified winner",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 220.73699092409947,
+            "right_heldout_rms_hz": 1131.637587627074
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 447.38850892208325,
+            "right_heldout_rms_hz": 3688.0529255491915
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 1140.4007332341748,
+            "right_heldout_rms_hz": 11027.730799604133
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-31025",
+          "norad_id": 58634,
+          "right_heldout_rms_hz": 54.05407335688418
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 10.927299051444095,
+          "left_training_rms_hz": 136.14672542847214,
+          "name": "STARLINK-11530",
+          "norad_id": 62562,
+          "right_heldout_rank": 23,
+          "right_heldout_rms_hz": 4568.927196797495,
+          "tau_s": -0.25
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-31789",
+        "norad_id": 59644,
+        "rms_hz": 142.62613800724557,
+        "tau_s": -1.75
+      },
+      "eligible_causal_tle_count": 504,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-31025",
+        "norad_id": 58634,
+        "rms_hz": 178.3388994978916
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 9,
+      "heldout_winner": {
+        "heldout_rms_hz": 114.856427445345,
+        "name": "STARLINK-31025",
+        "norad_id": 58634
+      },
+      "label": "CH2U RX0 \u2192 CH4L RX0",
+      "left_label": "CH2U RX0",
+      "observation_count": 21,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 707.1405838567761,
+          "training_rms_hz": 317.39579323716606
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 594.5182124241428,
+          "training_rms_hz": 81.97342720499736
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 1019.9486028242337,
+          "training_rms_hz": 74.94858294497587
+        }
+      ],
+      "rank": 2,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 0.2797866053397229,
+        "candidate_count_within_100_hz_per_s": 10,
+        "name": "STARLINK-11327",
+        "norad_id": 61695
+      },
+      "rf_join_shared_minus_independent_bic": 0.41164798106743206,
+      "rf_join_supported": false,
+      "right_label": "CH4L RX0",
+      "source_tracklet_count": 2,
+      "support_s": [
+        105.124463039,
+        126.972381209
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": true,
+      "training_observation_count": 12,
+      "training_runner": {
+        "name": "STARLINK-31025",
+        "norad_id": 58634,
+        "tau_s": -5.0,
+        "training_rms_hz": 212.87976534872055,
+        "winner_to_runner_rms_gap_hz": 72.1668770882188
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 18911.29296684265,
+        "element_epoch_utc": "2026-09-06T20:46:38.551872000Z",
+        "heldout_rank": 3,
+        "heldout_rms_hz": 898.2155141057004,
+        "name": "STARLINK-35704",
+        "norad_id": 66221,
+        "tau_boundary": false,
+        "tau_s": -0.5,
+        "training_rms_hz": 140.71288826050176
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "left-channel-only TLE winner did not lead the right-channel holdout",
+        "left-channel cubic extrapolation was not worse after the handoff"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 628.1876899941367,
+            "right_heldout_rms_hz": 4525.760770225259
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 874.8898625013493,
+            "right_heldout_rms_hz": 6148.841221634555
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 185.86847754137568,
+            "right_heldout_rms_hz": 600.6211334430321
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-4251",
+          "norad_id": 53083,
+          "right_heldout_rms_hz": 87.00842759871904
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": false,
+        "winner": {
+          "left_runner_rms_gap_hz": 1275.286759548725,
+          "left_training_rms_hz": 122.18523720956564,
+          "name": "STARLINK-35204",
+          "norad_id": 65694,
+          "right_heldout_rank": 5,
+          "right_heldout_rms_hz": 950.664942843655,
+          "tau_s": -0.25
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-35204",
+        "norad_id": 65694,
+        "rms_hz": 208.11247810129123,
+        "tau_s": 0.25
+      },
+      "eligible_causal_tle_count": 501,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-35204",
+        "norad_id": 65694,
+        "rms_hz": 212.72366581471547
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 75,
+      "heldout_winner": {
+        "heldout_rms_hz": 323.8209251789124,
+        "name": "STARLINK-35204",
+        "norad_id": 65694
+      },
+      "label": "CH2LU RX0+1 \u2192 CH4L RX0",
+      "left_label": "CH2LU RX0+1",
+      "observation_count": 182,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 2517.637171809363,
+          "training_rms_hz": 758.5771416946459
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 2754.428330640729,
+          "training_rms_hz": 814.9876376986698
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 332.53890992306845,
+          "training_rms_hz": 131.64189944433116
+        }
+      ],
+      "rank": 3,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 0.0947091607386028,
+        "candidate_count_within_100_hz_per_s": 1,
+        "name": "STARLINK-35204",
+        "norad_id": 65694
+      },
+      "rf_join_shared_minus_independent_bic": 22.141108277311787,
+      "rf_join_supported": false,
+      "right_label": "CH4L RX0",
+      "source_tracklet_count": 7,
+      "support_s": [
+        113.169421924,
+        170.164542421
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": true,
+      "training_observation_count": 107,
+      "training_runner": {
+        "name": "STARLINK-4251",
+        "norad_id": 53083,
+        "tau_s": -1.0,
+        "training_rms_hz": 470.07645958288913,
+        "winner_to_runner_rms_gap_hz": 295.4703553100888
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 40132.831845998764,
+        "element_epoch_utc": "2026-09-06T14:53:05.057951744Z",
+        "heldout_rank": 1,
+        "heldout_rms_hz": 323.8209251789124,
+        "name": "STARLINK-35204",
+        "norad_id": 65694,
+        "tau_boundary": false,
+        "tau_s": 0.0,
+        "training_rms_hz": 174.60610427280034
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "training TLE did not remain heldout rank one",
+        "cubic radio null was not worse on heldout rows",
+        "training runner separation was below 25 Hz RMS",
+        "left-channel-only TLE winner disagreed with stratified winner",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 695.449737836068,
+            "right_heldout_rms_hz": 2382.0262391925407
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 668.9881830942254,
+            "right_heldout_rms_hz": 2173.848602641643
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 616.8001627581355,
+            "right_heldout_rms_hz": 1580.9093030944791
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-31106",
+          "norad_id": 58689,
+          "right_heldout_rms_hz": 221.4163878401354
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 31.69939276711851,
+          "left_training_rms_hz": 19.136922588231762,
+          "name": "STARLINK-31025",
+          "norad_id": 58634,
+          "right_heldout_rank": 11,
+          "right_heldout_rms_hz": 1557.4796207600152,
+          "tau_s": -1.5
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 20,
+        "name": "STARLINK-5011",
+        "norad_id": 53925,
+        "rms_hz": 321.6761419287288,
+        "tau_s": 2.5
+      },
+      "eligible_causal_tle_count": 494,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 3,
+        "name": "STARLINK-5204",
+        "norad_id": 54101,
+        "rms_hz": 347.89546329638557
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 10,
+      "heldout_winner": {
+        "heldout_rms_hz": 317.5235387965688,
+        "name": "STARLINK-31025",
+        "norad_id": 58634
+      },
+      "label": "CH4L RX0 \u2192 CH1L RX0",
+      "left_label": "CH4L RX0",
+      "observation_count": 23,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 1239.9721403966032,
+          "training_rms_hz": 483.5481615031217
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 1391.8574431141153,
+          "training_rms_hz": 143.3206054179333
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 947.7100014633581,
+          "training_rms_hz": 121.10494652892989
+        }
+      ],
+      "rank": 4,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 1.0674723911142792,
+        "candidate_count_within_100_hz_per_s": 7,
+        "name": "STARLINK-11327",
+        "norad_id": 61695
+      },
+      "rf_join_shared_minus_independent_bic": 66.79481816361587,
+      "rf_join_supported": false,
+      "right_label": "CH1L RX0",
+      "source_tracklet_count": 2,
+      "support_s": [
+        116.930395847,
+        140.65599957
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": false,
+      "training_observation_count": 13,
+      "training_runner": {
+        "name": "STARLINK-30608",
+        "norad_id": 58091,
+        "tau_s": 2.75,
+        "training_rms_hz": 152.31013686302052,
+        "winner_to_runner_rms_gap_hz": 4.222807742537412
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 39350.723475933075,
+        "element_epoch_utc": "2026-09-06T15:06:10.927295744Z",
+        "heldout_rank": 6,
+        "heldout_rms_hz": 1486.1898360057314,
+        "name": "STARLINK-11327",
+        "norad_id": 61695,
+        "tau_boundary": false,
+        "tau_s": -1.5,
+        "training_rms_hz": 148.0873291204831
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "training TLE did not remain heldout rank one",
+        "cubic radio null was not worse on heldout rows",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 1408.9208045548526,
+            "right_heldout_rms_hz": 6265.011581838122
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 462.36545437019817,
+            "right_heldout_rms_hz": 1244.4785651219681
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 802.5628542759455,
+            "right_heldout_rms_hz": 3394.0765279256416
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-30824",
+          "norad_id": 58176,
+          "right_heldout_rms_hz": 485.4752908081933
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 18.20150588185531,
+          "left_training_rms_hz": 97.48681607110433,
+          "name": "STARLINK-34997",
+          "norad_id": 65418,
+          "right_heldout_rank": 3,
+          "right_heldout_rms_hz": 845.4096376114309,
+          "tau_s": 1.0
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 2,
+        "name": "STARLINK-34997",
+        "norad_id": 65418,
+        "rms_hz": 417.77505586563865,
+        "tau_s": 3.75
+      },
+      "eligible_causal_tle_count": 497,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-34997",
+        "norad_id": 65418,
+        "rms_hz": 421.97327316264295
+      },
+      "heldout_candidate_count_within_10_percent": 2,
+      "heldout_observation_count": 12,
+      "heldout_winner": {
+        "heldout_rms_hz": 833.5318333705955,
+        "name": "STARLINK-34856",
+        "norad_id": 65687
+      },
+      "label": "CH1L RX0 \u2192 CH4L RX0",
+      "left_label": "CH1L RX0",
+      "observation_count": 28,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 2417.1687173989735,
+          "training_rms_hz": 1079.4599784044321
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 2132.274192032764,
+          "training_rms_hz": 188.87509433747024
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 787.8355817335062,
+          "training_rms_hz": 114.16609150976858
+        }
+      ],
+      "rank": 5,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 1.7409454428607205,
+        "candidate_count_within_100_hz_per_s": 6,
+        "name": "STARLINK-5937",
+        "norad_id": 56922
+      },
+      "rf_join_shared_minus_independent_bic": 69.18973170715913,
+      "rf_join_supported": false,
+      "right_label": "CH4L RX0",
+      "source_tracklet_count": 2,
+      "support_s": [
+        129.613725838,
+        157.103237242
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": false,
+      "training_observation_count": 16,
+      "training_runner": {
+        "name": "STARLINK-34856",
+        "norad_id": 65687,
+        "tau_s": 3.25,
+        "training_rms_hz": 495.42683316990696,
+        "winner_to_runner_rms_gap_hz": 122.60759025270039
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 18889.069205760956,
+        "element_epoch_utc": "2026-09-06T20:47:25.264896000Z",
+        "heldout_rank": 2,
+        "heldout_rms_hz": 911.9563993507718,
+        "name": "STARLINK-34997",
+        "norad_id": 65418,
+        "tau_boundary": false,
+        "tau_s": 4.0,
+        "training_rms_hz": 372.81924291720657
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "time adjustment hit the \u00b15 s boundary",
+        "cubic radio null was not worse on heldout rows",
+        "training runner separation was below 25 Hz RMS",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 322.3690172062241,
+            "right_heldout_rms_hz": 996.3401466657662
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 313.0050574047057,
+            "right_heldout_rms_hz": 916.1072011059015
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 318.8464828584594,
+            "right_heldout_rms_hz": 1003.331025460007
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-31423",
+          "norad_id": 59242,
+          "right_heldout_rms_hz": 199.17202307455966
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 84.84671829158796,
+          "left_training_rms_hz": 37.0471005838324,
+          "name": "STARLINK-36595",
+          "norad_id": 67639,
+          "right_heldout_rank": 2,
+          "right_heldout_rms_hz": 371.5256620185545,
+          "tau_s": 1.0
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 32,
+        "name": "STARLINK-11530",
+        "norad_id": 62562,
+        "rms_hz": 167.60495803515857,
+        "tau_s": 0.25
+      },
+      "eligible_causal_tle_count": 493,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-36595",
+        "norad_id": 67639,
+        "rms_hz": 213.86244852874074
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 10,
+      "heldout_winner": {
+        "heldout_rms_hz": 841.8456336621821,
+        "name": "STARLINK-36595",
+        "norad_id": 67639
+      },
+      "label": "CH1L RX1 \u2192 CH2L RX1",
+      "left_label": "CH1L RX1",
+      "observation_count": 23,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 564.3130223694163,
+          "training_rms_hz": 216.39821096437433
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 748.490725254758,
+          "training_rms_hz": 78.03021670517721
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 516.864156644736,
+          "training_rms_hz": 58.78250680855688
+        }
+      ],
+      "rank": 6,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 1.4619809257128509,
+        "candidate_count_within_100_hz_per_s": 5,
+        "name": "STARLINK-11657",
+        "norad_id": 63558
+      },
+      "rf_join_shared_minus_independent_bic": 74.05164240123187,
+      "rf_join_supported": false,
+      "right_label": "CH2L RX1",
+      "source_tracklet_count": 2,
+      "support_s": [
+        236.066018465,
+        257.302057388
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": false,
+      "training_observation_count": 13,
+      "training_runner": {
+        "name": "STARLINK-35221",
+        "norad_id": 65695,
+        "tau_s": -5.0,
+        "training_rms_hz": 98.22301206546588,
+        "winner_to_runner_rms_gap_hz": 9.075105467721698
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 74475.765178442,
+        "element_epoch_utc": "2026-09-06T05:22:45.021216000Z",
+        "heldout_rank": 1,
+        "heldout_rms_hz": 841.8456336621821,
+        "name": "STARLINK-36595",
+        "norad_id": 67639,
+        "tau_boundary": true,
+        "tau_s": 5.0,
+        "training_rms_hz": 89.14790659774418
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "training TLE did not remain heldout rank one",
+        "left-channel-only TLE winner disagreed with stratified winner",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 768.5773242539283,
+            "right_heldout_rms_hz": 3292.0641911543094
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 1220.314263741073,
+            "right_heldout_rms_hz": 6710.97583570201
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 1307.4783096311908,
+            "right_heldout_rms_hz": 7727.839309109119
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-38107",
+          "norad_id": 100004,
+          "right_heldout_rms_hz": 403.22135888003345
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 5.345795678841782,
+          "left_training_rms_hz": 15.95099297483793,
+          "name": "STARLINK-35704",
+          "norad_id": 66221,
+          "right_heldout_rank": 22,
+          "right_heldout_rms_hz": 6981.666740796885,
+          "tau_s": -0.25
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 8,
+        "name": "STARLINK-38107",
+        "norad_id": 100004,
+        "rms_hz": 357.2330170998933,
+        "tau_s": -1.5
+      },
+      "eligible_causal_tle_count": 493,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 2,
+        "name": "STARLINK-38107",
+        "norad_id": 100004,
+        "rms_hz": 358.02467536251044
+      },
+      "heldout_candidate_count_within_10_percent": 2,
+      "heldout_observation_count": 16,
+      "heldout_winner": {
+        "heldout_rms_hz": 1013.7950767044791,
+        "name": "STARLINK-5566",
+        "norad_id": 56133
+      },
+      "label": "CH4L RX0 \u2192 CH2U RX0+1",
+      "left_label": "CH4L RX0",
+      "observation_count": 37,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 1556.86896186135,
+          "training_rms_hz": 439.2005075555059
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 1229.9922611463548,
+          "training_rms_hz": 175.5384356258435
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 1101.0324548845829,
+          "training_rms_hz": 162.46766512728811
+        }
+      ],
+      "rank": 7,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 0.06776689817570514,
+        "candidate_count_within_100_hz_per_s": 7,
+        "name": "STARLINK-30824",
+        "norad_id": 58176
+      },
+      "rf_join_shared_minus_independent_bic": 104.49525300569923,
+      "rf_join_supported": false,
+      "right_label": "CH2U RX0+1",
+      "source_tracklet_count": 3,
+      "support_s": [
+        159.112604108,
+        183.477836935
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": true,
+      "training_observation_count": 21,
+      "training_runner": {
+        "name": "STARLINK-5566",
+        "norad_id": 56133,
+        "tau_s": 4.5,
+        "training_rms_hz": 204.12989848725402,
+        "winner_to_runner_rms_gap_hz": 35.06166729470246
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 60868.88453197479,
+        "element_epoch_utc": "2026-09-06T09:08:14.948448000Z",
+        "heldout_rank": 2,
+        "heldout_rms_hz": 1095.8191640995067,
+        "name": "STARLINK-38107",
+        "norad_id": 100004,
+        "tau_boundary": false,
+        "tau_s": 2.5,
+        "training_rms_hz": 169.06823119255156
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "left-channel-only TLE winner disagreed with stratified winner",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 2661.1377973195886,
+            "right_heldout_rms_hz": 16157.847147950197
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 629.8975539481268,
+            "right_heldout_rms_hz": 3878.2731526303737
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 1990.461225284511,
+            "right_heldout_rms_hz": 21598.780682146094
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-35204",
+          "norad_id": 65694,
+          "right_heldout_rms_hz": 210.1206863094801
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 7.311329039939906,
+          "left_training_rms_hz": 102.3558451169252,
+          "name": "STARLINK-35704",
+          "norad_id": 66221,
+          "right_heldout_rank": 3,
+          "right_heldout_rms_hz": 3948.0946605025047,
+          "tau_s": 1.5
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-35204",
+        "norad_id": 65694,
+        "rms_hz": 123.0392674706616,
+        "tau_s": -0.5
+      },
+      "eligible_causal_tle_count": 503,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-35204",
+        "norad_id": 65694,
+        "rms_hz": 123.43055951496846
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 74,
+      "heldout_winner": {
+        "heldout_rms_hz": 138.29493799405392,
+        "name": "STARLINK-35204",
+        "norad_id": 65694
+      },
+      "label": "CH3U RX0 \u2192 CH2LU RX0+1",
+      "left_label": "CH3U RX0",
+      "observation_count": 180,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 2639.419569676257,
+          "training_rms_hz": 898.5560127472329
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 2716.1407653382907,
+          "training_rms_hz": 502.39857639281206
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 306.88607843493094,
+          "training_rms_hz": 159.7094203202448
+        }
+      ],
+      "rank": 8,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 1.2874446124210408,
+        "candidate_count_within_100_hz_per_s": 1,
+        "name": "STARLINK-35204",
+        "norad_id": 65694
+      },
+      "rf_join_shared_minus_independent_bic": 120.7528576525624,
+      "rf_join_supported": false,
+      "right_label": "CH2LU RX0+1",
+      "source_tracklet_count": 7,
+      "support_s": [
+        102.236434713,
+        158.861320834
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": true,
+      "training_observation_count": 106,
+      "training_runner": {
+        "name": "STARLINK-4251",
+        "norad_id": 53083,
+        "tau_s": -1.25,
+        "training_rms_hz": 484.5311679714322,
+        "winner_to_runner_rms_gap_hz": 363.78368188763955
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 40121.89885878563,
+        "element_epoch_utc": "2026-09-06T14:53:05.057951744Z",
+        "heldout_rank": 1,
+        "heldout_rms_hz": 138.29493799405392,
+        "name": "STARLINK-35204",
+        "norad_id": 65694,
+        "tau_boundary": false,
+        "tau_s": -0.25,
+        "training_rms_hz": 120.74748608379262
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "training TLE did not remain heldout rank one",
+        "cubic radio null was not worse on heldout rows",
+        "left-channel-only TLE winner disagreed with stratified winner",
+        "left-channel-only TLE winner did not lead the right-channel holdout",
+        "left-channel cubic extrapolation was not worse after the handoff"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 921.3455641404657,
+            "right_heldout_rms_hz": 3671.9987991052285
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 1525.8165918724317,
+            "right_heldout_rms_hz": 8101.248034614033
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 1388.0553719134007,
+            "right_heldout_rms_hz": 6749.651007246416
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-31106",
+          "norad_id": 58689,
+          "right_heldout_rms_hz": 221.4163878401354
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": false,
+        "winner": {
+          "left_runner_rms_gap_hz": 20.40004913054989,
+          "left_training_rms_hz": 107.31607486768571,
+          "name": "STARLINK-35204",
+          "norad_id": 65694,
+          "right_heldout_rank": 47,
+          "right_heldout_rms_hz": 7080.405997821407,
+          "tau_s": -0.25
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 5,
+        "name": "STARLINK-37214",
+        "norad_id": 68345,
+        "rms_hz": 666.5924871105356,
+        "tau_s": -5.0
+      },
+      "eligible_causal_tle_count": 493,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 3,
+        "name": "STARLINK-4348",
+        "norad_id": 53075,
+        "rms_hz": 790.3260348059927
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 19,
+      "heldout_winner": {
+        "heldout_rms_hz": 1046.8465970588647,
+        "name": "STARLINK-4348",
+        "norad_id": 53075
+      },
+      "label": "CH3LU RX0+1 \u2192 CH1L RX0",
+      "left_label": "CH3LU RX0+1",
+      "observation_count": 46,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 2240.829918781359,
+          "training_rms_hz": 644.4484943025741
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 2501.8624038840676,
+          "training_rms_hz": 398.73170243141277
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 2158.1250134535426,
+          "training_rms_hz": 183.32209065216597
+        }
+      ],
+      "rank": 9,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 0.37966508536601395,
+        "candidate_count_within_100_hz_per_s": 5,
+        "name": "STARLINK-4251",
+        "norad_id": 53083
+      },
+      "rf_join_shared_minus_independent_bic": 138.9559272411948,
+      "rf_join_supported": false,
+      "right_label": "CH1L RX0",
+      "source_tracklet_count": 3,
+      "support_s": [
+        107.771167127,
+        140.65599957
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": false,
+      "training_observation_count": 27,
+      "training_runner": {
+        "name": "STARLINK-5204",
+        "norad_id": 54101,
+        "tau_s": 5.0,
+        "training_rms_hz": 394.3476256395295,
+        "winner_to_runner_rms_gap_hz": 44.90708618927414
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 18962.724566698074,
+        "element_epoch_utc": "2026-09-06T20:45:49.766976000Z",
+        "heldout_rank": 5,
+        "heldout_rms_hz": 2340.986841491309,
+        "name": "STARLINK-32815",
+        "norad_id": 62956,
+        "tau_boundary": false,
+        "tau_s": 2.0,
+        "training_rms_hz": 349.44053945025536
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "training TLE did not remain heldout rank one",
+        "time adjustment hit the \u00b15 s boundary",
+        "left-channel-only TLE winner disagreed with stratified winner",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 832.1275034472364,
+            "right_heldout_rms_hz": 3161.6999391935447
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 1603.222083748176,
+            "right_heldout_rms_hz": 8669.874448886867
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 1521.44664074838,
+            "right_heldout_rms_hz": 7906.388846428802
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-31106",
+          "norad_id": 58689,
+          "right_heldout_rms_hz": 221.4163878401354
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 85.49963886975979,
+          "left_training_rms_hz": 114.10473354617477,
+          "name": "STARLINK-35204",
+          "norad_id": 65694,
+          "right_heldout_rank": 47,
+          "right_heldout_rms_hz": 7080.405997821407,
+          "tau_s": -0.25
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 2,
+        "name": "STARLINK-31789",
+        "norad_id": 59644,
+        "rms_hz": 766.7360345187077,
+        "tau_s": 4.75
+      },
+      "eligible_causal_tle_count": 493,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 2,
+        "name": "STARLINK-32815",
+        "norad_id": 62956,
+        "rms_hz": 860.8048425593654
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 20,
+      "heldout_winner": {
+        "heldout_rms_hz": 1362.6864180197351,
+        "name": "STARLINK-4348",
+        "norad_id": 53075
+      },
+      "label": "CH3LU RX0+1 \u2192 CH1L RX0",
+      "left_label": "CH3LU RX0+1",
+      "observation_count": 48,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 2601.606106189498,
+          "training_rms_hz": 607.1214574688804
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 2833.4445918822666,
+          "training_rms_hz": 525.1180961565136
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 2127.4281946453525,
+          "training_rms_hz": 193.50368773125697
+        }
+      ],
+      "rank": 10,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 0.056142873668250104,
+        "candidate_count_within_100_hz_per_s": 7,
+        "name": "STARLINK-4251",
+        "norad_id": 53083
+      },
+      "rf_join_shared_minus_independent_bic": 143.97433522040075,
+      "rf_join_supported": false,
+      "right_label": "CH1L RX0",
+      "source_tracklet_count": 3,
+      "support_s": [
+        104.74846548,
+        140.65599957
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": true,
+      "training_observation_count": 28,
+      "training_runner": {
+        "name": "STARLINK-5204",
+        "norad_id": 54101,
+        "tau_s": 5.0,
+        "training_rms_hz": 566.8612995244862,
+        "winner_to_runner_rms_gap_hz": 61.39446391554577
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 92286.75114536285,
+        "element_epoch_utc": "2026-09-06T00:23:42.717696000Z",
+        "heldout_rank": 3,
+        "heldout_rms_hz": 1773.0317194575057,
+        "name": "STARLINK-31025",
+        "norad_id": 58634,
+        "tau_boundary": true,
+        "tau_s": 5.0,
+        "training_rms_hz": 505.4668356089404
+      }
+    },
+    {
+      "abstention_reasons": [
+        "RF-only shared-trajectory gate rejected this channel join",
+        "training TLE did not remain heldout rank one",
+        "cubic radio null was not worse on heldout rows",
+        "left-channel-only TLE winner disagreed with stratified winner",
+        "left-channel-only TLE winner did not lead the right-channel holdout"
+      ],
+      "abstention_recommended": true,
+      "channel_handoff_test": {
+        "radio_polynomial_nulls": [
+          {
+            "degree": 1,
+            "right_calibration_rms_hz": 761.872392671347,
+            "right_heldout_rms_hz": 2985.0062338223347
+          },
+          {
+            "degree": 2,
+            "right_calibration_rms_hz": 1645.4963805748605,
+            "right_heldout_rms_hz": 7877.081429307167
+          },
+          {
+            "degree": 3,
+            "right_calibration_rms_hz": 1529.594381859127,
+            "right_heldout_rms_hz": 7097.113887298443
+          }
+        ],
+        "right_heldout_fraction_per_tracklet": 0.6,
+        "right_heldout_winner": {
+          "name": "STARLINK-2385",
+          "norad_id": 47804,
+          "right_heldout_rms_hz": 407.5251072288079
+        },
+        "right_offset_calibration_fraction_per_tracklet": 0.4,
+        "selection_rows": "all observations from the left channel only",
+        "tle_beats_cubic_radio_null_on_right_heldout": true,
+        "winner": {
+          "left_runner_rms_gap_hz": 262.7481715321005,
+          "left_training_rms_hz": 86.75447594128491,
+          "name": "STARLINK-37214",
+          "norad_id": 68345,
+          "right_heldout_rank": 56,
+          "right_heldout_rms_hz": 6170.405154840542,
+          "tau_s": -1.25
+        }
+      },
+      "curvature_only_descriptive_winner": {
+        "candidate_count_within_10_percent": 3,
+        "name": "STARLINK-11327",
+        "norad_id": 61695,
+        "rms_hz": 829.2457230894418,
+        "tau_s": 5.0
+      },
+      "eligible_causal_tle_count": 504,
+      "full_shape_descriptive_winner": {
+        "candidate_count_within_10_percent": 1,
+        "name": "STARLINK-5395",
+        "norad_id": 54831,
+        "rms_hz": 867.6074693065492
+      },
+      "heldout_candidate_count_within_10_percent": 1,
+      "heldout_observation_count": 27,
+      "heldout_winner": {
+        "heldout_rms_hz": 1679.341413900148,
+        "name": "STARLINK-5395",
+        "norad_id": 54831
+      },
+      "label": "CH4LU RX0+1 \u2192 CH3U RX0",
+      "left_label": "CH4LU RX0+1",
+      "observation_count": 65,
+      "radio_polynomial_nulls": [
+        {
+          "degree": 1,
+          "heldout_rms_hz": 2756.141221722877,
+          "training_rms_hz": 565.1418693707726
+        },
+        {
+          "degree": 2,
+          "heldout_rms_hz": 2814.1503577382364,
+          "training_rms_hz": 556.3844469419006
+        },
+        {
+          "degree": 3,
+          "heldout_rms_hz": 1424.9965337490103,
+          "training_rms_hz": 163.0481918097741
+        }
+      ],
+      "rank": 11,
+      "rate_only_descriptive_winner": {
+        "absolute_rate_error_hz_per_s": 0.2911775586062504,
+        "candidate_count_within_100_hz_per_s": 7,
+        "name": "STARLINK-31079",
+        "norad_id": 58598
+      },
+      "rf_join_shared_minus_independent_bic": 232.1900318377933,
+      "rf_join_supported": false,
+      "right_label": "CH3U RX0",
+      "source_tracklet_count": 4,
+      "support_s": [
+        74.730518742,
+        111.282538047
+      ],
+      "tle_beats_cubic_radio_null_on_heldout": false,
+      "training_observation_count": 38,
+      "training_runner": {
+        "name": "STARLINK-32815",
+        "norad_id": 62956,
+        "tau_s": 5.0,
+        "training_rms_hz": 610.8065443007124,
+        "winner_to_runner_rms_gap_hz": 100.82867250412517
+      },
+      "training_winner": {
+        "element_age_at_support_start_s": 72556.22078251839,
+        "element_epoch_utc": "2026-09-06T05:52:03.230112000Z",
+        "heldout_rank": 2,
+        "heldout_rms_hz": 1865.8390922374076,
+        "name": "STARLINK-11541",
+        "norad_id": 63015,
+        "tau_boundary": false,
+        "tau_s": -4.5,
+        "training_rms_hz": 509.97787179658724
+      }
+    }
+  ],
+  "schema_version": 1,
+  "scope": "all 11 exclusivity-compatible cross-channel association candidates",
+  "session_id": "scan-hop-09970e41439adea3",
+  "tle_element_policy": "object name starts STARLINK and element epoch is strictly before earliest recording support",
+  "tle_snapshot": {
+    "collected_utc": "2026-09-07T01:04:51.806973293Z",
+    "collected_utc_ns": 1788743091806973293,
+    "digest": "sha256:b4e951d174f7134bc62ad92807ba7d6c74fa5017ef2b0bb09d67680023e9fe9d",
+    "object_count": 11087,
+    "provider": "space-track",
+    "strictly_before_recording": true
+  },
+  "uniqueness_diagnostics": {
+    "curvature_only_nuisance": "per-tracklet offsets plus one common residual slope; acceleration and higher curvature remain testable",
+    "rate_near_tolerance_hz_per_s": 100.0,
+    "shape_and_curvature_near_fraction": 0.1
+  }
+}
