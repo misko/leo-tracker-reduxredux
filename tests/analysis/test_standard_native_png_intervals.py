@@ -1,64 +1,96 @@
 from __future__ import annotations
 
-from leo.analysis.standard.native_pngs import _restrict_path_to_common_intervals
-from leo.presentation.standard_png import StandardPngPathSource
+import inspect
+from types import SimpleNamespace
+from typing import Any
+
+from leo.analysis.standard import native_pngs
+from leo.analysis.standard.native_analyzers import production_standard_native_evidence_registry
 
 
-def _path() -> StandardPngPathSource:
-    return StandardPngPathSource(
-        path_id="stream-0:rx0",
-        label="radio · stream-0 · RX0",
-        time_offset_s=0.0,
-        tuned_center_frequency_hz=1_190_000_000,
-        sample_rate_hz=10,
+class _Document:
+    def __init__(self, **values: Any) -> None:
+        self.values = values
+        for key, value in values.items():
+            setattr(self, key, value)
+
+    def model_dump(self, *, mode: str) -> dict[str, Any]:
+        assert mode == "json"
+        return dict(self.values)
+
+
+def _science(detection: _Document) -> SimpleNamespace:
+    return SimpleNamespace(
+        detections=(detection,),
+        conditioned_hough_replay=(),
+        residual_hough_bank=SimpleNamespace(families=(), trajectories=()),
+        residual_hough_representatives=(),
+        dealiased_trajectory_bank=SimpleNamespace(branches=()),
+        final_trajectory_bank=object(),
+        cfo_alias_map=_Document(
+            alias_spacing_numerator_hz=2_500_000,
+            alias_spacing_denominator=11,
+        ),
+    )
+
+
+def test_native_png_source_cannot_filter_path_evidence_by_cross_radio_intervals() -> None:
+    parameters = inspect.signature(native_pngs.native_standard_png_source).parameters
+
+    assert "valid_utc_intervals" not in parameters
+    assert "preserve_per_path_waterfall" not in parameters
+
+
+def test_path_source_preserves_detections_and_breaks_only_at_own_continuity_boundary(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        native_pngs,
+        "build_final_trajectory_table_v3",
+        lambda _bank: _Document(trajectories=()),
+    )
+    source = SimpleNamespace(
+        stream_id="stream-0",
+        radio_id="radio-0",
         receiver_id=0,
-        waterfall={
-            "tiles": (
-                {
-                    "time_bin": 0,
-                    "sample_start": 0,
-                    "sample_stop": 10,
-                    "transform_count": 1,
-                    "receiver_power_dbfs": ((-100.0, -99.0),),
-                },
-            ),
-        },
-        pilot_scan={
-            "detections": (
-                {"time_s": 0.5, "id": "inside"},
-                {"time_s": 1.5, "id": "outside"},
-            )
-        },
-        trajectory_feedback={"results": ()},
-        trajectory_table={"trajectories": ()},
-        cfo_alias_map={},
-        dealiased_trajectory_bank={"branches": ()},
-        cfo_lift_replay={},
-        final_trajectory_bank={},
-        final_trajectory_table={"trajectories": ()},
+        sample_rate_hz=10,
+        tuned_center_frequency_hz=1_190_000_000,
+        timing=SimpleNamespace(first_estimate_utc_ns=1_000_000_000),
+        continuity_segments=(
+            _Document(segment_index=0),
+            _Document(segment_index=1),
+        ),
+    )
+    first = _Document(sample_start=2, time_s=0.2, marker="first")
+    second = _Document(sample_start=3, time_s=0.3, marker="second")
+    stateful = SimpleNamespace(
+        source=source,
+        segments=(
+            SimpleNamespace(global_device_sample_start=0, local_science=_science(first)),
+            SimpleNamespace(global_device_sample_start=20, local_science=_science(second)),
+        ),
+    )
+    waterfall = SimpleNamespace(waterfall=_Document(tiles=()))
+    report = SimpleNamespace(segments=())
+    config = SimpleNamespace(feedback=SimpleNamespace(subwindow_ms=25, probe_ms=20))
+
+    path = native_pngs._path_source(
+        waterfall,
+        stateful,
+        report,
+        config=config,
+        origin_utc_ns=1_000_000_000,
     )
 
-
-def test_common_support_keeps_path_waterfall_but_still_clips_paired_evidence() -> None:
-    path = _path()
-
-    restricted = _restrict_path_to_common_intervals(
-        path,
-        intervals=((0.0, 1.0),),
-        preserve_per_path_waterfall=True,
-    )
-
-    assert restricted.waterfall is path.waterfall
-    assert restricted.waterfall["tiles"][0]["transform_count"] == 1
-    assert restricted.waterfall["tiles"][0]["receiver_power_dbfs"] == ((-100.0, -99.0),)
-    assert restricted.pilot_scan["detections"] == ({"time_s": 0.5, "id": "inside"},)
+    detections = path.pilot_scan["detections"]
+    assert tuple(item.get("marker") for item in detections) == ("first", None, "second")
+    assert tuple(item["time_s"] for item in detections) == (0.2, 2.0, 2.3)
+    assert detections[1]["reason"] == "continuity boundary; no scientific sample"
+    assert detections[1]["scores"] == ()
 
 
-def test_common_support_can_mask_waterfall_for_existing_callers() -> None:
-    restricted = _restrict_path_to_common_intervals(
-        _path(),
-        intervals=((0.0, 0.5),),
-    )
+def test_paired_presentation_identity_marks_path_local_evidence_semantics() -> None:
+    spec = production_standard_native_evidence_registry().get("paired-presentation-native").spec
 
-    assert restricted.waterfall["tiles"][0]["transform_count"] == 0
-    assert restricted.waterfall["tiles"][0]["receiver_power_dbfs"] == ((None, None),)
+    assert spec.algorithm_version == "standard-native-paired-presentation-v8"
+    assert spec.configuration_schema == "paired-presentation-native.evidence.v7"

@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import math
 from collections.abc import Mapping
-from dataclasses import replace
 from typing import Any, cast
 
 import numpy as np
@@ -323,121 +322,6 @@ def _path_source(
     )
 
 
-def _clip_model_rows(
-    rows: tuple[dict[str, Any], ...],
-    *,
-    path_offset_s: float,
-    intervals: tuple[tuple[float, float], ...],
-) -> tuple[dict[str, Any], ...]:
-    clipped: list[dict[str, Any]] = []
-    for row in rows:
-        global_start = path_offset_s + float(row["start_s"])
-        global_stop = path_offset_s + float(row["end_s"])
-        for allowed_start, allowed_stop in intervals:
-            start = max(global_start, allowed_start)
-            stop = min(global_stop, allowed_stop)
-            if start < stop:
-                clipped.append(
-                    {
-                        **row,
-                        "start_s": start - path_offset_s,
-                        "end_s": stop - path_offset_s,
-                    }
-                )
-    return tuple(clipped)
-
-
-def _restrict_path_to_common_intervals(
-    path: StandardPngPathSource,
-    *,
-    intervals: tuple[tuple[float, float], ...],
-    preserve_per_path_waterfall: bool = False,
-) -> StandardPngPathSource:
-    def point_is_valid(time_s: float) -> bool:
-        global_time = path.time_offset_s + time_s
-        return any(start <= global_time < stop for start, stop in intervals)
-
-    waterfall = path.waterfall
-    if not preserve_per_path_waterfall:
-        waterfall = dict(path.waterfall)
-        tiles = []
-        for item in cast(tuple[dict[str, Any], ...], tuple(waterfall["tiles"])):
-            start = path.time_offset_s + int(item["sample_start"]) / path.sample_rate_hz
-            stop = path.time_offset_s + int(item["sample_stop"]) / path.sample_rate_hz
-            fully_valid = any(left <= start and stop <= right for left, right in intervals)
-            if fully_valid:
-                tiles.append(item)
-            else:
-                matrix = cast(tuple[tuple[float | None, ...], ...], item["receiver_power_dbfs"])
-                tiles.append(
-                    {
-                        **item,
-                        "transform_count": 0,
-                        "receiver_power_dbfs": tuple(tuple(None for _ in row) for row in matrix),
-                    }
-                )
-        waterfall["tiles"] = tuple(tiles)
-    detections = tuple(
-        item
-        for item in cast(tuple[dict[str, Any], ...], path.pilot_scan["detections"])
-        if point_is_valid(float(item["time_s"]))
-    )
-    replay = tuple(
-        item
-        for item in cast(tuple[dict[str, Any], ...], path.trajectory_feedback["results"])
-        if point_is_valid(float(item["time_s"]))
-    )
-    raw_rows = _clip_model_rows(
-        cast(tuple[dict[str, Any], ...], path.trajectory_table["trajectories"]),
-        path_offset_s=path.time_offset_s,
-        intervals=intervals,
-    )
-    dealiased_branches: list[dict[str, Any]] = []
-    for branch in cast(tuple[dict[str, Any], ...], path.dealiased_trajectory_bank["branches"]):
-        if "model" in branch:
-            selected = cast(dict[str, Any], branch["model"])
-        else:
-            selected = next(
-                item
-                for item in cast(tuple[dict[str, Any], ...], tuple(branch["models"]))
-                if item["model_id"] == branch["selected_model_id"]
-            )
-        for model in _clip_model_rows(
-            (selected,),
-            path_offset_s=path.time_offset_s,
-            intervals=intervals,
-        ):
-            if "model" in branch:
-                dealiased_branches.append({**branch, "model": model})
-            else:
-                dealiased_branches.append({**branch, "models": (model,)})
-    final_rows = _clip_model_rows(
-        cast(tuple[dict[str, Any], ...], path.final_trajectory_table["trajectories"]),
-        path_offset_s=path.time_offset_s,
-        intervals=intervals,
-    )
-    full_capture_glrt = path.full_capture_glrt
-    if full_capture_glrt is not None:
-        full_capture_glrt = {
-            **full_capture_glrt,
-            "tracks": _clip_model_rows(
-                cast(tuple[dict[str, Any], ...], tuple(full_capture_glrt["tracks"])),
-                path_offset_s=path.time_offset_s,
-                intervals=intervals,
-            ),
-        }
-    return replace(
-        path,
-        waterfall=waterfall,
-        pilot_scan={**path.pilot_scan, "detections": detections},
-        trajectory_feedback={**path.trajectory_feedback, "results": replay},
-        trajectory_table={"trajectories": raw_rows},
-        dealiased_trajectory_bank={"branches": tuple(dealiased_branches)},
-        final_trajectory_table={"trajectories": final_rows},
-        full_capture_glrt=full_capture_glrt,
-    )
-
-
 def native_standard_png_source(
     context: AnalysisContext,
     *,
@@ -447,10 +331,12 @@ def native_standard_png_source(
     full_capture_glrt_products: tuple[UpstreamJsonProduct, ...] = (),
     config: ReceiverStandardConfig,
     configs_by_sample_rate_hz: Mapping[int, ReceiverStandardConfig] | None = None,
-    valid_utc_intervals: tuple[tuple[int, int], ...] | None = None,
-    preserve_per_path_waterfall: bool = False,
 ) -> StandardPngSource:
-    """Build one legacy-compatible plot source from exact sealed native path products."""
+    """Build one plot source while preserving every path's own valid evidence.
+
+    Cross-radio common support belongs to paired reducers and must never be
+    accepted here as a filter over path-local presentation evidence.
+    """
 
     expected_counts = {
         ScopeKind.RECEIVER_PATH: {1},
@@ -567,22 +453,6 @@ def native_standard_png_source(
         )
         for waterfall, stateful, report, path_config, glrt in validated
     )
-    if valid_utc_intervals is not None:
-        relative_intervals = tuple(
-            (
-                (start - origin_utc_ns) / _NANOSECONDS_PER_SECOND,
-                (stop - origin_utc_ns) / _NANOSECONDS_PER_SECOND,
-            )
-            for start, stop in valid_utc_intervals
-        )
-        paths = tuple(
-            _restrict_path_to_common_intervals(
-                path,
-                intervals=relative_intervals,
-                preserve_per_path_waterfall=preserve_per_path_waterfall,
-            )
-            for path in paths
-        )
     if context.scope.kind is ScopeKind.RECEIVER_PATH:
         subject_id = f"{context.scope.stream_id}:rx{context.scope.receiver_id}"
     elif context.scope.kind is ScopeKind.RADIO:
