@@ -83,7 +83,7 @@ def test_frozen_standard_registry_identity_does_not_move() -> None:
     registry = production_standard_v2_registry()
 
     assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 42
-    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-8"
+    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-9"
 
 
 def test_native_evidence_registry_declares_only_executable_products() -> None:
@@ -147,8 +147,8 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
     assert alternate.output_products == PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
     assert ALTERNATE_CFO_TRACK_BANK_V5_PRODUCT in alternate.output_products
     assert ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT in alternate.output_products
-    assert alternate.algorithm_version == "standard-native-path-projection-v7"
-    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v7"
+    assert alternate.algorithm_version == "standard-native-path-projection-v8"
+    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v8"
     assert alternate.accepted_outcomes == (
         StageOutcome.COMPLETE,
         StageOutcome.NO_RESULT,
@@ -157,7 +157,7 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
     )
     assert configuration["path-alternate-tracks-native"] == {}
     assert registry.get("radio-scientific-report-native").spec.algorithm_version == (
-        "standard-native-radio-report-presentation-v9"
+        "standard-native-radio-report-presentation-v10"
     )
     assert tuple(
         (item.kind, item.accepted_schema_versions, item.producer_stage_key)

@@ -173,13 +173,19 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "paired-presentation": "PairedPresentationAnalyzer",
     }
     assert len(planned) == 5
-    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-8"
+    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-9"
     assert registry.get("path-standard").spec.configuration_schema == "path-standard.v3"
     assert CFO_LIFT_REPLAY_PRODUCT in registry.get("path-standard").spec.output_products
     assert CFO_LIFT_REPLAY_PRODUCT.schema_version == 4
     assert KALMAN_TRACKING_PRODUCT in registry.get("path-standard").spec.output_products
     assert KALMAN_TRACKING_PRODUCT.schema_version == 1
     assert FULL_CAPTURE_GLRT20MS_PNG_PRODUCT in registry.get("path-standard").spec.output_products
+    assert registry.get("radio-scientific-report").spec.algorithm_version == (
+        "standard-radio-report-presentation-v5"
+    )
+    assert registry.get("paired-presentation").spec.algorithm_version == (
+        "standard-paired-presentation-v5"
+    )
     assert (
         registry.get("path-alternate-tracks").spec.algorithm_version
         == "alternate-cfo-residual-hough-v2"

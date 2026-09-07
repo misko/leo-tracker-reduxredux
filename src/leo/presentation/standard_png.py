@@ -22,6 +22,11 @@ _RENDER_LOCK = RLock()
 _LANE_COLORS = ("#00a6d6", "#f28e2b", "#8e5bb7", "#59a14f")
 _WATERFALL_MISSING_COLOR = "#b8b8b8"
 _GLRT_EVIDENCE_COLOR = "#f28e2b"
+# Keep every Standard CFO report directly comparable.  Mixed-rate acquisition
+# places 2.5 MS/s evidence near zero and 25 MS/s evidence near either side of
+# +/-7.5 MHz; +/-8.5 MHz contains the full configured/observed GLRT support
+# without allowing one capture's extrema to change the scale of every report.
+_STANDARD_GLRT_CFO_Y_LIMITS_KHZ = (-8_500.0, 8_500.0)
 _SEGMENT_COLORS = (
     "#0072b2",
     "#009e73",
@@ -160,10 +165,8 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
         )
         FigureCanvasAgg(figure)
         axes = figure.subplots(len(source.paths), 1, sharex=True, sharey=True, squeeze=False)[:, 0]
-        all_cfo_khz: list[float] = []
         for axis, path in zip(axes, source.paths, strict=True):
             raw_times, raw_cfo, raw_opacity = _raw_glrt64_evidence(path)
-            all_cfo_khz.extend(raw_cfo)
             point_colors = _glrt_evidence_colors(raw_opacity)
             axis.scatter(
                 raw_times,
@@ -182,7 +185,6 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                 times = np.linspace(start, end, max(40, round((end - start) * 20)))
                 relative = times - path.time_offset_s - float(row["reference_time_s"])
                 cfo = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative) / 1_000
-                all_cfo_khz.extend(float(value) for value in cfo)
                 axis.plot(
                     times,
                     cfo,
@@ -206,16 +208,12 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
             axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
             axis.set_ylabel("Baseband CFO (kHz)")
             axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
+            axis.set_ylim(*_STANDARD_GLRT_CFO_Y_LIMITS_KHZ)
             axis.grid(alpha=0.2)
             handles, labels = axis.get_legend_handles_labels()
             if handles:
                 unique = dict(zip(labels, handles, strict=True))
                 axis.legend(unique.values(), unique.keys(), loc="best", fontsize=7, ncols=3)
-        if all_cfo_khz:
-            lower = min(all_cfo_khz)
-            upper = max(all_cfo_khz)
-            padding = max(20.0, 0.04 * max(upper - lower, 1.0))
-            axes[0].set_ylim(lower - padding, upper + padding)
         axes[-1].set_xlabel("Elapsed recording time (s)")
         figure.suptitle(
             (
@@ -224,6 +222,7 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                 else "Final replay-classified candidate CFO trajectories"
             )
             + "\norange × opacity ∝ positive control-normalized GLRT margin · segment lines on top"
+            + "\nfixed −8.5 to +8.5 MHz baseband-CFO Y axis across Standard reports"
             + "\none color per segment · identical solid styling; classification retained in labels"
             + "\nraw evidence preserved · candidate-only · no attribution\n"
             + source.session_id,
@@ -393,7 +392,7 @@ def _render_full_cfo_trajectories(
         constrained_layout=True,
     )
     FigureCanvasAgg(figure)
-    axes = figure.subplots(len(source.paths), 1, sharex=True, squeeze=False)[:, 0]
+    axes = figure.subplots(len(source.paths), 1, sharex=True, sharey=True, squeeze=False)[:, 0]
     for axis, path in zip(axes, source.paths, strict=True):
         observation_times, observation_cfo, observation_opacity = _raw_glrt64_evidence(path)
         alias_spacing_hz = _path_alias_spacing_hz(path)
@@ -458,6 +457,7 @@ def _render_full_cfo_trajectories(
         axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
         axis.set_ylabel("Baseband CFO (kHz)")
         axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
+        axis.set_ylim(*_STANDARD_GLRT_CFO_Y_LIMITS_KHZ)
         axis.grid(alpha=0.2)
         handles, labels = axis.get_legend_handles_labels()
         if show_legend and handles:
@@ -467,6 +467,7 @@ def _render_full_cfo_trajectories(
     figure.suptitle(
         "GLRT64 candidate CFO and Hough-seeded robust linear trajectories\n"
         "orange × opacity ∝ positive control-normalized GLRT margin · segment lines on top\n"
+        "fixed −8.5 to +8.5 MHz baseband-CFO Y axis across Standard reports\n"
         "one color per segment · identical solid styling across every in-range alias lift\n"
         "Hough-seeded robust linear segments · candidate-only · no attribution\n"
         f"{source.session_id}",

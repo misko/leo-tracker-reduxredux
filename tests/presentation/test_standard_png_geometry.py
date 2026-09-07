@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 
+from leo.presentation import standard_png
 from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.presentation.standard_png import (
     _GLRT_EVIDENCE_COLOR,
@@ -325,3 +327,73 @@ def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
 
     assert rendered.startswith(b"\x89PNG\r\n\x1a\n")
     assert rendered_without_legend.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_all_cfo_pngs_use_one_fixed_mixed_rate_y_axis(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def path(*, path_id: str, sample_rate_hz: int, tracking_cfo_hz: float) -> StandardPngPathSource:
+        return StandardPngPathSource(
+            path_id=path_id,
+            label=path_id,
+            time_offset_s=0.0,
+            tuned_center_frequency_hz=0,
+            sample_rate_hz=sample_rate_hz,
+            receiver_id=0,
+            waterfall={},
+            pilot_scan={
+                "detections": [
+                    {
+                        "time_s": 1.0,
+                        "candidates": [
+                            {
+                                "scores": [
+                                    {
+                                        "method": "glrt64",
+                                        "tracking_cfo_hz": tracking_cfo_hz,
+                                        "control_score": 0.04,
+                                        "margin": 0.02,
+                                    }
+                                ]
+                            }
+                        ],
+                    }
+                ]
+            },
+            trajectory_feedback={},
+            trajectory_table={"trajectories": []},
+            cfo_alias_map={},
+            dealiased_trajectory_bank={"branches": []},
+            cfo_lift_replay={},
+            final_trajectory_bank={},
+            final_trajectory_table={"trajectories": []},
+        )
+
+    source = StandardPngSource(
+        session_id="fixed-mixed-rate-cfo-axis",
+        subject_id="paired",
+        elapsed_start_s=0.0,
+        elapsed_end_s=2.0,
+        paths=(
+            path(path_id="low-rate", sample_rate_hz=2_500_000, tracking_cfo_hz=-500_000.0),
+            path(path_id="high-rate", sample_rate_hz=25_000_000, tracking_cfo_hz=8_325_000.0),
+        ),
+    )
+    figures = []
+
+    def capture(figure, **_kwargs):
+        figures.append(figure)
+        return b"captured"
+
+    monkeypatch.setattr(standard_png, "_save", capture)
+
+    render_full_standard_plot_png(source, StandardViewKindV2.CFO_TRAJECTORY)
+    render_full_cfo_stage_png(source, stage="dealiased")
+    render_full_cfo_stage_png(source, stage="final")
+
+    assert len(figures) == 3
+    for figure in figures:
+        assert len(figure.axes) == 2
+        for axis in figure.axes:
+            np.testing.assert_allclose(axis.get_ylim(), (-8_500.0, 8_500.0))
+        assert "fixed −8.5 to +8.5 MHz" in figure._suptitle.get_text()
