@@ -944,12 +944,12 @@ class PairedStandardNativeEvidenceAnalyzer:
 
 
 class PairedStandardNativeWaterfallAnalyzer:
-    """Render all six common native views over exact paired path evidence."""
+    """Render all six views from each paired path's exact native evidence."""
 
     spec = StageSpec(
         key="paired-presentation-native",
-        algorithm_version="standard-native-paired-presentation-v7",
-        configuration_schema="paired-presentation-native.evidence.v6",
+        algorithm_version="standard-native-paired-presentation-v8",
+        configuration_schema="paired-presentation-native.evidence.v7",
         dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),
@@ -1019,10 +1019,6 @@ class PairedStandardNativeWaterfallAnalyzer:
             full_capture_glrt_products=upstream[2],
             config=config,
             configs_by_sample_rate_hz=configurations,
-            valid_utc_intervals=tuple(
-                (item.start_utc_ns, item.stop_utc_ns) for item in paired.valid_utc_intervals
-            ),
-            preserve_per_path_waterfall=True,
         )
         payloads = render_standard_native_common_pngs(source)
         published = tuple(outputs.publish_bytes(product, payload) for product, payload in payloads)

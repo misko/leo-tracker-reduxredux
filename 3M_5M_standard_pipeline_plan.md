@@ -86,9 +86,10 @@ decimate, resample, or reconstruct the underlying IQ.
   rendered blank or unavailable, not as zero power.
 - The WebUI does not expose a numerical "waterfall cell validity" table.
   Validity remains an internal rendering and provenance concern.
-- Paired rendering uses the exact intersection of the radios' valid UTC
-  intervals. Segment ordinals from different radios are never assumed to
-  match.
+- Paired reductions use the exact intersection of the radios' valid UTC
+  intervals. Paired path panels retain each path's own valid evidence and hard
+  continuity breaks; another radio's missing support never filters path-local
+  evidence. Segment ordinals from different radios are never assumed to match.
 - PNG jobs consume sealed, digest-verified predecessor products. They do not
   reread IQ and do not render on demand in the API process.
 - Every published PNG binds its exact source-product digests and subject
@@ -222,8 +223,9 @@ Radio and paired renderers must consume exact child products rather than infer
 detailed plot series from terminal summary counts.
 
 - Radio plots contain the two receiver-path series for that radio.
-- Paired plots contain the four receiver-path series only over the exact
-  paired valid-UTC support.
+- Paired plots contain each receiver-path series over that path's exact valid
+  support. The paired valid-UTC intersection governs only cross-radio-derived
+  comparisons and conclusions.
 - Labels retain radio, receiver, segment, and trajectory identity.
 - Power/QAM summaries merge energy and count sufficient statistics.
 - Trajectory and Kalman models remain individual reset-local models; reducers
