@@ -188,9 +188,7 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                 times = np.linspace(start, end, max(40, round((end - start) * 20)))
                 relative = times - path.time_offset_s - float(row["reference_time_s"])
                 cfo = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative) / 1_000
-                cfo_by_sample_rate_hz[path.sample_rate_hz].extend(
-                    float(value) for value in cfo
-                )
+                cfo_by_sample_rate_hz[path.sample_rate_hz].extend(float(value) for value in cfo)
                 axis.plot(
                     times,
                     cfo,
@@ -291,9 +289,7 @@ def _robust_cfo_y_limits_khz(values: list[float]) -> tuple[float, float]:
         lower = float(np.min(finite))
         upper = float(np.max(finite))
     else:
-        lower, upper = (
-            float(value) for value in np.percentile(finite, _CFO_VIEWPORT_PERCENTILES)
-        )
+        lower, upper = (float(value) for value in np.percentile(finite, _CFO_VIEWPORT_PERCENTILES))
     span = upper - lower
     if span < _CFO_VIEWPORT_MINIMUM_SPAN_KHZ:
         center = (lower + upper) / 2.0
@@ -303,10 +299,8 @@ def _robust_cfo_y_limits_khz(values: list[float]) -> tuple[float, float]:
         span = _CFO_VIEWPORT_MINIMUM_SPAN_KHZ
     padding = max(25.0, span * _CFO_VIEWPORT_PADDING_FRACTION)
     return (
-        math.floor((lower - padding) / _CFO_VIEWPORT_QUANTUM_KHZ)
-        * _CFO_VIEWPORT_QUANTUM_KHZ,
-        math.ceil((upper + padding) / _CFO_VIEWPORT_QUANTUM_KHZ)
-        * _CFO_VIEWPORT_QUANTUM_KHZ,
+        math.floor((lower - padding) / _CFO_VIEWPORT_QUANTUM_KHZ) * _CFO_VIEWPORT_QUANTUM_KHZ,
+        math.ceil((upper + padding) / _CFO_VIEWPORT_QUANTUM_KHZ) * _CFO_VIEWPORT_QUANTUM_KHZ,
     )
 
 
