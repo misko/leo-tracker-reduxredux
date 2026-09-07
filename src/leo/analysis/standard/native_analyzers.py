@@ -588,8 +588,8 @@ class PathAlternateTracksNativeAnalyzer:
 
     spec = StageSpec(
         key="path-alternate-tracks-native",
-        algorithm_version="standard-native-path-projection-v8",
-        configuration_schema="path-alternate-tracks-native.projection.v8",
+        algorithm_version="standard-native-path-projection-v9",
+        configuration_schema="path-alternate-tracks-native.projection.v9",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),
@@ -790,8 +790,8 @@ class RadioStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="radio-scientific-report-native",
-        algorithm_version="standard-native-radio-report-presentation-v10",
-        configuration_schema="radio-scientific-report-native.evidence.v7",
+        algorithm_version="standard-native-radio-report-presentation-v11",
+        configuration_schema="radio-scientific-report-native.evidence.v8",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(QUALITY_V3_PRODUCT, "path-standard-native"),
@@ -948,8 +948,8 @@ class PairedStandardNativeWaterfallAnalyzer:
 
     spec = StageSpec(
         key="paired-presentation-native",
-        algorithm_version="standard-native-paired-presentation-v9",
-        configuration_schema="paired-presentation-native.evidence.v8",
+        algorithm_version="standard-native-paired-presentation-v10",
+        configuration_schema="paired-presentation-native.evidence.v9",
         dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V4_PRODUCT, "path-standard-native"),

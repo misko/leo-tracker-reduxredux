@@ -92,5 +92,5 @@ def test_path_source_preserves_detections_and_breaks_only_at_own_continuity_boun
 def test_paired_presentation_identity_marks_path_local_evidence_semantics() -> None:
     spec = production_standard_native_evidence_registry().get("paired-presentation-native").spec
 
-    assert spec.algorithm_version == "standard-native-paired-presentation-v9"
-    assert spec.configuration_schema == "paired-presentation-native.evidence.v8"
+    assert spec.algorithm_version == "standard-native-paired-presentation-v10"
+    assert spec.configuration_schema == "paired-presentation-native.evidence.v9"

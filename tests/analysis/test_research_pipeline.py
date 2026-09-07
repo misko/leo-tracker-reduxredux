@@ -73,7 +73,7 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
         == "research-alternate-cfo-residual-hough-v3"
     )
     assert research.get("path-standard").spec.algorithm_version == (
-        "research-standard-v2-production-9"
+        "research-standard-v2-production-10"
     )
     assert research.get("path-standard").spec.configuration_schema == "research.path-standard.v3"
     baseline = research.get(RATE_CONTINUITY_BASELINE_STAGE_KEY)

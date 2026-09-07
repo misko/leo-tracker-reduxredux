@@ -329,7 +329,7 @@ def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
     assert rendered_without_legend.startswith(b"\x89PNG\r\n\x1a\n")
 
 
-def test_all_cfo_pngs_use_one_fixed_mixed_rate_y_axis(
+def test_all_cfo_pngs_share_robust_y_axes_only_within_sample_rate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def path(*, path_id: str, sample_rate_hz: int, tracking_cfo_hz: float) -> StandardPngPathSource:
@@ -376,7 +376,8 @@ def test_all_cfo_pngs_use_one_fixed_mixed_rate_y_axis(
         elapsed_end_s=2.0,
         paths=(
             path(path_id="low-rate", sample_rate_hz=2_500_000, tracking_cfo_hz=-500_000.0),
-            path(path_id="high-rate", sample_rate_hz=25_000_000, tracking_cfo_hz=8_325_000.0),
+            path(path_id="low-rate-2", sample_rate_hz=2_500_000, tracking_cfo_hz=300_000.0),
+            path(path_id="high-rate", sample_rate_hz=25_000_000, tracking_cfo_hz=-7_500_000.0),
         ),
     )
     figures = []
@@ -393,7 +394,14 @@ def test_all_cfo_pngs_use_one_fixed_mixed_rate_y_axis(
 
     assert len(figures) == 3
     for figure in figures:
-        assert len(figure.axes) == 2
-        for axis in figure.axes:
-            np.testing.assert_allclose(axis.get_ylim(), (-8_500.0, 8_500.0))
-        assert "fixed −8.5 to +8.5 MHz" in figure._suptitle.get_text()
+        assert len(figure.axes) == 3
+        low_rate, low_rate_2, high_rate = figure.axes
+        shared = low_rate.get_shared_y_axes()
+        assert shared.joined(low_rate, low_rate_2)
+        assert not shared.joined(low_rate, high_rate)
+        np.testing.assert_allclose(low_rate.get_ylim(), low_rate_2.get_ylim())
+        assert low_rate.get_ylim()[0] <= -500.0
+        assert low_rate.get_ylim()[1] >= 300.0
+        assert high_rate.get_ylim()[0] <= -7_500.0 <= high_rate.get_ylim()[1]
+        assert high_rate.get_ylim()[1] - high_rate.get_ylim()[0] <= 500.0
+        assert "shared only by paths with the same sample rate" in figure._suptitle.get_text()
