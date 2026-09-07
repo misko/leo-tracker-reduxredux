@@ -1608,8 +1608,10 @@ def _component_environment_revision(component: str, revision: str) -> Path:
             raise ValueError(
                 "acquisition environment does not bind the exact release-local iiOD binary"
             )
-        if environment.get("LEO_SCANNER_ENABLED") != "false":
-            raise ValueError("release-A acquisition environment must keep scanner disabled")
+        if environment.get("LEO_SCANNER_ENABLED") != "true":
+            raise ValueError(
+                "qualified acquisition environment must enable the scanner scheduler"
+            )
     return safe
 
 

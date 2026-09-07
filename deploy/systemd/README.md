@@ -51,11 +51,11 @@ once, then captures complete eight-target sweeps for 300 seconds at 120 ms per
 target in CH1L, CH2L, CH3L, CH4L, CH1U, CH2U, CH3U, CH4U order. Every target
 uses the maximum-coverage IF for that slot's admitted bandwidth.
 
-The reviewed deployment preconfigures `LEO_SCANNER_CAPTURE_MODE=persistent_hop`
-while retaining `LEO_SCANNER_ENABLED=false` as the release-A safety gate. Leo's
-acquisition composition owns a narrow no-flash iiOD lifecycle and lazily adapts
-the installed `pluto-plus-utils` provider. The scanner may be enabled only after
-that provider and its sealed ARM binary are installed and verified. Persistent
+The reviewed deployment preconfigures `LEO_SCANNER_CAPTURE_MODE=persistent_hop`.
+The common environment retains `LEO_SCANNER_ENABLED=false` as a fail-safe, and
+the qualified acquisition-only override enables the scheduler. Leo's acquisition
+composition owns a narrow no-flash iiOD lifecycle and lazily adapts the installed
+`pluto-plus-utils` provider. Persistent
 mode is admitted only with the exact 20-minute,
 300-second, 120 ms cadence and an `ip:192.168.1.*` radio whose configured serial
 is not the hard-denied test serial. It requires the exact device-hop protocol,

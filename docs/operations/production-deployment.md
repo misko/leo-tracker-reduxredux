@@ -416,11 +416,11 @@ sudo install -o root -g root -m 0400 SCANNER_PASSWORD \
   /etc/leo/credentials/scanner-iiod-ssh-password
 ```
 
-Release A remains `LEO_SCANNER_ENABLED=false`, but every newly staged release
-must already contain the sealed binary and build-provenance receipt. Packaging
-the dormant assets does not start the alternate daemon or access a radio.
-Enabling persistent mode still fails closed unless that exact non-symlink
-executable and both systemd credentials are available.
+The common environment retains the fail-safe `LEO_SCANNER_ENABLED=false`, while
+the qualified acquisition-only environment sets `LEO_SCANNER_ENABLED=true`.
+Every newly staged release must contain the sealed binary and build-provenance
+receipt. The acquisition scheduler still fails closed unless that exact
+non-symlink executable and both systemd credentials are available.
 
 The full-cutover transaction runs any required `alembic upgrade head` while
 every LEO unit is quiescent. Before starting any worker, its cutover preflight reads

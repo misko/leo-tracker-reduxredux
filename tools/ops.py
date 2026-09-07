@@ -2120,7 +2120,7 @@ def _write_acquisition_release_environment(
     binary_path = f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod"
     release_location = locations[release_key][0]
     lines[release_location] = f"{release_key}={target}"
-    updates = {binary_key: binary_path, scanner_key: "false"}
+    updates = {binary_key: binary_path, scanner_key: "true"}
     for key, value in updates.items():
         if locations[key]:
             lines[locations[key][0]] = f"{key}={value}"
@@ -2639,10 +2639,13 @@ def _verify_acquisition_environment_revision(expected: str) -> None:
     ):
         raise OpsError("acquisition persistent-hop iiOD binary does not match the selected release")
     scanner_enabled = values.get("LEO_SCANNER_ENABLED")
-    if (release_has_binary and scanner_enabled != "false") or (
+    if (release_has_binary and scanner_enabled != "true") or (
         not release_has_binary and scanner_enabled not in {None, "false"}
     ):
-        raise OpsError("release-A acquisition environment must keep the scanner disabled")
+        raise OpsError(
+            "qualified acquisition environment must enable the scanner only when its "
+            "release-local iiOD binary is present"
+        )
 
 
 def _acquisition_desired_state(release: Path) -> str:

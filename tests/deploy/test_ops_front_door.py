@@ -1114,10 +1114,22 @@ def test_acquisition_environment_atomically_binds_selected_release(
         f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod"
     )
     assert values["LEO_MIXED_RATE_POLICY"] == "fixed-2p5-25"
-    assert values["LEO_SCANNER_ENABLED"] == "false"
+    assert values["LEO_SCANNER_ENABLED"] == "true"
     assert environment.read_text().startswith("# preserved acquisition override\n")
     monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", environment)
+    binary = Path(f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod")
+    original_is_file = Path.is_file
+    monkeypatch.setattr(
+        OPS.Path,
+        "is_file",
+        lambda path: path == binary or original_is_file(path),
+    )
     OPS._verify_acquisition_environment_revision(target)
+    environment.write_text(
+        environment.read_text().replace("LEO_SCANNER_ENABLED=true", "LEO_SCANNER_ENABLED=false")
+    )
+    with pytest.raises(OPS.OpsError, match="must enable the scanner"):
+        OPS._verify_acquisition_environment_revision(target)
     with pytest.raises(OPS.OpsError, match="does not match"):
         OPS._verify_acquisition_environment_revision("3" * 40)
 
