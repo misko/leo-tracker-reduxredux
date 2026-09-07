@@ -22,11 +22,10 @@ _RENDER_LOCK = RLock()
 _LANE_COLORS = ("#00a6d6", "#f28e2b", "#8e5bb7", "#59a14f")
 _WATERFALL_MISSING_COLOR = "#b8b8b8"
 _GLRT_EVIDENCE_COLOR = "#f28e2b"
-# Keep every Standard CFO report directly comparable.  Mixed-rate acquisition
-# places 2.5 MS/s evidence near zero and 25 MS/s evidence near either side of
-# +/-7.5 MHz; +/-8.5 MHz contains the full configured/observed GLRT support
-# without allowing one capture's extrema to change the scale of every report.
-_STANDARD_GLRT_CFO_Y_LIMITS_KHZ = (-8_500.0, 8_500.0)
+_CFO_VIEWPORT_PERCENTILES = (0.1, 99.9)
+_CFO_VIEWPORT_MINIMUM_SPAN_KHZ = 200.0
+_CFO_VIEWPORT_PADDING_FRACTION = 0.04
+_CFO_VIEWPORT_QUANTUM_KHZ = 50.0
 _SEGMENT_COLORS = (
     "#0072b2",
     "#009e73",
@@ -164,9 +163,13 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
             constrained_layout=True,
         )
         FigureCanvasAgg(figure)
-        axes = figure.subplots(len(source.paths), 1, sharex=True, sharey=True, squeeze=False)[:, 0]
+        axes = figure.subplots(len(source.paths), 1, sharex=True, squeeze=False)[:, 0]
+        cfo_by_sample_rate_hz: dict[int, list[float]] = defaultdict(list)
+        raw_cfo_by_path: list[list[float]] = []
         for axis, path in zip(axes, source.paths, strict=True):
             raw_times, raw_cfo, raw_opacity = _raw_glrt64_evidence(path)
+            raw_cfo_by_path.append(raw_cfo)
+            cfo_by_sample_rate_hz[path.sample_rate_hz].extend(raw_cfo)
             point_colors = _glrt_evidence_colors(raw_opacity)
             axis.scatter(
                 raw_times,
@@ -185,6 +188,9 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                 times = np.linspace(start, end, max(40, round((end - start) * 20)))
                 relative = times - path.time_offset_s - float(row["reference_time_s"])
                 cfo = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative) / 1_000
+                cfo_by_sample_rate_hz[path.sample_rate_hz].extend(
+                    float(value) for value in cfo
+                )
                 axis.plot(
                     times,
                     cfo,
@@ -208,12 +214,17 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
             axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
             axis.set_ylabel("Baseband CFO (kHz)")
             axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
-            axis.set_ylim(*_STANDARD_GLRT_CFO_Y_LIMITS_KHZ)
             axis.grid(alpha=0.2)
             handles, labels = axis.get_legend_handles_labels()
             if handles:
                 unique = dict(zip(labels, handles, strict=True))
                 axis.legend(unique.values(), unique.keys(), loc="best", fontsize=7, ncols=3)
+        _apply_sample_rate_cfo_y_axes(
+            axes,
+            source.paths,
+            cfo_by_sample_rate_hz=cfo_by_sample_rate_hz,
+            raw_cfo_by_path=raw_cfo_by_path,
+        )
         axes[-1].set_xlabel("Elapsed recording time (s)")
         figure.suptitle(
             (
@@ -222,7 +233,7 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                 else "Final replay-classified candidate CFO trajectories"
             )
             + "\norange × opacity ∝ positive control-normalized GLRT margin · segment lines on top"
-            + "\nfixed −8.5 to +8.5 MHz baseband-CFO Y axis across Standard reports"
+            + "\nrobust capture-local Y range · shared only by paths with the same sample rate"
             + "\none color per segment · identical solid styling; classification retained in labels"
             + "\nraw evidence preserved · candidate-only · no attribution\n"
             + source.session_id,
@@ -268,6 +279,70 @@ def _glrt_evidence_colors(opacity: list[float]) -> np.ndarray:
     if opacity:
         colors[:, 3] = np.asarray(opacity)
     return colors
+
+
+def _robust_cfo_y_limits_khz(values: list[float]) -> tuple[float, float]:
+    """Return a stable, rounded viewport for one same-sample-rate path group."""
+
+    finite = np.asarray([value for value in values if math.isfinite(value)], dtype=float)
+    if not finite.size:
+        return (-500.0, 500.0)
+    if finite.size < 20:
+        lower = float(np.min(finite))
+        upper = float(np.max(finite))
+    else:
+        lower, upper = (
+            float(value) for value in np.percentile(finite, _CFO_VIEWPORT_PERCENTILES)
+        )
+    span = upper - lower
+    if span < _CFO_VIEWPORT_MINIMUM_SPAN_KHZ:
+        center = (lower + upper) / 2.0
+        half_span = _CFO_VIEWPORT_MINIMUM_SPAN_KHZ / 2.0
+        lower = center - half_span
+        upper = center + half_span
+        span = _CFO_VIEWPORT_MINIMUM_SPAN_KHZ
+    padding = max(25.0, span * _CFO_VIEWPORT_PADDING_FRACTION)
+    return (
+        math.floor((lower - padding) / _CFO_VIEWPORT_QUANTUM_KHZ)
+        * _CFO_VIEWPORT_QUANTUM_KHZ,
+        math.ceil((upper + padding) / _CFO_VIEWPORT_QUANTUM_KHZ)
+        * _CFO_VIEWPORT_QUANTUM_KHZ,
+    )
+
+
+def _apply_sample_rate_cfo_y_axes(
+    axes: np.ndarray,
+    paths: tuple[StandardPngPathSource, ...],
+    *,
+    cfo_by_sample_rate_hz: dict[int, list[float]],
+    raw_cfo_by_path: list[list[float]],
+) -> None:
+    """Share and scale Y axes within, never across, sample-rate groups."""
+
+    axis_indexes_by_sample_rate_hz: dict[int, list[int]] = defaultdict(list)
+    for index, path in enumerate(paths):
+        axis_indexes_by_sample_rate_hz[path.sample_rate_hz].append(index)
+    for sample_rate_hz, indexes in axis_indexes_by_sample_rate_hz.items():
+        anchor = axes[indexes[0]]
+        for index in indexes[1:]:
+            axes[index].sharey(anchor)
+        limits = _robust_cfo_y_limits_khz(cfo_by_sample_rate_hz[sample_rate_hz])
+        anchor.set_ylim(*limits)
+        for index in indexes:
+            clipped = sum(
+                value < limits[0] or value > limits[1] for value in raw_cfo_by_path[index]
+            )
+            if clipped:
+                axes[index].text(
+                    0.995,
+                    0.015,
+                    f"{clipped:,} GLRT points outside robust Y range",
+                    transform=axes[index].transAxes,
+                    ha="right",
+                    va="bottom",
+                    fontsize=7,
+                    color="#6b7280",
+                )
 
 
 def _dealiased_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
@@ -392,9 +467,13 @@ def _render_full_cfo_trajectories(
         constrained_layout=True,
     )
     FigureCanvasAgg(figure)
-    axes = figure.subplots(len(source.paths), 1, sharex=True, sharey=True, squeeze=False)[:, 0]
+    axes = figure.subplots(len(source.paths), 1, sharex=True, squeeze=False)[:, 0]
+    cfo_by_sample_rate_hz: dict[int, list[float]] = defaultdict(list)
+    raw_cfo_by_path: list[list[float]] = []
     for axis, path in zip(axes, source.paths, strict=True):
         observation_times, observation_cfo, observation_opacity = _raw_glrt64_evidence(path)
+        raw_cfo_by_path.append(observation_cfo)
+        cfo_by_sample_rate_hz[path.sample_rate_hz].extend(observation_cfo)
         alias_spacing_hz = _path_alias_spacing_hz(path)
         raw_lower_hz = min(observation_cfo, default=-500.0) * 1_000.0
         raw_upper_hz = max(observation_cfo, default=500.0) * 1_000.0
@@ -428,6 +507,9 @@ def _render_full_cfo_trajectories(
                     raw_upper_hz=raw_upper_hz,
                 )
             for alias_index, lifted_cfo_hz in lifts:
+                cfo_by_sample_rate_hz[path.sample_rate_hz].extend(
+                    float(value) for value in lifted_cfo_hz / 1_000.0
+                )
                 label = (
                     f"H{row_index + 1} · {float(row['coefficients_hz'][0]) / 1_000.0:+.2f} "
                     f"kHz/s · n={int(row['point_count'])}"
@@ -457,17 +539,22 @@ def _render_full_cfo_trajectories(
         axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
         axis.set_ylabel("Baseband CFO (kHz)")
         axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
-        axis.set_ylim(*_STANDARD_GLRT_CFO_Y_LIMITS_KHZ)
         axis.grid(alpha=0.2)
         handles, labels = axis.get_legend_handles_labels()
         if show_legend and handles:
             unique = dict(zip(labels, handles, strict=True))
             axis.legend(unique.values(), unique.keys(), loc="best", fontsize=8, ncols=4)
+    _apply_sample_rate_cfo_y_axes(
+        axes,
+        source.paths,
+        cfo_by_sample_rate_hz=cfo_by_sample_rate_hz,
+        raw_cfo_by_path=raw_cfo_by_path,
+    )
     axes[-1].set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
         "GLRT64 candidate CFO and Hough-seeded robust linear trajectories\n"
         "orange × opacity ∝ positive control-normalized GLRT margin · segment lines on top\n"
-        "fixed −8.5 to +8.5 MHz baseband-CFO Y axis across Standard reports\n"
+        "robust capture-local Y range · shared only by paths with the same sample rate\n"
         "one color per segment · identical solid styling across every in-range alias lift\n"
         "Hough-seeded robust linear segments · candidate-only · no attribution\n"
         f"{source.session_id}",

@@ -274,7 +274,7 @@ def _publish_pngs(outputs: OutputSink, source: StandardPngSource) -> tuple[Publi
 class RadioScientificReportAnalyzer:
     spec = _spec(
         "radio-scientific-report",
-        algorithm_version="standard-radio-report-presentation-v5",
+        algorithm_version="standard-radio-report-presentation-v6",
         dependencies=("path-standard",),
         inputs=(
             ProductRequirement(
@@ -372,7 +372,7 @@ class PairedScientificReportAnalyzer:
 class PairedPresentationAnalyzer:
     spec = _spec(
         "paired-presentation",
-        algorithm_version="standard-paired-presentation-v5",
+        algorithm_version="standard-paired-presentation-v6",
         dependencies=("path-standard",),
         inputs=(
             ProductRequirement(
@@ -532,7 +532,7 @@ class PathStandardAnalyzer:
 
     spec = _spec(
         "path-standard",
-        algorithm_version="standard-v2-production-9",
+        algorithm_version="standard-v2-production-10",
         configuration_schema="path-standard.v3",
         outputs=_FUSED_PATH_PRODUCTS,
         resource=ResourceClass.HEAVY,
