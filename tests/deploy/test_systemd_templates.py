@@ -378,7 +378,7 @@ def test_acquisition_loads_fixed_scanner_iiod_credentials_and_release_binary() -
         "LoadCredential=scanner-iiod-ssh-password:/etc/leo/credentials/scanner-iiod-ssh-password"
     ) in service
     assert "CREDENTIALS_DIRECTORY" not in acquisition_environment
-    assert "LEO_SCANNER_ENABLED=false" in acquisition_environment
+    assert "LEO_SCANNER_ENABLED=true" in acquisition_environment
     assert (
         "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
         "/opt/leo-tracker/releases/REPLACE_WITH_SELECTED_ACQUISITION_SHA/"

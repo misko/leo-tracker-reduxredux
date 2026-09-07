@@ -2720,7 +2720,7 @@ def test_narrow_component_preflight_requires_exact_environment_and_unit(
         + (
             "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
             f"/opt/leo-tracker/releases/{revision}/runtime/scanner-iiod/iiod\n"
-            "LEO_SCANNER_ENABLED=false\n"
+            "LEO_SCANNER_ENABLED=true\n"
             if component == "acquisition"
             else ""
         )
@@ -2749,7 +2749,7 @@ def test_narrow_component_preflight_requires_exact_environment_and_unit(
         + (
             "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
             f"/opt/leo-tracker/releases/{revision}/runtime/scanner-iiod/iiod\n"
-            "LEO_SCANNER_ENABLED=false\n"
+            "LEO_SCANNER_ENABLED=true\n"
             if component == "acquisition"
             else ""
         )

@@ -200,7 +200,8 @@ Whether the canary succeeds or fails, pause before restarting the normal
 service. Bounded scanner-only mode deliberately defers Standard analysis so
 the 29-minute guard covers RF capture and durable run publication only. The
 normal service performs startup scanner reconciliation while it remains
-paused. The checked-in environment keeps its scanner disabled:
+paused. The common environment keeps its fail-safe disabled; after rollout,
+the qualified acquisition-only environment enables scheduled scanning:
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
@@ -218,10 +219,10 @@ each rate reports at least 950000 valid-duty ppm, zero missing samples, zero
 overflows, zero hop-event sequence gaps, and exact receiver restoration. The
 V1 manifest's 900000 ppm field remains a compatibility floor for historical
 sessions and is not the high-duty release gate. Verify that startup
-reconciliation completes Standard analysis for every sweep. Leave
-recurring scanning disabled until scanner IQ has passed the scanner-retention
-checks below; at the configured cadence its
-conservative raw growth is 649,036,800,000 bytes/day.
+reconciliation completes Standard analysis for every sweep. Before promoting a
+candidate acquisition release, leave its recurring scanner override disabled
+until scanner IQ has passed the scanner-retention checks below; at the
+configured cadence its conservative raw growth is 649,036,800,000 bytes/day.
 
 ## First capture and normal services
 
