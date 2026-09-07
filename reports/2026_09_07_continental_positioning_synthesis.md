@@ -1,6 +1,6 @@
 # Starlink positioning: 1.8 km continental localization / 1.2 km conditional benchmark
 
-**From received radio samples to an absolute position, and what currently limits resolution**
+**From received radio samples to an absolute position, and what limits resolution**
 
 Date: 7 September 2026. Evidence snapshot: remote `main` at
 `39146ee83d00523fbd37ba02179c87a5c241a017`.
@@ -8,25 +8,32 @@ Date: 7 September 2026. Evidence snapshot: remote `main` at
 **Headline result.** Our offline package locates a stationary receiver to **1.805 km
 horizontal error** from a **5,000 × 5,000 km starting region**, using archived
 Starlink-compatible signals without supplying the receiver coordinate or satellite
-identities to the estimator. The **1.184 km** result is an earlier **conditional
-three-scan benchmark**: satellite associations used a known-site preset, and its error
-was measured against that preset. **These are different experiments with different
-reference coordinates, not two estimates of the same continental accuracy.**
+identities to the estimator.
 
-The earlier reference is **37.858988°, −122.478103°**, with assumed altitude −29 m.
-The later evaluation-only coordinate is **37.8490428024417°, −122.48567437412359°**,
-with no supplied altitude. They are **1,290.27 m apart**. The earlier number is the
-horizontal displacement in a local tangent plane about its preset; the continental
-number is great-circle separation from the later coordinate. The reference difference,
-as well as the use of known-site associations, prevents a direct accuracy comparison.
-[Earlier scorer](../tools/evaluate_scan_pnt_cohort.py),
-[earlier position evaluator](../src/leo/analysis/research/scan_pnt_experiment.py),
-[later evaluation coordinate](evaluation/2026_09_07_regional_position_truth.json).
+A second experiment combines **three five-minute scans** and produces **1.184 km
+horizontal error**. In this experiment, a supplied receiver coordinate is used to
+select candidate satellite identities before fitting position. The fitted position
+is then compared with that supplied coordinate. We call this a **conditional
+benchmark** because satellite selection has access to location information.
+**The two experiments use different assumptions and reference coordinates; they
+do not measure the same continental accuracy.**
+
+| Experiment | Reference latitude / longitude | How the reference is used |
+|---|---|---|
+| Continental localization | 37.8490428024417°, −122.48567437412359° | Used only to evaluate the completed estimate; no reference altitude supplied |
+| Location-assisted association benchmark | 37.858988°, −122.478103° | Used to select satellite candidates and evaluate position, with assumed altitude −29 m |
+
+These coordinates are **1,290.27 m apart**. The benchmark's horizontal error is a
+displacement in a local tangent plane about its supplied coordinate; the continental
+error is great-circle separation from its evaluation coordinate. The reference
+difference and location-assisted satellite selection prevent a direct accuracy
+comparison. [Association scorer](../tools/evaluate_scan_pnt_cohort.py),
+[benchmark position evaluator](../src/leo/analysis/research/scan_pnt_experiment.py),
+[continental evaluation coordinate](evaluation/2026_09_07_regional_position_truth.json).
 
 ### Reading the results
 
-This report is self-contained; the linked studies and code provide supporting
-records and implementation detail. The package is this repository's radio-analysis
+The package is this repository's radio-analysis
 software together with its offline research position solver. It takes recorded
 radio samples and satellite orbit catalogues and estimates latitude and longitude.
 Here, **continental** describes the size of the initial search area. **Absolute
@@ -53,8 +60,8 @@ residual does not by itself establish a more accurate receiver position.
 
 ![Position results with their distinct assumptions](figures/2026_09_07_continental_positioning_synthesis/01-position-results-and-claim-boundaries.png)
 
-*Figure 1 — Real archived results, replotted from the two published numerical
-summaries. Panel A estimates unknown position and identities; panel B uses
+*Figure 1 — Measured position errors in the continental-search and location-assisted
+association experiments. Panel A estimates unknown position and identities; panel B uses
 known-site associations and a different reference coordinate. Every starting region
 in A reuses the same radio dataset. Lower bars or points mean smaller horizontal
 error. Blue uses nominal orbits; orange allows orbit-time fitting, with panel B
@@ -66,9 +73,9 @@ fits, not independent accuracy trials. Neither panel supplies a confidence radiu
 |---|---:|---|---|
 | Continental nominal-TLE fit, unknown height | **1,805 m** | Broad geographic bounds, recorded UTC, causal TLEs, stationary receiver, near-Earth height prior | Absolute localization in this archived experiment |
 | Four other regional starts, nominal TLE, unknown height | **1,543–1,795 m** | Different bounds; same RF dataset and evaluation coordinate | Starting-region sensitivity |
-| Earlier three-scan pooled fit | **1,184 m** | Satellite associations selected at the earlier site preset; fixed local height | Conditional benchmark, not a continental cold start |
-| Earlier nineteen-scan pooled fit | **669 m** | Same known-site association dependency and reference | Conditional accumulation result |
-| Earlier nineteen-scan calibrated fit | **292 m** | Also fits satellite timing using the site preset | Calibration consistency, not independent localization |
+| Location-assisted three-scan pooled fit | **1,184 m** | Satellite candidates selected using the benchmark reference coordinate; local height fixed at the −29 m reference | Conditional benchmark, not a continental cold start |
+| Location-assisted nineteen-scan pooled fit | **669 m** | Same location-assisted selection and benchmark reference | Conditional accumulation result |
+| Location-calibrated nineteen-scan fit | **292 m** | Also fits satellite timing using the benchmark reference coordinate | Calibration consistency, not independent localization |
 
 Sources: [continental study](2026_09_07_blind_regional_doppler_positioning.md) and
 [eight-hour study](2026_09_07_eight_hour_scan_tracking_and_positioning.md).
@@ -80,7 +87,7 @@ been established.
 
 The scientific question is whether ordinary communications transmissions can reveal
 where a receiver is, even when it does not know which satellites it hears. Our
-evidence now supports a useful answer: accumulate the time variation of several
+experiment tests the following approach: accumulate the time variation of several
 received frequency tracks, compare those variations against predicted satellite
 motion across a large geographic region, and refine the supported receiver location.
 The receiver does not need to decode user traffic for this experiment.
@@ -113,21 +120,23 @@ confirmed satellite identities.
 | Evidence used here | Recording or experiment | Role in this report |
 |---|---|---|
 | Continental localization | 24 scans on 7 September, spanning eight hours at 2.5 and 5 MS/s | Supplies the 1.805 km result and the geographic-search tests |
-| Conditional positioning | Earlier analysis of the same scan collection; 19 scans eligible for its pooled fits | Supplies the 1.184 km three-scan benchmark with known-site associations and a different reference coordinate |
+| Location-assisted association benchmark | Same scan collection; 19 scans eligible for its pooled fits | Supplies the 1.184 km three-scan result with location-assisted satellite selection and a different reference coordinate |
 | Detector and receiver quality | Two 60 s, 5 MS/s recordings on 26 and 27 August | Shows why detection, timing, and carrier-phase quality need separate checks |
 | Fractional timing | Selected track in the 2 September recording ending in `7fea7427619d`, at 2.5 MS/s | Same-sample comparison of integer and fractional timing |
-| Higher-rate timing | Five paired recording sets studied on 2 September, plus the targeted comparison published on 3 September for capture `0181f7f0ffa1` | Compares PSS and pilot timing at 25 MS/s with a separate 2.5 MS/s radio |
+| Higher-rate timing | Five pairs of 60 s recordings, plus a detailed comparison on recording pair `0181f7f0ffa1` | Compares PSS and pilot timing at 25 MS/s with a separate 2.5 MS/s radio |
 
 Short strings such as `7fea` and `0181` are recording identifiers for audit, not
-methods or satellite names. Later sections restate each comparison's relevant
-conditions. The smaller timing studies are separate from the continental dataset.
+methods or satellite names. The timing datasets are separate from the continental
+dataset. For the location-assisted benchmark, each scan contributes the longest
+passing episode for each distinct satellite candidate, after excluding conflicting
+assignments of one candidate to simultaneous channels. Requiring at least three
+candidates leaves 19 of the 24 scans eligible for that benchmark.
 
 The review screened all **148 pre-existing top-level reports** in this snapshot;
 the [source inventory](figures/2026_09_07_continental_positioning_synthesis/source-report-index.md)
-records their names and file fingerprints (hashes). Section 11 is an optional
-source index, not prerequisite reading. Historical plots remain evidence of their
-original experiments. Later timing, alias, and sign corrections determine how
-they may be interpreted today.
+records their names and file fingerprints (hashes). Section 11 provides the source
+index. Each experiment's conditions, measurement definitions, and limitations are
+stated alongside its results in this report.
 
 **Resolution bottleneck.** Empirically, five regional starts give similar kilometre
 scale errors, but they are five runs of one dataset. Theoretically, repeatability
@@ -144,7 +153,7 @@ can share a similar slope, while transmitter and receiver oscillators add unknow
 frequency offsets. Curvature and observations at different orbital viewing geometries
 can distinguish these possibilities.
 
-The latest corpus provides 24 scans of nominally 300 seconds, collected across an
+The positioning dataset contains 24 scans of nominally 300 seconds, collected across an
 eight-hour calendar window. It contains 502 RF channel episodes with median duration
 17.34 s and maximum 53.82 s. These are interrupted observations of different candidate
 signals, not 24 uninterrupted five-minute passes of identified satellites.
@@ -160,11 +169,12 @@ dots/crosses distinguish receiver inputs RX0/RX1. Sloping groups of points show
 frequency evolution; source-local offsets and multiple paths remain visible.
 Connected support is not proof of a spacecraft identity or carrier-phase continuity.
 The complete 24-scan
-atlas is linked in the [cohort report](2026_09_07_eight_hour_scan_tracking_and_positioning.md).*
+atlas is linked in the [scan observation record](2026_09_07_eight_hour_scan_tracking_and_positioning.md).*
 
-**Resolution bottleneck.** Empirically, the earlier 19 eligible nominal-TLE pooled
-fits go from 1,184 m at three scans to 304 m at six, 1,324 m at twelve, and 669 m at
-nineteen, against the earlier preset. More data do not monotonically reduce error.
+**Resolution bottleneck.** In the location-assisted association benchmark, pooled
+fits using nominal orbits give 1,184 m error at three scans, 304 m at six, 1,324 m
+at twelve, and 669 m at nineteen, against the benchmark reference coordinate.
+More data do not monotonically reduce error.
 Theoretically, independent geometry can improve observability, while correlated
 measurement or orbit biases persist under averaging. A short-arc fit with a free
 frequency offset discards absolute-frequency information by design.
@@ -214,7 +224,7 @@ those analyzers and the research positioning tools are separate stages. This
 diagram does not assert a deployed scanner-to-PNT service.*
 
 The key information boundary is before orbital fitting. RF extraction uses signal
-measurements; the geographic search receives no earlier known-site NORAD winners,
+measurements; the geographic search receives no location-assisted satellite selections,
 list of satellites visible from the known site, or fitted orbit correction.
 Later CFO values cannot
 choose the geographic cell, identity mixture, source offsets, or local-fit
@@ -231,7 +241,7 @@ choices before collecting new observations.
 with complete within-scan support before the 60/40 split. The held-out result is
 therefore conditional on retrospective extraction. Theoretically, stage-local
 holdout cannot prove end-to-end independence if an earlier stage used future data.
-A complete **earlier-only replay**, in which every stage can use only data available
+A complete **causal replay**, in which every stage can use only data available
 up to the simulated decision time, is the next test of this architecture.
 
 ## 4. Emission, propagation, and reception on the radio
@@ -260,13 +270,13 @@ means the pattern itself is not an identity code.
 | Tone offsets from edge-band centre | ±117.1875, ±351.5625, ±585.9375, ±820.3125 kHz | A centre at digital zero frequency (DC) does not put a pilot tone at DC |
 
 Authority: [template implementation](../src/leo/analysis/starlink/templates.py) and
-[IF/DC centering review](2026_08_21_edge_pilot_if_dc_centering.md). The older
-[transmission concept document](../docs/concepts/starlink-transmissions.md) describes
-the edge-pilot path accurately but predates the newer PSS implementation.
+[IF/DC centering review](2026_08_21_edge_pilot_if_dc_centering.md).
+[Edge-pilot signal description](../docs/concepts/starlink-transmissions.md).
 
 ### From Ku-band Doppler to recorded IQ
 
-The reviewed low-band chain uses an LNB local oscillator of 9.75 GHz. For example,
+The receiver chain used for these recordings has an LNB local oscillator of
+9.75 GHz. For example,
 CH3 lower-edge RF at 11.2096875 GHz becomes IF at 1.4596875 GHz by subtracting
 the oscillator frequency. The Pluto software-defined radio then places the selected
 slice in complex baseband, a representation centred near zero frequency. The
@@ -293,13 +303,14 @@ of tracks recorded at different RF frequencies. A source-local constant absorbs
 unresolved oscillator and transmitter frequency offsets. Frequency drift, channel
 effects, and transmitter steering can still contaminate the Doppler shape.
 
-**Empirical resolution limits.** The cohort's nominal unknown-height fits have
+**Empirical resolution limits.** Across the five regional searches, nominal-orbit
+fits with unknown height have
 276.6–287.0 Hz held-out CFO RMS. At 11.2 GHz, 1 Hz corresponds to approximately
 0.02677 m/s of line-of-sight velocity; 285 Hz corresponds to 7.63 m/s **if interpreted
 entirely as Doppler**. This is a units conversion, not a measured velocity error or
-position-error bound. The historical
-[dual-LNB study](2026_08_22_dual_lnb_drift_reference.md) observed short-term wander
-and did not establish a transferable clock calibration.
+position-error bound. A two-LNB comparison measured short-term frequency wander
+without establishing a calibration that could transfer between observations.
+[LNB frequency comparison](2026_08_22_dual_lnb_drift_reference.md).
 
 **Theoretical resolution limits.** Timing information depends on the known signal's
 effective RMS bandwidth, integration energy, and channel response. For the same
@@ -326,7 +337,7 @@ includes those missing intervals. **Duty** is the fraction of a stated interval
 with usable samples. A first-sample UTC **bracket** is the recorded earliest/latest
 time interval for that sample, rather than a perfectly known timestamp.
 
-| Latest eight-hour corpus quantity | Measured value |
+| Eight-hour positioning dataset quantity | Measured value |
 |---|---:|
 | Complete 300 s scans | 24: twelve at 2.5 MS/s and twelve at 5 MS/s |
 | Valid visits | 57,288, each 120 ms |
@@ -336,18 +347,19 @@ time interval for that sample, rather than a perfectly known timestamp.
 | Median / maximum first-sample UTC bracket width | 1.334 / 1.924 ms |
 | Median / maximum RF episode duration | 17.34 / 53.82 s |
 
-The distinction between device time and UTC was decisive in earlier work. Missing
-time at refill boundaries had compressed historical time axes and made apparent
-multi-second CFO slopes too steep. That mechanism supersedes earlier explanations
-of roughly 100 ms sawteeth as transmitter resets. Those recordings remain useful
-for qualified within-refill measurements, not as uncorrected long-baseline orbital
-evidence. [Refill mechanism](2026_08_24_refill_time_compression_sawtooth.md),
+An audit of recordings with gaps found a concrete timing failure: plotting received
+buffers back-to-back omitted the elapsed time of missing samples. The compressed
+time axis made multi-second CFO slopes appear too steep and produced roughly
+100 ms sawtooth patterns without requiring transmitter resets. Measurements wholly
+inside a verified buffer can remain useful, but orbital fitting across buffers
+requires the elapsed gaps to be restored.
+[Refill mechanism](2026_08_24_refill_time_compression_sawtooth.md),
 [counter-authoritative implementation](2026_08_24_continuity_buffer_implementation.md).
 
 **Empirical resolution limits.** Native-25 recordings in the September 2 paired
 cohort retain only **60.47–61.07%** of their logical timelines, with **16–21 gaps**
 per 60 s recording. That is a different acquisition cohort from the September 7
-scanner; it is not a current universal ceiling for 25 MS/s. Gap-safe processing
+scanner; it is not a universal ceiling for 25 MS/s. Gap-safe processing
 excludes every block crossing absent samples.
 [Five-pair report](2026_09_02_five_paired_native25_pss_vs_2p5_glrt.md).
 
@@ -373,8 +385,8 @@ gate accepts a window only when this difference exceeds a threshold. A correct
 template outperforming the control is stronger waveform evidence than a power
 peak alone.
 
-The detector variant called **GLRT64** combines known-symbol information in bounded
-groups and combines frame powers without assuming uninterrupted carrier phase
+The detector variant called **GLRT64** uses 64 known symbol positions per frame,
+combines their information in bounded groups, and combines frame powers without assuming uninterrupted carrier phase
 across all frames. In other words, it can accumulate evidence even when phase is
 not stable over the full window. The scanner/full-capture evidence here uses 20 ms
 probes, with a **stride**, or spacing between window starts, of 10 ms where source
@@ -385,17 +397,17 @@ of known 4QAM symbols, not decoded user traffic. Strong GLRT, good timing, and s
 carrier phase can occur on different receiver paths, so one quality score cannot
 stand in for the others.
 
-![Real known-pilot GLRT and QAM evidence](figures/2026_08_27_170330_capture_quality/glrt-quality.png)
+![Real known-pilot GLRT and QAM evidence](figures/2026_09_07_continental_positioning_synthesis/05-detector-quality-by-recording.png)
 
-*Figure 3 — Two selected 60 s receiver paths at 5 MS/s. The original PNG's “Prior
-182310” is a CH3 lower-edge recording from 26 August at 18:23:10 UTC; “New 170330”
-is the CH4 lower-edge recording from 27 August at 17:03:30 UTC, capture
-`a555a5cf5306`. The upper panel shows detector-score medians in two-second bins,
+*Figure 3 — Two selected 60 s receiver paths at 5 MS/s: CH3 lower edge on
+26 August at 18:23:10 UTC and CH4 lower edge on 27 August at 17:03:30 UTC
+(capture `a555a5cf5306`). Both use receiver input RX1. The upper panel shows
+detector-score medians in two-second bins,
 with 10th–90th percentile bands. Lower left shows the fraction passing the margin
 gate; lower right compares scores and the fraction of known pilot symbols recovered
 correctly. Channel, gain, bandwidth, and observation time also changed, so the
 comparison does not isolate one engineering change. This is detector evidence,
-not continental-solver input or a population detection rate. In the newer capture,
+not continental-solver input or a population detection rate. In the 27 August capture,
 the strongest timing/GLRT path had zero 75 ms segments passing the carrier-phase
 stability checks; another receiver input provided ten.
 [Capture-quality report](2026_08_27_170330_capture_quality.md).*
@@ -407,7 +419,7 @@ is one billionth of a second. A smoothly moving peak rounded onto that grid crea
 visible plateaus and fans. Fractional GLRT evaluates
 the local score surface, requires a bracketed concave peak, and estimates a
 continuous epoch. “Bracketed” means that evaluated points surround a local maximum;
-“concave” means the fitted peak curves downward. The newer path can directly rescore
+“concave” means the fitted peak curves downward. The Standard implementation can directly rescore
 the fractional coordinate with band-limited IQ interpolation, estimating the signal
 between recorded samples. A peak at the search boundary cannot be safely refined
 by this rule and remains an explicit failure.
@@ -422,9 +434,11 @@ separate quadratic curve from each; the lower row enlarges the U-shaped feature
 near 41 s. Blue/purple alternate between even/odd window indices on the 10 ms stride.
 Log-parabolic interpolation, fitting a parabola to the logarithm of the local
 score, reduced whole-track timing-fit RMS from **112.65 ns to 21.74 ns**, an **80.7%**
-reduction. The timing-derived frequency-change rate changed only 0.138%. This historical
-prototype held acquired CFO fixed and did not directly rescore the continuous
-coordinate; later Standard integration adds stronger fractional validation.
+reduction. The timing-derived frequency-change rate changed only 0.138%. This
+comparison held acquired CFO fixed and interpolated the sampled score surface;
+it did not directly evaluate the waveform at the fractional coordinate. The
+Standard implementation's direct fractional rescoring is an additional validation
+step, not a measurement included in these plotted results.
 [Fractional-epoch report](2026_09_02_7fea_glrt_fractional_epoch_prototype.md).*
 
 **Empirical resolution limits.** The integer grid was a demonstrated dominant error
@@ -474,8 +488,8 @@ lift**) is a coordinate correction, not additional Doppler information.
 
 Upper/lower observations are normalized by actual RF, and replicas are consolidated
 without silently counting the same sample as two episodes. Compatible edges can
-share trajectory shape while retaining independent offsets. The eight-hour result
-finds **338/387** accepted links predict later observations better with a shared
+share trajectory shape while retaining independent offsets. Among 387 accepted
+upper/lower links in the positioning dataset, **338** predict held-out observations better with a shared
 cubic than independent cubics; the median shared/separate RMS ratio is **0.582**.
 The formal precision gain for the fitted frequency-change rate is **1.43×**,
 calculated from the fit's assumed error model. These are conditional predictive
@@ -497,13 +511,12 @@ resolution of one coherent receiver spanning that bandwidth.*
 80 linear, 212 quadratic, and 210 cubic descriptions. A separate 300 s scan reviewed
 on 7 September, identifier `09970e`, shows channel-level descriptive RMS of
 68–112 Hz for cubics versus 577–796 Hz for lines; this does not justify using a
-cubic everywhere. Another scan, `a340`, appeared to show a signal switching
-channels. Correctly aligning and combining its channel records revealed
-**38.716 s of simultaneous channel overlap**, invalidating that proposed sequential
+cubic everywhere. Another scan, `a340`, contains **38.716 s of simultaneous channel
+overlap**, ruling out an interpretation of those records as a sequential channel
 switch. These examples show why a fitted trajectory needs continuity and channel
 checks before it becomes an orbital observation.
-[09970e review](2026_09_07_scan_09970e_fractional_glrt_trajectory_tle_review.md),
-[a340 correction](2026_09_07_scan_a340_fractional_glrt_trajectory_review.md).
+[Polynomial trajectory comparison](2026_09_07_scan_09970e_fractional_glrt_trajectory_tle_review.md),
+[cross-channel overlap analysis](2026_09_07_scan_a340_fractional_glrt_trajectory_review.md).
 
 **Theoretical resolution limits.** For \(N\) independent, equally noisy frequency
 measurements with frequency standard deviation \(\sigma_f\), approximately uniformly
@@ -511,11 +524,13 @@ distributed over duration \(T\), a fitted linear rate has standard error approxi
 \(\sqrt{12}\sigma_f/(\sqrt{N}T)\). Overlapping probes, shared oscillators, receiver
 replicas, and selected membership violate independence. Extending actual temporal
 support can help more than densely resampling the same interval. Local polynomials
-must not be extrapolated across hours. A separate recurrence check in the eight-hour
-study tried to predict candidate tracks reappearing about five hours later. Even
-linear extrapolations gave roughly 516–4,444 Hz residuals; propagated orbital models
-were far more useful. That comparison tests prediction of candidate tracks, not
-confirmation of their identities.
+must not be extrapolated across hours. For candidate tracks observed about five
+hours apart in the eight-hour dataset, linear extrapolation gives 516–4,444 Hz
+residuals. Propagating each candidate orbit while retaining its first-pass fitted
+orbit-time correction gives 81.8–224.2 Hz held-out residuals across four recurrence
+candidates. This comparison uses location-assisted identities and allows a fresh
+constant frequency offset on each pass; it tests prediction, not independent
+confirmation of satellite identity.
 
 ## 8. TLE and model-based geographic acquisition
 
@@ -538,9 +553,11 @@ geographic differences. The catalogue prior uses the full causal catalogue count
 so locations with fewer visible objects do not get an artificial advantage.
 
 The first 60% of each source is training and the last 40% is held out. Regional
-search retains at most six samples per partition; local physical fitting restores
-all samples in the selected episodes. The primary geographic selection uses training
-scores only. These are composite scores, not calibrated log probabilities.
+search retains at most six observations from each partition. Local refinement
+restores the full sampling density within both partitions, fitting parameters only
+on training observations and evaluating predictions on held-out observations.
+The primary geographic selection uses training scores only. These are composite
+scores, not calibrated log probabilities.
 They combine evidence across episodes to rank candidate locations; their numerical
 values do not directly state the probability that a location is correct. A
 geographic **mode** is a local peak in that score surface. The search keeps several
@@ -552,7 +569,7 @@ competing peaks and samples smaller patches around them before continuous fittin
 and 2,000 km centred on Oakland, California. The continental start uses a 5,000 km
 square centred at 43.6914344°, −106.8991205°, changing both centre and size. Each
 square is an allowed search area, not an uncertainty region around the final fix.
-The original scientific PNG uses a Natural Earth land backdrop with
+The map uses a Natural Earth land backdrop with
 [recorded provenance](figures/2026_09_07_blind_regional_pnt/map-source.json).*
 
 | Continental stage | Sampled locations | Revealed horizontal error | Recorded replay time |
@@ -571,8 +588,9 @@ after selection using the withheld evaluation coordinate. The rows show two
 branches: local refinement of the 125 km grid remained far from the reference;
 an independent 50 km search across the whole area found the successful branch.
 
-These elapsed times are previously recorded archived-data CPU runs, not new
-collection, a controlled benchmark, or a time-to-first-fix claim. The 10 km cell
+These are measured CPU processing times for replaying archived observations.
+They exclude signal-collection time and do not establish operational time to first
+fix or a controlled performance comparison. The 10 km cell
 happens to be closer to truth than the finer-grid winner. Keeping the
 training-selected refinement avoids selecting the lucky cell after reveal.
 
@@ -613,7 +631,7 @@ are not independent satellites confirmed by the receiver.
 
 The unknown-height model has a zero-centred 1 km height prior and bounds −500 to
 +5,000 m. The nominal solution is **37.853649440°, −122.465961367°**, with fitted
-ellipsoidal height approximately **−265 m**. Horizontal separation from the later
+ellipsoidal height approximately **−265 m**. Horizontal separation from the continental
 evaluation coordinate is **1,805.014 m**. No altitude truth was supplied, so the
 height has no validated accuracy interpretation. Ellipsoidal height is measured
 relative to the model's smooth reference surface for Earth, rather than local
@@ -669,33 +687,43 @@ need explicit constraints, priors, or abstention. This calculation assumes the
 chosen identities, linearization, error distribution, and covariance model are
 correct. It does not include distant geographic modes or an unknown model bias.
 
+A separate simulation isolates measurement noise using the satellite geometry of
+one recorded scan, with satellite identities and orbits treated as exact. Twenty
+trials add independent 100 Hz frequency noise; twenty hold each noise value constant
+across five consecutive samples. Their median horizontal errors are 925 m and
+1,528 m, respectively. These are simulated errors, not measurements of real-world
+accuracy; the comparison shows how correlated noise can degrade position even
+under ideal identity and orbit assumptions.
+
 | Stage / source of error | Empirical evidence | Theoretical constraint / unresolved measurement |
 |---|---|---|
-| Integer timing | `7fea`: 112.65 → 21.74 ns after fractional estimation | Grid quantization was removable; peak/channel bias remains |
-| Timing versus CFO | `0181`: 17.3 ns timing RMS with 1,214 Hz CFO RMS at native 25 MS/s | Separate parameter sensitivities; one cannot substitute for the other |
+| Integer timing | Selected 2.5 MS/s timing track: 112.65 → 21.74 ns after fractional estimation | Grid quantization was removable; peak/channel bias remains |
+| Timing versus CFO | Selected 25 MS/s GLRT windows: 17.3 ns timing RMS with 1,214 Hz CFO RMS | Separate parameter sensitivities; one cannot substitute for the other |
 | Continuity and UTC | Counter-attested scans; UTC brackets up to 1.924 ms | Sample adjacency is not external clock calibration |
 | Episode geometry | Median 17.34 s; model order varies | Short support weakens curvature and confounds nuisance parameters |
-| Measurement correlation | Existing 100 Hz-noise simulation: 925 m median with independent noise; 1,528 m with five-sample correlation | One real geometry with synthetic noise and exact identities/orbits; not a real-data accuracy trial |
+| Measurement correlation | 100 Hz-noise simulation: 925 m median with independent noise; 1,528 m with five-sample correlation | One real geometry with synthetic noise and exact identities/orbits; not a real-data accuracy trial |
 | Catalogue/geographic sampling | 250/125 km grids fail by thousands of km | A missed mode defeats local fitting |
 | Orbit/receiver ambiguity | Orbit correction lowers residuals and worsens all five locations | Nuisance directions remove position information |
 | Earth frame model | Earth-rotation time (UT1) approximated by civil time (UTC); small shifts of Earth's rotation axis (polar motion) neglected | Frame transform, signal travel time, and propagation approximations need improvement before precision claims |
-| Integrity and reference truth | Sharp wrong-time peaks; earlier/later references differ by 1.290 km | No calibrated 95% region or demonstrated false-fix rate |
+| Integrity and reference truth | Sharp wrong-time peaks; continental and location-assisted benchmark references differ by 1.290 km | No calibrated 95% region or demonstrated false-fix rate |
 
 This is a **bottleneck ledger, not an additive error budget**. The terms are
 correlated, incompletely calibrated, and measured under different conditions. A
-root-sum-square total would be unjustified. The existing synthetic noise experiment
+root-sum-square total would be unjustified. The synthetic noise experiment
 isolates one mechanism; it does not identify what fraction of the real 1.805 km
 error comes from noise, TLE error, clocks, or incorrect identities.
 
-**Resolution bottleneck.** Empirically, the remaining error survives improved timing
-and numerically converged fits. Theoretically, reducing measurement noise cannot
+**Resolution bottleneck.** Empirically, the continental position fit converges
+numerically but retains kilometre-scale horizontal error. The timing comparisons
+in sections 6 and 10 do not measure how much a timing improvement changes that
+position error. Theoretically, reducing measurement noise cannot
 remove systematic bias or restore information absorbed by nuisance parameters.
 Independent clock/orbit calibration, geometry diversity, and an honest no-fix
 decision are required alongside better RF estimation.
 
 ## 10. Sample rate, PSS tracking, FPGA acceleration, and next steps
 
-### What increasing the sample rate has actually achieved
+### Measured timing and CFO at 2.5 and 25 MS/s
 
 PSS processing uses the primary synchronization sequence to measure repeated frame
 timing. The native-rate implementation first constructs the part of the published
@@ -711,18 +739,19 @@ its transmit time, payload content, or interpretation of the separate **secondar
 synchronization sequence (SSS)**. Without those additional facts and clock/delay
 calibration, precise repeated timing is not yet an absolute range measurement.
 
-The study published on 2 September compared five recording pairs, each using
-separate radios for 25 MS/s PSS and 2.5 MS/s edge pilots. It found three independent
-native-25 PSS tracks out of five preselected captures, with quadratic block-median
+Five preselected recording pairs use separate radios for 25 MS/s PSS and 2.5 MS/s
+edge pilots. PSS processing acquired a track independently of GLRT in three of
+the five pairs, with quadratic block-median
 RMS **0.217–0.378 µs**. This statistic measures scatter of per-block median timing
 after subtracting a quadratic trend; a microsecond (µs) is one millionth of a second.
-The other two primary no-track outcomes remain in the evidence. The targeted
-September 3 `0181` comparison gives the sharper results below on selected support.
+The other two pairs produced no primary PSS track. A separate detailed comparison
+uses recording `0181f7f0ffa1` and evaluates the methods at selected times, as described
+below.
 
 ![Timing and CFO respond differently to higher sample rate](figures/2026_09_07_continental_positioning_synthesis/02-measured-timing-and-cfo-tradeoff.png)
 
 *Figure 8 — Real data from a recording pair whose 25 MS/s capture is
-`0181f7f0ffa1`, recorded on 2 September and compared in the 3 September study.
+`0181f7f0ffa1`, recorded on 2 September.
 Left: scatter around separately fitted quadratic timing curves; right: scatter
 around fitted CFO curves, with a different unit and scale. Fractional native-25
 GLRT has 17.3 ns timing RMS, PSS 19.5 ns, and paired low-rate fractional GLRT
@@ -731,7 +760,7 @@ Separate radios, unequal observation counts,
 PSS-selected scheduling, and retained-support gates prevent this from being a
 controlled sample-rate-only ranking.*
 
-| Observable on `0181` | Points | Quadratic timing RMS | Timing-derived rate magnitude |
+| Observable in the selected recording interval | Points | Quadratic timing RMS | Timing-derived rate magnitude |
 |---|---:|---:|---:|
 | 2.5 MS/s fractional GLRT, common interval | 242 | 41.4 ns | 3,071.08 Hz/s |
 | 25 MS/s integer GLRT | 89 | 29.3 ns | 3,075.88 Hz/s |
@@ -751,9 +780,9 @@ satellite Doppler. The table reports magnitudes because timing and recorded-IQ
 mixing conventions can reverse the displayed sign. The implementation in the
 reviewed snapshot labels its aligned timing-derived comparison a **template-phase
 CFO proxy**: a frequency representation of template timing for comparison, without
-claiming calibrated physical Doppler sign. This explains opposite-sign curves in
-older linked plots; they do not by themselves indicate opposite satellite motion.
-[Current presentation implementation](../src/leo/analysis/standard/native_pss_glrt_comparison.py),
+claiming calibrated physical Doppler sign. Curves using opposite conventions
+can have opposite signs without indicating opposite satellite motion.
+[Timing/CFO comparison implementation](../src/leo/analysis/standard/native_pss_glrt_comparison.py),
 [sign/quantization diagnosis](2026_09_02_6f8_pss_glrt_residual_deep_dive.md).
 
 ### Bandwidth, cadence, and transport are separate choices
@@ -784,7 +813,7 @@ pseudorange. [Qin et al., timing properties](https://rnl.ae.utexas.edu/wp-conten
 Increasing sample rate helps when it admits more **useful known-signal bandwidth**,
 reduces avoidable quantization, or supports a more faithful local interpolation.
 Oversampling the same analog-filtered band does not multiply independent information.
-Widening the analog filter can also admit more noise and interference. The current
+Widening the analog filter can also admit more noise and interference. The recorded
 25 MHz slice is still about one tenth of a 240 MHz channel; it must not be described
 as full-channel PSS capture. AD9361-class hardware supports a maximum 56 MHz tunable
 channel bandwidth, so a full-channel receiver is a different RF design, not a simple
@@ -817,8 +846,8 @@ A **field-programmable gate array (FPGA)** is programmable digital hardware in t
 radio that can perform many signal operations in parallel as samples arrive.
 The concrete opportunity is to process the known signal before the high-rate IQ
 stream overloads the transport or host, preserving counter-aligned observations
-and selected raw windows for audit. The FPGA already provides sample-counter
-authority in the capture system. **These reports do not demonstrate an FPGA PSS
+and selected raw windows for audit. The FPGA provides the device sample counter
+in the capture system. **The experiments do not demonstrate an FPGA PSS
 accelerator, its resource fit, or a positioning improvement from one.**
 
 | Proposed division of work | Purpose | Measurement required before adopting it |
@@ -828,7 +857,7 @@ accelerator, its resource fit, or a positioning improvement from one.**
 | Predicted-window PSS tracking around a previously acquired mode | Reduce search work and maintain timing cadence | Holdout epoch/CFO error, slip rate, reacquisition after gaps and competing signals |
 | Fractional peak / early-prompt-late statistics | Compare correlation just before, at, and after the predicted epoch to retain sub-sample timing information | Fixed-point bias and saturation versus the floating-point reference |
 | Device-counter-labelled compact output plus retained IQ snippets | Reduce transport pressure while preserving reproducibility | Bytes/s, queue occupancy, losses, latency, and replay agreement |
-| CPU multi-hypothesis association and orbit/position fitting | Keep changing catalogue logic and integrity checks reviewable | Earlier-only position errors, rejection rates, and geometry stability |
+| CPU multi-hypothesis association and orbit/position fitting | Keep changing catalogue logic and integrity checks reviewable | Causal-replay position errors, rejection rates, and geometry stability |
 
 A rough workload calculation illustrates why tracking should be separated from
 blind acquisition. A 110-tap direct PSS correlator at 25 MS/s costs approximately
@@ -844,7 +873,8 @@ to a running correlation. Hardware resource fit and **clock closure** mean that
 the implementation fits the available logic/memory and meets its required clock
 speed; neither follows from an operation count alone.
 
-The existing `0181` CPU experiment provides a limited measured baseline: 133
+The selected-window GLRT experiment on recording `0181` provides a measured
+processing baseline: 133
 20 ms windows took **52.47 s with four workers**; summed verified-read time was
 **39.66 worker-seconds**, which overlaps across workers and is not a wall-time
 percentage. This is selected GLRT work, not a continuous FPGA-PSS benchmark.
@@ -860,7 +890,9 @@ must be judged by retained independent information and final position validation
 
 ### Next steps, in order
 
-1. **Freeze an earlier-only replay on existing later scans.** Freeze source
+1. **Run a causal replay on recordings held out from method development.** Reveal
+   observations in timestamp order; every processing stage must use only data
+   available at the simulated decision time. Freeze source
    selection, RF association, geographic search, model settings, and fix/no-fix
    rules before opening evaluation coordinates. Retain every failed start and
    report elapsed observation time, accepted RF time, compute time, and miss rate.
@@ -874,7 +906,8 @@ must be judged by retained independent information and final position validation
 3. **Separate clocks, orbits, and receiver position.** Test constrained shared
    oscillator/clock states and calibration transferred from a known reference
    receiver to an unknown-location receiver on disjoint data. Keep
-   nominal TLE as the baseline: extra orbit freedom has already worsened position.
+   nominal TLE as the baseline: extra orbit freedom worsens position in all five
+   regional comparisons in Figure 7.
    Improve the Earth-frame model and assess sensitivity to causal catalogue age.
 4. **Measure sample-rate effects on the same recorded signal.** Use archived
    native IQ with anti-alias-filtered decimations, identical time support, declared
@@ -892,41 +925,36 @@ must be judged by retained independent information and final position validation
    and account for covariance with GLRT when both use the same IQ. Require an
    improvement on untouched position evaluation, not merely a cleaner timing PNG.
 
-These steps prioritize the existing corpus and short numerical replays. This report
-performs no new RF collection, firmware change, deployment, or database mutation.
-Any future collection needs explicit authorization and a duration of at most
-30 minutes under repository policy.
+These steps begin with archived recordings and short numerical replays.
 
-## 11. Evidence lineage, reproduction, and conclusion
+## 11. Supporting evidence, reproduction, and conclusion
 
-The table below is an optional audit trail. Its finding and interpretation columns
-summarize what each source contributes; reading those reports is not required to
-follow the methods or conclusions above. Historical names such as V3 and V4 identify
-earlier processing experiments, rather than prerequisites for this workflow.
+The supporting records below document the observations and limitations discussed
+in this report. Each row states the relevant finding directly.
 
-| Report family | Finding carried into this synthesis | Interpretation today |
+| Supporting records | Observation | Limitation |
 |---|---|---|
 | [Signal/tracking guide](2026_08_24_starlink_signal_and_tracking_guide.md), [IF centering](2026_08_21_edge_pilot_if_dc_centering.md) | Known edge-pilot evidence and exact RF geometry | Template compatibility does not decode an identity |
 | [Line finding](2026_08_20_line_finder.md), [residual Hough](2026_08_22_residual_hough_segmentation.md), [alias canonicalization](2026_08_26_cfo_alias_canonicalization.md), [window geometry](2026_08_26_20ms_window_comparison.md) | Retain real trajectories and distinguish aliases | Detector density and geometry are not physical transmitter counts |
 | [Subsecond pilot structure](2026_08_22_subsecond_pilot_structure.md), [phase qualification](2026_08_23_five_dwell_modulo_pi_qualification.md), [capture quality](2026_08_27_170330_capture_quality.md) | Local phase can be useful but intermittent | Timing, phase, QAM and CFO require separate quality gates |
-| [Refill mechanism](2026_08_24_refill_time_compression_sawtooth.md), [controlled loopback](2026_08_24_refill_continuity_loopback.md), [refill-aware review](2026_08_25_doppler_rate_and_satellite_linking_method_review.md) | Missing elapsed time explained historical slope distortions | Supersedes transmitter-reset interpretations for affected data |
-| [V3 review](2026_08_25_pnt_kalman_v3_comprehensive_review.md), [V4 experiment](2026_08_25_150802_pnt_kalman_v4_experimental.md), [downstream benchmark](2026_08_25_v3_v4_downstream_rate_benchmark.md) | Acquisition yield and conditional tracking improved in some settings | A filter named PNT is not itself a demonstrated position solver |
-| [Final Doppler holdout](2026_08_26_final_doppler_holdout_and_starlink_association_v2.md), [wrong-time interpretation](2026_08_26_wrong_time_specificity_and_orbital_time_shift.md), [long-arc audit](2026_08_27_satellite_pnt_long_arc_development_audit.md), [tracking synthesis](2026_08_27_satellite_tracking_association_and_pnt_synthesis.md) | Curvature and recurrence help; attractive ranks can fail identity gates | Later regional results do not retroactively promote old candidates |
+| [Refill mechanism](2026_08_24_refill_time_compression_sawtooth.md), [controlled loopback](2026_08_24_refill_continuity_loopback.md), [refill-aware review](2026_08_25_doppler_rate_and_satellite_linking_method_review.md) | Omitting missing sample time distorts CFO slopes | A recording-timeline artifact cannot establish transmitter resets |
+| [Kalman tracking analysis](2026_08_25_pnt_kalman_v3_comprehensive_review.md), [tracking variant](2026_08_25_150802_pnt_kalman_v4_experimental.md), [rate benchmark](2026_08_25_v3_v4_downstream_rate_benchmark.md) | Filter settings change candidate acquisition and conditional tracking | Tracking frequency is distinct from estimating receiver position |
+| [Doppler holdout](2026_08_26_final_doppler_holdout_and_starlink_association_v2.md), [wrong-time controls](2026_08_26_wrong_time_specificity_and_orbital_time_shift.md), [long-arc audit](2026_08_27_satellite_pnt_long_arc_development_audit.md), [tracking and association](2026_08_27_satellite_tracking_association_and_pnt_synthesis.md) | Curvature and repeat observations help discriminate candidate tracks | A high catalogue score alone does not confirm a satellite identity |
 | [Multi-radio rate experiment](2026_08_26_multi_radio_common_rate_results.md), [fixed-window calibration](2026_08_26_fixed500_calibration_results.md), [nuisance study](2026_08_26_retrospective_satellite_nuisance_results.md) | Shared noise and model freedom change apparent precision | Correlation and nuisance models require independent calibration |
-| [Counter-continuous delay](2026_08_25_counter_continuous_frame_timing_and_delay.md), [21-dwell PSS/SSS](2026_08_25_multi_dwell_pss_sss_doppler.md), [early mixed-rate replay](2026_08_31_production_dual_2p5_25_pss_replay.md) | Early timing support was limited and gap-dependent | Stronger later PSS evidence does not erase those negative outcomes |
-| [Five paired PSS/GLRT captures](2026_09_02_five_paired_native25_pss_vs_2p5_glrt.md), [6f8 diagnosis](2026_09_02_6f8_pss_glrt_residual_deep_dive.md), [7fea refinement](2026_09_02_7fea_glrt_fractional_epoch_prototype.md), [0181 comparison](2026_09_03_0181_native25_fractional_glrt.md) | Sub-sample timing is real; sample rate, sign and continuity matter | High timing precision remains distinct from absolute ranging |
-| [Native-rate deployment retrospective](2026_08_27_native_sample_rate_production_deployment_retrospective.md), [scanner duty prototype](2026_09_03_scanner_no_firmware_duty_prototype.md), [latest scan corpus](2026_09_07_eight_hour_scan_tracking_and_positioning.md) | Measured transport/queue work enabled high scan duty | Early limited hardware trials are superseded only by later measured qualifications |
-| [a340 review](2026_09_07_scan_a340_fractional_glrt_trajectory_review.md), [09970e review](2026_09_07_scan_09970e_fractional_glrt_trajectory_tle_review.md), [eight-hour positioning](2026_09_07_eight_hour_scan_tracking_and_positioning.md) | Episode consolidation, prediction, and conditional pooling | Known-site selection and channel conflicts remain explicit |
+| [Counter-continuous delay](2026_08_25_counter_continuous_frame_timing_and_delay.md), [21-dwell PSS/SSS](2026_08_25_multi_dwell_pss_sss_doppler.md), [mixed-rate replay](2026_08_31_production_dual_2p5_25_pss_replay.md) | Some synchronization tests have limited usable timing support and gaps | A successful selected recording does not establish a general detection yield |
+| [Five paired PSS/GLRT captures](2026_09_02_five_paired_native25_pss_vs_2p5_glrt.md), [timing-sign diagnosis](2026_09_02_6f8_pss_glrt_residual_deep_dive.md), [fractional GLRT comparison](2026_09_02_7fea_glrt_fractional_epoch_prototype.md), [25 MS/s GLRT/PSS comparison](2026_09_03_0181_native25_fractional_glrt.md) | Sub-sample timing is real; sample rate, sign and continuity matter | High timing precision remains distinct from absolute ranging |
+| [Native-rate capture measurements](2026_08_27_native_sample_rate_production_deployment_retrospective.md), [scanner duty measurements](2026_09_03_scanner_no_firmware_duty_prototype.md), [eight-hour scan dataset](2026_09_07_eight_hour_scan_tracking_and_positioning.md) | Capture and queue measurements establish usable duty for specific configurations | Each rate, receiver count, and transport configuration needs its own measured qualification |
+| [Cross-channel overlap analysis](2026_09_07_scan_a340_fractional_glrt_trajectory_review.md), [trajectory curvature analysis](2026_09_07_scan_09970e_fractional_glrt_trajectory_tle_review.md), [eight-hour positioning](2026_09_07_eight_hour_scan_tracking_and_positioning.md) | Episode consolidation, prediction, and conditional pooling | Known-site selection and channel conflicts remain explicit |
 | [Continental search](2026_09_07_blind_regional_doppler_positioning.md) | Unknown-position/unknown-identity localization at 1.805 km | One retrospective continental result; integrity and generalization remain open |
 
-The headline, new figures, and design-arithmetic table are generated from committed
+The headline, five figures, and design-arithmetic table are generated from committed
 numerical artifacts by
 [report_continental_positioning_synthesis.py](../tools/report_continental_positioning_synthesis.py).
 The [metrics](figures/2026_09_07_continental_positioning_synthesis/metrics.json)
 retain source values, both reference coordinates, the recomputed reference
 separation, every failed continental branch, and all local-model alternatives.
 The [manifest](figures/2026_09_07_continental_positioning_synthesis/manifest.json)
-hashes the numeric inputs, reused PNGs, source-report inventory, new figures, and
+hashes the numeric inputs, reused PNGs, source-report inventory, rendered figures, and
 report generator. No AI-generated imagery is used. Figures 1–8 contain measured
 or reported experimental evidence; Figure 9 is explicitly theoretical arithmetic.
 
@@ -948,20 +976,22 @@ numerical regression suite. The continental study intentionally omits 528 large
 per-scan/per-cell intermediate arrays from Git. `--published-only` declares that
 omission; these checks do not rerun the full RF extraction or continental search.
 
-Original publication validation passed **156 tests**: five report/evidence checks and
-151 regional, scan-positioning, blinded-evaluation, and sky regressions. The
-published-only verifier also validated **22 sealed replays, 20 local fits, and
-13 original continental figures**. The fresh
+The validation suite contains **156 tests**: five report/evidence checks and
+151 regional, scan-positioning, blinded-evaluation, and sky regressions. The saved
+published-only verification covers **22 sealed replays, 20 local fits, and
+13 continental-study figures**. The
 [regional verification receipt](figures/2026_09_07_continental_positioning_synthesis/regional-verification.json)
-records that scope and the explicitly omitted intermediate arrays. All nine PNGs
-embedded here were decoded successfully; the new figures were visually reviewed.
-The self-contained editorial revision reran the **five report/evidence checks**
-and refreshed the report hash; the numerical results and PNGs are unchanged.
+records that scope and the explicitly omitted intermediate arrays. For this
+edition, the five report/evidence checks passed, all nine embedded PNGs were decoded,
+and the two plots rendered with revised labels were visually reviewed. Numerical
+position and timing results are unchanged.
 
 The supported conclusion is **1.8 km continental localization from archived
 Starlink-compatible Doppler observations**, with a separately labelled **1.2 km
-conditional benchmark against an earlier site preset**. Fractional timing and
-native-rate PSS are real advances in observable precision. The next improvement in
+conditional benchmark with location-assisted satellite selection**: a supplied
+receiver coordinate selects candidate satellites before the position fit, and a
+different reference coordinate is used from the continental experiment. Fractional
+timing and native-rate PSS show measured precision on separate recordings. The next improvement in
 position must demonstrate that better measurements, clocks, satellite hypotheses,
 and coverage produce a more accurate and trustworthy location on disjoint data.
 Sample rate and FPGA acceleration are means to that measured outcome.

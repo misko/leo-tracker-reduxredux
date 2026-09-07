@@ -26,6 +26,7 @@ REGIONAL = FIGURES / "2026_09_07_blind_regional_pnt/evaluation-expanded.json"
 COHORT = FIGURES / "2026_09_07_eight_hour_scan_pnt/summary.json"
 TIMING = FIGURES / "2026_09_03_0181_native25_fractional_glrt/analysis-summary.json"
 FRACTIONAL = FIGURES / "2026_09_02_7fea_glrt_fractional_epoch/fractional-glrt-epoch-prototype.json"
+QUALITY = FIGURES / "2026_08_27_170330_capture_quality/capture-quality-results.json"
 OLD_SCORER = Path("tools/evaluate_scan_pnt_cohort.py")
 
 
@@ -110,6 +111,7 @@ def load_metrics(root: Path = ROOT) -> dict:
         "native25_cfo_comparison": timing["comparison"],
         "native25_runtime": timing["runtime"],
         "fractional_7fea_fits": fractional["fits"],
+        "detector_quality_comparison": read(QUALITY),
         "sample_rate_theory": [
             {
                 "sample_rate_msps": rate,
@@ -122,7 +124,8 @@ def load_metrics(root: Path = ROOT) -> dict:
             for rate in (2.5, 5.0, 10.0, 25.0)
         ],
         "input_sha256": {
-            str(p): sha(root / p) for p in (REGIONAL, COHORT, TIMING, FRACTIONAL, OLD_SCORER)
+            str(p): sha(root / p)
+            for p in (REGIONAL, COHORT, TIMING, FRACTIONAL, QUALITY, OLD_SCORER)
         },
     }
 
@@ -196,7 +199,7 @@ def render(metrics, output):
         ylabel="Horizontal error (km)",
         ylim=(0, 1.85),
         xticks=[3, 6, 12, 18, 19],
-        title="B · Earlier conditional positioning experiment",
+        title="B · Location-assisted satellite selection",
     )
     axes[1].legend(loc="upper right", fontsize=8)
     fig.suptitle(
@@ -347,6 +350,67 @@ def render(metrics, output):
     fig.suptitle("Measured limits of search resolution and model flexibility", fontsize=15)
     save(fig, output, "04-search-and-model-bottlenecks.png")
 
+    quality = metrics["detector_quality_comparison"]
+    fig = plt.figure(figsize=(13, 8), layout="constrained")
+    grid = fig.add_gridspec(2, 2, height_ratios=(1.1, 1))
+    score = fig.add_subplot(grid[0, :])
+    availability = fig.add_subplot(grid[1, 0])
+    aggregate = fig.add_subplot(grid[1, 1])
+    for key, label, color, offset in (
+        ("prior", "26 Aug · CH3 lower · RX1", orange, -0.18),
+        ("new", "27 Aug · CH4 lower · RX1", teal, 0.18),
+    ):
+        capture = quality["captures"][key]
+        bins = np.asarray(quality["glrt_time_bins"][key])
+        score.plot(bins[:, 0], bins[:, 1], "o-", color=color, markersize=3, label=label)
+        score.fill_between(bins[:, 0], bins[:, 2], bins[:, 3], color=color, alpha=0.14)
+        glrt = capture["glrt"]
+        availability.plot(
+            bins[:, 0],
+            bins[:, 5] * 100,
+            "o-",
+            color=color,
+            markersize=3,
+            label=f"{label}: {glrt['passing_windows']:,}/{glrt['valid_windows']:,}",
+        )
+        values = [
+            glrt["passing_median_exact_score"],
+            glrt["passing_median_margin"],
+            capture["known_pilot_hard_symbol_accuracy"],
+        ]
+        bars = aggregate.bar(np.arange(3) + offset, values, width=0.35, color=color, label=label)
+        aggregate.bar_label(bars, fmt="%.3f", padding=3, fontsize=9)
+    score.set(
+        xlim=(0, 60),
+        ylim=(0, 0.92),
+        xlabel="Elapsed recording time (s)",
+        ylabel="Exact known-pilot score",
+        title="A · Two-second medians with 10th–90th percentile bands",
+    )
+    score.legend(loc="lower right", fontsize=9)
+    availability.set(
+        xlim=(0, 60),
+        ylim=(40, 102),
+        xlabel="Elapsed recording time (s)",
+        ylabel="Margin-gate pass fraction (%)",
+        title="B · Detection availability on valid windows",
+    )
+    availability.legend(loc="lower right", fontsize=8)
+    aggregate.set(
+        xticks=np.arange(3),
+        xticklabels=["Median exact\nscore", "Median GLRT\nmargin", "Known-pilot\nsymbol accuracy"],
+        ylim=(0, 0.85),
+        ylabel="Unitless score or fraction",
+        title="C · Selected receiver-path quality",
+    )
+    aggregate.legend(loc="upper left", fontsize=8)
+    fig.suptitle(
+        "Known-pilot detection in two 60 s recordings at 5 MS/s\n"
+        "Channel, gain, bandwidth and recording time differ",
+        fontsize=15,
+    )
+    save(fig, output, "05-detector-quality-by-recording.png")
+
 
 def write_inventory(root, output):
     lines = [
@@ -410,7 +474,7 @@ def main():
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(
-        f"Rendered 4 PNGs; indexed {len(report_sources)} reports; "
+        f"Rendered 5 PNGs; indexed {len(report_sources)} reports; "
         f"verified {len(local)} local links."
     )
 

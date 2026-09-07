@@ -71,7 +71,7 @@ def test_published_manifest_matches_inputs_report_and_pngs():
             assert REPORT_TOOL.sha(ROOT / path) == expected, path
     for name, expected in manifest["outputs"].items():
         assert REPORT_TOOL.sha(output / name) == expected, name
-    assert len(list(output.glob("*.png"))) == 4
+    assert len(list(output.glob("*.png"))) == 5
     for path in manifest["linked_pngs"]:
         with Image.open(ROOT / path) as image:
             assert image.format == "PNG"
