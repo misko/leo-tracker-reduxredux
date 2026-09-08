@@ -1,0 +1,957 @@
+{
+  "recipe_sha256": "442ec55ae1d41d010a183fbae794b6357e0bfc54c640cb412ed090a636f21001",
+  "inputs_sha256": "572f502a0209c0171bcd7527b7f205f29f6669cecda4bca261c353adb184e3cd",
+  "rows": [
+    {
+      "session_id": "scan-hop-228b5ad75bb549f3",
+      "manifest_sha256": "sha256:cc67baea42f7214e62f74c1d7072072f1738cda207d7574009bb35107c9893af",
+      "schema_version": 2,
+      "manifest_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "created_utc_ns",
+        "finalized_utc_ns",
+        "plan",
+        "receipt",
+        "timing",
+        "receiver_ids",
+        "sample_format",
+        "sample_layout",
+        "chunks",
+        "total_sample_count",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compression",
+        "queue_telemetry"
+      ],
+      "receipt_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "radio_id",
+        "radio_serial",
+        "radio_uri",
+        "plan",
+        "server_protocol_version",
+        "server_feature_flags",
+        "request_flags",
+        "metadata_abi_version",
+        "stream_generation",
+        "kernel_buffers_requested",
+        "kernel_buffers_readback",
+        "capture_outcome",
+        "terminal_status",
+        "terminal_status_attested",
+        "session_start_device_sample_counter",
+        "session_end_device_sample_counter_exclusive",
+        "visits",
+        "continuity_faults",
+        "target_coverage",
+        "valid_sample_count",
+        "transition_invalid_sample_count",
+        "terminal_incomplete_visit_count",
+        "terminal_unretained_invalid_sample_count",
+        "terminal_unretained_valid_sample_count",
+        "missing_sample_count",
+        "overflow_count",
+        "hop_event_sequence_gap_count",
+        "duty_denominator_sample_count",
+        "valid_duty_ppm",
+        "continuity_attested",
+        "duty_target_met",
+        "restoration"
+      ],
+      "visit_fields": [
+        "schema_version",
+        "visit_index",
+        "sweep_index",
+        "target_index",
+        "fastlock_profile_index",
+        "event_sequence",
+        "device_event_id",
+        "device_event_flags",
+        "fastlock_slot",
+        "target",
+        "requested_if_center_hz",
+        "actual_lo_frequency_hz",
+        "actual_if_offset_hz",
+        "transition_invalid_before",
+        "valid_device_sample_counter",
+        "valid_device_sample_counter_end_exclusive",
+        "valid_sample_count"
+      ],
+      "chunk_fields": [
+        "schema_version",
+        "chunk_index",
+        "sweep_index",
+        "first_visit_index",
+        "visit_count",
+        "sample_start",
+        "sample_count",
+        "relative_path",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compressed_sha256"
+      ],
+      "plan": {
+        "schema_version": 1,
+        "kind": "starlink_persistent_hop_plan",
+        "nominal_duration_seconds": 300,
+        "valid_visit_ms": 120,
+        "sample_rate_hz": 2500000,
+        "bandwidth_hz": 2500000,
+        "lnb_lo_hz": 9750000000,
+        "receiver_ids": [
+          0,
+          1
+        ],
+        "gain_mode": "manual",
+        "gain_db": 40.0,
+        "samples_per_block": 131072,
+        "kernel_buffers": 8,
+        "transition_guard_samples": 2500,
+        "maximum_visit_count": 2500,
+        "minimum_valid_duty_ppm": 900000,
+        "profiles": [
+          {
+            "schema_version": 1,
+            "target_index": 0,
+            "fastlock_profile_index": 0,
+            "target": {
+              "channel": 1,
+              "edge": "lower",
+              "rf_center_hz": 10709687500,
+              "if_center_hz": 959687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 1,
+            "fastlock_profile_index": 1,
+            "target": {
+              "channel": 2,
+              "edge": "lower",
+              "rf_center_hz": 10959687500,
+              "if_center_hz": 1209687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 2,
+            "fastlock_profile_index": 2,
+            "target": {
+              "channel": 3,
+              "edge": "lower",
+              "rf_center_hz": 11209687500,
+              "if_center_hz": 1459687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 3,
+            "fastlock_profile_index": 3,
+            "target": {
+              "channel": 4,
+              "edge": "lower",
+              "rf_center_hz": 11459687500,
+              "if_center_hz": 1709687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 4,
+            "fastlock_profile_index": 4,
+            "target": {
+              "channel": 1,
+              "edge": "upper",
+              "rf_center_hz": 10940312500,
+              "if_center_hz": 1190312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 5,
+            "fastlock_profile_index": 5,
+            "target": {
+              "channel": 2,
+              "edge": "upper",
+              "rf_center_hz": 11190312500,
+              "if_center_hz": 1440312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 6,
+            "fastlock_profile_index": 6,
+            "target": {
+              "channel": 3,
+              "edge": "upper",
+              "rf_center_hz": 11440312500,
+              "if_center_hz": 1690312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 7,
+            "fastlock_profile_index": 7,
+            "target": {
+              "channel": 4,
+              "edge": "upper",
+              "rf_center_hz": 11690312500,
+              "if_center_hz": 1940312500
+            }
+          }
+        ]
+      },
+      "timing": {
+        "schema_version": 1,
+        "algorithm_version": "host-bracketed-device-counter-utc-v1",
+        "session_id": "scan-hop-228b5ad75bb549f3",
+        "session_start_device_sample_counter": 1210421031497,
+        "sample_rate_hz": 2500000,
+        "begin_before_realtime_ns": 1788844806354162812,
+        "begin_before_monotonic_ns": 780657474213145,
+        "begin_after_realtime_ns": 1788844806355300094,
+        "begin_after_monotonic_ns": 780657475350427,
+        "terminal_realtime_ns": 1788845107650054428,
+        "terminal_monotonic_ns": 780958770105510,
+        "first_sample_earliest_utc_ns": 1788844806354162063,
+        "first_sample_estimate_utc_ns": 1788844806354731078,
+        "first_sample_latest_utc_ns": 1788844806355300094,
+        "first_sample_bracket_width_ns": 1138031,
+        "maximum_realtime_monotonic_offset_spread_ns": 749,
+        "qualification_limit_ns": 50000000,
+        "qualified": true,
+        "reason": "first device sample is host-bracketed and the realtime/monotonic offset and first-sample bracket remained inside the qualification limit"
+      },
+      "queue_telemetry": {
+        "schema_version": 1,
+        "capacity_visits": 64,
+        "high_water_visits": 3,
+        "enqueue_failure_count": 0,
+        "maximum_enqueue_wait_ns": 39867,
+        "maximum_writer_service_ns": 459821795
+      },
+      "visits": 2388,
+      "chunks": 299,
+      "qualified": true
+    },
+    {
+      "session_id": "scan-hop-2c7a4d21e9d2a576",
+      "manifest_sha256": "sha256:b859cda5fb7a6364852962af62a351ce953088b9b4b2715d7d2fdb90a49d2abd",
+      "schema_version": 2,
+      "manifest_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "created_utc_ns",
+        "finalized_utc_ns",
+        "plan",
+        "receipt",
+        "timing",
+        "receiver_ids",
+        "sample_format",
+        "sample_layout",
+        "chunks",
+        "total_sample_count",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compression",
+        "queue_telemetry"
+      ],
+      "receipt_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "radio_id",
+        "radio_serial",
+        "radio_uri",
+        "plan",
+        "server_protocol_version",
+        "server_feature_flags",
+        "request_flags",
+        "metadata_abi_version",
+        "stream_generation",
+        "kernel_buffers_requested",
+        "kernel_buffers_readback",
+        "capture_outcome",
+        "terminal_status",
+        "terminal_status_attested",
+        "session_start_device_sample_counter",
+        "session_end_device_sample_counter_exclusive",
+        "visits",
+        "continuity_faults",
+        "target_coverage",
+        "valid_sample_count",
+        "transition_invalid_sample_count",
+        "terminal_incomplete_visit_count",
+        "terminal_unretained_invalid_sample_count",
+        "terminal_unretained_valid_sample_count",
+        "missing_sample_count",
+        "overflow_count",
+        "hop_event_sequence_gap_count",
+        "duty_denominator_sample_count",
+        "valid_duty_ppm",
+        "continuity_attested",
+        "duty_target_met",
+        "restoration"
+      ],
+      "visit_fields": [
+        "schema_version",
+        "visit_index",
+        "sweep_index",
+        "target_index",
+        "fastlock_profile_index",
+        "event_sequence",
+        "device_event_id",
+        "device_event_flags",
+        "fastlock_slot",
+        "target",
+        "requested_if_center_hz",
+        "actual_lo_frequency_hz",
+        "actual_if_offset_hz",
+        "transition_invalid_before",
+        "valid_device_sample_counter",
+        "valid_device_sample_counter_end_exclusive",
+        "valid_sample_count"
+      ],
+      "chunk_fields": [
+        "schema_version",
+        "chunk_index",
+        "sweep_index",
+        "first_visit_index",
+        "visit_count",
+        "sample_start",
+        "sample_count",
+        "relative_path",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compressed_sha256"
+      ],
+      "plan": {
+        "schema_version": 1,
+        "kind": "starlink_persistent_hop_plan",
+        "nominal_duration_seconds": 300,
+        "valid_visit_ms": 120,
+        "sample_rate_hz": 2500000,
+        "bandwidth_hz": 2500000,
+        "lnb_lo_hz": 9750000000,
+        "receiver_ids": [
+          0,
+          1
+        ],
+        "gain_mode": "manual",
+        "gain_db": 40.0,
+        "samples_per_block": 131072,
+        "kernel_buffers": 8,
+        "transition_guard_samples": 2500,
+        "maximum_visit_count": 2500,
+        "minimum_valid_duty_ppm": 900000,
+        "profiles": [
+          {
+            "schema_version": 1,
+            "target_index": 0,
+            "fastlock_profile_index": 0,
+            "target": {
+              "channel": 1,
+              "edge": "lower",
+              "rf_center_hz": 10709687500,
+              "if_center_hz": 959687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 1,
+            "fastlock_profile_index": 1,
+            "target": {
+              "channel": 2,
+              "edge": "lower",
+              "rf_center_hz": 10959687500,
+              "if_center_hz": 1209687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 2,
+            "fastlock_profile_index": 2,
+            "target": {
+              "channel": 3,
+              "edge": "lower",
+              "rf_center_hz": 11209687500,
+              "if_center_hz": 1459687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 3,
+            "fastlock_profile_index": 3,
+            "target": {
+              "channel": 4,
+              "edge": "lower",
+              "rf_center_hz": 11459687500,
+              "if_center_hz": 1709687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 4,
+            "fastlock_profile_index": 4,
+            "target": {
+              "channel": 1,
+              "edge": "upper",
+              "rf_center_hz": 10940312500,
+              "if_center_hz": 1190312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 5,
+            "fastlock_profile_index": 5,
+            "target": {
+              "channel": 2,
+              "edge": "upper",
+              "rf_center_hz": 11190312500,
+              "if_center_hz": 1440312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 6,
+            "fastlock_profile_index": 6,
+            "target": {
+              "channel": 3,
+              "edge": "upper",
+              "rf_center_hz": 11440312500,
+              "if_center_hz": 1690312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 7,
+            "fastlock_profile_index": 7,
+            "target": {
+              "channel": 4,
+              "edge": "upper",
+              "rf_center_hz": 11690312500,
+              "if_center_hz": 1940312500
+            }
+          }
+        ]
+      },
+      "timing": {
+        "schema_version": 1,
+        "algorithm_version": "host-bracketed-device-counter-utc-v1",
+        "session_id": "scan-hop-2c7a4d21e9d2a576",
+        "session_start_device_sample_counter": 1183581651911,
+        "sample_rate_hz": 2500000,
+        "begin_before_realtime_ns": 1788842405066067249,
+        "begin_before_monotonic_ns": 778256186117723,
+        "begin_after_realtime_ns": 1788842405067274559,
+        "begin_after_monotonic_ns": 778256187325033,
+        "terminal_realtime_ns": 1788842706065276664,
+        "terminal_monotonic_ns": 778557185328150,
+        "first_sample_earliest_utc_ns": 1788842405066066237,
+        "first_sample_estimate_utc_ns": 1788842405066670398,
+        "first_sample_latest_utc_ns": 1788842405067274559,
+        "first_sample_bracket_width_ns": 1208322,
+        "maximum_realtime_monotonic_offset_spread_ns": 1012,
+        "qualification_limit_ns": 50000000,
+        "qualified": true,
+        "reason": "first device sample is host-bracketed and the realtime/monotonic offset and first-sample bracket remained inside the qualification limit"
+      },
+      "queue_telemetry": {
+        "schema_version": 1,
+        "capacity_visits": 64,
+        "high_water_visits": 2,
+        "enqueue_failure_count": 0,
+        "maximum_enqueue_wait_ns": 29026,
+        "maximum_writer_service_ns": 290958601
+      },
+      "visits": 2389,
+      "chunks": 299,
+      "qualified": true
+    },
+    {
+      "session_id": "scan-hop-43cc401e05cbe425",
+      "manifest_sha256": "sha256:8abc3728635da02f197fb16c8ac295772b62e83a5865e8cc03837bddce38628e",
+      "schema_version": 2,
+      "manifest_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "created_utc_ns",
+        "finalized_utc_ns",
+        "plan",
+        "receipt",
+        "timing",
+        "receiver_ids",
+        "sample_format",
+        "sample_layout",
+        "chunks",
+        "total_sample_count",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compression",
+        "queue_telemetry"
+      ],
+      "receipt_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "radio_id",
+        "radio_serial",
+        "radio_uri",
+        "plan",
+        "server_protocol_version",
+        "server_feature_flags",
+        "request_flags",
+        "metadata_abi_version",
+        "stream_generation",
+        "kernel_buffers_requested",
+        "kernel_buffers_readback",
+        "capture_outcome",
+        "terminal_status",
+        "terminal_status_attested",
+        "session_start_device_sample_counter",
+        "session_end_device_sample_counter_exclusive",
+        "visits",
+        "continuity_faults",
+        "target_coverage",
+        "valid_sample_count",
+        "transition_invalid_sample_count",
+        "terminal_incomplete_visit_count",
+        "terminal_unretained_invalid_sample_count",
+        "terminal_unretained_valid_sample_count",
+        "missing_sample_count",
+        "overflow_count",
+        "hop_event_sequence_gap_count",
+        "duty_denominator_sample_count",
+        "valid_duty_ppm",
+        "continuity_attested",
+        "duty_target_met",
+        "restoration"
+      ],
+      "visit_fields": [
+        "schema_version",
+        "visit_index",
+        "sweep_index",
+        "target_index",
+        "fastlock_profile_index",
+        "event_sequence",
+        "device_event_id",
+        "device_event_flags",
+        "fastlock_slot",
+        "target",
+        "requested_if_center_hz",
+        "actual_lo_frequency_hz",
+        "actual_if_offset_hz",
+        "transition_invalid_before",
+        "valid_device_sample_counter",
+        "valid_device_sample_counter_end_exclusive",
+        "valid_sample_count"
+      ],
+      "chunk_fields": [
+        "schema_version",
+        "chunk_index",
+        "sweep_index",
+        "first_visit_index",
+        "visit_count",
+        "sample_start",
+        "sample_count",
+        "relative_path",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compressed_sha256"
+      ],
+      "plan": {
+        "schema_version": 1,
+        "kind": "starlink_persistent_hop_plan",
+        "nominal_duration_seconds": 300,
+        "valid_visit_ms": 120,
+        "sample_rate_hz": 5000000,
+        "bandwidth_hz": 5000000,
+        "lnb_lo_hz": 9750000000,
+        "receiver_ids": [
+          0,
+          1
+        ],
+        "gain_mode": "manual",
+        "gain_db": 40.0,
+        "samples_per_block": 131072,
+        "kernel_buffers": 8,
+        "transition_guard_samples": 5000,
+        "maximum_visit_count": 2500,
+        "minimum_valid_duty_ppm": 900000,
+        "profiles": [
+          {
+            "schema_version": 1,
+            "target_index": 0,
+            "fastlock_profile_index": 0,
+            "target": {
+              "channel": 1,
+              "edge": "lower",
+              "rf_center_hz": 10709687500,
+              "if_center_hz": 959687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 1,
+            "fastlock_profile_index": 1,
+            "target": {
+              "channel": 2,
+              "edge": "lower",
+              "rf_center_hz": 10959687500,
+              "if_center_hz": 1209687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 2,
+            "fastlock_profile_index": 2,
+            "target": {
+              "channel": 3,
+              "edge": "lower",
+              "rf_center_hz": 11209687500,
+              "if_center_hz": 1459687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 3,
+            "fastlock_profile_index": 3,
+            "target": {
+              "channel": 4,
+              "edge": "lower",
+              "rf_center_hz": 11459687500,
+              "if_center_hz": 1709687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 4,
+            "fastlock_profile_index": 4,
+            "target": {
+              "channel": 1,
+              "edge": "upper",
+              "rf_center_hz": 10940312500,
+              "if_center_hz": 1190312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 5,
+            "fastlock_profile_index": 5,
+            "target": {
+              "channel": 2,
+              "edge": "upper",
+              "rf_center_hz": 11190312500,
+              "if_center_hz": 1440312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 6,
+            "fastlock_profile_index": 6,
+            "target": {
+              "channel": 3,
+              "edge": "upper",
+              "rf_center_hz": 11440312500,
+              "if_center_hz": 1690312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 7,
+            "fastlock_profile_index": 7,
+            "target": {
+              "channel": 4,
+              "edge": "upper",
+              "rf_center_hz": 11690312500,
+              "if_center_hz": 1940312500
+            }
+          }
+        ]
+      },
+      "timing": {
+        "schema_version": 1,
+        "algorithm_version": "host-bracketed-device-counter-utc-v1",
+        "session_id": "scan-hop-43cc401e05cbe425",
+        "session_start_device_sample_counter": 1180231487692,
+        "sample_rate_hz": 5000000,
+        "begin_before_realtime_ns": 1788841366328774999,
+        "begin_before_monotonic_ns": 777217448825340,
+        "begin_after_realtime_ns": 1788841366329842965,
+        "begin_after_monotonic_ns": 777217449893306,
+        "terminal_realtime_ns": 1788841667313192362,
+        "terminal_monotonic_ns": 777518433243348,
+        "first_sample_earliest_utc_ns": 1788841366328774354,
+        "first_sample_estimate_utc_ns": 1788841366329308659,
+        "first_sample_latest_utc_ns": 1788841366329842965,
+        "first_sample_bracket_width_ns": 1068611,
+        "maximum_realtime_monotonic_offset_spread_ns": 645,
+        "qualification_limit_ns": 50000000,
+        "qualified": true,
+        "reason": "first device sample is host-bracketed and the realtime/monotonic offset and first-sample bracket remained inside the qualification limit"
+      },
+      "queue_telemetry": {
+        "schema_version": 1,
+        "capacity_visits": 64,
+        "high_water_visits": 3,
+        "enqueue_failure_count": 0,
+        "maximum_enqueue_wait_ns": 45336,
+        "maximum_writer_service_ns": 396866819
+      },
+      "visits": 2385,
+      "chunks": 299,
+      "qualified": true
+    },
+    {
+      "session_id": "scan-hop-db578e8636677ae0",
+      "manifest_sha256": "sha256:c9c18f0a6f1485e9e3f4b8b7ef1ba81eb3f929a5d1b34bb9dab869a947fc5228",
+      "schema_version": 2,
+      "manifest_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "created_utc_ns",
+        "finalized_utc_ns",
+        "plan",
+        "receipt",
+        "timing",
+        "receiver_ids",
+        "sample_format",
+        "sample_layout",
+        "chunks",
+        "total_sample_count",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compression",
+        "queue_telemetry"
+      ],
+      "receipt_fields": [
+        "schema_version",
+        "kind",
+        "session_id",
+        "radio_id",
+        "radio_serial",
+        "radio_uri",
+        "plan",
+        "server_protocol_version",
+        "server_feature_flags",
+        "request_flags",
+        "metadata_abi_version",
+        "stream_generation",
+        "kernel_buffers_requested",
+        "kernel_buffers_readback",
+        "capture_outcome",
+        "terminal_status",
+        "terminal_status_attested",
+        "session_start_device_sample_counter",
+        "session_end_device_sample_counter_exclusive",
+        "visits",
+        "continuity_faults",
+        "target_coverage",
+        "valid_sample_count",
+        "transition_invalid_sample_count",
+        "terminal_incomplete_visit_count",
+        "terminal_unretained_invalid_sample_count",
+        "terminal_unretained_valid_sample_count",
+        "missing_sample_count",
+        "overflow_count",
+        "hop_event_sequence_gap_count",
+        "duty_denominator_sample_count",
+        "valid_duty_ppm",
+        "continuity_attested",
+        "duty_target_met",
+        "restoration"
+      ],
+      "visit_fields": [
+        "schema_version",
+        "visit_index",
+        "sweep_index",
+        "target_index",
+        "fastlock_profile_index",
+        "event_sequence",
+        "device_event_id",
+        "device_event_flags",
+        "fastlock_slot",
+        "target",
+        "requested_if_center_hz",
+        "actual_lo_frequency_hz",
+        "actual_if_offset_hz",
+        "transition_invalid_before",
+        "valid_device_sample_counter",
+        "valid_device_sample_counter_end_exclusive",
+        "valid_sample_count"
+      ],
+      "chunk_fields": [
+        "schema_version",
+        "chunk_index",
+        "sweep_index",
+        "first_visit_index",
+        "visit_count",
+        "sample_start",
+        "sample_count",
+        "relative_path",
+        "uncompressed_bytes",
+        "compressed_bytes",
+        "uncompressed_sha256",
+        "compressed_sha256"
+      ],
+      "plan": {
+        "schema_version": 1,
+        "kind": "starlink_persistent_hop_plan",
+        "nominal_duration_seconds": 300,
+        "valid_visit_ms": 120,
+        "sample_rate_hz": 5000000,
+        "bandwidth_hz": 5000000,
+        "lnb_lo_hz": 9750000000,
+        "receiver_ids": [
+          0,
+          1
+        ],
+        "gain_mode": "manual",
+        "gain_db": 40.0,
+        "samples_per_block": 131072,
+        "kernel_buffers": 8,
+        "transition_guard_samples": 5000,
+        "maximum_visit_count": 2500,
+        "minimum_valid_duty_ppm": 900000,
+        "profiles": [
+          {
+            "schema_version": 1,
+            "target_index": 0,
+            "fastlock_profile_index": 0,
+            "target": {
+              "channel": 1,
+              "edge": "lower",
+              "rf_center_hz": 10709687500,
+              "if_center_hz": 959687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 1,
+            "fastlock_profile_index": 1,
+            "target": {
+              "channel": 2,
+              "edge": "lower",
+              "rf_center_hz": 10959687500,
+              "if_center_hz": 1209687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 2,
+            "fastlock_profile_index": 2,
+            "target": {
+              "channel": 3,
+              "edge": "lower",
+              "rf_center_hz": 11209687500,
+              "if_center_hz": 1459687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 3,
+            "fastlock_profile_index": 3,
+            "target": {
+              "channel": 4,
+              "edge": "lower",
+              "rf_center_hz": 11459687500,
+              "if_center_hz": 1709687500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 4,
+            "fastlock_profile_index": 4,
+            "target": {
+              "channel": 1,
+              "edge": "upper",
+              "rf_center_hz": 10940312500,
+              "if_center_hz": 1190312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 5,
+            "fastlock_profile_index": 5,
+            "target": {
+              "channel": 2,
+              "edge": "upper",
+              "rf_center_hz": 11190312500,
+              "if_center_hz": 1440312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 6,
+            "fastlock_profile_index": 6,
+            "target": {
+              "channel": 3,
+              "edge": "upper",
+              "rf_center_hz": 11440312500,
+              "if_center_hz": 1690312500
+            }
+          },
+          {
+            "schema_version": 1,
+            "target_index": 7,
+            "fastlock_profile_index": 7,
+            "target": {
+              "channel": 4,
+              "edge": "upper",
+              "rf_center_hz": 11690312500,
+              "if_center_hz": 1940312500
+            }
+          }
+        ]
+      },
+      "timing": {
+        "schema_version": 1,
+        "algorithm_version": "host-bracketed-device-counter-utc-v1",
+        "session_id": "scan-hop-db578e8636677ae0",
+        "session_start_device_sample_counter": 1190759485643,
+        "sample_rate_hz": 5000000,
+        "begin_before_realtime_ns": 1788843778303536954,
+        "begin_before_monotonic_ns": 779629423587405,
+        "begin_after_realtime_ns": 1788843778305023352,
+        "begin_after_monotonic_ns": 779629425073803,
+        "terminal_realtime_ns": 1788844079556705316,
+        "terminal_monotonic_ns": 779930676756845,
+        "first_sample_earliest_utc_ns": 1788843778303535876,
+        "first_sample_estimate_utc_ns": 1788843778304279614,
+        "first_sample_latest_utc_ns": 1788843778305023352,
+        "first_sample_bracket_width_ns": 1487476,
+        "maximum_realtime_monotonic_offset_spread_ns": 1078,
+        "qualification_limit_ns": 50000000,
+        "qualified": true,
+        "reason": "first device sample is host-bracketed and the realtime/monotonic offset and first-sample bracket remained inside the qualification limit"
+      },
+      "queue_telemetry": {
+        "schema_version": 1,
+        "capacity_visits": 64,
+        "high_water_visits": 3,
+        "enqueue_failure_count": 0,
+        "maximum_enqueue_wait_ns": 31047,
+        "maximum_writer_service_ns": 429392110
+      },
+      "visits": 2385,
+      "chunks": 299,
+      "qualified": true
+    }
+  ],
+  "conclusion": "These stored manifests retain valid-IQ visit counters and aggregate queue/timing evidence, not each original IIO block or per-block host arrival timestamp. Reconstructed pacing must be labeled modeled, not original-arrival replay.",
+  "no_rf": true,
+  "archive_read_only": true
+}
