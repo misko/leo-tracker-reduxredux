@@ -1,4 +1,4 @@
-/* Small bounded radix-2/5 FFT for the experiment's 512/5000/10000 transforms.
+/* Small bounded radix-2/5 FFT, including linear pilot-power correlations.
  * No allocation or trigonometric generation occurs during execution. */
 #include "fft.h"
 #include <math.h>
@@ -9,7 +9,7 @@ int leo_fft_init(leo_fft *fft, size_t size)
 {
     size_t rest = size;
     memset(fft, 0, sizeof(*fft));
-    if (size < 2 || size > 10000) return -1;
+    if (size < 2 || size > 32768) return -1;
     while (rest % 2 == 0) rest /= 2;
     while (rest % 5 == 0) rest /= 5;
     if (rest != 1) return -1;

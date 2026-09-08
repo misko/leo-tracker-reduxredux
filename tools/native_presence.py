@@ -62,6 +62,33 @@ class Result(ct.Structure):
     ]
 
 
+class Profile(ct.Structure):
+    _fields_ = [
+        *[
+            (name, ct.c_double)
+            for name in (
+                "acquisition_fft_cpu_ms",
+                "conditioned_cpu_ms",
+                "verification_cpu_ms",
+                "epoch_lattice_cpu_ms",
+                "final_confirmation_cpu_ms",
+                "local_coarse_cpu_ms",
+            )
+        ],
+        *[
+            (name, ct.c_uint32)
+            for name in (
+                "coarse_frames",
+                "fine_frames",
+                "epoch_frames",
+                "anchor_stride",
+                "epoch_stride",
+                "conditioned_radius_hz",
+            )
+        ],
+    ]
+
+
 def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -131,16 +158,35 @@ def build_executable(
     return _build(output, compiler, (*sanitizers, *cflags), executable=True)
 
 
-def write_probe(path: Path, values, rate: int, edge: str, counter: int = 0):
+def write_probe(path: Path, values, rate: int, edge: str, counter: int = 0, *, ci16: bool = False):
     """Explicit little-endian replay format; generated test data, never archive writes."""
     samples = np.asarray(values, dtype="<c16")
     if samples.shape != (rate // 50,) or rate not in (2_500_000, 5_000_000):
         raise ValueError("exactly 20 ms at a qualified sample rate required")
     if edge not in ("lower", "upper") or not 0 <= counter < 2**64:
         raise ValueError("invalid edge or counter")
+    payload = samples
+    if ci16:
+        components = np.column_stack((samples.real, samples.imag))
+        if (
+            not np.all(np.isfinite(components))
+            or np.any(components < -32768)
+            or np.any(components > 32767)
+            or np.any(components != np.rint(components))
+        ):
+            raise ValueError("CI16 replay requires exactly representable integer samples")
+        payload = components.astype("<i2")
     with path.open("xb") as stream:
         stream.write(
-            struct.pack("<4sIIIIQ", b"LPR1", rate, int(edge == "upper"), len(samples), 1, counter)
+            struct.pack(
+                "<4sIIIIQ",
+                b"LPR1",
+                rate,
+                int(edge == "upper"),
+                len(samples),
+                2 if ci16 else 1,
+                counter,
+            )
         )
         for roll in (0, 17):
             stream.write(
@@ -148,7 +194,7 @@ def write_probe(path: Path, values, rate: int, edge: str, counter: int = 0):
                     qin_edge_pilot_frame(rate, edge, symbol_roll=roll), dtype="<c16"
                 ).tobytes()
             )
-        stream.write(samples.tobytes())
+        stream.write(payload.tobytes())
 
 
 def array(values):
@@ -174,6 +220,7 @@ class NativePresence:
         self.library.leo_presence_create.restype = ct.c_void_p
         self.library.leo_presence_destroy.argtypes = [ct.c_void_p]
         self.library.leo_presence_destroy.restype = None
+        self.library.leo_presence_get_profile.argtypes = [ct.c_void_p, ct.POINTER(Profile)]
         self.library.leo_presence_run.argtypes = [
             ct.c_void_p,
             ct.c_void_p,
@@ -227,6 +274,12 @@ class NativePresence:
         ):
             raise ValueError("native presence rejected the input")
         return result
+
+    def profile(self):
+        result = Profile()
+        if self.library.leo_presence_get_profile(self.workspace, ct.byref(result)):
+            raise ValueError("native workspace is closed")
+        return {name: getattr(result, name) for name, _ in Profile._fields_}
 
     def coarse(self, values):
         samples = array(values)

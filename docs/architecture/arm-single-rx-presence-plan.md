@@ -3,8 +3,10 @@
 Status: implementation in progress, 2026-09-08. This document authorizes no
 deployment or new RF collection. Production scanning and scientific analysis
 remain unchanged. The [native checkpoint report](../../reports/2026_09_08_arm_presence_native_checkpoint.md)
-records current parity and ARM measurements; the 100 ms feasibility gate has
-not passed.
+records baseline parity and ARM measurements. The newer
+[power-proposal checkpoint](../../reports/2026_09_08_arm_presence_power_checkpoint.md)
+meets the 100 ms saved-IQ CPU target for one separately named single-candidate
+variant, but broader quality and streaming gates have not passed.
 
 ## Objective and boundaries
 
@@ -26,6 +28,12 @@ is available, report that checkpoint as blocked rather than load production.
 
 ## Evidence and unresolved questions
 
+- Latest reduced-work result: a single-candidate 4096-bin pilot-power proposal
+  with original-IQ fractional confirmation takes 43.5/77.4 ms warmed p99 CPU
+  at 2.5/5 MS/s in 640 native-CI16 replay executions. Wider development recovers
+  8/8 and 9/12 reference-associated positives, respectively, with timing misses,
+  a CFO alias, and tone false positives still unresolved. This is not a
+  qualified every-visit detector or authorization to proceed to live deployment.
 - The native checkpoint now contains actual saved-IQ ARM smoke measurements.
   Initial total CPU was 4.8/15.6 seconds at 2.5/5 MS/s, reduced to approximately
   3.0/8.8 seconds by the first equivalent-computation optimization pass. These

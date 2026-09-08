@@ -242,7 +242,7 @@ def test_build_rejects_existing_receipt_and_unknown_compiler(tmp_path):
         build_library(tmp_path / "library.so", compiler="/not-a-compiler")
 
 
-@pytest.mark.parametrize("size", [2, 5, 10, 25, 50, 125, 128, 512, 5000, 10000])
+@pytest.mark.parametrize("size", [2, 5, 10, 25, 50, 125, 128, 512, 5000, 8192, 10000, 16384, 32768])
 def test_bounded_fft_matches_numpy(library, size):
     class FFT(ct.Structure):
         _fields_ = [
@@ -271,4 +271,6 @@ def test_bounded_fft_matches_numpy(library, size):
     finally:
         native.leo_fft_free(ct.byref(fft))
     assert native.leo_fft_init(ct.byref(fft), 7) == -1
+    native.leo_fft_free(ct.byref(fft))
+    assert native.leo_fft_init(ct.byref(fft), 32769) == -1
     native.leo_fft_free(ct.byref(fft))

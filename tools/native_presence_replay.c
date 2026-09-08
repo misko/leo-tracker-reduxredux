@@ -21,7 +21,10 @@ static int read_u32(FILE *f, uint32_t *out)
 
 int main(int argc, char **argv)
 {
-    if (argc!=3) { fprintf(stderr,"usage: native-presence-replay PROBE ITERATIONS\n"); return 2; }
+    int profile=argc==4 && !strcmp(argv[3],"--profile");
+    if (argc!=3 && !profile) {
+        fprintf(stderr,"usage: native-presence-replay PROBE ITERATIONS [--profile]\n"); return 2;
+    }
     char *end; errno=0; long repeats=strtol(argv[2],&end,10);
     if (errno || *end || repeats<1 || repeats>20) return 2;
     struct rlimit cpu={60,60}, memory={128*1024*1024,128*1024*1024};
@@ -60,11 +63,12 @@ int main(int argc, char **argv)
         int rc=format==1 ? leo_presence_run(workspace,samples,count,&result) :
             leo_presence_run_ci16(workspace,samples,count,&result);
         if (rc) goto done;
-        printf("{\"schema\":\"native-presence-replay-v1\",\"rate_hz\":%u,\"edge\":%u,"
+        printf("{\"schema\":\"%s\",\"rate_hz\":%u,\"edge\":%u,"
             "\"device_counter\":\"%" PRIu64 "\",\"iteration\":%d,\"format\":%u,"
             "\"conversion_cpu_ms\":%.9g,\"coarse_cpu_ms\":%.9g,\"fine_cpu_ms\":%.9g,"
             "\"fractional_cpu_ms\":%.9g,\"total_cpu_ms\":%.9g,\"total_wall_ms\":%.9g,"
-            "\"candidates\":[",rate,edge,((uint64_t)hi<<32)|lo,repeat,format,
+            "\"candidates\":[",profile ? "native-presence-replay-profile-v1" : "native-presence-replay-v1",
+            rate,edge,((uint64_t)hi<<32)|lo,repeat,format,
             result.conversion_cpu_ms,result.coarse_cpu_ms,result.fine_cpu_ms,
             result.fractional_cpu_ms,result.total_cpu_ms,result.total_wall_ms);
         for (int k=0;k<result.candidate_count;++k) {
@@ -77,7 +81,21 @@ int main(int argc, char **argv)
         }
         struct rusage usage;
         if (getrusage(RUSAGE_SELF,&usage)) goto done;
-        printf("],\"max_rss_kib\":%ld}\n",usage.ru_maxrss);
+        printf("],\"max_rss_kib\":%ld",usage.ru_maxrss);
+        if (profile) {
+            leo_presence_profile p;
+            if (leo_presence_get_profile(workspace,&p)) goto done;
+            printf(",\"profile\":{\"acquisition_fft_cpu_ms\":%.9g,\"conditioned_cpu_ms\":%.9g,"
+                "\"verification_cpu_ms\":%.9g,\"epoch_lattice_cpu_ms\":%.9g,"
+                "\"final_confirmation_cpu_ms\":%.9g,\"local_coarse_cpu_ms\":%.9g,"
+                "\"coarse_frames\":%u,\"fine_frames\":%u,\"epoch_frames\":%u,"
+                "\"anchor_stride\":%u,\"epoch_stride\":%u,\"conditioned_radius_hz\":%u}",
+                p.acquisition_fft_cpu_ms,p.conditioned_cpu_ms,p.verification_cpu_ms,
+                p.epoch_lattice_cpu_ms,p.final_confirmation_cpu_ms,p.local_coarse_cpu_ms,
+                p.coarse_frames,p.fine_frames,p.epoch_frames,p.anchor_stride,p.epoch_stride,
+                p.conditioned_radius_hz);
+        }
+        puts("}");
         fflush(stdout);
     }
     status=0;

@@ -1,0 +1,66 @@
+{
+  "protocol": {
+    "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+    "baseline_commit": "68246a5f",
+    "frozen_before_native_variant_results": true,
+    "development_basis": "NumPy projection experiments on the already-used development probes recovered 8/8 reference-positive top timing peaks at 4096 bins, versus 7/8 at 2048 bins. This is not an untouched holdout.",
+    "scope": "Projected pilot-power timing proposals, native-rate local power refinement, blind CFO acquisition and original-20ms FP64 fractional GLRT confirmation",
+    "receiver": 1,
+    "cpu_target_ms": 100,
+    "reference_association": {
+      "maximum_cfo_difference_hz": 8000,
+      "maximum_circular_epoch_difference_us": 2
+    },
+    "common_flags": [
+      "-DLEO_PRESENCE_COARSE_FP32",
+      "-fno-unroll-loops",
+      "-fno-peel-loops",
+      "-fno-prefetch-loop-arrays",
+      "-fcx-limited-range"
+    ],
+    "variants": [
+      {
+        "name": "project4096_power2_f2",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "POWER_BINS": 4096,
+          "FAST_FINE_FFT": 1,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "CONDITIONED_RADIUS": 200
+        }
+      },
+      {
+        "name": "project4096_power1_f2",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "POWER_BINS": 4096,
+          "FAST_FINE_FFT": 1,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "CONDITIONED_RADIUS": 200,
+          "CANDIDATES": 1
+        }
+      },
+      {
+        "name": "project4096_power2_f4",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "POWER_BINS": 4096,
+          "FAST_FINE_FFT": 1,
+          "FINE_FRAMES": 4,
+          "EPOCH_FRAMES": 4,
+          "CONDITIONED_RADIUS": 400
+        }
+      }
+    ],
+    "algorithm_changes": [
+      "All available original-rate frames are folded using independently rounded physical frame offsets. The native folded phase grid and template power are circular-linearly projected to 4096 bins for the proposal correlation only.",
+      "Each retained proposal is locally refined using original-rate folded power, including the circular seam; fractional GLRT still uses original IQ.",
+      "Single-candidate and two-candidate variants are separate detectors. No power threshold is fitted to these development probes.",
+      "Complex limited-range compilation omits overflow-recovery paths for bounded finite inputs; it does not enable general fast-math or reassociation. Desktop/ARM parity and controls must still be checked."
+    ]
+  },
+  "protocol_sha256": "a1ffac0317d70e8f56c9d0d95457d7f3bd1d9c91d40ec6a511117af4ca2f431c",
+  "inputs_sha256": "a5be1172e537d1d7e7d10df2f00f8e9749cabb4d8e8bb2f396fcd70e4d12eb99"
+}

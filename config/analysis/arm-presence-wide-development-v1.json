@@ -1,0 +1,17 @@
+{
+  "schema": "org.leo.research.arm-presence-wide-development/v1",
+  "purpose": "Broader development evidence spanning the existing 300 s scans; not an untouched holdout or independent signal truth",
+  "receiver": 1,
+  "sessions": [
+    {"session_id": "scan-hop-0cff88ddaeec79f2", "rate_hz": 2500000},
+    {"session_id": "scan-hop-a5018b64a98f25e7", "rate_hz": 5000000}
+  ],
+  "sweeps": [10, 70, 140, 210, 280],
+  "targets_per_sweep": 8,
+  "probe_offset_ms": 0,
+  "probe_duration_ms": 20,
+  "reference_candidates": 8,
+  "reference_margin": 0.025,
+  "interpretation": "Measure per-probe agreement with the dense fractional reference. Lack of reference evidence is unresolved, not a known negative. First-20ms agreement cannot establish full-120ms coverage. Retain all reference candidates, not just one winner.",
+  "frozen_before_new_scores": true
+}

@@ -1,0 +1,69 @@
+{
+  "protocol": {
+    "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+    "baseline_commit": "68246a5f",
+    "frozen_before_native_variant_results": true,
+    "development_basis": "A NumPy pilot-power proposal was explored on the existing development probes before freezing these native variants. This is not an untouched holdout.",
+    "scope": "CFO-invariant folded pilot-power timing proposal, followed by blind full-band CFO acquisition and full-20ms FP64 fractional GLRT confirmation",
+    "receiver": 1,
+    "cpu_target_ms": 100,
+    "reference_association": {
+      "maximum_cfo_difference_hz": 8000,
+      "maximum_circular_epoch_difference_us": 2
+    },
+    "common_flags": [
+      "-DLEO_PRESENCE_COARSE_FP32",
+      "-fno-unroll-loops",
+      "-fno-peel-loops",
+      "-fno-prefetch-loop-arrays"
+    ],
+    "variants": [
+      {
+        "name": "power2_full",
+        "defines": {
+          "POWER_PROPOSAL": 1
+        }
+      },
+      {
+        "name": "power2_f2",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "FAST_FINE_FFT": 1,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "CONDITIONED_RADIUS": 200
+        }
+      },
+      {
+        "name": "power1_f2",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "FAST_FINE_FFT": 1,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "CONDITIONED_RADIUS": 200,
+          "CANDIDATES": 1
+        }
+      },
+      {
+        "name": "power2_f4",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "FAST_FINE_FFT": 1,
+          "FINE_FRAMES": 4,
+          "EPOCH_FRAMES": 4,
+          "CONDITIONED_RADIUS": 400
+        }
+      }
+    ],
+    "algorithm_changes": [
+      "Coarse search is normalized circular correlation of folded IQ power with Qin pilot-template power; it uses all available frames and has no CFO bank.",
+      "Proposed epochs are refined locally, followed by blind CFO search across the supported band.",
+      "FAST_FINE_FFT uses 4096/8192-point transforms and 610.3515625 Hz aligned bins inside the CFO bounds; it does not mislabel FFT bins as 500 Hz.",
+      "Legacy acquire/verify ranking scores are omitted; proposals retain power-correlation order. Final exact/control fractional GLRT is still required.",
+      "This is a separately named experimental detector, not a replacement scientific oracle."
+    ]
+  },
+  "protocol_sha256": "5cecf2e75b38b6c1713a2d9c2227452878ae8d903ad6019a81d66d2aa6109fe3",
+  "inputs_sha256": "2b43031929ab47785f1986c5c9377d87c6eaffed6d28306c8aec5953664f3bd1"
+}
