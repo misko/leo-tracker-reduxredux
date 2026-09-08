@@ -1,0 +1,33 @@
+{
+  "schema": "org.leo.research.sdk-replay-build/v1",
+  "command": [
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-mcpu=cortex-a9",
+    "-mfpu=neon",
+    "-mfloat-abi=hard",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/tools/scanner_glrt_sdk_replay.c",
+    "-L/tmp/leo-glrt-userspace-bundle.CS9kKMOf/release",
+    "-lleo-scanner-glrt",
+    "-Wl,--disable-new-dtags,-rpath,/tmp/ppu-iiod-bundle-0f8e84999ab145a595c829886af5ca31",
+    "-pthread",
+    "-lm",
+    "-o",
+    "/tmp/leo-glrt-package-arm.SMNvbf7E/parent/sdk-replay"
+  ],
+  "sources_sha256": {
+    "tools/scanner_glrt_sdk_replay.c": "67bc9fcaa734690e4c513eb589ea1d810ac5750e07a758975205017527fff083",
+    "tools/qualify_scanner_glrt_sdk.py": "6b61d60e10210a87727d6b861beb4565774ed53235ba4fa0de5a00ea3f3ae1f7",
+    "src/leo/scanner/native_presence/scanner_glrt.h": "3fc4d576c1b692f7487dc3d49652ff5396a4d637627989fe0e5eb20c65c1c1b9",
+    "src/leo/scanner/native_presence/frame_codec.h": "b6244e87f32dc2a73b0c98853fa75b97463e8f31aaeefdf785fb7d8aab0259bc"
+  },
+  "dependencies_sha256": {
+    "/tmp/leo-glrt-userspace-bundle.CS9kKMOf/release/libleo-scanner-glrt.so": "f30277a5483bcf5caac888bf4c413073bedd20725e82a215aadfe07f6e234377"
+  },
+  "compiler_sha256": "768cd6f030dcc5c4dc8577c8bd4536dd14b68fdc22af8cdefbce5c86dd5e33fa",
+  "binary_sha256": "e2c6edc5c2d3f9517e8d1da1338710d610d9c78f6a475a37f8fb2616c29cb5ef"
+}

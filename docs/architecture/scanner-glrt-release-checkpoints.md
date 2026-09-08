@@ -228,3 +228,11 @@ owned cleanup and failure tests. A real ARM candidate is cross-built with
 content-derived identities and checked loader paths; 232 portable regressions
 pass. Target package execution/compatibility, decision qualification and live
 unchanged-duty verification remain open. Nothing is deployed or remotely merged.
+
+The [exact-package ARM checkpoint](../../reports/2026_09_08_scanner_glrt_package_arm_checkpoint.md)
+then exercises production companion staging/verification/cleanup on the spare,
+iiOD loader/version execution and 278 saved-IQ SDK results using real package
+identities. It fixes the target's missing-`stat` incompatibility without changing
+the image; 350 regressions pass. This is not a listening iiOD lifecycle or live
+IIO test. Decision qualification, 5 MS/s headroom and authorized unchanged-duty
+RF verification remain required.
