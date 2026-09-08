@@ -258,10 +258,11 @@ static int ingest(leo_presence_workspace *w, const leo_presence_complex *x, size
     return 0;
 }
 
-static int coarse(leo_presence_workspace *w, size_t count)
+static int coarse(leo_presence_workspace *w, size_t count, const int16_t *iq)
 {
+    (void)iq;
 #if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
-    return coarse_differential(w,count);
+    return coarse_differential(w,count,iq);
 #elif LEO_PRESENCE_POWER_PROPOSAL
     return coarse_power(w,count);
 #endif
@@ -299,8 +300,19 @@ int leo_presence_coarse(leo_presence_workspace *w, const leo_presence_complex *x
     size_t count, double *scores)
 {
     if (!scores || ingest(w, x, count)) return -1;
-    if (coarse(w, count)) return -1;
+    if (coarse(w, count, NULL)) return -1;
     memcpy(scores, w->grid, 11 * w->n * sizeof(double));
+    return 0;
+}
+
+int leo_presence_coarse_ci16(leo_presence_workspace *w, const int16_t *iq,
+    size_t count, double *scores)
+{
+    if (!w || !iq || !scores || count<(size_t)ceil(w->rate/375.0) ||
+        count>w->max_samples || fegetround()!=FE_TONEAREST) return -1;
+    for (size_t k=0; k<count; ++k) w->samples[k]=iq[2*k]+I*(double)iq[2*k+1];
+    if (coarse(w,count,iq)) return -1;
+    memcpy(scores,w->grid,11*w->n*sizeof(double));
     return 0;
 }
 
@@ -541,7 +553,7 @@ static int candidate_before(const leo_presence_candidate *a, const leo_presence_
 }
 
 static int execute(leo_presence_workspace *w, size_t count, leo_presence_result *out,
-    const int16_t *original_ci16)
+    const int16_t *original_ci16, int32_t proposal_epoch)
 {
     (void)original_ci16;
     memset(&w->profile, 0, sizeof(w->profile));
@@ -553,11 +565,14 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
     w->nuisance.cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-nuisance_started;
 #endif
     double started = clock_ms(CLOCK_PROCESS_CPUTIME_ID);
-    if (coarse(w, count)) return -1;
+    if (proposal_epoch<0 && coarse(w, count, w->nuisance.applied ? NULL : original_ci16)) return -1;
     out->coarse_cpu_ms = clock_ms(CLOCK_PROCESS_CPUTIME_ID)-started;
     int retained_epoch[2], retained_bin[2], nr = 0;
+    if (proposal_epoch>=0) {
+        retained_epoch[0]=proposal_epoch; retained_bin[0]=5; nr=1;
+    }
     /* Two passes avoid sorting an entire allocation of coarse peaks. */
-    for (int selection = 0; selection < LEO_PRESENCE_CANDIDATES; ++selection) {
+    for (int selection = 0; proposal_epoch<0 && selection < LEO_PRESENCE_CANDIDATES; ++selection) {
         int best_e = -1, best_f = -1; double best_score = -1;
         for (int f = 0; f < 11; ++f) for (int e = 0; e < (int)w->n; ++e) {
             double value = w->grid[f*w->n+e];
@@ -587,7 +602,9 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
 #if LEO_PRESENCE_POWER_BINS
         radius=((int)w->n+LEO_PRESENCE_POWER_BINS-1)/LEO_PRESENCE_POWER_BINS;
 #endif
+        if (proposal_epoch>=0) radius=0;
         double stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
+        if (proposal_epoch<0) {
 #if LEO_PRESENCE_POWER_BINS
         /* Refine proposals against original-rate folded power, including the
          * circular seam. Do not compare projected and native scores locally. */
@@ -619,10 +636,11 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
             if (k>=0 && k<(int)w->n && (w->grid[f*w->n+k]>w->grid[f*w->n+refined] ||
                 (w->grid[f*w->n+k]==w->grid[f*w->n+refined] && k<refined))) refined=k;
         }
-        c->epoch=refined; c->coarse_score=w->grid[f*w->n+e];
+        }
+        c->epoch=refined; c->coarse_score=proposal_epoch<0 ? w->grid[f*w->n+e] : 0;
         double frequencies[1602], scores[1602], coarse_cfo=w->frequencies[f];
         double lower=fmax(-400000,coarse_cfo-80000), upper=fmin(400000,coarse_cfo+80000);
-        if (LEO_PRESENCE_POWER_PROPOSAL) { lower=-400000; upper=400000; }
+        if (LEO_PRESENCE_POWER_PROPOSAL || proposal_epoch>=0) { lower=-400000; upper=400000; }
         if (LEO_PRESENCE_FAST_FINE_FFT) {
             lower=ceil(lower/w->fine_step_hz)*w->fine_step_hz;
             upper=floor(upper/w->fine_step_hz)*w->fine_step_hz;
@@ -701,7 +719,7 @@ int leo_presence_run(leo_presence_workspace *w, const leo_presence_complex *samp
     double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID), wall=clock_ms(CLOCK_MONOTONIC);
     if (ingest(w,samples,count)) return -1;
     out->conversion_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
-    int result=execute(w,count,out,NULL);
+    int result=execute(w,count,out,NULL,-1);
     out->total_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
     out->total_wall_ms=clock_ms(CLOCK_MONOTONIC)-wall;
     return result;
@@ -715,8 +733,24 @@ int leo_presence_run_ci16(leo_presence_workspace *w, const int16_t *iq,
     double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID), wall=clock_ms(CLOCK_MONOTONIC);
     for (size_t k=0;k<count;++k) w->samples[k]=iq[2*k]+I*(double)iq[2*k+1];
     out->conversion_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
-    int result=execute(w,count,out,iq);
+    int result=execute(w,count,out,iq,-1);
     out->total_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
     out->total_wall_ms=clock_ms(CLOCK_MONOTONIC)-wall;
     return result;
+}
+
+int leo_presence_confirm_ci16(leo_presence_workspace *w, const int16_t *iq,
+    size_t count, int32_t proposal_epoch, leo_presence_result *out)
+{
+    if (!w || !iq || !out || count!=w->max_samples || proposal_epoch<0 ||
+        (size_t)proposal_epoch>=w->n || fegetround()!=FE_TONEAREST) return -1;
+    leo_presence_result result={0};
+    double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID), wall=clock_ms(CLOCK_MONOTONIC);
+    for (size_t k=0; k<count; ++k) w->samples[k]=iq[2*k]+I*(double)iq[2*k+1];
+    result.conversion_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
+    if (execute(w,count,&result,iq,proposal_epoch)) return -1;
+    result.total_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
+    result.total_wall_ms=clock_ms(CLOCK_MONOTONIC)-wall;
+    *out=result;
+    return 0;
 }

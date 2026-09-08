@@ -80,6 +80,16 @@ six existing confirmations. Neither quality nor combined confirmation cost is
 qualified. Next: measure proposal reuse inside bounded fractional confirmation,
 without assuming that screen coverage alone establishes an absence verdict.
 
+The [whole-dwell confirmation checkpoint](../../reports/2026_09_08_arm_presence_dwell_confirmation_checkpoint.md)
+now measures combined execution and tests proposal reuse. A two-resolution
+seeded policy reaches roughly 90 ms p99 CPU at 5 MS/s after exact dependency
+pruning, but associates only 18/35 development-positive dwells with one
+confirmation versus 20/35 for blind confirmation. Keeping the stronger blind
+search costs about 110 ms p99, still above target. Integer folding and screen
+dependency pruning preserve 2,304 complete candidate structures in desktop
+replay; 288 final ARM confirmation windows match the original desktop. These
+are engineering improvements, not classifier quality or streaming passes.
+
 ## Objective and boundaries
 
 Evaluate one selected RX during each 120 ms valid scanner visit, initially using

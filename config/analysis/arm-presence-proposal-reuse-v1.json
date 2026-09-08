@@ -1,0 +1,18 @@
+{
+  "schema": "org.leo.research.arm-presence-proposal-reuse/v1",
+  "status": "development_experiment_not_a_qualified_classifier",
+  "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+  "receiver": 1,
+  "dwell_ms": 120,
+  "window_ms": 20,
+  "grids_by_rate": {"2500000": [2048, 4096], "5000000": [4096, 8192]},
+  "selection_reason": "Previously saved timing comparisons show severe aliasing at 512 bins, especially at 5 MS/s. These grids test high-resolution proposal reuse; the cohort is already development data.",
+  "modes": ["blind", "seeded"],
+  "maximum_confirmations": 6,
+  "prefix_policies": [1, 2, 3, 6],
+  "seed_refinement": "Full CFO search and existing five-cell fractional GLRT; no second coarse timing search or differential local refinement. Unbracketed seeds remain incomplete evidence.",
+  "research_margin": 0.025,
+  "reference_association": {"maximum_cfo_difference_hz": 8000, "maximum_circular_epoch_difference_us": 2},
+  "classifier_absence_claims": false,
+  "live_rf_authorized": false
+}

@@ -108,6 +108,7 @@ def _build(
     executable: bool,
     scanner_worker: bool = False,
     window_ranker: bool = False,
+    dwell_presence: bool = False,
 ) -> Path:
     output = output.resolve()
     receipt = output.with_name(output.name + ".build.json")
@@ -129,6 +130,10 @@ def _build(
         entry = ROOT / "tools/presence_window_rank_replay.c"
         if executable:
             sources += [entry]
+    elif dwell_presence:
+        entry = ROOT / "tools/presence_dwell_replay.c"
+        if executable:
+            sources += [entry]
     elif executable:
         sources += [entry]
     hashes = {str(path.relative_to(ROOT)): _digest(path) for path in sources}
@@ -147,6 +152,7 @@ def _build(
             if window_ranker
             else [str(NATIVE / "presence.c"), str(NATIVE / "fft.c")]
         ),
+        *([str(NATIVE / "window_rank.c"), str(NATIVE / "dwell.c")] if dwell_presence else []),
         "-lm",
         "-o",
         str(output),
@@ -196,6 +202,13 @@ def build_window_ranker(
 ) -> Path:
     flags = () if executable else ("-shared", "-fPIC")
     return _build(output, compiler, (*flags, *cflags), executable=executable, window_ranker=True)
+
+
+def build_dwell_presence(
+    output: Path, *, compiler: str = "cc", executable: bool = False, cflags: tuple[str, ...] = ()
+) -> Path:
+    flags = () if executable else ("-shared", "-fPIC")
+    return _build(output, compiler, (*flags, *cflags), executable=executable, dwell_presence=True)
 
 
 def write_templates(path: Path, rate: int):
@@ -286,6 +299,16 @@ class NativePresence:
             ct.POINTER(Result),
         ]
         self.library.leo_presence_run_ci16.argtypes = self.library.leo_presence_run.argtypes
+        self._has_confirmation = hasattr(self.library, "leo_presence_confirm_ci16")
+        if self._has_confirmation:
+            self.library.leo_presence_confirm_ci16.argtypes = [
+                ct.c_void_p,
+                ct.c_void_p,
+                ct.c_size_t,
+                ct.c_int32,
+                ct.POINTER(Result),
+            ]
+            self.library.leo_presence_confirm_ci16.restype = ct.c_int
         self.library.leo_presence_coarse.argtypes = [
             ct.c_void_p,
             ct.c_void_p,
@@ -338,6 +361,25 @@ class NativePresence:
         if self.library.leo_presence_get_profile(self.workspace, ct.byref(result)):
             raise ValueError("native workspace is closed")
         return {name: getattr(result, name) for name, _ in Profile._fields_}
+
+    def confirm(self, iq, epoch):
+        if not self.workspace or not self._has_confirmation:
+            raise ValueError("proposal confirmation unavailable")
+        samples = np.asarray(iq)
+        if (
+            samples.dtype != np.dtype("int16")
+            or samples.shape != (self.rate // 50, 2)
+            or type(epoch) is not int
+            or not 0 <= epoch < round(self.rate / 750)
+        ):
+            raise ValueError("one 20ms CI16 RX interval and local integer seed required")
+        samples = np.ascontiguousarray(samples)
+        result = Result()
+        if self.library.leo_presence_confirm_ci16(
+            self.workspace, pointer(samples), len(samples), epoch, ct.byref(result)
+        ):
+            raise ValueError("proposal confirmation rejected input")
+        return result
 
     def nuisance(self):
         if not self._has_nuisance:

@@ -7,12 +7,14 @@ import pytest
 
 from leo.analysis.starlink.templates import qin_edge_pilot_frame
 from tools.native_presence import build_window_ranker, pointer
+from tools.presence_dwell import TimingProposal
 from tools.presence_window_rank import NativeWindowRank, RankResult
 
 
-@pytest.fixture(scope="module")
-def library(tmp_path_factory):
-    return build_window_ranker(tmp_path_factory.mktemp("window-rank") / "rank.so")
+@pytest.fixture(scope="module", params=["pruned", "all-cells"])
+def library(tmp_path_factory, request):
+    flags = ("-DLEO_PRESENCE_RANK_ALL_CELLS",) if request.param == "all-cells" else ()
+    return build_window_ranker(tmp_path_factory.mktemp("window-rank") / "rank.so", cflags=flags)
 
 
 def oracle(iq, rate, edge, bins):
@@ -66,6 +68,24 @@ def test_scores_and_window_order_match_independent_double_oracle(library, rate, 
     np.testing.assert_array_equal(result.scores, again.scores)
     assert result.total_cpu_ms >= result.fold_cpu_ms + result.correlation_cpu_ms
     assert iq.tobytes() == before
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+def test_single_window_api_preserves_whole_dwell_scores_and_failed_output(library, rate):
+    rng = np.random.default_rng(451)
+    iq = rng.integers(-32768, 32768, (6 * rate // 50, 2), dtype=np.int16)
+    with NativeWindowRank(library, rate, "lower", 512) as native:
+        result = native.run(iq)
+        function = native.library.leo_presence_rank_window_ci16
+        function.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_size_t, ct.POINTER(TimingProposal)]
+        for index, window in enumerate(iq.reshape(6, rate // 50, 2)):
+            out = TimingProposal()
+            assert function(native.workspace, pointer(window), len(window), ct.byref(out)) == 0
+            assert out.score == result.scores[index]
+            assert out.epoch == result.projected_epoch_samples[index]
+        before = bytes(out)
+        assert function(native.workspace, pointer(iq), len(iq), ct.byref(out)) == -1
+        assert bytes(out) == before
 
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])

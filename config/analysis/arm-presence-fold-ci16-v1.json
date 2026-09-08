@@ -1,0 +1,14 @@
+{
+  "schema": "org.leo.research.arm-presence-fold-ci16/v1",
+  "status": "execution_optimization_requires_desktop_and_arm_parity",
+  "base_protocol": "config/analysis/arm-presence-multires-v1.json",
+  "extra_defines": {"DIFFERENTIAL_CI16": 1},
+  "selection_reason": "Raw projected timing loses reference associations even where tone removal is inactive. Retain the blind eight-neighborhood differential-plus-power search and accelerate its exact CI16 folding instead of discarding alternative hypotheses.",
+  "invariants": [
+    "All original frame starts, support counts, timing hypotheses, CFO search, fractional GLRT and thresholds remain unchanged.",
+    "Use exact widening integer accumulation only when tone removal has not changed the working IQ.",
+    "Tone-conditioned and floating inputs retain the original FP64 folding.",
+    "Previously inspected scans are development data, not independent signal truth or fresh holdout."
+  ],
+  "live_rf_authorized": false
+}

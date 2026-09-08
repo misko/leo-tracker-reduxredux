@@ -53,11 +53,23 @@ int leo_presence_run(leo_presence_workspace *workspace,
     const leo_presence_complex *samples, size_t count, leo_presence_result *result);
 int leo_presence_run_ci16(leo_presence_workspace *workspace,
     const int16_t *interleaved_iq, size_t count, leo_presence_result *result);
+/* Experimental proposal reuse: exactly one 20 ms CI16 interval and a local
+ * integer timing seed. Searches the full CFO range, preserves tone handling
+ * and the existing five-cell/fractional GLRT confirmation. No coarse timing
+ * search or local differential refinement is performed. A bad/unbracketed
+ * seed is not absence evidence. Result layout and blind entrypoints remain
+ * unchanged. Unsupported input leaves result untouched. */
+int leo_presence_confirm_ci16(leo_presence_workspace *workspace,
+    const int16_t *interleaved_iq, size_t count, int32_t proposal_epoch,
+    leo_presence_result *result);
 /* Diagnostic surfaces, used for differential qualification of shared kernels.
  * GLRT accepts the acquisition CFO interval [-400000,400000] Hz and fractional
  * offsets in [-2,2] samples, retaining integer epochs separately. */
 int leo_presence_coarse(leo_presence_workspace *workspace,
     const leo_presence_complex *samples, size_t count, double *scores);
+/* Like the floating diagnostic, no nuisance conditioning is applied. */
+int leo_presence_coarse_ci16(leo_presence_workspace *workspace,
+    const int16_t *interleaved_iq, size_t count, double *scores);
 int leo_presence_glrt(leo_presence_workspace *workspace,
     const leo_presence_complex *samples, size_t count,
     int32_t epoch, double cfo, double offset, double result[3]);

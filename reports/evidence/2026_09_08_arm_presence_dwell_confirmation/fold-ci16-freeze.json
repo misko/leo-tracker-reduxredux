@@ -1,0 +1,71 @@
+{
+  "schema": "org.leo.research.presence-dwell-freeze/v1",
+  "state": "configuration_frozen_before_execution_existing_cohort_is_development",
+  "protocol": {
+    "schema": "org.leo.research.arm-presence-multires/v1",
+    "status": "development_experiment_not_a_qualified_classifier",
+    "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+    "receiver": 1,
+    "dwell_ms": 120,
+    "window_ms": 20,
+    "grids_by_rate": {
+      "2500000": [
+        512
+      ],
+      "5000000": [
+        512
+      ]
+    },
+    "timing_grids_by_rate": {
+      "2500000": [
+        2048,
+        4096
+      ],
+      "5000000": [
+        4096,
+        8192
+      ]
+    },
+    "selection_reason": "The 512-bin screen ranked windows better in prior development but its timing aliased. Compute high-resolution timing only in windows selected by that cheap screen, then perform seeded fractional GLRT.",
+    "modes": [
+      "blind",
+      "seeded"
+    ],
+    "maximum_confirmations": 6,
+    "prefix_policies": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "research_margin": 0.025,
+    "reference_association": {
+      "maximum_cfo_difference_hz": 8000,
+      "maximum_circular_epoch_difference_us": 2
+    },
+    "classifier_absence_claims": false,
+    "live_rf_authorized": false
+  },
+  "protocol_sha256": "99ba898f0ddb3cd1a3788af3385b7d3d8053f65635a3381ff9e31e5590d11ba6",
+  "detector_protocol_sha256": "4e9ad1950b37cb4591c07dc0e0aadf929a6f2ee40f87d23e041776eb4423dd17",
+  "inputs_sha256": "572f502a0209c0171bcd7527b7f205f29f6669cecda4bca261c353adb184e3cd",
+  "prior_results_sha256": "0e473850bc02da46a5d1ee6c92de2d6dd1d9d42b2f31b5ea124b7ad54a063c02",
+  "evaluation_tool_sha256": "e569cd86259b4cd0a95a3b1df0140f7e17bbf69436793241befc82527710f47c",
+  "optimization": {
+    "schema": "org.leo.research.arm-presence-fold-ci16/v1",
+    "status": "execution_optimization_requires_desktop_and_arm_parity",
+    "base_protocol": "config/analysis/arm-presence-multires-v1.json",
+    "extra_defines": {
+      "DIFFERENTIAL_CI16": 1
+    },
+    "selection_reason": "Raw projected timing loses reference associations even where tone removal is inactive. Retain the blind eight-neighborhood differential-plus-power search and accelerate its exact CI16 folding instead of discarding alternative hypotheses.",
+    "invariants": [
+      "All original frame starts, support counts, timing hypotheses, CFO search, fractional GLRT and thresholds remain unchanged.",
+      "Use exact widening integer accumulation only when tone removal has not changed the working IQ.",
+      "Tone-conditioned and floating inputs retain the original FP64 folding.",
+      "Previously inspected scans are development data, not independent signal truth or fresh holdout."
+    ],
+    "live_rf_authorized": false
+  },
+  "optimization_sha256": "a44774bf35744e01822f079079f73d6a6672f9a1466b4c8b4fefd9e5dabeab75"
+}

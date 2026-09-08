@@ -9,6 +9,10 @@ typedef struct {
     uint32_t order[6], projected_epoch_samples[6];
     double fold_cpu_ms, correlation_cpu_ms, total_cpu_ms, total_wall_ms;
 } leo_presence_rank_result;
+typedef struct {
+    uint32_t epoch;
+    double score, fold_cpu_ms, correlation_cpu_ms, total_cpu_ms, total_wall_ms;
+} leo_presence_timing_proposal;
 
 /* Qualified geometry only: one RX, 120 ms at 2.5/5 MS/s. Bins must be a
  * power of two in [512,8192]. Each 20 ms slice is searched independently,
@@ -21,4 +25,9 @@ leo_presence_rank_workspace *leo_presence_rank_create(uint32_t rate_hz,
 void leo_presence_rank_destroy(leo_presence_rank_workspace *workspace);
 int leo_presence_rank_ci16(leo_presence_rank_workspace *workspace,
     const int16_t *single_rx_iq, size_t sample_count, leo_presence_rank_result *result);
+/* Evaluate exactly one 20ms window at this workspace's grid resolution.
+ * Independent of previous rank calls, with unchanged fractional confirmation
+ * requirements. Useful for high-resolution timing after a cheap full screen. */
+int leo_presence_rank_window_ci16(leo_presence_rank_workspace *workspace,
+    const int16_t *single_rx_iq, size_t sample_count, leo_presence_timing_proposal *result);
 #endif
