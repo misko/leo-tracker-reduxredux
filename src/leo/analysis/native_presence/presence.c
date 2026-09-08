@@ -57,6 +57,15 @@
 #if LEO_PRESENCE_ENERGY_SUPPORT && (LEO_PRESENCE_FINE_FRAMES != 2 || LEO_PRESENCE_EPOCH_FRAMES != 2)
 #error "energy support experiment requires two acquisition and epoch frames"
 #endif
+#ifndef LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT
+#define LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT 0
+#endif
+#if LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT != 0 && LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT != 1
+#error "LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT must be 0 or 1"
+#endif
+#if LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT && !LEO_PRESENCE_ENERGY_SUPPORT
+#error "energy symbol support requires energy-selected acquisition frames"
+#endif
 
 /* The exact existing acquisition kernel, with platform-independent C types. */
 typedef double complex npy_cdouble;
@@ -122,6 +131,7 @@ static void correlate_registers(const double complex *restrict samples,
 struct leo_presence_workspace {
     uint32_t rate;
     int acquisition_first_frame;
+    int acquisition_regions[2];
     size_t n, max_samples;
     double complex *exact, *control, *samples, *input, *weighted, *base;
     double complex *conditioned_offsets;
@@ -197,6 +207,7 @@ static int epoch_stride(const leo_presence_workspace *w)
 static void select_acquisition_support(leo_presence_workspace *w, size_t count, int epoch)
 {
     w->acquisition_first_frame=0;
+    w->acquisition_regions[0]=w->acquisition_regions[1]=0;
 #if LEO_PRESENCE_ENERGY_SUPPORT
     /* Development-only: choose two adjacent complete frames by observed
      * energy after tone removal, never by truth or a GLRT score. Keep the
@@ -215,6 +226,23 @@ static void select_acquisition_support(leo_presence_workspace *w, size_t count, 
         }
         previous=energy;
     }
+#if LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT
+    /* A complete frame may contain a burst only after its early 64 symbols.
+     * Choose early/late support by received energy, once at the coarse epoch,
+     * and freeze that choice across the five timing hypotheses. Each frame
+     * still contributes exactly one contiguous, correctly indexed 64-symbol
+     * region. This is not a maximum over extra GLRT evaluations. */
+    for (int frame=0; frame<2; ++frame) {
+        int start=frame_start(w,epoch,w->acquisition_first_frame+frame);
+        double energy[2]={0};
+        for (int region=0; region<2; ++region) {
+            int begin=symbol_start(w,2+150*region), end=symbol_start(w,66+150*region);
+            if ((size_t)start+end+2>count) continue;
+            for (int k=begin; k<end; ++k) energy[region]+=power(w->samples[start+k]);
+        }
+        w->acquisition_regions[frame]=energy[1]>energy[0];
+    }
+#endif
 #else
     (void)count; (void)epoch;
 #endif
@@ -591,6 +619,8 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
      * per frame, alternating early/late known regions during final scoring.
      * The two-frame epoch lattice is unchanged. No extra FFT or confirmation. */
     const int diverse=LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY && final_scoring;
+    const int late=diverse || (LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT && !final_scoring &&
+        (w->acquisition_regions[0] || w->acquisition_regions[1]));
     /* Rotation depends on local sample position, never on the frame number.
      * Keep the original arithmetic and reuse it across every supporting frame. */
 #if LEO_PRESENCE_PRECOMPUTE
@@ -598,14 +628,14 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
     if (!w->have_rotations || w->rotation_cfo!=cfo || w->rotation_offset!=offset) {
         w->rotation_cfo=cfo; w->rotation_offset=offset; w->have_rotations=0;
     }
-    for (int region=0; region<=diverse; ++region) if (!(w->have_rotations&(1<<region))) {
+    for (int region=0; region<=late; ++region) if (!(w->have_rotations&(1<<region))) {
         for (int k=symbol_start(w,2+150*region); k<symbol_start(w,66+150*region); ++k)
             rotations[k]=rotate(-TAU*cfo*(k+offset)/w->rate);
         w->have_rotations|=1<<region;
     }
 #else
     double complex *rotations=w->weighted;
-    for (int region=0; region<=diverse; ++region)
+    for (int region=0; region<=late; ++region)
         for (int k=symbol_start(w,2+150*region); k<symbol_start(w,66+150*region); ++k)
             rotations[k]=rotate(-TAU*cfo*(k+offset)/w->rate);
 #endif
@@ -613,6 +643,9 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
     for (int frame = 0; frame < frame_limit; ++frame) {
         int start = frame_start(w, epoch, frame+(final_scoring ? 0 : w->acquisition_first_frame));
         int first_symbol=diverse && (frame&1) ? 152 : 2;
+#if LEO_PRESENCE_ENERGY_SYMBOL_SUPPORT
+        if (!final_scoring) first_symbol=2+150*w->acquisition_regions[frame];
+#endif
         first=symbol_start(w,first_symbol);
         stop=symbol_start(w,first_symbol+64);
         /* Do not discard a supporting terminal frame that still fits the
@@ -723,6 +756,7 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
     if (proposal_epoch<0 && coarse(w, count, w->nuisance.applied ? NULL : original_ci16)) return -1;
     out->coarse_cpu_ms = clock_ms(CLOCK_PROCESS_CPUTIME_ID)-started;
     int retained_epoch[2], retained_bin[2], candidate_support[2]={0}, nr = 0;
+    int candidate_regions[2][2]={{0}};
     if (proposal_epoch>=0) {
         retained_epoch[0]=proposal_epoch; retained_bin[0]=5; nr=1;
     }
@@ -837,6 +871,7 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
         w->profile.verification_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         if (frame_start(w,refined,1+w->acquisition_first_frame)+symbol_start(w,302)>(int)count) continue;
         candidate_support[out->candidate_count]=w->acquisition_first_frame;
+        memcpy(candidate_regions[out->candidate_count],w->acquisition_regions,sizeof(w->acquisition_regions));
         ++out->candidate_count;
     }
     if (!LEO_PRESENCE_POWER_PROPOSAL && out->candidate_count==2 &&
@@ -845,12 +880,17 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
         out->candidates[0]=out->candidates[1]; out->candidates[1]=tmp;
         int support=candidate_support[0];
         candidate_support[0]=candidate_support[1]; candidate_support[1]=support;
+        for (int k=0; k<2; ++k) {
+            int region=candidate_regions[0][k];
+            candidate_regions[0][k]=candidate_regions[1][k]; candidate_regions[1][k]=region;
+        }
     }
     out->fine_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-started;
     started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
     for (int r=0; r<out->candidate_count; ++r) {
         leo_presence_candidate *c=&out->candidates[r]; int best=0;
         w->acquisition_first_frame=candidate_support[r];
+        memcpy(w->acquisition_regions,candidate_regions[r],sizeof(w->acquisition_regions));
         double stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
         for (int k=0; k<5; ++k) {
             int epoch=(c->epoch+k-2+(int)w->n)%(int)w->n; double score[3];
