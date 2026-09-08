@@ -1,0 +1,33 @@
+{
+  "recipe_sha256": "e80005ddbecb011fd60f9b37d0e5296964073c0f9acb3db02a7642961e7f97e3",
+  "flags": [
+    "-DLEO_PRESENCE_COARSE_FP32",
+    "-fno-unroll-loops",
+    "-fno-peel-loops",
+    "-fno-prefetch-loop-arrays",
+    "-fcx-limited-range",
+    "-DLEO_PRESENCE_POWER_PROPOSAL=1",
+    "-DLEO_PRESENCE_DIFFERENTIAL_PROPOSAL=1",
+    "-DLEO_PRESENCE_DIFFERENTIAL_LOCAL_RADIUS=0",
+    "-DLEO_PRESENCE_TONE_NUISANCE=1",
+    "-DLEO_PRESENCE_TONE_BLOCKED=1",
+    "-DLEO_PRESENCE_TONE_CI16=1",
+    "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+    "-DLEO_PRESENCE_FAST_FINE_FFT=1",
+    "-DLEO_PRESENCE_FINE_ALL_SYMBOLS=1",
+    "-DLEO_PRESENCE_FINE_FRAMES=2",
+    "-DLEO_PRESENCE_EPOCH_FRAMES=2",
+    "-DLEO_PRESENCE_CONDITIONED_RADIUS=200",
+    "-DLEO_PRESENCE_CANDIDATES=1",
+    "-DLEO_PRESENCE_DIFFERENTIAL_CI16=1",
+    "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",
+    "-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1",
+    "-DLEO_PRESENCE_GLRT_SYMBOL_DIVERSITY=1",
+    "-DLEO_PRESENCE_BOUNDED_MAGNITUDE=1",
+    "-DLEO_PRESENCE_CONDITIONED_BLOCK_ROTATION=1",
+    "-DLEO_PRESENCE_ENERGY_SUPPORT=1"
+  ],
+  "scope": "8 sanitizer processes, 2 repeats and 6 confirmations per process; no live or ARM timing",
+  "cases": "both rates and edges; zero IQ and 4 ms terminal pilot burst",
+  "rx": 1
+}
