@@ -100,7 +100,14 @@ def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _build(output: Path, compiler: str, flags: tuple[str, ...], *, executable: bool) -> Path:
+def _build(
+    output: Path,
+    compiler: str,
+    flags: tuple[str, ...],
+    *,
+    executable: bool,
+    scanner_worker: bool = False,
+) -> Path:
     output = output.resolve()
     receipt = output.with_name(output.name + ".build.json")
     for path in (output, receipt):
@@ -111,8 +118,14 @@ def _build(output: Path, compiler: str, flags: tuple[str, ...], *, executable: b
         raise FileNotFoundError(compiler)
     sources = sorted(NATIVE.glob("*.[ch]"))
     sources += [ROOT / "src/leo/analysis/starlink/_native_acquisition_grid.inc", Path(__file__)]
-    if executable:
-        sources += [ROOT / "tools/native_presence_replay.c"]
+    entry = ROOT / "tools/native_presence_replay.c"
+    worker_sources = []
+    if scanner_worker:
+        entry = ROOT / "src/leo/scanner/native_presence/worker.c"
+        worker_sources = [ROOT / "src/leo/scanner/native_presence/pool.c"]
+        sources += sorted((ROOT / "src/leo/scanner/native_presence").glob("*.[ch]"))
+    elif executable:
+        sources += [entry]
     hashes = {str(path.relative_to(ROOT)): _digest(path) for path in sources}
     command = [
         compiler_path,
@@ -123,7 +136,7 @@ def _build(output: Path, compiler: str, flags: tuple[str, ...], *, executable: b
         "-Wextra",
         "-Werror",
         *flags,
-        *([str(ROOT / "tools/native_presence_replay.c")] if executable else []),
+        *([str(entry), *(str(p) for p in worker_sources)] if executable else []),
         str(NATIVE / "presence.c"),
         str(NATIVE / "fft.c"),
         "-lm",
@@ -163,6 +176,26 @@ def build_executable(
 ) -> Path:
     sanitizers = ("-fsanitize=address,undefined", "-fno-omit-frame-pointer") if sanitize else ()
     return _build(output, compiler, (*sanitizers, *cflags), executable=True)
+
+
+def build_worker(output: Path, *, compiler: str = "cc", cflags: tuple[str, ...] = ()) -> Path:
+    """Build the isolated scanner consumer, separate from the numerical library."""
+    return _build(output, compiler, cflags, executable=True, scanner_worker=True)
+
+
+def write_templates(path: Path, rate: int):
+    """Package both edge templates for a read-only inherited worker descriptor."""
+    if rate not in (2500000, 5000000):
+        raise ValueError("unqualified template rate")
+    n = round(rate / 750)
+    with path.open("xb") as output:
+        output.write(struct.pack("<4sII", b"LPT1", rate, n))
+        for edge in ("lower", "upper"):
+            for roll in (0, 17):
+                values = np.asarray(
+                    qin_edge_pilot_frame(rate, edge, symbol_roll=roll), dtype="<c16"
+                )
+                output.write(values.tobytes())
 
 
 def write_probe(path: Path, values, rate: int, edge: str, counter: int = 0, *, ci16: bool = False):

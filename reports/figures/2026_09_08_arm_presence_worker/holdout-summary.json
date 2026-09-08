@@ -1,0 +1,158 @@
+{
+  "schema": "org.leo.research.arm-presence-holdout-summary/v1",
+  "inputs_sha256": "572f502a0209c0171bcd7527b7f205f29f6669cecda4bca261c353adb184e3cd",
+  "results_sha256": "0e473850bc02da46a5d1ee6c92de2d6dd1d9d42b2f31b5ea124b7ad54a063c02",
+  "freeze_sha256": "622071169ad5007582a41a73e0d90614d19f32d1e28a4cdc15339960de8276f8",
+  "rates": {
+    "2500000": {
+      "first_window": {
+        "probes": 48,
+        "reference_positive": 12,
+        "reference_positive_detected": 12,
+        "reference_associated": 12,
+        "unresolved_additional_flags": 10
+      },
+      "all_windows": {
+        "probes": 288,
+        "reference_positive": 85,
+        "reference_positive_detected": 80,
+        "reference_associated": 78,
+        "unresolved_additional_flags": 57
+      },
+      "temporal_schedules": [
+        {
+          "offsets_ms": [
+            0
+          ],
+          "reference_positive_visits_anywhere": 22,
+          "reference_seen_at_scheduled_windows": 12,
+          "native_reference_associated_at_scheduled_windows": 12,
+          "native_flag_at_scheduled_windows_including_unresolved": 19
+        },
+        {
+          "offsets_ms": [
+            0,
+            40,
+            100
+          ],
+          "reference_positive_visits_anywhere": 22,
+          "reference_seen_at_scheduled_windows": 20,
+          "native_reference_associated_at_scheduled_windows": 19,
+          "native_flag_at_scheduled_windows_including_unresolved": 20
+        },
+        {
+          "offsets_ms": [
+            0,
+            20,
+            40,
+            60,
+            80,
+            100
+          ],
+          "reference_positive_visits_anywhere": 22,
+          "reference_seen_at_scheduled_windows": 22,
+          "native_reference_associated_at_scheduled_windows": 19,
+          "native_flag_at_scheduled_windows_including_unresolved": 20
+        }
+      ],
+      "sessions": {
+        "scan-hop-228b5ad75bb549f3": {
+          "probes": 144,
+          "reference_positive": 57,
+          "reference_positive_detected": 53,
+          "reference_associated": 51,
+          "unresolved_additional_flags": 13
+        },
+        "scan-hop-2c7a4d21e9d2a576": {
+          "probes": 144,
+          "reference_positive": 28,
+          "reference_positive_detected": 27,
+          "reference_associated": 27,
+          "unresolved_additional_flags": 44
+        }
+      }
+    },
+    "5000000": {
+      "first_window": {
+        "probes": 48,
+        "reference_positive": 3,
+        "reference_positive_detected": 3,
+        "reference_associated": 3,
+        "unresolved_additional_flags": 12
+      },
+      "all_windows": {
+        "probes": 288,
+        "reference_positive": 28,
+        "reference_positive_detected": 26,
+        "reference_associated": 26,
+        "unresolved_additional_flags": 56
+      },
+      "temporal_schedules": [
+        {
+          "offsets_ms": [
+            0
+          ],
+          "reference_positive_visits_anywhere": 13,
+          "reference_seen_at_scheduled_windows": 3,
+          "native_reference_associated_at_scheduled_windows": 3,
+          "native_flag_at_scheduled_windows_including_unresolved": 11
+        },
+        {
+          "offsets_ms": [
+            0,
+            40,
+            100
+          ],
+          "reference_positive_visits_anywhere": 13,
+          "reference_seen_at_scheduled_windows": 9,
+          "native_reference_associated_at_scheduled_windows": 9,
+          "native_flag_at_scheduled_windows_including_unresolved": 12
+        },
+        {
+          "offsets_ms": [
+            0,
+            20,
+            40,
+            60,
+            80,
+            100
+          ],
+          "reference_positive_visits_anywhere": 13,
+          "reference_seen_at_scheduled_windows": 13,
+          "native_reference_associated_at_scheduled_windows": 11,
+          "native_flag_at_scheduled_windows_including_unresolved": 12
+        }
+      ],
+      "sessions": {
+        "scan-hop-43cc401e05cbe425": {
+          "probes": 144,
+          "reference_positive": 7,
+          "reference_positive_detected": 6,
+          "reference_associated": 6,
+          "unresolved_additional_flags": 15
+        },
+        "scan-hop-db578e8636677ae0": {
+          "probes": 144,
+          "reference_positive": 21,
+          "reference_positive_detected": 20,
+          "reference_associated": 20,
+          "unresolved_additional_flags": 41
+        }
+      }
+    }
+  },
+  "misses": [
+    "scan-hop-43cc401e05cbe425-167-80.probe",
+    "scan-hop-2c7a4d21e9d2a576-164-80.probe",
+    "scan-hop-db578e8636677ae0-1127-80.probe",
+    "scan-hop-228b5ad75bb549f3-162-40.probe",
+    "scan-hop-228b5ad75bb549f3-167-100.probe",
+    "scan-hop-228b5ad75bb549f3-1126-60.probe",
+    "scan-hop-228b5ad75bb549f3-2082-80.probe"
+  ],
+  "different_cfo_or_timing": [
+    "scan-hop-228b5ad75bb549f3-1121-20.probe",
+    "scan-hop-228b5ad75bb549f3-2087-60.probe"
+  ],
+  "limitations": "Four held-out scans, not independent Starlink truth. Six non-overlapping windows tile selected visits; this is not continuous detection. Additional RF flags remain unresolved, not false-alarm labels."
+}

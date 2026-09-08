@@ -1,0 +1,56 @@
+{
+  "schema": "org.leo.research.presence-worker-execution/v1",
+  "scope": "Temporary userspace binaries; saved IQ and synthetic probes only; no RF, FPGA, flashed firmware, kernel, installation, or production configuration changes.",
+  "radio": {
+    "host": "192.168.1.15",
+    "serial": "104000b29905000e17000800065934759d",
+    "excluded_serial_not_accessed": "104000bac4950008230026001b440a003a",
+    "pinned_ssh_identity_used": true,
+    "receive_buffers_disabled_before_between_after": true,
+    "architecture": "armv7l",
+    "worker_nice": 19,
+    "affinity": "unbound, allowed CPUs 0-1",
+    "worker_uid": 65534,
+    "worker_no_new_privs": 1,
+    "worker_threads": 1,
+    "observed_5m_worker_rss_high_water_kib": 19260,
+    "rss_limitation": "Observed during the 5 MS/s load, not a terminal maximum receipt; includes two edge workspaces."
+  },
+  "paths": {
+    "local_experiment": "/tmp/leo-worker-checkpoint-2z88dxsx",
+    "remote_experiment": "/tmp/leo-presence-worker.io5F7y"
+  },
+  "worker_sha256": "835be221b53f7391a9de358b46d8e342f292e16b5530afea78e4c2afeeec1ce6",
+  "parent_sha256": "0292a191b53c1f7d9fd5a5150833adac8bd1a9c283492b7a079cd11d7ab3bc4f",
+  "parent_source_sha256": {
+    "tests/fixtures/scanner_presence_worker_smoke.c": "c6816cae246cfbe4daa34b37e71d47fdc953a814d1f0a98057273df36ee55f04"
+  },
+  "parent_compile_command": [
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "tests/fixtures/scanner_presence_worker_smoke.c",
+    "src/leo/scanner/native_presence/pool.c",
+    "-o",
+    "/tmp/leo-worker-checkpoint-2z88dxsx/paced-arm"
+  ],
+  "pack_sha256": {
+    "2500000": "102924d356693c881d7318f22243afa95af9e9c586c0569e40283ba972d78ddc",
+    "5000000": "ff0cdf345333cbd1f84e077e8bdb9eba42e8fe18bbe4e959a980886d4d0b18a0"
+  },
+  "raw_radio_and_local_sha256": {
+    "2500000": "962d94d3ce63983854707df44aeac8f9612fb39af904e20e47750b40776b1424",
+    "5000000": "ad6fae21f6815ddcbf3b77c2fd9f12b8c072094e77fd2e6a8c063129f70b9459"
+  },
+  "duration_ms_per_rate": 300000,
+  "spacing_ms": 126,
+  "source_probes_per_rate": 48,
+  "receipt_tail_5m": "{\"schema\":\"native-worker-paced-summary-v1\",\"rate_hz\":5000000,\"submitted\":2381,\"completed\":2381,\"dropped\":0,\"pool_bytes\":1234944,\"skipped\":0,\"duration_ms\":300000,\"elapsed_ms\":300009.308,\"max_occupied_slots\":1,\"max_submit_lateness_ms\":1.345034,\"max_copy_ms\":3.46216798,\"scope\":\"repeated saved probes at 126 ms spacing; not RF or full archived-stream qualification\"}\nad6fae21f6815ddcbf3b77c2fd9f12b8c072094e77fd2e6a8c063129f70b9459  /tmp/leo-presence-worker.io5F7y/paced-5000000.txt\n",
+  "receipt_tail_2m5": "{\"schema\":\"native-worker-paced-summary-v1\",\"rate_hz\":2500000,\"submitted\":2381,\"completed\":2381,\"dropped\":0,\"pool_bytes\":1234944,\"skipped\":0,\"duration_ms\":300000,\"elapsed_ms\":300005.313,\"max_occupied_slots\":1,\"max_submit_lateness_ms\":2.02008903,\"max_copy_ms\":2.08355999,\"scope\":\"repeated saved probes at 126 ms spacing; not RF or full archived-stream qualification\"}\n962d94d3ce63983854707df44aeac8f9612fb39af904e20e47750b40776b1424  /tmp/leo-presence-worker.io5F7y/paced-2500000.txt\nBOTH_PACED_LOADS_FINISHED_BUFFERS_DISABLED\n",
+  "observed_worker_status": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nName:\tworker-arm\nUmask:\t0077\nState:\tS (sleeping)\nTgid:\t7088\nNgid:\t0\nPid:\t7088\nPPid:\t7085\nTracerPid:\t0\nUid:\t65534\t65534\t65534\t65534\nGid:\t65534\t65534\t65534\t65534\nFDSize:\t32\nGroups:\t \nVmPeak:\t   25532 kB\nVmSize:\t   25532 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t   19260 kB\nVmRSS:\t   19260 kB\nRssAnon:\t   16828 kB\nRssFile:\t    1184 kB\nRssShmem:\t    1248 kB\nVmData:\t   22620 kB\nVmStk:\t     132 kB\nVmExe:\t      40 kB\nVmLib:\t    1392 kB\nVmPTE:\t      30 kB\nVmSwap:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t1\nSigQ:\t0/3385\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000000000\nSigCgt:\t0000000000000000\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tunknown\nSpeculationIndirectBranch:\tunsupported\nCpus_allowed:\t3\nCpus_allowed_list:\t0-1\nvoluntary_ctxt_switches:\t1215\nnonvoluntary_ctxt_switches:\t1589\n",
+  "freshly_fetched_origin_main": "29be8492f5f2efb439a9df1e6086224714e95506",
+  "origin_main_is_ancestor": true
+}
