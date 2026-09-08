@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "checkpoint": "scanner_glrt_production_host",
+  "date": "2026-09-08",
+  "source_commits": {
+    "leo": "11b816cb66a7fdbc21dee0d5db4f73c936245cd8",
+    "pluto_plus_utils": "606144e60d63910dfaf5902f722b950df65dc604",
+    "libiio_provider_unchanged": "af12ce68f8bb3f101c38f0332efe157513367a27"
+  },
+  "tests": [
+    {
+      "name": "leo_focused",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src OPENBLAS_NUM_THREADS=1 FFTW_PREFIX=/tmp/leo-presence-fftw.nLw4v6/install /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/radio/test_scanner_glrt_metadata.py tests/radio/test_scanner_glrt_native_host.py tests/radio/test_pluto_persistent_hop.py tests/radio/test_scanner_glrt_frames.py tests/contracts/test_scanner_glrt_session.py tests/contracts/test_scanner_glrt_frame.py tests/scanner/test_scanner_glrt_request.py tests/scanner/test_scanner_glrt_port.py tests/scanner/test_native_presence_dwell_worker.py tests/scanner/test_native_presence_pool.py tests/scanner/test_glrt_frame_result.py tests/scanner/test_persistent_hop_application.py tests/scanner/test_persistent_hop_contracts.py",
+      "result": {
+        "chunk_id": "9a3471",
+        "wall_time_seconds": 0.000002067,
+        "exit_code": 0,
+        "original_token_count": 106,
+        "output": "........................................................................ [ 22%]\n........................................................................ [ 45%]\n........................................................................ [ 68%]\n........................................................................ [ 90%]\n.............................                                            [100%]\n317 passed in 16.00s\n"
+      }
+    },
+    {
+      "name": "ppu_focused",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src OPENBLAS_NUM_THREADS=1 /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/test_persistent_hop.py tests/test_iio_persistent_hop.py tests/test_iio_metadata_capture.py",
+      "exit_code": 0,
+      "summary": "182 passed in 5.26s"
+    },
+    {
+      "name": "native_worker_to_host",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src OPENBLAS_NUM_THREADS=1 FFTW_PREFIX=/tmp/leo-presence-fftw.nLw4v6/install /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/radio/test_scanner_glrt_native_host.py",
+      "exit_code": 0,
+      "summary": "2 passed in 3.85s; included again in final 317-test Leo run"
+    },
+    {
+      "name": "leo_mypy",
+      "command": "PYTHONDONTWRITEBYTECODE=1 MYPYPATH=src:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m mypy --follow-imports=skip src/leo/contracts/scanner_glrt_session.py src/leo/radio/scanner_glrt_metadata.py src/leo/radio/pluto_persistent_hop.py",
+      "exit_code": 0,
+      "summary": "Success: no issues found in 3 source files"
+    },
+    {
+      "name": "ppu_mypy",
+      "command": "PYTHONDONTWRITEBYTECODE=1 MYPYPATH=src /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m mypy --python-version 3.12 src/pluto_plus/metadata_extension.py src/pluto_plus/persistent_hop.py src/pluto_plus/hardware/iio_persistent_hop.py src/pluto_plus/hardware/iio_metadata.py src/pluto_plus/hardware/iio.py",
+      "exit_code": 0,
+      "summary": "Success: no issues found in 5 source files; not a Python 3.11 environment qualification"
+    },
+    {
+      "name": "ruff_and_git_diff_check",
+      "exit_code": 0,
+      "summary": "Ruff checks passed for all changed source/test files in both repositories; staged whitespace checks passed"
+    }
+  ],
+  "retained_failures": [
+    "New stale-terminal test initially failed: completed HOPT did not cross-check last sequence/end against delivered IQ. Added validation and retained the regression.",
+    "Initial Leo test invocation lacked pluto-plus-utils on PYTHONPATH and two existing adapter tests failed import. Final commands explicitly select the new host worktree; no installed dependency was changed.",
+    "One new 301-second request fixture violated HOPR's own dwell-count bound before exercising fallback. Corrected the fixture count; no production contract was relaxed.",
+    "PPU Python 3.11 mypy target could not parse the installed NumPy stubs. Python 3.12 with normal import following passes. An intermediate follow-imports=skip invocation reported three Any-return diagnostics on pre-existing imported surfaces."
+  ],
+  "constraints": {
+    "new_rf": false,
+    "radio_access": false,
+    "production_changes": false,
+    "firmware_flash": false,
+    "fpga_changes": false,
+    "kernel_changes": false,
+    "pushed": false,
+    "deployed": false,
+    "numerical_policy_enabled": false
+  },
+  "remaining_gates": [
+    "Combined actual SPF provider + network + production host test",
+    "Original block/counter/hop-event arrival 300-second replay at both rates with shared-system cost measurement",
+    "Runtime artifact/configuration composition, durable evidence publication, operator presentation",
+    "Independent classifier quality and whole-dwell absence qualification",
+    "5 MS/s p99 CPU budget and first-execution tail",
+    "Authorized matched live disabled/enabled same-duty verification, reviewed release and deployment"
+  ]
+}

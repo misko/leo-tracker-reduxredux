@@ -1,6 +1,15 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
-Latest integration checkpoint: [actual SPF provider and bounded GLRT acquisition port](../../reports/2026_09_08_scanner_glrt_provider_checkpoint.md).
+Latest host checkpoint: [source-attested host integration](../../reports/2026_09_08_scanner_glrt_host_checkpoint.md).
+The opt-in production adapter now negotiates, unwraps, matches source dwells,
+and drains final results before close. A separate immutable evidence product
+distinguishes complete delivery from qualified classification. The actual native
+SDK/worker-to-host fixture passes at both rates, with 317 Leo and 182 PPU tests
+passing. Runtime composition/publication/UI, combined actual provider/network
+testing, original-arrival replay, quality, performance and live-duty gates remain
+open. No deployment, radio access or new RF occurred.
+
+Previous provider checkpoint: [actual SPF provider and bounded GLRT acquisition port](../../reports/2026_09_08_scanner_glrt_provider_checkpoint.md).
 The opt-in provider now accepts LGO1 requests, collects counter-attested RX1
 dwells, wraps unchanged legacy metadata with worker results, and supports
 terminal drain after the final IQ carrier is encoded. Completion/cancellation
