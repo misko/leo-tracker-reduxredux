@@ -10,6 +10,7 @@ from leo.radio.pluto_persistent_hop import (
     PERSISTENT_HOP_EXCLUDED_SERIAL,
     PlutoPersistentHopRadio,
 )
+from leo.radio.scanner_glrt_metadata import ScannerGlrtMetadataExtension, ScannerGlrtOptions
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
 from leo.scanner.persistent_hop import (
     PersistentHopSessionReceiptV1,
@@ -247,7 +248,8 @@ def _upstream_receipt(receipt: PersistentHopSessionReceiptV1):
     )
 
 
-def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
+@pytest.mark.parametrize("glrt", [False, True])
+def test_adapter_maps_valid_visit_iq_and_terminal_receipt(glrt: bool) -> None:
     plan, source_blocks, upstream = _cancelled_source()
     upstream.start_clock_bracket = SimpleNamespace(
         before_realtime_ns=1_000_000_000,
@@ -264,6 +266,7 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
         client_factory=lambda uri, serial: client,
         plan_factory=lambda selected: selected,
         tandem_request_factory=lambda: "hold",
+        scanner_glrt=ScannerGlrtOptions("12" * 32, "34" * 32) if glrt else None,
     )
 
     assert radio.open().uri == "ip:192.168.1.18"
@@ -290,6 +293,13 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
     with pytest.raises(StopIteration):
         session.read_visit()
     receipt = session.finish()
+    if glrt:
+        classification = radio.classification_evidence
+        assert classification is not None and not classification.negotiated
+        assert not classification.classification_complete
+        assert "lacks metadata extension" in classification.error
+    else:
+        assert radio.classification_evidence is None
 
     assert client.start_arguments == (plan, "hold")
     assert [item.evidence for item in mapped] == [item.evidence for item in source_blocks]
@@ -301,6 +311,59 @@ def test_adapter_maps_valid_visit_iq_and_terminal_receipt() -> None:
     assert receipt.valid_duty_ppm == 909_090
     assert receipt.duty_target_met
     radio.close()
+    if glrt:
+        assert radio.classification_evidence is classification
+        assert radio.classification_error == classification.error
+
+
+@pytest.mark.parametrize("supported", [False, True])
+def test_default_client_loader_negotiates_only_with_supported_host_api(monkeypatch, supported):
+    import pluto_plus.hardware.iio_persistent_hop as ppu
+
+    from leo.radio.pluto_persistent_hop import _load_client
+
+    extension = ScannerGlrtMetadataExtension(
+        ScannerGlrtOptions("12" * 32, "34" * 32), session=71
+    )
+    calls = []
+    client = object()
+
+    def legacy(uri, *, expected_serial):
+        calls.append((uri, expected_serial, None))
+        return client
+
+    def capable(uri, *, expected_serial, metadata_extension=None):
+        calls.append((uri, expected_serial, metadata_extension))
+        return client
+
+    monkeypatch.setattr(ppu, "iio_persistent_hop_client", capable if supported else legacy)
+    assert _load_client("ip:192.168.1.18", "test-only", metadata_extension=extension) is client
+    assert calls == [("ip:192.168.1.18", "test-only", extension if supported else None)]
+    if not supported:
+        assert "installed host client lacks" in extension.snapshot().error
+
+
+def test_radio_passes_one_extension_to_capable_factory_and_retains_failure_evidence():
+    plan, _blocks, upstream = _cancelled_source(visit_count=0)
+    client = _Client(upstream, persistent_hop_wire_session_id("adapter-session"))
+    extensions = []
+
+    def factory(uri, serial, *, metadata_extension):
+        extensions.append(metadata_extension)
+        metadata_extension.fail("injected unsupported provider")
+        return client
+
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18", expected_serial="allowed-serial", radio_id="scanner-radio",
+        client_factory=factory, scanner_glrt=ScannerGlrtOptions("12" * 32, "34" * 32),
+    )
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    assert session.finish().capture_outcome == "cancelled"
+    radio.close()
+    assert len(extensions) == 1
+    assert radio.classification_evidence.error == "injected unsupported provider"
+    assert radio.classification_error == "injected unsupported provider"
 
 
 def test_adapter_targets_one_explicit_alternate_iiod_port() -> None:
