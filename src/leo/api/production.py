@@ -52,6 +52,7 @@ from leo.storage import (
     ScannerAnalysisStore,
     ScannerIqStore,
 )
+from leo.storage.scanner_glrt import ScannerGlrtPresentationStore, ScannerGlrtStore
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -208,6 +209,9 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
                 ),
             ),
             persistent_hop_sessions=persistent_hop_iq,
+            scanner_glrt=ScannerGlrtPresentationStore(
+                persistent_hop_iq, ScannerGlrtStore.open_read_only(configured.bulk_root),
+            ),
             persistent_hop_presentations=PersistentHopPresentationStore(
                 persistent_hop_iq,
                 persistent_hop_analysis,

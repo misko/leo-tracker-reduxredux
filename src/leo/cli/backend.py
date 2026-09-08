@@ -139,6 +139,7 @@ class ScheduledPersistentHopRun:
 
     intent: ScheduledScannerRunIntentV1
     published: PublishedPersistentHopIqSession
+    classification_warning: str | None = None
 
 
 ScheduledScannerRunLike = ScheduledScannerRun | ScheduledPersistentHopRun
