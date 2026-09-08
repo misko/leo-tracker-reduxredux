@@ -1,5 +1,54 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
+## Current goal revision — frame-carried dwell classification
+
+The user has superseded the earlier advisory-side-channel goal with:
+**implement a realtime scanner GLRT classification that identifies which
+scanner dwells contain Starlink signal and reports it in LIBIIO frame data,
+without reducing scanner duty percentage.**
+
+The native numerical and worker checkpoints below remain reusable foundations,
+not completion of this revised goal. The final transport is now a negotiated,
+versioned extension carried with LIBIIO frame metadata, not a separate result
+connection. The proposed 0.5-percentage-point duty allowance is withdrawn.
+
+Additional mandatory requirements:
+
+- Qualify the classifier against the entire retained 120 ms dwell. A negative
+  first-20ms probe is insufficient. Evaluate inexpensive timing proposals over
+  all six temporal slices followed by bounded fractional GLRT confirmation,
+  preserving the one-selected-RX constraint. This is an experiment, not an
+  assumed sixfold speedup or sensitivity result. Keep the frozen 20 ms detector
+  as a comparator, not the final whole-dwell classifier.
+- Calibrate and evaluate a Starlink classification decision, separately from
+  numerical candidate agreement. Use development/holdout separation, known
+  pilot and interference controls, and explicit unresolved RF cases. Carry the
+  score, coverage, algorithm/configuration identity, and failure reason; never
+  convert incomplete computation into an absence claim.
+- Emit completed classifications in subsequent LIBIIO frames, explicitly
+  referring to their original session, visit, RX, and sample-counter interval.
+  Never wait for GLRT before forwarding current IQ. A negotiated metadata-only
+  terminal frame must deliver final results after RF capture stops; it must not
+  fabricate IQ or rely on an old client treating a zero-IQ frame as ordinary data.
+- Preserve existing ABI-3 base metadata and HOPS/HOPT published contracts. Add
+  an opt-in envelope/version and negotiate capacities and terminal semantics.
+  Old clients retain byte-identical framing. New clients without support
+  continue recording with an explicit unavailable-classification state.
+- Require no reduced dwell length, increased RF gaps, dropped IQ, or delayed
+  hop scheduling. Qualify capture-path replay and matched live disabled/enabled
+  runs against the unchanged scanner. Report duty measurements and uncertainty;
+  no positive regression allowance is accepted as success. Extra result drain
+  after capture is measured separately from the device-counter duty denominator.
+
+Concrete integration entry points inspected read-only: the pinned userspace
+iiOD provider in libiio `c752ab684a4c9924ee362ccfb02a7ac65f7992f9` builds ABI-3
+metadata plus HOPS in `iiod/spf-buffer-metadata.c`; `iiod/ops.c` transports a
+length-delimited metadata record followed by IQ. Its exact-gap parser and the
+`pluto_plus.hardware.iio_metadata.IioRawSidecarCaptureSession` / persistent-hop
+decoder validate current lengths and geometry, so appending bytes without
+explicit negotiation would break compatibility. Those parsers, all transport
+modes used by the scanner, and final-frame draining need owned tests.
+
 Status: implementation in progress, 2026-09-08. This document authorizes no
 deployment or new RF collection. Production scanning and scientific analysis
 remain unchanged. The [native checkpoint report](../../reports/2026_09_08_arm_presence_native_checkpoint.md)
@@ -11,7 +60,14 @@ The latest [differential/tone checkpoint](../../reports/2026_09_08_arm_presence_
 flags all 20 development reference positives, associates 19/20, and measures
 51.7/99.2 ms warmed p99 CPU on 800 CI16 ARM replays. First-execution/tail
 latency, fresh holdout, temporal coverage, and streaming qualification remain
-open; no worker/iiOD integration or deployment exists yet.
+open in that earlier checkpoint. The newer
+[worker/holdout checkpoint](../../reports/2026_09_08_arm_presence_worker_checkpoint.md)
+adds 576 held-out probes, an isolated worker/collector, and two 300 s repeated-
+probe ARM loads with 4,762/4,762 desktop-matching results and no losses. CPU p99
+is 53.0/100.32 ms: the strict 5 MS/s CPU gate still misses. Original DMA/metadata
+arrival replay, iiOD/host/UI integration, and live shadow qualification remain
+unfinished; nothing has been deployed. First-window reference evidence covers
+only 15/35 visits with reference evidence somewhere in the six-window tiling.
 
 ## Objective and boundaries
 
@@ -20,8 +76,9 @@ the first 20 ms and the existing two-candidate fractional GLRT path. Aim for
 100 ms of detector CPU per incoming visit at both 2.5 and 5 MS/s, while preserving
 dual-RX recording and approximately 126 ms visit spacing.
 
-The product is initially **GLRT candidate evidence**, not a verified Starlink
-verdict. A missed check is unknown, not negative. Neither a negative score nor
+The existing prototype produces **GLRT candidate evidence**, not a verified
+Starlink verdict. The revised end state requires qualified dwell classification
+as specified above. A missed check is unknown, not negative. Neither a negative score nor
 worker failure may discard IQ, shorten a capture, suppress normal analysis, or
 change hopping, gain, bandwidth, firmware, FPGA, or kernel behavior.
 
@@ -87,23 +144,28 @@ weakening its scientific warning.
 3. An isolated native worker consumes probes asynchronously. A bounded shared
    buffer pool and notification mechanism separate it from capture. No IIO
    device handle or radio-control authority passes to the worker.
-4. Completed evidence enters a bounded result ring. An optional, versioned
-   command on a separate control connection to the existing iiOD port returns
-   results by session and sequence cursor, without opening an RX buffer.
+4. Completed classifications enter a bounded result ring. A negotiated,
+   versioned LIBIIO frame-metadata extension carries completed results from
+   earlier dwells without waiting for computation or opening another RX buffer.
+   A terminal metadata-only frame drains results after RF capture stops.
 5. The host maps results through a narrow adapter into a new advisory evidence
    product. Existing IQ, HOPS/HOPT, metadata, and published analysis contracts
    remain byte-compatible and semantically unchanged.
 
-Three CI16 probe slots require 0.6 MB at 2.5 MS/s or 1.2 MB at 5 MS/s for 20 ms
-single-RX probes. Detector scratch space is additional and must be measured.
+Three CI16 probe slots contain 0.6 MB at 2.5 MS/s or 1.2 MB at 5 MS/s of 20 ms
+single-RX data. The current fixed-size prototype reserves the maximum at both
+rates: 1,234,944 bytes including the result ring and bookkeeping. Detector
+scratch space is additional; the two-workspace ARM worker showed 19,260 KiB
+RSS high water during the 5 MS/s run, not a final peak-memory qualification.
 Buffer states must distinguish filling, queued, and in-use; capture must never
 overwrite an in-use slot. Overflow increments explicit counters and drops
 detector work, not recording data.
 
-The result-read command is a proposed custom iiOD extension, not an existing
-stock libiio API. Prefer it over changing IQ framing or polling a latest-score
-attribute that can lose visit association. Keep replies bounded and nonblocking
-with respect to capture. A future metadata envelope is a separate design change.
+The frame envelope and terminal frame are proposed custom iiOD/libiio
+extensions, not existing stock APIs. Keep result batches bounded and
+nonblocking with respect to capture. Preserve legacy IQ framing through
+explicit capability/version negotiation; do not silently append fields to an
+immutable published contract.
 
 ## Checkpoints
 
@@ -247,13 +309,15 @@ Tests and exit gate:
 
 Deliverables:
 
-- An opt-in detector capability and bounded result-read operation on the
-  existing daemon. Preserve all published metadata and hop wire formats.
+- An opt-in classifier capability and bounded result batches in a newly
+  versioned LIBIIO frame envelope. Preserve existing metadata and hop wire
+  formats for legacy negotiation.
 - A new evidence contract binding session/generation, result sequence, visit,
   RX, rate, channel/edge, input counter bounds, algorithm/configuration identity,
   candidate fractional timing/CFO/scores, execution times, and status.
-- Cursor semantics for no data, overflow, duplicate reads, restart, terminal
-  completion, and bounded final drain. Scope access to the owning session;
+- Sequence semantics for pending results, overflow, duplicate delivery,
+  restart, terminal completion, and bounded metadata-only final drain. Scope
+  access to the owning session;
   stale or unrelated sessions must not read another session's results.
 - A host adapter and independent advisory storage/UI representation. Late or
   missing detector evidence must not block recording publication or analysis.
@@ -269,7 +333,9 @@ Tests and exit gate:
   capability falls back to normal recording, not failed acquisition.
 - Audit strict capability/ABI checks and exact-field validators before adding
   discovery fields; extension negotiation must not break existing preflights.
-- The control connection must not OPEN another RX buffer or change channel masks.
+- Classification delivery must not OPEN another RX buffer or change channel
+  masks. Results arriving after their original IQ frame must still map exactly
+  to their source dwell; terminal results cannot disappear at stream EOF.
 - Worker lifecycle tests cover crash, timeout, parent exit, and cleanup of only
   its own resources. Do not weaken the existing process-identity/ownership checks.
 - Host tests use declared PostgreSQL/hardware/corpus markers where required,
@@ -289,11 +355,11 @@ Procedure and tests:
 2. Preserve raw dual-RX capture throughout. Measure actual CPU/IRQ contention,
    queue age, detector coverage, valid duty, retune latency, overflows, missing
    samples, restoration, and result-to-IQ alignment.
-3. Proposed gate: zero missing samples/overflows, no failed restoration, normal
-   every-visit detector coverage, and no more than 0.5 percentage points of
-   valid-duty regression against a matched detector-disabled baseline. Freeze
-   that regression tolerance before the comparison; investigate material hop
-   latency increases even if mean duty passes.
+3. Revised gate: zero missing samples/overflows, no failed restoration, normal
+   every-visit classifier coverage, and no scanner-duty reduction against a
+   matched classifier-disabled baseline. No positive duty-regression tolerance
+   is authorized. Report measurement uncertainty and the hop-latency
+   distribution; do not hide regressions behind rounded mean percentages.
 4. Test worker failure and host disconnection without changing capture policy.
    Keep controls labelled as advisory GLRT evidence while specificity is unresolved.
 5. Prepare an opt-in release with pinned binaries and a tested rollback. Merge
@@ -315,6 +381,9 @@ The final report must distinguish:
 - Checked-probe coverage versus RF recording duty.
 - Offline replay feasibility versus live streaming qualification.
 
-**First implementation milestone: C0-C2, a parity-tested native GLRT2 replay and
-an honest measured desktop-to-ARM comparison. Do not build live integration
-before that experiment tells us it is worth doing.**
+**Next milestone: qualify whole-dwell classification and implement negotiated
+frame-metadata delivery, with unchanged RF duty.** The native numerical
+baseline, ARM timing comparisons, holdout experiment, and isolated handoff now
+exist. The 300 s repeated-probe runs are a scheduling experiment, not the
+required original block/counter/metadata-arrival replay or live headroom test.
+Finish those checks and versioned C5 integration before deployment or live RF.

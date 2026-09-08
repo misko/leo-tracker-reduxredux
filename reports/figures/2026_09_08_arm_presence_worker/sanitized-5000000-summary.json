@@ -1,0 +1,114 @@
+{
+  "schema": "org.leo.research.presence-worker-paced-verification/v1",
+  "all_outputs_match_desktop": true,
+  "terminal": {
+    "schema": "native-worker-paced-summary-v1",
+    "rate_hz": 5000000,
+    "submitted": 8,
+    "completed": 8,
+    "dropped": 0,
+    "pool_bytes": 1234944,
+    "skipped": 0,
+    "duration_ms": 1008,
+    "elapsed_ms": 1017.42816,
+    "max_occupied_slots": 1,
+    "max_submit_lateness_ms": 0.28787899,
+    "max_copy_ms": 0.0605119467,
+    "scope": "repeated saved probes at 126 ms spacing; not RF or full archived-stream qualification"
+  },
+  "unique_probes": 8,
+  "pack_probe_count": 48,
+  "executions": 8,
+  "timings": {
+    "total_cpu_ms": {
+      "p50": 4.1869625,
+      "p95": 5.471288499999999,
+      "p99": 5.8131041,
+      "max": 5.898558
+    },
+    "total_wall_ms": {
+      "p50": 4.80284947,
+      "p95": 6.067825098999999,
+      "p99": 6.3199513957999995,
+      "max": 6.38298297
+    },
+    "delivery_latency_ms": {
+      "p50": 5.291881505,
+      "p95": 6.593651969,
+      "p99": 6.790985625799999,
+      "max": 6.84031904
+    }
+  },
+  "first_lower_and_upper": [
+    {
+      "schema": "native-worker-paced-result-v1",
+      "sequence": 0,
+      "probe_index": 0,
+      "visit": 160,
+      "rate_hz": 5000000,
+      "device_counter": "1180332178859",
+      "edge": 0,
+      "channel": 1,
+      "status": 0,
+      "total_cpu_ms": 5.898558,
+      "total_wall_ms": 6.38298297,
+      "delivery_latency_ms": 6.84031904,
+      "candidates": [
+        {
+          "epoch": 5674,
+          "fractional_complete": 0,
+          "fractional_offset_samples": 0,
+          "acquired_cfo_hz": -310235.78284779144,
+          "tracking_cfo_hz": 0,
+          "exact_score": 0,
+          "control_score": 0,
+          "margin": 0
+        }
+      ],
+      "nuisance": {
+        "enabled": 1,
+        "applied": 0,
+        "frequency_hz": -96.25683472759921,
+        "spectral_fraction": 0.02934026103960667,
+        "fitted_power_fraction": 0.00021490932374551304
+      }
+    },
+    {
+      "schema": "native-worker-paced-result-v1",
+      "sequence": 4,
+      "probe_index": 4,
+      "visit": 164,
+      "rate_hz": 5000000,
+      "device_counter": "1180334695500",
+      "edge": 1,
+      "channel": 1,
+      "status": 0,
+      "total_cpu_ms": 4.558596,
+      "total_wall_ms": 4.86602604,
+      "delivery_latency_ms": 5.55222595,
+      "candidates": [
+        {
+          "epoch": 1449,
+          "fractional_complete": 1,
+          "fractional_offset_samples": 1.0662828269345663,
+          "acquired_cfo_hz": 84757.62256504926,
+          "tracking_cfo_hz": 128259.04301959471,
+          "exact_score": 0.03382732594400211,
+          "control_score": 0.03358803914764998,
+          "margin": 0.00023928679635212835
+        }
+      ],
+      "nuisance": {
+        "enabled": 1,
+        "applied": 0,
+        "frequency_hz": 0,
+        "spectral_fraction": 0.011671894845859461,
+        "fitted_power_fraction": 0
+      }
+    }
+  ],
+  "limitations": "Repeated saved probes, not independent signal trials or original DMA arrivals. No RF, receive interrupts, dual-RX forwarding, late hop metadata, or network acquisition contention. Worker initialization and input loading excluded from timings.",
+  "raw_sha256": "4fe9cf3fc29c8a6ba0f3b22357928d814573b16c4a9b463a2c97e47e8d06107c",
+  "manifest_sha256": "62e7fd1ea28154705123a4f313a53bb0e432be6cc7e4df551259819c6d07c3d2",
+  "verifier_sha256": "182556cbf08b1e9e6b861a9051161f982b2433f00c03cde4e2ce9aa1be0ce7e4"
+}

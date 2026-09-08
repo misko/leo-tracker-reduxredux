@@ -1,0 +1,125 @@
+{
+  "schema": "org.leo.research.arm-presence-holdout-freeze/v1",
+  "protocol": {
+    "schema": "org.leo.research.arm-presence-holdout/v1",
+    "purpose": "First evaluation of the frozen differential/tone detector on four previously unused complete scans, including a six-window tiling of each selected 120 ms visit. Numerical reference agreement is not independent Starlink truth.",
+    "detector_commit": "4efa904f",
+    "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+    "receiver": 1,
+    "sessions": [
+      {
+        "session_id": "scan-hop-43cc401e05cbe425",
+        "rate_hz": 5000000
+      },
+      {
+        "session_id": "scan-hop-2c7a4d21e9d2a576",
+        "rate_hz": 2500000
+      },
+      {
+        "session_id": "scan-hop-db578e8636677ae0",
+        "rate_hz": 5000000
+      },
+      {
+        "session_id": "scan-hop-228b5ad75bb549f3",
+        "rate_hz": 2500000
+      }
+    ],
+    "excluded_previously_examined_sessions": [
+      "scan-hop-a5018b64a98f25e7",
+      "scan-hop-0cff88ddaeec79f2",
+      "scan-hop-6762d7b8fced3bfc",
+      "scan-hop-bf8e9ccbb5952704"
+    ],
+    "selection_basis": "Four newest complete qualified published scans in the read-only scanner history at selection time, chosen from capture metadata only. No quality scores or IQ were inspected for selection.",
+    "sweeps": [
+      20,
+      140,
+      260
+    ],
+    "targets_per_sweep": 8,
+    "probe_offsets_ms": [
+      0,
+      20,
+      40,
+      60,
+      80,
+      100
+    ],
+    "probe_duration_ms": 20,
+    "reference_candidates": 8,
+    "reference_margin": 0.025,
+    "primary_check_offsets_ms": [
+      0
+    ],
+    "comparison_check_offsets_ms": [
+      [
+        0,
+        40,
+        100
+      ],
+      [
+        0,
+        20,
+        40,
+        60,
+        80,
+        100
+      ]
+    ],
+    "success_interpretation": "Report first-window probe recall and association separately from visit-level evidence anywhere in the six-window tiling. Do not retune thresholds on this cohort, classify reference-negative RF as absent, or call six-window timing coverage a continuous detector.",
+    "frozen_before_scores": true
+  },
+  "protocol_sha256": "61855e313eba598e27f09daa1932c34973cd80f38e87da66cf80609a8c93efb7",
+  "detector_protocol_sha256": "4e9ad1950b37cb4591c07dc0e0aadf929a6f2ee40f87d23e041776eb4423dd17",
+  "source_manifests": {
+    "scan-hop-43cc401e05cbe425": "sha256:8abc3728635da02f197fb16c8ac295772b62e83a5865e8cc03837bddce38628e",
+    "scan-hop-2c7a4d21e9d2a576": "sha256:b859cda5fb7a6364852962af62a351ce953088b9b4b2715d7d2fdb90a49d2abd",
+    "scan-hop-db578e8636677ae0": "sha256:c9c18f0a6f1485e9e3f4b8b7ef1ba81eb3f929a5d1b34bb9dab869a947fc5228",
+    "scan-hop-228b5ad75bb549f3": "sha256:cc67baea42f7214e62f74c1d7072072f1738cda207d7574009bb35107c9893af"
+  },
+  "numerical_sources": {
+    "src/leo/analysis/starlink/__init__.py": "5ed24f9d4fe46b4c52fabe9c5fefe7e667ea69da1b15d9863b7772650980c35c",
+    "src/leo/analysis/starlink/acceptance.py": "cdeac1c731c271cb4ae2704ff440ba9a455c16a8e93da4a494ceb7e60abb34c1",
+    "src/leo/analysis/starlink/acquisition.py": "05f79fc724ad30c499feda31f8d55994e6ee6621a5af90c8dcf980dedc66f7bc",
+    "src/leo/analysis/starlink/cfo_aliases.py": "c94542f31e5c0c8d76575e28610ec299af91f25ca371251821cf1214d7a18596",
+    "src/leo/analysis/starlink/cfo_dealias.py": "3cc921d2ccf2751b6c65f56e5a4e295bb7200e4439df0afad5cad4768287ce6b",
+    "src/leo/analysis/starlink/corpus.py": "1736c3d8940b0a5a5d490a240f5f778b9b485721e808326e4ea8c97823feda11",
+    "src/leo/analysis/starlink/dwell_doppler.py": "1d9ffef5f198d06d6e504b093a83cd715f403d1c4328bd1bf04b6c7fb369f482",
+    "src/leo/analysis/starlink/fractional_epoch.py": "ae177873aee33dc4efad0e7737fc0cd8f6785dfd9b2c9e698644d3d86b00e3f7",
+    "src/leo/analysis/starlink/frame_phase.py": "61aef53f712e57abb64dfc727b146f1a2dada34e73dd701c50b00722b75214e0",
+    "src/leo/analysis/starlink/glrt64_presentation.py": "a184de7c1514000042aff796db4735bf814e0bd611333370735ccd3fb73a6324",
+    "src/leo/analysis/starlink/kalman_tracking.py": "54c9ee255e3fbb7ded65508156de548e4959fae59eb934ea286407b233b0235a",
+    "src/leo/analysis/starlink/local_doppler.py": "a3a2402c784e6736a5548df01a69fbc93fea2be2d7894d18e064bb06fc3bc31a",
+    "src/leo/analysis/starlink/long_dwell.py": "670d953063c29ad44848fdf24fa7ef255caf20028a34161657702d244050e684",
+    "src/leo/analysis/starlink/multi_target.py": "e36f6ae9158aea3a52ff680255ffb77dfbdf6c66d7e38d564ecf45fb8d445afe",
+    "src/leo/analysis/starlink/phase_doppler.py": "b526b904d61d35ade71823bcafeed86cca81f10cccb33aeb59133bd56d17ed2a",
+    "src/leo/analysis/starlink/pilot_doppler_segments.py": "962b4b1ca700e5eb843b26c6f5bc7d94c923e11b512a07c4ed4bfe8b6f51c43e",
+    "src/leo/analysis/starlink/pilot_methods.py": "c33de1f8ed7b3d8f1f1b7de659d6aa2b110f658338eb2753ae2c5161757a2857",
+    "src/leo/analysis/starlink/pilot_search_geometry.py": "acf7d39a8e27f2f40839838a774b233a69802dc68eb6e2f54e8fecd02d9753b8",
+    "src/leo/analysis/starlink/pnt_kalman.py": "f114b1118a3ec5ced8e0ff9ef21c2514d1725de8dea388515f6cc2a7a9d3b1a3",
+    "src/leo/analysis/starlink/pss_search.py": "28df3fc9c1f4cde8c74295ca83eed21e9ab6a6044d6625aabd81976c97132d1f",
+    "src/leo/analysis/starlink/pss_timing.py": "f46031a519ccb12eea04060155ee1bd4489c87d298d5ac1042cbef81eb772f48",
+    "src/leo/analysis/starlink/seeded_acquisition.py": "a932e98b9617bcf023f72b4eb11ee6da52fae902a1c58836ab44a72dcfd6e80b",
+    "src/leo/analysis/starlink/seeded_alias_em.py": "8add32b1028e4d5603019f458b74babdbf665d43e44060c84f1371ad37154e4a",
+    "src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "src/leo/analysis/starlink/trajectories.py": "0d464fb5c91edea49545e93a340b25354933b8a8b75e0b245315ad6de65729be",
+    "src/leo/analysis/starlink/trajectory_accounting.py": "1df0393d12ca9f8fa96affc84d30780a3bcd1a7426634f722970d8b7a420e1a8",
+    "src/leo/analysis/starlink/trajectory_feedback.py": "2d94ede85e21b8e963d7f403e47ef800a88a001429db03ba6c89e3a75091ea97",
+    "src/leo/analysis/starlink/trusted_acceptance.py": "5cb522e89bac6676b7c3185f34ac7a30b62ff7882398f6020150f12e5ac00e72",
+    "src/leo/analysis/starlink/_native_acquisition.c": "7dd6ad1300dca46e986178ea755cd896819b9bae148072617c32cc80ce8458bf",
+    "src/leo/analysis/starlink/_native_acquisition_grid.inc": "1b67c6dcf6e1310816f202e07356b4334a6dcd64d764462329a60d617139917a",
+    "src/leo/analysis/native_presence/budget.h": "ad68831aaf98974c0e616135485fc6ab630cca50beded1686a93c4739649e76e",
+    "src/leo/analysis/native_presence/ci16_lag.h": "9dc6642506fd9e68c2e7643b2aa2733638c542b0b17d7280fde131c8bae6a39c",
+    "src/leo/analysis/native_presence/coarse_differential.h": "443ea5993ab82e1fb30540f7a4e6d9c04f3a287d982437c6373abdc3faf30068",
+    "src/leo/analysis/native_presence/coarse_fp32.h": "e8b1885ad78cc0be34cf59b1ee6741df6bb92dc87a15458f82e162cc572132b1",
+    "src/leo/analysis/native_presence/coarse_power.h": "0cc2ad32e55d07783bddf71ea69654fba785d6d92d9493c92cb77126ad4f29cd",
+    "src/leo/analysis/native_presence/fft.c": "051a60160720327ea7601d9bb95600d7e93302759769a14fcd86ed65ba5c1f66",
+    "src/leo/analysis/native_presence/fft.h": "951e09cccb036712640f6331e52168319a3f890e8a6f95f4d74f96ee1f2ed188",
+    "src/leo/analysis/native_presence/presence.c": "e813d051ca17689aeb14b495828c664ec4e567f8e159ad208b5a90f4416fdd3c",
+    "src/leo/analysis/native_presence/presence.h": "7481af82adfe663a4b3ec93dec50fb859ecae9521e676e3b22f2bb15ed27533b",
+    "src/leo/analysis/native_presence/tone_nuisance.h": "dabdd40e0387addbae0419a863712ba4fd01b2a72abb89607e0431ff2ea88c8a",
+    "src/leo/analysis/research/arm_presence.py": "7c86c8ee4b8095c01923d47799a4519ab5847ceb4e570015571a2ebe40f054d0",
+    "tools/freeze_native_presence_holdout.py": "4497e690ff685197d144738dd3d825994bc2b751fd9f4a54a9d1d9eadb6dafc8"
+  },
+  "state": "frozen_before_iq_read_or_scoring"
+}

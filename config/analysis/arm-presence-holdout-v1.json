@@ -1,0 +1,25 @@
+{
+  "schema": "org.leo.research.arm-presence-holdout/v1",
+  "purpose": "First evaluation of the frozen differential/tone detector on four previously unused complete scans, including a six-window tiling of each selected 120 ms visit. Numerical reference agreement is not independent Starlink truth.",
+  "detector_commit": "4efa904f",
+  "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+  "receiver": 1,
+  "sessions": [
+    {"session_id": "scan-hop-43cc401e05cbe425", "rate_hz": 5000000},
+    {"session_id": "scan-hop-2c7a4d21e9d2a576", "rate_hz": 2500000},
+    {"session_id": "scan-hop-db578e8636677ae0", "rate_hz": 5000000},
+    {"session_id": "scan-hop-228b5ad75bb549f3", "rate_hz": 2500000}
+  ],
+  "excluded_previously_examined_sessions": ["scan-hop-a5018b64a98f25e7", "scan-hop-0cff88ddaeec79f2", "scan-hop-6762d7b8fced3bfc", "scan-hop-bf8e9ccbb5952704"],
+  "selection_basis": "Four newest complete qualified published scans in the read-only scanner history at selection time, chosen from capture metadata only. No quality scores or IQ were inspected for selection.",
+  "sweeps": [20, 140, 260],
+  "targets_per_sweep": 8,
+  "probe_offsets_ms": [0, 20, 40, 60, 80, 100],
+  "probe_duration_ms": 20,
+  "reference_candidates": 8,
+  "reference_margin": 0.025,
+  "primary_check_offsets_ms": [0],
+  "comparison_check_offsets_ms": [[0, 40, 100], [0, 20, 40, 60, 80, 100]],
+  "success_interpretation": "Report first-window probe recall and association separately from visit-level evidence anywhere in the six-window tiling. Do not retune thresholds on this cohort, classify reference-negative RF as absent, or call six-window timing coverage a continuous detector.",
+  "frozen_before_scores": true
+}
