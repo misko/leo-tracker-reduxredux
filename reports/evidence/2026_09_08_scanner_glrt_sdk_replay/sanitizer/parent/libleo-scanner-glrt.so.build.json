@@ -1,0 +1,42 @@
+{
+  "schema": "org.leo.research.scanner-glrt-port-build/v1",
+  "created_unix_ns": 1788891735126834234,
+  "command": [
+    "/usr/bin/cc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-shared",
+    "-fPIC",
+    "-fsanitize=address,undefined",
+    "-fno-omit-frame-pointer",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence/scanner_glrt.c",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence/scanner_glrt_request.c",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence/pool.c",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence/frame_codec.c",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence/frame_result.c",
+    "-pthread",
+    "-lm",
+    "-o",
+    "/tmp/leo-glrt-sdk-blocks.XtW3os/sanitizer/parent/libleo-scanner-glrt.so"
+  ],
+  "compiler_version": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "compiler_sha256": "b5f1b773a7c733738352000c92a077dc5852a1a2fc6d836b1e411be1e9ec5f88",
+  "sources_sha256": {
+    "src/leo/scanner/native_presence/scanner_glrt.c": "20685d4226075e5158cbfca250900b12f059803bf2805483e1257733571f2118",
+    "src/leo/scanner/native_presence/scanner_glrt_request.c": "49919debd52b98b23c88292a9588061ce7a60c6bb01fbf9007822561509dca63",
+    "src/leo/scanner/native_presence/pool.c": "39751b2c93464b593d43b6f577467399df81671c6fdb3cc0758ef7c80b4d3547",
+    "src/leo/scanner/native_presence/frame_codec.c": "c6c019a9ccc2e1153152d47a1aa2f2e9b18f033633af724b3cf98b9fb4da67ec",
+    "src/leo/scanner/native_presence/frame_result.c": "50f133d6f05fe5cd5d3b8656cd4dbf4cf4bf16a06ac3bcc34cb4f3fa1703dd6d",
+    "src/leo/scanner/native_presence/scanner_glrt.h": "3fc4d576c1b692f7487dc3d49652ff5396a4d637627989fe0e5eb20c65c1c1b9",
+    "src/leo/scanner/native_presence/pool.h": "3cf6bbb38d533821571cea17d3049e590de41e1f1f67458eaa4182a4b4b1b00c",
+    "src/leo/scanner/native_presence/frame_codec.h": "b6244e87f32dc2a73b0c98853fa75b97463e8f31aaeefdf785fb7d8aab0259bc",
+    "src/leo/scanner/native_presence/frame_result.h": "f9cfc22b92f53954c94fd9ca7c34932a68030544754a9005117267451c90db6c",
+    "src/leo/analysis/native_presence/presence.h": "4f3e3dbb24985fcb57b3cb04b1e0474ae21ab8a385c83479e7227cffd2d61cb1",
+    "src/leo/analysis/native_presence/window_rank.h": "43488ef74db2476a93cd0be5dfd9ab407be9d512057662f2033723c72bb4e159",
+    "tools/native_presence.py": "5ffd4f5cb9654b264935a2a3d60adb88684d0db0df6a4483efa464f70fdf5b74"
+  },
+  "binary_sha256": "3229ff8366ccad1e5bb4b8f6dbe07055429b3e5ac1bae41dd99c23dbb535edf4"
+}
