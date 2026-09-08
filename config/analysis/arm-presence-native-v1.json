@@ -1,0 +1,47 @@
+{
+  "schema": "org.leo.research.arm-presence-native-protocol/v1",
+  "base_revision": "e24387b0eedfde687cd8c4fab528c9ac56ec3387",
+  "scope": "single-RX advisory fractional GLRT2; no capture gating",
+  "receiver": 1,
+  "receiver_selection": {
+    "source": "2026_09_07_arm_presence_screen_v2/develop-visits.jsonl only",
+    "rationale": "RX1 has repeated-reference support at both rates; RX0 has none at 2.5 MS/s in development. No held-out result used for selection.",
+    "repeated_reference_visits": {
+      "2500000": {"rx0": 0, "rx1": 14},
+      "5000000": {"rx0": 38, "rx1": 37}
+    }
+  },
+  "sessions": [
+    {"session_id": "scan-hop-0cff88ddaeec79f2", "rate_hz": 2500000},
+    {"session_id": "scan-hop-a5018b64a98f25e7", "rate_hz": 5000000}
+  ],
+  "first_visit": 1200,
+  "visit_count_per_session": 16,
+  "probe_offset_ms": 0,
+  "probe_duration_ms": 20,
+  "candidate_count": 2,
+  "coarse_cfo_min_hz": -400000,
+  "coarse_cfo_max_hz": 400000,
+  "coarse_cfo_step_hz": 80000,
+  "candidate_epoch_separation_samples": 5,
+  "candidate_cfo_separation_hz": 10000,
+  "numerical_tolerances_frozen_before_native_results": {
+    "inventory_epoch_order_and_gate": "exact",
+    "score_atol": 1e-10,
+    "score_rtol": 1e-9,
+    "fractional_offset_atol_samples": 1e-7,
+    "cfo_atol_hz": 0.001,
+    "template_components": "exact complex64"
+  },
+  "tolerance_rationale": "Double-precision algorithmic parity with alternate FFT/summation order; no precision reduction. Stricter 1e-12 kernel tests retained where already established. New tolerances are acceptance limits, not observed errors.",
+  "gaussian_seed": 712340,
+  "tone_seed": 712341,
+  "tone_frequency_hz": 173123,
+  "tone_amplitude": 6,
+  "rates_hz": [2500000, 5000000],
+  "edges": ["lower", "upper"],
+  "target_p99_detector_cpu_ms": 100,
+  "excluded_radio_serial": "104000bac4950008230026001b440a003a",
+  "arm_replay_requires_idle_nonproduction_radio": true,
+  "live_rf_requires_explicit_authorization": true
+}
