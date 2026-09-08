@@ -161,6 +161,40 @@ def test_unknown_variant_fails():
         variant_flags("not-a-variant")
 
 
+def test_support_requires_explicit_variant_and_new_inventory_is_independent():
+    assert variant_flags("amplitude-diverse-supported") == (
+        *variant_flags("amplitude-diverse"),
+        "-DLEO_PRESENCE_ENERGY_SUPPORT=1",
+    )
+    fresh = json.loads(
+        PROTOCOL.with_name("arm-presence-energy-support-challenge-v1.json").read_text()
+    )
+    validate_protocol(fresh)
+    inventory = list(cases(fresh))
+    seeds = [s["seed"] for s in inventory]
+    assert len(seeds) == len(set(seeds)) == fresh["case_count"] == 576
+    assert seeds == list(range(2026098000, 2026098576))
+    assert sum(s["kind"] in NEGATIVE_KINDS for s in inventory) == 256
+    assert sum(s["kind"] == "boundary_pilot" for s in inventory) == 80
+    assert sum(s["kind"] == "pilot" and s["snr_db"] == -6 for s in inventory) == 48
+    assert fresh["optimized_arithmetic"]
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"independent_case_seed_base": True},
+        {"independent_case_seed_base": -1},
+        {"independent_case_seed_base": 2**32 - 1},
+        {"independent_case_seed_base": 1, "case_count": 4097},
+        {"optimized_arithmetic": "true"},
+    ],
+)
+def test_invalid_new_challenge_options_fail(protocol, change):
+    with pytest.raises(ValueError, match="unreviewed"):
+        validate_protocol(protocol | change)
+
+
 @pytest.mark.parametrize(
     "change",
     [

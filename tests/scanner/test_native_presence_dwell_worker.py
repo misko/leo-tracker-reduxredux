@@ -35,6 +35,7 @@ from tools.qualify_presence_dwell_controls import generate
         "diverse",
         "amplitude-diverse",
         "amplitude-diverse-optimized",
+        "amplitude-diverse-optimized-supported",
     ],
 )
 def artifacts(tmp_path_factory, request):
@@ -56,6 +57,8 @@ def artifacts(tmp_path_factory, request):
             "-DLEO_PRESENCE_BOUNDED_MAGNITUDE=1",
             "-DLEO_PRESENCE_CONDITIONED_BLOCK_ROTATION=1",
         )
+    if "supported" in request.param:
+        flags += ("-DLEO_PRESENCE_ENERGY_SUPPORT=1",)
     return build_worker(root / "worker", cflags=flags), build_dwell_presence(
         root / "dwell.so", cflags=flags
     )
