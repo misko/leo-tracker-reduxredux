@@ -1,0 +1,332 @@
+{
+  "schema": "org.leo.research.scanner-glrt-provider-checkpoint/v1",
+  "date": "2026-09-08",
+  "scope": "Synthetic provider and saved algorithm regression tests; no radio access, RF, production service changes or live-duty measurement.",
+  "leo_source_commit": "73141b0f5279733a7baf755660639a1bba087bde",
+  "libiio_source_commit": "af12ce68f8bb3f101c38f0332efe157513367a27",
+  "test_only_algorithm_identity": "1212121212121212121212121212121212121212121212121212121212121212",
+  "test_only_configuration_identity": "3434343434343434343434343434343434343434343434343434343434343434",
+  "configured_identities_are_not_release_hashes": true,
+  "provider_runs": [
+    {
+      "cmd": "/tmp/leo-scanner-glrt-provider.YHI3NP/build/iiod/test_scanner_glrt_provider",
+      "chunk_id": "ba2645",
+      "wall_time_seconds": 0.00000299,
+      "exit_code": 0,
+      "original_token_count": 26,
+      "output": "SPF GLRT provider: both rates, real worker, delayed events, terminal drain and exact-gap tests passed\n"
+    },
+    {
+      "cmd": "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 /tmp/leo-scanner-glrt-provider.YHI3NP/asan/iiod/test_scanner_glrt_provider",
+      "chunk_id": "638166",
+      "wall_time_seconds": 0.086232702,
+      "exit_code": 0,
+      "original_token_count": 26,
+      "output": "SPF GLRT provider: both rates, real worker, delayed events, terminal drain and exact-gap tests passed\n"
+    }
+  ],
+  "c_regressions": [
+    {
+      "name": "test_spf_hop_protocol",
+      "chunk_id": "f2d143",
+      "wall_time_seconds": 0.000003243,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_hop_session",
+      "chunk_id": "c95c6c",
+      "wall_time_seconds": 0.000003158,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_hop_scheduler",
+      "chunk_id": "608bab",
+      "wall_time_seconds": 0.000003169,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_hop_device_userspace",
+      "chunk_id": "b69471",
+      "wall_time_seconds": 0.000002952,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_tandem_session",
+      "chunk_id": "f9a26a",
+      "wall_time_seconds": 0.000003171,
+      "exit_code": 0,
+      "original_token_count": 44,
+      "output": "SPF tandem event sequence gap: expected=4 observed=5 sample=11\nSPF tandem status did not catch up: expected=2 observed=0 attempts=4 epoch=13\nSPF tandem session tests passed\n"
+    },
+    {
+      "name": "test_spf_tandem_metadata",
+      "chunk_id": "a9069e",
+      "wall_time_seconds": 0.000003108,
+      "exit_code": 0,
+      "original_token_count": 9,
+      "output": "SPF tandem metadata tests passed\n"
+    },
+    {
+      "name": "test_spf_buffer_layout",
+      "chunk_id": "1e8d21",
+      "wall_time_seconds": 0.000003158,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_ddr_burst_request",
+      "chunk_id": "d44cdb",
+      "wall_time_seconds": 0.000003193,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_ddr_ring_request",
+      "chunk_id": "fd5ad1",
+      "wall_time_seconds": 0.00000287,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_ddr_ring_status",
+      "chunk_id": "84c3c6",
+      "wall_time_seconds": 0.000003472,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_spf_sampler_coverage",
+      "chunk_id": "d1324c",
+      "wall_time_seconds": 0.000002826,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_ddr_ring_core",
+      "chunk_id": "8057fd",
+      "wall_time_seconds": 0.000003245,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_thread_pool_affinity",
+      "chunk_id": "2cf2e2",
+      "wall_time_seconds": 0.000002874,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "test_metadata_batch_core",
+      "chunk_id": "3c39ec",
+      "wall_time_seconds": 0.000004769,
+      "exit_code": 0,
+      "original_token_count": 7,
+      "output": "metadata batch core: PASS\n"
+    },
+    {
+      "name": "test_buffer_block_lease",
+      "chunk_id": "362fdb",
+      "wall_time_seconds": 0.000003788,
+      "exit_code": 0,
+      "original_token_count": 7,
+      "output": "buffer block leases: PASS\n"
+    },
+    {
+      "name": "test_direct_async_transport",
+      "chunk_id": "32d656",
+      "wall_time_seconds": 0.000002982,
+      "exit_code": 0,
+      "original_token_count": 13,
+      "output": "ERROR: READ LINE: -32\ndirect async transport: PASS\n"
+    }
+  ],
+  "python_regressions": {
+    "leo": {
+      "passed": 249,
+      "elapsed_seconds": 11.24,
+      "files": [
+        "tests/scanner/test_scanner_glrt_port.py",
+        "tests/scanner/test_scanner_glrt_request.py",
+        "tests/scanner/test_glrt_frame_result.py",
+        "tests/scanner/test_glrt_frame_codec.py",
+        "tests/contracts/test_scanner_glrt_frame.py",
+        "tests/radio/test_scanner_glrt_frames.py",
+        "tests/scanner/test_native_presence_dwell_worker.py",
+        "tests/scanner/test_native_presence_pool.py"
+      ]
+    },
+    "libiio_bindings": {
+      "passed": 63,
+      "elapsed_seconds": 0.18,
+      "files": [
+        "bindings/python/tests"
+      ]
+    },
+    "new_sdk_and_request_tests": {
+      "passed": 44,
+      "elapsed_seconds": 4.48
+    }
+  },
+  "separate_server_parser_regression": {
+    "executable": "/tmp/leo-scanner-glrt-provider.YHI3NP/build/iiod/test_metadata_drain_server",
+    "exit_code": 0,
+    "output": "metadata drain parser/client/provider: PASS\n"
+  },
+  "arm": {
+    "sdk_cross_build": "passed",
+    "daemon_and_provider_fixture_cross_build": "passed",
+    "execution_on_radio": false,
+    "firmware_changed": false,
+    "toolchain": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/share/buildroot/toolchainfile.cmake"
+  },
+  "artifact_sha256": {
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/libscanner_glrt_v2.so": "4b0fb217e71347e705e84f3b92871cf7f0ae0b6402e3e05c2e26ceea85208c97",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/libscanner_glrt_asan.so": "3229ff8366ccad1e5bb4b8f6dbe07055429b3e5ac1bae41dd99c23dbb535edf4",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/libscanner_glrt_arm.so": "2b27810943e314b5661770e478efd3aa9ee4ad14d1a96bcc3c60cc4e83cdbafe",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/worker": "b881d4cc1f62c306185ae609681bdb11ef3367ac78157ca7116789e93302887d",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/worker-asan": "a1090af6f2bf054b558000dca2ae63c523acfbe10b53fed75ca3ca2d9d2d2c3b",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/templates-2500000": "35070e0e00ad7d73b10a7c2872086bd186e2912adf40a51679333610014db0bb",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/templates-5000000": "2e71705eef035a2f6f259bf2b4bb1d5abbe42adb67673fc7730c0356f2ff1971",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/build/iiod/iiod": "362534e2175895e2401a58ba342adccb42c7f3383d25e3fc71e98a31482b3e24",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/build/iiod/test_scanner_glrt_provider": "7ad243a3a1e327f5e4c7842d166043f762f9491fe13f8f61db5b544269de516d",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/asan/iiod/test_scanner_glrt_provider": "311222afbefe745190fd9838d5e0c98edbfefe53e69a02cbf53634bbe0ebf48e",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/arm-build/iiod/iiod": "ddf64264f8e2355ca44bf12483ddb634422880b93090e644ee384753a43edd9c",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/arm-build/iiod/test_scanner_glrt_provider": "9a44e35f86e57fdf3a07e257fbbcb0810b3e5c3e24497c8bdb6589f6eb620447",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/disabled-build/iiod/iiod": "7cc306232a3b68bfb6a245bcf85f257313597ec5b08e123b92d3412cfd842874"
+  },
+  "desktop_cmake_args": [
+    "cmake",
+    "-S",
+    "/home/mouse9911/gits/libiio-arm-glrt-frame-integration",
+    "-B",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/build",
+    "-DWITH_USB_BACKEND=OFF",
+    "-DWITH_SERIAL_BACKEND=OFF",
+    "-DWITH_AIO=OFF",
+    "-DWITH_IIOD_USBD=OFF",
+    "-DWITH_IIOD_SERIAL=OFF",
+    "-DWITH_ZSTD=OFF",
+    "-DWITH_TESTS=ON",
+    "-DHAVE_DNS_SD=OFF",
+    "-DCMAKE_BUILD_TYPE=Debug",
+    "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-buffer-metadata.c",
+    "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-hop-device-userspace.c",
+    "-DIIOD_BUFFER_METADATA_INCLUDE_DIRS=/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8;/home/mouse9911/gits/plutosdr-fw/linux/usr/include",
+    "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c",
+    "-DIIOD_SCANNER_GLRT_LIBRARY=/tmp/leo-scanner-glrt-provider.YHI3NP/libscanner_glrt_v2.so",
+    "-DIIOD_SCANNER_GLRT_INCLUDE_DIR=/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence",
+    "-DIIOD_SCANNER_GLRT_WORKER_PATH=/tmp/leo-scanner-glrt-provider.YHI3NP/worker",
+    "-DIIOD_SCANNER_GLRT_TEMPLATES_2500000=/tmp/leo-scanner-glrt-provider.YHI3NP/templates-2500000",
+    "-DIIOD_SCANNER_GLRT_TEMPLATES_5000000=/tmp/leo-scanner-glrt-provider.YHI3NP/templates-5000000",
+    "-DIIOD_SCANNER_GLRT_ALGORITHM_SHA256=1212121212121212121212121212121212121212121212121212121212121212",
+    "-DIIOD_SCANNER_GLRT_CONFIGURATION_SHA256=3434343434343434343434343434343434343434343434343434343434343434"
+  ],
+  "sanitizer_cmake_args": [
+    "cmake",
+    "-S",
+    "/home/mouse9911/gits/libiio-arm-glrt-frame-integration",
+    "-B",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/asan",
+    "-DWITH_USB_BACKEND=OFF",
+    "-DWITH_SERIAL_BACKEND=OFF",
+    "-DWITH_AIO=OFF",
+    "-DWITH_IIOD_USBD=OFF",
+    "-DWITH_IIOD_SERIAL=OFF",
+    "-DWITH_ZSTD=OFF",
+    "-DWITH_TESTS=ON",
+    "-DHAVE_DNS_SD=OFF",
+    "-DCMAKE_BUILD_TYPE=Debug",
+    "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-buffer-metadata.c",
+    "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-hop-device-userspace.c",
+    "-DIIOD_BUFFER_METADATA_INCLUDE_DIRS=/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8;/home/mouse9911/gits/plutosdr-fw/linux/usr/include",
+    "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c",
+    "-DIIOD_SCANNER_GLRT_LIBRARY=/tmp/leo-scanner-glrt-provider.YHI3NP/libscanner_glrt_asan.so",
+    "-DIIOD_SCANNER_GLRT_INCLUDE_DIR=/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence",
+    "-DIIOD_SCANNER_GLRT_WORKER_PATH=/tmp/leo-scanner-glrt-provider.YHI3NP/worker-asan",
+    "-DIIOD_SCANNER_GLRT_TEMPLATES_2500000=/tmp/leo-scanner-glrt-provider.YHI3NP/templates-2500000",
+    "-DIIOD_SCANNER_GLRT_TEMPLATES_5000000=/tmp/leo-scanner-glrt-provider.YHI3NP/templates-5000000",
+    "-DIIOD_SCANNER_GLRT_ALGORITHM_SHA256=1212121212121212121212121212121212121212121212121212121212121212",
+    "-DIIOD_SCANNER_GLRT_CONFIGURATION_SHA256=3434343434343434343434343434343434343434343434343434343434343434",
+    "-DCMAKE_C_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer",
+    "-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined",
+    "-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address,undefined"
+  ],
+  "arm_cmake_args": [
+    "cmake",
+    "-S",
+    "/home/mouse9911/gits/libiio-arm-glrt-frame-integration",
+    "-B",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/arm-build",
+    "-DWITH_USB_BACKEND=OFF",
+    "-DWITH_SERIAL_BACKEND=OFF",
+    "-DWITH_AIO=OFF",
+    "-DWITH_IIOD_USBD=OFF",
+    "-DWITH_IIOD_SERIAL=OFF",
+    "-DWITH_ZSTD=OFF",
+    "-DWITH_TESTS=ON",
+    "-DHAVE_DNS_SD=OFF",
+    "-DCMAKE_BUILD_TYPE=Debug",
+    "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-buffer-metadata.c",
+    "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-hop-device-userspace.c",
+    "-DIIOD_BUFFER_METADATA_INCLUDE_DIRS=/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8;/home/mouse9911/gits/plutosdr-fw/linux/usr/include",
+    "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c",
+    "-DIIOD_SCANNER_GLRT_LIBRARY=/tmp/leo-scanner-glrt-provider.YHI3NP/libscanner_glrt_arm.so",
+    "-DIIOD_SCANNER_GLRT_INCLUDE_DIR=/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/scanner/native_presence",
+    "-DIIOD_SCANNER_GLRT_WORKER_PATH=/tmp/leo-scanner-glrt-provider.YHI3NP/worker",
+    "-DIIOD_SCANNER_GLRT_TEMPLATES_2500000=/tmp/leo-scanner-glrt-provider.YHI3NP/templates-2500000",
+    "-DIIOD_SCANNER_GLRT_TEMPLATES_5000000=/tmp/leo-scanner-glrt-provider.YHI3NP/templates-5000000",
+    "-DIIOD_SCANNER_GLRT_ALGORITHM_SHA256=1212121212121212121212121212121212121212121212121212121212121212",
+    "-DIIOD_SCANNER_GLRT_CONFIGURATION_SHA256=3434343434343434343434343434343434343434343434343434343434343434",
+    "-DCMAKE_TOOLCHAIN_FILE=/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/share/buildroot/toolchainfile.cmake",
+    "-DCMAKE_SYSTEM_NAME=Linux",
+    "-DCMAKE_BUILD_TYPE=Release"
+  ],
+  "disabled_cmake_args": [
+    "cmake",
+    "-S",
+    "/home/mouse9911/gits/libiio-arm-glrt-frame-integration",
+    "-B",
+    "/tmp/leo-scanner-glrt-provider.YHI3NP/disabled-build",
+    "-DWITH_USB_BACKEND=OFF",
+    "-DWITH_SERIAL_BACKEND=OFF",
+    "-DWITH_AIO=OFF",
+    "-DWITH_IIOD_USBD=OFF",
+    "-DWITH_IIOD_SERIAL=OFF",
+    "-DWITH_ZSTD=OFF",
+    "-DWITH_TESTS=ON",
+    "-DHAVE_DNS_SD=OFF",
+    "-DCMAKE_BUILD_TYPE=Debug",
+    "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-buffer-metadata.c",
+    "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-hop-device-userspace.c",
+    "-DIIOD_BUFFER_METADATA_INCLUDE_DIRS=/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8;/home/mouse9911/gits/plutosdr-fw/linux/usr/include",
+    "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-arm-glrt-frame-integration/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c"
+  ],
+  "open_gates": [
+    "production host negotiation, decoding and final drain integration",
+    "combined real provider/network/client tests",
+    "original block/hop-metadata-arrival 300s replay",
+    "runtime artifact pinning and deployment packaging",
+    "5MS/s p99 CPU <=100ms and startup-tail resolution",
+    "independent classifier quality and whole-dwell absence validation",
+    "explicitly authorized same-duty live shadow verification and release review"
+  ],
+  "retained_failures": [
+    "Initial fixture compile mismatched const qualifiers on mocked register I/O; corrected without changing production IIO signatures.",
+    "Review found FINAL could overtake terminal IQ between feed and frame; added hop-locked carrier reservation and atomic drain-ready gate plus completion/cancellation tests."
+  ]
+}
