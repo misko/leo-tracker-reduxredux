@@ -36,6 +36,12 @@
 #if LEO_PRESENCE_BOUNDED_MAGNITUDE != 0 && LEO_PRESENCE_BOUNDED_MAGNITUDE != 1
 #error "LEO_PRESENCE_BOUNDED_MAGNITUDE must be 0 or 1"
 #endif
+#ifndef LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY
+#define LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY 0
+#endif
+#if LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY != 0 && LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY != 1
+#error "LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY must be 0 or 1"
+#endif
 
 /* The exact existing acquisition kernel, with platform-independent C types. */
 typedef double complex npy_cdouble;
@@ -516,7 +522,7 @@ static double normalized_score(leo_presence_workspace *w, size_t count, int epoc
 static double sinc(double x) { return x == 0 ? 1 : sin(TAU*0.5*x)/(TAU*0.5*x); }
 
 static int glrt(leo_presence_workspace *w, size_t count, int epoch,
-    double cfo, double offset, int frame_limit, double result[3])
+    double cfo, double offset, int frame_limit, int final_scoring, double result[3])
 {
     if (epoch < 0 || epoch >= (int)w->n || !isfinite(cfo) || fabs(cfo)>400000 ||
         !isfinite(offset) || fabs(offset)>2)
@@ -525,28 +531,44 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
     int integer = fabs(offset-nearbyint(offset)) <= 1e-12;
     int first = symbol_start(w,2);
     int stop = symbol_start(w,66);
+    /* Development-only specificity experiment: retain 64 contiguous symbols
+     * per frame, alternating early/late known regions during final scoring.
+     * The two-frame epoch lattice is unchanged. No extra FFT or confirmation. */
+    const int diverse=LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY && final_scoring;
     /* Rotation depends on local sample position, never on the frame number.
      * Keep the original arithmetic and reuse it across every supporting frame. */
 #if LEO_PRESENCE_PRECOMPUTE
     double complex *rotations=w->glrt_rotations;
     if (!w->have_rotations || w->rotation_cfo!=cfo || w->rotation_offset!=offset) {
-        for (int k=first; k<stop; ++k)
+        w->rotation_cfo=cfo; w->rotation_offset=offset; w->have_rotations=0;
+    }
+    for (int region=0; region<=diverse; ++region) if (!(w->have_rotations&(1<<region))) {
+        for (int k=symbol_start(w,2+150*region); k<symbol_start(w,66+150*region); ++k)
             rotations[k]=rotate(-TAU*cfo*(k+offset)/w->rate);
-        w->rotation_cfo=cfo; w->rotation_offset=offset; w->have_rotations=1;
+        w->have_rotations|=1<<region;
     }
 #else
     double complex *rotations=w->weighted;
-    for (int k=first; k<stop; ++k)
-        rotations[k]=rotate(-TAU*cfo*(k+offset)/w->rate);
+    for (int region=0; region<=diverse; ++region)
+        for (int k=symbol_start(w,2+150*region); k<symbol_start(w,66+150*region); ++k)
+            rotations[k]=rotate(-TAU*cfo*(k+offset)/w->rate);
 #endif
     double previous_fraction = NAN, weights[16], normalizer = 0;
     for (int frame = 0; frame < frame_limit; ++frame) {
         int start = frame_start(w, epoch, frame);
+        int first_symbol=diverse && (frame&1) ? 152 : 2;
+        first=symbol_start(w,first_symbol);
+        stop=symbol_start(w,first_symbol+64);
+        /* Do not discard a supporting terminal frame that still fits the
+         * original early region, including its fractional interpolation tail. */
+        if (first_symbol!=2 && start+stop-1+offset >= (int)count-(integer ? 0 : 8)) {
+            first_symbol=2; first=symbol_start(w,2); stop=symbol_start(w,66);
+        }
         if (start+stop-1+offset >= (double)count-(integer ? 0 : 8)) break;
         /* Workspace.select stops at the first unsupported row. */
         if (start+first+offset < (integer ? 0 : 7)) break;
         double complex correlations[2][64] = {{0}};
-        for (int symbol = 2; symbol < 66; ++symbol) {
+        for (int symbol = first_symbol; symbol < first_symbol+64; ++symbol) {
             int begin = symbol_start(w,symbol);
             int end = symbol_start(w,symbol+1);
             for (int k = begin; k < end; ++k) {
@@ -575,8 +597,8 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
                 }
                 /* Omit only the common unit-magnitude frame phase. */
                 double complex corrected = received*rotations[k];
-                correlations[0][symbol-2] += conj(w->exact[k])*corrected;
-                correlations[1][symbol-2] += conj(w->control[k])*corrected;
+                correlations[0][symbol-first_symbol] += conj(w->exact[k])*corrected;
+                correlations[1][symbol-first_symbol] += conj(w->control[k])*corrected;
             }
         }
         for (int which = 0; which < 2; ++which) {
@@ -616,7 +638,7 @@ int leo_presence_glrt(leo_presence_workspace *w, const leo_presence_complex *x,
     size_t count, int32_t epoch, double cfo, double offset, double result[3])
 {
     if (!result || ingest(w, x, count)) return -1;
-    return glrt(w, count, epoch, cfo, offset, 16, result);
+    return glrt(w, count, epoch, cfo, offset, 16, 1, result);
 }
 
 static int candidate_before(const leo_presence_candidate *a, const leo_presence_candidate *b)
@@ -765,7 +787,7 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
         double stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
         for (int k=0; k<5; ++k) {
             int epoch=(c->epoch+k-2+(int)w->n)%(int)w->n; double score[3];
-            glrt(w,count,epoch,c->acquired_cfo_hz,0,LEO_PRESENCE_EPOCH_FRAMES,score);
+            glrt(w,count,epoch,c->acquired_cfo_hz,0,LEO_PRESENCE_EPOCH_FRAMES,0,score);
             c->exact_grid[k]=score[0]; c->control_grid[k]=score[1];
             if (score[0]>c->exact_grid[best]) best=k;
         }
@@ -778,7 +800,7 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
         if (!isfinite(curve) || curve >= -DBL_EPSILON) continue;
         double offset=best-2+fmax(-0.5,fmin(0.5,0.5*(a-d)/curve));
         stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
-        double score[3]; glrt(w,count,c->epoch,c->acquired_cfo_hz,offset,16,score);
+        double score[3]; glrt(w,count,c->epoch,c->acquired_cfo_hz,offset,16,1,score);
         w->profile.final_confirmation_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         c->fractional_complete=1; c->fractional_offset_samples=offset;
         c->exact_score=score[0]; c->control_score=score[1]; c->margin=score[0]-score[1];
