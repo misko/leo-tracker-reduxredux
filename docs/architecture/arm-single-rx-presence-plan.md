@@ -1,5 +1,17 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
+Latest scientific checkpoint: [decision challenge and RF diagnosis](../../reports/2026_09_08_arm_presence_decision_checkpoint.md).
+The opt-in amplitude-weighted ranker recovers 48/48 strong-tone injected cases
+versus 13/48, with no extra fold, FFT or confirmation. It adds no saved-RF
+reference associations and is not promoted. The new 64-dwell cohort has 35
+reference-positive dwells: baseline same-slice association is 18/35, while a
+separate within-dwell comparison is 26/35. The 30 symbol-rolled control flags
+are timing ambiguities, not valid hard negatives; the original failed gate is
+preserved. Actual nonpilot controls show 0/224 flags at the proposed threshold,
+but short bursts remain poorly covered. 442 focused tests and 24 instrumented
+full-dwell executions pass; the userspace variant cross-builds for ARM. No new
+ARM runtime, absence, live-duty, deployment or remote-merge claim follows.
+
 Latest combined-network checkpoint: [actual provider-to-host network integration](../../reports/2026_09_08_scanner_glrt_network_checkpoint.md).
 The real provider/worker, iiOD parser, TCP/libiio, strict raw reader and concrete
 production host backend now pass full 300-second accelerated counter spans at
@@ -43,7 +55,7 @@ dwell counters and separate fractional offsets, but actual LIBIIO negotiation,
 provider attachment/draining and live same-duty qualification remain pending. No
 classification policy is enabled and nothing has been deployed.
 
-Scientific quality remains as recorded in the [screen-quality checkpoint](../../reports/2026_09_08_arm_presence_screen_quality_checkpoint.md).
+Earlier scientific quality is recorded in the [screen-quality checkpoint](../../reports/2026_09_08_arm_presence_screen_quality_checkpoint.md).
 The shared-fold hybrid detects 192/192 strong injected-pilot controls and flags
 30/35 development reference-positive dwells, with 22/35 timing/CFO associations.
 It still flags 5/80 negative controls and costs about 110 ms p99 CPU at 5 MS/s
