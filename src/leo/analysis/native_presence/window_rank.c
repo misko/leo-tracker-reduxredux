@@ -12,6 +12,12 @@
 #ifndef LEO_PRESENCE_RANK_HYBRID_PROJECTION
 #define LEO_PRESENCE_RANK_HYBRID_PROJECTION 0
 #endif
+#ifndef LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED
+#define LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED 0
+#endif
+#if LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED != 0 && LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED != 1
+#error "LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED must be 0 or 1"
+#endif
 #if LEO_PRESENCE_RANK_AREA_PROJECTION != 0 && LEO_PRESENCE_RANK_AREA_PROJECTION != 1
 #error "LEO_PRESENCE_RANK_AREA_PROJECTION must be 0 or 1"
 #endif
@@ -53,6 +59,9 @@ struct leo_presence_rank_workspace {
     size_t group_count;
     leo_presence_rank_screens screens;
     int have_screens;
+#if LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED
+    double projection_magnitude;
+#endif
 };
 
 static double rank_clock(clockid_t id)
@@ -124,6 +133,12 @@ static int project(leo_presence_rank_workspace *w, int area)
     if (energy==0) { memset(w->input,0,w->bins*sizeof(*w->input)); return 0; }
     float scale=(float)(1/sqrt(energy));
     if (!isfinite(energy) || !isfinite(scale) || scale==0) return -1;
+#if LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED
+    /* Experimental ranking statistic: restore projection amplitude AFTER
+     * normalized correlation. Reuse existing fold/energy/FFTs; no additional
+     * IQ traversal or GLRT confirmation. The default statistic is unchanged. */
+    w->projection_magnitude=sqrt(energy);
+#endif
     for (size_t k=0; k<w->bins; ++k) w->input[k]*=scale;
     return 1;
 }
@@ -310,6 +325,9 @@ static int correlate(leo_presence_rank_workspace *w, size_t projection,
                 if (score>value) { value=score; best=k; }
             }
             out->score=sqrt(value)/w->bins;
+#if LEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED
+            out->score*=w->projection_magnitude;
+#endif
             out->epoch=(uint32_t)nearbyint((double)best*w->n/w->bins)%w->n;
         }
     return 0;
