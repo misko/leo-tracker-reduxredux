@@ -1,0 +1,49 @@
+{
+  "schema": "org.leo.research.presence-window-rank-execution/v1",
+  "recorded_utc": "2026-09-08 07:52:52 UTC",
+  "status": "saved_iq_numerical_and_timing_checkpoint_not_streaming_qualification",
+  "remote_main_checked": "29be8492f5f2efb439a9df1e6086224714e95506",
+  "frame_foundation_commit": "fec7ecfc",
+  "target": {
+    "serial": "104000b29905000e17000800065934759d",
+    "lan_address": "192.168.1.15",
+    "transport": "SSH with existing pinned known-hosts identity",
+    "temporary_directory": "/tmp/leo-presence-rank.CpFcLQ",
+    "excluded_serial_not_accessed": "104000bac4950008230026001b440a003a",
+    "optimized_run": "50 invocations, each checking serial and both receive-buffer enable flags before and after; all passed",
+    "scalar_run_caveat": "800 rows completed, then final combined guard returned status 1 without diagnostics; subsequent read-only checks found expected serial, both buffers disabled, no replay process. Do not classify that run as clean-idle qualification."
+  },
+  "optimized_replay": {
+    "command_shape": "nice -n 19 rank-arm-neon INPUT.rank BINS 20",
+    "bins": [512, 1024, 2048, 4096, 8192],
+    "recorded_inputs": 8,
+    "ci16_extrema_inputs": 2,
+    "executions": 1000,
+    "numerically_matched": 1000,
+    "maximum_score_difference": 0.0,
+    "binary_sha256": "d945873d16b2ebdc28923b777177b5ae24852030ba4d756c4f938be53aaa717c",
+    "remote_and_local_output_sha256": "d4a12d6f38e8b4e0f79c7ccc21111f06ee0ef754bc70960d39ae5c803043bf5a",
+    "desktop_output_sha256": "ceecb48aac50909b032dbfd1e6c2cb51340e0a78beb67a3c5b9d7db502f2219c",
+    "verified_summary_sha256": "9a61581cc9232a726eb7bcdfa55bab56076bdcf43f5822789398db33b772165a",
+    "extrema_input_sha256": {
+      "2500000": "1d8bb7737a6f8b39735e953be40659bc0b858f5e5453480860852cee044ef57e",
+      "5000000": "4831b09c775be9a4dbf52a9203892c76f50c5e6d2f1f243472227ee83da3672e"
+    },
+    "extrema_generator": "numpy.default_rng(127), sequential rate order 2500000 then 5000000, choice([-32768,32767] as int16), shape=(rate*120//1000,2), upper edge, counter=10000000000000037",
+    "limits": {"wall_seconds": 30, "cpu_seconds": 25, "address_space_mib": 64},
+    "steady_state_timing_excludes": ["input loading", "template preparation", "workspace allocation", "IQ collection", "GLRT confirmation", "IIO forwarding"]
+  },
+  "tests": {
+    "focused_suite_passed": 640,
+    "final_screen_tool_tests_passed": 66,
+    "frame_codec_host_tests_passed": 74,
+    "frame_codec_arm_cross_compile": "passed with -std=c11 -O3 -Wall -Wextra -Werror",
+    "sanitizers": "50 complete 120ms shared-library screens passed ASan/UBSan; leak checking disabled for the embedding Python runtime; not an ARM timing result"
+  },
+  "rf_collection": false,
+  "production_deployment": false,
+  "firmware_fpga_kernel_changes": false,
+  "duty_preservation_verified": false,
+  "whole_dwell_classifier_qualified": false,
+  "installed_libiio_integration": false
+}
