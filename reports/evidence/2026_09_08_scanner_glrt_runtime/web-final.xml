@@ -1,0 +1,693 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="104" failures="0" errors="0" time="2.975004348">
+    <testsuite name="src/App.test.tsx" timestamp="2026-09-08T15:30:43.723Z" hostname="gauss" tests="13" failures="0" errors="0" skipped="0" time="1.562249106">
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; stops and starts capture with explicit accessible controls" time="0.155916657">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; queues a new analysis while retaining the current result" time="0.229333004">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; shows exactly one captured setup table for a single-radio recording" time="0.151685977">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; loudly reports capture continuity gaps and shows the radio count" time="0.149897704">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; does not claim legacy host-indexed IQ is counter-contiguous" time="0.151351709">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; loudly reports counter gaps and overflow on a queue-rejected refill" time="0.142287781">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; sends filters through the read query" time="0.143121306">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; shows bounded active and queued work with recording and radio identity" time="0.033117667">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; shows scanner history and selects an exact report" time="0.151607158">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; opens sealed long-scan coverage, GLRT, and CFO artifacts" time="0.073083388">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; loudly exposes an immutable all-target scanner capture failure" time="0.021161143">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; does not misclassify an attested no-signal scan as capture failure" time="0.02173822">
+        </testcase>
+        <testcase classname="src/App.test.tsx" name="Observation Console &gt; keeps current-run stage completion collapsed after removing legacy scientific panels" time="0.136770299">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/ScannerGlrtPanel.test.tsx" timestamp="2026-09-08T15:30:43.724Z" hostname="gauss" tests="21" failures="0" errors="0" skipped="0" time="0.285243138">
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; shows unqualified results independently from delivery, duty and exact epoch" time="0.056961627">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; treats missing history as unknown, not a negative detection" time="0.008214137">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; shows API failure without declaring the recording failed" time="0.045803645">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; shows a durable detector failure without inventing rows or absence" time="0.009266155">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; paginates a bounded result inventory" time="0.084768167">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; discards an old session response even when fetch ignores cancellation" time="0.006954898">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; retains partial-delivery failures explicitly" time="0.005279255">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; never renders rounded counters or unqualified positive claims" time="0.001693441">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; does not overlap slow polls and cancels on unmount" time="0.00577365">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;verdict&quot;:&quot;unknown-status&quot;}" time="0.004789675">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;exact_score&quot;:null}" time="0.004141418">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;margin&quot;:&quot;0.19&quot;}" time="0.006425151">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;cpu_ms&quot;:-1}" time="0.005058516">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;rate_hz&quot;:0}" time="0.005838806">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;channel&quot;:5}" time="0.004392674">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;edge&quot;:&quot;other&quot;}" time="0.004312585">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;search_window_mask&quot;:64}" time="0.004015523">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;reason&quot;:null}" time="0.004205008">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;confirmation_end&quot;:&quot;1&quot;}" time="0.004163386">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;cfo_hz&quot;:null}" time="0.007118324">
+        </testcase>
+        <testcase classname="src/ScannerGlrtPanel.test.tsx" name="radio-side GLRT &gt; contains malformed measurements inside the GLRT panel: {&quot;fractional_offset_samples&quot;:3}" time="0.004367483">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/SkyView.test.tsx" timestamp="2026-09-08T15:30:43.726Z" hostname="gauss" tests="18" failures="0" errors="0" skipped="0" time="0.418632588">
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; shows the element-set provenance rather than presenting the sky anonymously" time="0.098455118">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; reports how many objects are drawn and that the rest are not" time="0.020936661">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; states that the view is predicted, not observed" time="0.017192521">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; centres a 120 second slider on the anchor and moves the displayed instant" time="0.018987349">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; refuses an unparsable anchor instead of silently keeping the old one" time="0.016433908">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; requires a position before it will look up from one" time="0.045834551">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; rejects an out of range latitude" time="0.014839599">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; switches to the sky view for a chosen reviewed site" time="0.025681863">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; clamps to the sampled window rather than extrapolating past it" time="0.023972613">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; draws only objects above the mask and lists them highest first" time="0.017922869">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; lists full-window predicted Doppler rates at the CH1 and CH8 centers" time="0.012901363">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; puts the zenith at the centre of the chart" time="0.015786405">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; draws full-window trajectories and shows orbit and Doppler after selection" time="0.033320289">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; compares the latest unique TLE entries with the record used by the view" time="0.031580801">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; reports an unavailable archive rather than an empty sky" time="0.008928137">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky interface &gt; says so when no snapshot has been collected" time="0.003795342">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky provenance &gt; names the snapshot the view used, not the newest in the archive" time="0.004873209">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/SkyView.test.tsx" name="Sky provenance &gt; reports the object count of the snapshot it drew from" time="0.005761185">
+            <system-err>
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16389:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at getContext (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16360:18)
+    at new WebGLRenderer (file:///home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/three/build/three.module.js:16393:11)
+    at createGlobeScene (/home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:811:16)
+    at /home/mouse9911/gits/leo-tracker-arm-presence/web/src/SkyView.tsx:367:21
+    at Object.react_stack_bottom_frame (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (/home/mouse9911/gits/leo-tracker-arm-presence/web/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29) undefined
+THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context.
+
+            </system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/StandardAnalysis.test.tsx" timestamp="2026-09-08T15:30:43.728Z" hostname="gauss" tests="26" failures="0" errors="0" skipped="0" time="0.561700051">
+        <testcase classname="src/StandardAnalysis.test.tsx" name="renders native Current and registered PNGs without a waterfall cell table" time="0.23214581">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="renders mixed 2.5/5 Current with sealed same-channel RF passbands and paired PNGs" time="0.031472325">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="renders the complete production V5 hierarchy/detail with its V6 PNG inventory" time="0.023337605">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="renders the production V6 2.5 + 25 MS/s hierarchy with its V9 PNG inventory" time="0.018500038">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="renders the V7 automatic 2.5 MS/s selection without claiming wideband analysis" time="0.020080776">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="renders every registered PNG for production V5 detail with a V7 inventory" time="0.01983591">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="renders the additive candidate Doppler diagnostic from a V8 inventory" time="0.015717872">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="accepts exact production dwell geometry both_2p5" time="0.000828024">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="accepts exact production dwell geometry both_5" time="0.000478234">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="accepts exact production dwell geometry mixed_2p5_5" time="0.000332143">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="accepts exact production dwell geometry mixed_2p5_10" time="0.000296434">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="accepts exact production dwell geometry mixed_2p5_15" time="0.000242038">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="accepts exact production dwell geometry mixed_2p5_20" time="0.000234473">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="rejects production V5 crossed radio order" time="0.000695875">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="rejects production V5 wrong high-rate receiver geometry" time="0.000237667">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="rejects production V5 missing authority digest" time="0.000215157">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="accepts additive phase, Doppler, epoch, and paired comparison inventories" time="0.001704407">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="rejects mixed Current when sealed RF bandwidth does not match its native sample rate" time="0.000294187">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="keeps both radio subjects reachable beside all paths and the paired subject" time="0.051605973">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="strictly rejects crossed V3-only fields and measured values in a gap tile" time="0.000888489">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="rejects crossed eligibility reason truth before rendering subjects" time="0.004590975">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="rejects current subjects carrying stale-coded reasons" time="0.00341061">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="shows four independent receiver tabs plus a combined PNG gallery" time="0.080072673">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="uses only the independent Research API and PNG namespace on the Research tab" time="0.011192503">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="keeps research-only alternate lines out of the Standard tables while showing their PNG" time="0.019341158">
+        </testcase>
+        <testcase classname="src/StandardAnalysis.test.tsx" name="shows original beside a widened upper-edge investigation for its exact path" time="0.022499531">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/TleView.test.tsx" timestamp="2026-09-08T15:30:43.729Z" hostname="gauss" tests="2" failures="0" errors="0" skipped="0" time="0.129897253">
+        <testcase classname="src/TleView.test.tsx" name="TLE archive &gt; lists every local snapshot with update time, coverage and source" time="0.11465292">
+        </testcase>
+        <testcase classname="src/TleView.test.tsx" name="TLE archive &gt; reports archive unavailability instead of rendering an empty table" time="0.014053729">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/sky-interaction.test.ts" timestamp="2026-09-08T15:30:43.729Z" hostname="gauss" tests="2" failures="0" errors="0" skipped="0" time="0.004262732">
+        <testcase classname="src/sky-interaction.test.ts" name="rotateGlobe &gt; rotates around both axes from a pointer drag" time="0.002456229">
+        </testcase>
+        <testcase classname="src/sky-interaction.test.ts" name="rotateGlobe &gt; keeps vertical rotation away from an upside-down camera" time="0.000487659">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/sky-interpolate.test.ts" timestamp="2026-09-08T15:30:43.729Z" hostname="gauss" tests="22" failures="0" errors="0" skipped="0" time="0.01301948">
+        <testcase classname="src/sky-interpolate.test.ts" name="locateSegment &gt; clamps outside the sampled span rather than extrapolating" time="0.00153441">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="locateSegment &gt; finds the containing segment and the fraction along it" time="0.000374561">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="locateSegment &gt; refuses a span it cannot interpolate" time="0.000720452">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateTrack &gt; passes exactly through every knot" time="0.000655239">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateTrack &gt; reproduces a straight line exactly between knots" time="0.000183259">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateTrack &gt; follows a curve more closely than straight segments do" time="0.000247281">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateTrack &gt; applies the quantisation scale" time="0.000135275">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateTrack &gt; rejects a track that does not cover the declared knots" time="0.000183069">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateAzimuth &gt; crosses north the short way" time="0.000244286">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateAzimuth &gt; crosses north the short way in the other direction" time="0.000109191">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateAzimuth &gt; always returns a compass bearing" time="0.000243557">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateAzimuth &gt; interpolates an ordinary span linearly" time="0.000079761">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateSeries &gt; blends linearly between knots" time="0.000130291">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="domeProjection &gt; puts the zenith at the centre and the horizon on the unit circle" time="0.000216484">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="domeProjection &gt; places north up and east to the right" time="0.000164652">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="domeProjection &gt; clamps below the horizon rather than escaping the disc" time="0.000158508">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateHorizonTrack &gt; preserves every published horizon knot" time="0.000880563">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateHorizonTrack &gt; projects exact zenith to a finite centre point" time="0.00047987">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateHorizonTrack &gt; draws an overhead pass straight through the centre without a hook" time="0.001946905">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="interpolateHorizonTrack &gt; keeps a near-overhead pass smooth rather than curling around zenith" time="0.001785363">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="domeTrackPaths &gt; draws a dense 120-second trajectory and handles the north wrap" time="0.000440368">
+        </testcase>
+        <testcase classname="src/sky-interpolate.test.ts" name="domeTrackPaths &gt; clips portions below the selected horizon mask" time="0.000243295">
+        </testcase>
+    </testsuite>
+</testsuites>
