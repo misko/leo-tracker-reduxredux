@@ -465,9 +465,12 @@ The final report must distinguish:
 - Checked-probe coverage versus RF recording duty.
 - Offline replay feasibility versus live streaming qualification.
 
-**Next milestone: qualify whole-dwell classification and implement negotiated
-frame-metadata delivery, with unchanged RF duty.** The native numerical
-baseline, ARM timing comparisons, holdout experiment, and isolated handoff now
-exist. The 300 s repeated-probe runs are a scheduling experiment, not the
-required original block/counter/metadata-arrival replay or live headroom test.
-Finish those checks and versioned C5 integration before deployment or live RF.
+**Next milestone: qualify whole-dwell classification and unchanged RF duty.**
+The native numerical baseline, ARM comparisons, isolated handoff, negotiated
+frame delivery and source-bound post-capture runtime/UI publication now exist.
+See the [current release checkpoints](scanner-glrt-release-checkpoints.md) and
+[runtime verification](../../reports/2026_09_08_scanner_glrt_runtime_checkpoint.md)
+for the precise tested scope. The 300 s repeated-probe and accelerated synthetic
+counter-span tests do not replace original block/counter/metadata-arrival
+replay or live headroom. Detector quality, ARM tails, release packaging and
+authorized live same-duty verification remain open before deployment.

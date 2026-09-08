@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "checkpoint": "scanner_glrt_runtime_publication_ui",
+  "date_utc": "2026-09-08",
+  "status": "local implementation and portable tests passed; full goal unfinished",
+  "sources": {
+    "leo": "353bb1995dc06ce3d5744f01bb6699cf05ee4220",
+    "pluto_plus_utils": "606144e60d63910dfaf5902f722b950df65dc604",
+    "libiio": "a188a70d7f8785b7f342e337655ae537bc20848d"
+  },
+  "radio_accessed": false,
+  "rf_collected": false,
+  "production_mutations": [],
+  "remote_mutations": [],
+  "tests": [
+    {
+      "lane": "initial broader Python",
+      "passed": 165,
+      "errors": 1,
+      "skipped": 0,
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src OPENBLAS_NUM_THREADS=1 /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/scanner/test_glrt_publication.py tests/storage/test_scanner_glrt_store.py tests/cli/test_scanner_glrt_runtime.py tests/api/test_scanner_glrt_api.py tests/cli/test_persistent_hop_schedule.py tests/cli/test_acquire_cli.py tests/storage/test_persistent_hop_capture.py tests/storage/test_persistent_hop_store.py tests/api/test_persistent_hop_history_api.py tests/api/test_production_entrypoint.py tests/api/test_contract_boundary.py tests/radio/test_pluto_persistent_hop.py tests/contracts/test_scanner_glrt_frame.py tests/contracts/test_scanner_glrt_session.py --junitxml=/tmp/leo-glrt-runtime-checkpoint.0WPd0I/python.xml",
+      "evidence": "python-initial.xml.gz",
+      "uncompressed_sha256": "f5bef88a967b246b6954c33ac91cbd0453b24248dd98949d4b0b718b79a33922",
+      "reason": "Explicitly marked PostgreSQL fixture refused before connection because LEO_TEST_DATABASE_URL was not configured."
+    },
+    {
+      "lane": "final portable Python",
+      "passed": 167,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "deselected": 1,
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src OPENBLAS_NUM_THREADS=1 /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/scanner/test_glrt_publication.py tests/storage/test_scanner_glrt_store.py tests/cli/test_scanner_glrt_runtime.py tests/api/test_scanner_glrt_api.py tests/cli/test_persistent_hop_schedule.py tests/cli/test_acquire_cli.py tests/storage/test_persistent_hop_capture.py tests/storage/test_persistent_hop_store.py tests/api/test_persistent_hop_history_api.py tests/api/test_production_entrypoint.py tests/api/test_contract_boundary.py tests/radio/test_pluto_persistent_hop.py tests/contracts/test_scanner_glrt_frame.py tests/contracts/test_scanner_glrt_session.py -m 'not postgres' --junitxml=/tmp/leo-glrt-runtime-checkpoint.0WPd0I/python-final.xml",
+      "evidence": "python-final.xml",
+      "scope": "Contract, capture-bound publication, atomic store, runtime composition, scanner scheduler, existing CLI/capture/store/history/API and radio-adapter regressions; no real database."
+    },
+    {
+      "lane": "final full web unit and DOM suite",
+      "passed": 104,
+      "failed": 0,
+      "files": 7,
+      "command": "npm test -- --reporter=default --reporter=junit --outputFile.junit=/tmp/leo-glrt-runtime-checkpoint.0WPd0I/web-final.xml",
+      "evidence": "web-final.xml",
+      "scope": "Includes 21 new GLRT panel cases. jsdom, not a production browser or WebGL qualification."
+    },
+    {
+      "lane": "TypeScript and production web build",
+      "result": "passed",
+      "command": "npm run build",
+      "cwd": "web",
+      "warning": "SkyView chunk exceeds 500 kB."
+    },
+    {
+      "lane": "changed Python Ruff and git whitespace",
+      "result": "passed",
+      "scope": "All 13 added/modified Python implementation and test files; git diff --check."
+    }
+  ],
+  "artifacts_sha256": {
+    "python-initial.xml.gz": "7a2309c77bf0a7fe2c681f5a65fceee4807bd37835da136dd787ab3e75c4e8fd",
+    "python-final.xml": "45456bb32247c9cf9ee6a51127285559c8a2bc339414707e36b880394019b9be",
+    "web-final.xml": "20dac074661f17857e72e4adcd9cc8ace67ce3236ddc418b41eba4c9321698c5",
+    "web/package-lock.json": "af9f0a625062aa4691327ca181ada56a002c47b2c46e4f96cc5eca815b3b1c9b",
+    "uncommitted-build:web/dist/index.html": "6f8340657295b6367227ecbe9c24aca8aeee94d8a23067f1816c640e1a6b4381",
+    "uncommitted-build:web/dist/assets/index-Da0B5P1x.js": "a2514b17e3d84d3e661705a1720a9940827168058ee9a707828ed3a3951613a6"
+  },
+  "retained_warnings": [
+    "Existing Starlette/httpx deprecation in backend suite.",
+    "Existing jsdom canvas/WebGL diagnostics in SkyView web tests.",
+    "Existing large SkyView bundle warning in successful production build."
+  ],
+  "limits": [
+    "Detector remains opt-in unqualified-evidence; no Starlink/no-signal policy enabled.",
+    "Synthetic runtime fixtures retain one dwell and cancel; not full qualified 300-second RF captures.",
+    "2500-result fixture proves bounded storage capacity only, not source-attested capture.",
+    "Post-capture immutable publication, not live incremental UI publication.",
+    "No new detector sensitivity, ARM timing, original-arrival/load or live duty evidence.",
+    "Production database/browser E2E not run; no test database was configured.",
+    "Actual release SDK/worker/template packaging, artifact attestation, dependency pinning, merge and deployment remain open.",
+    "Directory fsync failure may leave a complete visible file but crash durability remains unproven; error is reported and IQ is unchanged.",
+    "No raw IQ or executable build artifacts are committed in this report."
+  ]
+}

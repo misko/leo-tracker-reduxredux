@@ -38,7 +38,8 @@ planning document.
 | Native worker | Full 120 ms RX1 screen plus fractional confirmation; paired desktop/ARM replay | Independent detection quality, startup tail, 5 MS/s headroom |
 | ARM scheduling | Two 300 s repeated-dwell runs; 2,381/2,381 results at each rate | Original block and metadata arrival, concurrent capture load |
 | Provider/transport | Opt-in provider, envelopes and terminal drain; combined real provider/network/host passes short faults and both full 300 s accelerated counter spans | Original-arrival replay and representative capture contention |
-| Host | Concrete backend/session and source-attested result accounting; 317 Leo / 182 PPU regressions plus 16 combined network tests | Runtime composition, durable evidence publication and live qualification |
+| Host | Concrete backend/session and source-attested result accounting; 317 Leo / 182 PPU regressions plus 16 combined network tests | Release packaging and live qualification |
+| Runtime/publication/UI | Explicit default-off opt-in; independent source-bound publication and scanner panel; 167 portable Python / 104 web tests | Production browser/database E2E, packaging/deployment and live qualification |
 
 The [worker receipt](../../reports/2026_09_08_arm_presence_dwell_worker_checkpoint.md)
 measures p99 CPU of 64.54/113.47 ms at 2.5/5 MS/s. At 5 MS/s, copy-to-result
@@ -211,7 +212,12 @@ now completes and tests the opt-in host adapter and exposes immutable evidence.
 The [combined network checkpoint](../../reports/2026_09_08_scanner_glrt_network_checkpoint.md)
 now closes the actual provider/network/concrete-host fixture gap, including
 full 300 s accelerated synthetic counter spans and short fault cases. It does
-not complete C3's original-arrival or load qualification. Immediate next:
-replay original block/event arrivals and finish runtime composition/publication.
+not complete C3's original-arrival or load qualification. The
+[runtime checkpoint](../../reports/2026_09_08_scanner_glrt_runtime_checkpoint.md)
+now implements explicit runtime opt-in and independent post-capture publication,
+API and UI, with fault-isolation tests. It is not a live partial-product UI or
+a qualified/deployed classifier. Immediate next: original block/event arrival
+replay, measured ARM headroom and held-out quality; release-local userspace
+packaging and full production E2E also remain open.
 The main scientific and performance release risks remain classifier specificity
 and the 5 MS/s CPU/startup tail. No new RF is needed to work on either risk.
