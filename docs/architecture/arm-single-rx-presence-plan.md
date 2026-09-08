@@ -1,11 +1,20 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
-Latest checkpoint: [whole-dwell screen quality and FFTW](../../reports/2026_09_08_arm_presence_screen_quality_checkpoint.md).
+Latest checkpoint: [whole-dwell worker and frame-record binding](../../reports/2026_09_08_arm_presence_dwell_worker_checkpoint.md).
+The full 120 ms isolated worker now completes two 300 s saved-dwell loads with
+4,762/4,762 desktop-matching results and no skipped jobs. CPU p99 is 64.54/113.47 ms
+at 2.5/5 MS/s; the 5 MS/s tail target still fails. Initial-tail and scratch-output
+failures are retained in the checkpoint. Record conversion preserves original
+dwell counters and separate fractional offsets, but actual LIBIIO negotiation,
+transport/draining and live same-duty qualification remain pending. No
+classification policy is enabled and nothing has been deployed.
+
+Scientific quality remains as recorded in the [screen-quality checkpoint](../../reports/2026_09_08_arm_presence_screen_quality_checkpoint.md).
 The shared-fold hybrid detects 192/192 strong injected-pilot controls and flags
 30/35 development reference-positive dwells, with 22/35 timing/CFO associations.
 It still flags 5/80 negative controls and costs about 110 ms p99 CPU at 5 MS/s
 after exact optimizations. Neither classification quality nor live duty is
-qualified; actual 120 ms worker/LIBIIO integration remains pending. Older
+qualified; actual LIBIIO integration remains pending. Older
 checkpoint figures below are historical, not current qualification claims.
 
 ## Current goal revision — frame-carried dwell classification

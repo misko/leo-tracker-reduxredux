@@ -3,6 +3,7 @@
  * a notification pipe, and immutable templates; never an IIO buffer or handle. */
 #define _GNU_SOURCE
 #include "pool.h"
+#include "../../analysis/native_presence/dwell.h"
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -80,15 +81,20 @@ int main(int argc, char **argv)
     if (prctl(PR_SET_PDEATHSIG,SIGTERM) || getppid()!=parent) return 2;
     struct stat meta;
     if (fstat(notify,&meta) || !S_ISFIFO(meta.st_mode)) return 2;
-    if (fstat(mapping,&meta) || !S_ISREG(meta.st_mode) || meta.st_size!=(off_t)leo_probe_pool_bytes()) return 2;
-    leo_probe_pool *pool=mmap(NULL,leo_probe_pool_bytes(),PROT_READ|PROT_WRITE,MAP_SHARED,mapping,0);
+    if (fstat(mapping,&meta) || !S_ISREG(meta.st_mode) ||
+        (meta.st_size!=(off_t)leo_probe_pool_bytes() && meta.st_size!=(off_t)leo_dwell_pool_bytes())) return 2;
+    size_t pool_bytes=(size_t)meta.st_size;
+    leo_probe_pool *pool=mmap(NULL,pool_bytes,PROT_READ|PROT_WRITE,MAP_SHARED,mapping,0);
     if (pool==MAP_FAILED) return 2;
     close(mapping);
-    uint64_t session,generation; uint32_t rate;
+    uint64_t session,generation; uint32_t rate,dwell,rx;
     int status=2;
     leo_presence_workspace *workspaces[2]={NULL,NULL};
+    leo_presence_dwell_workspace *dwells[2]={NULL,NULL};
     leo_presence_complex *exact=NULL,*control=NULL;
-    if (leo_probe_pool_configuration(pool,&session,&generation,&rate)) goto done;
+    if (leo_probe_pool_configuration(pool,&session,&generation,&rate) ||
+        leo_probe_pool_geometry(pool,&dwell,&rx) ||
+        pool_bytes!=(dwell ? leo_dwell_pool_bytes() : leo_probe_pool_bytes())) goto done;
     unsigned char header[12];
     uint16_t endian=1;
     if (*(unsigned char *)&endian!=1 || sizeof(double)!=8 ||
@@ -104,8 +110,13 @@ int main(int argc, char **argv)
     if (!exact || !control) goto done;
     for (int edge=0; edge<2; ++edge) {
         if (read_exact(templates,exact,n*sizeof(*exact)) || read_exact(templates,control,n*sizeof(*control))) goto done;
-        workspaces[edge]=leo_presence_create(rate,exact,control,n);
-        if (!workspaces[edge]) goto done;
+        if (dwell) {
+            dwells[edge]=leo_presence_dwell_create(rate,exact,control,n,512);
+            if (!dwells[edge]) goto done;
+        } else {
+            workspaces[edge]=leo_presence_create(rate,exact,control,n);
+            if (!workspaces[edge]) goto done;
+        }
     }
     close(templates); templates=-1;
     if (write(STDOUT_FILENO,"ready\n",6)!=6) goto done;
@@ -117,10 +128,26 @@ int main(int argc, char **argv)
         if (taken<0) goto done;
         if (taken) {
             if (result.request.session!=session || result.request.generation!=generation ||
-                result.request.rate_hz!=rate || result.request.sample_count!=rate/50 || result.request.edge>1) goto done;
-            leo_presence_workspace *w=workspaces[result.request.edge];
-            result.status=leo_presence_run_ci16(w,samples,result.request.sample_count,&result.evidence);
-            if (leo_presence_get_nuisance(w,&result.nuisance)) goto done;
+                result.request.rate_hz!=rate || result.request.sample_count!=rate/50*(dwell ? 6u : 1u) ||
+                result.request.edge>1 || (dwell && result.request.rx!=rx)) goto done;
+            if (dwell) {
+                leo_presence_dwell_workspace *w=dwells[result.request.edge];
+                leo_presence_dwell_result out;
+                result.status=leo_presence_dwell_run_ci16(w,samples,result.request.sample_count,1,0,&out);
+                if (!result.status) {
+                    if (leo_presence_dwell_get_screens(w,&result.dwell.screens)) goto done;
+                    result.evidence=out.confirmations[0]; result.nuisance=out.nuisances[0];
+                    result.dwell.rank=out.rank;
+                    result.dwell.search_window_mask=63;
+                    result.dwell.confirmation_window_mask=out.confirmation_window_mask;
+                    result.dwell.total_cpu_ms=out.total_cpu_ms;
+                    result.dwell.total_wall_ms=out.total_wall_ms;
+                }
+            } else {
+                leo_presence_workspace *w=workspaces[result.request.edge];
+                result.status=leo_presence_run_ci16(w,samples,result.request.sample_count,&result.evidence);
+                if (leo_presence_get_nuisance(w,&result.nuisance)) goto done;
+            }
             if (leo_probe_complete(pool,slot,&result)) goto done;
             continue;
         }
@@ -141,9 +168,12 @@ int main(int argc, char **argv)
         }
     }
 done:
-    for (int edge=0; edge<2; ++edge) leo_presence_destroy(workspaces[edge]);
+    for (int edge=0; edge<2; ++edge) {
+        leo_presence_destroy(workspaces[edge]);
+        leo_presence_dwell_destroy(dwells[edge]);
+    }
     free(exact); free(control);
     if (templates>=0) close(templates);
-    close(notify); munmap(pool,leo_probe_pool_bytes());
+    close(notify); munmap(pool,pool_bytes);
     return status;
 }

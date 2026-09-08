@@ -155,7 +155,11 @@ def _build(
             if window_ranker
             else [str(NATIVE / "presence.c"), str(NATIVE / "fft.c")]
         ),
-        *([str(NATIVE / "window_rank.c"), str(NATIVE / "dwell.c")] if dwell_presence else []),
+        *(
+            [str(NATIVE / "window_rank.c"), str(NATIVE / "dwell.c")]
+            if dwell_presence or scanner_worker
+            else []
+        ),
         *ldflags,
         "-lm",
         "-o",
@@ -213,9 +217,24 @@ def build_executable(
     return _build(output, compiler, (*sanitizers, *cflags), executable=True)
 
 
-def build_worker(output: Path, *, compiler: str = "cc", cflags: tuple[str, ...] = ()) -> Path:
+def build_worker(
+    output: Path,
+    *,
+    compiler: str = "cc",
+    cflags: tuple[str, ...] = (),
+    ldflags: tuple[str, ...] = (),
+    dependencies: tuple[Path, ...] = (),
+) -> Path:
     """Build the isolated scanner consumer, separate from the numerical library."""
-    return _build(output, compiler, cflags, executable=True, scanner_worker=True)
+    return _build(
+        output,
+        compiler,
+        cflags,
+        executable=True,
+        scanner_worker=True,
+        ldflags=ldflags,
+        dependencies=dependencies,
+    )
 
 
 def build_window_ranker(

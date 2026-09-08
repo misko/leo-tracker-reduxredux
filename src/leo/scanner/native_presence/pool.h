@@ -6,10 +6,19 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "../../analysis/native_presence/presence.h"
+#include "../../analysis/native_presence/window_rank.h"
 
 #define LEO_PROBE_SLOTS 3
 #define LEO_PROBE_RESULTS 64
 #define LEO_PROBE_MAX_SAMPLES 100000
+#define LEO_DWELL_MAX_SAMPLES 600000
+
+typedef struct {
+    uint32_t search_window_mask, confirmation_window_mask;
+    leo_presence_rank_result rank;
+    leo_presence_rank_screens screens;
+    double total_cpu_ms, total_wall_ms;
+} leo_probe_dwell_evidence;
 
 typedef struct {
     uint64_t session, generation, sequence, visit;
@@ -22,6 +31,10 @@ typedef struct {
     int32_t status; /* 0: computed candidate evidence; -1: detector failure. */
     leo_presence_result evidence;
     leo_presence_nuisance nuisance;
+    /* Zero for legacy 20ms probes. Whole-dwell mode screens all six windows
+     * and confirms exactly one; evidence/nuisance above describe that window.
+     * No calibrated classification or exhaustive absence claim is implied. */
+    leo_probe_dwell_evidence dwell;
 } leo_probe_result;
 
 typedef struct {
@@ -38,8 +51,14 @@ typedef struct {
 /* Mapping must be page-aligned, shared, and at least pool_bytes() bytes long.
  * Initialize only before exposing it to any producer/consumer. */
 size_t leo_probe_pool_bytes(void);
+size_t leo_dwell_pool_bytes(void);
 int leo_probe_pool_init(leo_probe_pool *, uint64_t session, uint64_t generation, uint32_t rate);
+/* Allocate dwell_pool_bytes() before this initialization. One fixed receiver
+ * per session; full-dwell requests must begin exactly at valid_start. */
+int leo_dwell_pool_init(leo_probe_pool *, uint64_t session, uint64_t generation,
+    uint32_t rate, uint32_t rx);
 int leo_probe_pool_configuration(const leo_probe_pool *, uint64_t *session, uint64_t *generation, uint32_t *rate);
+int leo_probe_pool_geometry(const leo_probe_pool *, uint32_t *dwell, uint32_t *rx);
 void leo_probe_pool_stats(const leo_probe_pool *, leo_probe_stats *);
 
 /* Zero-initialize the collector before its first begin call.
