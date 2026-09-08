@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -27,10 +28,32 @@ LIMITATION = (
 )
 
 
-def build(output: Path, *, compiler="cc", cflags=()):
+def build(
+    output: Path,
+    *,
+    compiler="cc",
+    cflags=(),
+    sdk_library: Path | None = None,
+    runtime_rpath: Path | None = None,
+):
+    """An optional prebuilt SDK is linked unchanged, not rebuilt or copied.
+
+    The literal runtime path supports packaged target tests without a loader
+    environment override. Neither option authorizes remote staging or RF.
+    """
+    if runtime_rpath is not None and (
+        not runtime_rpath.is_absolute()
+        or ".." in runtime_rpath.parts
+        or any(c in str(runtime_rpath) for c in ":,\n\r")
+    ):
+        raise ValueError("SDK runtime RPATH must be one literal absolute directory")
+    if sdk_library is not None:
+        sdk_library = sdk_library.resolve(strict=True)
+        if not sdk_library.is_file() or sdk_library.name != "libleo-scanner-glrt.so":
+            raise ValueError("prebuilt SDK must be libleo-scanner-glrt.so")
     safe_output(output)
     output.mkdir(parents=True, exist_ok=False)
-    sdk = build_scanner_glrt_port(
+    sdk = sdk_library or build_scanner_glrt_port(
         output / "libleo-scanner-glrt.so", compiler=compiler, cflags=cflags
     )
     entry = ROOT / "tools/scanner_glrt_sdk_replay.c"
@@ -55,9 +78,13 @@ def build(output: Path, *, compiler="cc", cflags=()):
         "-Werror",
         *cflags,
         str(entry),
-        f"-L{output.resolve()}",
+        f"-L{sdk.parent}",
         "-lleo-scanner-glrt",
-        "-Wl,-rpath,$ORIGIN",
+        (
+            f"-Wl,--disable-new-dtags,-rpath,{runtime_rpath}"
+            if runtime_rpath is not None
+            else "-Wl,-rpath,$ORIGIN"
+        ),
         "-pthread",
         "-lm",
         "-o",
@@ -92,7 +119,24 @@ def quantiles(values):
     )
 
 
-def verify(raw, manifest, duration, *, delay_blocks, jitter_ms, enabled):
+def verify(
+    raw,
+    manifest,
+    duration,
+    *,
+    delay_blocks,
+    jitter_ms,
+    enabled,
+    algorithm_sha256="12" * 32,
+    configuration_sha256="34" * 32,
+):
+    for identity in (algorithm_sha256, configuration_sha256):
+        if (
+            not isinstance(identity, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", identity)
+            or int(identity, 16) == 0
+        ):
+            raise ValueError("expected replay identity must be nonzero lowercase SHA-256")
     if (
         type(duration) is not int
         or not 242 <= duration <= 300000
@@ -206,8 +250,8 @@ def verify(raw, manifest, duration, *, delay_blocks, jitter_ms, enabled):
                 frame.session != 71
                 or frame.generation != 9
                 or frame.frame_sequence != frame_index
-                or frame.algorithm_sha256 != "12" * 32
-                or frame.configuration_sha256 != "34" * 32
+                or frame.algorithm_sha256 != algorithm_sha256
+                or frame.configuration_sha256 != configuration_sha256
                 or frame.dropped_results
                 or frame.result_sequence_limit > jobs
                 or (frame_index == len(groups["frame"]) - 1 and frame.result_sequence_limit != jobs)
@@ -309,6 +353,8 @@ def verify(raw, manifest, duration, *, delay_blocks, jitter_ms, enabled):
         delay_blocks=delay_blocks,
         jitter_ms=jitter_ms,
         enabled=enabled,
+        algorithm_sha256=algorithm_sha256,
+        configuration_sha256=configuration_sha256,
         nominal_block_period_ms=BLOCK * 1000 / rate,
         callback_cpu_ms=quantiles([r["callback_cpu_ms"] for r in groups["block"]]),
         callback_wall_ms=quantiles([r["callback_wall_ms"] for r in groups["block"]]),
@@ -335,6 +381,8 @@ def main():
     parser.add_argument("--delay-blocks", type=int, choices=(0, 2), default=0)
     parser.add_argument("--jitter-ms", type=int, choices=(0, 40), default=0)
     parser.add_argument("--disabled", action="store_true")
+    parser.add_argument("--algorithm-sha256", default="12" * 32)
+    parser.add_argument("--configuration-sha256", default="34" * 32)
     args = parser.parse_args()
     safe_output(args.output)
     checked = verify(
@@ -344,6 +392,8 @@ def main():
         delay_blocks=args.delay_blocks,
         jitter_ms=args.jitter_ms,
         enabled=not args.disabled,
+        algorithm_sha256=args.algorithm_sha256,
+        configuration_sha256=args.configuration_sha256,
     )
     write_json(
         args.output,

@@ -48,6 +48,20 @@ static int integer(const char *text,unsigned *value)
     *value=(unsigned)n; return 0;
 }
 
+static int identity(const char *text,uint8_t digest[32])
+{
+    static const char digits[]="0123456789abcdef";
+    unsigned nonzero=0;
+    if (strlen(text)!=64) return -1;
+    for (unsigned j=0;j<32;++j) {
+        const char *a=strchr(digits,text[2*j]),*b=strchr(digits,text[2*j+1]);
+        if (!a || !b) return -1;
+        digest[j]=(uint8_t)(((unsigned)(a-digits)<<4)|(unsigned)(b-digits));
+        nonzero|=digest[j];
+    }
+    return nonzero ? 0 : -1;
+}
+
 static int emit(leo_scanner_glrt *sdk,int drain,uint64_t block,double origin,
     double *cost_cpu,double *cost_wall)
 {
@@ -71,10 +85,13 @@ static int emit(leo_scanner_glrt *sdk,int drain,uint64_t block,double origin,
 int main(int argc,char **argv)
 {
     unsigned duration,delay,jitter,enabled;
-    if (argc!=8 || integer(argv[4],&duration) || duration<242 ||
+    if ((argc!=8 && argc!=10) || integer(argv[4],&duration) || duration<242 ||
         integer(argv[5],&delay) || (delay!=0 && delay!=2) ||
         integer(argv[6],&jitter) || (jitter!=0 && jitter!=40) ||
         integer(argv[7],&enabled) || enabled>1) return 2;
+    uint8_t algorithm[32],configuration[32];
+    memset(algorithm,18,32); memset(configuration,52,32);
+    if (argc==10 && (identity(argv[8],algorithm) || identity(argv[9],configuration))) return 2;
     alarm(duration/1000+25);
     struct rlimit cpu={340,340},memory={192*1024*1024,192*1024*1024};
     if (setrlimit(RLIMIT_CPU,&cpu)) return 2;
@@ -109,7 +126,7 @@ int main(int argc,char **argv)
     fclose(input); input=NULL;
     leo_scanner_glrt_config_v1 config={.session=71,.generation=9,.rate_hz=rate,.rx=1,
         .maximum_visits=jobs,.maximum_block_samples=BLOCK};
-    memset(config.algorithm_sha256,18,32); memset(config.configuration_sha256,52,32);
+    memcpy(config.algorithm_sha256,algorithm,32); memcpy(config.configuration_sha256,configuration,32);
     double opened=clock_ms(CLOCK_MONOTONIC);
     if (enabled) {
         int ret=leo_scanner_glrt_open(&sdk,&config,argv[1],argv[2]);
