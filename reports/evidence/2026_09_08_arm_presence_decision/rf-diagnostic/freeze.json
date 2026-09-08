@@ -1,0 +1,133 @@
+{
+  "protocol": {
+    "schema": "org.leo.research.presence-decision-challenge/v1",
+    "scope": "Frozen evaluation of a development-derived threshold hypothesis; never enables a runtime policy",
+    "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+    "rates_hz": [
+      2500000,
+      5000000
+    ],
+    "edges": [
+      "lower",
+      "upper"
+    ],
+    "receiver": 1,
+    "dwell_ms": 120,
+    "screen_bins": 512,
+    "screen": "hybrid_max_second_ratio",
+    "maximum_confirmations": 1,
+    "seeded": false,
+    "policies": {
+      "development_margin_only": {
+        "minimum_exact_score": 0.0,
+        "minimum_margin": 0.025
+      },
+      "frozen_absolute_score_hypothesis": {
+        "minimum_exact_score": 0.175,
+        "minimum_margin": 0.025
+      }
+    },
+    "hypothesis_basis": "The prior development report proposed 0.175/0.025 after inspecting its 5/80 negative failures. This new cohort must not be used to tune those values.",
+    "control_seeds": [
+      81001,
+      81002,
+      81003,
+      81004,
+      81005,
+      81006,
+      81007,
+      81008
+    ],
+    "positive_seeds": [
+      82001,
+      82002
+    ],
+    "negative_kinds": [
+      "white_noise",
+      "colored_noise",
+      "tone",
+      "two_tones",
+      "pulsed_tone",
+      "chirp",
+      "clipped_tones",
+      "wrong_pilot"
+    ],
+    "positive_snr_db": [
+      12.0,
+      0.0,
+      -12.0
+    ],
+    "positive_windows": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "boundary_snr_db": [
+      6.0,
+      -6.0
+    ],
+    "boundary_burst_ms": 4.0,
+    "pilot_plus_tone_snr_db": 0.0,
+    "association": {
+      "maximum_cfo_difference_hz": 8000.0,
+      "maximum_circular_epoch_difference_us": 2.0
+    },
+    "experiment_gate": {
+      "negative_false_flags": 0,
+      "minimum_positive_flag_fraction_at_snr_ge_0": 0.95,
+      "minimum_associated_fraction_at_snr_ge_0": 0.9,
+      "interpretation": "Bounded synthetic challenge gate only. Bursts and -12 dB cases are stress diagnostics. Passing cannot qualify operational RF specificity or whole-dwell absence."
+    },
+    "rf_sessions": [
+      {
+        "session_id": "scan-hop-cbd6954a5508690d",
+        "rate_hz": 2500000
+      },
+      {
+        "session_id": "scan-hop-7d7bc31311b79cfd",
+        "rate_hz": 5000000
+      },
+      {
+        "session_id": "scan-hop-44105201bdaf5aa0",
+        "rate_hz": 2500000
+      },
+      {
+        "session_id": "scan-hop-b89eba51117839b6",
+        "rate_hz": 5000000
+      }
+    ],
+    "rf_sweeps": [
+      30,
+      180
+    ],
+    "rf_selection_basis": "Four newest complete qualified captures in the read-only metadata inventory at selection time; no IQ or detector/analysis scores inspected. Two preselected sweeps, all eight edges, RX1 only.",
+    "rf_reference_candidates": 8,
+    "rf_unmatched_interpretation": "Unresolved RF, not verified no-Starlink truth",
+    "absence_policy_enabled": false,
+    "live_rf_authorized": false
+  },
+  "protocol_sha256": "182860f9dfd209df50253c233deec0dacf07cf6748673209870a447f28a06955",
+  "detector_protocol_sha256": "4e9ad1950b37cb4591c07dc0e0aadf929a6f2ee40f87d23e041776eb4423dd17",
+  "tool_sha256": "110add180221482d484cc2f5f717b455661b0f42829dc11b101ade686060ec1c",
+  "fft_backend": {
+    "backend": "fftw_fp64_estimate_fixed_arrays",
+    "dependency_sha256": {
+      "/tmp/leo-presence-fftw.nLw4v6/install/include/fftw3.h": "0dd1b988b681d5797aaf10c2c57c107f7dca510695e4b94b3855eb52550d282c",
+      "/tmp/leo-presence-fftw.nLw4v6/install/lib/libfftw3.so.3.6.10": "e36c51736889b6e3830d607fceb1cd0b746b9b03f33b5f57bee063e0f4637703"
+    },
+    "cflags": [
+      "-DLEO_PRESENCE_FFTW=1",
+      "-I/tmp/leo-presence-fftw.nLw4v6/install/include"
+    ],
+    "ldflags": [
+      "-L/tmp/leo-presence-fftw.nLw4v6/install/lib",
+      "-Wl,-rpath,/tmp/leo-presence-fftw.nLw4v6/install/lib",
+      "-lfftw3"
+    ]
+  },
+  "state": "frozen_before_generation_or_scoring",
+  "rank_weighting": "normalized_baseline"
+}
