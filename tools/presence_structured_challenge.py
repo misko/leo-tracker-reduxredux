@@ -29,6 +29,43 @@ from tools.qualify_native_presence import digest, write_json
 
 PROTOCOL = ROOT / "config/analysis/arm-presence-structured-challenge-v1.json"
 NEGATIVE_KINDS = ("repeating_qpsk", "independent_qpsk", "repeating_qam16", "independent_qam16")
+VARIANTS = {
+    "normalized": (0, 0),
+    "amplitude": (1, 0),
+    "normalized-diverse": (0, 1),
+    "amplitude-diverse": (1, 1),
+}
+
+
+def variant_flags(name):
+    """Explicit opt-in flags; original challenge variants retain early scoring."""
+    if name not in VARIANTS:
+        raise ValueError("unknown structured challenge variant")
+    amplitude, diversity = VARIANTS[name]
+    return (
+        f"-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED={amplitude}",
+        f"-DLEO_PRESENCE_GLRT_SYMBOL_DIVERSITY={diversity}",
+    )
+
+
+def validate_protocol(protocol):
+    variants = protocol["variants"]
+    if (
+        protocol["policy"] != {"minimum_exact_score": 0.175, "minimum_margin": 0.025}
+        or protocol["negative_kinds"] != list(NEGATIVE_KINDS)
+        or not isinstance(variants, list)
+        or not 1 <= len(variants) <= len(VARIANTS)
+        or any(not isinstance(v, str) or v not in VARIANTS for v in variants)
+        or len(set(variants)) != len(variants)
+        or protocol["screen_bins"] != 512
+        or protocol["maximum_confirmations"] != 1
+        or protocol["seeded"]
+        or protocol["receiver"] != 1
+        or protocol["dwell_ms"] != 120
+        or protocol["absence_policy_enabled"]
+        or protocol["live_rf_authorized"]
+    ):
+        raise ValueError("unreviewed challenge policy")
 
 
 def cases(protocol):
@@ -202,21 +239,12 @@ def summarize(rows, protocol):
     return summary
 
 
-def run(output, prefix):
+def run(output, prefix, protocol_path=PROTOCOL):
     output = output.resolve()
     if any(output.is_relative_to(Path(p)) for p in ("/mnt/qnap01", "/srv/bulk/leo")):
         raise ValueError("output cannot be under archive storage")
-    protocol = json.loads(PROTOCOL.read_text())
-    if (
-        protocol["policy"] != {"minimum_exact_score": 0.175, "minimum_margin": 0.025}
-        or protocol["negative_kinds"] != list(NEGATIVE_KINDS)
-        or protocol["variants"] != ["normalized", "amplitude"]
-        or protocol["screen_bins"] != 512
-        or protocol["maximum_confirmations"] != 1
-        or protocol["seeded"]
-        or protocol["receiver"] != 1
-    ):
-        raise ValueError("unreviewed challenge policy")
+    protocol = json.loads(protocol_path.read_text())
+    validate_protocol(protocol)
     inventory = list(cases(protocol))
     if len(inventory) != protocol["case_count"]:
         raise ValueError("unexpected challenge size")
@@ -231,7 +259,7 @@ def run(output, prefix):
     )
     freeze = dict(
         protocol=protocol,
-        protocol_sha256=digest(PROTOCOL),
+        protocol_sha256=digest(protocol_path),
         tool_sha256=digest(Path(__file__)),
         detector_protocol_sha256=digest(detector_path),
         cases=inventory,
@@ -242,9 +270,7 @@ def run(output, prefix):
     libraries = {
         name: build_dwell_presence(
             output / f"{name}.so",
-            cflags=flags
-            + options["cflags"]
-            + (f"-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED={int(name == 'amplitude')}",),
+            cflags=flags + options["cflags"] + variant_flags(name),
             ldflags=options["ldflags"],
             dependencies=options["dependencies"],
         )
@@ -287,8 +313,9 @@ def run(output, prefix):
                     f"{index + 1}/{len(inventory)} independent-symbol challenge cases", flush=True
                 )
     if (
-        freeze["protocol_sha256"] != digest(PROTOCOL)
+        freeze["protocol_sha256"] != digest(protocol_path)
         or freeze["tool_sha256"] != digest(Path(__file__))
+        or freeze["detector_protocol_sha256"] != digest(detector_path)
         or identities != {name: digest(path) for name, path in libraries.items()}
     ):
         raise ValueError("source or artifact identity changed during scoring")
@@ -306,5 +333,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--fftw-prefix", required=True, type=Path)
+    parser.add_argument("--protocol", type=Path, default=PROTOCOL)
     args = parser.parse_args()
-    run(args.output, args.fftw_prefix)
+    run(args.output, args.fftw_prefix, args.protocol)

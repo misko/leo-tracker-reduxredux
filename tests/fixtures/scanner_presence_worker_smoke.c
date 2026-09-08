@@ -1,5 +1,6 @@
 /* Bounded IPC qualification: ten zero probes, or repeated saved probes paced
- * at 126 ms. Neither mode opens RF or replays a complete recorded DMA stream. */
+ * at 126 ms (default) or 120 ms. Neither mode opens RF or replays a complete
+ * recorded DMA stream. */
 #define _GNU_SOURCE
 #include "../../src/leo/scanner/native_presence/pool.h"
 #include <fcntl.h>
@@ -91,12 +92,16 @@ static void print_result(const leo_probe_result *r, unsigned probes, double late
 
 int main(int argc, char **argv)
 {
-    if (argc!=3 && argc!=5) return 2;
-    int paced=argc==5, dwell=0;
-    unsigned duration=0;
+    if (argc!=3 && argc!=5 && argc!=6) return 2;
+    int paced=argc>=5, dwell=0;
+    unsigned duration=0, arrival_period=126;
+    if (argc==6) {
+        if (!strcmp(argv[5],"120")) arrival_period=120;
+        else if (strcmp(argv[5],"126")) return 2;
+    }
     if (paced) {
         char *end; errno=0; long parsed=strtol(argv[4],&end,10);
-        if (errno || !*argv[4] || *end || parsed<126 || parsed>300000) return 2;
+        if (errno || !*argv[4] || *end || parsed<(long)arrival_period || parsed>300000) return 2;
         duration=(unsigned)parsed;
     }
     alarm(paced ? duration/1000+20 : 15);
@@ -113,7 +118,7 @@ int main(int argc, char **argv)
     int16_t *samples=NULL;
     uint64_t starts[96]={0}, visits[96]={0};
     uint32_t edges[96]={0}, channels[96]={0}, probe_count=1;
-    double submitted_at[2400]={0};
+    double submitted_at[2500]={0};
     FILE *pack=NULL;
     const char *stage="open templates";
     unsigned char header[12];
@@ -176,7 +181,9 @@ int main(int argc, char **argv)
     if (poll(&event,1,5000)!=1 || read(ready[0],handshake,6)!=6 || memcmp(handshake,"ready\n",6)) goto done;
     stage="submit and recover bounded probes";
     leo_probe_collector collector={0};
-    uint64_t jobs=paced ? (duration+125)/126 : 10, submitted=0, received=0, skipped=0;
+    uint64_t jobs=paced ? (duration+arrival_period-1)/arrival_period : 10;
+    uint64_t submitted=0, received=0, skipped=0;
+    if (jobs>sizeof(submitted_at)/sizeof(submitted_at[0])) goto done;
     unsigned max_slots=0;
     double origin=now_ms(), max_lateness=0, max_copy=0;
     if (origin<0) goto done;
@@ -197,7 +204,7 @@ int main(int argc, char **argv)
             }
             ++received;
         }
-        if (submitted>=jobs || (paced && now<origin+submitted*126) ||
+        if (submitted>=jobs || (paced && now<origin+submitted*arrival_period) ||
             (!paced && received<submitted)) { usleep(500); continue; }
         uint64_t seq=submitted, index=seq%probe_count;
         uint64_t start=paced ? starts[index] : UINT64_C(10000000000000037)+seq*rate;
@@ -222,7 +229,7 @@ int main(int argc, char **argv)
         }
         double elapsed=now_ms()-copying;
         if (elapsed>max_copy) max_copy=elapsed;
-        double lateness=copying-origin-seq*126;
+        double lateness=copying-origin-seq*arrival_period;
         if (paced && lateness>max_lateness) max_lateness=lateness;
         if (write(notify[1],"1",1)!=1 && errno!=EAGAIN) goto done;
         leo_probe_stats current; leo_probe_pool_stats(pool,&current);
@@ -240,13 +247,14 @@ int main(int argc, char **argv)
     printf("{\"schema\":\"%s\",\"rate_hz\":%u,"
         "\"submitted\":%u,\"completed\":%u,\"dropped\":%u,\"pool_bytes\":%zu,"
         "\"skipped\":%" PRIu64 ",\"duration_ms\":%u,\"elapsed_ms\":%.9g,\"max_occupied_slots\":%u,"
+        "\"arrival_period_ms\":%u,"
         "\"max_submit_lateness_ms\":%.9g,\"max_copy_ms\":%.9g,"
         "\"scope\":\"%s; not RF or full archived-stream qualification\"}\n",
         dwell ? "native-worker-dwell-summary-v1" : (paced ? "native-worker-paced-summary-v1" : "native-worker-ipc-smoke-v1"),
         rate,stats.submitted,stats.completed,stats.result_dropped,pool_bytes,
-        skipped,duration,now_ms()-origin,max_slots,max_lateness,max_copy,
-        dwell ? "repeated 120ms saved dwells, 32768-sample chunks burst-delivered every 126ms" :
-            (paced ? "repeated saved probes at 126 ms spacing" : "synthetic zero probes"));
+        skipped,duration,now_ms()-origin,max_slots,arrival_period,max_lateness,max_copy,
+        dwell ? "repeated 120ms saved dwells, 32768-sample chunks burst-delivered at the reported arrival period" :
+            (paced ? "repeated saved probes at the reported arrival period" : "synthetic zero probes"));
     stage="flush replay evidence";
     if (fflush(stdout) || ferror(stdout)) goto done;
     status=0;

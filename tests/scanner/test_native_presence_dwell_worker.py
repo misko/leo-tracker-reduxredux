@@ -216,7 +216,10 @@ def test_full_dwell_gap_or_partial_eof_is_not_a_negative_result(library, artifac
 
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])
-def test_native_parent_full_dwell_pacing_and_identity(smoke_parent, artifacts, tmp_path, rate):
+@pytest.mark.parametrize("period", [None, 120, 126])
+def test_native_parent_full_dwell_pacing_and_identity(
+    smoke_parent, artifacts, tmp_path, rate, period
+):
     templates, pack = tmp_path / "templates", tmp_path / "dwells.pack"
     write_templates(templates, rate)
     counter = 10**16 + 37
@@ -225,8 +228,12 @@ def test_native_parent_full_dwell_pacing_and_identity(smoke_parent, artifacts, t
         for edge in range(2):
             output.write(struct.pack("<QQII", counter + edge * rate, 90 + edge, edge, 3))
             output.write(np.zeros((rate // 50 * 6, 2), dtype="<i2").tobytes())
+    spacing = period or 126
+    command = [str(smoke_parent), str(artifacts[0]), str(templates), str(pack), str(2 * spacing)]
+    if period is not None:
+        command.append(str(period))
     run = subprocess.run(
-        [str(smoke_parent), str(artifacts[0]), str(templates), str(pack), "252"],
+        command,
         check=True,
         capture_output=True,
         text=True,
@@ -250,8 +257,20 @@ def test_native_parent_full_dwell_pacing_and_identity(smoke_parent, artifacts, t
     assert terminal["schema"] == "native-worker-dwell-summary-v1"
     assert terminal["completed"] == terminal["submitted"] == 2
     assert terminal["skipped"] == terminal["dropped"] == 0
+    assert terminal["arrival_period_ms"] == spacing
+    assert terminal["duration_ms"] == 2 * spacing
     assert 7200000 < terminal["pool_bytes"] < 7500000
     assert "not RF or full archived-stream" in terminal["scope"]
+
+
+@pytest.mark.parametrize("period", ["0", "119", "127", "120.0", "invalid"])
+def test_native_parent_rejects_unreviewed_arrival_period_before_open(smoke_parent, period):
+    run = subprocess.run(
+        [str(smoke_parent), "/missing-worker", "/missing-template", "/missing-pack", "240", period],
+        capture_output=True,
+        timeout=3,
+    )
+    assert run.returncode == 2 and not run.stdout and not run.stderr
 
 
 @pytest.mark.parametrize(

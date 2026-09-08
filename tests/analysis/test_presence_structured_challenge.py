@@ -12,6 +12,8 @@ from tools.presence_structured_challenge import (
     structured_waveform,
     summarize,
     symbol_states,
+    validate_protocol,
+    variant_flags,
 )
 
 
@@ -136,3 +138,62 @@ def test_summary_keeps_false_flags_and_unassociated_positives_as_failures(protoc
 def test_invalid_or_unbounded_inputs_fail(protocol, change):
     with pytest.raises(ValueError):
         generate(spec() | change, protocol)
+
+
+@pytest.mark.parametrize(
+    "name,amplitude,diversity",
+    [
+        ("normalized", 0, 0),
+        ("amplitude", 1, 0),
+        ("normalized-diverse", 0, 1),
+        ("amplitude-diverse", 1, 1),
+    ],
+)
+def test_variant_flags_require_explicit_diversity_opt_in(name, amplitude, diversity):
+    assert variant_flags(name) == (
+        f"-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED={amplitude}",
+        f"-DLEO_PRESENCE_GLRT_SYMBOL_DIVERSITY={diversity}",
+    )
+
+
+def test_unknown_variant_fails():
+    with pytest.raises(ValueError, match="unknown"):
+        variant_flags("not-a-variant")
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"variants": []},
+        {"variants": ["amplitude", "amplitude"]},
+        {"variants": ["amplitude", "unknown"]},
+        {"variants": [None]},
+        {"variants": "amplitude"},
+        {"maximum_confirmations": 2},
+        {"receiver": 0},
+        {"seeded": True},
+        {"dwell_ms": 100},
+        {"absence_policy_enabled": True},
+        {"live_rf_authorized": True},
+        {"policy": {"minimum_exact_score": 0.17, "minimum_margin": 0.025}},
+    ],
+)
+def test_unreviewed_protocol_fails_before_execution(protocol, change):
+    with pytest.raises(ValueError, match="unreviewed"):
+        validate_protocol(protocol | change)
+
+
+def test_holdout_preserves_model_policy_and_uses_disjoint_seeds(protocol):
+    holdout = json.loads(PROTOCOL.with_name("arm-presence-structured-holdout-v1.json").read_text())
+    validate_protocol(protocol)
+    validate_protocol(holdout)
+    assert holdout["variants"] == ["amplitude", "amplitude-diverse"]
+    assert len(list(cases(holdout))) == holdout["case_count"] == 480
+    seed_keys = ("negative_seeds", "positive_seeds", "boundary_seeds")
+    original_seeds = {s for k in seed_keys for s in protocol[k]}
+    fresh_seeds = [s for k in seed_keys for s in holdout[k]]
+    assert len(set(fresh_seeds)) == len(fresh_seeds)
+    assert not original_seeds.intersection(fresh_seeds)
+    for key in protocol:
+        if key not in (*seed_keys, "scope", "interpretation", "variants"):
+            assert holdout[key] == protocol[key], key
