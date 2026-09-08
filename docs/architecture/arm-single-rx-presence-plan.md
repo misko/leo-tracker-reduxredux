@@ -1,5 +1,13 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
+Latest checkpoint: [whole-dwell screen quality and FFTW](../../reports/2026_09_08_arm_presence_screen_quality_checkpoint.md).
+The shared-fold hybrid detects 192/192 strong injected-pilot controls and flags
+30/35 development reference-positive dwells, with 22/35 timing/CFO associations.
+It still flags 5/80 negative controls and costs about 110 ms p99 CPU at 5 MS/s
+after exact optimizations. Neither classification quality nor live duty is
+qualified; actual 120 ms worker/LIBIIO integration remains pending. Older
+checkpoint figures below are historical, not current qualification claims.
+
 ## Current goal revision — frame-carried dwell classification
 
 The user has superseded the earlier advisory-side-channel goal with:

@@ -17,7 +17,7 @@ def library(tmp_path_factory, request):
     return build_window_ranker(tmp_path_factory.mktemp("window-rank") / "rank.so", cflags=flags)
 
 
-def oracle(iq, rate, edge, bins):
+def oracle(iq, rate, edge, bins, *, area=False):
     n = round(rate / 750)
     template = qin_edge_pilot_frame(rate, edge).astype(np.complex128)
     diff = np.roll(template, -4) * template.conj()
@@ -26,7 +26,16 @@ def oracle(iq, rate, edge, bins):
     fraction = position - left
 
     def project(values):
-        x = values[left] + fraction * (values[(left + 1) % n] - values[left])
+        if area:
+            boundaries = np.arange(bins + 1) * n / bins
+            indices = boundaries.astype(int)
+            integral = np.concatenate(([0], np.cumsum(values)))
+            at_boundaries = (
+                integral[indices] + (boundaries - indices) * values[np.minimum(indices, n - 1)]
+            )
+            x = np.diff(at_boundaries) / (n / bins)
+        else:
+            x = values[left] + fraction * (values[(left + 1) % n] - values[left])
         x -= x.mean()
         energy = np.vdot(x, x).real
         return x / np.sqrt(energy) if energy else np.zeros(bins, dtype=np.complex128)
@@ -48,6 +57,114 @@ def oracle(iq, rate, edge, bins):
         scores.append(abs(correlation[best]))
         epochs.append(round(best * n / bins) % n)
     return np.array(scores), np.array(epochs)
+
+
+@pytest.fixture(scope="module")
+def area_library(tmp_path_factory):
+    return build_window_ranker(
+        tmp_path_factory.mktemp("area-rank") / "rank.so",
+        cflags=("-DLEO_PRESENCE_RANK_AREA_PROJECTION=1",),
+    )
+
+
+@pytest.fixture(scope="module")
+def hybrid_library(tmp_path_factory):
+    return build_window_ranker(
+        tmp_path_factory.mktemp("hybrid-rank") / "rank.so",
+        cflags=("-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",),
+    )
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+@pytest.mark.parametrize("edge", ["lower", "upper"])
+@pytest.mark.parametrize("bins", [512, 2048, 8192])
+def test_shared_fold_hybrid_preserves_both_independent_screens(
+    library, area_library, hybrid_library, rate, edge, bins
+):
+    iq = np.random.default_rng(777).integers(-32768, 32768, (6 * rate // 50, 2), dtype=np.int16)
+    before = iq.tobytes()
+    expected = []
+    for binary in (library, area_library):
+        with NativeWindowRank(binary, rate, edge, bins) as native:
+            expected.append(native.run(iq))
+    with NativeWindowRank(hybrid_library, rate, edge, bins) as native:
+        with pytest.raises(ValueError, match="no completed"):
+            native.screens()
+        result, screens = native.run(iq), native.screens()
+        again, repeat = native.run(iq), native.screens()
+    assert bytes(screens) == bytes(repeat)
+    np.testing.assert_array_equal(result.scores, again.scores)
+    assert screens.available_mask == 3
+    for index, reference in enumerate(expected):
+        np.testing.assert_array_equal(screens.scores[index], reference.scores)
+        np.testing.assert_array_equal(screens.order[index], reference.order)
+        np.testing.assert_array_equal(screens.epochs[index], reference.projected_epoch_samples)
+        scores = sorted(reference.scores, reverse=True)
+        assert screens.contrast[index] == scores[0] / max(scores[1], 1e-30)
+    chosen = int(screens.contrast[1] > screens.contrast[0])
+    assert screens.selected == chosen
+    np.testing.assert_array_equal(result.scores, expected[chosen].scores)
+    np.testing.assert_array_equal(result.order, expected[chosen].order)
+    np.testing.assert_array_equal(
+        result.projected_epoch_samples, expected[chosen].projected_epoch_samples
+    )
+    assert result.total_cpu_ms >= result.fold_cpu_ms + result.correlation_cpu_ms
+    assert before == iq.tobytes()
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+@pytest.mark.parametrize("level", [0, -32768, 32767])
+def test_hybrid_zero_contrast_ties_use_point_and_diagnostics_invalidate(
+    hybrid_library, rate, level
+):
+    iq = np.full((6 * rate // 50, 2), level, dtype=np.int16)
+    with NativeWindowRank(hybrid_library, rate, "lower", 512) as native:
+        result = native.run(iq)
+        assert native.screens().selected == 0
+        assert list(native.screens().contrast) == [0, 0]
+        assert list(result.order) == list(range(6))
+        previous = bytes(result)
+        assert (
+            native.library.leo_presence_rank_ci16(
+                native.workspace, pointer(iq), 1, ct.byref(result)
+            )
+            == -1
+        )
+        assert bytes(result) == previous
+        with pytest.raises(ValueError, match="no completed"):
+            native.screens()
+        native.run(iq)
+        function = native.library.leo_presence_rank_window_ci16
+        function.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_size_t, ct.POINTER(TimingProposal)]
+        out = TimingProposal()
+        assert function(native.workspace, pointer(iq), rate // 50, ct.byref(out)) == 0
+        assert out.score == 0
+        with pytest.raises(ValueError, match="no completed"):
+            native.screens()
+    with pytest.raises(ValueError, match="closed"):
+        native.screens()
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+@pytest.mark.parametrize("edge", ["lower", "upper"])
+@pytest.mark.parametrize("bins", [512, 1024, 8192])
+def test_area_projection_matches_independent_integral_oracle(area_library, rate, edge, bins):
+    iq = np.random.default_rng(616).integers(-32768, 32768, (6 * rate // 50, 2), dtype=np.int16)
+    expected, epochs = oracle(iq, rate, edge, bins, area=True)
+    with NativeWindowRank(area_library, rate, edge, bins) as native:
+        result = native.run(iq)
+    np.testing.assert_allclose(result.scores, expected, rtol=2e-6, atol=2e-7)
+    np.testing.assert_array_equal(result.projected_epoch_samples, epochs)
+    np.testing.assert_array_equal(result.order, np.argsort(-expected, kind="stable"))
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+@pytest.mark.parametrize("level", [0, -32768, 32767])
+def test_area_projection_preserves_exact_zero_constant_controls(area_library, rate, level):
+    with NativeWindowRank(area_library, rate, "lower", 512) as native:
+        result = native.run(np.full((6 * rate // 50, 2), level, dtype=np.int16))
+    assert list(result.scores) == [0] * 6
+    assert list(result.order) == list(range(6))
 
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])

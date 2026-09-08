@@ -14,6 +14,7 @@ from tools.evaluate_native_presence_budgets import associated
 from tools.evaluate_presence_window_rank import load_dwells
 from tools.native_presence import ROOT, build_dwell_presence
 from tools.presence_dwell import NativeDwell, unpack
+from tools.presence_fftw import fftw_identity, fftw_options
 from tools.qualify_native_presence import digest, write_json
 from tools.qualify_presence_worker import compare_values
 
@@ -54,10 +55,22 @@ def summarize(rows):
     return summary
 
 
-def evaluate(directory: Path, output: Path, *, multires=False, integer_fold=False):
+def evaluate(
+    directory: Path,
+    output: Path,
+    *,
+    multires=False,
+    integer_fold=False,
+    fftw_prefix: Path | None = None,
+    area_screen: bool = False,
+    hybrid_screen: bool = False,
+):
+    if area_screen and hybrid_screen:
+        raise ValueError("choose either area-only or hybrid screen")
     if integer_fold and not multires:
         raise ValueError("integer folding experiment requires the frozen multires protocol")
     directory, output = directory.resolve(), output.resolve()
+    fft_options = fftw_options(fftw_prefix) if fftw_prefix is not None else None
     if any(
         output.is_relative_to(p) for p in (directory, Path("/mnt/qnap01"), Path("/srv/bulk/leo"))
     ):
@@ -98,6 +111,10 @@ def evaluate(directory: Path, output: Path, *, multires=False, integer_fold=Fals
             "evaluation_tool_sha256": digest(Path(__file__)),
             "optimization": optimization,
             "optimization_sha256": digest(optimization_path) if optimization else None,
+            "fft_backend": fftw_identity(fft_options) if fft_options else "builtin_fp64",
+            "screen_projection": "hybrid_max_second_ratio"
+            if hybrid_screen
+            else ("area_average" if area_screen else "point_interpolation"),
         },
     )
     flags = tuple(detector["common_flags"]) + tuple(
@@ -105,7 +122,16 @@ def evaluate(directory: Path, output: Path, *, multires=False, integer_fold=Fals
     )
     if optimization:
         flags += tuple(f"-DLEO_PRESENCE_{k}={v}" for k, v in optimization["extra_defines"].items())
-    library = build_dwell_presence(output / "dwell.so", cflags=flags)
+    if area_screen:
+        flags += ("-DLEO_PRESENCE_RANK_AREA_PROJECTION=1",)
+    if hybrid_screen:
+        flags += ("-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",)
+    library = build_dwell_presence(
+        output / "dwell.so",
+        cflags=flags + (fft_options["cflags"] if fft_options else ()),
+        ldflags=fft_options["ldflags"] if fft_options else (),
+        dependencies=fft_options["dependencies"] if fft_options else (),
+    )
     inputs = {r["file"]: r for r in json.loads((directory / "inputs.json").read_text())}
     priors = {r["probe"]: r for r in json.loads((directory / "results.json").read_text())}
     rows, blind_parity = [], 0
@@ -124,6 +150,7 @@ def evaluate(directory: Path, output: Path, *, multires=False, integer_fold=Fals
                     workspaces[key] = stack.enter_context(NativeDwell(library, *key))
                 for mode in protocol["modes"]:
                     result = unpack(workspaces[key].run(iq, seeded=mode == "seeded"))
+                    result["screen_diagnostics"] = unpack(workspaces[key].screens())
                     observations = []
                     for position, window in enumerate(result["rank"]["order"]):
                         source = metadata["source_files"][window]
@@ -185,8 +212,19 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--multires", action="store_true")
     parser.add_argument("--integer-fold", action="store_true")
+    parser.add_argument("--fftw-prefix", type=Path)
+    parser.add_argument("--area-screen", action="store_true")
+    parser.add_argument("--hybrid-screen", action="store_true")
     args = parser.parse_args()
-    evaluate(args.directory, args.output, multires=args.multires, integer_fold=args.integer_fold)
+    evaluate(
+        args.directory,
+        args.output,
+        multires=args.multires,
+        integer_fold=args.integer_fold,
+        fftw_prefix=args.fftw_prefix,
+        area_screen=args.area_screen,
+        hybrid_screen=args.hybrid_screen,
+    )
 
 
 if __name__ == "__main__":

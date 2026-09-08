@@ -29,9 +29,7 @@ def library(tmp_path_factory, request):
         "portable": ("-DLEO_PRESENCE_FORCE_PORTABLE",),
         "iterative": ("-DLEO_PRESENCE_ITERATIVE_FFT=1",),
     }[request.param]
-    return build_library(
-        tmp_path_factory.mktemp("native-presence") / "presence.so", cflags=flags
-    )
+    return build_library(tmp_path_factory.mktemp("native-presence") / "presence.so", cflags=flags)
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
@@ -254,6 +252,7 @@ def test_bounded_fft_matches_numpy(library, size):
             ("roots", ct.c_void_p),
             ("output", ct.c_void_p),
             ("scratch", ct.c_void_p),
+            ("backend_plan", ct.c_void_p),
         ]
 
     native = ct.CDLL(str(library))
