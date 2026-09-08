@@ -19,6 +19,75 @@ ROOT = Path(__file__).resolve().parents[1]
 NATIVE = ROOT / "src/leo/analysis/native_presence"
 
 
+def build_scanner_glrt_port(
+    output: Path, *, compiler: str = "cc", cflags: tuple[str, ...] = ()
+) -> Path:
+    """Build the acquisition-facing port, without linking numerical code/IIO.
+
+    This is a development/build-host helper only. A daemon consumes the built
+    library and scanner_glrt.h, not another component's private Python modules.
+    """
+    output = output.resolve()
+    receipt = output.with_name(output.name + ".build.json")
+    for path in (output, receipt):
+        if path.exists():
+            raise FileExistsError(path)
+    source = ROOT / "src/leo/scanner/native_presence"
+    names = (
+        "scanner_glrt.c",
+        "scanner_glrt_request.c",
+        "pool.c",
+        "frame_codec.c",
+        "frame_result.c",
+    )
+    sources = [source / name for name in names]
+    sources += [
+        source / name for name in ("scanner_glrt.h", "pool.h", "frame_codec.h", "frame_result.h")
+    ]
+    sources += [NATIVE / "presence.h", NATIVE / "window_rank.h", Path(__file__)]
+    hashes = {str(path.relative_to(ROOT)): _digest(path) for path in sources}
+    compiler_path = shutil.which(compiler)
+    if compiler_path is None:
+        raise FileNotFoundError(compiler)
+    command = [
+        compiler_path,
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-shared",
+        "-fPIC",
+        *cflags,
+        *(str(source / name) for name in names),
+        "-pthread",
+        "-lm",
+        "-o",
+        str(output),
+    ]
+    subprocess.run(command, check=True)
+    if hashes != {str(path.relative_to(ROOT)): _digest(path) for path in sources}:
+        raise RuntimeError("source changed during SDK build")
+    with receipt.open("x") as stream:
+        json.dump(
+            {
+                "schema": "org.leo.research.scanner-glrt-port-build/v1",
+                "created_unix_ns": time.time_ns(),
+                "command": command,
+                "compiler_version": subprocess.run(
+                    [compiler_path, "--version"], check=True, text=True, capture_output=True
+                ).stdout,
+                "compiler_sha256": _digest(Path(compiler_path).resolve()),
+                "sources_sha256": hashes,
+                "binary_sha256": _digest(output),
+            },
+            stream,
+            indent=2,
+        )
+        stream.write("\n")
+    return output
+
+
 class Candidate(ct.Structure):
     _fields_ = [
         ("epoch", ct.c_int32),

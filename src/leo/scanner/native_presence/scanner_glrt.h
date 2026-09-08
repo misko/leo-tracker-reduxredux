@@ -1,0 +1,74 @@
+/* Narrow userspace acquisition port. No IIO types or private numerical/IPC
+ * structures cross this boundary. All counters denote samples, not host time.
+ * API-v1 is experimental until the provider/quality/live-duty gates pass. */
+#ifndef LEO_SCANNER_GLRT_H
+#define LEO_SCANNER_GLRT_H
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
+#define LEO_SCANNER_GLRT_MAX_VISITS 2500u
+#define LEO_SCANNER_GLRT_MAX_BLOCK_SAMPLES 1048576u
+#define LEO_SCANNER_GLRT_REQUEST_HEADER_BYTES 96u
+#define LEO_SCANNER_GLRT_REQUEST_MAX_BYTES 4096u
+#define LEO_SCANNER_GLRT_FRAME_MAX_OVERHEAD 704u
+typedef struct {
+    uint64_t generation;
+    uint32_t rx;
+    uint8_t algorithm_sha256[32], configuration_sha256[32];
+    const uint8_t *legacy_request;
+    size_t legacy_bytes;
+} leo_scanner_glrt_request_v1;
+/* LGO1 wraps, but does not modify/interpret, an existing provider request.
+ * Borrowed legacy bytes are valid only as long as the packet. No allocation.
+ * Flags/reserved fields are fixed to zero; RX1 only. No runtime file paths. */
+int leo_scanner_glrt_request_decode(leo_scanner_glrt_request_v1 *,
+    const void *packet, size_t bytes);
+ssize_t leo_scanner_glrt_request_encode(const leo_scanner_glrt_request_v1 *,
+    void *packet, size_t capacity);
+int leo_scanner_glrt_legacy_view(const void *packet, size_t bytes,
+    const uint8_t **legacy, size_t *legacy_bytes);
+
+typedef struct leo_scanner_glrt leo_scanner_glrt;
+typedef struct {
+    uint64_t session, generation;
+    uint32_t rate_hz, rx, maximum_visits, maximum_block_samples;
+    uint8_t algorithm_sha256[32], configuration_sha256[32];
+} leo_scanner_glrt_config_v1;
+
+/* Startup only: preallocate bounded IQ history/result storage and start the
+ * isolated worker. Paths come from trusted daemon configuration, never the
+ * remote OPENM request. Caller attests the pinned artifact/config digests.
+ * The worker and template files must be regular, owned by root/current euid,
+ * not group/other writable, and not symlinks. No receive buffer is opened.
+ * All methods on one session must be serialized by its acquisition owner. */
+int leo_scanner_glrt_open(leo_scanner_glrt **output,
+    const leo_scanner_glrt_config_v1 *config,
+    const char *worker_path, const char *template_path);
+
+/* Ordered, independently attested hop geometry, potentially arriving after IQ.
+ * Visit indices begin at zero. A visit always has 120ms of planned valid time;
+ * unavailable/partial input never produces an absence claim. Channel 1..4,
+ * edge 0 lower / 1 upper. Geometry and blocks may arrive in either order. */
+int leo_scanner_glrt_visit(leo_scanner_glrt *, uint64_t visit,
+    uint64_t valid_start, uint64_t valid_end, uint32_t channel, uint32_t edge);
+int leo_scanner_glrt_block(leo_scanner_glrt *, uint64_t first_sample,
+    const int16_t *iq, size_t samples, size_t stride_shorts, size_t rx_offset_shorts);
+
+/* Stop submitting without waiting for computation. Cancellation resolves
+ * incomplete input as unavailable; submitted jobs may still finish normally. */
+int leo_scanner_glrt_finish(leo_scanner_glrt *, int cancelled);
+
+/* Encode LGC1 with unchanged opaque legacy bytes and at most four earlier
+ * results. Output must not overlap legacy input. No allocation/wait/refill.
+ * Frame sequence and consumed results advance only after successful encoding.
+ * Numerical evidence remains unqualified: this port enables no decision policy. */
+ssize_t leo_scanner_glrt_frame(leo_scanner_glrt *, const void *legacy,
+    size_t legacy_bytes, void *output, size_t capacity);
+/* Only after finish: -EAGAIN while pending; positive metadata-only DRAIN frame;
+ * exactly one FINAL, then -ENODATA. No fake IQ and no receive-buffer operation. */
+ssize_t leo_scanner_glrt_drain(leo_scanner_glrt *, void *output, size_t capacity);
+/* Failure of advisory processing must not change acquisition policy. */
+void leo_scanner_glrt_fail(leo_scanner_glrt *);
+void leo_scanner_glrt_close(leo_scanner_glrt *);
+#endif
