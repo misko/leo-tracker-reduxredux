@@ -34,6 +34,7 @@ VARIANTS = {
     "amplitude": (1, 0),
     "normalized-diverse": (0, 1),
     "amplitude-diverse": (1, 1),
+    "amplitude-diverse-supported": (1, 1),
 }
 
 
@@ -42,14 +43,16 @@ def variant_flags(name):
     if name not in VARIANTS:
         raise ValueError("unknown structured challenge variant")
     amplitude, diversity = VARIANTS[name]
-    return (
+    flags = (
         f"-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED={amplitude}",
         f"-DLEO_PRESENCE_GLRT_SYMBOL_DIVERSITY={diversity}",
     )
+    return flags + (("-DLEO_PRESENCE_ENERGY_SUPPORT=1",) if name.endswith("-supported") else ())
 
 
 def validate_protocol(protocol):
     variants = protocol["variants"]
+    seed_base = protocol.get("independent_case_seed_base")
     if (
         protocol["policy"] != {"minimum_exact_score": 0.175, "minimum_margin": 0.025}
         or protocol["negative_kinds"] != list(NEGATIVE_KINDS)
@@ -64,11 +67,29 @@ def validate_protocol(protocol):
         or protocol["dwell_ms"] != 120
         or protocol["absence_policy_enabled"]
         or protocol["live_rf_authorized"]
+        or type(protocol.get("optimized_arithmetic", False)) is not bool
+        or (
+            seed_base is not None
+            and (
+                type(seed_base) is not int
+                or not 0 <= seed_base < 2**32
+                or type(protocol["case_count"]) is not int
+                or not 0 < protocol["case_count"] <= 4096
+                or seed_base + protocol["case_count"] > 2**32
+            )
+        )
     ):
         raise ValueError("unreviewed challenge policy")
 
 
 def cases(protocol):
+    """Optional fresh independent draws per case; old inventories stay exact."""
+    base = protocol.get("independent_case_seed_base")
+    for index, spec in enumerate(_cases(protocol)):
+        yield spec if base is None else dict(spec, seed=base + index)
+
+
+def _cases(protocol):
     for rate in protocol["rates_hz"]:
         for edge in protocol["edges"]:
             geometry = {"rate_hz": rate, "edge": edge}
@@ -257,6 +278,11 @@ def run(output, prefix, protocol_path=PROTOCOL):
         + tuple(f"-DLEO_PRESENCE_{k}={v}" for k, v in detector["variants"][0]["defines"].items())
         + ("-DLEO_PRESENCE_DIFFERENTIAL_CI16=1", "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1")
     )
+    if protocol.get("optimized_arithmetic", False):
+        flags += (
+            "-DLEO_PRESENCE_BOUNDED_MAGNITUDE=1",
+            "-DLEO_PRESENCE_CONDITIONED_BLOCK_ROTATION=1",
+        )
     freeze = dict(
         protocol=protocol,
         protocol_sha256=digest(protocol_path),
