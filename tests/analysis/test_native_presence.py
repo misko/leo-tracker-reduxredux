@@ -99,6 +99,15 @@ def test_zero_invalid_and_closed_inputs(library):
         for invalid in [np.zeros(5), np.zeros(50001), np.full(50000, np.nan), np.ones((2, 50000))]:
             with pytest.raises(ValueError):
                 native.run(invalid)
+        for cfo, offset in ((float("nan"), 0), (float("inf"), 0), (1e308, 0), (0, 3)):
+            with pytest.raises(ValueError):
+                native.glrt(np.zeros(50000), 0, cfo, offset)
+        exact = np.ones(round(2_500_000 / 750), dtype=np.complex128)
+        control = exact.copy()
+        exact[0] = 17
+        assert not native.library.leo_presence_create(
+            2_500_000, pointer(exact), pointer(control), len(exact)
+        )
     native.close()
     with pytest.raises(ValueError, match="closed"):
         native.run(np.zeros(50000))

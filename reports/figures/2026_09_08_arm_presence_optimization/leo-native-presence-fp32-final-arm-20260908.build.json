@@ -1,0 +1,36 @@
+{
+  "schema": "org.leo.research.native-presence-build/v1",
+  "created_unix_ns": 1788836006482202765,
+  "command": [
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+    "-std=c11",
+    "-O3",
+    "-fno-math-errno",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-DLEO_PRESENCE_COARSE_FP32",
+    "-fno-unroll-loops",
+    "-fno-peel-loops",
+    "-fno-prefetch-loop-arrays",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/tools/native_presence_replay.c",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/analysis/native_presence/presence.c",
+    "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/analysis/native_presence/fft.c",
+    "-lm",
+    "-o",
+    "/tmp/leo-native-presence-fp32-final-arm-20260908"
+  ],
+  "compiler_version": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]\nCopyright (C) 2017 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "compiler_sha256": "768cd6f030dcc5c4dc8577c8bd4536dd14b68fdc22af8cdefbce5c86dd5e33fa",
+  "sources_sha256": {
+    "src/leo/analysis/native_presence/coarse_fp32.h": "7c31c02c86e78c5070243c06ea8c24da4689e6ae4575a9a1d492a381815b33bc",
+    "src/leo/analysis/native_presence/fft.c": "3277fc098cb7be389ff108dbbff4f8f54371ba75f002a6dfbe61e26435c484ae",
+    "src/leo/analysis/native_presence/fft.h": "951e09cccb036712640f6331e52168319a3f890e8a6f95f4d74f96ee1f2ed188",
+    "src/leo/analysis/native_presence/presence.c": "58782070c6448f3f3a4c1866003b9fa981c9ca7f515bccc2031bbb9375166ce4",
+    "src/leo/analysis/native_presence/presence.h": "55535a60701d7983bd5d671d392264dd978858676a1e82e60014862672434bed",
+    "src/leo/analysis/starlink/_native_acquisition_grid.inc": "1b67c6dcf6e1310816f202e07356b4334a6dcd64d764462329a60d617139917a",
+    "tools/native_presence.py": "fa76ee7020a3bc729700967d18f2df1191f984ba4c8381ce5e59e8d9e9595aa2",
+    "tools/native_presence_replay.c": "8717dda7d20079dfe9294d0995dbc7840a1868b30eb9c894b47ef95fe23e8538"
+  },
+  "binary_sha256": "cc3dca6eeea0a1365af64e465f1cf8c8c56656056692d400be76bc9f9c3840ab"
+}

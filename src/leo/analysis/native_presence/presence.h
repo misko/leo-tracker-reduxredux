@@ -24,6 +24,10 @@ typedef struct leo_presence_workspace leo_presence_workspace;
  * They must be the complex64 Qin frames promoted to double, for the given edge.
  * A copied immutable template package avoids an embedded Python dependency.
  * Runtime rate support is explicit; unqualified rates fail rather than snap.
+ * Template components must be finite and <=16 in magnitude. Input components
+ * must be finite and <=1e12; the radio CI16 range is safely inside this bound.
+ * All run/diagnostic calls return 0 on success, -1 for unsupported input or
+ * geometry. A failed call is unknown evidence, not a negative detection.
  */
 leo_presence_workspace *leo_presence_create(
     uint32_t rate_hz, const leo_presence_complex *exact,
@@ -33,7 +37,9 @@ int leo_presence_run(leo_presence_workspace *workspace,
     const leo_presence_complex *samples, size_t count, leo_presence_result *result);
 int leo_presence_run_ci16(leo_presence_workspace *workspace,
     const int16_t *interleaved_iq, size_t count, leo_presence_result *result);
-/* Diagnostic surfaces, used for differential qualification of shared kernels. */
+/* Diagnostic surfaces, used for differential qualification of shared kernels.
+ * GLRT accepts the acquisition CFO interval [-400000,400000] Hz and fractional
+ * offsets in [-2,2] samples, retaining integer epochs separately. */
 int leo_presence_coarse(leo_presence_workspace *workspace,
     const leo_presence_complex *samples, size_t count, double *scores);
 int leo_presence_glrt(leo_presence_workspace *workspace,
