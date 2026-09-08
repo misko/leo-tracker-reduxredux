@@ -1,0 +1,156 @@
+{
+  "scope": "desktop, default-off; no RF, deployment or duty qualification",
+  "regenerated_numerical_parity_cases": 576,
+  "independent_synthetic_cases": 800,
+  "synthetic_groups": {
+    "20 ms signals \u22126 to +12 dB / tone": {
+      "cases": 240,
+      "associated": {
+        "amplitude-diverse": 240,
+        "amplitude-diverse-supported": 240
+      }
+    },
+    "4 ms boundary \u22126 dB": {
+      "cases": 40,
+      "associated": {
+        "amplitude-diverse": 9,
+        "amplitude-diverse-supported": 14
+      }
+    },
+    "4 ms boundary +6 dB": {
+      "cases": 40,
+      "associated": {
+        "amplitude-diverse": 19,
+        "amplitude-diverse-supported": 25
+      }
+    }
+  },
+  "synthetic_false_flags": {
+    "amplitude-diverse": 0,
+    "amplitude-diverse-supported": 0
+  },
+  "synthetic_negative_cases": 480,
+  "boundary_failure_stages": {
+    "amplitude-diverse": {
+      "Wrong slice": 20,
+      "Initial CFO miss": 31,
+      "Associated": 28,
+      "Below fixed threshold": 1
+    },
+    "amplitude-diverse-supported": {
+      "Wrong slice": 20,
+      "Fractional incomplete": 17,
+      "Associated": 39,
+      "Below fixed threshold": 3,
+      "Initial CFO miss": 1
+    }
+  },
+  "boundary_gains": 13,
+  "boundary_losses": 2,
+  "boundary_unassociated_flags": {
+    "amplitude-diverse": 5,
+    "amplitude-diverse-supported": 0
+  },
+  "rf": {
+    "results": {
+      "amplitude-diverse": {
+        "reference_positive": 35,
+        "unresolved": 29,
+        "same_slice_associated": 18,
+        "within_dwell_associated": 26,
+        "flags_in_positive": 27,
+        "flags_in_unresolved": 1
+      },
+      "amplitude-diverse-supported": {
+        "reference_positive": 35,
+        "unresolved": 29,
+        "same_slice_associated": 18,
+        "within_dwell_associated": 27,
+        "flags_in_positive": 29,
+        "flags_in_unresolved": 1
+      }
+    },
+    "desktop_timing_percentiles": {
+      "2500000": {
+        "amplitude-diverse": {
+          "total_cpu_ms": [
+            0.8142614999999296,
+            0.9578247500000884,
+            1.0158518700001151,
+            1.0198169999998754
+          ],
+          "total_wall_ms": [
+            0.8141855001449585,
+            0.9577631771564483,
+            1.0158107805252075,
+            1.019752025604248
+          ]
+        },
+        "amplitude-diverse-supported": {
+          "total_cpu_ms": [
+            0.8300610000001143,
+            0.9624543999998877,
+            1.016315140000074,
+            1.145940000000337
+          ],
+          "total_wall_ms": [
+            0.829990029335022,
+            0.9624234616756439,
+            1.016202709674835,
+            1.1459400653839111
+          ]
+        }
+      },
+      "5000000": {
+        "amplitude-diverse": {
+          "total_cpu_ms": [
+            1.5522889999999734,
+            1.7663585500001655,
+            1.9431311199999755,
+            1.9979209999999057
+          ],
+          "total_wall_ms": [
+            1.5529825091362,
+            1.7663303554058072,
+            1.9429499173164366,
+            1.9976840019226074
+          ]
+        },
+        "amplitude-diverse-supported": {
+          "total_cpu_ms": [
+            1.5910569999998643,
+            1.7662829999998506,
+            1.9681691799999972,
+            2.060758000000078
+          ],
+          "total_wall_ms": [
+            1.591043472290039,
+            1.7662101745605467,
+            1.9681408154964444,
+            2.0607279539108276
+          ]
+        }
+      }
+    }
+  },
+  "rf_gained": [
+    {
+      "session": "scan-hop-44105201bdaf5aa0",
+      "visit": 1447
+    }
+  ],
+  "rf_lost": [],
+  "passing_tests": {
+    "analysis": 439,
+    "worker": 22
+  },
+  "execution": {
+    "processes": 8,
+    "dwells": 16,
+    "confirmations": 96,
+    "sanitizer_diagnostics": 0,
+    "numerical_mismatches": 0,
+    "arm_worker_sha256": "dc1f95c437c8bf8298f289ce870f31af41d5b84bc8551d37f2b58ff403dd7e28",
+    "arm_worker_executed": false
+  }
+}
