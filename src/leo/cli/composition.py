@@ -301,6 +301,7 @@ class CliSettings:
     scanner_persistent_queue_capacity_visits: int = 64
     scanner_persistent_iiod_port: int = 30_432
     scanner_persistent_iiod_binary_path: Path | None = None
+    scanner_persistent_iiod_bundle_manifest_path: Path | None = None
     scanner_persistent_credentials_directory: Path | None = None
     scanner_glrt: ScannerGlrtOptions | None = None
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
@@ -372,6 +373,11 @@ class CliSettings:
                         "persistent hopping requires an exact release-local iiOD binary"
                     )
                 self._require_runtime_file(binary, "persistent-hop iiOD binary")
+                if self.scanner_persistent_iiod_bundle_manifest_path is not None:
+                    self._require_runtime_file(
+                        self.scanner_persistent_iiod_bundle_manifest_path,
+                        "persistent-hop iiOD companion bundle manifest",
+                    )
                 if not os.access(binary, os.X_OK):
                     raise ValueError("persistent-hop iiOD binary is not executable")
                 if known_hosts is None or password is None:
@@ -411,6 +417,11 @@ class CliSettings:
             and not self.scanner_persistent_iiod_binary_path.is_absolute()
         ):
             raise ValueError("persistent-hop iiOD binary path must be absolute")
+        if self.scanner_persistent_iiod_bundle_manifest_path is not None and (
+            not self.scanner_persistent_iiod_bundle_manifest_path.is_absolute()
+            or self.scanner_persistent_iiod_binary_path is None
+        ):
+            raise ValueError("iiOD companion bundle requires an absolute path and iiOD binary")
         if (
             self.scanner_persistent_credentials_directory is not None
             and not self.scanner_persistent_credentials_directory.is_absolute()
@@ -554,6 +565,11 @@ class CliSettings:
                     None
                     if values.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH") is None
                     else Path(values["LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH"])
+                ),
+                scanner_persistent_iiod_bundle_manifest_path=(
+                    None
+                    if values.get("LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH") is None
+                    else Path(values["LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH"])
                 ),
                 scanner_persistent_credentials_directory=(
                     None
@@ -2711,6 +2727,7 @@ class LocalAcquisitionBackend:
                 binary_path=binary,
                 known_hosts_path=known_hosts,
                 password_path=password,
+                bundle_manifest_path=self.settings.scanner_persistent_iiod_bundle_manifest_path,
             )
         )
 

@@ -28,10 +28,16 @@ def create_pluto_userspace_iiod_lifecycle(
         raise PlutoUserspaceIiodLifecycleError(
             "installed pluto-plus-utils lacks the userspace iiOD deployment"
         ) from error
+    companion_options = (
+        {"bundle_manifest_path": configuration.bundle_manifest_path}
+        if configuration.bundle_manifest_path is not None
+        else {}
+    )
     return deployment_type(
         host=configuration.host,
         expected_serial=configuration.expected_serial,
         binary_path=configuration.binary_path,
         known_hosts_path=configuration.known_hosts_path,
         password_path=configuration.password_path,
+        **companion_options,
     )

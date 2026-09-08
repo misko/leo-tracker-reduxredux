@@ -1,6 +1,7 @@
 import json
 from dataclasses import replace
 from datetime import UTC, datetime
+from pathlib import Path
 from threading import Event
 from types import SimpleNamespace
 
@@ -76,6 +77,8 @@ def test_runtime_mode_requires_persistent_scanner_and_passes_options_to_radio(
 
 def test_complete_environment_opt_in_preserves_existing_scanner_geometry(tmp_path):
     original = _settings(tmp_path)
+    manifest = original.scanner_persistent_iiod_binary_path.parent / "bundle.json"
+    manifest.write_text('{"checked_by_ppu_at_entry": true}')
     settings = CliSettings.from_environ(
         {
             "LEO_RADIO_BACKEND": "pluto",
@@ -88,6 +91,7 @@ def test_complete_environment_opt_in_preserves_existing_scanner_geometry(tmp_pat
                 original.scanner_persistent_iiod_binary_path
             ),
             "CREDENTIALS_DIRECTORY": str(original.scanner_persistent_credentials_directory),
+            "LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH": str(manifest),
             "LEO_SCANNER_GLRT_MODE": "unqualified-evidence",
             "LEO_SCANNER_GLRT_ALGORITHM_SHA256": ALGORITHM,
             "LEO_SCANNER_GLRT_CONFIGURATION_SHA256": CONFIGURATION,
@@ -95,6 +99,13 @@ def test_complete_environment_opt_in_preserves_existing_scanner_geometry(tmp_pat
         }
     )
     assert settings.scanner_glrt == ScannerGlrtOptions(ALGORITHM, CONFIGURATION, 3)
+    assert settings.scanner_persistent_iiod_bundle_manifest_path == manifest
+    constructed = []
+    hooks = CompositionHooks(persistent_hop_iiod_lifecycle_factory=constructed.append)
+    LocalAcquisitionBackend(settings, hooks=hooks)._persistent_hop_iiod_lifecycle(
+        settings.radios[0]
+    )
+    assert constructed[0].bundle_manifest_path == manifest
     for field in (
         "scanner_run_seconds",
         "scanner_dwell_ms",
@@ -106,6 +117,23 @@ def test_complete_environment_opt_in_preserves_existing_scanner_geometry(tmp_pat
         "scanner_persistent_queue_capacity_visits",
     ):
         assert getattr(settings, field) == getattr(original, field)
+
+
+def test_bundle_option_does_not_enable_detector_and_rejects_relative_paths(tmp_path):
+    settings = _settings(tmp_path)
+    assert settings.scanner_persistent_iiod_bundle_manifest_path is None
+    manifest = settings.scanner_persistent_iiod_binary_path.parent / "bundle.json"
+    manifest.write_text("{}")
+    assert (
+        replace(settings, scanner_persistent_iiod_bundle_manifest_path=manifest).scanner_glrt
+        is None
+    )
+    with pytest.raises(ValueError):
+        replace(settings, scanner_persistent_iiod_bundle_manifest_path=Path("relative.json"))
+    with pytest.raises(CliBackendError, match="absolute path and iiOD binary"):
+        CliSettings.from_environ(
+            {"LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH": str(manifest)}
+        )
 
 
 class EvidenceRadio(_BoundedPersistentRadio):

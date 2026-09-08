@@ -22,6 +22,7 @@ class PersistentHopIiodLifecycleConfiguration:
     binary_path: Path
     known_hosts_path: Path
     password_path: Path
+    bundle_manifest_path: Path | None = None
 
 
 class PersistentHopIiodLifecycle(Protocol):
