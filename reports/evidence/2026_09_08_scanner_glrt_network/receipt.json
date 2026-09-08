@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "checkpoint": "scanner_glrt_network_offline",
+  "date_utc": "2026-09-08",
+  "status": "offline transport checkpoint passed; full goal unfinished",
+  "sources": {
+    "leo": "efad0b19d63df4a774b65da3c64cbaf650a96874",
+    "libiio": "a188a70d7f8785b7f342e337655ae537bc20848d",
+    "pluto_plus_utils": "606144e60d63910dfaf5902f722b950df65dc604"
+  },
+  "production_mutations": [],
+  "rf_collected": false,
+  "radio_accessed": false,
+  "tests": [
+    {
+      "lane": "combined loopback",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 43.174,
+      "command": "PYTHONDONTWRITEBYTECODE=1 LD_LIBRARY_PATH=/tmp/leo-scanner-glrt-provider.YHI3NP/build PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src:/home/mouse9911/gits/libiio-arm-glrt-frame-integration/bindings/python OPENBLAS_NUM_THREADS=1 SCANNER_GLRT_NETWORK_SERVER=/tmp/leo-scanner-glrt-provider.YHI3NP/build/iiod/test_scanner_glrt_network_server /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -xq tests/radio/test_scanner_glrt_network.py -o junit_family=xunit1 --junitxml=/tmp/leo-glrt-network-checkpoint.K5NohM/network.xml"
+    },
+    {
+      "lane": "instrumented loopback server short cases",
+      "passed": 14,
+      "failed": 0,
+      "deselected": 2,
+      "seconds": 8.73,
+      "command": "PYTHONDONTWRITEBYTECODE=1 LD_LIBRARY_PATH=/tmp/leo-scanner-glrt-provider.YHI3NP/build PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src:/home/mouse9911/gits/libiio-arm-glrt-frame-integration/bindings/python OPENBLAS_NUM_THREADS=1 SCANNER_GLRT_SERVER_LIBRARY_PATH=/tmp/leo-scanner-glrt-provider.YHI3NP/asan ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 SCANNER_GLRT_NETWORK_SERVER=/tmp/leo-scanner-glrt-provider.YHI3NP/asan/iiod/test_scanner_glrt_network_server /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -xq tests/radio/test_scanner_glrt_network.py -k 'not full_300s'",
+      "scope": "ASan/UBSan/leak checking for server build, SDK and worker; ordinary Python client/libiio"
+    },
+    {
+      "lane": "Leo focused regressions",
+      "passed": 317,
+      "seconds": 15.31,
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src OPENBLAS_NUM_THREADS=1 FFTW_PREFIX=/tmp/leo-presence-fftw.nLw4v6/install /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/radio/test_scanner_glrt_metadata.py tests/radio/test_scanner_glrt_native_host.py tests/radio/test_pluto_persistent_hop.py tests/radio/test_scanner_glrt_frames.py tests/contracts/test_scanner_glrt_session.py tests/contracts/test_scanner_glrt_frame.py tests/scanner/test_scanner_glrt_request.py tests/scanner/test_scanner_glrt_port.py tests/scanner/test_native_presence_dwell_worker.py tests/scanner/test_native_presence_pool.py tests/scanner/test_glrt_frame_result.py tests/scanner/test_persistent_hop_application.py tests/scanner/test_persistent_hop_contracts.py"
+    },
+    {
+      "lane": "PPU capture regressions",
+      "passed": 182,
+      "seconds": 4.75,
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src OPENBLAS_NUM_THREADS=1 /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/test_persistent_hop.py tests/test_iio_persistent_hop.py tests/test_iio_metadata_capture.py"
+    },
+    {
+      "lane": "libiio Python bindings",
+      "passed": 73,
+      "seconds": 0.17,
+      "command": "PYTHONDONTWRITEBYTECODE=1 LD_LIBRARY_PATH=/tmp/leo-scanner-glrt-provider.YHI3NP/build PYTHONPATH=bindings/python /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q bindings/python/tests/test_metadata_buffer_batch.py bindings/python/tests/test_metadata_drain_network.py"
+    },
+    {
+      "lane": "standalone SPF provider sanitizer regression",
+      "result": "passed",
+      "command": "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 /tmp/leo-scanner-glrt-provider.YHI3NP/asan/iiod/test_scanner_glrt_provider"
+    },
+    {
+      "lane": "Ruff and git whitespace",
+      "result": "passed",
+      "scope": "new Leo tests and changed worktrees"
+    }
+  ],
+  "full_counter_spans": [
+    {
+      "rate_hz": 2500000,
+      "visits": 2480,
+      "results": 2480,
+      "source_span_samples": 750217357,
+      "delivery_complete": true,
+      "classification_complete": false,
+      "result_reasons": [
+        "unqualified_classifier"
+      ],
+      "test_wall_seconds": 11.738
+    },
+    {
+      "rate_hz": 5000000,
+      "visits": 2480,
+      "results": 2480,
+      "source_span_samples": 1500417357,
+      "delivery_complete": true,
+      "classification_complete": false,
+      "result_reasons": [
+        "unqualified_classifier"
+      ],
+      "test_wall_seconds": 23.687
+    }
+  ],
+  "artifacts_sha256": {
+    "network_server": "a5ecaede9f960664358e3b55b28c983287f14889e191abc3516a341986c39d50",
+    "client_libiio": "d8f7097845656d44516727a11c51095861ba0476b1da69108c6e986704b5d59c",
+    "instrumented_network_server": "330747ab6fa480fc4be1b8cacb1cf25e6bb61185b49ad02ba0909bed8352491d",
+    "sdk": "4b0fb217e71347e705e84f3b92871cf7f0ae0b6402e3e05c2e26ceea85208c97",
+    "worker": "b881d4cc1f62c306185ae609681bdb11ef3367ac78157ca7116789e93302887d",
+    "templates_2500000": "35070e0e00ad7d73b10a7c2872086bd186e2912adf40a51679333610014db0bb",
+    "templates_5000000": "2e71705eef035a2f6f259bf2b4bb1d5abbe42adb67673fc7730c0356f2ff1971",
+    "original_junit_xml": "a216d8a79b8dd4cd6b9905f5cb700c716a9c6dfaa3553c084352a1416eb86bea",
+    "retained_junit_xml_with_terminal_newline": "abb2c998d0f39db7adbdae89344bd145e8f0a9111e05e52bca7af61a202043b1"
+  },
+  "limitations": [
+    "Accelerated synthetic sample clock, not original archived block/event arrival",
+    "RX0 is constant nonzero CI16 and RX1 is zero: transport tests, not sensitivity/specificity or fractional-signal qualification",
+    "Hardware operations and pyadi layout priming are substituted; physical LAN/serial gates unchanged",
+    "No new ARM execution or live-duty measurement; original 5 MS/s and cold-tail failures remain",
+    "Only scanner request-driven READBUFM path tested; direct-async and other transport modes not qualified",
+    "Runtime composition, durable publication/UI, qualified decision policy, release/deploy remain open",
+    "Test-only configured algorithm/configuration IDs are not release artifact attestation"
+  ],
+  "retained_failures": [
+    "Initial fixture omitted metadata-status and cancel capabilities; strict client rejected rather than bypassing negotiation",
+    "Initial fixture gain observation did not overlap its frame; real host validator rejected it; fixture corrected without relaxing validator",
+    "Initial status error occurred before fixture cleanup protected its buffer; context-first destruction segfaulted Python; fixture cleanup now closes buffer before context on setup failure"
+  ]
+}

@@ -1,5 +1,14 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
+Latest combined-network checkpoint: [actual provider-to-host network integration](../../reports/2026_09_08_scanner_glrt_network_checkpoint.md).
+The real provider/worker, iiOD parser, TCP/libiio, strict raw reader and concrete
+production host backend now pass full 300-second accelerated counter spans at
+both rates: 2,480/2,480 unqualified results each. Fourteen short fault/compatibility
+cases also pass with an instrumented server. This is synthetic offline evidence,
+not original-arrival replay, ARM runtime, scientific qualification or live duty.
+Those gates and runtime composition/publication/UI remain open; no radio access,
+RF, deployment or remote merge occurred.
+
 Latest host checkpoint: [source-attested host integration](../../reports/2026_09_08_scanner_glrt_host_checkpoint.md).
 The opt-in production adapter now negotiates, unwraps, matches source dwells,
 and drains final results before close. A separate immutable evidence product
