@@ -63,3 +63,42 @@ def test_rejects_partial_or_unbound_replay():
     for lines in (raw.splitlines()[:-1], raw.splitlines()[1:]):
         with pytest.raises(ValueError):
             verify_replay("\n".join(lines), inputs, desktop, "test", 2, 2)
+
+
+def nuisance_fixture():
+    _, inputs, desktop = fixture()
+    row = desktop[0]["result"]
+    row["schema"] = "native-presence-nuisance-replay-v1"
+    row["nuisance"] = {
+        "enabled": 1,
+        "applied": 1,
+        "frequency_hz": -73123,
+        "spectral_fraction": 0.3,
+        "fitted_power_fraction": 0.2,
+        "cpu_ms": 10,
+    }
+    raw = "a" * 64 + "  /tmp/a.probe\n" + json.dumps(row) + "\n"
+    raw += json.dumps({**row, "iteration": 1}) + "\n"
+    return raw, inputs, desktop
+
+
+def test_nuisance_parity_allows_only_execution_time_to_differ():
+    raw, inputs, desktop = nuisance_fixture()
+    rows = verify_replay(raw.replace('"cpu_ms": 10', '"cpu_ms": 15'), inputs, desktop, "test", 2, 2)
+    assert len(rows) == 2
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        ('"cpu_ms": 10', '"cpu_ms": NaN'),
+        ('"cpu_ms": 10', '"cpu_ms": -1'),
+        ('"applied": 1', '"applied": 0'),
+        ('"frequency_hz": -73123', '"frequency_hz": -73120'),
+        ('"fitted_power_fraction": 0.2', '"fitted_power_fraction": 0.3'),
+    ],
+)
+def test_rejects_changed_nuisance_or_invalid_duration(replacement):
+    raw, inputs, desktop = nuisance_fixture()
+    with pytest.raises(ValueError):
+        verify_replay(raw.replace(*replacement), inputs, desktop, "test", 2, 2)

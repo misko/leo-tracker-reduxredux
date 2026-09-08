@@ -26,6 +26,13 @@ typedef struct {
     uint32_t coarse_frames, fine_frames, epoch_frames, anchor_stride, epoch_stride;
     uint32_t conditioned_radius_hz;
 } leo_presence_profile;
+/* Optional research preprocessing, separate from the original result ABI.
+ * Frequency is zero when no spectral candidate was retained. An applied fit
+ * changes the working IQ, never the caller's samples or the recording. */
+typedef struct {
+    int32_t enabled, applied;
+    double frequency_hz, spectral_fraction, fitted_power_fraction, cpu_ms;
+} leo_presence_nuisance;
 
 /* Exact/control templates are configuration, prepared once outside execution.
  * They must be the complex64 Qin frames promoted to double, for the given edge.
@@ -41,6 +48,7 @@ leo_presence_workspace *leo_presence_create(
     const leo_presence_complex *control, size_t template_count);
 void leo_presence_destroy(leo_presence_workspace *workspace);
 int leo_presence_get_profile(const leo_presence_workspace *workspace, leo_presence_profile *profile);
+int leo_presence_get_nuisance(const leo_presence_workspace *workspace, leo_presence_nuisance *nuisance);
 int leo_presence_run(leo_presence_workspace *workspace,
     const leo_presence_complex *samples, size_t count, leo_presence_result *result);
 int leo_presence_run_ci16(leo_presence_workspace *workspace,

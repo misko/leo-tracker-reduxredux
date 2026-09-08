@@ -31,8 +31,11 @@ def verify_replay(text, inputs, desktop, variant, repeats, sample_format):
             raise ValueError("result without input identity")
         row = json.loads(line)
         probe = expected[name]
+        reference = references[name]
         if (
-            row["schema"] != "native-presence-replay-profile-v1"
+            row["schema"]
+            not in ("native-presence-replay-profile-v1", "native-presence-nuisance-replay-v1")
+            or row["schema"] != reference["schema"]
             or row["iteration"] != counts[name]
             or row["format"] != sample_format
             or row["device_counter"] != probe["device_counter"]
@@ -41,7 +44,29 @@ def verify_replay(text, inputs, desktop, variant, repeats, sample_format):
         ):
             raise ValueError("replay identity or sequence mismatch")
         counts[name] += 1
-        reference = references[name]
+        if row["schema"] == "native-presence-nuisance-replay-v1":
+            got, want = row["nuisance"], reference["nuisance"]
+            if got.keys() != want.keys():
+                raise ValueError("nuisance field mismatch")
+            for key in got:
+                if key == "cpu_ms":
+                    if not math.isfinite(got[key]) or got[key] < 0:
+                        raise ValueError("invalid nuisance duration")
+                    continue
+                if key in ("enabled", "applied"):
+                    if got[key] != want[key]:
+                        raise ValueError("nuisance decision mismatch")
+                elif (
+                    not math.isfinite(got[key])
+                    or not math.isfinite(want[key])
+                    or not math.isclose(
+                        got[key],
+                        want[key],
+                        rel_tol=1e-9,
+                        abs_tol=0.001 if key == "frequency_hz" else 1e-10,
+                    )
+                ):
+                    raise ValueError("nuisance numerical mismatch")
         if len(row["candidates"]) != len(reference["candidates"]):
             raise ValueError("candidate inventory mismatch")
         for got, want in zip(row["candidates"], reference["candidates"], strict=True):

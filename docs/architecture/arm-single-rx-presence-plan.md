@@ -7,6 +7,11 @@ records baseline parity and ARM measurements. The newer
 [power-proposal checkpoint](../../reports/2026_09_08_arm_presence_power_checkpoint.md)
 meets the 100 ms saved-IQ CPU target for one separately named single-candidate
 variant, but broader quality and streaming gates have not passed.
+The latest [differential/tone checkpoint](../../reports/2026_09_08_arm_presence_differential_checkpoint.md)
+flags all 20 development reference positives, associates 19/20, and measures
+51.7/99.2 ms warmed p99 CPU on 800 CI16 ARM replays. First-execution/tail
+latency, fresh holdout, temporal coverage, and streaming qualification remain
+open; no worker/iiOD integration or deployment exists yet.
 
 ## Objective and boundaries
 
@@ -28,6 +33,13 @@ is available, report that checkpoint as blocked rather than load production.
 
 ## Evidence and unresolved questions
 
+- Latest prototype: differential/power timing proposals, all-symbol CFO
+  acquisition, and explicitly reported stationary-tone conditioning. Iterative
+  FP64 FFT and exact widening CI16/NEON lag sums bring warmed p99 to 51.7/99.2 ms
+  at 2.5/5 MS/s. All 800 ARM outputs match desktop, but 5 MS/s CPU maxima reach
+  102.1 ms warmed and 109.6 ms first execution. This is not a streaming pass.
+  The remaining CFO mismatch and additional unresolved RF flags are retained;
+  tone-control improvement is development evidence, not specificity proof.
 - Latest reduced-work result: a single-candidate 4096-bin pilot-power proposal
   with original-IQ fractional confirmation takes 43.5/77.4 ms warmed p99 CPU
   at 2.5/5 MS/s in 640 native-CI16 replay executions. Wider development recovers
