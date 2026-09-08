@@ -1,7 +1,10 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
-Status: proposed, 2026-09-08. This document authorizes no deployment or new RF
-collection. The scanner and scientific analysis remain unchanged.
+Status: implementation in progress, 2026-09-08. This document authorizes no
+deployment or new RF collection. Production scanning and scientific analysis
+remain unchanged. The [native checkpoint report](../../reports/2026_09_08_arm_presence_native_checkpoint.md)
+records current parity and ARM measurements; the 100 ms feasibility gate has
+not passed.
 
 ## Objective and boundaries
 
@@ -23,6 +26,11 @@ is available, report that checkpoint as blocked rather than load production.
 
 ## Evidence and unresolved questions
 
+- The native checkpoint now contains actual saved-IQ ARM smoke measurements.
+  Initial total CPU was 4.8/15.6 seconds at 2.5/5 MS/s, reduced to approximately
+  3.0/8.8 seconds by the first equivalent-computation optimization pass. These
+  are not streaming qualifications or timing distributions. They supersede
+  any earlier assumed desktop-to-ARM slowdown factors.
 - [Desktop screen](../../reports/2026_09_07_arm_presence_desktop_screen.md):
   reduced GLRT is implemented and timed on x86, not ARM. Approximate single-RX
   median detector CPU is 28 ms at 2.5 MS/s and 68 ms at 5 MS/s, excluding the

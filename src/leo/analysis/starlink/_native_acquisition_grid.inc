@@ -54,6 +54,10 @@ LEO_GRID_TARGET static void LEO_GRID_FUNCTION(FoldedAnchorGridKernel *kernel) {
             }
             for (npy_intp epoch = 0; epoch < valid_epochs; ++epoch) {
                 const npy_intp position = base + epoch;
+#if defined(LEO_GRID_CORRELATE)
+                LEO_GRID_CORRELATE(samples + position, rotated_real, rotated_imag,
+                    reference_count, correlation_real, correlation_imag);
+#else
 #if defined(LEO_GRID_AVX2_12_REGISTER_ACCUMULATION)
                 if (kernel->cfo_count == 12) {
                     __m256d correlation_real_0 = _mm256_setzero_pd();
@@ -143,6 +147,7 @@ LEO_GRID_TARGET static void LEO_GRID_FUNCTION(FoldedAnchorGridKernel *kernel) {
                 }
 #if defined(LEO_GRID_AVX2_12_REGISTER_ACCUMULATION)
                 }
+#endif
 #endif
                 double received_energy =
                     prefix[position + reference_count] - prefix[position];

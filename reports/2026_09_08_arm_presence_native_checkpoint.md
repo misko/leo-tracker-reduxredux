@@ -86,3 +86,48 @@ The remaining checkpoints are optimized ARM feasibility, fresh quality evaluatio
 300 s paced streaming replay at each rate, optional versioned iiOD/host integration,
 authorized bounded live shadow verification, and an opt-in release with rollback.
 See the [implementation plan](../docs/architecture/arm-single-rx-presence-plan.md).
+
+## First equivalent-computation optimization pass
+
+Three changes were tested individually, without shortening the 20 ms probe or
+removing any scientific search hypotheses:
+
+1. Cache local CFO rotations across frames. Cache interpolation weights by the
+   actual rounded fractional position, including changes across floating-point
+   binades, rather than recomputing 16 Lanczos weights at every sample.
+2. Specialize radix-2 FFT butterflies and remove division/modulo from inner
+   butterfly indexing. A subsequent constant-divisor cleanup also removes the
+   remaining variable division at recursive node setup.
+3. Accumulate four coarse-search frequency lanes in scalar registers rather
+   than repeatedly updating twelve complex array entries per tap. The existing
+   scientific kernel's default path is unchanged; an optional compile-time
+   correlation hook selects this layout only for the standalone native port.
+
+| 5 MS/s smoke build | Coarse CPU | Fine CPU | Fractional CPU | Total CPU |
+|---|---:|---:|---:|---:|
+| Fresh digest-bound baseline | 13,321 ms | 1,569 ms | 729 ms | 15,639 ms |
+| Cache rotations/weights | 13,342 ms | 1,580 ms | 170 ms | 15,102 ms |
+| Also optimize FFT butterflies/indexing | 13,346 ms | 1,149 ms | 110 ms | 14,625 ms |
+| Also register-block coarse search | 7,517 ms | 1,159 ms | 120 ms | **8,806 ms** |
+
+The register-block build's 2.5 MS/s smoke took **2,979 ms** total, including
+2,369 ms coarse, 540 ms fine, and 70 ms fractional. All five listed ARM
+executions matched the original frozen fractional oracle. These remain smoke
+observations, not distributions. The final recursive constant-divisor cleanup
+was made after this table's binaries; its cost is not separately measured here.
+
+Both cached and register-block desktop replays passed all 40 frozen probes,
+three executions each. The latter explicitly forced the portable path rather
+than using AVX2, so its desktop runtime must not be compared as though the
+execution backend were unchanged. Tests exercise both default and forced
+portable builds and FFT sizes spanning mixed radix-2/5 geometries.
+
+The [stage receipt](figures/2026_09_08_arm_presence_optimization/arm-stages.json),
+build sidecars, and desktop replay outputs preserve evidence for each variant.
+The baseline is now a local Git checkpoint (`5404dd95`); none of this is merged
+into remote main or deployed to production.
+
+The optimizations help, but the latest measured cost is still about **30x/88x**
+the 100 ms target. The next experiment is a separately labelled single-precision
+coarse search using ARM NEON; fractional refinement remains double precision.
+Its grid errors and candidate decisions must be tested, not presumed equivalent.

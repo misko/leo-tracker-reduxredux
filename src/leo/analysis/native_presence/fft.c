@@ -38,16 +38,35 @@ static void transform(const leo_fft *fft, const double complex *input,
     size_t stride, size_t n, double complex *output, double complex *scratch)
 {
     if (n == 1) { output[0] = input[0]; return; }
-    size_t radix = n % 2 == 0 ? 2 : 5, m = n / radix;
+    size_t radix, m;
+    if (n % 2 == 0) { radix=2; m=n/2; }
+    else { radix=5; m=n/5; }
     for (size_t j = 0; j < radix; ++j)
         transform(fft, input + j * stride, stride * radix, m,
             output + j * m, scratch + j * m);
-    for (size_t k = 0; k < n; ++k) {
-        double complex value = output[k % m];
-        for (size_t j = 1; j < radix; ++j)
-            value += output[j * m + k % m] *
-                fft->roots[(j * k * (fft->size / n)) % fft->size];
-        scratch[k] = value;
+    /* stride is exactly size/n. Avoid integer division and modulo in every
+     * butterfly; Cortex-A9 otherwise calls software division helpers here. */
+    if (radix == 2) {
+        for (size_t k = 0; k < m; ++k) {
+            double complex even = output[k];
+            double complex odd = output[m+k] * fft->roots[k*stride];
+            scratch[k] = even+odd;
+            scratch[m+k] = even-odd;
+        }
+    } else {
+        for (size_t k = 0; k < m; ++k) {
+            for (size_t branch = 0; branch < 5; ++branch) {
+                size_t twiddle_step = (k+branch*m)*stride;
+                size_t twiddle = twiddle_step;
+                double complex value = output[k];
+                for (size_t j = 1; j < 5; ++j) {
+                    value += output[j*m+k]*fft->roots[twiddle];
+                    twiddle += twiddle_step;
+                    if (twiddle >= fft->size) twiddle -= fft->size;
+                }
+                scratch[branch*m+k] = value;
+            }
+        }
     }
     memcpy(output, scratch, n * sizeof(*output));
 }
