@@ -19,6 +19,13 @@ typedef struct {
     double fractional_cpu_ms, total_cpu_ms, total_wall_ms;
 } leo_presence_result;
 typedef struct leo_presence_workspace leo_presence_workspace;
+/* Separate diagnostic API: the existing candidate/result layouts stay intact. */
+typedef struct {
+    double acquisition_fft_cpu_ms, conditioned_cpu_ms, verification_cpu_ms;
+    double epoch_lattice_cpu_ms, final_confirmation_cpu_ms, local_coarse_cpu_ms;
+    uint32_t coarse_frames, fine_frames, epoch_frames, anchor_stride, epoch_stride;
+    uint32_t conditioned_radius_hz;
+} leo_presence_profile;
 
 /* Exact/control templates are configuration, prepared once outside execution.
  * They must be the complex64 Qin frames promoted to double, for the given edge.
@@ -33,6 +40,7 @@ leo_presence_workspace *leo_presence_create(
     uint32_t rate_hz, const leo_presence_complex *exact,
     const leo_presence_complex *control, size_t template_count);
 void leo_presence_destroy(leo_presence_workspace *workspace);
+int leo_presence_get_profile(const leo_presence_workspace *workspace, leo_presence_profile *profile);
 int leo_presence_run(leo_presence_workspace *workspace,
     const leo_presence_complex *samples, size_t count, leo_presence_result *result);
 int leo_presence_run_ci16(leo_presence_workspace *workspace,

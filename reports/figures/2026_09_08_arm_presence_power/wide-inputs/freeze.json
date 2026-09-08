@@ -1,0 +1,72 @@
+{
+  "schema": "org.leo.research.arm-presence-wide-development-freeze/v1",
+  "protocol": {
+    "schema": "org.leo.research.arm-presence-wide-development/v1",
+    "purpose": "Broader development evidence spanning the existing 300 s scans; not an untouched holdout or independent signal truth",
+    "receiver": 1,
+    "sessions": [
+      {
+        "session_id": "scan-hop-0cff88ddaeec79f2",
+        "rate_hz": 2500000
+      },
+      {
+        "session_id": "scan-hop-a5018b64a98f25e7",
+        "rate_hz": 5000000
+      }
+    ],
+    "sweeps": [
+      10,
+      70,
+      140,
+      210,
+      280
+    ],
+    "targets_per_sweep": 8,
+    "probe_offset_ms": 0,
+    "probe_duration_ms": 20,
+    "reference_candidates": 8,
+    "reference_margin": 0.025,
+    "interpretation": "Measure per-probe agreement with the dense fractional reference. Lack of reference evidence is unresolved, not a known negative. First-20ms agreement cannot establish full-120ms coverage. Retain all reference candidates, not just one winner.",
+    "frozen_before_new_scores": true
+  },
+  "protocol_sha256": "0c424b60a17c9c2cf3763619708f8ad3b59cd3d7fa7faabb293e1f63c212f467",
+  "source_manifests": {
+    "scan-hop-0cff88ddaeec79f2": "sha256:e511d9faa23877b8390b5cca0e9856170b700263f4c7da7c4930e71bafb9811c",
+    "scan-hop-a5018b64a98f25e7": "sha256:d09ac3ec1043d72026421625a21e680ea3af46802398e8a2c8cc39cac8fda01e"
+  },
+  "numerical_sources": {
+    "src/leo/analysis/starlink/__init__.py": "5ed24f9d4fe46b4c52fabe9c5fefe7e667ea69da1b15d9863b7772650980c35c",
+    "src/leo/analysis/starlink/acceptance.py": "cdeac1c731c271cb4ae2704ff440ba9a455c16a8e93da4a494ceb7e60abb34c1",
+    "src/leo/analysis/starlink/acquisition.py": "05f79fc724ad30c499feda31f8d55994e6ee6621a5af90c8dcf980dedc66f7bc",
+    "src/leo/analysis/starlink/cfo_aliases.py": "c94542f31e5c0c8d76575e28610ec299af91f25ca371251821cf1214d7a18596",
+    "src/leo/analysis/starlink/cfo_dealias.py": "3cc921d2ccf2751b6c65f56e5a4e295bb7200e4439df0afad5cad4768287ce6b",
+    "src/leo/analysis/starlink/corpus.py": "1736c3d8940b0a5a5d490a240f5f778b9b485721e808326e4ea8c97823feda11",
+    "src/leo/analysis/starlink/dwell_doppler.py": "1d9ffef5f198d06d6e504b093a83cd715f403d1c4328bd1bf04b6c7fb369f482",
+    "src/leo/analysis/starlink/fractional_epoch.py": "ae177873aee33dc4efad0e7737fc0cd8f6785dfd9b2c9e698644d3d86b00e3f7",
+    "src/leo/analysis/starlink/frame_phase.py": "61aef53f712e57abb64dfc727b146f1a2dada34e73dd701c50b00722b75214e0",
+    "src/leo/analysis/starlink/glrt64_presentation.py": "a184de7c1514000042aff796db4735bf814e0bd611333370735ccd3fb73a6324",
+    "src/leo/analysis/starlink/kalman_tracking.py": "54c9ee255e3fbb7ded65508156de548e4959fae59eb934ea286407b233b0235a",
+    "src/leo/analysis/starlink/local_doppler.py": "a3a2402c784e6736a5548df01a69fbc93fea2be2d7894d18e064bb06fc3bc31a",
+    "src/leo/analysis/starlink/long_dwell.py": "670d953063c29ad44848fdf24fa7ef255caf20028a34161657702d244050e684",
+    "src/leo/analysis/starlink/multi_target.py": "e36f6ae9158aea3a52ff680255ffb77dfbdf6c66d7e38d564ecf45fb8d445afe",
+    "src/leo/analysis/starlink/phase_doppler.py": "b526b904d61d35ade71823bcafeed86cca81f10cccb33aeb59133bd56d17ed2a",
+    "src/leo/analysis/starlink/pilot_doppler_segments.py": "962b4b1ca700e5eb843b26c6f5bc7d94c923e11b512a07c4ed4bfe8b6f51c43e",
+    "src/leo/analysis/starlink/pilot_methods.py": "c33de1f8ed7b3d8f1f1b7de659d6aa2b110f658338eb2753ae2c5161757a2857",
+    "src/leo/analysis/starlink/pilot_search_geometry.py": "acf7d39a8e27f2f40839838a774b233a69802dc68eb6e2f54e8fecd02d9753b8",
+    "src/leo/analysis/starlink/pnt_kalman.py": "f114b1118a3ec5ced8e0ff9ef21c2514d1725de8dea388515f6cc2a7a9d3b1a3",
+    "src/leo/analysis/starlink/pss_search.py": "28df3fc9c1f4cde8c74295ca83eed21e9ab6a6044d6625aabd81976c97132d1f",
+    "src/leo/analysis/starlink/pss_timing.py": "f46031a519ccb12eea04060155ee1bd4489c87d298d5ac1042cbef81eb772f48",
+    "src/leo/analysis/starlink/seeded_acquisition.py": "a932e98b9617bcf023f72b4eb11ee6da52fae902a1c58836ab44a72dcfd6e80b",
+    "src/leo/analysis/starlink/seeded_alias_em.py": "8add32b1028e4d5603019f458b74babdbf665d43e44060c84f1371ad37154e4a",
+    "src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "src/leo/analysis/starlink/trajectories.py": "0d464fb5c91edea49545e93a340b25354933b8a8b75e0b245315ad6de65729be",
+    "src/leo/analysis/starlink/trajectory_accounting.py": "1df0393d12ca9f8fa96affc84d30780a3bcd1a7426634f722970d8b7a420e1a8",
+    "src/leo/analysis/starlink/trajectory_feedback.py": "2d94ede85e21b8e963d7f403e47ef800a88a001429db03ba6c89e3a75091ea97",
+    "src/leo/analysis/starlink/trusted_acceptance.py": "5cb522e89bac6676b7c3185f34ac7a30b62ff7882398f6020150f12e5ac00e72",
+    "src/leo/analysis/starlink/_native_acquisition.c": "7dd6ad1300dca46e986178ea755cd896819b9bae148072617c32cc80ce8458bf",
+    "src/leo/analysis/starlink/_native_acquisition_grid.inc": "1b67c6dcf6e1310816f202e07356b4334a6dcd64d764462329a60d617139917a",
+    "src/leo/analysis/research/arm_presence.py": "7c86c8ee4b8095c01923d47799a4519ab5847ceb4e570015571a2ebe40f054d0",
+    "tools/freeze_native_presence_development.py": "25b4d0d592dce0fbc3f968f4ba00df0810e90e44a8bafb2b7800b526bd9116d5"
+  },
+  "state": "selection_and_sources_frozen_before_scoring"
+}

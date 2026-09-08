@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include "presence.h"
 #include "fft.h"
+#include "budget.h"
 #include <complex.h>
 #include <float.h>
 #include <fenv.h>
@@ -85,8 +86,18 @@ struct leo_presence_workspace {
     npy_intp starts[12], stops[12], offsets[16];
     double frequencies[12], correlation_real[12], correlation_imag[12];
     leo_fft fine_fft, short_fft, glrt_fft;
+    double fine_step_hz;
+#if LEO_PRESENCE_POWER_PROPOSAL
+    leo_fft power_fft;
+    double complex *power_input, *power_template_fft;
+    double *power_native_template, *power_native_folded;
+    double power_template_energy, power_native_template_energy, power_native_folded_energy;
+#endif
+    leo_presence_profile profile;
 #if defined(LEO_PRESENCE_COARSE_FP32)
     float *float_samples, *float_accumulated;
+    float float_reference_real[12*23*12], float_reference_imag[12*23*12];
+    double float_reference_energy[12];
 #endif
 };
 
@@ -100,9 +111,27 @@ static double power(double complex x) { return creal(x)*creal(x) + cimag(x)*cima
 static double complex rotate(double angle) { return cos(angle) + I * sin(angle); }
 static int frame_start(const leo_presence_workspace *w, int epoch, int frame)
 { return epoch + (int)nearbyint(frame * (w->rate / 750.0)); }
+static int epoch_stride(const leo_presence_workspace *w)
+{ return LEO_PRESENCE_STRIDE_2P5 ? LEO_PRESENCE_STRIDE_2P5*(int)(w->rate/2500000) : 1; }
+
+int leo_presence_get_profile(const leo_presence_workspace *w, leo_presence_profile *profile)
+{
+    if (!w || !profile) return -1;
+    *profile=w->profile;
+    profile->coarse_frames=LEO_PRESENCE_COARSE_FRAMES;
+    profile->fine_frames=LEO_PRESENCE_FINE_FRAMES;
+    profile->epoch_frames=LEO_PRESENCE_EPOCH_FRAMES;
+    profile->anchor_stride=LEO_PRESENCE_ANCHOR_STRIDE;
+    profile->epoch_stride=(uint32_t)epoch_stride(w);
+    profile->conditioned_radius_hz=LEO_PRESENCE_CONDITIONED_RADIUS;
+    return 0;
+}
 
 #if defined(LEO_PRESENCE_COARSE_FP32)
 #include "coarse_fp32.h"
+#endif
+#if LEO_PRESENCE_POWER_PROPOSAL
+#include "coarse_power.h"
 #endif
 
 void leo_presence_destroy(leo_presence_workspace *w)
@@ -116,6 +145,10 @@ void leo_presence_destroy(leo_presence_workspace *w)
     free(w->float_samples); free(w->float_accumulated);
 #endif
     leo_fft_free(&w->fine_fft); leo_fft_free(&w->short_fft); leo_fft_free(&w->glrt_fft);
+#if LEO_PRESENCE_POWER_PROPOSAL
+    leo_fft_free(&w->power_fft); free(w->power_input); free(w->power_template_fft);
+    free(w->power_native_template); free(w->power_native_folded);
+#endif
     free(w);
 }
 
@@ -139,8 +172,22 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
 #if defined(LEO_PRESENCE_COARSE_FP32)
     ALLOC(float_samples, 2*w->max_samples); ALLOC(float_accumulated, CFO_COUNT*n);
 #endif
+#if LEO_PRESENCE_POWER_PROPOSAL
+    size_t power_size=2;
+    while (power_size<2*n-1) power_size*=2;
+    if (LEO_PRESENCE_POWER_BINS) power_size=LEO_PRESENCE_POWER_BINS;
+    ALLOC(power_input,power_size); ALLOC(power_template_fft,power_size);
+    ALLOC(power_native_template,n); ALLOC(power_native_folded,n);
+    if (leo_fft_init(&w->power_fft,power_size)) { leo_presence_destroy(w); return NULL; }
+#endif
 #undef ALLOC
-    if (leo_fft_init(&w->fine_fft, rate / 500) ||
+    size_t fine_size=rate/500;
+    if (LEO_PRESENCE_FAST_FINE_FFT) {
+        fine_size=2;
+        while (fine_size<n) fine_size*=2;
+    }
+    w->fine_step_hz=(double)rate/fine_size;
+    if (leo_fft_init(&w->fine_fft, fine_size) ||
         leo_fft_init(&w->short_fft, 128) || leo_fft_init(&w->glrt_fft, 512)) {
         leo_presence_destroy(w); return NULL;
     }
@@ -162,6 +209,12 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
         w->frequencies[k] = -400000.0 + k * 80000.0;
     }
     for (int k = 0; k < 16; ++k) w->offsets[k] = frame_start(w, 0, k);
+#if defined(LEO_PRESENCE_COARSE_FP32)
+    coarse_fp32_templates(w);
+#endif
+#if LEO_PRESENCE_POWER_PROPOSAL
+    coarse_power_template(w);
+#endif
     return w;
 }
 
@@ -179,6 +232,9 @@ static int ingest(leo_presence_workspace *w, const leo_presence_complex *x, size
 
 static int coarse(leo_presence_workspace *w, size_t count)
 {
+#if LEO_PRESENCE_POWER_PROPOSAL
+    return coarse_power(w,count);
+#endif
 #if defined(LEO_PRESENCE_COARSE_FP32)
     return coarse_fp32(w, count);
 #else
@@ -253,7 +309,7 @@ static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
         }
     }
     int frames = 0;
-    for (int frame = 0; ; ++frame) {
+    for (int frame = 0; frame < LEO_PRESENCE_FINE_FRAMES; ++frame) {
         int start = frame_start(w, epoch, frame);
         if ((size_t)start + last >= count) break;
         memset(w->input, 0, w->fine_fft.size * sizeof(*w->input));
@@ -285,7 +341,7 @@ static void conditioned_scores(leo_presence_workspace *w, size_t count, int epoc
         w->base[k] = conj(w->exact[k]) * rotate(-TAU*frequencies[0]*k/w->rate);
     }
     int frames = 0;
-    for (int frame = 0; ; ++frame) {
+    for (int frame = 0; frame < LEO_PRESENCE_FINE_FRAMES; ++frame) {
         int start = frame_start(w, epoch, frame);
         if ((size_t)start + w->n > count) break;
         double energy = 0;
@@ -321,7 +377,7 @@ static double normalized_score(leo_presence_workspace *w, size_t count, int epoc
         }
     }
     int frames = 0;
-    for (int frame = 0; ; ++frame) {
+    for (int frame = 0; frame < LEO_PRESENCE_FINE_FRAMES; ++frame) {
         int start = frame_start(w, epoch, frame);
         if ((size_t)start + last >= count) break;
         double energy = 0; double complex total = 0;
@@ -343,7 +399,7 @@ static double normalized_score(leo_presence_workspace *w, size_t count, int epoc
 static double sinc(double x) { return x == 0 ? 1 : sin(TAU*0.5*x)/(TAU*0.5*x); }
 
 static int glrt(leo_presence_workspace *w, size_t count, int epoch,
-    double cfo, double offset, double result[3])
+    double cfo, double offset, int frame_limit, double result[3])
 {
     if (epoch < 0 || epoch >= (int)w->n || !isfinite(cfo) || fabs(cfo)>400000 ||
         !isfinite(offset) || fabs(offset)>2)
@@ -357,7 +413,7 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
     for (int k = first; k < stop; ++k)
         w->weighted[k] = rotate(-TAU*cfo*(k+offset)/w->rate);
     double previous_fraction = NAN, weights[16], normalizer = 0;
-    for (int frame = 0; ; ++frame) {
+    for (int frame = 0; frame < frame_limit; ++frame) {
         int start = frame_start(w, epoch, frame);
         if (start+stop-1+offset >= (double)count-(integer ? 0 : 8)) break;
         /* Workspace.select stops at the first unsupported row. */
@@ -430,7 +486,7 @@ int leo_presence_glrt(leo_presence_workspace *w, const leo_presence_complex *x,
     size_t count, int32_t epoch, double cfo, double offset, double result[3])
 {
     if (!result || ingest(w, x, count)) return -1;
-    return glrt(w, count, epoch, cfo, offset, result);
+    return glrt(w, count, epoch, cfo, offset, 16, result);
 }
 
 static int candidate_before(const leo_presence_candidate *a, const leo_presence_candidate *b)
@@ -445,12 +501,13 @@ static int candidate_before(const leo_presence_candidate *a, const leo_presence_
 
 static int execute(leo_presence_workspace *w, size_t count, leo_presence_result *out)
 {
+    memset(&w->profile, 0, sizeof(w->profile));
     double started = clock_ms(CLOCK_PROCESS_CPUTIME_ID);
     if (coarse(w, count)) return -1;
     out->coarse_cpu_ms = clock_ms(CLOCK_PROCESS_CPUTIME_ID)-started;
     int retained_epoch[2], retained_bin[2], nr = 0;
     /* Two passes avoid sorting an entire allocation of coarse peaks. */
-    for (int selection = 0; selection < 2; ++selection) {
+    for (int selection = 0; selection < LEO_PRESENCE_CANDIDATES; ++selection) {
         int best_e = -1, best_f = -1; double best_score = -1;
         for (int f = 0; f < 11; ++f) for (int e = 0; e < (int)w->n; ++e) {
             double value = w->grid[f*w->n+e];
@@ -476,31 +533,73 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
     for (int r = 0; r < nr; ++r) {
         leo_presence_candidate *c = &out->candidates[out->candidate_count];
         int e=retained_epoch[r], f=retained_bin[r], refined=e;
-        for (int k=e-1; k<=e+1; ++k)
+        int radius=epoch_stride(w)>1 ? epoch_stride(w)-1 : 1;
+#if LEO_PRESENCE_POWER_BINS
+        radius=((int)w->n+LEO_PRESENCE_POWER_BINS-1)/LEO_PRESENCE_POWER_BINS;
+#endif
+        double stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
+#if LEO_PRESENCE_POWER_BINS
+        /* Refine proposals against original-rate folded power, including the
+         * circular seam. Do not compare projected and native scores locally. */
+        for (int delta=-radius; delta<=radius; ++delta)
+            coarse_power_cell(w,(e+delta+(int)w->n)%(int)w->n);
+#endif
+#if defined(LEO_PRESENCE_COARSE_FP32)
+        if (epoch_stride(w)>1)
+            for (int k=e-radius; k<=e+radius; ++k)
+                if (k>=0 && k<(int)w->n && w->support[k]==0 && coarse_fp32_cell(w,count,k))
+                    return -1;
+#endif
+        w->profile.local_coarse_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
+        for (int local=e-radius; local<=e+radius; ++local) {
+            int k=local;
+#if LEO_PRESENCE_POWER_BINS
+            k=(local+(int)w->n)%(int)w->n;
+#endif
             if (k>=0 && k<(int)w->n && (w->grid[f*w->n+k]>w->grid[f*w->n+refined] ||
                 (w->grid[f*w->n+k]==w->grid[f*w->n+refined] && k<refined))) refined=k;
+        }
         c->epoch=refined; c->coarse_score=w->grid[f*w->n+e];
-        double frequencies[322], scores[322], coarse_cfo=w->frequencies[f];
-        int nf=grid(fmax(-400000,coarse_cfo-80000),fmin(400000,coarse_cfo+80000),500,frequencies);
+        double frequencies[1602], scores[1602], coarse_cfo=w->frequencies[f];
+        double lower=fmax(-400000,coarse_cfo-80000), upper=fmin(400000,coarse_cfo+80000);
+        if (LEO_PRESENCE_POWER_PROPOSAL) { lower=-400000; upper=400000; }
+        if (LEO_PRESENCE_FAST_FINE_FFT) {
+            lower=ceil(lower/w->fine_step_hz)*w->fine_step_hz;
+            upper=floor(upper/w->fine_step_hz)*w->fine_step_hz;
+        }
+        int nf=grid(lower,upper,w->fine_step_hz,frequencies);
+        stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
         fine_scores(w,count,refined,frequencies[0],nf,scores);
+        w->profile.acquisition_fft_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         int best=best_frequency(scores,frequencies,nf);
         double interpolated=frequencies[best];
         if (best>0 && best+1<nf) {
             double curve=scores[best-1]-2*scores[best]+scores[best+1];
             if (isfinite(curve) && curve < -1e-15)
-                interpolated += fmax(-500,fmin(500,0.5*(scores[best-1]-scores[best+1])/curve*500));
+                interpolated += fmax(-w->fine_step_hz,fmin(w->fine_step_hz,
+                    0.5*(scores[best-1]-scores[best+1])/curve*w->fine_step_hz));
         }
-        nf=grid(fmax(-400000,interpolated-2000),fmin(400000,interpolated+2000),100,frequencies);
+        nf=grid(fmax(-400000,interpolated-LEO_PRESENCE_CONDITIONED_RADIUS),
+            fmin(400000,interpolated+LEO_PRESENCE_CONDITIONED_RADIUS),100,frequencies);
+        stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
         conditioned_scores(w,count,refined,frequencies,nf,scores);
+        w->profile.conditioned_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         best=best_frequency(scores,frequencies,nf);
         c->acquired_cfo_hz=frequencies[best]; c->conditioned_score=scores[best];
-        c->acquire_score=normalized_score(w,count,refined,c->acquired_cfo_hz,w->exact,2);
-        c->verify_score=normalized_score(w,count,refined,c->acquired_cfo_hz,w->exact,3);
-        c->verify_control_score=normalized_score(w,count,refined,c->acquired_cfo_hz,w->control,3);
+        stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
+        /* Power proposals keep their proposal order. Final exact/control GLRT
+         * is still required; the legacy acquisition-ranking scores are unused. */
+        if (!LEO_PRESENCE_POWER_PROPOSAL) {
+            c->acquire_score=normalized_score(w,count,refined,c->acquired_cfo_hz,w->exact,2);
+            c->verify_score=normalized_score(w,count,refined,c->acquired_cfo_hz,w->exact,3);
+            c->verify_control_score=normalized_score(w,count,refined,c->acquired_cfo_hz,w->control,3);
+        }
+        w->profile.verification_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         if (frame_start(w,refined,1)+(int)nearbyint(302*w->rate*SYMBOL_S)>(int)count) continue;
         ++out->candidate_count;
     }
-    if (out->candidate_count==2 && candidate_before(&out->candidates[1],&out->candidates[0])) {
+    if (!LEO_PRESENCE_POWER_PROPOSAL && out->candidate_count==2 &&
+        candidate_before(&out->candidates[1],&out->candidates[0])) {
         leo_presence_candidate tmp=out->candidates[0];
         out->candidates[0]=out->candidates[1]; out->candidates[1]=tmp;
     }
@@ -508,12 +607,14 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
     started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
     for (int r=0; r<out->candidate_count; ++r) {
         leo_presence_candidate *c=&out->candidates[r]; int best=0;
+        double stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
         for (int k=0; k<5; ++k) {
             int epoch=(c->epoch+k-2+(int)w->n)%(int)w->n; double score[3];
-            glrt(w,count,epoch,c->acquired_cfo_hz,0,score);
+            glrt(w,count,epoch,c->acquired_cfo_hz,0,LEO_PRESENCE_EPOCH_FRAMES,score);
             c->exact_grid[k]=score[0]; c->control_grid[k]=score[1];
             if (score[0]>c->exact_grid[best]) best=k;
         }
+        w->profile.epoch_lattice_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         if (best==0 || best==4) continue;
         double a=log(fmax(c->exact_grid[best-1],DBL_MIN));
         double b=log(fmax(c->exact_grid[best],DBL_MIN));
@@ -521,7 +622,9 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
         double curve=a-2*b+d;
         if (!isfinite(curve) || curve >= -DBL_EPSILON) continue;
         double offset=best-2+fmax(-0.5,fmin(0.5,0.5*(a-d)/curve));
-        double score[3]; glrt(w,count,c->epoch,c->acquired_cfo_hz,offset,score);
+        stage_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
+        double score[3]; glrt(w,count,c->epoch,c->acquired_cfo_hz,offset,16,score);
+        w->profile.final_confirmation_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         c->fractional_complete=1; c->fractional_offset_samples=offset;
         c->exact_score=score[0]; c->control_score=score[1]; c->margin=score[0]-score[1];
         c->tracking_cfo_hz=c->acquired_cfo_hz+score[2];

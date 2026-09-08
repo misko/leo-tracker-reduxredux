@@ -51,6 +51,60 @@ static void coarse_float_add(const float *samples, const float *real,
 }
 #endif
 
+static void coarse_fp32_templates(leo_presence_workspace *w)
+{
+    for (int symbol=0; symbol<12; ++symbol) {
+        int local=(int)w->starts[symbol], taps=(int)(w->stops[symbol]-w->starts[symbol]);
+        for (int k=0; k<taps; ++k) {
+            double complex reference=w->exact[local+k];
+            w->float_reference_energy[symbol] += power(reference);
+            for (int f=0; f<CFO_COUNT; ++f) {
+                double angle=TAU*w->frequencies[f]*k/w->rate;
+                double cosine=cos(angle), sine=sin(angle);
+                int index=symbol*23*12+12*k+f;
+                w->float_reference_real[index]=(float)(creal(reference)*cosine-cimag(reference)*sine);
+                w->float_reference_imag[index]=(float)(creal(reference)*sine+cimag(reference)*cosine);
+            }
+        }
+    }
+}
+
+static int coarse_fp32_add(leo_presence_workspace *w, int symbol, ptrdiff_t position,
+    ptrdiff_t epoch)
+{
+    int taps=(int)(w->stops[symbol]-w->starts[symbol]);
+    double received=w->prefix[position+taps]-w->prefix[position];
+    if (received<0) received=0;
+    double denominator=sqrt(w->float_reference_energy[symbol]*received);
+    if (denominator>0) {
+        float inverse=(float)(1.0/denominator);
+        if (!isfinite(inverse)) return -1;
+        coarse_float_add(w->float_samples+2*position,
+            w->float_reference_real+symbol*23*12, w->float_reference_imag+symbol*23*12,
+            taps,inverse,w->float_accumulated+12*epoch);
+    }
+    ++w->support[epoch];
+    return 0;
+}
+
+/* Evaluate a previously unsearched epoch around a sparse coarse proposal.
+ * Normalized input/prefixes and immutable templates are already prepared. */
+static int coarse_fp32_cell(leo_presence_workspace *w, size_t count, int epoch)
+{
+    for (int symbol=0; symbol<12; symbol+=LEO_PRESENCE_ANCHOR_STRIDE) {
+        int taps=(int)(w->stops[symbol]-w->starts[symbol]);
+        for (int frame=0; frame<LEO_PRESENCE_COARSE_FRAMES; ++frame) {
+            ptrdiff_t position=w->starts[symbol]+w->offsets[frame]+epoch;
+            if (position+taps>(ptrdiff_t)count) break;
+            if (coarse_fp32_add(w,symbol,position,epoch)) return -1;
+        }
+    }
+    for (int f=0; f<CFO_COUNT; ++f)
+        w->grid[f*w->n+epoch]=w->support[epoch]>0 ?
+            (double)w->float_accumulated[12*epoch+f]/w->support[epoch] : -INFINITY;
+    return 0;
+}
+
 static int coarse_fp32(leo_presence_workspace *w, size_t count)
 {
     double scale=0;
@@ -68,44 +122,22 @@ static int coarse_fp32(leo_presence_workspace *w, size_t count)
         w->float_samples[2*k]=(float)real; w->float_samples[2*k+1]=(float)imag;
         w->prefix[k+1]=w->prefix[k]+real*real+imag*imag;
     }
-    for (int symbol=0; symbol<12; ++symbol) {
+    for (int symbol=0; symbol<12; symbol+=LEO_PRESENCE_ANCHOR_STRIDE) {
         int local=(int)w->starts[symbol], taps=(int)(w->stops[symbol]-w->starts[symbol]);
-        float real[23*12], imag[23*12];
-        double energy=0;
-        for (int k=0; k<taps; ++k) {
-            double complex reference=w->exact[local+k];
-            energy += power(reference);
-            for (int f=0; f<CFO_COUNT; ++f) {
-                double angle=TAU*w->frequencies[f]*k/w->rate;
-                double cosine=cos(angle), sine=sin(angle);
-                real[12*k+f]=(float)(creal(reference)*cosine-cimag(reference)*sine);
-                imag[12*k+f]=(float)(creal(reference)*sine+cimag(reference)*cosine);
-            }
-        }
-        for (int frame=0; frame<16; ++frame) {
+        for (int frame=0; frame<LEO_PRESENCE_COARSE_FRAMES; ++frame) {
             ptrdiff_t base=local+w->offsets[frame];
             ptrdiff_t valid=(ptrdiff_t)count-taps+1-base;
             if (valid<=0) break;
             if (valid>(ptrdiff_t)w->n) valid=(ptrdiff_t)w->n;
-            for (ptrdiff_t epoch=0; epoch<valid; ++epoch) {
+            for (ptrdiff_t epoch=0; epoch<valid; epoch+=epoch_stride(w)) {
                 ptrdiff_t position=base+epoch;
-                double received=fmax(0, w->prefix[position+taps]-w->prefix[position]);
-                double denominator=sqrt(energy*received);
-                if (denominator>0) {
-                    float inverse=(float)(1.0/denominator);
-                    /* Unrepresentable normalization is unsupported evidence,
-                     * never a successful negative result. */
-                    if (!isfinite(inverse)) return -1;
-                    coarse_float_add(w->float_samples+2*position, real, imag, taps,
-                        inverse, w->float_accumulated+12*epoch);
-                }
-                ++w->support[epoch];
+                if (coarse_fp32_add(w,symbol,position,epoch)) return -1;
             }
         }
     }
     for (int f=0; f<CFO_COUNT; ++f)
         for (size_t epoch=0; epoch<w->n; ++epoch)
             w->grid[f*w->n+epoch]=w->support[epoch]>0 ?
-                (double)w->float_accumulated[12*epoch+f]/w->support[epoch] : 0;
+                (double)w->float_accumulated[12*epoch+f]/w->support[epoch] : -INFINITY;
     return 0;
 }

@@ -1,0 +1,74 @@
+{
+  "protocol": {
+    "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+    "baseline_commit": "68246a5f",
+    "frozen_before_reduced_budget_results": true,
+    "scope": "Development-only reduced acquisition experiments; unchanged full-20ms FP64 fractional confirmation; no recording gating",
+    "receiver": 1,
+    "cpu_target_ms": 100,
+    "reference_association": {
+      "maximum_cfo_difference_hz": 8000,
+      "maximum_circular_epoch_difference_us": 2
+    },
+    "development_selection": "Existing native-v1 frozen inputs only; subsequent qualification must use a broader frozen cohort and a fresh holdout",
+    "common_flags": [
+      "-DLEO_PRESENCE_COARSE_FP32",
+      "-fno-unroll-loops",
+      "-fno-peel-loops",
+      "-fno-prefetch-loop-arrays"
+    ],
+    "variants": [
+      {
+        "name": "full_profile",
+        "defines": {}
+      },
+      {
+        "name": "frames4",
+        "defines": {
+          "COARSE_FRAMES": 4,
+          "FINE_FRAMES": 4,
+          "EPOCH_FRAMES": 4
+        }
+      },
+      {
+        "name": "compact4",
+        "defines": {
+          "COARSE_FRAMES": 4,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "ANCHOR_STRIDE": 3
+        }
+      },
+      {
+        "name": "sparse2_narrow",
+        "defines": {
+          "COARSE_FRAMES": 2,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "ANCHOR_STRIDE": 3,
+          "STRIDE_2P5": 2,
+          "CONDITIONED_RADIUS": 200
+        }
+      },
+      {
+        "name": "sparse3_narrow",
+        "defines": {
+          "COARSE_FRAMES": 3,
+          "FINE_FRAMES": 3,
+          "EPOCH_FRAMES": 3,
+          "ANCHOR_STRIDE": 3,
+          "STRIDE_2P5": 2,
+          "CONDITIONED_RADIUS": 200
+        }
+      }
+    ],
+    "claim_limits": [
+      "Reduced search is a different detector, not parity with the full algorithm.",
+      "No reference miss is a known negative, and GLRT reference acceptance is not Starlink truth.",
+      "Every probe keeps both the input geometry and full fractional confirmation interval.",
+      "A small development cohort or a single ARM timing is insufficient for deployment."
+    ]
+  },
+  "protocol_sha256": "4eeddb3fb32120cda5b434f316646e198d45326c8dca9bf0c5b29a28a7d0726d",
+  "inputs_sha256": "2b43031929ab47785f1986c5c9377d87c6eaffed6d28306c8aec5953664f3bd1"
+}

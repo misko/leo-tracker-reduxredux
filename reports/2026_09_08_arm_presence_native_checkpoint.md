@@ -3,7 +3,13 @@
 Status: implementation in progress; **not qualified for live deployment**.
 No new RF, FPGA, flashed firmware, kernel, or production scanner changes.
 
-Latest result: the experimental full-grid FP32/NEON coarse search, with FP64
+Update: a separately configured pilot-power proposal now meets the saved-IQ
+CPU target as a single-candidate experiment, but fails broader quality checks.
+See the [power-proposal checkpoint](2026_09_08_arm_presence_power_checkpoint.md)
+for native-CI16 ARM distributions, controls, and the unresolved timing/CFO
+failures. The full-grid baseline measurements below remain historical evidence.
+
+Latest full-grid result: the experimental FP32/NEON coarse search, with FP64
 refinement, takes approximately **1.55/4.40 seconds** at 2.5/5 MS/s on the ARM
 smoke probes. This improves the original baseline by about 3.1x/3.6x, but still
 misses the 100 ms target by 15.5x/44x. See the final section below.

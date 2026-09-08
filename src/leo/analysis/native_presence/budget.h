@@ -1,0 +1,57 @@
+/* Named, build-time research budgets. Defaults preserve the full baseline.
+ * Reduced budgets are different detectors, not numerical optimizations. */
+#ifndef LEO_PRESENCE_COARSE_FRAMES
+#define LEO_PRESENCE_COARSE_FRAMES 16
+#endif
+#ifndef LEO_PRESENCE_FINE_FRAMES
+#define LEO_PRESENCE_FINE_FRAMES 16
+#endif
+#ifndef LEO_PRESENCE_EPOCH_FRAMES
+#define LEO_PRESENCE_EPOCH_FRAMES 16
+#endif
+#ifndef LEO_PRESENCE_ANCHOR_STRIDE
+#define LEO_PRESENCE_ANCHOR_STRIDE 1
+#endif
+#ifndef LEO_PRESENCE_STRIDE_2P5
+#define LEO_PRESENCE_STRIDE_2P5 0
+#endif
+#ifndef LEO_PRESENCE_CONDITIONED_RADIUS
+#define LEO_PRESENCE_CONDITIONED_RADIUS 2000
+#endif
+#ifndef LEO_PRESENCE_POWER_PROPOSAL
+#define LEO_PRESENCE_POWER_PROPOSAL 0
+#endif
+#ifndef LEO_PRESENCE_POWER_BINS
+#define LEO_PRESENCE_POWER_BINS 0
+#endif
+#ifndef LEO_PRESENCE_FAST_FINE_FFT
+#define LEO_PRESENCE_FAST_FINE_FFT 0
+#endif
+#ifndef LEO_PRESENCE_CANDIDATES
+#define LEO_PRESENCE_CANDIDATES 2
+#endif
+#if LEO_PRESENCE_COARSE_FRAMES < 2 || LEO_PRESENCE_COARSE_FRAMES > 16 || \
+    LEO_PRESENCE_FINE_FRAMES < 2 || LEO_PRESENCE_FINE_FRAMES > 16 || \
+    LEO_PRESENCE_EPOCH_FRAMES < 2 || LEO_PRESENCE_EPOCH_FRAMES > 16 || \
+    LEO_PRESENCE_ANCHOR_STRIDE < 1 || LEO_PRESENCE_ANCHOR_STRIDE > 3 || \
+    LEO_PRESENCE_STRIDE_2P5 < 0 || LEO_PRESENCE_STRIDE_2P5 > 2 || \
+    LEO_PRESENCE_CONDITIONED_RADIUS < 100 || LEO_PRESENCE_CONDITIONED_RADIUS > 2000 || \
+    LEO_PRESENCE_CONDITIONED_RADIUS % 100 != 0 || \
+    LEO_PRESENCE_CANDIDATES < 1 || LEO_PRESENCE_CANDIDATES > 2 || \
+    LEO_PRESENCE_POWER_PROPOSAL < 0 || LEO_PRESENCE_POWER_PROPOSAL > 1 || \
+    LEO_PRESENCE_FAST_FINE_FFT < 0 || LEO_PRESENCE_FAST_FINE_FFT > 1
+#error "unsupported native presence research budget"
+#endif
+#if (LEO_PRESENCE_POWER_BINS != 0 && LEO_PRESENCE_POWER_BINS != 2048 && \
+    LEO_PRESENCE_POWER_BINS != 4096) || \
+    (!LEO_PRESENCE_POWER_PROPOSAL && LEO_PRESENCE_POWER_BINS != 0)
+#error "unsupported pilot-power projection size"
+#endif
+#if LEO_PRESENCE_POWER_PROPOSAL && (LEO_PRESENCE_STRIDE_2P5 != 0 || \
+    LEO_PRESENCE_COARSE_FRAMES != 16 || LEO_PRESENCE_ANCHOR_STRIDE != 1)
+#error "power proposals use the full time window and dense timing lattice"
+#endif
+#if !defined(LEO_PRESENCE_COARSE_FP32) && \
+    (LEO_PRESENCE_COARSE_FRAMES != 16 || LEO_PRESENCE_ANCHOR_STRIDE != 1 || LEO_PRESENCE_STRIDE_2P5 != 0)
+#error "reduced coarse budgets require the explicitly experimental FP32 implementation"
+#endif
