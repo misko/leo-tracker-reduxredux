@@ -57,7 +57,7 @@ static double diff_native_cell(leo_presence_workspace *w, size_t epoch,
         p+=w->power_native_folded[k-split]*w->power_native_template[k];
         d+=w->diff_folded[k-split]*conj(w->diff_template[k]);
     }
-    return (diff_norm>0 ? cabs(d)/diff_norm : 0) +
+    return (diff_norm>0 ? magnitude(d)/diff_norm : 0) +
         (power_norm>0 ? (LEO_PRESENCE_DIFFERENTIAL_POWER_MILLI/1000.0)*p/power_norm : 0);
 }
 
@@ -122,7 +122,7 @@ static int coarse_differential(leo_presence_workspace *w, size_t count, const in
         if (right==w->power_fft.size) right=0;
         double complex value=w->power_fft.output[left];
         value+=(position-left)*(w->power_fft.output[right]-value);
-        scores[k]=cabs(value)/(w->power_fft.size*norm);
+        scores[k]=magnitude(value)/(w->power_fft.size*norm);
     }
     int epochs[8], selected=0;
     for (int selection=0; selection<8; ++selection) {

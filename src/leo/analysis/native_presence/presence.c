@@ -15,6 +15,28 @@
 #define SYMBOL_S 4.4e-6
 #define CFO_COUNT 12
 
+/* Exact execution reuse. No search bins, frames, templates or thresholds
+ * change. Keep the uncached path available for differential qualification. */
+#ifndef LEO_PRESENCE_PRECOMPUTE
+#define LEO_PRESENCE_PRECOMPUTE 1
+#endif
+#if LEO_PRESENCE_PRECOMPUTE != 0 && LEO_PRESENCE_PRECOMPUTE != 1
+#error "LEO_PRESENCE_PRECOMPUTE must be 0 or 1"
+#endif
+#if LEO_PRESENCE_PRECOMPUTE
+/* grid() may append a clipped off-grid endpoint. This includes that spare
+ * slot even though it takes the nonregular (uncached) rotation path. */
+#define CONDITIONED_TABLES (2*LEO_PRESENCE_CONDITIONED_RADIUS/100+2)
+#else
+#define CONDITIONED_TABLES 42
+#endif
+#ifndef LEO_PRESENCE_BOUNDED_MAGNITUDE
+#define LEO_PRESENCE_BOUNDED_MAGNITUDE 0
+#endif
+#if LEO_PRESENCE_BOUNDED_MAGNITUDE != 0 && LEO_PRESENCE_BOUNDED_MAGNITUDE != 1
+#error "LEO_PRESENCE_BOUNDED_MAGNITUDE must be 0 or 1"
+#endif
+
 /* The exact existing acquisition kernel, with platform-independent C types. */
 typedef double complex npy_cdouble;
 typedef ptrdiff_t npy_intp;
@@ -81,6 +103,11 @@ struct leo_presence_workspace {
     size_t n, max_samples;
     double complex *exact, *control, *samples, *input, *weighted, *base;
     double complex *conditioned_offsets;
+#if LEO_PRESENCE_PRECOMPUTE
+    double complex *glrt_rotations;
+    double rotation_cfo, rotation_offset;
+    int have_rotations, symbol_starts[303];
+#endif
     double *prefix, *grid, *accumulated, *rotated_real, *rotated_imag;
     int32_t *support;
     npy_intp starts[12], stops[12], offsets[16];
@@ -114,9 +141,34 @@ static double clock_ms(clockid_t id)
     return ts.tv_sec * 1000.0 + ts.tv_nsec / 1e6;
 }
 static double power(double complex x) { return creal(x)*creal(x) + cimag(x)*cimag(x); }
+static double magnitude(double complex x)
+{
+#if LEO_PRESENCE_BOUNDED_MAGNITUDE
+    /* Avoid general hypot scaling for ordinary finite detector values. Keep
+     * libc's robust path for underflow, overflow and nonfinite inputs. This
+     * changes floating-point rounding, not the statistic: qualify separately. */
+    double squared=power(x);
+    if (squared>=DBL_MIN && isfinite(squared)) return sqrt(squared);
+#endif
+    return cabs(x);
+}
 static double complex rotate(double angle) { return cos(angle) + I * sin(angle); }
 static int frame_start(const leo_presence_workspace *w, int epoch, int frame)
-{ return epoch + (int)nearbyint(frame * (w->rate / 750.0)); }
+{
+#if LEO_PRESENCE_PRECOMPUTE
+    return epoch+(int)w->offsets[frame];
+#else
+    return epoch+(int)nearbyint(frame*(w->rate/750.0));
+#endif
+}
+static int symbol_start(const leo_presence_workspace *w, int symbol)
+{
+#if LEO_PRESENCE_PRECOMPUTE
+    return w->symbol_starts[symbol];
+#else
+    return (int)nearbyint(symbol*w->rate*SYMBOL_S);
+#endif
+}
 static int epoch_stride(const leo_presence_workspace *w)
 { return LEO_PRESENCE_STRIDE_2P5 ? LEO_PRESENCE_STRIDE_2P5*(int)(w->rate/2500000) : 1; }
 
@@ -157,6 +209,9 @@ void leo_presence_destroy(leo_presence_workspace *w)
     if (!w) return;
     free(w->exact); free(w->control); free(w->samples); free(w->input);
     free(w->weighted); free(w->base); free(w->conditioned_offsets);
+#if LEO_PRESENCE_PRECOMPUTE
+    free(w->glrt_rotations);
+#endif
     free(w->prefix); free(w->grid); free(w->accumulated); free(w->support);
     free(w->rotated_real); free(w->rotated_imag);
 #if defined(LEO_PRESENCE_COARSE_FP32)
@@ -187,7 +242,10 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
 } while (0)
     ALLOC(exact, n); ALLOC(control, n); ALLOC(samples, w->max_samples);
     ALLOC(input, rate / 500); ALLOC(weighted, n); ALLOC(base, n);
-    ALLOC(conditioned_offsets, 42 * n); ALLOC(prefix, w->max_samples + 1);
+    ALLOC(conditioned_offsets, CONDITIONED_TABLES * n); ALLOC(prefix, w->max_samples + 1);
+#if LEO_PRESENCE_PRECOMPUTE
+    ALLOC(glrt_rotations, n);
+#endif
     ALLOC(grid, CFO_COUNT * n); ALLOC(accumulated, CFO_COUNT * n); ALLOC(support, n);
     ALLOC(rotated_real, CFO_COUNT * 23); ALLOC(rotated_imag, CFO_COUNT * 23);
 #if defined(LEO_PRESENCE_COARSE_FP32)
@@ -226,7 +284,7 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
         }
         w->exact[k] = exact[k].re + I * exact[k].im;
         w->control[k] = control[k].re + I * control[k].im;
-        for (size_t f = 0; f < 42; ++f)
+        for (size_t f = 0; f < CONDITIONED_TABLES; ++f)
             w->conditioned_offsets[f*n+k] = rotate(-TAU * (f * 100.0) * k / rate);
     }
     for (int k = 0; k < 12; ++k) {
@@ -234,7 +292,12 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
         w->stops[k] = (npy_intp)nearbyint((3 + k * 26) * rate * SYMBOL_S);
         w->frequencies[k] = -400000.0 + k * 80000.0;
     }
-    for (int k = 0; k < 16; ++k) w->offsets[k] = frame_start(w, 0, k);
+    for (int k = 0; k < 16; ++k)
+        w->offsets[k]=(npy_intp)nearbyint(k*(rate/750.0));
+#if LEO_PRESENCE_PRECOMPUTE
+    for (int k=0; k<303; ++k)
+        w->symbol_starts[k]=(int)nearbyint(k*rate*SYMBOL_S);
+#endif
 #if defined(LEO_PRESENCE_COARSE_FP32)
     coarse_fp32_templates(w);
 #endif
@@ -248,7 +311,8 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
 
 static int ingest(leo_presence_workspace *w, const leo_presence_complex *x, size_t count)
 {
-    if (!w || !x || count < (size_t)ceil(w->rate / 375.0) || count > w->max_samples)
+    if (!w || !x || fegetround()!=FE_TONEAREST ||
+        count < (size_t)ceil(w->rate / 375.0) || count > w->max_samples)
         return -1;
     for (size_t k = 0; k < count; ++k) {
         if (!isfinite(x[k].re) || !isfinite(x[k].im) ||
@@ -339,7 +403,7 @@ static int best_frequency(const double *scores, const double *frequencies, int n
 static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
     double first_frequency, int frequency_count, double *scores)
 {
-    size_t last = (size_t)nearbyint(301 * w->rate * SYMBOL_S) - 1;
+    size_t last = (size_t)symbol_start(w,301) - 1;
     double template_energy = 0;
     memset(w->base, 0, w->n * sizeof(*w->base));
     memset(scores, 0, frequency_count * sizeof(*scores));
@@ -349,8 +413,8 @@ static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
     int first_bin=(int)nearbyint(first_frequency/w->fine_step_hz);
     first_bin=(first_bin+(int)w->fine_fft.size)%(int)w->fine_fft.size;
     for (int symbol = 2; symbol < 302; symbol += step) {
-        int begin = (int)nearbyint(symbol * w->rate * SYMBOL_S);
-        int end = (int)nearbyint((symbol+1) * w->rate * SYMBOL_S);
+        int begin = symbol_start(w,symbol);
+        int end = symbol_start(w,symbol+1);
         for (int k = begin; k < end; ++k) {
             template_energy += power(w->exact[k]);
             w->base[k] = conj(w->exact[k]);
@@ -363,8 +427,8 @@ static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
         memset(w->input, 0, w->fine_fft.size * sizeof(*w->input));
         double energy = 0;
         for (int symbol = 2; symbol < 302; symbol += step) {
-            int begin = (int)nearbyint(symbol * w->rate * SYMBOL_S);
-            int end = (int)nearbyint((symbol+1) * w->rate * SYMBOL_S);
+            int begin = symbol_start(w,symbol);
+            int end = symbol_start(w,symbol+1);
             for (int k = begin; k < end; ++k) {
                 energy += power(w->samples[start+k]);
                 w->input[k] = w->samples[start+k] * w->base[k];
@@ -375,7 +439,7 @@ static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
         if (denom > 0) {
             int bin=first_bin;
             for (int f = 0; f < frequency_count; ++f) {
-                scores[f] += cabs(w->fine_fft.output[bin])/denom;
+                scores[f] += magnitude(w->fine_fft.output[bin])/denom;
                 if (++bin==(int)w->fine_fft.size) bin=0;
             }
         }
@@ -409,7 +473,7 @@ static void conditioned_scores(leo_presence_workspace *w, size_t count, int epoc
             for (size_t k = 0; k < w->n; ++k)
                 total += w->weighted[k] * (regular ? w->conditioned_offsets[f*w->n+k] :
                     rotate(-TAU*(frequencies[f]-frequencies[0])*k/w->rate));
-            scores[f] += cabs(total)/denom;
+            scores[f] += magnitude(total)/denom;
         }
         ++frames;
     }
@@ -420,10 +484,10 @@ static double normalized_score(leo_presence_workspace *w, size_t count, int epoc
     double cfo, const double complex *reference, int first_symbol)
 {
     double te = 0, score = 0;
-    size_t last = (size_t)nearbyint((first_symbol == 2 ? 301 : 302)*w->rate*SYMBOL_S)-1;
+    size_t last = (size_t)symbol_start(w,first_symbol == 2 ? 301 : 302)-1;
     for (int symbol = first_symbol; symbol < 302; symbol += 2) {
-        int begin = (int)nearbyint(symbol*w->rate*SYMBOL_S);
-        int end = (int)nearbyint((symbol+1)*w->rate*SYMBOL_S);
+        int begin = symbol_start(w,symbol);
+        int end = symbol_start(w,symbol+1);
         for (int k = begin; k < end; ++k) {
             te += power(reference[k]);
             w->base[k] = conj(reference[k]) * rotate(-TAU*cfo*k/w->rate);
@@ -435,15 +499,15 @@ static double normalized_score(leo_presence_workspace *w, size_t count, int epoc
         if ((size_t)start + last >= count) break;
         double energy = 0; double complex total = 0;
         for (int symbol = first_symbol; symbol < 302; symbol += 2) {
-            int begin = (int)nearbyint(symbol*w->rate*SYMBOL_S);
-            int end = (int)nearbyint((symbol+1)*w->rate*SYMBOL_S);
+            int begin = symbol_start(w,symbol);
+            int end = symbol_start(w,symbol+1);
             for (int k = begin; k < end; ++k) {
                 total += w->samples[start+k]*w->base[k];
                 energy += power(w->samples[start+k]);
             }
         }
         double denom = sqrt(te*energy);
-        if (denom > 0) score += cabs(total)/denom;
+        if (denom > 0) score += magnitude(total)/denom;
         ++frames;
     }
     return frames ? score/frames : 0;
@@ -459,12 +523,22 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
         return -1;
     double spectra[2][128] = {{0}}, ceilings[2] = {0};
     int integer = fabs(offset-nearbyint(offset)) <= 1e-12;
-    int first = (int)nearbyint(2*w->rate*SYMBOL_S);
-    int stop = (int)nearbyint(66*w->rate*SYMBOL_S);
+    int first = symbol_start(w,2);
+    int stop = symbol_start(w,66);
     /* Rotation depends on local sample position, never on the frame number.
      * Keep the original arithmetic and reuse it across every supporting frame. */
-    for (int k = first; k < stop; ++k)
-        w->weighted[k] = rotate(-TAU*cfo*(k+offset)/w->rate);
+#if LEO_PRESENCE_PRECOMPUTE
+    double complex *rotations=w->glrt_rotations;
+    if (!w->have_rotations || w->rotation_cfo!=cfo || w->rotation_offset!=offset) {
+        for (int k=first; k<stop; ++k)
+            rotations[k]=rotate(-TAU*cfo*(k+offset)/w->rate);
+        w->rotation_cfo=cfo; w->rotation_offset=offset; w->have_rotations=1;
+    }
+#else
+    double complex *rotations=w->weighted;
+    for (int k=first; k<stop; ++k)
+        rotations[k]=rotate(-TAU*cfo*(k+offset)/w->rate);
+#endif
     double previous_fraction = NAN, weights[16], normalizer = 0;
     for (int frame = 0; frame < frame_limit; ++frame) {
         int start = frame_start(w, epoch, frame);
@@ -473,8 +547,8 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
         if (start+first+offset < (integer ? 0 : 7)) break;
         double complex correlations[2][64] = {{0}};
         for (int symbol = 2; symbol < 66; ++symbol) {
-            int begin = (int)nearbyint(symbol*w->rate*SYMBOL_S);
-            int end = (int)nearbyint((symbol+1)*w->rate*SYMBOL_S);
+            int begin = symbol_start(w,symbol);
+            int end = symbol_start(w,symbol+1);
             for (int k = begin; k < end; ++k) {
                 double position = start + k + offset;
                 double complex received = 0;
@@ -500,7 +574,7 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
                     received /= normalizer;
                 }
                 /* Omit only the common unit-magnitude frame phase. */
-                double complex corrected = received*w->weighted[k];
+                double complex corrected = received*rotations[k];
                 correlations[0][symbol-2] += conj(w->exact[k])*corrected;
                 correlations[1][symbol-2] += conj(w->control[k])*corrected;
             }
@@ -510,6 +584,9 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
             double ceiling = 0;
             for (int k = 0; k < 64; ++k) {
                 w->input[k] = correlations[which][k];
+                /* Keep libc magnitude in the final GLRT statistic. Tiny
+                 * ceiling differences can be amplified by fractional peak
+                 * interpolation on a nearly flat, non-pilot surface. */
                 ceiling += cabs(w->input[k]);
             }
             ceilings[which] += ceiling*ceiling;
@@ -673,7 +750,7 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
             c->verify_control_score=normalized_score(w,count,refined,c->acquired_cfo_hz,w->control,3);
         }
         w->profile.verification_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
-        if (frame_start(w,refined,1)+(int)nearbyint(302*w->rate*SYMBOL_S)>(int)count) continue;
+        if (frame_start(w,refined,1)+symbol_start(w,302)>(int)count) continue;
         ++out->candidate_count;
     }
     if (!LEO_PRESENCE_POWER_PROPOSAL && out->candidate_count==2 &&
@@ -728,7 +805,8 @@ int leo_presence_run(leo_presence_workspace *w, const leo_presence_complex *samp
 int leo_presence_run_ci16(leo_presence_workspace *w, const int16_t *iq,
     size_t count, leo_presence_result *out)
 {
-    if (!w || !iq || !out || count<(size_t)ceil(w->rate/375.0) || count>w->max_samples) return -1;
+    if (!w || !iq || !out || fegetround()!=FE_TONEAREST ||
+        count<(size_t)ceil(w->rate/375.0) || count>w->max_samples) return -1;
     memset(out,0,sizeof(*out));
     double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID), wall=clock_ms(CLOCK_MONOTONIC);
     for (size_t k=0;k<count;++k) w->samples[k]=iq[2*k]+I*(double)iq[2*k+1];
