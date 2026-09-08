@@ -9,6 +9,7 @@ from leo.analysis.starlink.templates import qin_edge_pilot_frame
 from tools.native_presence import build_window_ranker, pointer
 from tools.presence_dwell import TimingProposal
 from tools.presence_window_rank import NativeWindowRank, RankResult
+from tools.prototype_presence_rank_energy import projection_norms, select
 
 
 @pytest.fixture(scope="module", params=["pruned", "all-cells"])
@@ -73,6 +74,47 @@ def hybrid_library(tmp_path_factory):
         tmp_path_factory.mktemp("hybrid-rank") / "rank.so",
         cflags=("-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",),
     )
+
+
+@pytest.fixture(scope="module")
+def amplitude_library(tmp_path_factory):
+    return build_window_ranker(
+        tmp_path_factory.mktemp("amplitude-rank") / "rank.so",
+        cflags=("-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",
+                "-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1"),
+    )
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+@pytest.mark.parametrize("edge", ["lower", "upper"])
+def test_amplitude_variant_reuses_unchanged_correlations_and_epochs(
+    amplitude_library, hybrid_library, rate, edge
+):
+    iq = np.random.default_rng(9191).integers(-32768, 32768, (6 * rate // 50, 2), dtype=np.int16)
+    before = iq.tobytes()
+    with NativeWindowRank(hybrid_library, rate, edge, 512) as baseline:
+        baseline.run(iq)
+        normalized = baseline.screens()
+    with NativeWindowRank(amplitude_library, rate, edge, 512) as variant:
+        result = variant.run(iq)
+        screens = variant.screens()
+    norms = projection_norms(iq, rate)
+    np.testing.assert_allclose(screens.scores, np.asarray(normalized.scores) * norms, rtol=1e-10)
+    np.testing.assert_array_equal(screens.epochs, normalized.epochs)
+    assert result.order[0] == select(normalized.scores, norms, 1)
+    assert iq.tobytes() == before
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+def test_amplitude_zero_input_cannot_reuse_previous_projection_energy(amplitude_library, rate):
+    rng = np.random.default_rng(9192)
+    iq = rng.integers(-32768, 32768, (6 * rate // 50, 2), dtype=np.int16)
+    with NativeWindowRank(amplitude_library, rate, "lower", 512) as variant:
+        variant.run(iq)
+        result = variant.run(np.zeros_like(iq))
+        assert list(result.scores) == [0] * 6
+        assert list(result.order) == list(range(6))
+        assert variant.screens().selected == 0
 
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])

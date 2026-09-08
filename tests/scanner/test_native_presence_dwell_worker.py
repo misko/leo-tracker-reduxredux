@@ -27,9 +27,9 @@ from tools.presence_dwell import NativeDwell, unpack
 from tools.qualify_presence_dwell_controls import generate
 
 
-@pytest.fixture(scope="module")
-def artifacts(tmp_path_factory):
-    root = tmp_path_factory.mktemp("dwell-worker")
+@pytest.fixture(scope="module", params=["normalized", "amplitude"])
+def artifacts(tmp_path_factory, request):
+    root = tmp_path_factory.mktemp(f"dwell-worker-{request.param}")
     config = json.loads(
         (ROOT / "config/analysis/arm-presence-native-tone-ci16-v1.json").read_text()
     )
@@ -38,6 +38,8 @@ def artifacts(tmp_path_factory):
         + tuple(f"-DLEO_PRESENCE_{k}={v}" for k, v in config["variants"][0]["defines"].items())
         + ("-DLEO_PRESENCE_DIFFERENTIAL_CI16=1", "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1")
     )
+    if request.param == "amplitude":
+        flags += ("-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1",)
     return build_worker(root / "worker", cflags=flags), build_dwell_presence(
         root / "dwell.so", cflags=flags
     )
