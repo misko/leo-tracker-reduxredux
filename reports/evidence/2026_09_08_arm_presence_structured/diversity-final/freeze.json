@@ -1,0 +1,101 @@
+{
+  "scope": "post-hoc development, not fresh qualification",
+  "protocol": {
+    "schema": "org.leo.research.presence-structured-challenge/v1",
+    "scope": "Frozen new structured-nonpilot challenge; never enables a runtime policy",
+    "rates_hz": [
+      2500000,
+      5000000
+    ],
+    "edges": [
+      "lower",
+      "upper"
+    ],
+    "receiver": 1,
+    "dwell_ms": 120,
+    "screen_bins": 512,
+    "maximum_confirmations": 1,
+    "seeded": false,
+    "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+    "variants": [
+      "normalized",
+      "amplitude"
+    ],
+    "policy": {
+      "minimum_exact_score": 0.175,
+      "minimum_margin": 0.025
+    },
+    "association": {
+      "maximum_circular_epoch_difference_us": 2.0,
+      "maximum_cfo_difference_hz": 8000.0
+    },
+    "negative_kinds": [
+      "repeating_qpsk",
+      "independent_qpsk",
+      "repeating_qam16",
+      "independent_qam16"
+    ],
+    "negative_seeds": [
+      91001,
+      91002,
+      91003,
+      91004,
+      91005,
+      91006,
+      91007,
+      91008
+    ],
+    "negative_snr_db": [
+      0.0,
+      12.0
+    ],
+    "positive_seeds": [
+      92001,
+      92002,
+      92003,
+      92004
+    ],
+    "positive_windows": [
+      0,
+      2,
+      5
+    ],
+    "positive_snr_db": [
+      0.0,
+      12.0
+    ],
+    "tone_offsets_hz": [
+      -180000.0,
+      0.0,
+      220000.0
+    ],
+    "tone_inr_db": 17.0,
+    "boundary_seeds": [
+      93001,
+      93002
+    ],
+    "boundary_snr_db": [
+      -6.0,
+      6.0
+    ],
+    "boundary_burst_ms": 4.0,
+    "maximum_absolute_cfo_hz": 360000.0,
+    "case_count": 480,
+    "gate": {
+      "nonpilot_flags": 0,
+      "minimum_primary_association": 0.9
+    },
+    "interpretation": "Independent random symbol states, not cyclic rolls or phase rotations of known pilots. Reused seeds across rates/edges/SNR are dependent; no operational false-alarm probability or absence claim.",
+    "absence_policy_enabled": false,
+    "live_rf_authorized": false
+  },
+  "source_results_sha256": "037e43d3fbb197cbb03e185c000a5ed709b573ed6aedbe98ec9b986725f44891",
+  "source_freeze_sha256": "7845685e0d76569c490f6bde9abf054882b533fd9c3016987e140256b8e5dc68",
+  "prototype_results_sha256": "3fd6cf428c65e70a879c0f86502568a3f09722a5a9bfbe6079c717b13f482f5f",
+  "recipe_sha256": "549ff60cf1c1213933f4761453fef55e7ac9e336db3b383cf313fd178742f1f5",
+  "change": "alternate final-scoring frame regions 2..65 / 152..215; retain early epoch lattice",
+  "thresholds_changed": false,
+  "confirmations": 1,
+  "blocks_per_frame": 1,
+  "symbols_per_block": 64
+}
