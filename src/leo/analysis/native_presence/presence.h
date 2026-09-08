@@ -42,6 +42,7 @@ typedef struct {
  * must be finite and <=1e12; the radio CI16 range is safely inside this bound.
  * All run/diagnostic calls return 0 on success, -1 for unsupported input or
  * geometry. A failed call is unknown evidence, not a negative detection.
+ * FE_TONEAREST is required at execution as well as at workspace creation.
  */
 leo_presence_workspace *leo_presence_create(
     uint32_t rate_hz, const leo_presence_complex *exact,
