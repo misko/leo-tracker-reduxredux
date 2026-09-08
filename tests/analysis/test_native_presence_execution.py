@@ -31,11 +31,15 @@ def libraries(tmp_path_factory):
         + ("-DLEO_PRESENCE_DIFFERENTIAL_CI16=1", "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1")
     )
     artifacts = {}
-    for name, cache, magnitude in (
-        ("baseline", 0, 0),
-        ("cache", 1, 0),
-        ("magnitude", 1, 1),
-        ("wide", 1, 0),
+    for name, cache, magnitude, block, diverse in (
+        ("baseline", 0, 0, 0, 0),
+        ("cache", 1, 0, 0, 0),
+        ("magnitude", 1, 1, 0, 0),
+        ("blocked", 1, 0, 1, 0),
+        ("combined", 1, 1, 1, 0),
+        ("diverse", 1, 0, 0, 1),
+        ("diverse-combined", 1, 1, 1, 1),
+        ("wide", 1, 0, 0, 0),
     ):
         if name == "wide":
             common = tuple(f for f in common if "CONDITIONED_RADIUS=" not in f) + (
@@ -44,6 +48,9 @@ def libraries(tmp_path_factory):
         flags = common + (
             f"-DLEO_PRESENCE_PRECOMPUTE={cache}",
             f"-DLEO_PRESENCE_BOUNDED_MAGNITUDE={magnitude}",
+            f"-DLEO_PRESENCE_CONDITIONED_BLOCK_ROTATION={block}",
+            f"-DLEO_PRESENCE_GLRT_SYMBOL_DIVERSITY={diverse}",
+            f"-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED={diverse}",
         )
         artifacts[name] = build_dwell_presence(root / f"{name}.so", cflags=flags)
         helper = root / f"{name}-helper.so"
@@ -92,7 +99,15 @@ def test_complete_dwell_coverage_and_numerical_parity(libraries, rate, edge, kin
     with ExitStack() as stack:
         native = {
             name: stack.enter_context(NativeDwell(libraries[name], rate, edge, 512))
-            for name in ("baseline", "cache", "magnitude")
+            for name in (
+                "baseline",
+                "cache",
+                "magnitude",
+                "blocked",
+                "combined",
+                "diverse",
+                "diverse-combined",
+            )
         }
         # A reused workspace sees changing windows and IQ; no retained signal
         # estimate, transmitter phase or previous dwell is an acquisition seed.
@@ -110,7 +125,9 @@ def test_complete_dwell_coverage_and_numerical_parity(libraries, rate, edge, kin
                 for name, n in native.items()
             }
             assert outputs["cache"] == outputs["baseline"]
-            assert differences(outputs["baseline"], outputs["magnitude"]) == []
+            for name in ("magnitude", "blocked", "combined"):
+                assert differences(outputs["baseline"], outputs[name]) == []
+            assert differences(outputs["diverse"], outputs["diverse-combined"]) == []
             assert iq.tobytes() == original
 
 
@@ -177,14 +194,18 @@ def test_bounded_magnitude_retains_extreme_and_nonfinite_libc_fallback(libraries
 
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])
-@pytest.mark.parametrize("name,radius", [("cache", 200), ("wide", 2000)])
+@pytest.mark.parametrize(
+    "name,radius", [("cache", 200), ("blocked", 200), ("combined", 200), ("wide", 2000)]
+)
 @pytest.mark.parametrize("center", [-400000.0, -399973.125, 0.375, 399973.125, 400000.0])
+@pytest.mark.parametrize("short", [False, True])
 def test_compact_frequency_tables_cover_clipped_and_nonregular_endpoints(
-    libraries, rate, name, radius, center
+    libraries, rate, name, radius, center, short
 ):
     helper = libraries[name + "_helper"]
     rng = np.random.default_rng(82)
-    samples = rng.normal(size=rate // 50) + 1j * rng.normal(size=rate // 50)
+    count = math.ceil(rate / 375) if short else rate // 50
+    samples = rng.normal(size=count) + 1j * rng.normal(size=count)
     scores = np.full(44, -7.0, dtype=float)
     with NativePresence(helper._name, rate, "upper") as native:
         nf = helper.test_conditioned_scores(
@@ -197,15 +218,36 @@ def test_compact_frequency_tables_cover_clipped_and_nonregular_endpoints(
     template = qin_edge_pilot_frame(rate, "upper").astype(np.complex128)
     expected = np.zeros(len(frequencies))
     rotations = np.exp(-2j * np.pi * frequencies[:, None] * np.arange(len(template)) / rate)
+    frames = 0
     for frame in range(2):
         start = 317 + round(frame * (rate / 750))
+        if start + len(template) > len(samples):
+            break
         row = samples[start : start + len(template)]
         expected += np.abs(rotations @ (row * template.conj())) / np.sqrt(
             np.sum(np.abs(row) ** 2) * np.sum(np.abs(template) ** 2)
         )
+        frames += 1
     assert nf == len(frequencies)
-    np.testing.assert_allclose(scores[:nf], expected / 2, rtol=1e-9, atol=1e-10)
+    np.testing.assert_allclose(scores[:nf], expected / frames, rtol=1e-9, atol=1e-10)
     np.testing.assert_array_equal(scores[nf:], -7.0)
+
+
+def test_conditioned_block_rotation_rejects_unreviewed_compile_flag():
+    result = subprocess.run(
+        [
+            "cc",
+            "-std=c11",
+            "-fsyntax-only",
+            "-DLEO_PRESENCE_CONDITIONED_BLOCK_ROTATION=2",
+            str(ROOT / "src/leo/analysis/native_presence/presence.c"),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode != 0
+    assert "LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION must be 0 or 1" in result.stderr
 
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])

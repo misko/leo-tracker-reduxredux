@@ -42,6 +42,12 @@
 #if LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY != 0 && LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY != 1
 #error "LEO_PRESENCE_GLRT_SYMBOL_DIVERSITY must be 0 or 1"
 #endif
+#ifndef LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION
+#define LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION 0
+#endif
+#if LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION != 0 && LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION != 1
+#error "LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION must be 0 or 1"
+#endif
 
 /* The exact existing acquisition kernel, with platform-independent C types. */
 typedef double complex npy_cdouble;
@@ -459,9 +465,23 @@ static void conditioned_scores(leo_presence_workspace *w, size_t count, int epoc
 {
     double te = 0;
     memset(scores, 0, nf * sizeof(*scores));
+#if LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION
+    /* Factor the same local-time phasor into 32-sample blocks. No frequency
+     * bins, frames, samples or summation terms are removed. Directly computed
+     * block anchors prevent long oscillator-recursion drift. Multiplication
+     * changes FP64 rounding, so retain the original path for qualification. */
+    double complex basis[32], anchor=1;
+    for (size_t j=0; j<32; ++j)
+        basis[j]=rotate(-TAU*frequencies[0]*j/w->rate);
+#endif
     for (size_t k = 0; k < w->n; ++k) {
         te += power(w->exact[k]);
+#if LEO_PRESENCE_CONDITIONED_BLOCK_ROTATION
+        if (!(k&31)) anchor=rotate(-TAU*frequencies[0]*k/w->rate);
+        w->base[k] = conj(w->exact[k]) * (anchor*basis[k&31]);
+#else
         w->base[k] = conj(w->exact[k]) * rotate(-TAU*frequencies[0]*k/w->rate);
+#endif
     }
     int frames = 0;
     for (int frame = 0; frame < LEO_PRESENCE_FINE_FRAMES; ++frame) {

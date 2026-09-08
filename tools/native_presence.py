@@ -280,10 +280,23 @@ def build_library(
 
 
 def build_executable(
-    output: Path, *, compiler: str = "cc", sanitize: bool = False, cflags: tuple[str, ...] = ()
+    output: Path,
+    *,
+    compiler: str = "cc",
+    sanitize: bool = False,
+    cflags: tuple[str, ...] = (),
+    ldflags: tuple[str, ...] = (),
+    dependencies: tuple[Path, ...] = (),
 ) -> Path:
     sanitizers = ("-fsanitize=address,undefined", "-fno-omit-frame-pointer") if sanitize else ()
-    return _build(output, compiler, (*sanitizers, *cflags), executable=True)
+    return _build(
+        output,
+        compiler,
+        (*sanitizers, *cflags),
+        executable=True,
+        ldflags=ldflags,
+        dependencies=dependencies,
+    )
 
 
 def build_worker(
