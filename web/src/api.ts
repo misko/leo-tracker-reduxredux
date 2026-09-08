@@ -16,6 +16,124 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await response.json()) as T;
 }
 
+export interface ScannerGlrtResultV1 {
+  sequence: string;
+  visit: string;
+  valid_start: string;
+  valid_end: string;
+  search_start: string;
+  search_end: string;
+  confirmation_start: string;
+  confirmation_end: string;
+  rate_hz: number;
+  channel: number;
+  edge: "lower" | "upper";
+  rx: 1;
+  verdict: "unavailable" | "starlink" | "no_signal";
+  reason: string;
+  search_window_mask: number;
+  exact_score: number;
+  control_score: number;
+  margin: number;
+  cfo_hz: number;
+  epoch_sample_counter: string;
+  fractional_offset_samples: number;
+  cpu_ms: number;
+  wall_ms: number;
+}
+
+export interface ScannerGlrtPublicationV1 {
+  schema_version: 1;
+  kind: "scanner_glrt_publication";
+  session_id: string;
+  input_manifest_sha256: string;
+  algorithm_sha256: string;
+  configuration_sha256: string;
+  published_utc_ns: string;
+  error: string | null;
+  evidence: {
+    session: string;
+    generation: string;
+    negotiated: boolean;
+    mode: string | null;
+    source_terminal_attested: boolean;
+    final_received: boolean;
+    expected_results: number | null;
+    dropped_results: number;
+    result_sequence_limit: number;
+    results: ScannerGlrtResultV1[];
+    delivery_complete: boolean;
+    classification_complete: boolean;
+    error: string | null;
+  } | null;
+}
+
+function isGlrtCounter(value: unknown): value is string {
+  return typeof value === "string" && /^(0|[1-9][0-9]{0,19})$/.test(value)
+    && BigInt(value) <= 18446744073709551615n;
+}
+
+export async function getScannerGlrt(
+  sessionId: string, signal?: AbortSignal,
+): Promise<ScannerGlrtPublicationV1 | null> {
+  const response = await fetch(
+    `/api/v1/scanner/persistent-sessions/${encodeURIComponent(sessionId)}/glrt`,
+    { method: "GET", signal },
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`GLRT evidence request failed (${response.status})`);
+  const result = await response.json() as ScannerGlrtPublicationV1;
+  if (result.schema_version !== 1 || result.kind !== "scanner_glrt_publication"
+      || result.session_id !== sessionId || !isGlrtCounter(result.published_utc_ns)) {
+    throw new Error("GLRT evidence identity is invalid");
+  }
+  const evidence = result.evidence;
+  if (evidence !== null) {
+    if (!evidence || !Array.isArray(evidence.results) || evidence.results.length > 2500
+        || !isGlrtCounter(evidence.session) || !isGlrtCounter(evidence.generation)
+        || typeof evidence.delivery_complete !== "boolean"
+        || typeof evidence.classification_complete !== "boolean"
+        || (evidence.mode === "unqualified-evidence" && evidence.classification_complete)) {
+      throw new Error("GLRT evidence structure is invalid");
+    }
+    const counters = ["sequence", "visit", "valid_start", "valid_end", "search_start", "search_end",
+      "confirmation_start", "confirmation_end", "epoch_sample_counter"] as const;
+    for (const row of evidence.results) {
+      if (!row || row.rx !== 1 || counters.some((key) => !isGlrtCounter(row[key]))) {
+        throw new Error("GLRT result counters or receiver are invalid");
+      }
+      // Reject malformed display values here, so this independent panel cannot
+      // crash the recording view or render an unknown verdict as "No signal".
+      const measurements = [row.exact_score, row.control_score, row.margin, row.cfo_hz,
+        row.fractional_offset_samples, row.cpu_ms, row.wall_ms];
+      if (measurements.some((value) => typeof value !== "number" || !Number.isFinite(value))
+          || row.exact_score < 0 || row.control_score < 0 || row.cpu_ms < 0 || row.wall_ms < 0
+          || Math.abs(row.fractional_offset_samples) > 2
+          || !Number.isInteger(row.rate_hz) || row.rate_hz <= 0 || row.rate_hz > 4294967295
+          || !Number.isInteger(row.channel) || row.channel < 1 || row.channel > 4
+          || !["lower", "upper"].includes(row.edge)
+          || !["unavailable", "starlink", "no_signal"].includes(row.verdict)
+          || typeof row.reason !== "string" || !row.reason.length
+          || !Number.isInteger(row.search_window_mask)
+          || row.search_window_mask < 0 || row.search_window_mask > 63) {
+        throw new Error("GLRT result measurements or status are invalid");
+      }
+      const validStart = BigInt(row.valid_start), validEnd = BigInt(row.valid_end);
+      const searchStart = BigInt(row.search_start), searchEnd = BigInt(row.search_end);
+      const confirmStart = BigInt(row.confirmation_start), confirmEnd = BigInt(row.confirmation_end);
+      if (validEnd - validStart !== BigInt(Math.floor(row.rate_hz * 120 / 1000))
+          || validStart > searchStart || searchStart > confirmStart || confirmStart > confirmEnd
+          || confirmEnd > searchEnd || searchEnd > validEnd) {
+        throw new Error("GLRT result intervals are invalid");
+      }
+      if (evidence.mode === "unqualified-evidence" && row.verdict !== "unavailable") {
+        throw new Error("Unqualified GLRT evidence cannot assert a classification");
+      }
+    }
+  }
+  return result;
+}
+
 async function postJson<T>(path: string): Promise<T> {
   const response = await fetch(path, {
     method: "POST",

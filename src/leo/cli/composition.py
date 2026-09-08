@@ -103,6 +103,11 @@ from leo.cli.scanner import (
     run_scanner_command,
     write_scanner_report,
 )
+from leo.cli.scanner_glrt import (
+    existing_scanner_glrt_warning,
+    publish_scanner_glrt,
+    scanner_glrt_options,
+)
 from leo.cli.wp11 import WP11CliBackend
 from leo.contracts.mixed_rate_schedule import (
     ProductionDwellIntentV1,
@@ -153,6 +158,7 @@ from leo.radio import (
     RadioSource,
     create_pluto_userspace_iiod_lifecycle,
 )
+from leo.radio.scanner_glrt_metadata import ScannerGlrtOptions
 from leo.scanner import (
     PersistentHopPlanV1,
     PersistentHopRadio,
@@ -176,6 +182,7 @@ from leo.scanner import (
     compile_scheduled_scanner_run_intent_v1,
     current_low_band_targets,
 )
+from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource
 from leo.station.resolver import FixtureAuthorityFileReference
 from leo.storage import (
     PersistentHopIqStore,
@@ -188,6 +195,7 @@ from leo.storage import (
     capture_persistent_hop_to_store,
 )
 from leo.storage.errors import BundleNotFoundError
+from leo.storage.scanner_glrt import ScannerGlrtStore
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
 ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadioLike]
@@ -294,6 +302,7 @@ class CliSettings:
     scanner_persistent_iiod_port: int = 30_432
     scanner_persistent_iiod_binary_path: Path | None = None
     scanner_persistent_credentials_directory: Path | None = None
+    scanner_glrt: ScannerGlrtOptions | None = None
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
     ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
     direct_async_enabled: bool = False
@@ -306,6 +315,11 @@ class CliSettings:
             raise ValueError("at most two radios can be configured")
         if self.safety_reserve_bytes < 0:
             raise ValueError("acquisition safety reserve cannot be negative")
+        if self.scanner_glrt is not None:
+            if not isinstance(self.scanner_glrt, ScannerGlrtOptions):
+                raise ValueError("scanner GLRT options have an invalid type")
+            if not self.scanner_enabled or self.scanner_capture_mode != "persistent_hop":
+                raise ValueError("scanner GLRT requires an enabled persistent-hop scanner")
         if self.ddr_ring_max_rate_hz not in (0, 10_000_000, 15_000_000, 20_000_000):
             raise ValueError("DDR ring rollout maximum must be 0, 10, 15, or 20 MS/s")
         if self.radio_backend == "pluto":
@@ -517,6 +531,7 @@ class CliSettings:
                 scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "120")),
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
+                scanner_glrt=scanner_glrt_options(values),
                 scanner_persistent_transition_guard_us=int(
                     values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "1000")
                 ),
@@ -575,6 +590,7 @@ class CompositionHooks:
     scanner_analysis_store_factory: ScannerAnalysisStoreFactory = ScannerAnalysisStore
     scanner_run_store_factory: ScannerRunStoreFactory = ScannerRunStore
     persistent_hop_store_factory: PersistentHopIqStoreFactory = PersistentHopIqStore
+    scanner_glrt_store_factory: Callable[[Path], ScannerGlrtStore] = ScannerGlrtStore
     scanner_monotonic: Callable[[], float] = time.monotonic
     scanner_utc_ns: Callable[[], int] = time.time_ns
     capture_observer: CaptureObserver = lambda _result: None
@@ -1507,7 +1523,20 @@ class LocalAcquisitionBackend:
                     "persisted persistent-hop session disagrees with scheduled intent",
                     ExitCode.CONFLICT,
                 )
-            return ScheduledPersistentHopRun(intent=intent, published=existing)
+            warning = None
+            if self.settings.scanner_glrt is not None:
+                warning = existing_scanner_glrt_warning(
+                    existing, self.settings.scanner_glrt,
+                    store_factory=self.hooks.scanner_glrt_store_factory,
+                    bulk_root=self.settings.bulk_root,
+                )
+                if warning is not None:
+                    logging.getLogger(__name__).warning(
+                        "%s: %s; existing IQ capture preserved", session_id, warning,
+                    )
+            return ScheduledPersistentHopRun(
+                intent=intent, published=existing, classification_warning=warning,
+            )
 
         self._admit_persistent_hop_iq(plan)
         radio = self._persistent_hop_radio(configured)
@@ -1555,7 +1584,16 @@ class LocalAcquisitionBackend:
                     raise
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
-        return ScheduledPersistentHopRun(intent=intent, published=published)
+        classification_warning = None
+        if self.settings.scanner_glrt is not None:
+            classification_warning = publish_scanner_glrt(
+                cast(ScannerGlrtEvidenceSource, radio), published, self.settings.scanner_glrt,
+                store_factory=self.hooks.scanner_glrt_store_factory,
+                bulk_root=self.settings.bulk_root, realtime_ns=self.hooks.scanner_utc_ns,
+            )
+        return ScheduledPersistentHopRun(
+            intent=intent, published=published, classification_warning=classification_warning,
+        )
 
     def analyze_scheduled_scanner(
         self,
@@ -2648,6 +2686,7 @@ class LocalAcquisitionBackend:
             radio_id=configuration.radio_id,
             iiod_port=self.settings.scanner_persistent_iiod_port,
             read_ahead_visits=self.settings.scanner_persistent_read_ahead_visits,
+            scanner_glrt=self.settings.scanner_glrt,
         )
 
     def _persistent_hop_iiod_lifecycle(
