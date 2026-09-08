@@ -107,6 +107,7 @@ def _build(
     *,
     executable: bool,
     scanner_worker: bool = False,
+    window_ranker: bool = False,
 ) -> Path:
     output = output.resolve()
     receipt = output.with_name(output.name + ".build.json")
@@ -124,6 +125,10 @@ def _build(
         entry = ROOT / "src/leo/scanner/native_presence/worker.c"
         worker_sources = [ROOT / "src/leo/scanner/native_presence/pool.c"]
         sources += sorted((ROOT / "src/leo/scanner/native_presence").glob("*.[ch]"))
+    elif window_ranker:
+        entry = ROOT / "tools/presence_window_rank_replay.c"
+        if executable:
+            sources += [entry]
     elif executable:
         sources += [entry]
     hashes = {str(path.relative_to(ROOT)): _digest(path) for path in sources}
@@ -137,8 +142,11 @@ def _build(
         "-Werror",
         *flags,
         *([str(entry), *(str(p) for p in worker_sources)] if executable else []),
-        str(NATIVE / "presence.c"),
-        str(NATIVE / "fft.c"),
+        *(
+            [str(NATIVE / "window_rank.c")]
+            if window_ranker
+            else [str(NATIVE / "presence.c"), str(NATIVE / "fft.c")]
+        ),
         "-lm",
         "-o",
         str(output),
@@ -181,6 +189,13 @@ def build_executable(
 def build_worker(output: Path, *, compiler: str = "cc", cflags: tuple[str, ...] = ()) -> Path:
     """Build the isolated scanner consumer, separate from the numerical library."""
     return _build(output, compiler, cflags, executable=True, scanner_worker=True)
+
+
+def build_window_ranker(
+    output: Path, *, compiler: str = "cc", executable: bool = False, cflags: tuple[str, ...] = ()
+) -> Path:
+    flags = () if executable else ("-shared", "-fPIC")
+    return _build(output, compiler, (*flags, *cflags), executable=executable, window_ranker=True)
 
 
 def write_templates(path: Path, rate: int):

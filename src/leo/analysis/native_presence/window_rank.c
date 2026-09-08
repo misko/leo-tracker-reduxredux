@@ -1,0 +1,209 @@
+#define _POSIX_C_SOURCE 200809L
+#include "window_rank.h"
+#include <complex.h>
+#include <fenv.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#if defined(__ARM_NEON) && !defined(LEO_PRESENCE_RANK_FORCE_SCALAR)
+#include <arm_neon.h>
+#endif
+
+/* This separate experiment uses FP32 only for the proposal FFT. CI16 lag
+ * products/sums are exact int64; normalization is FP64. No final GLRT,
+ * fractional interpolation, sample counters, or existing kernels change. */
+struct leo_presence_rank_workspace {
+    uint32_t rate, bins;
+    size_t n, window;
+    float complex *roots, *input, *output, *template_fft;
+    double complex *folded;
+    int64_t *sum_real, *sum_imag;
+    uint32_t *support, starts[15];
+};
+
+static double rank_clock(clockid_t id)
+{
+    struct timespec ts;
+    if (clock_gettime(id,&ts)) return 0;
+    return ts.tv_sec*1000.0+ts.tv_nsec/1e6;
+}
+
+static void rank_fft(leo_presence_rank_workspace *w)
+{
+    const size_t n=w->bins;
+    for (size_t i=0, reversed=0; i<n; ++i) {
+        w->output[reversed]=w->input[i];
+        size_t bit=n>>1;
+        while (bit && (reversed&bit)) { reversed^=bit; bit>>=1; }
+        reversed^=bit;
+    }
+    for (size_t width=2, stride=n>>1; width<=n; width<<=1, stride>>=1) {
+        size_t half=width>>1;
+        for (size_t base=0; base<n; base+=width) {
+            for (size_t k=0; k<half; ++k) {
+                float complex even=w->output[base+k];
+                float complex odd=w->output[base+half+k]*w->roots[k*stride];
+                w->output[base+k]=even+odd;
+                w->output[base+half+k]=even-odd;
+            }
+        }
+    }
+}
+
+/* Circular interpolation is deliberately a proposal approximation, not a
+ * claim of lossless decimation. Its sensitivity must be measured per grid.
+ * Center in FP64 first so a pure constant lag sequence remains exactly zero. */
+static int project(leo_presence_rank_workspace *w)
+{
+    double complex mean=0;
+    for (size_t k=0; k<w->bins; ++k) {
+        double position=(double)k*w->n/w->bins;
+        size_t left=(size_t)position, right=left+1==w->n ? 0 : left+1;
+        mean+=w->folded[left]+(position-left)*(w->folded[right]-w->folded[left]);
+    }
+    mean/=w->bins;
+    double energy=0;
+    for (size_t k=0; k<w->bins; ++k) {
+        double position=(double)k*w->n/w->bins;
+        size_t left=(size_t)position, right=left+1==w->n ? 0 : left+1;
+        double complex value=w->folded[left]+(position-left)*(w->folded[right]-w->folded[left])-mean;
+        w->input[k]=(float)creal(value)+I*(float)cimag(value);
+        energy+=creal(value)*creal(value)+cimag(value)*cimag(value);
+    }
+    if (energy==0) { memset(w->input,0,w->bins*sizeof(*w->input)); return 0; }
+    float scale=(float)(1/sqrt(energy));
+    if (!isfinite(energy) || !isfinite(scale) || scale==0) return -1;
+    for (size_t k=0; k<w->bins; ++k) w->input[k]*=scale;
+    return 1;
+}
+
+void leo_presence_rank_destroy(leo_presence_rank_workspace *w)
+{
+    if (!w) return;
+    free(w->roots); free(w->input); free(w->output); free(w->template_fft);
+    free(w->folded); free(w->sum_real); free(w->sum_imag); free(w->support);
+    free(w);
+}
+
+leo_presence_rank_workspace *leo_presence_rank_create(uint32_t rate,
+    const leo_presence_complex *exact, size_t n, uint32_t bins)
+{
+    if (fegetround()!=FE_TONEAREST || (rate!=2500000 && rate!=5000000) || !exact ||
+        n!=(size_t)nearbyint(rate/750.0) || bins<512 || bins>8192 || (bins&(bins-1))) return NULL;
+    for (size_t k=0; k<n; ++k)
+        if (!isfinite(exact[k].re) || !isfinite(exact[k].im) ||
+            fabs(exact[k].re)>16 || fabs(exact[k].im)>16) return NULL;
+    leo_presence_rank_workspace *w=calloc(1,sizeof(*w));
+    if (!w) return NULL;
+    w->rate=rate; w->n=n; w->window=rate/50; w->bins=bins;
+#define ALLOC(field, count) do { \
+    w->field=calloc(count,sizeof(*w->field)); \
+    if (!w->field) { leo_presence_rank_destroy(w); return NULL; } \
+} while (0)
+    ALLOC(roots,bins); ALLOC(input,bins); ALLOC(output,bins); ALLOC(template_fft,bins);
+    ALLOC(folded,n); ALLOC(sum_real,n); ALLOC(sum_imag,n); ALLOC(support,n);
+#undef ALLOC
+    for (size_t frame=0; frame<15; ++frame)
+        w->starts[frame]=(uint32_t)nearbyint(frame*(rate/750.0));
+    for (size_t frame=0; frame<15; ++frame) {
+        size_t valid=w->window-w->starts[frame]-4;
+        if (valid>w->n) valid=w->n;
+        for (size_t k=0; k<valid; ++k) ++w->support[k];
+    }
+    for (size_t k=0; k<bins; ++k) {
+        double angle=-6.283185307179586476925286766559*k/bins;
+        w->roots[k]=(float)cos(angle)+I*(float)sin(angle);
+    }
+    for (size_t k=0; k<n; ++k) {
+        size_t next=(k+4)%n;
+        w->folded[k]=(exact[next].re+I*exact[next].im)*(exact[k].re-I*exact[k].im);
+    }
+    if (project(w)<=0) { leo_presence_rank_destroy(w); return NULL; }
+    rank_fft(w);
+    memcpy(w->template_fft,w->output,bins*sizeof(*w->output));
+    return w;
+}
+
+static void fold(leo_presence_rank_workspace *w, const int16_t *iq)
+{
+    memset(w->sum_real,0,w->n*sizeof(*w->sum_real));
+    memset(w->sum_imag,0,w->n*sizeof(*w->sum_imag));
+    for (size_t frame=0; frame<15; ++frame) {
+        size_t start=w->starts[frame], valid=w->window-start-4;
+        if (valid>w->n) valid=w->n;
+        size_t k=0;
+#if defined(__ARM_NEON) && !defined(LEO_PRESENCE_RANK_FORCE_SCALAR)
+        /* Widen EACH product before adding/subtracting: CI16 extrema exceed
+         * int32 in a complex product. Four independent folded cells retain
+         * exact int64 accumulation and the scalar support geometry. */
+        for (; k+3<valid; k+=4) {
+            int16x4x2_t a=vld2_s16(iq+2*(start+k));
+            int16x4x2_t b=vld2_s16(iq+2*(start+k+4));
+            int32x4_t rr=vmull_s16(a.val[0],b.val[0]);
+            int32x4_t ii=vmull_s16(a.val[1],b.val[1]);
+            int32x4_t ri=vmull_s16(a.val[0],b.val[1]);
+            int32x4_t ir=vmull_s16(a.val[1],b.val[0]);
+            int64x2_t re0=vaddq_s64(vmovl_s32(vget_low_s32(rr)),vmovl_s32(vget_low_s32(ii)));
+            int64x2_t re1=vaddq_s64(vmovl_s32(vget_high_s32(rr)),vmovl_s32(vget_high_s32(ii)));
+            int64x2_t im0=vsubq_s64(vmovl_s32(vget_low_s32(ri)),vmovl_s32(vget_low_s32(ir)));
+            int64x2_t im1=vsubq_s64(vmovl_s32(vget_high_s32(ri)),vmovl_s32(vget_high_s32(ir)));
+            vst1q_s64(w->sum_real+k,vaddq_s64(vld1q_s64(w->sum_real+k),re0));
+            vst1q_s64(w->sum_real+k+2,vaddq_s64(vld1q_s64(w->sum_real+k+2),re1));
+            vst1q_s64(w->sum_imag+k,vaddq_s64(vld1q_s64(w->sum_imag+k),im0));
+            vst1q_s64(w->sum_imag+k+2,vaddq_s64(vld1q_s64(w->sum_imag+k+2),im1));
+        }
+#endif
+        for (; k<valid; ++k) {
+            size_t offset=2*(start+k);
+            int64_t ar=iq[offset], ai=iq[offset+1];
+            int64_t br=iq[offset+8], bi=iq[offset+9];
+            w->sum_real[k]+=ar*br+ai*bi;
+            w->sum_imag[k]+=ar*bi-ai*br;
+        }
+    }
+    for (size_t k=0; k<w->n; ++k) {
+        double support=w->support[k] ? w->support[k] : 1;
+        w->folded[k]=(double)w->sum_real[k]/support+I*((double)w->sum_imag[k]/support);
+    }
+}
+
+int leo_presence_rank_ci16(leo_presence_rank_workspace *w, const int16_t *iq,
+    size_t count, leo_presence_rank_result *result)
+{
+    if (!w || !iq || !result || count!=6*w->window || fegetround()!=FE_TONEAREST) return -1;
+    leo_presence_rank_result out={0};
+    double cpu=rank_clock(CLOCK_PROCESS_CPUTIME_ID), wall=rank_clock(CLOCK_MONOTONIC);
+    for (size_t slice=0; slice<6; ++slice) {
+        double started=rank_clock(CLOCK_PROCESS_CPUTIME_ID);
+        fold(w,iq+2*slice*w->window);
+        out.fold_cpu_ms+=rank_clock(CLOCK_PROCESS_CPUTIME_ID)-started;
+        started=rank_clock(CLOCK_PROCESS_CPUTIME_ID);
+        int projected=project(w);
+        if (projected<0) return -1;
+        if (projected) {
+            rank_fft(w);
+            for (size_t k=0; k<w->bins; ++k)
+                w->input[k]=conjf(w->output[k]*conjf(w->template_fft[k]));
+            rank_fft(w);
+            size_t best=0;
+            double value=-1;
+            for (size_t k=0; k<w->bins; ++k) {
+                double re=crealf(w->output[k]), im=cimagf(w->output[k]);
+                double score=re*re+im*im;
+                if (score>value) { value=score; best=k; }
+            }
+            out.scores[slice]=sqrt(value)/w->bins;
+            out.projected_epoch_samples[slice]=(uint32_t)nearbyint((double)best*w->n/w->bins)%w->n;
+        }
+        out.correlation_cpu_ms+=rank_clock(CLOCK_PROCESS_CPUTIME_ID)-started;
+        out.order[slice]=(uint32_t)slice;
+        for (size_t j=slice; j>0 && out.scores[out.order[j]]>out.scores[out.order[j-1]]; --j) {
+            uint32_t swap=out.order[j]; out.order[j]=out.order[j-1]; out.order[j-1]=swap;
+        }
+    }
+    out.total_cpu_ms=rank_clock(CLOCK_PROCESS_CPUTIME_ID)-cpu;
+    out.total_wall_ms=rank_clock(CLOCK_MONOTONIC)-wall;
+    *result=out;
+    return 0;
+}

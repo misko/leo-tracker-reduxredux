@@ -69,6 +69,17 @@ arrival replay, iiOD/host/UI integration, and live shadow qualification remain
 unfinished; nothing has been deployed. First-window reference evidence covers
 only 15/35 visits with reference evidence somewhere in the six-window tiling.
 
+The newer [whole-dwell screen/frame checkpoint](../../reports/2026_09_08_arm_presence_window_rank_checkpoint.md)
+adds the C/Python envelope and fault-isolated host binding (not actual LIBIIO
+transport integration), plus a six-window native ranking experiment. Its
+smallest grid costs 20.0/40.01 ms p99 ARM CPU for the complete 120 ms screen;
+1,000 optimized saved-IQ/control outputs match desktop exactly. The best tested
+single-window ranking associates 20/35 development reference-positive dwells,
+versus 15/35 for the first window; top three reaches 28/35, versus 30/35 for all
+six existing confirmations. Neither quality nor combined confirmation cost is
+qualified. Next: measure proposal reuse inside bounded fractional confirmation,
+without assuming that screen coverage alone establishes an absence verdict.
+
 ## Objective and boundaries
 
 Evaluate one selected RX during each 120 ms valid scanner visit, initially using
