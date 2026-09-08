@@ -137,6 +137,9 @@ capacity only, not source-attested acquisition or detection sensitivity.
 1. Reduce the measured 5 MS/s CPU/startup tail and retest on saved data. The last
    actual ARM measurements remain 113.47 ms CPU p99 and 126.62 ms copy-to-result
    p99 at 5 MS/s; this checkpoint provides no new timing claim.
+   The subsequent [execution optimization checkpoint](2026_09_08_native_presence_execution_checkpoint.md)
+   reduces desktop setup/allocation and recurring CPU, with 475 passing tests;
+   ARM timing and live duty remain unverified.
 2. Qualify detection with frozen held-out recordings and valid interference
    controls. The [decision checkpoint](2026_09_08_arm_presence_decision_checkpoint.md)
    retains the short-burst and reference-association limitations; no threshold

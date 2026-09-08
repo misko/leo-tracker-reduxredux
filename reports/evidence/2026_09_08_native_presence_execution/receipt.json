@@ -1,0 +1,281 @@
+{
+  "scope": "offline execution optimization; not ARM timing, detection qualification or live duty",
+  "implementation_commit": "eea714def05a8f7b766ded8af0bb4460f6880694",
+  "baseline_commit": "fa467153bae55b7d2f39fc7ebe74e07e54554793",
+  "checks": {
+    "regressions": 475,
+    "focused_execution_tests": 51,
+    "sanitizer_processes": 32,
+    "sanitizer_dwell_executions": 64,
+    "sanitizer_confirmations": 384,
+    "saved_distinct_dwells": 96,
+    "paired_variant_comparisons": 960,
+    "tolerance_mismatches": 0,
+    "compiler_arm_artifacts": 2
+  },
+  "limits": [
+    "RX1 only; unchanged search and IQ",
+    "precompute default on; bounded magnitude default off",
+    "No new RF, deployment, FPGA/kernel/flashed firmware or remote branch changes",
+    "ARM host-key verification pending; no ARM execution for these artifacts",
+    "Cross-backend fractional timing stress differences remain; tolerances unchanged"
+  ],
+  "commands": {
+    "environment": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. OPENBLAS_NUM_THREADS=1 FFTW_PREFIX=/tmp/leo-presence-fftw.nLw4v6/install",
+    "python": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "build": "/tmp/leo-presence-runtime-opt.eAHUlj/build_qualified.py",
+    "qualification": "/tmp/leo-presence-runtime-opt.eAHUlj/qualify_execution.py",
+    "benchmark": "-m tools.benchmark_presence_execution /tmp/leo-native-presence-holdout-v1-20260908 /tmp/leo-presence-runtime-opt.eAHUlj/qualified/paired --library baseline=/tmp/leo-presence-runtime-opt.eAHUlj/baseline.so --library cache=/tmp/leo-presence-runtime-opt.eAHUlj/qualified/final-cache.so --library magnitude=/tmp/leo-presence-runtime-opt.eAHUlj/qualified/final-magnitude.so --repeats 5",
+    "pytest": "-m pytest -q tests/analysis/test_native_presence_execution.py tests/analysis/test_native_presence.py tests/analysis/test_presence_dwell.py tests/analysis/test_native_presence_ci16_fold.py tests/analysis/test_native_presence_ci16_lag.py tests/analysis/test_native_presence_fftw.py tests/analysis/test_native_presence_differential.py tests/scanner/test_native_presence_dwell_worker.py tests/scanner/test_glrt_frame_result.py --junitxml=/tmp/leo-presence-runtime-opt.eAHUlj/regression-qualified.xml"
+  },
+  "artifacts": {
+    "paired/freeze.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/paired/freeze.json",
+      "sha256": "d3972b0410608c07e069a0bfffd1f2c013dff98cdc0dd89b677dfd7a14f0a190",
+      "original_sha256": "d3972b0410608c07e069a0bfffd1f2c013dff98cdc0dd89b677dfd7a14f0a190",
+      "original_bytes": 1183,
+      "retained_bytes": 1183
+    },
+    "paired/summary.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/paired/summary.json",
+      "sha256": "2b233487af31d9589a555b61f57b13b1cbe1a33df042cea0c7a00cd83958cfd6",
+      "original_sha256": "2b233487af31d9589a555b61f57b13b1cbe1a33df042cea0c7a00cd83958cfd6",
+      "original_bytes": 9359,
+      "retained_bytes": 9359
+    },
+    "paired/results.json.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/paired/results.json",
+      "sha256": "165578877494a1fd5cd29d46fe64101b0dab8345dbbacaa71065727e61070a48",
+      "original_sha256": "e33d4539867d56887a430571231ac03c0ac841d737d891f08c18078ccce2135f",
+      "original_bytes": 28180579,
+      "retained_bytes": 799086
+    },
+    "qualification/freeze.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/execution-qualification/freeze.json",
+      "sha256": "9ff5206b20994fa96418212ecaaf181b7518ce8e0fa2aa5a5bb08eaf8e970e4a",
+      "original_sha256": "9ff5206b20994fa96418212ecaaf181b7518ce8e0fa2aa5a5bb08eaf8e970e4a",
+      "original_bytes": 1267,
+      "retained_bytes": 1267
+    },
+    "qualification/summary.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/execution-qualification/summary.json",
+      "sha256": "e401f76df93eac49fc12a5341d2e2065b9fda9f286e053a77362fc60a385cbc9",
+      "original_sha256": "e401f76df93eac49fc12a5341d2e2065b9fda9f286e053a77362fc60a385cbc9",
+      "original_bytes": 438,
+      "retained_bytes": 438
+    },
+    "qualification/sanitizer-results.json.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/execution-qualification/sanitizer-results.json",
+      "sha256": "e9c7847e7e113f07df4ad10319559cb45c127716a79c4ce7e2c5e31d1ddd4e66",
+      "original_sha256": "d3716a77199b9b1415b07c8f0bc92ab0e78737c6726bbd8c87b16cb788332a9f",
+      "original_bytes": 319148,
+      "retained_bytes": 26664
+    },
+    "qualification/setup-results.json.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/execution-qualification/setup-results.json",
+      "sha256": "996c7b0e150d4bca30765678807999e1542838efe8e20ab8e00c60dd6db6e679",
+      "original_sha256": "b8bc1b10dcafb0c9183012c3a4abaf17e6961912c701e0758ff337ba35bfeb8a",
+      "original_bytes": 43699,
+      "retained_bytes": 3446
+    },
+    "builds/baseline-builtin.so.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/baseline-builtin.so.build.json",
+      "sha256": "9ae5cc759d67946b059616dc85f4f3b3a672589cdc75229c8e8a177d8b8c0bc3",
+      "original_sha256": "9ae5cc759d67946b059616dc85f4f3b3a672589cdc75229c8e8a177d8b8c0bc3",
+      "original_bytes": 4087,
+      "retained_bytes": 4087
+    },
+    "builds/cache-builtin.so.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/cache-builtin.so.build.json",
+      "sha256": "63bfe89943596fdf9ca457ad1509f69c9aceb7502d586fd7b2b9ecfe538a9f35",
+      "original_sha256": "63bfe89943596fdf9ca457ad1509f69c9aceb7502d586fd7b2b9ecfe538a9f35",
+      "original_bytes": 4084,
+      "retained_bytes": 4084
+    },
+    "builds/final-cache.so.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/final-cache.so.build.json",
+      "sha256": "7e4315389f3591e5af9ef378b183b17c7d8d92d23bcd108d70a49b9fff87b495",
+      "original_sha256": "7e4315389f3591e5af9ef378b183b17c7d8d92d23bcd108d70a49b9fff87b495",
+      "original_bytes": 4559,
+      "retained_bytes": 4559
+    },
+    "builds/final-magnitude.so.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/final-magnitude.so.build.json",
+      "sha256": "7e3dc99fef9ceacd64a845ed694a826e64007ca3996a464ef19f4895537ee569",
+      "original_sha256": "7e3dc99fef9ceacd64a845ed694a826e64007ca3996a464ef19f4895537ee569",
+      "original_bytes": 4563,
+      "retained_bytes": 4563
+    },
+    "builds/magnitude-builtin.so.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/magnitude-builtin.so.build.json",
+      "sha256": "f65eee61ea24ab81a2636486dd10de6db28dd5d2afc056754a6257f73c4a4417",
+      "original_sha256": "f65eee61ea24ab81a2636486dd10de6db28dd5d2afc056754a6257f73c4a4417",
+      "original_bytes": 4088,
+      "retained_bytes": 4088
+    },
+    "builds/sanitize-cache.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/sanitize-cache.build.json",
+      "sha256": "39fb5f42563d663cb9d9a3eb774e421796537e78284062d4ee9aa11dc5b98482",
+      "original_sha256": "39fb5f42563d663cb9d9a3eb774e421796537e78284062d4ee9aa11dc5b98482",
+      "original_bytes": 4309,
+      "retained_bytes": 4309
+    },
+    "builds/sanitize-magnitude.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/sanitize-magnitude.build.json",
+      "sha256": "3fdbcb7f97f9f269121b8cbf55f54da286d7bc105813051addfba3792ded9056",
+      "original_sha256": "3fdbcb7f97f9f269121b8cbf55f54da286d7bc105813051addfba3792ded9056",
+      "original_bytes": 4313,
+      "retained_bytes": 4313
+    },
+    "builds/worker-cache-arm.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/worker-cache-arm.build.json",
+      "sha256": "f5c042d23ed903fd2d2153014f9fad166072428273e2dbf2e37ad69d732d96e8",
+      "original_sha256": "f5c042d23ed903fd2d2153014f9fad166072428273e2dbf2e37ad69d732d96e8",
+      "original_bytes": 6334,
+      "retained_bytes": 6334
+    },
+    "builds/worker-magnitude-arm.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualified/worker-magnitude-arm.build.json",
+      "sha256": "6df253d681b3f18e1414d520285ac6264127215c71f97bd184b7b0828db3780e",
+      "original_sha256": "6df253d681b3f18e1414d520285ac6264127215c71f97bd184b7b0828db3780e",
+      "original_bytes": 6338,
+      "retained_bytes": 6338
+    },
+    "builds/baseline-original.so.build.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/baseline.so.build.json",
+      "sha256": "9556689485e7010a397f8b2d2e888d18a174504978e1a310d274341ea101eb18",
+      "original_sha256": "9556689485e7010a397f8b2d2e888d18a174504978e1a310d274341ea101eb18",
+      "original_bytes": 4469,
+      "retained_bytes": 4469
+    },
+    "regression-qualified.xml": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/regression-qualified.xml",
+      "sha256": "8e8b06d2dd93ca35b1f5db7f90f1db1366bc60532fa06621d60be29ae497e4a4",
+      "original_sha256": "8e8b06d2dd93ca35b1f5db7f90f1db1366bc60532fa06621d60be29ae497e4a4",
+      "original_bytes": 74748,
+      "retained_bytes": 74748
+    },
+    "execution-extrema-fixed-tests.xml": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-extrema-fixed-tests.xml",
+      "sha256": "3e40b931d289bd624445839a676866654b6b1656e67c66c28a9be5ee0463d788",
+      "original_sha256": "3e40b931d289bd624445839a676866654b6b1656e67c66c28a9be5ee0463d788",
+      "original_bytes": 9148,
+      "retained_bytes": 9148
+    },
+    "rejected/regression.xml.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/regression.xml",
+      "sha256": "a6fa90cb7d07980ceda5f2d4daf8447ef611dcba40dc9aeddc5fff721c8a35ea",
+      "original_sha256": "0ba9aa64226845e398798813cefe562762d4d9f986807a0bc8b62282b4be82ec",
+      "original_bytes": 542,
+      "retained_bytes": 329
+    },
+    "rejected/execution-extrema-tests.xml.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-extrema-tests.xml",
+      "sha256": "73d8bba20b332e44df3baf1f325e630ba75c58c7d4cf2a96ae22973c3d239e7a",
+      "original_sha256": "bf814eace2852210888fb03c4217c901685d5260c8c0e76a16bf128051997c1b",
+      "original_bytes": 10876,
+      "retained_bytes": 1585
+    },
+    "rejected/cross-backend/freeze.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-qualification-v2/freeze.json",
+      "sha256": "643283465a3e77bc027d0cab2c0465acbbef790abf6f7410649f98c0e0ddf9b4",
+      "original_sha256": "643283465a3e77bc027d0cab2c0465acbbef790abf6f7410649f98c0e0ddf9b4",
+      "original_bytes": 1114,
+      "retained_bytes": 1114
+    },
+    "rejected/cross-backend/summary.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-qualification-v2/summary.json",
+      "sha256": "2ffb32fd19a8e710eea41488e4b94d0a8404bc67a092a89ad54bd48593be073f",
+      "original_sha256": "2ffb32fd19a8e710eea41488e4b94d0a8404bc67a092a89ad54bd48593be073f",
+      "original_bytes": 1067,
+      "retained_bytes": 1067
+    },
+    "rejected/cross-backend/sanitizer-results.json.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-qualification-v2/sanitizer-results.json",
+      "sha256": "4a258f370e05d5ec2bef79244bdcaebf4578b0bc80201448f517e5cc07340fc7",
+      "original_sha256": "3cb65c881aa43dcce8041ab3a55c04ea80f07b674d44d626ae31ed8fff504ecb",
+      "original_bytes": 324627,
+      "retained_bytes": 26947
+    },
+    "rejected/cross-backend/qualify_execution_rejected.py.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-qualification-v2/qualify_execution_rejected.py",
+      "sha256": "b9b31806e26ab7c13480fcd9305b24a0495a0899b2c96b11b9e92a0e7367944b",
+      "original_sha256": "43221a22ca5aa6aa7a1014bcf5c27635050a0f43a5081560a7523d6606703562",
+      "original_bytes": 8957,
+      "retained_bytes": 3078
+    },
+    "rejected/harness/freeze.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-qualification/freeze.json",
+      "sha256": "034a59ce27acbf5acc1392d9c0a759d6eda13fb18cc673f52c9daeb94f2445a3",
+      "original_sha256": "034a59ce27acbf5acc1392d9c0a759d6eda13fb18cc673f52c9daeb94f2445a3",
+      "original_bytes": 1114,
+      "retained_bytes": 1114
+    },
+    "rejected/harness/sanitizer-results.json.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-qualification/sanitizer-results.json",
+      "sha256": "121b54db215fd112639bb5bea757e56f10a7f2dd283577ae2038906fcf96da22",
+      "original_sha256": "6aa981244b3bff78499bc84a6190928cbe2761ca3e6789261152e82fcbc09328",
+      "original_bytes": 11152,
+      "retained_bytes": 2127
+    },
+    "rejected/harness/qualify_execution_rejected.py.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/execution-qualification/qualify_execution_rejected.py",
+      "sha256": "29e8bce79d6da7c3de88e50e2f43fa95747919664d5bcc6d3e19c2cb99cab077",
+      "original_sha256": "d4e4d4ddf874214ba680faa76b1c2497f5f13a590c56b9ae56a1a8ee61358a03",
+      "original_bytes": 8563,
+      "retained_bytes": 2939
+    },
+    "rejected/unrestricted-magnitude/freeze.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/paired-final/freeze.json",
+      "sha256": "dc59534d996cff5e2e24c33d7fdf4a145783da14d2f08bc1653321181396af67",
+      "original_sha256": "dc59534d996cff5e2e24c33d7fdf4a145783da14d2f08bc1653321181396af67",
+      "original_bytes": 1163,
+      "retained_bytes": 1163
+    },
+    "rejected/unrestricted-magnitude/summary.json": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/paired-final/summary.json",
+      "sha256": "f657c6f38e94dfb2259080a429be6e5df7445979d091b10807fba9f6a5bffca0",
+      "original_sha256": "f657c6f38e94dfb2259080a429be6e5df7445979d091b10807fba9f6a5bffca0",
+      "original_bytes": 9340,
+      "retained_bytes": 9340
+    },
+    "rejected/unrestricted-magnitude/results.json.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/paired-final/results.json",
+      "sha256": "f49cfbb77a8ab569426e8fb5a06c6240cd0d008aacd74850c587892a019073b8",
+      "original_sha256": "aea727e3a2ab2912c3f41532f80d6bc8556f2cf90ea2c978185cc6f947e16913",
+      "original_bytes": 28179922,
+      "retained_bytes": 805143
+    },
+    "audit.json": {
+      "sha256": "fcea50ba57afa8d0feced51879a6a2ab71920415b7233b831228f16d044bbf5f"
+    },
+    "recipes/build_qualified.py.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/build_qualified.py",
+      "sha256": "0bfb6c8314ec46e78146a74784a498967747ab013c6854e22c7d076042d2517d",
+      "original_sha256": "2b280608231c6123b052871914cfbf93dfcbfa1e54336857058d65203aafa207",
+      "original_bytes": 1885,
+      "retained_bytes": 886
+    },
+    "recipes/qualify_execution.py.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/qualify_execution.py",
+      "sha256": "fbf16a2b2a5d9a19e1d1cf9957d2d15ec0ab9f3e28416be4267e42800d8acd1e",
+      "original_sha256": "e619c5832ba3c0071682c56a36d573633920131a8885e53780bab4bcdfcfe35c",
+      "original_bytes": 9071,
+      "retained_bytes": 3108
+    },
+    "recipes/save_evidence.py.gz": {
+      "source": "/tmp/leo-presence-runtime-opt.eAHUlj/save_evidence.py",
+      "sha256": "039cf4642e244cb497573765b5dca5f956c81b462c27b0637b847ac06f07a9e6",
+      "original_sha256": "eda394e057d00aac6e2b7bb8ecd5cc26a9260a57d339f1cc3fb036ef810ab1d6",
+      "original_bytes": 8864,
+      "retained_bytes": 2989
+    },
+    "audit-full.json.gz": {
+      "sha256": "7d008844c0cfe7fecca7d7777def394520193877e6bdce3be27dfd68f449a6cd",
+      "original_sha256": "6163f0a08c0d49599aedb45a6d02cacd6062bdf62e85304a72f04154d19787a8",
+      "original_bytes": 388033,
+      "retained_bytes": 5176
+    }
+  },
+  "packaging_note": "Execution recipes were losslessly gzip-compressed after export; decompressed bytes and original hashes are preserved. IQ and executable binaries are not retained. Full stress-audit payloads are also losslessly compressed; audit.json is the compact summary."
+}

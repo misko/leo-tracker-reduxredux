@@ -1,0 +1,102 @@
+{
+  "numerical": {
+    "baseline": {
+      "executions": 480,
+      "exact_numerical_matches": 480,
+      "tolerance_mismatches": 0
+    },
+    "cache": {
+      "executions": 480,
+      "exact_numerical_matches": 480,
+      "tolerance_mismatches": 0
+    },
+    "magnitude": {
+      "executions": 480,
+      "exact_numerical_matches": 400,
+      "tolerance_mismatches": 0
+    }
+  },
+  "allocation": {
+    "2500000": {
+      "changed_allocation_bytes": {
+        "baseline": 2267496,
+        "cache": 402256
+      },
+      "saved_per_edge_bytes": 1865240
+    },
+    "5000000": {
+      "changed_allocation_bytes": {
+        "baseline": 4507944,
+        "cache": 775664
+      },
+      "saved_per_edge_bytes": 3732280
+    }
+  },
+  "full_scale_stress": [
+    {
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "same_backend_mismatches": {
+        "cache_builtin": [],
+        "magnitude_builtin": [],
+        "cache_fftw": [],
+        "magnitude_fftw": []
+      },
+      "baseline_cross_backend_mismatches": [
+        "result.confirmations[0].candidates[0].fractional_offset_samples",
+        "result.confirmations[1].candidates[0].fractional_offset_samples",
+        "result.confirmations[2].candidates[0].fractional_offset_samples",
+        "result.confirmations[3].candidates[0].fractional_offset_samples",
+        "result.confirmations[4].candidates[0].fractional_offset_samples",
+        "result.confirmations[5].candidates[0].fractional_offset_samples"
+      ]
+    },
+    {
+      "rate_hz": 2500000,
+      "edge": "upper",
+      "same_backend_mismatches": {
+        "cache_builtin": [],
+        "magnitude_builtin": [],
+        "cache_fftw": [],
+        "magnitude_fftw": []
+      },
+      "baseline_cross_backend_mismatches": []
+    },
+    {
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "same_backend_mismatches": {
+        "cache_builtin": [],
+        "magnitude_builtin": [],
+        "cache_fftw": [],
+        "magnitude_fftw": []
+      },
+      "baseline_cross_backend_mismatches": [
+        "result.confirmations[0].candidates[0].fractional_offset_samples",
+        "result.confirmations[1].candidates[0].fractional_offset_samples",
+        "result.confirmations[2].candidates[0].fractional_offset_samples",
+        "result.confirmations[3].candidates[0].fractional_offset_samples",
+        "result.confirmations[4].candidates[0].fractional_offset_samples",
+        "result.confirmations[5].candidates[0].fractional_offset_samples"
+      ]
+    },
+    {
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "same_backend_mismatches": {
+        "cache_builtin": [],
+        "magnitude_builtin": [],
+        "cache_fftw": [],
+        "magnitude_fftw": []
+      },
+      "baseline_cross_backend_mismatches": [
+        "result.confirmations[0].candidates[0].fractional_offset_samples",
+        "result.confirmations[1].candidates[0].fractional_offset_samples",
+        "result.confirmations[2].candidates[0].fractional_offset_samples",
+        "result.confirmations[3].candidates[0].fractional_offset_samples",
+        "result.confirmations[4].candidates[0].fractional_offset_samples",
+        "result.confirmations[5].candidates[0].fractional_offset_samples"
+      ]
+    }
+  ]
+}
