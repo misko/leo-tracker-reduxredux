@@ -1,12 +1,19 @@
 # Single-RX ARM presence detector: implementation and qualification plan
 
-Latest checkpoint: [whole-dwell worker and frame-record binding](../../reports/2026_09_08_arm_presence_dwell_worker_checkpoint.md).
+Latest transport checkpoint: [LIBIIO metadata-only result drain](../../reports/2026_09_08_libiio_metadata_drain_checkpoint.md).
+The explicit same-session drain API/command now passes actual network-backend,
+iiOD parser/provider, sanitizer and short synthetic ARM tests. Legacy refill
+still requires IQ. The real scanner's GLRT OPENM negotiation, live-frame result
+attachment, provider terminal envelopes and production host integration remain
+pending; no classification policy, runtime deployment or RF collection occurred.
+
+Latest numerical/worker checkpoint: [whole-dwell worker and frame-record binding](../../reports/2026_09_08_arm_presence_dwell_worker_checkpoint.md).
 The full 120 ms isolated worker now completes two 300 s saved-dwell loads with
 4,762/4,762 desktop-matching results and no skipped jobs. CPU p99 is 64.54/113.47 ms
 at 2.5/5 MS/s; the 5 MS/s tail target still fails. Initial-tail and scratch-output
 failures are retained in the checkpoint. Record conversion preserves original
 dwell counters and separate fractional offsets, but actual LIBIIO negotiation,
-transport/draining and live same-duty qualification remain pending. No
+provider attachment/draining and live same-duty qualification remain pending. No
 classification policy is enabled and nothing has been deployed.
 
 Scientific quality remains as recorded in the [screen-quality checkpoint](../../reports/2026_09_08_arm_presence_screen_quality_checkpoint.md).
