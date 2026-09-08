@@ -221,3 +221,10 @@ replay, measured ARM headroom and held-out quality; release-local userspace
 packaging and full production E2E also remain open.
 The main scientific and performance release risks remain classifier specificity
 and the 5 MS/s CPU/startup tail. No new RF is needed to work on either risk.
+
+The [userspace-bundle checkpoint](../../reports/2026_09_08_scanner_glrt_userspace_bundle_checkpoint.md)
+adds explicit companion-manifest composition, full-file pre-start verification,
+owned cleanup and failure tests. A real ARM candidate is cross-built with
+content-derived identities and checked loader paths; 232 portable regressions
+pass. Target package execution/compatibility, decision qualification and live
+unchanged-duty verification remain open. Nothing is deployed or remotely merged.
