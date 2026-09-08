@@ -238,3 +238,7 @@ over adding confirmations indiscriminately. Use stage-profiled, saved-data ARM
 tests to resolve 5 MS/s headroom and startup before production composition and
 authorized live unchanged-duty verification. No positive or absence policy is
 enabled by this report; merge/deployment and the full goal remain pending.
+
+Subsequent work: the [structured-interference and symbol-diversity checkpoint](2026_09_08_arm_presence_structured_checkpoint.md)
+implements the new challenge, retains its false flags, and evaluates a default-off
+final-symbol diversification option without changing the confirmation budget.

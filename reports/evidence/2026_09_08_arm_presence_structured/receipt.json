@@ -1,0 +1,336 @@
+{
+  "implementation_commit": "0026006ed75165946204c557f72d662d13c3b4be",
+  "scope": "offline development; no classification policy, RF, deployment, firmware or remote-main changes",
+  "checks": {
+    "component_tests": 613,
+    "instrumented_processes": 16,
+    "instrumented_dwells": 32,
+    "instrumented_confirmations": 192,
+    "fresh_initial_synthetic_cases": 480,
+    "posthoc_cases": 480,
+    "hash_reproduced_rf_dwells": 64,
+    "arm_cross_builds": 2
+  },
+  "gate": "Initial normalized and amplitude gates failed. Post-hoc amplitude + symbol diversity passes the same bounded synthetic gate, not fresh qualification.",
+  "original_rf_access_failure": "Initial ordinary-group read could not enumerate protected sessions. Repeated with the previously used mouse9911 user and leo group; no archive permissions or contents changed.",
+  "arm_context": "Latest relayed user restriction: only .20, .21 or currently locally USB-attached radios after exact identity/ownership verification. Do not use .15 or disrupt .18 canary. Excluded serial unchanged. Local USB descriptors verified db620, db696 and 3ef2; firmware reports map 3ef2 to R18, so not selected. Candidate db620 needs role/LAN/ownership verification. .20 and .21 strict SSH checks failed before authentication; no trust entries replaced or remote commands executed. Expected reboot-generated keys are not independent identity proof.",
+  "commands": {
+    "python": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "environment": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. OPENBLAS_NUM_THREADS=1 FFTW_PREFIX=/tmp/leo-presence-fftw.nLw4v6/install",
+    "initial": "-m tools.presence_structured_challenge /tmp/leo-presence-structured.ZxAkDl/challenge --fftw-prefix /tmp/leo-presence-fftw.nLw4v6/install",
+    "ablation": "/tmp/leo-presence-structured.ZxAkDl/evaluate_diversity.py",
+    "rf": "/tmp/leo-presence-structured.ZxAkDl/evaluate_rf.py",
+    "sanitizer": "/tmp/leo-presence-structured.ZxAkDl/verify_diversity_execution.py",
+    "rf_user_group": "sudo -n -u mouse9911 -g leo /usr/bin/env; absolute PYTHONPATH for the Leo and PPU worktrees",
+    "pytest": "-m pytest -q tests/analysis/test_native_presence_execution.py tests/analysis/test_native_presence.py tests/analysis/test_presence_dwell.py tests/analysis/test_native_presence_ci16_fold.py tests/analysis/test_native_presence_ci16_lag.py tests/analysis/test_native_presence_fftw.py tests/analysis/test_native_presence_differential.py tests/analysis/test_native_presence_symbol_diversity.py tests/analysis/test_presence_structured_challenge.py tests/analysis/test_presence_decision_challenge.py tests/scanner/test_native_presence_dwell_worker.py tests/scanner/test_glrt_frame_result.py --junitxml=/tmp/leo-presence-structured.ZxAkDl/regression-final.xml"
+  },
+  "artifacts": {
+    "challenge/amplitude.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/challenge/amplitude.so.build.json",
+      "sha256": "1635dc5ea69bb90791190c9fb6f5add160caed61e6e7040989d9987c56d01fb9",
+      "original_sha256": "1635dc5ea69bb90791190c9fb6f5add160caed61e6e7040989d9987c56d01fb9",
+      "original_bytes": 4527,
+      "retained_bytes": 4527
+    },
+    "challenge/normalized.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/challenge/normalized.so.build.json",
+      "sha256": "f15fdf32fc92fe79f781a8b1fe4a191a49808f232c4edd1f1367bd46396c1ee4",
+      "original_sha256": "f15fdf32fc92fe79f781a8b1fe4a191a49808f232c4edd1f1367bd46396c1ee4",
+      "original_bytes": 4528,
+      "retained_bytes": 4528
+    },
+    "challenge/results.jsonl.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/challenge/results.jsonl",
+      "sha256": "f778f21967b3c711b845ebdbce6bbb88845a134a8023f21227eb8e62d50bc6c0",
+      "original_sha256": "037e43d3fbb197cbb03e185c000a5ed709b573ed6aedbe98ec9b986725f44891",
+      "original_bytes": 8584984,
+      "retained_bytes": 517239
+    },
+    "challenge/summary.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/challenge/summary.json",
+      "sha256": "42b25cf0142bd7a6396feea5961da0505ec8dd4166f1ab2a612f80f701a34503",
+      "original_sha256": "42b25cf0142bd7a6396feea5961da0505ec8dd4166f1ab2a612f80f701a34503",
+      "original_bytes": 7205,
+      "retained_bytes": 7205
+    },
+    "diversity/amplitude.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity/amplitude.so.build.json",
+      "sha256": "18ad6c1da67dcda3e6402302d5b298964fd1b24d8d5304bf7719c62376386d29",
+      "original_sha256": "18ad6c1da67dcda3e6402302d5b298964fd1b24d8d5304bf7719c62376386d29",
+      "original_bytes": 4573,
+      "retained_bytes": 4573
+    },
+    "diversity/freeze.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity/freeze.json",
+      "sha256": "ae3d8ea88a09bbb765a56a590b1c5a09e433134bd42a5632d3cdfc11ebd8f120",
+      "original_sha256": "ae3d8ea88a09bbb765a56a590b1c5a09e433134bd42a5632d3cdfc11ebd8f120",
+      "original_bytes": 2493,
+      "retained_bytes": 2493
+    },
+    "diversity/normalized.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity/normalized.so.build.json",
+      "sha256": "1dfeae8380ad6dcca7667860ce497f685696f85dd959d2e46871be2b58ca6d1c",
+      "original_sha256": "1dfeae8380ad6dcca7667860ce497f685696f85dd959d2e46871be2b58ca6d1c",
+      "original_bytes": 4574,
+      "retained_bytes": 4574
+    },
+    "diversity/results.jsonl.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity/results.jsonl",
+      "sha256": "1e1294f30690a4290214b22801a3ae30d2d08e1c61e0761ea9fa426eaec024bd",
+      "original_sha256": "3fd6cf428c65e70a879c0f86502568a3f09722a5a9bfbe6079c717b13f482f5f",
+      "original_bytes": 8584944,
+      "retained_bytes": 516010
+    },
+    "diversity/summary.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity/summary.json",
+      "sha256": "0265739b1832bf1d4c2f6a8288959d7095e7394f4641435bd56eb6a5334ac9a8",
+      "original_sha256": "0265739b1832bf1d4c2f6a8288959d7095e7394f4641435bd56eb6a5334ac9a8",
+      "original_bytes": 6991,
+      "retained_bytes": 6991
+    },
+    "diversity-final/amplitude.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity-final/amplitude.so.build.json",
+      "sha256": "48bfbf8836b6608b8d3cb14dc602077a049d9934860a08e9f2bd96ff06409f23",
+      "original_sha256": "48bfbf8836b6608b8d3cb14dc602077a049d9934860a08e9f2bd96ff06409f23",
+      "original_bytes": 4579,
+      "retained_bytes": 4579
+    },
+    "diversity-final/freeze.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity-final/freeze.json",
+      "sha256": "0166a4cc6db64eb4c8b996d3ce2701a6edbe7679879716da848b91faf4262e33",
+      "original_sha256": "0166a4cc6db64eb4c8b996d3ce2701a6edbe7679879716da848b91faf4262e33",
+      "original_bytes": 2591,
+      "retained_bytes": 2591
+    },
+    "diversity-final/normalized.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity-final/normalized.so.build.json",
+      "sha256": "4a126d1a68321fd0a2acd09d5e9d3d08d2707f85ec43e24da6a8ba225069febf",
+      "original_sha256": "4a126d1a68321fd0a2acd09d5e9d3d08d2707f85ec43e24da6a8ba225069febf",
+      "original_bytes": 4580,
+      "retained_bytes": 4580
+    },
+    "diversity-final/results.jsonl.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity-final/results.jsonl",
+      "sha256": "182489828c5f485713b1e9d062bfb7446ad818e03f1ae61cf0005482cb2383f6",
+      "original_sha256": "fffb1aa8a9acee471106367eb1a32b670ca9ec176dd8aa4afa6e7f0ec560d272",
+      "original_bytes": 8584999,
+      "retained_bytes": 516293
+    },
+    "diversity-final/summary.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity-final/summary.json",
+      "sha256": "0265739b1832bf1d4c2f6a8288959d7095e7394f4641435bd56eb6a5334ac9a8",
+      "original_sha256": "0265739b1832bf1d4c2f6a8288959d7095e7394f4641435bd56eb6a5334ac9a8",
+      "original_bytes": 6991,
+      "retained_bytes": 6991
+    },
+    "rf-diversity/freeze.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/rf-diversity/freeze.json",
+      "sha256": "eb56bb97e4889f44865e763a65d269a35a8aa6e0ab47cab7e1c8d1bf54ea15e2",
+      "original_sha256": "eb56bb97e4889f44865e763a65d269a35a8aa6e0ab47cab7e1c8d1bf54ea15e2",
+      "original_bytes": 1794,
+      "retained_bytes": 1794
+    },
+    "rf-diversity/results.jsonl.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/rf-diversity/results.jsonl",
+      "sha256": "0272df6d01c1c5d21e1fcfe04211063cbaef149be70ba30a0b361872dd5e8986",
+      "original_sha256": "f6e27ff69df030877a4288c671fecb54fb1289b67358f82c5ac750fbd5d6322a",
+      "original_bytes": 2149463,
+      "retained_bytes": 97872
+    },
+    "rf-diversity/summary.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/rf-diversity/summary.json",
+      "sha256": "b2d61737b745a6cc43a26587ae334619eeecbd288ac5bb19cca2e4616402b274",
+      "original_sha256": "b2d61737b745a6cc43a26587ae334619eeecbd288ac5bb19cca2e4616402b274",
+      "original_bytes": 867,
+      "retained_bytes": 867
+    },
+    "rf-diversity-final/freeze.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/rf-diversity-final/freeze.json",
+      "sha256": "0ed3a744b699215d3b803fc3e3c1c168ec97f2b4f3419a0560dffea7a17fd245",
+      "original_sha256": "0ed3a744b699215d3b803fc3e3c1c168ec97f2b4f3419a0560dffea7a17fd245",
+      "original_bytes": 1913,
+      "retained_bytes": 1913
+    },
+    "rf-diversity-final/results.jsonl.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/rf-diversity-final/results.jsonl",
+      "sha256": "586a180dd17a0791a34fc04b942bc22c14122527ed236e284a662f63586a74c1",
+      "original_sha256": "a835e0cbb977ce71021e70dd9c5577744c68724630c4175a8c8891530a10d714",
+      "original_bytes": 2251953,
+      "retained_bytes": 124924
+    },
+    "rf-diversity-final/summary.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/rf-diversity-final/summary.json",
+      "sha256": "b2d61737b745a6cc43a26587ae334619eeecbd288ac5bb19cca2e4616402b274",
+      "original_sha256": "b2d61737b745a6cc43a26587ae334619eeecbd288ac5bb19cca2e4616402b274",
+      "original_bytes": 867,
+      "retained_bytes": 867
+    },
+    "rf-diversity-final/timing-summary.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/rf-diversity-final/timing-summary.json",
+      "sha256": "890afdf0aa9d69779eb6359854b656b24928477c6cec2b2e4d850ab72ad952af",
+      "original_sha256": "890afdf0aa9d69779eb6359854b656b24928477c6cec2b2e4d850ab72ad952af",
+      "original_bytes": 2925,
+      "retained_bytes": 2925
+    },
+    "execution/amplitude-arm.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/amplitude-arm.build.json",
+      "sha256": "e71dc348958788e147eb2a00b7ab8cf10cd6d6c6d885e94c98dfba7ebf073b02",
+      "original_sha256": "e71dc348958788e147eb2a00b7ab8cf10cd6d6c6d885e94c98dfba7ebf073b02",
+      "original_bytes": 6347,
+      "retained_bytes": 6347
+    },
+    "execution/amplitude-sanitize.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/amplitude-sanitize.build.json",
+      "sha256": "47059602817d14ca4e7eb75369e1c5b2c0b9c77836a436c2db9ec8a7d62a1a36",
+      "original_sha256": "47059602817d14ca4e7eb75369e1c5b2c0b9c77836a436c2db9ec8a7d62a1a36",
+      "original_bytes": 4329,
+      "retained_bytes": 4329
+    },
+    "execution/amplitude.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/amplitude.so.build.json",
+      "sha256": "f16d45ce9b526694051d3a54950cf3cec477fd09af343f9a7a42fd9bbdc6c0e4",
+      "original_sha256": "f16d45ce9b526694051d3a54950cf3cec477fd09af343f9a7a42fd9bbdc6c0e4",
+      "original_bytes": 4096,
+      "retained_bytes": 4096
+    },
+    "execution/freeze.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/freeze.json",
+      "sha256": "d1895cdff03e8d275be82b5fa7a7d9f7b03599f0137c12a137ac8f0ccb94d61a",
+      "original_sha256": "d1895cdff03e8d275be82b5fa7a7d9f7b03599f0137c12a137ac8f0ccb94d61a",
+      "original_bytes": 385,
+      "retained_bytes": 385
+    },
+    "execution/normalized-arm.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/normalized-arm.build.json",
+      "sha256": "a657694a393a96b11679ec7ac155cb1f6fc4f50d718957fd9e41fc3f8522c929",
+      "original_sha256": "a657694a393a96b11679ec7ac155cb1f6fc4f50d718957fd9e41fc3f8522c929",
+      "original_bytes": 6348,
+      "retained_bytes": 6348
+    },
+    "execution/normalized-sanitize.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/normalized-sanitize.build.json",
+      "sha256": "9afa05ec772280de86bc2a50a4d8594dba1b9e92e201bb6e643650bf2aac6498",
+      "original_sha256": "9afa05ec772280de86bc2a50a4d8594dba1b9e92e201bb6e643650bf2aac6498",
+      "original_bytes": 4330,
+      "retained_bytes": 4330
+    },
+    "execution/normalized.so.build.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/normalized.so.build.json",
+      "sha256": "5fc22ee24fb0e08d8cb0a171463a6fb93e3e9f6199d27ce37ba8b871f2164b66",
+      "original_sha256": "5fc22ee24fb0e08d8cb0a171463a6fb93e3e9f6199d27ce37ba8b871f2164b66",
+      "original_bytes": 4097,
+      "retained_bytes": 4097
+    },
+    "execution/results.json.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/results.json",
+      "sha256": "d54680661cbcfc0bed7f2ff741ff933eb7b2742c413a6455bdfa3d99e0de646d",
+      "original_sha256": "ff11f365791fe56c8aa21aabb6e0b0f4bf3cb18dfab1c40219bd26373bd611e6",
+      "original_bytes": 177822,
+      "retained_bytes": 17194
+    },
+    "execution/summary.json": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/execution/summary.json",
+      "sha256": "cf41e19be8a2b3b019bb4a47a49166643bc20d04d2a8559bf0bb3fb2b69474a0",
+      "original_sha256": "cf41e19be8a2b3b019bb4a47a49166643bc20d04d2a8559bf0bb3fb2b69474a0",
+      "original_bytes": 163,
+      "retained_bytes": 163
+    },
+    "generator-tests.xml": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/generator-tests.xml",
+      "sha256": "ad559c4ad1ec36795c6beff8feb1d59713e7ad35764ae5a4ed96044e49e03905",
+      "original_sha256": "ad559c4ad1ec36795c6beff8feb1d59713e7ad35764ae5a4ed96044e49e03905",
+      "original_bytes": 8532,
+      "retained_bytes": 8532
+    },
+    "diversity-tests.xml": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/diversity-tests.xml",
+      "sha256": "4555433d6961d576526adf52c0aef4aaaeb03c6be48cb191c148460ac12b8f31",
+      "original_sha256": "4555433d6961d576526adf52c0aef4aaaeb03c6be48cb191c148460ac12b8f31",
+      "original_bytes": 18930,
+      "retained_bytes": 18930
+    },
+    "regression.xml": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/regression.xml",
+      "sha256": "d0e37c4b18a2175ee564a594a2aa7319dd0ccac222d5f62668425e9b49dbde16",
+      "original_sha256": "d0e37c4b18a2175ee564a594a2aa7319dd0ccac222d5f62668425e9b49dbde16",
+      "original_bytes": 92818,
+      "retained_bytes": 92818
+    },
+    "regression-final.xml": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/regression-final.xml",
+      "sha256": "3227173d53bc5f19a369f80d1933ed5b8345485ebb6308f8fc0156779a0fc28a",
+      "original_sha256": "3227173d53bc5f19a369f80d1933ed5b8345485ebb6308f8fc0156779a0fc28a",
+      "original_bytes": 98920,
+      "retained_bytes": 98920
+    },
+    "recipes/evaluate_diversity.py.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/evaluate_diversity.py",
+      "sha256": "3a011f2045fb9a7869a147aba93d5e5361d177404a249f9dc66791e523acaccc",
+      "original_sha256": "549ff60cf1c1213933f4761453fef55e7ac9e336db3b383cf313fd178742f1f5",
+      "original_bytes": 4882,
+      "retained_bytes": 1904
+    },
+    "recipes/evaluate_diversity_prototype.py.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/evaluate_diversity_prototype.py",
+      "sha256": "3ee59afd5b5495a5395038f95cac2ca3c611440958af6cb4251bd80dfcd17b36",
+      "original_sha256": "4c6bd429902cf2ae589b1b145d29cfe9f1fa4f03b098f60e035e0f1858460f40",
+      "original_bytes": 4545,
+      "retained_bytes": 1827
+    },
+    "recipes/evaluate_rf.py.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/evaluate_rf.py",
+      "sha256": "24c100969498d11810251ce7200aae83bdfef0ca03614f976ce36a927a08381d",
+      "original_sha256": "584c4d0f091f920e6c22b1233d25d9a0a53682d7f4391692d6c9e7d79b1b1b49",
+      "original_bytes": 6623,
+      "retained_bytes": 2371
+    },
+    "recipes/evaluate_rf_prototype.py.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/evaluate_rf_prototype.py",
+      "sha256": "4e2b15f81f8aafa4b6de3531dd647573ad4977f53146330b6bff1fc84dde2863",
+      "original_sha256": "22e44cd7ca251e72c0837171c0eb2996fef4f9171aaf8f9c22d69479f82058bf",
+      "original_bytes": 5361,
+      "retained_bytes": 1911
+    },
+    "recipes/verify_diversity_execution.py.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/verify_diversity_execution.py",
+      "sha256": "256850a6c4863100a77b72741650d8e97e137935cbc9703ec612930f9962b317",
+      "original_sha256": "75f0a2b436af8a67ec8f98d703ca9475a33aa95671cb46abf46059327c8551a1",
+      "original_bytes": 4996,
+      "retained_bytes": 2097
+    },
+    "recipes/save_report_evidence.py.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/save_report_evidence.py",
+      "sha256": "4830b5fb2ef41cf1f9c29b5f38180a0fd70d598a5f7318e14726f747c493ca65",
+      "original_sha256": "9a9648c8387de11ff81c6a39e0523d9b469ba381874a4d1e12fd44e333369e55",
+      "original_bytes": 7729,
+      "retained_bytes": 3101
+    },
+    "comparison.json": {
+      "sha256": "4b1ed4cf86317286119da7fcf08f3af2994f266acd7a905dc2baf021c22c7913"
+    },
+    "challenge/freeze.json.gz": {
+      "source": "/tmp/leo-presence-structured.ZxAkDl/challenge/freeze.json",
+      "sha256": "fa0ab7607b4a116a99d346ea5ca4f618f71b24c530cd61be933aa6ae169a4da4",
+      "original_sha256": "7845685e0d76569c490f6bde9abf054882b533fd9c3016987e140256b8e5dc68",
+      "original_bytes": 92889,
+      "retained_bytes": 2785
+    }
+  },
+  "figures": {
+    "reports/figures/2026_09_08_arm_presence_structured/structured-challenge.png": "3fc1415f0147d1439c89578740351e82955a4872c2d94ef304616d67d73417aa"
+  },
+  "hardware_observation": {
+    "candidate_serial": "winbond-db620818a328172c",
+    "usb": "005:064",
+    "tty": "/dev/ttyACM2",
+    "other_usb_serials": [
+      "winbond-db6968136727402c",
+      "1040007c4a94000211000b009186843ef2"
+    ],
+    "presented_unverified_ssh_ed25519": {
+      "192.168.1.20": "SHA256:Op2EVhexgjavoA2/wG4FH0iLYdyN8BTyi8IGTWk0grs",
+      "192.168.1.21": "SHA256:awf51MFepNeUt75XWw3lWmJLVt4Axa2h6bIOWIuVB5I"
+    }
+  },
+  "packaging_note": "The 480-case initial inventory was losslessly gzip-compressed after export; its original byte hash is retained."
+}
