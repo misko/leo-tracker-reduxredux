@@ -43,6 +43,12 @@ pipeline](docs/pipelines/research-analysis.md). The [evidence
 ledger](docs/research/evidence-ledger.md) maps the complete versioned report
 set to current conclusions and caveats.
 
+The standalone paper [Continental-Scale Receiver Localization from Starlink
+Doppler Measurements](reports/2026_09_08_starlink_doppler_localization_paper.md)
+presents the 1.805 km continental result and a distinct 1.184 km location-assisted
+comparison, with measurement figures, experimental assumptions, resolution limits,
+and sample-rate and FPGA tradeoffs.
+
 Production setup and recovery are documented in the
 [`operator runbook`](docs/operations/runbook.md). Installable systemd templates
 and the non-secret environment example live under [`deploy/`](deploy/). The
