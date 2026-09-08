@@ -1,6 +1,7 @@
 /* Saved-IQ full-dwell execution only. Never opens IIO, radio nodes, or sockets. */
 #define _POSIX_C_SOURCE 200809L
 #include "../src/leo/analysis/native_presence/dwell.h"
+#include "../src/leo/analysis/native_presence/fft.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,9 +78,9 @@ int main(int argc, char **argv)
     for (uint32_t iteration=0; iteration<repeats; ++iteration) {
         leo_presence_dwell_result result;
         if (leo_presence_dwell_run_ci16(workspace,iq,count,maximum,seeded,&result)) goto done;
-        printf("{\"rate_hz\":%u,\"edge\":%u,\"counter\":\"%" PRIu64
+        printf("{\"fft_backend\":\"%s\",\"rate_hz\":%u,\"edge\":%u,\"counter\":\"%" PRIu64
             "\",\"bins\":%u,\"timing_bins\":%u,\"mode\":\"%s\",\"iteration\":%u,\"rank\":{\"scores\":",
-            rate,edge,counter,bins,timing_bins,argv[5],iteration);
+            leo_fft_backend_identity(),rate,edge,counter,bins,timing_bins,argv[5],iteration);
         doubles(result.rank.scores,6);
         printf(",\"order\":"); integers(result.rank.order,6);
         printf(",\"projected_epoch_samples\":"); integers(result.rank.projected_epoch_samples,6);
@@ -114,7 +115,18 @@ int main(int argc, char **argv)
             const leo_presence_timing_proposal *t=&result.timing_proposals[k];
             printf("%s{\"epoch\":%u,\"score\":%.17g,\"total_cpu_ms\":%.9g,\"total_wall_ms\":%.9g}",k ? "," : "",t->epoch,t->score,t->total_cpu_ms,t->total_wall_ms);
         }
-        printf("]}\n");
+        leo_presence_rank_screens screens;
+        if (leo_presence_dwell_get_screens(workspace,&screens)) goto done;
+        printf("],\"screen_diagnostics\":{\"available_mask\":%u,\"selected\":%u,\"contrast\":",
+            screens.available_mask,screens.selected);
+        doubles(screens.contrast,2);
+        printf(",\"scores\":["); doubles(screens.scores[0],6);
+        printf(","); doubles(screens.scores[1],6);
+        printf("],\"order\":["); integers(screens.order[0],6);
+        printf(","); integers(screens.order[1],6);
+        printf("],\"epochs\":["); integers(screens.epochs[0],6);
+        printf(","); integers(screens.epochs[1],6);
+        printf("]}}\n");
     }
     if (fflush(stdout) || ferror(stdout)) goto done;
     status=0;

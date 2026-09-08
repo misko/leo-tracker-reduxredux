@@ -5,12 +5,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef LEO_PRESENCE_FFTW
+#define LEO_PRESENCE_FFTW 0
+#endif
+#if LEO_PRESENCE_FFTW != 0 && LEO_PRESENCE_FFTW != 1
+#error "LEO_PRESENCE_FFTW must be 0 or 1"
+#endif
+#if LEO_PRESENCE_FFTW
+#include <fftw3.h>
+#endif
+
 #ifndef LEO_PRESENCE_ITERATIVE_FFT
 #define LEO_PRESENCE_ITERATIVE_FFT 0
 #endif
 #if LEO_PRESENCE_ITERATIVE_FFT != 0 && LEO_PRESENCE_ITERATIVE_FFT != 1
 #error "LEO_PRESENCE_ITERATIVE_FFT must be 0 or 1"
 #endif
+
+const char *leo_fft_backend_identity(void)
+{
+#if LEO_PRESENCE_FFTW
+    return fftw_version;
+#else
+    return "leo_builtin_fp64";
+#endif
+}
 
 int leo_fft_init(leo_fft *fft, size_t size)
 {
@@ -21,6 +40,19 @@ int leo_fft_init(leo_fft *fft, size_t size)
     while (rest % 5 == 0) rest /= 5;
     if (rest != 1) return -1;
     fft->size = size;
+#if LEO_PRESENCE_FFTW
+    /* Fixed arrays avoid new-array alignment restrictions and allow caller
+     * input to alias prior output. ESTIMATE planning happens only at setup;
+     * no timed planner search or external wisdom import occurs here. The
+     * owner serializes initialization/destruction, outside capture. */
+    fft->output = fftw_alloc_complex(size);
+    fft->scratch = fftw_alloc_complex(size);
+    if (fft->output && fft->scratch)
+        fft->backend_plan = fftw_plan_dft_1d((int)size, fft->scratch, fft->output,
+            FFTW_FORWARD, FFTW_ESTIMATE);
+    if (!fft->backend_plan) { leo_fft_free(fft); return -1; }
+    return 0;
+#else
     fft->roots = calloc(size, sizeof(double complex));
     fft->output = calloc(size, sizeof(double complex));
     fft->scratch = calloc(size, sizeof(double complex));
@@ -33,14 +65,22 @@ int leo_fft_init(leo_fft *fft, size_t size)
         fft->roots[k] = cos(angle) + I * sin(angle);
     }
     return 0;
+#endif
 }
 
 void leo_fft_free(leo_fft *fft)
 {
+#if LEO_PRESENCE_FFTW
+    if (fft->backend_plan) fftw_destroy_plan(fft->backend_plan);
+    fftw_free(fft->output);
+    fftw_free(fft->scratch);
+#else
     free(fft->roots); free(fft->output); free(fft->scratch);
+#endif
     memset(fft, 0, sizeof(*fft));
 }
 
+#if !LEO_PRESENCE_FFTW
 static void transform(const leo_fft *fft, const double complex *input,
     size_t stride, size_t n, double complex *output, double complex *scratch)
 {
@@ -111,8 +151,15 @@ static void transform_radix2(leo_fft *fft, const double complex *input)
 }
 #endif
 
+#endif
+
 void leo_fft_forward(leo_fft *fft, const double complex *input)
 {
+#if LEO_PRESENCE_FFTW
+    if (input != fft->scratch)
+        memcpy(fft->scratch,input,fft->size*sizeof(*input));
+    fftw_execute(fft->backend_plan);
+#else
 #if LEO_PRESENCE_ITERATIVE_FFT
     if ((fft->size & (fft->size-1)) == 0) {
         transform_radix2(fft, input);
@@ -120,4 +167,5 @@ void leo_fft_forward(leo_fft *fft, const double complex *input)
     }
 #endif
     transform(fft, input, 1, fft->size, fft->output, fft->scratch);
+#endif
 }

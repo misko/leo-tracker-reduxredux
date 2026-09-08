@@ -1,0 +1,72 @@
+{
+  "protocol": {
+    "schema": "org.leo.research.presence-dwell-controls/v1",
+    "scope": "Synthetic development controls, not RF specificity or untouched holdout",
+    "rates_hz": [
+      2500000,
+      5000000
+    ],
+    "edges": [
+      "lower",
+      "upper"
+    ],
+    "seeds": [
+      1901,
+      1902,
+      1903,
+      1904
+    ],
+    "negative_kinds": [
+      "white_noise",
+      "colored_noise",
+      "tone",
+      "two_tones",
+      "pulsed_tone"
+    ],
+    "positive_kinds": [
+      "pilot",
+      "pilot_plus_tone"
+    ],
+    "positive_windows": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "receiver": 1,
+    "dwell_ms": 120,
+    "screen_bins": 512,
+    "mode": "blind",
+    "research_margin": 0.025,
+    "policies": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "maximum_confirmations": 6,
+    "live_rf_authorized": false
+  },
+  "protocol_sha256": "f6a3a87515f7381a46a7cde203aeebc654a7e2b322c4db064cc324a922f74b88",
+  "generator_sha256": "b4f7aeab905b3440af3ce50c5a18ad98e2b226403235a4cc9678ee6b737678b2",
+  "fft_backend": {
+    "backend": "fftw_fp64_estimate_fixed_arrays",
+    "dependency_sha256": {
+      "/tmp/leo-presence-fftw.nLw4v6/install/include/fftw3.h": "0dd1b988b681d5797aaf10c2c57c107f7dca510695e4b94b3855eb52550d282c",
+      "/tmp/leo-presence-fftw.nLw4v6/install/lib/libfftw3.so.3.6.10": "e36c51736889b6e3830d607fceb1cd0b746b9b03f33b5f57bee063e0f4637703"
+    },
+    "cflags": [
+      "-DLEO_PRESENCE_FFTW=1",
+      "-I/tmp/leo-presence-fftw.nLw4v6/install/include"
+    ],
+    "ldflags": [
+      "-L/tmp/leo-presence-fftw.nLw4v6/install/lib",
+      "-Wl,-rpath,/tmp/leo-presence-fftw.nLw4v6/install/lib",
+      "-lfftw3"
+    ]
+  },
+  "state": "frozen_before_execution",
+  "screen_projection": "hybrid_max_second_ratio"
+}

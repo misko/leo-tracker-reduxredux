@@ -21,6 +21,8 @@ leo_presence_dwell_workspace *leo_presence_dwell_create_multires(uint32_t rate,
     const leo_presence_complex *exact, const leo_presence_complex *control,
     size_t template_count, uint32_t screen_bins, uint32_t timing_bins);
 void leo_presence_dwell_destroy(leo_presence_dwell_workspace *workspace);
+int leo_presence_dwell_get_screens(const leo_presence_dwell_workspace *workspace,
+    leo_presence_rank_screens *screens);
 /* seeded=0 retains the blind timing search as comparator; seeded=1 reuses
  * each selected window's projected timing. Both acquire CFO independently.
  * The complete 120ms screen and up to six confirmations share one execution;

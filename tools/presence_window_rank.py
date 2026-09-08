@@ -24,6 +24,29 @@ class RankResult(ct.Structure):
     ]
 
 
+class RankScreens(ct.Structure):
+    _fields_ = [
+        ("available_mask", ct.c_uint32),
+        ("selected", ct.c_uint32),
+        ("scores", (ct.c_double * 6) * 2),
+        ("contrast", ct.c_double * 2),
+        ("order", (ct.c_uint32 * 6) * 2),
+        ("epochs", (ct.c_uint32 * 6) * 2),
+    ]
+
+
+def read_screens(library, workspace, function):
+    if not workspace:
+        raise ValueError("native workspace is closed")
+    getter = getattr(library, function)
+    getter.argtypes = [ct.c_void_p, ct.POINTER(RankScreens)]
+    getter.restype = ct.c_int
+    screens = RankScreens()
+    if getter(workspace, ct.byref(screens)):
+        raise ValueError("no completed dwell screen available")
+    return screens
+
+
 def write_rank_probe(path: Path, iq, rate: int, edge: str, counter: int):
     values = np.asarray(iq)
     if (
@@ -105,3 +128,6 @@ class NativeWindowRank:
         ):
             raise ValueError("native rank rejected input")
         return result
+
+    def screens(self):
+        return read_screens(self.library, self.workspace, "leo_presence_rank_get_screens")

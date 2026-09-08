@@ -79,3 +79,9 @@ int leo_presence_dwell_run_ci16(leo_presence_dwell_workspace *w, const int16_t *
     *out=result;
     return 0;
 }
+
+int leo_presence_dwell_get_screens(const leo_presence_dwell_workspace *w,
+    leo_presence_rank_screens *screens)
+{
+    return w ? leo_presence_rank_get_screens(w->rank,screens) : -1;
+}

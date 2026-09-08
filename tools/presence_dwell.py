@@ -9,7 +9,7 @@ import numpy as np
 
 from leo.analysis.starlink.templates import qin_edge_pilot_frame
 from tools.native_presence import Nuisance, Result, array, pointer
-from tools.presence_window_rank import RankResult
+from tools.presence_window_rank import RankResult, read_screens
 
 
 class TimingProposal(ct.Structure):
@@ -127,3 +127,6 @@ class NativeDwell:
         ):
             raise ValueError("native dwell rejected input")
         return result
+
+    def screens(self):
+        return read_screens(self.library, self.workspace, "leo_presence_dwell_get_screens")

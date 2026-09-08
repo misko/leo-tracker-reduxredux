@@ -56,6 +56,76 @@ def test_every_dwell_and_confirmation_is_accounted():
     assert result["verified_confirmation_windows"] == 36
 
 
+def screen_fixture():
+    spec, rows = fixture()
+    for row in rows:
+        row["fft_backend"] = "fftw-3.3.10-sse2"
+        row["screen_diagnostics"] = {
+            "available_mask": 3,
+            "selected": 0,
+            "scores": [[0.1] * 6, [0.2] * 6],
+            "contrast": [1.0, 1.0],
+            "order": [list(range(6)), list(range(6))],
+            "epochs": [[0] * 6, [1] * 6],
+        }
+    return spec, rows
+
+
+def test_both_screens_and_fft_runtime_are_checked():
+    spec, rows = screen_fixture()
+    result = verify(rows, rows, spec, require_screens=True, fft_version="fftw-3.3.10")
+    assert result["required_screen_diagnostics"]
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "missing",
+        "mask",
+        "selected",
+        "nan",
+        "shape",
+        "contrast",
+        "epoch",
+        "order",
+        "unused",
+        "selected_score",
+        "fft",
+        "fft_missing",
+    ],
+)
+def test_screen_or_backend_damage_is_not_silently_ignored(damage):
+    spec, rows = screen_fixture()
+    arm = deepcopy(rows)
+    screen = arm[0]["screen_diagnostics"]
+    if damage == "missing":
+        del arm[0]["screen_diagnostics"]
+    elif damage == "mask":
+        screen["available_mask"] = True
+    elif damage == "selected":
+        screen["selected"] = 1
+    elif damage == "nan":
+        screen["scores"][1][0] = float("nan")
+    elif damage == "shape":
+        screen["scores"][1].pop()
+    elif damage == "contrast":
+        screen["contrast"][1] = 0.9
+    elif damage == "epoch":
+        screen["epochs"][1][0] += 1
+    elif damage == "order":
+        screen["order"][1][0] = 1
+    elif damage == "unused":
+        screen["available_mask"] = 1
+    elif damage == "selected_score":
+        screen["scores"][0] = [0.11] * 6
+    elif damage == "fft":
+        arm[0]["fft_backend"] = "fftw-3.3.100"
+    else:
+        del arm[0]["fft_backend"]
+    with pytest.raises(ValueError):
+        verify(rows, arm, spec, require_screens=True, fft_version="fftw-3.3.10")
+
+
 def multires_fixture():
     spec, rows = fixture()
     for row in rows:

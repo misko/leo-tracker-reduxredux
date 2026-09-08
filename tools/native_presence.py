@@ -109,6 +109,8 @@ def _build(
     scanner_worker: bool = False,
     window_ranker: bool = False,
     dwell_presence: bool = False,
+    ldflags: tuple[str, ...] = (),
+    dependencies: tuple[Path, ...] = (),
 ) -> Path:
     output = output.resolve()
     receipt = output.with_name(output.name + ".build.json")
@@ -137,6 +139,7 @@ def _build(
     elif executable:
         sources += [entry]
     hashes = {str(path.relative_to(ROOT)): _digest(path) for path in sources}
+    dependency_hashes = {str(path.resolve()): _digest(path) for path in dependencies}
     command = [
         compiler_path,
         "-std=c11",
@@ -153,6 +156,7 @@ def _build(
             else [str(NATIVE / "presence.c"), str(NATIVE / "fft.c")]
         ),
         *([str(NATIVE / "window_rank.c"), str(NATIVE / "dwell.c")] if dwell_presence else []),
+        *ldflags,
         "-lm",
         "-o",
         str(output),
@@ -160,6 +164,8 @@ def _build(
     subprocess.run(command, check=True)
     if hashes != {str(path.relative_to(ROOT)): _digest(path) for path in sources}:
         raise RuntimeError("source changed during build; artifact is not qualified")
+    if dependency_hashes != {str(path.resolve()): _digest(path) for path in dependencies}:
+        raise RuntimeError("dependency changed during build; artifact is not qualified")
     compiler_version = subprocess.run(
         [compiler_path, "--version"], check=True, text=True, capture_output=True
     ).stdout
@@ -172,6 +178,7 @@ def _build(
                 "compiler_version": compiler_version,
                 "compiler_sha256": _digest(Path(compiler_path).resolve()),
                 "sources_sha256": hashes,
+                "dependencies_sha256": dependency_hashes,
                 "binary_sha256": _digest(output),
             },
             stream,
@@ -181,8 +188,22 @@ def _build(
     return output
 
 
-def build_library(output: Path, *, compiler: str = "cc", cflags: tuple[str, ...] = ()) -> Path:
-    return _build(output, compiler, ("-shared", "-fPIC", *cflags), executable=False)
+def build_library(
+    output: Path,
+    *,
+    compiler: str = "cc",
+    cflags: tuple[str, ...] = (),
+    ldflags: tuple[str, ...] = (),
+    dependencies: tuple[Path, ...] = (),
+) -> Path:
+    return _build(
+        output,
+        compiler,
+        ("-shared", "-fPIC", *cflags),
+        executable=False,
+        ldflags=ldflags,
+        dependencies=dependencies,
+    )
 
 
 def build_executable(
@@ -205,10 +226,24 @@ def build_window_ranker(
 
 
 def build_dwell_presence(
-    output: Path, *, compiler: str = "cc", executable: bool = False, cflags: tuple[str, ...] = ()
+    output: Path,
+    *,
+    compiler: str = "cc",
+    executable: bool = False,
+    cflags: tuple[str, ...] = (),
+    ldflags: tuple[str, ...] = (),
+    dependencies: tuple[Path, ...] = (),
 ) -> Path:
     flags = () if executable else ("-shared", "-fPIC")
-    return _build(output, compiler, (*flags, *cflags), executable=executable, dwell_presence=True)
+    return _build(
+        output,
+        compiler,
+        (*flags, *cflags),
+        executable=executable,
+        dwell_presence=True,
+        ldflags=ldflags,
+        dependencies=dependencies,
+    )
 
 
 def write_templates(path: Path, rate: int):
