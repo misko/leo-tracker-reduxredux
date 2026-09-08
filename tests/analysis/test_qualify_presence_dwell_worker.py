@@ -94,6 +94,31 @@ def test_complete_full_dwell_receipt_passes_without_claiming_live_duty():
     assert "not original DMA/metadata timing" in report["limitations"]
 
 
+def test_120ms_period_is_explicit_and_changes_expected_job_count():
+    manifest, rows = receipt()
+    second = copy.deepcopy(rows[0])
+    second["sequence"] = 1
+    rows.insert(1, second)
+    rows[-1].update(arrival_period_ms=120, completed=2, submitted=2)
+    raw = "\n".join(map(json.dumps, rows))
+    checked = verify(raw, manifest, 126, arrival_period_ms=120)
+    assert checked["executions"] == 2
+    assert "every 120 ms" in checked["limitations"]
+    assert "not original DMA/metadata timing" in checked["limitations"]
+    with pytest.raises(ValueError):
+        verify(raw, manifest, 126)
+    del rows[-1]["arrival_period_ms"]
+    with pytest.raises(ValueError):
+        verify("\n".join(map(json.dumps, rows)), manifest, 126, arrival_period_ms=120)
+
+
+@pytest.mark.parametrize("period", [119, 127, 0, True, 120.0, "120"])
+def test_unreviewed_period_is_rejected(period):
+    manifest, rows = receipt()
+    with pytest.raises(ValueError):
+        verify("\n".join(map(json.dumps, rows)), manifest, 126, arrival_period_ms=period)
+
+
 @pytest.mark.parametrize(
     "field,value",
     [

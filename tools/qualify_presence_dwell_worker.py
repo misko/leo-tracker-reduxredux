@@ -156,10 +156,12 @@ def _compare(got, expected):
         raise ValueError("diagnostic numerical mismatch")
 
 
-def verify(raw: str, manifest: dict, duration: int):
+def verify(raw: str, manifest: dict, duration: int, *, arrival_period_ms: int = 126):
     if (
         manifest["schema"] != "org.leo.research.presence-dwell-worker-pack/v1"
-        or not 126 <= duration <= 300000
+        or type(arrival_period_ms) is not int
+        or arrival_period_ms not in (120, 126)
+        or not arrival_period_ms <= duration <= 300000
     ):
         raise ValueError("unqualified manifest or duration")
     records, rate = manifest["records"], manifest["rate_hz"]
@@ -169,10 +171,11 @@ def verify(raw: str, manifest: dict, duration: int):
     if not lines or lines[-1]["schema"] != "native-worker-dwell-summary-v1":
         raise ValueError("terminal full-dwell summary missing")
     terminal, rows = lines[-1], lines[:-1]
-    jobs = (duration + 125) // 126
+    jobs = (duration + arrival_period_ms - 1) // arrival_period_ms
     if (
         terminal["rate_hz"] != rate
         or terminal["duration_ms"] != duration
+        or terminal.get("arrival_period_ms", 126) != arrival_period_ms
         or terminal["submitted"] != jobs
         or terminal["completed"] != jobs
         or terminal["dropped"] != 0
@@ -249,7 +252,7 @@ def verify(raw: str, manifest: dict, duration: int):
             )
             for key in ("total_cpu_ms", "total_wall_ms", "delivery_latency_ms")
         },
-        "limitations": SCOPE
+        "limitations": SCOPE.replace("every 126 ms", f"every {arrival_period_ms} ms")
         + " Setup and loading excluded; no RF/IRQ/network contention measured.",
     }
 
@@ -266,12 +269,18 @@ def main():
     for name in ("manifest", "raw", "output"):
         v.add_argument(name, type=Path)
     v.add_argument("duration", type=int)
+    v.add_argument("--arrival-period-ms", type=int, choices=(120, 126), default=126)
     args = parser.parse_args()
     if args.action == "prepare":
         prepare(args.source, args.output, args.rate, args.library, maximum=args.maximum)
     else:
         safe_output(args.output)
-        result = verify(args.raw.read_text(), json.loads(args.manifest.read_text()), args.duration)
+        result = verify(
+            args.raw.read_text(),
+            json.loads(args.manifest.read_text()),
+            args.duration,
+            arrival_period_ms=args.arrival_period_ms,
+        )
         result.update(
             raw_sha256=digest(args.raw),
             manifest_sha256=digest(args.manifest),
