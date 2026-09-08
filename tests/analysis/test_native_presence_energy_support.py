@@ -34,6 +34,18 @@ def libraries(tmp_path_factory, protocol):
             ("default", ()),
             ("disabled", ("-DLEO_PRESENCE_ENERGY_SUPPORT=0",)),
             ("supported", ("-DLEO_PRESENCE_ENERGY_SUPPORT=1",)),
+            (
+                "symbols",
+                ("-DLEO_PRESENCE_ENERGY_SUPPORT=1", "-DLEO_PRESENCE_ENERGY_SYMBOL_SUPPORT=1"),
+            ),
+            (
+                "symbols-uncached",
+                (
+                    "-DLEO_PRESENCE_ENERGY_SUPPORT=1",
+                    "-DLEO_PRESENCE_ENERGY_SYMBOL_SUPPORT=1",
+                    "-DLEO_PRESENCE_PRECOMPUTE=0",
+                ),
+            ),
         )
     }
 

@@ -35,6 +35,7 @@ VARIANTS = {
     "normalized-diverse": (0, 1),
     "amplitude-diverse": (1, 1),
     "amplitude-diverse-supported": (1, 1),
+    "amplitude-diverse-symbol-supported": (1, 1),
 }
 
 
@@ -47,7 +48,11 @@ def variant_flags(name):
         f"-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED={amplitude}",
         f"-DLEO_PRESENCE_GLRT_SYMBOL_DIVERSITY={diversity}",
     )
-    return flags + (("-DLEO_PRESENCE_ENERGY_SUPPORT=1",) if name.endswith("-supported") else ())
+    if name.endswith("-supported"):
+        flags += ("-DLEO_PRESENCE_ENERGY_SUPPORT=1",)
+    if name == "amplitude-diverse-symbol-supported":
+        flags += ("-DLEO_PRESENCE_ENERGY_SYMBOL_SUPPORT=1",)
+    return flags
 
 
 def validate_protocol(protocol):

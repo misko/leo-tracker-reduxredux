@@ -180,6 +180,27 @@ def test_support_requires_explicit_variant_and_new_inventory_is_independent():
     assert fresh["optimized_arithmetic"]
 
 
+def test_symbol_support_is_explicit_and_uses_fresh_disjoint_seeds():
+    assert variant_flags("amplitude-diverse-symbol-supported") == (
+        *variant_flags("amplitude-diverse-supported"),
+        "-DLEO_PRESENCE_ENERGY_SYMBOL_SUPPORT=1",
+    )
+    new = json.loads(
+        PROTOCOL.with_name("arm-presence-symbol-support-challenge-v1.json").read_text()
+    )
+    old = json.loads(
+        PROTOCOL.with_name("arm-presence-energy-support-challenge-v1.json").read_text()
+    )
+    validate_protocol(new)
+    inventory = list(cases(new))
+    seeds = {r["seed"] for r in inventory}
+    assert len(seeds) == len(inventory) == 576
+    assert not seeds.intersection(r["seed"] for r in cases(old))
+    for key in old:
+        if key not in ("scope", "interpretation", "variants", "independent_case_seed_base"):
+            assert new[key] == old[key], key
+
+
 @pytest.mark.parametrize(
     "change",
     [
