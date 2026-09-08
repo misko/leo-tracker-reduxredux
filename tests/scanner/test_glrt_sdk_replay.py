@@ -198,6 +198,7 @@ def test_sdk_and_parent_build_receipts_attest_actual_artifacts(artifacts):
     _, parent, _, _ = artifacts
     receipt = json.loads(parent.with_name(parent.name + ".build.json").read_text())
     assert receipt["binary_sha256"] == digest(parent)
+    assert "-Wl,-rpath,$ORIGIN" in receipt["command"]
     assert all(digest(ROOT / p) == sha for p, sha in receipt["sources_sha256"].items())
     assert all(digest(Path(p)) == sha for p, sha in receipt["dependencies_sha256"].items())
 
@@ -232,3 +233,96 @@ def test_unreviewed_cli_rejects_before_loading_any_payload(
         timeout=2,
     )
     assert result.returncode == 2 and not result.stdout
+
+
+def test_packaged_sdk_and_release_identities_are_verified_without_rebuilding(workload, tmp_path):
+    original, worker, templates, pack, manifest = workload
+    sdk = original.parent / "libleo-scanner-glrt.so"
+    before = digest(sdk)
+    parent = build(tmp_path / "consumer", sdk_library=sdk, runtime_rpath=sdk.parent)
+    assert not (parent.parent / sdk.name).exists()
+    assert digest(sdk) == before
+    record = json.loads(parent.with_name(parent.name + ".build.json").read_text())
+    assert record["dependencies_sha256"] == {str(sdk.resolve()): before}
+    algorithm, configuration = "ab" * 32, "cd" * 32
+    process = subprocess.run(
+        [
+            str(parent),
+            str(worker),
+            str(templates),
+            str(pack),
+            "968",
+            "2",
+            "40",
+            "1",
+            algorithm,
+            configuration,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert process.returncode == 0, process.stderr
+    checked = verify(
+        process.stdout,
+        manifest,
+        968,
+        delay_blocks=2,
+        jitter_ms=40,
+        enabled=True,
+        algorithm_sha256=algorithm,
+        configuration_sha256=configuration,
+    )
+    assert checked["verified"] and checked["results"] == 8
+    assert checked["algorithm_sha256"] == algorithm
+    assert checked["configuration_sha256"] == configuration
+    with pytest.raises(ValueError, match="metadata/frame"):
+        verify(process.stdout, manifest, 968, delay_blocks=2, jitter_ms=40, enabled=True)
+
+
+@pytest.mark.parametrize(
+    "identities",
+    [
+        ("ab" * 32,),
+        ("0" * 64, "cd" * 32),
+        ("ab" * 32, "0" * 64),
+        ("AB" * 32, "cd" * 32),
+        ("ab" * 32, "bad"),
+        ("ab" * 32 + "\n", "cd" * 32),
+    ],
+)
+def test_invalid_release_ids_reject_before_any_payload_is_opened(artifacts, identities):
+    _, parent, _, _ = artifacts
+    result = subprocess.run(
+        [
+            str(parent),
+            "/missing-worker",
+            "/missing-template",
+            "/missing-pack",
+            "968",
+            "0",
+            "0",
+            "1",
+            *identities,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=2,
+    )
+    assert result.returncode == 2 and not result.stdout
+
+
+@pytest.mark.parametrize("value", [None, "0" * 64, "AB" * 32, "ab" * 32 + "\n", "bad"])
+def test_verifier_requires_independently_supplied_valid_release_identity(value):
+    with pytest.raises(ValueError, match="expected replay identity"):
+        verify("", {}, 968, delay_blocks=0, jitter_ms=0, enabled=True, algorithm_sha256=value)
+
+
+@pytest.mark.parametrize(
+    "path", [Path("relative"), Path("/tmp/a,other"), Path("/tmp/a:other"), Path("/tmp/a/../other")]
+)
+def test_unsafe_runtime_search_path_rejected_without_building(tmp_path, path):
+    output = tmp_path / "must-not-exist"
+    with pytest.raises(ValueError, match="runtime RPATH"):
+        build(output, runtime_rpath=path)
+    assert not output.exists()
