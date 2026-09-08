@@ -1,0 +1,57 @@
+{
+  "schema": "org.leo.research.sdk-replay-verification/v1",
+  "verified": true,
+  "jobs": 8,
+  "results": 8,
+  "blocks": 37,
+  "duration_ms": 968,
+  "rate_hz": 5000000,
+  "delay_blocks": 2,
+  "jitter_ms": 40,
+  "enabled": true,
+  "nominal_block_period_ms": 26.2144,
+  "callback_cpu_ms": {
+    "p50": 0.233998,
+    "p95": 1.8972395999999996,
+    "p99": 2.3584764000000003,
+    "max": 2.561826
+  },
+  "callback_wall_ms": {
+    "p50": 0.4434129,
+    "p95": 2.1719294072,
+    "p99": 2.41564469328,
+    "max": 2.543753862
+  },
+  "source_fill_ms": {
+    "p50": 0.463441968,
+    "p95": 2.0283508776,
+    "p99": 2.3726423547200004,
+    "max": 2.555878043
+  },
+  "arrival_lateness_ms": {
+    "p50": 0.16948203300000841,
+    "p95": 18.274346699600052,
+    "p99": 18.868656595919987,
+    "max": 19.168867085999977
+  },
+  "ready_callback_to_frame_ms": {
+    "p50": 12.855004489500004,
+    "p95": 68.3694885253,
+    "p99": 68.38562494266,
+    "max": 68.38965904700001
+  },
+  "worker_cpu_ms": {
+    "p50": 10.5008455,
+    "p95": 11.6660367,
+    "p99": 11.80539774,
+    "max": 11.840238
+  },
+  "worker_wall_ms": {
+    "p50": 11.07131552696228,
+    "p95": 12.03924347758293,
+    "p99": 12.268319848775864,
+    "max": 12.325588941574097
+  },
+  "callback_over_nominal_period": 0,
+  "limitations": "Modeled 121ms cycles with saved RX1 valid IQ, synthetic RX0 and 1ms transition padding; not original block arrivals, real IIO/IRQ/network load, detection qualification or live duty. Frame delivery includes waiting for a later carrier; it is not the per-block callback deadline."
+}
