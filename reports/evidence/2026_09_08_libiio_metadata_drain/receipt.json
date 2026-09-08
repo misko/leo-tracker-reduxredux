@@ -1,0 +1,114 @@
+{
+  "schema": "leo.libiio_metadata_drain_checkpoint.v1",
+  "scope": "Synthetic metadata-only transport tests; no classifier or RF-duty qualification",
+  "source_commit": "27817353ee6b031d67454860ce1659837fb4866d",
+  "source_parent": "c752ab684a4c9924ee362ccfb02a7ac65f7992f9",
+  "build_note": "Configured and built from final source before commit; embedded git version may identify the parent.",
+  "desktop_c_tests": [
+    {
+      "test": "tests/test_direct_async_transport",
+      "exit_code": 0,
+      "output": "ERROR: READ LINE: -32\ndirect async transport: PASS\n"
+    },
+    {
+      "test": "iiod/test_metadata_drain_server",
+      "exit_code": 0,
+      "output": "metadata drain parser/client/provider: PASS\n"
+    },
+    {
+      "test": "tests/test_metadata_batch_core",
+      "exit_code": 0,
+      "output": "metadata batch core: PASS\n"
+    },
+    {
+      "test": "tests/test_buffer_block_lease",
+      "exit_code": 0,
+      "output": "buffer block leases: PASS\n"
+    },
+    {
+      "test": "tests/test_iiod_command_batch",
+      "exit_code": 0,
+      "output": "iiOD metadata command batch: PASS\n"
+    },
+    {
+      "test": "tests/test_spf_hop_protocol",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "test": "tests/test_spf_hop_session",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "test": "tests/test_spf_hop_scheduler",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "test": "tests/test_thread_pool_affinity",
+      "exit_code": 0,
+      "output": ""
+    }
+  ],
+  "python_tests": {
+    "count": 63,
+    "passed": 63,
+    "network_tests_included": 10
+  },
+  "leo_existing_frame_tests": {
+    "count": 148,
+    "passed": 148
+  },
+  "sanitizers": {
+    "c_tests": [
+      "test_metadata_drain_server",
+      "test_direct_async_transport",
+      "test_metadata_batch_core"
+    ],
+    "address": true,
+    "undefined": true,
+    "leaks": true,
+    "network_python_tests": 10,
+    "python_process_leaks": false
+  },
+  "arm": {
+    "serial": "104000b29905000e17000800065934759d",
+    "address": "192.168.1.15",
+    "idle_attested_before_and_after": true,
+    "source_toolchain": "arm-linux-gnueabihf-gcc 7.3.1",
+    "cpu_limit_seconds": 10,
+    "wall_alarm_seconds_per_test": 15,
+    "address_space_limit_kib": 131072,
+    "nice": 19,
+    "attempt_without_timeout_applet": {
+      "chunk_id": "368616",
+      "wall_time_seconds": 0.103986459,
+      "exit_code": 127,
+      "original_token_count": 164,
+      "output": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nd9a0c59f7e937b5f9b8b03431f2bea0a65eb3301eb0184c795071a3b1576fb8e  /tmp/leo-metadata-drain.sjXnIK/libiio.so.0\n5029b3a97637927da20c898b82bc73b53da124a1fd4406534cf3e6fbac582ae7  /tmp/leo-metadata-drain.sjXnIK/test_metadata_drain_server\n3b6daac16f2b8d8724af5a0cfc5db212f4033059127ac285f91343dfa1f29581  /tmp/leo-metadata-drain.sjXnIK/test_direct_async_transport\nsh: timeout: not found\nsynthetic transport tests exit=127; spare still idle\n"
+    },
+    "final_run": {
+      "chunk_id": "3fb77d",
+      "wall_time_seconds": 0.148855172,
+      "exit_code": 0,
+      "original_token_count": 182,
+      "output": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nd9a0c59f7e937b5f9b8b03431f2bea0a65eb3301eb0184c795071a3b1576fb8e  /tmp/leo-metadata-drain.sjXnIK/libiio.so.0\ned6caff6e17dab6377cd2be36e3ae6a704a4c99d3d03a74c8fc3e696095eacd2  /tmp/leo-metadata-drain.sjXnIK/test_metadata_drain_server\n94544103d2feea5eedd2ac0914ac60edaf3d29b32b4ac1776215078fc09bb931  /tmp/leo-metadata-drain.sjXnIK/test_direct_async_transport\nmetadata drain parser/client/provider: PASS\nERROR: READ LINE: -32\ndirect async transport: PASS\nsynthetic transport tests exit=0; spare still idle\n"
+    }
+  },
+  "temporary_radio_artifacts_removed": true,
+  "local_artifacts_retained": true,
+  "changed_fpga": false,
+  "changed_kernel": false,
+  "flashed_firmware": false,
+  "installed_runtime": false,
+  "collected_rf": false,
+  "remaining": [
+    "GLRT OPENM negotiation and provider attachment",
+    "Result collection from actual scanner blocks and hop evidence",
+    "Final result envelope and host integration over the real provider path",
+    "5 MS/s runtime and startup headroom",
+    "Independent classifier specificity/recall",
+    "Authorized matched live same-duty verification"
+  ]
+}
