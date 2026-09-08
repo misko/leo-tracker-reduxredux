@@ -22,9 +22,12 @@ from tools.native_presence import (
 )
 
 
-@pytest.fixture(scope="module")
-def library(tmp_path_factory):
-    return build_library(tmp_path_factory.mktemp("native-presence") / "presence.so")
+@pytest.fixture(scope="module", params=["default", "portable"])
+def library(tmp_path_factory, request):
+    flags = ("-DLEO_PRESENCE_FORCE_PORTABLE",) if request.param == "portable" else ()
+    return build_library(
+        tmp_path_factory.mktemp("native-presence") / "presence.so", cflags=flags
+    )
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
@@ -230,7 +233,7 @@ def test_build_rejects_existing_receipt_and_unknown_compiler(tmp_path):
         build_library(tmp_path / "library.so", compiler="/not-a-compiler")
 
 
-@pytest.mark.parametrize("size", [128, 512, 5000, 10000])
+@pytest.mark.parametrize("size", [2, 5, 10, 25, 50, 125, 128, 512, 5000, 10000])
 def test_bounded_fft_matches_numpy(library, size):
     class FFT(ct.Structure):
         _fields_ = [

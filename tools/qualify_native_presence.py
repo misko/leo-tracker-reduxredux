@@ -223,6 +223,9 @@ def main():
     build = commands.add_parser("build")
     build.add_argument("output", type=Path)
     build.add_argument("--compiler", default="cc")
+    build.add_argument(
+        "--cflag", action="append", default=[], help="recorded build flag; use --cflag=-DNAME"
+    )
     run = commands.add_parser("replay")
     run.add_argument("output", type=Path)
     run.add_argument("executable", type=Path)
@@ -231,7 +234,7 @@ def main():
     if args.command == "freeze":
         freeze(args.root, args.output)
     elif args.command == "build":
-        build_executable(args.output, compiler=args.compiler)
+        build_executable(args.output, compiler=args.compiler, cflags=tuple(args.cflag))
     else:
         replay(args.output, args.executable.resolve(), args.results)
 

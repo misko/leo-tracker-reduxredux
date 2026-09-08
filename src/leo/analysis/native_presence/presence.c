@@ -30,12 +30,42 @@ typedef struct {
     double sample_rate_hz;
     int epoch_count, fast_magnitude, invalid_geometry;
 } FoldedAnchorGridKernel;
+
+/* Four frequency lanes fit in scalar ARM FP registers. The generic kernel's
+ * tap-major array updates otherwise repeatedly spill all twelve complex sums.
+ * Arithmetic and per-frequency summation order remain unchanged. */
+static void correlate_registers(const double complex *restrict samples,
+    const double *restrict real, const double *restrict imag, ptrdiff_t count,
+    double *restrict out_real, double *restrict out_imag)
+{
+    for (int f = 0; f < CFO_COUNT; f += 4) {
+        double r0=0, i0=0, r1=0, i1=0, r2=0, i2=0, r3=0, i3=0;
+        for (ptrdiff_t k = 0; k < count; ++k) {
+            double xr=creal(samples[k]), xi=cimag(samples[k]);
+            ptrdiff_t base=k*CFO_COUNT+f;
+#define ACCUMULATE(lane) do { \
+    double rr=real[base+lane], ri=imag[base+lane]; \
+    r##lane += xr*rr+xi*ri; \
+    i##lane += xi*rr-xr*ri; \
+} while (0)
+            ACCUMULATE(0); ACCUMULATE(1); ACCUMULATE(2); ACCUMULATE(3);
+#undef ACCUMULATE
+        }
+        out_real[f]=r0; out_imag[f]=i0;
+        out_real[f+1]=r1; out_imag[f+1]=i1;
+        out_real[f+2]=r2; out_imag[f+2]=i2;
+        out_real[f+3]=r3; out_imag[f+3]=i3;
+    }
+}
+
 #define LEO_GRID_FUNCTION presence_grid_portable
 #define LEO_GRID_TARGET
+#define LEO_GRID_CORRELATE correlate_registers
 #include "../starlink/_native_acquisition_grid.inc"
 #undef LEO_GRID_FUNCTION
 #undef LEO_GRID_TARGET
-#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+#undef LEO_GRID_CORRELATE
+#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__)) && !defined(LEO_PRESENCE_FORCE_PORTABLE)
 #define LEO_GRID_FUNCTION presence_grid_avx2
 #define LEO_GRID_TARGET __attribute__((target("avx2,fma,tune=haswell")))
 #include "../starlink/_native_acquisition_grid.inc"
@@ -148,7 +178,7 @@ static void coarse(leo_presence_workspace *w, size_t count)
         .offset_count=frames, .sample_rate_hz=w->rate, .epoch_count=(int)w->n,
         .fast_magnitude=1
     };
-#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__)) && !defined(LEO_PRESENCE_FORCE_PORTABLE)
     __builtin_cpu_init();
     if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
         presence_grid_avx2(&kernel);
@@ -299,6 +329,11 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
     int integer = fabs(offset-nearbyint(offset)) <= 1e-12;
     int first = (int)nearbyint(2*w->rate*SYMBOL_S);
     int stop = (int)nearbyint(66*w->rate*SYMBOL_S);
+    /* Rotation depends on local sample position, never on the frame number.
+     * Keep the original arithmetic and reuse it across every supporting frame. */
+    for (int k = first; k < stop; ++k)
+        w->weighted[k] = rotate(-TAU*cfo*(k+offset)/w->rate);
+    double previous_fraction = NAN, weights[16], normalizer = 0;
     for (int frame = 0; ; ++frame) {
         int start = frame_start(w, epoch, frame);
         if (start+stop-1+offset >= (double)count-(integer ? 0 : 8)) break;
@@ -314,17 +349,26 @@ static int glrt(leo_presence_workspace *w, size_t count, int epoch,
                 if (integer) received = w->samples[(int)nearbyint(position)];
                 else {
                     int base = (int)floor(position);
-                    double normalizer = 0;
+                    double fraction = position-base;
+                    /* Adding the offset to an integer can round differently
+                     * across floating-point binades. Cache the actual rounded
+                     * fraction, not a nominal one shared by every position. */
+                    if (fraction != previous_fraction) {
+                        normalizer = 0;
+                        for (int tap = -7; tap <= 8; ++tap) {
+                            double distance = position-(base+tap);
+                            weights[tap+7] = sinc(distance)*sinc(distance/8);
+                            normalizer += weights[tap+7];
+                        }
+                        previous_fraction = fraction;
+                    }
                     for (int tap = -7; tap <= 8; ++tap) {
-                        double distance = position-(base+tap);
-                        double weight = sinc(distance)*sinc(distance/8);
-                        normalizer += weight;
-                        received += weight*w->samples[base+tap];
+                        received += weights[tap+7]*w->samples[base+tap];
                     }
                     received /= normalizer;
                 }
                 /* Omit only the common unit-magnitude frame phase. */
-                double complex corrected = received*rotate(-TAU*cfo*(k+offset)/w->rate);
+                double complex corrected = received*w->weighted[k];
                 correlations[0][symbol-2] += conj(w->exact[k])*corrected;
                 correlations[1][symbol-2] += conj(w->control[k])*corrected;
             }
