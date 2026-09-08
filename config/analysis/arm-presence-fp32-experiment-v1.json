@@ -1,0 +1,17 @@
+{
+  "schema": "org.leo.research.arm-presence-precision-experiment/v1",
+  "algorithm": "glrt2-coarse-fp32-full-grid-v1",
+  "status": "experimental_not_streaming_qualified",
+  "baseline_commit": "d2802404",
+  "compile_flag": "LEO_PRESENCE_COARSE_FP32",
+  "probe_ms": 20,
+  "receiver": 1,
+  "coarse_hypotheses": "unchanged full epoch/CFO/anchor/frame grid",
+  "precision": "float32 coarse correlations and accumulation; float64 energy prefixes, refinement and fractional GLRT",
+  "input_scaling": "normalize coarse input by maximum absolute I/Q component; retained refinement IQ unchanged",
+  "coarse_grid_atol": 0.000002,
+  "coarse_grid_rtol": 0.00002,
+  "final_candidate_gate": "original frozen candidate inventory/order/epoch/CFO/fractional-score/decision tolerances, unchanged",
+  "controls": "reuse frozen development probes only; these are not a new independent holdout",
+  "frozen_before_variant_results": true
+}

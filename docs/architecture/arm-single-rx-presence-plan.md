@@ -31,6 +31,10 @@ is available, report that checkpoint as blocked rather than load production.
   3.0/8.8 seconds by the first equivalent-computation optimization pass. These
   are not streaming qualifications or timing distributions. They supersede
   any earlier assumed desktop-to-ARM slowdown factors.
+- A separately configured FP32/NEON coarse-search experiment now reduces smoke
+  totals further to approximately 1.55/4.40 seconds, with original fractional
+  candidate tolerances passing on the tested inputs. This remains above budget;
+  it is neither the default oracle nor a qualified every-visit detector.
 - [Desktop screen](../../reports/2026_09_07_arm_presence_desktop_screen.md):
   reduced GLRT is implemented and timed on x86, not ARM. Approximate single-RX
   median detector CPU is 28 ms at 2.5 MS/s and 68 ms at 5 MS/s, excluding the

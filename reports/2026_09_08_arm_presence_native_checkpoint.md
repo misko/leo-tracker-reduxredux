@@ -3,6 +3,11 @@
 Status: implementation in progress; **not qualified for live deployment**.
 No new RF, FPGA, flashed firmware, kernel, or production scanner changes.
 
+Latest result: the experimental full-grid FP32/NEON coarse search, with FP64
+refinement, takes approximately **1.55/4.40 seconds** at 2.5/5 MS/s on the ARM
+smoke probes. This improves the original baseline by about 3.1x/3.6x, but still
+misses the 100 ms target by 15.5x/44x. See the final section below.
+
 ## Baseline result
 
 A standalone C implementation now performs cold acquisition, two-candidate
@@ -131,3 +136,67 @@ The optimizations help, but the latest measured cost is still about **30x/88x**
 the 100 ms target. The next experiment is a separately labelled single-precision
 coarse search using ARM NEON; fractional refinement remains double precision.
 Its grid errors and candidate decisions must be tested, not presumed equivalent.
+
+## Separately qualified FP32/NEON coarse-search experiment
+
+The [precision protocol](../config/analysis/arm-presence-fp32-experiment-v1.json)
+was frozen before its results. It permits a coarse-grid absolute error of 2e-6
+and relative error of 2e-5, while retaining the original tight tolerances for
+final candidate inventory/order, epochs, fractional offsets, CFOs, scores, and
+decisions. It changes no search hypotheses or probe duration. Original IQ and
+all fine/fractional refinement remain double precision.
+
+The coarse input is normalized by its maximum absolute I/Q component, then
+correlated and accumulated in FP32. Energy prefixes remain FP64. On ARM, NEON
+handles twelve frequency lanes, including reciprocal-square-root refinement
+for magnitudes; the compiler output was inspected to confirm the SIMD path.
+This is an opt-in compile-time experiment, **not the default numerical oracle**.
+
+An initial SIMD build took 1.83/5.52 seconds. Disassembly showed substantial
+loop expansion and spills. Disabling loop unrolling, peeling, and automatic
+prefetch reduced the smoke totals to 1.56/4.38 seconds. A final rebuild with
+explicit unsupported-input error handling was replayed on both edges:
+
+| Rate / edge | Coarse CPU | Fine CPU | Fractional CPU | Total CPU |
+|---|---:|---:|---:|---:|
+| 2.5 MS/s lower | 900 ms | 570 ms | 70 ms | **1,550 ms** |
+| 2.5 MS/s upper | 910 ms | 570 ms | 70 ms | **1,550 ms** |
+| 5 MS/s lower | 3,048 ms | 1,217 ms | 120 ms | **4,394 ms** |
+| 5 MS/s upper | 3,053 ms | 1,200 ms | 130 ms | **4,399 ms** |
+
+Every ARM candidate in these four final smoke executions matched the frozen
+fractional oracle. Peak RSS was approximately 7/12.6 MiB. This is still only
+one invocation per rate/edge: no ARM distribution, RF streaming claim, or
+independent sensitivity estimate follows from these results.
+
+Both initial and final FP32 desktop builds passed all 40 frozen probes, three
+iterations each. Four rate/edge Gaussian grids passed the separately frozen
+coarse precision bound in component tests. The combined focused regression
+suite passed **152 tests**. ASan/UBSan passed four archived probes (both rates
+and edges) for the optimized FP64 build and four for the FP32 desktop build;
+that sanitizer result does not instrument the ARM NEON instructions.
+
+Malformed template amplitudes and unsupported CFO ranges are rejected. An
+unrepresentable FP32 normalization returns an error, not a successful negative
+detection. Tests also check scale invariance and preserve the known tone
+counterexample. None of the previously seen data is presented as a fresh holdout.
+
+The [final ARM receipt](figures/2026_09_08_arm_presence_optimization/arm-fp32-final.json)
+and adjacent build sidecars identify exact sources, flags, binaries, and inputs.
+The spare's IIO buffers were disabled before and after replay; production
+`leo-acquisition.service` remained active. Temporary userspace replay artifacts
+were staged only under the spare's owned `/tmp` experiment directories.
+
+### Next implementation decision
+
+The full blind search remains too expensive. The next bounded experiments need
+to profile fine refinement separately and reduce acquisition work: fewer
+acquisition frames, bounded coarse candidate proposals, or a reduced-rate scout,
+followed by fractional confirmation on retained original IQ. Each variant must
+be explicitly configured and tested for lost evidence and interference response.
+The historical cache and periodicity scouts are not presumed effective.
+
+Checking every Nth revisit remains a labelled coverage tradeoff, not completion
+of the every-visit target. No live collector, IIO result extension, production
+enablement, merge into remote main, or deployment has occurred. The full plan
+remains active, with runtime feasibility still the blocking release gate.

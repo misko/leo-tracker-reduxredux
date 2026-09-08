@@ -31,6 +31,7 @@ typedef struct {
     int epoch_count, fast_magnitude, invalid_geometry;
 } FoldedAnchorGridKernel;
 
+#if !defined(LEO_PRESENCE_COARSE_FP32)
 /* Four frequency lanes fit in scalar ARM FP registers. The generic kernel's
  * tap-major array updates otherwise repeatedly spill all twelve complex sums.
  * Arithmetic and per-frequency summation order remain unchanged. */
@@ -72,6 +73,7 @@ static void correlate_registers(const double complex *restrict samples,
 #undef LEO_GRID_FUNCTION
 #undef LEO_GRID_TARGET
 #endif
+#endif
 
 struct leo_presence_workspace {
     uint32_t rate;
@@ -83,6 +85,9 @@ struct leo_presence_workspace {
     npy_intp starts[12], stops[12], offsets[16];
     double frequencies[12], correlation_real[12], correlation_imag[12];
     leo_fft fine_fft, short_fft, glrt_fft;
+#if defined(LEO_PRESENCE_COARSE_FP32)
+    float *float_samples, *float_accumulated;
+#endif
 };
 
 static double clock_ms(clockid_t id)
@@ -96,6 +101,10 @@ static double complex rotate(double angle) { return cos(angle) + I * sin(angle);
 static int frame_start(const leo_presence_workspace *w, int epoch, int frame)
 { return epoch + (int)nearbyint(frame * (w->rate / 750.0)); }
 
+#if defined(LEO_PRESENCE_COARSE_FP32)
+#include "coarse_fp32.h"
+#endif
+
 void leo_presence_destroy(leo_presence_workspace *w)
 {
     if (!w) return;
@@ -103,6 +112,9 @@ void leo_presence_destroy(leo_presence_workspace *w)
     free(w->weighted); free(w->base); free(w->conditioned_offsets);
     free(w->prefix); free(w->grid); free(w->accumulated); free(w->support);
     free(w->rotated_real); free(w->rotated_imag);
+#if defined(LEO_PRESENCE_COARSE_FP32)
+    free(w->float_samples); free(w->float_accumulated);
+#endif
     leo_fft_free(&w->fine_fft); leo_fft_free(&w->short_fft); leo_fft_free(&w->glrt_fft);
     free(w);
 }
@@ -124,6 +136,9 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
     ALLOC(conditioned_offsets, 42 * n); ALLOC(prefix, w->max_samples + 1);
     ALLOC(grid, CFO_COUNT * n); ALLOC(accumulated, CFO_COUNT * n); ALLOC(support, n);
     ALLOC(rotated_real, CFO_COUNT * 23); ALLOC(rotated_imag, CFO_COUNT * 23);
+#if defined(LEO_PRESENCE_COARSE_FP32)
+    ALLOC(float_samples, 2*w->max_samples); ALLOC(float_accumulated, CFO_COUNT*n);
+#endif
 #undef ALLOC
     if (leo_fft_init(&w->fine_fft, rate / 500) ||
         leo_fft_init(&w->short_fft, 128) || leo_fft_init(&w->glrt_fft, 512)) {
@@ -131,7 +146,9 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
     }
     for (size_t k = 0; k < n; ++k) {
         if (!isfinite(exact[k].re) || !isfinite(exact[k].im) ||
-            !isfinite(control[k].re) || !isfinite(control[k].im)) {
+            !isfinite(control[k].re) || !isfinite(control[k].im) ||
+            fabs(exact[k].re)>16 || fabs(exact[k].im)>16 ||
+            fabs(control[k].re)>16 || fabs(control[k].im)>16) {
             leo_presence_destroy(w); return NULL;
         }
         w->exact[k] = exact[k].re + I * exact[k].im;
@@ -160,8 +177,11 @@ static int ingest(leo_presence_workspace *w, const leo_presence_complex *x, size
     return 0;
 }
 
-static void coarse(leo_presence_workspace *w, size_t count)
+static int coarse(leo_presence_workspace *w, size_t count)
 {
+#if defined(LEO_PRESENCE_COARSE_FP32)
+    return coarse_fp32(w, count);
+#else
     w->prefix[0] = 0.0;
     for (size_t k = 0; k < count; ++k) w->prefix[k+1] = w->prefix[k] + power(w->samples[k]);
     memset(w->accumulated, 0, CFO_COUNT * w->n * sizeof(double));
@@ -185,13 +205,15 @@ static void coarse(leo_presence_workspace *w, size_t count)
     else
 #endif
         presence_grid_portable(&kernel);
+    return kernel.invalid_geometry ? -1 : 0;
+#endif
 }
 
 int leo_presence_coarse(leo_presence_workspace *w, const leo_presence_complex *x,
     size_t count, double *scores)
 {
     if (!scores || ingest(w, x, count)) return -1;
-    coarse(w, count);
+    if (coarse(w, count)) return -1;
     memcpy(scores, w->grid, 11 * w->n * sizeof(double));
     return 0;
 }
@@ -323,7 +345,8 @@ static double sinc(double x) { return x == 0 ? 1 : sin(TAU*0.5*x)/(TAU*0.5*x); }
 static int glrt(leo_presence_workspace *w, size_t count, int epoch,
     double cfo, double offset, double result[3])
 {
-    if (epoch < 0 || epoch >= (int)w->n || !isfinite(cfo) || !isfinite(offset) || fabs(offset)>2)
+    if (epoch < 0 || epoch >= (int)w->n || !isfinite(cfo) || fabs(cfo)>400000 ||
+        !isfinite(offset) || fabs(offset)>2)
         return -1;
     double spectra[2][128] = {{0}}, ceilings[2] = {0};
     int integer = fabs(offset-nearbyint(offset)) <= 1e-12;
@@ -423,7 +446,7 @@ static int candidate_before(const leo_presence_candidate *a, const leo_presence_
 static int execute(leo_presence_workspace *w, size_t count, leo_presence_result *out)
 {
     double started = clock_ms(CLOCK_PROCESS_CPUTIME_ID);
-    coarse(w, count);
+    if (coarse(w, count)) return -1;
     out->coarse_cpu_ms = clock_ms(CLOCK_PROCESS_CPUTIME_ID)-started;
     int retained_epoch[2], retained_bin[2], nr = 0;
     /* Two passes avoid sorting an entire allocation of coarse peaks. */
