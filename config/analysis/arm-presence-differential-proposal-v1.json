@@ -1,0 +1,14 @@
+{
+  "schema": "org.leo.research.arm-presence-differential-proposal/v1",
+  "scope": "Development-only CFO-invariant lag-product timing proposals; no capture policy change",
+  "receiver": 1,
+  "lags_samples": [0, 1, 2, 4, 8],
+  "phase_bins": [0, 4096],
+  "retained_peaks": 8,
+  "minimum_separation_samples": 5,
+  "reference_margin": 0.025,
+  "timing_match_samples": 2,
+  "method": "Fold x[k+lag]*conj(x[k]) at exact rounded physical frame starts; subtract its mean and correlate with identically formed pilot lag products. CFO contributes a common phase, leaving correlation magnitude invariant. Lag zero is the earlier signed real power correlation.",
+  "limitations": "This proposes timing and a phase-derived CFO, not verified detection. Phase-derived CFO is ambiguous modulo sample_rate/lag. No threshold or CFO correction is fitted to reference outcomes. All inputs are development data.",
+  "frozen_before_results": true
+}

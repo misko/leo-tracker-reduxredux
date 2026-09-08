@@ -1,0 +1,47 @@
+{
+  "protocol": {
+    "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+    "baseline_commit": "9a3dd178",
+    "frozen_before_native_variant_results": true,
+    "replay_details": "nuisance",
+    "development_basis": "The staged tone-conditioned detector exceeds the 100 ms ARM target on 5 MS/s smoke probes. Remove recursive power-of-two FFT overhead without changing precision, search hypotheses, thresholds, or input conditioning.",
+    "scope": "Optional FP64 iterative radix-2 execution. Mixed radix-2/5 lengths retain the existing recursive path. Final fractional GLRT uses tone-conditioned working IQ when a fit is applied; original input remains unchanged.",
+    "receiver": 1,
+    "cpu_target_ms": 100,
+    "reference_association": {
+      "maximum_cfo_difference_hz": 8000,
+      "maximum_circular_epoch_difference_us": 2
+    },
+    "common_flags": [
+      "-DLEO_PRESENCE_COARSE_FP32",
+      "-fno-unroll-loops",
+      "-fno-peel-loops",
+      "-fno-prefetch-loop-arrays",
+      "-fcx-limited-range"
+    ],
+    "variants": [
+      {
+        "name": "diff4_staged_tone_iterative",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "DIFFERENTIAL_PROPOSAL": 1,
+          "DIFFERENTIAL_LOCAL_RADIUS": 0,
+          "TONE_NUISANCE": 1,
+          "ITERATIVE_FFT": 1,
+          "FAST_FINE_FFT": 1,
+          "FINE_ALL_SYMBOLS": 1,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "CONDITIONED_RADIUS": 200,
+          "CANDIDATES": 1
+        }
+      }
+    ],
+    "algorithm_changes": [
+      "No new hypotheses, precision change, or threshold change: bit-reversal followed by in-place radix-2 butterflies uses the same FP64 root table.",
+      "Qualify complete candidate and nuisance parity against the recursive variant before interpreting ARM performance."
+    ]
+  },
+  "protocol_sha256": "70a1ac0cccd5f4a6d5e35fe532668c130e5308d1818cb9239d53d4f1635ea4b6",
+  "inputs_sha256": "a5be1172e537d1d7e7d10df2f00f8e9749cabb4d8e8bb2f396fcd70e4d12eb99"
+}

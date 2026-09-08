@@ -1,0 +1,15 @@
+{
+  "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+  "baseline_commit": "9a3dd178",
+  "frozen_before_native_variant_results": true,
+  "development_basis": "The full local-refinement differential proposal detects all wider reference-positive probes, with one CFO mismatch. Native local correlation dominates proposal cost. Test ranking centers first and refining only the retained neighborhood.",
+  "scope": "Staged native differential proposals with unchanged original-IQ fractional confirmation",
+  "receiver": 1,
+  "cpu_target_ms": 100,
+  "reference_association": {"maximum_cfo_difference_hz": 8000, "maximum_circular_epoch_difference_us": 2},
+  "common_flags": ["-DLEO_PRESENCE_COARSE_FP32", "-fno-unroll-loops", "-fno-peel-loops", "-fno-prefetch-loop-arrays", "-fcx-limited-range"],
+  "variants": [
+    {"name": "diff4_powerhalf_staged", "defines": {"POWER_PROPOSAL": 1, "DIFFERENTIAL_PROPOSAL": 1, "DIFFERENTIAL_LOCAL_RADIUS": 0, "FAST_FINE_FFT": 1, "FINE_ALL_SYMBOLS": 1, "FINE_FRAMES": 2, "EPOCH_FRAMES": 2, "CONDITIONED_RADIUS": 200, "CANDIDATES": 1}}
+  ],
+  "algorithm_changes": ["Rank the eight native-rate proposal-center scores, then evaluate the two neighboring native cells only for the retained proposal. This may change candidate ranking and must be separately quality-tested."]
+}

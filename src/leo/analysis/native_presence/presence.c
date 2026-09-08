@@ -92,8 +92,14 @@ struct leo_presence_workspace {
     double complex *power_input, *power_template_fft;
     double *power_native_template, *power_native_folded;
     double power_template_energy, power_native_template_energy, power_native_folded_energy;
+#if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
+    double complex *diff_template, *diff_folded;
+    int32_t *diff_support;
+    double diff_template_energy, diff_folded_energy;
+#endif
 #endif
     leo_presence_profile profile;
+    leo_presence_nuisance nuisance;
 #if defined(LEO_PRESENCE_COARSE_FP32)
     float *float_samples, *float_accumulated;
     float float_reference_real[12*23*12], float_reference_imag[12*23*12];
@@ -127,11 +133,23 @@ int leo_presence_get_profile(const leo_presence_workspace *w, leo_presence_profi
     return 0;
 }
 
+int leo_presence_get_nuisance(const leo_presence_workspace *w, leo_presence_nuisance *nuisance)
+{
+    if (!w || !nuisance) return -1;
+    *nuisance=w->nuisance;
+    return 0;
+}
+
 #if defined(LEO_PRESENCE_COARSE_FP32)
 #include "coarse_fp32.h"
 #endif
-#if LEO_PRESENCE_POWER_PROPOSAL
+#if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
+#include "coarse_differential.h"
+#elif LEO_PRESENCE_POWER_PROPOSAL
 #include "coarse_power.h"
+#endif
+#if LEO_PRESENCE_TONE_NUISANCE
+#include "tone_nuisance.h"
 #endif
 
 void leo_presence_destroy(leo_presence_workspace *w)
@@ -148,6 +166,9 @@ void leo_presence_destroy(leo_presence_workspace *w)
 #if LEO_PRESENCE_POWER_PROPOSAL
     leo_fft_free(&w->power_fft); free(w->power_input); free(w->power_template_fft);
     free(w->power_native_template); free(w->power_native_folded);
+#if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
+    free(w->diff_template); free(w->diff_folded); free(w->diff_support);
+#endif
 #endif
     free(w);
 }
@@ -176,6 +197,11 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
     size_t power_size=2;
     while (power_size<2*n-1) power_size*=2;
     if (LEO_PRESENCE_POWER_BINS) power_size=LEO_PRESENCE_POWER_BINS;
+#if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
+    power_size=2;
+    while (power_size<n) power_size*=2;
+    ALLOC(diff_template,n); ALLOC(diff_folded,n); ALLOC(diff_support,n);
+#endif
     ALLOC(power_input,power_size); ALLOC(power_template_fft,power_size);
     ALLOC(power_native_template,n); ALLOC(power_native_folded,n);
     if (leo_fft_init(&w->power_fft,power_size)) { leo_presence_destroy(w); return NULL; }
@@ -212,7 +238,9 @@ leo_presence_workspace *leo_presence_create(uint32_t rate,
 #if defined(LEO_PRESENCE_COARSE_FP32)
     coarse_fp32_templates(w);
 #endif
-#if LEO_PRESENCE_POWER_PROPOSAL
+#if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
+    coarse_differential_template(w);
+#elif LEO_PRESENCE_POWER_PROPOSAL
     coarse_power_template(w);
 #endif
     return w;
@@ -232,7 +260,9 @@ static int ingest(leo_presence_workspace *w, const leo_presence_complex *x, size
 
 static int coarse(leo_presence_workspace *w, size_t count)
 {
-#if LEO_PRESENCE_POWER_PROPOSAL
+#if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
+    return coarse_differential(w,count);
+#elif LEO_PRESENCE_POWER_PROPOSAL
     return coarse_power(w,count);
 #endif
 #if defined(LEO_PRESENCE_COARSE_FP32)
@@ -292,7 +322,8 @@ static int best_frequency(const double *scores, const double *frequencies, int n
     return best;
 }
 
-/* Normalized coherent even-symbol fine acquisition, evaluated by sparse FFT. */
+/* Normalized coherent fine acquisition. Alternating symbols remain the
+ * baseline; all-symbol acquisition is a separately configured experiment. */
 static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
     double first_frequency, int frequency_count, double *scores)
 {
@@ -300,12 +331,17 @@ static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
     double template_energy = 0;
     memset(w->base, 0, w->n * sizeof(*w->base));
     memset(scores, 0, frequency_count * sizeof(*scores));
-    for (int symbol = 2; symbol < 302; symbol += 2) {
+    const int step=LEO_PRESENCE_FINE_ALL_SYMBOLS ? 1 : 2;
+    /* first_frequency is an aligned FFT bin. Select circular output indices
+     * instead of rotating every input sample by that integer-bin frequency. */
+    int first_bin=(int)nearbyint(first_frequency/w->fine_step_hz);
+    first_bin=(first_bin+(int)w->fine_fft.size)%(int)w->fine_fft.size;
+    for (int symbol = 2; symbol < 302; symbol += step) {
         int begin = (int)nearbyint(symbol * w->rate * SYMBOL_S);
         int end = (int)nearbyint((symbol+1) * w->rate * SYMBOL_S);
         for (int k = begin; k < end; ++k) {
             template_energy += power(w->exact[k]);
-            w->base[k] = conj(w->exact[k]) * rotate(-TAU*first_frequency*k/w->rate);
+            w->base[k] = conj(w->exact[k]);
         }
     }
     int frames = 0;
@@ -314,7 +350,7 @@ static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
         if ((size_t)start + last >= count) break;
         memset(w->input, 0, w->fine_fft.size * sizeof(*w->input));
         double energy = 0;
-        for (int symbol = 2; symbol < 302; symbol += 2) {
+        for (int symbol = 2; symbol < 302; symbol += step) {
             int begin = (int)nearbyint(symbol * w->rate * SYMBOL_S);
             int end = (int)nearbyint((symbol+1) * w->rate * SYMBOL_S);
             for (int k = begin; k < end; ++k) {
@@ -324,8 +360,13 @@ static void fine_scores(leo_presence_workspace *w, size_t count, int epoch,
         }
         leo_fft_forward(&w->fine_fft, w->input);
         double denom = sqrt(template_energy * energy);
-        if (denom > 0)
-            for (int f = 0; f < frequency_count; ++f) scores[f] += cabs(w->fine_fft.output[f])/denom;
+        if (denom > 0) {
+            int bin=first_bin;
+            for (int f = 0; f < frequency_count; ++f) {
+                scores[f] += cabs(w->fine_fft.output[bin])/denom;
+                if (++bin==(int)w->fine_fft.size) bin=0;
+            }
+        }
         ++frames;
     }
     if (frames) for (int f = 0; f < frequency_count; ++f) scores[f] /= frames;
@@ -499,9 +540,18 @@ static int candidate_before(const leo_presence_candidate *a, const leo_presence_
     return 0;
 }
 
-static int execute(leo_presence_workspace *w, size_t count, leo_presence_result *out)
+static int execute(leo_presence_workspace *w, size_t count, leo_presence_result *out,
+    const int16_t *original_ci16)
 {
+    (void)original_ci16;
     memset(&w->profile, 0, sizeof(w->profile));
+    memset(&w->nuisance, 0, sizeof(w->nuisance));
+#if LEO_PRESENCE_TONE_NUISANCE
+    double nuisance_started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
+    w->nuisance.enabled=1;
+    if (tone_nuisance(w,count,original_ci16)) return -1;
+    w->nuisance.cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-nuisance_started;
+#endif
     double started = clock_ms(CLOCK_PROCESS_CPUTIME_ID);
     if (coarse(w, count)) return -1;
     out->coarse_cpu_ms = clock_ms(CLOCK_PROCESS_CPUTIME_ID)-started;
@@ -544,6 +594,16 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
         for (int delta=-radius; delta<=radius; ++delta)
             coarse_power_cell(w,(e+delta+(int)w->n)%(int)w->n);
 #endif
+#if LEO_PRESENCE_DIFFERENTIAL_PROPOSAL && !LEO_PRESENCE_DIFFERENTIAL_LOCAL_RADIUS
+        /* Optional staged refinement: rank eight centers first, then refine
+         * only retained neighborhoods before blind CFO acquisition. */
+        double power_norm=sqrt(w->power_native_template_energy*w->power_native_folded_energy);
+        double diff_norm=sqrt(w->diff_template_energy*w->diff_folded_energy);
+        for (int delta=-1; delta<=1; ++delta) {
+            int local=(e+delta+(int)w->n)%(int)w->n;
+            w->grid[5*w->n+local]=diff_native_cell(w,(size_t)local,power_norm,diff_norm);
+        }
+#endif
 #if defined(LEO_PRESENCE_COARSE_FP32)
         if (epoch_stride(w)>1)
             for (int k=e-radius; k<=e+radius; ++k)
@@ -553,7 +613,7 @@ static int execute(leo_presence_workspace *w, size_t count, leo_presence_result 
         w->profile.local_coarse_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
         for (int local=e-radius; local<=e+radius; ++local) {
             int k=local;
-#if LEO_PRESENCE_POWER_BINS
+#if LEO_PRESENCE_POWER_BINS || LEO_PRESENCE_DIFFERENTIAL_PROPOSAL
             k=(local+(int)w->n)%(int)w->n;
 #endif
             if (k>=0 && k<(int)w->n && (w->grid[f*w->n+k]>w->grid[f*w->n+refined] ||
@@ -641,7 +701,7 @@ int leo_presence_run(leo_presence_workspace *w, const leo_presence_complex *samp
     double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID), wall=clock_ms(CLOCK_MONOTONIC);
     if (ingest(w,samples,count)) return -1;
     out->conversion_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
-    int result=execute(w,count,out);
+    int result=execute(w,count,out,NULL);
     out->total_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
     out->total_wall_ms=clock_ms(CLOCK_MONOTONIC)-wall;
     return result;
@@ -655,7 +715,7 @@ int leo_presence_run_ci16(leo_presence_workspace *w, const int16_t *iq,
     double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID), wall=clock_ms(CLOCK_MONOTONIC);
     for (size_t k=0;k<count;++k) w->samples[k]=iq[2*k]+I*(double)iq[2*k+1];
     out->conversion_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
-    int result=execute(w,count,out);
+    int result=execute(w,count,out,iq);
     out->total_cpu_ms=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
     out->total_wall_ms=clock_ms(CLOCK_MONOTONIC)-wall;
     return result;

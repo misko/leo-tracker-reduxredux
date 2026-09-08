@@ -22,9 +22,13 @@ from tools.native_presence import (
 )
 
 
-@pytest.fixture(scope="module", params=["default", "portable"])
+@pytest.fixture(scope="module", params=["default", "portable", "iterative"])
 def library(tmp_path_factory, request):
-    flags = ("-DLEO_PRESENCE_FORCE_PORTABLE",) if request.param == "portable" else ()
+    flags = {
+        "default": (),
+        "portable": ("-DLEO_PRESENCE_FORCE_PORTABLE",),
+        "iterative": ("-DLEO_PRESENCE_ITERATIVE_FFT=1",),
+    }[request.param]
     return build_library(
         tmp_path_factory.mktemp("native-presence") / "presence.so", cflags=flags
     )
@@ -263,11 +267,18 @@ def test_bounded_fft_matches_numpy(library, size):
     try:
         rng = np.random.default_rng(18)
         values = rng.normal(size=size) + 1j * rng.normal(size=size)
+        original = values.copy()
         native.leo_fft_forward(ct.byref(fft), pointer(values))
         result = np.ctypeslib.as_array(
             ct.cast(fft.output, ct.POINTER(ct.c_double)), shape=(size * 2,)
         ).view(np.complex128)
         np.testing.assert_allclose(result, np.fft.fft(values), rtol=1e-12, atol=1e-12)
+        np.testing.assert_array_equal(values, original)
+        # Reusing the plan must not retain prior output or mutate input.
+        repeated = values * (0.3 + 0.7j)
+        native.leo_fft_forward(ct.byref(fft), pointer(repeated))
+        np.testing.assert_allclose(result, np.fft.fft(repeated), rtol=1e-12, atol=1e-12)
+        np.testing.assert_array_equal(values, original)
     finally:
         native.leo_fft_free(ct.byref(fft))
     assert native.leo_fft_init(ct.byref(fft), 7) == -1

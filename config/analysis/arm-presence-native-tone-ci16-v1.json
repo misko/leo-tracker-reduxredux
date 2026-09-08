@@ -1,0 +1,19 @@
+{
+  "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+  "baseline_commit": "9a3dd178",
+  "frozen_before_native_variant_results": true,
+  "replay_details": "nuisance",
+  "development_basis": "Blocked FP64 tone fitting preserves development outputs but 5 MS/s tone-fit ARM smoke remains over budget. CI16 energy and lag products admit exact integer SIMD accumulation, avoiding FP64 arithmetic without a precision loss.",
+  "scope": "Use original immutable CI16 only for exact energy and lag sums, widened to int64 before addition. Maximum 100000 samples keeps sums below 2^48. Floating-input replay keeps the FP64 fallback; all later tone and GLRT computations remain FP64.",
+  "receiver": 1,
+  "cpu_target_ms": 100,
+  "reference_association": {"maximum_cfo_difference_hz": 8000, "maximum_circular_epoch_difference_us": 2},
+  "common_flags": ["-DLEO_PRESENCE_COARSE_FP32", "-fno-unroll-loops", "-fno-peel-loops", "-fno-prefetch-loop-arrays", "-fcx-limited-range"],
+  "variants": [
+    {"name": "diff4_staged_tone_ci16", "defines": {"POWER_PROPOSAL": 1, "DIFFERENTIAL_PROPOSAL": 1, "DIFFERENTIAL_LOCAL_RADIUS": 0, "TONE_NUISANCE": 1, "TONE_BLOCKED": 1, "TONE_CI16": 1, "ITERATIVE_FFT": 1, "FAST_FINE_FFT": 1, "FINE_ALL_SYMBOLS": 1, "FINE_FRAMES": 2, "EPOCH_FRAMES": 2, "CONDITIONED_RADIUS": 200, "CANDIDATES": 1}}
+  ],
+  "algorithm_changes": [
+    "Exact integer lag products use NEON on ARM and a scalar int64 fallback elsewhere, including unaligned sample counts and tail elements.",
+    "No narrowed search, reduced temporal support, threshold change, or new public result layout. Numerical parity remains mandatory."
+  ]
+}

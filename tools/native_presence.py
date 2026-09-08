@@ -89,6 +89,13 @@ class Profile(ct.Structure):
     ]
 
 
+class Nuisance(ct.Structure):
+    _fields_ = [("enabled", ct.c_int32), ("applied", ct.c_int32)] + [
+        (name, ct.c_double)
+        for name in ("frequency_hz", "spectral_fraction", "fitted_power_fraction", "cpu_ms")
+    ]
+
+
 def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -221,6 +228,9 @@ class NativePresence:
         self.library.leo_presence_destroy.argtypes = [ct.c_void_p]
         self.library.leo_presence_destroy.restype = None
         self.library.leo_presence_get_profile.argtypes = [ct.c_void_p, ct.POINTER(Profile)]
+        self._has_nuisance = hasattr(self.library, "leo_presence_get_nuisance")
+        if self._has_nuisance:
+            self.library.leo_presence_get_nuisance.argtypes = [ct.c_void_p, ct.POINTER(Nuisance)]
         self.library.leo_presence_run.argtypes = [
             ct.c_void_p,
             ct.c_void_p,
@@ -280,6 +290,14 @@ class NativePresence:
         if self.library.leo_presence_get_profile(self.workspace, ct.byref(result)):
             raise ValueError("native workspace is closed")
         return {name: getattr(result, name) for name, _ in Profile._fields_}
+
+    def nuisance(self):
+        if not self._has_nuisance:
+            raise ValueError("native library does not expose nuisance evidence")
+        result = Nuisance()
+        if self.library.leo_presence_get_nuisance(self.workspace, ct.byref(result)):
+            raise ValueError("native workspace is closed")
+        return {name: getattr(result, name) for name, _ in Nuisance._fields_}
 
     def coarse(self, values):
         samples = array(values)

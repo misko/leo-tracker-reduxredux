@@ -1,0 +1,16 @@
+{
+  "schema": "org.leo.research.arm-presence-tone-nuisance/v1",
+  "scope": "Desktop-only bounded stationary-tone fitting before a separately named detector; preserve raw IQ and raw scores",
+  "receiver": 1,
+  "detector_protocol": "config/analysis/arm-presence-native-differential-staged-v1.json",
+  "three_bin_spectral_fraction_min": 0.02,
+  "fit_power_fraction_min": 0.01,
+  "refinement_lags": [256, 4096, 16384],
+  "noise_seed": 936137,
+  "control_frequencies_hz": [-377123, -173123, 73123, 277123],
+  "control_amplitudes": [0.3, 1, 3, 10],
+  "mixed_rf_frequency_hz": 173123,
+  "mixed_rf_tone_to_original_power_ratio": 1,
+  "interpretation": "Empirical development controls, not specificity proof. The fit can remove part of a real signal. Compare pure controls, unmodified RF, and RF plus a tone; retain failed and changed results.",
+  "frozen_before_results": true
+}

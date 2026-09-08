@@ -5,6 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef LEO_PRESENCE_ITERATIVE_FFT
+#define LEO_PRESENCE_ITERATIVE_FFT 0
+#endif
+#if LEO_PRESENCE_ITERATIVE_FFT != 0 && LEO_PRESENCE_ITERATIVE_FFT != 1
+#error "LEO_PRESENCE_ITERATIVE_FFT must be 0 or 1"
+#endif
+
 int leo_fft_init(leo_fft *fft, size_t size)
 {
     size_t rest = size;
@@ -71,7 +78,46 @@ static void transform(const leo_fft *fft, const double complex *input,
     memcpy(output, scratch, n * sizeof(*output));
 }
 
+#if LEO_PRESENCE_ITERATIVE_FFT
+static void transform_radix2(leo_fft *fft, const double complex *input)
+{
+    const size_t n = fft->size;
+    double complex *output = fft->output;
+    /* The same FP64 butterflies and root table as the recursive path, but
+     * without per-level copies and per-leaf function calls. The permutation
+     * is bounded by n; no plan allocation or trigonometry occurs here. */
+    for (size_t i = 0, reversed = 0; i < n; ++i) {
+        if (input != output) output[reversed] = input[i];
+        else if (i < reversed) {
+            double complex value = output[i];
+            output[i] = output[reversed];
+            output[reversed] = value;
+        }
+        size_t bit = n >> 1;
+        while (bit && (reversed & bit)) { reversed ^= bit; bit >>= 1; }
+        reversed ^= bit;
+    }
+    for (size_t width = 2, stride = n >> 1; width <= n; width <<= 1, stride >>= 1) {
+        size_t half = width >> 1;
+        for (size_t base = 0; base < n; base += width) {
+            for (size_t k = 0; k < half; ++k) {
+                double complex even = output[base+k];
+                double complex odd = output[base+half+k] * fft->roots[k*stride];
+                output[base+k] = even+odd;
+                output[base+half+k] = even-odd;
+            }
+        }
+    }
+}
+#endif
+
 void leo_fft_forward(leo_fft *fft, const double complex *input)
 {
+#if LEO_PRESENCE_ITERATIVE_FFT
+    if ((fft->size & (fft->size-1)) == 0) {
+        transform_radix2(fft, input);
+        return;
+    }
+#endif
     transform(fft, input, 1, fft->size, fft->output, fft->scratch);
 }

@@ -1,0 +1,14 @@
+{
+  "schema": "org.leo.research.arm-presence-differential-proposal/v1",
+  "scope": "Development-only upsampled lag-product proposal; no capture policy change",
+  "receiver": 1,
+  "lags_samples": [0, 1, 2, 4, 8],
+  "phase_bins": [8192],
+  "retained_peaks": 8,
+  "minimum_separation_samples": 5,
+  "reference_margin": 0.025,
+  "timing_match_samples": 2,
+  "development_basis": "The earlier full-resolution lag-four proposal recovered 12/12 wider 5MS/s reference timings within its first two peaks, but projecting to 4096 bins lost two. Test 8192 bins before native porting.",
+  "limitations": "Development inputs only. No threshold or CFO correction fitted to reference outcomes. No streaming or detector-specificity claim.",
+  "frozen_before_results": true
+}

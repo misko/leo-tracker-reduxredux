@@ -1,0 +1,22 @@
+{
+  "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+  "baseline_commit": "9a3dd178",
+  "frozen_before_native_variant_results": true,
+  "development_basis": "NumPy exploration on existing development data found that lag-four correlation plus half-weight signed power recovered every reference timing as a top proposal. This is tuning on development data, not held-out validation.",
+  "scope": "Eight differential timing neighborhoods locally ranked using native-rate lag-product and power evidence, then one or two all-symbol blind CFO acquisitions and full-window fractional confirmations",
+  "receiver": 1,
+  "cpu_target_ms": 100,
+  "reference_association": {"maximum_cfo_difference_hz": 8000, "maximum_circular_epoch_difference_us": 2},
+  "common_flags": ["-DLEO_PRESENCE_COARSE_FP32", "-fno-unroll-loops", "-fno-peel-loops", "-fno-prefetch-loop-arrays", "-fcx-limited-range"],
+  "variants": [
+    {"name": "diff4_powerhalf_one", "defines": {"POWER_PROPOSAL": 1, "DIFFERENTIAL_PROPOSAL": 1, "FAST_FINE_FFT": 1, "FINE_ALL_SYMBOLS": 1, "FINE_FRAMES": 2, "EPOCH_FRAMES": 2, "CONDITIONED_RADIUS": 200, "CANDIDATES": 1}},
+    {"name": "diff4_powerhalf_two", "defines": {"POWER_PROPOSAL": 1, "DIFFERENTIAL_PROPOSAL": 1, "FAST_FINE_FFT": 1, "FINE_ALL_SYMBOLS": 1, "FINE_FRAMES": 2, "EPOCH_FRAMES": 2, "CONDITIONED_RADIUS": 200}},
+    {"name": "diff4_only_one", "defines": {"POWER_PROPOSAL": 1, "DIFFERENTIAL_PROPOSAL": 1, "DIFFERENTIAL_POWER_MILLI": 0, "FAST_FINE_FFT": 1, "FINE_ALL_SYMBOLS": 1, "FINE_FRAMES": 2, "EPOCH_FRAMES": 2, "CONDITIONED_RADIUS": 200, "CANDIDATES": 1}}
+  ],
+  "algorithm_changes": [
+    "The proposal FFT uses 4096/8192 bins at 2.5/5MS/s, never downsamples the native phase lattice, and only proposes eight neighborhoods. Native-rate complex correlation magnitude plus half-weight signed power correlation ranks their local cells.",
+    "CFO phase from a single differential lag is not trusted or used to narrow the search; development showed large errors on weak signals.",
+    "All-symbol fine acquisition avoids the additional alias introduced by an alternating-symbol mask. An equivalent FFT-output permutation removes per-input frequency rotations.",
+    "No tone threshold or decision gate is changed. Fractional confirmation still uses original IQ over the full available 20ms."
+  ]
+}

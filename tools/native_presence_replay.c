@@ -21,9 +21,10 @@ static int read_u32(FILE *f, uint32_t *out)
 
 int main(int argc, char **argv)
 {
-    int profile=argc==4 && !strcmp(argv[3],"--profile");
+    int nuisance=argc==4 && !strcmp(argv[3],"--nuisance");
+    int profile=nuisance || (argc==4 && !strcmp(argv[3],"--profile"));
     if (argc!=3 && !profile) {
-        fprintf(stderr,"usage: native-presence-replay PROBE ITERATIONS [--profile]\n"); return 2;
+        fprintf(stderr,"usage: native-presence-replay PROBE ITERATIONS [--profile|--nuisance]\n"); return 2;
     }
     char *end; errno=0; long repeats=strtol(argv[2],&end,10);
     if (errno || *end || repeats<1 || repeats>20) return 2;
@@ -67,7 +68,8 @@ int main(int argc, char **argv)
             "\"device_counter\":\"%" PRIu64 "\",\"iteration\":%d,\"format\":%u,"
             "\"conversion_cpu_ms\":%.9g,\"coarse_cpu_ms\":%.9g,\"fine_cpu_ms\":%.9g,"
             "\"fractional_cpu_ms\":%.9g,\"total_cpu_ms\":%.9g,\"total_wall_ms\":%.9g,"
-            "\"candidates\":[",profile ? "native-presence-replay-profile-v1" : "native-presence-replay-v1",
+            "\"candidates\":[",nuisance ? "native-presence-nuisance-replay-v1" :
+                (profile ? "native-presence-replay-profile-v1" : "native-presence-replay-v1"),
             rate,edge,((uint64_t)hi<<32)|lo,repeat,format,
             result.conversion_cpu_ms,result.coarse_cpu_ms,result.fine_cpu_ms,
             result.fractional_cpu_ms,result.total_cpu_ms,result.total_wall_ms);
@@ -94,6 +96,13 @@ int main(int argc, char **argv)
                 p.epoch_lattice_cpu_ms,p.final_confirmation_cpu_ms,p.local_coarse_cpu_ms,
                 p.coarse_frames,p.fine_frames,p.epoch_frames,p.anchor_stride,p.epoch_stride,
                 p.conditioned_radius_hz);
+        }
+        if (nuisance) {
+            leo_presence_nuisance n;
+            if (leo_presence_get_nuisance(workspace,&n)) goto done;
+            printf(",\"nuisance\":{\"enabled\":%d,\"applied\":%d,\"frequency_hz\":%.17g,"
+                "\"spectral_fraction\":%.17g,\"fitted_power_fraction\":%.17g,\"cpu_ms\":%.9g}",
+                n.enabled,n.applied,n.frequency_hz,n.spectral_fraction,n.fitted_power_fraction,n.cpu_ms);
         }
         puts("}");
         fflush(stdout);

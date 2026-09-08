@@ -45,6 +45,14 @@ def evaluate(inputs_directory: Path, output: Path, protocol_path: Path | None = 
         },
     )
     all_results = []
+    details = protocol.get("replay_details", "profile")
+    if details not in ("profile", "nuisance"):
+        raise ValueError("unknown replay details")
+    schema = (
+        "native-presence-nuisance-replay-v1"
+        if details == "nuisance"
+        else "native-presence-replay-profile-v1"
+    )
     for variant in protocol["variants"]:
         flags = tuple(protocol["common_flags"]) + tuple(
             f"-DLEO_PRESENCE_{name}={value}" for name, value in variant["defines"].items()
@@ -55,7 +63,7 @@ def evaluate(inputs_directory: Path, output: Path, protocol_path: Path | None = 
             if path.name != probe["file"] or digest(path) != probe["sha256"]:
                 raise ValueError("probe path/digest mismatch")
             process = subprocess.run(
-                [str(binary), str(path), "1", "--profile"],
+                [str(binary), str(path), "1", "--" + details],
                 capture_output=True,
                 text=True,
                 check=True,
@@ -63,7 +71,7 @@ def evaluate(inputs_directory: Path, output: Path, protocol_path: Path | None = 
             )
             row = json.loads(process.stdout)
             if (
-                row["schema"] != "native-presence-replay-profile-v1"
+                row["schema"] != schema
                 or row["device_counter"] != probe["device_counter"]
                 or row["rate_hz"] != probe["rate_hz"]
                 or row["edge"] != int(probe["edge"] == "upper")

@@ -1,0 +1,74 @@
+{
+  "policy": {
+    "schema": "org.leo.research.arm-presence-tone-nuisance/v1",
+    "scope": "Desktop-only bounded stationary-tone fitting before a separately named detector; preserve raw IQ and raw scores",
+    "receiver": 1,
+    "detector_protocol": "config/analysis/arm-presence-native-differential-staged-v1.json",
+    "three_bin_spectral_fraction_min": 0.02,
+    "fit_power_fraction_min": 0.01,
+    "refinement_lags": [
+      256,
+      4096,
+      16384
+    ],
+    "noise_seed": 936137,
+    "control_frequencies_hz": [
+      -377123,
+      -173123,
+      73123,
+      277123
+    ],
+    "control_amplitudes": [
+      0.3,
+      1,
+      3,
+      10
+    ],
+    "mixed_rf_frequency_hz": 173123,
+    "mixed_rf_tone_to_original_power_ratio": 1,
+    "interpretation": "Empirical development controls, not specificity proof. The fit can remove part of a real signal. Compare pure controls, unmodified RF, and RF plus a tone; retain failed and changed results.",
+    "frozen_before_results": true
+  },
+  "detector": {
+    "schema": "org.leo.research.arm-presence-budget-experiment/v1",
+    "baseline_commit": "9a3dd178",
+    "frozen_before_native_variant_results": true,
+    "development_basis": "The full local-refinement differential proposal detects all wider reference-positive probes, with one CFO mismatch. Native local correlation dominates proposal cost. Test ranking centers first and refining only the retained neighborhood.",
+    "scope": "Staged native differential proposals with unchanged original-IQ fractional confirmation",
+    "receiver": 1,
+    "cpu_target_ms": 100,
+    "reference_association": {
+      "maximum_cfo_difference_hz": 8000,
+      "maximum_circular_epoch_difference_us": 2
+    },
+    "common_flags": [
+      "-DLEO_PRESENCE_COARSE_FP32",
+      "-fno-unroll-loops",
+      "-fno-peel-loops",
+      "-fno-prefetch-loop-arrays",
+      "-fcx-limited-range"
+    ],
+    "variants": [
+      {
+        "name": "diff4_powerhalf_staged",
+        "defines": {
+          "POWER_PROPOSAL": 1,
+          "DIFFERENTIAL_PROPOSAL": 1,
+          "DIFFERENTIAL_LOCAL_RADIUS": 0,
+          "FAST_FINE_FFT": 1,
+          "FINE_ALL_SYMBOLS": 1,
+          "FINE_FRAMES": 2,
+          "EPOCH_FRAMES": 2,
+          "CONDITIONED_RADIUS": 200,
+          "CANDIDATES": 1
+        }
+      }
+    ],
+    "algorithm_changes": [
+      "Rank the eight native-rate proposal-center scores, then evaluate the two neighboring native cells only for the retained proposal. This may change candidate ranking and must be separately quality-tested."
+    ]
+  },
+  "inputs_sha256": "a5be1172e537d1d7e7d10df2f00f8e9749cabb4d8e8bb2f396fcd70e4d12eb99",
+  "source_sha256": "b82ae430141820fd18b1fa736147829c4c4f6ae2c4850158007af7dd387c58c3",
+  "nuisance_source_sha256": "be8460930d18f4b686dfad2c4eee757452c37c2269e8916c6589e47fa63ce421"
+}
