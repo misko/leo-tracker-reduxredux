@@ -75,6 +75,9 @@ static int valid_frame(const leo_glrt_frame_v1 *f)
     return 1;
 }
 
+int leo_glrt_record_validate(const leo_glrt_classification_v1 *record)
+{ return record && valid_record(record) ? 0 : -1; }
+
 int leo_glrt_frame_encode(const leo_glrt_frame_v1 *f, void *output, size_t capacity, size_t *written)
 {
     if (!output || !written || !valid_frame(f)) return -1;

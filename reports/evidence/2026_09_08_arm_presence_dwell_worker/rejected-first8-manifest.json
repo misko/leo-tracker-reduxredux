@@ -1,0 +1,1359 @@
+{
+  "schema": "org.leo.research.presence-dwell-worker-pack/v1",
+  "rate_hz": 5000000,
+  "pack_sha256": "10f7c336a6377ceb77f9b598f03ff827f86fa3d0ddee4736e2043fdf6d8f9aed",
+  "templates_sha256": "2e71705eef035a2f6f259bf2b4bb1d5abbe42adb67673fc7730c0356f2ff1971",
+  "reference_build": {
+    "schema": "org.leo.research.native-presence-build/v1",
+    "created_unix_ns": 1788864361095144073,
+    "command": [
+      "/usr/bin/cc",
+      "-std=c11",
+      "-O3",
+      "-fno-math-errno",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-shared",
+      "-fPIC",
+      "-DLEO_PRESENCE_COARSE_FP32",
+      "-fno-unroll-loops",
+      "-fno-peel-loops",
+      "-fno-prefetch-loop-arrays",
+      "-fcx-limited-range",
+      "-DLEO_PRESENCE_POWER_PROPOSAL=1",
+      "-DLEO_PRESENCE_DIFFERENTIAL_PROPOSAL=1",
+      "-DLEO_PRESENCE_DIFFERENTIAL_LOCAL_RADIUS=0",
+      "-DLEO_PRESENCE_TONE_NUISANCE=1",
+      "-DLEO_PRESENCE_TONE_BLOCKED=1",
+      "-DLEO_PRESENCE_TONE_CI16=1",
+      "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+      "-DLEO_PRESENCE_FAST_FINE_FFT=1",
+      "-DLEO_PRESENCE_FINE_ALL_SYMBOLS=1",
+      "-DLEO_PRESENCE_FINE_FRAMES=2",
+      "-DLEO_PRESENCE_EPOCH_FRAMES=2",
+      "-DLEO_PRESENCE_CONDITIONED_RADIUS=200",
+      "-DLEO_PRESENCE_CANDIDATES=1",
+      "-DLEO_PRESENCE_DIFFERENTIAL_CI16=1",
+      "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",
+      "-DLEO_PRESENCE_FFTW=1",
+      "-I/tmp/leo-presence-fftw.nLw4v6/install/include",
+      "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/analysis/native_presence/presence.c",
+      "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/analysis/native_presence/fft.c",
+      "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/analysis/native_presence/window_rank.c",
+      "/home/mouse9911/gits/leo-tracker-arm-presence/src/leo/analysis/native_presence/dwell.c",
+      "-L/tmp/leo-presence-fftw.nLw4v6/install/lib",
+      "-Wl,-rpath,/tmp/leo-presence-fftw.nLw4v6/install/lib",
+      "-lfftw3",
+      "-lm",
+      "-o",
+      "/tmp/leo-dwell-worker-20260908-vg66yo9u/reference.so"
+    ],
+    "compiler_version": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "compiler_sha256": "b5f1b773a7c733738352000c92a077dc5852a1a2fc6d836b1e411be1e9ec5f88",
+    "sources_sha256": {
+      "src/leo/analysis/native_presence/budget.h": "2f3282603071913b78dc81986073347dae1400094bbf35b71f45dc4992146f67",
+      "src/leo/analysis/native_presence/ci16_fold.h": "afdd9a1476b04bf06a529438a504f28640daff486196f1b1a6b185c59478a288",
+      "src/leo/analysis/native_presence/ci16_lag.h": "9dc6642506fd9e68c2e7643b2aa2733638c542b0b17d7280fde131c8bae6a39c",
+      "src/leo/analysis/native_presence/coarse_differential.h": "48c8af1254d70e341bad9fd3516fdb81abeabe70ee429a1f034b7a6e914804a5",
+      "src/leo/analysis/native_presence/coarse_fp32.h": "e8b1885ad78cc0be34cf59b1ee6741df6bb92dc87a15458f82e162cc572132b1",
+      "src/leo/analysis/native_presence/coarse_power.h": "0cc2ad32e55d07783bddf71ea69654fba785d6d92d9493c92cb77126ad4f29cd",
+      "src/leo/analysis/native_presence/dwell.c": "ec6f289b80e8d58bd88d0b31f61b8ed88617f181cd599da62b374fd62c6bea59",
+      "src/leo/analysis/native_presence/dwell.h": "8781e41b8260ce8b296383bc148031be888da99282cd110585c81e43c4043564",
+      "src/leo/analysis/native_presence/fft.c": "b97e118b792219fb329cea311431bf920d83d2014baf8c52b7f594faf592bbb5",
+      "src/leo/analysis/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+      "src/leo/analysis/native_presence/presence.c": "5a6334962c8f223067f1c7f5edcfb030d7749e0d4e9eab0df0389336e7053ce0",
+      "src/leo/analysis/native_presence/presence.h": "e16db06055b8b0c36cd76dc87c5b35e74d26cc7823699e09d6d6755d6e6b3b8b",
+      "src/leo/analysis/native_presence/tone_nuisance.h": "dabdd40e0387addbae0419a863712ba4fd01b2a72abb89607e0431ff2ea88c8a",
+      "src/leo/analysis/native_presence/window_rank.c": "39fbc06b4973d240ac6c9668b2911eb68f579861bcbe3640aaa7ef58b1d7e866",
+      "src/leo/analysis/native_presence/window_rank.h": "43488ef74db2476a93cd0be5dfd9ab407be9d512057662f2033723c72bb4e159",
+      "src/leo/analysis/starlink/_native_acquisition_grid.inc": "1b67c6dcf6e1310816f202e07356b4334a6dcd64d764462329a60d617139917a",
+      "tools/native_presence.py": "90d11a88aeb6ac118e3dc69f1a3cfcea3b3e3d3cec8d7db2c96cedf603c7ffb2"
+    },
+    "dependencies_sha256": {
+      "/tmp/leo-presence-fftw.nLw4v6/install/include/fftw3.h": "0dd1b988b681d5797aaf10c2c57c107f7dca510695e4b94b3855eb52550d282c",
+      "/tmp/leo-presence-fftw.nLw4v6/install/lib/libfftw3.so.3.6.10": "e36c51736889b6e3830d607fceb1cd0b746b9b03f33b5f57bee063e0f4637703"
+    },
+    "binary_sha256": "2b0344ecc84dbbc5b5927eeb3cc38e2a45debae6f2e69687d48267ab73e7a80e"
+  },
+  "reference_build_sha256": "180b60f7cd17652d177bd7c2e2e0593e3e3beb0822ca55c46a7cfb1434950f02",
+  "source_inputs_sha256": "572f502a0209c0171bcd7527b7f205f29f6669cecda4bca261c353adb184e3cd",
+  "source_results_sha256": "0e473850bc02da46a5d1ee6c92de2d6dd1d9d42b2f31b5ea124b7ad54a063c02",
+  "records": [
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 160,
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "counter": "1180332178859",
+      "rx": 1,
+      "channel": 1,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-160-0.probe",
+        "scan-hop-43cc401e05cbe425-160-20.probe",
+        "scan-hop-43cc401e05cbe425-160-40.probe",
+        "scan-hop-43cc401e05cbe425-160-60.probe",
+        "scan-hop-43cc401e05cbe425-160-80.probe",
+        "scan-hop-43cc401e05cbe425-160-100.probe"
+      ],
+      "source_sha256": [
+        "69c9a1403c53d667d7d16ada063b9b7af6f36a99a6cefd63952156bc09153e5d",
+        "e373257da3fe96e9342256d6df02f8b7825fe752792893017a4a729edbee4e14",
+        "15e8c2f86e6b661675c09547c38f242442fb99ac865a99e588205679f3bdc581",
+        "b7cf2c20c6a4fc5df9e936dca57902752d70ca00c60cf0f1903da21e565a15ca",
+        "7499e561c1faab6b3b2b86338a97695f776175ba263ea444d289056826bb46c6",
+        "754f671332a3d304bbf04e160cecd7bb7be7b864889c61afbdbf2218d7da6f25"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 834,
+            "fractional_complete": 1,
+            "fractional_offset_samples": 0.6772381851863409,
+            "acquired_cfo_hz": 28806.874720565273,
+            "tracking_cfo_hz": 26587.414493292545,
+            "exact_score": 0.04943142819777876,
+            "control_score": 0.03297303409705401,
+            "margin": 0.01645839410072475
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.0018099673859987865,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.11263822568480608,
+            0.11554366994569694,
+            0.11949917196439286,
+            0.11506884366627478,
+            0.1209709854026824,
+            0.11576111014828472
+          ],
+          "order": [
+            4,
+            2,
+            5,
+            1,
+            3,
+            0
+          ],
+          "projected_epoch_samples": [
+            2461,
+            1393,
+            1341,
+            2123,
+            5469,
+            547
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 0,
+          "scores": [
+            [
+              0.11263822568480608,
+              0.11554366994569694,
+              0.11949917196439286,
+              0.11506884366627478,
+              0.1209709854026824,
+              0.11576111014828472
+            ],
+            [
+              0.1172272487212744,
+              0.11162182733492296,
+              0.10523712765742652,
+              0.11658279971439654,
+              0.11316339963330142,
+              0.1102433978055796
+            ]
+          ],
+          "contrast": [
+            1.0123165157891478,
+            1.0055278223585007
+          ],
+          "order": [
+            [
+              4,
+              2,
+              5,
+              1,
+              3,
+              0
+            ],
+            [
+              0,
+              3,
+              4,
+              1,
+              5,
+              2
+            ]
+          ],
+          "epochs": [
+            [
+              2461,
+              1393,
+              1341,
+              2123,
+              5469,
+              547
+            ],
+            [
+              2044,
+              365,
+              3698,
+              195,
+              6133,
+              1537
+            ]
+          ]
+        },
+        "confirmation_window_mask": 16
+      }
+    },
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 161,
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "counter": "1180332803130",
+      "rx": 1,
+      "channel": 2,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-161-0.probe",
+        "scan-hop-43cc401e05cbe425-161-20.probe",
+        "scan-hop-43cc401e05cbe425-161-40.probe",
+        "scan-hop-43cc401e05cbe425-161-60.probe",
+        "scan-hop-43cc401e05cbe425-161-80.probe",
+        "scan-hop-43cc401e05cbe425-161-100.probe"
+      ],
+      "source_sha256": [
+        "5c1f4561a37544bb9db411d16c7a560a58797d8ff9aeaffbe6870a2c8509b9c4",
+        "2462d850df233c1bd2da458fd62afea97fe6456f5c9789ece03453bf89467a60",
+        "0ed3c79a5c5a5c9daa75fa481bb37aef26db7f197b572ef422950ebad77cdbdc",
+        "83843c548e6b69ae9ac01bb28814c374ad24b8f85a5c30296ffa1cc2b87d53b0",
+        "dba5f90ff4bfa4dc2ea82b37e9a8c0d8736b6a84e7b5884bb5843773feb74fe9",
+        "88f2bd4be8c255841b906b28d58881763a9620ea0e0f1afd9b43ffd295cba2db"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 497,
+            "fractional_complete": 0,
+            "fractional_offset_samples": 0.0,
+            "acquired_cfo_hz": 136053.8067137723,
+            "tracking_cfo_hz": 0.0,
+            "exact_score": 0.0,
+            "control_score": 0.0,
+            "margin": 0.0
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.0014322452555502584,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.12418638919377091,
+            0.13263481791610507,
+            0.10644763765960275,
+            0.09910177722622333,
+            0.09349993431376678,
+            0.11413431849348657
+          ],
+          "order": [
+            1,
+            0,
+            5,
+            2,
+            3,
+            4
+          ],
+          "projected_epoch_samples": [
+            3073,
+            3034,
+            1419,
+            1029,
+            5495,
+            3242
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 0,
+          "scores": [
+            [
+              0.12418638919377091,
+              0.13263481791610507,
+              0.10644763765960275,
+              0.09910177722622333,
+              0.09349993431376678,
+              0.11413431849348657
+            ],
+            [
+              0.10507072286770097,
+              0.11228225867614343,
+              0.11037438746128678,
+              0.10502831146616042,
+              0.10405001148519946,
+              0.1078096295911901
+            ]
+          ],
+          "contrast": [
+            1.0680302308262775,
+            1.0172854523475914
+          ],
+          "order": [
+            [
+              1,
+              0,
+              5,
+              2,
+              3,
+              4
+            ],
+            [
+              1,
+              2,
+              5,
+              0,
+              3,
+              4
+            ]
+          ],
+          "epochs": [
+            [
+              3073,
+              3034,
+              1419,
+              1029,
+              5495,
+              3242
+            ],
+            [
+              2305,
+              3451,
+              677,
+              4649,
+              4844,
+              2461
+            ]
+          ]
+        },
+        "confirmation_window_mask": 2
+      }
+    },
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 162,
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "counter": "1180333434137",
+      "rx": 1,
+      "channel": 3,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-162-0.probe",
+        "scan-hop-43cc401e05cbe425-162-20.probe",
+        "scan-hop-43cc401e05cbe425-162-40.probe",
+        "scan-hop-43cc401e05cbe425-162-60.probe",
+        "scan-hop-43cc401e05cbe425-162-80.probe",
+        "scan-hop-43cc401e05cbe425-162-100.probe"
+      ],
+      "source_sha256": [
+        "d3d83317242aa97f9710a6bbeced139f703613c9367ee452e679f1bd77d502e1",
+        "58082d23375370848ddad353070cd3cac30d474313373f9abda6b48f15447177",
+        "954555aa1ffe81be5b98a60e83510c126033745b9b257758fe9f53cc8e36a367",
+        "54d08e8dcbade288b2322adf4f31a3799ba8b8b8d59d3451005f862cf8258c0f",
+        "15a194f30dcf0d76d5d9bdb34c2fc40520cccedb981b8f9eeb7510101defa591",
+        "ecc01760582127362b263165489e7fe42a2b39941ed00d0d1a059f95220e90e5"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 2684,
+            "fractional_complete": 1,
+            "fractional_offset_samples": -0.07839853939426983,
+            "acquired_cfo_hz": -327718.7438708983,
+            "tracking_cfo_hz": -263354.3972799892,
+            "exact_score": 0.03337059238664084,
+            "control_score": 0.03500424741630288,
+            "margin": -0.0016336550296620414
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.0013963349293174292,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.11338240335923347,
+            0.09650531153166025,
+            0.10972853058967236,
+            0.14062506179295128,
+            0.10992918869676548,
+            0.1037462024182907
+          ],
+          "order": [
+            3,
+            0,
+            4,
+            2,
+            5,
+            1
+          ],
+          "projected_epoch_samples": [
+            2513,
+            2136,
+            1706,
+            143,
+            4584,
+            833
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 1,
+          "scores": [
+            [
+              0.12648288382831177,
+              0.10479241889907508,
+              0.13084905853534415,
+              0.1182092011625753,
+              0.10484384338554273,
+              0.11119806491265524
+            ],
+            [
+              0.11338240335923347,
+              0.09650531153166025,
+              0.10972853058967236,
+              0.14062506179295128,
+              0.10992918869676548,
+              0.1037462024182907
+            ]
+          ],
+          "contrast": [
+            1.0345198858128428,
+            1.2402723670215734
+          ],
+          "order": [
+            [
+              2,
+              0,
+              3,
+              5,
+              4,
+              1
+            ],
+            [
+              3,
+              0,
+              4,
+              2,
+              5,
+              1
+            ]
+          ],
+          "epochs": [
+            [
+              1458,
+              3880,
+              4792,
+              1589,
+              2057,
+              6641
+            ],
+            [
+              2513,
+              2136,
+              1706,
+              143,
+              4584,
+              833
+            ]
+          ]
+        },
+        "confirmation_window_mask": 8
+      }
+    },
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 163,
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "counter": "1180334065956",
+      "rx": 1,
+      "channel": 4,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-163-0.probe",
+        "scan-hop-43cc401e05cbe425-163-20.probe",
+        "scan-hop-43cc401e05cbe425-163-40.probe",
+        "scan-hop-43cc401e05cbe425-163-60.probe",
+        "scan-hop-43cc401e05cbe425-163-80.probe",
+        "scan-hop-43cc401e05cbe425-163-100.probe"
+      ],
+      "source_sha256": [
+        "75b487b5027ea3f6263d67d12edaaec7315c7465d10eeb3d39a38c8155d02268",
+        "f4dcd17669883c3a4d96ae8e5347274772b5b3820aabd5c49bac148698a26055",
+        "b2bc5ab0b25faff9f0d3be8c1a480ec14ab32383f90ae16562fbd27e469ecf06",
+        "070adeb593d446c93f4e15f8e5614325f591934019306790a4dad9ace0ce114d",
+        "91ef005cb113d7d0d81a471b3aa6601efd7701348ac45ae5667f74089b91090f",
+        "a974154c275db2f87e37e5eaa352688d38cc823a71c299dbd0cd48c78ba70f53"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 2646,
+            "fractional_complete": 1,
+            "fractional_offset_samples": 0.3307143087985165,
+            "acquired_cfo_hz": 393039.22682682524,
+            "tracking_cfo_hz": 437428.43137227977,
+            "exact_score": 0.03461282317502699,
+            "control_score": 0.04108900780696011,
+            "margin": -0.00647618463193312
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.001335422566550966,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.11487606471764837,
+            0.10291126702405068,
+            0.12002870000987081,
+            0.10947273437213677,
+            0.1379696278811509,
+            0.11548625000198938
+          ],
+          "order": [
+            4,
+            2,
+            5,
+            0,
+            3,
+            1
+          ],
+          "projected_epoch_samples": [
+            1302,
+            326,
+            6459,
+            482,
+            6094,
+            3099
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 0,
+          "scores": [
+            [
+              0.11487606471764837,
+              0.10291126702405068,
+              0.12002870000987081,
+              0.10947273437213677,
+              0.1379696278811509,
+              0.11548625000198938
+            ],
+            [
+              0.13252412895673601,
+              0.11547422909490596,
+              0.12254724382836077,
+              0.11590884013676062,
+              0.133892231634153,
+              0.12255810440267928
+            ]
+          ],
+          "contrast": [
+            1.1494719835323108,
+            1.0103234232753466
+          ],
+          "order": [
+            [
+              4,
+              2,
+              5,
+              0,
+              3,
+              1
+            ],
+            [
+              4,
+              0,
+              5,
+              2,
+              3,
+              1
+            ]
+          ],
+          "epochs": [
+            [
+              1302,
+              326,
+              6459,
+              482,
+              6094,
+              3099
+            ],
+            [
+              3451,
+              3998,
+              2409,
+              5313,
+              2422,
+              3711
+            ]
+          ]
+        },
+        "confirmation_window_mask": 16
+      }
+    },
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 164,
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "counter": "1180334695500",
+      "rx": 1,
+      "channel": 1,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-164-0.probe",
+        "scan-hop-43cc401e05cbe425-164-20.probe",
+        "scan-hop-43cc401e05cbe425-164-40.probe",
+        "scan-hop-43cc401e05cbe425-164-60.probe",
+        "scan-hop-43cc401e05cbe425-164-80.probe",
+        "scan-hop-43cc401e05cbe425-164-100.probe"
+      ],
+      "source_sha256": [
+        "b1d88b1eb46142dab7ac1feb4a211be63f4bc4a7edc332219f30bbfa5429e25b",
+        "f8db24d342f402f061150b2a2d4eef2888e92b39cc37afb19dbbec48931107c8",
+        "27f544219b5d51ccad5b505f4d3b45ab5d86da3b0d8c1b7810361a9d5dfc18ea",
+        "d1e480b51c9d0c11bb638eb644e95c17b7018c1f390e18c563bd89fe0af5ddaf",
+        "3e65599f3ca4fe26c315c55f06b112f44552c3acd115fe855dce9e53711f969b",
+        "bd20e579e24fff0bbb00dbd4d1e7ca8ebc13bc2dbc6d083c42c47d1080ff330b"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 787,
+            "fractional_complete": 0,
+            "fractional_offset_samples": 0.0,
+            "acquired_cfo_hz": 155087.94947981622,
+            "tracking_cfo_hz": 0.0,
+            "exact_score": 0.0,
+            "control_score": 0.0,
+            "margin": 0.0
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.0012189154519862005,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.11537485535769125,
+            0.09855869344232958,
+            0.11217168333771312,
+            0.10807214346500385,
+            0.11906506901376893,
+            0.15574668594837177
+          ],
+          "order": [
+            5,
+            4,
+            0,
+            2,
+            3,
+            1
+          ],
+          "projected_epoch_samples": [
+            2800,
+            286,
+            951,
+            5547,
+            3828,
+            5274
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 0,
+          "scores": [
+            [
+              0.11537485535769125,
+              0.09855869344232958,
+              0.11217168333771312,
+              0.10807214346500385,
+              0.11906506901376893,
+              0.15574668594837177
+            ],
+            [
+              0.10705951906988126,
+              0.1102476728463375,
+              0.10603633864275794,
+              0.10187319551864545,
+              0.12214527095088888,
+              0.1060640875689966
+            ]
+          ],
+          "contrast": [
+            1.308080423909727,
+            1.1079169999455152
+          ],
+          "order": [
+            [
+              5,
+              4,
+              0,
+              2,
+              3,
+              1
+            ],
+            [
+              4,
+              1,
+              0,
+              5,
+              2,
+              3
+            ]
+          ],
+          "epochs": [
+            [
+              2800,
+              286,
+              951,
+              5547,
+              3828,
+              5274
+            ],
+            [
+              2552,
+              3464,
+              1524,
+              6641,
+              2956,
+              6550
+            ]
+          ]
+        },
+        "confirmation_window_mask": 32
+      }
+    },
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 165,
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "counter": "1180335318845",
+      "rx": 1,
+      "channel": 2,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-165-0.probe",
+        "scan-hop-43cc401e05cbe425-165-20.probe",
+        "scan-hop-43cc401e05cbe425-165-40.probe",
+        "scan-hop-43cc401e05cbe425-165-60.probe",
+        "scan-hop-43cc401e05cbe425-165-80.probe",
+        "scan-hop-43cc401e05cbe425-165-100.probe"
+      ],
+      "source_sha256": [
+        "815adaf5776515b005b7b4fc54351d247184a1768c319c4f8c8d7356e7c876cd",
+        "c1b6d5336c5fc91088d92949410d7d52184060b23c6e5978100f6df3aa1ba2fe",
+        "d3bcad2d986a28abfa78358fbfbe0c2e1e4e919df70ac8a3fe4ff741f59c3eb4",
+        "9d2e537271ec1993c7425920e147c26dd16a1f8753f710815d605994410b33cb",
+        "2e601c71fba51c6520a7f7b2c086f323de0f948a13ec4cc540dab67ee70a3315",
+        "6557e598045bb3bdd88e42b3bfc35d36d6391ca1be80267f2e4eba1c6c39adb5"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 1885,
+            "fractional_complete": 1,
+            "fractional_offset_samples": -0.3098484502873907,
+            "acquired_cfo_hz": 240490.62852787055,
+            "tracking_cfo_hz": 295089.35011877964,
+            "exact_score": 0.03421519285994325,
+            "control_score": 0.03532465768635659,
+            "margin": -0.001109464826413345
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.0014659445605361052,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.10251506794413169,
+            0.10290821989421355,
+            0.11037212550705196,
+            0.1073701732539397,
+            0.13074678326586942,
+            0.10817858432798914
+          ],
+          "order": [
+            4,
+            2,
+            5,
+            3,
+            1,
+            0
+          ],
+          "projected_epoch_samples": [
+            430,
+            5352,
+            2617,
+            4323,
+            5287,
+            391
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 0,
+          "scores": [
+            [
+              0.10251506794413169,
+              0.10290821989421355,
+              0.11037212550705196,
+              0.1073701732539397,
+              0.13074678326586942,
+              0.10817858432798914
+            ],
+            [
+              0.132791432216077,
+              0.1201130587776787,
+              0.10728773982092532,
+              0.0983672409354981,
+              0.11318828040716719,
+              0.11414835393917089
+            ]
+          ],
+          "contrast": [
+            1.1845996683058864,
+            1.1055536639181351
+          ],
+          "order": [
+            [
+              4,
+              2,
+              5,
+              3,
+              1,
+              0
+            ],
+            [
+              0,
+              1,
+              5,
+              4,
+              2,
+              3
+            ]
+          ],
+          "epochs": [
+            [
+              430,
+              5352,
+              2617,
+              4323,
+              5287,
+              391
+            ],
+            [
+              781,
+              4388,
+              2500,
+              4662,
+              6120,
+              6107
+            ]
+          ]
+        },
+        "confirmation_window_mask": 16
+      }
+    },
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 166,
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "counter": "1180335943727",
+      "rx": 1,
+      "channel": 3,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-166-0.probe",
+        "scan-hop-43cc401e05cbe425-166-20.probe",
+        "scan-hop-43cc401e05cbe425-166-40.probe",
+        "scan-hop-43cc401e05cbe425-166-60.probe",
+        "scan-hop-43cc401e05cbe425-166-80.probe",
+        "scan-hop-43cc401e05cbe425-166-100.probe"
+      ],
+      "source_sha256": [
+        "88b3dcf9803237cb0f2b955cd69d3e3258ecd6916e50bf4349537a11ccf5e3fc",
+        "f2c88f461371322b34e1dc7b6d19eaca8bc4c4a81fbc3e85921701d47d9609f4",
+        "d4a26817b27b46b7cdfb311e0f616d4a33074747c6abb46ef74ba43f5ce992ee",
+        "7067a62d006f8bcfce15ada6ff186aea1f9cf26e5324a4559713583cfd3d1f18",
+        "802bec5ab9c7a78b6bb29757e550f9d746af41bc0501b301b990787bab6a3387",
+        "71e2cbee549c1f986dbdda593f43f095510aa7aa8a5885b4417d15cf0a772643"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 5565,
+            "fractional_complete": 0,
+            "fractional_offset_samples": 0.0,
+            "acquired_cfo_hz": 252399.49469170102,
+            "tracking_cfo_hz": 0.0,
+            "exact_score": 0.0,
+            "control_score": 0.0,
+            "margin": 0.0
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.0015399359263462786,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.11168998700489408,
+            0.11849391104204464,
+            0.1127005430841192,
+            0.11185608140781543,
+            0.10583341942299061,
+            0.12620169390111685
+          ],
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            0,
+            4
+          ],
+          "projected_epoch_samples": [
+            6172,
+            5313,
+            1198,
+            4440,
+            5117,
+            3268
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 1,
+          "scores": [
+            [
+              0.1097595806008449,
+              0.10892797726048184,
+              0.11682144537708024,
+              0.12333882923611737,
+              0.11583162420317822,
+              0.11487723341448788
+            ],
+            [
+              0.11168998700489408,
+              0.11849391104204464,
+              0.1127005430841192,
+              0.11185608140781543,
+              0.10583341942299061,
+              0.12620169390111685
+            ]
+          ],
+          "contrast": [
+            1.055789276001509,
+            1.0650479234864423
+          ],
+          "order": [
+            [
+              3,
+              2,
+              4,
+              5,
+              0,
+              1
+            ],
+            [
+              5,
+              1,
+              2,
+              3,
+              0,
+              4
+            ]
+          ],
+          "epochs": [
+            [
+              3451,
+              3750,
+              1185,
+              599,
+              1771,
+              5196
+            ],
+            [
+              6172,
+              5313,
+              1198,
+              4440,
+              5117,
+              3268
+            ]
+          ]
+        },
+        "confirmation_window_mask": 32
+      }
+    },
+    {
+      "session": "scan-hop-43cc401e05cbe425",
+      "visit": 167,
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "counter": "1180336574915",
+      "rx": 1,
+      "channel": 4,
+      "source_files": [
+        "scan-hop-43cc401e05cbe425-167-0.probe",
+        "scan-hop-43cc401e05cbe425-167-20.probe",
+        "scan-hop-43cc401e05cbe425-167-40.probe",
+        "scan-hop-43cc401e05cbe425-167-60.probe",
+        "scan-hop-43cc401e05cbe425-167-80.probe",
+        "scan-hop-43cc401e05cbe425-167-100.probe"
+      ],
+      "source_sha256": [
+        "4a11999f194f2fc14d183a785cd4ab5ed0526ec3e7e19a0c4ed0c8cae352ffd4",
+        "c1e12b9ccbbf5114e879b037c7c52cb209fe4d681b88ddbbf4d5f578107196fa",
+        "07097c1cc09b7fad798504f2159395939876c9a88e1fa0bc9a3a0be436b5ce9c",
+        "eb314fd7fea46967a924f0bd9aaf324fe7237514c3a445820f04f5595d6745f1",
+        "9e90efeaf61c9c4815a7e1886048a661429d2443f562048744ac11d3015f4727",
+        "9d10dc48dbfc6cc7962170ed61ce3189df6d97a251c5cc990e06e3626785c09d"
+      ],
+      "reference_positive": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "associated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "native_flagged": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expected": {
+        "candidates": [
+          {
+            "epoch": 4220,
+            "fractional_complete": 1,
+            "fractional_offset_samples": -0.5145677321803717,
+            "acquired_cfo_hz": -112278.47605353867,
+            "tracking_cfo_hz": -42143.5328717205,
+            "exact_score": 0.03674196105161838,
+            "control_score": 0.03591565207877665,
+            "margin": 0.0008263089728417286
+          }
+        ],
+        "nuisance": {
+          "enabled": 1,
+          "applied": 0,
+          "frequency_hz": 0.0,
+          "spectral_fraction": 0.001531608901703425,
+          "fitted_power_fraction": 0.0
+        },
+        "rank": {
+          "scores": [
+            0.1115308110308046,
+            0.10710914773651743,
+            0.10784009303408405,
+            0.1181702594030769,
+            0.12203305778127467,
+            0.11284360855081503
+          ],
+          "order": [
+            4,
+            3,
+            5,
+            0,
+            2,
+            1
+          ],
+          "projected_epoch_samples": [
+            3841,
+            3203,
+            2917,
+            4167,
+            4688,
+            2774
+          ]
+        },
+        "screen_diagnostics": {
+          "available_mask": 3,
+          "selected": 0,
+          "scores": [
+            [
+              0.1115308110308046,
+              0.10710914773651743,
+              0.10784009303408405,
+              0.1181702594030769,
+              0.12203305778127467,
+              0.11284360855081503
+            ],
+            [
+              0.11742114389617475,
+              0.11689050254671876,
+              0.1262368920776594,
+              0.12662416304032037,
+              0.1053132101620872,
+              0.1071649742261413
+            ]
+          ],
+          "contrast": [
+            1.032688414138297,
+            1.0030678112894504
+          ],
+          "order": [
+            [
+              4,
+              3,
+              5,
+              0,
+              2,
+              1
+            ],
+            [
+              3,
+              2,
+              0,
+              1,
+              5,
+              4
+            ]
+          ],
+          "epochs": [
+            [
+              3841,
+              3203,
+              2917,
+              4167,
+              4688,
+              2774
+            ],
+            [
+              6094,
+              2969,
+              729,
+              6276,
+              5899,
+              2526
+            ]
+          ]
+        },
+        "confirmation_window_mask": 16
+      }
+    }
+  ],
+  "available_dwells": 48,
+  "selection": "First at most 8 rate-matched dwells in frozen source order, independent of detector output.",
+  "scope": "Repeated complete RX1 dwells with 32768-sample chunks burst-delivered every 126 ms; not original DMA/metadata timing, live acquisition, or classifier qualification."
+}

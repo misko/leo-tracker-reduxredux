@@ -26,6 +26,18 @@ from tools.native_presence import (
     pointer,
     write_templates,
 )
+from tools.presence_window_rank import RankResult, RankScreens
+
+
+class DwellEvidence(ct.Structure):
+    _fields_ = [
+        ("search_window_mask", ct.c_uint32),
+        ("confirmation_window_mask", ct.c_uint32),
+        ("rank", RankResult),
+        ("screens", RankScreens),
+        ("total_cpu_ms", ct.c_double),
+        ("total_wall_ms", ct.c_double),
+    ]
 
 
 class Request(ct.Structure):
@@ -49,6 +61,7 @@ class Evidence(ct.Structure):
         ("status", ct.c_int32),
         ("evidence", Result),
         ("nuisance", Nuisance),
+        ("dwell", DwellEvidence),
     ]
 
 
@@ -93,7 +106,15 @@ def library(tmp_path_factory):
     )
     lib = ct.CDLL(str(output))
     lib.leo_probe_pool_bytes.restype = ct.c_size_t
+    lib.leo_dwell_pool_bytes.restype = ct.c_size_t
     lib.leo_probe_pool_init.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint32]
+    lib.leo_dwell_pool_init.argtypes = [
+        ct.c_void_p,
+        ct.c_uint64,
+        ct.c_uint64,
+        ct.c_uint32,
+        ct.c_uint32,
+    ]
     lib.leo_probe_pool_stats.argtypes = [ct.c_void_p, ct.POINTER(Stats)]
     lib.leo_probe_begin.argtypes = [ct.POINTER(Collector), ct.c_void_p, ct.POINTER(Request)]
     lib.leo_probe_feed.argtypes = [
@@ -117,13 +138,18 @@ def library(tmp_path_factory):
 
 
 class Pool:
-    def __init__(self, lib, rate=2500000, shared_fd=-1):
+    def __init__(self, lib, rate=2500000, shared_fd=-1, *, dwell=False, rx=1):
         self.lib, self.rate = lib, rate
+        self.dwell, self.rx = dwell, rx
+        self.bytes = lib.leo_dwell_pool_bytes() if dwell else lib.leo_probe_pool_bytes()
         if shared_fd >= 0:
-            os.ftruncate(shared_fd, lib.leo_probe_pool_bytes())
-        self.mapping = mmap.mmap(shared_fd, lib.leo_probe_pool_bytes(), flags=mmap.MAP_SHARED)
+            os.ftruncate(shared_fd, self.bytes)
+        self.mapping = mmap.mmap(shared_fd, self.bytes, flags=mmap.MAP_SHARED)
         self.address = ct.addressof(ct.c_char.from_buffer(self.mapping))
-        assert lib.leo_probe_pool_init(self.address, 71, 9, rate) == 0
+        if dwell:
+            assert lib.leo_dwell_pool_init(self.address, 71, 9, rate, rx) == 0
+        else:
+            assert lib.leo_probe_pool_init(self.address, 71, 9, rate) == 0
         self.collector = Collector()
 
     def request(self, sequence=0, offset=0):
@@ -137,8 +163,8 @@ class Pool:
             start + self.rate * 120 // 1000,
             start + self.rate * offset // 1000,
             self.rate,
-            self.rate // 50,
-            1,
+            self.rate // 50 * (6 if self.dwell else 1),
+            self.rx,
             1,
             0,
         )
@@ -319,7 +345,7 @@ def worker_artifacts(tmp_path_factory):
 
 
 @contextmanager
-def running_worker(library, binary, rate, *, damage=None):
+def running_worker(library, binary, rate, *, damage=None, dwell=False, rx=1):
     shared = os.memfd_create("leo-test-pool")
     templates = os.memfd_create("leo-test-templates")
     notify, write = os.pipe2(os.O_CLOEXEC | os.O_NONBLOCK)
@@ -327,7 +353,7 @@ def running_worker(library, binary, rate, *, damage=None):
     unrelated = os.memfd_create("must-not-reach-detector")
     pool, process = None, None
     try:
-        pool = Pool(library, rate, shared)
+        pool = Pool(library, rate, shared, dwell=dwell, rx=rx)
         n = round(rate / 750)
         payload = struct.pack("<4sII", b"LPT1", rate, n)
         for edge in ("lower", "upper"):

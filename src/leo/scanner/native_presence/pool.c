@@ -10,13 +10,12 @@ enum { FREE, FILLING, READY, WORKING };
 typedef struct {
     _Alignas(64) _Atomic uint32_t state;
     leo_probe_request request;
-    int16_t iq[2*LEO_PROBE_MAX_SAMPLES];
 } probe_slot;
 
 struct leo_probe_pool {
     uint32_t magic, abi_size;
     uint64_t session, generation;
-    uint32_t rate;
+    uint32_t rate, dwell, rx;
     _Alignas(64) uint32_t producer_head;
     _Atomic uint32_t submitted, busy, invalid, aborted;
     _Alignas(64) uint32_t worker_tail;
@@ -24,16 +23,26 @@ struct leo_probe_pool {
     _Alignas(64) _Atomic uint32_t result_tail;
     probe_slot slots[LEO_PROBE_SLOTS];
     leo_probe_result results[LEO_PROBE_RESULTS];
+    /* Both capacities are multiples of a cache line, so all three CI16
+     * regions remain aligned. Legacy mode need not allocate full dwells. */
+    _Alignas(64) int16_t iq[];
 };
 
-size_t leo_probe_pool_bytes(void) { return sizeof(leo_probe_pool); }
+size_t leo_probe_pool_bytes(void)
+{ return sizeof(leo_probe_pool)+LEO_PROBE_SLOTS*LEO_PROBE_MAX_SAMPLES*2*sizeof(int16_t); }
+size_t leo_dwell_pool_bytes(void)
+{ return sizeof(leo_probe_pool)+LEO_PROBE_SLOTS*LEO_DWELL_MAX_SAMPLES*2*sizeof(int16_t); }
 
-int leo_probe_pool_init(leo_probe_pool *p, uint64_t session, uint64_t generation, uint32_t rate)
+static int initialize(leo_probe_pool *p, uint64_t session, uint64_t generation,
+    uint32_t rate, uint32_t dwell, uint32_t rx)
 {
-    if (!p || (uintptr_t)p%64 || !session || !generation || (rate!=2500000 && rate!=5000000)) return -1;
-    memset(p,0,sizeof(*p));
-    p->magic=0x4c505031; p->abi_size=sizeof(*p);
+    if (!p || (uintptr_t)p%64 || !session || !generation || rx>1 ||
+        (rate!=2500000 && rate!=5000000)) return -1;
+    size_t bytes=dwell ? leo_dwell_pool_bytes() : leo_probe_pool_bytes();
+    memset(p,0,bytes);
+    p->magic=0x4c505032; p->abi_size=(uint32_t)bytes;
     p->session=session; p->generation=generation; p->rate=rate;
+    p->dwell=dwell; p->rx=rx;
     atomic_init(&p->submitted,0); atomic_init(&p->busy,0); atomic_init(&p->invalid,0);
     atomic_init(&p->aborted,0); atomic_init(&p->completed,0); atomic_init(&p->result_dropped,0);
     atomic_init(&p->result_head,0); atomic_init(&p->result_tail,0);
@@ -41,13 +50,36 @@ int leo_probe_pool_init(leo_probe_pool *p, uint64_t session, uint64_t generation
     return 0;
 }
 
+int leo_probe_pool_init(leo_probe_pool *p, uint64_t session, uint64_t generation, uint32_t rate)
+{ return initialize(p,session,generation,rate,0,1); }
+
+int leo_dwell_pool_init(leo_probe_pool *p, uint64_t session, uint64_t generation, uint32_t rate, uint32_t rx)
+{ return initialize(p,session,generation,rate,1,rx); }
+
+static int configured(const leo_probe_pool *p)
+{
+    return p && p->magic==0x4c505032 && p->dwell<=1 && p->rx<=1 &&
+        p->abi_size==(p->dwell ? leo_dwell_pool_bytes() : leo_probe_pool_bytes()) &&
+        p->session && p->generation && (p->rate==2500000 || p->rate==5000000);
+}
+
 int leo_probe_pool_configuration(const leo_probe_pool *p, uint64_t *session, uint64_t *generation, uint32_t *rate)
 {
-    if (!p || !session || !generation || !rate || p->magic!=0x4c505031 ||
-        p->abi_size!=sizeof(*p) || !p->session || !p->generation ||
-        (p->rate!=2500000 && p->rate!=5000000)) return -1;
+    if (!session || !generation || !rate || !configured(p)) return -1;
     *session=p->session; *generation=p->generation; *rate=p->rate;
     return 0;
+}
+
+int leo_probe_pool_geometry(const leo_probe_pool *p, uint32_t *dwell, uint32_t *rx)
+{
+    if (!dwell || !rx || !configured(p)) return -1;
+    *dwell=p->dwell; *rx=p->rx;
+    return 0;
+}
+
+static int16_t *slot_iq(leo_probe_pool *p, uint32_t index)
+{
+    return p->iq+index*2*(p->dwell ? LEO_DWELL_MAX_SAMPLES : LEO_PROBE_MAX_SAMPLES);
 }
 
 void leo_probe_pool_stats(const leo_probe_pool *p, leo_probe_stats *out)
@@ -77,7 +109,9 @@ static int same_request(const leo_probe_request *a, const leo_probe_request *b)
 static int valid_request(const leo_probe_pool *p, const leo_probe_request *r)
 {
     return r && r->session==p->session && r->generation==p->generation && r->rate_hz==p->rate &&
-        r->rx<=1 && r->channel>=1 && r->channel<=4 && r->edge<=1 && r->sample_count==p->rate/50 &&
+        r->rx<=1 && (!p->dwell || r->rx==p->rx) &&
+        r->channel>=1 && r->channel<=4 && r->edge<=1 &&
+        r->sample_count==p->rate/50*(p->dwell ? 6u : 1u) &&
         r->valid_end>=r->valid_start && r->valid_end-r->valid_start==p->rate*120/1000 &&
         r->probe_start>=r->valid_start && r->probe_start<=r->valid_end &&
         r->sample_count<=r->valid_end-r->probe_start;
@@ -122,7 +156,7 @@ int leo_probe_feed(leo_probe_collector *c, uint64_t block, const int16_t *sample
     size_t offset=(size_t)(expected-block), remaining=slot->request.sample_count-c->copied;
     size_t available=count-offset, copied=available<remaining ? available : remaining;
     const int16_t *input=samples+offset*stride+rx_offset;
-    int16_t *output=slot->iq+2*c->copied;
+    int16_t *output=slot_iq(p,c->slot)+2*c->copied;
     if (stride==2) memcpy(output,input,copied*2*sizeof(int16_t));
     else for (size_t k=0; k<copied; ++k) {
         output[2*k]=input[k*stride]; output[2*k+1]=input[k*stride+1];
@@ -141,7 +175,7 @@ int leo_probe_take(leo_probe_pool *p, uint32_t *index, leo_probe_request *reques
     probe_slot *slot=&p->slots[selected];
     if (atomic_load_explicit(&slot->state,memory_order_acquire)!=READY) return 0;
     atomic_store_explicit(&slot->state,WORKING,memory_order_relaxed);
-    *index=selected; *request=slot->request; *iq=slot->iq;
+    *index=selected; *request=slot->request; *iq=slot_iq(p,selected);
     ++p->worker_tail;
     return 1;
 }

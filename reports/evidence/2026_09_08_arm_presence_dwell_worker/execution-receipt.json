@@ -1,0 +1,39 @@
+{
+  "status": "worker and record binding verified in replay; actual LIBIIO integration and live duty not qualified",
+  "parent_commit": "83d8fa20",
+  "radio_serial": "104000b29905000e17000800065934759d",
+  "radio_lan": "192.168.1.15",
+  "new_rf_collected": false,
+  "production_deployed": false,
+  "excluded_radio_accessed": false,
+  "runtime_fftw_sha256": "1331a476804e5812490f15c18f4b087859552716fb5933413606482642d61a19",
+  "final_runs": {
+    "executions": 4762,
+    "distinct_saved_dwells": 96,
+    "elapsed_pacing_ms_per_rate": 300000,
+    "dropped_or_skipped": 0
+  },
+  "frame_binding": "72 synthetic wire records from actual ARM executable independently decoded on desktop; also ASan/UBSan/leak checked on desktop",
+  "classification_policy_enabled": false,
+  "unresolved": [
+    "5 MS/s p99 detector CPU >100 ms",
+    "first invocation tail and one skipped check",
+    "known detector false positives; no fresh specificity holdout",
+    "original DMA/hop-metadata timing replay",
+    "actual iiOD capability and terminal drain integration",
+    "authorized live disabled/enabled duty verification"
+  ],
+  "source_sha256": {
+    "src/leo/scanner/native_presence/frame_codec.c": "c6c019a9ccc2e1153152d47a1aa2f2e9b18f033633af724b3cf98b9fb4da67ec",
+    "src/leo/scanner/native_presence/frame_codec.h": "b6244e87f32dc2a73b0c98853fa75b97463e8f31aaeefdf785fb7d8aab0259bc",
+    "src/leo/scanner/native_presence/frame_result.c": "50f133d6f05fe5cd5d3b8656cd4dbf4cf4bf16a06ac3bcc34cb4f3fa1703dd6d",
+    "src/leo/scanner/native_presence/frame_result.h": "f9cfc22b92f53954c94fd9ca7c34932a68030544754a9005117267451c90db6c",
+    "src/leo/scanner/native_presence/pool.c": "39751b2c93464b593d43b6f577467399df81671c6fdb3cc0758ef7c80b4d3547",
+    "src/leo/scanner/native_presence/pool.h": "3cf6bbb38d533821571cea17d3049e590de41e1f1f67458eaa4182a4b4b1b00c",
+    "src/leo/scanner/native_presence/worker.c": "7a205af35d8500a5f6a92dfd1e0233a1292598b7508f9a1d8cb93b129fdb140f",
+    "tests/fixtures/scanner_presence_worker_smoke.c": "f8178fee9dea8895d74117205e633f44bd8a6e753813bc830872e022aa04246c",
+    "tests/fixtures/scanner_presence_frame_result_smoke.c": "e92291e1ee7495d02eb2961c334109006c1dc9d5eed7a7ff08db2b1f5b6f1a26",
+    "tools/qualify_presence_dwell_worker.py": "32abee52b614d11880c1e9ce41319e4df825cb46cc465bc1155b6a859585c474"
+  },
+  "rejected_output_note": "Original 300 s first8 output is incomplete and malformed despite a successful process exit; retained and rejected. Final parent checks stdio errors; packs streamed into parent before replay instead of copied onto limited /tmp."
+}

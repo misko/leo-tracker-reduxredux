@@ -48,6 +48,8 @@ typedef struct {
 int leo_glrt_frame_encode(const leo_glrt_frame_v1 *frame,
     void *output, size_t capacity, size_t *written);
 int leo_glrt_frame_decode(leo_glrt_frame_v1 *frame, const void *input, size_t bytes);
+/* Validate a standalone record before queueing it; zero means valid. */
+int leo_glrt_record_validate(const leo_glrt_classification_v1 *record);
 /* Structural extraction only: invalid classification semantics need not stop
  * the recorder from validating/forwarding its unchanged legacy metadata. */
 int leo_glrt_frame_legacy_view(const void *input, size_t bytes,

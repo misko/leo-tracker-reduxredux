@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
@@ -28,15 +29,31 @@ static uint32_t decode32(const unsigned char *p)
 static uint64_t decode64(const unsigned char *p)
 { return (uint64_t)decode32(p)|((uint64_t)decode32(p+4)<<32); }
 
+static void doubles(const double *values, size_t count)
+{
+    putchar('[');
+    for (size_t k=0;k<count;++k) printf("%s%.17g",k ? "," : "",values[k]);
+    putchar(']');
+}
+static void integers(const uint32_t *values, size_t count)
+{
+    putchar('[');
+    for (size_t k=0;k<count;++k) printf("%s%u",k ? "," : "",values[k]);
+    putchar(']');
+}
+
 static void print_result(const leo_probe_result *r, unsigned probes, double latency)
 {
-    printf("{\"schema\":\"native-worker-paced-result-v1\",\"sequence\":%" PRIu64
+    int dwell=r->request.sample_count==r->request.rate_hz/50*6;
+    printf("{\"schema\":\"%s\",\"sequence\":%" PRIu64
         ",\"probe_index\":%" PRIu64 ",\"visit\":%" PRIu64 ",\"rate_hz\":%u,"
         "\"device_counter\":\"%" PRIu64 "\",\"edge\":%u,\"channel\":%u,\"status\":%d,"
         "\"total_cpu_ms\":%.9g,\"total_wall_ms\":%.9g,\"delivery_latency_ms\":%.9g,\"candidates\":[",
+        dwell ? "native-worker-dwell-result-v1" : "native-worker-paced-result-v1",
         r->request.sequence,r->request.sequence%probes,r->request.visit,r->request.rate_hz,
         r->request.probe_start,r->request.edge,r->request.channel,r->status,
-        r->evidence.total_cpu_ms,r->evidence.total_wall_ms,latency);
+        dwell ? r->dwell.total_cpu_ms : r->evidence.total_cpu_ms,
+        dwell ? r->dwell.total_wall_ms : r->evidence.total_wall_ms,latency);
     for (int j=0; j<r->evidence.candidate_count; ++j) {
         const leo_presence_candidate *c=&r->evidence.candidates[j];
         printf("%s{\"epoch\":%d,\"fractional_complete\":%d,\"fractional_offset_samples\":%.17g,"
@@ -46,15 +63,36 @@ static void print_result(const leo_probe_result *r, unsigned probes, double late
             c->tracking_cfo_hz,c->exact_score,c->control_score,c->margin);
     }
     printf("],\"nuisance\":{\"enabled\":%d,\"applied\":%d,\"frequency_hz\":%.17g,"
-        "\"spectral_fraction\":%.17g,\"fitted_power_fraction\":%.17g}}\n",
+        "\"spectral_fraction\":%.17g,\"fitted_power_fraction\":%.17g}",
         r->nuisance.enabled,r->nuisance.applied,r->nuisance.frequency_hz,
         r->nuisance.spectral_fraction,r->nuisance.fitted_power_fraction);
+    if (dwell) {
+        const leo_probe_dwell_evidence *d=&r->dwell;
+        printf(",\"sample_count\":%u,\"valid_end\":\"%" PRIu64 "\",\"rx\":%u,"
+            "\"search_window_mask\":%u,\"confirmation_window_mask\":%u,\"rank\":{\"scores\":",
+            r->request.sample_count,r->request.valid_end,r->request.rx,
+            d->search_window_mask,d->confirmation_window_mask);
+        doubles(d->rank.scores,6);
+        printf(",\"order\":"); integers(d->rank.order,6);
+        printf(",\"projected_epoch_samples\":"); integers(d->rank.projected_epoch_samples,6);
+        printf(",\"total_cpu_ms\":%.9g,\"total_wall_ms\":%.9g},"
+            "\"confirmation_cpu_ms\":%.9g,\"confirmation_wall_ms\":%.9g,"
+            "\"screen_diagnostics\":{\"available_mask\":%u,\"selected\":%u,\"contrast\":",
+            d->rank.total_cpu_ms,d->rank.total_wall_ms,r->evidence.total_cpu_ms,r->evidence.total_wall_ms,
+            d->screens.available_mask,d->screens.selected);
+        doubles(d->screens.contrast,2);
+        printf(",\"scores\":["); doubles(d->screens.scores[0],6); printf(","); doubles(d->screens.scores[1],6);
+        printf("],\"order\":["); integers(d->screens.order[0],6); printf(","); integers(d->screens.order[1],6);
+        printf("],\"epochs\":["); integers(d->screens.epochs[0],6); printf(","); integers(d->screens.epochs[1],6);
+        printf("]}");
+    }
+    printf("}\n");
 }
 
 int main(int argc, char **argv)
 {
     if (argc!=3 && argc!=5) return 2;
-    int paced=argc==5;
+    int paced=argc==5, dwell=0;
     unsigned duration=0;
     if (paced) {
         char *end; errno=0; long parsed=strtol(argv[4],&end,10);
@@ -62,9 +100,16 @@ int main(int argc, char **argv)
         duration=(unsigned)parsed;
     }
     alarm(paced ? duration/1000+20 : 15);
+    struct rlimit memory={192*1024*1024,192*1024*1024};
+#if !defined(__SANITIZE_ADDRESS__)
+    if (setrlimit(RLIMIT_AS,&memory)) return 2;
+#else
+    (void)memory;
+#endif
     int status=2, shared=-1, templates=-1, notify[2]={-1,-1}, ready[2]={-1,-1};
     pid_t child=-1;
     leo_probe_pool *pool=MAP_FAILED;
+    size_t pool_bytes=leo_probe_pool_bytes();
     int16_t *samples=NULL;
     uint64_t starts[96]={0}, visits[96]={0};
     uint32_t edges[96]={0}, channels[96]={0}, probe_count=1;
@@ -79,11 +124,15 @@ int main(int argc, char **argv)
     if (paced) {
         stage="read bounded saved-probe pack";
         pack=fopen(argv[3],"rb");
-        if (!pack || fread(header,1,12,pack)!=12 || memcmp(header,"LPP1",4) || decode32(header+4)!=rate) goto done;
+        if (!pack || fread(header,1,12,pack)!=12 || decode32(header+4)!=rate) goto done;
+        dwell=!memcmp(header,"LDP1",4);
+        if (!dwell && memcmp(header,"LPP1",4)) goto done;
         probe_count=decode32(header+8);
-        if (!probe_count || probe_count>96) goto done;
+        if (!probe_count || probe_count>(dwell ? 48u : 96u)) goto done;
     }
-    samples=calloc((size_t)(rate/50)*probe_count,2*sizeof(int16_t));
+    size_t sample_count=rate/50*(dwell ? 6u : 1u);
+    pool_bytes=dwell ? leo_dwell_pool_bytes() : leo_probe_pool_bytes();
+    samples=calloc(sample_count*probe_count,2*sizeof(int16_t));
     if (!samples) goto done;
     if (paced) {
         for (uint32_t j=0; j<probe_count; ++j) {
@@ -92,7 +141,7 @@ int main(int argc, char **argv)
             starts[j]=decode64(record); visits[j]=decode64(record+8);
             edges[j]=decode32(record+16); channels[j]=decode32(record+20);
             if (edges[j]>1 || channels[j]<1 || channels[j]>4 || starts[j]>UINT64_MAX-rate*120/1000 ||
-                fread(samples+(size_t)j*(rate/50)*2,4,rate/50,pack)!=rate/50) goto done;
+                fread(samples+(size_t)j*sample_count*2,4,sample_count,pack)!=sample_count) goto done;
         }
         if (fgetc(pack)!=EOF || ferror(pack)) goto done;
         fclose(pack); pack=NULL;
@@ -102,9 +151,9 @@ int main(int argc, char **argv)
     shared=mkstemp(scratch);
     if (shared<0) goto done;
     /* Only this just-created anonymous IPC backing file is unlinked. */
-    if (unlink(scratch) || ftruncate(shared,(off_t)leo_probe_pool_bytes())) goto done;
-    pool=mmap(NULL,leo_probe_pool_bytes(),PROT_READ|PROT_WRITE,MAP_SHARED,shared,0);
-    if (pool==MAP_FAILED || leo_probe_pool_init(pool,71,9,rate)) goto done;
+    if (unlink(scratch) || ftruncate(shared,(off_t)pool_bytes)) goto done;
+    pool=mmap(NULL,pool_bytes,PROT_READ|PROT_WRITE,MAP_SHARED,shared,0);
+    if (pool==MAP_FAILED || (dwell ? leo_dwell_pool_init(pool,71,9,rate,1) : leo_probe_pool_init(pool,71,9,rate))) goto done;
     if (pipe2(notify,O_NONBLOCK) || pipe(ready)) goto done;
     char mapping_arg[32], notify_arg[32], templates_arg[32], parent_arg[32];
     snprintf(mapping_arg,sizeof(mapping_arg),"%d",shared);
@@ -140,7 +189,12 @@ int main(int argc, char **argv)
             if (seq>=submitted || result.status) goto done;
             if (!paced && (result.request.probe_start!=UINT64_C(10000000000000037)+seq*rate ||
                 result.evidence.candidate_count || !result.nuisance.enabled || result.nuisance.applied)) goto done;
-            if (paced) print_result(&result,probe_count,now_ms()-submitted_at[seq]);
+            if (paced) {
+                print_result(&result,probe_count,now_ms()-submitted_at[seq]);
+                /* A full scratch filesystem must fail qualification, not
+                 * silently lose evidence while reporting successful work. */
+                if (ferror(stdout)) { stage="write replay evidence"; goto done; }
+            }
             ++received;
         }
         if (submitted>=jobs || (paced && now<origin+submitted*126) ||
@@ -149,7 +203,7 @@ int main(int argc, char **argv)
         uint64_t start=paced ? starts[index] : UINT64_C(10000000000000037)+seq*rate;
         leo_probe_request request={.session=71,.generation=9,.sequence=seq,.visit=paced ? visits[index] : seq,
             .valid_start=start,.valid_end=start+rate*120/1000,.probe_start=start,
-            .rate_hz=rate,.sample_count=rate/50,.rx=1,
+            .rate_hz=rate,.sample_count=(uint32_t)sample_count,.rx=1,
             .channel=paced ? channels[index] : (uint32_t)(seq%4)+1,
             .edge=paced ? edges[index] : (uint32_t)(seq%2)};
         double copying=now_ms();
@@ -158,7 +212,14 @@ int main(int argc, char **argv)
         submitted_at[seq]=copying;
         ++submitted;
         if (!accepted) { ++skipped; continue; }
-        if (leo_probe_feed(&collector,start,samples+(size_t)index*(rate/50)*2,rate/50,2,0)!=1) goto done;
+        /* Full dwell submissions exercise block boundaries, but deliver their
+         * chunks in a burst. This is not the original DMA/metadata timeline. */
+        size_t block_size=dwell ? 32768 : sample_count;
+        for (size_t offset=0;offset<sample_count;offset+=block_size) {
+            size_t count=sample_count-offset<block_size ? sample_count-offset : block_size;
+            int rc=leo_probe_feed(&collector,start+offset,samples+((size_t)index*sample_count+offset)*2,count,2,0);
+            if (rc!=(offset+count==sample_count ? 1 : 0)) goto done;
+        }
         double elapsed=now_ms()-copying;
         if (elapsed>max_copy) max_copy=elapsed;
         double lateness=copying-origin-seq*126;
@@ -181,10 +242,13 @@ int main(int argc, char **argv)
         "\"skipped\":%" PRIu64 ",\"duration_ms\":%u,\"elapsed_ms\":%.9g,\"max_occupied_slots\":%u,"
         "\"max_submit_lateness_ms\":%.9g,\"max_copy_ms\":%.9g,"
         "\"scope\":\"%s; not RF or full archived-stream qualification\"}\n",
-        paced ? "native-worker-paced-summary-v1" : "native-worker-ipc-smoke-v1",
-        rate,stats.submitted,stats.completed,stats.result_dropped,leo_probe_pool_bytes(),
+        dwell ? "native-worker-dwell-summary-v1" : (paced ? "native-worker-paced-summary-v1" : "native-worker-ipc-smoke-v1"),
+        rate,stats.submitted,stats.completed,stats.result_dropped,pool_bytes,
         skipped,duration,now_ms()-origin,max_slots,max_lateness,max_copy,
-        paced ? "repeated saved probes at 126 ms spacing" : "synthetic zero probes");
+        dwell ? "repeated 120ms saved dwells, 32768-sample chunks burst-delivered every 126ms" :
+            (paced ? "repeated saved probes at 126 ms spacing" : "synthetic zero probes"));
+    stage="flush replay evidence";
+    if (fflush(stdout) || ferror(stdout)) goto done;
     status=0;
 done:
     if (status) fprintf(stderr,"worker IPC smoke failed: %s\n",stage);
@@ -195,7 +259,7 @@ done:
     }
     free(samples);
     if (pack) fclose(pack);
-    if (pool!=MAP_FAILED) munmap(pool,leo_probe_pool_bytes());
+    if (pool!=MAP_FAILED) munmap(pool,pool_bytes);
     if (shared>=0) close(shared);
     if (templates>=0) close(templates);
     for (int k=0; k<2; ++k) { if (notify[k]>=0) close(notify[k]); if (ready[k]>=0) close(ready[k]); }
