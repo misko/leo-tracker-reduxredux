@@ -1,0 +1,46 @@
+{
+  "schema": "org.leo.research.presence-dwell-worker-verification/v1",
+  "all_outputs_match_desktop": true,
+  "executions": 250,
+  "terminal": {
+    "schema": "native-worker-dwell-summary-v1",
+    "rate_hz": 2500000,
+    "submitted": 250,
+    "completed": 250,
+    "dropped": 0,
+    "pool_bytes": 7258496,
+    "skipped": 0,
+    "duration_ms": 30000,
+    "elapsed_ms": 30004.2493,
+    "max_occupied_slots": 1,
+    "arrival_period_ms": 120,
+    "max_submit_lateness_ms": 0.569272041,
+    "max_copy_ms": 4.97261405,
+    "scope": "repeated 120ms saved dwells, 32768-sample chunks burst-delivered at the reported arrival period; not RF or full archived-stream qualification"
+  },
+  "unique_dwells": 16,
+  "pack_dwell_count": 16,
+  "timings": {
+    "total_cpu_ms": {
+      "p50": 52.501512,
+      "p95": 62.6123058,
+      "p99": 62.80402512,
+      "max": 62.85468
+    },
+    "total_wall_ms": {
+      "p50": 55.816692950000004,
+      "p95": 65.188547495,
+      "p99": 66.03900166,
+      "max": 66.8596801
+    },
+    "delivery_latency_ms": {
+      "p50": 60.31164645,
+      "p95": 69.6832954,
+      "p99": 70.66651216,
+      "max": 71.5399441
+    }
+  },
+  "limitations": "Repeated complete RX1 dwells with 32768-sample chunks burst-delivered every 120 ms; not original DMA/metadata timing, live acquisition, or classifier qualification. Setup and loading excluded; no RF/IRQ/network contention measured.",
+  "verified": true,
+  "raw_sha256": "3152b21c8d3bc41f5dd35a4badb632f011d12cc83a23548f48fd16b841b951ae"
+}
