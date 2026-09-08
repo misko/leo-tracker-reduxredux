@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import ipaddress
 import queue
 import threading
@@ -14,7 +15,9 @@ from typing import Any, Literal, cast
 import numpy as np
 
 from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
+from leo.contracts.scanner_glrt_session import ScannerGlrtSessionEvidenceV1
 from leo.contracts.states import GainMode
+from leo.radio.scanner_glrt_metadata import ScannerGlrtMetadataExtension, ScannerGlrtOptions
 from leo.scanner.persistent_hop import (
     PersistentHopCaptureOutcome,
     PersistentHopPlanV1,
@@ -40,7 +43,7 @@ _MAXIMUM_READ_AHEAD_VISITS = 64
 _PRODUCER_POLL_SECONDS = 0.05
 _PRODUCER_JOIN_TIMEOUT_SECONDS = 15.0
 
-PersistentHopClientFactory = Callable[[str, str], Any]
+PersistentHopClientFactory = Callable[..., Any]
 PersistentHopPlanFactory = Callable[[PersistentHopPlanV1], Any]
 TandemRequestFactory = Callable[[], Any]
 
@@ -68,6 +71,7 @@ class PlutoPersistentHopRadio:
         client_factory: PersistentHopClientFactory | None = None,
         plan_factory: PersistentHopPlanFactory | None = None,
         tandem_request_factory: TandemRequestFactory | None = None,
+        scanner_glrt: ScannerGlrtOptions | None = None,
     ) -> None:
         self._uri = _physical_lan_uri(host, iiod_port=iiod_port)
         if not expected_serial or expected_serial != expected_serial.strip():
@@ -90,6 +94,22 @@ class PlutoPersistentHopRadio:
         self._read_ahead_visits = read_ahead_visits
         self._opened = False
         self._session: _PlutoPersistentHopSession | None = None
+        self._scanner_glrt = scanner_glrt
+        self._last_classification_evidence: ScannerGlrtSessionEvidenceV1 | None = None
+        self._last_classification_error: str | None = None
+
+    @property
+    def classification_evidence(self) -> ScannerGlrtSessionEvidenceV1 | None:
+        """Immutable evidence after producer completion, also retained on close."""
+        if self._session is not None:
+            return self._session.classification_evidence
+        return self._last_classification_evidence
+
+    @property
+    def classification_error(self) -> str | None:
+        if self._session is not None:
+            return self._session.classification_error
+        return self._last_classification_error
 
     @property
     def identity(self) -> ScanRadioIdentity:
@@ -112,8 +132,18 @@ class PlutoPersistentHopRadio:
         if self._session is not None:
             raise PlutoPersistentHopError("persistent-hop radio already owns a session")
         wire_session_id = persistent_hop_wire_session_id(session_id)
+        extension = (
+            ScannerGlrtMetadataExtension(self._scanner_glrt, session=wire_session_id)
+            if self._scanner_glrt is not None else None
+        )
         try:
-            client = self._client_factory(self._uri, self._expected_serial)
+            client_options: dict[str, Any] = {}
+            if extension is not None:
+                if _accepts_metadata_extension(self._client_factory):
+                    client_options["metadata_extension"] = extension
+                else:
+                    extension.fail("host client factory lacks metadata extension support")
+            client = self._client_factory(self._uri, self._expected_serial, **client_options)
             upstream = client.start(
                 self._plan_factory(plan),
                 session_id=wire_session_id,
@@ -130,6 +160,7 @@ class PlutoPersistentHopRadio:
             session_id=session_id,
             wire_session_id=wire_session_id,
             read_ahead_visits=self._read_ahead_visits,
+            metadata_extension=extension,
         )
         self._session = session
         return session
@@ -137,14 +168,19 @@ class PlutoPersistentHopRadio:
     def close(self) -> None:
         session, self._session = self._session, None
         self._opened = False
-        if session is not None and not session.complete:
+        if session is not None:
             try:
+                if session.complete:
+                    return
                 session.request_cancel()
                 session.finish()
             except Exception as error:
                 raise PlutoPersistentHopError(
                     f"persistent-hop radio close failed: {type(error).__name__}: {error}"
                 ) from error
+            finally:
+                self._last_classification_evidence = session.classification_evidence
+                self._last_classification_error = session.classification_error
 
 
 class _PlutoPersistentHopSession:
@@ -157,6 +193,7 @@ class _PlutoPersistentHopSession:
         session_id: str,
         wire_session_id: int,
         read_ahead_visits: int,
+        metadata_extension: ScannerGlrtMetadataExtension | None = None,
     ) -> None:
         self._upstream = upstream
         self._plan = plan
@@ -172,6 +209,9 @@ class _PlutoPersistentHopSession:
         self._produced_evidence: list[PersistentHopVisitV1] = []
         self._upstream_cancel_called = False
         self._upstream_terminal = False
+        self._metadata_extension = metadata_extension
+        self._classification_evidence: ScannerGlrtSessionEvidenceV1 | None = None
+        self._classification_error: str | None = None
         self._producer = threading.Thread(
             target=self._run_producer,
             name=f"leo-hop-radio-{session_id}",
@@ -182,6 +222,14 @@ class _PlutoPersistentHopSession:
     @property
     def plan(self) -> PersistentHopPlanV1:
         return self._plan
+
+    @property
+    def classification_evidence(self) -> ScannerGlrtSessionEvidenceV1 | None:
+        return self._classification_evidence if self._producer_done.is_set() else None
+
+    @property
+    def classification_error(self) -> str | None:
+        return self._classification_error if self._producer_done.is_set() else None
 
     @property
     def complete(self) -> bool:
@@ -258,6 +306,16 @@ class _PlutoPersistentHopSession:
             self._recover_terminal_after_failure(error)
             self._producer_error = error
         finally:
+            if self._metadata_extension is not None:
+                try:
+                    if self._producer_error is not None:
+                        self._metadata_extension.fail("host capture producer failed")
+                    self._classification_evidence = self._metadata_extension.snapshot()
+                    self._classification_error = self._classification_evidence.error
+                except Exception as error:
+                    # No storage callback or detector error may prevent the
+                    # independently validated recording from completing.
+                    self._classification_error = f"classification snapshot failed: {error}"
             self._producer_done.set()
 
     def _map_sampled_visit(self, sampled: Any) -> PersistentHopVisitBlock:
@@ -605,9 +663,33 @@ def _load_plan(plan: PersistentHopPlanV1) -> Any:
     )
 
 
-def _load_client(uri: str, expected_serial: str) -> Any:
+def _accepts_metadata_extension(factory: Callable[..., Any]) -> bool:
+    try:
+        parameters = inspect.signature(factory).parameters
+    except (TypeError, ValueError):
+        return False
+    named = parameters.get("metadata_extension")
+    return (named is not None and named.kind in (
+        inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY
+    )) or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()
+    )
+
+
+def _load_client(
+    uri: str,
+    expected_serial: str,
+    *,
+    metadata_extension: ScannerGlrtMetadataExtension | None = None,
+) -> Any:
     module = importlib.import_module("pluto_plus.hardware.iio_persistent_hop")
-    return module.iio_persistent_hop_client(uri, expected_serial=expected_serial)
+    options: dict[str, Any] = {}
+    if metadata_extension is not None:
+        if _accepts_metadata_extension(module.iio_persistent_hop_client):
+            options["metadata_extension"] = metadata_extension
+        else:
+            metadata_extension.fail("installed host client lacks metadata extension support")
+    return module.iio_persistent_hop_client(uri, expected_serial=expected_serial, **options)
 
 
 def _load_tandem_hold_request() -> Any:
