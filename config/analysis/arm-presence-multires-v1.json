@@ -1,0 +1,18 @@
+{
+  "schema": "org.leo.research.arm-presence-multires/v1",
+  "status": "development_experiment_not_a_qualified_classifier",
+  "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+  "receiver": 1,
+  "dwell_ms": 120,
+  "window_ms": 20,
+  "grids_by_rate": {"2500000": [512], "5000000": [512]},
+  "timing_grids_by_rate": {"2500000": [2048, 4096], "5000000": [4096, 8192]},
+  "selection_reason": "The 512-bin screen ranked windows better in prior development but its timing aliased. Compute high-resolution timing only in windows selected by that cheap screen, then perform seeded fractional GLRT.",
+  "modes": ["blind", "seeded"],
+  "maximum_confirmations": 6,
+  "prefix_policies": [1, 2, 3, 6],
+  "research_margin": 0.025,
+  "reference_association": {"maximum_cfo_difference_hz": 8000, "maximum_circular_epoch_difference_us": 2},
+  "classifier_absence_claims": false,
+  "live_rf_authorized": false
+}

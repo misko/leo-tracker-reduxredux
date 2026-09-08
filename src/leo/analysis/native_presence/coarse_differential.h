@@ -61,8 +61,17 @@ static double diff_native_cell(leo_presence_workspace *w, size_t epoch,
         (power_norm>0 ? (LEO_PRESENCE_DIFFERENTIAL_POWER_MILLI/1000.0)*p/power_norm : 0);
 }
 
-static int coarse_differential(leo_presence_workspace *w, size_t count)
+#if LEO_PRESENCE_DIFFERENTIAL_CI16
+#include "ci16_fold.h"
+#endif
+
+static int coarse_differential(leo_presence_workspace *w, size_t count, const int16_t *iq)
 {
+    (void)iq;
+#if LEO_PRESENCE_DIFFERENTIAL_CI16
+    if (iq) coarse_fold_ci16(w,iq,count);
+    else {
+#endif
     memset(w->power_native_folded,0,w->n*sizeof(double));
     memset(w->diff_folded,0,w->n*sizeof(double complex));
     memset(w->support,0,w->n*sizeof(int32_t));
@@ -81,6 +90,9 @@ static int coarse_differential(leo_presence_workspace *w, size_t count)
             }
         }
     }
+#if LEO_PRESENCE_DIFFERENTIAL_CI16
+    }
+#endif
     double mean=0;
     double complex diff_mean=0;
     for (size_t k=0; k<w->n; ++k) {
