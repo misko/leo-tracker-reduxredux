@@ -3,14 +3,24 @@
 import ctypes as ct
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from leo.analysis.starlink.templates import qin_edge_pilot_frame
-from tools.native_presence import ROOT, NativePresence, Result, build_library, pointer
+from tools.native_presence import (
+    ROOT,
+    NativePresence,
+    Result,
+    build_executable,
+    build_library,
+    pointer,
+    write_probe,
+)
 from tools.presence_fftw import fftw_options
+from tools.qualify_native_presence import digest
 from tools.qualify_presence_worker import compare_values
 
 pytestmark = pytest.mark.fftw
@@ -137,3 +147,32 @@ def test_fractional_detector_matches_builtin_with_original_tolerances(libraries,
         )
     compare_values(actual[1], baseline[1], nuisance=True)
     np.testing.assert_allclose(actual[2], baseline[2], rtol=1e-9, atol=1e-12)
+
+
+def test_profile_executable_links_and_attests_the_explicit_fftw_dependency(libraries, tmp_path):
+    options = fftw_options(Path(os.environ["FFTW_PREFIX"]))
+    receipt = json.loads(libraries[0].with_name("builtin.so.build.json").read_text())
+    flags = tuple(v for v in receipt["command"] if v.startswith("-DLEO_PRESENCE_"))
+    binary = build_executable(
+        tmp_path / "profile",
+        cflags=flags + options["cflags"],
+        ldflags=options["ldflags"],
+        dependencies=options["dependencies"],
+    )
+    built = json.loads(binary.with_name("profile.build.json").read_text())
+    assert built["binary_sha256"] == digest(binary)
+    assert built["dependencies_sha256"] == {str(p): digest(p) for p in options["dependencies"]}
+    assert all(flag in built["command"] for flag in options["ldflags"])
+    probe = tmp_path / "zero.probe"
+    write_probe(probe, np.zeros(50000, dtype=complex), 2500000, "upper", 2**53 + 19, ci16=True)
+    run = subprocess.run(
+        [str(binary), str(probe), "2", "--profile"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    rows = [json.loads(line) for line in run.stdout.splitlines()]
+    assert len(rows) == 2 and not run.stderr
+    assert all(row["device_counter"] == str(2**53 + 19) and not row["candidates"] for row in rows)
+    assert all(row["profile"]["fine_frames"] == 2 for row in rows)
