@@ -163,3 +163,8 @@ archive permissions or contents were changed.
 4. Finish ARM saved-IQ timing, original-arrival/load replay, userspace release/
    rollback checks and explicitly authorized live disabled/enabled duty tests.
    New options and runtime classification remain disabled. The goal is unfinished.
+
+Follow-up: the [fresh holdout and actual ARM checkpoint](2026_09_08_arm_presence_holdout_checkpoint.md)
+closes the fresh synthetic gate, verifies an allowed USB spare over its LAN
+interface, and measures 120 ms-paced worker execution. Live unchanged duty
+remains unverified.
