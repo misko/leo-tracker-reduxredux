@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -104,3 +105,19 @@ def test_default_adapter_delegates_binary_validation_to_ppu(
     configuration.binary_path.chmod(0o440)
     with pytest.raises(ValueError, match="rejected by PPU"):
         create_pluto_userspace_iiod_lifecycle(configuration)
+
+
+def test_companion_bundle_path_passes_only_through_the_optional_public_port(tmp_path, monkeypatch):
+    constructed = []
+    monkeypatch.setattr(
+        "leo.radio.pluto_userspace_iiod_lifecycle.importlib.import_module",
+        lambda _name: SimpleNamespace(
+            UserspaceIiodDeployment=lambda **kwargs: constructed.append(kwargs)
+        ),
+    )
+    configuration = _configuration(tmp_path)
+    create_pluto_userspace_iiod_lifecycle(configuration)
+    assert "bundle_manifest_path" not in constructed[-1]
+    manifest = configuration.binary_path.parent / "bundle.json"
+    create_pluto_userspace_iiod_lifecycle(replace(configuration, bundle_manifest_path=manifest))
+    assert constructed[-1]["bundle_manifest_path"] == manifest
