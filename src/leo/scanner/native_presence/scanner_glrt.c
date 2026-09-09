@@ -23,6 +23,7 @@ enum { PLANNED, COLLECTING, WORKING, DONE, SENT };
 struct visit_record {
     leo_glrt_classification_v1 record;
     leo_adaptive_observation_v1 observation;
+    uint64_t submitted_ns;
     unsigned state;
 };
 struct leo_scanner_glrt {
@@ -35,6 +36,10 @@ struct leo_scanner_glrt {
     size_t history_capacity;
     uint64_t history_start, history_end, frame_sequence;
     uint32_t known, collecting, sending, observing;
+    leo_scanner_glrt_protection_v1 protection;
+    leo_scanner_glrt_protection_stats_v1 protection_stats;
+    uint64_t now_ns;
+    uint32_t oldest_pending, recovery_count;
     pid_t worker;
     int notify, have_history, finished, final, failed;
 };
@@ -68,6 +73,63 @@ void leo_scanner_glrt_fail(leo_scanner_glrt *s)
         if (s->visits[j].state<DONE) unavailable(s,j,LEO_GLRT_WORKER_FAILED);
     s->collecting=s->known;
     if (s->notify>=0) { close(s->notify); s->notify=-1; }
+}
+
+static void disable_worker(leo_scanner_glrt *s)
+{
+    leo_scanner_glrt_fail(s);
+    /* Still our unreaped child; no PID lookup/reuse race, allocation or wait.
+     * Subsequent harvest uses WNOHANG; close does final reaping off capture. */
+    if (s->worker>0) (void)kill(s->worker,SIGKILL);
+}
+
+static void check_protection(leo_scanner_glrt *s)
+{
+    if (!s->protection_stats.enabled || s->failed) return;
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC,&now)) {
+        ++s->protection_stats.clock_faults; disable_worker(s); return;
+    }
+    uint64_t ns=(uint64_t)now.tv_sec*UINT64_C(1000000000)+(uint64_t)now.tv_nsec;
+    if (ns<s->now_ns) {
+        ++s->protection_stats.clock_faults; disable_worker(s); return;
+    }
+    s->now_ns=ns;
+    while (s->oldest_pending<s->collecting && s->visits[s->oldest_pending].state>=DONE)
+        ++s->oldest_pending;
+    if (s->oldest_pending<s->collecting &&
+        s->visits[s->oldest_pending].state==WORKING &&
+        ns-s->visits[s->oldest_pending].submitted_ns>=
+            (uint64_t)s->protection.worker_timeout_ms*1000000) {
+        ++s->protection_stats.watchdog_trips; disable_worker(s);
+    }
+}
+
+int leo_scanner_glrt_enable_protection(leo_scanner_glrt *s,
+    const leo_scanner_glrt_protection_v1 *config)
+{
+    if (!s || !config || !config->max_occupied_slots ||
+        config->max_occupied_slots>LEO_PROBE_SLOTS || !config->admission_age_ms ||
+        config->admission_age_ms>=config->worker_timeout_ms ||
+        config->worker_timeout_ms>1000 || !config->recovery_blocks ||
+        config->recovery_blocks>1024) return -EINVAL;
+    if (s->known || s->have_history || s->finished || s->failed || s->protection_stats.enabled)
+        return -EBUSY;
+    s->protection=*config;
+    s->protection_stats.enabled=1;
+    check_protection(s);
+    return s->failed ? -EIO : 0;
+}
+
+int leo_scanner_glrt_protection_stats(const leo_scanner_glrt *s,
+    leo_scanner_glrt_protection_stats_v1 *out)
+{
+    if (!s || !out) return -EINVAL;
+    *out=s->protection_stats;
+    leo_probe_stats pool; leo_probe_pool_stats(s->pool,&pool);
+    out->occupied_slots=pool.occupied_slots;
+    out->disabled=(uint32_t)s->failed;
+    return 0;
 }
 
 static void harvest(leo_scanner_glrt *s)
@@ -114,6 +176,26 @@ static void harvest(leo_scanner_glrt *s)
             s->worker=0; leo_scanner_glrt_fail(s);
         }
     }
+    /* Accept completed evidence before checking the oldest outstanding job. */
+    check_protection(s);
+}
+
+int leo_scanner_glrt_capture_pressure(leo_scanner_glrt *s, int pressured)
+{
+    if (!s || (pressured!=0 && pressured!=1)) return -EINVAL;
+    if (!s->protection_stats.enabled) return -ENOTSUP;
+    if (s->finished) return -EBUSY;
+    harvest(s);
+    if (s->failed) return 0;
+    if (pressured) {
+        if (!s->protection_stats.suspended) ++s->protection_stats.pressure_entries;
+        s->protection_stats.suspended=1; s->recovery_count=0;
+    } else if (s->protection_stats.suspended &&
+        ++s->recovery_count>=s->protection.recovery_blocks) {
+        s->protection_stats.suspended=0; s->recovery_count=0;
+        ++s->protection_stats.resumptions;
+    }
+    return 0;
 }
 
 int leo_scanner_glrt_observation(leo_scanner_glrt *s, leo_adaptive_observation_v1 *out)
@@ -154,11 +236,27 @@ static void collect_available(leo_scanner_glrt *s)
         uint64_t expected=v->record.valid_start+s->collector.copied;
         if (v->state==PLANNED) expected=v->record.valid_start;
         if (expected>=s->history_end) break;
+        if (s->protection_stats.suspended) {
+            leo_probe_abort(&s->collector);
+            unavailable(s,index,LEO_GLRT_INCOMPLETE_SEARCH);
+            ++s->protection_stats.pressure_skips; ++s->collecting; continue;
+        }
         if (expected<s->history_start) {
             leo_probe_abort(&s->collector);
             unavailable(s,index,LEO_GLRT_INVALID_INPUT); ++s->collecting; continue;
         }
         if (v->state==PLANNED) {
+            if (s->protection_stats.enabled) {
+                leo_probe_stats pool; leo_probe_pool_stats(s->pool,&pool);
+                if (pool.occupied_slots>=s->protection.max_occupied_slots ||
+                    (s->oldest_pending<s->collecting &&
+                     s->visits[s->oldest_pending].state==WORKING &&
+                     s->now_ns-s->visits[s->oldest_pending].submitted_ns>=
+                         (uint64_t)s->protection.admission_age_ms*1000000)) {
+                    unavailable(s,index,LEO_GLRT_WORKER_BUSY);
+                    ++s->protection_stats.backlog_skips; ++s->collecting; continue;
+                }
+            }
             leo_probe_request q=request_for(s,index);
             int ret=leo_probe_begin(&s->collector,s->pool,&q);
             if (ret!=1) {
@@ -166,6 +264,11 @@ static void collect_available(leo_scanner_glrt *s)
                 ++s->collecting; continue;
             }
             v->state=COLLECTING;
+            if (s->protection_stats.enabled) {
+                leo_probe_stats pool; leo_probe_pool_stats(s->pool,&pool);
+                if (pool.occupied_slots>s->protection_stats.peak_occupied_slots)
+                    s->protection_stats.peak_occupied_slots=pool.occupied_slots;
+            }
         }
         size_t offset=(size_t)(expected%s->history_capacity);
         size_t count=(size_t)(s->history_end-expected);
@@ -173,6 +276,7 @@ static void collect_available(leo_scanner_glrt *s)
         int ret=leo_probe_feed(&s->collector,expected,s->history+2*offset,count,2,0);
         if (ret<0) { unavailable(s,index,LEO_GLRT_INVALID_INPUT); ++s->collecting; }
         else if (ret==1) {
+            v->submitted_ns=s->now_ns;
             v->state=WORKING; ++s->collecting;
             if (wake_worker(s)) leo_scanner_glrt_fail(s);
         }
@@ -207,6 +311,14 @@ int leo_scanner_glrt_block(leo_scanner_glrt *s, uint64_t first,
     if (!s->have_history || first!=s->history_end) s->history_start=first;
     s->have_history=1;
     uint64_t end=first+count;
+    if (s->protection_stats.suspended) {
+        /* The caller retains/forwards its original dual-RX IQ. Only this
+         * advisory copy is omitted; invalidate history rather than reuse it. */
+        s->history_start=s->history_end=end;
+        ++s->protection_stats.history_blocks_skipped;
+        collect_available(s);
+        return 0;
+    }
     size_t offset=(size_t)(first%s->history_capacity), copied=0;
     while (copied<count) {
         size_t n=count-copied;

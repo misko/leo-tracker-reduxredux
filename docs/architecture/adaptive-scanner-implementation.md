@@ -110,8 +110,9 @@ do not silently change user-facing three-miss/two-second behavior.
 7. **Runtime/quality:** qualify the exact integrated build on held-out saved IQ,
    simulate/shadow scheduling without inventing unsampled RF, and run full
    300-second ARM modeled-producer tests at both rates. Existing older replay
-   passes are not passes for this new SDK/policy/package. No loss/backlog or
-   shortened dwell/every-Nth substitute for the requested behavior.
+   passes are not passes for this new SDK/policy/package. Preserve captured IQ
+   and complete result accounting, with overload skips explicitly UNKNOWN; no
+   unbounded backlog, shortened dwell or silent every-Nth substitution.
    The SDK replay now has an explicit positive-feedback research mode. It
    checks independent, source-bound scheduling observations alongside immutable
    wire results, including consumer ordering and timing. This does not itself
@@ -142,6 +143,14 @@ do not silently change user-facing three-miss/two-second behavior.
    provider, live duty, or an independent quality holdout. ARM weighted/fault
    transitions, precise queue occupancy and full-package memory remain open.
    See the [ARM threaded checkpoint](../../reports/2026_09_09_scanner_threaded_arm_checkpoint.md).
+   Capture-first protection is now an additional, default-off SDK/provider
+   opt-in: two-slot admission, 250 ms oldest-job shedding, a 500 ms owned-worker
+   watchdog, callback/source-gap pressure and four healthy blocks to resume.
+   Skipped evidence remains unhealthy UNKNOWN; recovery does not unlatch the
+   capture-long uniform fallback. New desktop overload, policy and actual
+   provider tests qualify these paths, not new ARM timing or live duty. The
+   previous ARM receipt predates this implementation and cannot qualify it.
+   See the [capture-protection checkpoint](../../reports/2026_09_09_scanner_capture_protection_checkpoint.md).
 8. **Live/release:** separately authorized <=30 minute canaries, first fixed
    detector off/on, then adaptive versus fixed with detector enabled in both.
    Each two-rate A/B matrix is four 300 s captures (20 minutes RF). Hardware

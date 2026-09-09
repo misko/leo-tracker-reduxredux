@@ -57,6 +57,38 @@ int leo_scanner_glrt_open_positive(leo_scanner_glrt **output,
     const leo_scanner_glrt_config_v1 *, const char *worker_path, const char *template_path,
     const leo_scanner_glrt_positive_policy_v1 *);
 
+/* Additive, startup-only opt-in; old open/config/wire layouts stay unchanged.
+ * max_occupied_slots limits admission including a partially collected dwell.
+ * Pending age includes queueing and computation, measured by CLOCK_MONOTONIC.
+ * At admission_age_ms, new checks are skipped; at worker_timeout_ms, only the
+ * owned worker is killed without waiting and advisory processing is disabled
+ * until a new session. The owner must continue calling block/frame/drain for
+ * deadlines to be checked: this is not a separate timer or a hard-RT promise.
+ * Pin these values with the trusted release's configuration identity. */
+typedef struct {
+    uint32_t max_occupied_slots, admission_age_ms, worker_timeout_ms, recovery_blocks;
+} leo_scanner_glrt_protection_v1;
+int leo_scanner_glrt_enable_protection(leo_scanner_glrt *,
+    const leo_scanner_glrt_protection_v1 *);
+
+/* Acquisition-owner pressure hint, once per measured block. Nonzero pressure
+ * suspends new checks; recovery_blocks consecutive zero hints resume admission.
+ * A skipped/partial check is unavailable with zero coverage, never a miss or
+ * an invented positive. Already submitted work may finish; no waiting/restart.
+ * This does not unlatch the adaptive policy's capture-long uniform fallback. */
+int leo_scanner_glrt_capture_pressure(leo_scanner_glrt *, int pressured);
+
+/* Runtime diagnostics only, not a new persisted contract or wire reason.
+ * occupied_slots is a momentary shared-pool snapshot, peak_occupied_slots is
+ * sampled by the acquisition owner, not a continuous instrumentation trace. */
+typedef struct {
+    uint64_t backlog_skips, pressure_skips, history_blocks_skipped;
+    uint64_t pressure_entries, resumptions, watchdog_trips, clock_faults;
+    uint32_t enabled, suspended, disabled, occupied_slots, peak_occupied_slots;
+} leo_scanner_glrt_protection_stats_v1;
+int leo_scanner_glrt_protection_stats(const leo_scanner_glrt *,
+    leo_scanner_glrt_protection_stats_v1 *);
+
 /* Acquisition-owner-only result copy for scheduler feedback. Returns 1 for an
  * observation, 0 if not ready, -ENODATA after the complete terminal inventory,
  * -ENOTSUP without positive opt-in. Does not consume wire results. No waiting;

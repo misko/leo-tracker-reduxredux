@@ -1,0 +1,362 @@
+{
+  "schema": "org.leo.research.capture-protection-evidence/v1",
+  "scope": "Desktop SDK/provider/synthetic TCP tests and ARM SDK cross-build; no RF or deployment",
+  "tests": {
+    "sdk-policy-tests.xml": 637,
+    "contracts-host-tests.xml": 241,
+    "provider-config-tests.xml": 23,
+    "protected-network-tests.xml": 16
+  },
+  "state_before_checkpoint_commit": {
+    "leo": {
+      "head": "6119acb0665fa23168882b8ac7396dc78db1ea08",
+      "status": " M docs/architecture/adaptive-scanner-implementation.md\n M src/leo/scanner/native_presence/scanner_glrt.c\n M src/leo/scanner/native_presence/scanner_glrt.h\n M tests/scanner/test_scanner_glrt_port.py\n?? reports/2026_09_09_scanner_capture_protection_checkpoint.md\n?? reports/evidence/2026_09_09_scanner_capture_protection/\n?? tests/scanner/native/\n?? tests/scanner/test_scanner_glrt_protection.py\n"
+    },
+    "libiio": {
+      "head": "42762db3e4a42901c7b9869a3d0d6be7c1147745",
+      "status": " M doc/scanner-glrt-provider.md\n M iiod/CMakeLists.txt\n M iiod/spf-buffer-metadata.c\n M iiod/spf-scanner-glrt.c\n M iiod/spf-scanner-glrt.h\n M tests/test_scanner_glrt_build_config.py\n M tests/test_scanner_glrt_provider.c\n"
+    },
+    "ppu": {
+      "head": "5c15faf28ba9000a137441b3ab0161356a4f67b4",
+      "status": ""
+    }
+  },
+  "artifacts": [
+    {
+      "source_name": "archive.py",
+      "file": "archive.py.gz",
+      "source_sha256": "4308064fbf7993102640857a087932c80d44a2d3d7ffa80d97283f35100a8885",
+      "compressed_sha256": "65105d767e76840fe6b75dea6cb6702f85cb6120499b26dfdebcc063a7ee9e39",
+      "source_bytes": 3141
+    },
+    {
+      "source_name": "build-results.json",
+      "file": "build-results.json.gz",
+      "source_sha256": "9d6fd0647c4f7e8fd67596bdba3e04c799d23828fa0f7dcd50288cb8d6692d37",
+      "compressed_sha256": "3bd93cb98abd55e8d7462e579c99352d42044c0e5e34b70837ecb6311761a649",
+      "source_bytes": 77062
+    },
+    {
+      "source_name": "build_fixture.py",
+      "file": "build_fixture.py.gz",
+      "source_sha256": "70bf6afb7c034d574cdb22ea2ab213216c6bc795bcd65aa05462d19188368ca9",
+      "compressed_sha256": "6600dc436326598fe0d8bde628e52624d602487085e20d20bdf185da1306ecbf",
+      "source_bytes": 5910
+    },
+    {
+      "source_name": "contracts-host-tests.xml",
+      "file": "contracts-host-tests.xml.gz",
+      "source_sha256": "86a419346927afee673b71e327d9c05c713aa6e0cb53d6878023fb99827f9f58",
+      "compressed_sha256": "12e383f796dcfb2f15538180a96401ee2c1a7c698a40cd0cf4501c562ce6d8ab",
+      "source_bytes": 51903
+    },
+    {
+      "source_name": "libleo-scanner-glrt-arm.so.build.json",
+      "file": "libleo-scanner-glrt-arm.so.build.json.gz",
+      "source_sha256": "017938eab351858710a10fef20536ccf4a373829009b20bedab351bc78b803c6",
+      "compressed_sha256": "acfa14f63bdee8c00ed5e864755295653392d3b1ffb17b75552984fb936c3a1d",
+      "source_bytes": 3327
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-compile-pressure-injection.json",
+      "file": "positive-only-v1-protection-OFF-compile-pressure-injection.json.gz",
+      "source_sha256": "30d86bee27e36926103e905bffd95e0798d984d59e7f75d63aeee669d6be3cbf",
+      "compressed_sha256": "67c2dc208c0b9cb030f525769bcff5574667a85c1f420b4a8f061decc80ff930",
+      "source_bytes": 939
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-compile-retry.json",
+      "file": "positive-only-v1-protection-OFF-compile-retry.json.gz",
+      "source_sha256": "623a1b21d0f5a4cc48faa03b922c04c61808ed41a5fae7ab3cd4916198c09645",
+      "compressed_sha256": "cf5a995c612c8136d87624e7f21918c335a67dc2d84930d0fd6a734155d1a44f",
+      "source_bytes": 589
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-compile.json",
+      "file": "positive-only-v1-protection-OFF-compile.json.gz",
+      "source_sha256": "b83f8552d50a1062dda3fa0c4b6ee0a9d0bb15d62a7d76acdcabe41aeda86d2a",
+      "compressed_sha256": "eed8081a15131efbf6916a43e24463c521768a9ccbafcac32de16dbd2109c7a6",
+      "source_bytes": 11577
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-configure-pressure-injection.json",
+      "file": "positive-only-v1-protection-OFF-configure-pressure-injection.json.gz",
+      "source_sha256": "4c8c36b1224b055d4d695ea39d009ffb20365fed897eac57ad143a64217277ed",
+      "compressed_sha256": "fd62d9e956973999da7d863e0188e3840d65d7edd54ea2bf297b6cdad4905cd2",
+      "source_bytes": 3228
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-configure-retry.json",
+      "file": "positive-only-v1-protection-OFF-configure-retry.json.gz",
+      "source_sha256": "4c8c36b1224b055d4d695ea39d009ffb20365fed897eac57ad143a64217277ed",
+      "compressed_sha256": "fd62d9e956973999da7d863e0188e3840d65d7edd54ea2bf297b6cdad4905cd2",
+      "source_bytes": 3228
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-configure.json",
+      "file": "positive-only-v1-protection-OFF-configure.json.gz",
+      "source_sha256": "da8da1a14733fb006cdc774bef999a0cc94ada312984372380b2e80d23400f4e",
+      "compressed_sha256": "ccc524b0b339c70be8532ed727aee631152fd31b999543bd2de6a8d6e2dc5602",
+      "source_bytes": 4408
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-provider-pressure-injection.json",
+      "file": "positive-only-v1-protection-OFF-provider-pressure-injection.json.gz",
+      "source_sha256": "d1b8109071c96e7bf29b78c0bafaef1a8a78e34ff03ad8c1c57cd929bc891365",
+      "compressed_sha256": "8b9834afc693ca5cfaa9c6c9a7c995a0ad0f8d702ea688b0190e9f6cd4d66f9e",
+      "source_bytes": 1305
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-provider-retry.json",
+      "file": "positive-only-v1-protection-OFF-provider-retry.json.gz",
+      "source_sha256": "d1b8109071c96e7bf29b78c0bafaef1a8a78e34ff03ad8c1c57cd929bc891365",
+      "compressed_sha256": "8b9834afc693ca5cfaa9c6c9a7c995a0ad0f8d702ea688b0190e9f6cd4d66f9e",
+      "source_bytes": 1305
+    },
+    {
+      "source_name": "positive-only-v1-protection-OFF-provider.json",
+      "file": "positive-only-v1-protection-OFF-provider.json.gz",
+      "source_sha256": "e8eebf06774e4fb97ca043f20ca8535fdd58b7e26819afa580469a8b0f24e7bc",
+      "compressed_sha256": "0504d8aad1d8ae4b259bd1551eaecfa410f1760e6d93917174c4e9dab075cc6a",
+      "source_bytes": 489
+    },
+    {
+      "source_name": "positive-only-v1-protection-ON-compile-pressure-injection.json",
+      "file": "positive-only-v1-protection-ON-compile-pressure-injection.json.gz",
+      "source_sha256": "9fbd2e10ebcdfb0cb2d8e03538e7acd07c01041fe2b294915f8ad93bfecbc456",
+      "compressed_sha256": "46d58a24ca7457a7c12a4c6392052425df2a05deddaf01b15854eea7e7189633",
+      "source_bytes": 937
+    },
+    {
+      "source_name": "positive-only-v1-protection-ON-compile-retry.json",
+      "file": "positive-only-v1-protection-ON-compile-retry.json.gz",
+      "source_sha256": "badc03702aef55358467c58b8ab0c9f7dd5cdf4622bcfc35b1f66af49480aa7f",
+      "compressed_sha256": "bfb1e25eeee29799a72a3d6ff277ab53e0de5c6d9e7a0849d9fe42fe87c1ad70",
+      "source_bytes": 11575
+    },
+    {
+      "source_name": "positive-only-v1-protection-ON-configure-pressure-injection.json",
+      "file": "positive-only-v1-protection-ON-configure-pressure-injection.json.gz",
+      "source_sha256": "05ffb42577d6cd736eb98e06b43ef7c0a2987768a0f714e27581f477bbce00a3",
+      "compressed_sha256": "6a2ca0fbfa9c2dba27a01a06d52b3bae0f214738bdc5175a7fa8547b52c05539",
+      "source_bytes": 3224
+    },
+    {
+      "source_name": "positive-only-v1-protection-ON-configure-retry.json",
+      "file": "positive-only-v1-protection-ON-configure-retry.json.gz",
+      "source_sha256": "9fb9426951fe4cec02998a61b94600eccc377c85c6c6bd2fce9820af81d7c231",
+      "compressed_sha256": "a032a259f973632b0f9542f0cc939b183eb9a12ff8a418bba5ae559c3de49a4b",
+      "source_bytes": 4404
+    },
+    {
+      "source_name": "positive-only-v1-protection-ON-provider-pressure-injection.json",
+      "file": "positive-only-v1-protection-ON-provider-pressure-injection.json.gz",
+      "source_sha256": "6c9113a2760343a906b1090666cc2dca79be6eeab6d343f763a36d485daae309",
+      "compressed_sha256": "23608bb7f5d276a01cff4f3905c28a94bde5910b06577f5d7f7d2cea83ad4275",
+      "source_bytes": 1303
+    },
+    {
+      "source_name": "positive-only-v1-protection-ON-provider-retry.json",
+      "file": "positive-only-v1-protection-ON-provider-retry.json.gz",
+      "source_sha256": "6c9113a2760343a906b1090666cc2dca79be6eeab6d343f763a36d485daae309",
+      "compressed_sha256": "23608bb7f5d276a01cff4f3905c28a94bde5910b06577f5d7f7d2cea83ad4275",
+      "source_bytes": 1303
+    },
+    {
+      "source_name": "protected-network-tests.xml",
+      "file": "protected-network-tests.xml.gz",
+      "source_sha256": "d5a1098f0a79117ac67f6a8bb1348d887905ce22ec242be8de2b22051b3d818b",
+      "compressed_sha256": "e85579c0ba70ba40af4a496c27bb21f856d2bb9dc86c612ca6578da8ac53c0d5",
+      "source_bytes": 3263
+    },
+    {
+      "source_name": "provider-config-tests.xml",
+      "file": "provider-config-tests.xml.gz",
+      "source_sha256": "523aa5ea03da15bc0e4a0174e9952f4f74398df0500f378bb816c8a8ab0f2e54",
+      "compressed_sha256": "30f57d14ef8349a8b4eb87d737918acf6b16d4982507239054b79e1c94b53fa7",
+      "source_bytes": 3779
+    },
+    {
+      "source_name": "sanitize_fixture.py",
+      "file": "sanitize_fixture.py.gz",
+      "source_sha256": "33bd10699a6f5f2da44008ac16f9934f144f613170490cca93ea9ac781fe8bef",
+      "compressed_sha256": "45b6f9413f8f474769ff5381e9d52c10a3ee9949edf2579a13ff47443aea9b54",
+      "source_bytes": 1900
+    },
+    {
+      "source_name": "sanitized-compile.json",
+      "file": "sanitized-compile.json.gz",
+      "source_sha256": "2f2423844aeb173985524381a88c02ee9affa2234a1a02c4036fa7505e240fdc",
+      "compressed_sha256": "9624d3263fff2ceb0146afcb44e18c1b413672d5baa4c61576c8902a62465c66",
+      "source_bytes": 4962
+    },
+    {
+      "source_name": "sanitized-configure.json",
+      "file": "sanitized-configure.json.gz",
+      "source_sha256": "5be2cf9dde080a9cbdbf715fc0dfba208869d3fa45e6b8e0f1f4c7187204f906",
+      "compressed_sha256": "e38d4182ca9fbc3062c42aa77dadf6c0cde169448ddc50c479d73320c63a5f0b",
+      "source_bytes": 4535
+    },
+    {
+      "source_name": "sanitized-provider.json",
+      "file": "sanitized-provider.json.gz",
+      "source_sha256": "2d7ef54df14ceb1046eef5c1240abe3884c470a54c42d36d80624fa35cd9ed0b",
+      "compressed_sha256": "02e482c596b2c22fd885b5482c78dc0d343071aee99cb00bc830f976d54178b6",
+      "source_bytes": 1308
+    },
+    {
+      "source_name": "sdk-policy-tests.xml",
+      "file": "sdk-policy-tests.xml.gz",
+      "source_sha256": "20a30a002f8ae3621ca37700b34869b6638593b498a51cbc36633270c03548d4",
+      "compressed_sha256": "7b445ca9d293599aac3bdb8d6254afa6468f4bbe2713d9de4455692f7a80c52c",
+      "source_bytes": 104045
+    },
+    {
+      "source_name": "sdk-sanitized.so.build.json",
+      "file": "sdk-sanitized.so.build.json.gz",
+      "source_sha256": "a6230db2e57e65c902cb7f9ca7a7f734c99f4b7bc701e40051027b19797c0349",
+      "compressed_sha256": "dd26b4c11374d91575d7a6a38907647ebd51f6fcf53eeb31117a2b3028d84695",
+      "source_bytes": 3149
+    },
+    {
+      "source_name": "sdk.so.build.json",
+      "file": "sdk.so.build.json.gz",
+      "source_sha256": "875d546e61e98ac01004d5d35c47039b8aea785a899a1b5158a31634aed904ba",
+      "compressed_sha256": "1ac949c6a5bd508ae73632964462aa0be4b4f286c3d2e0bd26aa974b9e78f3bf",
+      "source_bytes": 3072
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-compile-pressure-injection.json",
+      "file": "unqualified-evidence-protection-OFF-compile-pressure-injection.json.gz",
+      "source_sha256": "f3932884afa843aa01f5f28bd61f07df420d2ccc10b42951637221af1889ccfd",
+      "compressed_sha256": "16c1c0974a6d6aee0a954ff8000d847ead10b51604befcdd16709611dfd37d78",
+      "source_bytes": 947
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-compile-retry.json",
+      "file": "unqualified-evidence-protection-OFF-compile-retry.json.gz",
+      "source_sha256": "36b08b6876c9d1ad5958a3b65a9a17fbb0e30cbc661a0f84703eead956db71d0",
+      "compressed_sha256": "b360fce9a02545e8b29ac5d04bd40aa729fa3578d89efe123589d45f7ab0019d",
+      "source_bytes": 597
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-compile.json",
+      "file": "unqualified-evidence-protection-OFF-compile.json.gz",
+      "source_sha256": "aac70e68c5298c745a50dd25df09f0f26182dc435a02ff51c9cbf7ccb63a86f9",
+      "compressed_sha256": "2c8dee94e9ae38efcfce8d242190a7996500080f4f157527425afe1c8a00de33",
+      "source_bytes": 11585
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-configure-pressure-injection.json",
+      "file": "unqualified-evidence-protection-OFF-configure-pressure-injection.json.gz",
+      "source_sha256": "8910c6af1f024f9a8ac86ffacfec3d544862b188d15256489fc2eb1111751743",
+      "compressed_sha256": "e27d29e08439fce42264daac6f80b104ffc37492b845638b7371ed02d4153a51",
+      "source_bytes": 3105
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-configure-retry.json",
+      "file": "unqualified-evidence-protection-OFF-configure-retry.json.gz",
+      "source_sha256": "8910c6af1f024f9a8ac86ffacfec3d544862b188d15256489fc2eb1111751743",
+      "compressed_sha256": "e27d29e08439fce42264daac6f80b104ffc37492b845638b7371ed02d4153a51",
+      "source_bytes": 3105
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-configure.json",
+      "file": "unqualified-evidence-protection-OFF-configure.json.gz",
+      "source_sha256": "a8a5565250a2c8e7578138ed8468125b38326cdce2ed65114cbe227029a306d5",
+      "compressed_sha256": "6fa4d2d339d9a1b3d676bb2a05d3a2d9dc34eeed0045008c33c6b2746fffec19",
+      "source_bytes": 4285
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-provider-pressure-injection.json",
+      "file": "unqualified-evidence-protection-OFF-provider-pressure-injection.json.gz",
+      "source_sha256": "a8f1df48e7047b7725f6830184e6a9d4f41ecdb7bb2f4d8a7054f4b5d327c0c3",
+      "compressed_sha256": "36da4beafe8c248557ee0e4770eb98cae719d59c737f591efa69869b26993eec",
+      "source_bytes": 355
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-provider-retry.json",
+      "file": "unqualified-evidence-protection-OFF-provider-retry.json.gz",
+      "source_sha256": "a8f1df48e7047b7725f6830184e6a9d4f41ecdb7bb2f4d8a7054f4b5d327c0c3",
+      "compressed_sha256": "36da4beafe8c248557ee0e4770eb98cae719d59c737f591efa69869b26993eec",
+      "source_bytes": 355
+    },
+    {
+      "source_name": "unqualified-evidence-protection-OFF-provider.json",
+      "file": "unqualified-evidence-protection-OFF-provider.json.gz",
+      "source_sha256": "a8f1df48e7047b7725f6830184e6a9d4f41ecdb7bb2f4d8a7054f4b5d327c0c3",
+      "compressed_sha256": "36da4beafe8c248557ee0e4770eb98cae719d59c737f591efa69869b26993eec",
+      "source_bytes": 355
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-compile-pressure-injection.json",
+      "file": "unqualified-evidence-protection-ON-compile-pressure-injection.json.gz",
+      "source_sha256": "90b6a7f3b66cb0ad1602ac9daf9164bb0aa9b8407a57d8c75d7c703baf55a847",
+      "compressed_sha256": "7126fc78fee6bf5367c7c6e093c7fd4b1b23aa0a88e8e9806d2c86ec87cbf174",
+      "source_bytes": 945
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-compile-retry.json",
+      "file": "unqualified-evidence-protection-ON-compile-retry.json.gz",
+      "source_sha256": "f06fa85a3f9ab123c965f4cec01b419a652de6104a431aee10d1b6c141bc64da",
+      "compressed_sha256": "1a9c5578b27f4410dfd940c9f9b8eb28e134864bc9de8ba89e15c26501673ae7",
+      "source_bytes": 595
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-compile.json",
+      "file": "unqualified-evidence-protection-ON-compile.json.gz",
+      "source_sha256": "612b99f8d40477a5cb8101fb2a78d7ed1238b4bc820b3b7ee2123a42b8f6cd47",
+      "compressed_sha256": "3caafdce3d15f8005df4ca31eabea45289555d07671b9cf6e3a6f41ed318978b",
+      "source_bytes": 11583
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-configure-pressure-injection.json",
+      "file": "unqualified-evidence-protection-ON-configure-pressure-injection.json.gz",
+      "source_sha256": "81c2b0e40ddb29242984dbb4f81a7c8b22665d7f95a58ebe349085258914bde3",
+      "compressed_sha256": "d4bcf4503ba70465dca0333c1b3e024974ef02a49c3458b9b69026c6b2066bbd",
+      "source_bytes": 3101
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-configure-retry.json",
+      "file": "unqualified-evidence-protection-ON-configure-retry.json.gz",
+      "source_sha256": "81c2b0e40ddb29242984dbb4f81a7c8b22665d7f95a58ebe349085258914bde3",
+      "compressed_sha256": "d4bcf4503ba70465dca0333c1b3e024974ef02a49c3458b9b69026c6b2066bbd",
+      "source_bytes": 3101
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-configure.json",
+      "file": "unqualified-evidence-protection-ON-configure.json.gz",
+      "source_sha256": "2ad713c61b7679a9308345cd6e553f19d31f88c78dd77b4e4787b5416ea80af2",
+      "compressed_sha256": "5e6af32fde16e8087d218a543807572cd0c17699f7ce7f60c3ab34b22645108f",
+      "source_bytes": 4281
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-provider-pressure-injection.json",
+      "file": "unqualified-evidence-protection-ON-provider-pressure-injection.json.gz",
+      "source_sha256": "63d9d78fccaf8630329406dfbc21e1cf42ae609e16c4f55a13239438534c5eef",
+      "compressed_sha256": "9e7a1f58d7ab3a997845600806758e3a3fd4ba3fa7bedfb3f446974860975eb7",
+      "source_bytes": 353
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-provider-retry.json",
+      "file": "unqualified-evidence-protection-ON-provider-retry.json.gz",
+      "source_sha256": "63d9d78fccaf8630329406dfbc21e1cf42ae609e16c4f55a13239438534c5eef",
+      "compressed_sha256": "9e7a1f58d7ab3a997845600806758e3a3fd4ba3fa7bedfb3f446974860975eb7",
+      "source_bytes": 353
+    },
+    {
+      "source_name": "unqualified-evidence-protection-ON-provider.json",
+      "file": "unqualified-evidence-protection-ON-provider.json.gz",
+      "source_sha256": "63d9d78fccaf8630329406dfbc21e1cf42ae609e16c4f55a13239438534c5eef",
+      "compressed_sha256": "9e7a1f58d7ab3a997845600806758e3a3fd4ba3fa7bedfb3f446974860975eb7",
+      "source_bytes": 353
+    },
+    {
+      "source_name": "worker.build.json",
+      "file": "worker.build.json.gz",
+      "source_sha256": "3929b59d498a73d82dbf98c760f5d8c1acd63672047292ac57eb9195498f4530",
+      "compressed_sha256": "e6fe1ebdfc7be4608b17665ffb94e0f7b4b2762f5d0ff8adad6988d4b81166e0",
+      "source_bytes": 5865
+    }
+  ]
+}
