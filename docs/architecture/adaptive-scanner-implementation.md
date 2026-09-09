@@ -117,6 +117,20 @@ do not silently change user-facing three-miss/two-second behavior.
    wire results, including consumer ordering and timing. This does not itself
    exercise the scheduler thread, bounded queue, adaptive choices or IIO load.
    See the [feedback replay checkpoint](../../reports/2026_09_09_scanner_glrt_feedback_replay_checkpoint.md).
+   A subsequent research shadow adapter now connects the real SDK, libiio SPSC
+   queue, policy and scheduler thread through public ports with mocked hardware
+   IO. Positive-rich saved RX1 workloads pass full elapsed 300-second desktop
+   runs at both rates: 2,479 results/observations/choices each, with independent
+   policy-model agreement. These repeated development sequences do not demote
+   any target; separate generated-pilot/zero-IQ integration tests exercise
+   weighted proposals. This is not held-out quality, executed adaptive RF,
+   IIO/network contention, physical queue occupancy or live-duty qualification.
+   1,009 portable tests and five explicitly marked libiio integration tests
+   pass; short ASan/UBSan/leak checks and ARM cross-builds pass. ARM execution
+   remains paused on the intended spare's changed SSH host key, before any
+   upload or remote execution. Trusted identity confirmation, exact-package
+   ARM load/memory tests and independent quality remain open.
+   See the [threaded shadow checkpoint](../../reports/2026_09_09_scanner_threaded_shadow_checkpoint.md).
 8. **Live/release:** separately authorized <=30 minute canaries, first fixed
    detector off/on, then adaptive versus fixed with detector enabled in both.
    Each two-rate A/B matrix is four 300 s captures (20 minutes RF). Hardware
