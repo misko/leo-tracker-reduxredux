@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/tmp/leo-scanner-host-runtime.JXTjzr/.venv/bin/python",
+    "-c",
+    "\nimport dataclasses, json\nfrom pluto_plus.hardware.preflight import verify_metadata_runtime\nprint(json.dumps(dataclasses.asdict(verify_metadata_runtime(expected_abi=3)), indent=2))\n"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"metadata_abi\": 3,\n  \"source_ref\": \"a1088b61de3c57762cfed5533e1baf8076a7b726\",\n  \"source_commit\": \"a1088b61de3c57762cfed5533e1baf8076a7b726\",\n  \"native_libiio_path\": \"/tmp/leo-scanner-host-runtime.JXTjzr/.venv/lib/libiio.so.0.25\",\n  \"native_libiio_sha256\": \"a09b77cf0c0101204163abae8c90a6abc170199ee61836c5133dc3194569df3e\",\n  \"pylibiio_path\": \"/tmp/leo-scanner-host-runtime.JXTjzr/.venv/lib/python3.13/site-packages/iio.py\",\n  \"pylibiio_sha256\": \"5ed5cb596f24ceeb857b27eefe5303eeb4f1e9ed2c1f2a31a2ca5746d8fa52bb\",\n  \"receipt_path\": \"/tmp/leo-scanner-host-runtime.JXTjzr/.venv/share/pluto-plus-utils/metadata-runtime.json\"\n}\n",
+  "stderr": ""
+}

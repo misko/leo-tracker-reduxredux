@@ -18,7 +18,17 @@ enumerated with its exact serial. Verify that serial's physical `192.168.1.*`
 Ethernet mapping and availability/ownership before use; all capture and test
 traffic must use that Ethernet interface. A historical USB mapping is insufficient.
 The original excluded serial `104000bac4950008230026001b440a003a` remains excluded.
-No replacement is selected or authorized for RF by this restriction update.
+The operator subsequently authorized `.18` for the six 300-second capture
+matrix. Its exact serial `1040007c4a94000211000b009186843ef2` currently enumerates
+at USB `3-11`, and its physical Ethernet identity was verified read-only.
+However, its existing `v0.50-plutoplus-starlink-pss-15m-rx-only-dnm-v7` image
+exposes only `voltage0`/`voltage1`, one complex receiver, and lacks the DDS
+device expected by the host's pyadi constructor. It cannot qualify the unchanged
+dual-RX scanner. No RF or radio-side mutation was performed. Do not change its
+firmware/FPGA, weaken the layout gate or silently record only one RX.
+The other currently USB-visible spare is `winbond-db6968136727402c` at `3-7`;
+its historical `.152` mapping did not return a radio identity. Its current LAN
+address and availability remain unconfirmed; it has not been authorized for RF.
 
 ## Policy frozen for the first implementation
 
@@ -197,6 +207,15 @@ do not silently change user-facing three-miss/two-second behavior.
    [exact package](../../reports/2026_09_09_scanner_protected_package_checkpoint.md)
    evidence. Live streaming, adaptive allocation benefit, analysis throughput,
    deployed UI, remote merges and operational restoration remain open.
+   A later read-only spare preflight exposed a host packaging gap: the previous
+   ABI-3 installer cannot select the GLRT-capable library. PPU now has an
+   explicit `--scanner-glrt` install option pinned to the exact `a1088b6` native
+   source, preserving old defaults and receipt schema. A fresh isolated wheel
+   installation and clean-process verification pass, along with 834 component
+   and regression tests. The production staging/inventory pin is deliberately
+   unchanged; release promotion remains open. The installed runtime confirms
+   `.18`'s separate hardware-layout blocker rather than bypassing it.
+   See the [host runtime and USB preflight checkpoint](../../reports/2026_09_09_scanner_host_runtime_checkpoint.md).
 8. **Live/release:** separately authorized <=30 minute canaries, first fixed
    detector off/on, then adaptive versus fixed with detector enabled in both.
    The proposed combined matrix reuses the fixed detector-on comparison:
