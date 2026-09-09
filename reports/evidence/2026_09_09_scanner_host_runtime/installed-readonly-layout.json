@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/tmp/leo-scanner-host-runtime.JXTjzr/.venv/bin/python",
+    "-c",
+    "\nimport json\nfrom pluto_plus.hardware.preflight import verify_metadata_runtime\nverify_metadata_runtime(expected_abi=3)\nimport iio\ncontext = iio.Context('ip:192.168.1.18')\nassert context.attrs.get('hw_serial') == '1040007c4a94000211000b009186843ef2', context.attrs\ndevice = context.find_device('cf-ad9361-lpc')\nprint(json.dumps(dict(serial=context.attrs['hw_serial'], channels=[dict(\n    id=channel.id, output=channel.output, scan_element=channel.scan_element,\n    bits=channel.data_format.bits, length=channel.data_format.length,\n    repeat=channel.data_format.repeat) for channel in device.channels]), indent=2))\n"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"serial\": \"1040007c4a94000211000b009186843ef2\",\n  \"channels\": [\n    {\n      \"id\": \"voltage0\",\n      \"output\": false,\n      \"scan_element\": true,\n      \"bits\": 12,\n      \"length\": 16,\n      \"repeat\": 1\n    },\n    {\n      \"id\": \"voltage1\",\n      \"output\": false,\n      \"scan_element\": true,\n      \"bits\": 12,\n      \"length\": 16,\n      \"repeat\": 1\n    }\n  ]\n}\n",
+  "stderr": ""
+}
