@@ -31,6 +31,10 @@ class Config(ct.Structure):
 @pytest.fixture(scope="module")
 def port(tmp_path_factory):
     binary = build_scanner_glrt_port(tmp_path_factory.mktemp("glrt-port") / "port.so")
+    return load_port(binary)
+
+
+def load_port(binary):
     lib = ct.CDLL(str(binary))
     lib.leo_scanner_glrt_open.argtypes = [
         ct.POINTER(ct.c_void_p),
