@@ -3,6 +3,10 @@
 2026-09-09. No new RF, radio uploads, listeners, firmware/FPGA changes or
 production service changes. `.14` remains excluded and was not contacted.
 
+Subsequent explicitly authorized maintenance restored `.18` to released v0.49
+and verified 2R2T. See the [restoration checkpoint](2026_09_09_radio18_v49_2r2t_checkpoint.md).
+The observations below describe the earlier preflight, not its current firmware.
+
 ## Outcome
 
 The operator authorized `.18` for six 300-second captures, but read-only

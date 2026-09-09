@@ -3,7 +3,9 @@
 2026-09-09. User-authorized implementation, tests, deployment and verification.
 This document tracks the full requested outcome, not a release pass. New RF
 collection still requires explicit bounded authorization. Fixed scanning remains
-the default; no firmware flash, kernel or FPGA change belongs to this work.
+the default. Scanner development does not require custom firmware, kernel or
+FPGA changes. A separate explicit operator request authorized stock-release
+flashing and 2R2T restoration on `.18`, documented below.
 
 ## Current operator hardware restriction
 
@@ -21,11 +23,16 @@ The original excluded serial `104000bac4950008230026001b440a003a` remains exclud
 The operator subsequently authorized `.18` for the six 300-second capture
 matrix. Its exact serial `1040007c4a94000211000b009186843ef2` currently enumerates
 at USB `3-11`, and its physical Ethernet identity was verified read-only.
-However, its existing `v0.50-plutoplus-starlink-pss-15m-rx-only-dnm-v7` image
-exposes only `voltage0`/`voltage1`, one complex receiver, and lacks the DDS
-device expected by the host's pyadi constructor. It cannot qualify the unchanged
-dual-RX scanner. No RF or radio-side mutation was performed. Do not change its
-firmware/FPGA, weaken the layout gate or silently record only one RX.
+Its earlier `v0.50-plutoplus-starlink-pss-15m-rx-only-dnm-v7` image exposed only
+one complex receiver and lacked the DDS device expected by pyadi. The operator
+then explicitly authorized flashing the latest published release and restoring
+2R2T using PPU. This completed on `v0.49-plutoplus-spf-iq-direct-async-v4`:
+AD9361-compatible 2R2T, four RX storage elements, ABI 3, 216 MiB CMA, safe TX
+and exact QSPI readback verified. Stock release firmware/FPGA contents changed;
+the bootloader did not. No RF capture was started. The layout blocker is resolved,
+but exact-package live capture, duty and deployment gates remain open. Do not
+infer further flash authority or silently record only one RX.
+See the [restoration checkpoint](../../reports/2026_09_09_radio18_v49_2r2t_checkpoint.md).
 The other currently USB-visible spare is `winbond-db6968136727402c` at `3-7`;
 its historical `.152` mapping did not return a radio identity. Its current LAN
 address and availability remain unconfirmed; it has not been authorized for RF.
@@ -214,7 +221,9 @@ do not silently change user-facing three-miss/two-second behavior.
    installation and clean-process verification pass, along with 834 component
    and regression tests. The production staging/inventory pin is deliberately
    unchanged; release promotion remains open. The installed runtime confirms
-   `.18`'s separate hardware-layout blocker rather than bypassing it.
+   `.18`'s then-existing hardware-layout blocker rather than bypassing it.
+   Subsequently authorized PPU stock-release maintenance resolved that blocker
+   with verified v0.49/2R2T; it did not run RF or qualify the live scanner.
    See the [host runtime and USB preflight checkpoint](../../reports/2026_09_09_scanner_host_runtime_checkpoint.md).
 8. **Live/release:** separately authorized <=30 minute canaries, first fixed
    detector off/on, then adaptive versus fixed with detector enabled in both.

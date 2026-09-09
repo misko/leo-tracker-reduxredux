@@ -1,0 +1,113 @@
+{
+  "network": {
+    "host": "192.168.1.18",
+    "serial": "1040007c4a94000211000b009186843ef2",
+    "model": "Analog Devices PlutoSDR Rev.C (Z7010-AD9361)",
+    "firmware_version": "v0.49-plutoplus-spf-iq-direct-async-v4"
+  },
+  "usb": {
+    "usb_path": "/sys/bus/usb/devices/3-11",
+    "bus_number": 3,
+    "device_number": 94,
+    "product": "PlutoSDR+ with timestamp support",
+    "serial": "1040007c4a94000211000b009186843ef2",
+    "speed_mbps": 480.0,
+    "interface_count": 7,
+    "usb_spec_version": "2.00",
+    "advertised_max_power_ma": 500,
+    "runtime_power_status": "active",
+    "runtime_power_control": "on",
+    "resolved_parent_path": "/sys/devices/pci0000:80/0000:80:14.0/usb3/3-11",
+    "direct_to_root_hub": true,
+    "intermediate_hub_count": 0,
+    "root_controller_pci_address": "0000:80:14.0",
+    "root_controller_vendor_id": "8086",
+    "root_controller_device_id": "7f6e",
+    "link_faults": {
+      "observation_window": "current boot, last 1000 kernel messages",
+      "error_count": 0,
+      "disconnect_count": 12,
+      "port_power_cycle_count": 0,
+      "recent_messages": [
+        "usb 3-11: USB disconnect, device number 85",
+        "usb 3-11: USB disconnect, device number 86",
+        "usb 3-11: USB disconnect, device number 87",
+        "usb 3-11: USB disconnect, device number 88",
+        "usb 3-11: USB disconnect, device number 89",
+        "usb 3-11: USB disconnect, device number 91",
+        "usb 3-11: USB disconnect, device number 92",
+        "usb 3-11: USB disconnect, device number 93"
+      ]
+    },
+    "host_network_interfaces": [
+      {
+        "name": "enx00e02297811f",
+        "ipv4_addresses": [
+          "192.168.2.10"
+        ]
+      }
+    ],
+    "terminal_devices": [
+      "/dev/ttyACM1"
+    ],
+    "storage_devices": [
+      "/dev/sdf1"
+    ]
+  },
+  "setup": {
+    "identity": {
+      "serial": "1040007c4a94000211000b009186843ef2",
+      "usb_sysfs_path": "/sys/bus/usb/devices/3-11",
+      "observed_firmware": "v0.49-plutoplus-spf-iq-direct-async-v4"
+    },
+    "board_model": "Analog Devices PlutoSDR Rev.C (Z7010/AD9363)",
+    "live_phy_model": "ad9361",
+    "uboot": {
+      "attr_name": "compatible",
+      "attr_val": "ad9361",
+      "compatible": "ad9361",
+      "mode": "2r2t"
+    },
+    "environment_sha256": "220f8c74ca2b88a2996af21e8a2699470573b313c7a48b5a55f97018163128da",
+    "versions_sha256": "e0a9fab893a14efbcaa6dcb1c91216f71139e8afaf7f3e512113f5694985a134",
+    "qspi_firmware_sha256": "77f899610548d486aab2c83c4dc7170532d470b115d2bd0e8fc43e72b3bfca67",
+    "boot_provenance": "qspi_image_verified",
+    "rx_scan_channels": [
+      "voltage0",
+      "voltage1",
+      "voltage2",
+      "voltage3"
+    ],
+    "tx_safe": true,
+    "tx_hardwaregain_db": [
+      -80.0,
+      -80.0
+    ],
+    "rx_lo_5g8_accepted": true,
+    "rx_lo_5g8_readback_hz": 5800000000,
+    "rx_lo_restored": true,
+    "rx_buffer_active": false,
+    "rx_lo_probe_tx_safe": true,
+    "rx_lo_probe_gain_count": 2,
+    "rx_lo_probe_dds_count": 1,
+    "rx_lo_probe_gains_safe": true,
+    "rx_lo_probe_dds_safe": true
+  },
+  "metadata_runtime": {
+    "metadata_abi": 3,
+    "source_ref": "a1088b61de3c57762cfed5533e1baf8076a7b726",
+    "source_commit": "a1088b61de3c57762cfed5533e1baf8076a7b726",
+    "native_libiio_path": "/tmp/leo-scanner-host-runtime.JXTjzr/.venv/lib/libiio.so.0.25",
+    "native_libiio_sha256": "a09b77cf0c0101204163abae8c90a6abc170199ee61836c5133dc3194569df3e",
+    "pylibiio_path": "/tmp/leo-scanner-host-runtime.JXTjzr/.venv/lib/python3.13/site-packages/iio.py",
+    "pylibiio_sha256": "5ed5cb596f24ceeb857b27eefe5303eeb4f1e9ed2c1f2a31a2ca5746d8fa52bb",
+    "receipt_path": "/tmp/leo-scanner-host-runtime.JXTjzr/.venv/share/pluto-plus-utils/metadata-runtime.json"
+  },
+  "stock_probe_passed": true,
+  "idle_buffers": true,
+  "staging_removed": true,
+  "bootloader_sha256": "b14aa2ede1151d6ae3e83754bcbd58567148be544ba65be6bc78c17e0b2ae43f",
+  "bootloader_unchanged": true,
+  "final_readback": "** WARNING: connection is not using a post-quantum key exchange algorithm.\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\n** The server may need to be upgraded. See https://openssh.com/pq.html\nroot@192.168.1.18's  \nb14aa2ede1151d6ae3e83754bcbd58567148be544ba65be6bc78c17e0b2ae43f  /dev/mtd0\nde00e932-0911-4fa6-8435-cfff8984be4e\ndevice-fw v0.49-plutoplus-spf-iq-direct-async-v4\nhdl ddr-burst-v1-rc4-source/hdl-v1\nbuildroot iq-direct-async-v4-source/buildroot-v1\nlinux iq-direct-async-v4-source/linux-v1\nu-boot-xlnx gain-series-v4-rc2-source/u-boot-xlnx\nCmaTotal:         221184 kB\n",
+  "rf_capture_started": false
+}
