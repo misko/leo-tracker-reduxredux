@@ -24,7 +24,11 @@ def _sha256(path: Path) -> str:
 
 
 def _published(
-    tmp_path: Path, *, revision: str = REVISION, uv_bytes: bytes = b"uv-binary"
+    tmp_path: Path,
+    *,
+    revision: str = REVISION,
+    uv_bytes: bytes = b"uv-binary",
+    runtime_source: str | None = None,
 ) -> tuple[Path, Path]:
     root = tmp_path / "leo-tracker"
     release = root / "releases" / revision
@@ -63,7 +67,7 @@ def _published(
             {
                 "schema_version": 1,
                 "metadata_abi": 3,
-                "source_commit": GLOBALS["PRODUCTION_LIBIIO_SOURCE_COMMIT"],
+                "source_commit": runtime_source or GLOBALS["PRODUCTION_LIBIIO_SOURCE_COMMIT"],
                 "native_libiio_path": str(native),
                 "pylibiio_path": str(binding),
             }
@@ -109,6 +113,57 @@ def _validate(release: Path, metadata: Path, *, revision: str = REVISION, **kwar
 def test_external_metadata_seals_exact_immutable_tree(tmp_path: Path) -> None:
     release, metadata = _published(tmp_path)
     _validate(release, metadata)
+
+
+SCANNER_GLRT_SOURCE = "a1088b61de3c57762cfed5533e1baf8076a7b726"
+
+
+def test_scanner_runtime_is_an_exact_additional_identity_not_a_new_default(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path, runtime_source=SCANNER_GLRT_SOURCE)
+    _validate(release, metadata)
+    _validate(release, metadata, expected_runtime_profile="scanner-glrt")
+    with pytest.raises(ValueError, match="requested runtime profile"):
+        _validate(release, metadata, expected_runtime_profile="persistent-hop")
+    assert GLOBALS["PRODUCTION_LIBIIO_SOURCE_COMMIT"] == "f6c450eada95ce99fe8756ebc244bfcf6ddcc72a"
+
+
+def test_scanner_opt_in_cannot_reuse_a_legacy_runtime_release(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path)
+    _validate(release, metadata, expected_runtime_profile="persistent-hop")
+    with pytest.raises(ValueError, match="requested runtime profile"):
+        _validate(release, metadata, expected_runtime_profile="scanner-glrt")
+
+
+def test_unknown_runtime_profile_is_rejected(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path)
+    with pytest.raises(ValueError, match="unknown runtime profile"):
+        _validate(release, metadata, expected_runtime_profile="anything-abi3")
+
+
+@pytest.mark.parametrize("source", ("0" * 40, "4323b93a17ff2a0e8954fc5ffd9367a40540bebe"))
+def test_other_native_revisions_are_rejected_even_when_metadata_is_sealed(
+    tmp_path: Path, source: str
+) -> None:
+    release, metadata = _published(tmp_path, runtime_source=source)
+    with pytest.raises(ValueError, match="production ABI 3 runtime"):
+        _validate(release, metadata)
+
+
+def test_scanner_native_bytes_remain_sealed(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path, runtime_source=SCANNER_GLRT_SOURCE)
+    (release / ".venv/lib/libiio.so.0.25").write_bytes(b"different native runtime")
+    with pytest.raises(ValueError, match="digest does not verify"):
+        _validate(release, metadata)
+
+
+def test_scanner_receipt_relabel_cannot_change_a_sealed_release(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path)
+    receipt = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
+    document = json.loads(receipt.read_text())
+    document["source_commit"] = SCANNER_GLRT_SOURCE
+    receipt.write_text(json.dumps(document))
+    with pytest.raises(ValueError, match="digest does not verify"):
+        _validate(release, metadata, expected_runtime_profile="scanner-glrt")
 
 
 def test_metadata_digest_tamper_fails(tmp_path: Path) -> None:

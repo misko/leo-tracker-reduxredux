@@ -118,8 +118,8 @@ until a matching release is staged. An unversioned or service-account-managed
 Python is refused.
 This host currently supplies `/usr/bin/python3.14`.
 
-The hardware build also installs the metadata-ABI-1 host runtime matched to the
-production `.20`/`.21` firmware. It uses the release-sealed `uv`, verifies the
+The hardware build also installs the metadata-ABI-3 host runtime selected for
+this release path. It uses the release-sealed `uv`, verifies the
 immutable upstream libiio source commit, installs native libiio and pylibiio
 inside the release venv, and writes
 `.venv/share/pluto-plus-utils/metadata-runtime.json`. Publication verifies this
@@ -128,6 +128,35 @@ entrypoint can import pyadi. The external release metadata seals the receipt,
 native library, and Python binding hashes. Missing build tools, a wrong
 constructor ABI, a non-release native mapping, or any hash mismatch aborts
 staging; stock system libiio is never a fallback.
+
+### Explicit scanner host-runtime staging
+
+The raw stager accepts `--scanner-glrt` to request PPU's exact GLRT-capable
+**host transport** (`a1088b61de3c57762cfed5533e1baf8076a7b726`). Omit it to
+retain the normal fresh-build runtime (`f6c450eada95ce99fe8756ebc244bfcf6ddcc72a`).
+The existing source-bound PPU receipt records the selection; its native/binding
+paths and hashes remain in the same external immutable digest inventory.
+Arbitrary ABI-3 revisions are not accepted.
+
+This option does **not** enable GLRT/adaptive scanning, change the bundled ARM
+daemon, authorize RF, or select/restart a production service. Host transport and
+ARM daemon are separate artifacts. GLRT also needs the separately qualified,
+sealed companion bundle and explicit acquisition configuration; the unchanged
+legacy `runtime/scanner-iiod` artifact is not that bundle.
+
+As of the September 9 integration checkpoint, the locked PPU revision
+`7210cda9b0b2452cb607b5e49e689e2d60b6a8b7` does not expose this installer option.
+Dependency promotion/pin updates and companion packaging are still required
+before a complete scanner release can be built. A dry-run describes requested
+staging, not dependency availability or qualification. Do not work around this
+gate with editable installs, ambient loader overrides, or unsealed libraries.
+
+An explicit `--scanner-glrt` request also checks that an already-staged release
+has that exact runtime; it cannot silently accept or rewrite a legacy release.
+Without an explicit request, an existing release's already-sealed profile is
+revalidated, never changed. Staging does not support changing the runtime in
+place under the same revision. Old release metadata and rollback candidates
+remain unchanged.
 
 Before any cache write, `prepare-leo-cache` walks `/var`, `/var/lib`,
 `/var/lib/leo`, `.cache`, `uv`, and `ms-playwright` one component at a time
