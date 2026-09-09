@@ -80,8 +80,6 @@ class ScannerGlrtMetadataExtension:
     ) -> bytes:
         from pluto_plus.persistent_hop import PersistentHopRequestV1
 
-        from leo.scanner.models import scheduled_low_band_targets
-
         if self._attempted:
             raise ValueError("GLRT metadata extension is single-use")
         self._attempted = True
@@ -90,6 +88,18 @@ class ScannerGlrtMetadataExtension:
         hop = PersistentHopRequestV1.unpack(request[-288:])
         if hop.session_id != self.session:
             raise ValueError("GLRT request belongs to another session")
+        return self._negotiate_geometry(request, hop, attributes, drain_supported=drain_supported)
+
+    def _negotiate_geometry(
+        self,
+        request: bytes,
+        hop: PersistentHopRequestV1,
+        attributes: Mapping[str, str],
+        *,
+        drain_supported: bool,
+    ) -> bytes:
+        from leo.scanner.models import scheduled_low_band_targets
+
         self._request = hop
         required = {
             "iio,buffer-scanner-glrt": "1",
@@ -258,3 +268,34 @@ class ScannerGlrtMetadataExtension:
             ),
             error=self._error,
         )
+
+
+class ScannerAdaptiveGlrtMetadataExtension(ScannerGlrtMetadataExtension):
+    """Explicit V2 request; shared result frames bind to validated actual visits.
+
+    The V2 stream consumer, not the fixed V1 session, validates all hop records
+    before passing their common numeric geometry to consume/finish. GLRT's
+    published result layout is unchanged and has never implied fixed ordering.
+    """
+
+    def negotiate(
+        self, request: bytes, attributes: Mapping[str, str], *, drain_supported: bool
+    ) -> bytes:
+        from pluto_plus.adaptive_hop import AdaptiveHopRequestV2, require_adaptive_capabilities
+
+        if self._attempted:
+            raise ValueError("GLRT metadata extension is single-use")
+        self._attempted = True
+        if len(request) != 104 + 352 or self.options.mode != "positive-only-v1":
+            raise ValueError("adaptive GLRT requires V2 and the positive-only profile")
+        hop = AdaptiveHopRequestV2.unpack(request[104:])
+        hop.policy.require_pinned_policy()
+        require_adaptive_capabilities(attributes, hop.policy)
+        if hop.geometry.session_id != self.session or hop.policy.generation != self.generation:
+            raise ValueError("adaptive GLRT session/generation mismatch")
+        wrapped = self._negotiate_geometry(
+            request, hop.geometry, attributes, drain_supported=drain_supported
+        )
+        if wrapped == request:
+            raise ValueError(f"adaptive GLRT unavailable: {self._error}")
+        return wrapped

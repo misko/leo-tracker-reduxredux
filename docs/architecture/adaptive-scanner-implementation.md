@@ -55,17 +55,18 @@ do not silently change user-facing three-miss/two-second behavior.
    separate tests, not a full positive-signal network/load qualification.
    Portable Leo tests pass 500, web tests 106 plus build, PPU tests 299, and
    libiio configure tests 16. This is not yet deployment qualification.
-5. **Adaptive hop mode and complete recording:** native core implemented and
-   tested offline; provider/host composition remains unfinished. Explicit HOPR,
-   HOPS and HOPT V2 codecs, actual-visit session validation, scheduler policy
-   ports and a bounded SPSC native-feedback adapter now pass tests. Shadow
-   commits accounting to the actual target. Existing V1 wire codecs remain
-   unchanged and fixed-order session validation stays strict. Next connect
-   OPENM/provider capabilities and the existing userspace device factory, drain
-   SDK observations from the acquisition owner into the queue, and implement
-   compatibility-safe PPU/Leo recording/analysis adapters. Never mislabel every
-   eight adaptive visits as a complete sweep. See the
-   [native hop checkpoint](../../reports/2026_09_09_adaptive_hop_v2_checkpoint.md).
+5. **Adaptive hop mode and complete recording:** native core, real provider and
+   PPU stream/client/backend composition now pass offline tests. Explicit V2
+   OPENM, capability/pinned-policy admission, userspace factory, acquisition-owner
+   SDK feedback and final drain/cleanup are connected. Host reconstruction keeps
+   actual visits, shadow proposals, source-time decisions, bounded dual-RX IQ
+   and cancellation accounting. Four accelerated full-300-s rate/mode network
+   cases pass; these use synthetic zero RX1, not positive RF or ARM load.
+   Existing V1 fixed-order contracts remain strict. The Leo application still
+   needs immutable V2 capture/publication/analysis adapters; do not feed this
+   receipt to its V1 capture writer or label eight adaptive visits a sweep.
+   See the [provider/host checkpoint](../../reports/2026_09_09_adaptive_provider_host_checkpoint.md)
+   and [native hop checkpoint](../../reports/2026_09_09_adaptive_hop_v2_checkpoint.md).
 6. **Analysis/UI:** activity timeline, allocation/revisit metrics, cooldown and
    choice reasons, actual-visit Doppler processing, old/new recording tests.
 7. **Runtime/quality:** qualify the exact integrated build on held-out saved IQ,
