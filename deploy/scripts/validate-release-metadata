@@ -18,6 +18,13 @@ from pathlib import Path
 QNAP = Path("/mnt/qnap01")
 PRODUCTION_METADATA_ABI = 3
 PRODUCTION_LIBIIO_SOURCE_COMMIT = "f6c450eada95ce99fe8756ebc244bfcf6ddcc72a"
+# This is the exact host transport exercised by the scanner canaries, not the
+# separately built ARM iiOD revision. Accepting it does not enable GLRT or RF.
+SCANNER_GLRT_LIBIIO_SOURCE_COMMIT = "a1088b61de3c57762cfed5533e1baf8076a7b726"
+RUNTIME_PROFILES = {
+    "persistent-hop": PRODUCTION_LIBIIO_SOURCE_COMMIT,
+    "scanner-glrt": SCANNER_GLRT_LIBIIO_SOURCE_COMMIT,
+}
 
 
 def _sha256(path: Path) -> str:
@@ -73,7 +80,11 @@ def _validate_system_python(
         raise ValueError("metadata Python path and observed version do not verify")
 
 
-def _metadata_runtime_inventory(release: Path) -> tuple[Path, Path, Path]:
+def _metadata_runtime_inventory(
+    release: Path, *, expected_profile: str | None = None
+) -> tuple[Path, Path, Path]:
+    if expected_profile is not None and expected_profile not in RUNTIME_PROFILES:
+        raise ValueError("unknown runtime profile")
     venv = release / ".venv"
     receipt = venv / "share/pluto-plus-utils/metadata-runtime.json"
     if receipt.is_symlink() or not receipt.is_file():
@@ -86,9 +97,14 @@ def _metadata_runtime_inventory(release: Path) -> tuple[Path, Path, Path]:
         not isinstance(document, dict)
         or document.get("schema_version") != 1
         or document.get("metadata_abi") != PRODUCTION_METADATA_ABI
-        or document.get("source_commit") != PRODUCTION_LIBIIO_SOURCE_COMMIT
+        or document.get("source_commit") not in RUNTIME_PROFILES.values()
     ):
         raise ValueError("metadata runtime receipt identity is not the production ABI 3 runtime")
+    if (
+        expected_profile is not None
+        and document["source_commit"] != RUNTIME_PROFILES[expected_profile]
+    ):
+        raise ValueError("sealed native identity differs from the requested runtime profile")
     resolved: list[Path] = []
     for key in ("native_libiio_path", "pylibiio_path"):
         raw = document.get(key)
@@ -114,6 +130,7 @@ def validate(
     expected_gid: int | None = None,
     expected_python_prefix: Path = Path("/usr/bin"),
     expected_python_uid: int = 0,
+    expected_runtime_profile: str | None = None,
 ) -> None:
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
         raise ValueError("revision must be a full lowercase SHA")
@@ -170,7 +187,7 @@ def validate(
         expected_prefix=expected_python_prefix,
         expected_uid=expected_python_uid,
     )
-    runtime_paths = _metadata_runtime_inventory(release)
+    runtime_paths = _metadata_runtime_inventory(release, expected_profile=expected_runtime_profile)
     expected_paths = (
         python,
         release / ".release-tools/uv",
@@ -220,6 +237,7 @@ def main() -> int:
     parser.add_argument("metadata", type=Path)
     parser.add_argument("revision")
     parser.add_argument("--allow-incomplete", action="store_true")
+    parser.add_argument("--runtime-profile", choices=tuple(RUNTIME_PROFILES))
     options = parser.parse_args()
     try:
         validate(
@@ -227,6 +245,7 @@ def main() -> int:
             options.metadata,
             options.revision,
             allow_incomplete=options.allow_incomplete,
+            expected_runtime_profile=options.runtime_profile,
         )
     except (KeyError, OSError, UnicodeError, ValueError, subprocess.SubprocessError) as error:
         print(f"RELEASE METADATA INVALID: {error}", file=sys.stderr)

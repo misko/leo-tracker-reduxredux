@@ -255,6 +255,27 @@ do not silently change user-facing three-miss/two-second behavior.
    explicit unavailable detector outcomes before examining browser rendering.
    Do not treat successful fixture APIs as deployed-browser verification.
 
+   **Latest live checkpoint:** the bounded `.18` matrix and startup diagnostics
+   are stopped, with a conservative enclosing-time upper bound of 1,660 of
+   1,800 authorized seconds used. Userspace first-accepted-IQ activation and
+   source-backlog admission fixes are committed locally. The exact revised
+   bundle completed 300-second fixed/GLRT-on 5 MS/s and adaptive/GLRT-on 2.5 MS/s
+   scans at 94.4688% and 94.1583% duty, with full-IQ verification and real-store
+   API checks. Screening coverage was 26.63% and 100%, respectively. These are
+   not matched no-regression passes; no qualifying positives were found, so
+   real-signal adaptive weighting/cooldown benefit is still unverified. Further
+   full-length RF tests need additional authorization. No remote merge or
+   deployment is claimed. See the
+   [live checkpoint](../../reports/2026_09_09_radio18_live_startup_checkpoint.md).
+
+   **Host release staging:** an explicit raw-stager `--scanner-glrt` option and
+   exact additional native-source inventory validation are implemented locally,
+   retaining default behavior and the existing sealed receipt layout. It does
+   not enable scanning or replace the ARM bundle. Current locked PPU still
+   predates the option, and libiio/PPU dependency promotion, lockfile updates,
+   companion packaging, qualification and deployed verification remain open.
+   See the [staging checkpoint](../../reports/2026_09_09_scanner_release_runtime_checkpoint.md).
+
 ## Evidence discipline
 
 Current raw build/test work is under `/tmp/leo-adaptive-glrt.VkIAkP`. A fresh

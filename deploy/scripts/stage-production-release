@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: sudo $0 --source ABSOLUTE_GIT_DIR --revision FULL_40_HEX_SHA --python-bin ABSOLUTE_VERSIONED_SYSTEM_PYTHON [--uv-bin ABSOLUTE_UV] [--execute]" >&2
+  echo "usage: sudo $0 --source ABSOLUTE_GIT_DIR --revision FULL_40_HEX_SHA --python-bin ABSOLUTE_VERSIONED_SYSTEM_PYTHON [--uv-bin ABSOLUTE_UV] [--scanner-glrt] [--execute]" >&2
   exit 64
 }
 
@@ -13,16 +13,27 @@ revision=
 execute=false
 uv_bin=
 python_bin=
+scanner_glrt=false
 while (($#)); do
   case "$1" in
     --source) source_dir=${2-}; shift 2 ;;
     --revision) revision=${2-}; shift 2 ;;
     --uv-bin) uv_bin=${2-}; shift 2 ;;
     --python-bin) python_bin=${2-}; shift 2 ;;
+    --scanner-glrt) scanner_glrt=true; shift ;;
     --execute) execute=true; shift ;;
     *) usage ;;
   esac
 done
+
+# The existing source-bound PPU receipt is the immutable runtime selector.
+# Empty arrays preserve the installer default and old release metadata layout.
+metadata_runtime_options=()
+runtime_verification_options=()
+if $scanner_glrt; then
+  metadata_runtime_options=(--scanner-glrt)
+  runtime_verification_options=(--runtime-profile scanner-glrt)
+fi
 
 [[ -n "$source_dir" && -n "$revision" && -n "$python_bin" ]] || usage
 [[ "$source_dir" = /* ]] || { echo "--source must be absolute" >&2; exit 64; }
@@ -117,6 +128,12 @@ if ! $execute; then
   printf 'Would seal uv from %s inside the immutable release.\n' "$uv_bin"
   printf 'Would build with reviewed system Python %s (%s).\n' \
     "$python_bin" "$python_version"
+  if $scanner_glrt; then
+    printf 'Would request the pinned GLRT-capable host runtime; this does not enable GLRT, change the ARM bundle, or authorize RF.\n'
+    printf 'The locked PPU installer must support --scanner-glrt; publication will reject a legacy runtime.\n'
+  else
+    printf 'New releases retain the default host runtime; an existing sealed release is only revalidated, never rewritten.\n'
+  fi
   printf 'Re-run with --execute as root to perform the stage.\n'
   exit 0
 fi
@@ -191,7 +208,7 @@ if [[ -e "$release_dir" ]]; then
   }
   "$checker" "$release_dir" "$revision"
   "$release_dir/deploy/scripts/validate-release-metadata" \
-    "$release_dir" "$metadata" "$revision"
+    "$release_dir" "$metadata" "$revision" "${runtime_verification_options[@]}"
   runuser -u leo -- "$release_dir/.venv/bin/python" "$validator" \
     "$release_dir" "$staging_dir"
   echo "release already staged and verified: $release_dir"
@@ -289,6 +306,7 @@ runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
   "$release_dir/.venv/bin/pluto-install-metadata-runtime" \
     --uv-bin "$release_uv" \
     --metadata-abi "$metadata_abi" \
+    "${metadata_runtime_options[@]}" \
     --python "$release_dir/.venv/bin/python" \
     --prefix "$release_dir/.venv"
 runuser -u leo -- env HOME=/var/lib/leo \
@@ -369,7 +387,8 @@ mapfile -t metadata_runtime_paths <<<"$metadata_runtime_path_text"
 chown root:leo "$metadata_temp"
 chmod 0440 "$metadata_temp"
 "$release_dir/deploy/scripts/validate-release-metadata" \
-  "$release_dir" "$metadata_temp" "$revision" --allow-incomplete
+  "$release_dir" "$metadata_temp" "$revision" --allow-incomplete \
+  "${runtime_verification_options[@]}"
 rm -f -- "$release_dir/.leo-release-incomplete"
 PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python" - "$release_dir" <<'PY'
 import os
