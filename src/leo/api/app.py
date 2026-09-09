@@ -151,6 +151,11 @@ from leo.scanner import (
     ScannerReportV4,
     ScannerReportV5,
 )
+from leo.scanner.adaptive_hop_history import (
+    AdaptiveHopHistoryPageV1,
+    AdaptiveHopPresentationReader,
+    AdaptiveHopSessionDetailV1,
+)
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
 from leo.scanner.persistent_hop_tracking import (
     PersistentHopCandidateRecurrencePageV1,
@@ -179,6 +184,8 @@ def create_app(
     persistent_hop_presentations_v2: PersistentHopPresentationReaderV2 | None = None,
     persistent_hop_tracking: PersistentHopTrackingPresentationReader | None = None,
     scanner_glrt: ScannerGlrtPublicationReader | None = None,
+    adaptive_hop_sessions: AdaptiveHopPresentationReader | None = None,
+    adaptive_scanner_glrt: ScannerGlrtPublicationReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -368,6 +375,64 @@ def create_app(
             raise HTTPException(
                 status_code=409, detail="scanner report page is unavailable"
             ) from error
+
+    @router.api_route(
+        "/scanner/adaptive-sessions",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveHopHistoryPageV1,
+    )
+    def adaptive_hop_session_history(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    ) -> AdaptiveHopHistoryPageV1:
+        if adaptive_hop_sessions is None:
+            raise HTTPException(status_code=404, detail="adaptive history is not available")
+        try:
+            return adaptive_hop_sessions.page(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive history is unavailable"
+            ) from error
+
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveHopSessionDetailV1,
+    )
+    def adaptive_hop_session_detail(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+    ) -> AdaptiveHopSessionDetailV1:
+        if adaptive_hop_sessions is None:
+            raise HTTPException(status_code=404, detail="adaptive history is not available")
+        try:
+            detail = adaptive_hop_sessions.detail(session_id)
+        except Exception as error:
+            raise HTTPException(status_code=409, detail="adaptive detail is unavailable") from error
+        if detail is None:
+            raise HTTPException(status_code=404, detail="adaptive session not found")
+        return detail
+
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/glrt",
+        methods=["GET", "HEAD"],
+        response_model=ScannerGlrtPublicationV1,
+    )
+    def adaptive_hop_glrt_detail(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+    ) -> ScannerGlrtPublicationV1:
+        if adaptive_scanner_glrt is None:
+            raise HTTPException(status_code=404, detail="adaptive GLRT results are unavailable")
+        try:
+            publication = adaptive_scanner_glrt.detail(session_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive GLRT evidence is unavailable"
+            ) from error
+        if publication is None:
+            raise HTTPException(
+                status_code=404, detail="no recorded GLRT evidence for this capture"
+            )
+        return publication
 
     @v2_router.api_route(
         "/scanner/latest",

@@ -10,7 +10,9 @@ function confirmationMs(row: ScannerGlrtResultV1): string {
   return (Number(samples) * 1000 / row.rate_hz).toFixed(1);
 }
 
-export function ScannerGlrtPanel({ sessionId }: { sessionId: string }) {
+export function ScannerGlrtPanel({ sessionId, sessionKind = "persistent" }: {
+  sessionId: string; sessionKind?: "persistent" | "adaptive";
+}) {
   const [publication, setPublication] = useState<ScannerGlrtPublicationV1 | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function ScannerGlrtPanel({ sessionId }: { sessionId: string }) {
       if (busy) return;
       busy = true;
       try {
-        const value = await getScannerGlrt(sessionId, controller.signal);
+        const value = await getScannerGlrt(sessionId, controller.signal, sessionKind);
         if (active) { setPublication(value); setError(null); }
       } catch (failure) {
         if (active && !controller.signal.aborted) {
@@ -42,7 +44,7 @@ export function ScannerGlrtPanel({ sessionId }: { sessionId: string }) {
     void refresh();
     const timer = window.setInterval(() => { void refresh(); }, 15_000);
     return () => { active = false; controller.abort(); window.clearInterval(timer); };
-  }, [sessionId]);
+  }, [sessionId, sessionKind]);
   const evidence = publication?.evidence;
   const rows = evidence?.results ?? [];
   const currentPage = Math.min(page, Math.max(0, Math.ceil(rows.length / PAGE_SIZE) - 1));

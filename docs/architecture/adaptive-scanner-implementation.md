@@ -73,15 +73,21 @@ do not silently change user-facing three-miss/two-second behavior.
    checks preserve mode, identity and failed staging without recapturing a slot;
    the durable supervisor distinguishes capture health from detector quality.
    Both rates/modes pass full scheduled synthetic TCP-to-store/result tests,
-   cancellation and pre-refill cancellation. Adaptive history/UI and actual-time
-   analysis remain pending; do not feed adaptive receipts to the fixed writer
-   or call eight visits a sweep.
+   cancellation and pre-refill cancellation. Adaptive history/UI is covered by
+   checkpoint 6 below; actual-time analysis remains pending. Do not feed adaptive
+   receipts to the fixed writer or call eight visits a sweep.
    See the [scheduled runtime checkpoint](../../reports/2026_09_09_adaptive_scheduled_runtime_checkpoint.md).
    See the [application recording checkpoint](../../reports/2026_09_09_adaptive_recording_checkpoint.md).
    See the [provider/host checkpoint](../../reports/2026_09_09_adaptive_provider_host_checkpoint.md)
    and [native hop checkpoint](../../reports/2026_09_09_adaptive_hop_v2_checkpoint.md).
-6. **Analysis/UI:** activity timeline, allocation/revisit metrics, cooldown and
-   choice reasons, actual-visit Doppler processing, old/new recording tests.
+6. **Analysis/UI:** adaptive/shadow history, actual-visit timeline, allocation and
+   revisit/unobserved metrics, cooldown/choice inspection and independently bound
+   GLRT evidence are now integrated locally into the API and React scanner UI.
+   Source epochs remain exact decimal strings; empty source spans are unavailable,
+   and incomplete starts are distinct from retained IQ. Production-composition,
+   old/new selection and full-300-s metadata tests pass. Dense actual-visit
+   Doppler processing, analysis progress and deployed browser verification remain.
+   See the [history/UI checkpoint](../../reports/2026_09_09_adaptive_history_ui_checkpoint.md).
 7. **Runtime/quality:** qualify the exact integrated build on held-out saved IQ,
    simulate/shadow scheduling without inventing unsampled RF, and run full
    300-second ARM modeled-producer tests at both rates. Existing older replay
