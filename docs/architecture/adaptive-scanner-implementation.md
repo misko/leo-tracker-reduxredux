@@ -85,9 +85,19 @@ do not silently change user-facing three-miss/two-second behavior.
    GLRT evidence are now integrated locally into the API and React scanner UI.
    Source epochs remain exact decimal strings; empty source spans are unavailable,
    and incomplete starts are distinct from retained IQ. Production-composition,
-   old/new selection and full-300-s metadata tests pass. Dense actual-visit
-   Doppler processing, analysis progress and deployed browser verification remain.
+   old/new selection and full-300-s metadata tests pass. The pure actual-visit
+   fractional analyzer, pinned source reader, immutable visit checkpoints,
+   bounded resumable service and opt-in CLI are now implemented. Four saved RX1
+   rate/edge cases pass direct numerical parity and real codec/CLI/resume/metrics
+   publication; metadata, RX0 and additional fixture visits are explicitly
+   synthetic. The new checkpoint passes 674 component/regression tests. These
+   are dense metrics, not completed trajectory/figure/UI integration. Actual-time
+   figures and joins, progress/API/UI wiring and deployed browser verification
+   remain. Dense smoke timings also expose a serial processing-throughput gap;
+   do not automatically dispatch full dense scans every 20 minutes or silently
+   substitute sparse coverage before measuring/addressing it.
    See the [history/UI checkpoint](../../reports/2026_09_09_adaptive_history_ui_checkpoint.md).
+   See the [fractional metrics checkpoint](../../reports/2026_09_09_adaptive_fractional_analysis_checkpoint.md).
 7. **Runtime/quality:** qualify the exact integrated build on held-out saved IQ,
    simulate/shadow scheduling without inventing unsampled RF, and run full
    300-second ARM modeled-producer tests at both rates. Existing older replay
