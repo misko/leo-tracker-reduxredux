@@ -108,7 +108,7 @@ decoded dimensions verify. Ten HTTP status requests per short case took
 latency measurements. Process startup plus render took approximately 2.5–2.7 s;
 repeat verification took approximately 2.0–2.2 s.
 
-![Saved RX1 CH2L candidates, with synthetic receiver/receipt context](figures/2026_09_09_adaptive_overview/2500000-positive-lower-cfo-trajectories.png)
+![Saved RX1 CH2L candidates, with synthetic receiver/receipt context](figures/2026_09_09_adaptive_overview/labeled-2500000-positive-lower-cfo-trajectories.png)
 
 This figure is a presentation smoke test, not a new satellite identification.
 The negative/positive frequency groups are candidate evidence within one
@@ -142,11 +142,28 @@ excludes capture-manifest lookup, HTTP and browser rendering. Timing is from one
 desktop execution with other local tests running, not an ARM estimate or an
 isolated performance-tail qualification.
 
-![Full 300 s analytic candidate stress, not RF](figures/2026_09_09_adaptive_overview/synthetic-full-cfo-trajectories.png)
+![Full 300 s analytic candidate stress, not RF](figures/2026_09_09_adaptive_overview/labeled-synthetic-full-cfo-trajectories.png)
 
 Every dense point is retained in this stress plot; overplotting is intentional.
 The synthetic polynomial tracks and constant per-target offsets exercise the
 renderer, not a physical satellite model or a lower/upper correction method.
+All targets intentionally share `400000 - 1000*t + 2*t^2` plus fixed target,
+receiver and candidate-rank offsets. Their similar shapes are a fixture design,
+not evidence that an RF signal was observed on all channels.
+
+### Figure provenance clarification
+
+The first published PNGs lacked an in-image test-data banner. That made the
+full-span stress plot misleading when viewed outside this report. All 21 report
+figures have now been regenerated from the same sealed metrics with explicit
+synthetic or saved-RX1/test-context banners, also recorded in PNG metadata. The
+original artifacts remain preserved; no metrics or association results changed.
+Production rendering is unchanged unless a caller explicitly supplies a test
+context. The [annotation index](evidence/2026_09_09_adaptive_overview/annotation-index.json)
+binds the new PNGs and annotation sources to checkpoint `47f092f2`.
+Seventeen focused presentation tests pass (four unchanged full-span projection
+cases deselected in this follow-up); the 718-test baseline below refers to the
+original checkpoint, not a new full-suite run.
 
 These presentation costs are separate from the preceding checkpoint's measured
 dense-IQ analysis cost (seconds per 120 ms dwell). That throughput gap remains.
