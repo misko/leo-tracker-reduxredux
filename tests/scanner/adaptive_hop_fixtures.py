@@ -32,11 +32,17 @@ def receipt_fixture(
     complete=False,
     start=(1 << 53) + 17,
     session_id="adaptive-storage-test",
+    plan=None,
+    radio_id="synthetic",
+    radio_serial="synthetic-only",
+    radio_uri="ip:192.168.1.14",
+    transition_samples=20,
 ):
-    plan = AdaptiveHopPlanV1(
+    plan = plan or AdaptiveHopPlanV1(
         geometry=compile_persistent_hop_plan_v1(sample_rate_hz=rate),
         policy=AdaptiveHopPolicyV1(mode=mode, generation=71),
     )
+    mode = plan.policy.mode
     g = plan.geometry
     events = []
     counter = start
@@ -56,11 +62,11 @@ def receipt_fixture(
                 actual_if_offset_hz=0,
                 invalid_start_counter=counter,
                 transition_before_counter=counter + 10,
-                transition_after_counter=counter + 20,
-                valid_start_counter=counter + 20 + g.transition_guard_samples,
+                transition_after_counter=counter + transition_samples,
+                valid_start_counter=counter + transition_samples + g.transition_guard_samples,
                 decision=AdaptiveHopDecisionV1(
                     mode=mode,
-                    generation=71,
+                    generation=plan.policy.generation,
                     decision_counter=counter,
                     basis_visit=index - 1 if index else None,
                     proposed_target=(index + 3) % 8 if mode == "shadow" else target_index,
@@ -91,9 +97,9 @@ def receipt_fixture(
     )
     return AdaptiveHopReceiptV1(
         session_id=session_id,
-        radio_id="synthetic",
-        radio_serial="synthetic-only",
-        radio_uri="ip:192.168.1.14",
+        radio_id=radio_id,
+        radio_serial=radio_serial,
+        radio_uri=radio_uri,
         plan=plan,
         stream_generation=123 if events else None,
         source_span_attested=bool(events),

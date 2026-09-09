@@ -1,0 +1,907 @@
+{
+  "schema_version": 1,
+  "scope": "scheduled adaptive application, concrete adapter, source binding, IQ/publication and retry",
+  "excludes": [
+    "live RF",
+    "ARM throughput qualification",
+    "detector sensitivity qualification",
+    "production deployment",
+    "adaptive UI"
+  ],
+  "final_receipts": [
+    "leo-final.xml",
+    "ppu-final.xml",
+    "network-final.xml"
+  ],
+  "final_counts": {
+    "leo-final.xml": 492,
+    "ppu-final.xml": 1285,
+    "network-final.xml": 12
+  },
+  "artifacts": [
+    {
+      "path": "adapter-first.xml.gz",
+      "bytes": 17278,
+      "sha256": "sha256:c9c18db70cb9a17a1896fdb2ba8ca3cd27f992d15f7e572168bc672e7dcfada4",
+      "compressed_sha256": "sha256:480a63eaf5b95ec79f37e43ed2541a239f5f35575a6ccfc7d3cc01f2cec79858",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "17",
+        "skipped": "0",
+        "tests": "28",
+        "time": "1.156",
+        "timestamp": "2026-09-09T07:20:02.854349+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "adapter-retry.xml.gz",
+      "bytes": 22856,
+      "sha256": "sha256:b9f675a82241555f8ad72694e1d6a2d7824b2d6412eb202e546fe11f3d2c412c",
+      "compressed_sha256": "sha256:ac782cab2c016149d3714e0bffebe1cb0dd8b4bad4c3792d1dc684ff569e2a0b",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "11",
+        "skipped": "0",
+        "tests": "28",
+        "time": "2.587",
+        "timestamp": "2026-09-09T07:20:44.526223+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "adapter-retry2.xml.gz",
+      "bytes": 5771,
+      "sha256": "sha256:3ca03bb5ec2c70757b648b28f09291858ee2819ab05f494aec3b21921567b568",
+      "compressed_sha256": "sha256:bfe18eebe97d59db3113a4bb2abd9ac10ba7ec56031141f3584e41c622b55707",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "4",
+        "skipped": "0",
+        "tests": "28",
+        "time": "2.934",
+        "timestamp": "2026-09-09T07:21:48.833956+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "archive_checkpoint.py.gz",
+      "bytes": 4660,
+      "sha256": "sha256:f6bef8d8fa1cd01e3d7823331300908f9cb7dbcac38d2cfd14d3e5c4aa1f1518",
+      "compressed_sha256": "sha256:bf23047731b7561c1db3be766dfaa0ae4e9cec808a2eae45a39111c330ee93a0",
+      "final": false
+    },
+    {
+      "path": "binding-first.xml.gz",
+      "bytes": 8056,
+      "sha256": "sha256:0a865f7b9887e7c4a85cf09d626c544c6d53a8b9595d5897acef1c33df1ad691",
+      "compressed_sha256": "sha256:bdbde3d7f24ca9e6dd1c09d54547bf0126fb9f26c24116d0edefaf31ff928127",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "52",
+        "time": "2.967",
+        "timestamp": "2026-09-09T07:28:27.314576+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "leo-final.xml.gz",
+      "bytes": 77269,
+      "sha256": "sha256:acf658df541538b48584c1575667d41ae2f67b963835d8b0d7d79abd3a288200",
+      "compressed_sha256": "sha256:dab2d5b67146e7891da374f646d61a9e06ea91f18ae4cece1b9b0982373ba631",
+      "final": true,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "492",
+        "time": "33.679",
+        "timestamp": "2026-09-09T07:42:19.390987+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "network-final.xml.gz",
+      "bytes": 10364,
+      "sha256": "sha256:4fe3f91d3d8fddb1808fce055de622d74bbc9ea1516aa19465c40429ae98c820",
+      "compressed_sha256": "sha256:2c6e5eac51018fc5880659e977ee2ee28d65866b4186e3773ba026835f5a74b9",
+      "final": true,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "12",
+        "time": "185.985",
+        "timestamp": "2026-09-09T07:42:20.701189+00:00",
+        "hostname": "gauss"
+      },
+      "cases": [
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-shadow-2500000]",
+          "time": "29.687",
+          "properties": {
+            "mode": "shadow",
+            "ending": "complete",
+            "rate_hz": "2500000",
+            "complete_visits": "2480",
+            "source_span_samples": "750209920",
+            "uncompressed_bytes": "5952000000",
+            "queue_high_water_visits": "1",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 5724, \"server_pid\": 3955844}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-shadow-5000000]",
+          "time": "61.827",
+          "properties": {
+            "mode": "shadow",
+            "ending": "complete",
+            "rate_hz": "5000000",
+            "complete_visits": "2480",
+            "source_span_samples": "1500409920",
+            "uncompressed_bytes": "11904000000",
+            "queue_high_water_visits": "2",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 11448, \"server_pid\": 3958133}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-adaptive-2500000]",
+          "time": "25.308",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "complete",
+            "rate_hz": "2500000",
+            "complete_visits": "2480",
+            "source_span_samples": "750209920",
+            "uncompressed_bytes": "5952000000",
+            "queue_high_water_visits": "1",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 5724, \"server_pid\": 3961817}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-adaptive-5000000]",
+          "time": "61.476",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "complete",
+            "rate_hz": "5000000",
+            "complete_visits": "2480",
+            "source_span_samples": "1500409920",
+            "uncompressed_bytes": "11904000000",
+            "queue_high_water_visits": "1",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 11448, \"server_pid\": 3963147}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-shadow-2500000]",
+          "time": "0.817",
+          "properties": {
+            "mode": "shadow",
+            "ending": "cancel",
+            "rate_hz": "2500000",
+            "complete_visits": "31",
+            "source_span_samples": "9437181",
+            "uncompressed_bytes": "74400000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 72, \"server_pid\": 3963738}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-shadow-5000000]",
+          "time": "1.272",
+          "properties": {
+            "mode": "shadow",
+            "ending": "cancel",
+            "rate_hz": "5000000",
+            "complete_visits": "31",
+            "source_span_samples": "18874365",
+            "uncompressed_bytes": "148800000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 144, \"server_pid\": 3963745}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-adaptive-2500000]",
+          "time": "0.815",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "cancel",
+            "rate_hz": "2500000",
+            "complete_visits": "31",
+            "source_span_samples": "9437181",
+            "uncompressed_bytes": "74400000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 72, \"server_pid\": 3963753}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-adaptive-5000000]",
+          "time": "1.194",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "cancel",
+            "rate_hz": "5000000",
+            "complete_visits": "31",
+            "source_span_samples": "18874365",
+            "uncompressed_bytes": "148800000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 144, \"server_pid\": 3963761}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-shadow-2500000]",
+          "time": "0.385",
+          "properties": {
+            "mode": "shadow",
+            "ending": "before_refill",
+            "rate_hz": "2500000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3963816}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-shadow-5000000]",
+          "time": "0.378",
+          "properties": {
+            "mode": "shadow",
+            "ending": "before_refill",
+            "rate_hz": "5000000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3963824}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-adaptive-2500000]",
+          "time": "0.411",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "before_refill",
+            "rate_hz": "2500000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3963831}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-adaptive-5000000]",
+          "time": "0.430",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "before_refill",
+            "rate_hz": "5000000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3963838}"
+          }
+        }
+      ]
+    },
+    {
+      "path": "portable-first.xml.gz",
+      "bytes": 43226,
+      "sha256": "sha256:510a12a43ac2b00bd7905cbd2cd18a9b559f1169f6ed0e422abe701b1a0e454c",
+      "compressed_sha256": "sha256:9f28eb110fa3a4015cacd36b7776863d5ff57bbaa46af6a835edb2e9d0be7404",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "284",
+        "time": "11.276",
+        "timestamp": "2026-09-09T07:36:45.711129+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "ppu-final.xml.gz",
+      "bytes": 179899,
+      "sha256": "sha256:78c0cf503d4abe20b0f831907741fec6a003439d3ed8026951cb7a69f2fc609e",
+      "compressed_sha256": "sha256:270e9e6686d9d8c14b3df03531af46e8ddfc56c13c1e14374e66a9cf4592e309",
+      "final": true,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1285",
+        "time": "12.537",
+        "timestamp": "2026-09-09T07:40:23.891713+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "runtime-regression-first.xml.gz",
+      "bytes": 8358,
+      "sha256": "sha256:05844bdd18e59cc26e14e80a2eec2a6961b7d37708799deff81042e7719af72b",
+      "compressed_sha256": "sha256:18a39a3f94a943296c0092e11ecc1cc57704de07dacf6ac4ab42beb992e7aa33",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "55",
+        "time": "4.126",
+        "timestamp": "2026-09-09T07:26:16.380357+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "schedule-first.xml.gz",
+      "bytes": 3530,
+      "sha256": "sha256:1502ec08efc820183e5ccd2707f3e98b2c0fba46be7b19a08fedf677a24bd328",
+      "compressed_sha256": "sha256:41c97528ca70bad427555ef3e2aa2cf3bb89c25a4a3482de1d7a60751db3966d",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "23",
+        "time": "2.335",
+        "timestamp": "2026-09-09T07:30:34.519942+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    },
+    {
+      "path": "scheduled-network-final.xml.gz",
+      "bytes": 10364,
+      "sha256": "sha256:c1a5f1879dce503f248755018cd8018eb5725dbe08cc77ab5748f75d048e1dfc",
+      "compressed_sha256": "sha256:de445e54041034de4ca00b7f3fbce521a5126eedfb8f6e5c2928db0c29df1ef4",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "12",
+        "time": "199.851",
+        "timestamp": "2026-09-09T07:37:37.834738+00:00",
+        "hostname": "gauss"
+      },
+      "cases": [
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-shadow-2500000]",
+          "time": "31.099",
+          "properties": {
+            "mode": "shadow",
+            "ending": "complete",
+            "rate_hz": "2500000",
+            "complete_visits": "2480",
+            "source_span_samples": "750209920",
+            "uncompressed_bytes": "5952000000",
+            "queue_high_water_visits": "6",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 5724, \"server_pid\": 3944845}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-shadow-5000000]",
+          "time": "65.142",
+          "properties": {
+            "mode": "shadow",
+            "ending": "complete",
+            "rate_hz": "5000000",
+            "complete_visits": "2480",
+            "source_span_samples": "1500409920",
+            "uncompressed_bytes": "11904000000",
+            "queue_high_water_visits": "7",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 11448, \"server_pid\": 3946092}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-adaptive-2500000]",
+          "time": "31.481",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "complete",
+            "rate_hz": "2500000",
+            "complete_visits": "2480",
+            "source_span_samples": "750209920",
+            "uncompressed_bytes": "5952000000",
+            "queue_high_water_visits": "6",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 5724, \"server_pid\": 3951623}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[complete-adaptive-5000000]",
+          "time": "64.580",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "complete",
+            "rate_hz": "5000000",
+            "complete_visits": "2480",
+            "source_span_samples": "1500409920",
+            "uncompressed_bytes": "11904000000",
+            "queue_high_water_visits": "2",
+            "detector_results": "2480",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 11448, \"server_pid\": 3952070}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-shadow-2500000]",
+          "time": "0.828",
+          "properties": {
+            "mode": "shadow",
+            "ending": "cancel",
+            "rate_hz": "2500000",
+            "complete_visits": "31",
+            "source_span_samples": "9437181",
+            "uncompressed_bytes": "74400000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 72, \"server_pid\": 3952936}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-shadow-5000000]",
+          "time": "1.196",
+          "properties": {
+            "mode": "shadow",
+            "ending": "cancel",
+            "rate_hz": "5000000",
+            "complete_visits": "31",
+            "source_span_samples": "18874365",
+            "uncompressed_bytes": "148800000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 144, \"server_pid\": 3952960}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-adaptive-2500000]",
+          "time": "0.725",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "cancel",
+            "rate_hz": "2500000",
+            "complete_visits": "31",
+            "source_span_samples": "9437181",
+            "uncompressed_bytes": "74400000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 72, \"server_pid\": 3953015}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[cancel-adaptive-5000000]",
+          "time": "1.272",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "cancel",
+            "rate_hz": "5000000",
+            "complete_visits": "31",
+            "source_span_samples": "18874365",
+            "uncompressed_bytes": "148800000",
+            "queue_high_water_visits": "1",
+            "detector_results": "32",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 144, \"server_pid\": 3953022}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-shadow-2500000]",
+          "time": "0.401",
+          "properties": {
+            "mode": "shadow",
+            "ending": "before_refill",
+            "rate_hz": "2500000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3953160}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-shadow-5000000]",
+          "time": "0.434",
+          "properties": {
+            "mode": "shadow",
+            "ending": "before_refill",
+            "rate_hz": "5000000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3953167}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-adaptive-2500000]",
+          "time": "0.375",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "before_refill",
+            "rate_hz": "2500000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3953174}"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[before_refill-adaptive-5000000]",
+          "time": "0.393",
+          "properties": {
+            "mode": "adaptive",
+            "ending": "before_refill",
+            "rate_hz": "5000000",
+            "complete_visits": "0",
+            "source_span_samples": "0",
+            "uncompressed_bytes": "0",
+            "queue_high_water_visits": "0",
+            "detector_results": "0",
+            "network_fixture_stats": "{\"destroys\": 1, \"drains\": 1, \"opens\": 1, \"refills\": 0, \"server_pid\": 3953197}"
+          }
+        }
+      ]
+    },
+    {
+      "path": "scheduled-network-first.xml.gz",
+      "bytes": 4348,
+      "sha256": "sha256:1c2de307d03461076d9fe25143a05fea656efe2580e4bc51e89371b2e5a64d13",
+      "compressed_sha256": "sha256:2364615d8b15ed4c616cc71fbad8467026e520228b244146a1bb976f1b3ffb48",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "4",
+        "skipped": "0",
+        "tests": "4",
+        "time": "181.237",
+        "timestamp": "2026-09-09T07:32:41.106883+00:00",
+        "hostname": "gauss"
+      },
+      "cases": [
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[shadow-2500000]",
+          "time": "27.300",
+          "properties": {
+            "mode": "shadow",
+            "rate_hz": "2500000",
+            "complete_visits": "2480",
+            "source_span_samples": "750209920",
+            "uncompressed_bytes": "5952000000",
+            "queue_high_water_visits": "2",
+            "detector_results": "2480"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[shadow-5000000]",
+          "time": "62.753",
+          "properties": {
+            "mode": "shadow",
+            "rate_hz": "5000000",
+            "complete_visits": "2480",
+            "source_span_samples": "1500409920",
+            "uncompressed_bytes": "11904000000",
+            "queue_high_water_visits": "2",
+            "detector_results": "2480"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[adaptive-2500000]",
+          "time": "27.936",
+          "properties": {
+            "mode": "adaptive",
+            "rate_hz": "2500000",
+            "complete_visits": "2480",
+            "source_span_samples": "750209920",
+            "uncompressed_bytes": "5952000000",
+            "queue_high_water_visits": "4",
+            "detector_results": "2480"
+          }
+        },
+        {
+          "name": "test_scheduled_full_300s_actual_tcp_recording_and_publication[adaptive-5000000]",
+          "time": "61.338",
+          "properties": {
+            "mode": "adaptive",
+            "rate_hz": "5000000",
+            "complete_visits": "2480",
+            "source_span_samples": "1500409920",
+            "uncompressed_bytes": "11904000000",
+            "queue_high_water_visits": "2",
+            "detector_results": "2480"
+          }
+        }
+      ]
+    },
+    {
+      "path": "supervisor-first.xml.gz",
+      "bytes": 10141,
+      "sha256": "sha256:0c04178f1f0ac804ac006ee4698e2dc89d03e32456f8105e03f9f00348ca2719",
+      "compressed_sha256": "sha256:98db8c9ca25c41d06b18faeb3592ce27036c261b39180fabab6f34235de1e027",
+      "final": false,
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "59",
+        "time": "2.738",
+        "timestamp": "2026-09-09T07:34:07.809937+00:00",
+        "hostname": "gauss"
+      },
+      "cases": []
+    }
+  ],
+  "source_hashes": {
+    "leo:src/leo/cli/backend.py": "sha256:542028757ea6b08c70dae5bb731aa4558b571ee53e759c583dbf88e40e6a9319",
+    "leo:src/leo/cli/composition.py": "sha256:ee2a69ee12f26f56ca590611b7ee3c54b7d63456790d63667510c37e879d991e",
+    "leo:src/leo/cli/runner.py": "sha256:5375ad3d9a2c3775fda5d0a1ed1802fdf1524e322d228e35822bbaa1a10f5575",
+    "leo:src/leo/cli/scanner_glrt.py": "sha256:735edf3440ce596ca7a5f4dcd0f32f858d66233631bb210f9d2fc0cf1f04de20",
+    "leo:src/leo/radio/pluto_adaptive_hop.py": "sha256:27e707919b89d2736886c3ea0d8a4b4bf898bc8ac8ec3bef24eee96f03d39053",
+    "leo:src/leo/scanner/glrt_publication.py": "sha256:3629c009b379f829b06eea47af35124a552a7ae5f6a769a77bc6e93a3e692fbc",
+    "leo:src/leo/storage/adaptive_hop.py": "sha256:dd13a8764b916b86fea1ee14fdbef717d366be198df66a7725c49d1a58d2c2da",
+    "leo:src/leo/storage/persistent_hop.py": "sha256:2031c9de6468a1cfba9f8f0f08612dddfd1d188dc3e9dbec7779a7e95cf2a4c8",
+    "leo:tests/cli/test_adaptive_hop_schedule.py": "sha256:8381f623e579867ef6ed6ed22b86fd13870254e74f578fb8d8730200d9b35383",
+    "leo:tests/cli/test_adaptive_hop_supervisor.py": "sha256:8b711e6655c579bfbcc78665a53702afd168b59102b4ffab948c1bcc1742160c",
+    "leo:tests/radio/adaptive_hop_fixtures.py": "sha256:eadbc00f222000014ad97424cfd30b0de639f355f644455f8ccf17f55aaa2e1c",
+    "leo:tests/radio/test_adaptive_hop_scheduled_network.py": "sha256:c30f6a6c504d222c2407ad6ae961db1c5610a359eb813e4e78536a715000561a",
+    "leo:tests/radio/test_pluto_adaptive_hop.py": "sha256:c7539b9b441501a6be40d2ce08b7624cd164b32722fe8b9ec9946ac425047abe",
+    "leo:tests/scanner/adaptive_glrt_publication_fixtures.py": "sha256:4fda1f97a8012ea4ab205cc9c1d1e229ce5621708d045516912f8d4996ae124f",
+    "leo:tests/scanner/adaptive_hop_fixtures.py": "sha256:cbb853554378d918f5aeb872fb1ed84c75d19b02ccf244d665300a99317f136c",
+    "leo:tests/scanner/test_adaptive_glrt_publication.py": "sha256:61e567dc2a8a2998a8b9a28a76e49cb9b93f259189a410aa27f10f70ff9af49d",
+    "leo:tests/storage/test_adaptive_hop_store.py": "sha256:51900209b469151c48583add816f80616d3a5e3ccdd1c003f896c6756c375490",
+    "leo:tests/storage/test_persistent_hop_store.py": "sha256:214089e7a0b464895e370af2274f156acdccd77c2c2b581a6b56ea5853e09129",
+    "ppu:src/pluto_plus/adaptive_hop_client.py": "sha256:b62387ad44122970da683c3aed476237ac1a2684c40e57391031851822f51851",
+    "ppu:src/pluto_plus/adaptive_hop_stream.py": "sha256:1013573a1e81325372a91c95ecad39acc52f970e9f71d98427604e5f2acbbba1",
+    "ppu:src/pluto_plus/hardware/iio_adaptive_hop.py": "sha256:a02a789ed1a4f0c042dbd2e4126ce9af52cd547fa24bf2fa239463aa32bd753f",
+    "ppu:src/pluto_plus/hardware/pss_control.py": "sha256:495267dc0ac332bdcb0c2858f2e6dbef0c45d0a2074f6cf49aa718da2db204ff",
+    "ppu:src/pluto_plus/hardware/pss_iio.py": "sha256:8130e4d102c8c9e70d8d5f8f9a5ce636bcbb61d57c98f1e436b85af2ca8f1e57",
+    "ppu:tests/test_pss_control.py": "sha256:8a1a8c43ced1a7c79a930042d1444b9c9badfa6663fe685af90273aea6c31cab"
+  },
+  "commands": [
+    {
+      "command": [
+        "git",
+        "status",
+        "--short"
+      ],
+      "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence",
+      "returncode": 0,
+      "stdout": " M docs/architecture/adaptive-scanner-implementation.md\n M src/leo/cli/backend.py\n M src/leo/cli/composition.py\n M src/leo/cli/runner.py\n M src/leo/cli/scanner_glrt.py\n M src/leo/scanner/glrt_publication.py\n M src/leo/storage/adaptive_hop.py\n M src/leo/storage/persistent_hop.py\n M tests/scanner/adaptive_hop_fixtures.py\n M tests/storage/test_adaptive_hop_store.py\n M tests/storage/test_persistent_hop_store.py\n?? reports/2026_09_09_adaptive_scheduled_runtime_checkpoint.md\n?? src/leo/radio/pluto_adaptive_hop.py\n?? tests/cli/test_adaptive_hop_schedule.py\n?? tests/cli/test_adaptive_hop_supervisor.py\n?? tests/radio/adaptive_hop_fixtures.py\n?? tests/radio/test_adaptive_hop_scheduled_network.py\n?? tests/radio/test_pluto_adaptive_hop.py\n?? tests/scanner/adaptive_glrt_publication_fixtures.py\n?? tests/scanner/test_adaptive_glrt_publication.py\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence",
+      "returncode": 0,
+      "stdout": "a0c6903fc80899ab74c3b752ed85b057015c9530\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--short"
+      ],
+      "cwd": "/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host",
+      "returncode": 0,
+      "stdout": "5c15faf28ba9000a137441b3ab0161356a4f67b4\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--short"
+      ],
+      "cwd": "/home/mouse9911/gits/libiio-arm-glrt-frame-integration",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "/home/mouse9911/gits/libiio-arm-glrt-frame-integration",
+      "returncode": 0,
+      "stdout": "42762db3e4a42901c7b9869a3d0d6be7c1147745\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/mouse9911/gits/libiio-arm-glrt-frame-integration",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "origin/main"
+      ],
+      "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence",
+      "returncode": 0,
+      "stdout": "29be8492f5f2efb439a9df1e6086224714e95506\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "--is-ancestor",
+        "origin/main",
+        "HEAD"
+      ],
+      "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "origin/main"
+      ],
+      "cwd": "/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host",
+      "returncode": 0,
+      "stdout": "1245220f6078f9bcb3008aec9f6bacef83f5419e\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "--is-ancestor",
+        "origin/main",
+        "HEAD"
+      ],
+      "cwd": "/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/ruff",
+        "check",
+        "src/leo/cli/backend.py",
+        "src/leo/cli/composition.py",
+        "src/leo/cli/runner.py",
+        "src/leo/cli/scanner_glrt.py",
+        "src/leo/radio/pluto_adaptive_hop.py",
+        "src/leo/scanner/glrt_publication.py",
+        "src/leo/storage/adaptive_hop.py",
+        "src/leo/storage/persistent_hop.py",
+        "tests/cli/test_adaptive_hop_schedule.py",
+        "tests/cli/test_adaptive_hop_supervisor.py",
+        "tests/radio/adaptive_hop_fixtures.py",
+        "tests/radio/test_adaptive_hop_scheduled_network.py",
+        "tests/radio/test_pluto_adaptive_hop.py",
+        "tests/scanner/adaptive_glrt_publication_fixtures.py",
+        "tests/scanner/adaptive_hop_fixtures.py",
+        "tests/scanner/test_adaptive_glrt_publication.py",
+        "tests/storage/test_adaptive_hop_store.py",
+        "tests/storage/test_persistent_hop_store.py"
+      ],
+      "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence",
+      "returncode": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+        "-m",
+        "mypy",
+        "--python-version=3.12",
+        "--follow-imports=silent",
+        "src/leo/cli/backend.py",
+        "src/leo/cli/composition.py",
+        "src/leo/cli/runner.py",
+        "src/leo/cli/scanner_glrt.py",
+        "src/leo/radio/pluto_adaptive_hop.py",
+        "src/leo/scanner/glrt_publication.py",
+        "src/leo/storage/adaptive_hop.py",
+        "src/leo/storage/persistent_hop.py"
+      ],
+      "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence",
+      "returncode": 0,
+      "stdout": "Success: no issues found in 8 source files\n",
+      "stderr": ""
+    }
+  ],
+  "server": {
+    "path": "/tmp/leo-adaptive-provider.nZDbhN/adaptive-positive/iiod/test_scanner_glrt_network_server",
+    "sha256": "sha256:fb82732aeaa4f37ddf09b0e90de0cb76ac6f755f8dde9206576f28660e51c14c"
+  }
+}

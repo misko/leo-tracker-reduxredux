@@ -67,9 +67,16 @@ do not silently change user-facing three-miss/two-second behavior.
    IQ storage, bounded queued compression, lifecycle orchestration and a strict
    PPU V2 mapping boundary. Original and new manifest kinds are not conflated.
    Full-300-s synthetic TCP-to-store verification, short cancellation and
-   pre-refill cancellation are covered. The scheduled radio-session adapter,
-   publication/analysis composition and adaptive history/UI are still pending;
-   do not feed adaptive receipts to the fixed writer or call eight visits a sweep.
+   pre-refill cancellation are covered. The concrete single-owner adaptive radio
+   adapter and scheduled opt-in now compose capture, authority/cleanup, queued
+   IQ publication and separately source-bound classifier publication. Retry
+   checks preserve mode, identity and failed staging without recapturing a slot;
+   the durable supervisor distinguishes capture health from detector quality.
+   Both rates/modes pass full scheduled synthetic TCP-to-store/result tests,
+   cancellation and pre-refill cancellation. Adaptive history/UI and actual-time
+   analysis remain pending; do not feed adaptive receipts to the fixed writer
+   or call eight visits a sweep.
+   See the [scheduled runtime checkpoint](../../reports/2026_09_09_adaptive_scheduled_runtime_checkpoint.md).
    See the [application recording checkpoint](../../reports/2026_09_09_adaptive_recording_checkpoint.md).
    See the [provider/host checkpoint](../../reports/2026_09_09_adaptive_provider_host_checkpoint.md)
    and [native hop checkpoint](../../reports/2026_09_09_adaptive_hop_v2_checkpoint.md).

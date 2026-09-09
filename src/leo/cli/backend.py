@@ -73,6 +73,7 @@ from leo.storage import (
     PublishedScannerIqBundle,
     PublishedScannerRun,
 )
+from leo.storage.adaptive_hop import PublishedAdaptiveHopIqSession
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,7 +143,26 @@ class ScheduledPersistentHopRun:
     classification_warning: str | None = None
 
 
-ScheduledScannerRunLike = ScheduledScannerRun | ScheduledPersistentHopRun
+@dataclass(frozen=True, slots=True)
+class ScheduledAdaptiveHopRun:
+    """Actual-visit capture; never masquerades as a fixed-sweep recording."""
+
+    intent: ScheduledScannerRunIntentV1
+    published: PublishedAdaptiveHopIqSession
+    classification_warning: str | None = None
+
+    @property
+    def capture_qualified(self) -> bool:
+        # Recording health, not detector sensitivity or scientific qualification.
+        receipt = self.published.manifest.receipt
+        return (
+            receipt.terminal.state == "completed"
+            and receipt.source_span_attested
+            and receipt.duty_target_met
+        )
+
+
+ScheduledScannerRunLike = ScheduledScannerRun | ScheduledPersistentHopRun | ScheduledAdaptiveHopRun
 
 
 @dataclass(frozen=True, slots=True)

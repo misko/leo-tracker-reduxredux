@@ -10,7 +10,12 @@ from pathlib import Path
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
 from leo.contracts.scanner_glrt_session import ScannerGlrtSessionEvidenceV1
 from leo.radio.scanner_glrt_metadata import ScannerGlrtOptions
-from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource, validate_glrt_capture_binding
+from leo.scanner.glrt_publication import (
+    ScannerGlrtEvidenceSource,
+    validate_glrt_adaptive_binding,
+    validate_glrt_capture_binding,
+)
+from leo.storage.adaptive_hop import PublishedAdaptiveHopIqSession
 from leo.storage.persistent_hop import PublishedPersistentHopIqSession
 from leo.storage.scanner_glrt import ScannerGlrtStore
 
@@ -38,7 +43,7 @@ def scanner_glrt_options(values: Mapping[str, str]) -> ScannerGlrtOptions | None
 
 def publish_scanner_glrt(
     source: ScannerGlrtEvidenceSource,
-    capture: PublishedPersistentHopIqSession,
+    capture: PublishedPersistentHopIqSession | PublishedAdaptiveHopIqSession,
     options: ScannerGlrtOptions,
     *,
     store_factory: Callable[[Path], ScannerGlrtStore],
@@ -69,9 +74,7 @@ def publish_scanner_glrt(
             evidence=evidence,
             error=error,
         )
-        validate_glrt_capture_binding(
-            publication, capture.manifest.receipt, input_manifest_sha256=capture.manifest_sha256
-        )
+        _validate_binding(publication, capture)
     except Exception as failure:
         publication = ScannerGlrtPublicationV1(
             session_id=capture.session_id,
@@ -82,6 +85,7 @@ def publish_scanner_glrt(
             evidence=None,
             error=f"GLRT evidence rejected: {type(failure).__name__}: {failure}"[:2048],
         )
+    warning: str | None
     try:
         store_factory(bulk_root).publish(publication)
     except Exception as failure:
@@ -104,7 +108,7 @@ def publish_scanner_glrt(
 
 
 def existing_scanner_glrt_warning(
-    capture: PublishedPersistentHopIqSession,
+    capture: PublishedPersistentHopIqSession | PublishedAdaptiveHopIqSession,
     options: ScannerGlrtOptions,
     *,
     store_factory: Callable[[Path], ScannerGlrtStore],
@@ -115,9 +119,7 @@ def existing_scanner_glrt_warning(
         publication = store_factory(bulk_root).read(capture.session_id)
         if publication is None:
             return "no GLRT evidence recorded for this existing capture; radio was not reopened"
-        validate_glrt_capture_binding(
-            publication, capture.manifest.receipt, input_manifest_sha256=capture.manifest_sha256
-        )
+        _validate_binding(publication, capture)
         if (
             publication.algorithm_sha256 != options.algorithm_sha256
             or publication.configuration_sha256 != options.configuration_sha256
@@ -134,3 +136,17 @@ def existing_scanner_glrt_warning(
         return None
     except Exception as failure:
         return f"existing GLRT evidence unavailable: {type(failure).__name__}: {failure}"[:2048]
+
+
+def _validate_binding(
+    publication: ScannerGlrtPublicationV1,
+    capture: PublishedPersistentHopIqSession | PublishedAdaptiveHopIqSession,
+) -> None:
+    if isinstance(capture, PublishedAdaptiveHopIqSession):
+        validate_glrt_adaptive_binding(
+            publication, capture.manifest.receipt, input_manifest_sha256=capture.manifest_sha256
+        )
+    else:
+        validate_glrt_capture_binding(
+            publication, capture.manifest.receipt, input_manifest_sha256=capture.manifest_sha256
+        )

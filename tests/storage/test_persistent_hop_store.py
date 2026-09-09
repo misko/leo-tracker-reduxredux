@@ -31,6 +31,28 @@ def _cancelled_capture(tmp_path, *, visit_count: int = 9):
     return store, published, blocks
 
 
+def test_session_query_preserves_published_and_failed_staging(tmp_path):
+    store, published, _ = _cancelled_capture(tmp_path, visit_count=1)
+    assert store.contains_session(published.session_id)
+    assert not store.contains_session("another-slot")
+    writer = store.begin("another-slot", published.manifest.plan)
+    assert store.contains_session("another-slot")
+    writer.abort()
+    assert store.contains_session("another-slot")
+    reader = PersistentHopIqStore.open_read_only(tmp_path)
+    assert reader.contains_session("another-slot")
+    assert reader.contains_session(published.session_id)
+    assert not reader.contains_session("another-slot-prefix")
+    with pytest.raises(ValueError):
+        reader.contains_session("../outside")
+
+
+def test_read_only_session_query_creates_no_storage_namespaces(tmp_path):
+    reader = PersistentHopIqStore.open_read_only(tmp_path)
+    assert not reader.contains_session("missing-slot")
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_persistent_hop_store_streams_sweep_chunks_and_reopens(
     tmp_path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
