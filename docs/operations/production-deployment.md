@@ -144,10 +144,17 @@ ARM daemon are separate artifacts. GLRT also needs the separately qualified,
 sealed companion bundle and explicit acquisition configuration; the unchanged
 legacy `runtime/scanner-iiod` artifact is not that bundle.
 
+The separate optional `runtime/scanner-glrt` asset is now packaged and checked
+without executing ARM code. Staging verifies all 12 files before setting iiOD
+and worker to 0550 and the other files to 0440, then seals their hashes in
+external release metadata. Missing, extra or altered members fail publication.
+The default scanner daemon remains unchanged. See the
+[asset identities and limitations](../dependencies/scanner-glrt-runtime.md).
+
 As of the September 9 integration checkpoint, the locked PPU revision
 `7210cda9b0b2452cb607b5e49e689e2d60b6a8b7` does not expose this installer option.
-Dependency promotion/pin updates and companion packaging are still required
-before a complete scanner release can be built. A dry-run describes requested
+Dependency promotion/pin updates and full isolated release-build verification
+are still required before a complete scanner release is ready. A dry-run describes requested
 staging, not dependency availability or qualification. Do not work around this
 gate with editable installs, ambient loader overrides, or unsealed libraries.
 

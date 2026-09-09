@@ -9,6 +9,7 @@ import hashlib
 import importlib.metadata
 import json
 import os
+import runpy
 import stat
 import struct
 import subprocess
@@ -96,11 +97,7 @@ def validate_scanner_iiod_binary(
         raise ValueError("scanner iiOD size differs from the reviewed artifact")
     with binary.open("rb") as stream:
         header = stream.read(52)
-    if (
-        len(header) != 52
-        or header[:7] != b"\x7fELF\x01\x01\x01"
-        or header[7] not in (0, 3)
-    ):
+    if len(header) != 52 or header[:7] != b"\x7fELF\x01\x01\x01" or header[7] not in (0, 3):
         raise ValueError("scanner iiOD is not an ELF32 little-endian System V/GNU artifact")
     elf_type, machine, version = struct.unpack_from("<HHI", header, 16)
     flags = struct.unpack_from("<I", header, 36)[0]
@@ -142,8 +139,7 @@ def validate_scanner_iiod_provenance(release: Path) -> None:
         or source.get("origin_master") != SCANNER_IIOD_LIBIIO_REVISION
         or source.get("worktree_clean") is not True
         or not isinstance(runtime, dict)
-        or runtime.get("recommended_release_relative_path")
-        != SCANNER_IIOD_RELATIVE_PATH.as_posix()
+        or runtime.get("recommended_release_relative_path") != SCANNER_IIOD_RELATIVE_PATH.as_posix()
         or runtime.get("interactive_flag_must_be_absent") is not True
     ):
         raise ValueError("scanner iiOD provenance does not identify the reviewed artifact")
@@ -215,6 +211,8 @@ def validate(release: Path, forbidden_path: str) -> None:
     release = _safe_absolute(release, "release")
     validate_scanner_iiod_binary(release)
     validate_scanner_iiod_provenance(release)
+    bundle_validator = runpy.run_path(str(Path(__file__).with_name("validate-scanner-glrt-bundle")))
+    bundle_validator["inventory"](release)
     validate_release_uv(release)
     venv = _safe_absolute(release / ".venv", "release venv")
     python = venv / "bin/python"

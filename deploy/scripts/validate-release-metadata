@@ -10,6 +10,7 @@ import json
 import os
 import posixpath
 import re
+import runpy
 import stat
 import subprocess
 import sys
@@ -188,6 +189,10 @@ def validate(
         expected_uid=expected_python_uid,
     )
     runtime_paths = _metadata_runtime_inventory(release, expected_profile=expected_runtime_profile)
+    bundle_validator = runpy.run_path(str(Path(__file__).with_name("validate-scanner-glrt-bundle")))
+    bundle_paths = bundle_validator["inventory"](
+        release, expected_uid=expected_uid, expected_gid=expected_group
+    )
     expected_paths = (
         python,
         release / ".release-tools/uv",
@@ -197,6 +202,7 @@ def validate(
         release / "runtime/scanner-iiod/iiod",
         release / "runtime/scanner-iiod/provenance.json",
         *runtime_paths,
+        *bundle_paths,
     )
     if len(lines) != 3 + len(expected_paths):
         raise ValueError("metadata digest inventory has unexpected cardinality")

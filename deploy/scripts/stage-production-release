@@ -273,7 +273,7 @@ install -d -o leo -g leo -m 0700 "$staging_dir"
 # Historical reports account for roughly half the old release and are not an
 # input to runtime or the blocking release qualification.  Git archive also
 # omits the repository object database by construction.
-git -C "$source_real" archive --format=tar "$revision" -- . ':(exclude)reports' \
+git -C "$source_real" -c tar.umask=0027 archive --format=tar "$revision" -- . ':(exclude)reports' \
   | tar -x --no-same-owner -C "$staging_dir"
 printf '{"schema":"org.leo.release-source/v1","revision":"%s","tree":"%s"}\n' \
   "$revision" "$source_tree" >"$staging_dir/$source_identity_name"
@@ -289,6 +289,24 @@ scanner_iiod_provenance=$staging_dir/runtime/scanner-iiod/provenance.json
 }
 chmod 0550 "$scanner_iiod"
 chmod 0440 "$scanner_iiod_provenance"
+# Validate exact candidate bytes before normalizing only its enumerated files.
+# This optional asset is independent of host-runtime selection and enablement.
+if [[ -e "$staging_dir/runtime/scanner-glrt" || -L "$staging_dir/runtime/scanner-glrt" ]]; then
+  if ! scanner_bundle_path_text=$("$staging_dir/deploy/scripts/validate-scanner-glrt-bundle" \
+    "$staging_dir" --staged --paths); then
+    echo "scanner companion bundle failed pre-seal verification" >&2
+    exit 65
+  fi
+  [[ -n "$scanner_bundle_path_text" ]] || {
+    echo "present scanner companion bundle has no validated inventory" >&2
+    exit 65
+  }
+  mapfile -t scanner_bundle_paths <<<"$scanner_bundle_path_text"
+  chmod 0440 "${scanner_bundle_paths[@]}"
+  chmod 0550 "$staging_dir/runtime/scanner-glrt/iiod" \
+    "$staging_dir/runtime/scanner-glrt/worker"
+  chmod 0750 "$staging_dir/runtime/scanner-glrt"
+fi
 "$staging_dir/deploy/scripts/check-staged-release" "$staging_dir" "$revision"
 chown -R leo:leo "$staging_dir"
 chmod -R o-rwx "$staging_dir"
@@ -344,6 +362,7 @@ metadata_temp=$(mktemp \
 if ! metadata_runtime_path_text=$(PYTHONDONTWRITEBYTECODE=1 \
   "$release_dir/.venv/bin/python" - "$release_dir" "$metadata_runtime_receipt" <<'PY'
 import json
+import runpy
 import sys
 from pathlib import Path
 
@@ -362,6 +381,10 @@ for key in ("native_libiio_path", "pylibiio_path"):
     if not path.is_file() or not path.is_relative_to(venv):
         raise SystemExit(f"metadata runtime {key} is not release-local")
     paths.append(path)
+bundle_root = release / "runtime/scanner-glrt"
+if bundle_root.exists() or bundle_root.is_symlink():
+    bundle_validator = runpy.run_path(str(release / "deploy/scripts/validate-scanner-glrt-bundle"))
+    paths.extend(bundle_validator["inventory"](release))
 print(*(str(path) for path in paths), sep="\n")
 PY
 ); then
@@ -369,7 +392,7 @@ PY
   exit 65
 fi
 mapfile -t metadata_runtime_paths <<<"$metadata_runtime_path_text"
-[[ ${#metadata_runtime_paths[@]} -eq 3 ]] || {
+[[ ${#metadata_runtime_paths[@]} -eq 3 || ${#metadata_runtime_paths[@]} -eq 15 ]] || {
   echo "metadata runtime inventory has unexpected cardinality" >&2
   exit 65
 }

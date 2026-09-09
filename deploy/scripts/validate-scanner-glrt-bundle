@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""Validate the exact optional ARM bundle without executing code or accessing RF.
+
+The fixed scanner asset remains independent. These reviewed manifest digests
+identify one candidate; accepting its bytes is not detector/duty qualification.
+"""
+
+from __future__ import annotations
+
+import argparse
+import grp
+import hashlib
+import json
+import os
+import stat
+import struct
+import sys
+from pathlib import Path
+
+RELATIVE_PATH = Path("runtime/scanner-glrt")
+MANIFEST_DIGESTS = {
+    "bundle.json": "19c3650480a8386b12384b0f9a0c5d49e237b04ad98f474d3e703d3f820ddd7c",
+    "algorithm.json": "3a2b6f66a39f197f8544be8a7af635122d762fc3bf2c649ee4c8937d1490b41c",
+    "configuration.json": "7119b7116309835f308c5db23acb23b0e98f098fdf4c853caf8e4f0bb83424f8",
+}
+COMPANIONS = (
+    "worker",
+    "libleo-scanner-glrt.so",
+    "libfftw3.so.3",
+    "libiio.so.0",
+    "libxml2.so.2",
+    "libz.so.1",
+    "templates-2500000.bin",
+    "templates-5000000.bin",
+)
+EXECUTABLES = frozenset({"iiod", "worker"})
+ELF_FILES = frozenset({"iiod", *COMPANIONS[:6]})
+NAMES = (*MANIFEST_DIGESTS, "iiod", *COMPANIONS)
+MAX_FILE_BYTES = 64 * 1024 * 1024
+
+
+def _safe_path(path: Path) -> None:
+    if not path.is_absolute() or ".." in path.parts or path.is_relative_to("/mnt/qnap01"):
+        raise ValueError("scanner bundle path must be absolute, normalized and outside QNAP")
+    for part in (path, *path.parents):
+        if part.is_symlink():
+            raise ValueError("scanner bundle path contains a symlink")
+
+
+def _read(path: Path, *, uid: int, gid: int, staged: bool, maximum: int) -> bytes:
+    descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        before = os.fstat(descriptor)
+        mode = stat.S_IMODE(before.st_mode)
+        expected_mode = 0o550 if path.name in EXECUTABLES else 0o440
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or before.st_uid != uid
+            or before.st_gid != gid
+            or mode & 0o022
+            or (not staged and mode != expected_mode)
+            or not 0 < before.st_size <= maximum
+        ):
+            raise ValueError(
+                f"scanner bundle file is not a bounded trusted regular file: {path.name}"
+            )
+        chunks = bytearray()
+        while len(chunks) <= before.st_size:
+            block = os.read(descriptor, min(1024 * 1024, before.st_size + 1 - len(chunks)))
+            if not block:
+                break
+            chunks.extend(block)
+        after = os.fstat(descriptor)
+        fields = (
+            "st_dev",
+            "st_ino",
+            "st_size",
+            "st_mtime_ns",
+            "st_ctime_ns",
+            "st_mode",
+            "st_nlink",
+        )
+        if len(chunks) != before.st_size or any(
+            getattr(before, key) != getattr(after, key) for key in fields
+        ):
+            raise ValueError("scanner bundle input changed during verification")
+        return bytes(chunks)
+    finally:
+        os.close(descriptor)
+
+
+def inventory(
+    release: Path,
+    *,
+    staged: bool = False,
+    expected_uid: int = 0,
+    expected_gid: int | None = None,
+) -> tuple[Path, ...]:
+    """Return the exact digest inventory; absent optional bundle preserves legacy releases."""
+    root = release / RELATIVE_PATH
+    _safe_path(root)
+    if not root.exists():
+        return ()
+    gid = grp.getgrnam("leo").gr_gid if expected_gid is None else expected_gid
+    info = root.stat()
+    if (
+        not stat.S_ISDIR(info.st_mode)
+        or info.st_uid != expected_uid
+        or info.st_gid != gid
+        or info.st_mode & 0o022
+    ):
+        raise ValueError("scanner bundle directory is not trusted")
+    if {path.name for path in root.iterdir()} != set(NAMES):
+        raise ValueError("scanner bundle inventory has missing or unexpected entries")
+    documents = {}
+    for name, digest in MANIFEST_DIGESTS.items():
+        raw = _read(root / name, uid=expected_uid, gid=gid, staged=staged, maximum=65536)
+        if hashlib.sha256(raw).hexdigest() != digest:
+            raise ValueError(f"scanner bundle reviewed manifest digest mismatch: {name}")
+        documents[name] = json.loads(raw)
+    manifest = documents["bundle.json"]
+    # Paths are the fixed reviewed names, never arbitrary manifest-supplied paths.
+    if tuple(item["name"] for item in manifest["files"]) != COMPANIONS:
+        raise ValueError("scanner companion order differs from the reviewed inventory")
+    entries = [
+        {"name": "iiod", "bytes": manifest["daemon_bytes"], "sha256": manifest["daemon_sha256"]},
+        *manifest["files"],
+    ]
+    for entry in entries:
+        name = entry["name"]
+        raw = _read(root / name, uid=expected_uid, gid=gid, staged=staged, maximum=MAX_FILE_BYTES)
+        if len(raw) != entry["bytes"] or hashlib.sha256(raw).hexdigest() != entry["sha256"]:
+            raise ValueError(f"scanner bundle payload digest/size mismatch: {name}")
+        if name in ELF_FILES:
+            if len(raw) < 52 or raw[:7] != b"\x7fELF\x01\x01\x01":
+                raise ValueError(f"scanner bundle payload is not ELF32 little-endian: {name}")
+            kind, machine, version = struct.unpack_from("<HHI", raw, 16)
+            flags = struct.unpack_from("<I", raw, 36)[0]
+            if (
+                kind not in (2, 3)
+                or machine != 40
+                or version != 1
+                or flags & 0xFF000400 != 0x05000400
+            ):
+                raise ValueError(f"scanner bundle payload is not ARM hard-float EABI5: {name}")
+    return tuple(root / name for name in NAMES)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("release", type=Path)
+    parser.add_argument(
+        "--staged", action="store_true", help="check pre-seal files owned by this caller"
+    )
+    parser.add_argument(
+        "--paths", action="store_true", help="print the validated inventory for sealing"
+    )
+    args = parser.parse_args()
+    try:
+        paths = inventory(
+            args.release,
+            staged=args.staged,
+            expected_uid=os.geteuid() if args.staged else 0,
+            expected_gid=os.getegid() if args.staged else None,
+        )
+    except (OSError, ValueError, KeyError) as error:
+        print(f"SCANNER BUNDLE INVALID: {error}", file=sys.stderr)
+        return 1
+    if args.paths:
+        for path in paths:
+            print(path)
+    else:
+        print(json.dumps({"present": bool(paths), "files": len(paths), "executed": False}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
