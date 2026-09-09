@@ -5,6 +5,7 @@
 #define LEO_SCANNER_GLRT_FRAME_RESULT_H
 #include "frame_codec.h"
 #include "pool.h"
+#include "adaptive_scan.h"
 
 typedef struct {
     double minimum_exact_score, minimum_margin;
@@ -24,4 +25,10 @@ int leo_glrt_result_record(const leo_probe_result *, const leo_glrt_decision_pol
  * for a valid source dwell without inventing searched samples or measurements. */
 int leo_glrt_unavailable_record(const leo_probe_request *, enum leo_glrt_reason,
     leo_glrt_classification_v1 *output);
+/* Positive-only scheduling evidence. Requires an explicit enabled policy with
+ * absence disabled. A successful configured search with no candidate/passing
+ * candidate is NOT_DETECTED, never a public NO_SIGNAL claim. Incomplete
+ * fractional work is UNKNOWN unless another valid candidate is positive. */
+int leo_glrt_result_observation(const leo_probe_result *, const leo_glrt_decision_policy *,
+    leo_adaptive_observation_v1 *output);
 #endif

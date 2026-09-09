@@ -8,6 +8,7 @@ import subprocess
 import pytest
 
 from leo.contracts.scanner_glrt_frame import decode_frame
+from tests.scanner.test_adaptive_scan import Observation
 from tests.scanner.test_glrt_frame_codec import Frame, Record
 from tests.scanner.test_native_presence_pool import Evidence, Request
 from tools.native_presence import ROOT
@@ -50,6 +51,11 @@ def adapter(tmp_path_factory):
         ct.POINTER(Record),
     ]
     lib.leo_glrt_unavailable_record.argtypes = [ct.POINTER(Request), ct.c_int, ct.POINTER(Record)]
+    lib.leo_glrt_result_observation.argtypes = [
+        ct.POINTER(Evidence),
+        ct.POINTER(Policy),
+        ct.POINTER(Observation),
+    ]
     lib.leo_glrt_frame_encode.argtypes = [
         ct.POINTER(Frame),
         ct.c_void_p,
@@ -137,6 +143,64 @@ def test_classification_policy_is_explicit_and_absence_requires_separate_enable(
         assert (r.verdict, r.reason) == (verdict, reason)
         assert r.confirmation_start == r.confirmation_end
         assert r.epoch_sample_counter == r.fractional_offset_samples == 0
+
+
+@pytest.mark.parametrize(
+    "kind,expected,healthy",
+    [
+        ("positive", 1, 1),
+        ("below_threshold", 2, 1),
+        ("no_candidate", 2, 1),
+        ("fractional_incomplete", 0, 1),
+        ("worker_failed", 0, 0),
+        ("positive_and_incomplete", 1, 1),
+        ("negative_and_incomplete", 0, 1),
+    ],
+)
+def test_scheduling_hint_distinguishes_completed_miss_from_unknown(
+    adapter, kind, expected, healthy
+):
+    e, p = evidence(), Policy(0.175, 0.025, 1, 0)
+    if kind == "worker_failed":
+        e.status = -1
+    if kind == "no_candidate":
+        e.evidence.candidate_count = 0
+    if kind in ("below_threshold", "negative_and_incomplete"):
+        p.minimum_exact_score = 0.3
+    if "and_incomplete" in kind:
+        e.evidence.candidate_count = 2
+        e.evidence.candidates[1] = e.evidence.candidates[0]
+        e.evidence.candidates[1].fractional_complete = 0
+    if kind == "fractional_incomplete":
+        e.evidence.candidates[0].fractional_complete = 0
+    o = Observation()
+    assert adapter.leo_glrt_result_observation(ct.byref(e), ct.byref(p), ct.byref(o)) == 0
+    assert (o.outcome, o.healthy) == (expected, healthy)
+    assert (o.session, o.generation, o.visit, o.valid_start, o.valid_end) == (
+        e.request.session,
+        e.request.generation,
+        e.request.visit,
+        e.request.valid_start,
+        e.request.valid_end,
+    )
+    assert (o.target, o.rate_hz, o.rx) == (6, 5000000, 1)
+    # An evaluated miss remains unavailable in the existing public frame;
+    # scheduling evidence cannot silently enable a NO_SIGNAL assertion.
+    assert convert(adapter, e, p).verdict == (1 if expected == 1 else 0)
+
+
+@pytest.mark.parametrize("p", [None, Policy(0.175, 0.025, 0, 0), Policy(0.175, 0.025, 1, 1)])
+def test_scheduling_observation_requires_positive_only_policy(adapter, p):
+    o = Observation()
+    ct.memset(ct.byref(o), 0xAA, ct.sizeof(o))
+    original = bytes(o)
+    assert (
+        adapter.leo_glrt_result_observation(
+            ct.byref(evidence()), ct.byref(p) if p else None, ct.byref(o)
+        )
+        == -1
+    )
+    assert bytes(o) == original
 
 
 def test_failed_or_incomplete_fractional_work_cannot_become_absence(adapter):

@@ -34,7 +34,7 @@ from tests.scanner.glrt_publication_fixtures import (
 OPTIONS = ScannerGlrtOptions(ALGORITHM, CONFIGURATION)
 
 
-def test_opt_in_requires_exact_identities_and_never_enables_a_qualified_policy():
+def test_opt_in_requires_exact_identities_and_explicit_decision_mode():
     assert scanner_glrt_options({}) is None
     good = {
         "LEO_SCANNER_GLRT_MODE": "unqualified-evidence",
@@ -42,6 +42,8 @@ def test_opt_in_requires_exact_identities_and_never_enables_a_qualified_policy()
         "LEO_SCANNER_GLRT_CONFIGURATION_SHA256": CONFIGURATION,
     }
     assert scanner_glrt_options(good) == OPTIONS
+    positive = scanner_glrt_options(good | {"LEO_SCANNER_GLRT_MODE": "positive-only-v1"})
+    assert positive == ScannerGlrtOptions(ALGORITHM, CONFIGURATION, mode="positive-only-v1")
     for update in (
         {"LEO_SCANNER_GLRT_MODE": "qualified"},
         {"LEO_SCANNER_GLRT_MODE": "disabled"},

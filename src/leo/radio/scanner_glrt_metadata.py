@@ -33,9 +33,12 @@ class ScannerGlrtOptions:
     algorithm_sha256: str
     configuration_sha256: str
     drain_budget_seconds: float = 5.0
+    mode: str = "unqualified-evidence"
 
     def __post_init__(self) -> None:
         ScannerGlrtRequestV1(1, self.algorithm_sha256, self.configuration_sha256, b"validate")
+        if self.mode not in ("unqualified-evidence", "positive-only-v1"):
+            raise ValueError("unsupported GLRT decision profile")
         if (
             isinstance(self.drain_budget_seconds, bool)
             or not isinstance(self.drain_budget_seconds, (int, float))
@@ -91,7 +94,7 @@ class ScannerGlrtMetadataExtension:
         required = {
             "iio,buffer-scanner-glrt": "1",
             "iio,buffer-metadata-drain": "1",
-            "iio,buffer-scanner-glrt-mode": "unqualified-evidence",
+            "iio,buffer-scanner-glrt-mode": self.options.mode,
             "iio,buffer-scanner-glrt-algorithm-sha256": self.options.algorithm_sha256,
             "iio,buffer-scanner-glrt-configuration-sha256": self.options.configuration_sha256,
         }
@@ -161,8 +164,11 @@ class ScannerGlrtMetadataExtension:
     def _consume_frame(self, metadata: bytes, iq_payload: bytes) -> None:
         frame = self._reader.consume(metadata, iq_payload)
         for result in frame.results:
-            if result.verdict != "unavailable":
+            if self.options.mode == "unqualified-evidence" and result.verdict != "unavailable":
                 self.fail("unqualified provider asserted a classification")
+                return
+            if self.options.mode == "positive-only-v1" and result.verdict == "no_signal":
+                self.fail("positive-only provider asserted signal absence")
                 return
             if result.search_end > result.search_start and (
                 self._delivered_end is None or result.search_end > self._delivered_end
@@ -239,7 +245,7 @@ class ScannerGlrtMetadataExtension:
             algorithm_sha256=self.options.algorithm_sha256,
             configuration_sha256=self.options.configuration_sha256,
             negotiated=self._reader.negotiated,
-            mode="unqualified-evidence" if self._reader.negotiated else None,
+            mode=self.options.mode if self._reader.negotiated else None,
             source_terminal_attested=self._expected is not None,
             final_received=self._reader.final,
             expected_results=self._expected,

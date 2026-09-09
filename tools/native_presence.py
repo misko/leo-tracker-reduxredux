@@ -39,10 +39,18 @@ def build_scanner_glrt_port(
         "pool.c",
         "frame_codec.c",
         "frame_result.c",
+        "adaptive_scan.c",
     )
     sources = [source / name for name in names]
     sources += [
-        source / name for name in ("scanner_glrt.h", "pool.h", "frame_codec.h", "frame_result.h")
+        source / name
+        for name in (
+            "scanner_glrt.h",
+            "pool.h",
+            "frame_codec.h",
+            "frame_result.h",
+            "adaptive_scan.h",
+        )
     ]
     sources += [NATIVE / "presence.h", NATIVE / "window_rank.h", Path(__file__)]
     hashes = {str(path.relative_to(ROOT)): _digest(path) for path in sources}

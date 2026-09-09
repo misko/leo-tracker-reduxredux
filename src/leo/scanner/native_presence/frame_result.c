@@ -77,3 +77,25 @@ int leo_glrt_result_record(const leo_probe_result *in, const leo_glrt_decision_p
     *output=r;
     return 0;
 }
+
+int leo_glrt_result_observation(const leo_probe_result *in, const leo_glrt_decision_policy *policy,
+    leo_adaptive_observation_v1 *out)
+{
+    leo_glrt_classification_v1 r;
+    if (!out || !policy || !policy->classification_enabled || policy->absence_enabled ||
+        leo_glrt_result_record(in,policy,&r)) return -1;
+    const leo_probe_request *q=&in->request;
+    leo_adaptive_observation_v1 o={.session=q->session,.generation=q->generation,
+        .visit=q->visit,.valid_start=q->valid_start,.valid_end=q->valid_end,
+        .rate_hz=q->rate_hz,.rx=q->rx,.target=q->channel-1+4*q->edge,
+        .outcome=LEO_ADAPTIVE_UNKNOWN,.healthy=in->status==0};
+    if (r.verdict==LEO_GLRT_STARLINK) o.outcome=LEO_ADAPTIVE_DETECTED;
+    else if (!in->status) {
+        int complete=1;
+        for (int j=0;j<in->evidence.candidate_count;++j)
+            if (!in->evidence.candidates[j].fractional_complete) complete=0;
+        if (complete) o.outcome=LEO_ADAPTIVE_NOT_DETECTED;
+    }
+    *out=o;
+    return 0;
+}

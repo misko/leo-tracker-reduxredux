@@ -36,6 +36,26 @@ function respond(value: unknown, status = 200): Response {
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("radio-side GLRT", () => {
+  it("presents explicit positive-only detections without implying absence", async () => {
+    const value = publication();
+    value.evidence!.mode = "positive-only-v1";
+    value.evidence!.classification_complete = true;
+    Object.assign(value.evidence!.results[0], { verdict: "starlink", reason: "complete" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    render(<ScannerGlrtPanel sessionId="scan-glrt" />);
+    await screen.findByText("Starlink");
+    expect(screen.getByText(/Positive-only detection/)).toHaveTextContent("do not establish signal absence");
+    expect(screen.queryByText("No signal")).not.toBeInTheDocument();
+  });
+
+  it("rejects an absence claim from the positive-only profile", async () => {
+    const value = publication();
+    value.evidence!.mode = "positive-only-v1";
+    Object.assign(value.evidence!.results[0], { verdict: "no_signal", reason: "complete" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    await expect(getScannerGlrt("scan-glrt")).rejects.toThrow(/cannot assert signal absence/);
+  });
+
   it("shows unqualified results independently from delivery, duty and exact epoch", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(publication())));
     render(<ScannerGlrtPanel sessionId="scan-glrt" />);

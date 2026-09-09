@@ -17,18 +17,24 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+#include <math.h>
 
 enum { PLANNED, COLLECTING, WORKING, DONE, SENT };
-struct visit_record { leo_glrt_classification_v1 record; unsigned state; };
+struct visit_record {
+    leo_glrt_classification_v1 record;
+    leo_adaptive_observation_v1 observation;
+    unsigned state;
+};
 struct leo_scanner_glrt {
     leo_scanner_glrt_config_v1 config;
+    leo_glrt_decision_policy policy;
     leo_probe_pool *pool;
     leo_probe_collector collector;
     struct visit_record *visits;
     int16_t *history;
     size_t history_capacity;
     uint64_t history_start, history_end, frame_sequence;
-    uint32_t known, collecting, sending;
+    uint32_t known, collecting, sending, observing;
     pid_t worker;
     int notify, have_history, finished, final, failed;
 };
@@ -46,6 +52,10 @@ static void unavailable(leo_scanner_glrt *s, uint32_t index, enum leo_glrt_reaso
 {
     leo_probe_request q=request_for(s,index);
     (void)leo_glrt_unavailable_record(&q,reason,&s->visits[index].record);
+    s->visits[index].observation=(leo_adaptive_observation_v1){
+        .session=q.session,.generation=q.generation,.visit=q.visit,
+        .valid_start=q.valid_start,.valid_end=q.valid_end,.rate_hz=q.rate_hz,
+        .rx=q.rx,.target=q.channel-1+4*q.edge,.outcome=LEO_ADAPTIVE_UNKNOWN,.healthy=0};
     s->visits[index].state=DONE;
 }
 
@@ -76,7 +86,10 @@ static void harvest(leo_scanner_glrt *s)
                 q->valid_start!=r->valid_start || q->valid_end!=r->valid_end ||
                 q->rx!=s->config.rx || q->channel!=r->channel || q->edge!=r->edge ||
                 q->rate_hz!=s->config.rate_hz ||
-                leo_glrt_result_record(&result,NULL,&s->visits[index].record)) {
+                leo_glrt_result_record(&result,s->policy.classification_enabled ? &s->policy : NULL,
+                    &s->visits[index].record) ||
+                (s->policy.classification_enabled && leo_glrt_result_observation(&result,
+                    &s->policy,&s->visits[index].observation))) {
                 leo_scanner_glrt_fail(s); break;
             }
             s->visits[index].state=DONE;
@@ -101,6 +114,18 @@ static void harvest(leo_scanner_glrt *s)
             s->worker=0; leo_scanner_glrt_fail(s);
         }
     }
+}
+
+int leo_scanner_glrt_observation(leo_scanner_glrt *s, leo_adaptive_observation_v1 *out)
+{
+    if (!s || !out) return -EINVAL;
+    if (!s->policy.classification_enabled) return -ENOTSUP;
+    harvest(s);
+    if (s->observing<s->known && s->visits[s->observing].state>=DONE) {
+        *out=s->visits[s->observing++].observation;
+        return 1;
+    }
+    return s->finished && s->observing==s->known ? -ENODATA : 0;
 }
 
 /* Do not alter the daemon's process-wide SIGPIPE disposition. A full pipe
@@ -302,8 +327,9 @@ static void child_close_descriptors(const int keep[4], int limit)
     close(STDIN_FILENO);
 }
 
-int leo_scanner_glrt_open(leo_scanner_glrt **output,
-    const leo_scanner_glrt_config_v1 *config, const char *worker_path, const char *template_path)
+static int open_session(leo_scanner_glrt **output,
+    const leo_scanner_glrt_config_v1 *config, const char *worker_path, const char *template_path,
+    const leo_scanner_glrt_positive_policy_v1 *policy)
 {
     if (!output || !config || !config->session || !config->generation || config->rx!=1 ||
         (config->rate_hz!=2500000 && config->rate_hz!=5000000) || !config->maximum_visits ||
@@ -320,6 +346,8 @@ int leo_scanner_glrt_open(leo_scanner_glrt **output,
     leo_scanner_glrt *s=calloc(1,sizeof(*s));
     if (!s) goto done;
     s->notify=-1; s->config=*config;
+    if (policy) s->policy=(leo_glrt_decision_policy){.minimum_exact_score=policy->minimum_exact_score,
+        .minimum_margin=policy->minimum_margin,.classification_enabled=1,.absence_enabled=0};
     s->history_capacity=2*(size_t)config->maximum_block_samples+config->rate_hz/50*6;
     if (posix_memalign((void **)&s->history,64,s->history_capacity*2*sizeof(int16_t))) goto done;
     memset(s->history,0,s->history_capacity*2*sizeof(int16_t));
@@ -383,4 +411,17 @@ done:
     for (unsigned j=0;j<2;++j) { if (notify[j]>=0) close(notify[j]); if (ready[j]>=0) close(ready[j]); }
     leo_scanner_glrt_close(s);
     return error;
+}
+
+int leo_scanner_glrt_open(leo_scanner_glrt **output,
+    const leo_scanner_glrt_config_v1 *config, const char *worker_path, const char *template_path)
+{ return open_session(output,config,worker_path,template_path,NULL); }
+
+int leo_scanner_glrt_open_positive(leo_scanner_glrt **output,
+    const leo_scanner_glrt_config_v1 *config, const char *worker_path, const char *template_path,
+    const leo_scanner_glrt_positive_policy_v1 *policy)
+{
+    if (!policy || !isfinite(policy->minimum_exact_score) || policy->minimum_exact_score<0 ||
+        !isfinite(policy->minimum_margin) || policy->minimum_margin<=0) return -EINVAL;
+    return open_session(output,config,worker_path,template_path,policy);
 }
