@@ -107,6 +107,21 @@ do not silently change user-facing three-miss/two-second behavior.
    See the [history/UI checkpoint](../../reports/2026_09_09_adaptive_history_ui_checkpoint.md).
    See the [fractional metrics checkpoint](../../reports/2026_09_09_adaptive_fractional_analysis_checkpoint.md).
    See the [overview/API/UI checkpoint](../../reports/2026_09_09_adaptive_overview_checkpoint.md).
+   A follow-up connects the same native TCP-produced durable recording to its
+   read-only history/detail/GLRT HTTP APIs, without replacing its manifest.
+   All 12 rate/mode/ending cases pass against a fresh protected positive-only
+   provider build: four full 300-second counter spans, four mid-capture cancels
+   and four pre-refill cancels. Exact epochs, source span/duty, actual targets,
+   retained versus started inventory, source-bound classifier evidence, HEAD
+   responses and legacy-route separation are checked. The related selection
+   passes 68 scheduling/storage/API and 69 UI tests. This is accelerated
+   constant-RX0/zero-RX1 localhost traffic and ASGI/component testing, not a
+   rendered deployed browser, positive-signal sensitivity or live-duty proof.
+   The first local fixture attempt was correctly rejected because its newly
+   generated templates were group-writable; the recipe now sets 0600. No SDK
+   trust check, runtime behavior, scientific fixture or threshold was changed.
+   Failed and passing receipts and source/build hashes are retained in the
+   [publication API evidence](../../reports/evidence/2026_09_09_scanner_publication_api/index.json).
 7. **Runtime/quality:** qualify the exact integrated build on held-out saved IQ,
    simulate/shadow scheduling without inventing unsampled RF, and run full
    300-second ARM modeled-producer tests at both rates. Existing older replay
@@ -151,12 +166,49 @@ do not silently change user-facing three-miss/two-second behavior.
    provider tests qualify these paths, not new ARM timing or live duty. The
    previous ARM receipt predates this implementation and cannot qualify it.
    See the [capture-protection checkpoint](../../reports/2026_09_09_scanner_capture_protection_checkpoint.md).
+   Subsequent protected 300-second ARM saved-IQ replays now pass at both rates:
+   2,479 results/observations/choices each, with two explicit unavailable checks
+   at 5 MS/s and none at 2.5 MS/s. Forced-pressure runs verify recovery without
+   treating unknown as a miss or unlatching uniform fallback. These still mock
+   acquisition and retunes; they are not live-duty measurements.
+   A frozen independent 192-dwell RF split flags 61/64 and 46/49 full-reference
+   supported dwells at 2.5/5 MS/s. These are reference-relative observations,
+   not satellite truth or a measured false-alarm probability.
+   The exact updated protected userspace package also passes ARM loader,
+   saved-IQ SDK/policy and production staging/cleanup checks, without opening an
+   IIO context. The candidate was removed afterward; it is not deployed.
+   See the [protected ARM](../../reports/2026_09_09_scanner_protected_arm_checkpoint.md),
+   [RF holdout](../../reports/2026_09_09_scanner_rf_dwell_holdout.md) and
+   [exact package](../../reports/2026_09_09_scanner_protected_package_checkpoint.md)
+   evidence. Live streaming, adaptive allocation benefit, analysis throughput,
+   deployed UI, remote merges and operational restoration remain open.
 8. **Live/release:** separately authorized <=30 minute canaries, first fixed
    detector off/on, then adaptive versus fixed with detector enabled in both.
-   Each two-rate A/B matrix is four 300 s captures (20 minutes RF). Hardware
-   identity/ownership, physical LAN and all serial exclusions are mandatory.
+   The proposed combined matrix reuses the fixed detector-on comparison:
+   fixed/off, fixed/positive-only and adaptive/positive-only at each rate are
+   six 300-second captures, 30 minutes total RF. Authorization for this specific
+   matrix on spare `winbond-db620818a328172c` at `192.168.1.14` remains pending.
+   Hardware identity/ownership, physical LAN and all serial exclusions are mandatory.
    Verify source-counter duty, IQ continuity, transitions, final inventory and
    cleanup; review compatible releases, merge, deploy opt-in, verify rollback.
+
+   Use the existing scheduled application capture path and its real acquisition
+   authority and owned iiOD lifecycle. The older standalone
+   `run_persistent_hop_durable_canary.py` does not expose detector options or
+   adaptive capture and cannot qualify the on/adaptive conditions unchanged.
+   Keep gain, IF/bandwidth, 120 ms valid dwell, guard, block size, kernel buffers,
+   read-ahead and storage queue identical across conditions at each rate. Freeze
+   the reviewed live guard explicitly; a canary's 1 ms default is not evidence
+   of the currently deployed guard. Do not wait on six 20-minute scheduled slots
+   or start a background radio campaign to execute this bounded matrix.
+
+   For each actual recording, fully verify IQ through its owning store, then
+   read its history, detail and classifier publication through the public API.
+   Adaptive recordings use `/api/v1/scanner/adaptive-sessions`; legacy fixed
+   recordings retain their separate routes/contracts. Check mode, manifest
+   identity, exact counters, source span, started versus retained visits and
+   explicit unavailable detector outcomes before examining browser rendering.
+   Do not treat successful fixture APIs as deployed-browser verification.
 
 ## Evidence discipline
 
