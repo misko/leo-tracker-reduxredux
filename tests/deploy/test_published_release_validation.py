@@ -15,15 +15,21 @@ GLOBALS = runpy.run_path(str(VALIDATOR))
 
 
 def test_ppu_pin_is_one_exact_dependency_authority() -> None:
-    expected = "7210cda9b0b2452cb607b5e49e689e2d60b6a8b7"
+    expected = "6b577ac229fe4b7b43528ff469dd197f9550e268"
     with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
     provenance = json.loads((PROJECT_ROOT / "docs/dependencies/pluto-plus-utils.json").read_text())
-    lock = (PROJECT_ROOT / "uv.lock").read_text()
+    with (PROJECT_ROOT / "uv.lock").open("rb") as stream:
+        lock = tomllib.load(stream)
 
     assert project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"] == expected
     assert provenance["revision"] == expected
-    assert f"#{expected}" in lock
+    packages = [package for package in lock["package"] if package["name"] == "pluto-plus-utils"]
+    assert len(packages) == 1
+    assert packages[0]["source"] == {
+        "git": f"https://github.com/misko/pluto-plus-utils?rev={expected}#{expected}"
+    }
+    assert provenance["runtime_source_checkout_import"] is False
 
 
 def test_binary_scan_finds_reference_crossing_chunk_boundary(tmp_path: Path) -> None:

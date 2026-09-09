@@ -151,12 +151,14 @@ external release metadata. Missing, extra or altered members fail publication.
 The default scanner daemon remains unchanged. See the
 [asset identities and limitations](../dependencies/scanner-glrt-runtime.md).
 
-As of the September 9 integration checkpoint, the locked PPU revision
-`7210cda9b0b2452cb607b5e49e689e2d60b6a8b7` does not expose this installer option.
-Dependency promotion/pin updates and full isolated release-build verification
-are still required before a complete scanner release is ready. A dry-run describes requested
-staging, not dependency availability or qualification. Do not work around this
-gate with editable installs, ambient loader overrides, or unsealed libraries.
+The locked PPU revision is now
+`6b577ac229fe4b7b43528ff469dd197f9550e268`, published on the candidate
+`codex/arm-glrt-host-integration` branch. Its scanner host libiio revision is
+fetchable through `codex/arm-glrt-frame-integration`; installation still fetches
+the exact commit, not a moving branch. Neither dependency has been promoted to
+main/master. A dry-run describes requested staging, not a successful isolated
+release build or RF qualification. Do not work around qualification gates with
+editable installs, ambient loader overrides, or unsealed libraries.
 
 An explicit `--scanner-glrt` request also checks that an already-staged release
 has that exact runtime; it cannot silently accept or rewrite a legacy release.
