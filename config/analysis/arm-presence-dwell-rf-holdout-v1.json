@@ -1,0 +1,25 @@
+{
+  "schema": "org.leo.research.presence-dwell-rf-holdout/v1",
+  "selection_basis": "Four newest complete qualified sessions published before 2026-09-09T17:50:00Z in the metadata-only history inspection; no IQ or detector scores used for selection.",
+  "sessions": [
+    {"session_id": "scan-hop-24351823e2483b0e", "rate_hz": 5000000},
+    {"session_id": "scan-hop-571d32dfad9a0d4a", "rate_hz": 2500000},
+    {"session_id": "scan-hop-8fce993bbb5c8ed0", "rate_hz": 5000000},
+    {"session_id": "scan-hop-22e58b4e4dcc3550", "rate_hz": 2500000}
+  ],
+  "sweeps": [20, 21, 22, 23, 140, 260],
+  "receiver": 1,
+  "dwell_ms": 120,
+  "screen_bins": 512,
+  "maximum_confirmations": 1,
+  "seeded": false,
+  "variant": "amplitude-diverse-symbol-supported",
+  "detector_protocol": "config/analysis/arm-presence-native-tone-ci16-v1.json",
+  "policy": {"minimum_exact_score": 0.175, "minimum_margin": 0.025},
+  "reference_candidates": 8,
+  "reference_margin": 0.025,
+  "reference_offsets_ms": [0, 20, 40, 60, 80, 100],
+  "association": {"maximum_cfo_difference_hz": 8000, "maximum_circular_epoch_difference_us": 2},
+  "interpretation": "Frozen single-detector RF comparison, not operational false-alarm probability or satellite truth. Reference-negative RF is not proven absence. Report any-window and selected-window recall separately; inspect consecutive evaluated misses on reference-supported visits. No threshold tuning on this split.",
+  "live_rf": false
+}

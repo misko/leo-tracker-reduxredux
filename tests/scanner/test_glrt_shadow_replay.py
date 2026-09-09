@@ -57,6 +57,9 @@ def trace(policy, monkeypatch):
                         target=i % 8,
                         end=str(end),
                         outcome=outcome,
+                        # Match the real observation passed to the C policy.
+                        # This fixture stubs SDK validation, not its health field.
+                        healthy=previous.healthy,
                         elapsed_ms=(i + 1) * 121 + 0.02,
                     )
                 )
