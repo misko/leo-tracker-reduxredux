@@ -38,6 +38,165 @@ pytestmark = pytest.mark.libiio_integration
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])
 @pytest.mark.parametrize("mode", list(AdaptiveHopMode))
+@pytest.mark.parametrize("complete", [False, True, None])
+def test_adaptive_tcp_to_application_mapping_and_durable_iq(
+    native_server,
+    tmp_path,
+    rate,
+    mode,
+    complete,
+    record_property,
+):
+    """Actual TCP/client to new application contracts/store; synthetic IQ only."""
+    from leo.radio.adaptive_hop_mapping import map_adaptive_capture, map_adaptive_sampled_visit
+    from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPolicyV1
+    from leo.scanner.persistent_hop import (
+        PersistentHopUtcTimingAuthorityV1,
+        compile_persistent_hop_plan_v1,
+        persistent_hop_wire_session_id,
+    )
+    from leo.scanner.ports import ScanRadioIdentity
+    from leo.storage.adaptive_hop import AdaptiveHopIqStore
+
+    _, iio = native_server
+    session_id = "adaptive-tcp-storage-fixture"
+    wire_id = persistent_hop_wire_session_id(session_id)
+    application_plan = AdaptiveHopPlanV1(
+        geometry=compile_persistent_hop_plan_v1(
+            sample_rate_hz=rate,
+            transition_guard_us=1000,
+            kernel_buffers=2,
+        ),
+        policy=AdaptiveHopPolicyV1(mode=mode.name.lower(), generation=9),
+    )
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(session_id, application_plan)
+    with loopback_server(native_server, rate, 0, "normal") as (context, _stats):
+        uri, serial = "ip:192.168.1.14", "loopback-fixture-only"
+        radio = LoopbackRadio(uri, serial, context, iio)
+        host = ScannerAdaptiveGlrtMetadataExtension(
+            ScannerGlrtOptions(ALG, CONFIG, mode="positive-only-v1"),
+            session=wire_id,
+            generation=9,
+        )
+        backend = IioAdaptiveHopBackend(
+            uri,
+            expected_serial=serial,
+            iio_module=iio,
+            radio_factory=lambda _uri, _serial: radio,
+            metadata_extension=host,
+        )
+        client = AdaptiveHopClient(uri, expected_serial=serial, backend_factory=lambda _: backend)
+        settings = dataclasses.replace(
+            plan(rate),
+            samples_per_block=131072,
+            kernel_buffers=2,
+            transition_guard_samples=rate // 1000,
+        )
+        session = client.start(
+            settings,
+            policy=AdaptiveHopPolicyV2(9, mode),
+            session_id=wire_id,
+            tandem_request=TandemSessionRequestV1(mode=TandemMode.HOLD),
+        )
+        if complete is None:
+            session.request_cancel()
+        visits = []
+        try:
+            for sampled in session.visits():
+                block = map_adaptive_sampled_visit(sampled, application_plan)
+                writer.append(block)
+                visits.append(block.evidence)
+                if not complete and len(visits) == 30:
+                    session.request_cancel()
+            upstream = session.receipt
+            mapped = map_adaptive_capture(
+                upstream,
+                plan=application_plan,
+                identity=ScanRadioIdentity("loopback", serial, uri),
+                session_id=session_id,
+            )
+            assert mapped.visits == tuple(visits)
+            assert mapped.terminal.state == ("completed" if complete else "cancelled")
+            if complete:
+                assert mapped.duty_denominator_sample_count >= 300 * rate
+                assert mapped.complete_visit_count > 2400
+                assert mapped.unclassified_sample_count == 0
+            assert not mapped.events or mapped.terminal.first_counter > 2**53
+            assert radio.closed
+            assert host.snapshot().delivery_complete
+            precise = upstream.start_clock_bracket
+            timing = (
+                None
+                if not mapped.events
+                else PersistentHopUtcTimingAuthorityV1.from_host_bracket(
+                    session_id=session_id,
+                    session_start_device_sample_counter=mapped.terminal.first_counter,
+                    sample_rate_hz=rate,
+                    begin_before_realtime_ns=precise.before_realtime_ns,
+                    begin_before_monotonic_ns=precise.before_monotonic_ns,
+                    begin_after_realtime_ns=precise.after_realtime_ns,
+                    begin_after_monotonic_ns=precise.after_monotonic_ns,
+                    terminal_realtime_ns=time.time_ns(),
+                    terminal_monotonic_ns=time.monotonic_ns(),
+                )
+            )
+            published = writer.finish(mapped, timing=timing)
+        finally:
+            session.close()
+            backend.close()
+            writer.abort()
+            store.close()
+    # The server is stopped before offline readback; its unchanged 90-second
+    # watchdog guards capture/cleanup, not disk re-analysis after radio close.
+    read_store = AdaptiveHopIqStore(tmp_path, read_only=True)
+    try:
+        assert read_store.verify(session_id) == published
+        if complete is not None:
+            evidence, values = read_store.read_visit_ci16(published, 25)
+            assert evidence == visits[25]
+            assert values[0].tolist() == [[30000, -20000], [0, 0]]
+            assert not values.flags.writeable
+        else:
+            assert mapped.complete_visit_count == 0
+            assert not mapped.source_span_attested
+            assert mapped.duty_denominator_sample_count == 0
+            assert mapped.unclassified_sample_count == mapped.unreceived_tail_sample_count == 0
+            assert (
+                mapped.terminal.final_counter > 2**53
+            )  # raw evidence is retained, not elapsed time
+        record_property("complete", complete)
+        record_property("rate", rate)
+        record_property("mode", mode.name)
+        record_property("persisted_visits", mapped.complete_visit_count)
+        record_property("source_span_samples", mapped.duty_denominator_sample_count)
+        record_property("source_span_attested", mapped.source_span_attested)
+        record_property("verified_iq_bytes", published.manifest.uncompressed_bytes)
+        for corrupted in (
+            dataclasses.replace(upstream, host_lifecycle=None),
+            dataclasses.replace(upstream, radio_serial="wrong-radio"),
+            dataclasses.replace(upstream, kernel_buffers_readback=3),
+            dataclasses.replace(
+                upstream,
+                stream=dataclasses.replace(
+                    upstream.stream,
+                    valid_sample_count=upstream.stream.valid_sample_count + 1,
+                ),
+            ),
+        ):
+            with pytest.raises(ValueError):
+                map_adaptive_capture(
+                    corrupted,
+                    plan=application_plan,
+                    identity=ScanRadioIdentity("loopback", serial, uri),
+                    session_id=session_id,
+                )
+    finally:
+        read_store.close()
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+@pytest.mark.parametrize("mode", list(AdaptiveHopMode))
 @pytest.mark.parametrize("cancelled", [False, True])
 def test_v2_actual_network_and_original_source_binding(native_server, rate, mode, cancelled):
     _, iio = native_server

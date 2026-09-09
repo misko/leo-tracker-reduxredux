@@ -62,9 +62,15 @@ do not silently change user-facing three-miss/two-second behavior.
    actual visits, shadow proposals, source-time decisions, bounded dual-RX IQ
    and cancellation accounting. Four accelerated full-300-s rate/mode network
    cases pass; these use synthetic zero RX1, not positive RF or ARM load.
-   Existing V1 fixed-order contracts remain strict. The Leo application still
-   needs immutable V2 capture/publication/analysis adapters; do not feed this
-   receipt to its V1 capture writer or label eight adaptive visits a sweep.
+   Existing V1 fixed-order contracts remain strict. Leo now has separate
+   application adaptive schema-V1 kinds (wire V2 remains explicit), actual-visit
+   IQ storage, bounded queued compression, lifecycle orchestration and a strict
+   PPU V2 mapping boundary. Original and new manifest kinds are not conflated.
+   Full-300-s synthetic TCP-to-store verification, short cancellation and
+   pre-refill cancellation are covered. The scheduled radio-session adapter,
+   publication/analysis composition and adaptive history/UI are still pending;
+   do not feed adaptive receipts to the fixed writer or call eight visits a sweep.
+   See the [application recording checkpoint](../../reports/2026_09_09_adaptive_recording_checkpoint.md).
    See the [provider/host checkpoint](../../reports/2026_09_09_adaptive_provider_host_checkpoint.md)
    and [native hop checkpoint](../../reports/2026_09_09_adaptive_hop_v2_checkpoint.md).
 6. **Analysis/UI:** activity timeline, allocation/revisit metrics, cooldown and
