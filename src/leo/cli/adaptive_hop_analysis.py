@@ -14,6 +14,8 @@ from pathlib import Path
 from pydantic import TypeAdapter
 
 from leo.application.adaptive_hop_analysis import AdaptiveHopAnalysisService
+from leo.application.adaptive_hop_overview import AdaptiveHopOverviewService
+from leo.presentation.adaptive_hop_analysis import render_adaptive_hop_overview
 from leo.scanner.adaptive_hop import SessionId
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
@@ -46,7 +48,10 @@ def main() -> None:
         "--maximum-seconds",
         type=_seconds,
         default=300,
-        help="Stop at a visit boundary; an in-flight visit finishes first.",
+        help=(
+            "Metrics budget checked at visit boundaries; an in-flight visit finishes first. "
+            "Overview rendering follows completion and is outside this budget."
+        ),
     )
     parser.add_argument(
         "--probe-stride-ms",
@@ -54,6 +59,11 @@ def main() -> None:
         choices=(10, 20, 40, 60, 120),
         default=10,
         help="Default dense 10 ms stride; alternatives create distinct analyses.",
+    )
+    parser.add_argument(
+        "--metrics-only",
+        action="store_true",
+        help="Do not render the overview after metrics complete; metrics stay resumable.",
     )
     args = parser.parse_args()
     try:
@@ -82,7 +92,16 @@ def main() -> None:
                     maximum_seconds=args.maximum_seconds,
                     probe_stride_ms=args.probe_stride_ms,
                 )
-                print(json.dumps(asdict(result), sort_keys=True))
+                payload = {**asdict(result), "overview_state": "not_ready"}
+                if result.state == "metrics_complete" and not args.metrics_only:
+                    overview = AdaptiveHopOverviewService(
+                        inputs=AdaptiveHopAnalysisInputStore(captures),
+                        products=products,
+                        renderer=render_adaptive_hop_overview,
+                    ).render_session(args.session_id, probe_stride_ms=args.probe_stride_ms)
+                    payload["overview_state"] = "ready"
+                    payload["overview_metrics_manifest_sha256"] = overview.metrics_manifest_sha256
+                print(json.dumps(payload, sort_keys=True))
     except Exception as error:
         print(
             json.dumps(

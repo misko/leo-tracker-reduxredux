@@ -91,13 +91,22 @@ do not silently change user-facing three-miss/two-second behavior.
    rate/edge cases pass direct numerical parity and real codec/CLI/resume/metrics
    publication; metadata, RX0 and additional fixture visits are explicitly
    synthetic. The new checkpoint passes 674 component/regression tests. These
-   are dense metrics, not completed trajectory/figure/UI integration. Actual-time
-   figures and joins, progress/API/UI wiring and deployed browser verification
-   remain. Dense smoke timings also expose a serial processing-throughput gap;
+   are dense metrics. Actual-time coverage, fractional-response and all-passed
+   CFO PNGs, explicit candidate-only associations, restartable overview generation,
+   and additive read-only progress/artifact API/UI are now integrated locally.
+   Final overview checks pass 718 Python and 139 web tests plus build; six saved
+   RX1 cases exercise codec/CLI/API and four full-span synthetic projections
+   preserve maximum candidate inventories. A separate 806,432-candidate synthetic
+   store/render stress verifies bounded processing. Passed-only association
+   fitting uses an explicit configured margin gate; it cannot estimate a negative
+   tail from filtered input. These associations are not L/U or cross-channel
+   joins, satellite IDs or track-quality qualification. Deployed browser
+   verification remains. Dense smoke timings expose a serial throughput gap;
    do not automatically dispatch full dense scans every 20 minutes or silently
    substitute sparse coverage before measuring/addressing it.
    See the [history/UI checkpoint](../../reports/2026_09_09_adaptive_history_ui_checkpoint.md).
    See the [fractional metrics checkpoint](../../reports/2026_09_09_adaptive_fractional_analysis_checkpoint.md).
+   See the [overview/API/UI checkpoint](../../reports/2026_09_09_adaptive_overview_checkpoint.md).
 7. **Runtime/quality:** qualify the exact integrated build on held-out saved IQ,
    simulate/shadow scheduling without inventing unsampled RF, and run full
    300-second ARM modeled-producer tests at both rates. Existing older replay

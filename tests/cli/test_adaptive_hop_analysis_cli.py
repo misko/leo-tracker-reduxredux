@@ -34,12 +34,50 @@ def test_cli_persists_resumes_and_never_calls_radio(monkeypatch, tmp_path, capsy
     cli.main()
     first = json.loads(capsys.readouterr().out)
     assert first["state"] == "partial" and first["newly_analyzed_visits"] == 1
+    assert first["overview_state"] == "not_ready"
     cli.main()
     second = json.loads(capsys.readouterr().out)
     assert second["state"] == "metrics_complete" and second["newly_analyzed_visits"] == 1
+    assert second["overview_state"] == "ready"
     cli.main()
     third = json.loads(capsys.readouterr().out)
     assert third["newly_analyzed_visits"] == 0 and priorities == [10, 10, 10]
+    assert third["overview_state"] == "ready"
+    assert third["overview_metrics_manifest_sha256"] == second["overview_metrics_manifest_sha256"]
+
+
+def test_cli_metrics_only_then_failed_render_can_resume_without_reanalyzing(
+    monkeypatch, tmp_path, capsys
+):
+    from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
+
+    capture = publish_capture(tmp_path, count=2)
+    monkeypatch.setattr(cli.os, "nice", lambda _: None)
+    monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    args = ["analysis", "--bulk-root", str(tmp_path), "--session-id", capture.session_id]
+    monkeypatch.setattr(sys, "argv", [*args, "--metrics-only"])
+    cli.main()
+    first = json.loads(capsys.readouterr().out)
+    assert first["state"] == "metrics_complete" and first["overview_state"] == "not_ready"
+    renderer = cli.render_adaptive_hop_overview
+
+    def broken(*args):
+        raise RuntimeError("injected renderer failure")
+
+    monkeypatch.setattr(detector, "analyze_glrt64_dwell", lambda *a, **k: pytest.fail("reanalyzed"))
+    monkeypatch.setattr(cli, "render_adaptive_hop_overview", broken)
+    monkeypatch.setattr(sys, "argv", args)
+    with pytest.raises(SystemExit) as error:
+        cli.main()
+    assert error.value.code == 1
+    assert json.loads(capsys.readouterr().err)["error_type"] == "RuntimeError"
+    assert AdaptiveHopAnalysisPresentationStore(tmp_path).status(capture.session_id).state == (
+        "metrics_complete"
+    )
+    monkeypatch.setattr(cli, "render_adaptive_hop_overview", renderer)
+    cli.main()
+    final = json.loads(capsys.readouterr().out)
+    assert final["overview_state"] == "ready" and final["newly_analyzed_visits"] == 0
 
 
 @pytest.mark.parametrize("store_type", [PersistentHopAnalysisStore, PersistentHopAnalysisStoreV2])

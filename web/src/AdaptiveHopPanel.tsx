@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getAdaptiveSession, getAdaptiveSessions } from "./adaptive-api";
 import type { AdaptiveDetail, AdaptivePage, AdaptiveVisit } from "./adaptive-api";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
+import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
 import "./adaptive-hop.css";
 
 export const targetLabel = (index: number) => `CH${index % 4 + 1}${index < 4 ? "L" : "U"}`;
@@ -158,7 +159,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
           <button type="button" disabled={start + 50 >= detail.visits.length} onClick={() => setPage(page + 1)}>Next visits</button>
         </div></div> : null}
     </section>
-    <p className="adaptive-analysis-note">Dense GLRT/CFO trajectory analysis is not yet integrated for adaptive captures. It is not queued here. Recorded IQ and radio-side evidence remain available independently.</p>
+    <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />
     <ScannerGlrtPanel key={sessionId} sessionId={sessionId} sessionKind="adaptive" />
   </div>;
 }
