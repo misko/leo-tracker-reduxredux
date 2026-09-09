@@ -14,7 +14,7 @@ from tools.presence_dwell import NativeDwell, unpack
 from tools.qualify_native_presence import digest
 from tools.qualify_presence_dwell_controls import generate
 from tools.qualify_presence_dwell_worker import FIELDS
-from tools.qualify_scanner_glrt_sdk import build, verify
+from tools.qualify_scanner_glrt_sdk import POSITIVE_PROFILE, _decision, build, verify
 
 
 @pytest.fixture(scope="module")
@@ -33,6 +33,8 @@ def artifacts(tmp_path_factory):
             "-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1",
             "-DLEO_PRESENCE_BOUNDED_MAGNITUDE=1",
             "-DLEO_PRESENCE_CONDITIONED_BLOCK_ROTATION=1",
+            "-DLEO_PRESENCE_ENERGY_SUPPORT=1",
+            "-DLEO_PRESENCE_ENERGY_SYMBOL_SUPPORT=1",
         )
     )
     parent = build(root / "parent")
@@ -119,6 +121,187 @@ def runs(workload):
         outputs[enabled, delay, jitter] = process.stdout
     assert before == {p: digest(p) for p in before}
     return manifest, outputs
+
+
+@pytest.fixture(scope="module")
+def positive_runs(workload):
+    parent, worker, templates, pack, manifest = workload
+    before = {p: digest(p) for p in (parent, worker, templates, pack)}
+    outputs = {}
+    for delay, jitter in ((0, 0), (2, 0), (0, 40), (2, 40)):
+        process = subprocess.run(
+            [
+                str(parent),
+                str(worker),
+                str(templates),
+                str(pack),
+                "968",
+                str(delay),
+                str(jitter),
+                "1",
+                "12" * 32,
+                "34" * 32,
+                POSITIVE_PROFILE,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        assert process.returncode == 0, process.stderr
+        assert not process.stderr
+        outputs[delay, jitter] = process.stdout
+    assert before == {p: digest(p) for p in before}
+    return manifest, outputs
+
+
+@pytest.mark.parametrize("delay,jitter", [(0, 0), (2, 0), (0, 40), (2, 40)])
+def test_positive_feedback_and_wire_results_have_independent_complete_inventories(
+    positive_runs, delay, jitter
+):
+    manifest, outputs = positive_runs
+    checked = verify(
+        outputs[delay, jitter],
+        manifest,
+        968,
+        delay_blocks=delay,
+        jitter_ms=jitter,
+        enabled=True,
+        positive_feedback=True,
+    )
+    assert checked["results"] == checked["observations"] == checked["jobs"] == 8
+    assert checked["observation_outcomes"]["detected"] > 0
+    assert sum(checked["observation_outcomes"].values()) == 8
+    assert checked["observation_outcomes"]["detected"] < 8
+    assert checked["ready_callback_to_observation_ms"]["max"] >= 0
+    assert "no scheduler thread" in checked["limitations"]
+    assert "not original block arrivals" in checked["limitations"]
+    with pytest.raises(ValueError, match="protocol differs"):
+        verify(
+            outputs[delay, jitter],
+            manifest,
+            968,
+            delay_blocks=delay,
+            jitter_ms=jitter,
+            enabled=True,
+        )
+
+
+@pytest.mark.parametrize(
+    "kind,key,value",
+    [
+        ("protocol", "minimum_exact_score", 0.1),
+        ("protocol", "minimum_margin", 0.01),
+        ("protocol", "adaptive_scheduling", True),
+        ("protocol", "positive_profile", "unreviewed"),
+        ("observation", "session", "72"),
+        ("observation", "generation", "10"),
+        ("observation", "visit", "01"),
+        ("observation", "start", "9007199254740992"),
+        ("observation", "end", "9007199254740992"),
+        ("observation", "rate_hz", 1),
+        ("observation", "rx", 0),
+        ("observation", "target", 7),
+        ("observation", "healthy", False),
+        ("observation", "outcome", 3),
+        ("observation", "elapsed_ms", 0),
+        ("observation", "phase", "scheduler-thread"),
+        ("observation", "block", 0),
+        ("block", "observation_wall_ms", 1e6),
+        ("block", "observation_cpu_ms", -1),
+        ("observation-final", "count", 7),
+        ("observation-final", "elapsed_ms", 0),
+        ("summary", "observations", 7),
+    ],
+)
+def test_feedback_verifier_rejects_changed_identity_policy_and_timing(
+    positive_runs, kind, key, value
+):
+    manifest, outputs = positive_runs
+    rows = [json.loads(line) for line in outputs[2, 40].splitlines()]
+    next(row for row in rows if row["kind"] == kind)[key] = value
+    with pytest.raises(ValueError):
+        verify(
+            "\n".join(map(json.dumps, rows)),
+            manifest,
+            968,
+            delay_blocks=2,
+            jitter_ms=40,
+            enabled=True,
+            positive_feedback=True,
+        )
+
+
+@pytest.mark.parametrize("mutation", ["drop", "duplicate", "reorder", "no-final", "wrong-outcome"])
+def test_feedback_verifier_requires_exactly_once_ordered_observations(positive_runs, mutation):
+    manifest, outputs = positive_runs
+    rows = [json.loads(line) for line in outputs[2, 40].splitlines()]
+    indices = [i for i, r in enumerate(rows) if r["kind"] == "observation"]
+    first, second = indices[:2]
+    if mutation == "drop":
+        del rows[first]
+    elif mutation == "duplicate":
+        rows.insert(first, rows[first])
+    elif mutation == "reorder":
+        rows[first], rows[second] = rows[second], rows[first]
+    elif mutation == "no-final":
+        rows = [r for r in rows if r["kind"] != "observation-final"]
+    else:
+        rows[first]["outcome"] = (rows[first]["outcome"] + 1) % 3
+    with pytest.raises(ValueError):
+        verify(
+            "\n".join(map(json.dumps, rows)),
+            manifest,
+            968,
+            delay_blocks=2,
+            jitter_ms=40,
+            enabled=True,
+            positive_feedback=True,
+        )
+
+
+def test_expected_positive_choice_prioritizes_passing_candidate_over_larger_rejected_margin():
+    passing = dict(fractional_complete=1, exact_score=0.18, margin=0.03)
+    rejected = dict(fractional_complete=1, exact_score=0.17, margin=0.10)
+    source = dict(expected=dict(candidates=[rejected, passing]))
+    assert _decision(source, True) == (passing, "starlink", "complete", 1)
+    assert _decision(source, False) == (rejected, "unavailable", "unqualified_classifier", None)
+
+
+@pytest.mark.parametrize("incomplete", [False, True])
+def test_expected_completed_miss_and_incomplete_are_never_wire_absence(incomplete):
+    candidates = [dict(fractional_complete=0)] if incomplete else []
+    assert _decision(dict(expected=dict(candidates=candidates)), True) == (
+        None,
+        "unavailable",
+        "incomplete_search",
+        0 if incomplete else 2,
+    )
+
+
+@pytest.mark.parametrize("enabled,profile", [("0", POSITIVE_PROFILE), ("1", "unreviewed")])
+def test_invalid_feedback_opt_in_rejects_before_opening_payload(artifacts, enabled, profile):
+    _, parent, _, _ = artifacts
+    result = subprocess.run(
+        [
+            str(parent),
+            "/absent-worker",
+            "/absent-templates",
+            "/absent-pack",
+            "968",
+            "0",
+            "0",
+            enabled,
+            "12" * 32,
+            "34" * 32,
+            profile,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=2,
+    )
+    assert result.returncode == 2 and not result.stdout
+    with pytest.raises(ValueError, match="unreviewed replay"):
+        verify("", {}, 968, delay_blocks=0, jitter_ms=0, enabled=False, positive_feedback=True)
 
 
 @pytest.mark.parametrize(
