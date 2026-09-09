@@ -5,6 +5,21 @@ This document tracks the full requested outcome, not a release pass. New RF
 collection still requires explicit bounded authorization. Fixed scanning remains
 the default; no firmware flash, kernel or FPGA change belongs to this work.
 
+## Current operator hardware restriction
+
+The operator has withdrawn `192.168.1.14` / `winbond-db620818a328172c` from this
+task: it is in use by another agent and is not currently visible over local USB.
+Do not connect to, probe, run tests on, stop processes on, or reclaim that radio.
+Historical qualification receipts and temporary access recipes are evidence of
+past runs, not permission to reuse it.
+
+Any replacement must be physically connected to this host over USB and currently
+enumerated with its exact serial. Verify that serial's physical `192.168.1.*`
+Ethernet mapping and availability/ownership before use; all capture and test
+traffic must use that Ethernet interface. A historical USB mapping is insufficient.
+The original excluded serial `104000bac4950008230026001b440a003a` remains excluded.
+No replacement is selected or authorized for RF by this restriction update.
+
 ## Policy frozen for the first implementation
 
 - Eight independent targets: CH1L..CH4L, CH1U..CH4U. Do not suppress an upper
@@ -186,8 +201,10 @@ do not silently change user-facing three-miss/two-second behavior.
    detector off/on, then adaptive versus fixed with detector enabled in both.
    The proposed combined matrix reuses the fixed detector-on comparison:
    fixed/off, fixed/positive-only and adaptive/positive-only at each rate are
-   six 300-second captures, 30 minutes total RF. Authorization for this specific
-   matrix on spare `winbond-db620818a328172c` at `192.168.1.14` remains pending.
+   six 300-second captures, 30 minutes total RF. The proposed `.14` target is
+   withdrawn under the current operator restriction above. A replacement must
+   satisfy current local USB attachment, exact serial/LAN mapping and ownership
+   checks, and receive explicit bounded RF authorization before this matrix runs.
    Hardware identity/ownership, physical LAN and all serial exclusions are mandatory.
    Verify source-counter duty, IQ continuity, transitions, final inventory and
    cleanup; review compatible releases, merge, deploy opt-in, verify rollback.
