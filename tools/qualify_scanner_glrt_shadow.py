@@ -24,16 +24,27 @@ def verify(
     jitter_ms,
     algorithm_sha256="12" * 32,
     configuration_sha256="34" * 32,
+    capture_protection=False,
+    pressure_smoke=False,
 ):
     rows = [json.loads(line) for line in raw.splitlines()]
-    if not rows or rows[0].get("schema") != "leo-sdk-threaded-shadow-replay-v1":
+    schema = (
+        "leo-sdk-protected-threaded-shadow-replay-v1"
+        if capture_protection
+        else "leo-sdk-threaded-shadow-replay-v1"
+    )
+    if not rows or rows[0].get("schema") != schema:
         raise ValueError("explicit threaded shadow schema required")
     choices = [r for r in rows if r.get("kind") == "shadow-choice"]
     offers = [r for r in rows if r.get("kind") == "shadow-offer"]
     finals = [r for r in rows if r.get("kind") == "shadow-final"]
     extra = {"shadow-choice", "shadow-offer", "shadow-final"}
     core = [dict(r) for r in rows if r.get("kind") not in extra]
-    core[0]["schema"] = "leo-sdk-modeled-positive-feedback-replay-v1"
+    core[0]["schema"] = (
+        "leo-sdk-protected-positive-feedback-replay-v1"
+        if capture_protection
+        else "leo-sdk-modeled-positive-feedback-replay-v1"
+    )
     checked = verify_sdk(
         "\n".join(map(json.dumps, core)),
         manifest,
@@ -44,6 +55,8 @@ def verify(
         positive_feedback=True,
         algorithm_sha256=algorithm_sha256,
         configuration_sha256=configuration_sha256,
+        capture_protection=capture_protection,
+        pressure_smoke=pressure_smoke,
     )
     observations = [r for r in core if r["kind"] == "observation"]
     jobs, rate = checked["jobs"], checked["rate_hz"]
@@ -63,7 +76,7 @@ def verify(
             if type(offer.get(key)) not in (int, float) or not math.isfinite(offer[key]):
                 raise ValueError("invalid shadow offer clock")
         if (
-            not (i + 1) * 121
+            not (i * 121 if not observations[i]["healthy"] else (i + 1) * 121)
             <= offer["begin_ms"]
             <= offer["end_ms"]
             <= observations[i]["elapsed_ms"]
@@ -79,6 +92,7 @@ def verify(
         [0] * 8,
     )
     applied = 0
+    unhealthy, fallback = 0, False
     callback_age, basis_lag, mismatches, max_pending = [], [], 0, 0
     for i, choice in enumerate(choices):
         now = BASE + i * rate * 121 // 1000
@@ -125,6 +139,8 @@ def verify(
                 misses[t] = min(3, misses[t] + 1)
             else:
                 misses[t] = 0
+            unhealthy = 0 if obs["healthy"] else unhealthy + 1
+            fallback = fallback or unhealthy >= 3
         applied = end
         for t in range(8):
             if misses[t] >= 3 and (
@@ -133,7 +149,7 @@ def verify(
                 state[t] = 2
         active = sum(1 << t for t in range(8) if state[t] == 1)
         quiet = sum(1 << t for t in range(8) if state[t] == 2)
-        reason = 0 if i < 24 else (3 if not active else 1)
+        reason = 4 if fallback else (0 if i < 24 else (3 if not active else 1))
         target, total = i % 8, 0
         if reason != 1:
             credits = [0] * 8
@@ -170,7 +186,9 @@ def verify(
         last_visit[i % 8] = now + rate // 1000
     return dict(
         checked,
-        schema="org.leo.research.threaded-shadow-verification/v1",
+        schema="org.leo.research.protected-threaded-shadow-verification/v1"
+        if capture_protection
+        else "org.leo.research.threaded-shadow-verification/v1",
         choices=jobs,
         policy_model_matched=True,
         proposals_differing_from_actual=mismatches,

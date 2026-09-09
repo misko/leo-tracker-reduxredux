@@ -113,6 +113,10 @@ No scientific fixture, numerical threshold or expected outcome was weakened.
 
 ## Still required before release
 
+Follow-up: both protected 300-second ARM replays and short injected-pressure
+checks now pass; see the [protected ARM checkpoint](2026_09_09_scanner_protected_arm_checkpoint.md).
+The requirements below record the state at this implementation checkpoint.
+
 The earlier [full ARM replay](2026_09_09_scanner_threaded_arm_checkpoint.md)
 predates this implementation. Its 68.98/115.86 ms detector p99 values cannot
 qualify the new profile. Repeat protected 300-second ARM runs at both rates,
