@@ -17,6 +17,8 @@
 #define BASE UINT64_C(9007199254741209)
 #define MAX_INPUTS 48u
 #define LEGACY "sdk-replay-opaque-legacy"
+#define POSITIVE_PROFILE "positive-feedback-v1"
+#define OBSERVATIONS_PER_POLL 8u
 
 static double clock_ms(clockid_t clock)
 {
@@ -82,16 +84,52 @@ static int emit(leo_scanner_glrt *sdk,int drain,uint64_t block,double origin,
     return decoded.flags&LEO_GLRT_FRAME_FINAL ? 2 : 1;
 }
 
+/* Same acquisition owner as block/frame; no scheduler-thread SDK call. Poll
+ * both before and after carriers to check that neither consumer steals data.
+ * This is feedback transport evidence, NOT adaptive RF or policy simulation. */
+static int observations(leo_scanner_glrt *sdk,uint64_t block,double origin,
+    const char *phase,unsigned *count,int *terminal,double *cost_cpu,double *cost_wall)
+{
+    if (*terminal) return 0;
+    for (unsigned j=0;j<OBSERVATIONS_PER_POLL;++j) {
+        leo_adaptive_observation_v1 o;
+        double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall=clock_ms(CLOCK_MONOTONIC);
+        int ret=leo_scanner_glrt_observation(sdk,&o);
+        double ended=clock_ms(CLOCK_MONOTONIC);
+        *cost_cpu+=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
+        *cost_wall+=ended-wall;
+        if (ret==0) return 0;
+        if (ret==-ENODATA) {
+            *terminal=1;
+            printf("{\"kind\":\"observation-final\",\"count\":%u,\"block\":%" PRIu64
+                ",\"elapsed_ms\":%.9f}\n",*count,block,ended-origin);
+            return 0;
+        }
+        if (ret!=1) return -1;
+        ++*count;
+        printf("{\"kind\":\"observation\",\"session\":\"%" PRIu64 "\",\"generation\":\"%" PRIu64
+            "\",\"visit\":\"%" PRIu64 "\",\"start\":\"%" PRIu64 "\",\"end\":\"%" PRIu64
+            "\",\"rate_hz\":%u,\"rx\":%u,\"target\":%u,\"outcome\":%u,\"healthy\":%u,"
+            "\"block\":%" PRIu64 ",\"phase\":\"%s\",\"elapsed_ms\":%.9f}\n",
+            o.session,o.generation,o.visit,o.valid_start,o.valid_end,o.rate_hz,o.rx,
+            o.target,o.outcome,o.healthy,block,phase,ended-origin);
+    }
+    return 0;
+}
+
 int main(int argc,char **argv)
 {
     unsigned duration,delay,jitter,enabled;
-    if ((argc!=8 && argc!=10) || integer(argv[4],&duration) || duration<242 ||
+    if ((argc!=8 && argc!=10 && argc!=11) || integer(argv[4],&duration) || duration<242 ||
         integer(argv[5],&delay) || (delay!=0 && delay!=2) ||
         integer(argv[6],&jitter) || (jitter!=0 && jitter!=40) ||
         integer(argv[7],&enabled) || enabled>1) return 2;
     uint8_t algorithm[32],configuration[32];
     memset(algorithm,18,32); memset(configuration,52,32);
-    if (argc==10 && (identity(argv[8],algorithm) || identity(argv[9],configuration))) return 2;
+    if (argc>=10 && (identity(argv[8],algorithm) || identity(argv[9],configuration))) return 2;
+    int positive=argc==11;
+    if (positive && (!enabled || strcmp(argv[10],POSITIVE_PROFILE))) return 2;
+    const leo_scanner_glrt_positive_policy_v1 policy={.minimum_exact_score=0.175,.minimum_margin=0.025};
     alarm(duration/1000+25);
     struct rlimit cpu={340,340},memory={192*1024*1024,192*1024*1024};
     if (setrlimit(RLIMIT_CPU,&cpu)) return 2;
@@ -129,19 +167,26 @@ int main(int argc,char **argv)
     memcpy(config.algorithm_sha256,algorithm,32); memcpy(config.configuration_sha256,configuration,32);
     double opened=clock_ms(CLOCK_MONOTONIC);
     if (enabled) {
-        int ret=leo_scanner_glrt_open(&sdk,&config,argv[1],argv[2]);
+        int ret=positive ? leo_scanner_glrt_open_positive(&sdk,&config,argv[1],argv[2],&policy) :
+            leo_scanner_glrt_open(&sdk,&config,argv[1],argv[2]);
         if (ret) { fprintf(stderr,"SDK startup rejected: %d\n",ret); goto done; }
     }
     double setup_ms=clock_ms(CLOCK_MONOTONIC)-opened;
-    printf("{\"kind\":\"protocol\",\"schema\":\"leo-sdk-modeled-replay-v1\","
+    printf("{\"kind\":\"protocol\",\"schema\":\"%s\","
         "\"rate_hz\":%u,\"duration_ms\":%u,\"block_samples\":%u,\"jobs\":%u,\"inputs\":%u,"
         "\"delay_blocks\":%u,\"jitter_ms\":%u,\"enabled\":%u,\"base\":\"%" PRIu64 "\","
         "\"guard_samples\":%zu,\"setup_ms\":%.9f,\"synthetic_rx0_and_transition_padding\":true,"
-        "\"original_arrivals\":false,\"live_rf\":false}\n",
+        "\"original_arrivals\":false,\"live_rf\":false",
+        positive ? "leo-sdk-modeled-positive-feedback-replay-v1" : "leo-sdk-modeled-replay-v1",
         rate,duration,BLOCK,jobs,inputs,delay,jitter,enabled,BASE,guard,setup_ms);
+    if (positive) printf(",\"positive_profile\":\"%s\",\"minimum_exact_score\":%.17g,"
+        "\"minimum_margin\":%.17g,\"observations_per_poll\":%u,\"adaptive_scheduling\":false",
+        POSITIVE_PROFILE,policy.minimum_exact_score,policy.minimum_margin,OBSERVATIONS_PER_POLL);
+    puts("}");
     double origin=clock_ms(CLOCK_MONOTONIC);
     uint64_t total=(uint64_t)jobs*period,blocks=(total+BLOCK-1)/BLOCK;
-    unsigned known=0;
+    unsigned known=0,observation_count=0;
+    int observation_terminal=0;
     for (uint64_t block=0;block<blocks;++block) {
         uint64_t first=block*BLOCK;
         size_t count=total-first<BLOCK ? (size_t)(total-first) : BLOCK;
@@ -185,11 +230,20 @@ int main(int argc,char **argv)
         if (enabled && leo_scanner_glrt_block(sdk,BASE+first,iq,count,4,2)) goto done;
         callback_cpu+=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu_start;
         callback_wall+=clock_ms(CLOCK_MONOTONIC)-wall_start;
+        double observation_cpu=0,observation_wall=0;
+        if (positive && block%2==0 && observations(sdk,block,origin,"before-frame",
+            &observation_count,&observation_terminal,&observation_cpu,&observation_wall)) goto done;
         if (enabled && emit(sdk,0,block,origin,&callback_cpu,&callback_wall)!=1) goto done;
+        if (positive && block%2==1 && observations(sdk,block,origin,"after-frame",
+            &observation_count,&observation_terminal,&observation_cpu,&observation_wall)) goto done;
+        callback_cpu+=observation_cpu; callback_wall+=observation_wall;
         printf("{\"kind\":\"block\",\"block\":%" PRIu64 ",\"first\":\"%" PRIu64 "\",\"samples\":%zu,"
             "\"nominal_ms\":%.9f,\"requested_ms\":%.9f,\"arrival_ms\":%.9f,\"fill_ms\":%.9f,"
-            "\"callback_cpu_ms\":%.9f,\"callback_wall_ms\":%.9f}\n",
+            "\"callback_cpu_ms\":%.9f,\"callback_wall_ms\":%.9f",
             block,BASE+first,count,nominal_ms,requested_ms,arrived,fill_ms,callback_cpu,callback_wall);
+        if (positive) printf(",\"observation_cpu_ms\":%.9f,\"observation_wall_ms\":%.9f",
+            observation_cpu,observation_wall);
+        puts("}");
         fflush(stdout);
     }
     if (known!=jobs) goto done;
@@ -199,15 +253,24 @@ int main(int argc,char **argv)
         int terminal=0;
         while (clock_ms(CLOCK_MONOTONIC)<origin+duration+5000) {
             double cpu_ms=0,wall_ms=0;
+            if (positive && observations(sdk,blocks,origin,"drain",&observation_count,
+                &observation_terminal,&cpu_ms,&wall_ms)) goto done;
             int ret=emit(sdk,1,blocks,origin,&cpu_ms,&wall_ms);
             if (ret<0) goto done;
-            if (ret==2) { terminal=1; break; }
+            if (ret==2) {
+                if (positive && observations(sdk,blocks,origin,"drain",&observation_count,
+                    &observation_terminal,&cpu_ms,&wall_ms)) goto done;
+                terminal=1; break;
+            }
             if (until(clock_ms(CLOCK_MONOTONIC)+1)) goto done;
         }
         if (!terminal) goto done;
     }
-    printf("{\"kind\":\"summary\",\"jobs\":%u,\"blocks\":%" PRIu64 ",\"elapsed_ms\":%.9f}\n",
+    if (positive && (!observation_terminal || observation_count!=jobs)) goto done;
+    printf("{\"kind\":\"summary\",\"jobs\":%u,\"blocks\":%" PRIu64 ",\"elapsed_ms\":%.9f",
         jobs,blocks,clock_ms(CLOCK_MONOTONIC)-origin);
+    if (positive) printf(",\"observations\":%u",observation_count);
+    puts("}");
     status=0;
 done:
     leo_scanner_glrt_close(sdk);

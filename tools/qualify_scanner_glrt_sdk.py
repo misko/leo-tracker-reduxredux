@@ -20,11 +20,19 @@ from tools.qualify_presence_dwell_worker import _counter, safe_output
 BASE = 2**53 + 217
 BLOCK = 131072
 LEGACY = b"sdk-replay-opaque-legacy"
+POSITIVE_PROFILE = "positive-feedback-v1"
+MINIMUM_EXACT_SCORE = 0.175
+MINIMUM_MARGIN = 0.025
 LIMITATION = (
     "Modeled 121ms cycles with saved RX1 valid IQ, synthetic RX0 and 1ms transition padding; "
     "not original block arrivals, real IIO/IRQ/network load, detection qualification or live duty. "
     "Frame delivery includes waiting for a later carrier; "
     "it is not the per-block callback deadline."
+)
+FEEDBACK_LIMITATION = (
+    " Independent acquisition-owner observation copies are verified; no scheduler thread, "
+    "bounded SPSC handoff, adaptive choices, or counterfactual IQ are exercised. "
+    "SDK callback costs exclude research JSON logging and source-IQ filling."
 )
 
 
@@ -65,6 +73,7 @@ def build(
         entry,
         Path(__file__),
         ROOT / "src/leo/scanner/native_presence/scanner_glrt.h",
+        ROOT / "src/leo/scanner/native_presence/adaptive_scan.h",
         ROOT / "src/leo/scanner/native_presence/frame_codec.h",
     ]
     hashes = {str(p.relative_to(ROOT)): digest(p) for p in sources}
@@ -119,6 +128,114 @@ def quantiles(values):
     )
 
 
+def _decision(source, positive_feedback):
+    """Independent expected wire choice and scheduling outcome from frozen numerics.
+
+    A completed miss is not a no-signal wire verdict. An incomplete fractional
+    candidate keeps feedback unknown unless another candidate actually passes.
+    """
+    all_candidates = source["expected"]["candidates"]
+    complete = [c for c in all_candidates if c["fractional_complete"]]
+
+    def passes(candidate):
+        return (
+            positive_feedback
+            and candidate["exact_score"] >= MINIMUM_EXACT_SCORE
+            and candidate["margin"] >= MINIMUM_MARGIN
+        )
+
+    best = max(complete, key=lambda c: (passes(c), c["margin"]), default=None)
+    if not positive_feedback:
+        return best, "unavailable", "unqualified_classifier", None
+    if best is not None and passes(best):
+        return best, "starlink", "complete", 1
+    outcome = 2 if len(complete) == len(all_candidates) else 0
+    return best, "unavailable", "incomplete_search", outcome
+
+
+def _verify_observations(rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals):
+    observations, finals = groups["observation"], groups["observation-final"]
+    if len(observations) != jobs or len(finals) != 1 or rows[-1].get("observations") != jobs:
+        raise ValueError("feedback terminal inventory differs")
+    positions = {id(row): i for i, row in enumerate(rows)}
+    frame_by_block = {r["block"]: r for r in groups["frame"] if r["block"] < blocks}
+    latencies, outcomes, per_block = [], [0, 0, 0], {}
+    previous_time = 0.0
+    for i, row in enumerate(observations):
+        source = records[i % len(records)]
+        start = BASE + i * period + guard
+        _, _, _, outcome = _decision(source, True)
+        expected = dict(
+            kind="observation",
+            session="71",
+            generation="9",
+            visit=str(i),
+            start=str(start),
+            end=str(start + dwell),
+            rate_hz=rate,
+            rx=1,
+            target=source["channel"] - 1 + 4 * int(source["edge"] == "upper"),
+            outcome=outcome,
+            healthy=1,
+        )
+        if any(type(row.get(k)) is not type(v) or row[k] != v for k, v in expected.items()):
+            raise ValueError("feedback source binding or outcome differs")
+        block, elapsed = row.get("block"), row.get("elapsed_ms")
+        ready_block = max(groups["visit"][i]["block"], (i * period + guard + dwell - 1) // BLOCK)
+        if (
+            type(block) is not int
+            or not ready_block <= block <= blocks
+            or type(elapsed) not in (float, int)
+            or not math.isfinite(elapsed)
+            or not max(previous_time, arrivals[ready_block]) <= elapsed <= rows[-1]["elapsed_ms"]
+        ):
+            raise ValueError("feedback predates input or has invalid clock")
+        phase = "drain" if block == blocks else ("after-frame" if block % 2 else "before-frame")
+        if row.get("phase") != phase:
+            raise ValueError("feedback poll phase differs")
+        if block < blocks:
+            carrier = frame_by_block[block]
+            before = phase == "before-frame"
+            if (
+                (positions[id(row)] < positions[id(carrier)]) != before
+                or (before and elapsed > carrier["elapsed_ms"])
+                or (not before and elapsed < carrier["elapsed_ms"])
+                or elapsed < arrivals[block]
+            ):
+                raise ValueError("feedback consumer order or carrier clock differs")
+            per_block[block] = per_block.get(block, 0) + 1
+            if per_block[block] > 8:
+                raise ValueError("unbounded feedback polling")
+        elif elapsed < rows[0]["duration_ms"]:
+            raise ValueError("feedback drain predates finish")
+        previous_time = elapsed
+        latencies.append(elapsed - arrivals[ready_block])
+        outcomes[outcome] += 1
+    final = finals[0]
+    if (
+        type(final.get("count")) is not int
+        or final["count"] != jobs
+        or type(final.get("block")) is not int
+        or final["block"] != blocks
+        or type(final.get("elapsed_ms")) not in (float, int)
+        or not math.isfinite(final["elapsed_ms"])
+        or not max(previous_time, rows[0]["duration_ms"])
+        <= final["elapsed_ms"]
+        <= rows[-1]["elapsed_ms"]
+        or positions[id(final)] < positions[id(observations[-1])]
+    ):
+        raise ValueError("invalid feedback terminal receipt")
+    return dict(
+        observations=len(observations),
+        observation_outcomes=dict(
+            zip(("unknown", "detected", "not_detected"), outcomes, strict=True)
+        ),
+        ready_callback_to_observation_ms=quantiles(latencies),
+        observation_cpu_ms=quantiles([r["observation_cpu_ms"] for r in groups["block"]]),
+        observation_wall_ms=quantiles([r["observation_wall_ms"] for r in groups["block"]]),
+    )
+
+
 def verify(
     raw,
     manifest,
@@ -129,6 +246,7 @@ def verify(
     enabled,
     algorithm_sha256="12" * 32,
     configuration_sha256="34" * 32,
+    positive_feedback=False,
 ):
     for identity in (algorithm_sha256, configuration_sha256):
         if (
@@ -145,6 +263,8 @@ def verify(
         or type(jitter_ms) is not int
         or jitter_ms not in (0, 40)
         or type(enabled) is not bool
+        or type(positive_feedback) is not bool
+        or (positive_feedback and not enabled)
     ):
         raise ValueError("unreviewed replay parameters")
     rows = [json.loads(line) for line in raw.splitlines()]
@@ -162,7 +282,11 @@ def verify(
     )
     expected_protocol = dict(
         kind="protocol",
-        schema="leo-sdk-modeled-replay-v1",
+        schema=(
+            "leo-sdk-modeled-positive-feedback-replay-v1"
+            if positive_feedback
+            else "leo-sdk-modeled-replay-v1"
+        ),
         rate_hz=rate,
         duration_ms=duration,
         block_samples=BLOCK,
@@ -177,6 +301,14 @@ def verify(
         original_arrivals=False,
         live_rf=False,
     )
+    if positive_feedback:
+        expected_protocol.update(
+            positive_profile=POSITIVE_PROFILE,
+            minimum_exact_score=MINIMUM_EXACT_SCORE,
+            minimum_margin=MINIMUM_MARGIN,
+            observations_per_poll=8,
+            adaptive_scheduling=False,
+        )
     if any(
         type(protocol.get(k)) is not type(v) or protocol[k] != v
         for k, v in expected_protocol.items()
@@ -191,9 +323,10 @@ def verify(
         or not duration <= terminal["elapsed_ms"] <= duration + 5000
     ):
         raise ValueError("incomplete or incorrectly paced replay")
-    groups = {
-        kind: [r for r in rows[1:-1] if r["kind"] == kind] for kind in ("visit", "block", "frame")
-    }
+    kinds = ("visit", "block", "frame")
+    if positive_feedback:
+        kinds += ("observation", "observation-final")
+    groups = {kind: [r for r in rows[1:-1] if r["kind"] == kind] for kind in kinds}
     if (
         sum(map(len, groups.values())) != len(rows) - 2
         or len(groups["visit"]) != jobs
@@ -218,6 +351,15 @@ def verify(
                 raise ValueError("invalid callback clock")
         if row["arrival_ms"] + 0.01 < requested or (i and row["arrival_ms"] < arrivals[i - 1]):
             raise ValueError("block arrived before its model schedule")
+        if positive_feedback:
+            for unit in ("cpu", "wall"):
+                cost = row.get(f"observation_{unit}_ms")
+                if (
+                    type(cost) not in (float, int)
+                    or not math.isfinite(cost)
+                    or not 0 <= cost <= row[f"callback_{unit}_ms"] + 1e-7
+                ):
+                    raise ValueError("invalid feedback callback cost")
         arrivals[i] = row["arrival_ms"]
     for i, row in enumerate(groups["visit"]):
         meta = records[i % len(records)]
@@ -276,6 +418,7 @@ def verify(
                 if i >= jobs:
                     raise ValueError("extra SDK result")
                 source = records[i % len(records)]
+                candidate, verdict, reason, _ = _decision(source, positive_feedback)
                 start = BASE + i * period + guard
                 if (
                     record.sequence != i
@@ -286,16 +429,13 @@ def verify(
                     or record.rx != 1
                     or record.channel != source["channel"]
                     or record.edge != source["edge"]
-                    or record.verdict != "unavailable"
-                    or record.reason != "unqualified_classifier"
+                    or record.verdict != verdict
+                    or record.reason != reason
                     or record.search_window_mask != 63
                     or record.search_start != start
                     or record.search_end != start + dwell
                 ):
                     raise ValueError("SDK result lost, busy, failed, incomplete or misbound")
-                candidates = [
-                    c for c in source["expected"]["candidates"] if c["fractional_complete"]
-                ]
                 expected = dict(
                     exact_score=0.0,
                     control_score=0.0,
@@ -306,8 +446,7 @@ def verify(
                     confirmation_start=start,
                     confirmation_end=start,
                 )
-                if candidates:
-                    candidate = max(candidates, key=lambda c: c["margin"])
+                if candidate is not None:
                     window = source["expected"]["rank"]["order"][0]
                     beginning = start + window * (rate // 50)
                     expected.update(
@@ -342,8 +481,19 @@ def verify(
                 latencies.append(latency)
         if len(decoded) != jobs:
             raise ValueError("terminal result inventory incomplete")
+    feedback = (
+        _verify_observations(
+            rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals
+        )
+        if positive_feedback
+        else {}
+    )
     return dict(
-        schema="org.leo.research.sdk-replay-verification/v1",
+        schema=(
+            "org.leo.research.sdk-positive-feedback-replay-verification/v1"
+            if positive_feedback
+            else "org.leo.research.sdk-replay-verification/v1"
+        ),
         verified=True,
         jobs=jobs,
         results=len(decoded),
@@ -368,7 +518,8 @@ def verify(
         callback_over_nominal_period=sum(
             r["callback_wall_ms"] > BLOCK * 1000 / rate for r in groups["block"]
         ),
-        limitations=LIMITATION,
+        limitations=LIMITATION + (FEEDBACK_LIMITATION if positive_feedback else ""),
+        **feedback,
     )
 
 
@@ -383,6 +534,7 @@ def main():
     parser.add_argument("--disabled", action="store_true")
     parser.add_argument("--algorithm-sha256", default="12" * 32)
     parser.add_argument("--configuration-sha256", default="34" * 32)
+    parser.add_argument("--positive-feedback", action="store_true")
     args = parser.parse_args()
     safe_output(args.output)
     checked = verify(
@@ -394,6 +546,7 @@ def main():
         enabled=not args.disabled,
         algorithm_sha256=args.algorithm_sha256,
         configuration_sha256=args.configuration_sha256,
+        positive_feedback=args.positive_feedback,
     )
     write_json(
         args.output,

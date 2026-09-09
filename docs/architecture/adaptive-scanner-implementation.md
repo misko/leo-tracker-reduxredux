@@ -112,6 +112,11 @@ do not silently change user-facing three-miss/two-second behavior.
    300-second ARM modeled-producer tests at both rates. Existing older replay
    passes are not passes for this new SDK/policy/package. No loss/backlog or
    shortened dwell/every-Nth substitute for the requested behavior.
+   The SDK replay now has an explicit positive-feedback research mode. It
+   checks independent, source-bound scheduling observations alongside immutable
+   wire results, including consumer ordering and timing. This does not itself
+   exercise the scheduler thread, bounded queue, adaptive choices or IIO load.
+   See the [feedback replay checkpoint](../../reports/2026_09_09_scanner_glrt_feedback_replay_checkpoint.md).
 8. **Live/release:** separately authorized <=30 minute canaries, first fixed
    detector off/on, then adaptive versus fixed with detector enabled in both.
    Each two-rate A/B matrix is four 300 s captures (20 minutes RF). Hardware
