@@ -643,6 +643,16 @@ class PersistentHopIqStore:
             capacity_visits=capacity_visits,
         )
 
+    def contains_session(self, session_id: str) -> bool:
+        """Include retained failed staging when guarding a scheduled-mode change."""
+        if not _IDENTIFIER.fullmatch(session_id):
+            raise ValueError("persistent-hop session ID is not safe")
+        return (
+            next(self.bundles_root.glob(f"*/*/*/{session_id}"), None) is not None
+            or next(self.spool_root.glob(f"{session_id}.*.persistent-hop.partial"), None)
+            is not None
+        )
+
     def inspect(self, session_id: str) -> PublishedPersistentHopIqSession:
         if not _IDENTIFIER.fullmatch(session_id):
             raise ValueError("persistent-hop session ID is not safe")

@@ -40,6 +40,7 @@ from leo.acquisition.mixed_rate_schedule import (
 from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
+    ScheduledAdaptiveHopRun,
     ScheduledPersistentHopRun,
     ScheduledScannerPort,
     ScheduledScannerRunAnalysis,
@@ -624,16 +625,36 @@ class ContinuousAcquisitionRunner:
                                 scanner_intent,
                                 cancel=cancel,
                             )
-                            if isinstance(captured, ScheduledPersistentHopRun):
-                                receipt = captured.published.manifest.receipt
+                            if isinstance(
+                                captured, (ScheduledPersistentHopRun, ScheduledAdaptiveHopRun)
+                            ):
+                                capture_status: str
+                                if isinstance(captured, ScheduledAdaptiveHopRun):
+                                    adaptive_receipt = captured.published.manifest.receipt
+                                    qualified = captured.capture_qualified
+                                    hop_kind = "adaptive"
+                                    visit_count = adaptive_receipt.complete_visit_count
+                                    capture_status = adaptive_receipt.terminal.state
+                                    duty = (
+                                        str(adaptive_receipt.valid_duty_ppm)
+                                        if adaptive_receipt.source_span_attested
+                                        else "unavailable"
+                                    )
+                                else:
+                                    receipt = captured.published.manifest.receipt
+                                    qualified = receipt.qualified
+                                    hop_kind = "persistent"
+                                    visit_count = len(receipt.visits)
+                                    capture_status = receipt.capture_outcome
+                                    duty = str(receipt.valid_duty_ppm)
                                 persistent_outcome = (
-                                    f"persistent scan {captured.published.session_id} "
-                                    f"published; visits={len(receipt.visits)}; "
-                                    f"status={receipt.capture_outcome}; "
-                                    f"duty_ppm={receipt.valid_duty_ppm}; "
-                                    f"qualified={receipt.qualified}"
+                                    f"{hop_kind} scan {captured.published.session_id} "
+                                    f"published; visits={visit_count}; "
+                                    f"status={capture_status}; "
+                                    f"duty_ppm={duty}; "
+                                    f"qualified={qualified}"
                                 )
-                                if receipt.qualified:
+                                if qualified:
                                     queue.complete_acquisition_operation(
                                         operation_id=lease.operation_id,
                                         worker_id=worker_id,
@@ -648,14 +669,15 @@ class ContinuousAcquisitionRunner:
                                     )
                                 logger.info(
                                     "scheduled_scanner_analysis_deferred "
-                                    "reason=persistent_hop_pipeline "
+                                    "reason=%s_hop_pipeline "
                                     "run_id=%s",
+                                    hop_kind,
                                     captured.published.session_id,
                                 )
-                                run_status = "complete" if receipt.qualified else "failed"
+                                run_status = "complete" if qualified else "failed"
                                 stop_reason = (
-                                    "persistent-hop capture qualified"
-                                    if receipt.qualified
+                                    f"{hop_kind}-hop capture qualified"
+                                    if qualified
                                     else persistent_outcome
                                 )
                             else:
@@ -1015,10 +1037,15 @@ class ContinuousAcquisitionRunner:
                                 0.0,
                                 (next_scanner_slot - self._utc_now()).total_seconds(),
                             )
-                            if isinstance(captured, ScheduledPersistentHopRun):
+                            if isinstance(
+                                captured, (ScheduledPersistentHopRun, ScheduledAdaptiveHopRun)
+                            ):
                                 logger.info(
                                     "scheduled_scanner_analysis_deferred "
-                                    "reason=persistent_hop_pipeline run_id=%s",
+                                    "reason=%s_hop_pipeline run_id=%s",
+                                    "adaptive"
+                                    if isinstance(captured, ScheduledAdaptiveHopRun)
+                                    else "persistent",
                                     captured.published.session_id,
                                 )
                             elif analysis is None:

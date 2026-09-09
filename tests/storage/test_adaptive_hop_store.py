@@ -70,6 +70,30 @@ def test_adaptive_read_only_and_missing_records_create_nothing(tmp_path):
     store.close()
 
 
+def test_reservation_query_includes_unpublished_evidence_without_creating_paths(tmp_path):
+    store = AdaptiveHopIqStore(tmp_path)
+    receipt = receipt_fixture(count=0)
+    assert not store.contains_session(receipt.session_id)
+    assert list(tmp_path.iterdir()) == []
+    writer = store.begin(receipt.session_id, receipt.plan)
+    assert store.contains_session(receipt.session_id)
+    writer.abort()
+    assert store.contains_session(receipt.session_id)
+    assert not store.contains_session(receipt.session_id + "-other")
+    with pytest.raises(ValueError):
+        store.contains_session("../outside")
+    store.close()
+
+
+def test_reservation_query_includes_published_sessions(tmp_path):
+    store, published = publish(tmp_path, count=0)
+    assert store.contains_session(published.session_id)
+    reader = AdaptiveHopIqStore(tmp_path, read_only=True)
+    assert reader.contains_session(published.session_id)
+    reader.close()
+    store.close()
+
+
 def test_adaptive_empty_cancel_and_duplicate_session_are_safe(tmp_path):
     store, published = publish(tmp_path, count=0)
     assert published.manifest.chunks == ()

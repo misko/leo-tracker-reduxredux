@@ -279,6 +279,15 @@ class AdaptiveHopIqStore:
             if directory is not None:
                 directory.close()
 
+    def contains_session(self, session_id: str) -> bool:
+        """Includes reserved/unpublished sessions; never authorizes overwriting."""
+        try:
+            directory = self._session(session_id)
+        except BundleNotFoundError:
+            return False
+        directory.close()
+        return True
+
     def session_ids(self) -> tuple[str, ...]:
         # Do not turn unreadable or corrupt *published* records into an empty
         # history. Directory discovery ignores only uncommitted manifest absence.
