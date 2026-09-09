@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
+import { AdaptiveHopBrowser, AdaptiveHopDetail } from "./AdaptiveHopPanel";
 import {
   getActiveQueue,
   getAcquisitionQueue,
@@ -439,6 +440,7 @@ const persistentArtifactDetails: Record<PersistentHopArtifact, { title: string; 
 };
 
 function ScannerView() {
+  const [selectedAdaptiveId, setSelectedAdaptiveId] = useState<string | null>(null);
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
   const [attempts, setAttempts] = useState<ScannerHistoryPageV3 | null>(null);
   const [persistentPage, setPersistentPage] = useState<PersistentHopHistoryPageV3 | null>(null);
@@ -458,10 +460,11 @@ function ScannerView() {
       getScannerReports(0, 20, controller.signal),
       getPersistentHopSessions(persistentCursor, 5, controller.signal),
     ]).then(([result, attemptResult, persistentResult]) => {
+      if (controller.signal.aborted) return;
       setPage(result);
       setAttempts(attemptResult);
       setPersistentPage(persistentResult);
-      setSelectedScanId((current) => selectedPersistentId !== null
+      setSelectedScanId((current) => selectedPersistentId !== null || selectedAdaptiveId !== null
         ? null
         : current && result.items.some((item) => item.scan_id === current)
           ? current
@@ -476,7 +479,7 @@ function ScannerView() {
       window.clearInterval(timer);
       controller.abort();
     };
-  }, [cursor, persistentCursor, selectedPersistentId]);
+  }, [cursor, persistentCursor, selectedPersistentId, selectedAdaptiveId]);
   const selectedPersistentSummary = persistentPage?.items.find(
     (item) => item.capture.session_id === selectedPersistentId,
   ) ?? null;
@@ -491,9 +494,11 @@ function ScannerView() {
     const controller = new AbortController();
     const refresh = () => Promise.allSettled([
         getPersistentHopSession(selectedPersistentId, controller.signal).then((detail) => {
+          if (controller.signal.aborted) return;
           setPersistentDetail(detail);
         }),
         getPersistentHopTracking(selectedPersistentId, controller.signal).then((detail) => {
+          if (controller.signal.aborted) return;
           if (detail?.status?.analysis_id === "persistent-hop-causal-tle-tracking-v1") {
             setPersistentTracking(detail);
           }
@@ -537,6 +542,11 @@ function ScannerView() {
         <div><p className="section-label">INTER-DWELL SCANNER</p><strong>{page === null ? "Loading…" : `${page.total} scans`}</strong></div>
       </div>
       {error ? <ErrorBanner message={error} /> : null}
+      <AdaptiveHopBrowser selectedId={selectedAdaptiveId} onSelect={(id) => {
+        setSelectedAdaptiveId(id);
+        setSelectedPersistentId(null);
+        setSelectedScanId(null);
+      }} />
       <section className="persistent-hop-history" aria-labelledby="persistent-hop-history-heading">
         <header>
           <div><span>PERSISTENT HOP CAPTURES</span><h3 id="persistent-hop-history-heading">300-second sessions</h3></div>
@@ -556,6 +566,7 @@ function ScannerView() {
             return <tr key={capture.session_id} className={selectedPersistentId === capture.session_id ? "selected" : undefined}>
               <td><button className="scanner-row-button persistent-hop-row" type="button" onClick={() => {
                 setSelectedPersistentId(capture.session_id);
+                setSelectedAdaptiveId(null);
                 setSelectedScanId(null);
                 setPersistentArtifact("coverage");
               }}>
@@ -587,6 +598,7 @@ function ScannerView() {
             return <tr key={item.scan_id} className={selectedScanId === item.scan_id ? "selected" : undefined}>
               <td><button className="scanner-row-button" type="button" onClick={() => {
                 setSelectedScanId(item.scan_id);
+                setSelectedAdaptiveId(null);
                 setSelectedPersistentId(null);
                 const supportsPilot = item.analysis_id === "standard-scan-analysis-pilot-v1"
                   || item.analysis_id === "standard-scan-analysis-pilot-plots-v1"
@@ -616,11 +628,11 @@ function ScannerView() {
       </> : null}
     </aside>
     <section className="detail-pane scanner-analysis-detail" aria-label="Scanner analysis detail">
-      {selectedPersistentId === null && persistentDetail === null && failedAttempt ? <div className="error-banner" role="alert">
+      {selectedAdaptiveId === null && selectedPersistentId === null && persistentDetail === null && failedAttempt ? <div className="error-banner" role="alert">
         <strong>Scanner capture failure · {failedAttempt.report.scan_id}</strong>
         <span>{failedAttemptDetail} The immutable attempt report remains available through scanner history.</span>
       </div> : null}
-      {persistentDetail ? <PersistentHopAnalysisDetail
+      {selectedAdaptiveId !== null ? <AdaptiveHopDetail key={selectedAdaptiveId} sessionId={selectedAdaptiveId} /> : persistentDetail ? <PersistentHopAnalysisDetail
         detail={persistentDetail}
         tracking={persistentTracking}
         artifact={persistentArtifact}

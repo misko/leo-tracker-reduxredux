@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "checkpoint": "adaptive-history-api-ui",
+  "date": "2026-09-09",
+  "parent_commit": "05f73a34db532df4cd99d6ab352f90f1c487fcc2",
+  "scope": "Local actual-visit presentation. No radio, RF, deployment, remote merge or firmware changes.",
+  "raw_directory": "/tmp/leo-adaptive-history.EkWZKs",
+  "source_sha256": {
+    "src/leo/scanner/adaptive_hop_history.py": "sha256:be20a19d17bbc12beaec3ba978c6de27e0286a64a21aa1781f226bc09d57f9e5",
+    "src/leo/storage/adaptive_hop_history.py": "sha256:ca5bd14265c1dd353ab30f71302322ad7f5d89cf3f64dd749e58644dfdf6a0ef",
+    "src/leo/storage/adaptive_hop.py": "sha256:bc8fabf638ffb7982523c564684c833d384f2706d40d3ad491c78b02b42bdea4",
+    "src/leo/api/app.py": "sha256:de3f8848370f2fc506b45935f07b340290e2435219313b84234e17c0dc9453fc",
+    "src/leo/api/production.py": "sha256:6bb164216268f86e1b786912937976d16911790effcfcf682c695fe911c844f8",
+    "tests/scanner/test_adaptive_hop_history.py": "sha256:d4e3243df36e3e217d1621caa63b66cffc051ca354c36381a28097afb996c4d5",
+    "tests/storage/test_adaptive_hop_history.py": "sha256:9180482b9cb2d3ad1be95eac064a7a0c9418edc27334ed19539b43a916b55a44",
+    "tests/api/test_adaptive_hop_history_api.py": "sha256:a60d8751eabc0b02f915951245c8ba160149b52f40cbe9e13661fb285fa7bff2",
+    "tests/api/test_production_entrypoint.py": "sha256:792c83b68daf89cbf2173567495fa6510192d68aa448aeee452de833a9dad762",
+    "web/src/AdaptiveHopPanel.tsx": "sha256:993454976e6541a5016c0c9b64d3e4d7e30a90c39fe89532a088e0e630b6e999",
+    "web/src/adaptive-api.ts": "sha256:700b729dcf9d6095f6e1e35fdd54c5ed4f180418e008e84810857a19abcba4b1",
+    "web/src/adaptive-hop.css": "sha256:6ba496a1bb10ac5e9202a1ac232c95f5f2c7ba0e4661f0bd5b1a35adb5d9c88a",
+    "web/src/AdaptiveHopPanel.test.tsx": "sha256:f8dee3a10c7bca0f0cc19eaac8a45fff581680286605bcab50386750f31ee21f",
+    "web/src/adaptive-fixtures.ts": "sha256:6eca3688ffa7ad173694b8bc3369da3331ed7321a4d8026154aa2ddf55d26228",
+    "web/src/App.tsx": "sha256:0a0012224538754f243d0e8c91d9e351042adcbaa717cd95a4260359f346aef9",
+    "web/src/App.test.tsx": "sha256:42a9cbaa7bfc064f6da64505469540ca5a8180b87bf57c57595e32814e389806",
+    "web/src/api.ts": "sha256:2e40b6bed73822c8559b552b03afb5e35c33abed51140309cdd996355622b002",
+    "web/src/ScannerGlrtPanel.tsx": "sha256:361ad077657a9b136736bb063fd19f5d7bb4876d687b3ef8dec99c5384d1a766"
+  },
+  "artifact_sha256": {
+    "leo.junit.xml.gz": "sha256:8914facd4150e8471e08e58b141c56efcb1dd646fbddf6027434980a59a72719",
+    "leo.log.gz": "sha256:94c30c4b69c35213d486c465c535d6b46e99ff4a58bda5ffe053633d28715760",
+    "mypy.log.gz": "sha256:a621e97398d6a9cfeadae6a5a905048440c2b9f1d486e9d283ef52c1750b39da",
+    "ruff.log.gz": "sha256:4b9b7f6e2b30b4d4bc845c2545474cbaedc30b3512d648437d7e8e1979a8398d",
+    "web-build.log.gz": "sha256:c2f176a43bbd74d8c267ea98931d41b8bcd1b072d47917a4c4300c19dccf7dba",
+    "web.junit.xml.gz": "sha256:030673a73fbf747d3c1df46284c2c7517c3790f3069b50844701b730437f8095",
+    "web.log.gz": "sha256:57f250453feac29c93544ead52e818f82b1af8c4a7376467ae8f764d142b168d"
+  },
+  "commands": {
+    "python": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:.:/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host/src OPENBLAS_NUM_THREADS=1 /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest tests/scanner/test_adaptive_hop_history.py tests/scanner/test_adaptive_hop_contracts.py tests/scanner/test_adaptive_hop_application.py tests/scanner/test_adaptive_glrt_publication.py tests/scanner/test_glrt_publication.py tests/scanner/test_persistent_hop_contracts.py tests/scanner/test_persistent_hop_application.py tests/scanner/test_scanner_glrt_positive.py tests/scanner/test_scanner_glrt_request.py tests/storage/test_adaptive_hop_history.py tests/storage/test_adaptive_hop_queue.py tests/storage/test_adaptive_hop_store.py tests/storage/test_persistent_hop_store.py tests/storage/test_persistent_hop_capture.py tests/storage/test_scanner_glrt_store.py tests/radio/test_pluto_adaptive_hop.py tests/radio/test_adaptive_glrt_metadata.py tests/radio/test_scanner_glrt_metadata.py tests/cli/test_adaptive_hop_schedule.py tests/cli/test_adaptive_hop_supervisor.py tests/cli/test_persistent_hop_schedule.py tests/cli/test_scanner_glrt_runtime.py tests/api/test_adaptive_hop_history_api.py tests/api/test_scanner_glrt_api.py tests/api/test_persistent_hop_history_api.py tests/api/test_production_entrypoint.py tests/api/test_contract_boundary.py -q --tb=short -o junit_family=legacy --junitxml=/tmp/leo-adaptive-history.EkWZKs/leo.xml",
+    "web": "npm test -- --reporter=junit --outputFile=/tmp/leo-adaptive-history.EkWZKs/web.xml",
+    "build": "npm run build",
+    "mypy": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m mypy --python-version=3.12 --follow-imports=silent src/leo/scanner/adaptive_hop_history.py src/leo/storage/adaptive_hop_history.py src/leo/storage/adaptive_hop.py",
+    "ruff": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/ruff check src/leo/scanner/adaptive_hop_history.py src/leo/storage/adaptive_hop.py src/leo/storage/adaptive_hop_history.py src/leo/api/app.py src/leo/api/production.py tests/scanner/test_adaptive_hop_history.py tests/storage/test_adaptive_hop_history.py tests/api/test_adaptive_hop_history_api.py tests/api/test_production_entrypoint.py",
+    "whitespace": "git diff --check"
+  },
+  "results": {
+    "python": {
+      "passed": 496,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "web": {
+      "passed": 121,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "build": "passed",
+    "ruff": "passed",
+    "mypy": "passed"
+  },
+  "full_span_metadata_cases": [
+    {
+      "mode": "adaptive",
+      "rate_hz": 2500000,
+      "visits": 2480,
+      "response_bytes": 1052484,
+      "projection_and_ASGI_seconds": 0.14544719399418682
+    },
+    {
+      "mode": "adaptive",
+      "rate_hz": 5000000,
+      "visits": 2480,
+      "response_bytes": 1052523,
+      "projection_and_ASGI_seconds": 0.12727302208077163
+    },
+    {
+      "mode": "shadow",
+      "rate_hz": 2500000,
+      "visits": 2480,
+      "response_bytes": 1052489,
+      "projection_and_ASGI_seconds": 0.11188058997504413
+    },
+    {
+      "mode": "shadow",
+      "rate_hz": 5000000,
+      "visits": 2480,
+      "response_bytes": 1052528,
+      "projection_and_ASGI_seconds": 0.12549166195094585
+    }
+  ],
+  "limitations": [
+    "Full-span tests substitute metadata manifests; no full-span IQ readback, RF or ARM load in this checkpoint.",
+    "Frontend verification is React/DOM tests and production build, not deployed or real-browser QA.",
+    "Dense adaptive trajectory analysis remains not integrated.",
+    "Listing validates all published manifests; large-history disk latency not benchmarked.",
+    "Detector quality, exact integrated ARM runtime, separately authorized RF canaries, remote release/deployment and rollback remain required."
+  ]
+}

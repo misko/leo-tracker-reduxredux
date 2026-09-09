@@ -75,9 +75,10 @@ function isGlrtCounter(value: unknown): value is string {
 
 export async function getScannerGlrt(
   sessionId: string, signal?: AbortSignal,
+  sessionKind: "persistent" | "adaptive" = "persistent",
 ): Promise<ScannerGlrtPublicationV1 | null> {
   const response = await fetch(
-    `/api/v1/scanner/persistent-sessions/${encodeURIComponent(sessionId)}/glrt`,
+    `/api/v1/scanner/${sessionKind}-sessions/${encodeURIComponent(sessionId)}/glrt`,
     { method: "GET", signal },
   );
   if (response.status === 404) return null;

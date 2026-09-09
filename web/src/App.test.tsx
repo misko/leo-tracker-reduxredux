@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { adaptiveDetailFixture, adaptivePageFixture } from "./adaptive-fixtures";
 import type {
   RecordingDetailV1,
   RecordingSearchResponseV1,
@@ -371,6 +372,12 @@ describe("Observation Console", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
+      if (path === "/api/v1/scanner/adaptive-sessions") {
+        return { ok: true, status: 200, json: async () => adaptivePageFixture() } as Response;
+      }
+      if (path === "/api/v1/scanner/adaptive-sessions/adaptive-test") {
+        return { ok: true, status: 200, json: async () => adaptiveDetailFixture() } as Response;
+      }
       const payload = path === "/api/v1/capture-control" ? {
         schema_version: 1, generation: 0, desired_state: "running", observed_state: "running",
         changed_utc_ns: 1_787_280_000_000_000_000, operator_id: "system", reason: "ready",
@@ -432,6 +439,18 @@ describe("Observation Console", () => {
   });
 
   afterEach(() => vi.unstubAllGlobals());
+
+  it("selects adaptive recordings independently from fixed scanner analysis", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(await screen.findByRole("button", { name: /adaptive-test/ }));
+    await screen.findByRole("heading", { name: "Actual channel visits" });
+    expect(screen.getByText("53 / 54")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Starlink channel scans" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(persistentHopCapture.session_id) }));
+    await screen.findByRole("heading", { name: "300-second channel scan" });
+    expect(screen.queryByRole("heading", { name: "Actual channel visits" })).not.toBeInTheDocument();
+  });
 
   it("stops and starts capture with explicit accessible controls", async () => {
     render(<App />);

@@ -14,6 +14,7 @@ import os
 import re
 import stat
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Literal, Self
@@ -289,15 +290,18 @@ class AdaptiveHopIqStore:
         return True
 
     def session_ids(self) -> tuple[str, ...]:
+        return tuple(session.session_id for session in self.iter_sessions())
+
+    def iter_sessions(self) -> Iterator[PublishedAdaptiveHopIqSession]:
+        """Validate one published manifest at a time; retain no growing IQ inventory."""
         # Do not turn unreadable or corrupt *published* records into an empty
         # history. Directory discovery ignores only uncommitted manifest absence.
         try:
             os.stat(_NAMESPACE, dir_fd=self._root.fileno(), follow_symlinks=False)
         except FileNotFoundError:
-            return ()
+            return
         namespace = self._root.child(_NAMESPACE)
         try:
-            output = []
             for name in sorted(os.listdir(namespace.fileno())):
                 if not _IDENTIFIER.fullmatch(name):
                     continue
@@ -305,11 +309,10 @@ class AdaptiveHopIqStore:
                 if not stat.S_ISDIR(info.st_mode):
                     raise BundleCorruptionError("adaptive session path is not a directory")
                 try:
-                    self.inspect(name)
+                    session = self.inspect(name)
                 except BundleNotFoundError:
                     continue
-                output.append(name)
-            return tuple(output)
+                yield session
         finally:
             namespace.close()
 
