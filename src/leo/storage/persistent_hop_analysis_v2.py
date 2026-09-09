@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import os
 import re
 import stat
@@ -33,6 +32,7 @@ from leo.scanner.persistent_hop_products import (
     PersistentHopAnalysisManifestV2,
     PersistentHopAnalysisStatusV2,
 )
+from leo.storage.analysis_worker_lock import analysis_worker_lock
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError
 from leo.storage.persistent_hop import PersistentHopIqStore
 from leo.storage.uri import BulkUriResolver, confined_path
@@ -100,20 +100,11 @@ class PersistentHopAnalysisStoreV2:
 
     @contextmanager
     def worker_lock(self) -> Iterator[bool]:
-        """Share the existing lock so V1/V2 workers never compete with acquisition."""
+        """Share the existing lease with fixed V1/V2 and adaptive analysis workers."""
 
         self._require_writable()
-        path = self.status_root / "worker.lock"
-        with path.open("a+b") as stream:
-            try:
-                fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                yield False
-                return
-            try:
-                yield True
-            finally:
-                fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+        with analysis_worker_lock(self.root) as acquired:
+            yield acquired
 
     def begin_or_resume(
         self,
