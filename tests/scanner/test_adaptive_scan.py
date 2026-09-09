@@ -77,6 +77,7 @@ def policy(tmp_path_factory):
     lib.leo_adaptive_destroy.argtypes = [ct.c_void_p]
     lib.leo_adaptive_choose.argtypes = [ct.c_void_p, ct.c_uint64, ct.POINTER(Choice)]
     lib.leo_adaptive_commit.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64]
+    lib.leo_adaptive_commit_actual.argtypes = [ct.c_void_p, ct.c_uint32, ct.c_uint64, ct.c_uint64]
     lib.leo_adaptive_observe.argtypes = [ct.c_void_p, ct.POINTER(Observation), ct.c_uint64]
     lib.leo_adaptive_fallback.argtypes = [ct.c_void_p]
     lib.leo_adaptive_target.argtypes = [ct.c_void_p, ct.c_uint32, ct.POINTER(Target)]
@@ -131,6 +132,36 @@ def scan(policy):
     s = Scan(policy)
     yield s
     s.close()
+
+
+@pytest.mark.parametrize("rate", [2500000, 5000000])
+def test_shadow_binds_observation_and_credit_to_actual_not_proposed_target(policy, rate):
+    s = Scan(policy, rate=rate)
+    try:
+        # Warm the policy, then keep executing a fixed order despite different
+        # recommendations. The detector sees only this actual visit stream.
+        differed = 0
+        actual_counts = Counter()
+        for visit in range(160):
+            choice = s.choose()
+            actual = visit % 8
+            start, end = s.now, s.now + rate * 120 // 1000
+            assert policy.leo_adaptive_commit_actual(s.ptr, 8, start, end) == -errno.EINVAL
+            assert policy.leo_adaptive_commit_actual(s.ptr, actual, start, end) == 0
+            s.now = end
+            actual_counts[actual] += 1
+            o = Observation(71, 9, visit, start, end, rate, 1, actual, 1 if actual == 0 else 2, 1)
+            if choice.target != actual:
+                differed += 1
+                o.target = choice.target
+                assert policy.leo_adaptive_observe(s.ptr, ct.byref(o), end) == -errno.EINVAL
+                o.target = actual
+            s.observe(o)
+            assert [s.target(i).visits for i in range(8)] == [actual_counts[i] for i in range(8)]
+        assert differed > 0
+        assert s.choose().active_mask == 1
+    finally:
+        s.close()
 
 
 @pytest.mark.parametrize("mask", range(256))

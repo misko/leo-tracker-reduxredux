@@ -59,6 +59,11 @@ int leo_adaptive_observe(leo_adaptive_scan *, const leo_adaptive_observation_v1 
  * made into a hard realtime guarantee by this policy. */
 int leo_adaptive_choose(leo_adaptive_scan *, uint64_t now, leo_adaptive_choice_v1 *);
 int leo_adaptive_commit(leo_adaptive_scan *, uint64_t valid_start, uint64_t valid_end);
+/* Shadow/external-selection port: charge the visit to the ACTUAL target, not
+ * the pending recommendation. Future decisions and observation binding then
+ * use only executed visits. Does not claim an unsampled counterfactual. */
+int leo_adaptive_commit_actual(leo_adaptive_scan *, uint32_t actual_target,
+    uint64_t valid_start, uint64_t valid_end);
 /* Serious feedback faults latch fixed-order scanning until session destruction.
  * It remains the SAME recording/session; no wire-mode change or RX restart. */
 void leo_adaptive_fallback(leo_adaptive_scan *);

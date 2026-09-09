@@ -55,11 +55,17 @@ do not silently change user-facing three-miss/two-second behavior.
    separate tests, not a full positive-signal network/load qualification.
    Portable Leo tests pass 500, web tests 106 plus build, PPU tests 299, and
    libiio configure tests 16. This is not yet deployment qualification.
-5. **Adaptive hop mode and complete recording:** NOT IMPLEMENTED. Add explicitly
-   versioned request/event/session behavior, source-attested variable visits,
-   bounded acquisition-owner-to-scheduler feedback, policy/choice receipts and
-   compatibility-safe PPU/Leo adapters. Do not relax fixed-order V1 validators
-   or mislabel every eight adaptive visits as a complete sweep.
+5. **Adaptive hop mode and complete recording:** native core implemented and
+   tested offline; provider/host composition remains unfinished. Explicit HOPR,
+   HOPS and HOPT V2 codecs, actual-visit session validation, scheduler policy
+   ports and a bounded SPSC native-feedback adapter now pass tests. Shadow
+   commits accounting to the actual target. Existing V1 wire codecs remain
+   unchanged and fixed-order session validation stays strict. Next connect
+   OPENM/provider capabilities and the existing userspace device factory, drain
+   SDK observations from the acquisition owner into the queue, and implement
+   compatibility-safe PPU/Leo recording/analysis adapters. Never mislabel every
+   eight adaptive visits as a complete sweep. See the
+   [native hop checkpoint](../../reports/2026_09_09_adaptive_hop_v2_checkpoint.md).
 6. **Analysis/UI:** activity timeline, allocation/revisit metrics, cooldown and
    choice reasons, actual-visit Doppler processing, old/new recording tests.
 7. **Runtime/quality:** qualify the exact integrated build on held-out saved IQ,

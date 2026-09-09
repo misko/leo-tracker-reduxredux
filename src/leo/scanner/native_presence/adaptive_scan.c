@@ -12,7 +12,7 @@ struct leo_adaptive_scan {
     int32_t credits[LEO_ADAPTIVE_MAX_TARGETS];
     struct pending_visit *visits;
     uint64_t now, decision_counter, basis_visit;
-    uint32_t committed, applied, cursor, selected, pending, fallback, unhealthy;
+    uint32_t committed, applied, cursor, selected, pending, fallback, unhealthy, pending_total;
 };
 
 static uint64_t samples(const leo_adaptive_scan *s, uint32_t ms)
@@ -107,6 +107,7 @@ int leo_adaptive_choose(leo_adaptive_scan *s, uint64_t now, leo_adaptive_choice_
         if (s->targets[i].state==LEO_ADAPTIVE_QUIET) quiet|=1u<<i;
     }
     uint32_t selected=s->cursor, reason=LEO_ADAPTIVE_WEIGHTED;
+    s->pending_total=0;
     if (s->fallback) reason=LEO_ADAPTIVE_FAULT_FALLBACK;
     else if (s->committed<s->config.warmup_visits*count) reason=LEO_ADAPTIVE_WARMUP;
     else if (!active) reason=LEO_ADAPTIVE_NONE_ACTIVE;
@@ -127,13 +128,7 @@ int leo_adaptive_choose(leo_adaptive_scan *s, uint64_t now, leo_adaptive_choice_
                 (overdue==count || age>oldest_age)) { overdue=i; oldest_age=age; }
         }
         if (overdue<count) { selected=overdue; reason=LEO_ADAPTIVE_EXPLORATION; }
-        s->credits[selected]-=total;
-        /* Debt remains bounded even under repeated deadline overrides and
-         * activity changes. No unbounded catch-up burst after recovery. */
-        for (uint32_t i=0;i<count;++i) {
-            if (s->credits[i]>total) s->credits[i]=total;
-            if (s->credits[i]<-total) s->credits[i]=-total;
-        }
+        s->pending_total=(uint32_t)total;
     }
     const leo_adaptive_target_v1 *t=&s->targets[selected];
     uint64_t remaining=0, cooldown=samples(s,s->config.cooldown_ms);
@@ -148,13 +143,28 @@ int leo_adaptive_choose(leo_adaptive_scan *s, uint64_t now, leo_adaptive_choice_
 }
 
 int leo_adaptive_commit(leo_adaptive_scan *s, uint64_t start, uint64_t end)
+{ return s ? leo_adaptive_commit_actual(s,s->selected,start,end) : -EINVAL; }
+
+int leo_adaptive_commit_actual(leo_adaptive_scan *s, uint32_t actual,
+    uint64_t start, uint64_t end)
 {
-    if (!s || !s->pending || start<s->now || start<s->decision_counter ||
+    if (!s || !s->pending || actual>=s->config.target_count ||
+        start<s->now || start<s->decision_counter ||
         end<=start || end-start!=samples(s,120)) return -EINVAL;
-    s->visits[s->committed++]=(struct pending_visit){.start=start,.end=end,.target=s->selected};
-    leo_adaptive_target_v1 *t=&s->targets[s->selected];
+    if (s->pending_total) {
+        int32_t total=(int32_t)s->pending_total;
+        s->credits[actual]-=total;
+        /* Debit only an executed visit, including in shadow mode. Bound debt
+         * under deadline overrides without fabricating hypothetical service. */
+        for (uint32_t i=0;i<s->config.target_count;++i) {
+            if (s->credits[i]>total) s->credits[i]=total;
+            if (s->credits[i]<-total) s->credits[i]=-total;
+        }
+    }
+    s->visits[s->committed++]=(struct pending_visit){.start=start,.end=end,.target=actual};
+    leo_adaptive_target_v1 *t=&s->targets[actual];
     t->last_visit_start=start; ++t->visits;
-    s->cursor=(s->selected+1)%s->config.target_count; s->pending=0; s->now=start;
+    s->cursor=(actual+1)%s->config.target_count; s->pending=0; s->now=start;
     return 0;
 }
 
