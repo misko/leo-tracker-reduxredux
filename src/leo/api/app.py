@@ -156,6 +156,11 @@ from leo.scanner.adaptive_hop_history import (
     AdaptiveHopPresentationReader,
     AdaptiveHopSessionDetailV1,
 )
+from leo.scanner.adaptive_hop_presentation import (
+    AdaptiveHopAnalysisPresentationReader,
+    AdaptiveHopAnalysisStatusV1,
+    AdaptiveOverviewArtifact,
+)
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
 from leo.scanner.persistent_hop_tracking import (
     PersistentHopCandidateRecurrencePageV1,
@@ -186,6 +191,7 @@ def create_app(
     scanner_glrt: ScannerGlrtPublicationReader | None = None,
     adaptive_hop_sessions: AdaptiveHopPresentationReader | None = None,
     adaptive_scanner_glrt: ScannerGlrtPublicationReader | None = None,
+    adaptive_hop_analysis: AdaptiveHopAnalysisPresentationReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -411,6 +417,73 @@ def create_app(
         if detail is None:
             raise HTTPException(status_code=404, detail="adaptive session not found")
         return detail
+
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveHopAnalysisStatusV1,
+    )
+    def adaptive_analysis_status(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        response: Response,
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 10,
+    ) -> AdaptiveHopAnalysisStatusV1:
+        if adaptive_hop_analysis is None:
+            raise HTTPException(
+                status_code=404, detail="adaptive analysis presentation is unavailable"
+            )
+        try:
+            status = adaptive_hop_analysis.status(session_id, probe_stride_ms=probe_stride_ms)
+            if status is not None and (
+                status.session_id != session_id
+                or status.configuration.probe_stride_ms != probe_stride_ms
+            ):
+                raise ValueError("adaptive analysis request binding differs")
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive analysis metadata is unavailable"
+            ) from error
+        if status is None:
+            raise HTTPException(status_code=404, detail="adaptive session not found")
+        response.headers["Cache-Control"] = "no-store"
+        return status
+
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/{artifact}.png",
+        methods=["GET", "HEAD"],
+    )
+    def adaptive_analysis_artifact(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        artifact: AdaptiveOverviewArtifact,
+        binding_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        artifact_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 10,
+    ) -> Response:
+        if adaptive_hop_analysis is None:
+            raise HTTPException(status_code=404, detail="adaptive figures are unavailable")
+        try:
+            payload = adaptive_hop_analysis.artifact(
+                session_id,
+                artifact,
+                binding_sha256=binding_sha256,
+                artifact_sha256=artifact_sha256,
+                probe_stride_ms=probe_stride_ms,
+            )
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive figure evidence is unavailable"
+            ) from error
+        if payload is None:
+            raise HTTPException(status_code=404, detail="adaptive figure has not been published")
+        return Response(
+            content=payload,
+            media_type="image/png",
+            headers={
+                "ETag": f'"{artifact_sha256}"',
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="adaptive-{artifact}.png"',
+            },
+        )
 
     @router.api_route(
         "/scanner/adaptive-sessions/{session_id}/glrt",

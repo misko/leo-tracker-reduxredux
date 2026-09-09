@@ -46,8 +46,16 @@ def test_production_adaptive_routes_discover_new_publications_without_database_o
     from fastapi.testclient import TestClient
     from sqlalchemy import event
 
+    import leo.scanner.adaptive_hop_analysis as detector
+    from leo.application.adaptive_hop_analysis import AdaptiveHopAnalysisService
+    from leo.application.adaptive_hop_overview import AdaptiveHopOverviewService
+    from leo.storage.adaptive_hop import AdaptiveHopIqStore
+    from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
+    from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
     from leo.storage.scanner_glrt import ScannerGlrtStore
+    from tests.presentation.adaptive_overview_fixtures import rendered_fixture
     from tests.scanner.adaptive_glrt_publication_fixtures import publication_fixture
+    from tests.scanner.test_persistent_hop_standard_analysis import _fake_fractional_dwell
     from tests.storage.test_adaptive_hop_history import publish_capture
 
     original_engine = production.create_catalog_engine
@@ -85,4 +93,40 @@ def test_production_adaptive_routes_discover_new_publications_without_database_o
         assert client.get(f"{base}/{capture.session_id}").json()["capture"]["retained_visits"] == 2
         assert client.get(f"{base}/{capture.session_id}/glrt").json() == publication.model_dump(
             mode="json"
+        )
+        route = f"{base}/{capture.session_id}/analysis"
+        assert client.get(route).json()["state"] == "not_started"
+        captures = AdaptiveHopIqStore(tmp_path, read_only=True)
+        products = AdaptiveHopAnalysisStore(tmp_path)
+        inputs = AdaptiveHopAnalysisInputStore(captures)
+        monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
+        try:
+            AdaptiveHopAnalysisService(inputs=inputs, products=products).analyze_session(
+                capture.session_id
+            )
+            assert client.get(route).json()["state"] == "metrics_complete"
+            AdaptiveHopOverviewService(
+                inputs=inputs, products=products, renderer=lambda *args: rendered_fixture()
+            ).render_session(capture.session_id)
+        finally:
+            products.close()
+            captures.close()
+        current = client.get(route).json()
+        assert current["state"] == "figures_ready"
+        figure = current["overview"]["artifacts"][0]
+        response = client.get(
+            route + "/coverage.png",
+            params={
+                "binding_sha256": current["binding_sha256"],
+                "artifact_sha256": figure["sha256"],
+            },
+        )
+        assert (
+            response.status_code == 200
+            and response.content == rendered_fixture().artifacts["coverage"]
+        )
+        # Original history contract is unchanged; analysis is a new independent port.
+        assert (
+            client.get(f"{base}/{capture.session_id}").json()["capture"]["analysis_state"]
+            == "not_integrated"
         )

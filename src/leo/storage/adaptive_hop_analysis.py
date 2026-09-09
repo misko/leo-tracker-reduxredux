@@ -1,7 +1,7 @@
 """Pinned, immutable per-visit analysis with bounded reads and crash-safe resume.
 
-Only metrics are finalized here. A metrics manifest does not assert that plots,
-trajectory association, API integration or detector qualification are complete.
+Metrics and overview figures have separate completion manifests. A metrics
+manifest does not assert that plots or detector qualification are complete.
 """
 
 from __future__ import annotations
@@ -12,7 +12,9 @@ import json
 import os
 import re
 import stat
+import struct
 import time
+import zlib
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -23,6 +25,14 @@ from pydantic import BaseModel
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.scanner.adaptive_hop_analysis import AdaptiveHopVisitAnalysisV1
+from leo.scanner.adaptive_hop_presentation import (
+    MAX_OVERVIEW_PNG_BYTES,
+    OVERVIEW_ARTIFACTS,
+    AdaptiveHopAnalysisStatusV1,
+    AdaptiveHopFigureV1,
+    AdaptiveHopOverviewManifestV1,
+    RenderedAdaptiveOverview,
+)
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
@@ -236,14 +246,34 @@ class AdaptiveHopAnalysisJob:
             raise BundleCorruptionError(str(error)) from error
 
     def _references(self) -> tuple[AdaptiveHopVisitReferenceV1, ...]:
+        return tuple(self._read_visit(index)[1] for index in self.checkpoint_file_indexes())
+
+    def checkpoint_file_indexes(self) -> tuple[int, ...]:
+        """Bounded file inventory only; NOT a checksum/decoded-metrics verification."""
         indexes = []
-        for name in os.listdir(self._directory.fileno()):
-            if name.startswith("visit-"):
-                match = _VISIT.fullmatch(name)
-                if match is None:
-                    raise BundleCorruptionError("malformed adaptive analysis visit filename")
-                indexes.append(int(match.group(1)))
-        return tuple(self._read_visit(index)[1] for index in sorted(indexes))
+        with os.scandir(self._directory.fileno()) as entries:
+            for count, entry in enumerate(entries, start=1):
+                if count > 10000:
+                    raise BundleCorruptionError(
+                        "adaptive checkpoint directory exceeds inventory bound"
+                    )
+                if entry.name.startswith("visit-"):
+                    match = _VISIT.fullmatch(entry.name)
+                    if match is None:
+                        raise BundleCorruptionError("malformed adaptive analysis visit filename")
+                    index = int(match.group(1))
+                    self._index(index)
+                    info = entry.stat(follow_symlinks=False)
+                    if (
+                        not stat.S_ISREG(info.st_mode)
+                        or info.st_nlink != 1
+                        or not 0 < info.st_size <= _MAX_VISIT
+                    ):
+                        raise BundleCorruptionError(
+                            "adaptive checkpoint is not a bounded regular file"
+                        )
+                    indexes.append(index)
+        return tuple(sorted(indexes))
 
     def completed_visits(self) -> tuple[int, ...]:
         return tuple(r.visit_index for r in self._references())
@@ -254,6 +284,19 @@ class AdaptiveHopAnalysisJob:
         if manifest is not None and manifest.visits[index] != reference:
             raise BundleCorruptionError("adaptive published visit digest differs from manifest")
         return product
+
+    def published_visits(self) -> Iterator[AdaptiveHopVisitAnalysisV1]:
+        """Verify and stream sealed metrics with one manifest parse and one visit in memory."""
+        manifest = self.manifest()
+        if manifest is None:
+            raise BundleNotFoundError("adaptive metrics have not been finalized")
+        if self.checkpoint_file_indexes() != tuple(range(manifest.complete_visit_count)):
+            raise BundleCorruptionError("adaptive published metrics inventory differs")
+        for index, expected in enumerate(manifest.visits):
+            product, reference = self._read_visit(index)
+            if reference != expected:
+                raise BundleCorruptionError("adaptive published metrics digest differs")
+            yield product
 
     def write_visit(self, product: AdaptiveHopVisitAnalysisV1) -> AdaptiveHopVisitReferenceV1:
         if not self._writable:
@@ -317,4 +360,146 @@ class AdaptiveHopAnalysisJob:
             finalized_utc_ns=time.time_ns(),
         )
         _publish(self._directory, "metrics-manifest.v1.json", _seal(manifest), _MAX_MANIFEST)
+        return manifest
+
+    def overview(self) -> AdaptiveHopOverviewManifestV1 | None:
+        try:
+            raw = _read(self._directory, "overview-manifest.v1.json", _MAX_MANIFEST)
+        except FileNotFoundError:
+            return None
+        overview = _unseal(raw, AdaptiveHopOverviewManifestV1)
+        metrics = self.manifest()
+        if (
+            metrics is None
+            or overview.session_id != self.binding.session_id
+            or overview.binding_sha256 != self._binding_sha256
+            or overview.metrics_manifest_sha256
+            != sha256_digest(canonical_json_bytes(metrics.model_dump(mode="json")))
+            or overview.selected_observation_count > 2 * metrics.complete_visit_count
+        ):
+            raise BundleCorruptionError("adaptive overview differs from source metrics")
+        for artifact in overview.artifacts:
+            info = os.stat(
+                f"overview-v1-{artifact.name}.png",
+                dir_fd=self._directory.fileno(),
+                follow_symlinks=False,
+            )
+            if (
+                not stat.S_ISREG(info.st_mode)
+                or info.st_nlink != 1
+                or info.st_size != artifact.byte_count
+            ):
+                raise BundleCorruptionError("adaptive overview artifact inventory differs")
+        return overview
+
+    def status(self) -> AdaptiveHopAnalysisStatusV1:
+        """Metadata-only status. It does not read IQ, decompress metrics or infer liveness."""
+        metrics = self.manifest()
+        indexes = self.checkpoint_file_indexes()
+        overview = self.overview()
+        if metrics is not None:
+            if indexes != tuple(range(metrics.complete_visit_count)):
+                raise BundleCorruptionError("adaptive metrics checkpoint inventory is incomplete")
+            for ref in metrics.visits:
+                info = os.stat(
+                    ref.relative_path, dir_fd=self._directory.fileno(), follow_symlinks=False
+                )
+                if info.st_size != ref.compressed_bytes:
+                    raise BundleCorruptionError("adaptive metrics checkpoint size differs")
+        return AdaptiveHopAnalysisStatusV1(
+            session_id=self.binding.session_id,
+            input_manifest_sha256=self.binding.input_manifest_sha256,
+            binding_sha256=self._binding_sha256,
+            configuration=self.binding.configuration,
+            total_visits=self.binding.receipt.complete_visit_count,
+            checkpoint_visits=len(indexes),
+            state="figures_ready" if overview else "metrics_complete" if metrics else "partial",
+            progress_basis="sealed_metrics_manifest" if metrics else "file_inventory",
+            metrics_manifest_sha256=sha256_digest(
+                canonical_json_bytes(metrics.model_dump(mode="json"))
+            )
+            if metrics
+            else None,
+            overview=overview,
+        )
+
+    @staticmethod
+    def _png(payload: bytes) -> None:
+        # Envelope/dimension checks, not an image-decoder or scientific quality claim.
+        if (
+            not 45 <= len(payload) <= MAX_OVERVIEW_PNG_BYTES
+            or payload[:16] != b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+            or payload[-12:] != b"\x00\x00\x00\x00IEND\xaeB`\x82"
+        ):
+            raise ValueError("adaptive overview is not a bounded PNG")
+        width, height = struct.unpack(">II", payload[16:24])
+        if (
+            not 0 < width <= 4096
+            or not 0 < height <= 4096
+            or width * height > 8_000_000
+            or zlib.crc32(payload[12:29]) != struct.unpack(">I", payload[29:33])[0]
+        ):
+            raise ValueError("adaptive overview PNG header/dimensions are invalid")
+
+    def read_artifact(self, name: str, *, expected_sha256: str) -> bytes | None:
+        if name not in OVERVIEW_ARTIFACTS:
+            raise ValueError("unknown adaptive overview artifact")
+        overview = self.overview()
+        if overview is None:
+            return None
+        reference = next(a for a in overview.artifacts if a.name == name)
+        if reference.sha256 != expected_sha256:
+            raise BundleCorruptionError("adaptive overview artifact request changed digest")
+        payload = _read(self._directory, f"overview-v1-{name}.png", MAX_OVERVIEW_PNG_BYTES)
+        if len(payload) != reference.byte_count or sha256_digest(payload) != reference.sha256:
+            raise BundleCorruptionError("adaptive overview PNG digest differs")
+        self._png(payload)
+        return payload
+
+    def publish_overview(self, rendered: RenderedAdaptiveOverview) -> AdaptiveHopOverviewManifestV1:
+        if not self._writable:
+            raise PermissionError("adaptive analysis job is read-only")
+        metrics = self.verify()
+        if metrics is None:
+            raise ValueError("cannot publish overview before all metrics are sealed")
+        if set(rendered.artifacts) != set(OVERVIEW_ARTIFACTS):
+            raise ValueError("adaptive overview requires all three figures")
+        references = []
+        for name in OVERVIEW_ARTIFACTS:
+            payload = rendered.artifacts[name]
+            self._png(payload)
+            references.append(
+                AdaptiveHopFigureV1(
+                    name=name, sha256=sha256_digest(payload), byte_count=len(payload)
+                )
+            )
+        existing = self.overview()
+        manifest = AdaptiveHopOverviewManifestV1(
+            session_id=self.binding.session_id,
+            binding_sha256=self._binding_sha256,
+            metrics_manifest_sha256=sha256_digest(
+                canonical_json_bytes(metrics.model_dump(mode="json"))
+            ),
+            finalized_utc_ns=existing.finalized_utc_ns if existing else time.time_ns(),
+            artifacts=tuple(references),
+            trajectory_configuration_sha256=rendered.trajectory_configuration_sha256,
+            selected_observation_count=rendered.selected_observation_count,
+            association_count=rendered.association_count,
+            truncated_association_count=rendered.truncated_association_count,
+        )
+        if manifest.selected_observation_count > 2 * metrics.complete_visit_count:
+            raise ValueError("adaptive overview association input count exceeds retained visits")
+        if existing is not None and manifest != existing:
+            raise BundleCorruptionError("adaptive overview publication cannot be overwritten")
+        for name in OVERVIEW_ARTIFACTS:
+            destination, payload = f"overview-v1-{name}.png", rendered.artifacts[name]
+            try:
+                old = _read(self._directory, destination, MAX_OVERVIEW_PNG_BYTES)
+            except FileNotFoundError:
+                _publish(self._directory, destination, payload, MAX_OVERVIEW_PNG_BYTES)
+            else:
+                if old != payload:
+                    raise BundleCorruptionError("adaptive overview artifact cannot be overwritten")
+        if existing is None:
+            _publish(self._directory, "overview-manifest.v1.json", _seal(manifest), _MAX_MANIFEST)
         return manifest
