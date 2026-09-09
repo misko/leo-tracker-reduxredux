@@ -24,16 +24,15 @@ def scanner_glrt_options(values: Mapping[str, str]) -> ScannerGlrtOptions | None
     )
     if mode == "disabled":
         if any(key in values for key in keys):
-            raise ValueError("GLRT parameters require an explicit unqualified-evidence opt-in")
+            raise ValueError("GLRT parameters require an explicit detector opt-in")
         return None
-    if mode != "unqualified-evidence":
-        raise ValueError(
-            "GLRT mode must be disabled or unqualified-evidence; no policy is qualified"
-        )
+    if mode not in ("unqualified-evidence", "positive-only-v1"):
+        raise ValueError("GLRT mode must be disabled, unqualified-evidence or positive-only-v1")
     return ScannerGlrtOptions(
         algorithm_sha256=values.get(keys[0], ""),
         configuration_sha256=values.get(keys[1], ""),
         drain_budget_seconds=float(values.get(keys[2], "5")),
+        mode=mode,
     )
 
 

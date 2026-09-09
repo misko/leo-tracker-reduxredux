@@ -32,8 +32,8 @@ def validate_glrt_capture_binding(
 ) -> None:
     """Reject cross-session, stale-source and out-of-source classifications.
 
-    This validates linkage only. It neither relaxes the session's classification
-    policy nor promotes an unqualified candidate to a Starlink verdict.
+    This validates linkage and the admitted application profile. It never
+    promotes unqualified evidence. Published major-v1 layouts stay unchanged.
     """
     if (
         publication.session_id != receipt.session_id
@@ -48,6 +48,8 @@ def validate_glrt_capture_binding(
     if evidence.source_terminal_attested and evidence.expected_results != len(receipt.visits):
         raise ValueError("GLRT terminal inventory disagrees with capture receipt")
     for result in evidence.results:
+        if evidence.mode == "positive-only-v1" and result.verdict == "no_signal":
+            raise ValueError("positive-only GLRT profile cannot assert signal absence")
         if result.visit >= len(receipt.visits):
             raise ValueError("GLRT result names a visit absent from the capture")
         visit = receipt.visits[result.visit]

@@ -27,34 +27,59 @@ from tests.radio.test_scanner_glrt_metadata import (
 from tests.scanner.test_scanner_glrt_port import Session
 from tests.scanner.test_scanner_glrt_port import artifacts as artifacts
 from tests.scanner.test_scanner_glrt_port import port as port
+from tests.scanner.test_scanner_glrt_positive import PositivePolicy
+from tests.scanner.test_scanner_glrt_positive import positive_port as positive_port
+from tools.qualify_presence_dwell_controls import generate
 
 
 @pytest.mark.parametrize("rate", [2500000, 5000000])
+@pytest.mark.parametrize("positive", [False, True])
 def test_native_worker_frames_and_terminal_drain_reach_attested_host(
-    port, artifacts, tmp_path, rate
+    positive_port, artifacts, tmp_path, rate, positive
 ):
-    native = Session(port, artifacts[0], tmp_path, rate)
-    hop = request(rate)
-    host = ScannerGlrtMetadataExtension(
-        ScannerGlrtOptions(ALG, CONFIG), session=SESSION, generation=9
+    port = positive_port
+    native = Session(
+        port,
+        artifacts[0],
+        tmp_path,
+        rate,
+        positive_policy=PositivePolicy(0.175, 0.025) if positive else None,
     )
-    host.negotiate(raw_request(hop), capabilities(), drain_supported=True)
+    hop = request(rate)
+    mode = "positive-only-v1" if positive else "unqualified-evidence"
+    host = ScannerGlrtMetadataExtension(
+        ScannerGlrtOptions(ALG, CONFIG, mode=mode), session=SESSION, generation=9
+    )
+    host.negotiate(
+        raw_request(hop),
+        capabilities() | {"iio,buffer-scanner-glrt-mode": mode},
+        drain_supported=True,
+    )
     backend = SimpleNamespace(metadata_extension=host, closed=False)
+    expected_iq = []
 
     def blocks():
         for index in range(2):
             ev = event(hop, index)
             assert native.visit(index, ev.invalid_end_counter_exclusive, index + 1) == 0
             source = evidence(hop, index)
+            iq = np.zeros(
+                (source.block_end_counter_exclusive - source.block_first_counter, 4), dtype="<i2"
+            )
+            iq[:, :2] = 30000
+            guard = ev.invalid_end_counter_exclusive - source.block_first_counter
+            if positive:
+                selected, _ = generate(rate, "lower", 91, "pilot", 4)
+                iq[guard:, 2:] = selected
+            expected_iq.append(iq[guard:, 2] + 1j * iq[guard:, 3])
             # Feed at actual source counters, including the invalid guard,
             # in non-dividing chunks. The SDK must select RX1, not loud RX0.
             for first in range(
                 source.block_first_counter, source.block_end_counter_exclusive, 8191
             ):
                 count = min(8191, source.block_end_counter_exclusive - first)
-                iq = np.zeros((count, 4), dtype=np.int16)
-                iq[:, :2] = 30000
-                assert native.block(first, iq) == 0
+                offset = first - source.block_first_counter
+                assert native.block(first, iq[offset : offset + count]) == 0
             if index == 1:
                 assert port.leo_scanner_glrt_finish(native.ptr, 0) == 0
             legacy = source.pack()
@@ -63,10 +88,6 @@ def test_native_worker_frames_and_terminal_drain_reach_attested_host(
             assert n > 0
             raw = buffer.raw[:n]
             assert host.unwrap(raw) == legacy
-            iq = np.zeros(
-                (source.block_end_counter_exclusive - source.block_first_counter, 4), dtype="<i2"
-            )
-            iq[:, :2] = 30000
             yield PersistentHopWireBlock(legacy, iq.tobytes(), 17, raw)
 
     def drain(capacity):
@@ -94,11 +115,19 @@ def test_native_worker_frames_and_terminal_drain_reach_attested_host(
         visits = list(session.visits())
         assert len(visits) == 2
         assert all(np.all(v.samples[0] == 30000 + 30000j) for v in visits)
-        assert all(np.count_nonzero(v.samples[1]) == 0 for v in visits)
+        for visit, expected in zip(visits, expected_iq, strict=True):
+            np.testing.assert_array_equal(visit.samples[1], expected)
         snapshot = host.snapshot()
-        assert snapshot.delivery_complete and not snapshot.classification_complete
+        assert snapshot.delivery_complete and snapshot.classification_complete == positive
         assert snapshot.expected_results == len(snapshot.results) == 2
-        assert all(r.reason == "unqualified_classifier" and r.rx == 1 for r in snapshot.results)
+        assert snapshot.mode == mode
+        assert all(
+            r.reason == ("complete" if positive else "unqualified_classifier") and r.rx == 1
+            for r in snapshot.results
+        )
+        assert all(
+            r.verdict == ("starlink" if positive else "unavailable") for r in snapshot.results
+        )
         assert session.receipt.valid_sample_count == 2 * hop.dwell_samples
         assert session.receipt.missing_sample_count == 0 and backend.closed
     finally:

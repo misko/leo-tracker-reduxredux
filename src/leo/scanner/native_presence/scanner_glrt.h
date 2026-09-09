@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include "adaptive_scan.h"
 
 #define LEO_SCANNER_GLRT_MAX_VISITS 2500u
 #define LEO_SCANNER_GLRT_MAX_BLOCK_SAMPLES 1048576u
@@ -46,6 +47,23 @@ int leo_scanner_glrt_open(leo_scanner_glrt **output,
     const leo_scanner_glrt_config_v1 *config,
     const char *worker_path, const char *template_path);
 
+/* Additive explicit positive-only entrypoint. The old open/config ABI and its
+ * unqualified behavior are unchanged. A trusted, separately qualified release
+ * pins these thresholds in its configuration identity; no absence option. */
+typedef struct {
+    double minimum_exact_score, minimum_margin;
+} leo_scanner_glrt_positive_policy_v1;
+int leo_scanner_glrt_open_positive(leo_scanner_glrt **output,
+    const leo_scanner_glrt_config_v1 *, const char *worker_path, const char *template_path,
+    const leo_scanner_glrt_positive_policy_v1 *);
+
+/* Acquisition-owner-only result copy for scheduler feedback. Returns 1 for an
+ * observation, 0 if not ready, -ENODATA after the complete terminal inventory,
+ * -ENOTSUP without positive opt-in. Does not consume wire results. No waiting;
+ * the caller transfers copied observations through its narrow bounded queue,
+ * never invokes this non-thread-safe SDK from the hop scheduler thread. */
+int leo_scanner_glrt_observation(leo_scanner_glrt *, leo_adaptive_observation_v1 *);
+
 /* Ordered, independently attested hop geometry, potentially arriving after IQ.
  * Visit indices begin at zero. A visit always has 120ms of planned valid time;
  * unavailable/partial input never produces an absence claim. Channel 1..4,
@@ -62,7 +80,8 @@ int leo_scanner_glrt_finish(leo_scanner_glrt *, int cancelled);
 /* Encode LGC1 with unchanged opaque legacy bytes and at most four earlier
  * results. Output must not overlap legacy input. No allocation/wait/refill.
  * Frame sequence and consumed results advance only after successful encoding.
- * Numerical evidence remains unqualified: this port enables no decision policy. */
+ * The original open retains unqualified evidence; open_positive enables only
+ * its explicit positive policy. Wire layout and legacy bytes are unchanged. */
 ssize_t leo_scanner_glrt_frame(leo_scanner_glrt *, const void *legacy,
     size_t legacy_bytes, void *output, size_t capacity);
 /* Only after finish: -EAGAIN while pending; positive metadata-only DRAIN frame;

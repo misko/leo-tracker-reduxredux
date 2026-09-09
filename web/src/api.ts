@@ -129,6 +129,9 @@ export async function getScannerGlrt(
       if (evidence.mode === "unqualified-evidence" && row.verdict !== "unavailable") {
         throw new Error("Unqualified GLRT evidence cannot assert a classification");
       }
+      if (evidence.mode === "positive-only-v1" && row.verdict === "no_signal") {
+        throw new Error("Positive-only GLRT evidence cannot assert signal absence");
+      }
     }
   }
   return result;

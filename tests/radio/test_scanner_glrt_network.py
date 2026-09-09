@@ -38,10 +38,12 @@ from tests.radio.test_scanner_glrt_metadata import ALG, CONFIG, SESSION, plan
 
 pytestmark = pytest.mark.libiio_integration
 FIRST = (1 << 53) + 10000
+DECISION_MODE = os.environ.get("SCANNER_GLRT_TEST_MODE", "unqualified-evidence")
 
 
 @pytest.fixture(scope="module")
 def native_server():
+    assert DECISION_MODE in ("unqualified-evidence", "positive-only-v1")
     path = os.environ.get("SCANNER_GLRT_NETWORK_SERVER")
     assert path and Path(path).is_file(), "set SCANNER_GLRT_NETWORK_SERVER to the built fixture"
     import iio
@@ -159,19 +161,23 @@ def capture(native_server, rate, delay=0, mode="normal", enabled=True, count=8):
             hop, dwell_count=count, capture_span_samples=count * hop.dwell_samples
         )
         request = hop.append_to_tandem_request(
-            TandemSessionRequestV1(mode=TandemMode.HOLD), settings.samples_per_block,
+            TandemSessionRequestV1(mode=TandemMode.HOLD),
+            settings.samples_per_block,
             retention_frames=3,
         )
         extension = None
         if enabled:
             extension = ScannerGlrtMetadataExtension(
-                ScannerGlrtOptions(ALG, CONFIG), session=SESSION, generation=9
+                ScannerGlrtOptions(ALG, CONFIG, mode=DECISION_MODE), session=SESSION, generation=9
             )
             request = extension.negotiate(request, context.attrs, drain_supported=True)
             assert request.startswith(b"LGO1"), extension.error
         raw = IioRawSidecarCaptureSession(
-            PrimingSdr(device), iio.MetadataBuffer, request=request,
-            samples_per_channel=settings.samples_per_block, kernel_buffers=2,
+            PrimingSdr(device),
+            iio.MetadataBuffer,
+            request=request,
+            samples_per_channel=settings.samples_per_block,
+            kernel_buffers=2,
             metadata_status_reader=lambda buffer, capacity: buffer.metadata_status_raw(capacity),
             metadata_canceller=lambda buffer: buffer.cancel_metadata_session(),
             status_capacity=PERSISTENT_HOP_STATUS_BYTES,
@@ -182,7 +188,8 @@ def capture(native_server, rate, delay=0, mode="normal", enabled=True, count=8):
         # No connection is opened by this owner: its backend factory is the
         # explicit loopback port. Production LAN/serial gates are not changed.
         owner = PersistentHopClient(
-            "ip:192.168.1.18", expected_serial="loopback-fixture-only",
+            "ip:192.168.1.18",
+            expected_serial="loopback-fixture-only",
             backend_factory=lambda _: backend,
         )
         try:
@@ -207,7 +214,11 @@ def test_actual_provider_network_and_host_complete_all_edges(native_server, rate
         assert evidence.delivery_complete, evidence
         assert not evidence.classification_complete
         assert evidence.expected_results == len(evidence.results) == 8
-        assert all(r.rx == 1 and r.reason == "unqualified_classifier" for r in evidence.results)
+        expected_reason = (
+            "incomplete_search" if DECISION_MODE == "positive-only-v1" else "unqualified_classifier"
+        )
+        assert evidence.mode == DECISION_MODE
+        assert all(r.rx == 1 and r.reason == expected_reason for r in evidence.results)
         for result in evidence.results:
             assert result.channel == result.visit % 4 + 1
             assert result.edge == ("lower" if result.visit % 8 < 4 else "upper")
@@ -300,18 +311,24 @@ def test_full_300s_virtual_span_through_concrete_backend(native_server, rate, re
         uri, serial = "ip:192.168.1.18", "loopback-fixture-only"
         radio = LoopbackRadio(uri, serial, context, iio)
         host = ScannerGlrtMetadataExtension(
-            ScannerGlrtOptions(ALG, CONFIG), session=SESSION, generation=9
+            ScannerGlrtOptions(ALG, CONFIG, mode=DECISION_MODE), session=SESSION, generation=9
         )
         backend = IioPersistentHopBackend(
-            uri, expected_serial=serial, iio_module=iio,
-            radio_factory=lambda _uri, _serial: radio, metadata_extension=host,
+            uri,
+            expected_serial=serial,
+            iio_module=iio,
+            radio_factory=lambda _uri, _serial: radio,
+            metadata_extension=host,
         )
         client = PersistentHopClient(uri, expected_serial=serial, backend_factory=lambda _: backend)
         settings = dataclasses.replace(
-            plan(rate), samples_per_block=131072, transition_guard_samples=rate // 1000,
+            plan(rate),
+            samples_per_block=131072,
+            transition_guard_samples=rate // 1000,
         )
         session = client.start(
-            settings, session_id=SESSION,
+            settings,
+            session_id=SESSION,
             tandem_request=TandemSessionRequestV1(mode=TandemMode.HOLD),
         )
         try:

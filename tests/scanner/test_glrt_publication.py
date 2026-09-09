@@ -84,3 +84,23 @@ def test_invalid_or_unqualified_evidence_cannot_become_a_positive(tmp_path):
         source | {"evidence": None, "error": "no peer"}
     )
     assert failed.evidence is None and failed.error == "no peer"
+
+
+@pytest.mark.parametrize("verdict", ["starlink", "no_signal"])
+def test_positive_profile_is_checked_before_publication_or_presentation(tmp_path, verdict):
+    _, capture = make_capture(tmp_path)
+    document = make_publication(capture).model_dump()
+    document["evidence"].update(mode="positive-only-v1", classification_complete=True)
+    document["evidence"]["results"][0].update(verdict=verdict, reason="complete")
+    # The existing extensible persisted contract is not changed. Its new
+    # application profile is checked separately at the capture binding boundary.
+    publication = ScannerGlrtPublicationV1.model_validate(document)
+    if verdict == "no_signal":
+        with pytest.raises(ValueError, match="cannot assert signal absence"):
+            validate_glrt_capture_binding(
+                publication, capture.manifest.receipt, input_manifest_sha256=capture.manifest_sha256
+            )
+    else:
+        validate_glrt_capture_binding(
+            publication, capture.manifest.receipt, input_manifest_sha256=capture.manifest_sha256
+        )

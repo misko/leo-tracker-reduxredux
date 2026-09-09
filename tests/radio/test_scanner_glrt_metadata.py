@@ -85,6 +85,54 @@ def capabilities():
     }
 
 
+@pytest.mark.parametrize("mode", ["unqualified-evidence", "positive-only-v1"])
+def test_decision_mode_must_match_the_attested_provider(mode):
+    port = ScannerGlrtMetadataExtension(ScannerGlrtOptions(ALG, CONFIG, mode=mode), session=SESSION)
+    attributes = capabilities() | {
+        "iio,buffer-scanner-glrt-mode": (
+            "positive-only-v1" if mode == "unqualified-evidence" else "unqualified-evidence"
+        )
+    }
+    raw = raw_request(request())
+    assert port.negotiate(raw, attributes, drain_supported=True) == raw
+    assert not port.snapshot().negotiated
+
+
+def test_positive_only_mode_delivers_positive_and_unknown_but_not_absence():
+    hop = request()
+    options = ScannerGlrtOptions(ALG, CONFIG, mode="positive-only-v1")
+    port = ScannerGlrtMetadataExtension(options, session=SESSION, generation=GENERATION)
+    raw = raw_request(hop)
+    attrs = capabilities() | {"iio,buffer-scanner-glrt-mode": "positive-only-v1"}
+    assert decode_request(port.negotiate(raw, attrs, drain_supported=True)).legacy_request == raw
+    rows = (
+        result(hop, 0, verdict="starlink", reason="complete"),
+        result(hop, 1, reason="incomplete_search"),
+    )
+    for i in range(2):
+        source = evidence(hop, i)
+        port.consume(frame(i, (rows[i],)), b"iq", evidence=source)
+    port.finish(terminal(hop), lambda _: frame(2, flags=DRAIN | FINAL))
+    saved = port.snapshot()
+    assert saved.mode == "positive-only-v1" and saved.delivery_complete
+    assert not saved.classification_complete and saved.results == rows
+    assert ScannerGlrtSessionEvidenceV1.model_validate_json(saved.model_dump_json()) == saved
+
+    port = ScannerGlrtMetadataExtension(options, session=SESSION, generation=GENERATION)
+    port.negotiate(raw, attrs, drain_supported=True)
+    port.consume(
+        frame(0, (result(hop, 0, verdict="no_signal", reason="complete"),)),
+        b"iq",
+        evidence=evidence(hop, 0),
+    )
+    assert "asserted signal absence" in port.snapshot().error
+
+
+def test_unknown_decision_profile_is_rejected():
+    with pytest.raises(ValueError, match="decision profile"):
+        ScannerGlrtOptions(ALG, CONFIG, mode="anything")
+
+
 def event(hop, index):
     start = START + index * (hop.dwell_samples + hop.transition_guard_samples + 1)
     target = index % 8

@@ -71,7 +71,7 @@ def port(tmp_path_factory):
 
 
 class Session:
-    def __init__(self, port, worker, tmp_path, rate):
+    def __init__(self, port, worker, tmp_path, rate, *, positive_policy=None):
         self.port = port
         self.rate = rate
         self.ptr = ct.c_void_p()
@@ -84,15 +84,18 @@ class Session:
         worker.chmod(0o755)
         children_path = Path(f"/proc/self/task/{os.getpid()}/children")
         children_before = set(children_path.read_text().split())
-        assert (
-            port.leo_scanner_glrt_open(
-                ct.byref(self.ptr),
-                ct.byref(self.config),
-                os.fsencode(worker),
-                os.fsencode(self.template),
-            )
-            == 0
+        args = (
+            ct.byref(self.ptr),
+            ct.byref(self.config),
+            os.fsencode(worker),
+            os.fsencode(self.template),
         )
+        status = (
+            port.leo_scanner_glrt_open(*args)
+            if positive_policy is None
+            else port.leo_scanner_glrt_open_positive(*args, ct.byref(positive_policy))
+        )
+        assert status == 0
         children_after = set(children_path.read_text().split())
         created = children_after - children_before
         assert len(created) == 1

@@ -57,6 +57,7 @@ export function ScannerGlrtPanel({ sessionId }: { sessionId: string }) {
     {!loading && !failure && publication === null ? <p>No on-radio GLRT evidence was recorded for this capture. Signal presence is unknown.</p> : null}
     {evidence ? <>
       <p>{unqualified ? <strong>Unqualified measurements — not Starlink classifications.</strong> : "Radio classifier evidence."}</p>
+      {evidence.mode === "positive-only-v1" ? <p>Positive-only detection: unconfirmed dwells do not establish signal absence.</p> : null}
       <p>{rows.length}/{evidence.expected_results ?? "unknown"} results delivered · {evidence.delivery_complete ? "delivery complete" : "delivery incomplete"}
         {" · "}{evidence.classification_complete ? "classification complete" : "classification incomplete"}
         {" · "}{evidence.dropped_results} reported dropped results</p>
