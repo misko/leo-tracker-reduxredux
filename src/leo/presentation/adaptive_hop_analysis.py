@@ -6,6 +6,7 @@ import io
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
+from typing import Literal
 
 import numpy as np
 from matplotlib import rc_context
@@ -30,6 +31,11 @@ from leo.scanner.adaptive_hop_products import (
 
 _EDGE_COLORS = ("#287da1", "#bd3653")
 _MARKERS = ("o", "x")
+TestData = Literal["synthetic", "saved-rx1"]
+_TEST_LABELS = {
+    "synthetic": "SYNTHETIC TEST DATA - NOT RF",
+    "saved-rx1": "SAVED RX1 TEST EXCERPT - SYNTHETIC RX0 / RECEIPT / OTHER VISITS",
+}
 
 
 def adaptive_trajectory_configuration(margin_gate: float) -> TrajectoryBankConfig:
@@ -143,9 +149,29 @@ def project_adaptive_overview(
     return AdaptiveOverviewData(winners, passed, {key: tuple(rows) for key, rows in groups.items()})
 
 
-def _save(figure: Figure, binding: AdaptiveHopAnalysisBindingV1, metrics_sha256: str) -> bytes:
+def _save(
+    figure: Figure,
+    binding: AdaptiveHopAnalysisBindingV1,
+    metrics_sha256: str,
+    test_data: TestData | None,
+) -> bytes:
     output = io.BytesIO()
     FigureCanvasAgg(figure)
+    if test_data is not None:
+        # Explicit report/test context, never inferred from signal shape or IDs.
+        label = _TEST_LABELS[test_data]
+        figure.text(
+            0.5,
+            0.012,
+            label,
+            ha="center",
+            va="bottom",
+            fontsize=12,
+            weight="bold",
+            color="#9b1c20",
+            bbox={"facecolor": "white", "edgecolor": "#9b1c20", "pad": 5},
+        )
+        figure.set_layout_engine("constrained", rect=(0, 0.05, 1, 0.95))
     figure.savefig(
         output,
         format="png",
@@ -153,6 +179,7 @@ def _save(figure: Figure, binding: AdaptiveHopAnalysisBindingV1, metrics_sha256:
             "Software": "leo-tracker adaptive actual-visit overview-v1",
             "Session": binding.session_id,
             "Metrics": metrics_sha256,
+            **({"TestData": _TEST_LABELS[test_data]} if test_data is not None else {}),
         },
     )
     figure.clear()
@@ -180,7 +207,11 @@ def render_adaptive_hop_overview(
     binding: AdaptiveHopAnalysisBindingV1,
     manifest: AdaptiveHopMetricsManifestV1,
     visits: Iterable[AdaptiveHopVisitAnalysisV1],
+    *,
+    test_data: TestData | None = None,
 ) -> RenderedAdaptiveOverview:
+    if test_data is not None and test_data not in _TEST_LABELS:
+        raise ValueError("unknown adaptive overview test-data context")
     data = project_adaptive_overview(binding, manifest, visits)
     config = adaptive_trajectory_configuration(binding.configuration.glrt64_margin_gate)
     banks: dict[tuple[int, int], TrajectoryBankResult] = {
@@ -234,7 +265,7 @@ def render_adaptive_hop_overview(
         )
         if axis.get_legend_handles_labels()[0]:
             axis.legend(loc="upper right")
-        figures["coverage"] = _save(figure, binding, metrics_sha)
+        figures["coverage"] = _save(figure, binding, metrics_sha, test_data)
         figure = Figure(figsize=(15.5, 7.2), dpi=160, constrained_layout=True)
         axis = figure.subplots()
         for rx in (0, 1):
@@ -264,7 +295,7 @@ def render_adaptive_hop_overview(
             loc="left",
         )
         axis.legend(loc="best")
-        figures["glrt64-response"] = _save(figure, binding, metrics_sha)
+        figures["glrt64-response"] = _save(figure, binding, metrics_sha, test_data)
         figure = Figure(figsize=(15.5, 11.5), dpi=160, constrained_layout=True)
         axes = figure.subplots(4, 1, sharex=True)
         for channel, axis in enumerate(axes):
@@ -318,7 +349,7 @@ def render_adaptive_hop_overview(
             "no L/U or cross-channel joins",
             fontsize=14,
         )
-        figures["cfo-trajectories"] = _save(figure, binding, metrics_sha)
+        figures["cfo-trajectories"] = _save(figure, binding, metrics_sha, test_data)
     return RenderedAdaptiveOverview(
         artifacts=figures,
         trajectory_configuration_sha256=config.digest,

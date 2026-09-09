@@ -3,6 +3,7 @@ import io
 import numpy as np
 import pytest
 from matplotlib.image import imread
+from PIL import Image
 
 from leo.presentation.adaptive_hop_analysis import (
     adaptive_trajectory_configuration,
@@ -18,6 +19,28 @@ def test_passed_only_association_gate_is_explicit_and_tracks_configured_margin(g
     config = adaptive_trajectory_configuration(gate)
     assert config.methods[0].low_gate == config.methods[0].high_gate == gate
     assert config.digest != adaptive_trajectory_configuration(gate + 0.01).digest
+
+
+@pytest.mark.parametrize("context", ["synthetic", "saved-rx1"])
+def test_report_test_context_is_explicit_in_every_png_without_changing_candidates(
+    monkeypatch, context
+):
+    binding, manifest, products = overview_fixture(monkeypatch, count=30)
+    original = render_adaptive_hop_overview(binding, manifest, iter(products))
+    labeled = render_adaptive_hop_overview(binding, manifest, iter(products), test_data=context)
+    assert labeled.selected_observation_count == original.selected_observation_count
+    assert labeled.association_count == original.association_count
+    assert labeled.trajectory_configuration_sha256 == original.trajectory_configuration_sha256
+    for name, payload in labeled.artifacts.items():
+        with Image.open(io.BytesIO(payload)) as image:
+            assert image.info["TestData"].startswith(
+                "SYNTHETIC TEST DATA - NOT RF"
+                if context == "synthetic"
+                else "SAVED RX1 TEST EXCERPT"
+            )
+        assert payload != original.artifacts[name]
+        with Image.open(io.BytesIO(original.artifacts[name])) as image:
+            assert "TestData" not in image.info
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
