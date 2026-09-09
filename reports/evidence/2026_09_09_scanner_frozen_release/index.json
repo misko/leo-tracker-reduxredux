@@ -1,0 +1,364 @@
+{
+  "schema": "org.leo.research.scanner-frozen-release-checkpoint/v1",
+  "recorded_at_utc": "2026-09-09T23:40:53.579067+00:00",
+  "release_revision": "06c1fd88320e899f70f5ccb1df91b4bc76fa29c9",
+  "release_path": "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9",
+  "production_selectors": {
+    "current": "releases/39146ee83d00523fbd37ba02179c87a5c241a017",
+    "current-api": "releases/39146ee83d00523fbd37ba02179c87a5c241a017",
+    "current-acquisition": "releases/39146ee83d00523fbd37ba02179c87a5c241a017"
+  },
+  "full_frozen_release_build": true,
+  "production_activated": false,
+  "main_merged": false,
+  "radio_accessed": false,
+  "firmware_changed": false,
+  "tests": {
+    "deployment": {
+      "tests": 282,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ppu-offline-py313": {
+      "tests": 3400,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "ppu-paired-py311": {
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "web-vitest": {
+      "tests": 139,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "installed-scanner-py314": {
+      "tests": 314,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "artifacts": [
+    {
+      "source": "/tmp/leo-scanner-frozen-release.LGLfMd/deploy.xml",
+      "archive": "deployment.xml.gz",
+      "bytes": 42000,
+      "sha256": "9bdfa3b27b891ef37929f3af03b0b05af374328ca5898aad3aba225dd44fd9a9",
+      "archive_sha256": "3a82d0c9c2db3b7220d5b89de17b835aff17e8e0f65860dcb46aa97c80f174fe"
+    },
+    {
+      "source": "/tmp/leo-scanner-frozen-release.LGLfMd/ppu-offline.xml",
+      "archive": "ppu-offline-py313.xml.gz",
+      "bytes": 492557,
+      "sha256": "97e0686cbcf6d3230e40e31b23b8323dab90d49266e700cf28af9bf49949bd2b",
+      "archive_sha256": "dcf1b5f04ec1840a0a19b81a420c700a763be0de97fcc1c1956c53ef1c3d509c"
+    },
+    {
+      "source": "/tmp/leo-scanner-frozen-release.LGLfMd/ppu311-paired.xml",
+      "archive": "ppu-paired-py311.xml.gz",
+      "bytes": 8172,
+      "sha256": "0c5f375ee69685c11d248cedc5db76fcb92877def1307ae5de5d771a2b793485",
+      "archive_sha256": "e82b20e50deb82aeadd160a307ed2aa3a98aa4e836d86c1dc026f37fdaf62856"
+    },
+    {
+      "source": "/tmp/leo-scanner-frozen-release.LGLfMd/web.xml",
+      "archive": "web-vitest.xml.gz",
+      "bytes": 82751,
+      "sha256": "4bb2c7ea989eed735a7d867bcdaa89dba65eda1e539cbc3c6a73457b8fd0ac8b",
+      "archive_sha256": "b7779157e411d134d1af954d7fe5bc48696ae4faefaa93bacf1c91abf83bf32b"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "cat",
+          "/tmp/leo-scanner-release-tests.kwTXBo/installed-scanner.xml"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "installed-scanner.xml.gz",
+      "bytes": 48945,
+      "sha256": "4a8c64a24efe32bffbfa9b6b3044939b15380fcd387bab37db8daca0a28d47b5",
+      "archive_sha256": "aa6b8291b4e7f123c945a711058888c3c6d6f48e8c5022b92d33c78c096422f9"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "journalctl",
+          "--no-pager",
+          "-o",
+          "short-iso-precise",
+          "-u",
+          "leo-scanner-candidate-stage-06c1fd88.service"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "stage.log.gz",
+      "bytes": 1029,
+      "sha256": "84469986ebed57d325135bf0f9159aa4c2f4335476ecee471caa6b9800339b77",
+      "archive_sha256": "eee5a358166f63aaa8e6319319f159233bb4d66075c700d2446b0df741257d59"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "journalctl",
+          "--no-pager",
+          "-o",
+          "short-iso-precise",
+          "-u",
+          "leo-scanner-candidate-stage-06c1fd88-r2.service"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "stage-r2.log.gz",
+      "bytes": 46446,
+      "sha256": "e05bf6db0ea3ed89c21ab139b2253f65af09da80071af0fe033f54f522419c84",
+      "archive_sha256": "6987c0d916e843ea3e931bfaec379ca6611399ac8a7f40344831554fca27a861"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "systemctl",
+          "show",
+          "leo-api.service",
+          "leo-acquisition.service",
+          "-p",
+          "Id",
+          "-p",
+          "ActiveState",
+          "-p",
+          "SubState",
+          "-p",
+          "MainPID",
+          "-p",
+          "ExecMainStartTimestamp"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "production-services.txt.gz",
+      "bytes": 253,
+      "sha256": "841fb5deeb9f7266295c02fe1106f5326244ab20474549f3cd2e8bae1fbbbd3e",
+      "archive_sha256": "0ec17d841372f86b055da4d4e19b860215a29d4e54eecb8b7aaf3975e061a32f"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "-u",
+          "leo",
+          "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9/.venv/bin/python",
+          "-B",
+          "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9/deploy/scripts/validate-published-release",
+          "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9",
+          "/opt/leo-tracker/releases/.staging-06c1fd88320e899f70f5ccb1df91b4bc76fa29c9"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "release-validation.txt.gz",
+      "bytes": 104,
+      "sha256": "3f7db7fb52b79586157c270227c438b31f1a70d9e8a141c509141a721168a968",
+      "archive_sha256": "068324d10bdedc61fdf88fa94d7717962ffa931c2192f2abf92b7ef099494750"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9/deploy/scripts/validate-release-metadata",
+          "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9",
+          "/opt/leo-tracker/release-metadata/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9.txt",
+          "06c1fd88320e899f70f5ccb1df91b4bc76fa29c9",
+          "--runtime-profile",
+          "scanner-glrt"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "metadata-validation.txt.gz",
+      "bytes": 119,
+      "sha256": "7346d1bd19bd4482a9e4188a97bb623789c9b58a4be538d9f06e8039cae5ad9a",
+      "archive_sha256": "2bb6dd4db91bcd3a1c303821370e64c9437c5f256a5875d2cbbac7bebb927871"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "cat",
+          "/opt/leo-tracker/release-metadata/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9.txt"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "metadata.txt.gz",
+      "bytes": 3656,
+      "sha256": "f37f33c3ded99799afb477bc6ea7e9ff9ae499ae0c3ce6872462dc38e31cae47",
+      "archive_sha256": "d859b167deec56f31d2a2e4c2ab05e956616e37ed291445f373c485939c1378e"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "cat",
+          "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9/.venv/share/pluto-plus-utils/metadata-runtime.json"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "native-runtime.json.gz",
+      "bytes": 1004,
+      "sha256": "e3352f7f4d1e34349a4962186f4a575c34467c9692d1019ca8d1924c9fcd15b7",
+      "archive_sha256": "a5a526e0afd8fe97d950e6267ce6f22ad42abbc4bafbec63a2ebf2c49d73d238"
+    },
+    {
+      "source": {
+        "argv": [
+          "sudo",
+          "-n",
+          "cat",
+          "/opt/leo-tracker/releases/06c1fd88320e899f70f5ccb1df91b4bc76fa29c9/.leo-release-source.json"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "source-identity.json.gz",
+      "bytes": 143,
+      "sha256": "9794302e027dc0973b665c49ee4fd7193da099ee4fde18371bea77fb616f11c6",
+      "archive_sha256": "992044813711b2c09a73c2e4d6657e5697d97394bdf289f26e6e9369348cf7db"
+    },
+    {
+      "source": {
+        "argv": [
+          "git",
+          "ls-remote",
+          "origin",
+          "refs/heads/codex/arm-glrt-host-integration"
+        ],
+        "cwd": "/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host"
+      },
+      "archive": "ppu-remote.txt.gz",
+      "bytes": 84,
+      "sha256": "63dd96850e06f3ff7da826789100933c2993b8d8533802dc60456195e66571fa",
+      "archive_sha256": "b9670c2614aa064ef71b0fe054e0e39c75fe800cf032133e10aad0e2113dd396"
+    },
+    {
+      "source": {
+        "argv": [
+          "git",
+          "ls-remote",
+          "origin",
+          "refs/heads/codex/arm-glrt-frame-integration"
+        ],
+        "cwd": "/home/mouse9911/gits/libiio-arm-glrt-frame-integration"
+      },
+      "archive": "libiio-remote.txt.gz",
+      "bytes": 85,
+      "sha256": "f6eff8e7e84f12d7d3b5d6fc5d194f4671841a18b5a89a19c8c78a4fe39dd30f",
+      "archive_sha256": "bb584b8f3d61e21d8c3557b9dc1347458340c04995e3658a9ef8d0e99db841d7"
+    },
+    {
+      "source": {
+        "argv": [
+          "gh",
+          "run",
+          "view",
+          "34411241334",
+          "--repo",
+          "misko/pluto-plus-utils",
+          "--json",
+          "status,conclusion,headSha,jobs,url"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "ppu-main-ci.json.gz",
+      "bytes": 6800,
+      "sha256": "24fcf7b8bef7d5715a99d591c74f5c08b16ad9d8f82a02230e1c3114bf7886d7",
+      "archive_sha256": "be3ce434b24c6a8cb787acff2ca07eca5fb1d77b9a0ea95c0f06b204769322cc"
+    },
+    {
+      "source": {
+        "argv": [
+          "gh",
+          "run",
+          "view",
+          "34417309172",
+          "--repo",
+          "misko/pluto-plus-utils",
+          "--json",
+          "status,conclusion,headSha,jobs,url"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "ppu-candidate-ci.json.gz",
+      "bytes": 6800,
+      "sha256": "349ef666f72806bb105db64441bede9feda818a55d289680f262e5fdd5e8d1c8",
+      "archive_sha256": "954ba9b14f647b87f6d50badccdc0d2366fdb1dbd8424fbd2351ee41188e902e"
+    },
+    {
+      "source": {
+        "argv": [
+          "gh",
+          "api",
+          "repos/misko/pluto-plus-utils/actions/jobs/102665899876/logs"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "ppu-main-py311.log.gz",
+      "bytes": 77548,
+      "sha256": "0826bf8d3b725ba418f0ced4f3aa9790b224d7e2677286605ec9e839b06074a6",
+      "archive_sha256": "df7f1f1d0910a26010b9622f68d745b55ab3b4f71d96c95f405b12c6a663c168"
+    },
+    {
+      "source": {
+        "argv": [
+          "gh",
+          "api",
+          "repos/misko/pluto-plus-utils/actions/jobs/102684928094/logs"
+        ],
+        "cwd": "/home/mouse9911/gits/leo-tracker-arm-presence"
+      },
+      "archive": "ppu-candidate-py311.log.gz",
+      "bytes": 78699,
+      "sha256": "35346e08f7cc428d9b7b43a34e46715116c1d2a480140d6d447ef8f77a62ccc9",
+      "archive_sha256": "3d246b43c853ce0b5a895254c6dee18fc967c4b82006aa476aa23aab2749786b"
+    },
+    {
+      "source": {
+        "argv": [
+          "git",
+          "diff",
+          "4bc2ca6a50dd8dd3c925522acfff5466385fbfd5",
+          "6b577ac229fe4b7b43528ff469dd197f9550e268",
+          "--",
+          "src/pluto_plus/hardware/paired_capture.py",
+          "tests/test_paired_capture.py"
+        ],
+        "cwd": "/home/mouse9911/gits/pluto-plus-utils-arm-glrt-host"
+      },
+      "archive": "paired-source-unchanged.diff.gz",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    }
+  ],
+  "limits": [
+    "Installed-package tests cover selected scanner paths, not full production qualification.",
+    "Vitest is not deployed Chromium E2E; no new RF or sensitivity proof.",
+    "PPU main and candidate have the same three hosted Python 3.11 paired-capture failures.",
+    "Local Python 3.11 paired tests pass; the hosted failure remains unresolved.",
+    "PPU offline count includes one explicit external-transmitter skip and excludes ten marked tests.",
+    "Previously measured 5 MS/s screening coverage and live no-regression gates remain open."
+  ]
+}

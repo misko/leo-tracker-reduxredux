@@ -286,6 +286,18 @@ do not silently change user-facing three-miss/two-second behavior.
    deployed verification still remain. See the
    [bundle checkpoint](../../reports/2026_09_09_scanner_bundle_release_checkpoint.md).
 
+   **Frozen release build:** the dependency candidates are now published on
+   their feature branches, and Leo pins PPU `6b577ac...` consistently. A full
+   frozen, non-editable release at `06c1fd88...` was staged and sealed with the
+   exact scanner host runtime and unchanged ARM bundle. Repeat validation,
+   314 installed-package scanner tests and 139 web tests pass. Production
+   selectors/services are unchanged. Hosted Python 3.11 has the same three
+   paired-capture failures on PPU main and the candidate; local reproduction
+   passes, so that failure remains unresolved rather than waived. Main merges,
+   activation, deployed verification and the outstanding live/scientific gates
+   remain open. See the
+   [frozen-build checkpoint](../../reports/2026_09_09_scanner_frozen_release_checkpoint.md).
+
 ## Evidence discipline
 
 Current raw build/test work is under `/tmp/leo-adaptive-glrt.VkIAkP`. A fresh
