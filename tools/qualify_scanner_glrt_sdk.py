@@ -43,6 +43,7 @@ def build(
     cflags=(),
     sdk_library: Path | None = None,
     runtime_rpath: Path | None = None,
+    libiio_source: Path | None = None,
 ):
     """An optional prebuilt SDK is linked unchanged, not rebuilt or copied.
 
@@ -59,6 +60,29 @@ def build(
         sdk_library = sdk_library.resolve(strict=True)
         if not sdk_library.is_file() or sdk_library.name != "libleo-scanner-glrt.so":
             raise ValueError("prebuilt SDK must be libleo-scanner-glrt.so")
+    shadow_sources = []
+    shadow_flags = []
+    if libiio_source is not None:
+        libiio_source = libiio_source.resolve(strict=True)
+        shadow_sources = [
+            ROOT / "tools/scanner_glrt_shadow_replay.c",
+            *(
+                libiio_source / "iiod" / name
+                for name in (
+                    "spf-hop-adaptive-policy.c",
+                    "spf-hop-scheduler.c",
+                    "spf-hop-protocol.c",
+                    "spf-hop-adaptive-protocol.c",
+                )
+            ),
+        ]
+        if not all(p.is_file() for p in shadow_sources):
+            raise ValueError("complete explicit libiio scheduler sources required")
+        shadow_flags = [
+            "-DLEO_REPLAY_THREADED_SHADOW=1",
+            f"-I{libiio_source / 'iiod'}",
+            f"-I{ROOT / 'src/leo/scanner/native_presence'}",
+        ]
     safe_output(output)
     output.mkdir(parents=True, exist_ok=False)
     sdk = sdk_library or build_scanner_glrt_port(
@@ -76,7 +100,26 @@ def build(
         ROOT / "src/leo/scanner/native_presence/adaptive_scan.h",
         ROOT / "src/leo/scanner/native_presence/frame_codec.h",
     ]
-    hashes = {str(p.relative_to(ROOT)): digest(p) for p in sources}
+    if libiio_source is not None:
+        sources += (
+            shadow_sources
+            + [ROOT / "tools/scanner_glrt_shadow_replay.h"]
+            + [
+                libiio_source / "iiod" / name
+                for name in (
+                    "spf-hop-adaptive-policy.h",
+                    "spf-hop-scheduler.h",
+                    "spf-hop-session.h",
+                    "spf-hop-protocol.h",
+                    "spf-hop-adaptive-protocol.h",
+                )
+            ]
+        )
+
+    def source_key(path):
+        return str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
+
+    hashes = {source_key(p): digest(p) for p in sources}
     sdk_hash = digest(sdk)
     command = [
         compiler_path,
@@ -86,7 +129,9 @@ def build(
         "-Wextra",
         "-Werror",
         *cflags,
+        *shadow_flags,
         str(entry),
+        *map(str, shadow_sources),
         f"-L{sdk.parent}",
         "-lleo-scanner-glrt",
         (
@@ -100,7 +145,7 @@ def build(
         str(binary),
     ]
     subprocess.run(command, check=True)
-    if hashes != {str(p.relative_to(ROOT)): digest(p) for p in sources} or sdk_hash != digest(sdk):
+    if hashes != {source_key(p): digest(p) for p in sources} or sdk_hash != digest(sdk):
         raise RuntimeError("replay build inputs changed")
     write_json(
         binary.with_name(binary.name + ".build.json"),

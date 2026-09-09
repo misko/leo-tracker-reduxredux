@@ -12,6 +12,10 @@
 #include <sys/resource.h>
 #include <time.h>
 #include <unistd.h>
+#ifdef LEO_REPLAY_THREADED_SHADOW
+#include "scanner_glrt_shadow_replay.h"
+static struct leo_replay_shadow *shadow;
+#endif
 
 #define BLOCK 131072u
 #define BASE UINT64_C(9007199254741209)
@@ -95,6 +99,9 @@ static int observations(leo_scanner_glrt *sdk,uint64_t block,double origin,
         leo_adaptive_observation_v1 o;
         double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall=clock_ms(CLOCK_MONOTONIC);
         int ret=leo_scanner_glrt_observation(sdk,&o);
+#ifdef LEO_REPLAY_THREADED_SHADOW
+        if (ret==1 && leo_replay_shadow_offer(shadow,&o)) return -1;
+#endif
         double ended=clock_ms(CLOCK_MONOTONIC);
         *cost_cpu+=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu;
         *cost_wall+=ended-wall;
@@ -129,6 +136,9 @@ int main(int argc,char **argv)
     if (argc>=10 && (identity(argv[8],algorithm) || identity(argv[9],configuration))) return 2;
     int positive=argc==11;
     if (positive && (!enabled || strcmp(argv[10],POSITIVE_PROFILE))) return 2;
+#ifdef LEO_REPLAY_THREADED_SHADOW
+    if (!positive || delay!=2) return 2;
+#endif
     const leo_scanner_glrt_positive_policy_v1 policy={.minimum_exact_score=0.175,.minimum_margin=0.025};
     alarm(duration/1000+25);
     struct rlimit cpu={340,340},memory={192*1024*1024,192*1024*1024};
@@ -171,19 +181,30 @@ int main(int argc,char **argv)
             leo_scanner_glrt_open(&sdk,&config,argv[1],argv[2]);
         if (ret) { fprintf(stderr,"SDK startup rejected: %d\n",ret); goto done; }
     }
+    const char *schema=positive ? "leo-sdk-modeled-positive-feedback-replay-v1" : "leo-sdk-modeled-replay-v1";
+#ifdef LEO_REPLAY_THREADED_SHADOW
+    /* Require complete original-target sweep order; never relabel IQ to fit a proposal. */
+    if (inputs%8) goto done;
+    for (unsigned i=0;i<inputs;++i) if (channel[i]-1+4*edge[i]!=i%8) goto done;
+    if (leo_replay_shadow_open(&shadow,rate,jobs,BASE)) goto done;
+    schema="leo-sdk-threaded-shadow-replay-v1";
+#endif
     double setup_ms=clock_ms(CLOCK_MONOTONIC)-opened;
     printf("{\"kind\":\"protocol\",\"schema\":\"%s\","
         "\"rate_hz\":%u,\"duration_ms\":%u,\"block_samples\":%u,\"jobs\":%u,\"inputs\":%u,"
         "\"delay_blocks\":%u,\"jitter_ms\":%u,\"enabled\":%u,\"base\":\"%" PRIu64 "\","
         "\"guard_samples\":%zu,\"setup_ms\":%.9f,\"synthetic_rx0_and_transition_padding\":true,"
         "\"original_arrivals\":false,\"live_rf\":false",
-        positive ? "leo-sdk-modeled-positive-feedback-replay-v1" : "leo-sdk-modeled-replay-v1",
+        schema,
         rate,duration,BLOCK,jobs,inputs,delay,jitter,enabled,BASE,guard,setup_ms);
     if (positive) printf(",\"positive_profile\":\"%s\",\"minimum_exact_score\":%.17g,"
         "\"minimum_margin\":%.17g,\"observations_per_poll\":%u,\"adaptive_scheduling\":false",
         POSITIVE_PROFILE,policy.minimum_exact_score,policy.minimum_margin,OBSERVATIONS_PER_POLL);
     puts("}");
     double origin=clock_ms(CLOCK_MONOTONIC);
+#ifdef LEO_REPLAY_THREADED_SHADOW
+    if (leo_replay_shadow_start(shadow,origin)) goto done;
+#endif
     uint64_t total=(uint64_t)jobs*period,blocks=(total+BLOCK-1)/BLOCK;
     unsigned known=0,observation_count=0;
     int observation_terminal=0;
@@ -218,6 +239,9 @@ int main(int argc,char **argv)
             unsigned p=known%inputs;
             uint64_t start=BASE+(uint64_t)known*period+guard;
             double cpu_start=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall_start=clock_ms(CLOCK_MONOTONIC);
+#ifdef LEO_REPLAY_THREADED_SHADOW
+            if (leo_replay_shadow_visit(shadow,known,start,start+dwell,channel[p],edge[p])) goto done;
+#endif
             if (enabled && leo_scanner_glrt_visit(sdk,known,start,start+dwell,channel[p],edge[p])) goto done;
             callback_cpu+=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu_start;
             callback_wall+=clock_ms(CLOCK_MONOTONIC)-wall_start;
@@ -267,12 +291,18 @@ int main(int argc,char **argv)
         if (!terminal) goto done;
     }
     if (positive && (!observation_terminal || observation_count!=jobs)) goto done;
+#ifdef LEO_REPLAY_THREADED_SHADOW
+    if (leo_replay_shadow_finish(shadow)) goto done;
+#endif
     printf("{\"kind\":\"summary\",\"jobs\":%u,\"blocks\":%" PRIu64 ",\"elapsed_ms\":%.9f",
         jobs,blocks,clock_ms(CLOCK_MONOTONIC)-origin);
     if (positive) printf(",\"observations\":%u",observation_count);
     puts("}");
     status=0;
 done:
+#ifdef LEO_REPLAY_THREADED_SHADOW
+    leo_replay_shadow_close(shadow);
+#endif
     leo_scanner_glrt_close(sdk);
     if (input) fclose(input);
     free(saved); free(iq);
