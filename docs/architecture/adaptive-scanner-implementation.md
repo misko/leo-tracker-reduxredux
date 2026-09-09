@@ -131,6 +131,17 @@ do not silently change user-facing three-miss/two-second behavior.
    upload or remote execution. Trusted identity confirmation, exact-package
    ARM load/memory tests and independent quality remain open.
    See the [threaded shadow checkpoint](../../reports/2026_09_09_scanner_threaded_shadow_checkpoint.md).
+   The user subsequently confirmed per-boot SSH key rotation. Strict checking
+   remains enabled with a task-local current-boot pin; the exact idle spare was
+   reidentified by USB/LAN serial. Both full 300-second ARM shadow replays now
+   pass, 2,479 results/observations/choices each with independent numerical and
+   policy parity; maximum consumed feedback age is 242 ms. Worker wall p99 is
+   68.98/115.86 ms at 2.5/5 MS/s; 5 MS/s headroom remains a concern. All temporary
+   remote files were removed after verified cleanup; installed-library hashes
+   are unchanged. This uses mocked acquisition/recall, not the full installed
+   provider, live duty, or an independent quality holdout. ARM weighted/fault
+   transitions, precise queue occupancy and full-package memory remain open.
+   See the [ARM threaded checkpoint](../../reports/2026_09_09_scanner_threaded_arm_checkpoint.md).
 8. **Live/release:** separately authorized <=30 minute canaries, first fixed
    detector off/on, then adaptive versus fixed with detector enabled in both.
    Each two-rate A/B matrix is four 300 s captures (20 minutes RF). Hardware

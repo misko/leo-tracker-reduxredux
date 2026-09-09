@@ -5,6 +5,12 @@ identity verification.** This is a local checkpoint, not a deployed release.
 No new RF, firmware, FPGA, kernel or production-service change was made.
 Fixed-order scanning and classifier-off defaults are unchanged.
 
+Follow-up: after the user confirmed per-boot SSH key rotation, both full-duration
+ARM replays passed with a task-local strict key pin and renewed serial/idle
+checks. See the [ARM execution checkpoint](2026_09_09_scanner_threaded_arm_checkpoint.md).
+The desktop-only scope and original blocker below describe this checkpoint's
+historical state, not the later execution status.
+
 ## What this closes
 
 The [previous feedback replay](2026_09_09_scanner_glrt_feedback_replay_checkpoint.md)
