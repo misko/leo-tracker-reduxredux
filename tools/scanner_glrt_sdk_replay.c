@@ -22,6 +22,7 @@ static struct leo_replay_shadow *shadow;
 #define MAX_INPUTS 48u
 #define LEGACY "sdk-replay-opaque-legacy"
 #define POSITIVE_PROFILE "positive-feedback-v1"
+#define PROTECTION_PROFILE "capture-protection-v1"
 #define OBSERVATIONS_PER_POLL 8u
 
 static double clock_ms(clockid_t clock)
@@ -66,6 +67,18 @@ static int identity(const char *text,uint8_t digest[32])
         nonzero|=digest[j];
     }
     return nonzero ? 0 : -1;
+}
+
+static void protection_receipt(const leo_scanner_glrt_protection_stats_v1 *s)
+{
+    printf(",\"protection_stats\":{\"enabled\":%u,\"suspended\":%u,\"disabled\":%u,"
+        "\"occupied_slots\":%u,\"peak_occupied_slots\":%u,\"backlog_skips\":%" PRIu64
+        ",\"pressure_skips\":%" PRIu64 ",\"history_blocks_skipped\":%" PRIu64
+        ",\"pressure_entries\":%" PRIu64 ",\"resumptions\":%" PRIu64
+        ",\"watchdog_trips\":%" PRIu64 ",\"clock_faults\":%" PRIu64 "}",
+        s->enabled,s->suspended,s->disabled,s->occupied_slots,s->peak_occupied_slots,
+        s->backlog_skips,s->pressure_skips,s->history_blocks_skipped,
+        s->pressure_entries,s->resumptions,s->watchdog_trips,s->clock_faults);
 }
 
 static int emit(leo_scanner_glrt *sdk,int drain,uint64_t block,double origin,
@@ -127,19 +140,22 @@ static int observations(leo_scanner_glrt *sdk,uint64_t block,double origin,
 int main(int argc,char **argv)
 {
     unsigned duration,delay,jitter,enabled;
-    if ((argc!=8 && argc!=10 && argc!=11) || integer(argv[4],&duration) || duration<242 ||
+    if ((argc!=8 && (argc<10 || argc>13)) || integer(argv[4],&duration) || duration<242 ||
         integer(argv[5],&delay) || (delay!=0 && delay!=2) ||
         integer(argv[6],&jitter) || (jitter!=0 && jitter!=40) ||
         integer(argv[7],&enabled) || enabled>1) return 2;
     uint8_t algorithm[32],configuration[32];
     memset(algorithm,18,32); memset(configuration,52,32);
     if (argc>=10 && (identity(argv[8],algorithm) || identity(argv[9],configuration))) return 2;
-    int positive=argc==11;
+    int positive=argc>=11,protected=argc>=12,injected=argc==13;
     if (positive && (!enabled || strcmp(argv[10],POSITIVE_PROFILE))) return 2;
+    if (protected && strcmp(argv[11],PROTECTION_PROFILE)) return 2;
+    if (injected && (strcmp(argv[12],"pressure-smoke-v1") || duration<4840)) return 2;
 #ifdef LEO_REPLAY_THREADED_SHADOW
     if (!positive || delay!=2) return 2;
 #endif
     const leo_scanner_glrt_positive_policy_v1 policy={.minimum_exact_score=0.175,.minimum_margin=0.025};
+    const leo_scanner_glrt_protection_v1 protection={2,250,500,4};
     alarm(duration/1000+25);
     struct rlimit cpu={340,340},memory={192*1024*1024,192*1024*1024};
     if (setrlimit(RLIMIT_CPU,&cpu)) return 2;
@@ -180,6 +196,7 @@ int main(int argc,char **argv)
         int ret=positive ? leo_scanner_glrt_open_positive(&sdk,&config,argv[1],argv[2],&policy) :
             leo_scanner_glrt_open(&sdk,&config,argv[1],argv[2]);
         if (ret) { fprintf(stderr,"SDK startup rejected: %d\n",ret); goto done; }
+        if (protected && leo_scanner_glrt_enable_protection(sdk,&protection)) goto done;
     }
     const char *schema=positive ? "leo-sdk-modeled-positive-feedback-replay-v1" : "leo-sdk-modeled-replay-v1";
 #ifdef LEO_REPLAY_THREADED_SHADOW
@@ -189,6 +206,13 @@ int main(int argc,char **argv)
     if (leo_replay_shadow_open(&shadow,rate,jobs,BASE)) goto done;
     schema="leo-sdk-threaded-shadow-replay-v1";
 #endif
+    if (protected) {
+#ifdef LEO_REPLAY_THREADED_SHADOW
+        schema="leo-sdk-protected-threaded-shadow-replay-v1";
+#else
+        schema="leo-sdk-protected-positive-feedback-replay-v1";
+#endif
+    }
     double setup_ms=clock_ms(CLOCK_MONOTONIC)-opened;
     printf("{\"kind\":\"protocol\",\"schema\":\"%s\","
         "\"rate_hz\":%u,\"duration_ms\":%u,\"block_samples\":%u,\"jobs\":%u,\"inputs\":%u,"
@@ -200,6 +224,9 @@ int main(int argc,char **argv)
     if (positive) printf(",\"positive_profile\":\"%s\",\"minimum_exact_score\":%.17g,"
         "\"minimum_margin\":%.17g,\"observations_per_poll\":%u,\"adaptive_scheduling\":false",
         POSITIVE_PROFILE,policy.minimum_exact_score,policy.minimum_margin,OBSERVATIONS_PER_POLL);
+    if (protected) printf(",\"capture_protection\":{\"profile\":\"%s\",\"max_occupied_slots\":2,"
+        "\"admission_age_ms\":250,\"worker_timeout_ms\":500,\"recovery_blocks\":4,"
+        "\"callback_budget_percent\":80,\"pressure_smoke\":%s}",PROTECTION_PROFILE,injected ? "true" : "false");
     puts("}");
     double origin=clock_ms(CLOCK_MONOTONIC);
 #ifdef LEO_REPLAY_THREADED_SHADOW
@@ -208,6 +235,8 @@ int main(int argc,char **argv)
     uint64_t total=(uint64_t)jobs*period,blocks=(total+BLOCK-1)/BLOCK;
     unsigned known=0,observation_count=0;
     int observation_terminal=0;
+    int previous_pressure=0;
+    leo_scanner_glrt_protection_stats_v1 protection_stats={0};
     for (uint64_t block=0;block<blocks;++block) {
         uint64_t first=block*BLOCK;
         size_t count=total-first<BLOCK ? (size_t)(total-first) : BLOCK;
@@ -233,6 +262,12 @@ int main(int argc,char **argv)
         if (until(origin+requested_ms)) goto done;
         double arrived=clock_ms(CLOCK_MONOTONIC)-origin;
         double callback_cpu=0,callback_wall=0;
+        if (protected) {
+            double cpu_start=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall_start=clock_ms(CLOCK_MONOTONIC);
+            if (leo_scanner_glrt_capture_pressure(sdk,previous_pressure || (injected && block>=4 && block<24))) goto done;
+            callback_cpu+=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu_start;
+            callback_wall+=clock_ms(CLOCK_MONOTONIC)-wall_start;
+        }
         /* Model event observation after zero/two complete block deliveries.
          * The full stream contains sentinels in invalid intervals, never RF IQ. */
         while (known<jobs && ((uint64_t)known*period+guard)/BLOCK+delay<=block) {
@@ -261,12 +296,22 @@ int main(int argc,char **argv)
         if (positive && block%2==1 && observations(sdk,block,origin,"after-frame",
             &observation_count,&observation_terminal,&observation_cpu,&observation_wall)) goto done;
         callback_cpu+=observation_cpu; callback_wall+=observation_wall;
+        if (protected) {
+            double cpu_start=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall_start=clock_ms(CLOCK_MONOTONIC);
+            if (leo_scanner_glrt_protection_stats(sdk,&protection_stats)) goto done;
+            callback_cpu+=clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu_start;
+            callback_wall+=clock_ms(CLOCK_MONOTONIC)-wall_start;
+            /* Modeled SDK callback only, not provider/network/IRQ processing.
+             * Apply its measured pressure on the next block, once per block. */
+            previous_pressure=callback_wall>=count*800.0/rate;
+        }
         printf("{\"kind\":\"block\",\"block\":%" PRIu64 ",\"first\":\"%" PRIu64 "\",\"samples\":%zu,"
             "\"nominal_ms\":%.9f,\"requested_ms\":%.9f,\"arrival_ms\":%.9f,\"fill_ms\":%.9f,"
             "\"callback_cpu_ms\":%.9f,\"callback_wall_ms\":%.9f",
             block,BASE+first,count,nominal_ms,requested_ms,arrived,fill_ms,callback_cpu,callback_wall);
         if (positive) printf(",\"observation_cpu_ms\":%.9f,\"observation_wall_ms\":%.9f",
             observation_cpu,observation_wall);
+        if (protected) protection_receipt(&protection_stats);
         puts("}");
         fflush(stdout);
     }
@@ -297,6 +342,10 @@ int main(int argc,char **argv)
     printf("{\"kind\":\"summary\",\"jobs\":%u,\"blocks\":%" PRIu64 ",\"elapsed_ms\":%.9f",
         jobs,blocks,clock_ms(CLOCK_MONOTONIC)-origin);
     if (positive) printf(",\"observations\":%u",observation_count);
+    if (protected) {
+        if (leo_scanner_glrt_protection_stats(sdk,&protection_stats)) goto done;
+        protection_receipt(&protection_stats);
+    }
     puts("}");
     status=0;
 done:

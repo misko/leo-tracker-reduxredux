@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from leo.contracts.scanner_glrt_frame import DRAIN, FINAL, decode_frame
+from leo.contracts.scanner_glrt_frame import DETECTOR_FAILED, DRAIN, FINAL, decode_frame
 from tools.native_presence import ROOT, build_scanner_glrt_port
 from tools.qualify_native_presence import digest, write_json
 from tools.qualify_presence_dwell_worker import _counter, safe_output
@@ -21,6 +21,7 @@ BASE = 2**53 + 217
 BLOCK = 131072
 LEGACY = b"sdk-replay-opaque-legacy"
 POSITIVE_PROFILE = "positive-feedback-v1"
+PROTECTION_PROFILE = "capture-protection-v1"
 MINIMUM_EXACT_SCORE = 0.175
 MINIMUM_MARGIN = 0.025
 LIMITATION = (
@@ -198,7 +199,9 @@ def _decision(source, positive_feedback):
     return best, "unavailable", "incomplete_search", outcome
 
 
-def _verify_observations(rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals):
+def _verify_observations(
+    rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals, unavailable
+):
     observations, finals = groups["observation"], groups["observation-final"]
     if len(observations) != jobs or len(finals) != 1 or rows[-1].get("observations") != jobs:
         raise ValueError("feedback terminal inventory differs")
@@ -210,6 +213,9 @@ def _verify_observations(rows, groups, records, jobs, blocks, rate, period, dwel
         source = records[i % len(records)]
         start = BASE + i * period + guard
         _, _, _, outcome = _decision(source, True)
+        skipped = i in unavailable
+        if skipped:
+            outcome = 0
         expected = dict(
             kind="observation",
             session="71",
@@ -221,12 +227,14 @@ def _verify_observations(rows, groups, records, jobs, blocks, rate, period, dwel
             rx=1,
             target=source["channel"] - 1 + 4 * int(source["edge"] == "upper"),
             outcome=outcome,
-            healthy=1,
+            healthy=0 if skipped else 1,
         )
         if any(type(row.get(k)) is not type(v) or row[k] != v for k, v in expected.items()):
             raise ValueError("feedback source binding or outcome differs")
         block, elapsed = row.get("block"), row.get("elapsed_ms")
         ready_block = max(groups["visit"][i]["block"], (i * period + guard + dwell - 1) // BLOCK)
+        if skipped:
+            ready_block = groups["visit"][i]["block"]
         if (
             type(block) is not int
             or not ready_block <= block <= blocks
@@ -281,6 +289,83 @@ def _verify_observations(rows, groups, records, jobs, blocks, rate, period, dwel
     )
 
 
+def _verify_protection(groups, terminal, decoded, blocks, rate, failed, pressure_smoke):
+    monotonic = (
+        "peak_occupied_slots",
+        "backlog_skips",
+        "pressure_skips",
+        "history_blocks_skipped",
+        "pressure_entries",
+        "resumptions",
+        "watchdog_trips",
+        "clock_faults",
+        "disabled",
+    )
+    fields = (*monotonic, "enabled", "suspended", "occupied_slots")
+    previous = dict.fromkeys(monotonic, 0)
+    suspended = recovery = entries = resumes = history = 0
+    for index, row in enumerate([*groups["block"], terminal]):
+        stats = row.get("protection_stats")
+        if not isinstance(stats, dict) or set(stats) != set(fields):
+            raise ValueError("protection diagnostics missing or different")
+        if any(type(stats[k]) is not int or stats[k] < 0 for k in fields):
+            raise ValueError("invalid protection diagnostic type")
+        if any(stats[k] < previous[k] for k in monotonic):
+            raise ValueError("protection counters regressed")
+        if (
+            stats["enabled"] != 1
+            or stats["disabled"] > 1
+            or stats["suspended"] > 1
+            or stats["occupied_slots"] > 2
+            or stats["peak_occupied_slots"] > 2
+            or stats["resumptions"] > stats["pressure_entries"]
+            or stats["pressure_entries"] > blocks
+            or stats["history_blocks_skipped"] > blocks
+            or stats["watchdog_trips"] + stats["clock_faults"] > 1
+        ):
+            raise ValueError("protection bound violated")
+        if index < blocks and not stats["disabled"]:
+            previous_block = groups["block"][index - 1] if index else None
+            busy = (pressure_smoke and 4 <= index < 24) or (
+                previous_block is not None
+                and previous_block["callback_wall_ms"] >= previous_block["samples"] * 800 / rate
+            )
+            if busy:
+                entries += not suspended
+                suspended, recovery = 1, 0
+            elif suspended:
+                recovery += 1
+                if recovery == 4:
+                    suspended, recovery = 0, 0
+                    resumes += 1
+            history += suspended
+            if (
+                stats["suspended"],
+                stats["pressure_entries"],
+                stats["resumptions"],
+                stats["history_blocks_skipped"],
+            ) != (suspended, entries, resumes, history):
+                raise ValueError("pressure behavior differs from independent block model")
+        previous = {k: stats[k] for k in monotonic}
+    counts = {}
+    for r in decoded:
+        if not r.search_window_mask:
+            counts[r.reason] = counts.get(r.reason, 0) + 1
+    if (
+        stats["backlog_skips"] != counts.get("worker_busy", 0)
+        or stats["pressure_skips"] != counts.get("incomplete_search", 0)
+        or stats["disabled"] != int(failed)
+    ):
+        raise ValueError("protection counters disagree with wire inventory")
+    return dict(
+        protection_stats=stats,
+        unavailable_checks=sum(counts.values()),
+        unavailable_reasons=counts,
+        computed_results=len(decoded) - sum(counts.values()),
+        all_checks_computed=not counts,
+    )
+
+
 def verify(
     raw,
     manifest,
@@ -292,6 +377,8 @@ def verify(
     algorithm_sha256="12" * 32,
     configuration_sha256="34" * 32,
     positive_feedback=False,
+    capture_protection=False,
+    pressure_smoke=False,
 ):
     for identity in (algorithm_sha256, configuration_sha256):
         if (
@@ -309,7 +396,11 @@ def verify(
         or jitter_ms not in (0, 40)
         or type(enabled) is not bool
         or type(positive_feedback) is not bool
+        or type(capture_protection) is not bool
+        or type(pressure_smoke) is not bool
         or (positive_feedback and not enabled)
+        or (capture_protection and not positive_feedback)
+        or (pressure_smoke and not capture_protection)
     ):
         raise ValueError("unreviewed replay parameters")
     rows = [json.loads(line) for line in raw.splitlines()]
@@ -354,6 +445,29 @@ def verify(
             observations_per_poll=8,
             adaptive_scheduling=False,
         )
+    if capture_protection:
+        expected_protocol["schema"] = "leo-sdk-protected-positive-feedback-replay-v1"
+        expected_protection = dict(
+            profile=PROTECTION_PROFILE,
+            max_occupied_slots=2,
+            admission_age_ms=250,
+            worker_timeout_ms=500,
+            recovery_blocks=4,
+            callback_budget_percent=80,
+            pressure_smoke=pressure_smoke,
+        )
+        actual = protocol.get("capture_protection")
+        if (
+            not isinstance(actual, dict)
+            or set(actual) != set(expected_protection)
+            or any(
+                type(actual[k]) is not type(v) or actual[k] != v
+                for k, v in expected_protection.items()
+            )
+        ):
+            raise ValueError("capture protection profile differs")
+    elif "capture_protection" in protocol:
+        raise ValueError("unexpected capture protection profile")
     if any(
         type(protocol.get(k)) is not type(v) or protocol[k] != v
         for k, v in expected_protocol.items()
@@ -421,6 +535,7 @@ def verify(
         ):
             raise ValueError("saved-source or modeled visit binding differs")
         visits[i] = row
+    unavailable, detector_failed = set(), False
     if not enabled:
         if groups["frame"]:
             raise ValueError("disabled replay emitted classifier data")
@@ -432,6 +547,10 @@ def verify(
             raise ValueError("carrier or final frame missing")
         for frame_index, row in enumerate(groups["frame"]):
             frame = decode_frame(bytes.fromhex(row["hex"]))
+            flag = bool(frame.flags & DETECTOR_FAILED)
+            if detector_failed and not flag:
+                raise ValueError("detector failure flag regressed")
+            detector_failed = detector_failed or flag
             draining = frame_index >= blocks
             if (
                 frame.session != 71
@@ -442,7 +561,7 @@ def verify(
                 or frame.dropped_results
                 or frame.result_sequence_limit > jobs
                 or (frame_index == len(groups["frame"]) - 1 and frame.result_sequence_limit != jobs)
-                or frame.flags
+                or (frame.flags & ~DETECTOR_FAILED if capture_protection else frame.flags)
                 != (
                     (DRAIN | FINAL)
                     if frame_index == len(groups["frame"]) - 1
@@ -464,6 +583,17 @@ def verify(
                     raise ValueError("extra SDK result")
                 source = records[i % len(records)]
                 candidate, verdict, reason, _ = _decision(source, positive_feedback)
+                skipped = capture_protection and record.search_window_mask == 0
+                if skipped:
+                    if record.verdict != "unavailable" or record.reason not in (
+                        "worker_busy",
+                        "incomplete_search",
+                        "worker_failed",
+                        "invalid_input",
+                    ):
+                        raise ValueError("unqualified unavailable result")
+                    unavailable.add(i)
+                    candidate, verdict, reason = None, "unavailable", record.reason
                 start = BASE + i * period + guard
                 if (
                     record.sequence != i
@@ -476,9 +606,9 @@ def verify(
                     or record.edge != source["edge"]
                     or record.verdict != verdict
                     or record.reason != reason
-                    or record.search_window_mask != 63
+                    or record.search_window_mask != (0 if skipped else 63)
                     or record.search_start != start
-                    or record.search_end != start + dwell
+                    or record.search_end != (start if skipped else start + dwell)
                 ):
                     raise ValueError("SDK result lost, busy, failed, incomplete or misbound")
                 expected = dict(
@@ -511,6 +641,8 @@ def verify(
                         confirmation_start=beginning,
                         confirmation_end=beginning + rate // 50,
                     )
+                if skipped:
+                    expected.update(cpu_ms=0.0, wall_ms=0.0)
                 for key, value in expected.items():
                     actual = getattr(record, key)
                     if (isinstance(value, int) and actual != value) or (
@@ -519,6 +651,8 @@ def verify(
                     ):
                         raise ValueError(f"SDK numerical mismatch: {key}")
                 ready_block = max(visits[i]["block"], (i * period + guard + dwell - 1) // BLOCK)
+                if skipped:
+                    ready_block = visits[i]["block"]
                 latency = row["elapsed_ms"] - arrivals[ready_block]
                 if latency < 0:
                     raise ValueError("result predates available samples/metadata")
@@ -528,14 +662,22 @@ def verify(
             raise ValueError("terminal result inventory incomplete")
     feedback = (
         _verify_observations(
-            rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals
+            rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals, unavailable
         )
         if positive_feedback
         else {}
     )
+    protection = (
+        _verify_protection(groups, terminal, decoded, blocks, rate, detector_failed, pressure_smoke)
+        if capture_protection
+        else {}
+    )
+    measured = [r for r in decoded if r.search_window_mask]
     return dict(
         schema=(
-            "org.leo.research.sdk-positive-feedback-replay-verification/v1"
+            "org.leo.research.sdk-protected-feedback-replay-verification/v1"
+            if capture_protection
+            else "org.leo.research.sdk-positive-feedback-replay-verification/v1"
             if positive_feedback
             else "org.leo.research.sdk-replay-verification/v1"
         ),
@@ -558,13 +700,14 @@ def verify(
             [max(0.0, r["arrival_ms"] - r["requested_ms"]) for r in groups["block"]]
         ),
         ready_callback_to_frame_ms=quantiles(latencies),
-        worker_cpu_ms=quantiles([r.cpu_ms for r in decoded]),
-        worker_wall_ms=quantiles([r.wall_ms for r in decoded]),
+        worker_cpu_ms=quantiles([r.cpu_ms for r in measured]),
+        worker_wall_ms=quantiles([r.wall_ms for r in measured]),
         callback_over_nominal_period=sum(
             r["callback_wall_ms"] > BLOCK * 1000 / rate for r in groups["block"]
         ),
         limitations=LIMITATION + (FEEDBACK_LIMITATION if positive_feedback else ""),
         **feedback,
+        **protection,
     )
 
 
@@ -580,6 +723,8 @@ def main():
     parser.add_argument("--algorithm-sha256", default="12" * 32)
     parser.add_argument("--configuration-sha256", default="34" * 32)
     parser.add_argument("--positive-feedback", action="store_true")
+    parser.add_argument("--capture-protection", action="store_true")
+    parser.add_argument("--pressure-smoke", action="store_true")
     args = parser.parse_args()
     safe_output(args.output)
     checked = verify(
@@ -592,6 +737,8 @@ def main():
         algorithm_sha256=args.algorithm_sha256,
         configuration_sha256=args.configuration_sha256,
         positive_feedback=args.positive_feedback,
+        capture_protection=args.capture_protection,
+        pressure_smoke=args.pressure_smoke,
     )
     write_json(
         args.output,

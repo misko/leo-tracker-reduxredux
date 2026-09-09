@@ -31,9 +31,10 @@ def threaded(artifacts):
 
 
 @pytest.fixture(scope="module", params=[2500000, 5000000])
-def synthetic_workload(artifacts, request):
-    root, _, worker, library = artifacts
+def synthetic_workload(artifacts, request, tmp_path_factory):
+    _, _, worker, library = artifacts
     rate = request.param
+    root = tmp_path_factory.mktemp(f"shadow-workload-{rate}")
     template, pack = root / f"shadow-{rate}.templates", root / f"shadow-{rate}.pack"
     write_templates(template, rate)
     template.chmod(0o600)
