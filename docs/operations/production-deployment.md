@@ -160,6 +160,11 @@ main/master. A dry-run describes requested staging, not a successful isolated
 release build or RF qualification. Do not work around qualification gates with
 editable installs, ambient loader overrides, or unsealed libraries.
 
+The [September 9 frozen-build checkpoint](../../reports/2026_09_09_scanner_frozen_release_checkpoint.md)
+records a successfully staged and revalidated candidate with this pin and
+`--scanner-glrt`. That release is inactive; its existence does not authorize
+promotion, RF or bypass the remaining release gates.
+
 An explicit `--scanner-glrt` request also checks that an already-staged release
 has that exact runtime; it cannot silently accept or rewrite a legacy release.
 Without an explicit request, an existing release's already-sealed profile is
