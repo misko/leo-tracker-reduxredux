@@ -276,6 +276,16 @@ do not silently change user-facing three-miss/two-second behavior.
    companion packaging, qualification and deployed verification remain open.
    See the [staging checkpoint](../../reports/2026_09_09_scanner_release_runtime_checkpoint.md).
 
+   **ARM release asset:** the exact latest live-tested bundle is now packaged
+   separately from the legacy daemon, with all 12 files in the checked external
+   release inventory. Actual-byte integrity/mode/negative tests and real PPU
+   companion shell operations on a local fixture filesystem pass; no radio or
+   ARM code was executed for this packaging step. This preserves tested bytes,
+   not a claim of bit-reproducible cross-compilation. Dependency promotion/pins,
+   full isolated release build, remaining quality/duty/adaptive RF gates and
+   deployed verification still remain. See the
+   [bundle checkpoint](../../reports/2026_09_09_scanner_bundle_release_checkpoint.md).
+
 ## Evidence discipline
 
 Current raw build/test work is under `/tmp/leo-adaptive-glrt.VkIAkP`. A fresh

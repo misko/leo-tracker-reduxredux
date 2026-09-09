@@ -621,7 +621,9 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "current.next" not in stage
     assert '"$script_root/prepare-leo-cache"' in stage
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in stage
-    assert stage.index("trap cleanup EXIT") < stage.index('git -C "$source_real" archive')
+    assert stage.index("trap cleanup EXIT") < stage.index(
+        'git -C "$source_real" -c tar.umask=0027 archive'
+    )
     assert "git clone" not in stage
     assert "' :(exclude)reports'" not in stage
     assert "':(exclude)reports'" in stage

@@ -29,8 +29,20 @@ def test_unknown_path_fails_closed() -> None:
         OPS.components_for_paths(("unknown/new-surface.bin",), OPS.load_components())
 
 
-def test_scanner_iiod_release_assets_select_acquisition_and_deployment_gates() -> None:
-    paths = ("runtime/scanner-iiod/iiod", "runtime/scanner-iiod/provenance.json")
+@pytest.mark.parametrize(
+    "paths",
+    (
+        ("runtime/scanner-iiod/iiod", "runtime/scanner-iiod/provenance.json"),
+        (
+            "runtime/scanner-glrt/iiod",
+            "runtime/scanner-glrt/worker",
+            "runtime/scanner-glrt/bundle.json",
+        ),
+    ),
+)
+def test_scanner_iiod_release_assets_select_acquisition_and_deployment_gates(
+    paths: tuple[str, ...],
+) -> None:
 
     selected = OPS.components_for_paths(paths, OPS.load_components())
 

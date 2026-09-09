@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import runpy
+import shutil
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,7 @@ def _published(
     revision: str = REVISION,
     uv_bytes: bytes = b"uv-binary",
     runtime_source: str | None = None,
+    scanner_bundle: bool = False,
 ) -> tuple[Path, Path]:
     root = tmp_path / "leo-tracker"
     release = root / "releases" / revision
@@ -85,6 +87,26 @@ def _published(
         native,
         binding,
     )
+    if scanner_bundle:
+        destination = release / "runtime/scanner-glrt"
+        shutil.copytree(PROJECT_ROOT / "runtime/scanner-glrt", destination)
+        names = (
+            "bundle.json",
+            "algorithm.json",
+            "configuration.json",
+            "iiod",
+            "worker",
+            "libleo-scanner-glrt.so",
+            "libfftw3.so.3",
+            "libiio.so.0",
+            "libxml2.so.2",
+            "libz.so.1",
+            "templates-2500000.bin",
+            "templates-5000000.bin",
+        )
+        for name in names:
+            (destination / name).chmod(0o550 if name in ("iiod", "worker") else 0o440)
+        paths += tuple(destination / name for name in names)
     metadata.write_text(
         f"revision={revision}\n"
         f"python={python}\n"
@@ -113,6 +135,38 @@ def _validate(release: Path, metadata: Path, *, revision: str = REVISION, **kwar
 def test_external_metadata_seals_exact_immutable_tree(tmp_path: Path) -> None:
     release, metadata = _published(tmp_path)
     _validate(release, metadata)
+
+
+@pytest.mark.parametrize("runtime", (None, "a1088b61de3c57762cfed5533e1baf8076a7b726"))
+def test_bundle_inventory_is_sealed_independently_of_runtime_selection(
+    tmp_path: Path, runtime: str | None
+) -> None:
+    release, metadata = _published(tmp_path, runtime_source=runtime, scanner_bundle=True)
+    _validate(release, metadata)
+    assert len(metadata.read_text().splitlines()) == 25
+
+
+def test_bundle_cannot_be_added_without_sealing_its_inventory(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path, scanner_bundle=True)
+    metadata.chmod(0o640)
+    metadata.write_text("\n".join(metadata.read_text().splitlines()[:13]) + "\n")
+    metadata.chmod(0o440)
+    with pytest.raises(ValueError, match="cardinality"):
+        _validate(release, metadata)
+
+
+def test_resealed_modified_bundle_is_not_the_reviewed_candidate(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path, scanner_bundle=True)
+    worker = release / "runtime/scanner-glrt/worker"
+    old = _sha256(worker)
+    worker.chmod(0o750)
+    worker.write_bytes(b"changed worker")
+    worker.chmod(0o550)
+    metadata.chmod(0o640)
+    metadata.write_text(metadata.read_text().replace(old, _sha256(worker)))
+    metadata.chmod(0o440)
+    with pytest.raises(ValueError, match="payload digest/size mismatch"):
+        _validate(release, metadata)
 
 
 SCANNER_GLRT_SOURCE = "a1088b61de3c57762cfed5533e1baf8076a7b726"
