@@ -37,6 +37,16 @@ The other currently USB-visible spare is `winbond-db6968136727402c` at `3-7`;
 its historical `.152` mapping did not return a radio identity. Its current LAN
 address and availability remain unconfirmed; it has not been authorized for RF.
 
+On September 10 the operator explicitly selected `.20` or `.21` for live LNB
+testing. That narrow authorization supersedes the USB-only restriction for
+these two targets; both are LAN-only in the fresh inventory. The bounded
+follow-up uses `.20` / `1040005e0b100007100010000bf33a5d4d`, with a new 20-minute
+receive-only budget separate from the earlier `.18` ledger. It claims the
+actual `/srv/bulk/leo/control` paused-maintenance authority, preserves the
+operator's paused generation 215, uses strict pinned SSH and PPU's serial lock,
+and stages only the volatile userspace bundle. This is not authority to flash,
+resume production, use `.14`, or extend the RF campaign.
+
 ## Policy frozen for the first implementation
 
 - Eight independent targets: CH1L..CH4L, CH1U..CH4U. Do not suppress an upper
@@ -255,7 +265,7 @@ do not silently change user-facing three-miss/two-second behavior.
    explicit unavailable detector outcomes before examining browser rendering.
    Do not treat successful fixture APIs as deployed-browser verification.
 
-   **Latest live checkpoint:** the bounded `.18` matrix and startup diagnostics
+   **September 9 spare-radio checkpoint:** the bounded `.18` matrix and startup diagnostics
    are stopped, with a conservative enclosing-time upper bound of 1,660 of
    1,800 authorized seconds used. Userspace first-accepted-IQ activation and
    source-backlog admission fixes are committed locally. The exact revised
@@ -298,6 +308,21 @@ do not silently change user-facing three-miss/two-second behavior.
    remain open. See the
    [frozen-build checkpoint](../../reports/2026_09_09_scanner_frozen_release_checkpoint.md).
 
+   **September 10 LNB follow-up:** the explicitly authorized `.20` tests completed
+   two real 300-second captures using sealed release `987e1e46...`, PPU `664fa85...`
+   and the unchanged ARM bundle. At 2.5 MS/s, duty was 94.5317%, all 2,364 visits
+   were screened, 1,452 candidates passed and the actual scheduler used weighted
+   choices with cooldown/exploration. At 5 MS/s, duty was 94.2773%, but only
+   24.947% of visits were screened and the three-unhealthy-result latch forced
+   equal scanning from visit 4 onward. Both IQ and real-store API verification
+   passed, and the radio was restored without firmware changes. Production
+   remains paused at generation 215; no selector or service activation occurred.
+   A small score-blind saved-IQ fractional reference confirms useful RX1 signal
+   and exposes supported 5 MS/s dwells lost to detector skipping, not IQ loss.
+   Next work is deliberate-skip versus worker-fault policy semantics and 5 MS/s
+   compute cost, followed by remaining CI/integration/deployment gates. See the
+   [LNB live checkpoint](../../reports/2026_09_10_scanner_lnb_live_checkpoint.md).
+
 ## Evidence discipline
 
 Current raw build/test work is under `/tmp/leo-adaptive-glrt.VkIAkP`. A fresh
@@ -319,4 +344,6 @@ or hidden. No scientific fixture or detector numerical threshold was changed.
 Record exact source/artifact hashes, commands, JUnit counts, numerical/timing
 limits and failures at the next checkpoint. Passing policy tests or positive
 transport is not detector sensitivity qualification or unchanged live duty.
-Production services/radios have not been accessed or changed by these steps.
+The initial offline checkpoints did not access production services/radios;
+later explicitly authorized live access and its restoration scope are recorded
+in the dated checkpoints above.
