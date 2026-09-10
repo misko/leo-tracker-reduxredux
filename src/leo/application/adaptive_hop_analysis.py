@@ -14,6 +14,7 @@ from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisSource,
     AdaptiveHopVisitAnalysisV1,
     analyze_adaptive_hop_visit,
+    analyze_adaptive_hop_visit_batch,
 )
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
@@ -68,14 +69,17 @@ class AdaptiveHopAnalysisService:
         maximum_seconds: float = 300,
         probe_stride_ms: int = 10,
         cancelled: Callable[[], bool] = lambda: False,
+        maximum_workers: int = 1,
     ) -> AdaptiveHopAnalysisRun:
         """Budget/cancel at visit boundaries; never truncate scientific windows.
 
-        A running visit may exceed the time budget. Completed checkpoints survive
-        errors; neither a partial result nor metrics completion asserts UI readiness.
+        A running batch (at most two visits) may exceed the time budget. Completed
+        checkpoints survive errors; metrics completion does not assert UI readiness.
         """
         if type(maximum_visits) is not int or not 1 <= maximum_visits <= 2500:
             raise ValueError("adaptive analysis visit budget must be in 1..2500")
+        if type(maximum_workers) is not int or maximum_workers not in (1, 2):
+            raise ValueError("adaptive analysis worker count must be 1 or 2")
         if (
             isinstance(maximum_seconds, bool)
             or not math.isfinite(maximum_seconds)
@@ -105,9 +109,8 @@ class AdaptiveHopAnalysisService:
                 completed = set(job.completed_visits())
                 reason: Literal["complete", "visit_budget", "time_budget", "cancelled"] = "complete"
                 if manifest is None:
-                    for index in range(total):
-                        if index in completed:
-                            continue
+                    pending = [index for index in range(total) if index not in completed]
+                    for offset in range(0, len(pending), maximum_workers):
                         if cancelled():
                             reason = "cancelled"
                             break
@@ -117,12 +120,24 @@ class AdaptiveHopAnalysisService:
                         if self._clock() - started >= maximum_seconds:
                             reason = "time_budget"
                             break
-                        product = analyze_adaptive_hop_visit(
-                            source, index, configuration=configuration
+                        indexes = tuple(
+                            pending[offset : offset + min(maximum_workers, maximum_visits - count)]
                         )
-                        job.write_visit(product)
-                        completed.add(index)
-                        count += 1
+                        analyses = (
+                            (
+                                analyze_adaptive_hop_visit(
+                                    source, indexes[0], configuration=configuration
+                                ),
+                            )
+                            if maximum_workers == 1
+                            else analyze_adaptive_hop_visit_batch(
+                                source, indexes, configuration=configuration
+                            )
+                        )
+                        for index, product in zip(indexes, analyses, strict=True):
+                            job.write_visit(product)
+                            completed.add(index)
+                            count += 1
                     if len(completed) == total:
                         manifest = job.finalize_metrics()
                 return AdaptiveHopAnalysisRun(

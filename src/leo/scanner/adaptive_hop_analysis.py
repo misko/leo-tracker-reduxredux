@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Annotated, Literal, Protocol, Self
 
@@ -338,6 +340,41 @@ def analyze_adaptive_hop_visit(
     if cfg.sample_rate_hz != source.receipt.plan.geometry.sample_rate_hz:
         raise ValueError("adaptive analysis configuration changed source sample rate")
     samples = source.read_visit(visit_index)
+    return _analyze_loaded_visit(source, visit_index, samples, cfg)
+
+
+def analyze_adaptive_hop_visit_batch(
+    source: AdaptiveHopAnalysisSource,
+    visit_indexes: tuple[int, ...],
+    *,
+    configuration: AdaptiveHopAnalysisConfigurationV1,
+) -> Iterator[AdaptiveHopVisitAnalysisV1]:
+    """At most two independent visits; only the owning thread reads stored IQ.
+
+    Yield in source order so each successful visit can be checkpointed even if
+    the next fails. Worker threads see immutable arrays, never the reader cache.
+    """
+    if not 1 <= len(visit_indexes) <= 2 or len(set(visit_indexes)) != len(visit_indexes):
+        raise ValueError("adaptive analysis batch must contain one or two distinct visits")
+    cfg = AdaptiveHopAnalysisConfigurationV1.model_validate(configuration.model_dump())
+    if cfg.sample_rate_hz != source.receipt.plan.geometry.sample_rate_hz:
+        raise ValueError("adaptive analysis configuration changed source sample rate")
+    samples = tuple(source.read_visit(index) for index in visit_indexes)
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="leo-adaptive-glrt") as executor:
+        futures = [
+            executor.submit(_analyze_loaded_visit, source, index, values, cfg)
+            for index, values in zip(visit_indexes, samples, strict=True)
+        ]
+        for future in futures:
+            yield future.result()
+
+
+def _analyze_loaded_visit(
+    source: AdaptiveHopAnalysisSource,
+    visit_index: int,
+    samples: npt.NDArray[np.complex64],
+    cfg: AdaptiveHopAnalysisConfigurationV1,
+) -> AdaptiveHopVisitAnalysisV1:
     visit = source.visits[visit_index]
     event = visit.event
     analysis = analyze_glrt64_dwell(samples, cfg, edge=event.target.edge)

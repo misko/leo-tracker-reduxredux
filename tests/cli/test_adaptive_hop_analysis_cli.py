@@ -1,5 +1,6 @@
 import json
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -9,6 +10,58 @@ from leo.storage.persistent_hop_analysis import PersistentHopAnalysisStore
 from leo.storage.persistent_hop_analysis_v2 import PersistentHopAnalysisStoreV2
 from tests.scanner.test_persistent_hop_standard_analysis import _fake_fractional_dwell
 from tests.storage.test_adaptive_hop_history import publish_capture
+
+
+def test_pending_selection_resumes_then_orders_oldest_without_reading_iq():
+    states = {
+        "new": "not_started",
+        "partial": "partial",
+        "metrics": "metrics_complete",
+        "done": "figures_ready",
+    }
+    captures = SimpleNamespace(
+        iter_sessions=lambda: (
+            SimpleNamespace(session_id=name, manifest=SimpleNamespace(created_utc_ns=i))
+            for i, name in enumerate(states)
+        )
+    )
+    presentation = SimpleNamespace(status=lambda name, **kw: SimpleNamespace(state=states[name]))
+    assert cli.next_pending(captures, presentation, probe_stride_ms=10) == "metrics"
+    states["metrics"] = "figures_ready"
+    assert cli.next_pending(captures, presentation, probe_stride_ms=10) == "partial"
+    states["partial"] = "figures_ready"
+    assert cli.next_pending(captures, presentation, probe_stride_ms=10) == "new"
+    states["new"] = "figures_ready"
+    assert cli.next_pending(captures, presentation, probe_stride_ms=10) is None
+
+
+@pytest.mark.parametrize("stride", [10, 120])
+def test_pending_cli_publishes_figures_then_is_idle(monkeypatch, tmp_path, capsys, stride):
+    capture = publish_capture(tmp_path, count=3)
+    monkeypatch.setattr(cli.os, "nice", lambda _: None)
+    monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "analysis",
+            "--bulk-root",
+            str(tmp_path),
+            "--pending",
+            "--maximum-workers",
+            "2",
+            "--probe-stride-ms",
+            str(stride),
+        ],
+    )
+    cli.main()
+    result = json.loads(capsys.readouterr().out)
+    assert result["session_id"] == capture.session_id and result["overview_state"] == "ready"
+    monkeypatch.setattr(
+        detector, "analyze_glrt64_dwell", lambda *a, **k: pytest.fail("reanalyzed ready capture")
+    )
+    cli.main()
+    assert json.loads(capsys.readouterr().out)["state"] == "idle"
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
@@ -104,6 +157,7 @@ def test_cli_obeys_existing_fixed_worker_lock_without_analyzing(
         ("--maximum-seconds", "1801"),
         ("--probe-stride-ms", "9"),
         ("--session-id", "../unsafe"),
+        ("--maximum-workers", "3"),
     ],
 )
 def test_cli_invalid_arguments_create_nothing(monkeypatch, tmp_path, option, value):
