@@ -106,3 +106,7 @@ def main() -> None:
     print(json.dumps(payload, sort_keys=True) if arguments.json else payload)
     if result.failures or tracking_result.failures:
         raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

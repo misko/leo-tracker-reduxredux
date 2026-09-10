@@ -1,10 +1,31 @@
 import json
+import subprocess
 import sys
 from types import SimpleNamespace
 
 import pytest
 
 import leo.cli.scanner_analysis_backfill as cli
+
+
+@pytest.mark.parametrize(
+    "module, option",
+    [
+        ("leo.cli.adaptive_hop_analysis", "--pending"),
+        ("leo.cli.persistent_hop_analysis", "--maximum-tracking-groups"),
+        ("leo.cli.scanner_analysis_backfill", "--site"),
+    ],
+)
+def test_child_module_entrypoints_actually_execute(module, option):
+    result = subprocess.run(
+        [sys.executable, "-m", module, "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "usage:" in result.stdout and option in result.stdout
 
 
 @pytest.mark.parametrize("failure", [None, "adaptive", "fixed", "spawn"])
