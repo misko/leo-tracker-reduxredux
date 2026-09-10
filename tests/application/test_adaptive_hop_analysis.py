@@ -75,6 +75,42 @@ def test_failure_preserves_completed_science_and_releases_worker(monkeypatch, tm
     products.close()
 
 
+@pytest.mark.parametrize("maximum_visits", [1, 2, 3])
+def test_parallel_batches_keep_exact_visit_budget_and_resumability(
+    monkeypatch, tmp_path, maximum_visits
+):
+    inputs, products, worker = service(monkeypatch, tmp_path)
+    result = worker.analyze_session(
+        inputs.reader.session_id, maximum_workers=2, maximum_visits=maximum_visits
+    )
+    assert result.newly_analyzed_visits == maximum_visits
+    assert inputs.reader.calls == list(range(maximum_visits))
+    resumed = worker.analyze_session(inputs.reader.session_id, maximum_workers=2)
+    assert (
+        resumed.state == "metrics_complete" and resumed.newly_analyzed_visits == 3 - maximum_visits
+    )
+    products.close()
+
+
+def test_second_parallel_failure_keeps_first_checkpoint(monkeypatch, tmp_path):
+    inputs, products, worker = service(monkeypatch, tmp_path)
+    real = detector._analyze_loaded_visit
+
+    def fail(source, index, samples, cfg):
+        if index == 1:
+            raise RuntimeError("second parallel visit failed")
+        return real(source, index, samples, cfg)
+
+    monkeypatch.setattr(detector, "_analyze_loaded_visit", fail)
+    with pytest.raises(RuntimeError, match="second parallel"):
+        worker.analyze_session(inputs.reader.session_id, maximum_workers=2)
+    monkeypatch.setattr(detector, "_analyze_loaded_visit", real)
+    result = worker.analyze_session(inputs.reader.session_id, maximum_workers=2)
+    assert result.newly_analyzed_visits == 2 and result.state == "metrics_complete"
+    assert inputs.reader.calls == [0, 1, 1, 2]
+    products.close()
+
+
 @pytest.mark.parametrize("reason", ["cancelled", "time_budget"])
 def test_cancel_or_time_budget_never_truncates_or_reads_next_dwell(monkeypatch, tmp_path, reason):
     clock_values = iter([0, 0, 301])
@@ -102,6 +138,9 @@ def test_cancel_or_time_budget_never_truncates_or_reads_next_dwell(monkeypatch, 
         {"maximum_seconds": True},
         {"maximum_seconds": 1801},
         {"probe_stride_ms": 9},
+        {"maximum_workers": True},
+        {"maximum_workers": 0},
+        {"maximum_workers": 3},
     ],
 )
 def test_invalid_budget_is_rejected_before_inputs_or_output(monkeypatch, tmp_path, options):

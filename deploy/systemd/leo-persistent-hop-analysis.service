@@ -1,5 +1,5 @@
 [Unit]
-Description=LEO Tracker persistent-hop scanner analysis backfill
+Description=LEO Tracker fixed and adaptive scanner analysis backfill
 After=local-fs.target
 RequiresMountsFor=/srv/bulk/leo
 
@@ -7,7 +7,7 @@ RequiresMountsFor=/srv/bulk/leo
 Type=oneshot
 User=leo
 Group=leo
-WorkingDirectory=/opt/leo-tracker/current
+WorkingDirectory=/opt/leo-tracker/current-api
 EnvironmentFile=/etc/leo/leo.env
 Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-hop-analysis
@@ -16,7 +16,7 @@ ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/control/pe
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-hop-tracking
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/control/persistent-hop-tracking
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/presentation-cache/matplotlib
-ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current/.venv/bin/leo-persistent-hop-analysis --maximum-sessions 1 --maximum-workers 2 --probe-stride-ms 120 --site spinnaker-sausalito --maximum-tracking-groups 4 --json
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-api/.venv/bin/python -m leo.cli.scanner_analysis_backfill --site spinnaker-sausalito
 TimeoutStartSec=2h
 Nice=15
 CPUWeight=25
