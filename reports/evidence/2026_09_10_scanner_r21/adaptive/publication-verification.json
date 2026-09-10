@@ -1,0 +1,95 @@
+{
+  "verified_at": "2026-09-10T16:53:31.031585+00:00",
+  "session_id": "scan-hop-017449cd3ade0103",
+  "kind": "adaptive",
+  "artifacts": [
+    {
+      "name": "coverage",
+      "bytes": 69940,
+      "sha256": "8d6f37553e4d7063f0be667186a7ed4a51c32392bfa92322a7cf8db4786e6134",
+      "http_status": 200,
+      "content_type": "image/png",
+      "url": "http://127.0.0.1:8090/api/v1/scanner/adaptive-sessions/scan-hop-017449cd3ade0103/analysis/coverage.png?probe_stride_ms=120&binding_sha256=sha256%3A797834ad66d86bda9518aafaf2ff4883975da4d5a9a5b8261eafdf8f02f268d6&artifact_sha256=sha256%3A8d6f37553e4d7063f0be667186a7ed4a51c32392bfa92322a7cf8db4786e6134"
+    },
+    {
+      "name": "glrt64-response",
+      "bytes": 409724,
+      "sha256": "c375cedd537b88149ca4cd6ff8d33e849f6db7974e8b1fd75d1c450e8883947c",
+      "http_status": 200,
+      "content_type": "image/png",
+      "url": "http://127.0.0.1:8090/api/v1/scanner/adaptive-sessions/scan-hop-017449cd3ade0103/analysis/glrt64-response.png?probe_stride_ms=120&binding_sha256=sha256%3A797834ad66d86bda9518aafaf2ff4883975da4d5a9a5b8261eafdf8f02f268d6&artifact_sha256=sha256%3Ac375cedd537b88149ca4cd6ff8d33e849f6db7974e8b1fd75d1c450e8883947c"
+    },
+    {
+      "name": "cfo-trajectories",
+      "bytes": 575980,
+      "sha256": "b8ead48461a20ab58897b1205e747d792e68acebbcee46374bff28b6ae205e0d",
+      "http_status": 200,
+      "content_type": "image/png",
+      "url": "http://127.0.0.1:8090/api/v1/scanner/adaptive-sessions/scan-hop-017449cd3ade0103/analysis/cfo-trajectories.png?probe_stride_ms=120&binding_sha256=sha256%3A797834ad66d86bda9518aafaf2ff4883975da4d5a9a5b8261eafdf8f02f268d6&artifact_sha256=sha256%3Ab8ead48461a20ab58897b1205e747d792e68acebbcee46374bff28b6ae205e0d"
+    }
+  ],
+  "public_analysis": {
+    "schema_version": 1,
+    "kind": "adaptive_hop_analysis_status",
+    "session_id": "scan-hop-017449cd3ade0103",
+    "input_manifest_sha256": "sha256:0cbef370a2c70f5a1bae2e710eb6a652a0602d1f579bdf466ec59f8d8091c832",
+    "binding_sha256": "sha256:797834ad66d86bda9518aafaf2ff4883975da4d5a9a5b8261eafdf8f02f268d6",
+    "configuration": {
+      "schema_version": 1,
+      "analyzer_id": "adaptive-hop-fractional-glrt64-cfo-v1",
+      "sample_rate_hz": 2500000,
+      "valid_visit_ms": 120,
+      "probe_ms": 20,
+      "probe_stride_ms": 120,
+      "glrt64_margin_gate": 0.025,
+      "maximum_acquisition_candidates": 8,
+      "receiver_ids": [
+        0,
+        1
+      ],
+      "timing_refinement": "circular-five-cell-log-parabola-plus-lanczos16-v1",
+      "decision_score": "fractional-epoch-conditioned-glrt64-v1"
+    },
+    "total_visits": 2358,
+    "checkpoint_visits": 2358,
+    "state": "figures_ready",
+    "progress_basis": "sealed_metrics_manifest",
+    "worker_activity": "not_observed",
+    "metrics_manifest_sha256": "sha256:228dac2c68d99c278fb29a96322313ba455b9ba9f3262818b0af4172d131348a",
+    "overview": {
+      "schema_version": 1,
+      "kind": "adaptive_hop_fractional_overview",
+      "presentation_id": "adaptive-actual-visit-glrt64-overview-v1",
+      "session_id": "scan-hop-017449cd3ade0103",
+      "binding_sha256": "sha256:797834ad66d86bda9518aafaf2ff4883975da4d5a9a5b8261eafdf8f02f268d6",
+      "metrics_manifest_sha256": "sha256:228dac2c68d99c278fb29a96322313ba455b9ba9f3262818b0af4172d131348a",
+      "finalized_utc_ns": "1789059162364310067",
+      "artifacts": [
+        {
+          "name": "coverage",
+          "content_type": "image/png",
+          "sha256": "sha256:8d6f37553e4d7063f0be667186a7ed4a51c32392bfa92322a7cf8db4786e6134",
+          "byte_count": 69940
+        },
+        {
+          "name": "glrt64-response",
+          "content_type": "image/png",
+          "sha256": "sha256:c375cedd537b88149ca4cd6ff8d33e849f6db7974e8b1fd75d1c450e8883947c",
+          "byte_count": 409724
+        },
+        {
+          "name": "cfo-trajectories",
+          "content_type": "image/png",
+          "sha256": "sha256:b8ead48461a20ab58897b1205e747d792e68acebbcee46374bff28b6ae205e0d",
+          "byte_count": 575980
+        }
+      ],
+      "trajectory_configuration_sha256": "sha256:469344a7a0768460988b697bd7537a10c9ebeb31fe67af3e3933e8b226fcee3e",
+      "trajectory_input_policy": "strongest-passed-fractional-candidate-per-visit-rx",
+      "trajectory_scope": "separate-target-and-receiver-candidate-associations",
+      "selected_observation_count": 2255,
+      "association_count": 260,
+      "truncated_association_count": 0
+    }
+  }
+}
