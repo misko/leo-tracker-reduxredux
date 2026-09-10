@@ -136,6 +136,29 @@ match the subsequently committed libiio candidate `74035ef4` exactly.
 No firmware, installed daemon or scheduled
 capture was changed by this qualification.
 
+## Immutable release staging and repeatability caveat
+
+Candidate `5b71a533cae5e7875e2ca0337372e266bf5683c5` is pushed to the development
+branch and staged under `/opt/leo-tracker/releases/` with the pinned PPU host
+runtime. The production web build, final-path runtime validation and sealed
+metadata validation passed; a second invocation revalidated the immutable
+release without rewriting it. All 12 GLRT asset hashes match the reviewed
+worktree bytes. **No component selector, production configuration or service
+was changed.** This is staging, not production deployment, main merge or RF
+qualification. Acquisition remained active on `c60438c5` at the snapshot.
+
+The parallel change-aware gate initially had one failure in the legacy
+unprotected positive-feedback replay (5 MS/s, two-block metadata delay, 40 ms
+jitter): its strict verifier rejected an unavailable or otherwise mismatched
+result. The original run did not retain enough decoded output to identify the
+exact cause. Host contention is a hypothesis, not an established diagnosis.
+The same targeted test then passed, 32 additional eight-way concurrent runs
+all passed, and the full parallel gate passed with diagnostic output retention.
+No runtime code, numerical tolerance or assertion was changed to obtain those
+passes. The failed receipt is retained alongside the diagnostic runs; the
+intermittent failure is **not claimed fixed**. It is separate from the fair
+candidate's deliberate UNKNOWN-overload tests and from live RF qualification.
+
 ## Evidence and remaining gates
 
 [Receipts, source snapshots and figures](evidence/2026_09_10_scanner_pending240/index.json)

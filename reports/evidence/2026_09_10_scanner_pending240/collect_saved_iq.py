@@ -8,6 +8,7 @@ import numpy as np
 
 RUN = Path("/tmp/leo-pending240-real-iq-v2.IBKRmm")
 CORPUS = Path("/tmp/leo-dwell-worker-20260908-vg66yo9u")
+DIAGNOSTIC = Path("/tmp/leo-sdk-parallel-diagnostic.IMDvn2")
 
 
 def collect(archive, sha, figures):
@@ -34,6 +35,19 @@ def collect(archive, sha, figures):
         "scanner-integration-configured.xml",
     ] + [f"arm-batch-{i:02}.json" for i in range(16)]
     originals = [archive(RUN / name, "saved-iq/" + name) for name in names]
+    diagnostic_names = [
+        "parallel-release-gate-failed.json",
+        "parallel-release-gate-diagnostic.json",
+        "retain_replay.py",
+        "parallel_replay.py",
+        "targeted.xml",
+        "publication_checkpoint.py",
+        "release-publication-checkpoint.json",
+        "3324228/manifest.json",
+        "3324228/identity.json",
+        "parallel-replay/receipt.json",
+    ] + [f"parallel-replay/{i:02}.jsonl" for i in range(32)]
+    originals.extend(archive(DIAGNOSTIC / name, "publication/" + name) for name in diagnostic_names)
     # Preserve the frozen comparison configuration and its original references.
     # Raw .pack/.rank IQ and executable payloads are intentionally not published.
     for rate in (2500000, 5000000):
