@@ -54,9 +54,12 @@ class LoopbackRadio:
         self.active_profile = None
         self.lo_hz = 900000000
         self.original = IioReceiverSettingsReadback(
-            center_frequency_hz=float(self.lo_hz), sample_rate_hz=1000000.0,
-            bandwidth_hz=1000000.0, channels=(0, 1),
-            gain_modes=(GainMode.MANUAL, GainMode.MANUAL), gain_db=(10.0, 10.0),
+            center_frequency_hz=float(self.lo_hz),
+            sample_rate_hz=1000000.0,
+            bandwidth_hz=1000000.0,
+            channels=(0, 1),
+            gain_modes=(GainMode.MANUAL, GainMode.MANUAL),
+            gain_db=(10.0, 10.0),
         )
         self.closed = False
         self.capture = None
@@ -80,8 +83,10 @@ class LoopbackRadio:
         self, *, sample_rate_hz, rf_bandwidth_hz, channels, manual_gain_db
     ):
         return dataclasses.replace(
-            self.original, sample_rate_hz=float(sample_rate_hz),
-            bandwidth_hz=float(rf_bandwidth_hz), channels=channels,
+            self.original,
+            sample_rate_hz=float(sample_rate_hz),
+            bandwidth_hz=float(rf_bandwidth_hz),
+            channels=channels,
             gain_db=(manual_gain_db, manual_gain_db),
         )
 
@@ -104,8 +109,11 @@ class LoopbackRadio:
     def begin_raw_sidecar_metadata_capture(self, sample_count, *, kernel_buffers, **kwargs):
         self.device.set_kernel_buffers_count(kernel_buffers)
         capture = IioRawSidecarCaptureSession(
-            PrimingSdr(self.device), self.iio.MetadataBuffer,
-            samples_per_channel=sample_count, kernel_buffers=kernel_buffers, **kwargs,
+            PrimingSdr(self.device),
+            self.iio.MetadataBuffer,
+            samples_per_channel=sample_count,
+            kernel_buffers=kernel_buffers,
+            **kwargs,
         )
         capture.open()
         self.capture = capture

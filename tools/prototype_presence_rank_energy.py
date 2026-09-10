@@ -28,12 +28,12 @@ def projection_norms(iq, rate, bins=512):
         raise ValueError("complete dwell required")
     output = np.zeros((2, 6))
     for slice_index in range(6):
-        raw = iq[slice_index * window:(slice_index + 1) * window].astype(np.int64)
+        raw = iq[slice_index * window : (slice_index + 1) * window].astype(np.int64)
         sums, support = np.zeros(n, complex), np.zeros(n)
         for frame in range(15):
             start = round(frame * (rate / 750))
             count = min(n, window - start - 4)
-            a, b = raw[start:start + count], raw[start + 4:start + 4 + count]
+            a, b = raw[start : start + count], raw[start + 4 : start + 4 + count]
             sums[:count] += a[:, 0] * b[:, 0] + a[:, 1] * b[:, 1]
             sums[:count] += 1j * (a[:, 0] * b[:, 1] - a[:, 1] * b[:, 0])
             support[:count] += 1
@@ -56,8 +56,9 @@ def select(scores, norms, exponent):
         raise ValueError("undeclared ranking ablation")
     weighted = np.asarray(scores) * (norms**exponent)
     order = np.argsort(-weighted, axis=1, kind="stable")
-    contrast = np.array([row[idx[0]] / max(row[idx[1]], 1e-30)
-                         for row, idx in zip(weighted, order, strict=True)])
+    contrast = np.array(
+        [row[idx[0]] / max(row[idx[1]], 1e-30) for row, idx in zip(weighted, order, strict=True)]
+    )
     projection = int(contrast[1] > contrast[0])
     return int(order[projection, 0])
 
@@ -72,18 +73,25 @@ def run(source, output):
     if len(original) != 528:
         raise ValueError("complete opened challenge required")
     output.mkdir(parents=True, exist_ok=False)
-    write_json(output / "freeze.json", {
-        "scope": "post-hoc development ablation; no qualification claim",
-        "exponents": [0, 0.5, 1], "source_results_sha256": digest(source / "results.jsonl"),
-        "binary_sha256": digest(library), "tool_sha256": digest(Path(__file__)),
-    })
+    write_json(
+        output / "freeze.json",
+        {
+            "scope": "post-hoc development ablation; no qualification claim",
+            "exponents": [0, 0.5, 1],
+            "source_results_sha256": digest(source / "results.jsonl"),
+            "binary_sha256": digest(library),
+            "tool_sha256": digest(Path(__file__)),
+        },
+    )
     totals = {}
     with ExitStack() as stack, (output / "results.jsonl").open("x") as stream:
         engines = {}
         for index, spec in enumerate(cases(protocol)):
             iq, truth = generate(spec)
-            if (truth != original[index]["truth"]
-                    or hashlib.sha256(iq.tobytes()).hexdigest() != original[index]["iq_sha256"]):
+            if (
+                truth != original[index]["truth"]
+                or hashlib.sha256(iq.tobytes()).hexdigest() != original[index]["iq_sha256"]
+            ):
                 raise ValueError("opened challenge truth or IQ identity differs")
             key = spec["rate_hz"], spec["edge"]
             if key not in engines:
@@ -97,22 +105,37 @@ def run(source, output):
                 window = select(screens["scores"], norms, exponent)
                 position = result["rank"]["order"].index(window)
                 confirm = result["confirmations"][position]
-                accepted = passing(confirm["candidates"][:confirm["candidate_count"]], policy)
-                matched = any(associated(c, truth, window, protocol["association"])
-                              for c in accepted)
-                choices[str(exponent)] = {"window": window, "flagged": bool(accepted),
-                                          "associated": matched}
+                accepted = passing(confirm["candidates"][: confirm["candidate_count"]], policy)
+                matched = any(
+                    associated(c, truth, window, protocol["association"]) for c in accepted
+                )
+                choices[str(exponent)] = {
+                    "window": window,
+                    "flagged": bool(accepted),
+                    "associated": matched,
+                }
                 label = f"{exponent}:{key[0]}:{spec['kind']}:{spec.get('snr_db', 'none')}"
                 stats = totals.setdefault(label, {"cases": 0, "flagged": 0, "associated": 0})
                 stats["cases"] += 1
                 stats["flagged"] += bool(accepted)
                 stats["associated"] += matched
-            if (choices["0"]["window"] != original[index]["selected_window"]
-                    or choices["0"]["flagged"] != original[index]["decisions"][
-                        "frozen_absolute_score_hypothesis"]["flagged"]):
+            if (
+                choices["0"]["window"] != original[index]["selected_window"]
+                or choices["0"]["flagged"]
+                != original[index]["decisions"]["frozen_absolute_score_hypothesis"]["flagged"]
+            ):
                 raise ValueError("normalized baseline does not reproduce opened challenge")
-            stream.write(json.dumps({"truth": truth, "norms": norms.tolist(),
-                                     "scores": screens["scores"], "choices": choices}) + "\n")
+            stream.write(
+                json.dumps(
+                    {
+                        "truth": truth,
+                        "norms": norms.tolist(),
+                        "scores": screens["scores"],
+                        "choices": choices,
+                    }
+                )
+                + "\n"
+            )
             if (index + 1) % 64 == 0:
                 print(f"{index + 1}/528 ranking ablations evaluated", flush=True)
     write_json(output / "summary.json", totals)

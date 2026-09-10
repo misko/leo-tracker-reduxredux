@@ -27,10 +27,14 @@ from tools.qualify_native_presence import digest, write_json
 def visits(protocol):
     sweeps = protocol["rf_sweeps"]
     sessions = protocol["rf_sessions"]
-    if (len(sweeps) != 2 or sweeps != sorted(set(sweeps))
-            or any(type(s) is not int or not 0 <= s < 290 for s in sweeps)
-            or len(sessions) != 4 or len({s["session_id"] for s in sessions}) != 4
-            or sorted(s["rate_hz"] for s in sessions) != [2500000, 2500000, 5000000, 5000000]):
+    if (
+        len(sweeps) != 2
+        or sweeps != sorted(set(sweeps))
+        or any(type(s) is not int or not 0 <= s < 290 for s in sweeps)
+        or len(sessions) != 4
+        or len({s["session_id"] for s in sessions}) != 4
+        or sorted(s["rate_hz"] for s in sessions) != [2500000, 2500000, 5000000, 5000000]
+    ):
         raise ValueError("bounded, distinct and balanced RF cohort required")
     return [sweep * 8 + edge for sweep in sweeps for edge in range(8)]
 
@@ -46,11 +50,14 @@ def summarize(rows, protocol):
             positive = [r for r in subset if any(r["reference_positive"])]
             unresolved = [r for r in subset if not any(r["reference_positive"])]
             result[name][str(rate)] = {
-                "dwells": len(subset), "reference_positive_dwells": len(positive),
+                "dwells": len(subset),
+                "reference_positive_dwells": len(positive),
                 "flags_in_reference_positive": sum(
-                    r["decisions"][name]["flagged"] for r in positive),
+                    r["decisions"][name]["flagged"] for r in positive
+                ),
                 "associated_reference_positive": sum(
-                    r["decisions"][name]["associated"] for r in positive),
+                    r["decisions"][name]["associated"] for r in positive
+                ),
                 "unresolved_rf_dwells": len(unresolved),
                 "flags_in_unresolved_rf": sum(r["decisions"][name]["flagged"] for r in unresolved),
             }
@@ -71,9 +78,13 @@ def load_references(directory, manifests, indices):
 
 
 def validate_reference(row, *, input_sha, rate, edge, counter):
-    if (row["iq_sha256"] != input_sha or row["rate_hz"] != rate
-            or row["edge"] != edge or row["rx"] != 1
-            or row["source_counter"] != str(counter)):
+    if (
+        row["iq_sha256"] != input_sha
+        or row["rate_hz"] != rate
+        or row["edge"] != edge
+        or row["rx"] != 1
+        or row["source_counter"] != str(counter)
+    ):
         raise ValueError("reference IQ identity differs")
 
 
@@ -92,30 +103,39 @@ def diagnose(row, result, protocol):
         raise ValueError("diagnostic rank changed")
     confirmations = result["confirmations"]
     first = confirmations[0]
-    if first["candidates"][:first["candidate_count"]] != row["candidates"]:
+    if first["candidates"][: first["candidate_count"]] != row["candidates"]:
         raise ValueError("diagnostic first confirmation changed")
-    references = [[c for c in cs if c["margin"] >= 0.025]
-                  for cs in row["reference_candidates"]]
+    references = [[c for c in cs if c["margin"] >= 0.025] for cs in row["reference_candidates"]]
     all_references = [c for cs in references for c in cs]
     comparisons = {}
     for name, policy in protocol["policies"].items():
         windows = []
         for index, confirmation in zip(order, confirmations, strict=True):
-            candidates = confirmation["candidates"][:confirmation["candidate_count"]]
+            candidates = confirmation["candidates"][: confirmation["candidate_count"]]
             accepted = passing(candidates, policy)
-            windows.append({
-                "window": index, "flagged": bool(accepted),
-                "reference_positive": bool(references[index]),
-                "same_window_associated": any(
-                    associated(c, ref, row["rate_hz"], protocol["association"])
-                    for c in accepted for ref in references[index]),
-                "within_dwell_associated": any(
-                    associated(c, ref, row["rate_hz"], protocol["association"])
-                    for c in accepted for ref in all_references),
-            })
+            windows.append(
+                {
+                    "window": index,
+                    "flagged": bool(accepted),
+                    "reference_positive": bool(references[index]),
+                    "same_window_associated": any(
+                        associated(c, ref, row["rate_hz"], protocol["association"])
+                        for c in accepted
+                        for ref in references[index]
+                    ),
+                    "within_dwell_associated": any(
+                        associated(c, ref, row["rate_hz"], protocol["association"])
+                        for c in accepted
+                        for ref in all_references
+                    ),
+                }
+            )
         comparisons[name] = windows
-    return {"scope": "offline all-window comparator, not the one-confirmation worker",
-            "result": result, "comparisons": comparisons}
+    return {
+        "scope": "offline all-window comparator, not the one-confirmation worker",
+        "result": result,
+        "comparisons": comparisons,
+    }
 
 
 def summarize_diagnostics(rows, protocol):
@@ -132,7 +152,8 @@ def summarize_diagnostics(rows, protocol):
                 def count(records, field, policy=name, limit=budget):
                     return sum(
                         any(w[field] for w in r["diagnostics"]["comparisons"][policy][:limit])
-                        for r in records)
+                        for r in records
+                    )
 
                 result[name][str(rate)][str(budget)] = {
                     "reference_positive_dwells": len(positive),
@@ -151,25 +172,37 @@ def run(archive, output, prefix, *, amplitude=False, reference_run=None, all_win
     inputs = PersistentHopAnalysisInputStore(PersistentHopIqStore.open_read_only(archive))
     sources = [inputs.source(s["session_id"]) for s in protocol["rf_sessions"]]
     for spec, source in zip(protocol["rf_sessions"], sources, strict=True):
-        if (source.sample_rate_hz != spec["rate_hz"] or not source.receipt.qualified
-                or source.plan.valid_visit_ms != 120 or 1 not in source.receiver_ids
-                or len(source.visits) <= indices[-1]):
+        if (
+            source.sample_rate_hz != spec["rate_hz"]
+            or not source.receipt.qualified
+            or source.plan.valid_visit_ms != 120
+            or 1 not in source.receiver_ids
+            or len(source.visits) <= indices[-1]
+        ):
             raise ValueError("source differs from frozen metadata selection")
     reference_rows = {}
     if reference_run is not None:
         reference_rows = load_references(
-            reference_run, {s.session_id: s.input_manifest_sha256 for s in sources}, indices)
-    write_json(output / "source-freeze.json", {
-        "state": "source_manifests_frozen_before_IQ_or_scores",
-        "sessions": {s.session_id: s.input_manifest_sha256 for s in sources},
-        "visit_indices": indices, "rx": 1, "tool_sha256": digest(Path(__file__)),
-        "reference": "fresh eight-candidate fractional GLRT in each of six 20 ms slices",
-        "reference_reused_sha256": digest(reference_run / "results.jsonl")
-        if reference_run is not None else None,
-        "interpretation": "development replay of opened cohort" if reference_run else
-        "initial frozen RF comparison; not independent Starlink truth",
-        "all_window_diagnostic": all_windows,
-    })
+            reference_run, {s.session_id: s.input_manifest_sha256 for s in sources}, indices
+        )
+    write_json(
+        output / "source-freeze.json",
+        {
+            "state": "source_manifests_frozen_before_IQ_or_scores",
+            "sessions": {s.session_id: s.input_manifest_sha256 for s in sources},
+            "visit_indices": indices,
+            "rx": 1,
+            "tool_sha256": digest(Path(__file__)),
+            "reference": "fresh eight-candidate fractional GLRT in each of six 20 ms slices",
+            "reference_reused_sha256": digest(reference_run / "results.jsonl")
+            if reference_run is not None
+            else None,
+            "interpretation": "development replay of opened cohort"
+            if reference_run
+            else "initial frozen RF comparison; not independent Starlink truth",
+            "all_window_diagnostic": all_windows,
+        },
+    )
     rows = []
     with ExitStack() as stack, (output / "results.jsonl").open("x") as stream:
         engines = {}
@@ -184,34 +217,57 @@ def run(archive, output, prefix, *, amplitude=False, reference_run=None, all_win
                 result = unpack(engines[key].run(iq, maximum=1, seeded=False))
                 selected = result["rank"]["order"][0]
                 confirm = result["confirmations"][0]
-                candidates = confirm["candidates"][:confirm["candidate_count"]]
+                candidates = confirm["candidates"][: confirm["candidate_count"]]
                 # Reference output never supplies a timing/CFO seed to the worker.
                 values = iq[:, 0].astype(np.float64) + 1j * iq[:, 1]
                 input_sha = hashlib.sha256(iq.tobytes()).hexdigest()
                 prior = reference_rows.get((source.session_id, index))
                 if prior is not None:
-                    validate_reference(prior, input_sha=input_sha, rate=rate, edge=edge,
-                                       counter=visit.span.valid_device_sample_counter)
+                    validate_reference(
+                        prior,
+                        input_sha=input_sha,
+                        rate=rate,
+                        edge=edge,
+                        counter=visit.span.valid_device_sample_counter,
+                    )
                     references = prior["reference_candidates"]
                 else:
-                    references = [[asdict(c) for c in fresh_glrt(
-                        values[w * rate // 50:(w + 1) * rate // 50], rate,
-                        edge=edge, candidate_count=protocol["rf_reference_candidates"],
-                    )] for w in range(6)]
+                    references = [
+                        [
+                            asdict(c)
+                            for c in fresh_glrt(
+                                values[w * rate // 50 : (w + 1) * rate // 50],
+                                rate,
+                                edge=edge,
+                                candidate_count=protocol["rf_reference_candidates"],
+                            )
+                        ]
+                        for w in range(6)
+                    ]
                 positive = [[c for c in cs if c["margin"] >= 0.025] for cs in references]
                 decisions = {}
                 for name, policy in protocol["policies"].items():
                     accepted = passing(candidates, policy)
-                    decisions[name] = {"flagged": bool(accepted), "associated": any(
-                        associated(c, ref, rate, protocol["association"])
-                        for c in accepted for ref in positive[selected])}
+                    decisions[name] = {
+                        "flagged": bool(accepted),
+                        "associated": any(
+                            associated(c, ref, rate, protocol["association"])
+                            for c in accepted
+                            for ref in positive[selected]
+                        ),
+                    }
                 row = {
-                    "session": source.session_id, "visit": index, "rx": 1,
-                    "rate_hz": rate, "edge": edge, "channel": visit.span.target.channel,
+                    "session": source.session_id,
+                    "visit": index,
+                    "rx": 1,
+                    "rate_hz": rate,
+                    "edge": edge,
+                    "channel": visit.span.target.channel,
                     "source_counter": str(visit.span.valid_device_sample_counter),
                     "source_manifest_sha256": source.input_manifest_sha256,
                     "iq_sha256": input_sha,
-                    "selected_window": selected, "candidates": candidates,
+                    "selected_window": selected,
+                    "candidates": candidates,
                     "reference_candidates": references,
                     "reference_positive": [bool(cs) for cs in positive],
                     "decisions": decisions,
@@ -224,9 +280,12 @@ def run(archive, output, prefix, *, amplitude=False, reference_run=None, all_win
                 stream.write(json.dumps(row, allow_nan=False) + "\n")
                 stream.flush()
                 print(f"{source.session_id} visit {index}: {len(rows)}/64 scored", flush=True)
-    result = {"scope": "RF reference agreement, not independent specificity or absence",
-              "dwells": len(rows), "binary_sha256": digest(library),
-              "results": summarize(rows, protocol)}
+    result = {
+        "scope": "RF reference agreement, not independent specificity or absence",
+        "dwells": len(rows),
+        "binary_sha256": digest(library),
+        "results": summarize(rows, protocol),
+    }
     if all_windows:
         result["offline_comparators"] = summarize_diagnostics(rows, protocol)
     write_json(output / "summary.json", result)
@@ -239,11 +298,22 @@ if __name__ == "__main__":
     parser.add_argument("output", type=Path)
     parser.add_argument("--fftw-prefix", required=True, type=Path)
     parser.add_argument("--rank-amplitude", action="store_true")
-    parser.add_argument("--reference-run", type=Path,
-                        help="Reuse hash-checked references; this is now development data")
-    parser.add_argument("--all-windows", action="store_true",
-                        help="Offline all-six comparator; does not change the one-window policy")
+    parser.add_argument(
+        "--reference-run",
+        type=Path,
+        help="Reuse hash-checked references; this is now development data",
+    )
+    parser.add_argument(
+        "--all-windows",
+        action="store_true",
+        help="Offline all-six comparator; does not change the one-window policy",
+    )
     args = parser.parse_args()
-    run(args.archive, args.output, args.fftw_prefix,
-        amplitude=args.rank_amplitude, reference_run=args.reference_run,
-        all_windows=args.all_windows)
+    run(
+        args.archive,
+        args.output,
+        args.fftw_prefix,
+        amplitude=args.rank_amplitude,
+        reference_run=args.reference_run,
+        all_windows=args.all_windows,
+    )
