@@ -208,5 +208,8 @@ issue; this checkpoint does not claim to fix them.
 The [artifact index](evidence/2026_09_10_scanner_cooperative_skips_checkpoint/index.json)
 binds the public metrics, API snapshot, test receipts, build receipts, exact
 profiling recipe and three PNGs. No IQ, binaries or credentials are committed.
+The original profiling recipe is retained byte-for-byte as `profile_saved.py.gz`;
+its adjacent Python copy is formatting-clean. This housekeeping changes no
+measurement or figure and does not rerun the RF-verification recipes.
 `render_figures.py` rebuilds figures from retained metrics without radio or HTTP
 access; `collect_snapshot.py` is a separate read-only production API snapshot.
