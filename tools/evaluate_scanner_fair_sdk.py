@@ -51,11 +51,20 @@ def profiles(costs, count):
     yield "resampled_jitter", rng.choice(costs, count, replace=True), (0, 3, 8, 1, 9, 5)
 
 
-def evaluate_case(sdk, worker, output, path, label, costs, jitter, inputs):
+def evaluate_case(
+    sdk, worker, output, path, label, costs, jitter, inputs, *, maximum_pending_age_ms=120
+):
     baseline, rate, geometry, _, visits = inputs
     before = time.monotonic()
     result = run(
-        sdk, worker, output / "working", rate, geometry, costs.tolist(), owner_jitter_ms=jitter
+        sdk,
+        worker,
+        output / "working",
+        rate,
+        geometry,
+        costs.tolist(),
+        owner_jitter_ms=jitter,
+        maximum_pending_age_ms=maximum_pending_age_ms,
     )
     elapsed = time.monotonic() - before
     actual = summarize(visits, [row["visit"] for row in result["checks"]])
@@ -65,7 +74,13 @@ def evaluate_case(sdk, worker, output, path, label, costs, jitter, inputs):
     model_cost = float(np.median(costs))
     modeled = simulate(visits, model_cost, "freshness_guard_one_pending")
     model = summarize(visits, [row.visit for row in modeled])
-    sampled = sampled_simulate(geometry, rate, costs.tolist(), owner_jitter_ms=jitter)
+    sampled = sampled_simulate(
+        geometry,
+        rate,
+        costs.tolist(),
+        owner_jitter_ms=jitter,
+        maximum_pending_age_ms=maximum_pending_age_ms,
+    )
     actual_dispatches = [(r["visit"], r["started_ms"]) for r in result["checks"]]
     expected_dispatches = [(r["visit"], r["started_ms"]) for r in sampled["checks"]]
     assert actual_dispatches == expected_dispatches, "SDK and sampled model diverged"
@@ -79,6 +94,7 @@ def evaluate_case(sdk, worker, output, path, label, costs, jitter, inputs):
         "scope": "Actual SDK with synthetic IQ and controlled completion timing; no RF",
         "session_id": baseline["session_id"],
         "sample_rate_hz": rate,
+        "maximum_pending_age_ms": maximum_pending_age_ms,
         "snapshot_path": str(path.relative_to(ROOT)),
         "snapshot_sha256": digest(path),
         "input_manifest_sha256": baseline["input_manifest_sha256"],
@@ -113,6 +129,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, action="append", required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--maximum-pending-age-ms", type=int, choices=range(1, 241), default=120)
     args = parser.parse_args()
     args.output_root.mkdir()
     sdk, worker = build(args.output_root / "build")
@@ -134,7 +151,17 @@ def main():
         for label, costs, jitter in profiles(measured, len(geometry)):
             case = args.output_root / (baseline["session_id"] + "-" + label)
             case.mkdir()
-            result = evaluate_case(sdk, worker, case, path, label, costs, jitter, inputs)
+            result = evaluate_case(
+                sdk,
+                worker,
+                case,
+                path,
+                label,
+                costs,
+                jitter,
+                inputs,
+                maximum_pending_age_ms=args.maximum_pending_age_ms,
+            )
             with (case / "result.json").open("x") as stream:
                 json.dump(result, stream, indent=2, allow_nan=False)
                 stream.write("\n")
@@ -160,6 +187,7 @@ def main():
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip(),
         "sources": sources,
+        "maximum_pending_age_ms": args.maximum_pending_age_ms,
         "sdk_sha256": digest(sdk),
         "worker_sha256": digest(worker),
         "cases": results,

@@ -118,7 +118,18 @@ def _stopped(pid):
     raise TimeoutError("owned numerical worker did not reach its publication gate")
 
 
-def run(sdk, worker, directory, rate, geometry, costs_ms, *, block_ms=20, owner_jitter_ms=(0,)):
+def run(
+    sdk,
+    worker,
+    directory,
+    rate,
+    geometry,
+    costs_ms,
+    *,
+    block_ms=20,
+    owner_jitter_ms=(0,),
+    maximum_pending_age_ms=120,
+):
     """Controlled completion costs are indexed by source visit, not dispatch.
 
     Owner calls occur at delivered block ends; result publication is released
@@ -128,6 +139,8 @@ def run(sdk, worker, directory, rate, geometry, costs_ms, *, block_ms=20, owner_
     """
     if rate not in (2500000, 5000000) or not 0 < block_ms <= 20:
         raise ValueError("unsupported fixture geometry")
+    if not isinstance(maximum_pending_age_ms, int) or not 1 <= maximum_pending_age_ms <= 240:
+        raise ValueError("pending age must be an integer in 1..240 ms")
     if not geometry or len(geometry) != len(costs_ms) or len(geometry) > 2500:
         raise ValueError("invalid fixture inventory")
     if any(not np.isfinite(c) or not 0 < c < 450 for c in costs_ms):
@@ -227,7 +240,12 @@ def run(sdk, worker, directory, rate, geometry, costs_ms, *, block_ms=20, owner_
             p.leo_scanner_glrt_enable_protection(s.ptr, ct.byref(Protection(3, 450, 500, 4))) == 0
         )
         assert p.leo_scanner_glrt_enable_cooperative_skips(s.ptr) == 0
-        assert p.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(Admission(120, 2500))) == 0
+        assert (
+            p.leo_scanner_glrt_enable_fair_admission(
+                s.ptr, ct.byref(Admission(maximum_pending_age_ms, 2500))
+            )
+            == 0
+        )
         end = ORIGIN
         for first in range(ORIGIN, geometry[-1].end, block_count):
             end = min(first + block_count, geometry[-1].end)

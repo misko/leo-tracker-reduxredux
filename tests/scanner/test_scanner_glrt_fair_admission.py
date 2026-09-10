@@ -26,14 +26,14 @@ class AdmissionStats(ct.Structure):
     ] + [(name, ct.c_uint32) for name in ("enabled", "pending", "running")]
 
 
-@pytest.fixture(params=[2500000, 5000000])
+@pytest.fixture(params=[(rate, age) for rate in (2500000, 5000000) for age in (120, 240)])
 def fair(protected_port, artifacts, tmp_path, request):
     p = protected_port
+    rate, pending_age = request.param
     p.leo_scanner_glrt_enable_fair_admission.argtypes = [ct.c_void_p, ct.POINTER(Admission)]
     p.leo_scanner_glrt_admission_stats.argtypes = [ct.c_void_p, ct.POINTER(AdmissionStats)]
-    s = Session(
-        p, artifacts[0], tmp_path, request.param, positive_policy=PositivePolicy(0.175, 0.025)
-    )
+    s = Session(p, artifacts[0], tmp_path, rate, positive_policy=PositivePolicy(0.175, 0.025))
+    s.pending_age_ms = pending_age
     p.leo_test_clock(1_000_000_000, 1)
     assert (
         p.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(Admission(120, 2500)))
@@ -41,7 +41,9 @@ def fair(protected_port, artifacts, tmp_path, request):
     )
     assert p.leo_scanner_glrt_enable_protection(s.ptr, ct.byref(Protection(3, 450, 500, 4))) == 0
     assert p.leo_scanner_glrt_enable_cooperative_skips(s.ptr) == 0
-    assert p.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(Admission(120, 2500))) == 0
+    assert (
+        p.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(Admission(pending_age, 2500))) == 0
+    )
     try:
         yield s
     finally:
@@ -103,19 +105,21 @@ def test_pending_exact_age_boundary_and_expiry_are_unknown_not_fault(fair, domai
         feed(s, 0, 0)
         feed(s, 1, 1)
         if domain == "host":
-            s.port.leo_test_clock(1_120_000_000, 1)
+            boundary = 1_000_000_000 + s.pending_age_ms * 1_000_000
+            s.port.leo_test_clock(boundary, 1)
             assert not s.frame().results
             assert admission_stats(s).pending == 1
-            s.port.leo_test_clock(1_120_000_001, 1)
+            s.port.leo_test_clock(boundary + 1, 1)
             s.frame()
         else:
             count = s.rate // 50
             start = 2**53 + 347 + s.rate * 240 // 1000
             iq = np.zeros((count, 4), dtype=np.int16)
-            for j in range(6):
+            blocks = s.pending_age_ms // 20
+            for j in range(blocks):
                 assert s.block(start + j * count, iq) == 0
             assert admission_stats(s).pending == 1
-            assert s.block(start + 6 * count, iq) == 0
+            assert s.block(start + blocks * count, iq) == 0
         assert admission_stats(s).expired == 1 and admission_stats(s).pending == 0
         assert not stats(s).disabled
     finally:
@@ -201,7 +205,7 @@ def test_startup_opt_in_is_one_shot_and_validated(fair):
         == -errno.EINVAL
     )
     assert s.port.leo_scanner_glrt_enable_fair_admission(s.ptr, None) == -errno.EINVAL
-    for config in (Admission(0, 2500), Admission(121, 2500), Admission(120, 0)):
+    for config in (Admission(0, 2500), Admission(241, 2500), Admission(120, 0)):
         assert (
             s.port.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(config)) == -errno.EINVAL
         )
@@ -209,3 +213,22 @@ def test_startup_opt_in_is_one_shot_and_validated(fair):
         s.port.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(Admission(120, 2500)))
         == -errno.EBUSY
     )
+
+
+def test_pending_age_cannot_relax_the_separate_admission_guard(protected_port, artifacts, tmp_path):
+    p = protected_port
+    p.leo_scanner_glrt_enable_fair_admission.argtypes = [ct.c_void_p, ct.POINTER(Admission)]
+    s = Session(p, artifacts[0], tmp_path, 5000000, positive_policy=PositivePolicy(0.175, 0.025))
+    try:
+        assert (
+            p.leo_scanner_glrt_enable_protection(s.ptr, ct.byref(Protection(3, 200, 500, 4))) == 0
+        )
+        assert p.leo_scanner_glrt_enable_cooperative_skips(s.ptr) == 0
+        for age in (200, 240):
+            assert (
+                p.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(Admission(age, 2500)))
+                == -errno.ENOTSUP
+            )
+        assert p.leo_scanner_glrt_enable_fair_admission(s.ptr, ct.byref(Admission(120, 2500))) == 0
+    finally:
+        s.close()

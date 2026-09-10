@@ -85,6 +85,8 @@ int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *);
  * protection with all three preallocated slots available. One slot runs, one
  * complete dwell may be held, and one collects. No new IQ allocation occurs.
  * Pending age is bounded in BOTH source time and owner CLOCK_MONOTONIC time.
+ * The explicit pending limit accepts 1..240 ms (at most two dwell durations)
+ * and must remain below the separately configured admission-age limit.
  * Existing occupancy, admission-age and worker watchdog limits still apply.
  * Fairness uses last dispatch, not last positive: it never changes detections
  * or cooldown. A freshness guard operates only after recent worker overload.
