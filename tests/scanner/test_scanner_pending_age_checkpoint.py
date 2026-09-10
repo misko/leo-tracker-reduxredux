@@ -12,6 +12,7 @@ import pytest
 
 from tools.qualify_presence_dwell_worker import FIELDS
 from tools.qualify_presence_worker import compare_values
+from tools.qualify_scanner_glrt_sdk import verify
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "reports/evidence/2026_09_10_scanner_pending240"
@@ -166,3 +167,28 @@ def test_release_integration_receipts_preserve_initial_setup_error_and_rerun():
     ).find("testsuite")
     assert initial.get("errors") == "61" and initial.get("failures") == "0"
     assert all("LEO_LIBIIO_SOURCE" in error.get("message") for error in initial.findall(".//error"))
+
+
+def test_staging_and_parallel_diagnostics_do_not_hide_failure_or_claim_activation():
+    failed = read("publication/parallel-release-gate-failed.json")
+    repeated = read("publication/parallel-release-gate-diagnostic.json")
+    assert failed["passed"] is False and repeated["passed"] is True
+    assert failed["revision"] == repeated["revision"]
+    manifest = read("publication/3324228/manifest.json")
+    for i in range(32):
+        raw = gzip.decompress(
+            (EVIDENCE / f"publication/parallel-replay/{i:02}.jsonl.gz").read_bytes()
+        ).decode()
+        result = verify(
+            raw, manifest, 968, delay_blocks=2, jitter_ms=40, enabled=True, positive_feedback=True
+        )
+        assert result["jobs"] == result["results"] == result["observations"] == 8
+    stage = read("publication/release-publication-checkpoint.json")
+    assert stage["staged_revision"] == repeated["revision"]
+    assert stage["no_activation"] and not stage["new_rf"] and not stage["firmware_changed"]
+    assert len(stage["runtime_assets_sha256"]) == 12
+    for path, expected in stage["runtime_assets_sha256"].items():
+        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected
+    assert all(
+        not value.endswith(stage["staged_revision"]) for value in stage["selectors"].values()
+    )
