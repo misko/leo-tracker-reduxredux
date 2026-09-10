@@ -322,3 +322,82 @@ class NativeJournalSourceBindingV1(_NativePort):
             start = int(measurement.native_start_sample)
             if not origin <= start <= start + recording.pilot_samples - 1 <= last:
                 raise ValueError("native pilot lies outside its bound coarse source")
+
+
+NativeBundleArtifactName = Literal[
+    "journal.glrj",
+    "recording.json",
+    "source-binding.json",
+    "owner-receipt.json",
+    "coarse-protocol.json",
+    "coarse-summary.json",
+    "coarse-final-snapshot.txt",
+]
+
+
+class NativeBundleArtifactV1(_NativePort):
+    sha256: Digest
+    bytes: Annotated[int, Field(gt=0, le=3000000000)]
+
+
+class NativeBundleExternalIqV1(NativeBundleArtifactV1):
+    embedded: Literal[False]
+
+
+class NativeRecordingBundleV1(_NativePort):
+    schema_name: Literal["starlink-glrt-native-recording-bundle/v1"] = Field(alias="schema")
+    publication_status: Literal["complete"]
+    serial: Annotated[str, Field(min_length=1, max_length=128)]
+    boot_id: str
+    fit_sha256: Digest
+    visit: Identity
+    epoch: Identity
+    episode_index: Annotated[int, Field(ge=0, lt=2)]
+    runtime_result: Annotated[int, Field(ge=-5, le=0)]
+    owner_status: Annotated[str, Field(min_length=1, max_length=128)]
+    head_count: Annotated[int, Field(ge=0, le=225000)]
+    supported_count: Annotated[int, Field(ge=0, le=225000)]
+    evidence_mode: Literal["retrospective_retained_owner_correspondence"]
+    coarse_iq: NativeBundleExternalIqV1
+    artifacts: dict[NativeBundleArtifactName, NativeBundleArtifactV1]
+    acquisition_verified: Literal[False]
+    original_native_iq_verified: Literal[False]
+    physical_precision_qualified: Literal[False]
+
+    @model_validator(mode="after")
+    def _inventory(self) -> Self:
+        if len(self.artifacts) != 7 or self.supported_count > self.head_count:
+            raise ValueError("native bundle artifact or result inventory is incomplete")
+        return self
+
+    def require_binding(self, binding: NativeJournalSourceBindingV1) -> None:
+        names = (
+            "serial",
+            "boot_id",
+            "fit_sha256",
+            "visit",
+            "epoch",
+            "episode_index",
+            "runtime_result",
+            "owner_status",
+            "head_count",
+            "supported_count",
+            "evidence_mode",
+        )
+        if any(getattr(self, name) != getattr(binding, name) for name in names):
+            raise ValueError("native bundle identity or outcome differs from its source binding")
+        if (
+            self.coarse_iq.sha256 != binding.coarse_iq_sha256
+            or self.coarse_iq.bytes != binding.coarse_iq_bytes
+        ):
+            raise ValueError("native bundle coarse IQ reference differs")
+        hashes = {
+            "journal.glrj": binding.journal_sha256,
+            "recording.json": binding.recording_export_sha256,
+            "owner-receipt.json": binding.owner_receipt_sha256,
+            "coarse-protocol.json": binding.collector_protocol_sha256,
+            "coarse-summary.json": binding.collector_summary_sha256,
+            "coarse-final-snapshot.txt": binding.collector_final_snapshot_sha256,
+        }
+        if any(self.artifacts[name].sha256 != digest for name, digest in hashes.items()):
+            raise ValueError("native bundle artifact hashes differ from source binding")
