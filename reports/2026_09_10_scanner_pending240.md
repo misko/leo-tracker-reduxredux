@@ -8,6 +8,12 @@ the existing 120 ms provider default unchanged. The 240 ms candidate passed
 300-second schedule replays, desktop provider overload and ASan/UBSan checks,
 and the actual provider/worker on the ARM processor in `.18`.
 
+Follow-up verification passed **62 sealed-host localhost tests**, including
+both-rate 300-second source-span recordings and HTTP publication. Corrected
+immutable release `a37f5e92` subsequently passed the standard release gate,
+including **144 web tests and 16 Chromium browser tests**. This closes the
+host/package qualification gate, not the remaining live RF comparison.
+
 This is **not a production deployment or live RF duty qualification**. No
 firmware, FPGA, boot configuration, installed daemon or capture schedule was
 changed. No new RF was collected. The candidate is not a universal throughput win.
@@ -159,6 +165,65 @@ passes. The failed receipt is retained alongside the diagnostic runs; the
 intermittent failure is **not claimed fixed**. It is separate from the fair
 candidate's deliberate UNKNOWN-overload tests and from live RF qualification.
 
+The verifier now retains each mismatched field's exact actual and expected
+value, so a future failure can distinguish worker-busy results from source
+misbinding. All 13 exact equality checks remain; numerical tolerances and
+detector behavior are unchanged. Mutation tests cover every binding field,
+including integer counters above 2^53, plus both-rate replay integration.
+
+## Sealed host, recording and publication verification
+
+The staged Python application, pinned PPU package and metadata-ABI-3 libiio
+were exercised against a matching desktop 240 ms provider over localhost TCP.
+All **62 tests passed** in 487.7 seconds. The application uses PPU's existing
+public runtime preflight before importing the IIO binding; this selects the
+sealed native library rather than the ambient system library. No production
+runtime workaround or global library-path change was needed.
+
+The suite covers fixed, shadow and adaptive paths, fractional/source timing,
+terminal drain, cancellation, durable IQ, and read-only HTTP publication/retry.
+Each of the four complete scheduled shadow/adaptive cases at 2.5 and 5 MS/s
+retained **2,480 visits**, spanned at least 300 seconds in source samples, and
+verified publication through HTTP. Each owned fixture opened, drained and
+destroyed its context exactly once. Cancellation and pre-refill cancellation
+also published without reopening the source.
+
+These are accelerated synthetic-IQ fixtures with a desktop numerical worker,
+not actual ARM streaming or a physical 300-second RF duty measurement. Fixture
+identity digests are explicitly test-only. A context guard rejected all IIO
+URIs except `ip:127.0.0.1:<port>`; no radio was accessed. The later corrected
+release has identical `src/`, `runtime/`, deployment and dependency bytes to
+the release used here; only tests, diagnostics and documentation changed.
+
+## Release packaging failure, correction and full gate
+
+The first full release qualification correctly failed: a web PNG test tried
+to read the historical repository `reports/` directory, which immutable
+releases deliberately exclude. Scientific and PostgreSQL lanes passed; the
+web lane failed and its dependent Chromium lane was blocked. The original
+failed receipt and logs remain in the evidence bundle.
+
+The fix supplies a tiny release-local manifest containing the same three
+reviewed PNG hashes and byte lengths. Web tests still check exact bytes,
+hashes, PNG signatures and dimensions. Repository-owned tests additionally
+require that manifest to be the exact projection of the original evidence
+index and require the public PNG bytes to equal the original report figures.
+No scientific fixture, figure, dependency or public persisted contract changed.
+An isolated web tree without sibling reports passed all 144 tests and the build.
+
+Commit `a37f5e926dd45f4e0f8470ffc6dbc807ad8c90aa` was pushed to the development
+branch, staged immutably and qualified with the unchanged standard gate.
+All five blocking lanes passed. Content-addressed reuse retained the three
+unchanged successful corpus/science/PostgreSQL lanes (1, 56 and 3 tests);
+the web build and all **16 production Chromium tests** ran afresh. The full
+corrected gate took **126.7 seconds**. Browser checks include scanner archive
+paging and selected PNG loading; they do not establish live RF performance.
+
+The dedicated qualification database returned to only its `public` schema.
+All 12 staged ARM asset hashes matched the reviewed candidate. All production
+selectors remained unchanged, and acquisition remained active on `c60438c5`.
+The corrected release is **staged and software-qualified, not activated**.
+
 ## Evidence and remaining gates
 
 [Receipts, source snapshots and figures](evidence/2026_09_10_scanner_pending240/index.json)
@@ -174,8 +239,7 @@ Release manifest digest:
 The synthetic test envelope adds only its executable/input fixtures and is not
 the production release manifest.
 
-Remaining: final release qualification/publication, an explicitly authorized
-bounded same-build live off/on duty
+Remaining: an explicitly authorized bounded same-build live off/on duty
 comparison, deployment/rollback and UI verification. A new 300-second RF test
 requires fresh authorization. The PNG repair is separate and already on main;
 this candidate does not resolve previously reported intermittent 5 MS/s transport

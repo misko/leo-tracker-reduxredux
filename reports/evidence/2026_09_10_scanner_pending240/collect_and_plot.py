@@ -134,6 +134,9 @@ def main():
 
     saved_originals, saved_summary = collect(archive, sha, FIGURES)
     originals.extend(saved_originals)
+    from collect_release import collect as collect_release
+
+    originals.extend(collect_release(archive))
     files = [
         p
         for p in HERE.rglob("*")
