@@ -71,11 +71,23 @@ typedef struct {
 int leo_scanner_glrt_enable_protection(leo_scanner_glrt *,
     const leo_scanner_glrt_protection_v1 *);
 
+/* Additive startup-only opt-in, requiring positive policy and protection.
+ * Explicit pressure/admission skips carry healthy UNKNOWN scheduler feedback:
+ * the advisory owner intentionally did no check, rather than losing feedback.
+ * They neither count as misses nor refresh last-positive time. Public records
+ * remain unavailable, with zero coverage. Invalid input, worker/clock faults,
+ * cancellation and missing/stale feedback keep their existing fault behavior.
+ * No setting/ABI/default is changed by merely linking this newer SDK. A caller
+ * must pin this policy in a newly qualified bundle configuration before use. */
+int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *);
+
 /* Acquisition-owner pressure hint, once per measured block. Nonzero pressure
  * suspends new checks; recovery_blocks consecutive zero hints resume admission.
  * A skipped/partial check is unavailable with zero coverage, never a miss or
  * an invented positive. Already submitted work may finish; no waiting/restart.
- * This does not unlatch the adaptive policy's capture-long uniform fallback. */
+ * This does not unlatch the adaptive policy's capture-long uniform fallback.
+ * Cooperative skips avoid creating that fault solely from intentional shedding;
+ * they cannot clear an already-latched fault. */
 int leo_scanner_glrt_capture_pressure(leo_scanner_glrt *, int pressured);
 
 /* Runtime diagnostics only, not a new persisted contract or wire reason.

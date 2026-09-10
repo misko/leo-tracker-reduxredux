@@ -41,7 +41,7 @@ struct leo_scanner_glrt {
     uint64_t now_ns;
     uint32_t oldest_pending, recovery_count;
     pid_t worker;
-    int notify, have_history, finished, final, failed;
+    int notify, have_history, finished, final, failed, cooperative_skips;
 };
 
 static leo_probe_request request_for(const leo_scanner_glrt *s, uint32_t index)
@@ -62,6 +62,14 @@ static void unavailable(leo_scanner_glrt *s, uint32_t index, enum leo_glrt_reaso
         .valid_start=q.valid_start,.valid_end=q.valid_end,.rate_hz=q.rate_hz,
         .rx=q.rx,.target=q.channel-1+4*q.edge,.outcome=LEO_ADAPTIVE_UNKNOWN,.healthy=0};
     s->visits[index].state=DONE;
+}
+
+/* Call only at an explicit acquisition-owner admission decision. A wire reason
+ * alone is not sufficient evidence that skipping was intentional. */
+static void admission_skip(leo_scanner_glrt *s, uint32_t index, enum leo_glrt_reason reason)
+{
+    unavailable(s,index,reason);
+    if (s->cooperative_skips) s->visits[index].observation.healthy=1;
 }
 
 void leo_scanner_glrt_fail(leo_scanner_glrt *s)
@@ -119,6 +127,16 @@ int leo_scanner_glrt_enable_protection(leo_scanner_glrt *s,
     s->protection_stats.enabled=1;
     check_protection(s);
     return s->failed ? -EIO : 0;
+}
+
+int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *s)
+{
+    if (!s) return -EINVAL;
+    if (!s->policy.classification_enabled || !s->protection_stats.enabled) return -ENOTSUP;
+    if (s->known || s->have_history || s->finished || s->failed || s->cooperative_skips)
+        return -EBUSY;
+    s->cooperative_skips=1;
+    return 0;
 }
 
 int leo_scanner_glrt_protection_stats(const leo_scanner_glrt *s,
@@ -238,7 +256,7 @@ static void collect_available(leo_scanner_glrt *s)
         if (expected>=s->history_end) break;
         if (s->protection_stats.suspended) {
             leo_probe_abort(&s->collector);
-            unavailable(s,index,LEO_GLRT_INCOMPLETE_SEARCH);
+            admission_skip(s,index,LEO_GLRT_INCOMPLETE_SEARCH);
             ++s->protection_stats.pressure_skips; ++s->collecting; continue;
         }
         if (expected<s->history_start) {
@@ -253,7 +271,7 @@ static void collect_available(leo_scanner_glrt *s)
                      s->visits[s->oldest_pending].state==WORKING &&
                      s->now_ns-s->visits[s->oldest_pending].submitted_ns>=
                          (uint64_t)s->protection.admission_age_ms*1000000)) {
-                    unavailable(s,index,LEO_GLRT_WORKER_BUSY);
+                    admission_skip(s,index,LEO_GLRT_WORKER_BUSY);
                     ++s->protection_stats.backlog_skips; ++s->collecting; continue;
                 }
             }
