@@ -69,6 +69,7 @@ def protected_port(tmp_path_factory):
     p.leo_scanner_glrt_protection_stats.argtypes = [ct.c_void_p, ct.POINTER(Stats)]
     p.leo_scanner_glrt_capture_pressure.argtypes = [ct.c_void_p, ct.c_int]
     p.leo_scanner_glrt_enable_cooperative_skips.argtypes = [ct.c_void_p]
+    p.leo_scanner_glrt_skip_cause.argtypes = [ct.c_void_p, ct.c_uint64, ct.POINTER(ct.c_uint32)]
     p.leo_test_clock.argtypes = [ct.c_uint64, ct.c_int]
     return p
 

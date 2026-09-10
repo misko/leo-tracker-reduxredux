@@ -9,12 +9,25 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tools.native_presence import ROOT, build_dwell_presence, build_worker, write_templates
+from tools.native_presence import (
+    ROOT,
+    build_dwell_presence,
+    build_scanner_glrt_port,
+    build_worker,
+    write_templates,
+)
 from tools.presence_dwell import NativeDwell, unpack
 from tools.qualify_native_presence import digest
 from tools.qualify_presence_dwell_controls import generate
 from tools.qualify_presence_dwell_worker import FIELDS
-from tools.qualify_scanner_glrt_sdk import POSITIVE_PROFILE, _decision, build, verify
+from tools.qualify_scanner_glrt_sdk import (
+    COOPERATIVE_PROFILE,
+    POSITIVE_PROFILE,
+    PROTECTION_PROFILE,
+    _decision,
+    build,
+    verify,
+)
 
 
 @pytest.fixture(scope="module")
@@ -461,6 +474,53 @@ def test_packaged_sdk_and_release_identities_are_verified_without_rebuilding(wor
     assert checked["configuration_sha256"] == configuration
     with pytest.raises(ValueError, match="metadata/frame"):
         verify(process.stdout, manifest, 968, delay_blocks=2, jitter_ms=40, enabled=True)
+
+
+def test_replay_still_links_without_new_optional_sdk_symbols(workload, tmp_path):
+    _, worker, templates, pack, manifest = workload
+    # Rename only the two new exports, modeling an older SDK symbol inventory
+    # while exercising the real unchanged default SDK behavior.
+    sdk = build_scanner_glrt_port(
+        tmp_path / "libleo-scanner-glrt.so",
+        cflags=(
+            "-Dleo_scanner_glrt_enable_cooperative_skips=leo_test_unused_enable",
+            "-Dleo_scanner_glrt_skip_cause=leo_test_unused_cause",
+        ),
+    )
+    before = digest(sdk)
+    parent = build(tmp_path / "consumer", sdk_library=sdk, runtime_rpath=sdk.parent)
+    command = [
+        str(parent),
+        str(worker),
+        str(templates),
+        str(pack),
+        "968",
+        "2",
+        "40",
+        "1",
+        "12" * 32,
+        "34" * 32,
+        POSITIVE_PROFILE,
+        PROTECTION_PROFILE,
+    ]
+    process = subprocess.run(command, capture_output=True, text=True, timeout=15)
+    assert process.returncode == 0, process.stderr
+    result = verify(
+        process.stdout,
+        manifest,
+        968,
+        delay_blocks=2,
+        jitter_ms=40,
+        enabled=True,
+        positive_feedback=True,
+        capture_protection=True,
+    )
+    assert result["verified"] and result["results"] == 8
+    unsupported = subprocess.run(
+        [*command, COOPERATIVE_PROFILE], capture_output=True, text=True, timeout=2
+    )
+    assert unsupported.returncode == 2 and not unsupported.stdout
+    assert digest(sdk) == before
 
 
 @pytest.mark.parametrize(

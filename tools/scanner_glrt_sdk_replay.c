@@ -23,7 +23,14 @@ static struct leo_replay_shadow *shadow;
 #define LEGACY "sdk-replay-opaque-legacy"
 #define POSITIVE_PROFILE "positive-feedback-v1"
 #define PROTECTION_PROFILE "capture-protection-v1"
+#define COOPERATIVE_PROFILE "cooperative-skips-v1"
 #define OBSERVATIONS_PER_POLL 8u
+
+/* Keep legacy replay linkable against an already sealed older SDK. The new
+ * replay profile fails closed if either additive entrypoint is absent. */
+extern int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *) __attribute__((weak));
+extern int leo_scanner_glrt_skip_cause(const leo_scanner_glrt *,uint64_t,uint32_t *)
+    __attribute__((weak));
 
 static double clock_ms(clockid_t clock)
 {
@@ -105,7 +112,8 @@ static int emit(leo_scanner_glrt *sdk,int drain,uint64_t block,double origin,
  * both before and after carriers to check that neither consumer steals data.
  * This is feedback transport evidence, NOT adaptive RF or policy simulation. */
 static int observations(leo_scanner_glrt *sdk,uint64_t block,double origin,
-    const char *phase,unsigned *count,int *terminal,double *cost_cpu,double *cost_wall)
+    const char *phase,unsigned *count,int *terminal,double *cost_cpu,double *cost_wall,
+    int cooperative)
 {
     if (*terminal) return 0;
     for (unsigned j=0;j<OBSERVATIONS_PER_POLL;++j) {
@@ -130,9 +138,15 @@ static int observations(leo_scanner_glrt *sdk,uint64_t block,double origin,
         printf("{\"kind\":\"observation\",\"session\":\"%" PRIu64 "\",\"generation\":\"%" PRIu64
             "\",\"visit\":\"%" PRIu64 "\",\"start\":\"%" PRIu64 "\",\"end\":\"%" PRIu64
             "\",\"rate_hz\":%u,\"rx\":%u,\"target\":%u,\"outcome\":%u,\"healthy\":%u,"
-            "\"block\":%" PRIu64 ",\"phase\":\"%s\",\"elapsed_ms\":%.9f}\n",
+            "\"block\":%" PRIu64 ",\"phase\":\"%s\",\"elapsed_ms\":%.9f",
             o.session,o.generation,o.visit,o.valid_start,o.valid_end,o.rate_hz,o.rx,
             o.target,o.outcome,o.healthy,block,phase,ended-origin);
+        if (cooperative) {
+            uint32_t cause;
+            if (leo_scanner_glrt_skip_cause(sdk,o.visit,&cause)) return -1;
+            printf(",\"skip_cause\":%u",cause);
+        }
+        puts("}");
     }
     return 0;
 }
@@ -140,17 +154,27 @@ static int observations(leo_scanner_glrt *sdk,uint64_t block,double origin,
 int main(int argc,char **argv)
 {
     unsigned duration,delay,jitter,enabled;
-    if ((argc!=8 && (argc<10 || argc>13)) || integer(argv[4],&duration) || duration<242 ||
+    if ((argc!=8 && (argc<10 || argc>14)) || integer(argv[4],&duration) || duration<242 ||
         integer(argv[5],&delay) || (delay!=0 && delay!=2) ||
         integer(argv[6],&jitter) || (jitter!=0 && jitter!=40) ||
         integer(argv[7],&enabled) || enabled>1) return 2;
     uint8_t algorithm[32],configuration[32];
     memset(algorithm,18,32); memset(configuration,52,32);
     if (argc>=10 && (identity(argv[8],algorithm) || identity(argv[9],configuration))) return 2;
-    int positive=argc>=11,protected=argc>=12,injected=argc==13;
+    int positive=argc>=11,protected=argc>=12,injected=0,cooperative=0;
     if (positive && (!enabled || strcmp(argv[10],POSITIVE_PROFILE))) return 2;
     if (protected && strcmp(argv[11],PROTECTION_PROFILE)) return 2;
-    if (injected && (strcmp(argv[12],"pressure-smoke-v1") || duration<4840)) return 2;
+    if (argc>=13) {
+        injected=!strcmp(argv[12],"pressure-smoke-v1");
+        cooperative=argc==13 && !strcmp(argv[12],COOPERATIVE_PROFILE);
+        if ((!injected && !cooperative) || (injected && duration<4840)) return 2;
+    }
+    if (argc==14) {
+        if (!injected || strcmp(argv[13],COOPERATIVE_PROFILE)) return 2;
+        cooperative=1;
+    }
+    if (cooperative && (!leo_scanner_glrt_enable_cooperative_skips ||
+        !leo_scanner_glrt_skip_cause)) return 2;
 #ifdef LEO_REPLAY_THREADED_SHADOW
     if (!positive || delay!=2) return 2;
 #endif
@@ -197,6 +221,7 @@ int main(int argc,char **argv)
             leo_scanner_glrt_open(&sdk,&config,argv[1],argv[2]);
         if (ret) { fprintf(stderr,"SDK startup rejected: %d\n",ret); goto done; }
         if (protected && leo_scanner_glrt_enable_protection(sdk,&protection)) goto done;
+        if (cooperative && leo_scanner_glrt_enable_cooperative_skips(sdk)) goto done;
     }
     const char *schema=positive ? "leo-sdk-modeled-positive-feedback-replay-v1" : "leo-sdk-modeled-replay-v1";
 #ifdef LEO_REPLAY_THREADED_SHADOW
@@ -208,9 +233,11 @@ int main(int argc,char **argv)
 #endif
     if (protected) {
 #ifdef LEO_REPLAY_THREADED_SHADOW
-        schema="leo-sdk-protected-threaded-shadow-replay-v1";
+        schema=cooperative ? "leo-sdk-cooperative-threaded-shadow-replay-v1" :
+            "leo-sdk-protected-threaded-shadow-replay-v1";
 #else
-        schema="leo-sdk-protected-positive-feedback-replay-v1";
+        schema=cooperative ? "leo-sdk-cooperative-positive-feedback-replay-v1" :
+            "leo-sdk-protected-positive-feedback-replay-v1";
 #endif
     }
     double setup_ms=clock_ms(CLOCK_MONOTONIC)-opened;
@@ -227,6 +254,7 @@ int main(int argc,char **argv)
     if (protected) printf(",\"capture_protection\":{\"profile\":\"%s\",\"max_occupied_slots\":2,"
         "\"admission_age_ms\":250,\"worker_timeout_ms\":500,\"recovery_blocks\":4,"
         "\"callback_budget_percent\":80,\"pressure_smoke\":%s}",PROTECTION_PROFILE,injected ? "true" : "false");
+    if (cooperative) printf(",\"cooperative_skips_profile\":\"%s\"",COOPERATIVE_PROFILE);
     puts("}");
     double origin=clock_ms(CLOCK_MONOTONIC);
 #ifdef LEO_REPLAY_THREADED_SHADOW
@@ -291,10 +319,10 @@ int main(int argc,char **argv)
         callback_wall+=clock_ms(CLOCK_MONOTONIC)-wall_start;
         double observation_cpu=0,observation_wall=0;
         if (positive && block%2==0 && observations(sdk,block,origin,"before-frame",
-            &observation_count,&observation_terminal,&observation_cpu,&observation_wall)) goto done;
+            &observation_count,&observation_terminal,&observation_cpu,&observation_wall,cooperative)) goto done;
         if (enabled && emit(sdk,0,block,origin,&callback_cpu,&callback_wall)!=1) goto done;
         if (positive && block%2==1 && observations(sdk,block,origin,"after-frame",
-            &observation_count,&observation_terminal,&observation_cpu,&observation_wall)) goto done;
+            &observation_count,&observation_terminal,&observation_cpu,&observation_wall,cooperative)) goto done;
         callback_cpu+=observation_cpu; callback_wall+=observation_wall;
         if (protected) {
             double cpu_start=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall_start=clock_ms(CLOCK_MONOTONIC);
@@ -323,12 +351,12 @@ int main(int argc,char **argv)
         while (clock_ms(CLOCK_MONOTONIC)<origin+duration+5000) {
             double cpu_ms=0,wall_ms=0;
             if (positive && observations(sdk,blocks,origin,"drain",&observation_count,
-                &observation_terminal,&cpu_ms,&wall_ms)) goto done;
+                &observation_terminal,&cpu_ms,&wall_ms,cooperative)) goto done;
             int ret=emit(sdk,1,blocks,origin,&cpu_ms,&wall_ms);
             if (ret<0) goto done;
             if (ret==2) {
                 if (positive && observations(sdk,blocks,origin,"drain",&observation_count,
-                    &observation_terminal,&cpu_ms,&wall_ms)) goto done;
+                    &observation_terminal,&cpu_ms,&wall_ms,cooperative)) goto done;
                 terminal=1; break;
             }
             if (until(clock_ms(CLOCK_MONOTONIC)+1)) goto done;

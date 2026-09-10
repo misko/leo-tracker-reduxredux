@@ -26,10 +26,13 @@ def verify(
     configuration_sha256="34" * 32,
     capture_protection=False,
     pressure_smoke=False,
+    cooperative_skips=False,
 ):
     rows = [json.loads(line) for line in raw.splitlines()]
     schema = (
-        "leo-sdk-protected-threaded-shadow-replay-v1"
+        "leo-sdk-cooperative-threaded-shadow-replay-v1"
+        if cooperative_skips
+        else "leo-sdk-protected-threaded-shadow-replay-v1"
         if capture_protection
         else "leo-sdk-threaded-shadow-replay-v1"
     )
@@ -41,7 +44,9 @@ def verify(
     extra = {"shadow-choice", "shadow-offer", "shadow-final"}
     core = [dict(r) for r in rows if r.get("kind") not in extra]
     core[0]["schema"] = (
-        "leo-sdk-protected-positive-feedback-replay-v1"
+        "leo-sdk-cooperative-positive-feedback-replay-v1"
+        if cooperative_skips
+        else "leo-sdk-protected-positive-feedback-replay-v1"
         if capture_protection
         else "leo-sdk-modeled-positive-feedback-replay-v1"
     )
@@ -57,6 +62,7 @@ def verify(
         configuration_sha256=configuration_sha256,
         capture_protection=capture_protection,
         pressure_smoke=pressure_smoke,
+        cooperative_skips=cooperative_skips,
     )
     observations = [r for r in core if r["kind"] == "observation"]
     jobs, rate = checked["jobs"], checked["rate_hz"]
@@ -76,7 +82,11 @@ def verify(
             if type(offer.get(key)) not in (int, float) or not math.isfinite(offer[key]):
                 raise ValueError("invalid shadow offer clock")
         if (
-            not (i * 121 if not observations[i]["healthy"] else (i + 1) * 121)
+            not (
+                i * 121
+                if not observations[i]["healthy"] or observations[i].get("skip_cause")
+                else (i + 1) * 121
+            )
             <= offer["begin_ms"]
             <= offer["end_ms"]
             <= observations[i]["elapsed_ms"]
@@ -186,7 +196,9 @@ def verify(
         last_visit[i % 8] = now + rate // 1000
     return dict(
         checked,
-        schema="org.leo.research.protected-threaded-shadow-verification/v1"
+        schema="org.leo.research.cooperative-threaded-shadow-verification/v1"
+        if cooperative_skips
+        else "org.leo.research.protected-threaded-shadow-verification/v1"
         if capture_protection
         else "org.leo.research.threaded-shadow-verification/v1",
         choices=jobs,

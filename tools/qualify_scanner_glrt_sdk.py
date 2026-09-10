@@ -22,6 +22,7 @@ BLOCK = 131072
 LEGACY = b"sdk-replay-opaque-legacy"
 POSITIVE_PROFILE = "positive-feedback-v1"
 PROTECTION_PROFILE = "capture-protection-v1"
+COOPERATIVE_PROFILE = "cooperative-skips-v1"
 MINIMUM_EXACT_SCORE = 0.175
 MINIMUM_MARGIN = 0.025
 LIMITATION = (
@@ -200,7 +201,18 @@ def _decision(source, positive_feedback):
 
 
 def _verify_observations(
-    rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals, unavailable
+    rows,
+    groups,
+    records,
+    jobs,
+    blocks,
+    rate,
+    period,
+    dwell,
+    guard,
+    arrivals,
+    unavailable,
+    intentional_skips=frozenset(),
 ):
     observations, finals = groups["observation"], groups["observation-final"]
     if len(observations) != jobs or len(finals) != 1 or rows[-1].get("observations") != jobs:
@@ -227,7 +239,7 @@ def _verify_observations(
             rx=1,
             target=source["channel"] - 1 + 4 * int(source["edge"] == "upper"),
             outcome=outcome,
-            healthy=0 if skipped else 1,
+            healthy=int(not skipped or i in intentional_skips),
         )
         if any(type(row.get(k)) is not type(v) or row[k] != v for k, v in expected.items()):
             raise ValueError("feedback source binding or outcome differs")
@@ -366,6 +378,62 @@ def _verify_protection(groups, terminal, decoded, blocks, rate, failed, pressure
     )
 
 
+def _verify_cooperative_skips(groups, decoded, arrivals, blocks, period, dwell, guard):
+    """Bind the SDK's decision-site diagnostic to its wire and block receipts.
+
+    Do not decide health from a wire reason alone. Pressure increments must land
+    during suspension, after visit registration and before the full input could
+    have been submitted. Backlog increments attest the explicit admission gate;
+    exact occupancy/age boundaries are additionally tested at the native port.
+    """
+    observations = groups["observation"]
+    if len(observations) != len(decoded):
+        raise ValueError("cooperative diagnostic inventory differs")
+    causes = {1: [], 2: []}
+    for i, (row, record) in enumerate(zip(observations, decoded, strict=True)):
+        cause = row.get("skip_cause")
+        if type(cause) is not int or cause not in (0, 1, 2):
+            raise ValueError("invalid cooperative skip diagnostic")
+        expected = (
+            0
+            if record.search_window_mask
+            else {
+                "incomplete_search": 1,
+                "worker_busy": 2,
+                "worker_failed": 0,
+                "invalid_input": 0,
+            }.get(record.reason)
+        )
+        if expected != cause:
+            raise ValueError("cooperative skip cause disagrees with wire evidence")
+        if cause:
+            causes[cause].append(i)
+    for cause, field in ((1, "pressure_skips"), (2, "backlog_skips")):
+        consumed = 0
+        for block in range(blocks):
+            stats = groups["block"][block]["protection_stats"]
+            count = stats[field]
+            if not consumed <= count <= len(causes[cause]):
+                raise ValueError("cooperative skip counter has no matching visit")
+            if count > consumed and (stats["disabled"] or (cause == 1 and not stats["suspended"])):
+                raise ValueError("cooperative skip occurred outside owner admission state")
+            for visit in causes[cause][consumed:count]:
+                registration = groups["visit"][visit]["block"]
+                ready = max(registration, (visit * period + guard + dwell - 1) // BLOCK)
+                observation = observations[visit]
+                if not registration <= block <= ready or not (
+                    type(observation.get("block")) is int
+                    and observation["block"] >= block
+                    and type(observation.get("elapsed_ms")) in (float, int)
+                    and observation["elapsed_ms"] >= arrivals[block]
+                ):
+                    raise ValueError("cooperative skip is not causal for its registered input")
+            consumed = count
+        if consumed != len(causes[cause]):
+            raise ValueError("cooperative skip lacks a block admission receipt")
+    return frozenset(causes[1] + causes[2])
+
+
 def verify(
     raw,
     manifest,
@@ -379,6 +447,7 @@ def verify(
     positive_feedback=False,
     capture_protection=False,
     pressure_smoke=False,
+    cooperative_skips=False,
 ):
     for identity in (algorithm_sha256, configuration_sha256):
         if (
@@ -398,9 +467,11 @@ def verify(
         or type(positive_feedback) is not bool
         or type(capture_protection) is not bool
         or type(pressure_smoke) is not bool
+        or type(cooperative_skips) is not bool
         or (positive_feedback and not enabled)
         or (capture_protection and not positive_feedback)
         or (pressure_smoke and not capture_protection)
+        or (cooperative_skips and not capture_protection)
     ):
         raise ValueError("unreviewed replay parameters")
     rows = [json.loads(line) for line in raw.splitlines()]
@@ -468,6 +539,11 @@ def verify(
             raise ValueError("capture protection profile differs")
     elif "capture_protection" in protocol:
         raise ValueError("unexpected capture protection profile")
+    if cooperative_skips:
+        expected_protocol["schema"] = "leo-sdk-cooperative-positive-feedback-replay-v1"
+        expected_protocol["cooperative_skips_profile"] = COOPERATIVE_PROFILE
+    elif "cooperative_skips_profile" in protocol:
+        raise ValueError("unexpected cooperative skip profile")
     if any(
         type(protocol.get(k)) is not type(v) or protocol[k] != v
         for k, v in expected_protocol.items()
@@ -660,22 +736,40 @@ def verify(
                 latencies.append(latency)
         if len(decoded) != jobs:
             raise ValueError("terminal result inventory incomplete")
-    feedback = (
-        _verify_observations(
-            rows, groups, records, jobs, blocks, rate, period, dwell, guard, arrivals, unavailable
-        )
-        if positive_feedback
-        else {}
-    )
     protection = (
         _verify_protection(groups, terminal, decoded, blocks, rate, detector_failed, pressure_smoke)
         if capture_protection
         else {}
     )
+    intentional_skips = (
+        _verify_cooperative_skips(groups, decoded, arrivals, blocks, period, dwell, guard)
+        if cooperative_skips
+        else frozenset()
+    )
+    feedback = (
+        _verify_observations(
+            rows,
+            groups,
+            records,
+            jobs,
+            blocks,
+            rate,
+            period,
+            dwell,
+            guard,
+            arrivals,
+            unavailable,
+            intentional_skips,
+        )
+        if positive_feedback
+        else {}
+    )
     measured = [r for r in decoded if r.search_window_mask]
     return dict(
         schema=(
-            "org.leo.research.sdk-protected-feedback-replay-verification/v1"
+            "org.leo.research.sdk-cooperative-feedback-replay-verification/v1"
+            if cooperative_skips
+            else "org.leo.research.sdk-protected-feedback-replay-verification/v1"
             if capture_protection
             else "org.leo.research.sdk-positive-feedback-replay-verification/v1"
             if positive_feedback
@@ -708,6 +802,7 @@ def verify(
         limitations=LIMITATION + (FEEDBACK_LIMITATION if positive_feedback else ""),
         **feedback,
         **protection,
+        **({"cooperative_skipped_visits": sorted(intentional_skips)} if cooperative_skips else {}),
     )
 
 
@@ -725,6 +820,7 @@ def main():
     parser.add_argument("--positive-feedback", action="store_true")
     parser.add_argument("--capture-protection", action="store_true")
     parser.add_argument("--pressure-smoke", action="store_true")
+    parser.add_argument("--cooperative-skips", action="store_true")
     args = parser.parse_args()
     safe_output(args.output)
     checked = verify(
@@ -739,6 +835,7 @@ def main():
         positive_feedback=args.positive_feedback,
         capture_protection=args.capture_protection,
         pressure_smoke=args.pressure_smoke,
+        cooperative_skips=args.cooperative_skips,
     )
     write_json(
         args.output,

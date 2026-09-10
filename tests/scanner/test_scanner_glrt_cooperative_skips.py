@@ -32,6 +32,12 @@ def commit_actual(scan, policy, visit):
     return choice
 
 
+def skip_cause(s, visit):
+    out = ct.c_uint32(99)
+    assert s.port.leo_scanner_glrt_skip_cause(s.ptr, visit, ct.byref(out)) == 0
+    return out.value
+
+
 def test_explicit_pressure_skips_preserve_unknown_and_do_not_latch_fault(cooperative, policy):
     s = cooperative
     scan = Scan(policy, rate=s.rate, start=2**53 + 347)
@@ -46,6 +52,7 @@ def test_explicit_pressure_skips_preserve_unknown_and_do_not_latch_fault(coopera
             observation = feedback(s)
             if visit < 3:
                 assert (observation.outcome, observation.healthy) == (0, 1)
+                assert skip_cause(s, visit) == 1
                 assert observation.valid_end - observation.valid_start == s.rate * 120 // 1000
             scan.observe(observation)
             frame = s.frame(b"unaltered dual-RX carrier")
@@ -82,6 +89,7 @@ def test_explicit_backlog_shedding_is_unknown_not_an_error(cooperative):
         for r in rows[2:]
     )
     assert [(o.outcome, o.healthy) for o in observations[2:]] == [(0, 1)] * 3
+    assert [skip_cause(s, visit) for visit in range(5)] == [0, 0, 2, 2, 2]
 
 
 @pytest.mark.parametrize("already_faulted", [False, True])
@@ -139,6 +147,7 @@ def test_real_worker_timeout_still_latches_capture_long_fault(cooperative, polic
                 s.port.leo_test_clock(1_500_000_000, 1)
             row = s.frame(b"IQ continues").results[0]
             assert row.reason == "worker_failed"
+            assert skip_cause(s, visit) == 0
             observation = feedback(s)
             assert (observation.outcome, observation.healthy) == (0, 0)
             scan.observe(observation)
@@ -165,6 +174,28 @@ def test_other_unavailability_is_not_reclassified_as_cooperative(cooperative, fa
     # Read the observation independently of its wire result only once.
     row = s.frame().results[0]
     assert row.verdict == "unavailable" and row.search_window_mask == 0
+    assert skip_cause(s, 0) == 0
+
+
+def test_skip_diagnostic_is_read_only_and_requires_a_completed_visit(protected):
+    s = protected
+    out = ct.c_uint32(99)
+    assert s.port.leo_scanner_glrt_skip_cause(None, 0, ct.byref(out)) == -errno.EINVAL
+    assert s.port.leo_scanner_glrt_skip_cause(s.ptr, 0, ct.byref(out)) == -errno.ENOTSUP
+    assert s.port.leo_scanner_glrt_enable_cooperative_skips(s.ptr) == 0
+    assert s.port.leo_scanner_glrt_skip_cause(s.ptr, 0, None) == -errno.EINVAL
+    assert s.port.leo_scanner_glrt_skip_cause(s.ptr, 0, ct.byref(out)) == -errno.EINVAL
+    start = 2**53 + 347
+    assert s.visit(0, start) == 0
+    assert s.port.leo_scanner_glrt_skip_cause(s.ptr, 0, ct.byref(out)) == -errno.EAGAIN
+    assert out.value == 99
+    pressure(s, 1)
+    assert s.block(start, np.zeros((s.rate // 50, 4), dtype=np.int16)) == 0
+    assert skip_cause(s, 0) == 1
+    assert feedback(s).visit == 0
+    assert skip_cause(s, 0) == 1
+    assert s.frame().results[0].visit == 0
+    assert skip_cause(s, 0) == 1
 
 
 def test_cooperative_skips_require_explicit_startup_opt_in(protected_port, artifacts, tmp_path):
