@@ -159,11 +159,13 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
 
     assert acquisition["ExecStart"].endswith(
         "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} "
-        "--profile ${LEO_CAPTURE_PROFILE_5M} "
-        "--radio radio_pluto_5d4d --radio radio_pluto_19f2 "
-        "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS} "
-        "--mixed-rate-policy ${LEO_MIXED_RATE_POLICY}"
+        "--radio radio_pluto_19f2 "
+        "--interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} "
+        "--scanner-only --max-scanner-runs 1"
     )
+    assert acquisition["Restart"] == "always"
+    assert "radio_pluto_5d4d" not in acquisition["ExecStart"]
+    assert "--mixed-rate-policy" not in acquisition["ExecStart"]
     assert "leo process worker --worker-id worker-%i" in worker["ExecStart"]
     assert reconcile["ExecStart"].endswith("leo process reconcile --json")
     assert retention["ExecStart"].endswith("leo process retention-run --execute --automatic --json")
@@ -526,7 +528,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_CAPTURE_INTERVAL_SECONDS"] == "180"
     assert values["LEO_SCANNER_ENABLED"] == "false"
     assert values["LEO_SCANNER_CAPTURE_MODE"] == "persistent_hop"
-    assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_5d4d"
+    assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_19f2"
     assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "1200"
     assert values["LEO_SCANNER_MAXIMUM_LATENESS_SECONDS"] == "300"
     assert values["LEO_SCANNER_RUN_SECONDS"] == "300"

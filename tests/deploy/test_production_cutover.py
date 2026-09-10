@@ -35,6 +35,9 @@ from leo.qualification.release_contract import (
 PROJECT_ROOT = Path(__file__).parents[2]
 SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 SCRIPT_GLOBALS = runpy.run_path(str(SCRIPT))
+SCANNER_ONLY_ENVIRONMENT = "".join(
+    f"{key}={value}\n" for key, value in SCRIPT_GLOBALS["_scanner_only_bindings"].items()
+)
 
 
 def _call(name: str, *args: object, **kwargs: object) -> Any:
@@ -50,7 +53,7 @@ def test_acquisition_cutover_requires_daemon_from_pinned_glrt_bundle(
     bundle = f"/opt/leo-tracker/releases/{pin}/runtime/scanner-glrt"
     environment = tmp_path / "acquisition.env"
     environment.write_text(
-        f"LEO_ACQUISITION_RELEASE_ID={revision}\n"
+        SCANNER_ONLY_ENVIRONMENT + f"LEO_ACQUISITION_RELEASE_ID={revision}\n"
         "LEO_SCANNER_ENABLED=true\n"
         f"LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH={bundle}/iiod\n"
         f"LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH={bundle}/bundle.json\n"
@@ -910,19 +913,16 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     service.write_text(f"[Service]\nExecStart={expected}\n", encoding="utf-8")
     _call("verify_staged_acquisition_service", release)
 
-    profile_5m = "--profile ${LEO_CAPTURE_PROFILE_5M} "
-    radio_a = "--radio radio_pluto_5d4d "
     radio_b = "--radio radio_pluto_19f2 "
-    mixed_policy = "--mixed-rate-policy ${LEO_MIXED_RATE_POLICY}"
+    scanner_mode = "--scanner-only --max-scanner-runs 1"
     tampered_commands = (
         expected.replace("PYTHONDONTWRITEBYTECODE=1 ", ""),
-        expected.replace(profile_5m, ""),
-        expected.replace(profile_5m, profile_5m + profile_5m),
-        expected.replace(radio_a + radio_b, radio_b + radio_a),
+        expected.replace("--profile ${LEO_CAPTURE_PROFILE} ", ""),
+        expected.replace(radio_b, "--radio radio_pluto_5d4d "),
         expected.replace(radio_b, ""),
         expected.replace(radio_b, radio_b + "--radio unexpected-radio "),
-        expected.replace(mixed_policy, ""),
-        expected.replace(mixed_policy, "--mixed-rate-policy mixed-native-rates-16-safe-v1"),
+        expected.replace(scanner_mode, ""),
+        expected.replace(scanner_mode, "--scanner-only --max-scanner-runs 2"),
     )
     assert len(set(tampered_commands)) == len(tampered_commands)
     for command in tampered_commands:
@@ -1267,7 +1267,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
             "LEO_SCANNER_ENABLED=false",
             "LEO_SCANNER_CAPTURE_MODE=persistent_hop",
-            "LEO_SCANNER_RADIO_ID=radio_pluto_5d4d",
+            "LEO_SCANNER_RADIO_ID=radio_pluto_19f2",
             "LEO_SCANNER_INTERVAL_SECONDS=1200",
             "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=300",
             "LEO_SCANNER_RUN_SECONDS=300",
@@ -1293,7 +1293,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
     with pytest.raises(ValueError, match="station topology"):
         _call(
             "verify_environment_text",
-            environment.replace("radio_pluto_19f2", "pluto-b"),
+            environment.replace('"radio_id":"radio_pluto_19f2"', '"radio_id":"pluto-b"'),
             revision,
         )
     with pytest.raises(ValueError, match="station topology"):
@@ -2761,7 +2761,7 @@ def test_narrow_component_preflight_requires_exact_environment_and_unit(
     environment.write_text(
         f"{key}={revision}\n"
         + (
-            "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
+            SCANNER_ONLY_ENVIRONMENT + "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
             f"/opt/leo-tracker/releases/{revision}/runtime/scanner-iiod/iiod\n"
             "LEO_SCANNER_ENABLED=true\n"
             if component == "acquisition"
