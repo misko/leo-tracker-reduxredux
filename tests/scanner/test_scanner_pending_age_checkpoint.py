@@ -192,3 +192,85 @@ def test_staging_and_parallel_diagnostics_do_not_hide_failure_or_claim_activatio
     assert all(
         not value.endswith(stage["staged_revision"]) for value in stage["selectors"].values()
     )
+
+
+def test_sealed_host_network_checks_cover_both_rates_without_live_rf():
+    definition = read("staged-host/staged-definition.json")
+    result = read("staged-host/staged-result.json")
+    assert result["exit_code"] == 0 and result["package_paths_unchanged"]
+    assert result["no_radio_context"] and not definition["new_rf"]
+    assert not definition["firmware_changed"]
+    assert "not the production ARM bundle identity" in definition["loopback_fixture_identities"]
+    for path in definition["modules"].values():
+        assert Path(path).is_relative_to(Path(definition["staged_release"]) / ".venv")
+    suite = ET.fromstring(
+        gzip.decompress((EVIDENCE / "staged-host/staged-network.xml.gz").read_bytes())
+    ).find("testsuite")
+    assert suite.get("tests") == "62"
+    assert all(suite.get(key) == "0" for key in ("failures", "errors", "skipped"))
+    complete = []
+    for case in suite.findall("testcase"):
+        props = {p.get("name"): p.get("value") for p in case.findall("properties/property")}
+        if props.get("ending") == "complete":
+            complete.append((props["mode"], int(props["rate_hz"])))
+            assert props["complete_visits"] == props["detector_results"] == "2480"
+            assert int(props["source_span_samples"]) >= 300 * int(props["rate_hz"])
+            assert props["published_recording_http_verified"] == "True"
+            stats = json.loads(props["network_fixture_stats"])
+            assert stats["opens"] == stats["destroys"] == stats["drains"] == 1
+    assert set(complete) == {
+        (mode, rate) for mode in ("shadow", "adaptive") for rate in (2500000, 5000000)
+    }
+
+
+def test_release_web_repair_preserves_failed_gate_and_exact_png_checks():
+    initial = read("release-qualification/failed/receipt.json")
+    assert initial["passed"] is False
+    commands = {row["name"]: row for row in initial["commands"]}
+    assert commands["production-web-build"]["exit_code"] == 1
+    assert commands["production-chromium-e2e"]["exit_code"] == 70
+    assert (
+        "blocked by failed lane dependencies"
+        in commands["production-chromium-e2e"]["validation_error"]
+    )
+    web = read("release-web-isolation/receipt.json")
+    assert web["exit_code"] == 0 and web["sibling_reports_absent"]
+    assert web["compiled_index_exists"]
+    assert (
+        web["manifest_sha256"]
+        == hashlib.sha256((ROOT / "web/report-assets.manifest.json").read_bytes()).hexdigest()
+    )
+
+
+def test_corrected_immutable_gate_passes_without_claiming_activation():
+    gate = read("release-qualification/corrected/receipt.json")
+    assert gate["passed"] and gate["status"] == "passed"
+    assert len(gate["commands"]) == 5
+    assert all(c["passed"] and c["exit_code"] == 0 for c in gate["commands"])
+    assert {lane["name"] for lane in gate["reused_lanes"]} == {
+        "protected-real-corpus",
+        "current-native-science",
+        "current-native-postgresql",
+    }
+    for variant in ("failed", "corrected"):
+        receipt = read(f"release-qualification/{variant}/receipt.json")
+        for entry in receipt["evidence"]:
+            path = EVIDENCE / f"release-qualification/{variant}/{entry['relative_path']}.gz"
+            if path.is_file():
+                payload = gzip.decompress(path.read_bytes())
+                assert len(payload) == entry["bytes"]
+                assert hashlib.sha256(payload).hexdigest() == entry["sha256"]
+        for command in receipt["commands"]:
+            assert (
+                EVIDENCE / f"release-qualification/{variant}/{command['log_relative_path']}.gz"
+            ).is_file()
+    checkpoint = read("release-qualification/checkpoint.json")
+    assert checkpoint["staged_revision"] == gate["git_revision"]
+    assert checkpoint["qualification_database_final_schemas"] == ["public"]
+    assert checkpoint["runtime_delta_from_staged_loopback_revision"] == []
+    assert checkpoint["no_activation"] and not checkpoint["new_rf"]
+    assert not checkpoint["firmware_changed"] and checkpoint["acquisition_service"] == "active"
+    assert all(not path.endswith(gate["git_revision"]) for path in checkpoint["selectors"].values())
+    assert len(checkpoint["runtime_assets_sha256"]) == 12
+    for path, expected in checkpoint["runtime_assets_sha256"].items():
+        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected
