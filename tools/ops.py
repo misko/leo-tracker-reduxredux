@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import re
+import runpy
 import shlex
 import shutil
 import stat
@@ -24,6 +25,9 @@ from typing import Any
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
+_scanner_binary_path = runpy.run_path(str(ROOT / "deploy/scripts/scanner-runtime-binding.py"))[
+    "scanner_binary_path"
+]
 MANIFEST_PATH = ROOT / "config/ops-components.json"
 PROTECTED_DATABASES = frozenset({"leo_tracker", "postgres", "template0", "template1"})
 RELEASE_ROOT = Path("/opt/leo-tracker")
@@ -2117,7 +2121,10 @@ def _write_acquisition_release_environment(
             "acquisition environment must contain exactly one release binding and at most "
             "one persistent-hop iiOD binary and scanner-enable binding"
         )
-    binary_path = f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod"
+    try:
+        binary_path = _scanner_binary_path(old_environment.decode(), target)
+    except ValueError as error:
+        raise OpsError(str(error)) from error
     release_location = locations[release_key][0]
     lines[release_location] = f"{release_key}={target}"
     updates = {binary_key: binary_path, scanner_key: "true"}
@@ -2625,13 +2632,17 @@ def _verify_acquisition_environment_revision(expected: str) -> None:
     path = PRODUCTION_ACQUISITION_ENVIRONMENT
     if path.is_symlink() or not path.is_file():
         raise OpsError("acquisition environment must be a regular non-symlink file")
-    values = _environment_values(path.read_bytes())
+    content = path.read_bytes()
+    values = _environment_values(content)
     actual = values.get("LEO_ACQUISITION_RELEASE_ID")
     if actual != expected:
         raise OpsError(
             "acquisition environment release does not match the selected acquisition component"
         )
-    expected_binary = f"/opt/leo-tracker/releases/{expected}/runtime/scanner-iiod/iiod"
+    try:
+        expected_binary = _scanner_binary_path(content.decode(), expected)
+    except ValueError as error:
+        raise OpsError(str(error)) from error
     configured_binary = values.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH")
     release_has_binary = Path(expected_binary).is_file()
     if configured_binary != expected_binary and (

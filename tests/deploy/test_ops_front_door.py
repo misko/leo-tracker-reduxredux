@@ -1168,6 +1168,47 @@ def test_legacy_acquisition_environment_without_scanner_binary_binding_is_restor
         OPS._verify_acquisition_environment_revision(legacy)
 
 
+def test_acquisition_deploy_preserves_pinned_glrt_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target, pin = "2" * 40, "3" * 40
+    bundle = f"/opt/leo-tracker/releases/{pin}/runtime/scanner-glrt"
+    environment = tmp_path / "acquisition.env"
+    original = (
+        f"LEO_ACQUISITION_RELEASE_ID={'1' * 40}\n"
+        f"LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH={bundle}/bundle.json\n"
+        f"LEO_SCANNER_GLRT_ALGORITHM_SHA256={'a' * 64}\n"
+        f"LEO_SCANNER_GLRT_CONFIGURATION_SHA256={'b' * 64}\n"
+        "LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=2500000\n"
+    ).encode()
+    environment.write_bytes(original)
+    monkeypatch.setattr(OPS.os, "chown", lambda *_args: None)
+    monkeypatch.setattr(OPS.grp, "getgrnam", lambda _name: type("Group", (), {"gr_gid": 1})())
+    OPS._write_acquisition_release_environment(environment, original, target)
+    values = OPS._environment_values(environment.read_bytes())
+    assert values["LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH"] == f"{bundle}/iiod"
+    for key, value in OPS._environment_values(original).items():
+        if key != "LEO_ACQUISITION_RELEASE_ID":
+            assert values[key] == value
+    monkeypatch.setattr(OPS, "PRODUCTION_ACQUISITION_ENVIRONMENT", environment)
+    original_is_file = Path.is_file
+    monkeypatch.setattr(
+        OPS.Path,
+        "is_file",
+        lambda path: str(path) == f"{bundle}/iiod" or original_is_file(path),
+    )
+    OPS._verify_acquisition_environment_revision(target)
+    environment.write_text(
+        environment.read_text().replace(
+            f"{bundle}/iiod",
+            f"/opt/leo-tracker/releases/{target}/runtime/scanner-iiod/iiod",
+        )
+    )
+    with pytest.raises(OPS.OpsError, match="persistent-hop iiOD binary"):
+        OPS._verify_acquisition_environment_revision(target)
+
+
 def test_worker_environment_is_created_and_atomically_binds_selected_release(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

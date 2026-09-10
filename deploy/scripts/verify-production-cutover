@@ -12,6 +12,7 @@ import math
 import os
 import pwd
 import re
+import runpy
 import socket
 import stat
 import subprocess
@@ -28,6 +29,9 @@ RELEASE_ROOT = Path("/opt/leo-tracker/releases")
 ENVIRONMENT = Path("/etc/leo/leo.env")
 WORKER_ENVIRONMENT = Path("/etc/leo/worker.env")
 ACQUISITION_ENVIRONMENT = Path("/etc/leo/acquisition.env")
+_scanner_binary_path = runpy.run_path(
+    str(Path(__file__).resolve().with_name("scanner-runtime-binding.py"))
+)["scanner_binary_path"]
 UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
 ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
@@ -1604,17 +1608,15 @@ def _component_environment_revision(component: str, revision: str) -> Path:
     if bindings != [revision]:
         raise ValueError(f"{component} environment does not bind the exact target release")
     if component == "acquisition":
-        expected_binary = str(
-            RELEASE_ROOT / revision / "runtime" / "scanner-iiod" / "iiod"
+        expected_binary = _scanner_binary_path(
+            safe.read_text(encoding="utf-8"), revision, RELEASE_ROOT
         )
         if environment.get("LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH") != expected_binary:
             raise ValueError(
                 "acquisition environment does not bind the exact release-local iiOD binary"
             )
         if environment.get("LEO_SCANNER_ENABLED") != "true":
-            raise ValueError(
-                "qualified acquisition environment must enable the scanner scheduler"
-            )
+            raise ValueError("qualified acquisition environment must enable the scanner scheduler")
     return safe
 
 
@@ -3793,8 +3795,7 @@ def _verify_component_preflight(component: str, release: Path, revision: str) ->
     if component == "acquisition" and not {
         "LoadCredential=scanner-iiod-ssh-known-hosts:"
         "/etc/leo/credentials/scanner-iiod-ssh-known-hosts",
-        "LoadCredential=scanner-iiod-ssh-password:"
-        "/etc/leo/credentials/scanner-iiod-ssh-password",
+        "LoadCredential=scanner-iiod-ssh-password:/etc/leo/credentials/scanner-iiod-ssh-password",
     } <= set(unit_text.splitlines()):
         raise ValueError("staged acquisition unit lacks exact scanner iiOD credentials")
     if drop_in.read_text(encoding="utf-8").splitlines() != ["[Service]", expected_environment]:

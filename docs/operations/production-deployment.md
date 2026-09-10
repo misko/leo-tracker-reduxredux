@@ -269,6 +269,18 @@ the release evidence directory (stage 3 below). Its sealed receipt must say
 
 ## Stage 3 — maintenance window and service-account access
 
+### Scanner runtime binding across releases
+
+An acquisition deployment follows the new release's plain `scanner-iiod` binary
+only when no GLRT bundle is configured. With an explicit
+`LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH`, deployment keeps the daemon
+beside that exact release-local GLRT manifest and preserves its algorithm,
+configuration and rate allowlist. A detector promotion must deliberately update
+those bindings together after qualification; an unrelated application deploy
+must not silently promote it or substitute the plain daemon. Both the environment
+writer and cutover verifier enforce the same deployment-owned policy. Retain the
+separately pinned runtime release as a dependency when planning release cleanup.
+
 Announce the maintenance window. Review the exact temporary user services, then
 stop and disable only these known LEO units; do not use a broad process kill:
 

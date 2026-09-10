@@ -42,6 +42,35 @@ def _call(name: str, *args: object, **kwargs: object) -> Any:
     return function(*args, **kwargs)
 
 
+def test_acquisition_cutover_requires_daemon_from_pinned_glrt_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    revision, pin = "a" * 40, "b" * 40
+    bundle = f"/opt/leo-tracker/releases/{pin}/runtime/scanner-glrt"
+    environment = tmp_path / "acquisition.env"
+    environment.write_text(
+        f"LEO_ACQUISITION_RELEASE_ID={revision}\n"
+        "LEO_SCANNER_ENABLED=true\n"
+        f"LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH={bundle}/iiod\n"
+        f"LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH={bundle}/bundle.json\n"
+        f"LEO_SCANNER_GLRT_ALGORITHM_SHA256={'c' * 64}\n"
+        f"LEO_SCANNER_GLRT_CONFIGURATION_SHA256={'d' * 64}\n"
+    )
+    environment.chmod(0o640)
+    function = SCRIPT_GLOBALS["_component_environment_revision"]
+    monkeypatch.setitem(function.__globals__, "ACQUISITION_ENVIRONMENT", environment)
+    assert function("acquisition", revision) == environment
+    environment.write_text(
+        environment.read_text().replace(
+            f"{bundle}/iiod",
+            f"/opt/leo-tracker/releases/{revision}/runtime/scanner-iiod/iiod",
+        )
+    )
+    with pytest.raises(ValueError, match="iiOD binary"):
+        function("acquisition", revision)
+
+
 def _write(path: Path, payload: bytes) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
