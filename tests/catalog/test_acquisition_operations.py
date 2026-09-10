@@ -72,13 +72,14 @@ def test_coalesced_cadence_keeps_only_newest_pending_intent(catalog_harness) -> 
     ]
 
 
-def test_coalesced_enqueue_is_race_safe(catalog_harness) -> None:
+@pytest.mark.parametrize("kind", ["scheduled_recording", "scanner_sweep"])
+def test_coalesced_enqueue_is_race_safe(catalog_harness, kind) -> None:
     due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
 
     def enqueue(offset: int):
         return catalog_harness.repository.enqueue_acquisition_operation(
             operation_key=f"dwell:race:{offset}",
-            kind="scheduled_recording",
+            kind=kind,
             payload={"slot": offset},
             scheduled_for=due + timedelta(seconds=offset),
             coalesce_pending_kind=True,
@@ -89,7 +90,7 @@ def test_coalesced_enqueue_is_race_safe(catalog_harness) -> None:
 
     active = catalog_harness.repository.active_acquisition_operations()
     assert len(active) == 1
-    assert active[0].kind == "scheduled_recording"
+    assert active[0].kind == kind
     assert active[0].operation_key == "dwell:race:7"
 
 

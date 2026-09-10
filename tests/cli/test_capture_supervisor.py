@@ -204,6 +204,10 @@ class _DurableSupervisorBackend(_SupervisorBackend):
             for queued in self.operations:
                 if queued.kind == kind and queued.state == "pending":
                     queued.state = "cancelled"
+        # Match the production unique partial index, including while paused.
+        assert not any(
+            queued.kind == kind and queued.state == "pending" for queued in self.operations
+        ), "only one pending cadence intent per kind is allowed"
         item = SimpleNamespace(
             operation_id=self.next_id,
             operation_key=operation_key,
@@ -1332,6 +1336,10 @@ def test_durable_supervisor_coalesces_missed_cadence_slots() -> None:
     ]
     assert summary.capture_count == 1
     assert len(queued_dwells) <= 1
+    scans = [item for item in backend.operations if item.kind == "scanner_sweep"]
+    assert len(scans) > 1
+    assert sum(item.state == "pending" for item in scans) <= 1
+    assert any(item.state == "cancelled" for item in scans)
 
 
 def test_pause_fences_both_schedules_and_resume_starts_fresh_cadence() -> None:

@@ -311,6 +311,7 @@ class CliSettings:
     scanner_persistent_credentials_directory: Path | None = None
     scanner_glrt: ScannerGlrtOptions | None = None
     scanner_hop_policy: Literal["fixed", "shadow", "adaptive"] = "fixed"
+    scanner_adaptive_sample_rates_hz: tuple[int, ...] = (2_500_000, 5_000_000)
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
     ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
     direct_async_enabled: bool = False
@@ -325,6 +326,14 @@ class CliSettings:
             raise ValueError("acquisition safety reserve cannot be negative")
         if self.scanner_hop_policy not in ("fixed", "shadow", "adaptive"):
             raise ValueError("scanner hop policy must be fixed, shadow or adaptive")
+        rates = self.scanner_adaptive_sample_rates_hz
+        if (
+            not isinstance(rates, tuple)
+            or not rates
+            or any(type(rate) is not int or rate not in (2_500_000, 5_000_000) for rate in rates)
+            or len(set(rates)) != len(rates)
+        ):
+            raise ValueError("scanner adaptive sample rates must be unique supported integer rates")
         if self.scanner_hop_policy != "fixed" and (
             not self.scanner_enabled
             or self.scanner_capture_mode != "persistent_hop"
@@ -570,6 +579,12 @@ class CliSettings:
                 scanner_hop_policy=cast(
                     Literal["fixed", "shadow", "adaptive"],
                     values.get("LEO_SCANNER_HOP_POLICY", "fixed"),
+                ),
+                scanner_adaptive_sample_rates_hz=tuple(
+                    int(rate)
+                    for rate in values.get(
+                        "LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ", "2500000,5000000"
+                    ).split(",")
                 ),
                 scanner_persistent_transition_guard_us=int(
                     values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "1000")
@@ -1387,7 +1402,11 @@ class LocalAcquisitionBackend:
                 ExitCode.INVALID_CONFIGURATION,
             )
         if self.settings.scanner_capture_mode == "persistent_hop":
-            if self.settings.scanner_hop_policy != "fixed":
+            if (
+                self.settings.scanner_hop_policy != "fixed"
+                and intent.configuration.sample_rate_hz
+                in self.settings.scanner_adaptive_sample_rates_hz
+            ):
                 return self._capture_scheduled_adaptive_hop(intent, cancel=cancel)
             return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
         configured = next(
