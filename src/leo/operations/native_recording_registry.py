@@ -81,11 +81,19 @@ class NativeRecordingRegistry:
             manifest_sha256=expected_sha256,
         )
         raw = (registration.model_dump_json() + "\n").encode()
-        self.root.mkdir(parents=True, exist_ok=True)
+        try:
+            self.root.mkdir(parents=True)
+        except FileExistsError:
+            if not self.root.is_dir():
+                raise ValueError("native registry path is not a directory") from None
+        else:
+            self.root.chmod(0o755)
         target = self.root / (expected_sha256 + ".json")
         descriptor, name = tempfile.mkstemp(prefix=".registration-", dir=self.root)
         try:
             with os.fdopen(descriptor, "wb") as stream:
+                # Published metadata must be readable by the separate API user.
+                os.fchmod(stream.fileno(), 0o644)
                 stream.write(raw)
                 stream.flush()
                 os.fsync(stream.fileno())

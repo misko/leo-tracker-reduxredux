@@ -112,6 +112,14 @@ Registration verifies the complete bundle before atomically publishing one
 small local record of the absolute manifest path and expected digest. Payloads
 are not copied. Identical registration is idempotent; a conflicting existing
 registration is rejected. The manifest digest is the public recording ID.
+New registry directories use mode 0755 and registration records use mode 0644
+so the separate API account can read them even when the producer has a private
+umask. Existing ancestors are not changed. The selected manifest and payloads
+must also be readable by that account; new native publications provide those
+permissions explicitly. Earlier private publications are not modified by
+registration and can be republished to a new accessible directory. Use a fresh
+registry when an existing ID points to the old private location; registration
+does not replace existing mappings.
 
 Production reads `LEO_NATIVE_RECORDING_REGISTRY`, defaulting to
 `LEO_BULK_ROOT/native-recordings`. A missing registry is an empty list and is not
@@ -134,6 +142,8 @@ connect across gaps, concatenate epochs, fit Doppler rate, or claim acquisition
 or physical accuracy qualification. Times remain on the bound receiver sample
 axis. Large native counters are decimal strings throughout the browser port.
 
-Registration is currently an explicit post-publication CLI handoff. Automatic
-registration from the live operator and deployment of this UI to the running
+The prepared v16 operator invokes this CLI automatically after RF shutdown,
+saved owner receipt and publication. It records registration outcomes separately
+and preserves the original radio outcomes. The handoff is tested on retained
+recordings; its live execution and deployment of this UI to the running
 production service remain to be verified.

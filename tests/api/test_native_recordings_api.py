@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -127,6 +128,18 @@ def test_cli_registers_without_copying_payloads_and_discovers_new_entries(tmp_pa
     assert json.loads(result.stdout)["bundle_id"] == reader.list_recordings().items[0].bundle_id
     assert len(list(root.iterdir())) == 1
     assert list(root.iterdir())[0].stat().st_size < 1000
+
+
+def test_new_registration_is_readable_by_api_user_with_private_producer_umask(tmp_path):
+    path, _ = bundle(tmp_path)
+    registry = NativeRecordingRegistry(tmp_path / "registry")
+    previous = os.umask(0o077)
+    try:
+        bundle_id = registry.register(path, expected_sha256=digest(path.read_bytes()))
+    finally:
+        os.umask(previous)
+    assert registry.root.stat().st_mode & 0o777 == 0o755
+    assert (registry.root / (bundle_id + ".json")).stat().st_mode & 0o777 == 0o644
 
 
 def test_registration_refuses_bad_pin_before_creating_output_and_qnap(tmp_path, monkeypatch):
