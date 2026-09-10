@@ -23,6 +23,20 @@ The report and evidence are published to `main`; the unqualified SDK prototype
 and its new tests remain on `codex/scanner-5m-cooperative-skips`. Publishing this
 report is not a source or runtime promotion of that prototype.
 
+### Web-published figures
+
+The same three reviewed PNGs are packaged as static assets for the production
+web service at these paths (relative to the scanner UI's origin):
+
+- `/reports/scanner-2026-09-10/capture-vs-screening.png`
+- `/reports/scanner-2026-09-10/desktop-stage-profile.png`
+- `/reports/scanner-2026-09-10/screening-by-target.png`
+
+The web-owned asset test requires byte-for-byte agreement with this report and
+its SHA-256 index. These are dated report snapshots, not automatically refreshed
+per-scan GLRT/CFO products. Publishing them needs only an API/UI deployment;
+acquisition, its selected release and the detector bundle are unchanged.
+
 ## An unassisted scheduled 5 MS/s capture completed
 
 **`scan-hop-b5521c5e306d0bd3`** started at **01:00:07.982 UTC** and finalized at
@@ -194,5 +208,8 @@ issue; this checkpoint does not claim to fix them.
 The [artifact index](evidence/2026_09_10_scanner_cooperative_skips_checkpoint/index.json)
 binds the public metrics, API snapshot, test receipts, build receipts, exact
 profiling recipe and three PNGs. No IQ, binaries or credentials are committed.
+The original profiling recipe is retained byte-for-byte as `profile_saved.py.gz`;
+its adjacent Python copy is formatting-clean. This housekeeping changes no
+measurement or figure and does not rerun the RF-verification recipes.
 `render_figures.py` rebuilds figures from retained metrics without radio or HTTP
 access; `collect_snapshot.py` is a separate read-only production API snapshot.
