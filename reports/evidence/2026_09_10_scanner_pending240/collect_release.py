@@ -5,6 +5,7 @@ from pathlib import Path
 LOOPBACK = Path("/tmp/leo-staged-glrt-network.oQCyDX")
 WEB = Path("/tmp/leo-report-assets-isolated.o4ZCRF")
 RELEASE = Path("/tmp/leo-release-a37f5e92.lafvfb")
+INTEGRATION = Path("/tmp/leo-main-integration.W66xm6")
 
 
 def collect(archive):
@@ -41,4 +42,10 @@ def collect(archive):
     originals.append(
         archive(RELEASE / "snapshot_release.py", "release-qualification/snapshot_release.py")
     )
+    assert (INTEGRATION / "receipt.json").is_file()
+    for path in sorted(INTEGRATION.rglob("*")):
+        if path.is_file():
+            originals.append(
+                archive(path, "main-integration/" + str(path.relative_to(INTEGRATION)))
+            )
     return originals
