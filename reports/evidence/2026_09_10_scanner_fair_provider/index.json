@@ -1,0 +1,531 @@
+{
+  "scope": "Synthetic provider and local ARM bundle checks; no radio deployment or RF",
+  "libiio_revision": "b6e692400acd0690767167abc381b0268a640bf7",
+  "leo_revision": "0eb6ee2f8afa6b8b3317f9e9e40221fba553f0bd",
+  "originals": [
+    {
+      "path": "build-config.xml.gz",
+      "original_sha256": "d4473a2dab4fb0abe1c6f5c4e50ee01dcd806e8196b4883c60ad8cf026403ab1",
+      "original_bytes": 5388,
+      "counts": {
+        "tests": 34,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "network.xml.gz",
+      "original_sha256": "8b805d03273f287c22a25ce49095ef317d37085233dd03150b01651e4b0f901d",
+      "original_bytes": 25139,
+      "counts": {
+        "tests": 62,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "run-provider.py.gz",
+      "original_sha256": "ee0b3e8ff3b48d865af2fdd2e612cbfb4e229140f83cf2c3fe9dcd530163d319",
+      "original_bytes": 6737
+    },
+    {
+      "path": "off-receipt.json.gz",
+      "original_sha256": "ae0293754969f8818ca1ca951a1b88154db8808152ce7ded858fc793243ba60f",
+      "original_bytes": 12440
+    },
+    {
+      "path": "off-configure.log.gz",
+      "original_sha256": "22c450af875a7955cd7838b4fc1f0be73f2aa7a14c4e79c886b2a613e72c6aea",
+      "original_bytes": 1643
+    },
+    {
+      "path": "off-build.log.gz",
+      "original_sha256": "80b451b1bb08dddb723c75fef258d6ccc7f88b3fb6b4fe8dbf62e3e6c6e093a5",
+      "original_bytes": 12328
+    },
+    {
+      "path": "off-test_scanner_glrt_provider.log.gz",
+      "original_sha256": "6fcdfeec2cbf88b8707b713af57e6d930d5fe9a894b03f47356dd0b25e6f8937",
+      "original_bytes": 2100
+    },
+    {
+      "path": "off-test_spf_hop_adaptive_native.log.gz",
+      "original_sha256": "634003f5ef75d635564dfe29147575ab5c20e0cca1c29f8abbc605aca0cd85ab",
+      "original_bytes": 98
+    },
+    {
+      "path": "off-test_spf_hop_adaptive_policy.log.gz",
+      "original_sha256": "27f324c131c6ddfec04ee6fa679a3250927cf3ef0bda98777facd2fe2967116d",
+      "original_bytes": 109
+    },
+    {
+      "path": "fair-receipt.json.gz",
+      "original_sha256": "33912e70e7fa0fa65c4c9a16df3eb096522f54006dab514e9da483241d6ae09f",
+      "original_bytes": 12444
+    },
+    {
+      "path": "fair-configure.log.gz",
+      "original_sha256": "aefdf7276ddde15f90724f18265b408a7e1d251729ebb9e14dbcd0e7cfe46be2",
+      "original_bytes": 1644
+    },
+    {
+      "path": "fair-build.log.gz",
+      "original_sha256": "2591606481f97ad7fb385face67c4b423db742c9f4c19be960757c608151ba6b",
+      "original_bytes": 12328
+    },
+    {
+      "path": "fair-test_scanner_glrt_provider.log.gz",
+      "original_sha256": "63274f19a6245512977521bc1e86d394180214e8688b883dfa8c26334a3ef7d5",
+      "original_bytes": 3468
+    },
+    {
+      "path": "fair-test_spf_hop_adaptive_native.log.gz",
+      "original_sha256": "634003f5ef75d635564dfe29147575ab5c20e0cca1c29f8abbc605aca0cd85ab",
+      "original_bytes": 98
+    },
+    {
+      "path": "fair-test_spf_hop_adaptive_policy.log.gz",
+      "original_sha256": "27f324c131c6ddfec04ee6fa679a3250927cf3ef0bda98777facd2fe2967116d",
+      "original_bytes": 109
+    },
+    {
+      "path": "delayed-receipt.json.gz",
+      "original_sha256": "bcf41eef294fdbfd1db4725befec840b598b1fe95f64d47ca26fbf1556c52995",
+      "original_bytes": 12466
+    },
+    {
+      "path": "delayed-configure.log.gz",
+      "original_sha256": "b4d6240c8519da4c42c35d6cae6707ff2d22b80ecf69a4874a9d5a681262502c",
+      "original_bytes": 1647
+    },
+    {
+      "path": "delayed-build.log.gz",
+      "original_sha256": "d029c9beea180fab9f5381ab64fe27641adf56c0c8cfa8e848b543de65e65229",
+      "original_bytes": 12328
+    },
+    {
+      "path": "delayed-test_scanner_glrt_provider.log.gz",
+      "original_sha256": "03f876f1d5ac4212495d589a458ade90f2d6b05103b2a65c53fd3c34ced4bd1b",
+      "original_bytes": 3454
+    },
+    {
+      "path": "delayed-test_spf_hop_adaptive_native.log.gz",
+      "original_sha256": "634003f5ef75d635564dfe29147575ab5c20e0cca1c29f8abbc605aca0cd85ab",
+      "original_bytes": 98
+    },
+    {
+      "path": "delayed-test_spf_hop_adaptive_policy.log.gz",
+      "original_sha256": "27f324c131c6ddfec04ee6fa679a3250927cf3ef0bda98777facd2fe2967116d",
+      "original_bytes": 109
+    },
+    {
+      "path": "asan-receipt.json.gz",
+      "original_sha256": "a179baad2f67ea60d350642fc1b1e794f3ddef0203107a13e2bbc0731d3a5e6a",
+      "original_bytes": 12520
+    },
+    {
+      "path": "asan-configure.log.gz",
+      "original_sha256": "bfe2a15a8e10d2295b672cd73a19309d7b8029755d884953e35ee617aa727e6c",
+      "original_bytes": 1644
+    },
+    {
+      "path": "asan-build.log.gz",
+      "original_sha256": "e74b88607a55a8205f74040a16e8097d35ac3a7550d717f3a9077144ea7f0d1d",
+      "original_bytes": 12328
+    },
+    {
+      "path": "asan-test_scanner_glrt_provider.log.gz",
+      "original_sha256": "8af5b36544655ec79097a91af524449e5a4f10b6bb2f242faf5df16e3d2992ac",
+      "original_bytes": 3453
+    },
+    {
+      "path": "asan-test_spf_hop_adaptive_native.log.gz",
+      "original_sha256": "634003f5ef75d635564dfe29147575ab5c20e0cca1c29f8abbc605aca0cd85ab",
+      "original_bytes": 98
+    },
+    {
+      "path": "asan-test_spf_hop_adaptive_policy.log.gz",
+      "original_sha256": "27f324c131c6ddfec04ee6fa679a3250927cf3ef0bda98777facd2fe2967116d",
+      "original_bytes": 109
+    },
+    {
+      "path": "sdk.so.build.json.gz",
+      "original_sha256": "b25d852a7914d743d5c630fb81db9ff65b1a6bc702f838b4ce87b3e49acf36ab",
+      "original_bytes": 3061
+    },
+    {
+      "path": "sdk-asan.so.build.json.gz",
+      "original_sha256": "f99fbfd43f405138b8cc36e9a22124107a94ad82e4647709021a4053534e6605",
+      "original_bytes": 3154
+    },
+    {
+      "path": "worker.build.json.gz",
+      "original_sha256": "c7a6ea4cae98f5b74a4a50a102e56ffb777e4f37a36bc01d12aa6607d0b8f3c5",
+      "original_bytes": 5854
+    },
+    {
+      "path": "worker-delayed.build.json.gz",
+      "original_sha256": "6a565d3e0d45e9f735d0f10a7b5bde6f518cef712e9b7574ea484933f4c90bc5",
+      "original_bytes": 6269
+    },
+    {
+      "path": "arm-build_bundle.py.gz",
+      "original_sha256": "3c59d897ecdc355809f76f3117e8192bccc0d0b13b8c921c57e175f42b76cbab",
+      "original_bytes": 11060
+    },
+    {
+      "path": "arm-exercise_bundle.py.gz",
+      "original_sha256": "4db9abe8dd69e560856b890bd70f3c925316117ba21da040a512434f3e94d9f4",
+      "original_bytes": 2104
+    },
+    {
+      "path": "arm-receipt.json.gz",
+      "original_sha256": "812af69aefbc313c03ce795c393cebc405955159ff734db9a5eec684477c38a4",
+      "original_bytes": 165974
+    },
+    {
+      "path": "arm-local-stage-receipt.json.gz",
+      "original_sha256": "66c55f00b845c7a522013c81b38569c6a14a0601b0f0a09b9ecaf6f4f3114598",
+      "original_bytes": 1073
+    },
+    {
+      "path": "arm-configure.json.gz",
+      "original_sha256": "4d7bf2b1fb4aa883564d5d7a91124a8fa450a9793d8ccd553830fdae5e5a765b",
+      "original_bytes": 4689
+    },
+    {
+      "path": "arm-compile.json.gz",
+      "original_sha256": "af1ed1c814f120d800cf63363d2272dff7239c0fecbd0a1dc1edd98a8a32d27c",
+      "original_bytes": 3972
+    },
+    {
+      "path": "arm-worker-symbols.json.gz",
+      "original_sha256": "408a6ab2c7cc6ba02a98abd9e44b4cada2f3cb9ffbe0d03566cbcfe1f0c2442a",
+      "original_bytes": 5294
+    },
+    {
+      "path": "arm-bundle.json.gz",
+      "original_sha256": "bc6e5dd53447ce374671eac280b3d9a29abbe40bce6c118bc49546b94d962a25",
+      "original_bytes": 1300
+    },
+    {
+      "path": "arm-configuration.json.gz",
+      "original_sha256": "2af4982425b543279b1c6be6ba251cd6a4ce05826be17f5dafc976bb4190be12",
+      "original_bytes": 1532
+    },
+    {
+      "path": "arm-algorithm.json.gz",
+      "original_sha256": "2f9eb3b754ae241f78d4d58a6269e3c8fe0bda681ab2e60a32f7677bafc8f2bd",
+      "original_bytes": 27449
+    },
+    {
+      "path": "arm-worker.build.json.gz",
+      "original_sha256": "aa47a107751bf27430cefe1fa22a1ca4edf67cbed13422473c0909dae81a060a",
+      "original_bytes": 6844
+    },
+    {
+      "path": "arm-libleo-scanner-glrt.so.build.json.gz",
+      "original_sha256": "950cfa74b258f955747c469c717f6e9782a51f816361eefb766c18426233fbf2",
+      "original_bytes": 3364
+    },
+    {
+      "path": "libiio-iiod_CMakeLists.txt.gz",
+      "original_sha256": "0f27564fd77c622dd5c112d7c9eb854b6c1145aa1b50e5c9ec322f73359188de",
+      "original_bytes": 18797
+    },
+    {
+      "path": "libiio-iiod_spf-scanner-glrt.c.gz",
+      "original_sha256": "bf7b2c0cc5dbe95664cdd302b5ce56b150dd3fdf69af3d0f30f55bfb143e39a8",
+      "original_bytes": 12815
+    },
+    {
+      "path": "libiio-iiod_spf-scanner-glrt.h.gz",
+      "original_sha256": "9d654e7ab17429b2b329a22d0e3c1ad099c7b663b10eda6698ea28c0fe786d03",
+      "original_bytes": 2405
+    },
+    {
+      "path": "libiio-tests_README.scanner-glrt-cooperative.md.gz",
+      "original_sha256": "ee175da4425cec0b97e747745e3ffefe5e6ba1d79271931e06d6474f6d59e8ed",
+      "original_bytes": 3576
+    },
+    {
+      "path": "libiio-tests_scanner-glrt-adaptive-fixture.h.gz",
+      "original_sha256": "d86971a4a1d6f43af4d5ac475b22c701a1748e7caa6d31df0ec132e7e9efc03b",
+      "original_bytes": 15769
+    },
+    {
+      "path": "libiio-tests_test_scanner_glrt_build_config.py.gz",
+      "original_sha256": "c61cf25d7fb9527a0b245b0194d27e4e583419d99852fe7bad5d8cd5d24d105b",
+      "original_bytes": 9861
+    },
+    {
+      "path": "libiio-tests_scanner-glrt-worker-delay.c.gz",
+      "original_sha256": "d2dbfcd2e993e5ee6708e865fb633af321cd2aeb4f35e814fc7ad24e57e1d0e3",
+      "original_bytes": 1019
+    }
+  ],
+  "files": [
+    {
+      "path": "arm-algorithm.json.gz",
+      "bytes": 9281,
+      "sha256": "945f44997b74896bbd0f362270d05e0c68cefa27e3b5614abde22861c58add5e"
+    },
+    {
+      "path": "arm-build_bundle.py.gz",
+      "bytes": 4172,
+      "sha256": "31cc1ba9256eb2100551f1972f795cb0539d1801238c63df47c479e812062e3c"
+    },
+    {
+      "path": "arm-bundle.json.gz",
+      "bytes": 656,
+      "sha256": "75e127f75f19b2d3609ff093c65ef9e0e7b15615ba79df6c51d2308f1f03563a"
+    },
+    {
+      "path": "arm-compile.json.gz",
+      "bytes": 883,
+      "sha256": "b9885ff48f952e7c83c471c45c6908d14df17f1bc526e9b7f59384d72261e7b0"
+    },
+    {
+      "path": "arm-configuration.json.gz",
+      "bytes": 838,
+      "sha256": "e7e844ffaae203b40756c0a81b177ea60653afae4335dbcf8f6f3ac9ebb1a7af"
+    },
+    {
+      "path": "arm-configure.json.gz",
+      "bytes": 1643,
+      "sha256": "a4dea29dfd1ce6ce0ec7578701bc5ef1c5aa58d80870ec4893a242841f91db3a"
+    },
+    {
+      "path": "arm-exercise_bundle.py.gz",
+      "bytes": 966,
+      "sha256": "f022e570d7f47e3df36584b331d479a4502f7638ef8cb52e4535eb938ec1a21a"
+    },
+    {
+      "path": "arm-libleo-scanner-glrt.so.build.json.gz",
+      "bytes": 1449,
+      "sha256": "5ae3f4526a16702e603a6109a1f97b8a430799bc1de11b0a16a451d64213e565"
+    },
+    {
+      "path": "arm-local-stage-receipt.json.gz",
+      "bytes": 666,
+      "sha256": "7c43106353e27b5e49925892a37bd03cfdc4c6151da922ca962eb1dd6d846f3d"
+    },
+    {
+      "path": "arm-receipt.json.gz",
+      "bytes": 55677,
+      "sha256": "cdf0945984193b31671ae5da4d603b141b92884a3295149b3bdf9295afc768ed"
+    },
+    {
+      "path": "arm-worker-symbols.json.gz",
+      "bytes": 1670,
+      "sha256": "b03325c34ac121e61dfccd26476ed945cac96e96ac1fdc542aca9954be1ebd09"
+    },
+    {
+      "path": "arm-worker.build.json.gz",
+      "bytes": 2753,
+      "sha256": "e8de1980bedb46c5d1e92abf208194f6c089ae849fe08743227ee1b1b69d241e"
+    },
+    {
+      "path": "asan-build.log.gz",
+      "bytes": 1464,
+      "sha256": "75906adb6c6fba4dab9292303ae3d433d10ffca31f5da8ae2bee53269affe89f"
+    },
+    {
+      "path": "asan-configure.log.gz",
+      "bytes": 686,
+      "sha256": "bfe9e47a5a6f64b19af28ca7281baf1483ee8310f6d39304432b20151803aa4e"
+    },
+    {
+      "path": "asan-receipt.json.gz",
+      "bytes": 4285,
+      "sha256": "ce483d9cec67818e2bdf7bd51482a2c9fcfee94a42051268b4a1f1ca44ed3ff4"
+    },
+    {
+      "path": "asan-test_scanner_glrt_provider.log.gz",
+      "bytes": 445,
+      "sha256": "a99fc959c562f82b6b771a59e764495c9fbddb809a3b74516252d78ba670f6f3"
+    },
+    {
+      "path": "asan-test_spf_hop_adaptive_native.log.gz",
+      "bytes": 109,
+      "sha256": "af139be3b933b5292ce60853de48c27c552e9f4e4e48e0a1169cf971e3d11ece"
+    },
+    {
+      "path": "asan-test_spf_hop_adaptive_policy.log.gz",
+      "bytes": 115,
+      "sha256": "da81233699429fdbde85f659344eac54e9f27980839875e925da66b221f6ecdd"
+    },
+    {
+      "path": "build-config.xml.gz",
+      "bytes": 794,
+      "sha256": "aa2b1946e8c78a51e99474eae2883ff53af8e34709666f08a43a8ee4f1275b67"
+    },
+    {
+      "path": "collect.py",
+      "bytes": 6328,
+      "sha256": "1aa1fce5b8c74622ce73224632cf051cdaab5b7068c9dfc3097e16e339bddd0c"
+    },
+    {
+      "path": "delayed-build.log.gz",
+      "bytes": 1473,
+      "sha256": "3603765da0acbf9468f048b1846041de8e54cfb53f61deebf6e544d1d7c667d2"
+    },
+    {
+      "path": "delayed-configure.log.gz",
+      "bytes": 689,
+      "sha256": "b07bdbaf32b3a04588f7b1b54b355ebf5fe3f402cc3570d3c251e44f05e13591"
+    },
+    {
+      "path": "delayed-receipt.json.gz",
+      "bytes": 4256,
+      "sha256": "f0f08a90dbc2c1da908e71dff0d6bfc09e2dfce9638fe4496fb404cd624f0ff0"
+    },
+    {
+      "path": "delayed-test_scanner_glrt_provider.log.gz",
+      "bytes": 428,
+      "sha256": "64caa6f40e63a8c9124b92bdb14102108f9410e0c1bcc5e27fdf24def21bee51"
+    },
+    {
+      "path": "delayed-test_spf_hop_adaptive_native.log.gz",
+      "bytes": 109,
+      "sha256": "af139be3b933b5292ce60853de48c27c552e9f4e4e48e0a1169cf971e3d11ece"
+    },
+    {
+      "path": "delayed-test_spf_hop_adaptive_policy.log.gz",
+      "bytes": 115,
+      "sha256": "da81233699429fdbde85f659344eac54e9f27980839875e925da66b221f6ecdd"
+    },
+    {
+      "path": "fair-build.log.gz",
+      "bytes": 1490,
+      "sha256": "b3e0ef26489d0b6bdbba6a2c96a1492e150db8b9ef16805e31cf18eead01a64e"
+    },
+    {
+      "path": "fair-configure.log.gz",
+      "bytes": 684,
+      "sha256": "723d0e4e4c8c8481f943ba41fd7ea0218a51f8cf6f1452c454af7efbe4b4bb91"
+    },
+    {
+      "path": "fair-receipt.json.gz",
+      "bytes": 4248,
+      "sha256": "ca98f74145687fd1b3197efeeef74ee17eb3b750eaa1c1a2da1c6c5d012d8898"
+    },
+    {
+      "path": "fair-test_scanner_glrt_provider.log.gz",
+      "bytes": 394,
+      "sha256": "57e9e0a898a8213d6387fa7a0376da6364f962179255fe0d0eb7bea3ec5605e6"
+    },
+    {
+      "path": "fair-test_spf_hop_adaptive_native.log.gz",
+      "bytes": 109,
+      "sha256": "af139be3b933b5292ce60853de48c27c552e9f4e4e48e0a1169cf971e3d11ece"
+    },
+    {
+      "path": "fair-test_spf_hop_adaptive_policy.log.gz",
+      "bytes": 115,
+      "sha256": "da81233699429fdbde85f659344eac54e9f27980839875e925da66b221f6ecdd"
+    },
+    {
+      "path": "libiio-iiod_CMakeLists.txt.gz",
+      "bytes": 4531,
+      "sha256": "2f6a20760114e70a45bcc25b056b3a8f783b7a48dc33723b4d8f44ec44450581"
+    },
+    {
+      "path": "libiio-iiod_spf-scanner-glrt.c.gz",
+      "bytes": 3904,
+      "sha256": "7068e2ec25cee86f44a76ef7a8f0fed90cfbdbfc7a82be2d7e991622a05ec604"
+    },
+    {
+      "path": "libiio-iiod_spf-scanner-glrt.h.gz",
+      "bytes": 975,
+      "sha256": "b408982644512e0e94f2f42cf705ebb02ce36f0a43d86b7fe6d71b00629218be"
+    },
+    {
+      "path": "libiio-tests_README.scanner-glrt-cooperative.md.gz",
+      "bytes": 1825,
+      "sha256": "fca04944864648a7b36375a063a6cef9fdf89aa2fb1c53062b316224cf7e4b68"
+    },
+    {
+      "path": "libiio-tests_scanner-glrt-adaptive-fixture.h.gz",
+      "bytes": 4912,
+      "sha256": "dc5cb4213f041048c3e5e4a3d7d77014207211995d568df112e16c6503456b97"
+    },
+    {
+      "path": "libiio-tests_scanner-glrt-worker-delay.c.gz",
+      "bytes": 500,
+      "sha256": "24575b3fb126fb5e4f5c0eb5c8e0fbf38c31c1cb1937c01caf2cd6b28e2b63ad"
+    },
+    {
+      "path": "libiio-tests_test_scanner_glrt_build_config.py.gz",
+      "bytes": 2243,
+      "sha256": "e9cefbdbfb4b8158afc1ef5b5f1800dca8ca0c158bf4b5e933acbef099f4990e"
+    },
+    {
+      "path": "network.xml.gz",
+      "bytes": 1860,
+      "sha256": "fdee8257475871166b930358c9137494a17819d9b4a418a956e9b5dfdf72d75e"
+    },
+    {
+      "path": "off-build.log.gz",
+      "bytes": 1480,
+      "sha256": "f9f025c0c7a1b7b599645cbfdc9f2e1db57de81954fb4acb9c1b45dd5fde3ce0"
+    },
+    {
+      "path": "off-configure.log.gz",
+      "bytes": 685,
+      "sha256": "d4f32f74d1eb584be05771a4fde2d0bce8039a4350fcfeb2e07f373f64529fbb"
+    },
+    {
+      "path": "off-receipt.json.gz",
+      "bytes": 4246,
+      "sha256": "06c511d7e589d42380a5cd6881bcc7a035902d0cccfa3a735aa4f093f3688a82"
+    },
+    {
+      "path": "off-test_scanner_glrt_provider.log.gz",
+      "bytes": 308,
+      "sha256": "e853a938f4d0186d02c34c2a660ad0492468a9396fe12680a7c75933117e8990"
+    },
+    {
+      "path": "off-test_spf_hop_adaptive_native.log.gz",
+      "bytes": 109,
+      "sha256": "af139be3b933b5292ce60853de48c27c552e9f4e4e48e0a1169cf971e3d11ece"
+    },
+    {
+      "path": "off-test_spf_hop_adaptive_policy.log.gz",
+      "bytes": 115,
+      "sha256": "da81233699429fdbde85f659344eac54e9f27980839875e925da66b221f6ecdd"
+    },
+    {
+      "path": "run-provider.py.gz",
+      "bytes": 2679,
+      "sha256": "2f854e6292a4105fc0f5f693e045be5e31c06a5ae0d33f2906161a4dc1a87272"
+    },
+    {
+      "path": "sdk-asan.so.build.json.gz",
+      "bytes": 1355,
+      "sha256": "8b95dacc5ad6cc45404c927a803705918ecd28cf1edf9f112a60e9cd654c54bd"
+    },
+    {
+      "path": "sdk.so.build.json.gz",
+      "bytes": 1310,
+      "sha256": "c649453ab2808994ffd867d0296b63e75284e21ce90a4e1945bbe1dc12dee061"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 23028,
+      "sha256": "e5111f8a41cf13fa18fa4336d086580baf45ab6c9dcd1571ea310c3f5d3c666f"
+    },
+    {
+      "path": "worker-delayed.build.json.gz",
+      "bytes": 2524,
+      "sha256": "efc7f180ce03f8b3e52cc501914a4336605c475807a7ded4c89bc3e27815feb4"
+    },
+    {
+      "path": "worker.build.json.gz",
+      "bytes": 2403,
+      "sha256": "7b71d217426c09c1b89b7f3c67d3609a4b65a4064e3d2dcd0b4a3b55318d93b3"
+    }
+  ]
+}
