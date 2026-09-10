@@ -159,7 +159,7 @@ int leo_scanner_glrt_enable_fair_admission(leo_scanner_glrt *s,
     const leo_scanner_glrt_admission_v1 *config)
 {
     if (!s || !config || !config->maximum_pending_age_ms ||
-        config->maximum_pending_age_ms>120 || config->freshness_trigger_ms<120 ||
+        config->maximum_pending_age_ms>240 || config->freshness_trigger_ms<120 ||
         config->freshness_trigger_ms>10000) return -EINVAL;
     if (!s->cooperative_skips || s->protection.max_occupied_slots!=LEO_PROBE_SLOTS ||
         config->maximum_pending_age_ms>=s->protection.admission_age_ms) return -ENOTSUP;

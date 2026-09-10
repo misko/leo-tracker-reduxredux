@@ -1,5 +1,8 @@
 # Fair scanner admission: provider integration and ARM bundle
 
+Follow-up: [paired 300-second replays and actual ARM verification](2026_09_10_scanner_pending240.md)
+evaluate a bounded 240 ms pending-age candidate, including its throughput trade-off.
+
 ## Outcome
 
 The [bounded SDK admission prototype](2026_09_10_scanner_fair_sdk_checkpoint.md)

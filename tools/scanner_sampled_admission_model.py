@@ -8,9 +8,13 @@ predict RF verdicts or generate recording evidence.
 import math
 
 
-def simulate(geometry, rate, costs_ms, *, block_ms=20, owner_jitter_ms=(0,)):
+def simulate(
+    geometry, rate, costs_ms, *, block_ms=20, owner_jitter_ms=(0,), maximum_pending_age_ms=120
+):
     if rate not in (2500000, 5000000) or not isinstance(block_ms, int) or not 0 < block_ms <= 20:
         raise ValueError("unsupported delivery geometry")
+    if not isinstance(maximum_pending_age_ms, int) or not 1 <= maximum_pending_age_ms <= 240:
+        raise ValueError("pending age must be an integer in 1..240 ms")
     if not geometry or len(geometry) != len(costs_ms) or len(geometry) > 2500:
         raise ValueError("invalid visit inventory")
     if any(not math.isfinite(c) or not 0 < c < 450 for c in costs_ms):
@@ -29,7 +33,7 @@ def simulate(geometry, rate, costs_ms, *, block_ms=20, owner_jitter_ms=(0,)):
         raise ValueError("invalid or overlapping dwell geometry")
     origin = geometry[0].start
     block_samples = rate * block_ms // 1000
-    age_samples = rate * 120 // 1000
+    age_samples = rate * maximum_pending_age_ms // 1000
     fresh_samples = rate * 2500 // 1000
     seen, last = set(), {}
     pending, running = None, None
@@ -50,7 +54,7 @@ def simulate(geometry, rate, costs_ms, *, block_ms=20, owner_jitter_ms=(0,)):
             return
         i, born_ns = pending
         g = geometry[i]
-        if now - born_ns > 120_000_000 or source - g.end > age_samples:
+        if now - born_ns > maximum_pending_age_ms * 1_000_000 or source - g.end > age_samples:
             dropped["expired"] += 1
             pending = None
         elif running is None:

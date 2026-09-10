@@ -11,12 +11,19 @@ def visits(origin=0):
 
 
 @pytest.mark.parametrize("cost", [75, 170, 210])
-def test_integer_source_translation_and_exact_reproducibility(cost):
-    small = simulate(visits(), 2500000, [cost] * 40)
-    large = simulate(visits(2**53 + 347), 2500000, [cost] * 40)
+@pytest.mark.parametrize("pending_age", [120, 200, 240])
+def test_integer_source_translation_and_exact_reproducibility(cost, pending_age):
+    small = simulate(visits(), 2500000, [cost] * 40, maximum_pending_age_ms=pending_age)
+    large = simulate(visits(2**53 + 347), 2500000, [cost] * 40, maximum_pending_age_ms=pending_age)
     assert small == large
     assert len({c["visit"] for c in small["checks"]}) == len(small["checks"])
     assert {c["target"] for c in small["checks"]} == set(range(8))
+
+
+@pytest.mark.parametrize("age", [0, 241, -1, 120.5, float("nan"), None])
+def test_invalid_pending_age(age):
+    with pytest.raises(ValueError, match="pending age"):
+        simulate(visits(), 2500000, [170] * 40, maximum_pending_age_ms=age)
 
 
 @pytest.mark.parametrize(
