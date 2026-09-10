@@ -290,6 +290,7 @@ one filesystem before changing access:
 
 ```text
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs,scanner-hop-recordings}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{scanner-adaptive-recordings,scanner-hop-classifications,scanner-adaptive-analysis}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
 sudo install -d -o root -g leo -m 2770 \
@@ -311,6 +312,7 @@ sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control \
   /srv/bulk/leo/trash /srv/bulk/leo/presentation-cache \
   /srv/bulk/leo/scanner-recordings /srv/bulk/leo/scanner-reports \
   /srv/bulk/leo/scanner-runs /srv/bulk/leo/scanner-hop-recordings
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{scanner-adaptive-recordings,scanner-hop-classifications,scanner-adaptive-analysis}
 sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
   -exec setfacl -m u:leo:rwx {} +
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports,scanner-runs,scanner-hop-recordings}
@@ -325,6 +327,9 @@ sudo -u leo test -w /srv/bulk/leo/scanner-recordings
 sudo -u leo test -w /srv/bulk/leo/scanner-reports
 sudo -u leo test -w /srv/bulk/leo/scanner-runs
 sudo -u leo test -w /srv/bulk/leo/scanner-hop-recordings
+sudo -u leo test -w /srv/bulk/leo/scanner-adaptive-recordings
+sudo -u leo test -w /srv/bulk/leo/scanner-hop-classifications
+sudo -u leo test -w /srv/bulk/leo/scanner-adaptive-analysis
 for path in release capture legacy frequency-calibration-plans \
   frequency-calibration-promotions wp11-configs wp11-plans trusted-campaigns; do
   sudo -u leo test -w "/srv/bulk/leo/qualification/$path"
