@@ -169,6 +169,9 @@ in the earlier LNB report. Neither issue is hidden by this scanner's successful
 94.55% result.
 
 The [artifact index](evidence/2026_09_10_scanner_production_rollout/index.json)
-binds 20 public receipts, replay recipes and PNGs by size and SHA-256. No IQ or
+binds 22 public receipts, replay recipes and PNGs by size and SHA-256. Original
+run recipes are preserved byte-for-byte as `analyze.py.gz` and
+`verify_scanner.py.gz`; the adjacent Python copies are formatting/lint-clean
+for deployment checks. No capture command was rerun during that cleanup. No IQ or
 credentials are committed. Full local verification evidence remains beneath
 `/srv/bulk/leo/qualification/scanner-a2731551/`, including the setup attempts.

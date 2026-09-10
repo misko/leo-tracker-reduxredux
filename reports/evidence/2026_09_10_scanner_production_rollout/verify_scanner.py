@@ -4,9 +4,9 @@ The first queue attempt was cancelled before radio setup. Preserve that failed
 operation and its evidence; explicitly retry the same immutable scanner intent
 through the public capture application, without editing catalog state.
 """
+
 import json
 import logging
-import os
 import signal
 import sys
 import time
@@ -37,12 +37,14 @@ intent = backend.scheduled_scanner_intent(
 assert intent.configuration.sample_rate_hz == 2_500_000, "Not a 2.5 MS/s cadence slot"
 assert backend.capture_control_snapshot().desired_state == "paused"
 
+
 def save(name, value):
     if hasattr(value, "model_dump"):
         value = value.model_dump(mode="json")
     with (root / name).open("x") as handle:
         json.dump(value, handle, indent=2)
         handle.write("\n")
+
 
 save("intent.json", intent)
 save("authority-before.json", backend.capture_control_snapshot())
@@ -53,31 +55,47 @@ timer = Timer(420, cancel.set)
 timer.daemon = True
 started = time.monotonic()
 
+
 def heartbeat():
     while not done.wait(30):
-        print(json.dumps({"event": "verification_running", "seconds": time.monotonic() - started}), flush=True)
+        print(
+            json.dumps({"event": "verification_running", "seconds": time.monotonic() - started}),
+            flush=True,
+        )
+
 
 Thread(target=heartbeat, daemon=True).start()
 try:
-    save("authority-resumed.json", backend.capture_resume(
-        operator_id="scanner-main-verification",
-        reason="Authorized single 300 s 2.5 MS/s deployed scanner verification; scheduler stopped",
-    ))
+    save(
+        "authority-resumed.json",
+        backend.capture_resume(
+            operator_id="scanner-main-verification",
+            reason=(
+                "Authorized single 300 s 2.5 MS/s deployed scanner verification; scheduler stopped"
+            ),
+        ),
+    )
     timer.start()
     result = backend.capture_scheduled_scanner(intent, cancel=cancel)
-    summary = dict(session_id=result.published.session_id,
+    summary = dict(
+        session_id=result.published.session_id,
         manifest_sha256=result.published.manifest_sha256,
         capture_qualified=result.capture_qualified,
-        classification_warning=result.classification_warning)
+        classification_warning=result.classification_warning,
+    )
     save("capture-result.json", summary)
     save("public-manifest.json", result.published.manifest)
     print(json.dumps(summary), flush=True)
 finally:
     timer.cancel()
-    save("authority-after.json", backend.capture_pause(
-        operator_id="scanner-main-verification",
-        reason="Bounded scanner verification ended; hold pending evidence and UI checks",
-        wait=True, timeout_seconds=90,
-    ))
+    save(
+        "authority-after.json",
+        backend.capture_pause(
+            operator_id="scanner-main-verification",
+            reason="Bounded scanner verification ended; hold pending evidence and UI checks",
+            wait=True,
+            timeout_seconds=90,
+        ),
+    )
     done.set()
     save("wall-time.json", {"elapsed_seconds": time.monotonic() - started})
