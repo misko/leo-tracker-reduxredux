@@ -29,9 +29,11 @@ RELEASE_ROOT = Path("/opt/leo-tracker/releases")
 ENVIRONMENT = Path("/etc/leo/leo.env")
 WORKER_ENVIRONMENT = Path("/etc/leo/worker.env")
 ACQUISITION_ENVIRONMENT = Path("/etc/leo/acquisition.env")
-_scanner_binary_path = runpy.run_path(
+_scanner_runtime_policy = runpy.run_path(
     str(Path(__file__).resolve().with_name("scanner-runtime-binding.py"))
-)["scanner_binary_path"]
+)
+_scanner_binary_path = _scanner_runtime_policy["scanner_binary_path"]
+_scanner_only_bindings = _scanner_runtime_policy["SCANNER_ONLY_BINDINGS"]
 UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
 ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
@@ -292,11 +294,9 @@ EXPECTED_ACQUISITION_EXEC_START = (
     "/usr/bin/env PYTHONDONTWRITEBYTECODE=1 "
     "/opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
     "--profile ${LEO_CAPTURE_PROFILE} "
-    "--profile ${LEO_CAPTURE_PROFILE_5M} "
-    "--radio radio_pluto_5d4d "
     "--radio radio_pluto_19f2 "
-    "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS} "
-    "--mixed-rate-policy ${LEO_MIXED_RATE_POLICY}"
+    "--interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} "
+    "--scanner-only --max-scanner-runs 1"
 )
 LIVE_STATION_PROBE_PROGRAM = """
 import json
@@ -1529,7 +1529,7 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
     expected_scanner = {
         "LEO_SCANNER_ENABLED": "false",
         "LEO_SCANNER_CAPTURE_MODE": "persistent_hop",
-        "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
+        "LEO_SCANNER_RADIO_ID": "radio_pluto_19f2",
         "LEO_SCANNER_INTERVAL_SECONDS": "1200",
         "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "300",
         "LEO_SCANNER_RUN_SECONDS": "300",
@@ -1608,6 +1608,8 @@ def _component_environment_revision(component: str, revision: str) -> Path:
     if bindings != [revision]:
         raise ValueError(f"{component} environment does not bind the exact target release")
     if component == "acquisition":
+        if any(environment.get(key) != value for key, value in _scanner_only_bindings.items()):
+            raise ValueError("acquisition environment must bind scanner-only radio .21")
         expected_binary = _scanner_binary_path(
             safe.read_text(encoding="utf-8"), revision, RELEASE_ROOT
         )

@@ -235,3 +235,16 @@ Do not enable `leo-qualification.timer` until the acquisition maintenance
 window and marker file have been arranged. See
 [`docs/operations/runbook.md`](../../docs/operations/runbook.md) for install,
 recovery, backup, retention, and qualification procedures.
+# Scanner-only production on radio .21
+
+The acquisition service dispatches only the existing 300-second scanner mode,
+on `radio_pluto_19f2` (`192.168.1.21`). `--max-scanner-runs 1` bounds each
+invocation, and `Restart=always` restarts it after completion to await the next
+durable cadence slot. Completed operation keys are not recaptured. The normal
+20-minute, 50/50 2.5/5 MS/s schedule and internal 120 ms dwells are unchanged.
+Standalone dwell jobs are neither enqueued nor claimed by this service; existing
+pending dwell jobs are retained. Downstream analysis and the UI remain enabled.
+Acquisition's environment override exposes only .21; .20 is reserved for the
+separate GLRT hardware task. Keep .21 in its existing AD9361 mode unless a
+separately justified capability check requires otherwise. No firmware flash is
+part of this software change.

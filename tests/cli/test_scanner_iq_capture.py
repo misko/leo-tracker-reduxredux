@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Event
 
@@ -169,6 +170,43 @@ def test_persisted_scanner_intent_rejects_a_changed_radio_identity(tmp_path) -> 
         changed.capture_scheduled_scanner(intent, cancel=Event())
 
     assert replacement_radio.open_count == 0
+
+
+def test_scanner_relocation_rejects_queued_r20_intent_before_opening_any_radio(tmp_path):
+    r20 = RadioConfigurationV1(
+        radio_id="radio_pluto_5d4d",
+        serial="1040005e0b100007100010000bf33a5d4d",
+        host="192.168.1.20",
+    )
+    r21 = RadioConfigurationV1(
+        radio_id="radio_pluto_19f2",
+        serial="10400056f695001322002d0010ad1719f2",
+        host="192.168.1.21",
+    )
+    settings = CliSettings(
+        profile_root=tmp_path / "profiles",
+        bulk_root=tmp_path / "bulk",
+        radio_backend="pluto",
+        radios=(r20,),
+        scanner_enabled=True,
+        scanner_radio_id=r20.radio_id,
+        scanner_run_seconds=300,
+        scanner_dwell_ms=120,
+        scanner_report_root=tmp_path / "reports",
+    )
+    intent = _scheduled_intent(LocalAcquisitionBackend(settings))
+    opened = []
+    relocated = LocalAcquisitionBackend(
+        replace(settings, radios=(r21,), scanner_radio_id=r21.radio_id),
+        CompositionHooks(scanner_radio_factory=lambda config: opened.append(config)),
+    )
+    with pytest.raises(CliBackendError, match="disagrees with runtime policy"):
+        relocated.capture_scheduled_scanner(intent, cancel=Event())
+    assert opened == []
+    new_intent = _scheduled_intent(relocated)
+    assert new_intent.radio_id == r21.radio_id and new_intent.radio_serial == r21.serial
+    assert new_intent.run_duration_seconds == 300
+    assert new_intent.configuration.dwell_ms == 120
 
 
 def test_scheduled_scanner_publishes_iq_before_returning_capture(

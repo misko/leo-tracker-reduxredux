@@ -25,9 +25,9 @@ from typing import Any
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
-_scanner_binary_path = runpy.run_path(str(ROOT / "deploy/scripts/scanner-runtime-binding.py"))[
-    "scanner_binary_path"
-]
+_scanner_runtime_policy = runpy.run_path(str(ROOT / "deploy/scripts/scanner-runtime-binding.py"))
+_scanner_binary_path = _scanner_runtime_policy["scanner_binary_path"]
+_scanner_only_bindings = _scanner_runtime_policy["SCANNER_ONLY_BINDINGS"]
 MANIFEST_PATH = ROOT / "config/ops-components.json"
 PROTECTED_DATABASES = frozenset({"leo_tracker", "postgres", "template0", "template1"})
 RELEASE_ROOT = Path("/opt/leo-tracker")
@@ -99,7 +99,7 @@ _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
     "LEO_SCANNER_ENABLED": "false",
     "LEO_SCANNER_CAPTURE_MODE": "persistent_hop",
-    "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
+    "LEO_SCANNER_RADIO_ID": "radio_pluto_19f2",
     "LEO_SCANNER_INTERVAL_SECONDS": "1200",
     "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "300",
     "LEO_SCANNER_RUN_SECONDS": "300",
@@ -2112,10 +2112,10 @@ def _write_acquisition_release_environment(
             and line.partition("=")[1]
             and line.partition("=")[0].strip() == key
         ]
-        for key in (release_key, binary_key, scanner_key)
+        for key in (release_key, binary_key, scanner_key, *_scanner_only_bindings)
     }
     if len(locations[release_key]) != 1 or any(
-        len(locations[key]) > 1 for key in (binary_key, scanner_key)
+        len(locations[key]) > 1 for key in (binary_key, scanner_key, *_scanner_only_bindings)
     ):
         raise OpsError(
             "acquisition environment must contain exactly one release binding and at most "
@@ -2127,7 +2127,7 @@ def _write_acquisition_release_environment(
         raise OpsError(str(error)) from error
     release_location = locations[release_key][0]
     lines[release_location] = f"{release_key}={target}"
-    updates = {binary_key: binary_path, scanner_key: "true"}
+    updates = {binary_key: binary_path, scanner_key: "true", **_scanner_only_bindings}
     for key, value in updates.items():
         if locations[key]:
             lines[locations[key][0]] = f"{key}={value}"

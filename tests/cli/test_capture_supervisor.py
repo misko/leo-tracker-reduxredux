@@ -967,6 +967,40 @@ def test_durable_scanner_only_is_bounded_and_does_not_consume_ordinary_work() ->
     assert [item.state for item in scanners] == ["succeeded", "succeeded"]
 
 
+def test_restarted_single_scan_invocations_keep_cadence_and_leave_dwells_paused() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    ordinary = backend.enqueue_acquisition_operation(
+        operation_key="dwell:before-scanner-only",
+        kind="scheduled_recording",
+        payload={"profile_name": "test-profile", "radio_ids": ["radio-a"], "extra_tags": []},
+        scheduled_for=start - timedelta(minutes=1),
+    )
+    for _ in range(2):
+        result = ContinuousAcquisitionRunner(
+            cast(AcquisitionCliBackend, backend),
+            clock=clock,
+            utc_now=lambda: start + timedelta(seconds=clock.now),
+        ).run(
+            "test-profile",
+            radio_ids=("radio-a",),
+            extra_tags=(),
+            interval_seconds=10,
+            maximum_captures=None,
+            cancel=cast(Event, _AdvancingCancel(clock)),
+            scanner_only=True,
+            maximum_scanner_runs=1,
+        )
+        assert result.scanner_run_count == 1
+        assert result.stopped_reason == "maximum_scanner_runs"
+    assert backend.scanner_capture_times == [0.0, 5.0]
+    assert backend.capture_times == []
+    assert ordinary.state == "pending" and ordinary.attempt_count == 0
+    assert len([op for op in backend.operations if op.kind == "scheduled_recording"]) == 1
+
+
 def test_scanner_only_stops_after_a_failed_started_run() -> None:
     clock = _Clock()
     backend = _DurableSupervisorBackend(clock)

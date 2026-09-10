@@ -1,7 +1,23 @@
 """Deployment-owned scanner binding policy; no runtime or hardware imports."""
 
+import json
 import re
 from pathlib import Path
+
+SCANNER_ONLY_BINDINGS = {
+    "LEO_SCANNER_RADIO_ID": "radio_pluto_19f2",
+    "LEO_RADIOS_JSON": json.dumps(
+        [
+            {
+                "radio_id": "radio_pluto_19f2",
+                "serial": "10400056f695001322002d0010ad1719f2",
+                "host": "192.168.1.21",
+                "receiver_count": 2,
+            }
+        ],
+        separators=(",", ":"),
+    ),
+}
 
 
 def scanner_binary_path(
@@ -21,6 +37,7 @@ def scanner_binary_path(
         "LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH",
         "LEO_SCANNER_GLRT_ALGORITHM_SHA256",
         "LEO_SCANNER_GLRT_CONFIGURATION_SHA256",
+        *SCANNER_ONLY_BINDINGS,
     }
     for line in environment.splitlines():
         if line.lstrip().startswith("#"):
