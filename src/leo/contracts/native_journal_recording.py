@@ -391,7 +391,7 @@ class NativeRecordingBundleV1(_NativePort):
             or self.coarse_iq.bytes != binding.coarse_iq_bytes
         ):
             raise ValueError("native bundle coarse IQ reference differs")
-        hashes = {
+        hashes: dict[NativeBundleArtifactName, str] = {
             "journal.glrj": binding.journal_sha256,
             "recording.json": binding.recording_export_sha256,
             "owner-receipt.json": binding.owner_receipt_sha256,

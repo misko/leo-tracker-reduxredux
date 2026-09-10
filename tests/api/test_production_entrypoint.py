@@ -39,6 +39,68 @@ def test_production_composition_rejects_qnap_before_database_or_filesystem_write
         )
 
 
+@pytest.mark.parametrize("custom_registry", [False, True])
+def test_production_native_recordings_discover_publication_without_database_or_restart(
+    tmp_path, monkeypatch, custom_registry
+):
+    from fastapi.testclient import TestClient
+    from sqlalchemy import event
+
+    from leo.operations.native_recording_registry import NativeRecordingRegistry
+    from tests.cli.test_native_recording_bundle import bundle, digest
+
+    original_engine = production.create_catalog_engine
+
+    def disconnected_engine(url):
+        engine = original_engine(url)
+
+        @event.listens_for(engine, "do_connect")
+        def refuse_connection(*args, **kwargs):
+            raise AssertionError("native recording review must not open PostgreSQL")
+
+        return engine
+
+    monkeypatch.setattr(production, "create_catalog_engine", disconnected_engine)
+    (tmp_path / "qualification" / "trusted-campaigns").mkdir(parents=True)
+    (tmp_path / "recordings").mkdir()
+    static = tmp_path / "web"
+    static.mkdir()
+    registry_root = tmp_path / ("selected-registry" if custom_registry else "native-recordings")
+    app = production.create_production_app(
+        production.ProductionSettings(
+            database_url="postgresql+psycopg://unused@127.0.0.1:1/unused",
+            bulk_root=tmp_path,
+            static_directory=static,
+            tle_root=tmp_path / "tle",
+            native_recording_registry=registry_root if custom_registry else None,
+        )
+    )
+    with TestClient(app) as client:
+        route = "/api/v1/native-recordings"
+        response = client.get(route)
+        assert response.status_code == 200 and response.json()["total"] == 0
+        assert not registry_root.exists()
+        path, manifest = bundle(tmp_path)
+        bundle_id = NativeRecordingRegistry(registry_root).register(
+            path, expected_sha256=digest(path.read_bytes())
+        )
+        assert client.get(route).json()["items"][0]["bundle_id"] == bundle_id
+        response = client.get(f"{route}/{bundle_id}")
+        assert response.status_code == 200
+        detail = response.json()
+        assert detail["summary"]["runtime_result"] == manifest["runtime_result"] == -5
+        assert detail["summary"]["owner_status"] == "failed"
+        assert detail["summary"]["head_count"] == len(detail["rows"])
+        assert detail["summary"]["physical_precision_qualified"] is False
+        assert client.head(f"{route}/{bundle_id}").status_code == 200
+        # Damage discovered after startup is surfaced on the next request.
+        (path.parent / "journal.glrj").write_bytes(b"damaged")
+        assert client.get(f"{route}/{bundle_id}").status_code == 409
+        assert client.get(route).json()["items"][0]["error"] == "integrity_unavailable"
+        if custom_registry:
+            assert not (tmp_path / "native-recordings").exists()
+
+
 def test_production_adaptive_routes_discover_new_publications_without_database_or_restart(
     tmp_path,
     monkeypatch,

@@ -135,7 +135,7 @@ def review_native_recording(
             )
     output.mkdir(parents=True, exist_ok=False)
     with (output / "measurements.csv").open("x", newline="") as stream:
-        columns = (
+        columns: tuple[str, ...] = (
             "sequence",
             "frame",
             "native_start_sample",
