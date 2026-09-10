@@ -80,8 +80,10 @@ def hybrid_library(tmp_path_factory):
 def amplitude_library(tmp_path_factory):
     return build_window_ranker(
         tmp_path_factory.mktemp("amplitude-rank") / "rank.so",
-        cflags=("-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",
-                "-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1"),
+        cflags=(
+            "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",
+            "-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1",
+        ),
     )
 
 

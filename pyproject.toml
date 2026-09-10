@@ -70,6 +70,12 @@ line-length = 100
 # are recorded in its snapshot manifest.  It is evidence, not live source.
 extend-exclude = [
   "reports/2026_08_25_post_refill_24h_retrospective/code/snapshot",
+  # These retained execution recipes are hash-bound by their archive manifests.
+  # tests/deploy/test_archived_glrt_evidence.py verifies their original bytes.
+  "reports/evidence/2026_09_08_arm_presence_300s",
+  "reports/evidence/2026_09_08_scanner_glrt_package_arm",
+  "reports/evidence/2026_09_08_scanner_glrt_sdk_replay",
+  "reports/evidence/2026_09_08_scanner_glrt_userspace_bundle",
 ]
 
 [tool.ruff.format]

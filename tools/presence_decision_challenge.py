@@ -62,16 +62,33 @@ def cases(protocol):
             for seed in protocol["positive_seeds"]:
                 for window in protocol["positive_windows"]:
                     for snr in protocol["positive_snr_db"]:
-                        yield dict(base, seed=seed, kind="pilot", start_ms=window * 20.0,
-                                   duration_ms=20.0, snr_db=snr)
-                    yield dict(base, seed=seed, kind="pilot_plus_tone", start_ms=window * 20.0,
-                               duration_ms=20.0, snr_db=protocol["pilot_plus_tone_snr_db"])
+                        yield dict(
+                            base,
+                            seed=seed,
+                            kind="pilot",
+                            start_ms=window * 20.0,
+                            duration_ms=20.0,
+                            snr_db=snr,
+                        )
+                    yield dict(
+                        base,
+                        seed=seed,
+                        kind="pilot_plus_tone",
+                        start_ms=window * 20.0,
+                        duration_ms=20.0,
+                        snr_db=protocol["pilot_plus_tone_snr_db"],
+                    )
                 for boundary in range(1, 6):
                     for snr in protocol["boundary_snr_db"]:
                         duration = protocol["boundary_burst_ms"]
-                        yield dict(base, seed=seed, kind="boundary_pilot",
-                                   start_ms=boundary * 20.0 - duration / 2,
-                                   duration_ms=duration, snr_db=snr)
+                        yield dict(
+                            base,
+                            seed=seed,
+                            kind="boundary_pilot",
+                            start_ms=boundary * 20.0 - duration / 2,
+                            duration_ms=duration,
+                            snr_db=snr,
+                        )
 
 
 def generate(spec):
@@ -85,8 +102,16 @@ def generate(spec):
         raise ValueError("signal interval outside dwell")
     kind = spec["kind"]
     positive = kind in ("pilot", "pilot_plus_tone", "boundary_pilot")
-    known = {"white_noise", "colored_noise", "tone", "two_tones", "pulsed_tone",
-             "chirp", "clipped_tones", "wrong_pilot"}
+    known = {
+        "white_noise",
+        "colored_noise",
+        "tone",
+        "two_tones",
+        "pulsed_tone",
+        "chirp",
+        "clipped_tones",
+        "wrong_pilot",
+    }
     if not positive and kind not in known:
         raise ValueError("unknown control")
     rng = np.random.default_rng(seed)
@@ -102,7 +127,7 @@ def generate(spec):
         coefficients /= np.linalg.norm(coefficients)
         values = np.convolve(values, coefficients, mode="same")
     if kind in ("tone", "two_tones", "pulsed_tone", "clipped_tones", "pilot_plus_tone"):
-        envelope = (np.remainder(time * rng.uniform(600, 1100), 1) < rng.uniform(0.1, 0.9))
+        envelope = np.remainder(time * rng.uniform(600, 1100), 1) < rng.uniform(0.1, 0.9)
         if kind != "pulsed_tone":
             envelope = 1
         amplitude = 48000 if kind == "clipped_tones" else 8000
@@ -117,19 +142,27 @@ def generate(spec):
         if not np.isfinite(snr) or not -30 <= snr <= 20:
             raise ValueError("SNR outside bounded challenge")
         pilot = continuous_pilot(rate, edge, epoch, 17 if kind == "wrong_pilot" else 0)[start:end]
-        amplitude = np.sqrt(2 * sigma**2 * 10 ** (snr / 10) / np.mean(np.abs(pilot)**2))
+        amplitude = np.sqrt(2 * sigma**2 * 10 ** (snr / 10) / np.mean(np.abs(pilot) ** 2))
         values[start:end] += amplitude * pilot * np.exp(2j * np.pi * frequency * time[start:end])
     components = np.rint(np.column_stack((values.real, values.imag)))
-    truth = dict(spec, starlink_model_present=positive, epoch_samples=epoch, cfo_hz=frequency,
-                 clipped_components=int(np.count_nonzero(
-                     (components < -32768) | (components > 32767))))
+    truth = dict(
+        spec,
+        starlink_model_present=positive,
+        epoch_samples=epoch,
+        cfo_hz=frequency,
+        clipped_components=int(np.count_nonzero((components < -32768) | (components > 32767))),
+    )
     return np.clip(components, -32768, 32767).astype(np.int16), truth
 
 
 def passing(candidates, policy):
-    return [c for c in candidates if c["fractional_complete"]
-            and c["exact_score"] >= policy["minimum_exact_score"]
-            and c["margin"] >= policy["minimum_margin"]]
+    return [
+        c
+        for c in candidates
+        if c["fractional_complete"]
+        and c["exact_score"] >= policy["minimum_exact_score"]
+        and c["margin"] >= policy["minimum_margin"]
+    ]
 
 
 def associated(candidate, truth, window, limits):
@@ -142,9 +175,11 @@ def associated(candidate, truth, window, limits):
     epoch = window * rate // 50 + candidate["epoch"] + candidate["fractional_offset_samples"]
     period = rate / FRAME_RATE_HZ
     difference = abs((epoch - truth["epoch_samples"] + period / 2) % period - period / 2)
-    return (difference / rate * 1e6 <= limits["maximum_circular_epoch_difference_us"]
-            and abs(candidate["tracking_cfo_hz"] - truth["cfo_hz"])
-            <= limits["maximum_cfo_difference_hz"])
+    return (
+        difference / rate * 1e6 <= limits["maximum_circular_epoch_difference_us"]
+        and abs(candidate["tracking_cfo_hz"] - truth["cfo_hz"])
+        <= limits["maximum_cfo_difference_hz"]
+    )
 
 
 def summarize(rows, protocol):
@@ -159,15 +194,21 @@ def summarize(rows, protocol):
             group["flagged"] += int(row["decisions"][name]["flagged"])
             group["associated"] += int(row["decisions"][name]["associated"])
         negative = [r for r in rows if not r["truth"]["starlink_model_present"]]
-        positive = [r for r in rows if r["truth"]["kind"] in ("pilot", "pilot_plus_tone")
-                    and r["truth"]["snr_db"] >= 0]
+        positive = [
+            r
+            for r in rows
+            if r["truth"]["kind"] in ("pilot", "pilot_plus_tone") and r["truth"]["snr_db"] >= 0
+        ]
         false_flags = sum(r["decisions"][name]["flagged"] for r in negative)
         flag_fraction = sum(r["decisions"][name]["flagged"] for r in positive) / len(positive)
         association = sum(r["decisions"][name]["associated"] for r in positive) / len(positive)
         gate = protocol["experiment_gate"]
         result[name] = {
-            "groups": groups, "negative_cases": len(negative), "false_flags": false_flags,
-            "primary_positive_cases": len(positive), "primary_flag_fraction": flag_fraction,
+            "groups": groups,
+            "negative_cases": len(negative),
+            "false_flags": false_flags,
+            "primary_positive_cases": len(positive),
+            "primary_flag_fraction": flag_fraction,
             "primary_associated_fraction": association,
             "bounded_challenge_pass": (
                 false_flags <= gate["negative_false_flags"]
@@ -187,8 +228,11 @@ def audit_control_labels(rows, protocol):
     """
     result = {}
     for name in protocol["policies"]:
-        hard = [r for r in rows if not r["truth"]["starlink_model_present"]
-                and r["truth"]["kind"] != "wrong_pilot"]
+        hard = [
+            r
+            for r in rows
+            if not r["truth"]["starlink_model_present"] and r["truth"]["kind"] != "wrong_pilot"
+        ]
         ambiguous = [r for r in rows if r["truth"]["kind"] == "wrong_pilot"]
         errors = []
         for row in ambiguous:
@@ -196,17 +240,22 @@ def audit_control_labels(rows, protocol):
             rate, period = truth["rate_hz"], truth["rate_hz"] / FRAME_RATE_HZ
             expected = truth["epoch_samples"] + 17 * OFDM_SYMBOL_DURATION_S * rate
             for candidate in passing(row["candidates"], protocol["policies"][name]):
-                epoch = (row["selected_window"] * rate // 50 + candidate["epoch"]
-                         + candidate["fractional_offset_samples"])
+                epoch = (
+                    row["selected_window"] * rate // 50
+                    + candidate["epoch"]
+                    + candidate["fractional_offset_samples"]
+                )
                 errors.append((epoch - expected + period / 2) % period - period / 2)
         result[name] = {
             "scope": "post-hoc control-label audit, not qualification or operational FAR",
-            "original_gate_preserved": True, "qualified": False,
+            "original_gate_preserved": True,
+            "qualified": False,
             "nonpilot_control_cases": len(hard),
             "flags_in_nonpilot_controls": sum(r["decisions"][name]["flagged"] for r in hard),
             "timing_ambiguous_controls": len(ambiguous),
             "flags_in_timing_ambiguous_controls": sum(
-                r["decisions"][name]["flagged"] for r in ambiguous),
+                r["decisions"][name]["flagged"] for r in ambiguous
+            ),
             "predicted_shift_us": 17 * OFDM_SYMBOL_DURATION_S * 1e6,
             "accepted_candidate_timing_residual_samples": errors,
         }
@@ -218,26 +267,47 @@ def prepare(output, prefix, *, amplitude=False):
     if any(output.is_relative_to(Path(p)) for p in ("/mnt/qnap01", "/srv/bulk/leo")):
         raise ValueError("output cannot be beneath archive storage")
     protocol = json.loads(PROTOCOL.read_text())
-    if (protocol["receiver"] != 1 or protocol["maximum_confirmations"] != 1
-            or protocol["screen_bins"] != 512 or protocol["seeded"]):
+    if (
+        protocol["receiver"] != 1
+        or protocol["maximum_confirmations"] != 1
+        or protocol["screen_bins"] != 512
+        or protocol["seeded"]
+    ):
         raise ValueError("unreviewed detector geometry")
     output.mkdir(parents=True, exist_ok=False)
     options = fftw_options(prefix)
     detector_path = ROOT / protocol["detector_protocol"]
     detector = json.loads(detector_path.read_text())
-    flags = tuple(detector["common_flags"]) + tuple(
-        f"-DLEO_PRESENCE_{key}={value}" for key, value in detector["variants"][0]["defines"].items()
-    ) + ("-DLEO_PRESENCE_DIFFERENTIAL_CI16=1", "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1")
+    flags = (
+        tuple(detector["common_flags"])
+        + tuple(
+            f"-DLEO_PRESENCE_{key}={value}"
+            for key, value in detector["variants"][0]["defines"].items()
+        )
+        + ("-DLEO_PRESENCE_DIFFERENTIAL_CI16=1", "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1")
+    )
     if amplitude:
         flags += ("-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1",)
-    write_json(output / "freeze.json", {
-        "protocol": protocol, "protocol_sha256": digest(PROTOCOL),
-        "detector_protocol_sha256": digest(detector_path), "tool_sha256": digest(Path(__file__)),
-        "fft_backend": fftw_identity(options), "state": "frozen_before_generation_or_scoring",
-        "rank_weighting": "amplitude_development_variant" if amplitude else "normalized_baseline",
-    })
-    library = build_dwell_presence(output / "detector.so", cflags=flags + options["cflags"],
-                                   ldflags=options["ldflags"], dependencies=options["dependencies"])
+    write_json(
+        output / "freeze.json",
+        {
+            "protocol": protocol,
+            "protocol_sha256": digest(PROTOCOL),
+            "detector_protocol_sha256": digest(detector_path),
+            "tool_sha256": digest(Path(__file__)),
+            "fft_backend": fftw_identity(options),
+            "state": "frozen_before_generation_or_scoring",
+            "rank_weighting": "amplitude_development_variant"
+            if amplitude
+            else "normalized_baseline",
+        },
+    )
+    library = build_dwell_presence(
+        output / "detector.so",
+        cflags=flags + options["cflags"],
+        ldflags=options["ldflags"],
+        dependencies=options["dependencies"],
+    )
     return protocol, library
 
 
@@ -254,33 +324,56 @@ def run_controls(output, prefix, *, amplitude=False):
             result = unpack(engines[key].run(iq, maximum=1, seeded=False))
             window = result["rank"]["order"][0]
             confirmation = result["confirmations"][0]
-            candidates = confirmation["candidates"][:confirmation["candidate_count"]]
+            candidates = confirmation["candidates"][: confirmation["candidate_count"]]
             decisions = {}
             for name, policy in protocol["policies"].items():
                 accepted = passing(candidates, policy)
-                decisions[name] = {"flagged": bool(accepted), "associated": any(
-                    associated(c, truth, window, protocol["association"]) for c in accepted)}
-            row = {"truth": truth, "iq_sha256": hashlib.sha256(iq.tobytes()).hexdigest(),
-                   "selected_window": window, "candidates": candidates, "decisions": decisions,
-                   "cpu_ms": result["total_cpu_ms"], "wall_ms": result["total_wall_ms"]}
+                decisions[name] = {
+                    "flagged": bool(accepted),
+                    "associated": any(
+                        associated(c, truth, window, protocol["association"]) for c in accepted
+                    ),
+                }
+            row = {
+                "truth": truth,
+                "iq_sha256": hashlib.sha256(iq.tobytes()).hexdigest(),
+                "selected_window": window,
+                "candidates": candidates,
+                "decisions": decisions,
+                "cpu_ms": result["total_cpu_ms"],
+                "wall_ms": result["total_wall_ms"],
+            }
             rows.append(row)
             stream.write(json.dumps(row, allow_nan=False) + "\n")
             if len(rows) % 32 == 0:
                 print(f"{len(rows)} frozen controls evaluated", flush=True)
-    result = {"scope": "bounded synthetic challenge, not operational specificity or absence",
-              "cases": len(rows), "binary_sha256": digest(library),
-              "results": summarize(rows, protocol),
-              "control_label_audit": audit_control_labels(rows, protocol)}
+    result = {
+        "scope": "bounded synthetic challenge, not operational specificity or absence",
+        "cases": len(rows),
+        "binary_sha256": digest(library),
+        "results": summarize(rows, protocol),
+        "control_label_audit": audit_control_labels(rows, protocol),
+    }
     write_json(output / "summary.json", result)
-    print(json.dumps({k: {a: b for a, b in v.items() if a != "groups"}
-                      for k, v in result["results"].items()}, indent=2))
+    print(
+        json.dumps(
+            {
+                k: {a: b for a, b in v.items() if a != "groups"}
+                for k, v in result["results"].items()
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--fftw-prefix", type=Path, required=True)
-    parser.add_argument("--rank-amplitude", action="store_true",
-                        help="Development variant, not untouched challenge qualification")
+    parser.add_argument(
+        "--rank-amplitude",
+        action="store_true",
+        help="Development variant, not untouched challenge qualification",
+    )
     args = parser.parse_args()
     run_controls(args.output, args.fftw_prefix, amplitude=args.rank_amplitude)
