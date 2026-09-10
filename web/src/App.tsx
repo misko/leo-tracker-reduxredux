@@ -44,6 +44,7 @@ const TleInterface = lazy(() =>
   import("./TleView").then((module) => ({ default: module.TleInterface })),
 );
 import { StandardAnalysis } from "./StandardAnalysis";
+import { NativeRecordings } from "./NativeRecordings";
 import type {
   AnalysisState,
   ActiveQueueV1,
@@ -66,7 +67,7 @@ const analysisStates: Array<[string, string]> = [
   ["no_result", "No result"],
 ];
 
-type PrimaryView = "recordings" | "queue" | "scanner" | "sky" | "tle";
+type PrimaryView = "recordings" | "queue" | "scanner" | "native" | "sky" | "tle";
 
 export default function App() {
   const [view, setView] = useState<PrimaryView>("recordings");
@@ -238,6 +239,8 @@ export default function App() {
         <QueueView />
       ) : view === "scanner" ? (
         <ScannerView />
+      ) : view === "native" ? (
+        <NativeRecordings />
       ) : view === "sky" ? (
         <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}>
           <SkyInterface />
@@ -312,6 +315,13 @@ function Header({
           onClick={() => onView("scanner")}
         >
           Scanner
+        </button>
+        <button
+          type="button"
+          aria-current={view === "native" ? "page" : undefined}
+          onClick={() => onView("native")}
+        >
+          Native refinement
         </button>
         <button
           type="button"

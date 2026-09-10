@@ -69,8 +69,8 @@ to output sample zero of the coarse recording. Calculations subtract integer
 native coordinates before division; the 1,272-sample group delay is already
 included in the binding origin and is not subtracted again. These times are
 receiver sample-axis coordinates, not UTC or resolved physical frame epochs.
-Automatic publication, artifact registration and display in the recording UI
-remain subsequent integration work.
+Registration and display in the recording UI use complete published bundles,
+as described below.
 
 ## Review a published bundle
 
@@ -97,5 +97,43 @@ A directory without the final manifest, a partial publication, an inconsistent
 or changed artifact, or a mismatched source produces no application review.
 The output remains the existing bound-review schema and CSV. Publication
 completion does not replace the preserved runtime result or owner status.
-The reusable bundle reader is the application admission point for recording
-UI integration; UI registration and display are not yet implemented.
+The reusable bundle reader is also the admission point for recording UI integration.
+
+## Register a publication for the API and UI
+
+```sh
+python -m leo.cli.native_recording_register \
+  --manifest /absolute/path/published-episode/manifest.json \
+  --sha256 EXPECTED_MANIFEST_SHA256 \
+  --registry /srv/bulk/leo/native-recordings
+```
+
+Registration verifies the complete bundle before atomically publishing one
+small local record of the absolute manifest path and expected digest. Payloads
+are not copied. Identical registration is idempotent; a conflicting existing
+registration is rejected. The manifest digest is the public recording ID.
+
+Production reads `LEO_NATIVE_RECORDING_REGISTRY`, defaulting to
+`LEO_BULK_ROOT/native-recordings`. A missing registry is an empty list and is not
+created by the API. New registrations become visible on the next refresh.
+There are no HTTP registration or filesystem-path parameters.
+
+* `GET /api/v1/native-recordings?cursor=0&limit=20` lists registered episodes.
+  The maximum list page is 100. Damaged or missing payloads remain listed with
+  `integrity_unavailable` and no summary; they are not silently omitted.
+* `GET /api/v1/native-recordings/ID?cursor=0&limit=200` returns the bound summary
+  and measurements. The maximum measurement page is 1,000. Every request
+  revalidates publication bytes. Missing IDs return 404; registered evidence
+  that fails verification returns 409. Both routes support HEAD.
+
+The **Native refinement** tab shows per-episode run outcomes, support/rejection
+counts, radio/boot/epoch identity, exact native counters, CFO, and timing
+corrections. The CFO plot contains only supported fits on the current page;
+the table retains rejected estimates and rejection/fault masks. It does not
+connect across gaps, concatenate epochs, fit Doppler rate, or claim acquisition
+or physical accuracy qualification. Times remain on the bound receiver sample
+axis. Large native counters are decimal strings throughout the browser port.
+
+Registration is currently an explicit post-publication CLI handoff. Automatic
+registration from the live operator and deployment of this UI to the running
+production service remain to be verified.

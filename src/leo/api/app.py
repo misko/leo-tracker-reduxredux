@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from leo.acquisition import CaptureAuthorityError
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
+from leo.api.native_recordings import native_recording_router
 from leo.application.capture_control import OperatorCaptureControl
 from leo.application.research_reprocess import (
     AnalysisControlStatusV2,
@@ -60,6 +61,7 @@ from leo.presentation.models import (
     StorageStateV1,
     SystemStatusV1,
 )
+from leo.presentation.native_recordings import NativeRecordingReader
 from leo.presentation.repository import PresentationRepository
 from leo.presentation.scanner import (
     ScannerAnalysisReader,
@@ -193,6 +195,7 @@ def create_app(
     adaptive_scanner_glrt: ScannerGlrtPublicationReader | None = None,
     adaptive_hop_analysis: AdaptiveHopAnalysisPresentationReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
+    native_recordings: NativeRecordingReader | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
 
@@ -204,6 +207,7 @@ def create_app(
         openapi_url=None,
     )
     resolver = RegisteredArtifactResolver(artifact_root)
+    app.include_router(native_recording_router(native_recordings))
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
     v2_router = APIRouter(prefix="/api/v2")
