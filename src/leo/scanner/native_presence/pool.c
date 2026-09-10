@@ -6,7 +6,11 @@
 #error "Presence handoff requires lock-free 32-bit atomic integers"
 #endif
 
-enum { FREE, FILLING, READY, WORKING };
+/* Private same-build ABI: older workers must reject HELD-capable mappings
+ * during startup, not silently apply FIFO semantics to managed admission. */
+#define LEO_POOL_MAGIC UINT32_C(0x4c505033)
+
+enum { FREE, FILLING, READY, WORKING, HELD };
 typedef struct {
     _Alignas(64) _Atomic uint32_t state;
     leo_probe_request request;
@@ -16,6 +20,7 @@ struct leo_probe_pool {
     uint32_t magic, abi_size;
     uint64_t session, generation;
     uint32_t rate, dwell, rx;
+    _Atomic uint32_t held_mode;
     _Alignas(64) uint32_t producer_head;
     _Atomic uint32_t submitted, busy, invalid, aborted;
     _Alignas(64) uint32_t worker_tail;
@@ -40,9 +45,10 @@ static int initialize(leo_probe_pool *p, uint64_t session, uint64_t generation,
         (rate!=2500000 && rate!=5000000)) return -1;
     size_t bytes=dwell ? leo_dwell_pool_bytes() : leo_probe_pool_bytes();
     memset(p,0,bytes);
-    p->magic=0x4c505032; p->abi_size=(uint32_t)bytes;
+    p->magic=LEO_POOL_MAGIC; p->abi_size=(uint32_t)bytes;
     p->session=session; p->generation=generation; p->rate=rate;
     p->dwell=dwell; p->rx=rx;
+    atomic_init(&p->held_mode,0);
     atomic_init(&p->submitted,0); atomic_init(&p->busy,0); atomic_init(&p->invalid,0);
     atomic_init(&p->aborted,0); atomic_init(&p->completed,0); atomic_init(&p->result_dropped,0);
     atomic_init(&p->result_head,0); atomic_init(&p->result_tail,0);
@@ -58,7 +64,8 @@ int leo_dwell_pool_init(leo_probe_pool *p, uint64_t session, uint64_t generation
 
 static int configured(const leo_probe_pool *p)
 {
-    return p && p->magic==0x4c505032 && p->dwell<=1 && p->rx<=1 &&
+    return p && p->magic==LEO_POOL_MAGIC && p->dwell<=1 && p->rx<=1 &&
+        atomic_load_explicit(&p->held_mode,memory_order_acquire)<=1 &&
         p->abi_size==(p->dwell ? leo_dwell_pool_bytes() : leo_probe_pool_bytes()) &&
         p->session && p->generation && (p->rate==2500000 || p->rate==5000000);
 }
@@ -74,6 +81,16 @@ int leo_probe_pool_geometry(const leo_probe_pool *p, uint32_t *dwell, uint32_t *
 {
     if (!dwell || !rx || !configured(p)) return -1;
     *dwell=p->dwell; *rx=p->rx;
+    return 0;
+}
+
+int leo_dwell_pool_enable_held(leo_probe_pool *p)
+{
+    if (!configured(p) || !p->dwell || atomic_load(&p->held_mode) ||
+        atomic_load(&p->submitted) || p->producer_head) return -1;
+    for (unsigned j=0;j<LEO_PROBE_SLOTS;++j)
+        if (atomic_load(&p->slots[j].state)!=FREE) return -1;
+    atomic_store_explicit(&p->held_mode,1,memory_order_release);
     return 0;
 }
 
@@ -122,6 +139,14 @@ int leo_probe_begin(leo_probe_collector *c, leo_probe_pool *p, const leo_probe_r
     if (!c || !p) return -1;
     if (c->active || !valid_request(p,request)) { atomic_fetch_add(&p->invalid,1); return -1; }
     uint32_t index=p->producer_head%LEO_PROBE_SLOTS;
+    if (atomic_load_explicit(&p->held_mode,memory_order_acquire)) {
+        for (unsigned j=0;j<LEO_PROBE_SLOTS;++j) {
+            uint32_t candidate=(index+j)%LEO_PROBE_SLOTS;
+            if (atomic_load_explicit(&p->slots[candidate].state,memory_order_acquire)==FREE) {
+                index=candidate; break;
+            }
+        }
+    }
     probe_slot *slot=&p->slots[index];
     if (atomic_load_explicit(&slot->state,memory_order_acquire)!=FREE) {
         atomic_fetch_add(&p->busy,1); return 0;
@@ -129,6 +154,7 @@ int leo_probe_begin(leo_probe_collector *c, leo_probe_pool *p, const leo_probe_r
     slot->request=*request;
     atomic_store_explicit(&slot->state,FILLING,memory_order_relaxed);
     *c=(leo_probe_collector){.pool=p,.slot=index,.active=1};
+    if (atomic_load(&p->held_mode)) ++p->producer_head;
     return 1;
 }
 
@@ -140,11 +166,12 @@ void leo_probe_abort(leo_probe_collector *c)
     c->active=0;
 }
 
-int leo_probe_feed(leo_probe_collector *c, uint64_t block, const int16_t *samples,
-    size_t count, size_t stride, size_t rx_offset)
+static int feed(leo_probe_collector *c, uint64_t block, const int16_t *samples,
+    size_t count, size_t stride, size_t rx_offset, int held)
 {
     if (!c || !c->active) return -1;
     leo_probe_pool *p=c->pool;
+    if ((int)atomic_load_explicit(&p->held_mode,memory_order_acquire)!=held) return -1;
     if (!samples || !count || stride<2 || stride>16 || rx_offset>stride-2 ||
         count>SIZE_MAX/stride/sizeof(int16_t) || count>UINT64_MAX-block) {
         atomic_fetch_add(&p->invalid,1); leo_probe_abort(c); return -1;
@@ -163,15 +190,50 @@ int leo_probe_feed(leo_probe_collector *c, uint64_t block, const int16_t *sample
     }
     c->copied+=(uint32_t)copied;
     if (c->copied<slot->request.sample_count) return 0;
-    atomic_store_explicit(&slot->state,READY,memory_order_release);
-    ++p->producer_head; atomic_fetch_add(&p->submitted,1); c->active=0;
+    atomic_store_explicit(&slot->state,held ? HELD : READY,memory_order_release);
+    if (!held) { ++p->producer_head; atomic_fetch_add(&p->submitted,1); }
+    c->active=0;
     return 1;
 }
+
+int leo_probe_feed(leo_probe_collector *c, uint64_t block, const int16_t *samples,
+    size_t count, size_t stride, size_t rx_offset)
+{ return feed(c,block,samples,count,stride,rx_offset,0); }
+
+int leo_probe_feed_held(leo_probe_collector *c, uint64_t block, const int16_t *samples,
+    size_t count, size_t stride, size_t rx_offset)
+{ return feed(c,block,samples,count,stride,rx_offset,1); }
+
+static int held_change(leo_probe_pool *p, uint32_t index, const leo_probe_request *request, int publish)
+{
+    if (!configured(p) || !atomic_load(&p->held_mode) || index>=LEO_PROBE_SLOTS || !request ||
+        atomic_load_explicit(&p->slots[index].state,memory_order_acquire)!=HELD ||
+        !same_request(&p->slots[index].request,request)) return -1;
+    if (publish) atomic_fetch_add(&p->submitted,1);
+    else atomic_fetch_add(&p->aborted,1);
+    atomic_store_explicit(&p->slots[index].state,publish ? READY : FREE,memory_order_release);
+    return 0;
+}
+
+int leo_probe_publish_held(leo_probe_pool *p, uint32_t index, const leo_probe_request *request)
+{ return held_change(p,index,request,1); }
+
+int leo_probe_release_held(leo_probe_pool *p, uint32_t index, const leo_probe_request *request)
+{ return held_change(p,index,request,0); }
 
 int leo_probe_take(leo_probe_pool *p, uint32_t *index, leo_probe_request *request, const int16_t **iq)
 {
     if (!p || !index || !request || !iq) return -1;
     uint32_t selected=p->worker_tail%LEO_PROBE_SLOTS;
+    if (atomic_load_explicit(&p->held_mode,memory_order_acquire)) {
+        selected=LEO_PROBE_SLOTS;
+        for (unsigned j=0;j<LEO_PROBE_SLOTS;++j) {
+            if (atomic_load_explicit(&p->slots[j].state,memory_order_acquire)==READY &&
+                (selected==LEO_PROBE_SLOTS || p->slots[j].request.sequence<p->slots[selected].request.sequence))
+                selected=j;
+        }
+        if (selected==LEO_PROBE_SLOTS) return 0;
+    }
     probe_slot *slot=&p->slots[selected];
     if (atomic_load_explicit(&slot->state,memory_order_acquire)!=READY) return 0;
     atomic_store_explicit(&slot->state,WORKING,memory_order_relaxed);

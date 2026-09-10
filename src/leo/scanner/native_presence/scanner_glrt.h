@@ -81,6 +81,26 @@ int leo_scanner_glrt_enable_protection(leo_scanner_glrt *,
  * must pin this policy in a newly qualified bundle configuration before use. */
 int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *);
 
+/* Experimental startup-only fair admission, requiring positive/cooperative
+ * protection with all three preallocated slots available. One slot runs, one
+ * complete dwell may be held, and one collects. No new IQ allocation occurs.
+ * Pending age is bounded in BOTH source time and owner CLOCK_MONOTONIC time.
+ * Existing occupancy, admission-age and worker watchdog limits still apply.
+ * Fairness uses last dispatch, not last positive: it never changes detections
+ * or cooldown. A freshness guard operates only after recent worker overload.
+ * Defaults remain unchanged; qualify and identify a new bundle before use. */
+typedef struct {
+    uint32_t maximum_pending_age_ms, freshness_trigger_ms;
+} leo_scanner_glrt_admission_v1;
+int leo_scanner_glrt_enable_fair_admission(leo_scanner_glrt *,
+    const leo_scanner_glrt_admission_v1 *);
+typedef struct {
+    uint64_t dispatched, replacements, expired, freshness_skips, pressure_drops;
+    uint32_t enabled, pending, running;
+} leo_scanner_glrt_admission_stats_v1;
+int leo_scanner_glrt_admission_stats(const leo_scanner_glrt *,
+    leo_scanner_glrt_admission_stats_v1 *);
+
 enum leo_scanner_glrt_skip_cause {
     LEO_SCANNER_GLRT_SKIP_NONE=0,
     LEO_SCANNER_GLRT_SKIP_PRESSURE=1,

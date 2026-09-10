@@ -19,7 +19,7 @@
 #include <limits.h>
 #include <math.h>
 
-enum { PLANNED, COLLECTING, WORKING, DONE, SENT };
+enum { PLANNED, COLLECTING, HELD, WORKING, DONE, SENT };
 struct visit_record {
     leo_glrt_classification_v1 record;
     leo_adaptive_observation_v1 observation;
@@ -40,9 +40,16 @@ struct leo_scanner_glrt {
     leo_scanner_glrt_protection_stats_v1 protection_stats;
     uint64_t now_ns;
     uint32_t oldest_pending, recovery_count;
+    leo_scanner_glrt_admission_v1 admission;
+    leo_scanner_glrt_admission_stats_v1 admission_stats;
+    uint32_t pending_visit, pending_slot, running_visit, seen_targets, dispatched_targets;
+    uint64_t pending_ns, pressure_source, last_dispatch_ns[8], last_dispatch_source[8];
+    int admission_pressure;
     pid_t worker;
     int notify, have_history, finished, final, failed, cooperative_skips;
 };
+
+static void advance_admission(leo_scanner_glrt *s);
 
 static leo_probe_request request_for(const leo_scanner_glrt *s, uint32_t index)
 {
@@ -81,6 +88,11 @@ void leo_scanner_glrt_fail(leo_scanner_glrt *s)
     if (!s) return;
     s->failed=1;
     leo_probe_abort(&s->collector);
+    if (s->admission_stats.enabled && s->pending_visit!=UINT32_MAX) {
+        leo_probe_request q=request_for(s,s->pending_visit);
+        (void)leo_probe_release_held(s->pool,s->pending_slot,&q);
+        s->pending_visit=UINT32_MAX;
+    }
     for (uint32_t j=s->sending;j<s->known;++j)
         if (s->visits[j].state<DONE) unavailable(s,j,LEO_GLRT_WORKER_FAILED);
     s->collecting=s->known;
@@ -143,6 +155,33 @@ int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *s)
     return 0;
 }
 
+int leo_scanner_glrt_enable_fair_admission(leo_scanner_glrt *s,
+    const leo_scanner_glrt_admission_v1 *config)
+{
+    if (!s || !config || !config->maximum_pending_age_ms ||
+        config->maximum_pending_age_ms>120 || config->freshness_trigger_ms<120 ||
+        config->freshness_trigger_ms>10000) return -EINVAL;
+    if (!s->cooperative_skips || s->protection.max_occupied_slots!=LEO_PROBE_SLOTS ||
+        config->maximum_pending_age_ms>=s->protection.admission_age_ms) return -ENOTSUP;
+    if (s->known || s->have_history || s->finished || s->failed || s->admission_stats.enabled)
+        return -EBUSY;
+    if (leo_dwell_pool_enable_held(s->pool)) return -EIO;
+    s->admission=*config;
+    s->admission_stats.enabled=1;
+    s->pending_visit=s->running_visit=UINT32_MAX;
+    return 0;
+}
+
+int leo_scanner_glrt_admission_stats(const leo_scanner_glrt *s,
+    leo_scanner_glrt_admission_stats_v1 *out)
+{
+    if (!s || !out) return -EINVAL;
+    *out=s->admission_stats;
+    out->pending=out->enabled && s->pending_visit!=UINT32_MAX;
+    out->running=out->enabled && !s->failed && s->running_visit!=UINT32_MAX;
+    return 0;
+}
+
 int leo_scanner_glrt_skip_cause(const leo_scanner_glrt *s, uint64_t visit, uint32_t *out)
 {
     if (!s || !out) return -EINVAL;
@@ -187,6 +226,10 @@ static void harvest(leo_scanner_glrt *s)
                 leo_scanner_glrt_fail(s); break;
             }
             s->visits[index].state=DONE;
+            if (s->admission_stats.enabled) {
+                if (s->running_visit!=index) { leo_scanner_glrt_fail(s); break; }
+                s->running_visit=UINT32_MAX;
+            }
         }
         leo_probe_stats stats; leo_probe_pool_stats(s->pool,&stats);
         if (stats.result_dropped) leo_scanner_glrt_fail(s);
@@ -227,6 +270,7 @@ int leo_scanner_glrt_capture_pressure(leo_scanner_glrt *s, int pressured)
         s->protection_stats.suspended=0; s->recovery_count=0;
         ++s->protection_stats.resumptions;
     }
+    advance_admission(s);
     return 0;
 }
 
@@ -235,6 +279,7 @@ int leo_scanner_glrt_observation(leo_scanner_glrt *s, leo_adaptive_observation_v
     if (!s || !out) return -EINVAL;
     if (!s->policy.classification_enabled) return -ENOTSUP;
     harvest(s);
+    advance_admission(s);
     if (s->observing<s->known && s->visits[s->observing].state>=DONE) {
         *out=s->visits[s->observing++].observation;
         return 1;
@@ -258,6 +303,115 @@ static int wake_worker(leo_scanner_glrt *s)
     }
     if (pthread_sigmask(SIG_SETMASK,&previous,NULL)) return -1;
     return n==1 || (n<0 && error==EAGAIN) ? 0 : -1;
+}
+
+static unsigned target_for(const leo_scanner_glrt *s, uint32_t index)
+{ return s->visits[index].record.channel-1+4*s->visits[index].record.edge; }
+
+static void drop_pending(leo_scanner_glrt *s, enum leo_glrt_reason reason, int intentional)
+{
+    uint32_t index=s->pending_visit;
+    if (index==UINT32_MAX) return;
+    leo_probe_request q=request_for(s,index);
+    if (leo_probe_release_held(s->pool,s->pending_slot,&q)) { leo_scanner_glrt_fail(s); return; }
+    s->pending_visit=UINT32_MAX;
+    if (intentional) {
+        admission_skip(s,index,reason);
+        if (reason==LEO_GLRT_WORKER_BUSY) ++s->protection_stats.backlog_skips;
+        else ++s->protection_stats.pressure_skips;
+    } else unavailable(s,index,reason);
+}
+
+static int pending_expired(const leo_scanner_glrt *s)
+{
+    uint64_t end=s->visits[s->pending_visit].record.valid_end;
+    return s->now_ns-s->pending_ns>(uint64_t)s->admission.maximum_pending_age_ms*1000000 ||
+        (s->history_end>end && s->history_end-end>
+            (uint64_t)s->config.rate_hz*s->admission.maximum_pending_age_ms/1000);
+}
+
+static int freshness_eligible(const leo_scanner_glrt *s, unsigned target)
+{
+    uint64_t limit=(uint64_t)s->config.rate_hz*s->admission.freshness_trigger_ms/1000;
+    if (!s->admission_pressure || s->history_end-s->pressure_source>=limit) return 1;
+    uint32_t overdue=0;
+    for (unsigned j=0;j<8;++j) {
+        if (!(s->seen_targets&(1u<<j))) continue;
+        if (!(s->dispatched_targets&(1u<<j)) ||
+            s->history_end-s->last_dispatch_source[j]>=limit) overdue|=1u<<j;
+    }
+    return !overdue || (overdue&(1u<<target));
+}
+
+static void advance_admission(leo_scanner_glrt *s)
+{
+    if (!s->admission_stats.enabled || s->failed) return;
+    if (s->pending_visit!=UINT32_MAX) {
+        if (s->protection_stats.suspended) {
+            ++s->admission_stats.pressure_drops;
+            drop_pending(s,LEO_GLRT_INCOMPLETE_SEARCH,1);
+        } else if (pending_expired(s)) {
+            ++s->admission_stats.expired;
+            drop_pending(s,LEO_GLRT_WORKER_BUSY,1);
+        } else if (s->running_visit==UINT32_MAX) {
+            uint32_t index=s->pending_visit;
+            unsigned target=target_for(s,index);
+            if (!freshness_eligible(s,target)) {
+                ++s->admission_stats.freshness_skips;
+                drop_pending(s,LEO_GLRT_WORKER_BUSY,1);
+            } else {
+                leo_probe_request q=request_for(s,index);
+                if (leo_probe_publish_held(s->pool,s->pending_slot,&q)) {
+                    leo_scanner_glrt_fail(s); return;
+                }
+                s->pending_visit=UINT32_MAX; s->running_visit=index;
+                s->visits[index].state=WORKING; s->visits[index].submitted_ns=s->now_ns;
+                s->last_dispatch_ns[target]=s->now_ns;
+                s->last_dispatch_source[target]=s->visits[index].record.valid_end;
+                s->dispatched_targets|=1u<<target;
+                ++s->admission_stats.dispatched;
+                if (wake_worker(s)) { leo_scanner_glrt_fail(s); return; }
+            }
+        }
+    }
+    /* Keep the worker's notification pipe open while terminal pending work can
+     * still be admitted. Closing early would expose HELD storage at EOF. */
+    if (s->finished && s->pending_visit==UINT32_MAX && s->notify>=0) {
+        close(s->notify); s->notify=-1;
+    }
+}
+
+static void accept_held(leo_scanner_glrt *s, uint32_t index)
+{
+    unsigned target=target_for(s,index);
+    s->visits[index].state=HELD;
+    s->seen_targets|=1u<<target;
+    if (s->running_visit!=UINT32_MAX) {
+        s->admission_pressure=1; s->pressure_source=s->history_end;
+    }
+    advance_admission(s);
+    if (s->failed) return;
+    if (s->pending_visit!=UINT32_MAX) {
+        unsigned previous=target_for(s,s->pending_visit);
+        int replace=!(s->dispatched_targets&(1u<<target)) ?
+            !!(s->dispatched_targets&(1u<<previous)) :
+            ((s->dispatched_targets&(1u<<previous)) &&
+             s->last_dispatch_ns[target]<s->last_dispatch_ns[previous]);
+        if (!replace) {
+            leo_probe_request q=request_for(s,index);
+            if (leo_probe_release_held(s->pool,s->collector.slot,&q)) {
+                leo_scanner_glrt_fail(s); return;
+            }
+            admission_skip(s,index,LEO_GLRT_WORKER_BUSY);
+            ++s->protection_stats.backlog_skips;
+            return;
+        }
+        ++s->admission_stats.replacements;
+        drop_pending(s,LEO_GLRT_WORKER_BUSY,1);
+        if (s->failed) return;
+    }
+    s->pending_visit=index; s->pending_slot=s->collector.slot; s->pending_ns=s->now_ns;
+    advance_admission(s);
 }
 
 static void collect_available(leo_scanner_glrt *s)
@@ -305,9 +459,16 @@ static void collect_available(leo_scanner_glrt *s)
         size_t offset=(size_t)(expected%s->history_capacity);
         size_t count=(size_t)(s->history_end-expected);
         if (count>s->history_capacity-offset) count=s->history_capacity-offset;
-        int ret=leo_probe_feed(&s->collector,expected,s->history+2*offset,count,2,0);
+        int ret=s->admission_stats.enabled ?
+            leo_probe_feed_held(&s->collector,expected,s->history+2*offset,count,2,0) :
+            leo_probe_feed(&s->collector,expected,s->history+2*offset,count,2,0);
         if (ret<0) { unavailable(s,index,LEO_GLRT_INVALID_INPUT); ++s->collecting; }
         else if (ret==1) {
+            if (s->admission_stats.enabled) {
+                ++s->collecting;
+                accept_held(s,index);
+                continue;
+            }
             v->submitted_ns=s->now_ns;
             v->state=WORKING; ++s->collecting;
             if (wake_worker(s)) leo_scanner_glrt_fail(s);
@@ -328,6 +489,7 @@ int leo_scanner_glrt_visit(leo_scanner_glrt *s, uint64_t visit,
     if (!s->failed) s->visits[index].state=PLANNED;
     else s->collecting=s->known;
     harvest(s);
+    advance_admission(s);
     collect_available(s);
     return 0;
 }
@@ -348,6 +510,7 @@ int leo_scanner_glrt_block(leo_scanner_glrt *s, uint64_t first,
          * advisory copy is omitted; invalidate history rather than reuse it. */
         s->history_start=s->history_end=end;
         ++s->protection_stats.history_blocks_skipped;
+        advance_admission(s);
         collect_available(s);
         return 0;
     }
@@ -363,6 +526,7 @@ int leo_scanner_glrt_block(leo_scanner_glrt *s, uint64_t first,
     }
     s->history_end=end;
     if (end-s->history_start>s->history_capacity) s->history_start=end-s->history_capacity;
+    advance_admission(s);
     collect_available(s);
     return 0;
 }
@@ -378,7 +542,10 @@ int leo_scanner_glrt_finish(leo_scanner_glrt *s, int cancelled)
             unavailable(s,j,cancelled ? LEO_GLRT_CANCELLED : LEO_GLRT_INCOMPLETE_SEARCH);
     s->collecting=s->known;
     s->finished=1;
-    if (s->notify>=0) { close(s->notify); s->notify=-1; }
+    if (s->admission_stats.enabled) {
+        if (cancelled) drop_pending(s,LEO_GLRT_CANCELLED,0);
+        advance_admission(s);
+    } else if (s->notify>=0) { close(s->notify); s->notify=-1; }
     return 0;
 }
 
@@ -388,6 +555,7 @@ static ssize_t emit(leo_scanner_glrt *s, const void *legacy, size_t legacy_bytes
     if (!s || !output || legacy_bytes>LEO_GLRT_FRAME_MAX_BYTES-LEO_GLRT_FRAME_HEADER_BYTES ||
         (!draining && (!legacy || !legacy_bytes)) || s->final) return -EINVAL;
     harvest(s);
+    advance_admission(s);
     leo_glrt_frame_v1 f={.session=s->config.session,.generation=s->config.generation,
         .frame_sequence=s->frame_sequence,.result_sequence_limit=s->known,
         .legacy_metadata=legacy,.legacy_bytes=(uint32_t)legacy_bytes};
