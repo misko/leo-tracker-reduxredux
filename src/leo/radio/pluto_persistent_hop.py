@@ -353,6 +353,24 @@ class _PlutoPersistentHopSession:
 
     def _recover_terminal_after_failure(self, primary: BaseException) -> None:
         try:
+            diagnostics = getattr(self._upstream, "failure_diagnostics", None)
+            if diagnostics is not None:
+                ppu = importlib.import_module("pluto_plus.persistent_hop")
+                diagnostic_type = getattr(ppu, "PersistentHopFailureDiagnosticsV1", None)
+                if (
+                    isinstance(diagnostic_type, type)
+                    and isinstance(diagnostics, diagnostic_type)
+                    and diagnostics.session_id == self._wire_session_id
+                ):
+                    # PPU has already released this failed client, even when
+                    # restoration failed. These diagnostics cannot qualify IQ
+                    # and must never be mapped into a successful/cancelled receipt.
+                    primary.add_note(
+                        "persistent-hop released-client diagnostics (not a capture receipt): "
+                        + repr(diagnostics)[:8192]
+                    )
+                    return
+                primary.add_note("persistent-hop ignored invalid or foreign failure diagnostics")
             if not self._upstream_terminal and not self._upstream_cancel_called:
                 self._cancel_upstream()
             if self._upstream_terminal and self._receipt is None:

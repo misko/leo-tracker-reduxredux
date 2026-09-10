@@ -193,6 +193,33 @@ def test_persistent_hop_application_preserves_cancel_receipt_after_sink_failure(
     assert radio.lifecycle[-1] == "close"
 
 
+def test_capture_failure_keeps_bounded_cleanup_notes_in_its_message() -> None:
+    radio = FakePersistentHopRadio()
+    primary = OSError("original capture failure")
+    primary.add_note("x" * 9_000 + "truncated-marker")
+    for index in range(5):
+        primary.add_note(f"cleanup-{index}")
+
+    def fail(_block) -> None:
+        raise primary
+
+    with pytest.raises(PersistentHopCaptureError) as caught:
+        capture_persistent_hop_session(
+            radio,
+            compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000),
+            session_id="hop-failure-notes",
+            visit_sink=fail,
+            cancel=Event(),
+        )
+    message = str(caught.value)
+    assert caught.value.__cause__ is primary
+    assert message.count("capture_note=") == 4
+    assert "cleanup-2" in message and "cleanup-3" not in message
+    assert "x" * 8_192 in message and "truncated-marker" not in message
+    assert caught.value.terminal_receipt is not None  # The ordinary sink-cancel path is intact.
+    assert caught.value.terminal_receipt.capture_outcome == "cancelled"
+
+
 def test_persistent_hop_application_never_opens_after_precancel() -> None:
     radio = FakePersistentHopRadio()
     cancel = Event()
