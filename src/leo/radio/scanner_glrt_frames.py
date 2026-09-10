@@ -98,7 +98,7 @@ class ScannerGlrtFrameReader:
             and not drain
         ):
             raise ValueError("classification envelope/IQ framing is inconsistent")
-        results = ()
+        results: tuple[ScannerGlrtClassificationV1, ...] = ()
         if self.fault is None:
             try:
                 frame = decode_frame(metadata)
