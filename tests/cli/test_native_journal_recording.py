@@ -11,7 +11,10 @@ import sys
 
 import pytest
 
-from leo.contracts.native_journal_recording import NativeJournalRecordingV1
+from leo.contracts.native_journal_recording import (
+    NativeJournalRecordingV1,
+    NativeJournalSourceBindingV1,
+)
 from leo.operations.native_journal_recording import (
     load_native_recording,
     recording_review,
@@ -276,3 +279,159 @@ def test_cli_keeps_every_frame_and_never_overwrites_output(tmp_path):
     before = (output / "summary.json").read_bytes()
     again = subprocess.run(command, capture_output=True, text=True)
     assert again.returncode != 0 and (output / "summary.json").read_bytes() == before
+
+
+def binding_for(value, export_digest):
+    start = int(value["measurements"][0]["native_start_sample"])
+    origin = start - start % 24 - 1272
+    return dict(
+        schema="starlink-glrt-native-source-binding/v1",
+        evidence_mode="retrospective_retained_owner_correspondence",
+        recording_export_sha256=export_digest,
+        journal_sha256=value["journal_sha256"],
+        owner_receipt_sha256="b" * 64,
+        collector_protocol_sha256="c" * 64,
+        collector_summary_sha256="d" * 64,
+        collector_final_snapshot_sha256="e" * 64,
+        coarse_iq_sha256="f" * 64,
+        coarse_iq_bytes=400000,
+        serial="test-radio",
+        host="192.168.1.14",
+        boot_id="336a3c4c-8ab3-4758-ae9e-6967808e2a6d",
+        firmware="test-native",
+        fit_sha256="a" * 64,
+        visit=1105016,
+        epoch=3,
+        episode_index=0,
+        source_rate_hz=60000000,
+        output_rate_hz=2500000,
+        output_samples=100000,
+        native_origin=str(origin),
+        native_last_output_center=str(origin + 24 * 99999),
+        native_samples_per_output_sample=24,
+        native_group_delay_samples=1272,
+        runtime_result=-5,
+        owner_status="failed",
+        head_count=2,
+        supported_count=1,
+        source_correspondence_verified=True,
+        radio_signed_attestation=False,
+        acquisition_verified=False,
+        original_native_iq_verified=False,
+        physical_precision_qualified=False,
+    )
+
+
+def test_bound_cli_preserves_failure_and_exact_coarse_time_axis(tmp_path):
+    value = recording()
+    source = tmp_path / "recording.json"
+    source.write_text(json.dumps(value))
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    binding = binding_for(value, digest)
+    bound = tmp_path / "binding.json"
+    bound.write_text(json.dumps(binding))
+    bound_digest = hashlib.sha256(bound.read_bytes()).hexdigest()
+    output = tmp_path / "review"
+    command = [
+        sys.executable,
+        "-m",
+        "leo.cli.native_journal_recording",
+        "--recording",
+        str(source),
+        "--sha256",
+        digest,
+        "--source-binding",
+        str(bound),
+        "--source-binding-sha256",
+        bound_digest,
+        "--output",
+        str(output),
+    ]
+    result = subprocess.run(command, check=True, capture_output=True, text=True)
+    summary = json.loads(result.stdout)
+    assert summary["schema"] == "native-journal-bound-application-review/v1"
+    assert summary["radio_boot_source_bound"] and summary["runtime_result"] == -5
+    assert summary["owner_status"] == "failed" and not summary["acquisition_verified"]
+    assert summary["source_binding"] == binding
+    assert summary["source_binding_sha256"] == bound_digest
+    with (output / "measurements.csv").open() as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == 2 and rows[1]["supported"] == "False"
+    expected = (
+        int(value["measurements"][0]["native_start_sample"]) - int(binding["native_origin"])
+    ) / 60000000
+    assert float(rows[0]["coarse_relative_scheduled_start_s"]) == expected
+    assert float(rows[0]["coarse_relative_refined_start_s"]) == expected - 8e-9
+    assert float(rows[0]["coarse_relative_pilot_center_s"]) == expected + 79199 / 120000000
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    [
+        "export",
+        "journal",
+        "epoch",
+        "count",
+        "origin",
+        "bytes",
+        "boot",
+        "excluded",
+        "host",
+        "signed",
+        "outside",
+        "unknown",
+    ],
+)
+def test_wrong_source_binding_cannot_qualify_a_recording(corruption):
+    value = recording()
+    model = parse(value)
+    binding = binding_for(value, "a" * 64)
+    if corruption == "export":
+        binding["recording_export_sha256"] = "b" * 64
+    elif corruption == "journal":
+        binding["journal_sha256"] = "b" * 64
+    elif corruption == "epoch":
+        binding["epoch"] = 4
+    elif corruption == "count":
+        binding["head_count"] = 3
+    elif corruption == "origin":
+        binding["native_origin"] = str(2**64)
+    elif corruption == "bytes":
+        binding["coarse_iq_bytes"] -= 4
+    elif corruption == "boot":
+        binding["boot_id"] = "not-a-boot"
+    elif corruption == "excluded":
+        binding["serial"] = "1040007c4a94000211000b009186843ef2"
+    elif corruption == "host":
+        binding["host"] = "127.0.0.1"
+    elif corruption == "signed":
+        binding["radio_signed_attestation"] = True
+    elif corruption == "outside":
+        for key in ("native_origin", "native_last_output_center"):
+            binding[key] = str(int(binding[key]) + 2400000)
+    elif corruption == "unknown":
+        binding["unexpected"] = 1
+    with pytest.raises(ValueError):
+        NativeJournalSourceBindingV1.model_validate_json(json.dumps(binding)).require_recording(
+            model, export_sha256="a" * 64
+        )
+
+
+def test_binding_flags_and_digest_are_required_before_output(tmp_path):
+    source = tmp_path / "recording.json"
+    source.write_text(json.dumps(recording()))
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    binding = tmp_path / "binding.json"
+    binding.write_text(json.dumps(binding_for(recording(), digest)))
+    output = tmp_path / "review"
+    with pytest.raises(ValueError, match="required together"):
+        review_native_recording(source, output, expected_sha256=digest, source_binding=binding)
+    with pytest.raises(ValueError, match="expected bytes"):
+        review_native_recording(
+            source,
+            output,
+            expected_sha256=digest,
+            source_binding=binding,
+            expected_binding_sha256="0" * 64,
+        )
+    assert not output.exists()

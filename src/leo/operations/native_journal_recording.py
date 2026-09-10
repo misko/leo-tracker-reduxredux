@@ -8,15 +8,18 @@ import json
 import re
 from pathlib import Path
 
-from leo.contracts.native_journal_recording import NativeJournalRecordingV1
+from leo.contracts.native_journal_recording import (
+    NativeJournalRecordingV1,
+    NativeJournalSourceBindingV1,
+)
 
 
-def load_native_recording(path: Path, *, expected_sha256: str) -> NativeJournalRecordingV1:
+def _verified_json(path: Path, expected_sha256: str, maximum_bytes: int) -> bytes:
     if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
         raise ValueError("native recording requires an exact expected file digest")
     with path.open("rb") as stream:
-        raw = stream.read(256 * 1024 * 1024 + 1)
-    if len(raw) > 256 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raw = stream.read(maximum_bytes + 1)
+    if len(raw) > maximum_bytes or hashlib.sha256(raw).hexdigest() != expected_sha256:
         raise ValueError("native recording exceeds its bound or differs from expected bytes")
 
     def unique(pairs):
@@ -29,6 +32,11 @@ def load_native_recording(path: Path, *, expected_sha256: str) -> NativeJournalR
 
     # Reject duplicate keys before the typed parser could choose the last one.
     json.loads(raw, object_pairs_hook=unique)
+    return raw
+
+
+def load_native_recording(path: Path, *, expected_sha256: str) -> NativeJournalRecordingV1:
+    raw = _verified_json(path, expected_sha256, 256 * 1024 * 1024)
     return NativeJournalRecordingV1.model_validate_json(raw)
 
 
@@ -89,10 +97,42 @@ def recording_review(recording: NativeJournalRecordingV1) -> tuple[dict, list[di
     return summary, rows
 
 
-def review_native_recording(path: Path, output: Path, *, expected_sha256: str) -> dict:
+def review_native_recording(
+    path: Path,
+    output: Path,
+    *,
+    expected_sha256: str,
+    source_binding: Path | None = None,
+    expected_binding_sha256: str | None = None,
+) -> dict:
+    if (source_binding is None) != (expected_binding_sha256 is None):
+        raise ValueError("native source binding and its expected digest are required together")
     recording = load_native_recording(path, expected_sha256=expected_sha256)
     summary, rows = recording_review(recording)
     summary["recording_export_sha256"] = expected_sha256
+    if source_binding is not None:
+        assert expected_binding_sha256 is not None
+        binding = NativeJournalSourceBindingV1.model_validate_json(
+            _verified_json(source_binding, expected_binding_sha256, 65536)
+        )
+        binding.require_recording(recording, export_sha256=expected_sha256)
+        summary.update(
+            schema="native-journal-bound-application-review/v1",
+            radio_boot_source_bound=True,
+            runtime_outcome="owner_result_retained",
+            runtime_result=binding.runtime_result,
+            owner_status=binding.owner_status,
+            source_binding_sha256=expected_binding_sha256,
+            source_binding=binding.model_dump(mode="json", by_alias=True),
+        )
+        origin = int(binding.native_origin)
+        for row in rows:
+            relative = (int(row["native_start_sample"]) - origin) / recording.source_rate_hz
+            row.update(
+                coarse_relative_scheduled_start_s=relative,
+                coarse_relative_refined_start_s=relative + row["delay_s"],
+                coarse_relative_pilot_center_s=relative + 79199 / (2 * recording.source_rate_hz),
+            )
     output.mkdir(parents=True, exist_ok=False)
     with (output / "measurements.csv").open("x", newline="") as stream:
         columns = (
@@ -109,6 +149,12 @@ def review_native_recording(path: Path, output: Path, *, expected_sha256: str) -
             "rejection",
             "hardware_fault",
         )
+        if source_binding is not None:
+            columns += (
+                "coarse_relative_scheduled_start_s",
+                "coarse_relative_refined_start_s",
+                "coarse_relative_pilot_center_s",
+            )
         writer = csv.DictWriter(stream, fieldnames=columns)
         writer.writeheader()
         writer.writerows(rows)

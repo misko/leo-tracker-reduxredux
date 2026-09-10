@@ -7,7 +7,9 @@ repository's implementation. It does not establish radio/boot provenance.
 from __future__ import annotations
 
 from fractions import Fraction
+from ipaddress import IPv4Address
 from typing import Annotated, Literal, Self
+from uuid import UUID
 
 from pydantic import ConfigDict, Field, model_validator
 
@@ -238,3 +240,85 @@ class NativeJournalRecordingV1(_NativePort):
                 raise ValueError("native recording sample or carrier association differs")
             previous = measurement.frame
         return self
+
+
+class NativeJournalSourceBindingV1(_NativePort):
+    """Retained-owner correspondence, distinct from signed hardware attestation."""
+
+    schema_name: Literal["starlink-glrt-native-source-binding/v1"] = Field(alias="schema")
+    evidence_mode: Literal["retrospective_retained_owner_correspondence"]
+    recording_export_sha256: Digest
+    journal_sha256: Digest
+    owner_receipt_sha256: Digest
+    collector_protocol_sha256: Digest
+    collector_summary_sha256: Digest
+    collector_final_snapshot_sha256: Digest
+    coarse_iq_sha256: Digest
+    coarse_iq_bytes: Annotated[int, Field(gt=0, le=3000000000)]
+    serial: Annotated[str, Field(min_length=1, max_length=128)]
+    host: str
+    boot_id: str
+    firmware: Annotated[str, Field(min_length=1, max_length=128)]
+    fit_sha256: Digest
+    visit: Identity
+    epoch: Identity
+    episode_index: Annotated[int, Field(ge=0, lt=2)]
+    source_rate_hz: Literal[60000000]
+    output_rate_hz: Literal[2500000]
+    output_samples: Annotated[int, Field(gt=0, le=750000000)]
+    native_origin: DecimalInteger
+    native_last_output_center: DecimalInteger
+    native_samples_per_output_sample: Literal[24]
+    native_group_delay_samples: Literal[1272]
+    runtime_result: Annotated[int, Field(ge=-5, le=0)]
+    owner_status: Annotated[str, Field(min_length=1, max_length=128)]
+    head_count: Annotated[int, Field(ge=0, le=225000)]
+    supported_count: Annotated[int, Field(ge=0, le=225000)]
+    source_correspondence_verified: Literal[True]
+    radio_signed_attestation: Literal[False]
+    acquisition_verified: Literal[False]
+    original_native_iq_verified: Literal[False]
+    physical_precision_qualified: Literal[False]
+
+    @model_validator(mode="after")
+    def _source(self) -> Self:
+        host = IPv4Address(self.host)
+        if (
+            not host.is_private
+            or host.is_loopback
+            or host.is_link_local
+            or host.is_unspecified
+            or host.is_multicast
+            or str(host) != self.host
+        ):
+            raise ValueError("native source binding requires a private Ethernet endpoint")
+        if self.serial == "1040007c4a94000211000b009186843ef2":
+            raise ValueError("native source binding names the excluded receiver")
+        if str(UUID(self.boot_id)) != self.boot_id:
+            raise ValueError("native source binding has an invalid boot identity")
+        origin = integer(self.native_origin, 64)
+        last = integer(self.native_last_output_center, 64)
+        if (
+            origin < 1272
+            or origin % 24
+            or last != origin + 24 * (self.output_samples - 1)
+            or self.coarse_iq_bytes != 4 * self.output_samples
+            or self.supported_count > self.head_count
+        ):
+            raise ValueError("native source binding geometry or inventory differs")
+        return self
+
+    def require_recording(self, recording: NativeJournalRecordingV1, *, export_sha256: str) -> None:
+        if (
+            self.recording_export_sha256 != export_sha256
+            or self.journal_sha256 != recording.journal_sha256
+            or self.epoch != recording.epoch
+            or self.head_count != recording.head_count
+            or self.supported_count != recording.supported_count
+        ):
+            raise ValueError("native source binding belongs to different recording evidence")
+        origin, last = int(self.native_origin), int(self.native_last_output_center)
+        for measurement in recording.measurements:
+            start = int(measurement.native_start_sample)
+            if not origin <= start <= start + recording.pilot_samples - 1 <= last:
+                raise ValueError("native pilot lies outside its bound coarse source")
