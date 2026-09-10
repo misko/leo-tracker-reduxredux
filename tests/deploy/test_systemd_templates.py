@@ -254,11 +254,12 @@ def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate(
     timer = _unit("leo-persistent-hop-analysis.timer")["Timer"]
     analysis_text = (UNIT_ROOT / "leo-persistent-hop-analysis.service").read_text()
 
-    assert "--maximum-sessions 1" in analysis["ExecStart"]
-    assert "--maximum-workers 2" in analysis["ExecStart"]
-    assert "--probe-stride-ms 120" in analysis["ExecStart"]
+    assert analysis_text.count("\nExecStart=") == 1
+    assert (
+        "/current-api/.venv/bin/python -m leo.cli.scanner_analysis_backfill"
+        in (analysis["ExecStart"])
+    )
     assert "--site spinnaker-sausalito" in analysis["ExecStart"]
-    assert "--maximum-tracking-groups 4" in analysis["ExecStart"]
     assert int(analysis["CPUWeight"]) < int(acquisition["CPUWeight"])
     assert int(analysis["IOWeight"]) < int(acquisition["IOWeight"])
     assert int(analysis["Nice"]) > int(acquisition["Nice"])
@@ -319,6 +320,7 @@ def test_every_service_uses_immutable_release_and_denies_qnap() -> None:
         "leo-api.service": "current-api",
         "leo-worker@.service": "current-worker",
         "leo-acquisition.service": "current-acquisition",
+        "leo-persistent-hop-analysis.service": "current-api",
     }
     for path in _services():
         service = _unit(path.name)["Service"]

@@ -134,7 +134,8 @@ class PlutoPersistentHopRadio:
         wire_session_id = persistent_hop_wire_session_id(session_id)
         extension = (
             ScannerGlrtMetadataExtension(self._scanner_glrt, session=wire_session_id)
-            if self._scanner_glrt is not None else None
+            if self._scanner_glrt is not None
+            else None
         )
         try:
             client_options: dict[str, Any] = {}
@@ -360,7 +361,7 @@ class _PlutoPersistentHopSession:
                 if (
                     isinstance(diagnostic_type, type)
                     and isinstance(diagnostics, diagnostic_type)
-                    and diagnostics.session_id == self._wire_session_id
+                    and cast(Any, diagnostics).session_id == self._wire_session_id
                 ):
                     # PPU has already released this failed client, even when
                     # restoration failed. These diagnostics cannot qualify IQ
@@ -687,11 +688,10 @@ def _accepts_metadata_extension(factory: Callable[..., Any]) -> bool:
     except (TypeError, ValueError):
         return False
     named = parameters.get("metadata_extension")
-    return (named is not None and named.kind in (
-        inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY
-    )) or any(
-        p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()
-    )
+    return (
+        named is not None
+        and named.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+    ) or any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values())
 
 
 def _load_client(

@@ -2,6 +2,7 @@ import type { AdaptiveCapture } from "./adaptive-api";
 
 export const adaptiveArtifacts = ["coverage", "glrt64-response", "cfo-trajectories"] as const;
 export type AdaptiveArtifact = typeof adaptiveArtifacts[number];
+export type AdaptiveProbeStride = 10 | 120;
 export interface AdaptiveFigure {
   name: AdaptiveArtifact; content_type: "image/png"; sha256: string; byte_count: number;
 }
@@ -35,8 +36,8 @@ const digest = (v: unknown): v is string => typeof v === "string" && /^sha256:[0
 const count = (v: unknown, maximum: number): v is number => typeof v === "number" && Number.isSafeInteger(v) && v >= 0 && v <= maximum;
 const u64 = (v: unknown): v is string => typeof v === "string" && /^(0|[1-9][0-9]{0,19})$/.test(v) && BigInt(v) < 18446744073709551616n;
 
-export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: AbortSignal): Promise<AdaptiveAnalysisStatus | null> {
-  const response = await fetch(`/api/v1/scanner/adaptive-sessions/${encodeURIComponent(capture.session_id)}/analysis`, { signal, cache: "no-store" });
+export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: AbortSignal, probeStrideMs: AdaptiveProbeStride = 120): Promise<AdaptiveAnalysisStatus | null> {
+  const response = await fetch(`/api/v1/scanner/adaptive-sessions/${encodeURIComponent(capture.session_id)}/analysis?probe_stride_ms=${probeStrideMs}`, { signal, cache: "no-store" });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Adaptive analysis request failed (${response.status})`);
   const value = await response.json() as AdaptiveAnalysisStatus;
@@ -45,7 +46,7 @@ export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: Abo
       || value.session_id !== capture.session_id || value.input_manifest_sha256 !== capture.input_manifest_sha256
       || !digest(value.binding_sha256) || !cfg || cfg.schema_version !== 1
       || cfg.analyzer_id !== "adaptive-hop-fractional-glrt64-cfo-v1" || cfg.sample_rate_hz !== capture.sample_rate_hz
-      || cfg.valid_visit_ms !== 120 || cfg.probe_ms !== 20 || cfg.probe_stride_ms !== 10
+      || cfg.valid_visit_ms !== 120 || cfg.probe_ms !== 20 || cfg.probe_stride_ms !== probeStrideMs
       || !Number.isFinite(cfg.glrt64_margin_gate) || cfg.glrt64_margin_gate <= 0
       || !count(cfg.maximum_acquisition_candidates, 16) || cfg.maximum_acquisition_candidates < 1
       || !Array.isArray(cfg.receiver_ids) || cfg.receiver_ids.length !== 2 || cfg.receiver_ids[0] !== 0 || cfg.receiver_ids[1] !== 1
@@ -82,6 +83,6 @@ export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: Abo
 }
 
 export function adaptiveFigureUrl(status: AdaptiveAnalysisStatus, figure: AdaptiveFigure): string {
-  const query = new URLSearchParams({ binding_sha256: status.binding_sha256, artifact_sha256: figure.sha256 });
+  const query = new URLSearchParams({ probe_stride_ms: String(status.configuration.probe_stride_ms), binding_sha256: status.binding_sha256, artifact_sha256: figure.sha256 });
   return `/api/v1/scanner/adaptive-sessions/${encodeURIComponent(status.session_id)}/analysis/${figure.name}.png?${query.toString()}`;
 }
