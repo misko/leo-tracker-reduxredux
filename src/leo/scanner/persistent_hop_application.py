@@ -128,6 +128,10 @@ def capture_persistent_hop_session(
         details = []
         if primary_error is not None:
             details.append(f"capture={type(primary_error).__name__}: {primary_error}")
+            # Preserve bounded failure/cleanup notes in the ordinary error
+            # message, whose consumers may not render Python exception chains.
+            for note in getattr(primary_error, "__notes__", ())[:4]:
+                details.append(f"capture_note={str(note)[:8192]}")
         if recovery_error is not None:
             details.append(f"recovery={type(recovery_error).__name__}: {recovery_error}")
         if close_error is not None:

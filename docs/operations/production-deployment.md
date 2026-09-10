@@ -152,7 +152,7 @@ The default scanner daemon remains unchanged. See the
 [asset identities and limitations](../dependencies/scanner-glrt-runtime.md).
 
 The locked PPU revision is now
-`6b577ac229fe4b7b43528ff469dd197f9550e268`, published on the candidate
+`664fa85cdde35050c0293a1dab90d2cc8b99eef9`, published on the candidate
 `codex/arm-glrt-host-integration` branch. Its scanner host libiio revision is
 fetchable through `codex/arm-glrt-frame-integration`; installation still fetches
 the exact commit, not a moving branch. Neither dependency has been promoted to
@@ -161,7 +161,8 @@ release build or RF qualification. Do not work around qualification gates with
 editable installs, ambient loader overrides, or unsealed libraries.
 
 The [September 9 frozen-build checkpoint](../../reports/2026_09_09_scanner_frozen_release_checkpoint.md)
-records a successfully staged and revalidated candidate with this pin and
+records a successfully staged and revalidated candidate with the preceding
+`6b577ac...` pin and
 `--scanner-glrt`. That release is inactive; its existence does not authorize
 promotion, RF or bypass the remaining release gates.
 

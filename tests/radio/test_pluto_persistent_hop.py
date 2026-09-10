@@ -521,6 +521,54 @@ def test_adapter_propagates_producer_error_after_preserving_terminal_receipt() -
     radio.close()
 
 
+@pytest.mark.parametrize("diagnostic_kind", ["released", "foreign", "malformed"])
+def test_adapter_retains_failure_diagnostics_without_cancelling_a_released_client(
+    diagnostic_kind: str,
+) -> None:
+    from pluto_plus.persistent_hop import PersistentHopFailureDiagnosticsV1
+
+    plan, source_blocks, source = _cancelled_source(visit_count=1)
+    failure = _ProducerFailure("IQ counter gap")
+    upstream = _FailingUpstream(source._blocks, source.receipt, failure)
+    wire_id = persistent_hop_wire_session_id("adapter-session")
+    upstream.failure_diagnostics = (
+        object()
+        if diagnostic_kind == "malformed"
+        else PersistentHopFailureDiagnosticsV1(
+            session_id=wire_id + int(diagnostic_kind == "foreign"),
+            terminal_status=None,
+            host_lifecycle=None,
+            cleanup_errors=("cancel/status: transport unavailable",),
+        )
+    )
+    client = _Client(upstream, wire_id)
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        client_factory=lambda uri, serial: client,
+        plan_factory=lambda selected: selected,
+        tandem_request_factory=lambda: "hold",
+    )
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    assert session.read_visit().evidence == source_blocks[0].evidence
+    with pytest.raises(_ProducerFailure) as caught:
+        session.read_visit()
+    assert caught.value is failure
+    notes = "\n".join(failure.__notes__)
+    if diagnostic_kind == "released":
+        assert not upstream.cancelled
+        assert "transport unavailable" in notes and "not a capture receipt" in notes
+        with pytest.raises(RuntimeError, match="requires a server-attested terminal receipt"):
+            session.finish()
+    else:
+        assert upstream.cancelled
+        assert "ignored invalid or foreign" in notes
+        assert session.finish().visits == (source_blocks[0].evidence,)
+    radio.close()
+
+
 def test_adapter_builds_the_exact_installed_ppu_plan_without_hardware() -> None:
     plan, _source_blocks, upstream = _cancelled_source(visit_count=0)
     client = _Client(upstream, persistent_hop_wire_session_id("adapter-session"))
