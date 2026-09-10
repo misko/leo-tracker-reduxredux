@@ -1,3 +1,4 @@
+import threading
 from dataclasses import replace
 
 import numpy as np
@@ -10,6 +11,7 @@ from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisSource,
     AdaptiveHopVisitAnalysisV1,
     analyze_adaptive_hop_visit,
+    analyze_adaptive_hop_visit_batch,
     validate_adaptive_analysis_binding,
 )
 from tests.scanner.adaptive_hop_fixtures import receipt_fixture
@@ -30,6 +32,55 @@ class Reader:
         values[:, 0, :] = [index + 1, 2]
         values[:, 1, :] = [visit.event.target_index + 10, -3]
         return visit, values
+
+
+@pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
+def test_bounded_parallel_batch_preserves_dense_science_and_owner_only_reads(monkeypatch, rate):
+    reader = Reader(rate=rate, count=3)
+    source = AdaptiveHopAnalysisSource(reader)
+    cfg = AdaptiveHopAnalysisConfigurationV1(sample_rate_hz=rate)
+    monkeypatch.setattr(analysis_module, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    serial = tuple(analyze_adaptive_hop_visit(source, i, configuration=cfg) for i in range(2))
+    owner = threading.get_ident()
+    read = reader.read_visit_ci16
+
+    def checked_read(index):
+        assert threading.get_ident() == owner
+        return read(index)
+
+    reader.read_visit_ci16 = checked_read
+    parallel = tuple(analyze_adaptive_hop_visit_batch(source, (0, 1), configuration=cfg))
+    assert parallel == serial
+    assert all(len(result.probes) == 22 for result in parallel)
+
+
+@pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
+def test_parallel_matches_actual_fractional_detector_on_synthetic_pilot(rate):
+    from tools.qualify_presence_dwell_controls import generate
+
+    reader = Reader(rate=rate, count=3)
+    iq, _ = generate(rate, "lower", 92851, "pilot", 0)
+    values = np.repeat(iq[:, None, :], 2, axis=1)
+    reader.read_visit_ci16 = lambda index: (reader.receipt.visits[index], values)
+    source = AdaptiveHopAnalysisSource(reader)
+    cfg = AdaptiveHopAnalysisConfigurationV1(sample_rate_hz=rate, probe_stride_ms=120)
+    serial = tuple(analyze_adaptive_hop_visit(source, i, configuration=cfg) for i in range(2))
+    parallel = tuple(analyze_adaptive_hop_visit_batch(source, (0, 1), configuration=cfg))
+    assert parallel == serial
+
+
+@pytest.mark.parametrize("indexes", [(), (0, 0), (0, 1, 2)])
+def test_parallel_batch_rejects_invalid_bounds_before_iq(indexes):
+    reader = Reader(count=4)
+    with pytest.raises(ValueError, match="one or two distinct"):
+        tuple(
+            analyze_adaptive_hop_visit_batch(
+                AdaptiveHopAnalysisSource(reader),
+                indexes,
+                configuration=AdaptiveHopAnalysisConfigurationV1(sample_rate_hz=2_500_000),
+            )
+        )
+    assert reader.calls == []
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])

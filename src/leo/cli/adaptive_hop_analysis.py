@@ -20,6 +20,7 @@ from leo.scanner.adaptive_hop import SessionId
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
+from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
 from leo.storage.analysis_worker_lock import analysis_worker_lock
 
 
@@ -37,19 +38,45 @@ def _seconds(text: str) -> float:
     return value
 
 
+def next_pending(captures, presentation, *, probe_stride_ms: int) -> str | None:
+    """Resume saved work before older unstarted captures; never read IQ to select.
+
+    Finish metrics-only jobs first. Oldest creation time breaks ties, preventing
+    a newly arriving capture from repeatedly preempting an unfinished one.
+    """
+    selected = None
+    for capture in captures.iter_sessions():
+        status = presentation.status(capture.session_id, probe_stride_ms=probe_stride_ms)
+        if status is None:
+            raise ValueError("published adaptive capture disappeared during selection")
+        if status.state == "figures_ready":
+            continue
+        priority = {"metrics_complete": 0, "partial": 1, "not_started": 2}[status.state]
+        candidate = (priority, capture.manifest.created_utc_ns, capture.session_id)
+        if selected is None or candidate < selected:
+            selected = candidate
+    return selected[2] if selected is not None else None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--bulk-root", type=Path, required=True, help="Existing local recording root; never QNAP."
     )
-    parser.add_argument("--session-id", required=True)
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--session-id")
+    selection.add_argument(
+        "--pending", action="store_true", help="Resume one pending published capture, then return."
+    )
+    parser.add_argument("--maximum-workers", type=int, choices=(1, 2), default=1)
     parser.add_argument("--maximum-visits", type=_visits, default=2500)
     parser.add_argument(
         "--maximum-seconds",
         type=_seconds,
         default=300,
         help=(
-            "Metrics budget checked at visit boundaries; an in-flight visit finishes first. "
+            "Metrics budget checked at batch boundaries; "
+            "at most two in-flight visits finish first. "
             "Overview rendering follows completion and is outside this budget."
         ),
     )
@@ -67,7 +94,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     try:
-        TypeAdapter(SessionId).validate_python(args.session_id)
+        if args.session_id is not None:
+            TypeAdapter(SessionId).validate_python(args.session_id)
     except ValueError:
         parser.error("invalid adaptive session identifier")
     try:
@@ -83,14 +111,32 @@ def main() -> None:
                 if not acquired:
                     print(json.dumps({"state": "busy", "reason": "analysis worker is active"}))
                     return
+                session_id = args.session_id
+                if args.pending:
+                    session_id = next_pending(
+                        captures,
+                        AdaptiveHopAnalysisPresentationStore(args.bulk_root),
+                        probe_stride_ms=args.probe_stride_ms,
+                    )
+                    if session_id is None:
+                        print(
+                            json.dumps(
+                                {
+                                    "state": "idle",
+                                    "reason": "all published adaptive figures are ready",
+                                }
+                            )
+                        )
+                        return
                 result = AdaptiveHopAnalysisService(
                     inputs=AdaptiveHopAnalysisInputStore(captures),
                     products=products,
                 ).analyze_session(
-                    args.session_id,
+                    session_id,
                     maximum_visits=args.maximum_visits,
                     maximum_seconds=args.maximum_seconds,
                     probe_stride_ms=args.probe_stride_ms,
+                    maximum_workers=args.maximum_workers,
                 )
                 payload = {**asdict(result), "overview_state": "not_ready"}
                 if result.state == "metrics_complete" and not args.metrics_only:
@@ -98,7 +144,7 @@ def main() -> None:
                         inputs=AdaptiveHopAnalysisInputStore(captures),
                         products=products,
                         renderer=render_adaptive_hop_overview,
-                    ).render_session(args.session_id, probe_stride_ms=args.probe_stride_ms)
+                    ).render_session(session_id, probe_stride_ms=args.probe_stride_ms)
                     payload["overview_state"] = "ready"
                     payload["overview_metrics_manifest_sha256"] = overview.metrics_manifest_sha256
                 print(json.dumps(payload, sort_keys=True))

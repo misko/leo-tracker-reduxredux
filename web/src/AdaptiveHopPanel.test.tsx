@@ -10,7 +10,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("adaptive actual-visit presentation", () => {
   it("shows retained inventory, source time, shadow proposals and cooldown without claiming absence", async () => {
     const detail = adaptiveDetailFixture();
-    const fetcher = vi.fn(async (path: string) => path.endsWith("/glrt") || path.endsWith("/analysis") ? respond(null, 404) : respond(detail));
+    const fetcher = vi.fn(async (path: string) => path.endsWith("/glrt") || path.includes("/analysis?") ? respond(null, 404) : respond(detail));
     vi.stubGlobal("fetch", fetcher);
     render(<AdaptiveHopDetail sessionId="adaptive-test" />);
     await screen.findByRole("heading", { name: "Actual channel visits" });
@@ -32,7 +32,7 @@ describe("adaptive actual-visit presentation", () => {
   });
 
   it("keeps empty cancellation time and duty unavailable", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (path: string) => path.endsWith("/glrt") || path.endsWith("/analysis") ? respond(null, 404) : respond(adaptiveDetailFixture("empty", 0))));
+    vi.stubGlobal("fetch", vi.fn(async (path: string) => path.endsWith("/glrt") || path.includes("/analysis?") ? respond(null, 404) : respond(adaptiveDetailFixture("empty", 0))));
     render(<AdaptiveHopDetail sessionId="empty" />);
     await screen.findByText("No hop was started.");
     expect(screen.getByText(/No attested device-time span/)).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe("adaptive actual-visit presentation", () => {
   it("ignores a late response from the previously selected scan", async () => {
     let finishOld: (value: Response) => void = () => {};
     const old = new Promise<Response>(resolve => { finishOld = resolve; });
-    vi.stubGlobal("fetch", vi.fn((path: string) => path.endsWith("/glrt") || path.endsWith("/analysis") ? Promise.resolve(respond(null, 404))
+    vi.stubGlobal("fetch", vi.fn((path: string) => path.endsWith("/glrt") || path.includes("/analysis?") ? Promise.resolve(respond(null, 404))
       : path.endsWith("/old") ? old : Promise.resolve(respond(adaptiveDetailFixture("new")))));
     const view = render(<AdaptiveHopDetail sessionId="old" />);
     view.rerender(<AdaptiveHopDetail sessionId="new" />);

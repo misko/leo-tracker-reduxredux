@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 
@@ -139,11 +140,11 @@ def _fractional_candidates(
     return tuple(
         PresenceCandidate(
             epoch_sample=epoch,
-            fractional_offset_samples=float(refined.fractional_epoch_offset_samples),
+            fractional_offset_samples=float(cast(float, refined.fractional_epoch_offset_samples)),
             acquired_cfo_hz=frequency,
-            tracking_cfo_hz=float(refined.fractional_tracking_cfo_hz),
+            tracking_cfo_hz=float(cast(float, refined.fractional_tracking_cfo_hz)),
             margin=float(refined.fractional_margin),
-            exact_score=float(refined.fractional_exact_score),
+            exact_score=float(cast(float, refined.fractional_exact_score)),
         )
         for epoch, frequency, refined in zip(epochs, frequencies, refinements, strict=True)
         if refined.fractional_margin is not None

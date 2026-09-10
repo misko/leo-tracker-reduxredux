@@ -28,8 +28,23 @@ FINAL = 2
 DETECTOR_FAILED = 4
 _HEADER = struct.Struct("<4sHHIIHHI5Q32s32s")
 _RECORD = struct.Struct("<8QI4BII4dQ3d")
-VERDICTS = ("unavailable", "starlink", "no_signal")
-REASONS = (
+VERDICTS: tuple[Literal["unavailable", "starlink", "no_signal"], ...] = (
+    "unavailable",
+    "starlink",
+    "no_signal",
+)
+REASONS: tuple[
+    Literal[
+        "complete",
+        "worker_busy",
+        "worker_failed",
+        "invalid_input",
+        "incomplete_search",
+        "unqualified_classifier",
+        "cancelled",
+    ],
+    ...,
+] = (
     "complete",
     "worker_busy",
     "worker_failed",

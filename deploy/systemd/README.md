@@ -118,6 +118,34 @@ of the alternating 20-minute capture cadence. The full IQ is retained, and a
 manual `--probe-stride-ms 10` run remains available for exhaustive overlapping
 windows when its multi-hour cost is intentional.
 
+The same timer also advances adaptive captures through the public
+`leo-adaptive-hop-analysis --pending` command. The shared worker lease prevents
+fixed/adaptive analysis overlap. Each pass gives adaptive metrics a 300-second
+budget at two-visit batch boundaries, then attempts the existing fixed analysis
+and tracking job even if adaptive work failed; failures remain nonzero in the
+journal. Work resumes from verified checkpoints, prioritizing completed metrics
+awaiting figures, then partial jobs, then oldest unstarted captures. It never
+opens a radio or changes capture scheduling.
+
+Both automatic overview paths use **one 20 ms probe per 120 ms valid dwell,
+both receivers, fractional GLRT64/CFO**. This is temporal subsampling, not lower
+capture duty or integer estimation. Adaptive UI status and PNG requests explicitly
+include `probe_stride_ms=120`; the optional dense view requests its independent
+`probe_stride_ms=10` binding. Existing dense checkpoints are neither relabeled
+nor deleted. The API default remains unchanged for existing clients.
+
+For adaptive scans, `not_started`, `partial`, `metrics_complete`, and
+`figures_ready` are distinct. Only the last exposes digest-bound coverage,
+GLRT response, and CFO-candidate/association PNGs. Rendering retries consume
+sealed metrics, not IQ. These associations do not assert satellite IDs or
+cross-channel joins; the fixed scanner's separate tracking/TLE path is unchanged.
+
+Analysis units normally follow `current-api`, which contains the presentation
+code. An analysis-only maintenance deployment may instead pin this unit's
+working directory and Python executable to the same exact sealed release SHA;
+record that pin and keep acquisition/worker selectors untouched. Do not point
+the unit at an uncommitted worktree or mutate an immutable release in place.
+
 After the fractional product seals, the same bounded worker projects only
 margin-passing fractional candidates with qualified device-counter/UTC timing,
 reconstructs alias-aware trajectories before opening a catalogue, and compares
