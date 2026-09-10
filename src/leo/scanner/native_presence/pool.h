@@ -78,4 +78,15 @@ void leo_probe_abort(leo_probe_collector *);
 int leo_probe_take(leo_probe_pool *, uint32_t *slot, leo_probe_request *, const int16_t **samples);
 int leo_probe_complete(leo_probe_pool *, uint32_t slot, const leo_probe_result *);
 int leo_probe_read_result(leo_probe_pool *, leo_probe_result *);
+
+/* Private same-build, explicit startup-only admission mode. Full dwells can
+ * be collected into HELD slots, invisible to take(), then published or freed
+ * by the sole acquisition owner. A published/running slot cannot be revoked.
+ * The request argument binds release/publication against slot reuse. Legacy
+ * FIFO behavior and feed() remain unchanged unless this mode is selected. */
+int leo_dwell_pool_enable_held(leo_probe_pool *);
+int leo_probe_feed_held(leo_probe_collector *, uint64_t block_counter,
+    const int16_t *samples, size_t frame_count, size_t stride_shorts, size_t rx_offset_shorts);
+int leo_probe_publish_held(leo_probe_pool *, uint32_t slot, const leo_probe_request *);
+int leo_probe_release_held(leo_probe_pool *, uint32_t slot, const leo_probe_request *);
 #endif
