@@ -481,7 +481,9 @@ class ContinuousAcquisitionRunner:
                         payload=scanner_intent.model_dump(mode="json"),
                         scheduled_for=next_scanner_due,
                         priority=_SCANNER_CADENCE_PRIORITY,
-                        coalesce_pending_kind=False,
+                        # Paused capture still accrues cadence intents. Retain their
+                        # history, but honor the one-pending-intent-per-kind invariant.
+                        coalesce_pending_kind=True,
                     )
                     next_scanner_due += timedelta(seconds=scanner_configuration.interval_seconds)
 

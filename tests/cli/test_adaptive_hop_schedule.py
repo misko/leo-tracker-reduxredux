@@ -6,7 +6,7 @@ from threading import Event
 
 import pytest
 
-from leo.cli.backend import CliBackendError, ScheduledAdaptiveHopRun
+from leo.cli.backend import CliBackendError, ScheduledAdaptiveHopRun, ScheduledPersistentHopRun
 from leo.cli.composition import CliSettings, CompositionHooks, LocalAcquisitionBackend
 from leo.cli.models import ExitCode
 from leo.radio.scanner_glrt_metadata import ScannerGlrtOptions
@@ -351,3 +351,44 @@ def test_default_off_and_exact_options_reach_concrete_adapter(tmp_path, monkeypa
             ),
         )
     ]
+
+
+@pytest.mark.parametrize("minute,adaptive", [(0, True), (20, False)])
+def test_rate_allowlist_preserves_geometry_and_selects_qualified_policy(tmp_path, minute, adaptive):
+    backend, radio, lifecycle, store, events = backend_fixture(tmp_path, mode="adaptive")
+    original_intent = intent_fixture(backend, minute)
+    backend.settings = replace(backend.settings, scanner_adaptive_sample_rates_hz=(2_500_000,))
+    fixed_radio = _BoundedPersistentRadio(events)
+    backend.hooks = replace(backend.hooks, persistent_hop_radio_factory=lambda _: fixed_radio)
+    intent = intent_fixture(backend, minute)
+    assert intent == original_intent  # No change to cadence, rate, RF bandwidth or dwell.
+    result = backend.capture_scheduled_scanner(intent, cancel=Event())
+    assert isinstance(result, ScheduledAdaptiveHopRun if adaptive else ScheduledPersistentHopRun)
+    assert radio.open_count == int(adaptive)
+    assert fixed_radio.open_count == int(not adaptive)
+    assert backend.capture_scheduled_scanner(intent, cancel=Event()) == result
+    assert lifecycle.enter_count == 1
+    if adaptive:
+        backend.settings = replace(backend.settings, scanner_adaptive_sample_rates_hz=(5_000_000,))
+        with pytest.raises(CliBackendError, match="different hopping recording kind"):
+            backend.capture_scheduled_scanner(intent, cancel=Event())
+        assert radio.open_count == 1
+    store.close()
+
+
+@pytest.mark.parametrize(
+    "rates", [(), (True,), (2_500_000.0,), (1,), (2_500_000,) * 2, [2_500_000]]
+)
+def test_rate_allowlist_rejects_invalid_runtime_values(tmp_path, rates):
+    with pytest.raises(ValueError, match="adaptive sample rates"):
+        replace(_settings(tmp_path), scanner_adaptive_sample_rates_hz=rates)
+
+
+def test_rate_allowlist_environment_is_strict_and_defaults_preserve_both_rates():
+    assert CliSettings.from_environ({}).scanner_adaptive_sample_rates_hz == (2_500_000, 5_000_000)
+    assert CliSettings.from_environ(
+        {"LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ": "2500000"}
+    ).scanner_adaptive_sample_rates_hz == (2_500_000,)
+    for value in ("", "2500000,", "2500000,2500000", "2500000.0", "true", "1000000"):
+        with pytest.raises(CliBackendError):
+            CliSettings.from_environ({"LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ": value})
