@@ -14,7 +14,7 @@ export function analysisFixture(state: AdaptiveAnalysisStatus["state"] = "figure
     schema_version: 1, kind: "adaptive_hop_analysis_status", session_id: capture.session_id,
     input_manifest_sha256: capture.input_manifest_sha256, binding_sha256: sha("a"),
     configuration: { schema_version: 1, analyzer_id: "adaptive-hop-fractional-glrt64-cfo-v1", sample_rate_hz: capture.sample_rate_hz,
-      valid_visit_ms: 120, probe_ms: 20, probe_stride_ms: 10, glrt64_margin_gate: .025, maximum_acquisition_candidates: 8,
+      valid_visit_ms: 120, probe_ms: 20, probe_stride_ms: 120, glrt64_margin_gate: .025, maximum_acquisition_candidates: 8,
       receiver_ids: [0, 1], timing_refinement: "circular-five-cell-log-parabola-plus-lanczos16-v1", decision_score: "fractional-epoch-conditioned-glrt64-v1" },
     total_visits: capture.retained_visits, checkpoint_visits: complete ? capture.retained_visits : state === "partial" ? 1 : 0,
     state, progress_basis: complete ? "sealed_metrics_manifest" : state === "partial" ? "file_inventory" : "no_checkpoints",
@@ -66,7 +66,7 @@ describe("adaptive analysis publication", () => {
   it.each(["source", "stride", "integer-score", "count", "live-worker", "missing-figure", "external-figure", "wrong-metrics", "rounded-epoch", "receiver"])("rejects invalid %s evidence", async fault => {
     const value = analysisFixture();
     if (fault === "source") value.input_manifest_sha256 = sha("9");
-    if (fault === "stride") value.configuration.probe_stride_ms = 120;
+    if (fault === "stride") value.configuration.probe_stride_ms = 10;
     if (fault === "integer-score") Object.assign(value.configuration, { decision_score: "integer" });
     if (fault === "count") value.checkpoint_visits--;
     if (fault === "live-worker") Object.assign(value, { worker_activity: "running" });
@@ -104,5 +104,24 @@ describe("adaptive analysis publication", () => {
   it("constructs only local digest-bound URLs", () => {
     const status = analysisFixture();
     expect(adaptiveFigureUrl(status, status.overview!.artifacts[0])).toMatch(/^\/api\/v1\/scanner\/adaptive-sessions\/adaptive-test\/analysis\/coverage\.png\?/);
+    expect(adaptiveFigureUrl(status, status.overview!.artifacts[0])).toContain("probe_stride_ms=120");
+  });
+
+  it("keeps dense results explicitly separate from automatic overview sampling", async () => {
+    const dense = analysisFixture();
+    dense.configuration.probe_stride_ms = 10;
+    dense.binding_sha256 = sha("1");
+    dense.overview!.binding_sha256 = dense.binding_sha256;
+    const fetcher = vi.fn().mockResolvedValueOnce(respond(analysisFixture())).mockResolvedValue(respond(dense));
+    vi.stubGlobal("fetch", fetcher);
+    render(<AdaptiveAnalysisPanel capture={capture} />);
+    await screen.findByRole("img", { name: "Fractional GLRT response" });
+    expect(fetcher.mock.calls[0][0]).toContain("probe_stride_ms=120");
+    expect(screen.getByText(/20 ms probes \/ 120 ms stride/)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Analysis sampling" }), { target: { value: "10" } });
+    await screen.findByText(/20 ms probes \/ 10 ms stride/);
+    expect(fetcher.mock.calls[1][0]).toContain("probe_stride_ms=10");
+    expect(screen.getByText(/not scheduled automatically/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open fractional glrt response PNG" }).getAttribute("href")).toContain("probe_stride_ms=10");
   });
 });
