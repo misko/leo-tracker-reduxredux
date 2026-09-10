@@ -2130,8 +2130,10 @@ def _write_acquisition_release_environment(
     updates = {binary_key: binary_path, scanner_key: "true", **_scanner_only_bindings}
     for key, value in updates.items():
         if locations[key]:
-            lines[locations[key][0]] = f"{key}={value}"
-    additions = [f"{key}={value}" for key, value in updates.items() if not locations[key]]
+            lines[locations[key][0]] = f"{key}={shlex.quote(value)}"
+    additions = [
+        f"{key}={shlex.quote(value)}" for key, value in updates.items() if not locations[key]
+    ]
     lines[release_location + 1 : release_location + 1] = additions
     temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
     try:
