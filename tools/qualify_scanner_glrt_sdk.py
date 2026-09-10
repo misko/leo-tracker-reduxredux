@@ -434,6 +434,20 @@ def _verify_cooperative_skips(groups, decoded, arrivals, blocks, period, dwell, 
     return frozenset(causes[1] + causes[2])
 
 
+def _require_result_binding(record, expected):
+    """Keep strict equality while retaining the reason a replay was rejected."""
+    differences = {
+        key: {"actual": getattr(record, key), "expected": value}
+        for key, value in expected.items()
+        if getattr(record, key) != value
+    }
+    if differences:
+        detail = json.dumps(
+            {"visit": expected["visit"], "differences": differences}, sort_keys=True
+        )
+        raise ValueError("SDK result lost, busy, failed, incomplete or misbound: " + detail)
+
+
 def verify(
     raw,
     manifest,
@@ -671,22 +685,24 @@ def verify(
                     unavailable.add(i)
                     candidate, verdict, reason = None, "unavailable", record.reason
                 start = BASE + i * period + guard
-                if (
-                    record.sequence != i
-                    or record.visit != i
-                    or record.valid_start != start
-                    or record.valid_end != start + dwell
-                    or record.rate_hz != rate
-                    or record.rx != 1
-                    or record.channel != source["channel"]
-                    or record.edge != source["edge"]
-                    or record.verdict != verdict
-                    or record.reason != reason
-                    or record.search_window_mask != (0 if skipped else 63)
-                    or record.search_start != start
-                    or record.search_end != (start if skipped else start + dwell)
-                ):
-                    raise ValueError("SDK result lost, busy, failed, incomplete or misbound")
+                _require_result_binding(
+                    record,
+                    dict(
+                        sequence=i,
+                        visit=i,
+                        valid_start=start,
+                        valid_end=start + dwell,
+                        rate_hz=rate,
+                        rx=1,
+                        channel=source["channel"],
+                        edge=source["edge"],
+                        verdict=verdict,
+                        reason=reason,
+                        search_window_mask=0 if skipped else 63,
+                        search_start=start,
+                        search_end=start if skipped else start + dwell,
+                    ),
+                )
                 expected = dict(
                     exact_score=0.0,
                     control_score=0.0,

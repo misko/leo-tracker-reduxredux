@@ -280,6 +280,26 @@ def test_expected_positive_choice_prioritizes_passing_candidate_over_larger_reje
     assert _decision(source, False) == (rejected, "unavailable", "unqualified_classifier", None)
 
 
+def test_binding_failure_retains_exact_actual_and_expected_channel(positive_runs):
+    manifest, outputs = positive_runs
+    changed = copy.deepcopy(manifest)
+    original = changed["records"][0]["channel"]
+    changed["records"][0]["channel"] = original % 4 + 1
+    with pytest.raises(ValueError, match="SDK result lost") as error:
+        verify(
+            outputs[0, 0],
+            changed,
+            968,
+            delay_blocks=0,
+            jitter_ms=0,
+            enabled=True,
+            positive_feedback=True,
+        )
+    detail = json.loads(str(error.value).split(": ", 1)[1])
+    assert detail["visit"] == 0
+    assert detail["differences"]["channel"] == dict(actual=original, expected=original % 4 + 1)
+
+
 @pytest.mark.parametrize("incomplete", [False, True])
 def test_expected_completed_miss_and_incomplete_are_never_wire_absence(incomplete):
     candidates = [dict(fractional_complete=0)] if incomplete else []
