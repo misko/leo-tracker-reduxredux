@@ -101,3 +101,34 @@ until that test passes. Scheduled capture has resumed on the repaired existing
 release. This report does not assert that the new candidate is activated.
 
 [Reproduction script and hash-indexed original receipts](evidence/2026_09_10_scanner_live/index.json).
+
+## Post-qualification status, 15:28 UTC
+
+The implementation and this report were fast-forwarded into remote main at
+`f167d26bb003d2955bd86b0999b09c22e700a02f`; provider source was fast-forwarded
+into libiio's remote master at `74035ef4e8e0e4b4d2f58e39273ee51987b6f681`.
+The scanner-capable `f167d26b` release was staged immutably with
+`--scanner-glrt`. Its host native and Python-binding hashes exactly match the
+live-tested `40de667b` release, as do application, ARM runtime and web bytes.
+All source-change gates passed, and 171 focused deployment/evidence tests
+passed. Its five-lane sealed release qualification passed, with all five lanes
+reused under exact input hashes rather than represented as new executions:
+
+`/srv/bulk/leo/qualification/release/release-f167d26-20260910T152517Z/receipt.json`
+
+**This candidate remains inactive.** The reviewed deployment plan is a full
+API/worker/acquisition cutover, including a worker release fence and no database
+migration. It was not started at the end of the authorized maintenance window.
+
+Capture authority remained `running/running`, generation 226, and ordinary
+scheduled recording was leased after resumption. However, the 15:20 scanner
+slot `scan-hop-811e09624a93b96b` left an unpublished session directory and its
+retry was fenced with `adaptive slot has unpublished evidence; preserve it
+without recapture`. We did not remove it, forge a completed receipt or recapture
+that slot. It was no longer in the active queue by 15:28. Scheduled scanner
+health is therefore **not yet established** by ordinary recording resumption.
+Production release `9948c311` still has host transport `f6c450e`; the qualified
+candidate has scanner transport `a1088b6`. The original attempt's root failure
+has not been reconstructed from the subsequently retained conflict message.
+Next work must finish the candidate cutover and verify scanner publication,
+as well as obtain the separately missing full 5 MS/s adaptive RF evidence.
