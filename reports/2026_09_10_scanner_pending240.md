@@ -224,6 +224,38 @@ All 12 staged ARM asset hashes matched the reviewed candidate. All production
 selectors remained unchanged, and acquisition remained active on `c60438c5`.
 The corrected release is **staged and software-qualified, not activated**.
 
+## Latest-main integration and current operational gate
+
+On September 10, the user authorized the bounded 25-minute RF comparison.
+Main had meanwhile advanced to `732f1cdf`, adding native recording UI and
+registration support. Merge `40de667bc8fb98b99d2b343cb19f9045193d7b86` preserves
+those changes and the scanner candidate. The only conflict was two equivalent
+PNG test-packaging repairs; the resolution retains the release-local manifest
+and repository-to-original byte checks, with the same reviewed PNG hashes.
+
+The merged development gate passed after installing the declared optional
+hardware dependencies (the initial run had eight missing-PPU import failures).
+The merged revision was pushed and staged immutably. Its standard release gate
+passed in **156.9 seconds**, with **148 web tests and 16 Chromium tests**.
+The three unchanged scientific/database lanes were reused by exact input hashes
+from the qualified `9948c311` release. Its definition and receipt identify this
+reuse explicitly. The qualification database again ended with only `public`.
+
+**No new RF was collected and no production control was changed.** Read-only
+inspection found both `.20` and `.21` leased by production acquisition on
+`9948c311`, with ordinary captures scheduled every **180 seconds**. There is
+therefore no normal 300-second idle interval for the proposed canary. The live
+queue also retained a pending scanner operation failing strict SSH host-key
+verification for `.20` at 14:40 and 14:42 UTC. Service-active is not proof that
+scanner captures are succeeding. The key must be verified against the radio's
+identity and refreshed through the normal credential path; strict checking must
+not be disabled. These operational observations are retained in the evidence.
+
+RF permission is now present, but a bounded maintenance pause still needs
+approval because the authorized test was explicitly to leave scheduled captures
+uninterrupted. Main promotion and activation remain held pending that live
+comparison, restoration and production verification.
+
 ## Evidence and remaining gates
 
 [Receipts, source snapshots and figures](evidence/2026_09_10_scanner_pending240/index.json)
@@ -239,8 +271,8 @@ Release manifest digest:
 The synthetic test envelope adds only its executable/input fixtures and is not
 the production release manifest.
 
-Remaining: an explicitly authorized bounded same-build live off/on duty
-comparison, deployment/rollback and UI verification. A new 300-second RF test
-requires fresh authorization. The PNG repair is separate and already on main;
+Remaining: approval for a bounded maintenance pause, the authorized same-build
+live off/on duty comparison, deployment/rollback and UI verification.
+The PNG repair is separate and already on main;
 this candidate does not resolve previously reported intermittent 5 MS/s transport
 failures.

@@ -274,3 +274,18 @@ def test_corrected_immutable_gate_passes_without_claiming_activation():
     assert len(checkpoint["runtime_assets_sha256"]) == 12
     for path, expected in checkpoint["runtime_assets_sha256"].items():
         assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected
+
+
+def test_latest_main_qualification_keeps_rf_permission_separate_from_radio_availability():
+    receipt = read("main-integration/receipt.json")
+    checkpoint = read("main-integration/checkpoint.json")
+    assert receipt["passed"] and len(receipt["commands"]) == 5
+    assert all(command["passed"] for command in receipt["commands"])
+    assert receipt["git_revision"] == checkpoint["staged_revision"]
+    assert checkpoint["integrated_main"] == "732f1cdf0a6a1e3180b5ca5ebb4a2b5cb51873be"
+    assert checkpoint["approved_rf_seconds"] == 1500 and checkpoint["rf_seconds_used"] == 0
+    assert not checkpoint["new_rf"] and not checkpoint["firmware_changed"]
+    assert not checkpoint["production_changed"]
+    assert checkpoint["qualification_database_final_schemas"] == ["public"]
+    assert checkpoint["capture_control"]["desired_state"] == "running"
+    assert "needs maintenance permission" in checkpoint["blocker"]
