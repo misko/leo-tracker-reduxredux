@@ -4,9 +4,14 @@ import gzip
 import hashlib
 import json
 import re
+import xml.etree.ElementTree as ET
+from collections import Counter
 from pathlib import Path
 
 import pytest
+
+from tools.qualify_presence_dwell_worker import FIELDS
+from tools.qualify_presence_worker import compare_values
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "reports/evidence/2026_09_10_scanner_pending240"
@@ -102,3 +107,62 @@ def test_provider_overload_and_failure_after_observed_recovery(mode):
     for _, frame, recovered in injections:
         if int(frame) >= 130:
             assert int(recovered) > 0 and int(frame) < 200
+
+
+def _compare_saved_result(result, metadata):
+    assert result["rate_hz"] == metadata["rate_hz"]
+    assert result["counter"] == str(metadata["counter"])
+    assert result["edge"] == int(metadata["edge"] == "upper")
+    expected = metadata["expected"]
+    assert result["confirmation_count"] == 1
+    assert result["confirmation_window_mask"] == expected["confirmation_window_mask"]
+    assert result["rank"]["order"] == expected["rank"]["order"]
+    compare_values(result["nuisances"][0], expected["nuisance"], nuisance=True)
+    candidates = result["confirmations"][0]["candidates"]
+    assert len(candidates) == len(expected["candidates"])
+    for got, reference in zip(candidates, expected["candidates"], strict=True):
+        compare_values({key: got[key] for key in FIELDS}, reference)
+
+
+def test_all_saved_iq_arm_runs_match_separate_current_desktop_references():
+    prepared = read("saved-iq/prepared.json")
+    rows = {row["filename"]: row for row in prepared["rows"]}
+    assert len(rows) == 96
+    result = read("saved-iq/arm-results.json")
+    assert result["completed"] and result["original_dwells"] == 96
+    assert result["executions"] == len(result["results"]) == 288
+    assert Counter(r["filename"] for r in result["results"]) == dict.fromkeys(rows, 3)
+    for row in result["results"]:
+        _compare_saved_result(row["result"], rows[row["filename"]]["metadata"])
+    # Historical references remain a separate comparison, never overwritten
+    # to make the current detector's different configuration pass.
+    for row in rows.values():
+        _compare_saved_result(row["legacy_result"], row["frozen_metadata"])
+    for rate in (2500000, 5000000):
+        frozen = read(f"saved-iq/frozen-{rate}.json")
+        actual = [r["frozen_metadata"] for r in rows.values() if r["metadata"]["rate_hz"] == rate]
+        assert len(actual) == 48 and actual == frozen["records"]
+    assert (
+        prepared["worker_algorithm_sha256"]
+        == hashlib.sha256((ROOT / "runtime/scanner-glrt/algorithm.json").read_bytes()).hexdigest()
+    )
+    post = read("saved-iq/arm-postflight.json")
+    assert post["installed_daemon_unchanged"]
+    assert post["new_rf"] is False and post["firmware_changed"] is False
+
+
+def test_release_integration_receipts_preserve_initial_setup_error_and_rerun():
+    for filename, count in (
+        ("all-deploy-tests.xml", 286),
+        ("scanner-integration-configured.xml", 1720),
+    ):
+        suite = ET.fromstring(
+            gzip.decompress((EVIDENCE / "saved-iq" / (filename + ".gz")).read_bytes())
+        ).find("testsuite")
+        assert int(suite.get("tests")) == count
+        assert all(suite.get(key) == "0" for key in ("failures", "errors", "skipped"))
+    initial = ET.fromstring(
+        gzip.decompress((EVIDENCE / "saved-iq/scanner-integration.xml.gz").read_bytes())
+    ).find("testsuite")
+    assert initial.get("errors") == "61" and initial.get("failures") == "0"
+    assert all("LEO_LIBIIO_SOURCE" in error.get("message") for error in initial.findall(".//error"))

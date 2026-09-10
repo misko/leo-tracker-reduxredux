@@ -55,10 +55,27 @@ def test_actual_bundle_has_exact_order_bytes_and_no_execution(release: Path) -> 
     original = PROJECT_ROOT / "runtime/scanner-glrt"
     assert all(path.read_bytes() == (original / path.name).read_bytes() for path in paths)
     manifest = json.loads((original / "bundle.json").read_text())
-    assert manifest["daemon_bytes"] + sum(item["bytes"] for item in manifest["files"]) == 3467936
+    assert manifest["daemon_bytes"] + sum(item["bytes"] for item in manifest["files"]) == 3477064
     assert hashlib.sha256((original / "iiod").read_bytes()).hexdigest() == (
-        "4f3e9bf59d02d7606e5f4a35bb75c8ed52e1a7e02b76a08dc4001d5a6da2eb92"
+        "5d4cdce3f96d51e4fac38bbcc51a63a7123ff54abd710fc386e75fc89d681af1"
     )
+
+
+def test_candidate_preserves_capture_guards_and_explicit_unknown_feedback(release: Path) -> None:
+    validate(release)
+    config = json.loads((release / "runtime/scanner-glrt/configuration.json").read_text())
+    assert config["rx"] == 1 and config["rates_hz"] == [2500000, 5000000]
+    assert config["valid_dwell_ms"] == 120 and config["maximum_capture_seconds"] == 300
+    assert config["bandwidth_equals_rate"] is True
+    assert config["positive_policy"] == {"minimum_exact_score": 0.175, "minimum_margin": 0.025}
+    protection = config["capture_protection"]
+    assert protection["max_occupied_slots"] == 3
+    assert protection["admission_age_ms"] == 450 and protection["worker_timeout_ms"] == 500
+    assert config["fair_admission"]["maximum_pending_age_ms"] == 240
+    assert config["fair_admission"]["maximum_revisit_guaranteed"] is False
+    assert config["cooperative_skips"]["provides_negative_evidence"] is False
+    assert config["cooperative_skips"]["renews_activity_or_cooldown"] is False
+    assert config["cooperative_skips"]["genuine_faults_remain_latched"] is True
 
 
 def test_only_the_reviewed_sdk_shared_object_is_trackable() -> None:

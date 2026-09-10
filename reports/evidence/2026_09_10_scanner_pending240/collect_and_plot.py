@@ -130,6 +130,10 @@ def main():
         if (ARM / name).exists():
             originals.append(archive(ARM / name, "arm/" + name))
     figures(receipt["cases"])
+    from collect_saved_iq import collect
+
+    saved_originals, saved_summary = collect(archive, sha, FIGURES)
+    originals.extend(saved_originals)
     files = [
         p
         for p in HERE.rglob("*")
@@ -138,6 +142,7 @@ def main():
     index = dict(
         scope=receipt["scope"],
         arm_provider_passed=arm_passed,
+        saved_iq_arm=saved_summary,
         originals=originals,
         files=[
             dict(path=str(p.relative_to(REPO)), sha256=sha(p.read_bytes()), bytes=p.stat().st_size)

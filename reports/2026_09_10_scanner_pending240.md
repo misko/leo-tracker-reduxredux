@@ -89,6 +89,53 @@ easy synthetic inputs do not establish real-IQ runtime tails or RF sensitivity.
 Owned temporary files were removed; idle buffers, unchanged installed-daemon
 PID/executable/start time, and unchanged USB device number were verified.
 
+## Follow-up: real saved-IQ execution on ARM
+
+All **96 saved RX1 dwells** (48 per rate, each 120 ms) were replayed on the
+USB-attested `.18` ARM processor, three times each. **All 288 executions matched
+the current desktop algorithm**, including fractional epochs/CFO, candidate
+scores, rank order, confirmation-window selection and nuisance estimates.
+The existing comparison tolerances were unchanged. All original dwells were
+used; none were selected or discarded using the new detector's output.
+
+| Rate | Wall-time median | p95 | p99 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| 2.5 MS/s | 57.30 ms | 62.71 ms | 67.12 ms | 68.09 ms |
+| 5 MS/s | 104.39 ms | 107.29 ms | 114.70 ms | 115.99 ms |
+
+![Measured ARM runtime on saved real IQ](figures/2026_09_10_scanner_pending240/saved-iq-arm-timing.png)
+
+These are **direct numerical execution times**, not streaming-worker latency.
+No IIO receive context was opened: live transport/interrupt contention, queue
+handoff and capture callback costs are absent. At 5 MS/s, the measured p99
+leaves only 5.3 ms before the next 120 ms dwell. This supports keeping advisory
+checks skippable; it does not establish that every live dwell can be checked.
+Repeated execution on 48 inputs per rate does not characterize rare tails or
+all RF conditions. Wall time is preferable to the coarsely quantized ARM CPU
+timer. Comparing these numbers to earlier live tests would confound workload
+and contention with the admission change.
+
+An initial preflight compared the current detector configuration to older
+frozen references and rejected a confirmation-window mismatch. The references
+were **not changed**: the older configuration was rebuilt separately and
+reproduced all 96 frozen results. The current desktop configuration then
+provided a separate ARM comparand. Its numerical source bytes and compiler
+defines match the already-deployed detector; this candidate changes admission,
+not detector settings. Positive-gate counts differ between configurations
+(old/current: 22/21 at 2.5 MS/s, 11/12 at 5 MS/s); these are not new-admission
+sensitivity changes, nor are these counts ground-truth recall.
+
+The exact candidate bundle is integrated into the development release assets
+with matching validator pins. All 286 deployment tests passed. An initial
+scanner run passed 1,659 tests but had 61 setup errors because the explicitly
+required libiio source path was missing; its original receipt is retained
+alongside the configured rerun, which **passed all 1,720 scanner tests**.
+All 176 provider source files match the candidate's recorded hashes. The
+cross-build receipt names the pre-commit checkout revision; its per-file hashes
+match the subsequently committed libiio candidate `74035ef4` exactly.
+No firmware, installed daemon or scheduled
+capture was changed by this qualification.
+
 ## Evidence and remaining gates
 
 [Receipts, source snapshots and figures](evidence/2026_09_10_scanner_pending240/index.json)
@@ -104,8 +151,8 @@ Release manifest digest:
 The synthetic test envelope adds only its executable/input fixtures and is not
 the production release manifest.
 
-Remaining: representative saved-IQ ARM timing/decision checks, release dependency
-pins/integration, an explicitly authorized bounded same-build live off/on duty
+Remaining: final release qualification/publication, an explicitly authorized
+bounded same-build live off/on duty
 comparison, deployment/rollback and UI verification. A new 300-second RF test
 requires fresh authorization. The PNG repair is separate and already on main;
 this candidate does not resolve previously reported intermittent 5 MS/s transport
