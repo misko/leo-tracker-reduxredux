@@ -24,7 +24,7 @@ struct visit_record {
     leo_glrt_classification_v1 record;
     leo_adaptive_observation_v1 observation;
     uint64_t submitted_ns;
-    unsigned state;
+    unsigned state, skip_cause;
 };
 struct leo_scanner_glrt {
     leo_scanner_glrt_config_v1 config;
@@ -69,7 +69,11 @@ static void unavailable(leo_scanner_glrt *s, uint32_t index, enum leo_glrt_reaso
 static void admission_skip(leo_scanner_glrt *s, uint32_t index, enum leo_glrt_reason reason)
 {
     unavailable(s,index,reason);
-    if (s->cooperative_skips) s->visits[index].observation.healthy=1;
+    if (s->cooperative_skips) {
+        s->visits[index].observation.healthy=1;
+        s->visits[index].skip_cause=reason==LEO_GLRT_WORKER_BUSY ?
+            LEO_SCANNER_GLRT_SKIP_BACKLOG : LEO_SCANNER_GLRT_SKIP_PRESSURE;
+    }
 }
 
 void leo_scanner_glrt_fail(leo_scanner_glrt *s)
@@ -136,6 +140,16 @@ int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *s)
     if (s->known || s->have_history || s->finished || s->failed || s->cooperative_skips)
         return -EBUSY;
     s->cooperative_skips=1;
+    return 0;
+}
+
+int leo_scanner_glrt_skip_cause(const leo_scanner_glrt *s, uint64_t visit, uint32_t *out)
+{
+    if (!s || !out) return -EINVAL;
+    if (!s->cooperative_skips) return -ENOTSUP;
+    if (visit>=s->known) return -EINVAL;
+    if (s->visits[visit].state<DONE) return -EAGAIN;
+    *out=s->visits[visit].skip_cause;
     return 0;
 }
 

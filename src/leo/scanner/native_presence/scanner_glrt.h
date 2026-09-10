@@ -81,6 +81,17 @@ int leo_scanner_glrt_enable_protection(leo_scanner_glrt *,
  * must pin this policy in a newly qualified bundle configuration before use. */
 int leo_scanner_glrt_enable_cooperative_skips(leo_scanner_glrt *);
 
+enum leo_scanner_glrt_skip_cause {
+    LEO_SCANNER_GLRT_SKIP_NONE=0,
+    LEO_SCANNER_GLRT_SKIP_PRESSURE=1,
+    LEO_SCANNER_GLRT_SKIP_BACKLOG=2
+};
+/* Acquisition-owner runtime diagnostic, not a persisted/wire contract. Only an
+ * explicitly shed check receives a nonzero cause. Requires cooperative opt-in
+ * and a known completed visit (EAGAIN while pending). Does not poll, consume an
+ * observation, or change policy. Completed fault results keep cause NONE. */
+int leo_scanner_glrt_skip_cause(const leo_scanner_glrt *, uint64_t visit, uint32_t *out);
+
 /* Acquisition-owner pressure hint, once per measured block. Nonzero pressure
  * suspends new checks; recovery_blocks consecutive zero hints resume admission.
  * A skipped/partial check is unavailable with zero coverage, never a miss or
