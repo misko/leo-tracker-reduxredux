@@ -277,7 +277,15 @@ class ContinuousAcquisitionRunner:
         worker_id = f"capture-supervisor:{socket.gethostname()}:{os.getpid()}"
         lease_for = timedelta(minutes=10)
         scanner_configuration = scanner.scanner_schedule()
-        scanner.reconcile_scanner_recordings()
+        # Persistent/adaptive publications have their own background reconciler.
+        # A bounded scanner-only restart must not synchronously re-analyze the
+        # legacy standard-scan corpus before it can admit its next radio slot.
+        if not (
+            scanner_only
+            and scanner_configuration is not None
+            and scanner_configuration.requires_durable_queue
+        ):
+            scanner.reconcile_scanner_recordings()
         next_scanner_due = (
             None
             if scanner_configuration is None
