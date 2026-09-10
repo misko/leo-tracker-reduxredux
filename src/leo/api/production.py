@@ -35,6 +35,7 @@ from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
 from leo.contracts.pipeline_lanes import PipelineLane
 from leo.operations import ScannerPurgeTombstoneStore
+from leo.operations.native_recording_registry import NativeRecordingRegistry
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.scanner import ScannerReportStore
 from leo.processing import ProcessingService, RecordingIqReaderProvider
@@ -73,6 +74,7 @@ class ProductionSettings:
     port: int = 8000
     pipeline_release_id: str | None = None
     scanner_report_root: Path | None = None
+    native_recording_registry: Path | None = None
 
     @classmethod
     def from_environment(cls) -> ProductionSettings:
@@ -98,6 +100,9 @@ class ProductionSettings:
             pipeline_release_id=os.environ.get("LEO_PIPELINE_RELEASE_ID"),
             scanner_report_root=(
                 Path(value) if (value := os.environ.get("LEO_SCANNER_REPORT_ROOT")) else None
+            ),
+            native_recording_registry=(
+                Path(value) if (value := os.environ.get("LEO_NATIVE_RECORDING_REGISTRY")) else None
             ),
         )
 
@@ -196,6 +201,9 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         app = create_app(
             repository,
             artifact_root=configured.bulk_root,
+            native_recordings=NativeRecordingRegistry(
+                configured.native_recording_registry or configured.bulk_root / "native-recordings"
+            ),
             static_directory=configured.static_directory,
             standard_repository=standard_repository,
             research_repository=research_repository,

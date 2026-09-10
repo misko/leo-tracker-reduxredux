@@ -322,9 +322,7 @@ def test_default_client_loader_negotiates_only_with_supported_host_api(monkeypat
 
     from leo.radio.pluto_persistent_hop import _load_client
 
-    extension = ScannerGlrtMetadataExtension(
-        ScannerGlrtOptions("12" * 32, "34" * 32), session=71
-    )
+    extension = ScannerGlrtMetadataExtension(ScannerGlrtOptions("12" * 32, "34" * 32), session=71)
     calls = []
     client = object()
 
@@ -354,8 +352,11 @@ def test_radio_passes_one_extension_to_capable_factory_and_retains_failure_evide
         return client
 
     radio = PlutoPersistentHopRadio(
-        "192.168.1.18", expected_serial="allowed-serial", radio_id="scanner-radio",
-        client_factory=factory, scanner_glrt=ScannerGlrtOptions("12" * 32, "34" * 32),
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        client_factory=factory,
+        scanner_glrt=ScannerGlrtOptions("12" * 32, "34" * 32),
     )
     radio.open()
     session = radio.begin_session(plan, session_id="adapter-session")

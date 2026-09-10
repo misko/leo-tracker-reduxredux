@@ -56,8 +56,13 @@ def test_fp32_final_candidates_keep_original_frozen_gate(fp32_library, rate, edg
         {
             name: getattr(c, name)
             for name in (
-                "epoch", "fractional_complete", "acquired_cfo_hz", "tracking_cfo_hz",
-                "fractional_offset_samples", "exact_score", "margin",
+                "epoch",
+                "fractional_complete",
+                "acquired_cfo_hz",
+                "tracking_cfo_hz",
+                "fractional_offset_samples",
+                "exact_score",
+                "margin",
             )
         }
         for c in result.candidates[: result.candidate_count]
@@ -71,11 +76,13 @@ def test_fp32_zero_and_scale_invariance(fp32_library):
         assert native.run(np.zeros(50000)).candidate_count == 0
         expected = native.coarse(samples)
         for scale in (1e-200, 1e8):
-            np.testing.assert_allclose(native.coarse(samples*scale), expected, atol=2e-6, rtol=2e-5)
+            np.testing.assert_allclose(
+                native.coarse(samples * scale), expected, atol=2e-6, rtol=2e-5
+            )
 
 
 def test_unrepresentable_fp32_normalization_is_error_not_negative(fp32_library):
-    samples = np.full(50000, 1e-50+1e-50j, dtype=np.complex128)
+    samples = np.full(50000, 1e-50 + 1e-50j, dtype=np.complex128)
     samples[-1] = 1
     with NativePresence(fp32_library, 2_500_000, "lower") as native:
         with pytest.raises(ValueError, match="rejected"):
