@@ -71,3 +71,31 @@ included in the binding origin and is not subtracted again. These times are
 receiver sample-axis coordinates, not UTC or resolved physical frame epochs.
 Automatic publication, artifact registration and display in the recording UI
 remain subsequent integration work.
+
+## Review a published bundle
+
+For automatic operator publications, select the final manifest and its expected
+digest instead of naming separate recording and source-binding files:
+
+```sh
+python -m leo.cli.native_recording_bundle \
+  --manifest /absolute/path/published-episode/manifest.json \
+  --sha256 EXPECTED_MANIFEST_SHA256 \
+  --output /absolute/path/new-review-directory
+```
+
+The application requires the complete version 1 bundle manifest and exactly
+its seven declared artifacts. It verifies each byte count and digest, rejects
+symlink/nonregular payloads and path traversal, and checks agreement between
+the manifest, recording and source binding. This includes the radio/boot/visit/
+epoch, owner outcome, raw journal length, source-file hashes and external coarse
+IQ reference. Raw owner evidence is retained and hash-checked, not interpreted
+through a dependency on commissioning code. The coarse IQ is external to this
+bundle; its digest refers to the producer's retained source validation.
+
+A directory without the final manifest, a partial publication, an inconsistent
+or changed artifact, or a mismatched source produces no application review.
+The output remains the existing bound-review schema and CSV. Publication
+completion does not replace the preserved runtime result or owner status.
+The reusable bundle reader is the application admission point for recording
+UI integration; UI registration and display are not yet implemented.
