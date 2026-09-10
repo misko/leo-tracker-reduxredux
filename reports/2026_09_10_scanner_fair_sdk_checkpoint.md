@@ -95,6 +95,12 @@ remain unchanged. No golden fixture changed.
 
 ## Remaining qualification work
 
+Follow-up: the [provider integration and ARM bundle checkpoint](2026_09_10_scanner_fair_provider.md)
+adds explicit provider activation, paced overload/sanitizer tests and a matching
+local userspace bundle. The list below records the open gates at this SDK
+checkpoint; the follow-up distinguishes completed integration from remaining
+ARM execution and live qualification.
+
 1. Add default-OFF provider activation, a newly identified full userspace
    bundle containing the matching worker, and real provider replay tests for
    the fair policy. The older provider/bundle receipts qualify only cooperative
