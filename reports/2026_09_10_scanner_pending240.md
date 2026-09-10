@@ -1,5 +1,11 @@
 # Bounded detector admission: full-schedule and ARM qualification
 
+**Later live result:** the authorized maintenance and 300-second 2.5 MS/s
+adaptive test are now documented in the
+[live qualification report](2026_09_10_scanner_live.md), including the repaired
+production blockers, 94.26% duty and the unattempted full 5 MS/s adaptive gate.
+The historical checkpoints below retain their original scope and status.
+
 ## Outcome
 
 The SDK supports an explicitly selected **1–240 ms pending-work age**, with
