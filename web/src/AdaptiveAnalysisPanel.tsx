@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AdaptiveCapture } from "./adaptive-api";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
-import type { AdaptiveAnalysisStatus, AdaptiveArtifact, AdaptiveFigure } from "./adaptive-analysis-api";
+import type { AdaptiveAnalysisStatus, AdaptiveArtifact, AdaptiveFigure, AdaptiveProbeStride } from "./adaptive-analysis-api";
 
 const figureCopy: Record<AdaptiveArtifact, { title: string; detail: string }> = {
   "coverage": { title: "Retained channel coverage", detail: "Actual valid intervals; empty time is not interpolated. An outlined marker is an incomplete hop start." },
@@ -26,6 +26,7 @@ function FigureView({ status, figure }: { status: AdaptiveAnalysisStatus; figure
 }
 
 export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture }) {
+  const [probeStrideMs, setProbeStrideMs] = useState<AdaptiveProbeStride>(120);
   const [status, setStatus] = useState<AdaptiveAnalysisStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
       if (busy) return;
       busy = true;
       try {
-        const result = await getAdaptiveAnalysis(capture, controller.signal);
+        const result = await getAdaptiveAnalysis(capture, controller.signal, probeStrideMs);
         if (active) { setStatus(result); setError(null); }
       } catch (failure) {
         if (active) { setStatus(null); setError(failure instanceof Error ? failure.message : "Adaptive analysis is unavailable"); }
@@ -46,17 +47,22 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
     void refresh();
     const timer = window.setInterval(() => { void refresh(); }, 15000);
     return () => { active = false; controller.abort(); window.clearInterval(timer); };
-  }, [capture.session_id, capture.input_manifest_sha256, capture.retained_visits, capture.sample_rate_hz]);
+  }, [capture.session_id, capture.input_manifest_sha256, capture.retained_visits, capture.sample_rate_hz, probeStrideMs]);
   const label = status?.state === "figures_ready" ? "Figures ready" : status?.state === "metrics_complete" ? "Metrics published"
     : status?.state === "partial" ? "Partial checkpoints" : "Not started";
   return <section className="scanner-results-panel adaptive-analysis" aria-label="Adaptive fractional analysis">
     <header><h3>Fractional GLRT and Doppler analysis</h3><strong>{loading ? "Loading…" : error || !status ? "Unavailable" : label}</strong></header>
+    <label>Analysis sampling <select value={probeStrideMs} onChange={event => setProbeStrideMs(Number(event.target.value) as AdaptiveProbeStride)}>
+      <option value={120}>Automatic overview · one probe per dwell</option>
+      <option value={10}>Dense analysis · 10 ms stride (if published)</option>
+    </select></label>
+    <p>{probeStrideMs === 120 ? "Automatic overview uses one 20 ms probe per 120 ms retained dwell, on both receivers, matching fixed-order scan plots. It does not analyze every sample; full recorded IQ is retained." : "Dense analysis uses overlapping 20 ms probes every 10 ms. It is a separate, more expensive analysis and is not scheduled automatically."}</p>
     {error ? <p role="alert">{error}. Recording and on-radio evidence remain separate.</p> : null}
     {!loading && !error && !status ? <p>Analysis presentation is unavailable for this capture on this server. It is not queued here.</p> : null}
     {status ? <>
-      <p>{status.checkpoint_visits} / {status.total_visits} retained visits have saved checkpoints · 20 ms probes / 10 ms stride · both recorded receivers analyzed offline</p>
+      <p>{status.checkpoint_visits} / {status.total_visits} retained visits have saved checkpoints · 20 ms probes / {status.configuration.probe_stride_ms} ms stride · both recorded receivers analyzed offline</p>
       {status.total_visits > 0 ? <progress aria-label="Saved adaptive analysis checkpoints" value={status.checkpoint_visits} max={status.total_visits} /> : <p>No complete dwell was retained in this capture.</p>}
-      {status.state === "not_started" ? <p>No dense analysis checkpoint has been published. Opening this view does not start or queue analysis.</p> : null}
+      {status.state === "not_started" ? <p>No checkpoint has been published for this sampling policy. Opening this view does not start or queue analysis.</p> : null}
       {status.state === "partial" ? <p>This count reflects published checkpoint files. Their full numerical contents are verified when metrics are finalized; figures are not ready.</p> : null}
       {status.state === "metrics_complete" ? <p>All retained visits have a sealed metrics manifest. Overview figures have not been published yet.</p> : null}
       <p>This is a saved-progress snapshot, not a live-worker status. Capture duty and radio-side detector health are shown independently.</p>
