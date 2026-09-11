@@ -25,8 +25,9 @@ and no ordinary RX scan elements. A separate PPU transition profile now binds
 that exact source firmware and observed RX-only layout to the unchanged,
 qualified v0.49 target bytes and all existing return checks. The ordinary
 promotion profile remains unchanged. The
-[PPU patch](evidence/ppu-transition.patch) is local commit `77fc87e`, based on
-PPU main `664fa85`; 119 firmware, LAN CLI, and transition tests passed, as did
+[PPU patch](evidence/ppu-transition.patch) is published on PPU's remote `main` as
+[commit `77fc87e`](https://github.com/misko/pluto-plus-utils/commit/77fc87e8677a9efe3079aa1b62ee622c5988c6ac),
+based on `664fa85`; 119 firmware, LAN CLI, and transition tests passed, as did
 Ruff checks and formatting. This is the first hardware execution of the new
 transition, rather than a new firmware qualification claim.
 
