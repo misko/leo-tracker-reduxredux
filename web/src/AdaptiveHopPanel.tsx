@@ -3,6 +3,7 @@ import { getAdaptiveSession, getAdaptiveSessions } from "./adaptive-api";
 import type { AdaptiveDetail, AdaptivePage, AdaptiveVisit } from "./adaptive-api";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
+import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 import "./adaptive-hop.css";
 
 export const targetLabel = (index: number) => `CH${index % 4 + 1}${index < 4 ? "L" : "U"}`;
@@ -160,6 +161,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
         </div></div> : null}
     </section>
     <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />
+    <ScannerRefinementPanel key={`refinement:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
     <ScannerGlrtPanel key={sessionId} sessionId={sessionId} sessionKind="adaptive" />
   </div>;
 }

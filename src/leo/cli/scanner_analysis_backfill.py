@@ -22,6 +22,7 @@ def main() -> None:
     # These are the existing public CLIs, each taking the shared nonblocking
     # analysis lease. No extra queue, scientific policy, or storage coupling.
     jobs = (
+        ("refinement", "leo.cli.scanner_refinement", "--maximum-seconds", "180"),
         (
             "adaptive",
             "leo.cli.adaptive_hop_analysis",
@@ -51,10 +52,11 @@ def main() -> None:
             module,
             "--bulk-root",
             str(arguments.bulk_root),
-            "--maximum-workers",
-            "2",
-            "--probe-stride-ms",
-            "120",
+            *(
+                []
+                if name == "refinement"
+                else ["--maximum-workers", "2", "--probe-stride-ms", "120"]
+            ),
             *options,
         ]
         try:
