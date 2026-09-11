@@ -8,6 +8,7 @@ from leo.radio.persistent_hop_iiod_lifecycle import (
     PersistentHopIiodLifecycle,
     PersistentHopIiodLifecycleConfiguration,
 )
+from leo.radio.scanner_iio_compat import endpoint_probe
 
 
 class PlutoUserspaceIiodLifecycleError(RuntimeError):
@@ -39,5 +40,6 @@ def create_pluto_userspace_iiod_lifecycle(
         binary_path=configuration.binary_path,
         known_hosts_path=configuration.known_hosts_path,
         password_path=configuration.password_path,
+        serial_probe=endpoint_probe,
         **companion_options,
     )

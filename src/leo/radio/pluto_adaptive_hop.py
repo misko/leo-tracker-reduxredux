@@ -26,6 +26,7 @@ from leo.radio.scanner_glrt_metadata import (
     ScannerAdaptiveGlrtMetadataExtension,
     ScannerGlrtOptions,
 )
+from leo.radio.scanner_iio_compat import scanner_adi_module
 from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopReceiptV1, AdaptiveHopVisitV1
 from leo.scanner.adaptive_hop_ports import AdaptiveHopSession, AdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import persistent_hop_wire_session_id
@@ -328,5 +329,8 @@ def _load_client(
 ) -> Any:
     module = importlib.import_module("pluto_plus.hardware.iio_adaptive_hop")
     return module.iio_adaptive_hop_client(
-        uri, expected_serial=expected_serial, metadata_extension=metadata_extension
+        uri,
+        expected_serial=expected_serial,
+        metadata_extension=metadata_extension,
+        adi_module=scanner_adi_module(),
     )
