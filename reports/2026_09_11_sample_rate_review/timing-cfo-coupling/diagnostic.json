@@ -1,0 +1,118 @@
+{
+  "source_summary_sha256": "4364adacab2bd6969f636d28bc92c324f31601e44c6682ad648b3e332151c166",
+  "common_delay_case_count": 59,
+  "summary": [
+    {
+      "sample_rate_hz": 2500000,
+      "glrt_grid": 512,
+      "fine_step_hz": 500,
+      "conditioned_step_hz": 100,
+      "paired_cases": 59,
+      "delay_recovery_rms_ns": 24.83621413268996,
+      "unintended_cfo_change_rms_hz": 46.59727230331206,
+      "median_abs_unintended_cfo_change_hz": 1.1204012174566742
+    },
+    {
+      "sample_rate_hz": 2500000,
+      "glrt_grid": 8192,
+      "fine_step_hz": 500,
+      "conditioned_step_hz": 100,
+      "paired_cases": 59,
+      "delay_recovery_rms_ns": 24.76643853640414,
+      "unintended_cfo_change_rms_hz": 9.178601774420004,
+      "median_abs_unintended_cfo_change_hz": 1.5446502363993204
+    },
+    {
+      "sample_rate_hz": 5000000,
+      "glrt_grid": 512,
+      "fine_step_hz": 500,
+      "conditioned_step_hz": 100,
+      "paired_cases": 59,
+      "delay_recovery_rms_ns": 9.38760704143532,
+      "unintended_cfo_change_rms_hz": 48.738637546151,
+      "median_abs_unintended_cfo_change_hz": 0.8729635884228628
+    },
+    {
+      "sample_rate_hz": 5000000,
+      "glrt_grid": 8192,
+      "fine_step_hz": 500,
+      "conditioned_step_hz": 100,
+      "paired_cases": 59,
+      "delay_recovery_rms_ns": 9.384939382495757,
+      "unintended_cfo_change_rms_hz": 3.750272145953981,
+      "median_abs_unintended_cfo_change_hz": 0.9007374728680588
+    }
+  ],
+  "example": {
+    "session_id": "scan-hop-cabca9c4f49c5a27",
+    "candidate_id": "sha256:fff60a570cd48eaf1aeeed00bfdf697df7495a025e3db9b69e34b5369739b013",
+    "fs": 5000000,
+    "fine_step_hz": 500,
+    "grid": 512,
+    "case": "delay_ns",
+    "amount": 32.97710095069158,
+    "recovered": true,
+    "timing_error_ns": -8.26012976693562,
+    "cfo_error_hz": 343.62487166543724,
+    "raw_cfo_delta_hz": 343.62487166543724
+  },
+  "example_frequency_decomposition": [
+    {
+      "glrt_grid": 512,
+      "acquisition_cfo_change_hz": -100.26717378915055,
+      "glrt_residual_change_hz": 443.8920454545878,
+      "final_cfo_change_hz": 343.62487166543724,
+      "baseline": {
+        "rank": 0,
+        "integer_epoch_s": 0.0012534,
+        "epoch_s": 0.0012534919796480769,
+        "fraction_samples": 0.45989824038444205,
+        "acquired_cfo_hz": 345904.87738341774,
+        "cfo_hz": 458209.56488342053,
+        "margin": 0.3712464572162874,
+        "exact_score": 0.4100943285501208,
+        "status": "complete"
+      },
+      "delayed": {
+        "rank": 0,
+        "integer_epoch_s": 0.0012534,
+        "epoch_s": 0.0012535166966192606,
+        "fraction_samples": 0.5834830963034046,
+        "acquired_cfo_hz": 345804.6102096286,
+        "cfo_hz": 458553.189755086,
+        "margin": 0.3705263372548294,
+        "exact_score": 0.40987943307803854,
+        "status": "complete"
+      }
+    },
+    {
+      "glrt_grid": 8192,
+      "acquisition_cfo_change_hz": -100.26717378915055,
+      "glrt_residual_change_hz": 83.2297585227061,
+      "final_cfo_change_hz": -17.03741526644444,
+      "baseline": {
+        "rank": 0,
+        "integer_epoch_s": 0.0012534,
+        "epoch_s": 0.0012534912453077353,
+        "fraction_samples": 0.4562265386762326,
+        "acquired_cfo_hz": 345904.87738341774,
+        "cfo_hz": 458403.76765330695,
+        "margin": 0.37442247846899757,
+        "exact_score": 0.41333924595288696,
+        "status": "complete"
+      },
+      "delayed": {
+        "rank": 0,
+        "integer_epoch_s": 0.0012534,
+        "epoch_s": 0.0012535169938084527,
+        "fraction_samples": 0.5849690422637526,
+        "acquired_cfo_hz": 345804.6102096286,
+        "cfo_hz": 458386.7302380405,
+        "margin": 0.37321205063635615,
+        "exact_score": 0.4125551718410063,
+        "status": "complete"
+      }
+    }
+  ],
+  "interpretation": "No new RF or replay. Derived from stored pure-time-shift probes. Shows CFO sensitivity to timing changes; not absolute frequency truth or proof that sample spacing alone causes the rate difference. Example selected post hoc as largest baseline 5 Msps delay-induced CFO change."
+}
