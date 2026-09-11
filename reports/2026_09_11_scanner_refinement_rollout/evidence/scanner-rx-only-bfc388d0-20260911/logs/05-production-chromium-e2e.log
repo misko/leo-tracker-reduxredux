@@ -1,0 +1,54 @@
+
+> leo-tracker-web@0.1.0 test:e2e:production
+> playwright test --project=production-chromium --output /srv/bulk/leo/qualification/release/scanner-rx-only-bfc388d0-20260911/results/playwright
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> f47b536afe98, initial catalog schema
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade f47b536afe98 -> a8d4c2e91b70, add analysis-run promotion policy
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade a8d4c2e91b70 -> c31f9d7a2e44, add durable scientific campaign catalog
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade c31f9d7a2e44 -> e4b17c8d93af, add authoritative calibration catalog
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade e4b17c8d93af -> f62a9d174be1, harden calibration publication
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade f62a9d174be1 -> a73c4e19d2f0, add campaign outer seal
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade a73c4e19d2f0 -> b91e2c4d7a10, scope radio stream identity to its capture session
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade b91e2c4d7a10 -> d52a7f24c8e1, add typed scopes, integrity prerequisites, release authority and derivations
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade d52a7f24c8e1 -> e63b8f41a2c7, harden Standard pipeline topology, resources and derivation lineage
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade e63b8f41a2c7 -> f74c9d30b6e2, fence Standard derivation lineage and backfill unresolved capture paths
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade f74c9d30b6e2 -> a85e4c71d9f0, seal typed stage results and freeze run subject bindings
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade a85e4c71d9f0 -> c96f1a42e7d3, add immutable station and capture path authority
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade c96f1a42e7d3 -> d17c4a8b9e20, raise processing worker capacity
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade d17c4a8b9e20 -> e28b7a4c1d90, add independent Standard and Research analysis lanes
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade e28b7a4c1d90 -> 9b7e31a4c2d8, add atomic processing cutover fence evidence
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 9b7e31a4c2d8 -> 63f8b6c1a902, add durable single-owner acquisition operation queue
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 63f8b6c1a902 -> 7c4a1e8d2b90, coalesce scheduled acquisition queue
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 7c4a1e8d2b90 -> b3e91d6f4a20, restore bounded processing resource capacity
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade b3e91d6f4a20 -> 0f6a2b9c4d81, cap initial Standard-native heavy workers
+[WebServer] INFO:     Started server process [1898740]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8766 (Press CTRL+C to quit)
+
+Running 16 tests using 2 workers
+
+  ✓   1 [production-chromium] › ../tests/e2e/sky.spec.ts:32:7 › sky interface › names the element set it drew from (991ms)
+  ✓   2 [production-chromium] › ../tests/e2e/dashboard.spec.ts:3:5 › production dashboard reads an atomically promoted current-format live run (1.3s)
+  ✓   3 [production-chromium] › ../tests/e2e/sky.spec.ts:39:7 › sky interface › lists local TLE snapshots with update time, coverage and source (1.2s)
+  ✓   4 [production-chromium] › ../tests/e2e/dashboard.spec.ts:76:5 › capture control stops admission, preserves queued work, and starts without 5xx (1.0s)
+  ✓   6 [production-chromium] › ../tests/e2e/dashboard.spec.ts:114:5 › production dashboard exposes an ordinary failed analysis explicitly (441ms)
+  ✓   5 [production-chromium] › ../tests/e2e/sky.spec.ts:50:7 › sky interface › draws the globe and reports how many objects it holds (882ms)
+  ✓   7 [production-chromium] › ../tests/e2e/dashboard.spec.ts:131:5 › an in-progress recording reports pending Standard images without a server outage (864ms)
+  ✓   8 [production-chromium] › ../tests/e2e/sky.spec.ts:58:7 › sky interface › looks up from a reviewed site and charts the sky (933ms)
+  ✓   9 [production-chromium] › ../tests/e2e/dashboard.spec.ts:151:5 › scanner view pages through Standard analyses and loads selected PNGs (918ms)
+  ✓  11 [production-chromium] › ../tests/e2e/dashboard.spec.ts:184:5 › scanner view presents an empty archive without a server failure (183ms)
+  ✓  12 [production-chromium] › ../tests/e2e/dashboard.spec.ts:206:5 › scanner view reports a corrupt selected page as a bounded conflict, not a 5xx (271ms)
+  ✓  10 [production-chromium] › ../tests/e2e/sky.spec.ts:72:7 › sky interface › compares five unique TLE records for a selected satellite (1.0s)
+  ✓  13 [production-chromium] › ../tests/e2e/sky.spec.ts:89:7 › sky interface › looks up from a typed position (2.7s)
+  ✓  14 [production-chromium] › ../tests/e2e/sky.spec.ts:102:7 › sky interface › refuses a position outside the globe (886ms)
+  ✓  15 [production-chromium] › ../tests/e2e/sky.spec.ts:109:7 › sky interface › moves the displayed instant with the 120 second slider (930ms)
+  ✓  16 [production-chromium] › ../tests/e2e/sky.spec.ts:126:7 › sky interface › keeps the existing views reachable (912ms)
+[WebServer] INFO:     Shutting down
+[WebServer] INFO:     Waiting for application shutdown.
+[WebServer] INFO:     Application shutdown complete.
+[WebServer] INFO:     Finished server process [1898740]
+
+  16 passed (2.0m)

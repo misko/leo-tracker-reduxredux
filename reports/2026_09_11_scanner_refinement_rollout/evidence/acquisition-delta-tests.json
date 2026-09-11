@@ -1,0 +1,871 @@
+{
+  "duration_seconds": 19.896735,
+  "kind": "leo-test-receipt",
+  "manifest_sha256": "d82301bd9b8150e9df4eddda5d1edd1c5be7bcf2fd03c20f06f89831ef2e7b52",
+  "overlay_digest": "29f3a5dbbfa1fa60f619fd896c39468267086dfaa59eae3cd70e7613ebc3df34",
+  "passed": true,
+  "plan": {
+    "components": [
+      "acquisition",
+      "analysis",
+      "api",
+      "deployment",
+      "documentation",
+      "python-general",
+      "web"
+    ],
+    "gates": [
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/mypy",
+          "src"
+        ],
+        "name": "mypy",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_glrt_refinement_prototype.py"
+        ],
+        "name": "pytest-changed-1",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/deploy/test_systemd_templates.py"
+        ],
+        "name": "pytest-changed-10",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/presentation/test_scanner_refinement_png.py"
+        ],
+        "name": "pytest-changed-11",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/radio/test_pluto_persistent_hop.py"
+        ],
+        "name": "pytest-changed-12",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/radio/test_pluto_userspace_iiod_lifecycle.py"
+        ],
+        "name": "pytest-changed-13",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/radio/test_scanner_iio_compat.py"
+        ],
+        "name": "pytest-changed-14",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/storage/test_scanner_refinement_store.py"
+        ],
+        "name": "pytest-changed-15",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_glrt_refinement_summary.py"
+        ],
+        "name": "pytest-changed-2",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_historic_glrt_joint.py"
+        ],
+        "name": "pytest-changed-3",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_scan_sample_rate_review.py"
+        ],
+        "name": "pytest-changed-4",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_scanner_refinement_comparison.py"
+        ],
+        "name": "pytest-changed-5",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/api/test_scanner_refinement_api.py"
+        ],
+        "name": "pytest-changed-6",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_scanner_analysis_backfill.py"
+        ],
+        "name": "pytest-changed-7",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_scanner_refinement_cli.py"
+        ],
+        "name": "pytest-changed-8",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/contracts/test_scanner_refinement_contract.py"
+        ],
+        "name": "pytest-changed-9",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+          "check",
+          "--force-exclude",
+          "reports/evidence/2026_09_10_scanner_r21/archive_evidence.py",
+          "reports/evidence/2026_09_10_scanner_r21/export_figures.py",
+          "reports/evidence/2026_09_10_scanner_r21/verify_capture.py",
+          "src/leo/analysis/research/arm_presence.py",
+          "src/leo/analysis/starlink/glrt_refinement_prototype.py",
+          "src/leo/analysis/starlink/refinement_comparison.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/api/scanner_refinement.py",
+          "src/leo/cli/scanner_analysis_backfill.py",
+          "src/leo/cli/scanner_refinement.py",
+          "src/leo/contracts/scanner_refinement.py",
+          "src/leo/presentation/scanner_refinement.py",
+          "src/leo/radio/pluto_adaptive_hop.py",
+          "src/leo/radio/pluto_persistent_hop.py",
+          "src/leo/radio/pluto_userspace_iiod_lifecycle.py",
+          "src/leo/radio/scanner_iio_compat.py",
+          "src/leo/radio/scanner_iio_probe.py",
+          "src/leo/storage/scanner_refinement.py",
+          "src/leo/storage/scanner_refinement_source.py",
+          "tests/analysis/test_glrt_refinement_prototype.py",
+          "tests/analysis/test_glrt_refinement_summary.py",
+          "tests/analysis/test_historic_glrt_joint.py",
+          "tests/analysis/test_scan_sample_rate_review.py",
+          "tests/analysis/test_scanner_refinement_comparison.py",
+          "tests/api/test_scanner_refinement_api.py",
+          "tests/cli/test_scanner_analysis_backfill.py",
+          "tests/cli/test_scanner_refinement_cli.py",
+          "tests/contracts/test_scanner_refinement_contract.py",
+          "tests/deploy/test_systemd_templates.py",
+          "tests/presentation/test_scanner_refinement_png.py",
+          "tests/radio/test_pluto_persistent_hop.py",
+          "tests/radio/test_pluto_userspace_iiod_lifecycle.py",
+          "tests/radio/test_scanner_iio_compat.py",
+          "tests/scanner/refinement_fixtures.py",
+          "tests/storage/test_scanner_refinement_store.py",
+          "tools/check_glrt_refinement_synthetic.py",
+          "tools/prototype_glrt_local_joint.py",
+          "tools/replay_historic_glrt_joint.py",
+          "tools/review_scan_sample_rates.py",
+          "tools/summarize_glrt_refinement_prototype.py",
+          "tools/summarize_historic_glrt_joint.py"
+        ],
+        "name": "ruff-check",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+          "format",
+          "--check",
+          "--force-exclude",
+          "reports/evidence/2026_09_10_scanner_r21/archive_evidence.py",
+          "reports/evidence/2026_09_10_scanner_r21/export_figures.py",
+          "reports/evidence/2026_09_10_scanner_r21/verify_capture.py",
+          "src/leo/analysis/research/arm_presence.py",
+          "src/leo/analysis/starlink/glrt_refinement_prototype.py",
+          "src/leo/analysis/starlink/refinement_comparison.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/api/scanner_refinement.py",
+          "src/leo/cli/scanner_analysis_backfill.py",
+          "src/leo/cli/scanner_refinement.py",
+          "src/leo/contracts/scanner_refinement.py",
+          "src/leo/presentation/scanner_refinement.py",
+          "src/leo/radio/pluto_adaptive_hop.py",
+          "src/leo/radio/pluto_persistent_hop.py",
+          "src/leo/radio/pluto_userspace_iiod_lifecycle.py",
+          "src/leo/radio/scanner_iio_compat.py",
+          "src/leo/radio/scanner_iio_probe.py",
+          "src/leo/storage/scanner_refinement.py",
+          "src/leo/storage/scanner_refinement_source.py",
+          "tests/analysis/test_glrt_refinement_prototype.py",
+          "tests/analysis/test_glrt_refinement_summary.py",
+          "tests/analysis/test_historic_glrt_joint.py",
+          "tests/analysis/test_scan_sample_rate_review.py",
+          "tests/analysis/test_scanner_refinement_comparison.py",
+          "tests/api/test_scanner_refinement_api.py",
+          "tests/cli/test_scanner_analysis_backfill.py",
+          "tests/cli/test_scanner_refinement_cli.py",
+          "tests/contracts/test_scanner_refinement_contract.py",
+          "tests/deploy/test_systemd_templates.py",
+          "tests/presentation/test_scanner_refinement_png.py",
+          "tests/radio/test_pluto_persistent_hop.py",
+          "tests/radio/test_pluto_userspace_iiod_lifecycle.py",
+          "tests/radio/test_scanner_iio_compat.py",
+          "tests/scanner/refinement_fixtures.py",
+          "tests/storage/test_scanner_refinement_store.py",
+          "tools/check_glrt_refinement_synthetic.py",
+          "tools/prototype_glrt_local_joint.py",
+          "tools/replay_historic_glrt_joint.py",
+          "tools/review_scan_sample_rates.py",
+          "tools/summarize_glrt_refinement_prototype.py",
+          "tools/summarize_historic_glrt_joint.py"
+        ],
+        "name": "ruff-format",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "run",
+          "build"
+        ],
+        "name": "web-build",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "test",
+          "--",
+          "--run"
+        ],
+        "name": "web-test",
+        "postgres": false
+      }
+    ],
+    "paths": [
+      "deploy/systemd/leo-persistent-hop-analysis.service",
+      "reports/2026_09_10_glrt_hyperparameter_study.md",
+      "reports/2026_09_10_historic_glrt_joint/README.md",
+      "reports/2026_09_10_historic_glrt_joint/SHA256SUMS",
+      "reports/2026_09_10_historic_glrt_joint/analysis-receipt.json",
+      "reports/2026_09_10_historic_glrt_joint/joint-comparison.png",
+      "reports/2026_09_10_historic_glrt_joint/plan.json",
+      "reports/2026_09_10_historic_glrt_joint/raw/scan-hop-24581756098baa21.json",
+      "reports/2026_09_10_historic_glrt_joint/raw/scan-hop-432b03933b8c76bf.json",
+      "reports/2026_09_10_historic_glrt_joint/raw/scan-hop-862a183b8ab422da.json",
+      "reports/2026_09_10_historic_glrt_joint/raw/scan-hop-8a1c00acfc8fbc31.json",
+      "reports/2026_09_10_historic_glrt_joint/raw/scan-hop-cabca9c4f49c5a27.json",
+      "reports/2026_09_10_historic_glrt_joint/raw/scan-hop-fb52971f6bb09c12.json",
+      "reports/2026_09_10_historic_glrt_joint/summary.csv",
+      "reports/2026_09_10_historic_glrt_joint/summary.json",
+      "reports/2026_09_10_scanner_r21.md",
+      "reports/2026_09_11_glrt_refinement_prototype/README.md",
+      "reports/2026_09_11_glrt_refinement_prototype/SHA256SUMS",
+      "reports/2026_09_11_glrt_refinement_prototype/audit.json",
+      "reports/2026_09_11_glrt_refinement_prototype/comparison.png",
+      "reports/2026_09_11_glrt_refinement_prototype/paired-comparison.png",
+      "reports/2026_09_11_glrt_refinement_prototype/paired.csv",
+      "reports/2026_09_11_glrt_refinement_prototype/per-scan.csv",
+      "reports/2026_09_11_glrt_refinement_prototype/plan.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-24581756098baa21-000.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-24581756098baa21-007.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-24581756098baa21-014.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-24581756098baa21-020.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-24581756098baa21-027.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-24581756098baa21-034.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-432b03933b8c76bf-000.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-432b03933b8c76bf-008.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-432b03933b8c76bf-016.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-432b03933b8c76bf-024.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-432b03933b8c76bf-032.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-432b03933b8c76bf-040.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-862a183b8ab422da-000.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-862a183b8ab422da-007.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-862a183b8ab422da-013.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-862a183b8ab422da-020.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-862a183b8ab422da-026.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-862a183b8ab422da-033.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-8a1c00acfc8fbc31-000.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-8a1c00acfc8fbc31-008.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-8a1c00acfc8fbc31-017.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-8a1c00acfc8fbc31-025.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-8a1c00acfc8fbc31-034.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-8a1c00acfc8fbc31-042.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-cabca9c4f49c5a27-000.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-cabca9c4f49c5a27-010.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-cabca9c4f49c5a27-020.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-cabca9c4f49c5a27-030.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-cabca9c4f49c5a27-040.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-cabca9c4f49c5a27-050.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-fb52971f6bb09c12-000.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-fb52971f6bb09c12-006.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-fb52971f6bb09c12-013.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-fb52971f6bb09c12-019.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-fb52971f6bb09c12-026.json",
+      "reports/2026_09_11_glrt_refinement_prototype/raw/scan-hop-fb52971f6bb09c12-032.json",
+      "reports/2026_09_11_glrt_refinement_prototype/runtime.csv",
+      "reports/2026_09_11_glrt_refinement_prototype/summary.csv",
+      "reports/2026_09_11_glrt_refinement_prototype/summary.json",
+      "reports/2026_09_11_glrt_refinement_prototype/synthetic.json",
+      "reports/2026_09_11_sample_rate_review/README.md",
+      "reports/2026_09_11_sample_rate_review/SHA256SUMS",
+      "reports/2026_09_11_sample_rate_review/analysis-receipt.json",
+      "reports/2026_09_11_sample_rate_review/historical-rate-summary.json",
+      "reports/2026_09_11_sample_rate_review/paired-rate-comparison.png",
+      "reports/2026_09_11_sample_rate_review/paired-summary.csv",
+      "reports/2026_09_11_sample_rate_review/paired-summary.json",
+      "reports/2026_09_11_sample_rate_review/plan.json",
+      "reports/2026_09_11_sample_rate_review/raw/scan-hop-432b03933b8c76bf.json",
+      "reports/2026_09_11_sample_rate_review/raw/scan-hop-862a183b8ab422da.json",
+      "reports/2026_09_11_sample_rate_review/raw/scan-hop-cabca9c4f49c5a27.json",
+      "reports/2026_09_11_sample_rate_review/timing-cfo-coupling/README.md",
+      "reports/2026_09_11_sample_rate_review/timing-cfo-coupling/SHA256SUMS",
+      "reports/2026_09_11_sample_rate_review/timing-cfo-coupling/diagnostic.json",
+      "reports/2026_09_11_scanner_refinement_rollout/README.md",
+      "reports/evidence/2026_09_10_scanner_r21/adaptive/glrt-publication.json.gz",
+      "reports/evidence/2026_09_10_scanner_r21/adaptive/manifest.json.gz",
+      "reports/evidence/2026_09_10_scanner_r21/adaptive/publication-verification.json",
+      "reports/evidence/2026_09_10_scanner_r21/adaptive/ui-verification.json",
+      "reports/evidence/2026_09_10_scanner_r21/adaptive/verification.json",
+      "reports/evidence/2026_09_10_scanner_r21/archive_evidence.py",
+      "reports/evidence/2026_09_10_scanner_r21/cutover-result.json",
+      "reports/evidence/2026_09_10_scanner_r21/export_figures.py",
+      "reports/evidence/2026_09_10_scanner_r21/final-public-state.json",
+      "reports/evidence/2026_09_10_scanner_r21/fixed/glrt-publication.json.gz",
+      "reports/evidence/2026_09_10_scanner_r21/fixed/manifest.json.gz",
+      "reports/evidence/2026_09_10_scanner_r21/fixed/publication-verification.json",
+      "reports/evidence/2026_09_10_scanner_r21/fixed/tracking-verification.json",
+      "reports/evidence/2026_09_10_scanner_r21/fixed/ui-verification.json",
+      "reports/evidence/2026_09_10_scanner_r21/fixed/verification.json",
+      "reports/evidence/2026_09_10_scanner_r21/identity.json",
+      "reports/evidence/2026_09_10_scanner_r21/index.json",
+      "reports/evidence/2026_09_10_scanner_r21/original-missing-ui.json",
+      "reports/evidence/2026_09_10_scanner_r21/recover_1620.py.gz",
+      "reports/evidence/2026_09_10_scanner_r21/sealed-release-receipt.json",
+      "reports/evidence/2026_09_10_scanner_r21/single-host-credential-result.json",
+      "reports/evidence/2026_09_10_scanner_r21/startup-fix-cutover-result.json",
+      "reports/evidence/2026_09_10_scanner_r21/verify_capture.py",
+      "reports/evidence/2026_09_10_scanner_r21/verify_ui.mjs",
+      "reports/figures/2026_09_10_scanner_r21/adaptive-cfo-trajectories.png",
+      "reports/figures/2026_09_10_scanner_r21/adaptive-coverage.png",
+      "reports/figures/2026_09_10_scanner_r21/adaptive-glrt64-response.png",
+      "reports/figures/2026_09_10_scanner_r21/fixed-cfo-trajectories.png",
+      "reports/figures/2026_09_10_scanner_r21/fixed-coverage.png",
+      "reports/figures/2026_09_10_scanner_r21/fixed-glrt64-response.png",
+      "reports/figures/2026_09_10_scanner_r21/fixed-trajectory-tle.png",
+      "src/leo/analysis/research/arm_presence.py",
+      "src/leo/analysis/starlink/glrt_refinement_prototype.py",
+      "src/leo/analysis/starlink/refinement_comparison.py",
+      "src/leo/api/app.py",
+      "src/leo/api/production.py",
+      "src/leo/api/scanner_refinement.py",
+      "src/leo/cli/scanner_analysis_backfill.py",
+      "src/leo/cli/scanner_refinement.py",
+      "src/leo/contracts/scanner_refinement.py",
+      "src/leo/presentation/scanner_refinement.py",
+      "src/leo/radio/pluto_adaptive_hop.py",
+      "src/leo/radio/pluto_persistent_hop.py",
+      "src/leo/radio/pluto_userspace_iiod_lifecycle.py",
+      "src/leo/radio/scanner_iio_compat.py",
+      "src/leo/radio/scanner_iio_probe.py",
+      "src/leo/storage/scanner_refinement.py",
+      "src/leo/storage/scanner_refinement_source.py",
+      "tests/analysis/test_glrt_refinement_prototype.py",
+      "tests/analysis/test_glrt_refinement_summary.py",
+      "tests/analysis/test_historic_glrt_joint.py",
+      "tests/analysis/test_scan_sample_rate_review.py",
+      "tests/analysis/test_scanner_refinement_comparison.py",
+      "tests/api/test_scanner_refinement_api.py",
+      "tests/cli/test_scanner_analysis_backfill.py",
+      "tests/cli/test_scanner_refinement_cli.py",
+      "tests/contracts/test_scanner_refinement_contract.py",
+      "tests/deploy/test_systemd_templates.py",
+      "tests/presentation/test_scanner_refinement_png.py",
+      "tests/radio/test_pluto_persistent_hop.py",
+      "tests/radio/test_pluto_userspace_iiod_lifecycle.py",
+      "tests/radio/test_scanner_iio_compat.py",
+      "tests/scanner/refinement_fixtures.py",
+      "tests/storage/test_scanner_refinement_store.py",
+      "tools/check_glrt_refinement_synthetic.py",
+      "tools/prototype_glrt_local_joint.py",
+      "tools/replay_historic_glrt_joint.py",
+      "tools/review_scan_sample_rates.py",
+      "tools/summarize_glrt_refinement_prototype.py",
+      "tools/summarize_historic_glrt_joint.py",
+      "web/src/AdaptiveHopPanel.tsx",
+      "web/src/App.tsx",
+      "web/src/ScannerRefinementPanel.test.tsx",
+      "web/src/ScannerRefinementPanel.tsx",
+      "web/src/api.ts"
+    ],
+    "tier": "deployment"
+  },
+  "results": [
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/mypy",
+        "src"
+      ],
+      "duration_seconds": 0.169078,
+      "exit_code": 0,
+      "name": "mypy",
+      "output_sha256": "5441bf1693b12d3852ad74f5a16bf054cf02c48f3d32632b636063223643ea19"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_glrt_refinement_prototype.py"
+      ],
+      "duration_seconds": 2.043005,
+      "exit_code": 0,
+      "name": "pytest-changed-1",
+      "output_sha256": "43b86cb74637b814d9b98f33626435200357994398b99a832389efc5bd70ce60"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/deploy/test_systemd_templates.py"
+      ],
+      "duration_seconds": 4.741939,
+      "exit_code": 0,
+      "name": "pytest-changed-10",
+      "output_sha256": "480f00f25f9680163fd473ce0e5a6e34a1995ed0bf7fcf559c4f0bfed6ff5a22"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/presentation/test_scanner_refinement_png.py"
+      ],
+      "duration_seconds": 3.956366,
+      "exit_code": 0,
+      "name": "pytest-changed-11",
+      "output_sha256": "640c3b1301e561be6d40afa1167cf4d4876e4bb03dc9d90f71e90cb3d8f6f0c0"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/radio/test_pluto_persistent_hop.py"
+      ],
+      "duration_seconds": 3.919303,
+      "exit_code": 0,
+      "name": "pytest-changed-12",
+      "output_sha256": "e40944f7efa55ea81000d1db88b6f17f7ad8d3b789b9649de24d01a15e4bf69e"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/radio/test_pluto_userspace_iiod_lifecycle.py"
+      ],
+      "duration_seconds": 2.547889,
+      "exit_code": 0,
+      "name": "pytest-changed-13",
+      "output_sha256": "39b075a82204be3926b0b7583a68619906f30c676edc9ac233e40f46ceaf441d"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/radio/test_scanner_iio_compat.py"
+      ],
+      "duration_seconds": 2.261635,
+      "exit_code": 0,
+      "name": "pytest-changed-14",
+      "output_sha256": "27106f0176fd0192e2f3b57f9f78e78ded08dcdf0ec288e090aae9a146270c15"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/storage/test_scanner_refinement_store.py"
+      ],
+      "duration_seconds": 3.176267,
+      "exit_code": 0,
+      "name": "pytest-changed-15",
+      "output_sha256": "f46df585b3b6bea67e497278380f2162c92e4fb85dbb47d74aa185a6fe4b3925"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_glrt_refinement_summary.py"
+      ],
+      "duration_seconds": 2.894671,
+      "exit_code": 0,
+      "name": "pytest-changed-2",
+      "output_sha256": "202ac1ab497afafb79433c40f1f98a391d7dc3b2c6833cf64e1dcd234f755e03"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_historic_glrt_joint.py"
+      ],
+      "duration_seconds": 2.246125,
+      "exit_code": 0,
+      "name": "pytest-changed-3",
+      "output_sha256": "5e31c39dad277f7264b1e56d0a0af28cc15e8198d722c5d979f245b3f1bc07a2"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_scan_sample_rate_review.py"
+      ],
+      "duration_seconds": 2.357334,
+      "exit_code": 0,
+      "name": "pytest-changed-4",
+      "output_sha256": "9008032a770b9c7f86522f31958150c2866d1c6c1dc42d9dcb5ab32dadd2725c"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_scanner_refinement_comparison.py"
+      ],
+      "duration_seconds": 5.088213,
+      "exit_code": 0,
+      "name": "pytest-changed-5",
+      "output_sha256": "1610f9de64b89ce6ed59560ba5747a5a6f4a6c1e8165155123df4d171611b1e9"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/api/test_scanner_refinement_api.py"
+      ],
+      "duration_seconds": 5.66115,
+      "exit_code": 0,
+      "name": "pytest-changed-6",
+      "output_sha256": "174905d40da07a1c004395c84c5360810638540b8546d87d8d6217d6f545cb16"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_scanner_analysis_backfill.py"
+      ],
+      "duration_seconds": 16.685395,
+      "exit_code": 0,
+      "name": "pytest-changed-7",
+      "output_sha256": "662a9d7fcda9b1bc7b593c7c871d1e1e9839a2d3eff4e51b8b4c55b6de1b3a3c"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_scanner_refinement_cli.py"
+      ],
+      "duration_seconds": 5.195149,
+      "exit_code": 0,
+      "name": "pytest-changed-8",
+      "output_sha256": "db411ce637c29697f728b3db06b4138e27f2a0ade3fe4d29818dd85c296763f4"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/contracts/test_scanner_refinement_contract.py"
+      ],
+      "duration_seconds": 0.993957,
+      "exit_code": 0,
+      "name": "pytest-changed-9",
+      "output_sha256": "96930e0475760ea3818d98efd9c208416bb41c820336d7ab9d9949a8ae04a4ad"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+        "check",
+        "--force-exclude",
+        "reports/evidence/2026_09_10_scanner_r21/archive_evidence.py",
+        "reports/evidence/2026_09_10_scanner_r21/export_figures.py",
+        "reports/evidence/2026_09_10_scanner_r21/verify_capture.py",
+        "src/leo/analysis/research/arm_presence.py",
+        "src/leo/analysis/starlink/glrt_refinement_prototype.py",
+        "src/leo/analysis/starlink/refinement_comparison.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/api/scanner_refinement.py",
+        "src/leo/cli/scanner_analysis_backfill.py",
+        "src/leo/cli/scanner_refinement.py",
+        "src/leo/contracts/scanner_refinement.py",
+        "src/leo/presentation/scanner_refinement.py",
+        "src/leo/radio/pluto_adaptive_hop.py",
+        "src/leo/radio/pluto_persistent_hop.py",
+        "src/leo/radio/pluto_userspace_iiod_lifecycle.py",
+        "src/leo/radio/scanner_iio_compat.py",
+        "src/leo/radio/scanner_iio_probe.py",
+        "src/leo/storage/scanner_refinement.py",
+        "src/leo/storage/scanner_refinement_source.py",
+        "tests/analysis/test_glrt_refinement_prototype.py",
+        "tests/analysis/test_glrt_refinement_summary.py",
+        "tests/analysis/test_historic_glrt_joint.py",
+        "tests/analysis/test_scan_sample_rate_review.py",
+        "tests/analysis/test_scanner_refinement_comparison.py",
+        "tests/api/test_scanner_refinement_api.py",
+        "tests/cli/test_scanner_analysis_backfill.py",
+        "tests/cli/test_scanner_refinement_cli.py",
+        "tests/contracts/test_scanner_refinement_contract.py",
+        "tests/deploy/test_systemd_templates.py",
+        "tests/presentation/test_scanner_refinement_png.py",
+        "tests/radio/test_pluto_persistent_hop.py",
+        "tests/radio/test_pluto_userspace_iiod_lifecycle.py",
+        "tests/radio/test_scanner_iio_compat.py",
+        "tests/scanner/refinement_fixtures.py",
+        "tests/storage/test_scanner_refinement_store.py",
+        "tools/check_glrt_refinement_synthetic.py",
+        "tools/prototype_glrt_local_joint.py",
+        "tools/replay_historic_glrt_joint.py",
+        "tools/review_scan_sample_rates.py",
+        "tools/summarize_glrt_refinement_prototype.py",
+        "tools/summarize_historic_glrt_joint.py"
+      ],
+      "duration_seconds": 0.008833,
+      "exit_code": 0,
+      "name": "ruff-check",
+      "output_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+        "format",
+        "--check",
+        "--force-exclude",
+        "reports/evidence/2026_09_10_scanner_r21/archive_evidence.py",
+        "reports/evidence/2026_09_10_scanner_r21/export_figures.py",
+        "reports/evidence/2026_09_10_scanner_r21/verify_capture.py",
+        "src/leo/analysis/research/arm_presence.py",
+        "src/leo/analysis/starlink/glrt_refinement_prototype.py",
+        "src/leo/analysis/starlink/refinement_comparison.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/api/scanner_refinement.py",
+        "src/leo/cli/scanner_analysis_backfill.py",
+        "src/leo/cli/scanner_refinement.py",
+        "src/leo/contracts/scanner_refinement.py",
+        "src/leo/presentation/scanner_refinement.py",
+        "src/leo/radio/pluto_adaptive_hop.py",
+        "src/leo/radio/pluto_persistent_hop.py",
+        "src/leo/radio/pluto_userspace_iiod_lifecycle.py",
+        "src/leo/radio/scanner_iio_compat.py",
+        "src/leo/radio/scanner_iio_probe.py",
+        "src/leo/storage/scanner_refinement.py",
+        "src/leo/storage/scanner_refinement_source.py",
+        "tests/analysis/test_glrt_refinement_prototype.py",
+        "tests/analysis/test_glrt_refinement_summary.py",
+        "tests/analysis/test_historic_glrt_joint.py",
+        "tests/analysis/test_scan_sample_rate_review.py",
+        "tests/analysis/test_scanner_refinement_comparison.py",
+        "tests/api/test_scanner_refinement_api.py",
+        "tests/cli/test_scanner_analysis_backfill.py",
+        "tests/cli/test_scanner_refinement_cli.py",
+        "tests/contracts/test_scanner_refinement_contract.py",
+        "tests/deploy/test_systemd_templates.py",
+        "tests/presentation/test_scanner_refinement_png.py",
+        "tests/radio/test_pluto_persistent_hop.py",
+        "tests/radio/test_pluto_userspace_iiod_lifecycle.py",
+        "tests/radio/test_scanner_iio_compat.py",
+        "tests/scanner/refinement_fixtures.py",
+        "tests/storage/test_scanner_refinement_store.py",
+        "tools/check_glrt_refinement_synthetic.py",
+        "tools/prototype_glrt_local_joint.py",
+        "tools/replay_historic_glrt_joint.py",
+        "tools/review_scan_sample_rates.py",
+        "tools/summarize_glrt_refinement_prototype.py",
+        "tools/summarize_historic_glrt_joint.py"
+      ],
+      "duration_seconds": 0.006734,
+      "exit_code": 0,
+      "name": "ruff-format",
+      "output_sha256": "85d14254773cfdca3a1e4ad74b622614440354ff0acddef68ae9285b86d73891"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "run",
+        "build"
+      ],
+      "duration_seconds": 4.468778,
+      "exit_code": 0,
+      "name": "web-build",
+      "output_sha256": "e70536aa09c35f01ad49bc45af9cba6d370814d130489a392e8c1dc57ff4667a"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "test",
+        "--",
+        "--run"
+      ],
+      "duration_seconds": 3.771722,
+      "exit_code": 0,
+      "name": "web-test",
+      "output_sha256": "a9d8b48ca5e4fece627c4634045e589ed8c68aaf7152ebdc8cc4eb3714c000d3"
+    }
+  ],
+  "revision": "bfc388d0aeebc8237d73d54ef93334389f042240",
+  "schema_version": 1
+}
