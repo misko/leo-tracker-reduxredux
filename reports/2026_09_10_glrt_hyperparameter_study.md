@@ -41,6 +41,7 @@ absolute Doppler-error measurement.
 
 ## Reports, figures, and evidence
 
+- [Joint acquisition/GLRT replay on six further historical scans, with acquisition rerun after every shift](2026_09_10_historic_glrt_joint/README.md).
 - [Original 24-hour cohort, window/grid sweeps, and orbital candidates](2026_09_10_scan_24h_glrt_rms/README.md).
 - [Reference audit and qualification of the original parameter recommendations](2026_09_10_glrt_reference_audit/README.md).
 - [Stride, probe position, and wider timing search](2026_09_10_scan_glrt_stride/README.md).
