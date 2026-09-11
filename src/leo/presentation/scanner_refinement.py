@@ -68,11 +68,12 @@ def render_scanner_refinement(evidence: ComparisonEvidenceV1) -> dict[str, bytes
         figure.tight_layout(rect=(0, 0.055, 1, 0.89))
         overview = _png(figure)
 
-        figure = Figure(figsize=(12, 7), dpi=140)
-        axes = figure.subplots(2, 1)
+        figure = Figure(figsize=(12, 9), dpi=140)
+        axes = figure.subplots(3, 1)
         for ax, case, key, label in (
             (axes[0], "frequency", "raw_cfo_hz", "Raw CFO-shift error (Hz)"),
             (axes[1], "delay", "delay_ns", "Delay-recovery error (ns)"),
+            (axes[2], "delay", "raw_cfo_hz", "Raw delay-induced CFO error (Hz)"),
         ):
             for p, color, name in zip(PROFILES, _COLORS, _LABELS, strict=True):
                 selected = [
@@ -91,7 +92,7 @@ def render_scanner_refinement(evidence: ComparisonEvidenceV1) -> dict[str, bytes
             ax.set_ylabel(label)
             ax.grid(alpha=0.2)
         axes[0].legend(ncol=4, fontsize=9)
-        axes[1].set_xlabel(
+        axes[-1].set_xlabel(
             "Independent probe device time in capture (s); targets and receivers are not joined"
         )
         figure.suptitle(
