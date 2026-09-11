@@ -66,6 +66,7 @@ def test_default_adapter_lazily_constructs_exact_ppu_deployment(
     assert arguments["binary_path"] == configuration.binary_path
     assert arguments["known_hosts_path"] == configuration.known_hosts_path
     assert arguments["password_path"] == configuration.password_path
+    assert callable(arguments["serial_probe"])
     lifecycle.enter_and_attest()
     lifecycle.exit_and_verify()
 

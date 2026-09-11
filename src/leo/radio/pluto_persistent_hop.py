@@ -18,6 +18,7 @@ from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.scanner_glrt_session import ScannerGlrtSessionEvidenceV1
 from leo.contracts.states import GainMode
 from leo.radio.scanner_glrt_metadata import ScannerGlrtMetadataExtension, ScannerGlrtOptions
+from leo.radio.scanner_iio_compat import scanner_adi_module
 from leo.scanner.persistent_hop import (
     PersistentHopCaptureOutcome,
     PersistentHopPlanV1,
@@ -701,7 +702,7 @@ def _load_client(
     metadata_extension: ScannerGlrtMetadataExtension | None = None,
 ) -> Any:
     module = importlib.import_module("pluto_plus.hardware.iio_persistent_hop")
-    options: dict[str, Any] = {}
+    options: dict[str, Any] = {"adi_module": scanner_adi_module()}
     if metadata_extension is not None:
         if _accepts_metadata_extension(module.iio_persistent_hop_client):
             options["metadata_extension"] = metadata_extension

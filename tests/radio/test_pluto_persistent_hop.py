@@ -326,11 +326,13 @@ def test_default_client_loader_negotiates_only_with_supported_host_api(monkeypat
     calls = []
     client = object()
 
-    def legacy(uri, *, expected_serial):
+    def legacy(uri, *, expected_serial, adi_module):
+        assert callable(adi_module.ad9361)
         calls.append((uri, expected_serial, None))
         return client
 
-    def capable(uri, *, expected_serial, metadata_extension=None):
+    def capable(uri, *, expected_serial, adi_module, metadata_extension=None):
+        assert callable(adi_module.ad9361)
         calls.append((uri, expected_serial, metadata_extension))
         return client
 
