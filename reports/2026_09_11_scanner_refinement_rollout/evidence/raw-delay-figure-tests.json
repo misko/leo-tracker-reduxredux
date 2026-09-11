@@ -1,0 +1,134 @@
+{
+  "duration_seconds": 2.336947,
+  "kind": "leo-test-receipt",
+  "manifest_sha256": "d82301bd9b8150e9df4eddda5d1edd1c5be7bcf2fd03c20f06f89831ef2e7b52",
+  "overlay_digest": "887a0b78bb92b2f86450033a828455537264d31e67d2505475034203b8f77490",
+  "passed": true,
+  "plan": {
+    "components": [
+      "api",
+      "documentation"
+    ],
+    "gates": [
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/mypy",
+          "src"
+        ],
+        "name": "mypy",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/presentation/test_scanner_refinement_png.py"
+        ],
+        "name": "pytest-changed-1",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+          "check",
+          "--force-exclude",
+          "src/leo/presentation/scanner_refinement.py",
+          "tests/presentation/test_scanner_refinement_png.py"
+        ],
+        "name": "ruff-check",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+          "format",
+          "--check",
+          "--force-exclude",
+          "src/leo/presentation/scanner_refinement.py",
+          "tests/presentation/test_scanner_refinement_png.py"
+        ],
+        "name": "ruff-format",
+        "postgres": false
+      }
+    ],
+    "paths": [
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-2cb20a43053cf90c/evidence.json",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-2cb20a43053cf90c/probe-comparison-web-ui.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-2cb20a43053cf90c/probe-comparison.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-2cb20a43053cf90c/shift-recovery-web-ui.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-2cb20a43053cf90c/shift-recovery.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-2cb20a43053cf90c/status.json",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-2cb20a43053cf90c/web-ui-verification.json",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-906f2bb639b7eccc/evidence.json",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-906f2bb639b7eccc/probe-comparison-web-ui.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-906f2bb639b7eccc/probe-comparison.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-906f2bb639b7eccc/shift-recovery-web-ui.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-906f2bb639b7eccc/shift-recovery.png",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-906f2bb639b7eccc/status.json",
+      "reports/2026_09_11_scanner_refinement_rollout/scan-hop-906f2bb639b7eccc/web-ui-verification.json",
+      "src/leo/presentation/scanner_refinement.py",
+      "tests/presentation/test_scanner_refinement_png.py"
+    ],
+    "tier": "deployment"
+  },
+  "results": [
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/mypy",
+        "src"
+      ],
+      "duration_seconds": 0.14928,
+      "exit_code": 0,
+      "name": "mypy",
+      "output_sha256": "cc16ba8a2a34bf4a18029e22d4bfc479a11509d52b8132ed75d084915b7ed0ce"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/presentation/test_scanner_refinement_png.py"
+      ],
+      "duration_seconds": 2.325867,
+      "exit_code": 0,
+      "name": "pytest-changed-1",
+      "output_sha256": "291554bdd4c860e1578e2a305a07591c92d2bb668d57a2c399e64aca4e6f836b"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+        "check",
+        "--force-exclude",
+        "src/leo/presentation/scanner_refinement.py",
+        "tests/presentation/test_scanner_refinement_png.py"
+      ],
+      "duration_seconds": 0.066676,
+      "exit_code": 0,
+      "name": "ruff-check",
+      "output_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+        "format",
+        "--check",
+        "--force-exclude",
+        "src/leo/presentation/scanner_refinement.py",
+        "tests/presentation/test_scanner_refinement_png.py"
+      ],
+      "duration_seconds": 0.066707,
+      "exit_code": 0,
+      "name": "ruff-format",
+      "output_sha256": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938"
+    }
+  ],
+  "revision": "e18636f9577dae60072889d54625fba2ed88e457",
+  "schema_version": 1
+}

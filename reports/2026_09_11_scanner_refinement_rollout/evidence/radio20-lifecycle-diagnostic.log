@@ -1,0 +1,12 @@
+{"port": 30431, "exit_code": 0, "stdout": "scanner-endpoint-verified\n", "stderr": ""}
+{"port": 30432, "exit_code": 1, "stdout": "", "stderr": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/opt/leo-tracker/releases/bfc388d0aeebc8237d73d54ef93334389f042240/.venv/lib/python3.14/site-packages/leo/radio/scanner_iio_probe.py\", line 10, in <module>\n    verify_endpoint(sys.argv[1], int(sys.argv[2]), sys.argv[3])\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/leo-tracker/releases/bfc388d0aeebc8237d73d54ef93334389f042240/.venv/lib/python3.14/site-packages/leo/radio/scanner_iio_compat.py\", line 72, in verify_endpoint\n    raise ValueError(\"scanner endpoint lacks persistent-hop capabilities\")\nValueError: scanner endpoint lacks persistent-hop capabilities\n"}
+{"port": 30431, "exit_code": 0, "stdout": "scanner-endpoint-verified\n", "stderr": ""}
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.leo/verify-radio20-lifecycle.py", line 34, in <module>
+    start = lifecycle.enter_and_attest()
+  File "/opt/leo-tracker/releases/bfc388d0aeebc8237d73d54ef93334389f042240/.venv/lib/python3.14/site-packages/pluto_plus/userspace_iiod.py", line 1153, in enter_and_attest
+    return self._lifecycle.start(_read_local_binary(self.binary_path))
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/leo-tracker/releases/bfc388d0aeebc8237d73d54ef93334389f042240/.venv/lib/python3.14/site-packages/pluto_plus/userspace_iiod.py", line 889, in start
+    raise UserspaceIiodLifecycleError("alternate iiOD readiness probe failed")
+pluto_plus.userspace_iiod.UserspaceIiodLifecycleError: alternate iiOD readiness probe failed
