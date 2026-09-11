@@ -1,0 +1,21 @@
+{
+  "complete_rows": 1944,
+  "previous_paired_rows_exactly_reproduced": 648,
+  "all_candidate_selections_verified": true,
+  "historic_replay_wall_seconds": 272.6,
+  "new_rf": false,
+  "source_sha256": {
+    "src/leo/analysis/starlink/glrt_refinement_prototype.py": "fe89bc554a44fd452f1b606912e3f83162f6b8997afcc55aab31b27b4b489e9c",
+    "tools/prototype_glrt_local_joint.py": "6e97f25cf1dcb64b08bbd39a1f3ec486ab1b7b76cad84adac56719796598e317",
+    "tools/summarize_glrt_refinement_prototype.py": "b69b2cd162d7cafa104506a697a8c7763f872f67bd0587735945066914ed9bee",
+    "tools/check_glrt_refinement_synthetic.py": "f6541a9205ca0ee5b2cae5e8cc6e93778908113b171e101eb21ba78963b6cfd5",
+    "tests/analysis/test_glrt_refinement_prototype.py": "23c1adb455c976a296894577253c7e009175df93e0f9dc35f86e1a3fb1cff06c",
+    "tests/analysis/test_glrt_refinement_summary.py": "7f6cec2b07bed0ca983fee1513df1bde79bbdc97fff4000c1c76544763b43a1f"
+  },
+  "tests": {
+    "focused_passed": 33,
+    "after_residual_bookkeeping_correction_passed": 10,
+    "ruff": "passed"
+  },
+  "bookkeeping_note": "After replay, joint score residual CFO was updated to preserve total = conditioning + residual when an alias is unwrapped. Historical serialized outputs never read that residual field; tracking, scores, offsets and selections are unchanged."
+}
