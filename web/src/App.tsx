@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
+import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 import { AdaptiveHopBrowser, AdaptiveHopDetail } from "./AdaptiveHopPanel";
 import {
   getActiveQueue,
@@ -774,6 +775,7 @@ function PersistentHopAnalysisDetail({
       <p className="scanner-artifact-caption">{artifactDetails.caption} · {formatNumber(product.probe_count)} receiver/probe evaluations · {formatNumber(product.passed_fractional_best_count)} passing fractional winners</p>
       <p className="scanner-artifact-caption">Analysis geometry: {product.configuration.probe_ms} ms windows every {product.configuration.probe_stride_ms} ms. The full captured IQ remains available for exhaustive reanalysis.</p>
     </section>}
+    <ScannerRefinementPanel key={capture.session_id} sessionId={capture.session_id} inputDigest={product?.input_manifest_sha256} />
     {tracking !== null ? <PersistentHopTrackingPanel detail={tracking} /> : null}
   </>;
 }

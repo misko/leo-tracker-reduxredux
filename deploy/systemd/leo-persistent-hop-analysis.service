@@ -14,6 +14,7 @@ ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-ho
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-hop-analysis-work
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/control/persistent-hop-analysis
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-hop-tracking
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-refinement-comparisons
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/control/persistent-hop-tracking
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/presentation-cache/matplotlib
 ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-api/.venv/bin/python -m leo.cli.scanner_analysis_backfill --site spinnaker-sausalito

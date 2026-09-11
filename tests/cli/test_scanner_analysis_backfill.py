@@ -14,6 +14,7 @@ import leo.cli.scanner_analysis_backfill as cli
         ("leo.cli.adaptive_hop_analysis", "--pending"),
         ("leo.cli.persistent_hop_analysis", "--maximum-tracking-groups"),
         ("leo.cli.scanner_analysis_backfill", "--site"),
+        ("leo.cli.scanner_refinement", "--session-id"),
     ],
 )
 def test_child_module_entrypoints_actually_execute(module, option):
@@ -28,7 +29,7 @@ def test_child_module_entrypoints_actually_execute(module, option):
     assert "usage:" in result.stdout and option in result.stdout
 
 
-@pytest.mark.parametrize("failure", [None, "adaptive", "fixed", "spawn"])
+@pytest.mark.parametrize("failure", [None, "refinement", "adaptive", "fixed", "spawn"])
 def test_both_publication_paths_run_sequentially_even_after_failure(
     monkeypatch, tmp_path, capsys, failure
 ):
@@ -39,9 +40,11 @@ def test_both_publication_paths_run_sequentially_even_after_failure(
         commands.append(command)
         if len(commands) == 1 and failure == "spawn":
             raise OSError("injected spawn failure")
-        failed = (len(commands) == 1 and failure == "adaptive") or (
-            len(commands) == 2 and failure == "fixed"
-        )
+        failed = command[2] == {
+            "refinement": "leo.cli.scanner_refinement",
+            "adaptive": "leo.cli.adaptive_hop_analysis",
+            "fixed": "leo.cli.persistent_hop_analysis",
+        }.get(failure)
         return SimpleNamespace(returncode=int(failed))
 
     monkeypatch.setattr(cli.subprocess, "run", run)
@@ -55,7 +58,16 @@ def test_both_publication_paths_run_sequentially_even_after_failure(
         assert json.loads(capsys.readouterr().err)["state"] == "failed"
     else:
         cli.main()
-    assert len(commands) == 2
+    assert len(commands) == 3
+    assert commands.pop(0) == [
+        sys.executable,
+        "-m",
+        "leo.cli.scanner_refinement",
+        "--bulk-root",
+        str(tmp_path),
+        "--maximum-seconds",
+        "180",
+    ]
     assert commands[0][:3] == [sys.executable, "-m", "leo.cli.adaptive_hop_analysis"]
     assert commands[1][:3] == [sys.executable, "-m", "leo.cli.persistent_hop_analysis"]
     for command in commands:

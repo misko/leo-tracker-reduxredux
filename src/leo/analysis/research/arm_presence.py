@@ -62,12 +62,12 @@ def periodicity_scout(samples: np.ndarray, sample_rate_hz: int) -> dict[str, flo
             energy = float(np.vdot(left, left).real * np.vdot(right, right).real)
             correlations.append(float(abs(np.vdot(left, right)) ** 2) / max(energy, 1e-30))
         scores.append(float(np.mean(correlations)))
-    energy = np.abs(values) ** 2
+    sample_energy = np.abs(values) ** 2
     return {
         "lag_margin": scores[0] - max(scores[1:]),
         "lag_exact": scores[0],
-        "rms": float(np.sqrt(np.mean(energy))),
-        "crest_factor": float(np.max(energy) / max(float(np.mean(energy)), 1e-30)),
+        "rms": float(np.sqrt(np.mean(sample_energy))),
+        "crest_factor": float(np.max(sample_energy) / max(float(np.mean(sample_energy)), 1e-30)),
     }
 
 

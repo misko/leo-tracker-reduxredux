@@ -486,6 +486,7 @@ export interface PersistentHopSessionDetailV2 {
     schema_version: 2;
     analysis_id: "persistent-hop-fractional-glrt64-cfo-v2";
     session_id: string;
+    input_manifest_sha256?: string;
     completed_at: string;
     sample_rate_hz: 2500000 | 5000000;
     bandwidth_hz: 2500000 | 5000000;
