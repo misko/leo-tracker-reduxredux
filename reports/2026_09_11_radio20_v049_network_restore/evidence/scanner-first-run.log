@@ -1,0 +1,74 @@
+durable_acquisition_operation_failed
+Traceback (most recent call last):
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 254, in read_visit
+    return self._visits.get(timeout=_PRODUCER_POLL_SECONDS)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/queue.py", line 209, in get
+    raise Empty
+_queue.Empty
+During handling of the above exception, another exception occurred:
+Traceback (most recent call last):
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/scanner/persistent_hop_application.py", line 86, in capture_persistent_hop_session
+    block = session.read_visit()
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 259, in read_visit
+    self._raise_producer_error()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 403, in _raise_producer_error
+    raise self._producer_error
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 294, in _run_producer
+    sampled = next(visits)
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/pluto_plus/persistent_hop.py", line 1398, in visits
+    for block in self._decoded_blocks():
+                 ~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/pluto_plus/persistent_hop.py", line 1453, in _decoded_blocks
+    for wire in self._backend.blocks():
+                ~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_persistent_hop.py", line 296, in blocks
+    raw = capture.read_block()
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_metadata.py", line 1333, in read_block
+    buffer.refill()
+    ~~~~~~~~~~~~~^^
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/iio.py", line 1435, in refill
+    _buffer_refill_with_metadata(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._buffer,
+        ^^^^^^^^^^^^^
+    ...<2 lines>...
+        _byref(metadata_bytes),
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/iio.py", line 65, in _check_negative
+    raise OSError(-result, _strerror(-result))
+OSError: [Errno 116] Stale file handle
+persistent-hop cleanup also failed: backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact
+persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=2472588173390146395, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.CANCELLED: 4>, reason=<PersistentHopTerminalReason.CLIENT_CLOSE: 2>, error_code=0, flags=<PersistentHopStatusFlag.TERMINAL|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 57>, session_id=2472588173390146395, planned_dwells=2500, visits_started=899, events_emitted=899, next_event_sequence=899, last_block_sequence=4340, last_block_end_counter=3504644518, first_counter=2935877634, final_counter=3504961798, restore_before_counter=3504961798, restore_after_counter=3504993487, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=2, restored_profile_index=255, startup_invalid_start_counter=2935877634, startup_invalid_end_counter_exclusive=2935906392, device_dropped_events=0), host_lifecycle=None, cleanup_errors=('backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact',))
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/cli/runner.py", line 634, in _run_durable_supervised
+    captured = scanner.capture_scheduled_scanner(
+        scanner_intent,
+        cancel=cancel,
+    )
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1411, in capture_scheduled_scanner
+    return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1641, in _capture_scheduled_persistent_hop
+    published = capture_persistent_hop_to_store(
+        radio,
+    ...<7 lines>...
+        before_publish=cleanup_before_publish,
+    )
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/storage/persistent_hop_capture.py", line 39, in capture_persistent_hop_to_store
+    receipt = capture_persistent_hop_session(
+        radio,
+    ...<4 lines>...
+        timing_sink=timings.append,
+    )
+  File "/opt/leo-tracker/releases/d8dbe7723987ac222d18201ef175ca38e0951105/.venv/lib/python3.14/site-packages/leo/scanner/persistent_hop_application.py", line 146, in capture_persistent_hop_session
+    raise failure from primary_error
+leo.scanner.persistent_hop_application.PersistentHopCaptureError: capture=OSError: [Errno 116] Stale file handle; capture_note=persistent-hop cleanup also failed: backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact; capture_note=persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=2472588173390146395, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.CANCELLED: 4>, reason=<PersistentHopTerminalReason.CLIENT_CLOSE: 2>, error_code=0, flags=<PersistentHopStatusFlag.TERMINAL|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 57>, session_id=2472588173390146395, planned_dwells=2500, visits_started=899, events_emitted=899, next_event_sequence=899, last_block_sequence=4340, last_block_end_counter=3504644518, first_counter=2935877634, final_counter=3504961798, restore_before_counter=3504961798, restore_after_counter=3504993487, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=2, restored_profile_index=255, startup_invalid_start_counter=2935877634, startup_invalid_end_counter_exclusive=2935906392, device_dropped_events=0), host_lifecycle=None, cleanup_errors=('backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact',)); recovery=PlutoPersistentHopError: persistent-hop finish requires a server-attested terminal receipt
+Scanner-only run stopped: error; 1 scanner run(s) started.
+leo-acquisition.service: Main process exited, code=exited, status=21/n/a
+leo-acquisition.service: Failed with result 'exit-code'.
+leo-acquisition.service: Consumed 57.844s CPU time over 2min 28.021s wall clock time, 2.2G memory peak.

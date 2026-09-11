@@ -1,5 +1,11 @@
 # Scanner local and joint refinement comparisons
 
+**Later update:** `.20` was successfully flashed over the network using PPU to
+the latest published v0.49 release. The
+[firmware follow-up](../2026_09_11_radio20_v049_network_restore/README.md) records
+the flash receipt and subsequent scanner verification. The observations below
+preserve the earlier, pre-flash rollout state.
+
 **Published and deployed:** the comparison worker and web UI serve saved PNGs
 and numerical evidence. **Live restart blocked:** `.20` currently runs
 `glrt-native-exact-r60000000-stripped-v1`; its kernel lacks the
