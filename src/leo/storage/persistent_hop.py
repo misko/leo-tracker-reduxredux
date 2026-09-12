@@ -37,6 +37,11 @@ from leo.scanner.persistent_hop_history import (
     PersistentHopHistoryPageV1,
 )
 from leo.scanner.persistent_hop_ports import PersistentHopVisitBlock
+from leo.scanner.single_rx import (
+    SingleRxHopReceiptV2,
+    SingleRxHopTimingV2,
+    SingleRxPersistentHopPlanV2,
+)
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError, BundleStateError
 from leo.storage.uri import BulkUriResolver, confined_path
 from leo.storage.writer import _CompressedFileWriter, _fsync_directory, _mkdir_durable
@@ -196,6 +201,27 @@ class PersistentHopIqSessionManifestV2(ScannerModel):
             or self.timing.sample_rate_hz != legacy.plan.sample_rate_hz
         ):
             raise ValueError("persistent-hop timing authority disagrees with IQ evidence")
+        return self
+
+
+class SingleRxHopIqSessionManifestV3(PersistentHopIqSessionManifestV2):
+    """One physical RX at 10 MS/s with the same counter-based IQ accounting."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    plan: SingleRxPersistentHopPlanV2
+    receipt: SingleRxHopReceiptV2
+    timing: SingleRxHopTimingV2
+
+    @model_validator(mode="after")
+    def _content_is_closed(self) -> Self:
+        PersistentHopIqSessionManifestV1._content_is_closed(self)  # type: ignore[operator]
+        if (
+            self.timing.session_id != self.session_id
+            or self.timing.session_start_device_sample_counter
+            != self.receipt.session_start_device_sample_counter
+            or self.timing.sample_rate_hz != self.plan.sample_rate_hz
+        ):
+            raise ValueError("single-RX timing authority disagrees with IQ evidence")
         return self
 
 
@@ -389,7 +415,11 @@ class PersistentHopSessionWriter:
             queue_telemetry=queue_telemetry,
         )
         manifest: PersistentHopIqSessionManifestV1 | PersistentHopIqSessionManifestV2
-        if timing is None:
+        if isinstance(self.plan, SingleRxPersistentHopPlanV2):
+            manifest = SingleRxHopIqSessionManifestV3.model_validate(
+                {**manifest_values, "timing": timing}
+            )
+        elif timing is None:
             manifest = PersistentHopIqSessionManifestV1.model_validate(manifest_values)
         else:
             manifest = PersistentHopIqSessionManifestV2.model_validate(
@@ -669,7 +699,9 @@ class PersistentHopIqStore:
             header = json.loads(payload)
             schema_version = header.get("schema_version") if isinstance(header, dict) else None
             manifest_type = (
-                PersistentHopIqSessionManifestV2
+                SingleRxHopIqSessionManifestV3
+                if schema_version == 3
+                else PersistentHopIqSessionManifestV2
                 if schema_version == 2
                 else PersistentHopIqSessionManifestV1
             )
@@ -724,16 +756,27 @@ class PersistentHopIqStore:
             )
         )
 
-    def page(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV1:
+    def page(
+        self, *, cursor: int, limit: int, include_single_rx: bool = False
+    ) -> PersistentHopHistoryPageV1:
         """Project a bounded page without reading or verifying multi-GB IQ chunks."""
 
         if cursor < 0 or not 1 <= limit <= 20:
             raise ValueError("persistent-hop history page is outside its bounded range")
         session_ids = self.session_ids()
+        from leo.scanner.persistent_hop_history import PersistentHopCapturePageV2
+
+        if not include_single_rx:
+            session_ids = tuple(
+                session_id
+                for session_id in session_ids
+                if not isinstance(self.inspect(session_id).manifest, SingleRxHopIqSessionManifestV3)
+            )
         selected = session_ids[cursor : cursor + limit]
         items = [self.history_item(session_id) for session_id in selected]
         next_cursor = cursor + len(items) if cursor + len(items) < len(session_ids) else None
-        return PersistentHopHistoryPageV1(
+        page_type = PersistentHopCapturePageV2 if include_single_rx else PersistentHopHistoryPageV1
+        return page_type(
             cursor=cursor,
             limit=limit,
             total=len(session_ids),
@@ -746,28 +789,41 @@ class PersistentHopIqStore:
 
         manifest = self.inspect(session_id).manifest
         receipt = manifest.receipt
-        return PersistentHopHistoryItemV1(
-            captured_at=datetime.fromtimestamp(
-                manifest.created_utc_ns / 1_000_000_000,
-                tz=UTC,
-            ),
-            finalized_at=datetime.fromtimestamp(
-                manifest.finalized_utc_ns / 1_000_000_000,
-                tz=UTC,
-            ),
-            session_id=session_id,
-            radio_id=receipt.radio_id,
-            sample_rate_hz=manifest.plan.sample_rate_hz,
-            bandwidth_hz=manifest.plan.bandwidth_hz,
-            visit_count=len(receipt.visits),
-            target_coverage=receipt.target_coverage,
-            capture_outcome=receipt.capture_outcome,
-            terminal_state=receipt.terminal_status.state,
-            terminal_reason=receipt.terminal_status.reason,
-            valid_duty_ppm=receipt.valid_duty_ppm,
-            continuity_attested=receipt.continuity_attested,
-            restoration_status=receipt.restoration.status,
-            qualified=receipt.qualified,
+        from leo.scanner.persistent_hop_history import SingleRxHopHistoryCaptureV2
+
+        history_type = (
+            SingleRxHopHistoryCaptureV2
+            if isinstance(manifest, SingleRxHopIqSessionManifestV3)
+            else PersistentHopHistoryItemV1
+        )
+        extra: dict[str, Any] = {}
+        if isinstance(manifest, SingleRxHopIqSessionManifestV3):
+            extra["receiver_ids"] = manifest.receiver_ids
+        return history_type.model_validate(
+            dict(
+                **extra,
+                captured_at=datetime.fromtimestamp(
+                    manifest.created_utc_ns / 1_000_000_000,
+                    tz=UTC,
+                ),
+                finalized_at=datetime.fromtimestamp(
+                    manifest.finalized_utc_ns / 1_000_000_000,
+                    tz=UTC,
+                ),
+                session_id=session_id,
+                radio_id=receipt.radio_id,
+                sample_rate_hz=manifest.plan.sample_rate_hz,
+                bandwidth_hz=manifest.plan.bandwidth_hz,
+                visit_count=len(receipt.visits),
+                target_coverage=receipt.target_coverage,
+                capture_outcome=receipt.capture_outcome,
+                terminal_state=receipt.terminal_status.state,
+                terminal_reason=receipt.terminal_status.reason,
+                valid_duty_ppm=receipt.valid_duty_ppm,
+                continuity_attested=receipt.continuity_attested,
+                restoration_status=receipt.restoration.status,
+                qualified=receipt.qualified,
+            )
         )
 
     def verify(

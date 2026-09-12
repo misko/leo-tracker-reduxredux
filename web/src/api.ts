@@ -510,6 +510,39 @@ export interface PersistentHopSessionDetailV2 {
   };
 }
 
+export type SingleRxHopCaptureV2 = Omit<PersistentHopCaptureV1,
+  "schema_version" | "sample_rate_hz" | "bandwidth_hz"> & {
+  schema_version: 2;
+  sample_rate_hz: 10000000;
+  bandwidth_hz: 10000000;
+  receiver_ids: [0] | [1];
+  profile_id: "single-rx-random-10m-300s-v1";
+};
+
+export interface PersistentHopHistoryPageV4 extends Omit<PersistentHopHistoryPageV3,
+  "schema_version" | "items"> {
+  schema_version: 4;
+  items: Array<Omit<PersistentHopHistoryPageV3["items"][number], "schema_version" | "capture"> & {
+    schema_version: 3 | 4;
+    capture: PersistentHopCaptureV1 | SingleRxHopCaptureV2;
+  }>;
+}
+
+export type SingleRxHopSessionDetailV3 = Omit<PersistentHopSessionDetailV2,
+  "schema_version" | "capture" | "product"> & {
+  schema_version: 3;
+  capture: SingleRxHopCaptureV2;
+  product: null | (Omit<NonNullable<PersistentHopSessionDetailV2["product"]>,
+    "schema_version" | "sample_rate_hz" | "bandwidth_hz"> & {
+    schema_version: 3;
+    sample_rate_hz: 10000000;
+    bandwidth_hz: 10000000;
+  });
+};
+
+export type CurrentPersistentHopPage = PersistentHopHistoryPageV3 | PersistentHopHistoryPageV4;
+export type CurrentPersistentHopDetail = PersistentHopSessionDetailV2 | SingleRxHopSessionDetailV3;
+
 export interface PersistentHopTrackingDetailV1 {
   schema_version: 1;
   status: {
@@ -592,17 +625,17 @@ export function getPersistentHopSessions(
   cursor = 0,
   limit = 20,
   signal?: AbortSignal,
-): Promise<PersistentHopHistoryPageV3> {
+): Promise<CurrentPersistentHopPage> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
-  return getJson<PersistentHopHistoryPageV3>(`/api/v3/scanner/persistent-sessions?${params}`, signal);
+  return getJson<CurrentPersistentHopPage>(`/api/v4/scanner/persistent-sessions?${params}`, signal);
 }
 
 export function getPersistentHopSession(
   sessionId: string,
   signal?: AbortSignal,
-): Promise<PersistentHopSessionDetailV2> {
-  return getJson<PersistentHopSessionDetailV2>(
-    `/api/v3/scanner/persistent-sessions/${encodeURIComponent(sessionId)}`,
+): Promise<CurrentPersistentHopDetail> {
+  return getJson<CurrentPersistentHopDetail>(
+    `/api/v4/scanner/persistent-sessions/${encodeURIComponent(sessionId)}`,
     signal,
   );
 }

@@ -59,7 +59,7 @@ def test_selection_uses_score_and_physical_phase_without_a_cfo_oracle():
     )
 
 
-@pytest.mark.parametrize("fs", [2500000, 5000000])
+@pytest.mark.parametrize("fs", [2500000, 5000000, 10000000])
 def test_real_numerical_comparison_reacquires_each_known_shift(fs):
     samples = np.zeros(round(fs * 0.021), dtype=complex)
     template = np.asarray(qin_edge_pilot_frame(fs, "lower"))

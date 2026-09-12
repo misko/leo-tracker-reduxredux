@@ -310,6 +310,7 @@ class CliSettings:
     scanner_persistent_iiod_bundle_manifest_path: Path | None = None
     scanner_persistent_credentials_directory: Path | None = None
     scanner_glrt: ScannerGlrtOptions | None = None
+    scanner_profile: str = "alternating-2p5m-5m"
     scanner_hop_policy: Literal["fixed", "shadow", "adaptive"] = "fixed"
     scanner_adaptive_sample_rates_hz: tuple[int, ...] = (2_500_000, 5_000_000)
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
@@ -317,6 +318,20 @@ class CliSettings:
     direct_async_enabled: bool = False
 
     def __post_init__(self) -> None:
+        from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID
+
+        if self.scanner_profile not in ("alternating-2p5m-5m", SINGLE_RX_PROFILE_ID):
+            raise ValueError("unknown scheduled scanner profile")
+        if self.scanner_profile == SINGLE_RX_PROFILE_ID and (
+            self.scanner_capture_mode != "persistent_hop"
+            or self.scanner_hop_policy != "fixed"
+            or self.scanner_glrt is not None
+            or self.scanner_run_seconds != 300
+            or self.scanner_dwell_ms != 120
+        ):
+            raise ValueError(
+                "single-RX 10 MS/s profile requires fixed 300s/120ms hopping and host analysis"
+            )
         ids = tuple(radio.radio_id for radio in self.radios)
         if len(ids) != len(set(ids)):
             raise ValueError("configured radio IDs must be unique")
@@ -576,6 +591,7 @@ class CliSettings:
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
                 scanner_glrt=scanner_glrt_options(values),
+                scanner_profile=values.get("LEO_SCANNER_PROFILE", "alternating-2p5m-5m"),
                 scanner_hop_policy=cast(
                     Literal["fixed", "shadow", "adaptive"],
                     values.get("LEO_SCANNER_HOP_POLICY", "fixed"),
@@ -1356,7 +1372,14 @@ class LocalAcquisitionBackend:
             for radio in self.settings.radios
             if radio.radio_id == self.settings.scanner_radio_id
         )
-        return compile_scheduled_scanner_run_intent_v1(
+        from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID, compile_single_rx_scanner_intent
+
+        compiler = (
+            compile_single_rx_scanner_intent
+            if self.settings.scanner_profile == SINGLE_RX_PROFILE_ID
+            else compile_scheduled_scanner_run_intent_v1
+        )
+        return compiler(
             operation_key=operation_key,
             radio_id=configured.radio_id,
             radio_serial=configured.serial or configured.radio_id,
@@ -1567,7 +1590,17 @@ class LocalAcquisitionBackend:
         configured = next(
             radio for radio in self.settings.radios if radio.radio_id == intent.radio_id
         )
-        plan = compile_scheduled_persistent_hop_plan_v1(
+        from leo.scanner.single_rx import (
+            SingleRxScheduledScannerIntentV2,
+            compile_single_rx_hop_plan,
+        )
+
+        compiler = (
+            compile_single_rx_hop_plan
+            if isinstance(intent, SingleRxScheduledScannerIntentV2)
+            else compile_scheduled_persistent_hop_plan_v1
+        )
+        plan = compiler(
             intent,
             transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
             kernel_buffers=self.settings.scanner_persistent_kernel_buffers,

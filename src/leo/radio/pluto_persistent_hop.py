@@ -515,34 +515,43 @@ def _map_receipt(
         for profile in plan.profiles
     )
     _require_upstream_coverage(upstream.target_coverage, coverage)
-    return PersistentHopSessionReceiptV1(
-        session_id=session_id,
-        radio_id=identity.radio_id,
-        radio_serial=identity.serial,
-        radio_uri=identity.uri,
-        plan=plan,
-        stream_generation=f"iio-{int(upstream.stream_generation):016x}",
-        kernel_buffers_requested=int(upstream.kernel_buffers_requested),
-        kernel_buffers_readback=int(upstream.kernel_buffers_readback),
-        capture_outcome=cast(PersistentHopCaptureOutcome, capture_outcome),
-        terminal_status=mapped_status,
-        session_start_device_sample_counter=int(status.first_counter),
-        session_end_device_sample_counter_exclusive=int(status.final_counter),
-        visits=visits,
-        target_coverage=coverage,
-        valid_sample_count=int(upstream.valid_sample_count),
-        transition_invalid_sample_count=int(upstream.transition_invalid_sample_count),
-        terminal_incomplete_visit_count=incomplete_count,
-        terminal_unretained_invalid_sample_count=trailing_invalid,
-        terminal_unretained_valid_sample_count=trailing_valid,
-        missing_sample_count=int(upstream.missing_sample_count),
-        overflow_count=int(upstream.overflow_count),
-        hop_event_sequence_gap_count=int(upstream.hop_event_sequence_gap_count),
-        duty_denominator_sample_count=int(upstream.duty_denominator_sample_count),
-        valid_duty_ppm=int(upstream.valid_duty_ppm),
-        continuity_attested=bool(upstream.continuity_attested),
-        duty_target_met=bool(upstream.duty_target_met),
-        restoration=restoration,
+    from leo.scanner.single_rx import SingleRxHopReceiptV2, SingleRxPersistentHopPlanV2
+
+    receipt_type = (
+        SingleRxHopReceiptV2
+        if isinstance(plan, SingleRxPersistentHopPlanV2)
+        else PersistentHopSessionReceiptV1
+    )
+    return receipt_type.model_validate(
+        dict(
+            session_id=session_id,
+            radio_id=identity.radio_id,
+            radio_serial=identity.serial,
+            radio_uri=identity.uri,
+            plan=plan,
+            stream_generation=f"iio-{int(upstream.stream_generation):016x}",
+            kernel_buffers_requested=int(upstream.kernel_buffers_requested),
+            kernel_buffers_readback=int(upstream.kernel_buffers_readback),
+            capture_outcome=cast(PersistentHopCaptureOutcome, capture_outcome),
+            terminal_status=mapped_status,
+            session_start_device_sample_counter=int(status.first_counter),
+            session_end_device_sample_counter_exclusive=int(status.final_counter),
+            visits=visits,
+            target_coverage=coverage,
+            valid_sample_count=int(upstream.valid_sample_count),
+            transition_invalid_sample_count=int(upstream.transition_invalid_sample_count),
+            terminal_incomplete_visit_count=incomplete_count,
+            terminal_unretained_invalid_sample_count=trailing_invalid,
+            terminal_unretained_valid_sample_count=trailing_valid,
+            missing_sample_count=int(upstream.missing_sample_count),
+            overflow_count=int(upstream.overflow_count),
+            hop_event_sequence_gap_count=int(upstream.hop_event_sequence_gap_count),
+            duty_denominator_sample_count=int(upstream.duty_denominator_sample_count),
+            valid_duty_ppm=int(upstream.valid_duty_ppm),
+            continuity_attested=bool(upstream.continuity_attested),
+            duty_target_met=bool(upstream.duty_target_met),
+            restoration=restoration,
+        )
     )
 
 
@@ -660,7 +669,12 @@ def _load_plan(plan: PersistentHopPlanV1) -> Any:
     module = importlib.import_module("pluto_plus.persistent_hop")
     profile_type = module.PersistentHopProfileV1
     plan_type = module.PersistentHopPlanV1
+    extra: dict[str, Any] = {}
+    if len(plan.receiver_ids) == 1:
+        plan_type = module.SingleRxPersistentHopPlanV2
+        extra["receiver_id"] = plan.receiver_ids[0]
     return plan_type(
+        **extra,
         nominal_duration_seconds=plan.nominal_duration_seconds,
         valid_visit_ms=plan.valid_visit_ms,
         sample_rate_hz=plan.sample_rate_hz,

@@ -467,36 +467,45 @@ class FakePersistentHopSession:
             ),
             device_dropped_events=event_gap_count,
         )
-        receipt = PersistentHopSessionReceiptV1(
-            session_id=self._session_id,
-            radio_id=self._radio.identity.radio_id,
-            radio_serial=self._radio.identity.serial,
-            radio_uri=self._radio.identity.uri,
-            plan=self.plan,
-            metadata_abi_version=3,
-            stream_generation=f"fake-hop-{self._wire_session_id()}",
-            kernel_buffers_requested=self.plan.kernel_buffers,
-            kernel_buffers_readback=self.plan.kernel_buffers,
-            capture_outcome=capture_outcome,
-            terminal_status=terminal,
-            session_start_device_sample_counter=self._first_counter,
-            session_end_device_sample_counter_exclusive=self._next_counter,
-            visits=visits,
-            continuity_faults=tuple(self._faults),
-            target_coverage=coverage,
-            valid_sample_count=valid_samples,
-            transition_invalid_sample_count=transition_samples,
-            missing_sample_count=missing_samples,
-            overflow_count=sum(item.kind == "rx_overflow" for item in self._faults),
-            hop_event_sequence_gap_count=event_gap_count,
-            duty_denominator_sample_count=device_span,
-            valid_duty_ppm=(valid_samples * 1_000_000 // device_span if device_span else 0),
-            continuity_attested=not self._faults,
-            duty_target_met=(
-                bool(device_span)
-                and valid_samples * 1_000_000 // device_span >= self.plan.minimum_valid_duty_ppm
-            ),
-            restoration=restoration,
+        from leo.scanner.single_rx import SingleRxHopReceiptV2, SingleRxPersistentHopPlanV2
+
+        receipt_type = (
+            SingleRxHopReceiptV2
+            if isinstance(self.plan, SingleRxPersistentHopPlanV2)
+            else PersistentHopSessionReceiptV1
+        )
+        receipt = receipt_type.model_validate(
+            dict(
+                session_id=self._session_id,
+                radio_id=self._radio.identity.radio_id,
+                radio_serial=self._radio.identity.serial,
+                radio_uri=self._radio.identity.uri,
+                plan=self.plan,
+                metadata_abi_version=3,
+                stream_generation=f"fake-hop-{self._wire_session_id()}",
+                kernel_buffers_requested=self.plan.kernel_buffers,
+                kernel_buffers_readback=self.plan.kernel_buffers,
+                capture_outcome=capture_outcome,
+                terminal_status=terminal,
+                session_start_device_sample_counter=self._first_counter,
+                session_end_device_sample_counter_exclusive=self._next_counter,
+                visits=visits,
+                continuity_faults=tuple(self._faults),
+                target_coverage=coverage,
+                valid_sample_count=valid_samples,
+                transition_invalid_sample_count=transition_samples,
+                missing_sample_count=missing_samples,
+                overflow_count=sum(item.kind == "rx_overflow" for item in self._faults),
+                hop_event_sequence_gap_count=event_gap_count,
+                duty_denominator_sample_count=device_span,
+                valid_duty_ppm=(valid_samples * 1_000_000 // device_span if device_span else 0),
+                continuity_attested=not self._faults,
+                duty_target_met=(
+                    bool(device_span)
+                    and valid_samples * 1_000_000 // device_span >= self.plan.minimum_valid_duty_ppm
+                ),
+                restoration=restoration,
+            )
         )
         return receipt
 

@@ -1,16 +1,16 @@
 {
   "schema": "spf.iiod-build-provenance.v1",
-  "created_at_utc": "2026-09-03T07:46:12Z",
+  "created_at_utc": "2026-09-12T17:22:48.156242+00:00",
   "hardware_accessed": false,
   "artifact": {
-    "path": "/home/mouse9911/.codex/staging/libiio-userspace-hop-c752ab6/iiod-armv7l-c752ab6",
-    "sha256": "5d7ca0a04e93341bdcd28f1967f583f14389456ff4375362e394b7cc71af32ea",
-    "size_bytes": 230980,
+    "path": "/tmp/leo-single-rx-iiod-arm/iiod/iiod",
+    "sha256": "a21900cdc05de20cb6df522adddd01a3427de50331b513db828a8252a3a16297",
+    "size_bytes": 243268,
     "mode": "0755",
     "format": "ELF 32-bit LSB PIE, ARM EABI5, dynamically linked, GNU/Linux >= 3.2.0, stripped",
     "elf_machine": "ARM",
     "elf_interpreter": "/lib/ld-linux-armhf.so.3",
-    "elf_build_id_sha1": "793b7354466b815db6eea16320eb34e757f7c369",
+    "elf_build_id_sha1": "74815c935360a6cd0d3d3813ed7078a9592d40c2",
     "elf_attributes": {
       "cpu": "ARMv7-A",
       "arm_isa": true,
@@ -24,19 +24,62 @@
     "undefined_iio_symbol_count": 0
   },
   "source": {
-    "repository": "/home/mouse9911/gits/libiio-userspace-hop-main-integration",
+    "repository": "/home/mouse9911/gits/libiio-single-rx-10m",
     "origin": "git@github.com:misko/libiio.git",
-    "head": "c752ab684a4c9924ee362ccfb02a7ac65f7992f9",
-    "origin_master": "c752ab684a4c9924ee362ccfb02a7ac65f7992f9",
-    "tree": "ef489663e962746d8543b4104458e08c958ebf12",
-    "commit_timestamp": "2026-09-03T07:29:33Z",
-    "commit_subject": "Merge remote-tracking branch 'origin/codex/userspace-hop-duty' into codex/userspace-hop-main-integration",
+    "head": "66eb685d9bfb5ac264ed5311a2ce9b531127f56d",
+    "base_commit": "a1088b61de3c57762cfed5533e1baf8076a7b726",
+    "tree": "e3bce395490d454fa8a45932f49ac2de91acee75",
     "worktree_clean": true,
     "provider_input_sha256": {
-      "iiod/spf-buffer-metadata.c": "eb87146dc7e8c4ed5d4cacb1d83617dfb8ef48d0f9856a612ca2f303c3b7a19b",
-      "iiod/spf-hop-device-userspace.c": "9f9925a759b8c3c82d9d4ce5ed5afcc430d2dc281e18e1da173f1ef3f5efa807",
+      "iiod/CMakeLists.txt": "d34fefe8f9417b2f4822aab8889a3bc1afd93e1085451dae19b658f199551e9f",
+      "iiod/buffer-metadata-none.c": "a382f437f49e278a8c0c1875e06bdee8a7f052cd097667b0cc80e2e316685246",
+      "iiod/buffer-metadata.h": "11eb870d4b65a6f191b0650294fc4a06811506da1c0a1f10249b95d7f4247df1",
+      "iiod/ddr-ring-core.c": "a910d5a80da00fafb2975afb02b2623796048c765fb82dbbf5f3b838689b0f5d",
+      "iiod/ddr-ring-core.h": "7dffe19c2234bf3e411b232b252281139426eae1b1255b4259e0c60c39e255d7",
+      "iiod/dns-sd.c": "588da3c498e8c58907e1c50719a3287ad8d67f532a668d29a89dd4a9325b3780",
+      "iiod/dns-sd.h": "354396c6023e061ca58c5679bc2b4b86f81139f188953fbc015e233ee6df6033",
+      "iiod/iiod.c": "b1595cd10781b4ebd295d307e2a0806078656a569fdd58372ca4ff5326d64050",
+      "iiod/lexer.l": "3df2d8dedf9d1900a2794b27cad5f02f9b2b3bc586216aed0025ed005eb8ae17",
+      "iiod/ops.c": "c60c547e3038fb9740ae98eddf787977cefb62626f5dedb56398e6c3f3b2d67b",
+      "iiod/ops.h": "1ac9f2b1702e9a8944a3b464dea75051ccf0e197708fdaa26c438d37200b94eb",
+      "iiod/parser.y": "8e72359f91d941ebbe979bd598ba5ca1c22133d7782b63075096bbb9bc090963",
+      "iiod/queue.h": "8b284031772b1ba2035d9b05b24f2cb9b23e7bd324bcccb5e3fcc57d34aafa48",
+      "iiod/serial.c": "9a3a1f07c24283f9eb115bd9cc9ae6106d04f0485e111a0b549e39af3d4619fb",
+      "iiod/spf-buffer-layout.c": "45739b09ab48ebeb710d73c9c33757f5d01a3ee0cf52912086ec8f069a78d694",
+      "iiod/spf-buffer-layout.h": "2750b1f089b474ab9ceb842c9adda2dbb478ec996c8f3e21276f7a5a1a13a15e",
+      "iiod/spf-buffer-metadata.c": "d0cb3a4dc2f85ec421c37276961aba7ec3fc07b0084e752c9624b8bc2cdf7c79",
+      "iiod/spf-ddr-burst-request.c": "68c9840430039065748aaabf98bd0f38f7b7e60ec310de6be6beb58377f5ba0a",
+      "iiod/spf-ddr-burst-request.h": "1acfa4fa51ae844b12f2c40a6b2386a1b0f12f3aef528740d031f51a91dcaf84",
+      "iiod/spf-ddr-ring-request.c": "5e1573a0cc5a2733cc90c0925748cdc0f77e22a10278c1a370ee1fbc96833044",
+      "iiod/spf-ddr-ring-request.h": "3f32468dd7c5ae3478b19fba8a4dc73771873eb5a7d48cbbfe221e7a7dd2805a",
+      "iiod/spf-ddr-ring-status.c": "47d6416e4d21570a7d700ff79fde1a8a1c0e839e689ebcd3f33f1989ae0d7171",
+      "iiod/spf-ddr-ring-status.h": "73e34d66968a0db7e063631a2cbe7f740aecb4118828ed647f421f01e1464a9a",
+      "iiod/spf-hop-adaptive-policy.c": "9e4babd7b379e9a241a366681b6007f7c0fa9a2ccdd12529971e35d618830ead",
+      "iiod/spf-hop-adaptive-policy.h": "10da470740ab0eafab5221824a3afcc4c0fa948912de3797653f149804b53e6f",
+      "iiod/spf-hop-adaptive-protocol.c": "f79909187f28e45206bb3b016e5a0233b6ab5d3c30b3c4c2c8160f6bf40d8fc9",
+      "iiod/spf-hop-adaptive-protocol.h": "baa5f1769c8c5bd2fcacb511a67db09b6b15ef03dec488718a7feb3ea3b54ea8",
+      "iiod/spf-hop-device-local.c": "d06f4bb0573295f4f60c979169b7d08230c8289097c2514aff0a36bc8a3a0f91",
+      "iiod/spf-hop-device-userspace.c": "496e5eee26d851661997bd4aa0a7c1659b3d720c606f559ad6f0b98557602ced",
+      "iiod/spf-hop-device.h": "73049376610d66d92df4ef2365a704dbbc2a4c43d82224b4ade9337775edb4a4",
+      "iiod/spf-hop-protocol.c": "2e677aeb8d2f486f5e7f30741938d9ea8a9aabc10003eefae12321fe14f987da",
+      "iiod/spf-hop-protocol.h": "6b0e12cbc4e82f39b7dc3c0ffebbddbeca2f33934cb774e334598c8f5fb0420a",
+      "iiod/spf-hop-scheduler.c": "eb3d723b461bf4604120b74dd1cfb427938382ab62a4d3292af913fe3126943f",
+      "iiod/spf-hop-scheduler.h": "c1ecda8844c24fe24adc63fa9a21d51ba067b8dc056ef79027d6d0c6ecaaa8c8",
+      "iiod/spf-hop-session.c": "b0f91eab5f25a7034d48fedae0b605a5e9470a352e6f4de358b0e6a0cb105081",
+      "iiod/spf-hop-session.h": "4551fc8dff556a3c7e45c423cb4dc811b1abfaa460d94f63c922c691575ce905",
+      "iiod/spf-sampler-coverage.c": "0f0df91f6137668775761dd693bd8f5ef04f923cf5e99ed9e8b21a66b15a1573",
+      "iiod/spf-sampler-coverage.h": "d8f355f35c301e1d84942b9e3a6841c1c196af3d4e2d561d2ee19ed46f40260e",
+      "iiod/spf-scanner-glrt.c": "368dc1667d06141d15cb69ed38df8b1f6dae95d30001853985633fc032bdb816",
+      "iiod/spf-scanner-glrt.h": "d55cfaa20a91fccf62e459ed5728a11b28c5f2e53bdb6d884039c0fcbcce3757",
+      "iiod/spf-tandem-metadata.c": "aef685a51ce2be04f9dbe521ba8487ef009a881304e93ecfff0f616a5226c2b7",
+      "iiod/spf-tandem-metadata.h": "c4e063d201390632dc62a58c75ebf2c84d9f9c7feb4e2d0afaa384e8db2d512f",
       "iiod/spf-tandem-session.c": "ccee77836fc59ee195525fa53ae5e469b05418b907ae9ec2db921208e1e3e9c8",
-      "iiod/spf-tandem-metadata.c": "aef685a51ce2be04f9dbe521ba8487ef009a881304e93ecfff0f616a5226c2b7"
+      "iiod/spf-tandem-session.h": "c3485604e5d35f9a39e7e3268fb3b733391082a2ea48bf35235ca9c371603f69",
+      "iiod/spf-temperature-cache.c": "4b26b717e54f5a20249b6e8aec6290504e3ba9416d2beee0f9bd03039485e96f",
+      "iiod/spf-temperature-cache.h": "9e384aa9a0656896943fe63b6f5a1976d451b3d7db06118e6d011873b2edc518",
+      "iiod/thread-pool.c": "a4b267bb47f6fb90510c1a1eb5fa192eb2993f623d4ad41dc2a78401def2bf97",
+      "iiod/thread-pool.h": "5684232a86bf2c35aeca77b0841a27bfa8e5f9aa588b1709ef3cedbd807776d9",
+      "iiod/usbd.c": "c3fe2e112cead8d3cd6fd15c2cd3356b91357caca411dddf158a6e36e4860e94"
     }
   },
   "external_spf_sources": {
@@ -93,8 +136,8 @@
     "with_aio": true,
     "with_tests_for_arm": false,
     "dns_sd": false,
-    "metadata_provider": "/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-buffer-metadata.c",
-    "persistent_hop_device_provider": "/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-hop-device-userspace.c",
+    "metadata_provider": "/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-buffer-metadata.c",
+    "persistent_hop_device_provider": "/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-hop-device-userspace.c",
     "provider_compile_definitions": [
       "IIOD_HAS_BUFFER_METADATA=1",
       "IIOD_HAS_BUFFER_PERSISTENT_HOP=1"
@@ -102,7 +145,7 @@
     "provider_compile_definitions_absent": [
       "IIOD_HAS_KERNEL_PERSISTENT_HOP"
     ],
-    "arm_cmake_cache_sha256": "615744b02a3c4c80f22945a739286f2b2061fc9d0c0c7c12992a008fd524e6a2",
+    "arm_cmake_cache_sha256": "27943b5bd568537b80b4d1ee5be9cd1433ce3aa73570ebe1694464831bbb9b2a",
     "linkage_rationale": "The normal shared-libiio iiOD imported five block-lease APIs absent from the selected SDK sysroot libiio.so.0.25. Statically linking current libiio into iiOD eliminates that undeclared deployment dependency while retaining stock target system-library dependencies.",
     "shared_build_imports_absent_from_sdk_libiio": [
       "iio_buffer_block_acquire",
@@ -110,113 +153,44 @@
       "iio_buffer_block_release",
       "iio_buffer_block_start",
       "iio_buffer_get_allocated_kernel_buffers_count"
-    ]
+    ],
+    "single_rx_10m_capability": "iio,buffer-persistent-hop-single-rx-10m=1"
   },
   "dynamic_dependencies": [
-    {
-      "soname": "libpthread.so.0",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/lib/libpthread-2.25.so",
-      "sha256": "97f319642be16132027162d6953689a801ef369b6bd463669f96d30d509f9911"
-    },
-    {
-      "soname": "libaio.so.1",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/libaio.so.1.0.2",
-      "sha256": "7b199fde7db13e9a9207cac3828a3a7e7f9ab623bb71e29e03ec22da75d090ac"
-    },
-    {
-      "soname": "libusb-1.0.so.0",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/libusb-1.0.so.0.3.0",
-      "sha256": "f9cb1f77ec907f3ea517ea2cac1d7b7891e53de632960b27c37f371a9ebfbe3f"
-    },
-    {
-      "soname": "librt.so.1",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/lib/librt-2.25.so",
-      "sha256": "f4da9d7a7b6658a76d0e47cbc3e5add28d098da1eea164f7b17885600b578622"
-    },
-    {
-      "soname": "libxml2.so.2",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/libxml2.so.2.10.4",
-      "sha256": "50088159719c5840663159623e6ac0d89a427bfecbf2925ca3483c22b33a376b"
-    },
-    {
-      "soname": "libz.so.1",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/libz.so.1.2.13",
-      "sha256": "e982181893996bb9d5b48643a685ba92f307147dc8370823ae5f635d6e6651d9"
-    },
-    {
-      "soname": "libm.so.6",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/lib/libm-2.25.so",
-      "sha256": "e9a7529ff8e15362f523d52af6655263f6f175b0df5a075f533a4c43fdc32622"
-    },
-    {
-      "soname": "libc.so.6",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/lib/libc-2.25.so",
-      "sha256": "057eff01375ed70daff20c9568709d80ea190511b656c6c60ebeca1375cad374"
-    },
-    {
-      "soname": "ld-linux-armhf.so.3",
-      "resolved_sdk_path": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/lib/ld-2.25.so",
-      "sha256": "a039578005865d55715e89ea7a16720c31f712eb3cd385fb4882e6331fbc4f56"
-    }
+    "libpthread.so.0",
+    "libaio.so.1",
+    "libusb-1.0.so.0",
+    "librt.so.1",
+    "libxml2.so.2",
+    "libz.so.1",
+    "libm.so.6",
+    "libc.so.6",
+    "ld-linux-armhf.so.3"
   ],
   "validation": {
-    "native_build": {
-      "result": "pass",
-      "build_directory": "/tmp/libiio-userspace-hop-c752ab6-native",
-      "cmake_cache_sha256": "f42859973611f368c800a1db045e428b9a4c7a13e95fe10fa5fc376891be1f82"
-    },
-    "native_c_unit_executables": {
-      "result": "pass",
-      "passed": 18,
-      "failed": 0,
-      "tests": [
-        "test_buffer_block_lease",
-        "test_ddr_ring_core",
-        "test_direct_async_transport",
-        "test_iiod_command_batch",
-        "test_metadata_batch_core",
-        "test_spf_buffer_layout",
-        "test_spf_ddr_burst_request",
-        "test_spf_ddr_ring_request",
-        "test_spf_ddr_ring_status",
-        "test_spf_hop_device_userspace",
-        "test_spf_hop_protocol",
-        "test_spf_hop_scheduler",
-        "test_spf_hop_session",
-        "test_spf_sampler_coverage",
-        "test_spf_tandem_metadata",
-        "test_spf_tandem_session",
-        "test_spf_temperature_cache",
-        "test_thread_pool_affinity"
-      ]
-    },
-    "python_bindings": {
-      "result": "pass",
-      "passed": 37,
-      "failed": 0,
-      "files": [
-        "bindings/python/tests/test_buffer_close.py",
-        "bindings/python/tests/test_metadata_buffer_batch.py"
-      ]
-    },
-    "arm_cross_build": {
-      "result": "pass",
-      "execution_tested": false,
-      "reason_not_executed": "No ARM emulator was installed and hardware access was prohibited.",
-      "all_needed_sonames_resolved_in_sdk_sysroot": true,
-      "experimental_persistent_hop_uapi_used": false
-    }
+    "native_tests": [
+      "test_spf_buffer_layout",
+      "test_spf_tandem_metadata",
+      "test_spf_tandem_session",
+      "test_spf_hop_device_userspace",
+      "test_spf_hop_scheduler",
+      "test_spf_hop_session",
+      "test_spf_hop_protocol",
+      "test_spf_hop_adaptive"
+    ],
+    "all_passed": true,
+    "hardware_accessed": false
   },
   "runtime": {
     "recommended_release_relative_path": "runtime/scanner-iiod/iiod",
     "recommended_absolute_path_template": "/opt/leo-tracker/releases/<SHA>/runtime/scanner-iiod/iiod",
     "alternate_tcp_server_command": [
-      "/path/to/iiod-armv7l-c752ab6",
+      "/path/to/iiod-armv7l-66eb685",
       "-p",
       "30432"
     ],
     "alternate_tcp_server_command_explicit_local_context": [
-      "/path/to/iiod-armv7l-c752ab6",
+      "/path/to/iiod-armv7l-66eb685",
       "-u",
       "local:",
       "-p",
@@ -228,55 +202,42 @@
     "alternate_port": 30432
   },
   "reproduction": {
-    "script": {
-      "path": "/home/mouse9911/.codex/staging/libiio-userspace-hop-c752ab6/rebuild-arm-iiod.sh",
-      "sha256": "8bf68065679a74a88cd09be22e17189f1d0fc2668a9c69671f7716c70714f34b",
-      "syntax_checked": true,
-      "executed_twice": true,
-      "two_fresh_builds_bit_identical": true,
-      "strips_non_runtime_symbols": true,
-      "fresh_reproduction_outputs": [
-        {
-          "build_directory": "/tmp/libiio-userspace-hop-c752ab6-arm-static.7lzMLK",
-          "output": "/tmp/libiio-userspace-hop-c752ab6-release-repro-c/iiod-armv7l-c752ab6",
-          "sha256": "5d7ca0a04e93341bdcd28f1967f583f14389456ff4375362e394b7cc71af32ea"
-        },
-        {
-          "build_directory": "/tmp/libiio-userspace-hop-c752ab6-arm-static.hu3nSZ",
-          "output": "/tmp/libiio-userspace-hop-c752ab6-release-repro-d/iiod-armv7l-c752ab6",
-          "sha256": "5d7ca0a04e93341bdcd28f1967f583f14389456ff4375362e394b7cc71af32ea"
-        }
-      ],
-      "asserts_zero_unresolved_iio_imports": true,
-      "asserts_no_experimental_persistent_hop_uapi": true,
-      "asserts_all_dynamic_sonames_resolve_in_sdk_sysroot": true
-    },
-    "native_build_directory": "/tmp/libiio-userspace-hop-c752ab6-native",
-    "arm_build_directory_for_staged_artifact": "/tmp/libiio-userspace-hop-c752ab6-arm-static.LmXu04",
-    "arm_install_root_for_staged_artifact": "/tmp/libiio-userspace-hop-c752ab6-arm-install.aWRaDd",
+    "script": "reports/2026_09_12_single_rx_10m_profile/package_iiod.py",
+    "native_build_directory": "/tmp/leo-single-rx-iiod-native",
+    "arm_build_directory_for_staged_artifact": "/tmp/leo-single-rx-iiod-arm",
     "native_configure_arguments": [
       "cmake",
-      "-S", "/home/mouse9911/gits/libiio-userspace-hop-main-integration",
-      "-B", "/tmp/libiio-userspace-hop-c752ab6-native",
-      "-G", "Ninja",
+      "-S",
+      "/home/mouse9911/gits/libiio-single-rx-10m",
+      "-B",
+      "/tmp/leo-single-rx-iiod-native",
+      "-G",
+      "Ninja",
       "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
       "-DHAVE_DNS_SD=OFF",
       "-DWITH_IIOD=ON",
       "-DWITH_AIO=ON",
       "-DWITH_TESTS=ON",
-      "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-buffer-metadata.c",
-      "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c",
+      "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-buffer-metadata.c",
+      "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c",
       "-DIIOD_BUFFER_METADATA_INCLUDE_DIRS=/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8;/home/mouse9911/gits/plutosdr-fw/linux/usr/include",
-      "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-hop-device-userspace.c"
+      "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-hop-device-userspace.c"
     ],
     "native_build_arguments": [
-      "cmake", "--build", "/tmp/libiio-userspace-hop-c752ab6-native", "--parallel", "8"
+      "cmake",
+      "--build",
+      "/tmp/leo-single-rx-iiod-native",
+      "--parallel",
+      "8"
     ],
     "arm_configure_arguments": [
       "cmake",
-      "-S", "/home/mouse9911/gits/libiio-userspace-hop-main-integration",
-      "-B", "${fresh_mktemp_build_directory}",
-      "-G", "Ninja",
+      "-S",
+      "/home/mouse9911/gits/libiio-single-rx-10m",
+      "-B",
+      "${fresh_mktemp_build_directory}",
+      "-G",
+      "Ninja",
       "-DCMAKE_BUILD_TYPE=Release",
       "-DHAVE_DNS_SD=OFF",
       "-DWITH_IIOD=ON",
@@ -284,19 +245,19 @@
       "-DWITH_TESTS=OFF",
       "-DBUILD_SHARED_LIBS=OFF",
       "-DCMAKE_TOOLCHAIN_FILE=/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/share/buildroot/toolchainfile.cmake",
-      "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-buffer-metadata.c",
-      "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c",
+      "-DIIOD_BUFFER_METADATA_PROVIDER=/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-buffer-metadata.c",
+      "-DIIOD_BUFFER_METADATA_PROVIDER_EXTRA_SOURCES=/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-tandem-session.c;/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-tandem-metadata.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_gain_sampler.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_rssi_read.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_radio_frame_v3.c;/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8/spf_thread_join.c",
       "-DIIOD_BUFFER_METADATA_INCLUDE_DIRS=/home/mouse9911/gits/plutosdr-fw-metadata-gain-timeline-v8;/home/mouse9911/gits/plutosdr-fw/linux/usr/include",
-      "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-userspace-hop-main-integration/iiod/spf-hop-device-userspace.c"
+      "-DIIOD_BUFFER_PERSISTENT_HOP_DEVICE_PROVIDER=/home/mouse9911/gits/libiio-single-rx-10m/iiod/spf-hop-device-userspace.c"
     ],
     "arm_build_arguments": [
-      "cmake", "--build", "${fresh_mktemp_build_directory}", "--target", "iiod", "--parallel", "8"
-    ],
-    "arm_install_environment": {
-      "DESTDIR": "${fresh_mktemp_install_root}"
-    },
-    "arm_install_arguments": [
-      "cmake", "--install", "${fresh_mktemp_build_directory}", "--prefix", "/usr"
+      "cmake",
+      "--build",
+      "${fresh_mktemp_build_directory}",
+      "--target",
+      "iiod",
+      "--parallel",
+      "8"
     ]
   }
 }

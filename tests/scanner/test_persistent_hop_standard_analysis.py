@@ -26,18 +26,26 @@ from leo.scanner.persistent_hop_products import (
 
 
 class _ZeroReader:
-    def __init__(self, sample_count: int) -> None:
+    def __init__(self, sample_count: int, receiver_ids=(0, 1)) -> None:
         self.sample_count = sample_count
-        self.receiver_ids = (0, 1)
+        self.receiver_ids = receiver_ids
         self.calls: list[tuple[int, int]] = []
 
     def read_valid_ci16(self, sample_start: int, sample_count: int) -> np.ndarray:
         self.calls.append((sample_start, sample_count))
-        return np.zeros((sample_count, 2, 2), dtype="<i2")
+        return np.zeros((sample_count, len(self.receiver_ids), 2), dtype="<i2")
 
 
-def _source(visit_count: int = 8):
+def _source(visit_count: int = 8, receiver_id=None):
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+    if receiver_id is not None:
+        from leo.scanner.single_rx import SingleRxPersistentHopPlanV2
+
+        plan = SingleRxPersistentHopPlanV2(
+            receiver_ids=(receiver_id,),
+            transition_guard_samples=10_000,
+            profiles=plan.profiles,
+        )
     radio = FakePersistentHopRadio()
     radio.open()
     session = radio.begin_session(plan, session_id="hop-analysis-product")
@@ -46,7 +54,7 @@ def _source(visit_count: int = 8):
     session.request_cancel()
     receipt = session.finish()
     radio.close()
-    reader = _ZeroReader(receipt.valid_sample_count)
+    reader = _ZeroReader(receipt.valid_sample_count, plan.receiver_ids)
     source = build_persistent_hop_analysis_source(
         receipt=receipt,
         reader=reader,
@@ -228,6 +236,48 @@ def _fake_fractional_dwell(_samples, configuration, *, edge) -> DwellGlrt64Analy
         reason=f"fractional fixture {edge}",
         probes=tuple(probes),
     )
+
+
+@pytest.mark.parametrize("receiver_id", [0, 1])
+def test_single_rx_doppler_slope_uses_device_time_across_retune_gaps(monkeypatch, receiver_id):
+    from dataclasses import replace
+
+    source, reader = _source(visit_count=2, receiver_id=receiver_id)
+    calls = 0
+
+    def dwell(samples, configuration, *, edge):
+        nonlocal calls
+        span = source.visits[calls]
+        calls += 1
+        expected_time = (
+            span.valid_device_sample_counter
+            - source.receipt.session_start_device_sample_counter
+            + 125.375
+        ) / 10_000_000
+        cfo = 2000 + 1200 * expected_time
+        response = _fake_fractional_dwell(samples, configuration, edge=edge)
+        probe = response.probes[0]
+        winner = replace(
+            probe.candidates[1],
+            fractional_tracking_cfo_hz=cfo,
+            fractional_residual_cfo_hz=cfo - 2000,
+        )
+        return replace(response, probes=(replace(probe, candidates=(winner,)),))
+
+    monkeypatch.setattr(persistent_source_module, "analyze_glrt64_dwell", dwell)
+    chunk = analyze_persistent_hop_sweep_v2(
+        source,
+        0,
+        configuration=PersistentHopGlrt64Configuration(source.plan, probe_stride_ms=120),
+    )
+    first, second = [probe.best for probe in chunk.probes]
+    dt = (second.fractional_session_sample - first.fractional_session_sample) / 10_000_000
+    assert dt > 0.120  # Retune time cannot disappear when valid IQ is concatenated.
+    assert (
+        second.fractional_tracking_cfo_hz - first.fractional_tracking_cfo_hz
+    ) / dt == pytest.approx(1200)
+    assert chunk.receiver_ids == (receiver_id,)
+    assert len(reader.calls) == 2
 
 
 def test_v2_ranks_gates_and_reports_cfo_at_fractional_epoch(

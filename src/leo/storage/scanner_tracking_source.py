@@ -78,7 +78,11 @@ class ScannerTrackingInputStore:
                         tuple(_candidate(c) for c in p.fractional_candidates),
                     )
                 )
-        if len(probes) != len(visits) * 2 * chunks[0].scheduled_probe_count_per_receiver_visit:
+        if len(probes) != (
+            len(visits)
+            * len(published.manifest.receiver_ids)
+            * chunks[0].scheduled_probe_count_per_receiver_visit
+        ):
             raise ValueError("fixed probe coverage is incomplete")
         return TrackingInput(
             session_id,

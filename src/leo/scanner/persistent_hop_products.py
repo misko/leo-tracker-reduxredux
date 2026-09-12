@@ -434,6 +434,9 @@ class PersistentHopAnalysisChunkV2(ScannerModel):
     def _coverage_is_complete(self) -> Self:
         if self.receiver_ids != (0, 1):
             raise ValueError("persistent-hop V2 receiver geometry is not (0, 1)")
+        return self._validate_probe_coverage()
+
+    def _validate_probe_coverage(self) -> Self:
         expected = (
             self.visit_count
             * len(self.receiver_ids)
@@ -469,6 +472,18 @@ class PersistentHopAnalysisChunkV2(ScannerModel):
                 ):
                     raise ValueError("persistent-hop V2 decision gate disagrees with scores")
         return self
+
+
+class SingleRxHopAnalysisChunkV3(PersistentHopAnalysisChunkV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    kind: Literal["starlink_single_rx_hop_analysis_chunk_v3"] = (
+        "starlink_single_rx_hop_analysis_chunk_v3"  # type: ignore[assignment]
+    )
+    receiver_ids: tuple[Literal[0]] | tuple[Literal[1]] = Field(...)
+
+    @model_validator(mode="after")
+    def _coverage_is_complete(self) -> Self:
+        return self._validate_probe_coverage()
 
 
 class PersistentHopAnalysisChunkReferenceV2(ScannerModel):
@@ -576,6 +591,17 @@ class PersistentHopAnalysisManifestV2(ScannerModel):
         }:
             raise ValueError("persistent-hop V2 artifact inventory is incomplete")
         return self
+
+
+class SingleRxHopAnalysisManifestV3(PersistentHopAnalysisManifestV2):
+    """New input geometry; fractional GLRT/CFO V2 algorithm remains identical."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    kind: Literal["starlink_single_rx_hop_analysis_v3"] = (  # type: ignore[assignment]
+        "starlink_single_rx_hop_analysis_v3"  # type: ignore[assignment]
+    )
+    sample_rate_hz: Literal[10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[10_000_000]  # type: ignore[assignment]
 
 
 class PersistentHopAnalysisStatusV2(ScannerModel):
