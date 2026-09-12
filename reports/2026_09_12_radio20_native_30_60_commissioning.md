@@ -128,6 +128,15 @@ to 64 bits. These timings still exceed the seed-age limit, and exclude loaded
 DMA and resolver work. All four complete score grids remain byte-identical to
 the independently verified initial grids.
 
+A two-thread partition of that exact computation subsequently measured
+638.23–645.01 ms per window on the radio. All 146,652 scores again match
+byte-for-byte. Partial partitions cannot publish peaks; writers are joined
+before peak selection. This brings the isolated scan within the one-second
+seed-age limit, while loaded DMA contention, subsequent resolution/catch-up
+and total acquisition latency still require integration tests. No RF was
+collected during these scanner benchmarks. Evidence:
+[two-thread ARM review](figures/2026_09_12_radio20_native_30_60_commissioning/coarse-parallel-review.json).
+
 The next checkpoint is a direct software-candidate handoff through full
 resolution and catch-up into GLT1, with current source-time checks and native
 feedback. Sequential RF scanning, reacquisition and slower multi-frame

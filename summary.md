@@ -188,6 +188,8 @@ The relevance column says what each report contributes now. “Historical,” �
 
 ## Scope and verification
 
+Scanner follow-up: the same report now includes a two-thread, saved-IQ ARM scan at 638–645 ms/window with all 146,652 scores unchanged. This passes the isolated one-second seed-age timing bound; contention with live DMA and the complete acquired handoff remain unqualified.
+
 Further implementation: [Radio .20 native 30/60 MS/s commissioning](reports/2026_09_12_radio20_native_30_60_commissioning.md) records successful builds, deployments, receive calibration, 2,621,440 contiguous IQ samples and 16 complete scheduled native jobs at each rate. Both active epochs had zero CDC/pacer loss. The initial ARM blind scan is numerically exact but takes about 1.82 seconds per window, reduced to about 1.19 seconds by subsequent saved-IQ optimization. Autonomous acquisition, feedback, scanning and refinement remain incomplete. This is new implementation evidence, outside the original report-review inventory.
 
 Earlier implementation evidence: [Radio .20 ARM startup qualification](reports/2026_09_12_radio20_tracking_qualification.md) records a temporary saved-IQ benchmark: three of eight accepted candidates reached a fresh handoff, zero of six controls did. It also independently rechecks the historical host-assisted native-feedback journal with 10,463 measurements, of which 10,431 were supported.
