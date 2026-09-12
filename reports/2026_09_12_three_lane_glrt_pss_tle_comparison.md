@@ -6,7 +6,15 @@ PSS acquisition, the subsequent causal outlier gate, **new GLRT replay on the
 downsampled IQ**, and historical TLE comparisons for all three signal paths.
 The original experiment artifacts remain available for audit.
 
-**Latest timing-status update:** [Residual bands, fractional interpolation bias,
+**Latest model update:** [Probabilistic PSS repetition models, causal timing
+updates, bandwidth expectations and recording continuity](2026_09_12_pss_mixture_models.md).
+New models distinguish repeated peaks from broad outliers in all fifteen series,
+with plots showing both raw measurements and explicitly associated residuals.
+The continuity audit explains why the 60-second native recordings only provide
+roughly three-second continuous stretches, while the independent 2.5 MS/s
+recordings are continuous for the full minute.
+
+**Prior timing-status update:** [Residual bands, fractional interpolation bias,
 and bounded recovery experiments](2026_09_12_pss_glrt_timing_residuals.md).
 This adds six-panel PNGs for every dwell: GLRT above PSS, with columns always
 ordered 25 MS/s native, 2.5 MS/s downsampled, and 2.5 MS/s independent capture.

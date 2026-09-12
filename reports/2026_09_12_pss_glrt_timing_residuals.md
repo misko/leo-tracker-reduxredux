@@ -5,6 +5,10 @@
 The same five GLRT-selected, gap-free 2.25-second intervals are used throughout.
 This is bounded offline analysis of existing recordings, with no new RF capture.
 
+**Subsequent model update:** [PSS repetition mixtures and causal timing updates](2026_09_12_pss_mixture_models.md)
+now separates supported repeated peaks from broad outliers in all three lanes,
+shows both raw and associated residuals, and audits the full recordings' gaps.
+
 **Cubic-fit follow-up:** fitting the first 60% and predicting the last 40%, cubic
 fits perform worse than quadratics in **23 of 30 series**. A controlled noiseless
 test also identifies a specific GLRT fractional-interpolation bias. For PSS,
