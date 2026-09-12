@@ -159,7 +159,7 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
 
     assert acquisition["ExecStart"].endswith(
         "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} "
-        "--radio radio_pluto_19f2 "
+        "--radio ${LEO_SCANNER_RADIO_ID} "
         "--interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} "
         "--scanner-only --max-scanner-runs 1"
     )

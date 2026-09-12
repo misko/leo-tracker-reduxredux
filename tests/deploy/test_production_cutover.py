@@ -913,7 +913,7 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     service.write_text(f"[Service]\nExecStart={expected}\n", encoding="utf-8")
     _call("verify_staged_acquisition_service", release)
 
-    radio_b = "--radio radio_pluto_19f2 "
+    radio_b = "--radio ${LEO_SCANNER_RADIO_ID} "
     scanner_mode = "--scanner-only --max-scanner-runs 1"
     tampered_commands = (
         expected.replace("PYTHONDONTWRITEBYTECODE=1 ", ""),
