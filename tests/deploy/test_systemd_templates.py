@@ -266,8 +266,9 @@ def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate(
     assert int(analysis["IOWeight"]) < int(acquisition["IOWeight"])
     assert int(analysis["Nice"]) > int(acquisition["Nice"])
     assert analysis["IOSchedulingClass"] == "idle"
-    assert analysis_text.count("ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750") == 7
+    assert analysis_text.count("ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750") == 8
     assert "/srv/bulk/leo/scanner-refinement-comparisons" in analysis_text
+    assert "/srv/bulk/leo/scanner-shared-tracking-v1" in analysis_text
     for directory in (
         "/srv/bulk/leo/scanner-hop-analysis",
         "/srv/bulk/leo/scanner-hop-analysis-work",
