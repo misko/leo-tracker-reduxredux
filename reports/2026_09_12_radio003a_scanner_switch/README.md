@@ -104,6 +104,15 @@ of 64, with no enqueue failures. The service exited successfully and resumed its
 normal next-slot wait. One full success is evidence for this configuration, not
 a claim that every earlier transport failure has been explained.
 
+The following normal 23:40 slot also completed on its first attempt as
+`scan-hop-86c1ad6a5201da99`: RX0, **95.4302% duty**, 2,386 valid visits,
+zero missing samples, overflows or event gaps, and successful restoration.
+Its manifest was inspected through the read-only storage port and the compact
+receipt is retained in `scheduled-2340-capture-pass.json`. The service exited
+successfully at 23:45:16 UTC and resumed its next-slot wait. Native analysis was
+running when checked at 23:48 UTC; this second capture is additional baseline
+continuity evidence, not an adaptive-load qualification.
+
 The capture is visible through API v4. Native-10M analysis completed successfully
 at 23:35:17 UTC through the installed production CLI, respecting the shared worker
 lease, with two workers and a 120 ms probe stride. All 2,386 visits/probes were
