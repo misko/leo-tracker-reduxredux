@@ -8,7 +8,9 @@ import pytest
 
 from leo.radio.pluto_persistent_hop import (
     PERSISTENT_HOP_EXCLUDED_SERIAL,
+    PlutoPersistentHopError,
     PlutoPersistentHopRadio,
+    _map_restoration,
 )
 from leo.radio.scanner_glrt_metadata import ScannerGlrtMetadataExtension, ScannerGlrtOptions
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
@@ -367,6 +369,26 @@ def test_radio_passes_one_extension_to_capable_factory_and_retains_failure_evide
     assert len(extensions) == 1
     assert radio.classification_evidence.error == "injected unsupported provider"
     assert radio.classification_error == "injected unsupported provider"
+
+
+@pytest.mark.parametrize("mode", ["slow_attack", "fast_attack", "manual"])
+def test_restoration_keeps_manual_gains_exact_and_projects_agc_observations(mode) -> None:
+    _plan, _blocks, upstream = _cancelled_source(visit_count=0)
+    host = upstream.receipt.host_lifecycle
+    host.original_settings.gain_modes = (mode, mode)
+    host.original_settings.gain_db = (11.0, 12.0)
+    host.restored_settings = SimpleNamespace(**vars(host.original_settings))
+    host.restored_settings.gain_db = (9.0, 13.0)
+    if mode == "manual":
+        with pytest.raises(PlutoPersistentHopError, match="exact two-layer restoration"):
+            _map_restoration(upstream.receipt)
+    else:
+        mapped = _map_restoration(upstream.receipt)
+        assert mapped.status == "restored"
+        assert mapped.original_settings == mapped.restored_settings
+        assert mapped.original_settings.gains == ()
+        assert host.original_settings.gain_db == (11.0, 12.0)
+        assert host.restored_settings.gain_db == (9.0, 13.0)
 
 
 def test_adapter_targets_one_explicit_alternate_iiod_port() -> None:
