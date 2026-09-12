@@ -84,8 +84,53 @@ failed support, so no native descriptor was submitted.
 Independent replay checked its 219,978 grid values, all 48 new ordering scores,
 102 resolver hypotheses, 48 moment sets, 238,296 worker IQ samples and source
 epoch binding. This qualifies the added ordering cost and rejection path at
-60 MS/s; physical 30-MS/s validation of this latest ordering change remains
-outstanding. The four loaded captures together total 40.2653184 seconds of RF.
+60 MS/s. The four loaded captures together total 40.2653184 seconds of RF.
+
+The same executable subsequently passed the 30-MS/s loaded rejection test in
+`cpu-live30-ranked-v1/`. It retained all 25,165,824 samples with zero active
+CDC/pacer loss. Scan-plus-order took 824.55–836.97 ms, including 66.27–68.19 ms
+for ordering; seed ages were 831.70–838.24 ms. Resolution/catch-up took
+609.25–614.88 ms, and the largest refill interval was 8.758 ms. All six
+candidates failed support. The independent review checked the same complete
+grid, ordering-score, resolver, IQ and integer-moment counts as the latest
+60-MS/s run. This closes physical validation of loaded candidate ordering at
+both rates; it does not qualify acquired native feedback.
+
+The 30-MS/s boot had 5,415,779 pre-epoch pacer drops at its default receive
+clock. After exact-rate configuration and calibration, REBASE established the
+qualified epoch with zero drops. The review preserves the boot counters
+separately; the runtime must configure the rate before opening a fresh epoch.
+
+A separate saved-IQ quality diagnostic passed window five's stronger
+second-ranked candidate through the actual C worker at nine frozen receiver
+snapshots, from 100 to 950 ms after its search window. At 100 ms it supported
+six of the required eight initial observations; later snapshots supported at
+most one. All nine rejected handoff. This demonstrates why finding a stronger
+candidate is insufficient by itself, without treating frozen-snapshot replay
+as live timing evidence. Quality thresholds and required history remain unchanged.
+
+Two additional 30-MS/s visits used the configured upper edges of channels 4
+and 1. Each retained another 10.0663296 seconds with zero active-epoch drops:
+
+| Receive LO | Complete retained samples | Largest refill interval | Supported initial history |
+| --- | --- | --- | --- |
+| 1,940,312,500 Hz | 25,165,824 | 7.301 ms | Zero in each of six attempts |
+| 1,190,312,500 Hz | 25,165,824 | 6.994 ms | Three in the sixth attempt; zero in the other five |
+
+At 1,190.3125 MHz, the sixth candidate had original single-pilot power
+coherence 0.069904 and resolved four-pilot coherence 0.056742, at receiver-relative
+CFO +438,250.84 Hz. Three supported catch-up observations were insufficient for
+the required eight, so the worker rejected handoff and submitted no native jobs.
+Both visits have complete independent IQ, grid, ordering, resolver and moment
+reviews. The initial review helper assumed rejected attempts had zero supported
+history; it stopped on the three-observation case. Its correction preserves and
+checks partial history rather than treating rejection as absence of support.
+Both reviewer versions are retained by hash. No runtime gate changed.
+
+These three new 30-MS/s captures add 30.1989888 seconds of RF. The seven
+loaded captures documented here total 70.4643072 seconds. Channel visits occurred
+at separate times, so they do not provide simultaneous coverage or establish
+the absence of usable signals on any band.
 
 An additional operator check, committed as `02027ea3d`, requires a drained,
 cleared GLT1 snapshot before changing RF settings. This preserves unread heads
@@ -106,10 +151,14 @@ Full artifacts remain under
 `cpu-live30-v2/`, `cpu-live60-v2/` and `cpu-live60-lo1440-v1/`.
 The 60-MS/s deployment receipt is
 `deploy60-live-v1/receipts/19eddb0f-bef5-403d-80bc-8b66e81f66a1.json`.
+The subsequent verified 30-MS/s transition is
+`deploy30-ranked-v1/receipts/131d1226-2cd8-4564-9c69-4228ea150046.json`.
+The latest captures are `cpu-live30-ranked-v1/`,
+`cpu-live30-ranked-lo1940-v1/` and `cpu-live30-ranked-lo1190-v1/`.
 The two `.20` attempts refused by the shared radio lease collected no RF.
 
-After the latest run, `.20` remained on `glrt-iq-tracking-r60000000-v1`, boot
-`e5c91ef5-f9ec-45c2-951a-8e8e4a8102dc`, at receive LO 1,690,312,496 Hz.
+After the latest run, `.20` remained on `glrt-iq-tracking-r30000000-v1`, boot
+`f6f290d1-21ff-4a31-bb88-3ccbb46f488b`, at receive LO 1,190,312,500 Hz.
 The operator verified unchanged RF settings, TX powerdown, idle buffers,
 drained/cleared tracking state and removal of its temporary executable files.
 This is a bounded test deployment; an autonomous startup service is not installed.
