@@ -1,0 +1,70 @@
+{
+  "schema": "ethernet_chunk_probe_v1",
+  "started_utc": "2026-09-12T20:22:21.958475+00:00",
+  "serial": "104000bac4950008230026001b440a003a",
+  "uri": "ip:192.168.1.17",
+  "wire_bytes_per_complex_sample": 4,
+  "samples_per_frame": 1000000,
+  "kernel_buffers": 50,
+  "host_runtime": {
+    "metadata_abi": 3,
+    "source_ref": "persistent-hop-duty-v1-source/libiio-v1",
+    "source_commit": "f6c450eada95ce99fe8756ebc244bfcf6ddcc72a",
+    "native_libiio_path": "/srv/bulk/leo-dev/ppu-ethernet60-20260912/.venv/lib/libiio.so.0.25",
+    "native_libiio_sha256": "4c214823c24b5ebc6634f2febfe42fd33db9c6d2cd44fb6f5ba6e03d8ef9c9e6",
+    "pylibiio_path": "/srv/bulk/leo-dev/ppu-ethernet60-20260912/.venv/lib/python3.13/site-packages/iio.py",
+    "pylibiio_sha256": "3e95a653fb9782cccaee83723179aa0fc96b3c76d817f6649f36958e08a28c0b",
+    "receipt_path": "/srv/bulk/leo-dev/ppu-ethernet60-20260912/.venv/share/pluto-plus-utils/metadata-runtime.json"
+  },
+  "cells": [
+    {
+      "rate_hz": 5000000,
+      "nominal_seconds": 1.0,
+      "requested_seconds": 1.0,
+      "ram_slots": 0,
+      "frames": [],
+      "complete": false,
+      "error": {
+        "type": "OSError",
+        "message": "[Errno 95] Operation not supported",
+        "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo-dev/ppu-ethernet60-20260912/tools/ethernet_chunk_probe.py\", line 81, in cell\n    with radio.begin_metadata_capture(\n         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        FRAME, kernel_buffers=50, ddr_ring_bytes=ram_slots * FRAME * 4,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        tandem_request=TandemSessionRequestV1(mode=TandemMode.HOLD),\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ) as capture:\n    ^\n  File \"/srv/bulk/leo-dev/ppu-ethernet60-20260912/src/pluto_plus/hardware/iio.py\", line 1314, in begin_metadata_capture\n    session.open()\n    ~~~~~~~~~~~~^^\n  File \"/srv/bulk/leo-dev/ppu-ethernet60-20260912/src/pluto_plus/hardware/iio_metadata.py\", line 565, in open\n    self._buffer = self._open_metadata_buffer()\n                   ~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/srv/bulk/leo-dev/ppu-ethernet60-20260912/src/pluto_plus/hardware/iio_metadata.py\", line 702, in _open_metadata_buffer\n    return self._metadata_buffer_type(\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        self._sdr._rxadc,\n        ^^^^^^^^^^^^^^^^^\n    ...<5 lines>...\n        drop_backlog_on_overrun=self._drop_backlog_on_overrun,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/srv/bulk/leo-dev/ppu-ethernet60-20260912/.venv/lib/python3.13/site-packages/iio.py\", line 1378, in __init__\n    self._buffer = _create_buffer_with_metadata(\n                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        device._device, samples_count, request_storage, len(request)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/srv/bulk/leo-dev/ppu-ethernet60-20260912/.venv/lib/python3.13/site-packages/iio.py\", line 59, in _check_null\n    raise OSError(err, _strerror(err))\nOSError: [Errno 95] Operation not supported\n"
+      },
+      "cycle_seconds": 0.9972559839952737,
+      "settings": {
+        "center_frequency_hz": 2400000000.0,
+        "sample_rate_hz": 5000000.0,
+        "bandwidth_hz": 5000000.0,
+        "gain_mode": "slow_attack",
+        "gain_db": null,
+        "channels": [
+          0
+        ]
+      },
+      "repeat": 0
+    }
+  ],
+  "rx_only": true,
+  "iq_saved": false,
+  "settings_restored": true,
+  "scope": "Finite direct-async sessions; gaps between sessions excluded from source coverage.",
+  "identity": {
+    "radio_id": "104000bac4950008230026001b440a003a",
+    "serial": "104000bac4950008230026001b440a003a",
+    "uri": "ip:192.168.1.17",
+    "transport": "iio_ip",
+    "model": "Analog Devices PlutoSDR Rev.C (Z7010-AD9361)",
+    "firmware_version": "v0.49-plutoplus-spf-iq-direct-async-v4",
+    "usb_path": null
+  },
+  "original_settings": {
+    "center_frequency_hz": 2400000000.0,
+    "sample_rate_hz": 30720000.0,
+    "bandwidth_hz": 18000000.0,
+    "gain_mode": "slow_attack",
+    "gain_db": null,
+    "channels": [
+      0
+    ]
+  },
+  "finished_utc": "2026-09-12T20:22:23.818232+00:00"
+}

@@ -1,0 +1,68 @@
+{
+  "outcome": "success",
+  "receipt_id": "355d88f2-3493-43af-8b6d-4f7ff8074670",
+  "phases": [
+    "preflight_revalidated",
+    "remote_preflight_attested",
+    "source_rx_only_attested",
+    "remote_tx_safe_read_only_attested",
+    "pluto_frm_staged",
+    "staged_hash_verified",
+    "updater_reported_done",
+    "mtd3_fit_verified",
+    "remote_stage_removed",
+    "reboot_dispatched",
+    "lan_iio_disappeared",
+    "lan_iio_reappeared",
+    "return_attested",
+    "tx_safe_attested",
+    "lan_ssh_host_key_rotated",
+    "remote_return_tx_safe_read_only_attested"
+  ],
+  "plan": {
+    "host": "192.168.1.17",
+    "target_serial": "104000bac4950008230026001b440a003a",
+    "before_firmware": "starlink-pss30-iio-v1-dnm",
+    "expected_firmware": "v0.49-plutoplus-spf-iq-direct-async-v4",
+    "mutation_profile_id": "iq-direct-async-v4-from-pss30-1r1t-restore",
+    "image_sha256": "f45524f4765d5743144703ff6f4541084ff1ab9b1ce20a77f3f6fa820a1f84b6",
+    "fit_sha256": "77f899610548d486aab2c83c4dc7170532d470b115d2bd0e8fc43e72b3bfca67",
+    "fit_size": 12825815,
+    "source_iio_layout": "detector-only-1r1t-v1",
+    "return_iio_layout": "tx-capable-1r1t-v1"
+  },
+  "qspi_fit_after_reboot": "77f899610548d486aab2c83c4dc7170532d470b115d2bd0e8fc43e72b3bfca67",
+  "final_state": {
+    "serial": "104000bac4950008230026001b440a003a",
+    "firmware": "v0.49-plutoplus-spf-iq-direct-async-v4",
+    "driver": "ad9361",
+    "rx_scan_channels": [
+      "voltage0",
+      "voltage1"
+    ],
+    "rx_sample_rate_hz": 30720000,
+    "rx_bandwidth_hz": 18000000,
+    "tx_lo_powerdown": "1",
+    "tx_gain_db": -80.0,
+    "dds_raw": [
+      "0",
+      "0",
+      "0",
+      "0"
+    ],
+    "dds_scale": [
+      "0.000000",
+      "0.000000",
+      "0.000000",
+      "0.000000"
+    ]
+  },
+  "final_persistent_setup": {
+    "attr_name": "compatible",
+    "attr_val": "ad9361",
+    "compatible": "ad9361",
+    "mode": "1r1t"
+  },
+  "cold_power_cycle_tested": false,
+  "private_credentials_and_environment_excluded": true
+}
