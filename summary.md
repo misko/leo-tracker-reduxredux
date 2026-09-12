@@ -188,6 +188,8 @@ The relevance column says what each report contributes now. “Historical,” �
 
 ## Scope and verification
 
+Loaded tracking follow-up: [Radio .20 loaded 30/60-MS/s acquisition](reports/2026_09_12_radio20_loaded_30_60_tracking.md) records continuous FPGA IQ export alongside ARM scanning and catch-up at both rates, with zero active CDC/pacer losses. The physical candidates did not reach native handoff. Saved-IQ review found a stronger second-ranked candidate missed by the initial selection policy, motivating a full-pilot ordering check; supported physical feedback remains unqualified.
+
 CPU acquisition follow-up: [Radio .20 CPU acquisition and catch-up](reports/2026_09_12_radio20_cpu_acquisition_catchup.md) connects software proposals to the existing resolver/worker without fabricated FPGA decisions. Synthetic pilots pass the complete chain. ARM replay of four windows from each saved 30/60-MS/s capture rejects all eight strongest proposals; independent grids, FFTs and integer moments agree. The receiver clock is frozen in this benchmark, so live acquisition and native feedback remain unqualified.
 
 Scanner follow-up: the same report now includes a two-thread, saved-IQ ARM scan at 638–645 ms/window with all 146,652 scores unchanged. This passes the isolated one-second seed-age timing bound; contention with live DMA and the complete acquired handoff remain unqualified.
