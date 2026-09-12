@@ -49,6 +49,14 @@ the other three. Thus 25 MS/s is not uniformly the best carrier measurement.
 Those carrier figures use the original alternate-measurement quadratic protocol;
 they must not be compared numerically with the new causal PSS timing residuals.
 
+After the earlier sample-phase bias correction, GLRT's frozen early-fit/late-test
+timing RMS is **11.3–24.2 ns native, 8.3–27.3 ns downsampled, and 10.2–37.8 ns
+independent**. The corrected downsample matches or beats native in two of five
+dwells, and is close in another. This further limits the claim that 25 MS/s is
+intrinsically necessary for this pilot's timing. These late-test values use a
+different split from the alternate-measurement figures in the table above;
+the matching before/after late-test bars are shown in the status PNG below.
+
 **What the updated model does.** Each PSS timing observation is modeled as
 `y(t) = q(t) + k × T + residual`, or as a broad outlier. The early smooth
 trajectory `q(t)` is quadratic; `k` identifies a repeated correlation peak.
