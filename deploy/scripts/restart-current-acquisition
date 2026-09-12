@@ -46,8 +46,16 @@ mapfile -t release_bindings < <(
 }
 
 run_leo() {
+  # These commands operate on capture authority, never on a radio. The actual
+  # acquisition service receives and validates its credentials through systemd.
+  # A standalone control command has no CREDENTIALS_DIRECTORY and must not fail
+  # scanner admission before it can pause or inspect that same service.
+  case "${1-} ${2-}" in
+    'acquire status'|'acquire pause'|'acquire resume') ;;
+    *) echo "restart helper permits only capture-authority commands" >&2; return 64 ;;
+  esac
   /usr/sbin/runuser -u leo -- /bin/bash -c \
-    'set -a; source /etc/leo/leo.env; source /etc/leo/acquisition.env; set +a; exec "$@"' \
+    'set -a; source /etc/leo/leo.env; source /etc/leo/acquisition.env; set +a; export LEO_SCANNER_ENABLED=false; exec "$@"' \
     acquisition-component-cutover "$release/.venv/bin/leo" "$@"
 }
 
