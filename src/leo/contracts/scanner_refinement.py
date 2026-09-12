@@ -111,6 +111,16 @@ class ComparisonMetricV1(ContractModel):
     alias_changes: int
 
 
+class ComparisonEvidenceV2(ComparisonEvidenceV1):
+    """Native 10 MS/s comparison over the receivers actually recorded."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    sample_rate_hz: Literal[10000000] = 10000000  # type: ignore[assignment]
+    selection_policy: Literal["two-evenly-spaced-visits-per-target-recorded-receivers"] = (
+        "two-evenly-spaced-visits-per-target-recorded-receivers"  # type: ignore[assignment]
+    )
+
+
 class ComparisonArtifactV1(ContractModel):
     name: Artifact
     sha256: Sha256Digest
@@ -135,6 +145,16 @@ class ComparisonStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["not_started", "partial", "complete"]
     manifest: ComparisonManifestV1 | None = None
+
+
+class ComparisonManifestV2(ComparisonManifestV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    sample_rate_hz: Literal[10000000] = 10000000  # type: ignore[assignment]
+
+
+class ComparisonStatusV2(ComparisonStatusV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    manifest: ComparisonManifestV2 | None = None
 
 
 class ScannerRefinementReader(Protocol):
