@@ -1,0 +1,31 @@
+{
+  "inputs": {
+    "/srv/bulk/leo/experiments/paired-five-pss-bandwidth-20260912-v2-fractional/selection.json": "7448f4b6c72a641795a2044a01ae86a6dfe0f1867c1fd11b8a03c321e948ca6a",
+    "/srv/bulk/leo/experiments/paired-five-pss-bandwidth-20260912-v2-fractional/summary.json": "d6bd4ca7ffafb569107546bb3e56d0e9828b9d303e2404b725849f3a48732f98",
+    "/srv/bulk/leo/experiments/paired-five-pss-outlier-bands-20260912-v5/glrt-sample-phase-bias.json": "050cf53bfcdcf5d89aecb631124b91baa3eb21ea5cdb225e473fedc070557a58"
+  },
+  "frame_timing_source": "frozen corrected fractional PSS v2; no new IQ remeasurement",
+  "models": "single Gaussian+Student-t baseline; fixed repetition mixture; empirical-spacing mixture",
+  "mixture_components": "13 Gaussian peaks plus df=3 Student-t background, scale 1500 ns",
+  "empirical_spacing_bounds_ns": [
+    480,
+    570
+  ],
+  "chosen_mode": "fixed at 25 MS/s; empirical at both 2.5 MS/s lanes, declared before late evaluation",
+  "training_stop_s": 1.35,
+  "process_training_stop_s": 0.9,
+  "process_calibration_stop_s": 1.35,
+  "process_candidates": [
+    1000.0,
+    100000.0,
+    10000000.0,
+    1000000000.0
+  ],
+  "posterior_update_threshold": 0.95,
+  "maximum_coast_s": 0.25,
+  "candidate_acquisition": "whole-interval association inherited from v2; causal replay is conditional",
+  "uncertainty": "curve covariance conditional on spacing and responsibilities; core sigma includes unmodeled signal effects",
+  "background_center": "ordinary quadratic fitted on the supplied training data, frozen during mixture optimization and evaluation; same baseline across candidate models",
+  "fresh_RF": false,
+  "production_deployment": false
+}
