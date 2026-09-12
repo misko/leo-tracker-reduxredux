@@ -19,6 +19,17 @@ from tests.scanner.adaptive_hop_fixtures import block_fixture, receipt_fixture
 OPTIONS = ScannerGlrtOptions("a" * 64, "b" * 64, mode="positive-only-v1")
 
 
+def test_adaptive_adapter_accepts_newly_selected_exact_radio():
+    radio = PlutoAdaptiveHopRadio(
+        "192.168.1.17",
+        expected_serial="104000bac4950008230026001b440a003a",
+        radio_id="radio_pluto_003a",
+        scanner_glrt=OPTIONS,
+    )
+    assert radio.open().serial == "104000bac4950008230026001b440a003a"
+    radio.close()
+
+
 def radio_fixture(upstream, **kwargs):
     client = Client(upstream)
     calls = []
@@ -284,7 +295,6 @@ def test_begin_requires_open_and_one_session():
         {"host": "192.168.2.1"},
         {"host": "127.0.0.1"},
         {"host": "ip:192.168.1.14"},
-        {"expected_serial": "104000bac4950008230026001b440a003a"},
         {"expected_serial": " "},
         {"radio_id": " "},
         {"read_ahead_visits": 0},
