@@ -6,6 +6,14 @@ PSS acquisition, the subsequent causal outlier gate, **new GLRT replay on the
 downsampled IQ**, and historical TLE comparisons for all three signal paths.
 The original experiment artifacts remain available for audit.
 
+**Latest timing-status update:** [Residual bands, fractional interpolation bias,
+and bounded recovery experiments](2026_09_12_pss_glrt_timing_residuals.md).
+This adds six-panel PNGs for every dwell: GLRT above PSS, with columns always
+ordered 25 MS/s native, 2.5 MS/s downsampled, and 2.5 MS/s independent capture.
+It distinguishes PSS repetition ambiguities from smaller GLRT sample-phase bias.
+The new corrections are offline diagnostics; TLE rankings have not been
+recomputed using them, and no FPGA tracker has been deployed by this work.
+
 **Fractional GLRT correction:** GLRT does not require integer timing, and this
 repository already has fractional GLRT products. The first version of this report
 read the integer epoch field and omitted those companions. The completed
