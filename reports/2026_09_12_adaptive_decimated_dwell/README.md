@@ -2,9 +2,26 @@
 
 2026-09-12. Stage 1 of the deployment plan is implemented as a research replay,
 but **the on-radio real-time gate has not passed**. No adaptive profile activation,
-corpus migration or firmware change has occurred. One bounded baseline canary
-was attempted later in the investigation; its failure and temporary service
-pause are recorded below. The fixed production service was restored.
+corpus migration or firmware-image change has occurred. The user-selected radio
+is now `.17`, serial `104000bac4950008230026001b440a003a`; earlier `.20` results
+below are historical evidence. The live [replacement-radio checkpoint](../2026_09_12_radio003a_scanner_switch/README.md)
+and [RF ledger](rf-ledger.json) supersede the older rollout status and remaining
+allowance quoted below.
+
+The larger 262,144-sample refill sustained approximately 65 seconds without a
+reported gap, then exposed a duplicate restoration check that incorrectly treated
+AGC gain observations as configured gains. PPU `7c382988` now uses its existing
+settable-state predicate and retains both gain observations in its receipt.
+Manual gains, rate, bandwidth, LO, channel selection, modes and Fast Lock
+deactivation remain checked. The recheck on sealed Leo release `eefcb4f0` passed:
+65.0196636 seconds of device span, 95.4172% duty, zero missing samples, overflows
+or event gaps, and successful cancellation/restoration. This release and block
+size are now selected for the fixed production scanner.
+
+The normal 23:20 fixed scan then completed on its first attempt at 95.4264% duty,
+with zero reported loss and successful restoration. Native analysis processed all
+2,386 visits; Chromium verified all three plots against their manifest hashes.
+The full adaptive deployment gate remains open.
 
 ## Latest deployment checkpoint
 
