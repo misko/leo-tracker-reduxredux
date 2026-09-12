@@ -2,13 +2,18 @@ import time
 from contextlib import contextmanager
 from types import SimpleNamespace
 
+import pytest
+
 from leo.cli import scanner_refinement as cli
 from leo.storage.scanner_refinement import ScannerRefinementStore
 from tests.scanner.refinement_fixtures import comparison_fixture
 
 
-def test_checkpoint_resumes_without_repeating_completed_probes(monkeypatch, tmp_path):
-    fixture = comparison_fixture()
+@pytest.mark.parametrize("sample_rate_hz", [5000000, 10000000])
+def test_checkpoint_resumes_without_repeating_completed_probes(
+    monkeypatch, tmp_path, sample_rate_hz
+):
+    fixture = comparison_fixture(sample_rate_hz=sample_rate_hz)
     reads = []
 
     @contextmanager
@@ -20,7 +25,7 @@ def test_checkpoint_resumes_without_repeating_completed_probes(monkeypatch, tmp_
         yield SimpleNamespace(
             session_kind="fixed",
             input_manifest_sha256=fixture.input_manifest_sha256,
-            sample_rate_hz=5000000,
+            sample_rate_hz=sample_rate_hz,
             probe_ids=fixture.scheduled_probe_ids,
             read_probe=read,
         )

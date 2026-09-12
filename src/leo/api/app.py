@@ -219,6 +219,7 @@ def create_app(
     resolver = RegisteredArtifactResolver(artifact_root)
     app.include_router(native_recording_router(native_recordings))
     app.include_router(scanner_refinement_router(scanner_refinement))
+    app.include_router(scanner_refinement_router(scanner_refinement, version=2))
     app.include_router(scanner_tracking_router(scanner_tracking))
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")

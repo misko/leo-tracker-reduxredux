@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 type Artifact = "shift-recovery" | "probe-comparison";
 type Status = {
-  schema_version: 1;
+  schema_version: 1 | 2;
   session_id: string;
   state: "not_started" | "partial" | "complete";
   manifest: null | {
@@ -24,7 +24,7 @@ export function ScannerRefinementPanel({ sessionId, inputDigest }: {
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [artifact, setArtifact] = useState<Artifact>("shift-recovery");
-  const base = `/api/v1/scanner/refinement-comparisons/${encodeURIComponent(sessionId)}`;
+  const base = `/api/v2/scanner/refinement-comparisons/${encodeURIComponent(sessionId)}`;
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
@@ -42,7 +42,7 @@ export function ScannerRefinementPanel({ sessionId, inputDigest }: {
         if (!response.ok) throw new Error(`Comparison evidence unavailable (${response.status})`);
         const value = await response.json() as Status;
         const m = value.manifest;
-        if (value.schema_version !== 1 || value.session_id !== sessionId ||
+        if (![1, 2].includes(value.schema_version) || value.session_id !== sessionId ||
             !["not_started", "partial", "complete"].includes(value.state) ||
             (value.state === "complete") !== (m !== null) ||
             (m !== null && (m.session_id !== sessionId ||

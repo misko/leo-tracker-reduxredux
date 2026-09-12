@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from pydantic import TypeAdapter
+from pydantic import RootModel, TypeAdapter
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.scanner_refinement import (
@@ -15,15 +15,20 @@ from leo.contracts.scanner_refinement import (
     Artifact,
     ComparisonArtifactV1,
     ComparisonEvidenceV1,
+    ComparisonEvidenceV2,
     ComparisonManifestV1,
+    ComparisonManifestV2,
     ComparisonMetricV1,
     ComparisonStatusV1,
+    ComparisonStatusV2,
     SessionId,
 )
 from leo.storage.adaptive_hop_analysis import _publish, _read, _seal, _unseal
 from leo.storage.pinned import PinnedLocalRoot
 
 _LIMIT = 8 * 1024 * 1024
+_EvidenceDocument = RootModel[ComparisonEvidenceV1 | ComparisonEvidenceV2]
+_ManifestDocument = RootModel[ComparisonManifestV1 | ComparisonManifestV2]
 
 
 class ScannerRefinementStore:
@@ -51,14 +56,19 @@ class ScannerRefinementStore:
             with self._directory(session_id) as directory:
                 try:
                     manifest = _unseal(
-                        _read(directory, "manifest.json", _LIMIT), ComparisonManifestV1
-                    )
+                        _read(directory, "manifest.json", _LIMIT), _ManifestDocument
+                    ).root
                 except FileNotFoundError:
                     return ComparisonStatusV1(session_id=session_id, state="partial")
                 if manifest.session_id != session_id:
                     raise ValueError("comparison session binding differs")
-                return ComparisonStatusV1(
-                    session_id=session_id, state="complete", manifest=manifest
+                status_type = (
+                    ComparisonStatusV2
+                    if isinstance(manifest, ComparisonManifestV2)
+                    else ComparisonStatusV1
+                )
+                return status_type.model_validate(
+                    dict(session_id=session_id, state="complete", manifest=manifest)
                 )
         except ValueError as error:
             if isinstance(error.__cause__, FileNotFoundError):
@@ -68,7 +78,7 @@ class ScannerRefinementStore:
     def work(self, session_id: str) -> ComparisonEvidenceV1 | None:
         try:
             with self._directory(session_id) as directory:
-                return _unseal(_read(directory, "work.json", _LIMIT), ComparisonEvidenceV1)
+                return _unseal(_read(directory, "work.json", _LIMIT), _EvidenceDocument).root
         except FileNotFoundError:
             return None
         except ValueError as error:
@@ -77,7 +87,7 @@ class ScannerRefinementStore:
             raise
 
     def save_work(self, evidence: ComparisonEvidenceV1) -> None:
-        evidence = ComparisonEvidenceV1.model_validate(evidence.model_dump())
+        evidence = _EvidenceDocument.model_validate(evidence.model_dump()).root
         with self._directory(evidence.session_id, create=True) as directory:
             payload = _seal(evidence)
             if len(payload) > _LIMIT:
@@ -105,7 +115,7 @@ class ScannerRefinementStore:
         metrics: tuple[ComparisonMetricV1, ...],
         artifacts: dict[str, bytes],
     ) -> ComparisonManifestV1:
-        evidence = ComparisonEvidenceV1.model_validate(evidence.model_dump())
+        evidence = _EvidenceDocument.model_validate(evidence.model_dump()).root
         if len({r.probe_id for r in evidence.rows}) + len(evidence.failures) != len(
             evidence.scheduled_probe_ids
         ):
@@ -126,16 +136,23 @@ class ScannerRefinementStore:
                     )
                 )
                 members.append((name + ".png", payload))
-            manifest = ComparisonManifestV1(
-                session_id=evidence.session_id,
-                input_manifest_sha256=evidence.input_manifest_sha256,
-                evidence_sha256=sha256_digest(raw),
-                sample_rate_hz=evidence.sample_rate_hz,
-                scheduled_probes=len(evidence.scheduled_probe_ids),
-                completed_probes=len({r.probe_id for r in evidence.rows}),
-                failed_probes=len(evidence.failures),
-                metrics=metrics,
-                artifacts=tuple(references),
+            manifest_type = (
+                ComparisonManifestV2
+                if isinstance(evidence, ComparisonEvidenceV2)
+                else ComparisonManifestV1
+            )
+            manifest = manifest_type.model_validate(
+                dict(
+                    session_id=evidence.session_id,
+                    input_manifest_sha256=evidence.input_manifest_sha256,
+                    evidence_sha256=sha256_digest(raw),
+                    sample_rate_hz=evidence.sample_rate_hz,
+                    scheduled_probes=len(evidence.scheduled_probe_ids),
+                    completed_probes=len({r.probe_id for r in evidence.rows}),
+                    failed_probes=len(evidence.failures),
+                    metrics=metrics,
+                    artifacts=tuple(references),
+                )
             )
             members.append(("manifest.json", _seal(manifest)))
             for filename, payload in members:
