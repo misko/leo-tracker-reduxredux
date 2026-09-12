@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Protocol
 
 from leo.analysis.persistent_hop_trajectory import PersistentHopCfoCandidate
 from leo.analysis.starlink.fractional_epoch import fractional_take_bounds
@@ -13,7 +13,6 @@ from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.scanner.persistent_hop_products import (
     PERSISTENT_HOP_FRACTIONAL_ANALYZER_ID,
     PersistentHopAnalysisChunkV2,
-    PersistentHopCandidateV2,
     PersistentHopProbeMetricV2,
 )
 from leo.storage.persistent_hop import PersistentHopIqSessionManifestV2
@@ -327,8 +326,16 @@ def _nonoverlapping_probes(
     )
 
 
-def _fractional_glrt64_support_geometry(
-    candidate: PersistentHopCandidateV2,
+class FractionalEpoch(Protocol):
+    @property
+    def integer_epoch_sample(self) -> int: ...
+
+    @property
+    def fractional_epoch_offset_samples(self) -> float: ...
+
+
+def fractional_glrt64_support_geometry(
+    candidate: FractionalEpoch,
     *,
     sample_rate_hz: int,
     probe_sample_count: int,
@@ -380,6 +387,10 @@ def _fractional_glrt64_support_geometry(
         center_in_probe_samples=center,
         factorial_support_moments_s=(1.0, 0.0, raw_second / 2.0, raw_third / 6.0),
     )
+
+
+# Preserve the legacy projection's numerical path and public publications.
+_fractional_glrt64_support_geometry = fractional_glrt64_support_geometry
 
 
 def _utc_ns_for_counter(

@@ -43,6 +43,16 @@ def main() -> None:
             "4",
             "--json",
         ),
+        (
+            "tracking",
+            "leo.cli.scanner_tracking",
+            "--site",
+            arguments.site,
+            "--maximum-seconds",
+            "180",
+            "--maximum-sessions",
+            "2",
+        ),
     )
     failures = []
     for name, module, *options in jobs:
@@ -54,7 +64,7 @@ def main() -> None:
             str(arguments.bulk_root),
             *(
                 []
-                if name == "refinement"
+                if name in ("refinement", "tracking")
                 else ["--maximum-workers", "2", "--probe-stride-ms", "120"]
             ),
             *options,

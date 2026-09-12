@@ -17,6 +17,8 @@ def render_persistent_hop_tracking_png(
     trajectory: PersistentHopTrajectoryResult,
     candidates: tuple[PersistentHopCfoCandidate, ...],
     associations: tuple[PersistentHopTleCandidateV1, ...],
+    *,
+    catalogue_diagnostics: bool = True,
 ) -> bytes:
     """Plot the primary TLE-blind tracks and annotate candidate-only matches."""
 
@@ -77,8 +79,15 @@ def render_persistent_hop_tracking_png(
         axis.grid(alpha=0.2)
         axis.legend(loc="best", fontsize=7)
         axis.set_title(
-            "TLE-blind cross-channel Doppler trajectories with causal catalogue diagnostics\n"
-            "Labels are candidate-only; heldout and wrong-time controls never assert identity",
+            (
+                "TLE-blind cross-channel Doppler trajectories with causal catalogue diagnostics\n"
+                "Labels are candidate-only; heldout and wrong-time controls never assert identity"
+            )
+            if catalogue_diagnostics
+            else (
+                "TLE-blind cross-channel Doppler trajectories\n"
+                "Measured tracks before catalogue comparison"
+            ),
             loc="left",
             fontweight="bold",
         )

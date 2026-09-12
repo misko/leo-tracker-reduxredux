@@ -60,6 +60,7 @@ from leo.storage.adaptive_hop_history import (
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
 from leo.storage.scanner_glrt import ScannerGlrtPresentationStore, ScannerGlrtStore
 from leo.storage.scanner_refinement import ScannerRefinementStore
+from leo.storage.scanner_tracking import ScannerTrackingStore
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -227,6 +228,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             adaptive_scanner_glrt=AdaptiveHopGlrtPresentationStore(configured.bulk_root),
             adaptive_hop_analysis=AdaptiveHopAnalysisPresentationStore(configured.bulk_root),
             scanner_refinement=ScannerRefinementStore(configured.bulk_root),
+            scanner_tracking=ScannerTrackingStore(configured.bulk_root),
             scanner_glrt=ScannerGlrtPresentationStore(
                 persistent_hop_iq,
                 ScannerGlrtStore.open_read_only(configured.bulk_root),
