@@ -1,0 +1,97 @@
+{
+  "audit_time_utc": "2026-09-12T19:59:32.334718+00:00",
+  "scope": "Documentation audit; prior scientific measurements and test receipts checked, no new fit/tests/radio/build. This is not independent physical truth validation.",
+  "checks": {
+    "v6_input_hashes": 3,
+    "v6_validated_source_hashes": 5,
+    "per_series_accounting_and_innovation_checks": 15,
+    "late_decisions_checked": 10125,
+    "three_lane_per_dwell_png_pairs": 5,
+    "continuity_cases_checked": 5,
+    "reference_snapshot_hashes": 7,
+    "v6_prior_tests": "16 passed in 1.73s",
+    "v6_prior_lint": "All checks passed!"
+  },
+  "current_ranges": {
+    "native25": {
+      "supported_pss_dwells": 5,
+      "pss_innovation_rms_ns": [
+        3.2393547797998083,
+        4.68055547293586
+      ],
+      "pss_coverage_supported_percent": [
+        96.0,
+        100.0
+      ],
+      "glrt_v5_corrected_late_rms_ns": [
+        11.277010501852804,
+        24.152664627530914
+      ],
+      "glrt_v4_carrier_rms_hz": [
+        4.7860248276480535,
+        43.3467406752542
+      ]
+    },
+    "derived2p5": {
+      "supported_pss_dwells": 5,
+      "pss_innovation_rms_ns": [
+        43.93915772490979,
+        79.6964260847486
+      ],
+      "pss_coverage_supported_percent": [
+        54.666666666666664,
+        92.44444444444444
+      ],
+      "glrt_v5_corrected_late_rms_ns": [
+        8.320859305693318,
+        27.330131695355636
+      ],
+      "glrt_v4_carrier_rms_hz": [
+        4.948724209221296,
+        44.00569202188645
+      ]
+    },
+    "recorded2p5": {
+      "supported_pss_dwells": 3,
+      "pss_innovation_rms_ns": [
+        44.62038024673088,
+        51.777040935435465
+      ],
+      "pss_coverage_supported_percent": [
+        57.925925925925924,
+        89.77777777777777
+      ],
+      "glrt_v5_corrected_late_rms_ns": [
+        10.157212342839003,
+        37.79373165346865
+      ],
+      "glrt_v4_carrier_rms_hz": [
+        3.887528250614589,
+        42.76608085189574
+      ]
+    }
+  },
+  "input_sha256": {
+    "/srv/bulk/leo/experiments/paired-five-pss-mixture-models-20260912-v6/protocol.json": "0e12ed6517ac9557ae3b7f33a5d29f330502d01b29bd54304eb98e4ad2f2f331",
+    "/srv/bulk/leo/experiments/paired-five-pss-mixture-models-20260912-v6/summary.json": "a8e2a100e3e1e57457ff4dc4be031c5506dfb7043c894cde02d441e2cf2551e1",
+    "/srv/bulk/leo/experiments/paired-five-pss-mixture-models-20260912-v6/validation.json": "6c57ce87f82c0583e07b8199454ac688a9f611d1b15fbeb636dd6f1e2444ddc2",
+    "/srv/bulk/leo/experiments/paired-five-pss-mixture-models-20260912-v6/continuity-audit.json": "399bace3560bfbcdb03ea6fdb33873d92af6451a6bb0be3513b402902cbe4bec",
+    "/srv/bulk/leo/experiments/paired-five-glrt-pss-tle-20260912-v4/measurement-summary.csv": "9d1f3be24c6addbd5069ce8c8d46d4e51948f472764545dbf639ba1bf33eba86",
+    "/srv/bulk/leo/experiments/paired-five-pss-outlier-bands-20260912-v5/glrt-sample-phase-bias.json": "050cf53bfcdcf5d89aecb631124b91baa3eb21ea5cdb225e473fedc070557a58",
+    "/srv/bulk/leo/experiments/paired-five-report-audit-20260912-v7/planning-budget.json": "d376de9d7d297957dab4097008bcedfff61045322dbae026cbac9fbf0128345b",
+    "/srv/bulk/leo/experiments/paired-five-report-audit-20260912-v7/source-provenance.json": "0858b4dccbac8bc233af76af4856d662b1b5c4d85fdebd16cea0ef9e80b040f3"
+  },
+  "report_source_sha256": {
+    "/home/mouse9911/gits/leo-tracker-paired-five-pss-bandwidth/reports/2026_09_12_three_lane_glrt_pss_tle_comparison.md": "37057c2ef759801717eace0fedebf992396fe93e56c8c21dab450ef1a15fa1c7",
+    "/home/mouse9911/gits/leo-tracker-paired-five-pss-bandwidth/reports/2026_09_12_pss_mixture_models.md": "ed280805a617cf70f86cf9a0d96135a1374a133687731486f3920ff01ffca01c",
+    "/home/mouse9911/gits/leo-tracker-paired-five-pss-bandwidth/reports/2026_09_12_pss_30_60_fpga_path.md": "971507826f9b2489670b0a7e929c5d572f08dcdaaa030228e97939bfb6cbf0e5"
+  },
+  "unresolved": [
+    "Physical timing/carrier sign and clock interpretation",
+    "Observer site authority and calibrated RF response",
+    "TLE rankings not rerun with v5/v6 corrections",
+    "Long-baseline PSS tracking across existing native gaps",
+    "Live acquired fractional PSS loop at 30/60 MS/s",
+    "New sampler/correlator whole-board timing and throughput"
+  ]
+}

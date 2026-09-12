@@ -1,10 +1,24 @@
 # Five paired dwells: GLRT, PSS, bandwidth and historical Starlink TLE discrimination
 
-Updated 12 September 2026. This is the consolidated current report, superseding
-the original integer-first PSS comparison. It incorporates corrected fractional
-PSS acquisition, the subsequent causal outlier gate, **new GLRT replay on the
-downsampled IQ**, and historical TLE comparisons for all three signal paths.
-The original experiment artifacts remain available for audit.
+Updated and comprehensively audited 12 September 2026. This report consolidates
+the five-dwell comparison, fractional GLRT and PSS measurements, interpolation
+and repetition-band investigations, updated probabilistic PSS tracking, capture
+continuity, historical TLE discrimination, and the proposed 30/60 MS/s FPGA path.
+All three paths remain explicit: **25 MS/s native, 2.5 MS/s downsampled, and
+2.5 MS/s independent capture**. Original results are retained with their protocols;
+later corrections do not silently replace earlier measurements or TLE rankings.
+
+**Reading the evidence:** the current summary below includes the v5 GLRT
+correction and v6 PSS models. The detailed carrier/TLE tables later in this report
+retain the v4 comparison. No TLE ranking has been recomputed with v5/v6 corrections.
+The present v7 update audits and consolidates documentation and engineering
+calculations; it is not another measurement or model-fitting experiment.
+
+**Engineering discussion:** [A bounded path to 30/60 MS/s fractional PSS tracking](2026_09_12_pss_30_60_fpga_path.md).
+This reviews reusable hardware evidence, the older integer-lag FPGA result,
+fractional tracking requirements, acquisition/handoff, analog bandwidth and
+explicit transport/compute budgets. It proposes windowed native capture first,
+then hardware correlation, with software prediction and explicit reacquisition.
 
 **Latest model update:** [Probabilistic PSS repetition models, causal timing
 updates, bandwidth expectations and recording continuity](2026_09_12_pss_mixture_models.md).
@@ -25,7 +39,8 @@ recomputed using them, and no FPGA tracker has been deployed by this work.
 **Fractional GLRT correction:** GLRT does not require integer timing, and this
 repository already has fractional GLRT products. The first version of this report
 read the integer epoch field and omitted those companions. The completed
-fractional comparison below corrects that omission: **10.5–11.9 ns native,
+v4 alternate-measurement fractional comparison below corrects that omission:
+**10.5–11.9 ns native,
 21.3–26.3 ns downsampled, and 21.0–33.0 ns other-radio timing RMS**. The integer
 table is retained as a labeled baseline, not as GLRT's precision limit.
 
@@ -49,6 +64,80 @@ conditional on that assumed site; the measured signal comparisons are not.
 | 2.5 MS/s downsample of the 25 MS/s recording | All 1,035 new GLRT windows pass; carrier curves and leading TLE candidates closely match native 25 MS/s | An independent second observation: this is the same ADC and the same IQ |
 | 2.5 MS/s from the other radio | Strong GLRT in all selected windows; sometimes substantially cleaner carrier measurements than the native radio | Nanosecond time alignment or a shared calibrated oscillator |
 | Native 25 MS/s | Much stronger per-frame PSS peaks and cleaner timing; accepted gated measurements have roughly 3–5 ns local residuals | A corresponding absolute Doppler accuracy, or a 10× carrier/TLE improvement |
+
+**Current measurements and what each number means.** Ranges span the five
+selected dwells; the independent PSS residual range includes only its three
+supported cases. Measurements use the same selected intervals but different
+estimator apertures and the explicitly stated validation protocols. They are
+not a common absolute-accuracy leaderboard.
+
+| Observable / protocol | 25 MS/s native | 2.5 MS/s downsampled | 2.5 MS/s independent capture |
+|---|---:|---:|---:|
+| GLRT carrier: v4 alternating-measurement quadratic residual RMS | 4.79–43.35 Hz | 4.95–44.01 Hz | 3.89–42.77 Hz |
+| GLRT timing: v5 first-60% fit, late-40% prediction, sample-phase correction | 11.3–24.2 ns RMS | 8.3–27.3 ns RMS | 10.2–37.8 ns RMS |
+| PSS timing: v6 accepted late causal innovations after repetition association | 3.2–4.7 ns RMS | 43.9–79.7 ns RMS | 44.6–51.8 ns RMS |
+| PSS supported repetition models | 5/5 dwells | 5/5 dwells | 3/5 dwells |
+| PSS late update coverage, 675 frames/dwell | 96.0–100% | 54.7–92.4% | 57.9–89.8% in supported cases; 0% in two cases |
+
+Native and downsampled GLRT carrier curves closely agree dwell by dwell and
+select the same leading TLE candidate in all five. Their overlapping timing
+residual ranges after correction also weaken a claim of an intrinsic large
+wideband GLRT advantage. PSS shows a much larger measured benefit from the
+wider capture: lower within-track scatter, stronger peaks and higher coverage.
+
+The v6 PSS fit uses the first 1.35 seconds for its band model and replays the
+last 0.90 seconds causally, choosing process variance within early data only.
+It models a quadratic trajectory, repeated peaks and a broad Student-t outlier
+population. Gaussian width, spacing and branch probabilities are frozen for
+late updates. Native uses 533.333 ns spacing; the narrowband paths use an
+empirical spacing bounded to 480–570 ns. A best-branch posterior of at least
+95% is necessary for an update. Unsupported models do not update, and 250 ms
+without support expires a lock. The frozen mixture improves all-point late
+predictive density over a single-peak baseline in 11 of 13 supported series,
+so the more elaborate model is not uniformly better.
+
+![Current all-dwell GLRT correction and PSS tracking coverage](figures/2026_09_12_paired_glrt_pss_tle/paired-five-pss-mixture-models-20260912-v6/mixture-model-status.png)
+
+GLRT's top row compares like-for-like frozen predictions before and after its
+sample-phase correction. PSS's bottom row counts every late opportunity by
+update outcome. The two rows intentionally show different quantities. Per-dwell
+raw peaks, associated residuals, complete model fits, all late decisions and
+limitations are retained in the [PSS model supplement](2026_09_12_pss_mixture_models.md).
+
+**Why small ns RMS does not directly establish better Doppler or a better TLE
+match.** The plotted residual is consistency with an estimator/model; it is not
+error against known propagation delay. A useful conceptual observation equation is
+`measured timing = propagation delay + combined frame/receiver clock offset + estimator error`.
+For physical propagation delay `tau = range/c`, the first-order Doppler relation
+is `f_D = -f_RF * d(tau)/dt`; Doppler rate depends on the second derivative.
+These relations do not automatically apply to the stored template-phase coordinate.
+Carrier measurements also have oscillator terms of their own.
+
+At a fixed time baseline and sampling pattern, reducing independent unbiased
+timing errors tenfold ideally reduces fitted slope and curvature uncertainty
+tenfold. A longer supported baseline can also improve those derivatives.
+But lower residuals achieved through stronger smoothing, outlier selection or
+repetition association are not automatically an equivalent reduction in true
+measurement error. Adjacent accepted native innovations in `466531` have
+correlation 0.38, so independent-frame uncertainty formulas are not calibrated
+for that track. The current replay is conditional on an already associated
+candidate and does not validate blind acquisition or an absolute timing origin.
+
+Starlink's frame and carrier clocks can behave differently; a precise frame
+stretch measurement is therefore not by itself a precise geometric carrier
+Doppler measurement. [Independent timing research](https://radionavlab.ae.utexas.edu/wp-content/uploads/qin_starlink_timing_properties.pdf)
+supports separate clock terms, without diagnosing the cause of our particular
+timing/carrier coordinate mismatch.
+
+TLE discrimination additionally requires candidate predictions to remain
+different after allowing the same justified clock uncertainties. In our retained
+`e4d711` comparison, one drift-adjusted candidate reaches 3.53 ns late RMS, yet
+all 193 visible candidates remain within the empirical separation threshold.
+Thus a tiny residual can coexist with almost no satellite specificity. This
+work compares existing TLE candidates; it does not estimate new orbital elements.
+The next scientific quantities to validate are slope/curvature uncertainty with
+temporal correlation, calibrated agreement with carrier observations, and
+held-out candidate separation under a justified shared observation model.
 
 **Cohort and input control.** The frozen inventory contains 841 paired capture
 IDs, 1,682 recorded 2.5 MS/s GLRT products and 121 native 25 MS/s GLRT products
@@ -78,6 +167,28 @@ intervals have none. Inter-radio start offsets are 286–374 ms. Summed first-sa
 UTC half-widths are 1.41–1.70 ms, larger than the nominal 1.333 ms frame period.
 The paired intervals are contemporaneous, but common individual frame numbers
 and absolute inter-radio timing are unresolved.
+
+**The 2.25-second interval is a selection choice, with a real continuity limit
+in the underlying wideband captures.** All five native paths span 60 seconds,
+but their longest continuous segments are only 3.28–3.40 seconds. The segments
+containing our chosen intervals last 3.00–3.28 seconds. All native boundaries
+have counter-gap/overflow flags, and their median positive preceding gap is
+1.92 seconds. These flags do not isolate the faulty acquisition/transport stage.
+All five independent 2.5 MS/s recordings contain 60 seconds of continuous IQ;
+the downsampled controls inherit the native gaps. Zero-fill placeholders cannot
+be treated as observed timing. See the [full counter audit](figures/2026_09_12_paired_glrt_pss_tle/paired-five-pss-mixture-models-20260912-v6/continuity-audit.json).
+
+A longer analysis can use more of each valid native segment, or process segments
+over the full minute with explicit reacquisition and frame/peak identity checks.
+It cannot claim continuously measured wideband lock across the missing IQ.
+Continuous independent-radio samples permit a longer PSS analysis, but sustained
+PSS support outside the selected interval has not yet been established.
+
+The frozen bindings declare RF bandwidths of 25 MHz for native and 2.5 MHz for
+the independent recording. These settings do not constitute a measured flat RF
+response or physical-die attestation. The comparison demonstrates the behavior
+of these recorded paths; extrapolation to 30/60 MS/s requires explicit RF/filter
+profiles and new evidence of the additional useful bandwidth.
 
 The downsampled control translates the native IQ to the other radio's pilot-edge
 center, applies the existing FFT-based decimation by ten, and trims 64 output
@@ -486,6 +597,24 @@ all measured series, all candidate rankings for the three nuisance/mask scenario
 GLRT epoch diagnostics and primary timing rankings, input references and prediction
 arrays. No published contracts, databases, golden fixtures or QNAP paths were
 modified. The additions are research analysis and offline report tools.
+
+| Evidence version | Scope and status |
+|---|---|
+| v1 | Frozen five-dwell GLRT selection and original integer-first PSS experiment; historical baseline |
+| v2 | Corrected fractional PSS measurements; source observations used by the later models |
+| v3 | Native PSS causal outlier-gate replay; retained earlier tracking baseline |
+| v4 | Three-lane GLRT/carrier and historical TLE comparison, including fractional GLRT companions; current published TLE evidence |
+| v5 | Polynomial order, repetition bands, GLRT sample-phase bias and bounded PSS IQ recovery diagnostics |
+| v6 | Three-lane probabilistic PSS models, all-point frozen scores, causal updates, all raw/associated PNGs and full-capture continuity audit |
+| v7 | This report consolidation, source/evidence audit and 30/60 MS/s engineering calculations; no new IQ measurements, models or hardware claims |
+
+The v6 component validation separately records **16 passing targeted tests**
+(eleven mixture tests plus five existing causal-lock tests) and lint success.
+The older 64-test result at the end of this report belongs to v4; it is not a
+new run or a combined count for v6. This documentation update checks linked
+artifacts, input/source hashes, result accounting, reported ranges and derived
+engineering arithmetic. See the [report audit](figures/2026_09_12_paired_glrt_pss_tle/paired-five-report-audit-20260912-v7/report-audit.json)
+and [source/provenance snapshot](figures/2026_09_12_paired_glrt_pss_tle/paired-five-report-audit-20260912-v7/source-provenance.json).
 
 - [Measurement summary CSV](figures/2026_09_12_paired_glrt_pss_tle/paired-five-glrt-pss-tle-20260912-v4/measurement-summary.csv)
 - [All carrier/PSS TLE rankings CSV](figures/2026_09_12_paired_glrt_pss_tle/paired-five-glrt-pss-tle-20260912-v4/tle-rankings.csv.gz)
