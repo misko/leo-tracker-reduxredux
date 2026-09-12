@@ -1,0 +1,84 @@
+Canary: (1,), 10 MS/s, 300s, isolated writer
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 255, in read_visit
+    return self._visits.get(timeout=_PRODUCER_POLL_SECONDS)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/queue.py", line 209, in get
+    raise Empty
+_queue.Empty
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/scanner/persistent_hop_application.py", line 86, in capture_persistent_hop_session
+    block = session.read_visit()
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 260, in read_visit
+    self._raise_producer_error()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 404, in _raise_producer_error
+    raise self._producer_error
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 295, in _run_producer
+    sampled = next(visits)
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/persistent_hop.py", line 1439, in visits
+    for block in self._decoded_blocks():
+                 ~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/persistent_hop.py", line 1491, in _decoded_blocks
+    for wire in self._backend.blocks():
+                ~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_persistent_hop.py", line 290, in blocks
+    raw = capture.read_block()
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_metadata.py", line 1342, in read_block
+    buffer.refill()
+    ~~~~~~~~~~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/iio.py", line 1435, in refill
+    _buffer_refill_with_metadata(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._buffer,
+        ^^^^^^^^^^^^^
+    ...<2 lines>...
+        _byref(metadata_bytes),
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/iio.py", line 65, in _check_negative
+    raise OSError(-result, _strerror(-result))
+OSError: [Errno 116] Stale file handle
+persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=17868572528595185572, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.CANCELLED: 4>, reason=<PersistentHopTerminalReason.CLIENT_CLOSE: 2>, error_code=0, flags=<PersistentHopStatusFlag.TERMINAL|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 57>, session_id=17868572528595185572, planned_dwells=2500, visits_started=1, events_emitted=1, next_event_sequence=1, last_block_sequence=2, last_block_end_counter=2090533891973, first_counter=2090533477055, final_counter=2090534353800, restore_before_counter=2090534353800, restore_after_counter=2090534413992, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=0, restored_profile_index=255, startup_invalid_start_counter=2090533477055, startup_invalid_end_counter_exclusive=2090533549351, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=())
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/reports/2026_09_12_single_rx_10m_profile/canary.py", line 68, in <module>
+    result = backend.capture_scheduled_scanner(intent, cancel=Event())
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/cli/composition.py", line 1434, in capture_scheduled_scanner
+    return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/cli/composition.py", line 1674, in _capture_scheduled_persistent_hop
+    published = capture_persistent_hop_to_store(
+        radio,
+    ...<7 lines>...
+        before_publish=cleanup_before_publish,
+    )
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/storage/persistent_hop_capture.py", line 39, in capture_persistent_hop_to_store
+    receipt = capture_persistent_hop_session(
+        radio,
+    ...<4 lines>...
+        timing_sink=timings.append,
+    )
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/scanner/persistent_hop_application.py", line 146, in capture_persistent_hop_session
+    raise failure from primary_error
+leo.scanner.persistent_hop_application.PersistentHopCaptureError: capture=OSError: [Errno 116] Stale file handle; capture_note=persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=17868572528595185572, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.CANCELLED: 4>, reason=<PersistentHopTerminalReason.CLIENT_CLOSE: 2>, error_code=0, flags=<PersistentHopStatusFlag.TERMINAL|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 57>, session_id=17868572528595185572, planned_dwells=2500, visits_started=1, events_emitted=1, next_event_sequence=1, last_block_sequence=2, last_block_end_counter=2090533891973, first_counter=2090533477055, final_counter=2090534353800, restore_before_counter=2090534353800, restore_after_counter=2090534413992, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=0, restored_profile_index=255, startup_invalid_start_counter=2090533477055, startup_invalid_end_counter_exclusive=2090533549351, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=()); recovery=PlutoPersistentHopError: persistent-hop finish requires a server-attested terminal receipt

@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 _scanner_runtime_policy = runpy.run_path(str(ROOT / "deploy/scripts/scanner-runtime-binding.py"))
 _scanner_binary_path = _scanner_runtime_policy["scanner_binary_path"]
 _scanner_only_bindings = _scanner_runtime_policy["SCANNER_ONLY_BINDINGS"]
+_scanner_radio_bindings = _scanner_runtime_policy["scanner_radio_bindings"]
 MANIFEST_PATH = ROOT / "config/ops-components.json"
 PROTECTED_DATABASES = frozenset({"leo_tracker", "postgres", "template0", "template1"})
 RELEASE_ROOT = Path("/opt/leo-tracker")
@@ -2127,7 +2128,11 @@ def _write_acquisition_release_environment(
         raise OpsError(str(error)) from error
     release_location = locations[release_key][0]
     lines[release_location] = f"{release_key}={target}"
-    updates = {binary_key: binary_path, scanner_key: "true", **_scanner_only_bindings}
+    updates = {
+        binary_key: binary_path,
+        scanner_key: "true",
+        **_scanner_radio_bindings(_environment_values(old_environment)),
+    }
     for key, value in updates.items():
         if locations[key]:
             lines[locations[key][0]] = f"{key}={shlex.quote(value)}"

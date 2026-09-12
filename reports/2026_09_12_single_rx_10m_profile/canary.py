@@ -2,15 +2,19 @@
 
 import json
 import signal
+import subprocess
 import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Event
 
+from pluto_plus.userspace_iiod import UserspaceIiodDeployment
+
 from leo.acquisition.authority import RadioBusyError
 from leo.cli.backend import CliBackendError
 from leo.cli.composition import CliSettings, CompositionHooks, LocalAcquisitionBackend
+from leo.radio.scanner_iio_compat import endpoint_probe
 from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID
 from leo.storage.persistent_hop import PersistentHopIqStore
 
@@ -19,6 +23,63 @@ CANARY_ROOT = Path(sys.argv[2])
 OUTPUT = Path(sys.argv[1])
 if OUTPUT.exists():
     raise FileExistsError(OUTPUT)
+
+
+class DiagnosticDeployment(UserspaceIiodDeployment):
+    """Retain the owned daemon's bounded log before normal verified cleanup."""
+
+    def __init__(self, configuration):
+        self.configuration = configuration
+        super().__init__(
+            host=configuration.host,
+            expected_serial=configuration.expected_serial,
+            binary_path=configuration.binary_path,
+            known_hosts_path=configuration.known_hosts_path,
+            password_path=configuration.password_path,
+            serial_probe=endpoint_probe,
+        )
+
+    def exit_and_verify(self):
+        try:
+            if self.active is not None:
+                configuration = self.configuration
+                result = subprocess.run(
+                    [
+                        "sshpass",
+                        "-f",
+                        str(configuration.password_path),
+                        "ssh",
+                        "-T",
+                        "-F",
+                        "/dev/null",
+                        "-o",
+                        "StrictHostKeyChecking=yes",
+                        "-o",
+                        f"UserKnownHostsFile={configuration.known_hosts_path}",
+                        "-o",
+                        "GlobalKnownHostsFile=/dev/null",
+                        "-o",
+                        "PubkeyAuthentication=no",
+                        "-o",
+                        "PreferredAuthentications=password",
+                        "-o",
+                        "NumberOfPasswordPrompts=1",
+                        f"root@{configuration.host}",
+                        f"head -c 65536 {self.active.paths.log}",
+                    ],
+                    capture_output=True,
+                    timeout=10,
+                    check=False,
+                )
+                OUTPUT.with_suffix(".iiod.log").write_bytes(result.stdout)
+                print(
+                    f"Owned iiOD diagnostic log retained (SSH exit {result.returncode})", flush=True
+                )
+        except Exception as error:
+            print(f"Could not retain iiOD log: {type(error).__name__}: {error}", flush=True)
+        finally:
+            super().exit_and_verify()
+
 
 values = {}
 for file in (Path("/etc/leo/leo.env"), Path("/etc/leo/acquisition.env")):
@@ -42,7 +103,10 @@ values.update(
 store = PersistentHopIqStore(CANARY_ROOT)
 backend = LocalAcquisitionBackend(
     CliSettings.from_environ(values),
-    CompositionHooks(persistent_hop_store_factory=lambda _root: store),
+    CompositionHooks(
+        persistent_hop_store_factory=lambda _root: store,
+        persistent_hop_iiod_lifecycle_factory=DiagnosticDeployment,
+    ),
 )
 slot = datetime.fromtimestamp(int(time.time() // 1200) * 1200, UTC)
 intent = backend.scheduled_scanner_intent(
