@@ -1,8 +1,8 @@
 {
   "schema": "adaptive-deployment-qualification-rf-ledger-v1",
   "budget_seconds": 1800,
-  "charged_seconds": 9.285046554,
-  "remaining_seconds": 1790.714953446,
+  "charged_seconds": 77.86576568294957,
+  "remaining_seconds": 1722.1342343170504,
   "entries": [
     {
       "id": "metadata-canary-preflight",
@@ -13,9 +13,19 @@
       "id": "metadata-canary-startup-failure",
       "rf_seconds_upper_bound": 9.285046554,
       "reason": "conservatively charge entire capture call including bufferless preparation and cleanup; incomplete first valid visit; restoration attested"
+    },
+    {
+      "id": "radio003a-canary-cancel-failure",
+      "rf_seconds_upper_bound": 34.276158086024225,
+      "reason": "RX1 cancellation failed because metadata-closed visits exceeded retained IQ; owned daemon cleaned; capture stopped"
+    },
+    {
+      "id": "radio003a-canary-cancel-pass",
+      "rf_seconds_upper_bound": 34.30456104292534,
+      "reason": "RX1 bounded recheck passed after draining closed-visit IQ; cancellation and restoration attested"
     }
   ],
   "reserved_next_canaries_seconds": 1500,
-  "unallocated_seconds": 290.714953446,
+  "unallocated_seconds": 222.1342343170504,
   "collection_stopped_on_failure": true
 }

@@ -1,0 +1,94 @@
+{
+  "release": "f497e1e6015a6f4f159512c8ad0f886dd1bfde3b",
+  "intent": {
+    "schema_version": 2,
+    "policy_id": "single-rx-random-10m-300s-v1",
+    "intent_digest": "sha256:ca372e1850cf056eecd5e2a85b053b74bf027e1e386ec5c0c85a9b54bf084ec8",
+    "operation_key": "scheduled-scanner:20260912T222000Z",
+    "radio_id": "radio_pluto_003a",
+    "radio_serial": "104000bac4950008230026001b440a003a",
+    "scheduled_for": "2026-09-12T22:20:00Z",
+    "cadence_ordinal": 1491043,
+    "interval_seconds": 1200.0,
+    "maximum_lateness_seconds": 300.0,
+    "run_duration_seconds": 300,
+    "configuration": {
+      "schema_version": 4,
+      "band_plan_id": "starlink-low-ch1-ch4-pilot-centered-single-rx-v1",
+      "lnb_lo_hz": 9750000000,
+      "sample_rate_hz": 10000000,
+      "bandwidth_hz": 10000000,
+      "dwell_ms": 120,
+      "probe_ms": 20,
+      "kernel_buffers": 8,
+      "receiver_ids": [
+        1
+      ],
+      "gain_mode": "manual",
+      "gain_db": 40.0,
+      "glrt64_margin_gate": 0.025,
+      "maximum_acquisition_candidates": 10,
+      "targets": [
+        {
+          "channel": 1,
+          "edge": "lower",
+          "rf_center_hz": 10709687500,
+          "if_center_hz": 959687500
+        },
+        {
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10959687500,
+          "if_center_hz": 1209687500
+        },
+        {
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11209687500,
+          "if_center_hz": 1459687500
+        },
+        {
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11459687500,
+          "if_center_hz": 1709687500
+        },
+        {
+          "channel": 1,
+          "edge": "upper",
+          "rf_center_hz": 10940312500,
+          "if_center_hz": 1190312500
+        },
+        {
+          "channel": 2,
+          "edge": "upper",
+          "rf_center_hz": 11190312500,
+          "if_center_hz": 1440312500
+        },
+        {
+          "channel": 3,
+          "edge": "upper",
+          "rf_center_hz": 11440312500,
+          "if_center_hz": 1690312500
+        },
+        {
+          "channel": 4,
+          "edge": "upper",
+          "rf_center_hz": 11690312500,
+          "if_center_hz": 1940312500
+        }
+      ],
+      "tuning_settle_us": 250,
+      "reset_receive_buffer_before_each_target": true,
+      "require_device_metadata": true
+    }
+  },
+  "purpose": "30-second cancellation/startup check; not 300-second duty qualification",
+  "status": "failed",
+  "maximum_capture_call_seconds": 90,
+  "capture_started_utc_ns": 1789252103645781879,
+  "error": "SSH known-hosts must contain only exact literal-host keys",
+  "notes": [],
+  "charged_rf_upper_bound_seconds": 0.19214970408938825,
+  "finished_utc_ns": 1789252103837932418
+}
