@@ -1,0 +1,459 @@
+{
+  "duration_seconds": 17.746938,
+  "kind": "leo-test-receipt",
+  "manifest_sha256": "d82301bd9b8150e9df4eddda5d1edd1c5be7bcf2fd03c20f06f89831ef2e7b52",
+  "overlay_digest": "174b96416476354c13ea24a5aba793f43f87a24c58c9a163ff665f8e37440482",
+  "passed": true,
+  "plan": {
+    "components": [
+      "analysis",
+      "api",
+      "python-general",
+      "web"
+    ],
+    "gates": [
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/mypy",
+          "src"
+        ],
+        "name": "mypy",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_catalogue_eligibility.py"
+        ],
+        "name": "pytest-changed-1",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/api/test_scanner_tracking.py"
+        ],
+        "name": "pytest-changed-2",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/application/test_persistent_hop_trajectory.py"
+        ],
+        "name": "pytest-changed-3",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/application/test_scanner_tracking.py"
+        ],
+        "name": "pytest-changed-4",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_scanner_analysis_backfill.py"
+        ],
+        "name": "pytest-changed-5",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/contracts/test_scanner_tracking_contracts.py"
+        ],
+        "name": "pytest-changed-6",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/storage/test_scanner_tracking.py"
+        ],
+        "name": "pytest-changed-7",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/storage/test_scanner_tracking_source.py"
+        ],
+        "name": "pytest-changed-8",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+          "check",
+          "--force-exclude",
+          "src/leo/analysis/catalogue_eligibility.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/api/scanner_tracking.py",
+          "src/leo/application/persistent_hop_trajectory.py",
+          "src/leo/application/scanner_tracking.py",
+          "src/leo/application/scanner_trajectory.py",
+          "src/leo/cli/scanner_analysis_backfill.py",
+          "src/leo/cli/scanner_tracking.py",
+          "src/leo/contracts/scanner_tracking.py",
+          "src/leo/presentation/persistent_hop_tracking.py",
+          "src/leo/storage/scanner_tracking.py",
+          "src/leo/storage/scanner_tracking_source.py",
+          "tests/analysis/test_catalogue_eligibility.py",
+          "tests/api/test_scanner_tracking.py",
+          "tests/application/test_persistent_hop_trajectory.py",
+          "tests/application/test_scanner_tracking.py",
+          "tests/cli/test_scanner_analysis_backfill.py",
+          "tests/contracts/test_scanner_tracking_contracts.py",
+          "tests/storage/test_scanner_tracking.py",
+          "tests/storage/test_scanner_tracking_source.py"
+        ],
+        "name": "ruff-check",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+          "format",
+          "--check",
+          "--force-exclude",
+          "src/leo/analysis/catalogue_eligibility.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/api/scanner_tracking.py",
+          "src/leo/application/persistent_hop_trajectory.py",
+          "src/leo/application/scanner_tracking.py",
+          "src/leo/application/scanner_trajectory.py",
+          "src/leo/cli/scanner_analysis_backfill.py",
+          "src/leo/cli/scanner_tracking.py",
+          "src/leo/contracts/scanner_tracking.py",
+          "src/leo/presentation/persistent_hop_tracking.py",
+          "src/leo/storage/scanner_tracking.py",
+          "src/leo/storage/scanner_tracking_source.py",
+          "tests/analysis/test_catalogue_eligibility.py",
+          "tests/api/test_scanner_tracking.py",
+          "tests/application/test_persistent_hop_trajectory.py",
+          "tests/application/test_scanner_tracking.py",
+          "tests/cli/test_scanner_analysis_backfill.py",
+          "tests/contracts/test_scanner_tracking_contracts.py",
+          "tests/storage/test_scanner_tracking.py",
+          "tests/storage/test_scanner_tracking_source.py"
+        ],
+        "name": "ruff-format",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "run",
+          "build"
+        ],
+        "name": "web-build",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "test",
+          "--",
+          "--run"
+        ],
+        "name": "web-test",
+        "postgres": false
+      }
+    ],
+    "paths": [
+      "src/leo/analysis/catalogue_eligibility.py",
+      "src/leo/api/app.py",
+      "src/leo/api/production.py",
+      "src/leo/api/scanner_tracking.py",
+      "src/leo/application/persistent_hop_trajectory.py",
+      "src/leo/application/scanner_tracking.py",
+      "src/leo/application/scanner_trajectory.py",
+      "src/leo/cli/scanner_analysis_backfill.py",
+      "src/leo/cli/scanner_tracking.py",
+      "src/leo/contracts/scanner_tracking.py",
+      "src/leo/presentation/persistent_hop_tracking.py",
+      "src/leo/storage/scanner_tracking.py",
+      "src/leo/storage/scanner_tracking_source.py",
+      "tests/analysis/test_catalogue_eligibility.py",
+      "tests/api/test_scanner_tracking.py",
+      "tests/application/test_persistent_hop_trajectory.py",
+      "tests/application/test_scanner_tracking.py",
+      "tests/cli/test_scanner_analysis_backfill.py",
+      "tests/contracts/test_scanner_tracking_contracts.py",
+      "tests/storage/test_scanner_tracking.py",
+      "tests/storage/test_scanner_tracking_source.py",
+      "web/src/AdaptiveHopPanel.tsx",
+      "web/src/App.tsx",
+      "web/src/ScannerTrackingPanel.test.tsx",
+      "web/src/ScannerTrackingPanel.tsx"
+    ],
+    "tier": "deployment"
+  },
+  "results": [
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/mypy",
+        "src"
+      ],
+      "duration_seconds": 0.15297,
+      "exit_code": 0,
+      "name": "mypy",
+      "output_sha256": "fddd1aa9b9175a6a17ec12ea474e752af850e14c9a0bd9404ee939403e24979a"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_catalogue_eligibility.py"
+      ],
+      "duration_seconds": 9.238588,
+      "exit_code": 0,
+      "name": "pytest-changed-1",
+      "output_sha256": "ce289ca0a62735067ce02a81838342f1a4e8ca69ea92c0354bbcb2d269ae54b2"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/api/test_scanner_tracking.py"
+      ],
+      "duration_seconds": 11.209533,
+      "exit_code": 0,
+      "name": "pytest-changed-2",
+      "output_sha256": "35528ae756a4cdbfd57d88291f23dbb1afe7b1c912a387d07bbf47341e333f27"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/application/test_persistent_hop_trajectory.py"
+      ],
+      "duration_seconds": 10.256702,
+      "exit_code": 0,
+      "name": "pytest-changed-3",
+      "output_sha256": "f42c9209d3ebaaaa235c3e2ff92d47f402adc847063795be29d538b44e9a2711"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/application/test_scanner_tracking.py"
+      ],
+      "duration_seconds": 11.363058,
+      "exit_code": 0,
+      "name": "pytest-changed-4",
+      "output_sha256": "29351b62c79b57b4391f21a9177faa07370a544c40aaa1e56c5ec14d04ce130d"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_scanner_analysis_backfill.py"
+      ],
+      "duration_seconds": 17.740085,
+      "exit_code": 0,
+      "name": "pytest-changed-5",
+      "output_sha256": "33d9513e59a64b2a9a25040b4e6887a5be186295eedf9109f7c074248a3679cb"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/contracts/test_scanner_tracking_contracts.py"
+      ],
+      "duration_seconds": 10.441697,
+      "exit_code": 0,
+      "name": "pytest-changed-6",
+      "output_sha256": "4127b9d0e99400cb909470c5efe37b353e6e4d53c4aef987894622a1ccc1e5c4"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/storage/test_scanner_tracking.py"
+      ],
+      "duration_seconds": 10.758021,
+      "exit_code": 0,
+      "name": "pytest-changed-7",
+      "output_sha256": "23265c0fe618dd5e0dd0938ac294047432b4247fedb6ef1fcf854f98f5505c39"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/storage/test_scanner_tracking_source.py"
+      ],
+      "duration_seconds": 10.668402,
+      "exit_code": 0,
+      "name": "pytest-changed-8",
+      "output_sha256": "57f4fddd7c3a553a09ecccf2d329cb889b28842026b90b90a07cf1247a6db5e4"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+        "check",
+        "--force-exclude",
+        "src/leo/analysis/catalogue_eligibility.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/api/scanner_tracking.py",
+        "src/leo/application/persistent_hop_trajectory.py",
+        "src/leo/application/scanner_tracking.py",
+        "src/leo/application/scanner_trajectory.py",
+        "src/leo/cli/scanner_analysis_backfill.py",
+        "src/leo/cli/scanner_tracking.py",
+        "src/leo/contracts/scanner_tracking.py",
+        "src/leo/presentation/persistent_hop_tracking.py",
+        "src/leo/storage/scanner_tracking.py",
+        "src/leo/storage/scanner_tracking_source.py",
+        "tests/analysis/test_catalogue_eligibility.py",
+        "tests/api/test_scanner_tracking.py",
+        "tests/application/test_persistent_hop_trajectory.py",
+        "tests/application/test_scanner_tracking.py",
+        "tests/cli/test_scanner_analysis_backfill.py",
+        "tests/contracts/test_scanner_tracking_contracts.py",
+        "tests/storage/test_scanner_tracking.py",
+        "tests/storage/test_scanner_tracking_source.py"
+      ],
+      "duration_seconds": 0.014702,
+      "exit_code": 0,
+      "name": "ruff-check",
+      "output_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/srv/bulk/leo-dev/scanner-glrt-comparison-pngs/.venv/bin/ruff",
+        "format",
+        "--check",
+        "--force-exclude",
+        "src/leo/analysis/catalogue_eligibility.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/api/scanner_tracking.py",
+        "src/leo/application/persistent_hop_trajectory.py",
+        "src/leo/application/scanner_tracking.py",
+        "src/leo/application/scanner_trajectory.py",
+        "src/leo/cli/scanner_analysis_backfill.py",
+        "src/leo/cli/scanner_tracking.py",
+        "src/leo/contracts/scanner_tracking.py",
+        "src/leo/presentation/persistent_hop_tracking.py",
+        "src/leo/storage/scanner_tracking.py",
+        "src/leo/storage/scanner_tracking_source.py",
+        "tests/analysis/test_catalogue_eligibility.py",
+        "tests/api/test_scanner_tracking.py",
+        "tests/application/test_persistent_hop_trajectory.py",
+        "tests/application/test_scanner_tracking.py",
+        "tests/cli/test_scanner_analysis_backfill.py",
+        "tests/contracts/test_scanner_tracking_contracts.py",
+        "tests/storage/test_scanner_tracking.py",
+        "tests/storage/test_scanner_tracking_source.py"
+      ],
+      "duration_seconds": 0.005561,
+      "exit_code": 0,
+      "name": "ruff-format",
+      "output_sha256": "ba72d5ff990b6755459efa6266bf58b9f38733d193f2c3339b32245e476e5994"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "run",
+        "build"
+      ],
+      "duration_seconds": 4.442051,
+      "exit_code": 0,
+      "name": "web-build",
+      "output_sha256": "d76d62fc4c2c8a2c36ee47c21686563389d5596635ddac7d80506da87348af83"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "test",
+        "--",
+        "--run"
+      ],
+      "duration_seconds": 2.959931,
+      "exit_code": 0,
+      "name": "web-test",
+      "output_sha256": "5a29271839ed60ae39c912f42c36c0fbb38421ee2dfd996473f2e109b8093f8e"
+    }
+  ],
+  "revision": "1028d888b770d432f120d922906ada3fa17f1977",
+  "schema_version": 1
+}
