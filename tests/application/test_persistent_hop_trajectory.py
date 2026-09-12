@@ -21,8 +21,8 @@ from leo.scanner.persistent_hop_products import (
 from leo.storage.persistent_hop import PersistentHopIqStore
 
 
-def _one_visit_manifest(tmp_path):  # type: ignore[no-untyped-def]
-    plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+def _one_visit_manifest(tmp_path, rate=2_500_000):  # type: ignore[no-untyped-def]
+    plan = compile_persistent_hop_plan_v1(sample_rate_hz=rate)
     radio = FakePersistentHopRadio()
     radio.open()
     session = radio.begin_session(plan, session_id="trajectory-projection")

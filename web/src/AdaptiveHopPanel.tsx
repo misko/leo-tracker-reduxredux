@@ -3,6 +3,7 @@ import { getAdaptiveSession, getAdaptiveSessions } from "./adaptive-api";
 import type { AdaptiveDetail, AdaptivePage, AdaptiveVisit } from "./adaptive-api";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
+import { ScannerTrackingPanel } from "./ScannerTrackingPanel";
 import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 import "./adaptive-hop.css";
 
@@ -161,6 +162,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
         </div></div> : null}
     </section>
     <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />
+    <ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
     <ScannerRefinementPanel key={`refinement:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
     <ScannerGlrtPanel key={sessionId} sessionId={sessionId} sessionKind="adaptive" />
   </div>;

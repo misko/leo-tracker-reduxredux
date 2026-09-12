@@ -15,6 +15,7 @@ import leo.cli.scanner_analysis_backfill as cli
         ("leo.cli.persistent_hop_analysis", "--maximum-tracking-groups"),
         ("leo.cli.scanner_analysis_backfill", "--site"),
         ("leo.cli.scanner_refinement", "--session-id"),
+        ("leo.cli.scanner_tracking", "--session-id"),
     ],
 )
 def test_child_module_entrypoints_actually_execute(module, option):
@@ -58,7 +59,11 @@ def test_both_publication_paths_run_sequentially_even_after_failure(
         assert json.loads(capsys.readouterr().err)["state"] == "failed"
     else:
         cli.main()
-    assert len(commands) == 3
+    assert len(commands) == 4
+    tracking = commands.pop()
+    assert tracking[2] == "leo.cli.scanner_tracking"
+    assert "--maximum-workers" not in tracking
+    assert tracking[-4:] == ["--maximum-seconds", "180", "--maximum-sessions", "2"]
     assert commands.pop(0) == [
         sys.executable,
         "-m",

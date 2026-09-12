@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
 import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
+import { ScannerTrackingPanel } from "./ScannerTrackingPanel";
 import { AdaptiveHopBrowser, AdaptiveHopDetail } from "./AdaptiveHopPanel";
 import {
   getActiveQueue,
@@ -776,7 +777,8 @@ function PersistentHopAnalysisDetail({
       <p className="scanner-artifact-caption">Analysis geometry: {product.configuration.probe_ms} ms windows every {product.configuration.probe_stride_ms} ms. The full captured IQ remains available for exhaustive reanalysis.</p>
     </section>}
     <ScannerRefinementPanel key={capture.session_id} sessionId={capture.session_id} inputDigest={product?.input_manifest_sha256} />
-    {tracking !== null ? <PersistentHopTrackingPanel detail={tracking} /> : null}
+    <ScannerTrackingPanel key={`tracking:${capture.session_id}`} sessionId={capture.session_id} inputDigest={product?.input_manifest_sha256} />
+    {tracking !== null ? <details><summary>Previous tracking publication</summary><PersistentHopTrackingPanel detail={tracking} /></details> : null}
   </>;
 }
 
