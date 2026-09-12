@@ -7,7 +7,7 @@ every original sample within each scheduled full 300-symbol pilot to refine
 timing and carrier-frequency offset (CFO). The target is 750 measurement
 opportunities per second; weak, missing or invalid pilots can be rejected.
 
-Updated 2026-09-12, including the 21:23 UTC timing result. The immediate
+Updated 2026-09-12, including the 21:58 UTC V25 timing audit. The immediate
 objective is 2.5/5/15 MS/s; 30/60 MS/s requires its own hardware qualification.
 
 ## Current position
@@ -15,15 +15,19 @@ objective is 2.5/5/15 MS/s; 30/60 MS/s requires its own hardware qualification.
 | Area | Verified state | Remaining gate |
 | --- | --- | --- |
 | Deployed receiver | `.21` retains `glrt-local-search-r2500000-v1`: FPGA acquisition and candidate verification at 2.5 MS/s, with host comparison. Broad search observes 5.6-ms windows every 100 ms. | No persistent native-tracking firmware is deployed. |
-| Native processing | Rate-specific reference, moment engine and scheduler components exist for all five rates; isolated engine implementations have passed. | Complete-board fit, loaded feedback and physical operation at each rate. |
+| Native processing | Rate-specific reference, moment engine and scheduler components exist for all five rates; isolated engine implementations have passed. V25 now passes complete-board static timing at 2.5 MS/s. | Complete-board qualification at higher rates, loaded feedback and physical operation at every rate. |
 | Integrated 5/15-MS/s receiver RTL | Filtering, coarse/native coordinate mapping, acquisition, native processing, GLA2 driver/readers and the compiled ARM kernel pass a combined 352-test qualification. Integrated RTL replay reproduces coarse IQ, acquisition and native moments exactly at both rates. | Rate-specific board/netlist/package integration, radio-local GLA2 capture/bootstrap/handoff and physical verification. |
 | Radio ARM control | A finite 2.5-MS/s capture-to-tracking helper runs on the actual radio ARM with modeled IIO/native inputs: 246 supported complete results are independently exact; interruption and cancellation are accounted for. | This is software-model execution, not RF or physical FPGA tracking. Higher-rate GLA2 runtime remains pending. |
 | Automatic startup | A 2.097152-s real capture produced one independently matched FPGA/host positive among 21 windows. The worker obtained six of eight required supported history trials and submitted no tracking jobs. | Reliable, timely acquisition-to-tracking handoff; the short capture is inconclusive for detector recovery qualification. |
-| Complete-board timing | Latest 2.5-MS/s candidate v24b routes legally but fails final setup: WNS −0.034 ns, TNS −0.106 ns across six endpoints. Hold is +0.009 ns; pulse width is +0.264 ns. The build exits 1. | Timing gate remains closed. Vivado writing a bitstream does not authorize deployment; exact clock/netlist/package checks also remain required. |
+| Complete-board timing | Latest 2.5-MS/s candidate V25 exits 0: all 32,809 routable nets are routed, setup is +0.002 ns, hold +0.036 ns and pulse width +0.264 ns, with no failing endpoints. The physical MMCM matches the 90.909-MHz processing profile. | A 2-ps setup margin is a narrow static pass. Review CDC/exception/I/O findings and complete package qualification before bounded diagnostics; actual RX calibration and release verification remain open. |
+| Package and boot tooling | V2 topology, rate, clock, package verification and boot tests pass 127 cases. | Assemble and independently verify the actual V2 FIT/FRM, create the corresponding PPU profile, and retain pinned rollback. No new package has been deployed. |
 
-The immediate gates are **complete-board timing** and **supported live startup**.
-Scheduled diagnostics can deploy once hardware/package gates pass, while
-automatic handoff remains under independent qualification.
+The next checkpoint is **a verified V2 package and PPU profile for bounded
+2.5-MS/s diagnostics**. V25 closes the complete-board static timing failure;
+its audit still explicitly grants no deployment eligibility by itself.
+CDC/exception/I/O review, boot/RX calibration and exact native diagnostics
+remain necessary. Automatic handoff separately needs supported live startup.
+No radio access or firmware change was performed during this report refresh.
 The new 5/15-MS/s replay uses synthetically repeated retained coarse IQ;
 it proves the integrated digital path, not native RF sensitivity or accuracy.
 
@@ -117,17 +121,23 @@ host oracle, retained failures and rollback. Resolve coarse CFO aliases and
 aged-seed support on retained IQ. Measure acquisition completion, startup,
 future-job admission and steady feedback separately. Freeze seed age, lookahead,
 capture region, uncertainty, buffer limits and rejection rules before evaluation.
-V23 terminated during congested routing without a final result; do not reuse
-its intermediate timing as qualification. V24b supplies a legally routed
-comparison: fix its measured remaining setup paths and recheck
-the complete image. Never deploy a timing-failed image.
+V25 closes the setup shortfall after V24b's −0.034-ns failure. Preserve both
+results and the exact V25 sources; the new private-state revision passes
+84 development and 63 isolated tests and retains exact direct/filtered RTL
+replay. Review the remaining CDC/exception/I/O findings: timing still reports
+15 missing I/O delays, and the CDC report includes two critical findings.
+The CDC, clock and exception reports match V24b after header/path normalization;
+their findings have not thereby been cleared. Require actual RX calibration
+and measured source integrity during bounded diagnostics.
 
-**Checkpoint 1 — deploy 2.5 MS/s.** First deploy bounded scheduled native jobs
-and reproduce their exact moments from recorded IQ. Then connect automatic
-acquisition handoff, radio-local feedback and loss/reacquisition in shadow
-mode. Promote only after the common gates below pass, including loaded
-startup. Keep the deployed acquisition cadence distinct from the shared
-tracking design's existing 200-ms coarse completion limit.
+**Checkpoint 1 — deploy 2.5 MS/s.** Assemble the V2 FIT/FRM from the timing-passing
+board and pinned kernel/rootfs, independently verify topology, rates, clocks
+and hashes, then bind the PPU profile and rollback. After the audit review,
+run bounded boot/RX calibration and scheduled native jobs; reproduce their
+exact moments from recorded IQ. Then qualify automatic acquisition handoff,
+radio-local feedback and loss/reacquisition in shadow mode. Promote only after
+the common gates pass, including loaded startup. Preserve the shared design's
+200-ms coarse completion limit; latest direct RTL replay completes in 197.746 ms.
 
 **Checkpoint 2 — deploy 5 MS/s.** Carry the verified factor-two receiver RTL,
 GLA2 mapping, driver and reader into a timing-passing board/package. Extend the
@@ -218,7 +228,10 @@ Implementation provenance is `misko/plutosdr-fw`: the integrated filtered
 receiver qualification uses branch `codex/glrt-clock-profile-implementation`,
 FW `8931ae6ae9af`, HDL `ed84cb06316a` and Linux `86caa241a3ce`.
 Its built ARM kernel is `5.15.0-00024-g86caa241a3ce`; it has not been deployed.
-The separate v24b board candidate uses FW `4748bb22d` / HDL `648da8194`.
+The updated development source is FW `87dca93eb`, HDL `e48709fc9`, Linux
+`86caa241a3ce` and Buildroot `e347a45d3`. The separate V25 board candidate
+uses FW `db6575306` / HDL `58366e0c4`; keep these distinct from development
+and from V24b's failed FW `4748bb22d` / HDL `648da8194` candidate.
 Earlier FW `1f7c2102f` integrates measured FFT planning; FW `5e130d1e2` / HDL
 `bc8d757660c0` introduces the 15-MS/s filter component.
 Numerical development reports are retained in `misko/leo-tracker-reduxredux`
@@ -228,7 +241,9 @@ and `reports/2026_09_12_multirate_real25_streaming_review.md`.
 Checked local deployment artifacts retain reproducible inputs and source bindings:
 
 - [Combined filtered-receiver qualification](/srv/bulk/leo/glrt-deployment-20260909/filtered-receiver-qualification-v1/result.json): 352 unique passing tests, exact integrated 5/15-MS/s replay and a linked ARM kernel. Inputs are synthetic repeated coarse IQ; no hardware accessed.
-- [Latest complete-board timing](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v24b/hdl/projects/pluto/timing_impl.log): setup still fails by 0.034 ns. The [v23 termination receipt](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v23-termination-v1.json) records its earlier inconclusive route termination.
+- [V25 complete-board timing](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v25/full-audit/timing_summary.rpt), [route status](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v25/full-audit/route_status.rpt) and [netlist/clock audit](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v25/full-audit/audit.tsv): positive setup/hold/pulse margins, legal route and MMCM 10/11/1. The audit retains `hardware_eligible=0`; [CDC findings](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v25/full-audit/cdc.rpt) and I/O/exception review remain explicit. [V24b timing](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v24b/hdl/projects/pluto/timing_impl.log) retains the preceding setup failure.
+- [Private-state development tests](/srv/bulk/leo/glrt-deployment-20260909/private-state-dev-v2.xml) and [isolated tests](/srv/bulk/leo/glrt-deployment-20260909/private-state-board-v1.xml): 84 and 63 passes. [Direct replay](/srv/bulk/leo/glrt-deployment-20260909/tracking-clocked-private-state-replay-v1/result.json) retains 16 exact native results alongside acquisition; [filtered replay](/srv/bulk/leo/glrt-deployment-20260909/filtered-private-state-replay-v1/result.json) retains exact 5/15-MS/s coarse and native outputs. These are RTL simulations, not new RF evidence.
+- [V2 package/boot tooling tests](/srv/bulk/leo/glrt-deployment-20260909/tracking-package-v2.xml): 127 passes. These check versioned packaging and topology/clock validation; actual FIT/FRM assembly and PPU profile qualification remain pending.
 - [15-MS/s filter tests](/srv/bulk/leo/glrt-deployment-20260909/fifteen-ddc-v1.xml) and [standalone timing](/srv/bulk/leo/glrt-deployment-20260909/fifteen-ddc-ooc-v1/summary.txt): 97 passes; +0.551/+0.104-ns setup/hold at 100 MHz, 1,641 LUTs, 1,069 registers, 16 DSPs and 12 RAM tiles. These physical counts are for the isolated filter, not the integrated receiver.
 - [ARM resolver receipt](/srv/bulk/leo/glrt-deployment-20260909/tracking-resolver-unaligned-v1/operator-v1.json): separate plan storage and 0/8-byte-offset execution tested; no RF or firmware change. The later receiver integration passes [324 tests](/srv/bulk/leo/glrt-deployment-20260909/measured-receiver-v1.xml).
 - [Independent real host comparison](/srv/bulk/leo/glrt-deployment-20260909/radio-bootstrap-iio-v3/independent-host/summary.json): one matched positive; explicitly inconclusive for promotion.
@@ -236,6 +251,7 @@ Checked local deployment artifacts retain reproducible inputs and source binding
 - Earlier [30-MS/s engine](/srv/bulk/leo/glrt-deployment-20260909/multirate-native-engine-30000000-ooc-v1/summary.txt) and [60-MS/s engine](/srv/bulk/leo/glrt-deployment-20260909/multirate-native-engine-60000000-ooc-v1/summary.txt) each use eight DSPs and 11.5 RAM tiles, with positive internal setup/hold. These pinned isolated revisions exclude coarse acquisition, DDC, receiver and feedback.
 
 Each checkpoint records the image/radio, frozen inputs/limits, measured results,
-every disagreement and a **pass / fail / inconclusive** verdict. Estimate dates
-after timing and loaded handoff close, separating diagnostics, automatic tracking
-and full FPGA autonomy.
+every disagreement and a **pass / fail / inconclusive** verdict. The diagnostic
+deployment date now depends on package and audit completion; automatic tracking
+also depends on loaded handoff. Keep full FPGA autonomy and higher-rate hardware
+qualification as separate milestones.
