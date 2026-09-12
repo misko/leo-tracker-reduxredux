@@ -978,11 +978,19 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
         _call("probe_live_station_radios", release)
 
 
-@pytest.mark.parametrize("selected_index", [0, 1])
+@pytest.mark.parametrize("selected_index", [0, 1, 2])
 def test_single_rx_live_probe_checks_only_selected_frozen_radio(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, selected_index: int
 ) -> None:
     payload = _live_station_probe_payload()
+    if selected_index == 2:
+        replacement = dict(payload["radios"][0])
+        replacement.update(
+            radio_id="radio_pluto_003a",
+            serial="104000bac4950008230026001b440a003a",
+            uri="ip:192.168.1.17",
+        )
+        payload["radios"].append(replacement)
     radio = payload["radios"][selected_index]
     payload["radios"] = [radio]
     configured = {
