@@ -23,8 +23,9 @@ This selection supersedes earlier
 Implementation checkpoint: the [2.5M decimated-dwell engine report](../../reports/2026_09_12_adaptive_decimated_dwell/README.md)
 records working integer DSP and passing arithmetic/pilot controls, but the best
 measured FIR pipeline still misses the ARM service-time gate. The same checkpoint
-records intermittent refill failures in the existing fixed scanner. Stage 1 and
-baseline reliability remain open; no adaptive deployment has occurred.
+records earlier refill failures in the fixed scanner. The larger-refill baseline
+has since passed two complete scheduled captures; continuity under adaptive load
+remains unqualified. No adaptive deployment has occurred.
 
 Latest execution checkpoint: recursive, FP32 FIR and FFT filtering experiments
 also fail the full-coverage ARM timing gate. The unchanged direct-FIR pipeline
@@ -32,9 +33,10 @@ on the host measures 19.28 ms mean / 27.27 ms empirical p99 on sixteen developme
 dwells, excluding transport/feedback. A user preference is pending before changing
 the on-radio architecture or six-window coverage requirement. The
 [host-feedback proposal](adaptive-single-rx-10m-host-feedback-proposal.md) makes
-that alternative concrete without activating it. The startup provider fix has
-passed the replacement radio's short check, but complete-scan continuity remains
-unqualified. Consult the report and its RF ledger for the current evidence and remaining
+that alternative concrete without activating it. The startup provider fix,
+larger refills and AGC-restoration fix passed the replacement radio's short check
+and complete 23:20 and 23:40 scheduled captures. Consult the report and its RF
+ledger for the current evidence and remaining
 qualification allowance. The sequence below remains the intended on-radio design
 until an explicit architecture revision is accepted.
 
