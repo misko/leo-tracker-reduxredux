@@ -168,6 +168,10 @@ from leo.scanner.adaptive_hop_presentation import (
     AdaptiveOverviewArtifact,
 )
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
+from leo.scanner.persistent_hop_history import (
+    PersistentHopHistoryPageV4,
+    SingleRxHopSessionDetailV3,
+)
 from leo.scanner.persistent_hop_tracking import (
     PersistentHopCandidateRecurrencePageV1,
     PersistentHopTrackingDetailV1,
@@ -842,6 +846,42 @@ def create_app(
                 "X-Leo-PNG-Cache": "artifact",
             },
         )
+
+    @v4_router.api_route(
+        "/scanner/persistent-sessions",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopHistoryPageV4,
+    )
+    def persistent_hop_session_history_v4(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    ):
+        if persistent_hop_presentations_v2 is None:
+            raise HTTPException(status_code=404, detail="persistent-hop presentation unavailable")
+        try:
+            return persistent_hop_presentations_v2.page_v4(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="persistent-hop page unavailable"
+            ) from error
+
+    @v4_router.api_route(
+        "/scanner/persistent-sessions/{session_id}",
+        methods=["GET", "HEAD"],
+        response_model=PersistentHopSessionDetailV2 | SingleRxHopSessionDetailV3,
+    )
+    def persistent_hop_session_detail_v4(session_id: str):
+        if persistent_hop_presentations_v2 is None:
+            raise HTTPException(status_code=404, detail="persistent-hop presentation unavailable")
+        try:
+            detail = persistent_hop_presentations_v2.detail_v3(session_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="persistent-hop detail unavailable"
+            ) from error
+        if detail is None:
+            raise HTTPException(status_code=404, detail="persistent-hop session not found")
+        return detail
 
     @v4_router.api_route(
         "/scanner/persistent-sessions/{session_id}/tracking",

@@ -53,6 +53,34 @@ def test_fixed_adapter_retains_legacy_numerical_projection(tmp_path, rate):
     reader.close()
 
 
+@pytest.mark.parametrize("receiver_id", [0, 1])
+def test_single_rx_tracking_keeps_physical_id_and_native_clock(tmp_path, monkeypatch, receiver_id):
+    import leo.scanner.persistent_hop_analysis as fixed_detector
+    from leo.application.persistent_hop_analysis_v2 import PersistentHopAnalysisServiceV2
+    from leo.presentation.persistent_hop_analysis_v2 import render_persistent_hop_analysis_pngs_v2
+    from leo.storage.persistent_hop_analysis_source import PersistentHopAnalysisInputStore
+    from leo.storage.persistent_hop_analysis_v2 import PersistentHopAnalysisStoreV2
+    from tests.storage.test_persistent_hop_analysis_store_v2 import _capture, _fractional_dwell
+
+    captures = _capture(tmp_path, receiver_id)
+    products = PersistentHopAnalysisStoreV2(tmp_path)
+    monkeypatch.setattr(fixed_detector, "analyze_glrt64_dwell", _fractional_dwell)
+    service = PersistentHopAnalysisServiceV2(
+        inputs=PersistentHopAnalysisInputStore(captures),
+        products=products,
+        renderer=render_persistent_hop_analysis_pngs_v2,
+        probe_stride_ms=120,
+    )
+    assert service.run_pending(maximum_sessions=1).failures == ()
+    reader = ScannerTrackingInputStore(tmp_path)
+    source = reader.load("hop-fractional-v2")
+    assert source.sample_rate_hz == 10_000_000
+    assert len(source.probes) == 1 and source.probes[0].receiver_id == receiver_id
+    actual = project_scanner_candidates(replace(source, qualified=True))
+    assert actual and all(item.receiver_id == receiver_id for item in actual)
+    reader.close()
+
+
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
 def test_adaptive_adapter_reads_verified_metrics_and_actual_counters(tmp_path, monkeypatch, rate):
     capture = publish_capture(tmp_path, rate=rate, count=4)

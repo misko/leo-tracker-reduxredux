@@ -40,7 +40,7 @@ def test_zero_signal_has_no_invented_peak():
     assert peak.score == peak.frequency_hz == peak.runner_up_gap == 0
 
 
-@pytest.mark.parametrize("fs", [2500000, 5000000])
+@pytest.mark.parametrize("fs", [2500000, 5000000, 10000000])
 def test_joint_passes_preserve_score_and_recover_known_pilot_cfo(fs):
     template = np.asarray(qin_edge_pilot_frame(fs, "lower"))
     samples = np.zeros(fs // 50, dtype=complex)

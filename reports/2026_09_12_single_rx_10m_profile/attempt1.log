@@ -1,0 +1,111 @@
+Canary: (1,), 10 MS/s, 300s, isolated writer
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Existing radio lease active; waiting without starting RF
+validated release publication metadata: /opt/leo-tracker/release-metadata/9948c31199bba4cb315d012ed8f439c763c5b3fe.txt
+validated published release runtime: /opt/leo-tracker/releases/9948c31199bba4cb315d012ed8f439c763c5b3fe
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 149, in begin_session
+    upstream = client.start(
+        self._plan_factory(plan),
+        session_id=wire_session_id,
+        tandem_request=self._tandem_request_factory(),
+    )
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/persistent_hop.py", line 1302, in start
+    prepared_plan = prepare_plan(plan)
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_persistent_hop.py", line 153, in prepare_plan
+    radio.configure_source_locked_receiver_geometry(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sample_rate_hz=plan.sample_rate_hz,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        manual_gain_db=plan.manual_gain_db,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/hardware/iio.py", line 977, in configure_source_locked_receiver_geometry
+    raise ValueError("persistent sidecar capture requires paired RX channels")
+ValueError: persistent sidecar capture requires paired RX channels
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/scanner/persistent_hop_application.py", line 77, in capture_persistent_hop_session
+    session = radio.begin_session(plan, session_id=session_id)
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 155, in begin_session
+    raise PlutoPersistentHopError(
+        f"persistent-hop provider start failed: {type(error).__name__}: {error}"
+    ) from error
+leo.radio.pluto_persistent_hop.PlutoPersistentHopError: persistent-hop provider start failed: ValueError: persistent sidecar capture requires paired RX channels
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/reports/2026_09_12_single_rx_10m_profile/canary.py", line 62, in <module>
+    result = backend.capture_scheduled_scanner(intent, cancel=Event())
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/cli/composition.py", line 1434, in capture_scheduled_scanner
+    return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/cli/composition.py", line 1674, in _capture_scheduled_persistent_hop
+    published = capture_persistent_hop_to_store(
+        radio,
+    ...<7 lines>...
+        before_publish=cleanup_before_publish,
+    )
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/storage/persistent_hop_capture.py", line 39, in capture_persistent_hop_to_store
+    receipt = capture_persistent_hop_session(
+        radio,
+    ...<4 lines>...
+        timing_sink=timings.append,
+    )
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/scanner/persistent_hop_application.py", line 146, in capture_persistent_hop_session
+    raise failure from primary_error
+leo.scanner.persistent_hop_application.PersistentHopCaptureError: capture=PlutoPersistentHopError: persistent-hop provider start failed: ValueError: persistent sidecar capture requires paired RX channels

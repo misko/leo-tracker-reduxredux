@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import stat
@@ -302,7 +303,14 @@ class PersistentHopAnalysisStoreV2:
                     byte_count=len(payload),
                 )
             )
-        manifest = PersistentHopAnalysisManifestV2.model_validate(
+        from leo.scanner.persistent_hop_products import SingleRxHopAnalysisManifestV3
+
+        manifest_type = (
+            SingleRxHopAnalysisManifestV3
+            if sample_rate_hz == 10_000_000
+            else PersistentHopAnalysisManifestV2
+        )
+        manifest = manifest_type.model_validate(
             {
                 "session_id": session_id,
                 "input_uri": input_uri,
@@ -371,7 +379,14 @@ class PersistentHopAnalysisStoreV2:
         path = confined_path(self.analysis_root, candidate, must_exist=True)
         payload = self._read_regular(path / "manifest.json", _MAX_JSON_BYTES)
         try:
-            manifest = PersistentHopAnalysisManifestV2.model_validate_json(payload)
+            from leo.scanner.persistent_hop_products import SingleRxHopAnalysisManifestV3
+
+            manifest_type = (
+                SingleRxHopAnalysisManifestV3
+                if json.loads(payload).get("schema_version") == 3
+                else PersistentHopAnalysisManifestV2
+            )
+            manifest = manifest_type.model_validate_json(payload)
         except Exception as error:
             raise BundleCorruptionError(
                 f"invalid persistent-hop V2 analysis manifest: {error}"
@@ -478,7 +493,14 @@ class PersistentHopAnalysisStoreV2:
                 compressed,
                 max_output_size=_MAX_JSON_BYTES,
             )
-            chunk = PersistentHopAnalysisChunkV2.model_validate_json(raw)
+            from leo.scanner.persistent_hop_products import SingleRxHopAnalysisChunkV3
+
+            chunk_type = (
+                SingleRxHopAnalysisChunkV3
+                if json.loads(raw).get("schema_version") == 3
+                else PersistentHopAnalysisChunkV2
+            )
+            chunk = chunk_type.model_validate_json(raw)
         except Exception as error:
             raise BundleCorruptionError(f"invalid persistent-hop V2 chunk: {error}") from error
         return chunk, self._chunk_reference_v2(path, chunk, raw, compressed)
@@ -590,7 +612,21 @@ class PersistentHopPresentationStoreV2:
         self._analyses = analyses
 
     def page_v3(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV3:
-        captures = self._captures.page(cursor=cursor, limit=limit)
+        return self._page(cursor=cursor, limit=limit, include_single_rx=False)
+
+    def page_v4(self, *, cursor: int, limit: int):
+        return self._page(cursor=cursor, limit=limit, include_single_rx=True)
+
+    def _page(self, *, cursor: int, limit: int, include_single_rx: bool):
+        from leo.scanner.persistent_hop_history import (
+            PersistentHopHistoryPageV4,
+            SingleRxHopHistoryCaptureV2,
+            SingleRxHopHistoryItemV4,
+        )
+
+        captures = self._captures.page(
+            cursor=cursor, limit=limit, include_single_rx=include_single_rx
+        )
         items = []
         for capture in captures.items:
             status = self._analyses.status(capture.session_id, total_visits=capture.visit_count)
@@ -600,14 +636,22 @@ class PersistentHopPresentationStoreV2:
                     item.name
                     for item in self._analyses.inspect(capture.session_id).manifest.artifacts
                 )
+            item_type = (
+                SingleRxHopHistoryItemV4
+                if isinstance(capture, SingleRxHopHistoryCaptureV2)
+                else PersistentHopHistoryItemV3
+            )
             items.append(
-                PersistentHopHistoryItemV3(
-                    capture=capture,
-                    analysis=status,
-                    available_artifacts=artifacts,
+                item_type.model_validate(
+                    dict(
+                        capture=capture,
+                        analysis=status,
+                        available_artifacts=artifacts,
+                    )
                 )
             )
-        return PersistentHopHistoryPageV3(
+        page_type = PersistentHopHistoryPageV4 if include_single_rx else PersistentHopHistoryPageV3
+        return page_type(
             cursor=captures.cursor,
             limit=captures.limit,
             total=captures.total,
@@ -616,6 +660,15 @@ class PersistentHopPresentationStoreV2:
         )
 
     def detail_v2(self, session_id: str) -> PersistentHopSessionDetailV2 | None:
+        detail = self.detail_v3(session_id)
+        return detail if detail is None or detail.schema_version == 2 else None
+
+    def detail_v3(self, session_id: str):
+        from leo.scanner.persistent_hop_history import (
+            SingleRxHopHistoryCaptureV2,
+            SingleRxHopSessionDetailV3,
+        )
+
         try:
             capture = self._captures.history_item(session_id)
         except BundleNotFoundError:
@@ -624,10 +677,17 @@ class PersistentHopPresentationStoreV2:
         product = (
             self._analyses.inspect(session_id).manifest if status.state == "complete" else None
         )
-        return PersistentHopSessionDetailV2(
-            capture=capture,
-            analysis=status,
-            product=product,
+        detail_type = (
+            SingleRxHopSessionDetailV3
+            if isinstance(capture, SingleRxHopHistoryCaptureV2)
+            else PersistentHopSessionDetailV2
+        )
+        return detail_type.model_validate(
+            dict(
+                capture=capture,
+                analysis=status,
+                product=product,
+            )
         )
 
     def artifact(self, session_id: str, artifact: str) -> bytes | None:
