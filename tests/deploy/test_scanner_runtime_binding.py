@@ -1,3 +1,4 @@
+import json
 import runpy
 from pathlib import Path
 
@@ -55,3 +56,22 @@ def test_missing_or_duplicate_digest_is_rejected(key: str) -> None:
 def test_duplicate_manifest_is_rejected() -> None:
     with pytest.raises(ValueError, match="duplicate"):
         binding(ENVIRONMENT + ENVIRONMENT.splitlines()[0] + "\n", TARGET)
+
+
+def test_single_rx_deployment_preserves_the_explicit_radio():
+    policy = runpy.run_path(str(ROOT / "deploy/scripts/scanner-runtime-binding.py"))
+    radio = {"radio_id": "radio_pluto_5d4d", "serial": "serial-20", "host": "192.168.1.20"}
+    environment = {
+        "LEO_SCANNER_PROFILE": "single-rx-random-10m-300s-v1",
+        "LEO_SCANNER_RADIO_ID": radio["radio_id"],
+        "LEO_RADIOS_JSON": json.dumps([radio]),
+    }
+    assert policy["scanner_radio_bindings"](environment) == {
+        key: environment[key] for key in policy["SCANNER_ONLY_BINDINGS"]
+    }
+    assert policy["scanner_radio_bindings"]({}) == policy["SCANNER_ONLY_BINDINGS"]
+    for invalid in ([], [radio, radio], [{**radio, "radio_id": "other"}], [{}], None):
+        with pytest.raises(ValueError, match="radio binding"):
+            policy["scanner_radio_bindings"](
+                {**environment, "LEO_RADIOS_JSON": json.dumps(invalid)}
+            )

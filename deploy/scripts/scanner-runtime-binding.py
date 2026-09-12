@@ -20,6 +20,29 @@ SCANNER_ONLY_BINDINGS = {
 }
 
 
+def scanner_radio_bindings(environment: dict[str, str]) -> dict[str, str]:
+    """Keep the explicitly selected single-profile radio through cutover."""
+    if environment.get("LEO_SCANNER_PROFILE") != "single-rx-random-10m-300s-v1":
+        return dict(SCANNER_ONLY_BINDINGS)
+    selected = environment.get("LEO_SCANNER_RADIO_ID")
+    raw = environment.get("LEO_RADIOS_JSON", "")
+    try:
+        radios = json.loads(raw)
+    except ValueError as error:
+        raise ValueError("single-RX profile requires one explicit radio binding") from error
+    if (
+        not selected
+        or not isinstance(radios, list)
+        or len(radios) != 1
+        or not isinstance(radios[0], dict)
+        or radios[0].get("radio_id") != selected
+        or not radios[0].get("serial")
+        or not radios[0].get("host")
+    ):
+        raise ValueError("single-RX profile requires one explicit matching radio binding")
+    return {"LEO_SCANNER_RADIO_ID": selected, "LEO_RADIOS_JSON": raw}
+
+
 def scanner_binary_path(
     environment: str,
     revision: str,

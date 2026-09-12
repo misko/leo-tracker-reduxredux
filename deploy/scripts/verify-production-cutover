@@ -34,6 +34,7 @@ _scanner_runtime_policy = runpy.run_path(
 )
 _scanner_binary_path = _scanner_runtime_policy["scanner_binary_path"]
 _scanner_only_bindings = _scanner_runtime_policy["SCANNER_ONLY_BINDINGS"]
+_scanner_radio_bindings = _scanner_runtime_policy["scanner_radio_bindings"]
 UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
 ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
@@ -1608,7 +1609,10 @@ def _component_environment_revision(component: str, revision: str) -> Path:
     if bindings != [revision]:
         raise ValueError(f"{component} environment does not bind the exact target release")
     if component == "acquisition":
-        if any(environment.get(key) != value for key, value in _scanner_only_bindings.items()):
+        if any(
+            environment.get(key) != value
+            for key, value in _scanner_radio_bindings(environment).items()
+        ):
             raise ValueError("acquisition environment must bind scanner-only radio .21")
         expected_binary = _scanner_binary_path(
             safe.read_text(encoding="utf-8"), revision, RELEASE_ROOT
