@@ -6,6 +6,12 @@ This analysis fits new models to the existing fractional PSS measurements from
 all five dwells and all three capture paths. No new IQ measurements or RF captures
 were made. GLRT remains the previous frozen-fit reference in these figures.
 
+The consolidated report now explicitly explains the distinction between
+conditional timing RMS, derivative uncertainty and TLE discrimination. The
+[30/60 MS/s FPGA discussion](2026_09_12_pss_30_60_fpga_path.md)
+adds audited historical hardware evidence and proposed windowing/correlation
+budgets. Those documentation updates do not change the v6 measurements below.
+
 **25 MS/s makes a substantial difference to PSS frame tracking in these data,
 while providing little additional GLRT carrier information.** The new PSS model
 distinguishes a smooth timing trajectory, repeated correlation peaks and a broad
