@@ -33,3 +33,20 @@ def test_archived_glrt_recipes_match_original_manifest(directory, manifest):
         raw = (root / name).read_bytes()
         assert len(raw) == inventory[name]["bytes"], name
         assert hashlib.sha256(raw).hexdigest() == inventory[name]["sha256"], name
+
+
+def test_paired_pss_source_snapshots_match_publication_manifest():
+    relative = "reports/figures/2026_09_12_paired_glrt_pss_tle"
+    root = ROOT / relative
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert relative in config["tool"]["ruff"]["extend-exclude"]
+    publication = json.loads((root / "publication-manifest.json").read_text())
+    inventory = {
+        item["published"]: item["sha256"]
+        for item in publication
+        if item["published"].endswith(".py")
+    }
+    scripts = {path.relative_to(ROOT).as_posix() for path in root.rglob("*.py")}
+    assert scripts and scripts == set(inventory)
+    for name in sorted(scripts):
+        assert hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == inventory[name], name
