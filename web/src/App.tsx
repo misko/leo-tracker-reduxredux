@@ -704,7 +704,8 @@ function ScannerView() {
           <p className="scanner-artifact-caption">{artifactDetails.caption} · red lines mark retunes</p>
         </section>
       </> : <div className="empty-detail"><strong>{page === null || selectedPersistentId !== null ? "Loading scan…" : "Select a scan"}</strong><span>Standard and 300-second persistent-hop analysis artifacts will appear here.</span></div>}
-      {selectedPersistentId !== null ? <ScannerGlrtPanel key={selectedPersistentId} sessionId={selectedPersistentId} /> : null}
+      {selectedPersistentId !== null && (persistentDetail?.capture ?? selectedPersistentSummary?.capture)?.schema_version === 1
+        ? <ScannerGlrtPanel key={selectedPersistentId} sessionId={selectedPersistentId} /> : null}
     </section>
   </main>;
 }
