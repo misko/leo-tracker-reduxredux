@@ -188,6 +188,8 @@ The relevance column says what each report contributes now. “Historical,” �
 
 ## Scope and verification
 
+CPU acquisition follow-up: [Radio .20 CPU acquisition and catch-up](reports/2026_09_12_radio20_cpu_acquisition_catchup.md) connects software proposals to the existing resolver/worker without fabricated FPGA decisions. Synthetic pilots pass the complete chain. ARM replay of four windows from each saved 30/60-MS/s capture rejects all eight strongest proposals; independent grids, FFTs and integer moments agree. The receiver clock is frozen in this benchmark, so live acquisition and native feedback remain unqualified.
+
 Scanner follow-up: the same report now includes a two-thread, saved-IQ ARM scan at 638–645 ms/window with all 146,652 scores unchanged. This passes the isolated one-second seed-age timing bound; contention with live DMA and the complete acquired handoff remain unqualified.
 
 Further implementation: [Radio .20 native 30/60 MS/s commissioning](reports/2026_09_12_radio20_native_30_60_commissioning.md) records successful builds, deployments, receive calibration, 2,621,440 contiguous IQ samples and 16 complete scheduled native jobs at each rate. Both active epochs had zero CDC/pacer loss. The initial ARM blind scan is numerically exact but takes about 1.82 seconds per window, reduced to about 1.19 seconds by subsequent saved-IQ optimization. Autonomous acquisition, feedback, scanning and refinement remain incomplete. This is new implementation evidence, outside the original report-review inventory.
