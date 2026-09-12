@@ -126,6 +126,30 @@ def intent_fixture(backend, minute=20):
     )
 
 
+@pytest.mark.parametrize("diagnostic_error", [False, True])
+def test_adaptive_failure_reads_diagnostics_before_cleanup(tmp_path, monkeypatch, diagnostic_error):
+    backend, radio, lifecycle, store, events = backend_fixture(tmp_path, fault="read")
+
+    def diagnostic_tail():
+        events.append("lifecycle.diagnostic")
+        if diagnostic_error:
+            raise RuntimeError("diagnostic connection lost")
+        return "missing_samples=21050"
+
+    monkeypatch.setattr(lifecycle, "diagnostic_tail", diagnostic_tail, raising=False)
+    try:
+        with pytest.raises(AdaptiveHopCaptureError) as caught:
+            backend.capture_scheduled_scanner(intent_fixture(backend), cancel=Event())
+        assert events.index("lifecycle.diagnostic") < events.index("lifecycle.exit")
+        assert events.index("lifecycle.exit") < events.index("claim.release")
+        assert lifecycle.exit_count == 1
+        assert "store.publish" not in events
+        expected = "diagnostic connection lost" if diagnostic_error else "missing_samples=21050"
+        assert expected in "\n".join(caught.value.__notes__)
+    finally:
+        store.close()
+
+
 @pytest.mark.parametrize("mode", ["shadow", "adaptive"])
 @pytest.mark.parametrize("minute", [0, 20])
 def test_scheduled_adaptive_capture_publishes_after_cleanup_and_retry_reads_only(

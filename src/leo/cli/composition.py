@@ -147,7 +147,6 @@ from leo.qualification import (
     resolve_soak_evidence,
 )
 from leo.radio import (
-    PERSISTENT_HOP_EXCLUDED_SERIAL,
     PERSISTENT_HOP_IIOD_KNOWN_HOSTS_CREDENTIAL,
     PERSISTENT_HOP_IIOD_PASSWORD_CREDENTIAL,
     FakeRadioSource,
@@ -159,6 +158,7 @@ from leo.radio import (
     RadioSource,
     create_pluto_userspace_iiod_lifecycle,
 )
+from leo.radio.persistent_hop_iiod_lifecycle import attach_iiod_failure_diagnostics
 from leo.radio.pluto_adaptive_hop import PlutoAdaptiveHopRadio
 from leo.radio.scanner_glrt_metadata import ScannerGlrtOptions
 from leo.scanner import (
@@ -401,8 +401,6 @@ class CliSettings:
                     raise ValueError(
                         "persistent hopping requires a usable literal 192.168.1.* host"
                     )
-                if configured.serial == PERSISTENT_HOP_EXCLUDED_SERIAL:
-                    raise ValueError("persistent hopping cannot use the excluded Pluto serial")
                 if (
                     self.scanner_interval_seconds != 1_200
                     or self.scanner_run_seconds != 300
@@ -1683,6 +1681,8 @@ class LocalAcquisitionBackend:
                         before_publish=cleanup_before_publish,
                     )
                 except BaseException as primary:
+                    if lifecycle_active and not cleanup_attempted:
+                        attach_iiod_failure_diagnostics(lifecycle, primary)
                     try:
                         cleanup_before_publish()
                     except BaseException as cleanup:
@@ -1828,6 +1828,8 @@ class LocalAcquisitionBackend:
                         before_publish=cleanup_before_publish,
                     )
                 except BaseException as primary:
+                    if active and not cleanup_attempted:
+                        attach_iiod_failure_diagnostics(lifecycle, primary)
                     try:
                         cleanup_before_publish()
                     except BaseException as cleanup:

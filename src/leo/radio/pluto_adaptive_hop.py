@@ -17,7 +17,6 @@ from leo.radio.adaptive_hop_mapping import (
     map_adaptive_sampled_visit,
 )
 from leo.radio.pluto_persistent_hop import (
-    PERSISTENT_HOP_EXCLUDED_SERIAL,
     _load_plan,
     _load_tandem_hold_request,
     _physical_lan_uri,
@@ -63,8 +62,6 @@ class PlutoAdaptiveHopRadio:
         self._uri = _physical_lan_uri(host, iiod_port=iiod_port)
         if not expected_serial or expected_serial != expected_serial.strip():
             raise ValueError("adaptive serial must be a trimmed nonempty value")
-        if expected_serial == PERSISTENT_HOP_EXCLUDED_SERIAL:
-            raise ValueError("the excluded Pluto serial cannot run adaptive hopping")
         if not radio_id or radio_id != radio_id.strip():
             raise ValueError("adaptive radio ID must be a trimmed nonempty value")
         if type(read_ahead_visits) is not int or not 1 <= read_ahead_visits <= 64:

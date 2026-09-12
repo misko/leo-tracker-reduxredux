@@ -38,6 +38,7 @@ from leo.scanner.persistent_hop_ports import (
 )
 from leo.scanner.ports import ScanRadioIdentity
 
+# Historical identifier retained for import compatibility; no longer a denylist.
 PERSISTENT_HOP_EXCLUDED_SERIAL = "104000bac4950008230026001b440a003a"
 _DEFAULT_READ_AHEAD_VISITS = 8
 _MAXIMUM_READ_AHEAD_VISITS = 64
@@ -77,8 +78,6 @@ class PlutoPersistentHopRadio:
         self._uri = _physical_lan_uri(host, iiod_port=iiod_port)
         if not expected_serial or expected_serial != expected_serial.strip():
             raise ValueError("persistent-hop serial must be one trimmed nonempty value")
-        if expected_serial == PERSISTENT_HOP_EXCLUDED_SERIAL:
-            raise ValueError("the excluded Pluto serial cannot run persistent hopping")
         if not radio_id or radio_id != radio_id.strip():
             raise ValueError("persistent-hop radio ID must be one trimmed nonempty value")
         if (

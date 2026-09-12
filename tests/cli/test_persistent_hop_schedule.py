@@ -205,6 +205,21 @@ def test_persistent_hop_mode_is_default_off() -> None:
     assert settings.scanner_capture_mode == "sequential"
 
 
+def test_settings_accept_newly_selected_exact_radio(tmp_path) -> None:
+    settings = _settings(
+        tmp_path,
+        radios=(
+            RadioConfigurationV1(
+                radio_id="radio_pluto_003a",
+                serial="104000bac4950008230026001b440a003a",
+                host="192.168.1.17",
+            ),
+        ),
+        scanner_radio_id="radio_pluto_003a",
+    )
+    assert settings.radios[0].serial == "104000bac4950008230026001b440a003a"
+
+
 def test_persistent_hop_credentials_are_derived_from_fixed_systemd_names(tmp_path) -> None:
     settings = _settings(tmp_path)
 
@@ -372,17 +387,30 @@ def test_lifecycle_startup_failure_relies_on_transactional_entry_and_never_captu
     assert radio.open_count == 0
 
 
-def test_capture_failure_aborts_then_cleans_before_claim_release(tmp_path) -> None:
+@pytest.mark.parametrize("diagnostic_error", [False, True])
+def test_capture_failure_aborts_then_cleans_before_claim_release(
+    tmp_path, diagnostic_error
+) -> None:
     events: list[str] = []
     radio = _CaptureFailureRadio(events)
-    lifecycle = _Lifecycle(events)
+
+    class DiagnosticLifecycle(_Lifecycle):
+        def diagnostic_tail(self):
+            events.append("lifecycle.diagnostic")
+            if diagnostic_error:
+                raise RuntimeError("diagnostic connection lost")
+            return "missing_samples=21050"
+
+    lifecycle = DiagnosticLifecycle(events)
     backend, intent, _configurations = _recording_backend(tmp_path, radio, lifecycle, events)
 
-    with pytest.raises(Exception, match="injected capture failure"):
+    with pytest.raises(Exception, match="injected capture failure") as caught:
         backend.capture_scheduled_scanner(intent, cancel=Event())
 
     assert "store.publish" not in events
-    assert events[-3:] == ["store.abort", "lifecycle.exit", "claim.release"]
+    assert events[-4:] == ["store.abort", "lifecycle.diagnostic", "lifecycle.exit", "claim.release"]
+    expected = "diagnostic connection lost" if diagnostic_error else "missing_samples=21050"
+    assert expected in "\n".join(caught.value.__notes__)
     assert (radio.open_count, radio.close_count) == (1, 1)
 
 
