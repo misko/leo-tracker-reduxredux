@@ -12,7 +12,7 @@ WorkingDirectory=/opt/leo-tracker/current-acquisition
 EnvironmentFile=/etc/leo/leo.env
 LoadCredential=scanner-iiod-ssh-known-hosts:/etc/leo/credentials/scanner-iiod-ssh-known-hosts
 LoadCredential=scanner-iiod-ssh-password:/etc/leo/credentials/scanner-iiod-ssh-password
-ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} --radio radio_pluto_19f2 --interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} --scanner-only --max-scanner-runs 1
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} --radio ${LEO_SCANNER_RADIO_ID} --interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} --scanner-only --max-scanner-runs 1
 # Durable cadence de-duplication prevents recapture after a successful restart.
 Restart=always
 RestartSec=5s
