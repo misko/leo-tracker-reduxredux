@@ -109,9 +109,15 @@ The following normal 23:40 slot also completed on its first attempt as
 zero missing samples, overflows or event gaps, and successful restoration.
 Its manifest was inspected through the read-only storage port and the compact
 receipt is retained in `scheduled-2340-capture-pass.json`. The service exited
-successfully at 23:45:16 UTC and resumed its next-slot wait. Native analysis was
-running when checked at 23:48 UTC; this second capture is additional baseline
-continuity evidence, not an adaptive-load qualification.
+successfully at 23:45:16 UTC and resumed its next-slot wait. The automatic
+background worker completed native analysis of all 2,386 visits/probes at
+23:53:33 UTC, without a manual analysis command. The product binds the inspected
+capture manifest and native 10 MS/s rate. At 23:54 UTC, all three plots fetched
+through their public API URLs passed byte-count, SHA-256 and PNG-dimension checks,
+before the next 00:00 scan slot. The complete detail and artifact checks are
+retained as `scheduled-2340-analysis-complete.json` and
+`scheduled-2340-plot-check.json`. This verifies automatic publication for the
+fixed baseline; it is not an adaptive-load qualification.
 
 The capture is visible through API v4. Native-10M analysis completed successfully
 at 23:35:17 UTC through the installed production CLI, respecting the shared worker
