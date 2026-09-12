@@ -40,7 +40,10 @@ with authority.claim((radio_id,), task_id=session_id, task_kind=CaptureTaskKind.
                 {
                     "before": before.model_dump(mode="json"),
                     "after": after.model_dump(mode="json"),
-                    "reason": "Establish the configured scanner manual-gain baseline before capture snapshots.",
+                    "reason": (
+                        "Establish the configured scanner manual-gain baseline "
+                        "before capture snapshots."
+                    ),
                 },
                 indent=2,
             )
