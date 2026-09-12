@@ -94,7 +94,10 @@ user asked to leave migration alone. No further migration changes were made.
 The first small file-flush probe took minutes to return and timed out. A
 second 64 MiB write/flush probe launched at approximately 17:56 was still in a
 kernel filesystem wait at 18:01, with its cancellation signal pending. It
-holds no radio lease. Neither probe establishes production storage readiness.
+returned failed after 322.614 seconds, when its pending 30-second timeout could
+finally be handled. The probe has exited and held no radio lease. Neither
+probe establishes production storage readiness; its final result is retained
+in `bulk-readiness2.json`.
 
 ## Software validation
 
