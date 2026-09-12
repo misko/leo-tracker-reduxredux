@@ -21,9 +21,9 @@ QNAP = Path("/mnt/qnap01")
 PRODUCTION_METADATA_ABI = 3
 SCANNER_IIOD_RELATIVE_PATH = Path("runtime/scanner-iiod/iiod")
 SCANNER_IIOD_PROVENANCE_RELATIVE_PATH = Path("runtime/scanner-iiod/provenance.json")
-SCANNER_IIOD_SHA256 = "5d7ca0a04e93341bdcd28f1967f583f14389456ff4375362e394b7cc71af32ea"
-SCANNER_IIOD_SIZE_BYTES = 230_980
-SCANNER_IIOD_LIBIIO_REVISION = "c752ab684a4c9924ee362ccfb02a7ac65f7992f9"
+SCANNER_IIOD_SHA256 = "a21900cdc05de20cb6df522adddd01a3427de50331b513db828a8252a3a16297"
+SCANNER_IIOD_SIZE_BYTES = 243_268
+SCANNER_IIOD_LIBIIO_REVISION = "66eb685d9bfb5ac264ed5311a2ce9b531127f56d"
 
 
 def _safe_absolute(path: Path, label: str) -> Path:
@@ -136,7 +136,7 @@ def validate_scanner_iiod_provenance(release: Path) -> None:
         or artifact.get("undefined_iio_symbol_count") != 0
         or not isinstance(source, dict)
         or source.get("head") != SCANNER_IIOD_LIBIIO_REVISION
-        or source.get("origin_master") != SCANNER_IIOD_LIBIIO_REVISION
+        or source.get("base_commit") != "a1088b61de3c57762cfed5533e1baf8076a7b726"
         or source.get("worktree_clean") is not True
         or not isinstance(runtime, dict)
         or runtime.get("recommended_release_relative_path") != SCANNER_IIOD_RELATIVE_PATH.as_posix()

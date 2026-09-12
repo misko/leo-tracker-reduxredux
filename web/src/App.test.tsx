@@ -424,8 +424,8 @@ describe("Observation Console", () => {
             },
           ],
         }
-        : path === "/api/v3/scanner/persistent-sessions" ? persistentHopHistory
-        : path === `/api/v3/scanner/persistent-sessions/${persistentHopCapture.session_id}` ? persistentHopDetail
+        : path === "/api/v4/scanner/persistent-sessions" ? persistentHopHistory
+        : path === `/api/v4/scanner/persistent-sessions/${persistentHopCapture.session_id}` ? persistentHopDetail
         : path === "/api/v1/acquisition-queue" ? acquisitionQueue
         : path === "/api/v1/queue" ? activeQueue
         : url.includes("/content") ? {
@@ -450,6 +450,30 @@ describe("Observation Console", () => {
     fireEvent.click(screen.getByRole("button", { name: new RegExp(persistentHopCapture.session_id) }));
     await screen.findByRole("heading", { name: "300-second channel scan" });
     expect(screen.queryByRole("heading", { name: "Actual channel visits" })).not.toBeInTheDocument();
+  });
+
+  it("shows the physical RX1 selection for a single-receiver 10 MS/s scan", async () => {
+    const normalFetch = fetch as ReturnType<typeof vi.fn>;
+    const capture = {
+      ...persistentHopCapture, schema_version: 2, sample_rate_hz: 10000000,
+      bandwidth_hz: 10000000, receiver_ids: [1], profile_id: "single-rx-random-10m-300s-v1",
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input), "http://localhost").pathname;
+      if (path === "/api/v4/scanner/persistent-sessions") {
+        return new Response(JSON.stringify({ ...persistentHopHistory, schema_version: 4,
+          items: [{ ...persistentHopHistory.items[0], schema_version: 4, capture }] }));
+      }
+      if (path === `/api/v4/scanner/persistent-sessions/${capture.session_id}`) {
+        return new Response(JSON.stringify({ ...persistentHopDetail, schema_version: 3, capture }));
+      }
+      return normalFetch(input, init);
+    }));
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(capture.session_id) }));
+    expect(await screen.findByText("RX1 · held for this scan")).toBeInTheDocument();
+    expect(screen.getByLabelText("Persistent hop summary")).toHaveTextContent("10.0 MS/s · 10.0 MHz");
   });
 
   it("stops and starts capture with explicit accessible controls", async () => {
@@ -796,10 +820,10 @@ describe("Observation Console", () => {
     };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), "http://localhost").pathname;
-      if (path === "/api/v3/scanner/persistent-sessions") {
+      if (path === "/api/v4/scanner/persistent-sessions") {
         return new Response(JSON.stringify(completeHistory), { status: 200, headers: { "Content-Type": "application/json" } });
       }
-      if (path === `/api/v3/scanner/persistent-sessions/${persistentHopCapture.session_id}`) {
+      if (path === `/api/v4/scanner/persistent-sessions/${persistentHopCapture.session_id}`) {
         return new Response(JSON.stringify(completeDetail), { status: 200, headers: { "Content-Type": "application/json" } });
       }
       if (path === `/api/v4/scanner/persistent-sessions/${persistentHopCapture.session_id}/tracking`) {

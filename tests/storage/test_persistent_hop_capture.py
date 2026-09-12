@@ -67,8 +67,23 @@ class _FailingRadio:
         raise AssertionError("failed open cannot close an unopened radio")
 
 
-def test_capture_publishes_only_after_receipt_and_iq_are_closed(tmp_path) -> None:
-    plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+@pytest.mark.parametrize("receiver_id", [None, 0, 1])
+def test_capture_publishes_only_after_receipt_and_iq_are_closed(tmp_path, receiver_id) -> None:
+    if receiver_id is None:
+        plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+    else:
+        from leo.scanner.models import scheduled_low_band_targets
+        from leo.scanner.persistent_hop import PersistentHopProfileV1
+        from leo.scanner.single_rx import SingleRxPersistentHopPlanV2
+
+        plan = SingleRxPersistentHopPlanV2(
+            receiver_ids=(receiver_id,),
+            transition_guard_samples=10_000,
+            profiles=tuple(
+                PersistentHopProfileV1(target_index=i, fastlock_profile_index=i, target=target)
+                for i, target in enumerate(scheduled_low_band_targets(bandwidth_hz=5_000_000))
+            ),
+        )
     source = FakePersistentHopRadio()
     source.open()
     source_session = source.begin_session(plan, session_id="stored-session")
@@ -89,7 +104,7 @@ def test_capture_publishes_only_after_receipt_and_iq_are_closed(tmp_path) -> Non
     )
 
     assert published.manifest.receipt == receipt
-    assert published.manifest.schema_version == 2
+    assert published.manifest.schema_version == (2 if receiver_id is None else 3)
     assert published.manifest.timing.session_id == receipt.session_id
     assert (
         published.manifest.timing.session_start_device_sample_counter
@@ -98,6 +113,16 @@ def test_capture_publishes_only_after_receipt_and_iq_are_closed(tmp_path) -> Non
     assert published.manifest.timing.qualified
     assert published.manifest.total_sample_count == plan.valid_visit_samples
     assert published.manifest.queue_telemetry is not None
+    reopened = store.verify(published.session_id)
+    assert reopened.manifest == published.manifest
+    reader = store.valid_ci16_reader(reopened)
+    assert reader.receiver_ids == plan.receiver_ids
+    assert reader.read_valid_ci16(0, 10).shape == (10, len(plan.receiver_ids), 2)
+    if receiver_id is not None:
+        assert store.page(cursor=0, limit=20).total == 0
+        history = store.page(cursor=0, limit=20, include_single_rx=True)
+        assert history.items[0].receiver_ids == (receiver_id,)
+        assert history.items[0].sample_rate_hz == 10_000_000
     assert published.manifest.queue_telemetry.enqueue_failure_count == 0
     assert store.inspect("stored-session").manifest_sha256 == published.manifest_sha256
     assert radio.opened is False

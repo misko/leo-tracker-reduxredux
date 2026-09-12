@@ -165,8 +165,15 @@ def capture_persistent_hop_session(
         assert begin_after_monotonic_ns is not None
         assert terminal_realtime_ns is not None
         assert terminal_monotonic_ns is not None
+        from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxPersistentHopPlanV2
+
+        timing_type = (
+            SingleRxHopTimingV2
+            if isinstance(plan, SingleRxPersistentHopPlanV2)
+            else PersistentHopUtcTimingAuthorityV1
+        )
         timing_sink(
-            PersistentHopUtcTimingAuthorityV1.from_host_bracket(
+            timing_type.from_host_bracket(
                 session_id=session_id,
                 session_start_device_sample_counter=(receipt.session_start_device_sample_counter),
                 sample_rate_hz=plan.sample_rate_hz,

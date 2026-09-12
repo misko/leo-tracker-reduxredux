@@ -1,0 +1,279 @@
+Sep 12 16:45:10 gauss kernel: INFO: task xfsaild/dm-5:2257 blocked for more than 122 seconds.
+Sep 12 16:45:10 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:45:10 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:45:10 gauss kernel: task:xfsaild/dm-5    state:D stack:0     pid:2257  tgid:2257  ppid:2      task_flags:0x200840 flags:0x00080000
+Sep 12 16:45:10 gauss kernel: Call Trace:
+Sep 12 16:45:10 gauss kernel:  <TASK>
+Sep 12 16:45:10 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:45:10 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:45:10 gauss kernel:  schedule_timeout+0xcf/0x110
+Sep 12 16:45:10 gauss kernel:  wait_for_completion+0x81/0x140
+Sep 12 16:45:10 gauss kernel:  __flush_workqueue+0x14e/0x430
+Sep 12 16:45:10 gauss kernel:  xlog_cil_push_now.isra.0+0x74/0xb0 [xfs]
+Sep 12 16:45:10 gauss kernel:  xlog_cil_force_seq+0x70/0x2c0 [xfs]
+Sep 12 16:45:10 gauss kernel:  xfs_log_force+0x99/0x310 [xfs]
+Sep 12 16:45:10 gauss kernel:  ? xlog_cil_push_now.isra.0+0x56/0xb0 [xfs]
+Sep 12 16:45:10 gauss kernel:  xlog_cil_flush+0xca/0xf0 [xfs]
+Sep 12 16:45:10 gauss kernel:  xfsaild_push+0x2db/0x5c0 [xfs]
+Sep 12 16:45:10 gauss kernel:  ? __pfx_process_timeout+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  ? __pfx_xfsaild+0x10/0x10 [xfs]
+Sep 12 16:45:10 gauss kernel:  xfsaild+0xc9/0x1a0 [xfs]
+Sep 12 16:45:10 gauss kernel:  ? __pfx_xfsaild+0x10/0x10 [xfs]
+Sep 12 16:45:10 gauss kernel:  kthread+0xf7/0x130
+Sep 12 16:45:10 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  ret_from_fork+0x195/0x2a0
+Sep 12 16:45:10 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  ret_from_fork_asm+0x1a/0x30
+Sep 12 16:45:10 gauss kernel:  </TASK>
+Sep 12 16:45:10 gauss kernel: INFO: task kworker/6:0:3791346 blocked for more than 122 seconds.
+Sep 12 16:45:10 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:45:10 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:45:10 gauss kernel: task:kworker/6:0     state:D stack:0     pid:3791346 tgid:3791346 ppid:2      task_flags:0x4208060 flags:0x00080000
+Sep 12 16:45:10 gauss kernel: Workqueue: xfs-sync/dm-5 xfs_log_worker [xfs]
+Sep 12 16:45:10 gauss kernel: Call Trace:
+Sep 12 16:45:10 gauss kernel:  <TASK>
+Sep 12 16:45:10 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:45:10 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:45:10 gauss kernel:  schedule_timeout+0xcf/0x110
+Sep 12 16:45:10 gauss kernel:  wait_for_completion+0x81/0x140
+Sep 12 16:45:10 gauss kernel:  __flush_workqueue+0x14e/0x430
+Sep 12 16:45:10 gauss kernel:  xlog_cil_push_now.isra.0+0x74/0xb0 [xfs]
+Sep 12 16:45:10 gauss kernel:  xlog_cil_force_seq+0x70/0x2c0 [xfs]
+Sep 12 16:45:10 gauss kernel:  ? os_xsave+0x2e/0x70
+Sep 12 16:45:10 gauss kernel:  xfs_log_force+0x99/0x310 [xfs]
+Sep 12 16:45:10 gauss kernel:  ? xfs_log_need_covered.isra.0+0x16/0xc0 [xfs]
+Sep 12 16:45:10 gauss kernel:  xfs_log_worker+0x3e/0xd0 [xfs]
+Sep 12 16:45:10 gauss kernel:  process_one_work+0x1ac/0x3d0
+Sep 12 16:45:10 gauss kernel:  worker_thread+0x1b8/0x360
+Sep 12 16:45:10 gauss kernel:  ? _raw_spin_lock_irqsave+0xe/0x20
+Sep 12 16:45:10 gauss kernel:  ? __pfx_worker_thread+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  kthread+0xf7/0x130
+Sep 12 16:45:10 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  ret_from_fork+0x195/0x2a0
+Sep 12 16:45:10 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:45:10 gauss kernel:  ret_from_fork_asm+0x1a/0x30
+Sep 12 16:45:10 gauss kernel:  </TASK>
+Sep 12 16:45:10 gauss kernel: INFO: task python:3877494 blocked for more than 122 seconds.
+Sep 12 16:45:10 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:45:10 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:45:10 gauss kernel: task:python          state:D stack:0     pid:3877494 tgid:3877494 ppid:3877415 task_flags:0x400000 flags:0x00080000
+Sep 12 16:45:10 gauss kernel: Call Trace:
+Sep 12 16:45:10 gauss kernel:  <TASK>
+Sep 12 16:45:10 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:45:10 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:45:10 gauss kernel:  schedule_timeout+0xcf/0x110
+Sep 12 16:45:10 gauss kernel:  wait_for_completion+0x81/0x140
+Sep 12 16:45:10 gauss kernel:  __flush_workqueue+0x14e/0x430
+Sep 12 16:45:10 gauss kernel:  xlog_cil_push_now.isra.0+0x74/0xb0 [xfs]
+Sep 12 16:45:10 gauss kernel:  xlog_cil_force_seq+0x70/0x2c0 [xfs]
+Sep 12 16:45:10 gauss kernel:  ? dentry_free+0x5c/0xa0
+Sep 12 16:45:10 gauss kernel:  ? __dentry_kill+0x19f/0x1b0
+Sep 12 16:45:10 gauss kernel:  xfs_log_force_seq+0x90/0x260 [xfs]
+Sep 12 16:45:10 gauss kernel:  xfs_log_force_inode+0x6d/0x90 [xfs]
+Sep 12 16:45:10 gauss kernel:  xfs_dir_fsync+0x25/0xb0 [xfs]
+Sep 12 16:45:10 gauss kernel:  do_fsync+0x5a/0xe0
+Sep 12 16:45:10 gauss kernel:  __x64_sys_fsync+0x13/0x20
+Sep 12 16:45:10 gauss kernel:  x64_sys_call+0x124e/0x2390
+Sep 12 16:45:10 gauss kernel:  do_syscall_64+0x105/0x5a0
+Sep 12 16:45:10 gauss kernel:  ? putname+0x41/0x90
+Sep 12 16:45:10 gauss kernel:  ? __x64_sys_renameat+0x5f/0x80
+Sep 12 16:45:10 gauss kernel:  ? arch_exit_to_user_mode_prepare.isra.0+0xd/0xe0
+Sep 12 16:45:10 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:45:10 gauss kernel:  ? from_kgid_munged+0x17/0x30
+Sep 12 16:45:10 gauss kernel:  ? cp_new_stat+0x142/0x190
+Sep 12 16:45:10 gauss kernel:  ? __do_sys_newfstat+0x51/0x80
+Sep 12 16:45:10 gauss kernel:  ? arch_exit_to_user_mode_prepare.isra.0+0xd/0xe0
+Sep 12 16:45:10 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:45:10 gauss kernel:  ? putname+0x41/0x90
+Sep 12 16:45:10 gauss kernel:  ? __x64_sys_renameat2+0x65/0x90
+Sep 12 16:45:10 gauss kernel:  ? arch_exit_to_user_mode_prepare.isra.0+0xd/0xe0
+Sep 12 16:45:10 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:45:10 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:45:10 gauss kernel:  ? sysvec_apic_timer_interrupt+0x54/0xd0
+Sep 12 16:45:10 gauss kernel:  entry_SYSCALL_64_after_hwframe+0x76/0x7e
+Sep 12 16:45:10 gauss kernel: RIP: 0033:0x7f3dfa8a03e6
+Sep 12 16:45:10 gauss kernel: RSP: 002b:00007ffef629d1d0 EFLAGS: 00000202 ORIG_RAX: 000000000000004a
+Sep 12 16:45:10 gauss kernel: RAX: ffffffffffffffda RBX: 0000000000425040 RCX: 00007f3dfa8a03e6
+Sep 12 16:45:10 gauss kernel: RDX: 0000000000000000 RSI: 0000000000000000 RDI: 000000000000000e
+Sep 12 16:45:10 gauss kernel: RBP: 00007ffef629d1e0 R08: 0000000000000000 R09: 0000000000000000
+Sep 12 16:45:10 gauss kernel: R10: 0000000000000000 R11: 0000000000000202 R12: 000000000000000e
+Sep 12 16:45:10 gauss kernel: R13: 0000000000b217c8 R14: 0000000000b217c8 R15: 00007f3dfac04cc0
+Sep 12 16:45:10 gauss kernel:  </TASK>
+Sep 12 16:49:15 gauss kernel: INFO: task kworker/6:0:3791346 blocked for more than 122 seconds.
+Sep 12 16:49:15 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:49:15 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:49:15 gauss kernel: task:kworker/6:0     state:D stack:0     pid:3791346 tgid:3791346 ppid:2      task_flags:0x4208060 flags:0x00080000
+Sep 12 16:49:15 gauss kernel: Workqueue: xfs-sync/dm-5 xfs_log_worker [xfs]
+Sep 12 16:49:15 gauss kernel: Call Trace:
+Sep 12 16:49:15 gauss kernel:  <TASK>
+Sep 12 16:49:15 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:49:15 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:49:15 gauss kernel:  schedule_timeout+0xcf/0x110
+Sep 12 16:49:15 gauss kernel:  wait_for_completion+0x81/0x140
+Sep 12 16:49:15 gauss kernel:  __flush_workqueue+0x14e/0x430
+Sep 12 16:49:15 gauss kernel:  xlog_cil_push_now.isra.0+0x74/0xb0 [xfs]
+Sep 12 16:49:15 gauss kernel:  xlog_cil_force_seq+0x70/0x2c0 [xfs]
+Sep 12 16:49:15 gauss kernel:  ? os_xsave+0x2e/0x70
+Sep 12 16:49:15 gauss kernel:  xfs_log_force+0x99/0x310 [xfs]
+Sep 12 16:49:15 gauss kernel:  ? xfs_log_need_covered.isra.0+0x16/0xc0 [xfs]
+Sep 12 16:49:15 gauss kernel:  xfs_log_worker+0x3e/0xd0 [xfs]
+Sep 12 16:49:15 gauss kernel:  process_one_work+0x1ac/0x3d0
+Sep 12 16:49:15 gauss kernel:  worker_thread+0x1b8/0x360
+Sep 12 16:49:15 gauss kernel:  ? _raw_spin_lock_irqsave+0xe/0x20
+Sep 12 16:49:15 gauss kernel:  ? __pfx_worker_thread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  kthread+0xf7/0x130
+Sep 12 16:49:15 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  ret_from_fork+0x195/0x2a0
+Sep 12 16:49:15 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  ret_from_fork_asm+0x1a/0x30
+Sep 12 16:49:15 gauss kernel:  </TASK>
+Sep 12 16:49:15 gauss kernel: INFO: task kworker/u96:0:3870717 blocked for more than 122 seconds.
+Sep 12 16:49:15 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:49:15 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:49:15 gauss kernel: task:kworker/u96:0   state:D stack:0     pid:3870717 tgid:3870717 ppid:2      task_flags:0x4248060 flags:0x00080000
+Sep 12 16:49:15 gauss kernel: Workqueue: xfs-cil/dm-5 xlog_cil_push_work [xfs]
+Sep 12 16:49:15 gauss kernel: Call Trace:
+Sep 12 16:49:15 gauss kernel:  <TASK>
+Sep 12 16:49:15 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:49:15 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:49:15 gauss kernel:  xlog_cil_order_write+0x138/0x180 [xfs]
+Sep 12 16:49:15 gauss kernel:  ? __pfx_default_wake_function+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  xlog_cil_push_work+0x697/0x9f0 [xfs]
+Sep 12 16:49:15 gauss kernel:  process_one_work+0x1ac/0x3d0
+Sep 12 16:49:15 gauss kernel:  worker_thread+0x1b8/0x360
+Sep 12 16:49:15 gauss kernel:  ? __pfx_worker_thread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  kthread+0xf7/0x130
+Sep 12 16:49:15 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  ret_from_fork+0x195/0x2a0
+Sep 12 16:49:15 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  ret_from_fork_asm+0x1a/0x30
+Sep 12 16:49:15 gauss kernel:  </TASK>
+Sep 12 16:49:15 gauss kernel: INFO: task python:3877494 blocked for more than 122 seconds.
+Sep 12 16:49:15 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:49:15 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:49:15 gauss kernel: task:python          state:D stack:0     pid:3877494 tgid:3877494 ppid:3877415 task_flags:0x400000 flags:0x00080000
+Sep 12 16:49:15 gauss kernel: Call Trace:
+Sep 12 16:49:15 gauss kernel:  <TASK>
+Sep 12 16:49:15 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:49:15 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:49:15 gauss kernel:  xlog_cil_force_seq+0x1fa/0x2c0 [xfs]
+Sep 12 16:49:15 gauss kernel:  ? __pfx_default_wake_function+0x10/0x10
+Sep 12 16:49:15 gauss kernel:  xfs_log_force_seq+0x90/0x260 [xfs]
+Sep 12 16:49:15 gauss kernel:  xfs_log_force_inode+0x6d/0x90 [xfs]
+Sep 12 16:49:15 gauss kernel:  xfs_dir_fsync+0x25/0xb0 [xfs]
+Sep 12 16:49:15 gauss kernel:  do_fsync+0x5a/0xe0
+Sep 12 16:49:15 gauss kernel:  __x64_sys_fsync+0x13/0x20
+Sep 12 16:49:15 gauss kernel:  x64_sys_call+0x124e/0x2390
+Sep 12 16:49:15 gauss kernel:  do_syscall_64+0x105/0x5a0
+Sep 12 16:49:15 gauss kernel:  ? putname+0x41/0x90
+Sep 12 16:49:15 gauss kernel:  ? __x64_sys_renameat+0x5f/0x80
+Sep 12 16:49:15 gauss kernel:  ? arch_exit_to_user_mode_prepare.isra.0+0xd/0xe0
+Sep 12 16:49:15 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:49:15 gauss kernel:  ? from_kgid_munged+0x17/0x30
+Sep 12 16:49:15 gauss kernel:  ? cp_new_stat+0x142/0x190
+Sep 12 16:49:15 gauss kernel:  ? __do_sys_newfstat+0x51/0x80
+Sep 12 16:49:15 gauss kernel:  ? arch_exit_to_user_mode_prepare.isra.0+0xd/0xe0
+Sep 12 16:49:15 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:49:15 gauss kernel:  ? putname+0x41/0x90
+Sep 12 16:49:15 gauss kernel:  ? __x64_sys_renameat2+0x65/0x90
+Sep 12 16:49:15 gauss kernel:  ? arch_exit_to_user_mode_prepare.isra.0+0xd/0xe0
+Sep 12 16:49:15 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:49:15 gauss kernel:  ? do_syscall_64+0x140/0x5a0
+Sep 12 16:49:15 gauss kernel:  ? sysvec_apic_timer_interrupt+0x54/0xd0
+Sep 12 16:49:15 gauss kernel:  entry_SYSCALL_64_after_hwframe+0x76/0x7e
+Sep 12 16:49:15 gauss kernel: RIP: 0033:0x7f3dfa8a03e6
+Sep 12 16:49:15 gauss kernel: RSP: 002b:00007ffef629d1d0 EFLAGS: 00000202 ORIG_RAX: 000000000000004a
+Sep 12 16:49:15 gauss kernel: RAX: ffffffffffffffda RBX: 0000000000425040 RCX: 00007f3dfa8a03e6
+Sep 12 16:49:15 gauss kernel: RDX: 0000000000000000 RSI: 0000000000000000 RDI: 000000000000000e
+Sep 12 16:49:15 gauss kernel: RBP: 00007ffef629d1e0 R08: 0000000000000000 R09: 0000000000000000
+Sep 12 16:49:15 gauss kernel: R10: 0000000000000000 R11: 0000000000000202 R12: 000000000000000e
+Sep 12 16:49:15 gauss kernel: R13: 0000000000b217c8 R14: 0000000000b217c8 R15: 00007f3dfac04cc0
+Sep 12 16:49:15 gauss kernel:  </TASK>
+Sep 12 16:51:18 gauss kernel: INFO: task kworker/6:0:3791346 blocked for more than 245 seconds.
+Sep 12 16:51:18 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:51:18 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:51:18 gauss kernel: task:kworker/6:0     state:D stack:0     pid:3791346 tgid:3791346 ppid:2      task_flags:0x4208060 flags:0x00080000
+Sep 12 16:51:18 gauss kernel: Workqueue: xfs-sync/dm-5 xfs_log_worker [xfs]
+Sep 12 16:51:18 gauss kernel: Call Trace:
+Sep 12 16:51:18 gauss kernel:  <TASK>
+Sep 12 16:51:18 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:51:18 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:51:18 gauss kernel:  schedule_timeout+0xcf/0x110
+Sep 12 16:51:18 gauss kernel:  wait_for_completion+0x81/0x140
+Sep 12 16:51:18 gauss kernel:  __flush_workqueue+0x14e/0x430
+Sep 12 16:51:18 gauss kernel:  xlog_cil_push_now.isra.0+0x74/0xb0 [xfs]
+Sep 12 16:51:18 gauss kernel:  xlog_cil_force_seq+0x70/0x2c0 [xfs]
+Sep 12 16:51:18 gauss kernel:  ? os_xsave+0x2e/0x70
+Sep 12 16:51:18 gauss kernel:  xfs_log_force+0x99/0x310 [xfs]
+Sep 12 16:51:18 gauss kernel:  ? xfs_log_need_covered.isra.0+0x16/0xc0 [xfs]
+Sep 12 16:51:18 gauss kernel:  xfs_log_worker+0x3e/0xd0 [xfs]
+Sep 12 16:51:18 gauss kernel:  process_one_work+0x1ac/0x3d0
+Sep 12 16:51:18 gauss kernel:  worker_thread+0x1b8/0x360
+Sep 12 16:51:18 gauss kernel:  ? _raw_spin_lock_irqsave+0xe/0x20
+Sep 12 16:51:18 gauss kernel:  ? __pfx_worker_thread+0x10/0x10
+Sep 12 16:51:18 gauss kernel:  kthread+0xf7/0x130
+Sep 12 16:51:18 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:51:18 gauss kernel:  ret_from_fork+0x195/0x2a0
+Sep 12 16:51:18 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:51:18 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:51:18 gauss kernel:  ret_from_fork_asm+0x1a/0x30
+Sep 12 16:51:18 gauss kernel:  </TASK>
+Sep 12 16:53:21 gauss kernel: INFO: task kworker/6:0:3791346 blocked for more than 368 seconds.
+Sep 12 16:53:21 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:53:21 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:53:21 gauss kernel: task:kworker/6:0     state:D stack:0     pid:3791346 tgid:3791346 ppid:2      task_flags:0x4208060 flags:0x00080000
+Sep 12 16:53:21 gauss kernel: Workqueue: xfs-sync/dm-5 xfs_log_worker [xfs]
+Sep 12 16:53:21 gauss kernel: Call Trace:
+Sep 12 16:53:21 gauss kernel:  <TASK>
+Sep 12 16:53:21 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:53:21 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:53:21 gauss kernel:  schedule_timeout+0xcf/0x110
+Sep 12 16:53:21 gauss kernel:  wait_for_completion+0x81/0x140
+Sep 12 16:53:21 gauss kernel:  __flush_workqueue+0x14e/0x430
+Sep 12 16:53:21 gauss kernel:  xlog_cil_push_now.isra.0+0x74/0xb0 [xfs]
+Sep 12 16:53:21 gauss kernel:  xlog_cil_force_seq+0x70/0x2c0 [xfs]
+Sep 12 16:53:21 gauss kernel:  ? os_xsave+0x2e/0x70
+Sep 12 16:53:21 gauss kernel:  xfs_log_force+0x99/0x310 [xfs]
+Sep 12 16:53:21 gauss kernel:  ? xfs_log_need_covered.isra.0+0x16/0xc0 [xfs]
+Sep 12 16:53:21 gauss kernel:  xfs_log_worker+0x3e/0xd0 [xfs]
+Sep 12 16:53:21 gauss kernel:  process_one_work+0x1ac/0x3d0
+Sep 12 16:53:21 gauss kernel:  worker_thread+0x1b8/0x360
+Sep 12 16:53:21 gauss kernel:  ? _raw_spin_lock_irqsave+0xe/0x20
+Sep 12 16:53:21 gauss kernel:  ? __pfx_worker_thread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  kthread+0xf7/0x130
+Sep 12 16:53:21 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  ret_from_fork+0x195/0x2a0
+Sep 12 16:53:21 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  ret_from_fork_asm+0x1a/0x30
+Sep 12 16:53:21 gauss kernel:  </TASK>
+Sep 12 16:53:21 gauss kernel: INFO: task kworker/u96:1:3843990 blocked for more than 122 seconds.
+Sep 12 16:53:21 gauss kernel:       Tainted: G           OE       7.0.0-30-generic #30-Ubuntu
+Sep 12 16:53:21 gauss kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 12 16:53:21 gauss kernel: task:kworker/u96:1   state:D stack:0     pid:3843990 tgid:3843990 ppid:2      task_flags:0x4248060 flags:0x00080000
+Sep 12 16:53:21 gauss kernel: Workqueue: xfs-cil/dm-5 xlog_cil_push_work [xfs]
+Sep 12 16:53:21 gauss kernel: Call Trace:
+Sep 12 16:53:21 gauss kernel:  <TASK>
+Sep 12 16:53:21 gauss kernel:  __schedule+0x2bb/0x650
+Sep 12 16:53:21 gauss kernel:  schedule+0x27/0x90
+Sep 12 16:53:21 gauss kernel:  xlog_cil_order_write+0x138/0x180 [xfs]
+Sep 12 16:53:21 gauss kernel:  ? __pfx_default_wake_function+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  xlog_cil_push_work+0x697/0x9f0 [xfs]
+Sep 12 16:53:21 gauss kernel:  process_one_work+0x1ac/0x3d0
+Sep 12 16:53:21 gauss kernel:  worker_thread+0x1b8/0x360
+Sep 12 16:53:21 gauss kernel:  ? _raw_spin_lock_irqsave+0xe/0x20
+Sep 12 16:53:21 gauss kernel:  ? __pfx_worker_thread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  kthread+0xf7/0x130
+Sep 12 16:53:21 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  ret_from_fork+0x195/0x2a0
+Sep 12 16:53:21 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  ? __pfx_kthread+0x10/0x10
+Sep 12 16:53:21 gauss kernel:  ret_from_fork_asm+0x1a/0x30
+Sep 12 16:53:21 gauss kernel:  </TASK>
+Sep 12 16:53:21 gauss kernel: Future hung task reports are suppressed, see sysctl kernel.hung_task_warnings
+Sep 12 17:13:37 gauss kernel: workqueue: xlog_ioend_work [xfs] hogged CPU for >10000us 35 times, consider switching to WQ_UNBOUND
+Sep 12 17:14:58 gauss kernel: audit: type=1400 audit(1789233298.839:2063): apparmor="DENIED" operation="open" class="file" profile="who" name="/usr/share/coreutils/locales/uucore/en-US.ftl" pid=3925847 comm="who" requested_mask="r" denied_mask="r" fsuid=0 ouid=0

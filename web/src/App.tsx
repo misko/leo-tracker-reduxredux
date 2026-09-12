@@ -29,8 +29,8 @@ import {
 import type {
   CaptureControlStateV1,
   PersistentHopArtifact,
-  PersistentHopHistoryPageV3,
-  PersistentHopSessionDetailV2,
+  CurrentPersistentHopPage,
+  CurrentPersistentHopDetail,
   PersistentHopTrackingDetailV1,
   ScannerAnalysisHistoryPageV3,
   ScannerHistoryPageV3,
@@ -455,10 +455,10 @@ function ScannerView() {
   const [selectedAdaptiveId, setSelectedAdaptiveId] = useState<string | null>(null);
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
   const [attempts, setAttempts] = useState<ScannerHistoryPageV3 | null>(null);
-  const [persistentPage, setPersistentPage] = useState<PersistentHopHistoryPageV3 | null>(null);
+  const [persistentPage, setPersistentPage] = useState<CurrentPersistentHopPage | null>(null);
   const [persistentCursor, setPersistentCursor] = useState(0);
   const [selectedPersistentId, setSelectedPersistentId] = useState<string | null>(null);
-  const [persistentDetail, setPersistentDetail] = useState<PersistentHopSessionDetailV2 | null>(null);
+  const [persistentDetail, setPersistentDetail] = useState<CurrentPersistentHopDetail | null>(null);
   const [persistentTracking, setPersistentTracking] = useState<PersistentHopTrackingDetailV1 | null>(null);
   const [persistentArtifact, setPersistentArtifact] = useState<PersistentHopArtifact>("coverage");
   const [cursor, setCursor] = useState(0);
@@ -715,7 +715,7 @@ function PersistentHopAnalysisDetail({
   artifact,
   onArtifact,
 }: {
-  detail: PersistentHopSessionDetailV2;
+  detail: CurrentPersistentHopDetail;
   tracking: PersistentHopTrackingDetailV1 | null;
   artifact: PersistentHopArtifact;
   onArtifact: (artifact: PersistentHopArtifact) => void;
@@ -734,6 +734,7 @@ function PersistentHopAnalysisDetail({
       <DataPair label="Session" value={capture.session_id} />
       <DataPair label="Radio" value={capture.radio_id} />
       <DataPair label="Rate / bandwidth" value={`${(capture.sample_rate_hz / 1_000_000).toFixed(1)} MS/s · ${(capture.bandwidth_hz / 1_000_000).toFixed(1)} MHz`} />
+      <DataPair label="Receiver" value={"receiver_ids" in capture ? `RX${capture.receiver_ids[0]} · held for this scan` : "RX0 + RX1"} />
       <DataPair label="Usable duty" value={`${(capture.valid_duty_ppm / 10_000).toFixed(2)}%`} />
       <DataPair label="Visits" value={formatNumber(capture.visit_count)} />
       <DataPair label="Continuity" value={capture.continuity_attested ? "Device-counter attested" : "Not attested"} />

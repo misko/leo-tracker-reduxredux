@@ -18,6 +18,7 @@ from leo.scanner.persistent_hop_products import (
     PersistentHopAnalysisManifestV2,
     PersistentHopAnalysisStatusV1,
     PersistentHopAnalysisStatusV2,
+    SingleRxHopAnalysisManifestV3,
 )
 
 
@@ -206,3 +207,38 @@ class PersistentHopPresentationReaderV2(Protocol):
     def detail_v2(self, session_id: str) -> PersistentHopSessionDetailV2 | None: ...
 
     def artifact(self, session_id: str, artifact: str) -> bytes | None: ...
+
+    def page_v4(self, *, cursor: int, limit: int) -> PersistentHopHistoryPageV4: ...
+
+    def detail_v3(
+        self, session_id: str
+    ) -> PersistentHopSessionDetailV2 | SingleRxHopSessionDetailV3 | None: ...
+
+
+class SingleRxHopHistoryCaptureV2(PersistentHopHistoryItemV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    sample_rate_hz: Literal[10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[10_000_000]  # type: ignore[assignment]
+    receiver_ids: tuple[Literal[0]] | tuple[Literal[1]]
+    profile_id: Literal["single-rx-random-10m-300s-v1"] = "single-rx-random-10m-300s-v1"
+
+
+class PersistentHopCapturePageV2(PersistentHopHistoryPageV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    items: tuple[PersistentHopHistoryItemV1 | SingleRxHopHistoryCaptureV2, ...]
+
+
+class SingleRxHopHistoryItemV4(PersistentHopHistoryItemV3):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    capture: SingleRxHopHistoryCaptureV2
+
+
+class PersistentHopHistoryPageV4(PersistentHopHistoryPageV3):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    items: tuple[PersistentHopHistoryItemV3 | SingleRxHopHistoryItemV4, ...]
+
+
+class SingleRxHopSessionDetailV3(PersistentHopSessionDetailV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    capture: SingleRxHopHistoryCaptureV2
+    product: SingleRxHopAnalysisManifestV3 | None = None

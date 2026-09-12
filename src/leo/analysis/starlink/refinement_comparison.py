@@ -154,7 +154,7 @@ def score_profiles(samples: npt.NDArray[np.complex128], fs: int, edge: str):
 
 def compare_probe(probe: RefinementProbe) -> tuple[ComparisonRowV1, ...]:
     fs, samples = probe.sample_rate_hz, probe.samples
-    if fs not in (2500000, 5000000) or len(samples) != round(fs * 0.021):
+    if fs not in (2500000, 5000000, 10000000) or len(samples) != round(fs * 0.021):
         raise ValueError("comparison requires exactly 21 ms at a supported sample rate")
     seed = int(
         hashlib.sha256(("scanner-refinement-v1:" + probe.probe_id).encode()).hexdigest()[:16], 16
