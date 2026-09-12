@@ -309,6 +309,8 @@ targets = (
     ("radio_pluto_5d4d", "192.168.1.20", "1040005e0b100007100010000bf33a5d4d"),
     ("radio_pluto_19f2", "192.168.1.21", "10400056f695001322002d0010ad1719f2"),
 )
+if len(sys.argv) > 1 and sys.argv[1] == "radio_pluto_003a":
+    targets = (("radio_pluto_003a", "192.168.1.17", "104000bac4950008230026001b440a003a"),)
 radios = []
 for radio_id, host, serial in targets:
     if len(sys.argv) > 1 and radio_id != sys.argv[1]:
@@ -1357,6 +1359,15 @@ def probe_live_station_radios(
             raise ValueError("narrow live probe requires the single-RX scanner profile")
         bindings = _scanner_radio_bindings(scanner_environment)
         selected = bindings["LEO_SCANNER_RADIO_ID"]
+        if selected == "radio_pluto_003a":
+            frozen = (
+                (
+                    "radio_pluto_003a",
+                    "104000bac4950008230026001b440a003a",
+                    "ip:192.168.1.17",
+                    "iio_ip",
+                ),
+            )
         frozen = tuple(item for item in frozen if item[0] == selected)
         configured = json.loads(bindings["LEO_RADIOS_JSON"])[0]
         if len(frozen) != 1 or (
