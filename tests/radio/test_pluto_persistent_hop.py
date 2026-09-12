@@ -467,6 +467,44 @@ def test_adapter_cancel_is_producer_owned_and_retains_current_completed_visit() 
     radio.close()
 
 
+@pytest.mark.parametrize("deadline", [False, True])
+def test_cancel_drains_metadata_closed_visits_before_transport_close(monkeypatch, deadline):
+    from leo.radio import pluto_persistent_hop as module
+
+    plan, source_blocks, source = _cancelled_source(visit_count=2)
+    upstream = _HeldVisitUpstream(source._blocks, source.receipt)
+    upstream.completed_visits = source.receipt.visits
+    if deadline:
+        monkeypatch.setattr(module, "_CANCEL_DRAIN_TIMEOUT_SECONDS", 0)
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        client_factory=lambda *_: _Client(
+            upstream, persistent_hop_wire_session_id("adapter-session")
+        ),
+        plan_factory=lambda selected: selected,
+        tandem_request_factory=lambda: "hold",
+    )
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    assert upstream.visit_entered.wait(timeout=2)
+    session.request_cancel()
+    upstream.release_visit.set()
+    assert session.read_visit().evidence == source_blocks[0].evidence
+    if deadline:
+        with pytest.raises(module.PlutoPersistentHopError, match="timed out draining"):
+            session.read_visit()
+    else:
+        assert session.read_visit().evidence == source_blocks[1].evidence
+        with pytest.raises(StopIteration):
+            session.read_visit()
+        assert session.finish().visits == tuple(block.evidence for block in source_blocks)
+    assert upstream.cancelled
+    assert upstream.cancel_thread_id == upstream.visit_thread_id
+    radio.close()
+
+
 def test_adapter_finish_drains_a_full_read_ahead_queue_for_recovery() -> None:
     plan, source_blocks, source = _cancelled_source(visit_count=2)
     upstream = _QueueFullUpstream(source._blocks, source.receipt)
