@@ -4,6 +4,14 @@ Status: implementation in progress; deployment gates remain open, 2026-09-12.
 This document does not change the running scanner.
 Baseline release: `98207d6fc6eaeaab1ab870998c1519afe0a6b892`.
 
+Radio selection update: the user selected `104000bac4950008230026001b440a003a`
+at `192.168.1.17` (`radio_pluto_003a`). Both receiver paths are now available;
+the fixed single-RX profile has been switched to this radio. The
+[replacement-radio checkpoint](../../reports/2026_09_12_radio003a_scanner_switch/README.md)
+records the passing short check, acquisition release, cancellation fix, and
+remaining first-production-scan verification. This selection supersedes earlier
+`.20` references and the historical exclusion of this serial.
+
 Implementation checkpoint: the [2.5M decimated-dwell engine report](../../reports/2026_09_12_adaptive_decimated_dwell/README.md)
 records working integer DSP and passing arithmetic/pilot controls, but the best
 measured FIR pipeline still misses the ARM service-time gate. The same checkpoint
@@ -85,7 +93,7 @@ establish duty or detection performance for this combined design.
 
 ## Intended behavior
 
-Add `adaptive-single-rx-random-10m-300s-v1` on the currently selected `.20`
+Add `adaptive-single-rx-random-10m-300s-v1` on the user-selected `.17`
 radio. Select physical RX0 or RX1 once from the durable scan identity; record
 and classify that receiver for the whole scan, including retries. Record native
 10 MS/s CI16 with 10 MHz bandwidth for 300 seconds, with 120 ms valid visits
