@@ -301,6 +301,7 @@ EXPECTED_ACQUISITION_EXEC_START = (
 )
 LIVE_STATION_PROBE_PROGRAM = """
 import json
+import sys
 
 from leo.radio import PlutoIioRadioSource
 
@@ -310,6 +311,8 @@ targets = (
 )
 radios = []
 for radio_id, host, serial in targets:
+    if len(sys.argv) > 1 and radio_id != sys.argv[1]:
+        continue
     source = PlutoIioRadioSource(host, expected_serial=serial, radio_id=radio_id)
     try:
         identity = source.open()
@@ -1329,9 +1332,40 @@ def probe_processing_resource_capacity() -> None:
 
 def probe_live_station_radios(
     release: Path,
+    *,
+    scanner_environment: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Read exact live identities through the staged Leo Pluto adapter."""
 
+    frozen = (
+        (
+            "radio_pluto_5d4d",
+            "1040005e0b100007100010000bf33a5d4d",
+            "ip:192.168.1.20",
+            "iio_ip",
+        ),
+        (
+            "radio_pluto_19f2",
+            "10400056f695001322002d0010ad1719f2",
+            "ip:192.168.1.21",
+            "iio_ip",
+        ),
+    )
+    selection: tuple[str, ...] = ()
+    if scanner_environment is not None:
+        if scanner_environment.get("LEO_SCANNER_PROFILE") != "single-rx-random-10m-300s-v1":
+            raise ValueError("narrow live probe requires the single-RX scanner profile")
+        bindings = _scanner_radio_bindings(scanner_environment)
+        selected = bindings["LEO_SCANNER_RADIO_ID"]
+        frozen = tuple(item for item in frozen if item[0] == selected)
+        configured = json.loads(bindings["LEO_RADIOS_JSON"])[0]
+        if len(frozen) != 1 or (
+            configured.get("serial"),
+            configured.get("host"),
+            configured.get("receiver_count"),
+        ) != (frozen[0][1], frozen[0][2].removeprefix("ip:"), 2):
+            raise ValueError("selected scanner radio differs from the frozen station identity")
+        selection = (selected,)
     output = command(
         "runuser",
         "-u",
@@ -1341,6 +1375,7 @@ def probe_live_station_radios(
         "-I",
         "-c",
         LIVE_STATION_PROBE_PROGRAM,
+        *selection,
         timeout_seconds=30.0,
     )
     try:
@@ -1353,7 +1388,7 @@ def probe_live_station_radios(
         or type(payload.get("schema_version")) is not int
         or payload.get("schema_version") != 1
         or not isinstance(payload.get("radios"), list)
-        or len(payload["radios"]) != 2
+        or len(payload["radios"]) != len(frozen)
     ):
         raise ValueError("live station radio probe returned a malformed inventory")
 
@@ -1374,20 +1409,6 @@ def probe_live_station_radios(
         "supports_device_sample_counter",
         "supports_continuity_sequence",
     }
-    frozen = (
-        (
-            "radio_pluto_5d4d",
-            "1040005e0b100007100010000bf33a5d4d",
-            "ip:192.168.1.20",
-            "iio_ip",
-        ),
-        (
-            "radio_pluto_19f2",
-            "10400056f695001322002d0010ad1719f2",
-            "ip:192.168.1.21",
-            "iio_ip",
-        ),
-    )
     for observed, identity in zip(payload["radios"], frozen, strict=True):
         if not isinstance(observed, dict) or set(observed) != radio_keys:
             raise ValueError("live station radio probe returned a malformed radio")
@@ -3928,7 +3949,16 @@ def verify(args: argparse.Namespace) -> list[str]:
             raise ValueError("system-scope LEO units are already active:\n" + system_active)
     probe_processing_resource_capacity()
     if component is None:
-        probe_live_station_radios(release)
+        acquisition_path = _component_environment_revision("acquisition", revision)
+        acquisition_environment = {}
+        for line in acquisition_path.read_text(encoding="utf-8").splitlines():
+            key, separator, value = line.partition("=")
+            if separator and not line.lstrip().startswith("#"):
+                acquisition_environment[key.strip()] = value.strip().strip("'\"")
+        if acquisition_environment.get("LEO_SCANNER_PROFILE") == "single-rx-random-10m-300s-v1":
+            probe_live_station_radios(release, scanner_environment=acquisition_environment)
+        else:
+            probe_live_station_radios(release)
 
     unit_paths = tuple(sorted(UNIT_SOURCE.glob("leo-*.service")))
     if not unit_paths:

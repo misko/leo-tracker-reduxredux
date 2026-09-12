@@ -978,6 +978,51 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
         _call("probe_live_station_radios", release)
 
 
+@pytest.mark.parametrize("selected_index", [0, 1])
+def test_single_rx_live_probe_checks_only_selected_frozen_radio(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, selected_index: int
+) -> None:
+    payload = _live_station_probe_payload()
+    radio = payload["radios"][selected_index]
+    payload["radios"] = [radio]
+    configured = {
+        "radio_id": radio["radio_id"],
+        "serial": radio["serial"],
+        "host": radio["uri"].removeprefix("ip:"),
+        "receiver_count": 2,
+    }
+    environment = {
+        "LEO_SCANNER_PROFILE": "single-rx-random-10m-300s-v1",
+        "LEO_SCANNER_RADIO_ID": radio["radio_id"],
+        "LEO_RADIOS_JSON": json.dumps([configured]),
+    }
+    calls = []
+
+    def fake_command(*argv: str, timeout_seconds: float | None = None) -> str:
+        calls.append(argv)
+        return json.dumps(payload)
+
+    function = SCRIPT_GLOBALS["probe_live_station_radios"]
+    monkeypatch.setitem(function.__globals__, "command", fake_command)
+    assert function(tmp_path, scanner_environment=environment) == payload
+    assert calls[-1][-1] == radio["radio_id"]
+    assert "radio_id != sys.argv[1]" in calls[-1][-2]
+    configured["host"] = "192.0.2.1"
+    environment["LEO_RADIOS_JSON"] = json.dumps([configured])
+    with pytest.raises(ValueError, match="frozen station identity"):
+        function(tmp_path, scanner_environment=environment)
+    assert len(calls) == 1
+    configured["host"] = radio["uri"].removeprefix("ip:")
+    environment["LEO_RADIOS_JSON"] = json.dumps([configured])
+    payload["radios"] = _live_station_probe_payload()["radios"]
+    with pytest.raises(ValueError, match="malformed inventory"):
+        function(tmp_path, scanner_environment=environment)
+    payload["radios"] = [radio]
+    radio["metadata_abi_version"] = 2
+    with pytest.raises(ValueError, match="metadata ABI"):
+        function(tmp_path, scanner_environment=environment)
+
+
 def test_native_bandwidth_receipt_uses_staged_contract_and_exact_v5_authority(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
