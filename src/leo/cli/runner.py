@@ -72,7 +72,6 @@ from leo.contracts.mixed_rate_schedule import (
 )
 from leo.contracts.states import CaptureState
 from leo.scanner import (
-    ScheduledScannerRunIntentV1,
     canonical_scheduled_scanner_operation_key,
 )
 
@@ -619,7 +618,9 @@ class ContinuousAcquisitionRunner:
                                 last,
                             )
                     elif lease.kind == CaptureTaskKind.SCANNER_SWEEP.value:
-                        scanner_intent = ScheduledScannerRunIntentV1.model_validate(lease.payload)
+                        from leo.scanner.single_rx import parse_scheduled_scanner_intent
+
+                        scanner_intent = parse_scheduled_scanner_intent(lease.payload)
                         lateness = (self._utc_now() - scanner_intent.scheduled_for).total_seconds()
                         if lateness > scanner_intent.maximum_lateness_seconds:
                             queue.complete_acquisition_operation(

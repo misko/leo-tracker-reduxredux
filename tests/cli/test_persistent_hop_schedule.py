@@ -258,11 +258,16 @@ def test_persistent_hop_mode_rejects_noncanonical_cadence_or_host(
         _settings(tmp_path, **updates)
 
 
-def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path) -> None:
+@pytest.mark.parametrize("single_rx", [False, True])
+def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path, single_rx) -> None:
+    from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID, parse_scheduled_scanner_intent
+
     radio = _BoundedPersistentRadio()
     lifecycle = _Lifecycle()
     backend = LocalAcquisitionBackend(
-        _settings(tmp_path),
+        _settings(
+            tmp_path, scanner_profile=SINGLE_RX_PROFILE_ID if single_rx else "alternating-2p5m-5m"
+        ),
         CompositionHooks(
             persistent_hop_radio_factory=lambda _configuration: radio,
             persistent_hop_iiod_lifecycle_factory=lambda _configuration: lifecycle,
@@ -274,16 +279,18 @@ def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path) -> 
         scheduled_for=scheduled_for,
     )
 
+    intent = parse_scheduled_scanner_intent(intent.model_dump(mode="json"))
     first = backend.capture_scheduled_scanner(intent, cancel=Event())
     second = backend.capture_scheduled_scanner(intent, cancel=Event())
 
     assert isinstance(first, ScheduledPersistentHopRun)
     assert isinstance(second, ScheduledPersistentHopRun)
-    assert first.published.manifest.plan.sample_rate_hz == 5_000_000
-    assert first.published.manifest.plan.bandwidth_hz == 5_000_000
-    assert first.published.manifest.plan.transition_guard_samples == 5_000
+    rate = 10_000_000 if single_rx else 5_000_000
+    assert first.published.manifest.plan.sample_rate_hz == rate
+    assert first.published.manifest.plan.bandwidth_hz == rate
+    assert first.published.manifest.plan.transition_guard_samples == rate // 1000
     assert first.published.manifest.receipt.capture_outcome == "cancelled"
-    assert first.published.manifest.receipt.valid_sample_count == 600_000
+    assert first.published.manifest.receipt.valid_sample_count == rate * 120 // 1000
     assert first.published.manifest.queue_telemetry is not None
     assert first.published.manifest.queue_telemetry.capacity_visits == 64
     assert second.published.manifest_sha256 == first.published.manifest_sha256

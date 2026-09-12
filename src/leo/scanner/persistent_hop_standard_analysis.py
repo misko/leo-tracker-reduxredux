@@ -262,16 +262,25 @@ def analyze_persistent_hop_sweep_v2(
                 )
             )
 
-    return PersistentHopAnalysisChunkV2(
-        session_id=source.session_id,
-        input_manifest_sha256=source.input_manifest_sha256,
-        configuration=persistent_hop_fractional_product_configuration(selected),
-        sweep_index=sweep_index,
-        first_visit_index=spans[0].visit_index,
-        visit_count=len(spans),
-        scheduled_probe_count_per_receiver_visit=selected.scheduled_probe_count,
-        receiver_ids=selected.receiver_ids,
-        probes=tuple(rows),
+    from leo.scanner.persistent_hop_products import SingleRxHopAnalysisChunkV3
+
+    chunk_type = (
+        SingleRxHopAnalysisChunkV3
+        if len(selected.receiver_ids) == 1
+        else PersistentHopAnalysisChunkV2
+    )
+    return chunk_type.model_validate(
+        dict(
+            session_id=source.session_id,
+            input_manifest_sha256=source.input_manifest_sha256,
+            configuration=persistent_hop_fractional_product_configuration(selected),
+            sweep_index=sweep_index,
+            first_visit_index=spans[0].visit_index,
+            visit_count=len(spans),
+            scheduled_probe_count_per_receiver_visit=selected.scheduled_probe_count,
+            receiver_ids=selected.receiver_ids,
+            probes=tuple(rows),
+        )
     )
 
 

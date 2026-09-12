@@ -25,8 +25,16 @@ from leo.storage.persistent_hop_analysis_v2 import (
 )
 
 
-def _capture(root: Path) -> PersistentHopIqStore:
+def _capture(root: Path, receiver_id=None) -> PersistentHopIqStore:
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
+    if receiver_id is not None:
+        from leo.scanner.single_rx import SingleRxPersistentHopPlanV2
+
+        plan = SingleRxPersistentHopPlanV2(
+            receiver_ids=(receiver_id,),
+            transition_guard_samples=10_000,
+            profiles=plan.profiles,
+        )
     radio = FakePersistentHopRadio()
     radio.open()
     session = radio.begin_session(plan, session_id="hop-fractional-v2")
@@ -35,9 +43,73 @@ def _capture(root: Path) -> PersistentHopIqStore:
     writer.append(session.read_visit())
     session.request_cancel()
     receipt = session.finish()
-    writer.finish(receipt)
+    timing = None
+    if receiver_id is not None:
+        from leo.scanner.single_rx import SingleRxHopTimingV2
+
+        timing = SingleRxHopTimingV2.from_host_bracket(
+            session_id=receipt.session_id,
+            session_start_device_sample_counter=receipt.session_start_device_sample_counter,
+            sample_rate_hz=plan.sample_rate_hz,
+            begin_before_realtime_ns=1_000_000_000,
+            begin_after_realtime_ns=1_001_000_000,
+            begin_before_monotonic_ns=2_000_000_000,
+            begin_after_monotonic_ns=2_001_000_000,
+            terminal_realtime_ns=2_000_000_000,
+            terminal_monotonic_ns=3_000_000_000,
+        )
+    writer.finish(receipt, timing=timing)
     radio.close()
     return captures
+
+
+@pytest.mark.parametrize("receiver_id", [0, 1])
+def test_single_rx_analysis_publication_and_v4_history(tmp_path, monkeypatch, receiver_id):
+    captures = _capture(tmp_path, receiver_id)
+    current = PersistentHopAnalysisStoreV2(tmp_path)
+    monkeypatch.setattr(persistent_source_module, "analyze_glrt64_dwell", _fractional_dwell)
+    service = PersistentHopAnalysisServiceV2(
+        inputs=PersistentHopAnalysisInputStore(captures),
+        products=current,
+        renderer=render_persistent_hop_analysis_pngs_v2,
+        probe_stride_ms=120,
+    )
+    assert service.run_pending(maximum_sessions=1).failures == ()
+    publication = current.inspect("hop-fractional-v2")
+    assert publication.manifest.schema_version == 3
+    assert publication.manifest.sample_rate_hz == 10_000_000
+    assert publication.manifest.probe_count == 1
+    (chunk,) = current.published_chunks("hop-fractional-v2")
+    assert chunk.schema_version == 3 and chunk.receiver_ids == (receiver_id,)
+    assert chunk.probes[0].receiver_id == receiver_id
+    candidate = chunk.probes[0].fractional_candidates[0]
+    assert candidate.fractional_tracking_cfo_hz == 1018.0
+    presentation = PersistentHopPresentationStoreV2(captures, current)
+    assert presentation.page_v3(cursor=0, limit=5).total == 0
+    page = presentation.page_v4(cursor=0, limit=5)
+    assert page.schema_version == 4 and page.items[0].capture.receiver_ids == (receiver_id,)
+    detail = presentation.detail_v3("hop-fractional-v2")
+    assert detail.product == publication.manifest
+    assert presentation.detail_v2("hop-fractional-v2") is None
+    from fastapi.testclient import TestClient
+
+    from leo.api.app import create_app
+    from leo.presentation.fixtures import build_fixture_repository
+
+    client = TestClient(
+        create_app(
+            build_fixture_repository(tmp_path),
+            artifact_root=tmp_path,
+            persistent_hop_presentations_v2=presentation,
+        )
+    )
+    response = client.get("/api/v4/scanner/persistent-sessions")
+    assert response.status_code == 200
+    assert response.json()["items"][0]["capture"]["receiver_ids"] == [receiver_id]
+    response = client.get("/api/v4/scanner/persistent-sessions/hop-fractional-v2")
+    assert (
+        response.status_code == 200 and response.json()["product"]["sample_rate_hz"] == 10_000_000
+    )
 
 
 def _fractional_dwell(_samples, configuration, *, edge) -> DwellGlrt64Analysis:
