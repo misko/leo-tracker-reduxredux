@@ -11,8 +11,18 @@ later corrections do not silently replace earlier measurements or TLE rankings.
 **Reading the evidence:** the current summary below includes the v5 GLRT
 correction and v6 PSS models. The detailed carrier/TLE tables later in this report
 retain the v4 comparison. No TLE ranking has been recomputed with v5/v6 corrections.
-The present v7 update audits and consolidates documentation and engineering
-calculations; it is not another measurement or model-fitting experiment.
+The v7 update audited and consolidated documentation and engineering calculations.
+The subsequent hardware update below adds Ethernet/capture evidence; the scientific
+GLRT/PSS models and historical TLE rankings remain the previously stated versions.
+
+**Latest hardware measurement:** [60 MS/s Ethernet capacity and the 1R1T metadata
+blocker](2026_09_12_ethernet60_measurement.md). `.17` was flashed to qualified v0.49;
+ordinary 60 MS/s IQ delivered 74.40–74.50 MB/s (about 31% delivery equivalent).
+The counter-verified longer tests found contiguous runs of 5.36 s at 25 MS/s and
+3.57 s at 30 MS/s. A firmware 1R1T/paired-AGC dependency prevents the same continuity
+proof at 60 MS/s and is filed as [issue #97](https://github.com/misko/plutosdr-fw/issues/97).
+The new report includes the full ladder, PNGs, per-buffer evidence, and updated
+64–128 µs PSS-window transport budgets.
 
 **Engineering discussion:** [A bounded path to 30/60 MS/s fractional PSS tracking](2026_09_12_pss_30_60_fpga_path.md).
 This reviews reusable hardware evidence, the older integer-lag FPGA result,
