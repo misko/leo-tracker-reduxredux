@@ -1,0 +1,100 @@
+{
+  "release": "caa67df2b6a04d284da15979b75b956071b26e30",
+  "experimental_rw_cpu": 1,
+  "status": "failed",
+  "intent": {
+    "schema_version": 2,
+    "policy_id": "single-rx-random-10m-300s-v1",
+    "intent_digest": "sha256:f27772c0a32a2110efd295cf807c1c6e0ad311507c9ea1546180b4c1efa3004f",
+    "operation_key": "scheduled-scanner:20260912T230000Z",
+    "radio_id": "radio_pluto_003a",
+    "radio_serial": "104000bac4950008230026001b440a003a",
+    "scheduled_for": "2026-09-12T23:00:00Z",
+    "cadence_ordinal": 1491045,
+    "interval_seconds": 1200.0,
+    "maximum_lateness_seconds": 300.0,
+    "run_duration_seconds": 300,
+    "configuration": {
+      "schema_version": 4,
+      "band_plan_id": "starlink-low-ch1-ch4-pilot-centered-single-rx-v1",
+      "lnb_lo_hz": 9750000000,
+      "sample_rate_hz": 10000000,
+      "bandwidth_hz": 10000000,
+      "dwell_ms": 120,
+      "probe_ms": 20,
+      "kernel_buffers": 8,
+      "receiver_ids": [
+        0
+      ],
+      "gain_mode": "manual",
+      "gain_db": 40.0,
+      "glrt64_margin_gate": 0.025,
+      "maximum_acquisition_candidates": 10,
+      "targets": [
+        {
+          "channel": 1,
+          "edge": "lower",
+          "rf_center_hz": 10709687500,
+          "if_center_hz": 959687500
+        },
+        {
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10959687500,
+          "if_center_hz": 1209687500
+        },
+        {
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11209687500,
+          "if_center_hz": 1459687500
+        },
+        {
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11459687500,
+          "if_center_hz": 1709687500
+        },
+        {
+          "channel": 1,
+          "edge": "upper",
+          "rf_center_hz": 10940312500,
+          "if_center_hz": 1190312500
+        },
+        {
+          "channel": 2,
+          "edge": "upper",
+          "rf_center_hz": 11190312500,
+          "if_center_hz": 1440312500
+        },
+        {
+          "channel": 3,
+          "edge": "upper",
+          "rf_center_hz": 11440312500,
+          "if_center_hz": 1690312500
+        },
+        {
+          "channel": 4,
+          "edge": "upper",
+          "rf_center_hz": 11690312500,
+          "if_center_hz": 1940312500
+        }
+      ],
+      "tuning_settle_us": 250,
+      "reset_receive_buffer_before_each_target": true,
+      "require_device_metadata": true
+    }
+  },
+  "maximum_capture_call_seconds": 100,
+  "capture_started_utc_ns": 1789254394419689034,
+  "launch_script_original_sha256": "17b1d6f433ed63eea8019219eb2eee0e9fbf32965492fe5b362921e84d247aff",
+  "launch_script_candidate_sha256": "5df9f5dad848a72d6f437120c301b416bc3ebf588eeb05fd04d1207ca0650757",
+  "attested_rw_cpu": 1,
+  "daemon_log": "SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=0 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288 transported_frames=1 wall_ns=20842915 stage=dma_refill count=1 total_ns=12511783 max_ns=12511783\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=0 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288 transported_frames=1 wall_ns=20842915 stage=transport_frame count=1 total_ns=8327574 max_ns=8327574\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=0 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288 transported_frames=1 wall_ns=20842915 stage=transport_iq count=1 total_ns=8200626 max_ns=8200626\nSPF persistent-hop DMA-ready start: first=84108968508 discarded=0 error=0\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=sampler_admit count=100 total_ns=102486025 max_ns=1720752\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=dma_refill count=100 total_ns=31858369 max_ns=757386\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=sampler_finish count=100 total_ns=61731372 max_ns=3542262\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=metadata_build count=100 total_ns=65671158 max_ns=1351710\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=transport_frame count=100 total_ns=1122321725 max_ns=16116960\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=transport_iq count=100 total_ns=1023663785 max_ns=15010554\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=sampler_admit count=200 total_ns=211259191 max_ns=2349210\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=dma_refill count=200 total_ns=63987332 max_ns=1112496\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=sampler_finish count=200 total_ns=127233368 max_ns=3867715\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=metadata_build count=200 total_ns=132982842 max_ns=3633318\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=transport_frame count=200 total_ns=2235951334 max_ns=16116960\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=transport_iq count=200 total_ns=2036664154 max_ns=15017479\nSPF metadata streaming counter gap accounted: frame=222 first_sample=84138197564 missing=131072 ring_prefix_complete=0\nSPF persistent-hop block failed: error=-84 state=5 reason=7 session_error=-84 block=223 first=84138197564 end=84138328636 visits=27 events=27\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=sampler_admit count=223 total_ns=234314869 max_ns=2349210\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=dma_refill count=223 total_ns=71357798 max_ns=1112496\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=sampler_finish count=223 total_ns=140208927 max_ns=3867715\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=metadata_build count=223 total_ns=161284848 max_ns=14173914\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=transport_frame count=223 total_ns=2499125658 max_ns=16182816\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=transport_iq count=222 total_ns=2264135532 max_ns=15239676\n",
+  "error": "capture=OSError: [Errno 84] Invalid or incomplete multibyte or wide character; capture_note=persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=13857950649899365162, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.FAILED: 5>, reason=<PersistentHopTerminalReason.COUNTER_DISCONTINUITY: 7>, error_code=-84, flags=<PersistentHopStatusFlag.TERMINAL|CONTINUITY_FAULT|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 61>, session_id=13857950649899365162, planned_dwells=2500, visits_started=27, events_emitted=27, next_event_sequence=27, last_block_sequence=221, last_block_end_counter=84138066492, first_counter=84109564413, final_counter=84142690454, restore_before_counter=84142690454, restore_after_counter=84142789619, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=2, restored_profile_index=255, startup_invalid_start_counter=84109564413, startup_invalid_end_counter_exclusive=84109640061, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('slow_attack', 'slow_attack'), gain_db=(46.0, 71.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('slow_attack', 'slow_attack'), gain_db=(46.0, 71.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=()); recovery=PlutoPersistentHopError: persistent-hop finish requires a server-attested terminal receipt",
+  "notes": [
+    "alternate iiOD advisory daemon log tail:\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=0 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288 transported_frames=1 wall_ns=20842915 stage=dma_refill count=1 total_ns=12511783 max_ns=12511783\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=0 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288 transported_frames=1 wall_ns=20842915 stage=transport_frame count=1 total_ns=8327574 max_ns=8327574\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=0 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288 transported_frames=1 wall_ns=20842915 stage=transport_iq count=1 total_ns=8200626 max_ns=8200626\nSPF persistent-hop DMA-ready start: first=84108968508 discarded=0 error=0\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=sampler_admit count=100 total_ns=102486025 max_ns=1720752\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=dma_refill count=100 total_ns=31858369 max_ns=757386\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=sampler_finish count=100 total_ns=61731372 max_ns=3542262\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=metadata_build count=100 total_ns=65671158 max_ns=1351710\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=transport_frame count=100 total_ns=1122321725 max_ns=16116960\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=52428800 transported_frames=100 wall_ns=1497311571 stage=transport_iq count=100 total_ns=1023663785 max_ns=15010554\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=sampler_admit count=200 total_ns=211259191 max_ns=2349210\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=dma_refill count=200 total_ns=63987332 max_ns=1112496\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=sampler_finish count=200 total_ns=127233368 max_ns=3867715\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=metadata_build count=200 total_ns=132982842 max_ns=3633318\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=transport_frame count=200 total_ns=2235951334 max_ns=16116960\nSPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=104857600 transported_frames=200 wall_ns=2996039603 stage=transport_iq count=200 total_ns=2036664154 max_ns=15017479\nSPF metadata streaming counter gap accounted: frame=222 first_sample=84138197564 missing=131072 ring_prefix_complete=0\nSPF persistent-hop block failed: error=-84 state=5 reason=7 session_error=-84 block=223 first=84138197564 end=84138328636 visits=27 events=27\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=sampler_admit count=223 total_ns=234314869 max_ns=2349210\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=dma_refill count=223 total_ns=71357798 max_ns=1112496\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=sampler_finish count=223 total_ns=140208927 max_ns=3867715\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=metadata_build count=223 total_ns=161284848 max_ns=14173914\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=transport_frame count=223 total_ns=2499125658 max_ns=16182816\nSPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=116391936 transported_frames=222 wall_ns=3334309065 stage=transport_iq count=222 total_ns=2264135532 max_ns=15239676\n"
+  ],
+  "charged_rf_upper_bound_seconds": 10.723047730047256,
+  "finished_utc_ns": 1789254405142737438
+}

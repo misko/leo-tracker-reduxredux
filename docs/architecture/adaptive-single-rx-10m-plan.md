@@ -8,8 +8,11 @@ Radio selection update: the user selected `104000bac4950008230026001b440a003a`
 at `192.168.1.17` (`radio_pluto_003a`). Both receiver paths are now available;
 the fixed single-RX profile has been switched to this radio. The
 [replacement-radio checkpoint](../../reports/2026_09_12_radio003a_scanner_switch/README.md)
-records the passing short check, acquisition release, cancellation fix, and
-remaining first-production-scan verification. This selection supersedes earlier
+records the passing short capture and native analysis, acquisition release,
+cancellation fix, and two failed 23:00 scheduled attempts. Both failures lost a
+131,072-sample block; a bounded CPU1 worker-affinity comparison also failed.
+Acquisition is stopped while baseline transport reliability is unresolved.
+This selection supersedes earlier
 `.20` references and the historical exclusion of this serial.
 
 Implementation checkpoint: the [2.5M decimated-dwell engine report](../../reports/2026_09_12_adaptive_decimated_dwell/README.md)
@@ -22,10 +25,11 @@ Latest execution checkpoint: recursive, FP32 FIR and FFT filtering experiments
 also fail the full-coverage ARM timing gate. The unchanged direct-FIR pipeline
 on the host measures 19.28 ms mean / 27.27 ms empirical p99 on sixteen development
 dwells, excluding transport/feedback. A user preference is pending before changing
-the on-radio architecture or six-window coverage requirement. The bounded
-metadata canary failed at startup; a subsequent provider candidate defers hopping
-until the first validated DMA frame and passes native tests, but remains unqualified
-live. Consult the report and its RF ledger for the current evidence and remaining
+the on-radio architecture or six-window coverage requirement. The
+[host-feedback proposal](adaptive-single-rx-10m-host-feedback-proposal.md) makes
+that alternative concrete without activating it. The startup provider fix has
+passed the replacement radio's short check, but complete-scan continuity remains
+unqualified. Consult the report and its RF ledger for the current evidence and remaining
 qualification allowance. The sequence below remains the intended on-radio design
 until an explicit architecture revision is accepted.
 
