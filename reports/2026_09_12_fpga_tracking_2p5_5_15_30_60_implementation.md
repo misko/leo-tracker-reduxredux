@@ -7,22 +7,25 @@ every original sample within each scheduled full 300-symbol pilot to refine
 timing and carrier-frequency offset (CFO). The target is 750 measurement
 opportunities per second; weak, missing or invalid pilots can be rejected.
 
-Reviewed 2026-09-12. The immediate deployment objective is 2.5/5/15 MS/s;
-the longer-term 30/60-MS/s stages require their own hardware gates.
+Updated 2026-09-12, including the 21:23 UTC timing result. The immediate
+objective is 2.5/5/15 MS/s; 30/60 MS/s requires its own hardware qualification.
 
 ## Current position
 
 | Area | Verified state | Remaining gate |
 | --- | --- | --- |
 | Deployed receiver | `.21` retains `glrt-local-search-r2500000-v1`: FPGA acquisition and candidate verification at 2.5 MS/s, with host comparison. Broad search observes 5.6-ms windows every 100 ms. | No persistent native-tracking firmware is deployed. |
-| Native processing | Rate-specific reference, moment engine, scheduler and runtime components exist for all five rates; isolated engine implementations have passed. | Combined receiver fit, source mapping, loaded feedback and physical operation at each rate. |
-| 15-MS/s coarse filter | The new 15 → 5 → 2.5-MS/s cascade passes 97 numerical/RTL tests and standalone 100-MHz implementation. | Integrate its coordinates, support flags and resources into the complete receiver. |
+| Native processing | Rate-specific reference, moment engine and scheduler components exist for all five rates; isolated engine implementations have passed. | Complete-board fit, loaded feedback and physical operation at each rate. |
+| Integrated 5/15-MS/s receiver RTL | Filtering, coarse/native coordinate mapping, acquisition, native processing, GLA2 driver/readers and the compiled ARM kernel pass a combined 352-test qualification. Integrated RTL replay reproduces coarse IQ, acquisition and native moments exactly at both rates. | Rate-specific board/netlist/package integration, radio-local GLA2 capture/bootstrap/handoff and physical verification. |
+| Radio ARM control | A finite 2.5-MS/s capture-to-tracking helper runs on the actual radio ARM with modeled IIO/native inputs: 246 supported complete results are independently exact; interruption and cancellation are accounted for. | This is software-model execution, not RF or physical FPGA tracking. Higher-rate GLA2 runtime remains pending. |
 | Automatic startup | A 2.097152-s real capture produced one independently matched FPGA/host positive among 21 windows. The worker obtained six of eight required supported history trials and submitted no tracking jobs. | Reliable, timely acquisition-to-tracking handoff; the short capture is inconclusive for detector recovery qualification. |
-| Complete-board timing | The v17 candidate isolates an index-enable change from the best legally routed comparison; no final passing qualification was available at this review. | Final routing, setup, hold, clock coverage, DRC and implemented-netlist checks before flashing. |
+| Complete-board timing | Latest 2.5-MS/s candidate v24b routes legally but fails final setup: WNS −0.034 ns, TNS −0.106 ns across six endpoints. Hold is +0.009 ns; pulse width is +0.264 ns. The build exits 1. | Timing gate remains closed. Vivado writing a bitstream does not authorize deployment; exact clock/netlist/package checks also remain required. |
 
 The immediate gates are **complete-board timing** and **supported live startup**.
 Scheduled diagnostics can deploy once hardware/package gates pass, while
 automatic handoff remains under independent qualification.
+The new 5/15-MS/s replay uses synthetically repeated retained coarse IQ;
+it proves the integrated digital path, not native RF sensitivity or accuracy.
 
 ## Architecture and coordinates
 
@@ -61,15 +64,19 @@ Keep native source index, dense coarse index, fractional timing, epoch and
 filter delay explicit. The DDC output index identifies the newest original
 input sample, not the filter's signal center. The new 15-MS/s cascade has
 318 native samples of group delay, stride six and 636 samples of startup
-history. Check mapping by impulse, known pilot and chunked replay before
-admitting seeds. Existing direct-coarse logic expects consecutive indices;
-passing stride-six indices to it without an adapter is incorrect. Preserve
-published contracts and add/version coordinate capabilities explicitly.
+history. The integrated 5/15-MS/s RTL now adapts dense coarse coordinates and
+exports native rate, stride and delay through GLA2. Tests check support,
+source/epoch continuity, interruption and restart. Preserve the existing GLA1
+contract; extend the radio-local reader and bootstrap to consume GLA2 explicitly.
 
 Schedule from absolute rational/fixed-point coordinates at every rate:
 nominal 2.5/5-MS/s periods and measured corrections can be fractional.
 Distinguish ADC sample time, FPGA clocks and ARM wall time; reference-grid
 timestamps do not imply a different physical sampling rate.
+The current integrated replay and board candidate use a rational processing
+clock of 1,000,000,000/11 Hz, approximately 90.909 MHz. Clock metadata, pacing,
+admission and driver interpretation must match the selected image; older
+100-MHz component timings do not qualify this complete clock configuration.
 
 ## Feedback, segmentation and bounded compute
 
@@ -98,6 +105,10 @@ time from approximately 518–534 ms to 429–446 ms, with approximately 157 ms
 of planning before RX. The subsequent optional receiver integration passes
 324 tests. The ARM benchmark excludes concurrent IIO and hardware submission;
 loaded startup and steady-state feedback latency remain unqualified.
+The subsequent actual-ARM modeled continuation checks 246 complete results,
+one interrupted result and 29 unadmitted cancellations. All 17 bootstrap
+evaluations reproduce independently. Its finite capture does not complete the
+full tracking target and does not supersede the real RF six-of-eight startup failure.
 
 ## Implementation checkpoints
 
@@ -106,8 +117,10 @@ host oracle, retained failures and rollback. Resolve coarse CFO aliases and
 aged-seed support on retained IQ. Measure acquisition completion, startup,
 future-job admission and steady feedback separately. Freeze seed age, lookahead,
 capture region, uncertainty, buffer limits and rejection rules before evaluation.
-Follow the exact board build to its terminal reports; select changes from
-measured failing paths/congestion. Never deploy a timing-failed image.
+V23 terminated during congested routing without a final result; do not reuse
+its intermediate timing as qualification. V24b supplies a legally routed
+comparison: fix its measured remaining setup paths and recheck
+the complete image. Never deploy a timing-failed image.
 
 **Checkpoint 1 — deploy 2.5 MS/s.** First deploy bounded scheduled native jobs
 and reproduce their exact moments from recorded IQ. Then connect automatic
@@ -116,20 +129,22 @@ mode. Promote only after the common gates below pass, including loaded
 startup. Keep the deployed acquisition cadence distinct from the shared
 tracking design's existing 200-ms coarse completion limit.
 
-**Checkpoint 2 — deploy 5 MS/s.** Integrate the existing factor-two filter with
-dense coarse/native coordinate mapping, source support, capability validation
-and rate-bound driver/operator packaging. Qualify the 6,600-sample pilot's
-fractional timing coverage and 6,666⅔-sample repeat cadence. Its serial native
-rotator has a measured 18-clock minimum versus 20 available clocks/sample
-at 100 MHz; test the actual combined stalls and boundary timing. Repeat
-diagnostic → automatic shadow → promotion with physical 5-MS/s RX calibration.
+**Checkpoint 2 — deploy 5 MS/s.** Carry the verified factor-two receiver RTL,
+GLA2 mapping, driver and reader into a timing-passing board/package. Extend the
+radio-local capture/bootstrap/controller from its finite 2.5-MS/s path to GLA2.
+Qualify physical 6,600-sample pilots and the 6,666⅔-sample repeat cadence.
+The serial rotator needs 18 clocks; the 90.909-MHz profile averages only
+18.182 clocks/sample. Preserve the passing simulated schedule and measure
+actual stalls, boundaries and sustained load. Then run diagnostic → automatic
+shadow → promotion with physical 5-MS/s RX calibration.
 
-**Checkpoint 3 — deploy 15 MS/s.** Integrate the new 37-tap first filter stage
-with the existing 201-tap 5 → 2.5-MS/s stage and the native engine. Qualify
-source-phase continuity, filter warmup, cancellation and evidence ownership
-under factor-six reduction. Budget the parallel native datapath, filters,
-coarse engine, queues and receiver together. Repeat the deployment sequence
-and demonstrate sustained 19,800-sample pilot processing with coarse activity.
+**Checkpoint 3 — deploy 15 MS/s.** Carry the verified 37-tap/201-tap cascade,
+factor-six mapping and parallel native engine into a qualified board/package
+and radio-local GLA2 path. The combined replay already produces nine acquisition
+records and five exact native results at each of 5 and 15 MS/s while coarse
+processing is active. Extend that short simulation evidence to sustained
+physical 19,800-sample pilots, coarse interference and recovery. Measure the
+complete resource budget and repeat diagnostics, automatic shadow and promotion.
 
 **Autonomy milestone — close the remaining loop in FPGA.** Port the validated
 seed resolver, correction solve, timing/period/CFO/rate predictor, uncertainty
@@ -145,16 +160,16 @@ and carry it into 30/60-MS/s qualification.
 coarse filter profile; the current DDC rate guard does not support 30 MS/s.
 Evaluate a 30 → 5 → 2.5-MS/s cascade, freezing actual coefficients, attenuation,
 delay, arithmetic widths and lane schedule from measurements. Integrate the
-existing 39,600-sample native profile. At 100 MHz the average input spacing is
-3⅓ clocks, so validate the actual arrival pattern and sustained throughput.
+existing 39,600-sample native profile. At the current candidate processing clock
+the average spacing would be 3.030 clocks; qualify its actual arrival pattern.
 Repeat complete-board, calibration, diagnostics, autonomous tracking and host
 comparison gates; an isolated eight-DSP native engine is insufficient evidence.
 
 **Checkpoint 5 — deploy 60 MS/s.** Integrate the existing 60 → 5 → 2.5-MS/s
 filter profile with exact mapping and the 79,200-sample native processor.
 Requalify reference/derivative approximation, memory ports, CDC and computation
-with the actual RX stream: the average input spacing at 100 MHz is only
-1⅔ clocks. Retain enough original IQ to independently reproduce selected native
+with the actual RX stream: the average spacing at the current candidate clock
+would be only 1.515 clocks. Retain original IQ to reproduce selected native
 results without requiring continuous raw Ethernet export. Promote only after
 60-MS/s RX calibration, every-repeat accounting, autonomous recovery and all
 common gates pass. Exhaustive native blind search remains a later feature.
@@ -199,20 +214,25 @@ to the receiver/LNB unless clock drift is separately calibrated.
 
 ## Evidence and release record
 
-Implementation provenance is `misko/plutosdr-fw`, branch
-`codex/glrt-deployment-implementation`: FW `f27a05452` qualifies normalization,
-`1f7c2102f` integrates measured FFT planning, and FW `5e130d1e2` / HDL
-`bc8d757660c0` adds the 15-MS/s filter component.
-The isolated v17 timing candidate uses FW `26f225df72e1` / HDL `43a9f4c49981`.
+Implementation provenance is `misko/plutosdr-fw`: the integrated filtered
+receiver qualification uses branch `codex/glrt-clock-profile-implementation`,
+FW `8931ae6ae9af`, HDL `ed84cb06316a` and Linux `86caa241a3ce`.
+Its built ARM kernel is `5.15.0-00024-g86caa241a3ce`; it has not been deployed.
+The separate v24b board candidate uses FW `4748bb22d` / HDL `648da8194`.
+Earlier FW `1f7c2102f` integrates measured FFT planning; FW `5e130d1e2` / HDL
+`bc8d757660c0` introduces the 15-MS/s filter component.
 Numerical development reports are retained in `misko/leo-tracker-reduxredux`
 at commit `1d9f4c621e4e`, under `reports/2026_09_11_multirate_glrt_development.md`
 and `reports/2026_09_12_multirate_real25_streaming_review.md`.
 
 Checked local deployment artifacts retain reproducible inputs and source bindings:
 
-- [15-MS/s filter tests](/srv/bulk/leo/glrt-deployment-20260909/fifteen-ddc-v1.xml) and [standalone timing](/srv/bulk/leo/glrt-deployment-20260909/fifteen-ddc-ooc-v1/summary.txt): 97 passes; +0.551/+0.104-ns setup/hold at 100 MHz, 1,641 LUTs, 1,069 registers, 16 DSPs and 12 RAM tiles. Receiver boundaries remain unqualified.
+- [Combined filtered-receiver qualification](/srv/bulk/leo/glrt-deployment-20260909/filtered-receiver-qualification-v1/result.json): 352 unique passing tests, exact integrated 5/15-MS/s replay and a linked ARM kernel. Inputs are synthetic repeated coarse IQ; no hardware accessed.
+- [Latest complete-board timing](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v24b/hdl/projects/pluto/timing_impl.log): setup still fails by 0.034 ns. The [v23 termination receipt](/srv/bulk/leo/glrt-deployment-20260909/board-tracking-clocked-2500000-v23-termination-v1.json) records its earlier inconclusive route termination.
+- [15-MS/s filter tests](/srv/bulk/leo/glrt-deployment-20260909/fifteen-ddc-v1.xml) and [standalone timing](/srv/bulk/leo/glrt-deployment-20260909/fifteen-ddc-ooc-v1/summary.txt): 97 passes; +0.551/+0.104-ns setup/hold at 100 MHz, 1,641 LUTs, 1,069 registers, 16 DSPs and 12 RAM tiles. These physical counts are for the isolated filter, not the integrated receiver.
 - [ARM resolver receipt](/srv/bulk/leo/glrt-deployment-20260909/tracking-resolver-unaligned-v1/operator-v1.json): separate plan storage and 0/8-byte-offset execution tested; no RF or firmware change. The later receiver integration passes [324 tests](/srv/bulk/leo/glrt-deployment-20260909/measured-receiver-v1.xml).
 - [Independent real host comparison](/srv/bulk/leo/glrt-deployment-20260909/radio-bootstrap-iio-v3/independent-host/summary.json): one matched positive; explicitly inconclusive for promotion.
+- [Actual-ARM modeled continuation](/srv/bulk/leo/glrt-deployment-20260909/radio-tracking-arm-v1/operator.json) and [independent arithmetic](/srv/bulk/leo/glrt-deployment-20260909/radio-tracking-arm-v1/independent-arithmetic.json): modeled source/native results with clean drain; no RF, new firmware or physical FPGA tracking.
 - Earlier [30-MS/s engine](/srv/bulk/leo/glrt-deployment-20260909/multirate-native-engine-30000000-ooc-v1/summary.txt) and [60-MS/s engine](/srv/bulk/leo/glrt-deployment-20260909/multirate-native-engine-60000000-ooc-v1/summary.txt) each use eight DSPs and 11.5 RAM tiles, with positive internal setup/hold. These pinned isolated revisions exclude coarse acquisition, DDC, receiver and feedback.
 
 Each checkpoint records the image/radio, frozen inputs/limits, measured results,
