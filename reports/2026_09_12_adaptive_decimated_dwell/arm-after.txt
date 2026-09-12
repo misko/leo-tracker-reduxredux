@@ -1,0 +1,89 @@
+PID   USER     COMMAND
+    1 root     init
+    2 root     [kthreadd]
+    3 root     [rcu_gp]
+    4 root     [rcu_par_gp]
+    6 root     [kworker/0:0H-kb]
+    8 root     [mm_percpu_wq]
+    9 root     [rcu_tasks_kthre]
+   10 root     [ksoftirqd/0]
+   11 root     [rcu_preempt]
+   12 root     [migration/0]
+   13 root     [cpuhp/0]
+   14 root     [cpuhp/1]
+   15 root     [migration/1]
+   16 root     [ksoftirqd/1]
+   19 root     [kdevtmpfs]
+   20 root     [inet_frag_wq]
+   22 root     [kworker/1:1-eve]
+   23 root     [khungtaskd]
+   24 root     [oom_reaper]
+   25 root     [writeback]
+   37 root     [kblockd]
+   38 root     [watchdogd]
+   39 root     [kworker/1:1H-kb]
+   40 root     [cfg80211]
+   41 root     [kworker/u4:1-ev]
+   42 root     [kswapd0]
+   44 root     [spi0]
+   45 root     [spi1]
+   49 root     [ci_otg]
+   50 root     [irq/55-41600000]
+   51 root     [kworker/u5:0]
+   52 root     [sdhci]
+   53 root     [irq/36-mmc0]
+   55 root     [kworker/1:2-eve]
+   65 root     [jffs2_gcd_mtd2]
+   77 root     /sbin/syslogd -n
+   81 root     /sbin/klogd -n
+  104 root     watchdog -t 5 -T 10 /dev/watchdog
+  213 root     {iiod_supervisor} /bin/sh /usr/sbin/iiod_supervisor.sh -D -n 3 -F /dev/iio_ffs --rw-cpu-affinity 1
+  216 root     {sdr_usb_gadget_} /bin/sh /usr/sbin/sdr_usb_gadget_supervisor.sh /dev/sdr_gadget_ffs
+  218 root     /usr/sbin/iiod -D -n 3 -F /dev/iio_ffs --rw-cpu-affinity 1
+  219 root     /usr/sbin/sdr_usb_gadget /dev/sdr_gadget_ffs
+  225 root     [file-storage]
+  242 dbus     dbus-daemon --system
+  311 root     /usr/sbin/udhcpd /etc/udhcpd.conf
+  314 root     httpd -h /www
+  357 root     [kworker/u4:3-fl]
+  361 root     /bin/sh /sbin/update.sh
+  367 avahi    avahi-daemon: running [pluto-5d4d.local]
+  375 root     /usr/sbin/dropbear -R
+  380 root     /usr/sbin/sdr_ip_gadget
+  388 root     input-event-daemon
+  389 root     /sbin/getty -L ttyPS0 0 vt100
+  390 root     /sbin/getty -L ttyGS0 0 vt100
+  399 root     [kworker/0:1H-kb]
+  434 root     [kworker/1:2H-kb]
+11248 root     [kworker/0:0-eve]
+13327 root     [kworker/0:1-eve]
+13673 root     [kworker/0:2-eve]
+13737 root     [kworker/1:0H-kb]
+13864 root     [kworker/0:2H-kb]
+14060 root     /usr/sbin/dropbear -R -2 8
+14061 root     sh -c ps; cat /proc/loadavg; cat /proc/cpuinfo
+14062 root     ps
+0.16 0.28 0.28 1/66 14063
+processor	: 0
+model name	: ARMv7 Processor rev 0 (v7l)
+BogoMIPS	: 333.33
+Features	: half thumb fastmult vfp edsp neon vfpv3 tls vfpd32 
+CPU implementer	: 0x41
+CPU architecture: 7
+CPU variant	: 0x3
+CPU part	: 0xc09
+CPU revision	: 0
+
+processor	: 1
+model name	: ARMv7 Processor rev 0 (v7l)
+BogoMIPS	: 333.33
+Features	: half thumb fastmult vfp edsp neon vfpv3 tls vfpd32 
+CPU implementer	: 0x41
+CPU architecture: 7
+CPU variant	: 0x3
+CPU part	: 0xc09
+CPU revision	: 0
+
+Hardware	: Xilinx Zynq Platform
+Revision	: 0003
+Serial		: 0000000000000000

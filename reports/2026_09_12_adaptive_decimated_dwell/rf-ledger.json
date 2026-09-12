@@ -1,0 +1,21 @@
+{
+  "schema": "adaptive-deployment-qualification-rf-ledger-v1",
+  "budget_seconds": 1800,
+  "charged_seconds": 9.285046554,
+  "remaining_seconds": 1790.714953446,
+  "entries": [
+    {
+      "id": "metadata-canary-preflight",
+      "rf_seconds_upper_bound": 0,
+      "reason": "failed before remote staging and capture"
+    },
+    {
+      "id": "metadata-canary-startup-failure",
+      "rf_seconds_upper_bound": 9.285046554,
+      "reason": "conservatively charge entire capture call including bufferless preparation and cleanup; incomplete first valid visit; restoration attested"
+    }
+  ],
+  "reserved_next_canaries_seconds": 1500,
+  "unallocated_seconds": 290.714953446,
+  "collection_stopped_on_failure": true
+}
