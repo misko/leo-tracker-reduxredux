@@ -7,11 +7,14 @@ from leo.storage.scanner_refinement_source import select_visits
 from tests.scanner.refinement_fixtures import comparison_fixture
 
 
-def test_read_only_missing_does_not_create_paths_and_resume_publishes_exact_bytes(tmp_path):
+@pytest.mark.parametrize("sample_rate_hz", [5000000, 10000000])
+def test_read_only_missing_does_not_create_paths_and_resume_publishes_exact_bytes(
+    tmp_path, sample_rate_hz
+):
     reader = ScannerRefinementStore(tmp_path)
     assert reader.status("scan-one").state == "not_started"
     assert list(tmp_path.iterdir()) == []
-    evidence = comparison_fixture()
+    evidence = comparison_fixture(sample_rate_hz=sample_rate_hz)
     writer = ScannerRefinementStore(tmp_path, read_only=False)
     writer.save_work(evidence)
     assert reader.status("scan-one").state == "partial"
@@ -20,6 +23,8 @@ def test_read_only_missing_does_not_create_paths_and_resume_publishes_exact_byte
     manifest = writer.publish(evidence, comparison_metrics(evidence.rows), pngs)
     assert writer.publish(evidence, comparison_metrics(evidence.rows), pngs) == manifest
     assert reader.status("scan-one").manifest == manifest
+    assert manifest.schema_version == (2 if sample_rate_hz == 10000000 else 1)
+    assert manifest.sample_rate_hz == sample_rate_hz
     assert reader.artifact("scan-one", "shift-recovery") == pngs["shift-recovery"]
     assert reader.evidence("scan-one") is not None
     path = tmp_path / "scanner-refinement-comparisons" / "scan-one" / "probe-comparison.png"

@@ -4,11 +4,12 @@ from leo.contracts.scanner_refinement import (
     PROFILES,
     ComparisonCandidateV1,
     ComparisonEvidenceV1,
+    ComparisonEvidenceV2,
     ComparisonRowV1,
 )
 
 
-def comparison_fixture():
+def comparison_fixture(*, sample_rate_hz=5000000):
     rows = []
     for case, amount in (("baseline", 0.0), ("frequency", 137.123), ("delay", 71.31)):
         for i, profile in enumerate(PROFILES):
@@ -45,12 +46,13 @@ def comparison_fixture():
                     scoring_seconds=0.01,
                 )
             )
-    return ComparisonEvidenceV1(
+    model = ComparisonEvidenceV2 if sample_rate_hz == 10000000 else ComparisonEvidenceV1
+    return model(
         session_id="scan-one",
         session_kind="fixed",
         input_manifest_sha256="sha256:" + "a" * 64,
         implementation_sha256="sha256:" + "b" * 64,
-        sample_rate_hz=5000000,
+        sample_rate_hz=sample_rate_hz,
         scheduled_probe_ids=("scan-one:0:0",),
         rows=tuple(rows),
     )
