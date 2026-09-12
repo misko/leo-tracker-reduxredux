@@ -433,7 +433,8 @@ class _PlutoPersistentHopSession:
             )
             if receipt.visits != tuple(self._produced_evidence):
                 raise PlutoPersistentHopError(
-                    "PPU terminal visits disagree with produced IQ visits"
+                    "PPU terminal visits disagree with produced IQ visits: "
+                    f"terminal={len(receipt.visits)}, produced={len(self._produced_evidence)}"
                 )
             return receipt
         except PlutoPersistentHopError:
