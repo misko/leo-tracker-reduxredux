@@ -10,6 +10,17 @@ const fixture = () => ({ schema_version: 1, session_id: "scan-one", state: "comp
 } });
 afterEach(() => vi.unstubAllGlobals());
 
+it("uses the versioned API to display a native 10 MS/s comparison", async () => {
+  const value = fixture();
+  value.schema_version = 2;
+  value.manifest.sample_rate_hz = 10000000;
+  const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => value });
+  vi.stubGlobal("fetch", fetch);
+  render(<ScannerRefinementPanel sessionId="scan-one" inputDigest={digest} />);
+  expect(await screen.findByRole("img")).toHaveAttribute("src", expect.stringContaining("/api/v2/scanner/refinement-comparisons/scan-one/"));
+  expect(screen.getByText(/10 MS\/s/)).toBeInTheDocument();
+});
+
 it("shows both saved PNG comparisons and preserves failure and accuracy context", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => fixture() }));
   render(<ScannerRefinementPanel sessionId="scan-one" inputDigest={digest} />);

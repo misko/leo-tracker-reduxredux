@@ -9,11 +9,10 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Literal, cast
 
 from leo.analysis.starlink import acquisition, glrt_refinement_prototype, pilot_methods
 from leo.analysis.starlink.refinement_comparison import compare_probe, comparison_metrics
-from leo.contracts.scanner_refinement import ComparisonEvidenceV1
+from leo.contracts.scanner_refinement import ComparisonEvidenceV1, ComparisonEvidenceV2
 from leo.presentation.scanner_refinement import render_scanner_refinement
 from leo.storage.analysis_worker_lock import analysis_worker_lock
 from leo.storage.scanner_refinement import ScannerRefinementStore
@@ -41,14 +40,21 @@ def run_session(root: Path, session_id: str, deadline: float) -> str:
         )
         evidence = products.work(session_id)
         if evidence is None:
-            evidence = ComparisonEvidenceV1(
-                session_id=session_id,
-                session_kind=source.session_kind,
-                input_manifest_sha256=source.input_manifest_sha256,
-                implementation_sha256=implementation,
-                sample_rate_hz=cast(Literal[2500000, 5000000], source.sample_rate_hz),
-                scheduled_probe_ids=source.probe_ids,
-                rows=(),
+            evidence_type = (
+                ComparisonEvidenceV2
+                if source.sample_rate_hz == 10_000_000
+                else ComparisonEvidenceV1
+            )
+            evidence = evidence_type.model_validate(
+                dict(
+                    session_id=session_id,
+                    session_kind=source.session_kind,
+                    input_manifest_sha256=source.input_manifest_sha256,
+                    implementation_sha256=implementation,
+                    sample_rate_hz=source.sample_rate_hz,
+                    scheduled_probe_ids=source.probe_ids,
+                    rows=(),
+                )
             )
         if (
             evidence.implementation_sha256 != implementation
