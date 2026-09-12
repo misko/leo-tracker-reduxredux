@@ -73,12 +73,12 @@ opening the held-out corpus.
 
 ## Sequence to deployment
 
-1. First resolve the replacement radio's native-10M stream discontinuities.
-   The 23:00 fixed-profile attempts each lost one DMA block; a CPU1 affinity
-   comparison also failed and is rejected. Acquisition is stopped. Preserve the
-   full counter/gap checks and establish continuous transport before adding
-   feedback traffic. Then accept the execution location and seal one complete DSP
-   configuration and
+1. Carry the larger-refill baseline into feedback qualification. The 23:00
+   fixed-profile attempts each lost one DMA block; CPU1 affinity also failed.
+   After doubling blocks to 262,144 samples and correcting the AGC-restoration
+   comparison, the 23:20 full scan passed at 95.4264% duty with zero loss.
+   Preserve the counter/gap checks and qualify transport with the added feedback
+   traffic. Accept the execution location and seal one complete DSP configuration and
    its reference protocol. Apply the existing response, arithmetic, synthetic
    boundary and 64-dwell held-out gates without tuning on held-out outcomes.
 2. Run 300-second paced host replay, including queueing, filtering, screening,

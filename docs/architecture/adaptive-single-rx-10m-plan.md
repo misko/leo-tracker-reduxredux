@@ -11,7 +11,12 @@ the fixed single-RX profile has been switched to this radio. The
 records the passing short capture and native analysis, acquisition release,
 cancellation fix, and two failed 23:00 scheduled attempts. Both failures lost a
 131,072-sample block; a bounded CPU1 worker-affinity comparison also failed.
-Acquisition is stopped while baseline transport reliability is unresolved.
+After a larger-refill comparison and AGC-restoration fix, the 65.02-second
+recheck passed at 95.4172% duty with zero loss. Acquisition release `eefcb4f0`
+completed the 23:20 slot with 262,144-sample blocks: 95.4264% duty, zero loss,
+successful restoration, and 2,386 RX0 visits. Native analysis processed every
+visit, and Chromium verified all three source-bound figures. API/UI release
+`7f82cf42` removes the disabled radio-classifier panel for this fixed profile.
 This selection supersedes earlier
 `.20` references and the historical exclusion of this serial.
 
@@ -42,10 +47,10 @@ configuration, then deploy one compatible bundle.
 
 | Step | Current evidence | Required exit |
 | --- | --- | --- |
-| 1. Qualify metadata reliability | Polling-margin candidate `10e72e8` failed its startup canary. Subsequent candidate `26310f8` defers hopping until the first validated DMA frame; nine native tests and an ARM package pass. Later production counter gaps remain unexplained. | Verify real observation coverage under queued 10M capture, duty, continuity and restoration. Neither candidate is yet a demonstrated production fix. |
+| 1. Qualify metadata reliability | Provider `26310f8`, larger 262,144-sample refills and PPU's AGC-restoration fix passed a short recheck and the replacement radio's complete 23:20 capture, analysis and browser check. | Carry this exact baseline into adaptive qualification and verify continuity, duty and restoration under the added decision/feedback load. |
 | 2. Select the 2.5M decision engine | Integer FIR, FP32 FIR, recursive and FFT candidates all fail complete-pipeline ARM timing. The host comparison passes microbenchmark timing; architecture preference is pending. Held-out quality remains unqualified. | Combined mean ≤90 ms and p99 ≤100 ms, held-out fidelity and boundary checks, then 300-second paced replay with no growing queue, overload skips or expired decisions. |
 | 3. Integrate capture through publication | Fixed single-RX 10M recording and analysis provide reusable components; adaptive interfaces still contain legacy geometry/rate restrictions. | Versioned provider/contracts, correct RX0/RX1 column mapping, native-10M analysis, decision provenance, API and browser assets pass component and compatibility tests. |
-| 4. Qualify on the radio | One baseline attempt stopped at its first incomplete visit; restoration passed. The RF ledger conservatively charges 9.285 seconds. No shadow/adaptive canary has run. | Uniform shadow RX0/RX1 and adaptive RX0/RX1 pass the live gates below. Stop on the first failure. |
+| 4. Qualify on the radio | Short baseline checks and failed candidates are retained in the linked RF ledger and replacement-radio report. No shadow/adaptive canary has run. | Uniform shadow RX0/RX1 and adaptive RX0/RX1 pass the live gates below. Stop on the first failure. |
 | 5. Switch and verify | Fixed profile is the rollback target. | Switch the complete compatible release between scans; the first scheduled adaptive scan, analysis and web publication pass, with rollback verified. |
 
 Keep an explicit RF ledger: four 300-second canaries use 20 minutes, the first
@@ -105,9 +110,11 @@ and the existing eight pilot-centred targets and 20-minute cadence. Feed only
 the separate 2.5 MS/s decision copy through the on-radio classifier; preserve
 complete native IQ for offline analysis.
 
-Use the qualified fixed profile's initial transport settings: 32 kernel
-buffers, 131,072 samples per block, read-ahead 8, writer queue 64, and one
-thread per math library. These are starting settings, not adaptive qualification.
+Use the latest validated fixed-profile transport settings as the adaptive starting
+point. The replacement radio's current candidate uses 32 kernel buffers,
+262,144 samples per block, read-ahead 8, writer queue 64, and one thread per math
+library. The earlier 131,072-sample block size failed full scans on this radio.
+Larger blocks and their feedback latency still require adaptive qualification.
 The fixed profile remains the rollback choice. Migration is outside this change.
 
 Preserve the current adaptive policy:
