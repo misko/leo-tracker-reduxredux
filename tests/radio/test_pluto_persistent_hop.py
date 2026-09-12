@@ -612,13 +612,14 @@ def test_adapter_rejects_nonliteral_or_nonlocal_lan_hosts(host: str) -> None:
         PlutoPersistentHopRadio(host, expected_serial="allowed", radio_id="scanner")
 
 
-def test_adapter_hard_denies_excluded_serial() -> None:
-    with pytest.raises(ValueError, match="excluded"):
-        PlutoPersistentHopRadio(
-            "192.168.1.18",
-            expected_serial=PERSISTENT_HOP_EXCLUDED_SERIAL,
-            radio_id="scanner",
-        )
+def test_adapter_accepts_explicitly_selected_formerly_excluded_serial() -> None:
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.17",
+        expected_serial=PERSISTENT_HOP_EXCLUDED_SERIAL,
+        radio_id="radio_pluto_003a",
+    )
+    assert radio.open().serial == PERSISTENT_HOP_EXCLUDED_SERIAL
+    radio.close()
 
 
 @pytest.mark.parametrize("port", [0, 65_536, True, "30432"])
