@@ -1,0 +1,44 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "/home/mouse9911/gits/leo-tracker-paired-native-cfo-rate/.venv/bin/ruff",
+        "check",
+        "tools/analyze_pss_outlier_bands.py",
+        "tools/replay_pss_local_recovery.py",
+        "tools/plot_glrt_sample_phase_bias.py",
+        "tools/plot_paired_timing_status.py",
+        "tools/export_paired_report.py",
+        "tools/diagnose_timing_polynomial_and_bands.py",
+        "tools/probe_fractional_estimator_bias.py",
+        "tests/analysis/test_timing_diagnostic_tools.py"
+      ],
+      "exit_code": 0,
+      "output": "All checks passed!\n"
+    },
+    {
+      "argv": [
+        "/home/mouse9911/gits/leo-tracker-paired-native-cfo-rate/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/analysis/test_timing_diagnostic_tools.py"
+      ],
+      "exit_code": 0,
+      "output": "......                                                                   [100%]\n6 passed in 0.28s\n"
+    }
+  ],
+  "source_sha256": {
+    "tools/analyze_pss_outlier_bands.py": "e6c94c6d25bbca9077531dbfe3fbc5e351e6b56dad702389b06d885bf2e7a262",
+    "tools/replay_pss_local_recovery.py": "aab8880d182610b9a32fcc20a49d31b870f4000e4bd731420207cb8dfd0cfd83",
+    "tools/plot_glrt_sample_phase_bias.py": "31998b2c0085dd3556eed20062a47b1f0cc665793fd36c6ff8bacb87b741a97c",
+    "tools/plot_paired_timing_status.py": "dc8f9e0769f7d074f7935f4db50812de692c5ecad7f05b0a5bff0df025afd8af",
+    "tools/export_paired_report.py": "e2cfed8fa808cf4a4fbee68756c3043744cacdd0910a8bcb8efd8dc376dc44d8",
+    "tools/diagnose_timing_polynomial_and_bands.py": "bed260a9e1eea2b95621842b0afe2947a245b25294547ec7bb1c302b5b4f07bb",
+    "tools/probe_fractional_estimator_bias.py": "d88438d3bc2281861818447a82d0638c2cf1cd5c0f7e308d8f4087eb00bb15a9",
+    "tests/analysis/test_timing_diagnostic_tools.py": "01f51d9871a7ba89480044b4fbc33dbbb235d3711753564009422178e5142963"
+  },
+  "all_30_frozen_RMS_reproduced": true,
+  "new_RF": false,
+  "production_code_changed": false
+}
