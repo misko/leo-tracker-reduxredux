@@ -314,3 +314,45 @@ retain every measured job, moment word, fit and terminal refusal, with their
 sources alongside. This establishes a useful production-C feedback baseline
 for a bounded ARM replay; it does not yet complete the FPGA tracking goal.
 No RF is collected or firmware changed.
+
+## Actual ARM replay rules out every-frame software measurements
+
+A bounded saved-IQ replay ran on radio `192.168.1.20`, serial
+`1040005e0b100007100010000bf33a5d4d`, with the resident 60-MS/s image.
+The operator acquired both radio leases, attested identity and TX-safe idle
+state, verified staged input/binary hashes, ran the alarm-bounded executable
+and removed its temporary files. Before/after identity, boot, image hashes,
+buffer state and TX-safe state match. No RX buffer or native job is opened.
+
+The executable uses the unchanged C collector, solver, trend and scheduler,
+with the same 32 diagnostic training records and original positive IQ.
+All 1,768 ARM scheduled jobs, rejection decisions and fitted values match the
+independently checked host replay within the review's numerical tolerances.
+Both platforms accept 1,367 measurements.
+
+| Compute metric | Host | Radio ARM |
+| --- | ---: | ---: |
+| Total for 1,768 measurements | 0.386 s | 3.723 s |
+| Mean per measurement | 0.218 ms | 2.106 ms |
+| 99th percentile | 0.274 ms | 2.239 ms |
+| Maximum | 0.440 ms | 2.442 ms |
+| Measurements exceeding the 1.333-ms frame period | 0 | 1,768 |
+
+Timing includes prediction, IQ moment calculation, solve and history update.
+It excludes input loading, output serialization and live capture/DMA costs.
+ARM computation alone consumes 1.579 times the represented source duration.
+This is an unpaced compute benchmark, not a receiver-freshness qualification.
+
+Therefore the current software collector cannot sustain measurements on every
+750-Hz frame on this ARM in the tested build. The result changes the next
+experiment: test less frequent ARM observations for maintained support and
+headroom, while preserving the FPGA path for native per-frame measurements.
+Neither a two-frame cadence nor any broader system throughput is qualified by
+the table alone. Startup localization cost also remains outside this benchmark.
+
+The [ARM operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-bench/operator.json),
+[host/ARM comparison](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-bench/review.json),
+both measurement journals, benchmark, operator, reviewer, training records and
+build hashes accompany this report. ARM binary SHA-256 is
+`991750d4a82262694bcdfa085a4a71fcfee1aef954495a15a6cb028b3f85ae4f`.
+No RF or firmware changes occurred; sustained native tracking remains unfinished.
