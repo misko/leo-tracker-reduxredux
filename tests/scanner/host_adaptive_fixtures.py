@@ -55,8 +55,9 @@ def numerics():
     )
 
 
-def host_receipt(*, receiver=0, mode="adaptive", **kwargs):
-    plan = host_plan(receiver=receiver, mode=mode)
+def host_receipt(*, receiver=0, mode="adaptive", plan=None, **kwargs):
+    plan = host_plan(receiver=receiver, mode=mode) if plan is None else plan
+    receiver = plan.classification_receiver
 
     def factory(**fields):
         records = tuple(

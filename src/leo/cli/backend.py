@@ -154,11 +154,17 @@ class ScheduledAdaptiveHopRun:
     @property
     def capture_qualified(self) -> bool:
         # Recording health, not detector sensitivity or scientific qualification.
+        from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2
+
         receipt = self.published.manifest.receipt
         return (
             receipt.terminal.state == "completed"
             and receipt.source_span_attested
-            and receipt.duty_target_met
+            and (
+                receipt.qualification_duty_floor_met
+                if isinstance(receipt, HostAdaptiveHopReceiptV2)
+                else receipt.duty_target_met
+            )
         )
 
 
