@@ -497,3 +497,47 @@ The [combined operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pil
 eight journals and operator/reviewer sources accompany this report. The
 three-frame live setting is still disabled. Sustained native FPGA tracking,
 receiver-paced freshness and physical clean-loss continuation remain unfinished.
+
+## Paced ARM observer keeps up with a rolling producer
+
+The next ARM replay publishes saved IQ in 16,384-sample chunks at 2.5 MS/s
+using absolute monotonic deadlines. It preloads 114,688 samples, then feeds
+a 131,072-sample (512-KiB, 52.43-ms) rolling owner buffer. The observer consumes
+three-frame measurements concurrently. The initial diagnostic training is
+already supplied; this is not an acquisition-latency test.
+
+Each retention callback writes and flushes the exact 3,300-sample IQ window
+before returning to the observer's history commit. The producer is joined
+before owner shutdown. The benchmark caps each observer at 200 measurements,
+uses a two-second observer deadline and a 15-second process alarm, and keeps
+the existing source and acceptance guards.
+
+| ARM starting offset | Accepted / retained | Observer elapsed | WAIT calls | Maximum copied source age |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 95 / 200 | 0.802012 s | 1,092 | 19,636 samples / 7.8544 ms |
+| 1 | 200 / 200 | 0.802047 s | 1,133 | 19,652 samples / 7.8608 ms |
+| 2 | 200 / 200 | 0.804474 s | 1,107 | 19,577 samples / 7.8308 ms |
+
+All 600 jobs, fitted values and rejection decisions match the paced host
+baseline. Every byte of the 7,920,000 retained IQ bytes matches the original
+recording at the retained job positions. All three observers reach DONE at
+their cap. The recorded age is published source position minus pilot start
+at IQ copy; it is not a native scheduling deadline or a post-commit latency.
+
+The operator ran on .20, serial `1040005e0b100007100010000bf33a5d4d`,
+under both leases after the other acquisition released ownership. Identity,
+resident 60-MS/s image and TX-safe idle state match before/after; temporary
+files are removed. No RF samples or native jobs were collected.
+
+This validates the actual observer with a paced producer, rolling-buffer
+overwrite and IQ retention on ARM. It still excludes live IIO/DMA behavior,
+simultaneous native-controller load and production storage durability.
+The retention flush is a userspace file flush, not an fsync guarantee.
+A bounded live test needs explicit cadence selection and corresponding
+journal review before the three-frame setting is enabled.
+
+The [paced ARM review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-observer/review.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-observer/operator.json),
+host/ARM journals, build manifest and benchmark/operator/reviewer sources
+accompany this report. Retained IQ stays in the local evidence directory
+with hashes in the receipt. Native FPGA tracking remains unfinished.
