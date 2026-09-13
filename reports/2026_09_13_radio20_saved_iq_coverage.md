@@ -1156,3 +1156,74 @@ and [paired-window review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-ph
 retain the evidence. Journals, support summary, plot source and exact operator
 wrapper accompany them. The next physical target is supported 60-MS/s native
 feedback; another verified live acquisition currently owns the global lease.
+
+## Supported 30-MS/s result does not repeat at 60 MS/s
+
+After the verified lease owner exits, the frozen 30→60-MS/s transition
+succeeds on the same serial. Image/rollback hashes, written FIT, reboot
+return, serial, firmware and TX-safe state pass. Deployment receipt:
+`1efd0bf3-d049-45bd-9fde-6c8f88aff8b2`. The exact same expanded-scan
+executable then runs one bounded CH3-upper capture. No algorithm, support
+gate or freshness limit changes.
+
+| Physical 60-MS/s follow-up | Result |
+| --- | --- |
+| RF duration | 7.118266 s |
+| Exported / returned coarse samples | 17,795,665 / 17,793,024 |
+| Scans / ranking scores | 6 / 384 |
+| Scan and ranking time | 590.209–618.164 ms |
+| Worker time | 584.498–590.001 ms |
+| Accepted historical measurements | 0 / 48 |
+| Handoffs / native results / observer episodes | 0 / 0 / 0 |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill gap | 6.730 ms |
+
+Ranking powers range from 0.003548 to 0.004084, and the highest historical
+coherence is 0.003572. Independent review passes all 219,978 grid values,
+candidate suppression/order checks, 384 ranking scores, 102 resolver
+hypotheses, 48 moment/dense fits, 48 startup jobs, 30,192 scalar rotation
+checks and 113,722 overlapping retained samples. All seed copies meet the
+existing source-age limit. This verifies loaded execution and rejection at
+60 MS/s, but provides no new native feedback measurement.
+
+The successful 30-MS/s capture and this weak 60-MS/s capture occur at
+different times. They do not establish that sample rate caused the difference
+or invalidate the earlier supported native run. The antenna/LNB power and
+pointing question remains unanswered; no receive-path change is assumed.
+
+A small offline diagnostic evaluates normalized lagged complex cross-power
+on 42 retained 14,000-sample windows: 13 positive and 13 control cuts, the four
+latest 30-MS/s searches, and the twelve searches from the two expanded
+60-MS/s captures. It checks lags 3333, 6667 and 10000 samples. The last
+corresponds to exactly three nominal frames and has 4000 overlapping pairs.
+Integer cross sums and energies agree with independent complex dot products
+for all 126 comparisons.
+
+At lag 10000, the saved control ranges from 0.000036 to 0.001137.
+The two recent 60-MS/s runs range from 0.000034 to 0.000833. The successful
+30-MS/s search scores 0.003436, but the three rejected 30-MS/s searches score
+0.005064, 0.004467 and 0.013171. Repetition therefore cannot substitute for
+reference-specific candidate resolution and accepted history. Its possible
+role is inexpensive temporal preselection before the full scan, subject to
+separate cost/recall tests; no trigger threshold is selected or deployed.
+These few inspected windows do not calibrate independent false alarms.
+
+All operator identity/TX-safe checks and cleanup pass; artifacts total
+2,932,455 bytes. Radio .20 now remains on
+`glrt-iq-tracking-r60000000-v1`, boot
+`cec63f8e-b9d8-49e9-b7a7-4fec44bae66b`, with receive LO 1,690,312,498 Hz,
+manual gain 30 dB, 2.5-MHz RF bandwidth, TX disabled and buffers idle.
+FIT SHA-256 is
+`19c1504e8cbf442f4fd2ee995a0ceaf3780a9a4559026a653f8fdaae53932f1b`;
+QSPI SHA-256 is
+`6d40ab1638b82b2e8877e1be8b9063a3e30c182c4293c5c11f75543d2614f58f`.
+Temporary executable/evidence files are removed; no persistent tracker is
+installed.
+
+The [deployment result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/deployment.json),
+[operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/operator.json),
+[independent capture review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/review.json)
+and [repetition diagnostic](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/repetition.json)
+retain the evidence. Worker journal and operator/diagnostic sources accompany
+them. Supported 60-MS/s native feedback, longer operation and autonomous
+loss/reacquisition remain unfinished.
