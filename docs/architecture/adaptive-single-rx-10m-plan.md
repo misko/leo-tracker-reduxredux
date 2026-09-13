@@ -84,7 +84,10 @@ on-radio proposal, whose full six-window pipeline missed the ARM timing gate.
   cover both RXs, legacy storage compatibility, bounded decision overflow,
   rejected feedback, cancellation and restoration ownership. See the
   [capture integration checkpoint](../../reports/2026_09_13_host_adaptive_capture/README.md).
-  Application orchestration, scheduler dispatch, analysis and UI still need
+  Application capture-to-storage, native-rate analysis, resumable checkpoints
+  and all three overview PNGs are now connected and tested through the analysis
+  CLI. See the [native publication checkpoint](../../reports/2026_09_13_host_adaptive_analysis/README.md).
+  Scheduler admission, refinement/tracking readers and API/UI still need
   integration. Do not enable an adaptive flag on the current fixed release.
 
 ## Critical path
@@ -92,7 +95,7 @@ on-radio proposal, whose full six-window pipeline missed the ARM timing gate.
 | Stage | Work remaining | Exit evidence |
 | --- | --- | --- |
 | 1. Freeze host feedback integration | Bind the sealed DSP identity, complete paced replay, package compatible provider/PPU/native libraries. | Mean service time ≤90 ms, p99 ≤100 ms, feedback age ≤1 second, all six screens, no healthy overloads or growing queue; source and binary receipts. |
-| 2. Connect capture through publication | Versioned Leo contracts and durable intent; producer-side feedback; native single-RX storage and analysis; API/UI evidence. | Component, compatibility and saved-data tests pass for RX0 and RX1, with truthful actual visit timing and decision provenance. |
+| 2. Connect capture through publication | Finish scheduler admission, refinement/tracking readers and API/UI; qualify saved-data throughput for the connected native analysis/PNG path. | Component, compatibility and saved-data tests pass for RX0 and RX1, with truthful actual visit timing and decision provenance. |
 | 3. Qualify on the selected radio | Shadow RX0, shadow RX1, adaptive RX0, adaptive RX1, each bounded to 300 seconds. | Live gates below pass; stop on first failure and retain every attempt in the RF ledger. |
 | 4. Deploy and verify | Switch one compatible release between scans, then verify its first scheduled scan. | Native recording, analysis and browser publication pass; ten-minute scheduling remains active and the fixed rollback is verified. |
 
@@ -202,6 +205,6 @@ an adaptive deployment. No firmware flash or corpus migration is planned.
 
 Done means the scheduled random-RX adaptive profile completes capture, native-10M
 analysis and web publication while satisfying these gates. The immediate next
-implementation step is connecting the new capture producer and versioned store
-through application orchestration, native analysis, scheduler dispatch and web
-publication. Runtime packaging and live qualification remain required.
+implementation step is scheduler admission and API/UI integration for the new
+capture/analysis path, plus refinement and tracking reader support. Runtime
+packaging, saved-data throughput checks and live qualification remain required.

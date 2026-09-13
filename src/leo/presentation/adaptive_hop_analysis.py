@@ -28,6 +28,10 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
 )
+from leo.scanner.host_adaptive_products import (
+    HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveMetricsManifestV2,
+)
 
 _EDGE_COLORS = ("#287da1", "#bd3653")
 _MARKERS = ("o", "x")
@@ -70,6 +74,24 @@ def project_adaptive_overview(
 ) -> AdaptiveOverviewData:
     binding = AdaptiveHopAnalysisBindingV1.model_validate(binding.model_dump())
     manifest = AdaptiveHopMetricsManifestV1.model_validate(manifest.model_dump())
+    return _project_overview(binding, manifest, visits)
+
+
+def project_host_adaptive_overview(
+    binding: HostAdaptiveAnalysisBindingV2,
+    manifest: HostAdaptiveMetricsManifestV2,
+    visits: Iterable[AdaptiveHopVisitAnalysisV1],
+) -> AdaptiveOverviewData:
+    binding = HostAdaptiveAnalysisBindingV2.model_validate(binding.model_dump())
+    manifest = HostAdaptiveMetricsManifestV2.model_validate(manifest.model_dump())
+    return _project_overview(binding, manifest, visits)
+
+
+def _project_overview(
+    binding: AdaptiveHopAnalysisBindingV1,
+    manifest: AdaptiveHopMetricsManifestV1,
+    visits: Iterable[AdaptiveHopVisitAnalysisV1],
+) -> AdaptiveOverviewData:
     if (
         manifest.binding_sha256 != binding.sha256
         or manifest.session_id != binding.session_id
@@ -157,6 +179,30 @@ def _save(
 ) -> bytes:
     output = io.BytesIO()
     FigureCanvasAgg(figure)
+    host_metadata = {}
+    if isinstance(binding, HostAdaptiveAnalysisBindingV2):
+        receipt = binding.receipt
+        host_metadata = {
+            "Binding": binding.sha256,
+            "CaptureRateHz": str(binding.configuration.sample_rate_hz),
+            "PhysicalReceiver": str(receipt.plan.classification_receiver),
+            "DecisionRateHz": str(receipt.plan.decision.decision_rate_hz),
+            "DecisionExecution": "host",
+            "DecisionConfiguration": receipt.plan.decision.configuration_sha256,
+        }
+        accepted = sum(d.feedback_disposition == "accepted" for d in receipt.host_decisions)
+        fallback = any(e.decision.reason == "fault_fallback" for e in receipt.events)
+        figure.text(
+            0.99,
+            0.003,
+            f"Native 10 MS/s · RX{receipt.plan.classification_receiver} · "
+            f"Host decisions 2.5 MS/s · Valid duty {receipt.valid_duty_ppm / 10000:.2f}% · "
+            f"Feedback accepted {accepted}/{len(receipt.host_decisions)} · "
+            f"Policy fallback {'observed' if fallback else 'not observed'}",
+            ha="right",
+            va="bottom",
+            fontsize=8,
+        )
     if test_data is not None:
         # Explicit report/test context, never inferred from signal shape or IDs.
         label = _TEST_LABELS[test_data]
@@ -176,9 +222,10 @@ def _save(
         output,
         format="png",
         metadata={
-            "Software": "leo-tracker adaptive actual-visit overview-v1",
+            "Software": f"leo-tracker adaptive actual-visit overview-v{binding.schema_version}",
             "Session": binding.session_id,
             "Metrics": metrics_sha256,
+            **host_metadata,
             **({"TestData": _TEST_LABELS[test_data]} if test_data is not None else {}),
         },
     )
@@ -213,6 +260,29 @@ def render_adaptive_hop_overview(
     if test_data is not None and test_data not in _TEST_LABELS:
         raise ValueError("unknown adaptive overview test-data context")
     data = project_adaptive_overview(binding, manifest, visits)
+    return _render_overview(binding, manifest, data, test_data=test_data)
+
+
+def render_host_adaptive_hop_overview(
+    binding: HostAdaptiveAnalysisBindingV2,
+    manifest: HostAdaptiveMetricsManifestV2,
+    visits: Iterable[AdaptiveHopVisitAnalysisV1],
+    *,
+    test_data: TestData | None = None,
+) -> RenderedAdaptiveOverview:
+    if test_data is not None and test_data not in _TEST_LABELS:
+        raise ValueError("unknown adaptive overview test-data context")
+    data = project_host_adaptive_overview(binding, manifest, visits)
+    return _render_overview(binding, manifest, data, test_data=test_data)
+
+
+def _render_overview(
+    binding: AdaptiveHopAnalysisBindingV1,
+    manifest: AdaptiveHopMetricsManifestV1,
+    data: AdaptiveOverviewData,
+    *,
+    test_data: TestData | None,
+) -> RenderedAdaptiveOverview:
     config = adaptive_trajectory_configuration(binding.configuration.glrt64_margin_gate)
     banks: dict[tuple[int, int], TrajectoryBankResult] = {
         key: fit_trajectory_bank(observations, config)
@@ -268,7 +338,7 @@ def render_adaptive_hop_overview(
         figures["coverage"] = _save(figure, binding, metrics_sha, test_data)
         figure = Figure(figsize=(15.5, 7.2), dpi=160, constrained_layout=True)
         axis = figure.subplots()
-        for rx in (0, 1):
+        for rx in binding.configuration.receiver_ids:
             rows = data.winners[data.winners[:, 1] == rx]
             axis.scatter(
                 rows[:, 2],
@@ -301,7 +371,7 @@ def render_adaptive_hop_overview(
         for channel, axis in enumerate(axes):
             for edge in (0, 1):
                 target = channel + edge * 4
-                for rx in (0, 1):
+                for rx in binding.configuration.receiver_ids:
                     rows = data.passed[(data.passed[:, 0] == target) & (data.passed[:, 1] == rx)]
                     if len(rows):
                         axis.scatter(
