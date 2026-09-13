@@ -1,0 +1,237 @@
+commit 20e605d1c8bc872630198fb65a4e6461adf0c0db
+Author:     misko <misko@cs.toronto.edu>
+AuthorDate: Sun Sep 13 22:59:35 2026 +0000
+Commit:     misko <misko@cs.toronto.edu>
+CommitDate: Sun Sep 13 22:59:35 2026 +0000
+
+    Allow bounded ARM revisits with scan64 observer profile
+
+diff --git a/tests/starlink_glrt/test_cpu_live_probe.py b/tests/starlink_glrt/test_cpu_live_probe.py
+index 50d8a9167..c8494f579 100644
+--- a/tests/starlink_glrt/test_cpu_live_probe.py
++++ b/tests/starlink_glrt/test_cpu_live_probe.py
+@@ -618,7 +618,7 @@ def test_advancing_capture_worker_and_native_feedback(live_api, controller, pilo
+ 
+ @pytest.mark.parametrize('rate', [30000000,60000000])
+ @pytest.mark.parametrize('mode', [
+-    'loss_then_supported','four_losses','attempt_budget','full_profile','visit_full_profile','visit_selected_profile','short_observer3','short_scan64','worker_error',
++    'loss_then_supported','four_losses','attempt_budget','full_profile','visit_full_profile','visit_selected_profile','short_observer3','short_scan64','visit_scan64','worker_error',
+     'retention_error','restart_budget','cancel','deadline','uncleared','source_gap',
+     'wrong_epoch','wrong_rate','unread_head','read_failure','rebase_same_epoch',
+     'rebase_short_write',
+@@ -662,8 +662,9 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+         lib.live_visit_mode(handle)
+     if mode=='short_observer3':
+         assert lib.live_set_dwell(handle,b'1536-selected-observer3',(c.c_uint64*4)())==0
+-    if mode=='short_scan64':
++    if mode in ('short_scan64','visit_scan64'):
+         assert lib.live_set_dwell(handle,b'1536-selected-observer3-scan64',(c.c_uint64*4)())==0
++        if mode=='visit_scan64': lib.live_visit_mode(handle)
+     iq=np.zeros((10_000_000,2),dtype=np.int16)
+     for frame in range(3000):
+         start=22+(frame*10000+1)//3
+@@ -685,7 +686,7 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+                 else: time.sleep(.001)
+             # This is the same capture-thread ordering as the executable:
+             # finished worker -> join -> retained/drained source check -> release owner.
+-            if mode in ('visit_full_profile','visit_selected_profile'): assert lib.live_capture_done(handle)==1
++            if mode in ('visit_full_profile','visit_selected_profile','visit_scan64'): assert lib.live_capture_done(handle)==1
+             lib.live_join(handle)
+             assert lib.live_visit_loss(handle)==int(not (mode=='loss_then_supported' and episode==1))
+             totals=(c.c_uint64*8)();lib.live_totals(handle,totals)
+@@ -703,11 +704,11 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+             episodes.append(reviewed)
+             assert totals[3]==sum(len(r['heads']) for r in episodes)
+             assert totals[4]==int(mode=='loss_then_supported' and episode==1)
+-            if mode in ('full_profile','visit_full_profile','visit_selected_profile'):
++            if mode in ('full_profile','visit_full_profile','visit_selected_profile','visit_scan64'):
+                 rows=[json.loads(line) for line in (tmp_path/'worker.jsonl').read_text().splitlines()]
+                 observer_rows=[json.loads(line) for line in (tmp_path/'observer.jsonl').read_text().splitlines()]
+                 disposition=dict(status=3,stage='worker_complete',worker_complete=1,
+-                    retention_mode='selected_windows' if mode=='visit_selected_profile' else 'full',reacquisitions=0,native_completed_runs=0,
++                    retention_mode='selected_windows' if mode in ('visit_selected_profile','visit_scan64') else 'full',reacquisitions=0,native_completed_runs=0,
+                     handoffs=1,native_runs=1,completed_refills=count//16384,blocks=count//16384,
+                     attempts=int(totals[0]),rate=rate,native_results=int(totals[3]))
+                 result=review_clean_loss(rows,data,disposition,observer_rows)
+@@ -748,7 +749,7 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+             if fault or mode=='attempt_budget' or episode==3:
+                 assert admitted==0
+                 break
+-            if mode in ('visit_selected_profile','short_observer3','short_scan64'):
++            if mode in ('visit_selected_profile','short_observer3','short_scan64','visit_scan64'):
+                 assert admitted==0  # Return clean loss to the LO owner, without same-LO REBASE.
+                 break
+             if mode in ('uncleared','source_gap','wrong_epoch','wrong_rate','unread_head','read_failure'):
+@@ -780,8 +781,8 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+         out=(c.c_uint64*5)();lib.live_finish(handle,out)
+     assert not radio.errors,radio.errors
+     rows=[json.loads(line) for line in (tmp_path/'worker.jsonl').read_text().splitlines()]
+-    check_observer_evidence(tmp_path,iq,1000000,rows,rate,3 if mode in ('short_observer3','short_scan64') else 9)
+-    if mode=='short_scan64':
++    check_observer_evidence(tmp_path,iq,1000000,rows,rate,3 if mode in ('short_observer3','short_scan64','visit_scan64') else 9)
++    if mode in ('short_scan64','visit_scan64'):
+         scans=[r for r in rows if r['kind']=='scan']
+         ranks=[r for r in rows if r['kind']=='candidate_order']
+         assert scans and ranks and len(scans)==len(ranks)
+diff --git a/tests/starlink_glrt/test_cpu_visit_probe.py b/tests/starlink_glrt/test_cpu_visit_probe.py
+index 033a88a1f..e9e125a73 100644
+--- a/tests/starlink_glrt/test_cpu_visit_probe.py
++++ b/tests/starlink_glrt/test_cpu_visit_probe.py
+@@ -30,7 +30,9 @@ int iio_channel_attr_read_longlong(const struct iio_channel *c,const char *n,lon
+ int iio_channel_attr_write_longlong(const struct iio_channel *c,const char *n,long long out)
+ { (void)c;(void)n;(void)out;return -1; }
+ static int simulated_child(int argc,char **argv) {
+-    if(!strcmp(argv[1],"selected")) {
++    if(!strcmp(argv[1],"scan64")) {
++        if(argc!=7 || strcmp(argv[6],"1536-selected-observer3-scan64")) return 9;
++    } else if(!strcmp(argv[1],"selected")) {
+         if(argc!=7 || strcmp(argv[6],"1536-selected")) return 9;
+     } else if(argc!=6) return 9;
+     printf("retained child output\n");fprintf(stderr,"retained child diagnostics\n");
+@@ -48,6 +50,7 @@ int exercise_child(const char *directory,const char *mode) {
+     char *args[]={"probe",(char *)mode,"serial","bank","refs",(char *)directory};
+     struct visit_context context={.args=args,.probe_main=simulated_child};
+     context.visit_count=!strcmp(mode,"selected") ? 4 : 2;
++    if(!strcmp(mode,"scan64")) context.profile="1536-selected-observer3-scan64";
+     uint64_t budget=!strcmp(mode,"hang") ? UINT64_C(100000000) : UINT64_C(2000000000);
+     interrupted=0;
+     int rc=visit_child(&context,0,clock_ns(NULL)+budget),status;
+@@ -67,6 +70,18 @@ int exercise_four_children(const char *directory) {
+     for(unsigned n=0;n<4;n++) if(visit_child(&context,n,clock_ns(NULL)+UINT64_C(2000000000))) return -1;
+     int status;return waitpid(-1,&status,WNOHANG)==-1 && errno==ECHILD ? 0 : -1;
+ }
++int parse_plan(unsigned rate,unsigned count,const char *profile) {
++    char raw_rate[32];snprintf(raw_rate,sizeof(raw_rate),"%u",rate);
++    char *args[]={"probe",raw_rate,"1040005e0b100007100010000bf33a5d4d","bank","refs","out",
++        "1190312500","1440312500","1690312500","1940312500",NULL,NULL};
++    struct visit_context context={0};uint64_t lo[4];
++    if(count>5) return -1;
++    if(profile) args[6+count]=(char *)profile;
++    if(visit_arguments(6+(int)count+(profile!=NULL),args,&context,lo)) return -1;
++    const char *selected=visit_profile(&context);
++    if(context.visit_count!=count || context.rate!=rate) return -2;
++    return selected && !strcmp(selected,"1536-selected-observer3-scan64") ? 64 : 8;
++}
+ '''
+ 
+ 
+@@ -93,14 +108,15 @@ def probe(tmp_path_factory):
+     lib.inspect_idle_words.argtypes=[c.POINTER(c.c_uint32),c.c_uint32]
+     lib.invalid_plan.argtypes=[c.c_char_p,c.c_uint,c.c_int]
+     lib.exercise_four_children.argtypes=[c.c_char_p]
++    lib.parse_plan.argtypes=[c.c_uint,c.c_uint,c.c_char_p]
+     return lib
+ 
+ 
+-@pytest.mark.parametrize('mode',['pass','fail','hang','existing','clean_loss','unknown','signal','selected'])
++@pytest.mark.parametrize('mode',['pass','fail','hang','existing','clean_loss','unknown','signal','selected','scan64'])
+ def test_child_is_reaped_before_return_and_evidence_is_never_overwritten(probe,tmp_path,mode):
+     if mode=='existing':
+         (tmp_path/'visit-0').mkdir();(tmp_path/'visit-0/stdout.json').write_text('preserved')
+-    assert probe.exercise_child(os.fsencode(tmp_path),mode.encode())==({'pass':0,'selected':0,'clean_loss':1}.get(mode,-1))
++    assert probe.exercise_child(os.fsencode(tmp_path),mode.encode())==({'pass':0,'selected':0,'scan64':0,'clean_loss':1}.get(mode,-1))
+     if mode=='existing': assert (tmp_path/'visit-0/stdout.json').read_text()=='preserved'
+     elif mode not in ('hang','signal'):
+         assert (tmp_path/'visit-0/stdout.json').read_text()=='retained child output\n'
+@@ -126,6 +142,14 @@ def test_four_selected_children_have_separate_evidence_and_are_all_reaped(probe,
+         assert (tmp_path/f'visit-{n}/stdout.json').read_text()=='retained child output\n'
+ 
+ 
++@pytest.mark.parametrize('rate',[30000000,60000000,2500000])
++@pytest.mark.parametrize('count',[1,2,3,4])
++@pytest.mark.parametrize('profile',[None,b'1536-selected-observer3-scan64',b'unknown'])
++def test_explicit_scan64_plan_preserves_legacy_and_rejects_invalid_arguments(probe,rate,count,profile):
++    valid=rate in (30000000,60000000) and count in (2,3,4) and profile!=b'unknown'
++    assert probe.parse_plan(rate,count,profile)==((64 if profile else 8) if valid else -1)
++
++
+ @pytest.mark.parametrize('rate',[30000000,60000000])
+ @pytest.mark.parametrize('epoch',[0,1,7])
+ @pytest.mark.parametrize('mode',['idle','boot_drops','active','fault','configured','wrong_rate','unread'])
+diff --git a/tools/glrt_cpu_visit_probe.c b/tools/glrt_cpu_visit_probe.c
+index 0d2144284..c3d05bb57 100644
+--- a/tools/glrt_cpu_visit_probe.c
++++ b/tools/glrt_cpu_visit_probe.c
+@@ -14,8 +14,34 @@ struct visit_context {
+     FILE *journal;
+     uint32_t rate;
+     unsigned visit_count;
++    const char *profile;
+     int (*probe_main)(int,char **);
+ };
++static const char *visit_profile(const struct visit_context *v)
++{
++    return v->profile ? v->profile : v->visit_count>2 ? "1536-selected" : NULL;
++}
++/* The optional trailing profile is opt-in; existing visit invocations retain
++ * their exact child profile. Validate the full plan before any IIO contact. */
++static int visit_arguments(int argc,char **argv,struct visit_context *v,uint64_t lo[4])
++{
++    char *end;int count=argc-6;
++    if(argc<8 || argc>11 || (strcmp(argv[1],"30000000") && strcmp(argv[1],"60000000")) ||
++       strcmp(argv[2],"1040005e0b100007100010000bf33a5d4d")) return -1;
++    v->profile=NULL;
++    if(!strcmp(argv[argc-1],"1536-selected-observer3-scan64")) {
++        v->profile=argv[argc-1];count--;
++    }
++    if(count<2 || count>4) return -1;
++    for(int n=0;n<count;n++) {
++        errno=0;lo[n]=strtoull(argv[6+n],&end,10);
++        if(errno || *end || !*argv[6+n]) return -1;
++        if((lo[n]!=1190312500 && lo[n]!=1440312500 && lo[n]!=1690312500 && lo[n]!=1940312500) ||
++           (n && lo[n]==lo[n-1])) return -1;
++    }
++    v->args=argv;v->rate=(uint32_t)strtoul(argv[1],NULL,10);v->visit_count=(unsigned)count;
++    return 0;
++}
+ static int visit_cancelled(void *unused) { (void)unused;return interrupted!=0; }
+ static int visit_probe_main(int argc,char **argv) { return live_probe_run(argc,argv,1); }
+ static int channel_is(struct iio_channel *channel,const char *name,const char *expected)
+@@ -97,7 +123,7 @@ static int visit_child(void *pointer,unsigned number,uint64_t deadline)
+ {
+     struct visit_context *v=pointer;char directory[PATH_MAX],out[PATH_MAX],err[PATH_MAX];
+     char *args[]={v->args[0],v->args[1],v->args[2],v->args[3],v->args[4],directory,
+-        v->visit_count>2 ? "1536-selected" : NULL,NULL};
++        (char *)visit_profile(v),NULL};
+     int stdout_fd=-1,stderr_fd=-1,status=0,stopping=0;pid_t pid,waited;uint64_t stop_at=0,now=clock_ns(NULL);
+     if(snprintf(directory,sizeof(directory),"%s/visit-%u",v->args[5],number)<=0 || mkdir(directory,0700) ||
+        snprintf(out,sizeof(out),"%s/stdout.json",directory)<=0 || snprintf(err,sizeof(err),"%s/stderr.txt",directory)<=0) return -1;
+@@ -109,7 +135,7 @@ static int visit_child(void *pointer,unsigned number,uint64_t deadline)
+         int rc;
+         if(dup2(stdout_fd,STDOUT_FILENO)<0 || dup2(stderr_fd,STDERR_FILENO)<0) _exit(2);
+         close(stdout_fd);close(stderr_fd);
+-        rc=v->probe_main(v->visit_count>2 ? 7 : 6,args);
++        rc=v->probe_main(visit_profile(v) ? 7 : 6,args);
+         if(fflush(stdout) || fflush(stderr)) rc=2;
+         _exit(rc);
+     }
+@@ -137,17 +163,9 @@ fail:
+ int main(int argc,char **argv)
+ {
+     struct visit_context context={0};struct glrt_visit_ports ports;
+-    char path[PATH_MAX],*end;uint64_t lo[4];struct sigaction action={0};int rc;
+-    if(argc<8 || argc>10 || (strcmp(argv[1],"30000000") && strcmp(argv[1],"60000000")) ||
+-       strcmp(argv[2],"1040005e0b100007100010000bf33a5d4d")) return 2;
+-    context.visit_count=(unsigned)argc-6;
+-    for(unsigned n=0;n<context.visit_count;n++) {
+-        errno=0;lo[n]=strtoull(argv[6+n],&end,10);
+-        if(errno || *end || !*argv[6+n]) return 2;
+-        if((lo[n]!=1190312500 && lo[n]!=1440312500 && lo[n]!=1690312500 && lo[n]!=1940312500) ||
+-           (n && lo[n]==lo[n-1])) return 2;
+-    }
+-    context.args=argv;context.rate=(uint32_t)strtoul(argv[1],NULL,10);context.probe_main=visit_probe_main;
++    char path[PATH_MAX];uint64_t lo[4];struct sigaction action={0};int rc;
++    if(visit_arguments(argc,argv,&context,lo)) return 2;
++    context.probe_main=visit_probe_main;
+     if(snprintf(path,sizeof(path),"%s/visits.txt",argv[5])<=0 || !(context.journal=fopen(path,"wx"))) return 2;
+     action.sa_handler=signal_stop;sigemptyset(&action.sa_mask);
+     if(sigaction(SIGALRM,&action,NULL) || sigaction(SIGTERM,&action,NULL) || sigaction(SIGINT,&action,NULL)) return 2;
+@@ -156,7 +174,7 @@ int main(int argc,char **argv)
+     rc=fprintf(context.journal,"plan %u %s",context.rate,argv[2])<0 ? GLRT_VISIT_RETENTION : 0;
+     for(unsigned n=0;n<context.visit_count;n++)
+         if(fprintf(context.journal," %" PRIu64,lo[n])<0) rc=GLRT_VISIT_RETENTION;
+-    if(fprintf(context.journal," %s %u 60000000000\n",context.visit_count>2 ? "1536-selected" : "1536",context.visit_count)<0 ||
++    if(fprintf(context.journal," %s %u 60000000000\n",visit_profile(&context) ? visit_profile(&context) : "1536",context.visit_count)<0 ||
+        fflush(context.journal)) rc=GLRT_VISIT_RETENTION;
+     if(!rc) rc=glrt_tracking_visit_plan_run(&ports,context.rate,lo,context.visit_count);
+     if(fprintf(context.journal,"terminal %d\n",rc)<0 || fclose(context.journal)) rc=GLRT_VISIT_RETENTION;
