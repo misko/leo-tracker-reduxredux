@@ -229,3 +229,47 @@ examples and a known frequency peak. An additional
 reproduce selected local peak powers across all three inputs. These checks do
 not independently validate the entire search, the physical model or a
 false-alarm rate.
+
+## Existing C gates recover a useful adjacent-pilot forecast
+
+The next replay runs the unchanged C 2.5-MS/s IQ moment collector and tracking
+solver on the previous diagnostic's 64 localized pilots per input. All
+integer moment words, dense-fit timing/CFO corrections, coherence and rejection
+bits are checked against the independent NumPy calculations. The existing
+0.05 coherence threshold and local correction bounds remain unchanged.
+
+Only measurements accepted by C in frames 0–31 train a linear timing and
+carrier forecast. That forecast is frozen before frames 32–63, which receive
+new C measurements at the predicted quarter-sample positions and CFOs.
+Held-out localization results do not enter the forecast, and held-out
+measurements do not feed back into it.
+
+| Input | Accepted localized measurements | Accepted training measurements | Accepted forecast measurements |
+| --- | ---: | ---: | ---: |
+| Strongest missed proposal | 0 / 64 | 0 / 32 | No forecast authorized by this diagnostic |
+| Positive | 53 / 64 | 26 / 32 | 27 / 32 |
+| Control | 0 / 64 | 0 / 32 | No forecast authorized by this diagnostic |
+
+The positive timing fit advances by 0.01782 coarse samples per frame relative
+to the nominal frame period, about 5.35 ppm. Its fitted CFO changes by
+-4.865 Hz per frame, about -3,649 Hz/s. The five rejected held-out measurements
+are frames 35, 41, 47, 53 and 59: each fails both coherence and local bounds.
+Their periodic spacing is an observation, not an established explanation of
+the transmitted waveform or RF path.
+
+This is materially better than the preceding unweighted fit of every local
+estimate. It provides a reason to pursue validity-filtered adjacent-pilot
+startup before introducing coherent integration or weakening gates. It does
+not yet establish an acquisition algorithm: training positions/CFOs came from
+a relatively broad diagnostic search, the forecast is a Python fit rather
+than the production C trend controller, and neither ARM runtime cost nor a
+fresh native handoff has been measured for this path. The next implementation
+step is to exercise the production trend/catch-up path with these accepted
+adjacent observations and measure its bounded ARM cost.
+
+The [C validity result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-c-validity-v1.json)
+retains all 224 independently checked moment/fit records and provenance.
+Its [replay source](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/check_adjacent_c_validity.py)
+builds the unchanged collector and solver into a host library. No RF,
+firmware, acceptance gate or production runtime changes occur. Sustained
+30/60-MS/s native tracking remains unqualified.
