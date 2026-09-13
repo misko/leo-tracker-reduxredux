@@ -176,3 +176,56 @@ The first checks ideal phase prediction and cancellation; the second checks
 an ideal chirp at the actual 12-ms cadence and verifies that changing held-out
 CFO values cannot change the trained frequency model. These synthetic checks
 do not constitute an independent numerical review of the physical phase model.
+
+## Adjacent pilots expose a timing-model limitation
+
+A follow-up examines frames 0 through 63 in three existing 2.5-MS/s input
+cuts. The first 32 frames train a linear carrier model and residual phase;
+the next 32 are held out. The initial timing schedule uses the resolved first
+start, the C scheduler's Q16 period and quarter-sample rounding. Per-pilot
+frequency searches cover resolver CFO ±1,000 Hz on a 5-Hz grid. These searched
+peak powers are diagnostic statistics, not the C worker's acceptance results.
+
+The fixed timing schedule gives median searched power 0.02764 on the positive,
+versus 0.03719 on the strongest weak candidate and 0.00076 on the control.
+That unexpected positive result motivates a separate ±2-sample timing search,
+in quarter-sample steps, for each pilot.
+
+| Input | Median power after local timing search | Timing-search boundary hits / 64 | Held-out power using training-only timing/carrier forecasts |
+| --- | ---: | ---: | ---: |
+| Strongest missed proposal | 0.03737 | 0 | 0.03586 |
+| Positive | 0.07743 | 4 | 0.03459 |
+| Control | 0.00148 | 10 | 0.00020 |
+
+The local timing search is fitted separately on every frame and therefore is
+an in-sample diagnostic, including on the held-out half. Its results on that
+half never train the forecast: only the first 32 local positions and CFO
+estimates fit the timing and carrier models used for the final column.
+The rise in the positive's local power shows that fixed timing alignment
+explains much of its apparent correlation loss. Unweighted forecasts still
+perform poorly, with several training measurements weak or at the timing
+search boundary. This experiment does not establish the cause of those weak
+frames, nor prove that a robust fit will fix them.
+
+Held-out phase RMS with the timing/carrier forecast remains 1.280 radians for
+the weak proposal, 1.784 for the positive and 1.944 for the control. Coherent
+gain is respectively 5.479, 0.074 and 5.439 out of a maximum of 32. A gain
+number alone clearly supplies no defensible acquisition rule here.
+
+The next implementation question is how actual C timing/CFO validity checks
+behave at adjacent cadence, and whether excluding invalid measurements gives
+a useful causal forecast. Coherent integration remains an unqualified research
+option. No gate, ARM runtime or FPGA image changes in this experiment, and no
+RF collection occurs. The previous 30/60-MS/s scan/revisit verification stands;
+sustained native tracking remains incomplete.
+
+The [fixed-timing result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-pilot-phase-v1.json)
+and [localization/forecast result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-pilot-timing-v1.json)
+include source hashes, all selected jobs, frequencies, powers and complex
+correlations, with their diagnostic sources alongside. Six synthetic checks
+cover chirp fitting, exclusion of held-out CFO, phase prediction, scheduler
+examples and a known frequency peak. An additional
+[18 direct-DFT spot checks](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-pilot-timing-spot-checks-v1.json)
+reproduce selected local peak powers across all three inputs. These checks do
+not independently validate the entire search, the physical model or a
+false-alarm rate.
