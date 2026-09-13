@@ -936,3 +936,69 @@ and [ARM score/timing review](figures/2026_09_13_radio20_saved_iq_coverage/pilot
 retain the measurements and hashes. Sources and ARM journals accompany them;
 full host journals remain in local evidence. Sustained live 30/60-MS/s FPGA
 tracking, physical loss/reacquisition and refinement remain unfinished.
+
+## Live 64-candidate profile passes execution and freshness checks
+
+Firmware worktree commit `7e7555550` adds the explicit
+`1536-selected-observer3-scan64` profile. It uses the bounded heap selector,
+separate 4,096-bin ranking plan, existing 16,384-bin resolver, and three-frame
+observer cadence. The operator accepts 64 candidates only with this short,
+selected-IQ profile. Its limits remain six attempts, 1,536 capture blocks
+(10.0663296 seconds maximum), one native episode, and the existing freshness
+and acceptance gates. Both FFT plans are destroyed after threads are joined.
+Candidate journals retain all 64 scores and explicit FFT/budget metadata.
+
+The Cortex-A9 executable SHA-256 is
+`ede7d9bd6e60fb692c916d9f0707595d02d6f0a39066174c1aaf827616cfd456`.
+The full final suite passes 250 tests. An earlier run has 249 passes and one
+legacy 60-MS/s native-deadline failure after 199 results; its test report is
+retained. The unchanged full rerun passes without relaxed deadlines or gates.
+New focused cases cover both native rates, observer cleanup, short-profile
+no-restart behavior, ranking failure and operator admission bounds. The actual
+live ranking function also matches all 1,664 independently checked scores on
+the 26 saved cuts.
+
+After process 1627338 releases the global lease, the exact-profile operator
+attests serial 1040005e0b100007100010000bf33a5d4d at 192.168.1.20 and runs one
+bounded CH3-upper capture using the resident 60-MS/s image.
+
+| Physical result | Measurement |
+| --- | --- |
+| RF duration / exported coarse samples | 7.1314052 s / 17,828,513 |
+| Returned coarse samples | 17,825,792; 2,721 exported tail samples unreturned |
+| Completed scans / ranked candidates | 6 / 384 |
+| Scan and ranking time | 585.278–634.364 ms |
+| Resolver and historical-worker time | 579.803–581.586 ms |
+| Accepted historical measurements | 0 / 48 |
+| Handoffs / native results / observer episodes | 0 / 0 / 0 |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill gap | 6.679 ms |
+
+All six selected seed copies satisfy the existing one-second source-age
+limit. The selected candidate ranks are 56, 30, 7, 44, 11 and 58, demonstrating
+that the live expanded path actually considers candidates outside the old
+eight-entry budget. Their ranking powers are only 0.003506–0.004286; the
+maximum historical coherence is 0.003825. No measurement passes, so this
+capture cannot qualify observer/native concurrency or sustained tracking.
+
+Independent review verifies every selected local maximum and its exact
+suppression/tie order against a sorted oracle, all 219,978 integer grid
+values, 384 reduced-FFT ranking scores, 102 full-resolution resolver
+hypotheses, 48 exact moments/dense fits, 48 startup jobs, 30,192 scalar
+rotation checks and 112,741 overlapping retained samples. Source counters,
+epoch binding and cleanup pass. The capture succeeds, while acquisition
+correctly refuses unsupported histories.
+
+Before/after identity and TX-safe state match, configured RF state is
+preserved, evidence is retrieved and temporary remote files are removed.
+The resident firmware image is unchanged and no persistent tracker remains.
+Further progress must address signal acquisition/support and verify native
+feedback after a supported live handoff; scanner execution alone is insufficient.
+
+The [build manifest](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/build.json),
+[live-ranking comparisons](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/ranking.json),
+[physical operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/operator.json)
+and [independent physical review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/review.json)
+retain measurements and hashes. Sources, component patch, worker journal and
+both full-suite reports accompany them; original retained IQ remains in local
+evidence. Sustained live 30/60-MS/s FPGA tracking remains unfinished.
