@@ -425,3 +425,35 @@ not enabled in the live probe and is not deployed. ARM cadence benchmarking
 remains pending: a second admission attempt was refused before radio contact,
 with the new global lease owner PID 913908 verified live. No radio or firmware
 changes were made by these attempts. Native tracking remains incomplete.
+
+## Actual observer replay matches the three-frame feedback baseline
+
+The new cadence option is exercised through the actual passive observer,
+including IQ-owner publication/copy, source/deadline guards, retention callback,
+solver and history update. The same diagnostic training history and saved
+positive are used. Each of the three starting offsets runs to the unchanged
+200-measurement cap and returns DONE.
+
+| Starting offset | Retained measurements | Accepted measurements |
+| --- | ---: | ---: |
+| 0 | 200 | 95 |
+| 1 | 200 | 200 |
+| 2 | 200 | 200 |
+
+All 600 emitted jobs, fit values and rejection decisions exactly match the
+corresponding prefix of the independently reviewed cadence baseline. The
+retention callback completes before history commit. This extends validation
+from a direct trend loop to the actual observer component, but all IQ is
+already retained: it does not test receiver pacing, producer contention or
+native FPGA feedback.
+
+Both host and Cortex-A9 benchmark executables build successfully. The
+[build/replay manifest](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/observer-replay/build.json),
+benchmark source and three journals accompany the report. The first output
+setup attempt encountered a binary/directory name collision before any replay;
+the results use a separate directory. No source IQ was changed.
+
+ARM execution is still pending. Previous lease owner PID 913908 exited, but
+PID 933850 was verified live holding the global lease for another canary run.
+No additional admission was attempted while that owner was confirmed live.
+No radio, live-probe configuration or firmware changes occurred.
