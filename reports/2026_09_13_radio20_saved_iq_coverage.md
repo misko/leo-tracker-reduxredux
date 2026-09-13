@@ -124,3 +124,55 @@ The [C replay result](figures/2026_09_13_radio20_saved_iq_coverage/missed-candid
 [independent review](figures/2026_09_13_radio20_saved_iq_coverage/missed-candidates/independent-review.json)
 and twelve retained worker journals are accompanied by the benchmark, runner
 and review source. Original IQ cuts remain in the local evidence directory.
+
+## Can sparse pilots support coherent integration?
+
+Two offline diagnostics fit the first four retained pilot measurements and
+predict the next four without fitting to their phase or frequency. These are
+frames 0, 9, 18, 27, 36, 45, 54 and 63: measurements are approximately 12 ms
+apart, spanning 84 ms, rather than adjacent 1.333-ms frames. All IQ is the
+existing 2.5-MS/s coarse stream; no new RF is collected.
+
+The first model removes the resolver CFO, fits a linear residual phase to the
+training pilots and extrapolates it. The second fits a linear CFO drift from
+the first four independently checked C estimates, integrates that predicted
+frequency across the IQ samples, then fits the remaining training phase.
+The second model uses estimates even when the C worker rejects them; this is
+an exploratory diagnostic, not an authorized feedback or acceptance path.
+
+| Saved input | Constant-CFO phase RMS / gain | Drift-model phase RMS / gain |
+| --- | ---: | ---: |
+| Strongest missed proposal | 2.076 rad / 0.063 | 1.374 rad / 1.146 |
+| Positive | 2.299 rad / 1.236 | 1.553 rad / 1.978 |
+| Control | 2.073 rad / 0.456 | 1.870 rad / 0.731 |
+
+Phase RMS is the circular prediction error on the four held-out measurements.
+Gain is `abs(sum(corrected amplitudes))**2 / sum(abs(amplitudes)**2)`, with a
+maximum of four. Gain alone can hide a common phase prediction error and is
+not a calibrated detection statistic. These twelve selected cuts do not
+establish a false-alarm distribution or general sensitivity improvement.
+
+The positive's first four local CFO estimates decline from 471,921 to 471,780
+Hz; their fitted drift is about -3,824 Hz/s. The drift model improves its phase
+prediction, but its held-out error remains substantial. Consequently neither
+model establishes reliable phase prediction even for the saved positive.
+This result cannot rule out coherent integration: sparse phase sampling has
+frequency ambiguity in approximately 83.33-Hz increments, the linear drift
+forecast can be inaccurate, and fractional reference timing and inter-frame
+phase behavior still need examination. No specific cause is established here.
+
+Before changing the tracker, the next bounded offline experiment should
+inspect adjacent pilots on the positive and control, retaining exact timing
+and reference-phase conventions. Any combined-pilot detector would then need
+held-out timing/CFO checks and false-alarm calibration that includes its search
+and selection process. Existing acquisition and native gates remain unchanged;
+sustained FPGA tracking is still unqualified.
+
+The [constant-CFO result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heldout-pilot-phase-v1.json)
+and [drift result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heldout-pilot-drift-v1.json)
+retain all complex correlations, per-pilot powers, source coordinates, phase
+errors and provenance hashes. Both diagnostic sources accompany the results.
+The first checks ideal phase prediction and cancellation; the second checks
+an ideal chirp at the actual 12-ms cadence and verifies that changing held-out
+CFO values cannot change the trained frequency model. These synthetic checks
+do not constitute an independent numerical review of the physical phase model.
