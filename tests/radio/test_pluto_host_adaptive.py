@@ -1,0 +1,263 @@
+import threading
+import time
+
+import numpy as np
+import pytest
+from pluto_plus.host_adaptive_hop_stream import HostAdaptiveHopSampledVisitV3
+
+from leo.analysis.host_decision import HostDecisionEvidence
+from leo.radio.pluto_host_adaptive import PlutoHostAdaptiveHopRadio
+from tests.radio.adaptive_hop_fixtures import upstream_receipt
+from tests.scanner.host_adaptive_fixtures import host_receipt, numerics
+
+
+class Engine:
+    def __init__(self, *, delay=0, fail=False):
+        self.threads = [threading.get_ident()]
+        self.delay, self.fail = delay, fail
+        self.closed = False
+
+    def run(self, iq, *, edge):
+        self.threads.append(threading.get_ident())
+        assert iq.dtype == np.dtype("<i2") and iq.shape == (1_200_000, 2)
+        assert not iq.flags.writeable
+        assert edge in ("lower", "upper")
+        if self.delay:
+            time.sleep(self.delay)
+        if self.fail:
+            raise RuntimeError("synthetic detector failure")
+        return HostDecisionEvidence(**numerics().model_dump(exclude={"schema_version"}))
+
+    def close(self):
+        self.threads.append(threading.get_ident())
+        self.closed = True
+
+
+class Client:
+    def __init__(self, receipt, *, pacing=0.04, reject=False):
+        self.owner = threading.get_ident()
+        self.source = receipt
+        self.receipt = upstream_receipt(receipt)
+        self.closed = False
+        self.next_index = 0
+        self.feedback = []
+        self.pacing, self.reject = pacing, reject
+        self.calls = []
+
+    def owned(self, name):
+        assert threading.get_ident() == self.owner
+        self.calls.append(name)
+
+    def start(self, plan, *, policy, decision, session_id, tandem_request):
+        self.owned("start")
+        assert plan.receiver_id == decision.receiver_id == self.source.plan.classification_receiver
+        assert policy == self.receipt.stream.request.policy
+        assert decision == self.receipt.stream.request.decision
+        assert session_id == self.source.terminal.session_id
+        return self
+
+    @property
+    def start_clock_bracket(self):
+        self.owned("clock")
+        return None
+
+    @property
+    def stream_generation(self):
+        self.owned("generation")
+        return self.source.stream_generation
+
+    def sampled(self):
+        index = self.next_index
+        self.next_index += 1
+        return HostAdaptiveHopSampledVisitV3(
+            self.receipt.stream.visits[index],
+            np.full((1, 1_200_000), index + 2j, np.complex64),
+            self.source.plan.classification_receiver,
+        )
+
+    def visits(self):
+        self.owned("visits")
+        while self.next_index < self.source.complete_visit_count:
+            if self.pacing:
+                time.sleep(self.pacing)
+            self.owned("read")
+            yield self.sampled()
+        self.closed = True
+
+    def submit_feedback(self, feedback):
+        self.owned("feedback")
+        feedback.pack()
+        assert feedback.visit == len(self.feedback)
+        if self.reject:
+            raise OSError("synthetic provider rejection")
+        self.feedback.append(feedback)
+        return not self.closed
+
+    def close(self):
+        self.owned("close")
+        self.closed = True
+        return self.receipt
+
+    def take_terminal_visits(self):
+        self.owned("terminal")
+        assert self.closed
+        return tuple(
+            self.sampled() for _ in range(self.next_index, self.source.complete_visit_count)
+        )
+
+
+def setup(receipt, *, pacing=0.04, reject=False, engine_delay=0, engine_fail=False, read_ahead=8):
+    clients, engines = [], []
+
+    def client_factory(uri, serial):
+        assert uri == receipt.radio_uri and serial == receipt.radio_serial
+        clients.append(Client(receipt, pacing=pacing, reject=reject))
+        return clients[-1]
+
+    def engine_factory():
+        engines.append(Engine(delay=engine_delay, fail=engine_fail))
+        return engines[-1]
+
+    radio = PlutoHostAdaptiveHopRadio(
+        "192.168.1.14",
+        expected_serial=receipt.radio_serial,
+        radio_id=receipt.radio_id,
+        decision=receipt.plan.decision,
+        decision_engine_factory=engine_factory,
+        client_factory=client_factory,
+        read_ahead_visits=read_ahead,
+    )
+    return radio, clients, engines
+
+
+def drain(session):
+    visits = []
+    while True:
+        try:
+            block = session.read_visit()
+        except StopIteration:
+            break
+        visits.append(block.evidence)
+    return visits
+
+
+@pytest.mark.parametrize("receiver", [0, 1])
+@pytest.mark.parametrize("mode", ["shadow", "adaptive"])
+def test_client_construction_admission_iio_and_feedback_have_one_owner(receiver, mode):
+    receipt = host_receipt(receiver=receiver, mode=mode, count=7)
+    radio, clients, engines = setup(receipt)
+    consumer_thread = threading.get_ident()
+    assert radio.open() == radio.identity
+    try:
+        session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+        assert session.start_clock_bracket is None
+        assert tuple(drain(session)) == receipt.visits
+        result = session.finish()
+        assert result.plan == receipt.plan and result.visits == receipt.visits
+        assert len(result.host_decisions) == receipt.complete_visit_count
+        assert all(d.health == "healthy" for d in result.host_decisions)
+        assert result.host_decisions[-1].feedback_disposition == "source_ended"
+        assert any(d.feedback_disposition == "accepted" for d in result.host_decisions)
+        assert [f.visit for f in clients[0].feedback] == list(range(receipt.complete_visit_count))
+        assert clients[0].owner != consumer_thread
+        assert engines[0].closed
+        assert len(set(engines[0].threads)) == 1
+        assert engines[0].threads[0] not in (consumer_thread, clients[0].owner)
+    finally:
+        radio.close()
+    assert clients[0].closed
+
+
+@pytest.mark.parametrize("fault", ["overflow", "detector_failure", "feedback_rejected"])
+def test_decision_fault_preserves_every_native_visit_with_explicit_evidence(fault):
+    receipt = host_receipt(count=13)
+    radio, clients, engines = setup(
+        receipt,
+        pacing=0 if fault == "overflow" else 0.04,
+        engine_delay=0.2 if fault == "overflow" else 0,
+        engine_fail=fault == "detector_failure",
+        reject=fault == "feedback_rejected",
+        read_ahead=64,
+    )
+    radio.open()
+    try:
+        session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+        assert tuple(drain(session)) == receipt.visits
+        result = session.finish()
+        assert result.valid_sample_count == receipt.valid_sample_count
+        assert len(result.host_decisions) == receipt.complete_visit_count
+        if fault == "overflow":
+            degraded = [d for d in result.host_decisions if d.health == "queue_overflow"]
+            assert degraded and all(
+                d.numerics is None and d.feedback_outcome == "unknown" for d in degraded
+            )
+            assert [f.visit for f in clients[0].feedback] == list(
+                range(receipt.complete_visit_count)
+            )
+        elif fault == "detector_failure":
+            assert all(
+                d.health == "detector_failure" and d.feedback_outcome == "unknown"
+                for d in result.host_decisions
+            )
+        else:
+            assert result.host_decisions[0].feedback_disposition == "rejected"
+            assert all(
+                d.feedback_disposition == "not_submitted"
+                and d.feedback_error
+                and d.feedback_call_elapsed_ns is None
+                for d in result.host_decisions[1:]
+            )
+            assert clients[0].calls.count("feedback") == 1
+    finally:
+        radio.close()
+    assert engines[0].closed
+
+
+def test_cancel_is_only_a_cross_thread_signal_and_restoration_stays_owned():
+    receipt = host_receipt(count=5)
+    radio, clients, _ = setup(receipt)
+    radio.open()
+    try:
+        session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+        first = session.read_visit()
+        session.request_cancel()
+        remaining = drain(session)
+        assert (first.evidence, *remaining) == receipt.visits
+        assert session.finish().terminal.state == "cancelled"
+    finally:
+        radio.close()
+    assert clients[0].closed and "terminal" in clients[0].calls
+
+
+def test_exhausted_native_read_ahead_fails_capture_and_closes_on_its_owner():
+    receipt = host_receipt(count=6)
+    radio, clients, _ = setup(receipt, pacing=0, read_ahead=1)
+    radio.open()
+    session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+    deadline = time.monotonic() + 3
+    while not session.stopped and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert session.stopped
+    with pytest.raises(RuntimeError, match="read-ahead exhausted"):
+        drain(session)
+    with pytest.raises(RuntimeError, match="read-ahead exhausted"):
+        radio.close()
+    assert clients[0].closed
+
+
+def test_admission_failure_does_not_construct_a_worker_or_leave_a_thread():
+    receipt = host_receipt(count=2)
+    radio, _, engines = setup(receipt)
+
+    def fail(*args):
+        raise RuntimeError("synthetic admission rejection")
+
+    radio._client_factory = fail
+    radio.open()
+    with pytest.raises(RuntimeError, match="admission rejection"):
+        radio.begin_session(receipt.plan, session_id=receipt.session_id)
+    with pytest.raises(RuntimeError, match="admission rejection"):
+        radio.close()
+    assert not engines
+    assert radio.open() == radio.identity
+    radio.close()

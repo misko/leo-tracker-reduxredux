@@ -78,9 +78,14 @@ on-radio proposal, whose full six-window pipeline missed the ARM timing gate.
   worker and real feedback serialization. Preserve its exact source hashes,
   all rows, startup and steady-state timing, queue depth and memory evidence.
   Passing replay does not qualify live command/ack latency.
-- Leo's adaptive persisted contracts, writer/reader, analysis, scheduler dispatch
-  and UI still need the explicit single-RX host-feedback path. Do not enable an
-  adaptive flag on the current fixed release.
+- Leo now has application-major-2 single-RX adaptive plans/receipts, a durable
+  mode/configuration-bound intent, native single-RX manifests/readers/writers,
+  provider-major-3 mapping and an acquisition-owner producer. Component tests
+  cover both RXs, legacy storage compatibility, bounded decision overflow,
+  rejected feedback, cancellation and restoration ownership. See the
+  [capture integration checkpoint](../../reports/2026_09_13_host_adaptive_capture/README.md).
+  Application orchestration, scheduler dispatch, analysis and UI still need
+  integration. Do not enable an adaptive flag on the current fixed release.
 
 ## Critical path
 
@@ -197,4 +202,6 @@ an adaptive deployment. No firmware flash or corpus migration is planned.
 
 Done means the scheduled random-RX adaptive profile completes capture, native-10M
 analysis and web publication while satisfying these gates. The immediate next
-implementation step is Leo's versioned capture-to-publication integration.
+implementation step is connecting the new capture producer and versioned store
+through application orchestration, native analysis, scheduler dispatch and web
+publication. Runtime packaging and live qualification remain required.
