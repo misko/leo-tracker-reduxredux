@@ -1072,3 +1072,87 @@ retain the evidence. Harness, build/operator/reviewer sources and ARM journals
 are archived alongside them. Retained IQ remains local. Initial local
 file/directory naming and versioned-input path errors were corrected before
 this final harness was executed on ARM; earlier outputs remain separate.
+
+## 30-MS/s expanded scan completes supported native feedback
+
+The frozen 60→30-MS/s transition succeeds under the normal global and
+serial-bound deployment controls. Local image and rollback hashes pass,
+the updater reports completion, the written FIT is verified, the radio reboots
+and returns with the expected serial/image, and TX-safe checks pass. The
+deployment receipt is `f5ff7f99-d8f7-468f-a2f0-13152e4f81d5`.
+
+Radio 192.168.1.20 / serial 1040005e0b100007100010000bf33a5d4d then executes
+the same pinned expanded-scan binary and short profile used in the 60-MS/s
+test. Receive settings are 30,000,000 samples/s, 2.5-MHz RF bandwidth,
+manual gain 30 dB, A_BALANCED and actual LO 1,690,312,498 Hz. The configured
+receive path is calibrated before capture and a fresh epoch excludes boot
+drop counters.
+
+The first three attempts reject weak candidates. The fourth has ranking
+power 0.089748 and accepts all 126 catch-up measurements, then hands off to
+the native controller. The observer and native FPGA processing run together.
+
+| Physical result | Verified measurement |
+| --- | --- |
+| RF duration | 7.1904052 s |
+| Exported / returned coarse samples | 17,976,013 / 17,973,248 |
+| Completed scans / ranking scores | 4 / 256 |
+| Scan and ranking | 634.899–643.809 ms |
+| Successful resolution/catch-up | 865.354 ms; 126/126 accepted |
+| Native FPGA results | 1,500, representing a two-second frame budget |
+| Supported native results | 972/1,500 |
+| Native frame range / final supported frame | 1137–2636 / 2636 |
+| Longest consecutive native rejection run | 3 frames |
+| Controller termination | Complete; prediction horizon not exhausted |
+| Simultaneous coarse observer | 200/200 supported; completed |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill gap | 7.169 ms |
+
+This is a supported, bounded live native feedback result at 30 MS/s.
+It is not yet evidence of indefinite lock, native physical estimation
+accuracy, autonomous loss/reacquisition or the equivalent supported 60-MS/s
+run. No support gate or freshness limit changes.
+
+![Native and observer support during the bounded 30-MS/s run](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/support.png)
+
+The native support pattern is uneven across frame classes: frame ordinal
+modulo three classes 0, 1 and 2 support 499/500, 236/500 and 237/500 results,
+with median coherences 0.076511, 0.003201 and 0.000693 respectively. This is a
+description of the retained estimates, not a diagnosis of the physical cause.
+The three-frame observer's 200 measurements all exceed the gate. No policy
+change is inferred from this post-hoc grouping.
+
+Independent acquisition/source review checks 146,652 grid values, all
+64-candidate selection orders, 256 ranking scores, 68 resolver hypotheses,
+150 historical moment/dense fits, 200 observer fits, 30,192 scalar rotation
+checks and 71,211 overlapping retained samples. All seed copies satisfy the
+one-second source-age bound. Epoch/ownership review confirms the one native
+episode, 1,500 results, orderly completion and 64 retained native/coarse pairs.
+
+A separate dense numerical review verifies all 1,500 native estimates from
+the retained native moments and the pinned native reference basis. Two
+corrupted-estimate checks are rejected. Native raw IQ is unavailable, so
+this independently verifies estimates, rejection bits and journal ownership,
+not the FPGA's individual moment accumulations or physical timing accuracy.
+The 64 paired-window review also passes: 42 coarse and 40 native estimates
+are supported within that paired subset.
+
+All capture evidence totals 8,205,027 bytes. Before/after identity and TX-safe
+state match, configured RF settings are preserved, and temporary executable
+and evidence files are removed from the radio. It remains on
+`glrt-iq-tracking-r30000000-v1`, boot
+`f3d715f6-e2ae-4ead-bbfa-6d2da4389cb7`, with TX disabled and buffers idle.
+FIT SHA-256 is
+`c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703`;
+QSPI SHA-256 is
+`e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5`.
+No persistent tracker is installed.
+
+The [deployment result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/deployment.json),
+[operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/operator.json),
+[acquisition/observer review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/acquisition-review.json),
+[native estimate review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/native-review.json)
+and [paired-window review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/paired-review.json)
+retain the evidence. Journals, support summary, plot source and exact operator
+wrapper accompany them. The next physical target is supported 60-MS/s native
+feedback; another verified live acquisition currently owns the global lease.
