@@ -1346,3 +1346,58 @@ and [sequence review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/s
 accompany child reviews/journals, build provenance, source patch and test
 results. Supported 60-MS/s native feedback, longer supported operation,
 physical loss/reacquisition and persistent ARM operation remain unfinished.
+
+## Expanded ARM revisits also pass at 30 MS/s
+
+After the verified external lease holder exits, the normal deployment
+operator successfully transitions .20 from the frozen 60-MS/s image to
+`glrt-iq-tracking-r30000000-v1`. Receipt
+`30e87244-3c44-49e7-8b00-39492dc5ba32` records updater completion, flash hash
+verification, reboot, returned serial/image attestation and TX-safe checks.
+The earlier refused attempt dispatched no updater; this is a new admitted
+attempt, not a retry of an unresolved deployment.
+
+The exact ARM visit executable used at 60 MS/s then runs CH3 → CH4 → CH3 at
+30 MS/s, with the same exported 2.5-MS/s IQ, scan64/observer3 profile and
+unchanged scientific gates. All scheduling and LO transitions run on ARM.
+The host operator stages inputs, retrieves evidence and verifies cleanup.
+
+| Visit | Acquisition epoch | RF seconds | Scans | Accepted startup measurements |
+| --- | ---: | ---: | ---: | ---: |
+| CH3 | 1 | 7.3935652 | 6 | 0/48 |
+| CH4 | 2 | 7.4001608 | 6 | 0/48 |
+| CH3 revisit | 3 | 7.4591948 | 6 | 0/48 |
+
+The sequence completes with 22.2529208 seconds of received data and zero
+active CDC/pacer drops. Independent review checks 659,934 coarse-grid
+values, 1152 ranking scores, 306 resolver hypotheses and 144 moment/dense
+fits. All retained source/epoch associations and original seed-age checks
+pass. Scan plus ranking takes 635.822–652.684 ms; worker processing takes
+584.505–595.601 ms. Maximum refill gap is 7.820 ms. Four deliberately
+corrupted transition associations are rejected.
+
+There is no handoff or native execution in this run. The highest selected
+pilot ranking power is 0.004713 and the highest historical coherence is
+0.004178. The earlier supported two-second 30-MS/s native run remains valid,
+but these recent weak captures at both rates do not reproduce it. Sequential
+measurements do not establish a causal sample-rate comparison, and successful
+revisit execution does not establish physical tracking-loss/reacquisition.
+
+Before/after identity and TX-safe state agree, and all 8,893,716 artifact
+bytes are retrieved before temporary files are removed. Radio .20 now
+remains on the 30-MS/s image, boot
+`7c103cbd-d589-4ed2-aeea-da2fce8f5a80`, with LO 1,690,312,498 Hz, RF bandwidth
+2.5 MHz, manual gain 30 dB, buffers idle and TX disabled. FIT SHA-256 is
+`c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703`.
+No persistent tracker is installed. Supported 60-MS/s native feedback,
+repeatable longer supported tracking and physical loss/reacquisition remain
+unfinished; this result closes the pending physical expanded-revisit check
+at 30 MS/s.
+
+The [deployment result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/deployment.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/operator.json),
+[result summary](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/result-summary.json)
+and [sequence review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/independent-sequence-review.json)
+retain the evidence. Child reviews and journals accompany them; executable
+build, source patch and component tests are retained with the preceding
+60-MS/s result.
