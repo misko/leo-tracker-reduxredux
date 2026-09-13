@@ -1,0 +1,5722 @@
+{
+  "new_rf_samples": 0,
+  "receiver_time": "frozen",
+  "acquisition_qualified": false,
+  "compile_command": [
+    "cc",
+    "-std=c99",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-pthread",
+    "-I",
+    "/srv/bulk/leo/glrt-deployment-20260909/fftw-host-v1/install/include",
+    "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/expanded_worker_bench.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_cpu_coarse.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_cpu_seed.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_worker.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_live_bootstrap.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_iq.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_seed.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_resolver.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_iq_owner.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_recent_iq.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_bootstrap.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_native_trend.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_native_schedule.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_schedule.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_native_solver.c",
+    "-L",
+    "/srv/bulk/leo/glrt-deployment-20260909/fftw-host-v1/install/lib",
+    "-Wl,-rpath,/srv/bulk/leo/glrt-deployment-20260909/fftw-host-v1/install/lib",
+    "-lfftw3",
+    "-lm",
+    "-o",
+    "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/expanded-worker-v1/bench"
+  ],
+  "ranking_sha256": "e15d78ee4b7334cd2bf6ee9c3864855ea660451a30c5c17e0f059b19b79a2118",
+  "binary_sha256": "54608dd6d67d4e4f371090aee0ebbbc832bf1d450e9af468f14dde086bf0915c",
+  "runner_sha256": "553e5a07b4081054a959f19bb7946a8f45ae7aeeb60dfda24177fb84b6bff0c4",
+  "bench_source_sha256": "cbcc7d563422b441edc808c0e8d574767767003586d4a775f823e584184ccab2",
+  "references_sha256": "78b50e1aea5c350889b0798fc691491299925932e496a918cd5fbd3b9bc4faf2",
+  "production_source_sha256": {
+    "glrt_cpu_coarse.c": "432cba4c40b03e4fdd42b7612c4be9e659fba4b72b59a0e2dbd83ba2e8cf3c8a",
+    "glrt_cpu_seed.c": "b05e6e7f7d511024724815972c10ac5dd9abbf1382d4dc01b9c84bd8f9a76dd9",
+    "glrt_tracking_worker.c": "d6e1443e650302ea2daff80883de41bff335c1efbd2bd6fac5f0e6e66e39a762",
+    "glrt_tracking_live_bootstrap.c": "4ae0f5dcfc9a1c8af38c98936f96b2d5e4063311ad9b6e765a348815a6d7d1f2",
+    "glrt_tracking_iq.c": "ba13333be6c82f779e85c49fb2e8807f2fd96859221db69fb16399e621c50373",
+    "glrt_tracking_seed.c": "1ccb7c5bafcbbb0beea0c425b6d271d607c5f0ed5f04ed3a134b794aa58f4bd1",
+    "glrt_tracking_resolver.c": "346a40bc7888227c3d5d20f7a0f21f6b20ec4673050c9925628f4642fc325f24",
+    "glrt_tracking_iq_owner.c": "70adae706ab0cdc0e0e0aa6d2d952b6c6233a6973a7bf803f76044bef1e73378",
+    "glrt_tracking_recent_iq.c": "10469858350d20e428858909c5d2831f52f85b37565f225dfd1384a0037e4cce",
+    "glrt_tracking_bootstrap.c": "bb81141a388e4ca5e3401cb8d375b3615ddb9cfa27478add19be7fef020acbc8",
+    "glrt_native_trend.c": "e25ba2452f5a06d98238e985b6140c7628ee2e48b0ff1e8f130da78aa4fa8c60",
+    "glrt_native_schedule.c": "19fb8397898053345c637352ce1381aad93176a2ec6b8c7c6656401b25cb7b1d",
+    "glrt_tracking_schedule.c": "8745c2cf249e21c0af7cc4827a0277c468555f84d339cf154ccde87b8e02aaca",
+    "glrt_native_solver.c": "85e7601311dc5293617940701c5ea015bc6d9490d6941530b8a58534b89a967e",
+    "glrt_cpu_tracking_bench.c": "623866fe5aefe09ced8227465244c4302cb43fbe2801a48e62def75c6fd4e256"
+  },
+  "cases": [
+    {
+      "label": "positive",
+      "number": 0,
+      "input_sha256": "616c8e659421a14905b00bf9ce3fca53f7f9b54098e062de79276e755c134b12",
+      "runs": {
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": 1,
+            "retained_past": 15,
+            "supported_history": 15,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 15,
+          "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "3a4f919354a1aaade396013d546c0125105993e1194d2b767b6a81ed767532e7"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 1,
+      "input_sha256": "fecca620518b6b31e252907d5409445cc2d396a032232fcccdfb3e798c4638a5",
+      "runs": {
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a8edc63bb485b56adfc029194ccf31e41a76a3da6a9d81b9ab60964aa41f3688"
+        },
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "f1369a495433209c78c851df455af073852e9b23ed38e22a39b72c14ecd2441c"
+        },
+        "13": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "c7bc2e6dfb333e658233a1ae0793fb0787ad14f1012b4d8844e2343882be365d"
+        },
+        "15": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "2312ff81707dfbfbb5be75dc50583bfedaf111d1fe73e91c3f32504f7f83c057"
+        },
+        "50": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "c34eb71c843e19cc2ccf319e91cdc63bd3c7a3d7871412aaac5daecf31272daf"
+        },
+        "165": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 3,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 3,
+          "journal_sha256": "d6c5f1a9abec5a9801692b69b4c6e8a2060c9f8c6601d56dcfe197edb33101d0"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f1369a495433209c78c851df455af073852e9b23ed38e22a39b72c14ecd2441c"
+          },
+          "four": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a8edc63bb485b56adfc029194ccf31e41a76a3da6a9d81b9ab60964aa41f3688"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 15,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "2312ff81707dfbfbb5be75dc50583bfedaf111d1fe73e91c3f32504f7f83c057"
+          },
+          "four": {
+            "winner": 13,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c7bc2e6dfb333e658233a1ae0793fb0787ad14f1012b4d8844e2343882be365d"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 15,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "2312ff81707dfbfbb5be75dc50583bfedaf111d1fe73e91c3f32504f7f83c057"
+          },
+          "four": {
+            "winner": 50,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c34eb71c843e19cc2ccf319e91cdc63bd3c7a3d7871412aaac5daecf31272daf"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 15,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "2312ff81707dfbfbb5be75dc50583bfedaf111d1fe73e91c3f32504f7f83c057"
+          },
+          "four": {
+            "winner": 50,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c34eb71c843e19cc2ccf319e91cdc63bd3c7a3d7871412aaac5daecf31272daf"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 165,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 3,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 3,
+            "journal_sha256": "d6c5f1a9abec5a9801692b69b4c6e8a2060c9f8c6601d56dcfe197edb33101d0"
+          },
+          "four": {
+            "winner": 165,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 3,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 3,
+            "journal_sha256": "d6c5f1a9abec5a9801692b69b4c6e8a2060c9f8c6601d56dcfe197edb33101d0"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 2,
+      "input_sha256": "ab8b64d9556316a1b9ac4594a56a527b7861d5090285e6ae75be7d71e6c5c49c",
+      "runs": {
+        "1": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "f63b76fec5225c1b4cf8d6b8b14bf39279cb3ef7cd28ae554cf93f3396888773"
+        },
+        "3": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "38c524c105ebb3999936f3708a91ab56caf904b8d4a1c36a8567d4f11ecc0671"
+        },
+        "16": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "4a867dbcbcd657c255a5b12d5a027a5aece6ea48f22bcfe96b8367302b1e0773"
+        },
+        "17": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "e789a935ab91aeaecd0304718b3b48f19a8fa1bf367f7309644c701cdd1e7b72"
+        },
+        "52": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "ad5efe8038d30ab472f115cb3f99ca8a79dfcfdc9052ae7a662ecbf88808bf89"
+        },
+        "66": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 4,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 4,
+          "journal_sha256": "9349118b5cb700866685cf37bc3291abe2adcb9f3a51661bc61bb5ed36a036a3"
+        },
+        "240": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "30e5a63a6fa8941ec5e86bf209349143e34fbcbd6ec5744d8ebb26838a539e34"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f63b76fec5225c1b4cf8d6b8b14bf39279cb3ef7cd28ae554cf93f3396888773"
+          },
+          "four": {
+            "winner": 3,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "38c524c105ebb3999936f3708a91ab56caf904b8d4a1c36a8567d4f11ecc0671"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 16,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "4a867dbcbcd657c255a5b12d5a027a5aece6ea48f22bcfe96b8367302b1e0773"
+          },
+          "four": {
+            "winner": 17,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "e789a935ab91aeaecd0304718b3b48f19a8fa1bf367f7309644c701cdd1e7b72"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 52,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ad5efe8038d30ab472f115cb3f99ca8a79dfcfdc9052ae7a662ecbf88808bf89"
+          },
+          "four": {
+            "winner": 17,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "e789a935ab91aeaecd0304718b3b48f19a8fa1bf367f7309644c701cdd1e7b72"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 52,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ad5efe8038d30ab472f115cb3f99ca8a79dfcfdc9052ae7a662ecbf88808bf89"
+          },
+          "four": {
+            "winner": 66,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 4,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 4,
+            "journal_sha256": "9349118b5cb700866685cf37bc3291abe2adcb9f3a51661bc61bb5ed36a036a3"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 240,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "30e5a63a6fa8941ec5e86bf209349143e34fbcbd6ec5744d8ebb26838a539e34"
+          },
+          "four": {
+            "winner": 66,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 4,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 4,
+            "journal_sha256": "9349118b5cb700866685cf37bc3291abe2adcb9f3a51661bc61bb5ed36a036a3"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 3,
+      "input_sha256": "5cf7eecbd2d23e3bf44c687b419facba9e30b61d41d1e21f3938fec878e8aa58",
+      "runs": {
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "40650056a8fbf99406f2b551d5fb0521187098c7fd38b1919a9888b203e7f54a"
+        },
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "11fbc5a83a1277146209f3ef94121f295e4225ae1fd6efe1c25e72ffc18e40c3"
+        },
+        "29": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": 1,
+            "retained_past": 15,
+            "supported_history": 15,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 15,
+          "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "40650056a8fbf99406f2b551d5fb0521187098c7fd38b1919a9888b203e7f54a"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "11fbc5a83a1277146209f3ef94121f295e4225ae1fd6efe1c25e72ffc18e40c3"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          },
+          "four": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          },
+          "four": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          },
+          "four": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          },
+          "four": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "58fe44f456d105efc7a5427bae7e80a630313be8246aa0d806eda9ea67f479bc"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 4,
+      "input_sha256": "9bd5fd0f0192a9df5f5b0809aa454710a3093beb83017ac0b9abe0ac854dd743",
+      "runs": {
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "b58667f3d361eceab320f7301e4ac8cdf47f808dbcdf23522509969b5838d2cf"
+        },
+        "6": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "0860ec7a08242319aa52f0e748bf0dec4e72ac934cc86942341e1186bb5db9fa"
+        },
+        "10": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": 1,
+            "retained_past": 15,
+            "supported_history": 15,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 15,
+          "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "0860ec7a08242319aa52f0e748bf0dec4e72ac934cc86942341e1186bb5db9fa"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b58667f3d361eceab320f7301e4ac8cdf47f808dbcdf23522509969b5838d2cf"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "aea221a56828ae25bc3ca8285b1082347aa57d4ba5019a9a267b09addaa4f889"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 5,
+      "input_sha256": "b4486dfa6a8f6046a005f6e6e62c53daa4fae3b97f2276b215b15f7b1a57c5f4",
+      "runs": {
+        "2": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "94710d81b59cc050c9412229fad33d6c73b27acdc3be15b9c8f2330cf6e51288"
+        },
+        "7": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "957da5eaa7fd590d1ae76178a4348f86cb7a0444d7f12e4467a3c64173ac7c26"
+        },
+        "29": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "f9f58e899f4e250ea0395a5c0e3f7c61f873ae89a5c5bac732ef863a3210b026"
+        },
+        "86": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a8bc47b54002df54288616d05f5f309ea70c655f1036fdc2d33ff5623014c554"
+        },
+        "89": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "1eec1436226b5fce2557f455eef37ed6d6bc1bda3b22ed32f0019009ccecbb40"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "957da5eaa7fd590d1ae76178a4348f86cb7a0444d7f12e4467a3c64173ac7c26"
+          },
+          "four": {
+            "winner": 2,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "94710d81b59cc050c9412229fad33d6c73b27acdc3be15b9c8f2330cf6e51288"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f9f58e899f4e250ea0395a5c0e3f7c61f873ae89a5c5bac732ef863a3210b026"
+          },
+          "four": {
+            "winner": 2,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "94710d81b59cc050c9412229fad33d6c73b27acdc3be15b9c8f2330cf6e51288"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 29,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f9f58e899f4e250ea0395a5c0e3f7c61f873ae89a5c5bac732ef863a3210b026"
+          },
+          "four": {
+            "winner": 2,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "94710d81b59cc050c9412229fad33d6c73b27acdc3be15b9c8f2330cf6e51288"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 89,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1eec1436226b5fce2557f455eef37ed6d6bc1bda3b22ed32f0019009ccecbb40"
+          },
+          "four": {
+            "winner": 86,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a8bc47b54002df54288616d05f5f309ea70c655f1036fdc2d33ff5623014c554"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 89,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1eec1436226b5fce2557f455eef37ed6d6bc1bda3b22ed32f0019009ccecbb40"
+          },
+          "four": {
+            "winner": 86,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a8bc47b54002df54288616d05f5f309ea70c655f1036fdc2d33ff5623014c554"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 6,
+      "input_sha256": "ddafde7e26a0e481018ebcdb2761472db879cf64c04114164e5fa0e9011e8911",
+      "runs": {
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "28170321288d9d02979afefe7465bbb0b6cd309ae0110e36d55a216ea6d825af"
+        },
+        "7": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "811d467e7a44e4877ec2285168c37f87399e85ee7476fc10aea27d34ae8eae2c"
+        },
+        "26": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "c672cf22c677d529fd89ef04c06a3c57bdfad0135fb6d3ccea863bc0f35de53e"
+        },
+        "30": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "d9019d2df454da5fdf1c275ed6ea5bbfe6ebbbfb8ac2733c863e9046f7c8a3a8"
+        },
+        "33": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "ab41d0f49397d2210f27e318d832ee2dfc5561934ef0f845161087b2d8990f4b"
+        },
+        "158": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "9921adf4e6f982e9911151aab25293f71550fbd24138fba571cce237412c7afd"
+        },
+        "231": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "829c8873563ca9a536cac33e46cce1bcae341bb31091dfb4b3c1a59a5ddaf031"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "811d467e7a44e4877ec2285168c37f87399e85ee7476fc10aea27d34ae8eae2c"
+          },
+          "four": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "28170321288d9d02979afefe7465bbb0b6cd309ae0110e36d55a216ea6d825af"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 30,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d9019d2df454da5fdf1c275ed6ea5bbfe6ebbbfb8ac2733c863e9046f7c8a3a8"
+          },
+          "four": {
+            "winner": 26,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c672cf22c677d529fd89ef04c06a3c57bdfad0135fb6d3ccea863bc0f35de53e"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 30,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d9019d2df454da5fdf1c275ed6ea5bbfe6ebbbfb8ac2733c863e9046f7c8a3a8"
+          },
+          "four": {
+            "winner": 33,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ab41d0f49397d2210f27e318d832ee2dfc5561934ef0f845161087b2d8990f4b"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 30,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d9019d2df454da5fdf1c275ed6ea5bbfe6ebbbfb8ac2733c863e9046f7c8a3a8"
+          },
+          "four": {
+            "winner": 33,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ab41d0f49397d2210f27e318d832ee2dfc5561934ef0f845161087b2d8990f4b"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 231,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "829c8873563ca9a536cac33e46cce1bcae341bb31091dfb4b3c1a59a5ddaf031"
+          },
+          "four": {
+            "winner": 158,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9921adf4e6f982e9911151aab25293f71550fbd24138fba571cce237412c7afd"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 7,
+      "input_sha256": "efe625cda8b4510cdb8660d9322df07d63d69310359c21d43d59ce34e16471e7",
+      "runs": {
+        "6": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+        },
+        "109": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "be870c56640305a4bc7eeddddee6d36e59d710308848e1a3c160f853007a835a"
+        },
+        "224": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "acafc77955103f720ff19a05643bb6de401dc0fcea03729111489a88800b57ff"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          },
+          "four": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          },
+          "four": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          },
+          "four": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          },
+          "four": {
+            "winner": 109,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "be870c56640305a4bc7eeddddee6d36e59d710308848e1a3c160f853007a835a"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a627e0da1a0daacdcac4fe1c5e8b47c34993c5aa7eed43e4acf46b7a3623df23"
+          },
+          "four": {
+            "winner": 224,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "acafc77955103f720ff19a05643bb6de401dc0fcea03729111489a88800b57ff"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 8,
+      "input_sha256": "3a8383826e8ee5ccf39bc08a65e6c0a587a345f6489aad88c90f3dac328492ca",
+      "runs": {
+        "3": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "e8cdf7e6fc2347323c44f606b740d8d1ba52c63b503d1ee5f52fa26da8015ae6"
+        },
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "076b9918700e75403dbf0867107c00a430247c3e85b5074b9520b4f287e00bf0"
+        },
+        "9": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "b4d49b967f270ee240484224415cb1c8886e78cd23e00243d50e0646d4e9bf34"
+        },
+        "46": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "6be4f18edb9e140d5464415018f208629525a85c2cd9cb94cbdb8c12fc865c14"
+        },
+        "53": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "98216d6d28a3cd629f30af5235c5238429e2b1b0515a9e066a897982c2cc0569"
+        },
+        "94": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 1,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 1,
+          "journal_sha256": "ca9e2ab8d82cf4e959658425fabc9ac99a68b7b1b19cc5147fd538cce0b22ff8"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 3,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "e8cdf7e6fc2347323c44f606b740d8d1ba52c63b503d1ee5f52fa26da8015ae6"
+          },
+          "four": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "076b9918700e75403dbf0867107c00a430247c3e85b5074b9520b4f287e00bf0"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 9,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b4d49b967f270ee240484224415cb1c8886e78cd23e00243d50e0646d4e9bf34"
+          },
+          "four": {
+            "winner": 9,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b4d49b967f270ee240484224415cb1c8886e78cd23e00243d50e0646d4e9bf34"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 46,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6be4f18edb9e140d5464415018f208629525a85c2cd9cb94cbdb8c12fc865c14"
+          },
+          "four": {
+            "winner": 53,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "98216d6d28a3cd629f30af5235c5238429e2b1b0515a9e066a897982c2cc0569"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 94,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 1,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 1,
+            "journal_sha256": "ca9e2ab8d82cf4e959658425fabc9ac99a68b7b1b19cc5147fd538cce0b22ff8"
+          },
+          "four": {
+            "winner": 94,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 1,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 1,
+            "journal_sha256": "ca9e2ab8d82cf4e959658425fabc9ac99a68b7b1b19cc5147fd538cce0b22ff8"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 94,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 1,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 1,
+            "journal_sha256": "ca9e2ab8d82cf4e959658425fabc9ac99a68b7b1b19cc5147fd538cce0b22ff8"
+          },
+          "four": {
+            "winner": 94,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 1,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 1,
+            "journal_sha256": "ca9e2ab8d82cf4e959658425fabc9ac99a68b7b1b19cc5147fd538cce0b22ff8"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 9,
+      "input_sha256": "c2e7ab7335906c2eb245f3c922b6dcea569a3a838c5db9a0b971d936ad57e27e",
+      "runs": {
+        "3": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "28b36fa797f1756432b6a5ab9550650be8e8ec9a7e2e27fda8ee490fa6d0b916"
+        },
+        "7": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "64950a834cb9d5f384b18fa067df6dd4c458b901e56703b8535546436e940d76"
+        },
+        "60": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a05d72246ccccd8ace8495047cb18755dde3bd01e860c908838726e8412fbaa3"
+        },
+        "74": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a692d9dec893802de43696ce3a8631e0fcd67255c7dc3ad3bac893b210019e57"
+        },
+        "183": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 1,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 1,
+          "journal_sha256": "37db075470352961ad5d2b677742f79dbac8ca119a1aa126a6fc63bd373c7fe4"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "64950a834cb9d5f384b18fa067df6dd4c458b901e56703b8535546436e940d76"
+          },
+          "four": {
+            "winner": 3,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "28b36fa797f1756432b6a5ab9550650be8e8ec9a7e2e27fda8ee490fa6d0b916"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "64950a834cb9d5f384b18fa067df6dd4c458b901e56703b8535546436e940d76"
+          },
+          "four": {
+            "winner": 3,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "28b36fa797f1756432b6a5ab9550650be8e8ec9a7e2e27fda8ee490fa6d0b916"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 60,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a05d72246ccccd8ace8495047cb18755dde3bd01e860c908838726e8412fbaa3"
+          },
+          "four": {
+            "winner": 3,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "28b36fa797f1756432b6a5ab9550650be8e8ec9a7e2e27fda8ee490fa6d0b916"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 60,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a05d72246ccccd8ace8495047cb18755dde3bd01e860c908838726e8412fbaa3"
+          },
+          "four": {
+            "winner": 74,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a692d9dec893802de43696ce3a8631e0fcd67255c7dc3ad3bac893b210019e57"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 183,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 1,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 1,
+            "journal_sha256": "37db075470352961ad5d2b677742f79dbac8ca119a1aa126a6fc63bd373c7fe4"
+          },
+          "four": {
+            "winner": 183,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 1,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 1,
+            "journal_sha256": "37db075470352961ad5d2b677742f79dbac8ca119a1aa126a6fc63bd373c7fe4"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 10,
+      "input_sha256": "8416d716386b51b448227cfd340f1897a6aa5350efadc35f984d31287bad179a",
+      "runs": {
+        "1": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "f529f81acff5cd3b520fe1ea1427fca0c466bbf25cd3610499eb77dd9742f861"
+        },
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "fdcb8b960a8ab1815727702751378001a3495ad4c65a8c9e0b026eedc9134d84"
+        },
+        "26": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "686d8c9e1a67c8a8b97bb47e51e419bdf957976b43baa69f8775cfb3598b128c"
+        },
+        "30": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "23877f1c48e7bba707747b371f4616ae816aecf9e1117d8f513ca27f9626e24c"
+        },
+        "38": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "9e9738f0fe31e06f04c33d23eae50655c994f46c87dc15f8afe3fb408c1eefdf"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "fdcb8b960a8ab1815727702751378001a3495ad4c65a8c9e0b026eedc9134d84"
+          },
+          "four": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f529f81acff5cd3b520fe1ea1427fca0c466bbf25cd3610499eb77dd9742f861"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 26,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "686d8c9e1a67c8a8b97bb47e51e419bdf957976b43baa69f8775cfb3598b128c"
+          },
+          "four": {
+            "winner": 30,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "23877f1c48e7bba707747b371f4616ae816aecf9e1117d8f513ca27f9626e24c"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 38,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9e9738f0fe31e06f04c33d23eae50655c994f46c87dc15f8afe3fb408c1eefdf"
+          },
+          "four": {
+            "winner": 38,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9e9738f0fe31e06f04c33d23eae50655c994f46c87dc15f8afe3fb408c1eefdf"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 38,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9e9738f0fe31e06f04c33d23eae50655c994f46c87dc15f8afe3fb408c1eefdf"
+          },
+          "four": {
+            "winner": 38,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9e9738f0fe31e06f04c33d23eae50655c994f46c87dc15f8afe3fb408c1eefdf"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 38,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9e9738f0fe31e06f04c33d23eae50655c994f46c87dc15f8afe3fb408c1eefdf"
+          },
+          "four": {
+            "winner": 38,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9e9738f0fe31e06f04c33d23eae50655c994f46c87dc15f8afe3fb408c1eefdf"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 11,
+      "input_sha256": "d1efab8af06af854bd4533984f96e359719a122cfe03afe8b398ddcd967bd46b",
+      "runs": {
+        "7": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "0214326b35393d437457fdc46cc1edb3b6a9cd64dbe48d3618db255aeed90d50"
+        },
+        "10": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 3,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 3,
+          "journal_sha256": "e33a92b375a8eea7e71ba2a9f0c28c31f9a24cd79d433cd7aca8fe6025afa1bd"
+        },
+        "25": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "b5c01ad42dae1eeb318242bb33b8f054acb85347f6ccfb9fd70f4a6da5fb6d06"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "0214326b35393d437457fdc46cc1edb3b6a9cd64dbe48d3618db255aeed90d50"
+          },
+          "four": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "0214326b35393d437457fdc46cc1edb3b6a9cd64dbe48d3618db255aeed90d50"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b5c01ad42dae1eeb318242bb33b8f054acb85347f6ccfb9fd70f4a6da5fb6d06"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 3,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 3,
+            "journal_sha256": "e33a92b375a8eea7e71ba2a9f0c28c31f9a24cd79d433cd7aca8fe6025afa1bd"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b5c01ad42dae1eeb318242bb33b8f054acb85347f6ccfb9fd70f4a6da5fb6d06"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 3,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 3,
+            "journal_sha256": "e33a92b375a8eea7e71ba2a9f0c28c31f9a24cd79d433cd7aca8fe6025afa1bd"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b5c01ad42dae1eeb318242bb33b8f054acb85347f6ccfb9fd70f4a6da5fb6d06"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 3,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 3,
+            "journal_sha256": "e33a92b375a8eea7e71ba2a9f0c28c31f9a24cd79d433cd7aca8fe6025afa1bd"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b5c01ad42dae1eeb318242bb33b8f054acb85347f6ccfb9fd70f4a6da5fb6d06"
+          },
+          "four": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 3,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 3,
+            "journal_sha256": "e33a92b375a8eea7e71ba2a9f0c28c31f9a24cd79d433cd7aca8fe6025afa1bd"
+          }
+        }
+      ]
+    },
+    {
+      "label": "positive",
+      "number": 12,
+      "input_sha256": "caa93634915c162736e4f2e2c193b7b0a14bfc9168088416ec2d9549b013d8b8",
+      "runs": {
+        "2": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "1959ae97e586ee234e561a3a3c7730d2e710896029322ee58b387e402c12bd1c"
+        },
+        "8": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "627fb2a57140f539ce0695542c70b9549715a1a8d4e57f0d35da6927ccd3d68d"
+        },
+        "19": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "9499efbe459cd18efcb428bcd7ac16ef4e1d0e56a2a2a245d6691cfa6e6fb031"
+        },
+        "35": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": 1,
+            "retained_past": 15,
+            "supported_history": 15,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 15,
+          "journal_sha256": "39c144b0ad8005d61b2aed08d8e47d5d3da5be6d6ee16f4ce4f6edf454af66aa"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 8,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "627fb2a57140f539ce0695542c70b9549715a1a8d4e57f0d35da6927ccd3d68d"
+          },
+          "four": {
+            "winner": 2,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1959ae97e586ee234e561a3a3c7730d2e710896029322ee58b387e402c12bd1c"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 19,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9499efbe459cd18efcb428bcd7ac16ef4e1d0e56a2a2a245d6691cfa6e6fb031"
+          },
+          "four": {
+            "winner": 2,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1959ae97e586ee234e561a3a3c7730d2e710896029322ee58b387e402c12bd1c"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 35,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "39c144b0ad8005d61b2aed08d8e47d5d3da5be6d6ee16f4ce4f6edf454af66aa"
+          },
+          "four": {
+            "winner": 35,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "39c144b0ad8005d61b2aed08d8e47d5d3da5be6d6ee16f4ce4f6edf454af66aa"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 35,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "39c144b0ad8005d61b2aed08d8e47d5d3da5be6d6ee16f4ce4f6edf454af66aa"
+          },
+          "four": {
+            "winner": 35,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "39c144b0ad8005d61b2aed08d8e47d5d3da5be6d6ee16f4ce4f6edf454af66aa"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 35,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "39c144b0ad8005d61b2aed08d8e47d5d3da5be6d6ee16f4ce4f6edf454af66aa"
+          },
+          "four": {
+            "winner": 35,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": 1,
+              "retained_past": 15,
+              "supported_history": 15,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 15,
+            "journal_sha256": "39c144b0ad8005d61b2aed08d8e47d5d3da5be6d6ee16f4ce4f6edf454af66aa"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 0,
+      "input_sha256": "503682c211722c5808298513d4564aa91e42872a71e8594839b1d371e527d382",
+      "runs": {
+        "1": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "989ec0f10d4b6ae72dda03e599c267ab120f0e2ff4fe112cdc84d2e71eda1d2e"
+        },
+        "8": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "af3749c932a3eda472d1a11746544b31b81a613073c2319b13a3de8b19aaedeb"
+        },
+        "25": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "1f4b2a41450ce1989a1cdd60fc782d25f96b5efaa2401afa3dd8cc51d6cb499e"
+        },
+        "31": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "63b69bf4cb631a9585cc9a1157270abf4102a83d52978ad376d981da83a8ed61"
+        },
+        "41": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "6065bfd56e8dd590e6fd3f6ed82741d470e5cbb0140a7e30b26807448d96ac9c"
+        },
+        "146": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "348486f66d70186ec7ec8f80379e52dc18c5491bb1267395da4452a585f2fbfc"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "989ec0f10d4b6ae72dda03e599c267ab120f0e2ff4fe112cdc84d2e71eda1d2e"
+          },
+          "four": {
+            "winner": 8,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "af3749c932a3eda472d1a11746544b31b81a613073c2319b13a3de8b19aaedeb"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 31,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "63b69bf4cb631a9585cc9a1157270abf4102a83d52978ad376d981da83a8ed61"
+          },
+          "four": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1f4b2a41450ce1989a1cdd60fc782d25f96b5efaa2401afa3dd8cc51d6cb499e"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 31,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "63b69bf4cb631a9585cc9a1157270abf4102a83d52978ad376d981da83a8ed61"
+          },
+          "four": {
+            "winner": 41,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6065bfd56e8dd590e6fd3f6ed82741d470e5cbb0140a7e30b26807448d96ac9c"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 31,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "63b69bf4cb631a9585cc9a1157270abf4102a83d52978ad376d981da83a8ed61"
+          },
+          "four": {
+            "winner": 41,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6065bfd56e8dd590e6fd3f6ed82741d470e5cbb0140a7e30b26807448d96ac9c"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 31,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "63b69bf4cb631a9585cc9a1157270abf4102a83d52978ad376d981da83a8ed61"
+          },
+          "four": {
+            "winner": 146,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "348486f66d70186ec7ec8f80379e52dc18c5491bb1267395da4452a585f2fbfc"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 1,
+      "input_sha256": "a41ea63b68734715ceb48822c3fd604548df672cb735fe560310170dc793a130",
+      "runs": {
+        "1": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "686e602ec8877b8e33c6eb59038010f2dd5330ff0aa7ab2998569ce15f395638"
+        },
+        "30": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "f3ae0d70658f0c569fbdc6db7bf96dd67e98d257ff7d748d7304a0bff4d01aeb"
+        },
+        "60": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "1312dd8b4e3cc67978f24b035482e30a6f2d02a5e57a867123b4d11155c05f4c"
+        },
+        "117": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a8a6f9a3cf8ba1a6c4245af5deceb2bafd0945d7418e0d967b970b9ac7675be4"
+        },
+        "134": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "83c334289e562af4e96afa72c2aa6f7e5e844293ee62cb3536af19ee502f96ab"
+        },
+        "152": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "95dfd1476658fadf9fabe3a9a25c9f7d7fb6b7f21f00000b5244358a208f7bdc"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "686e602ec8877b8e33c6eb59038010f2dd5330ff0aa7ab2998569ce15f395638"
+          },
+          "four": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "686e602ec8877b8e33c6eb59038010f2dd5330ff0aa7ab2998569ce15f395638"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 30,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f3ae0d70658f0c569fbdc6db7bf96dd67e98d257ff7d748d7304a0bff4d01aeb"
+          },
+          "four": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "686e602ec8877b8e33c6eb59038010f2dd5330ff0aa7ab2998569ce15f395638"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 30,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f3ae0d70658f0c569fbdc6db7bf96dd67e98d257ff7d748d7304a0bff4d01aeb"
+          },
+          "four": {
+            "winner": 60,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1312dd8b4e3cc67978f24b035482e30a6f2d02a5e57a867123b4d11155c05f4c"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 30,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "f3ae0d70658f0c569fbdc6db7bf96dd67e98d257ff7d748d7304a0bff4d01aeb"
+          },
+          "four": {
+            "winner": 117,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a8a6f9a3cf8ba1a6c4245af5deceb2bafd0945d7418e0d967b970b9ac7675be4"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 152,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "95dfd1476658fadf9fabe3a9a25c9f7d7fb6b7f21f00000b5244358a208f7bdc"
+          },
+          "four": {
+            "winner": 134,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "83c334289e562af4e96afa72c2aa6f7e5e844293ee62cb3536af19ee502f96ab"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 2,
+      "input_sha256": "e7d1e7b74d2c7ff30b3cac56b038a34b044d9f12f87665beedc9176ab505ab66",
+      "runs": {
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "81b04beffde49ca5f72b587981e969cd3d19e4f4b77e686a1e24db6db07ff4d6"
+        },
+        "7": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "dadefed0daffde56195c4fdc0f225c001e53cabd43c1244691ab892d0ead42bb"
+        },
+        "20": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "7e464943797bc40befc3932e82fe36cb4c5ccbfc4bbca04e3c6861f23adefce9"
+        },
+        "62": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "d469ffce94bbd02b97d24677c1b780933acbfa3c8270faffbbb256dc41d95794"
+        },
+        "83": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "ae8c5390e12538c64bf422b0ff571f3ac26315424c304bd743e8bafdf186aebf"
+        },
+        "85": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "6ff7bc9be8edcc996126c80c85e3343f2025314255d00f2e4f9cac387e81a77a"
+        },
+        "190": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "ad8ba84044559381b43d6b81fb7dd60434fec7134ed0bfb662feceae06adeb89"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "dadefed0daffde56195c4fdc0f225c001e53cabd43c1244691ab892d0ead42bb"
+          },
+          "four": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "81b04beffde49ca5f72b587981e969cd3d19e4f4b77e686a1e24db6db07ff4d6"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "dadefed0daffde56195c4fdc0f225c001e53cabd43c1244691ab892d0ead42bb"
+          },
+          "four": {
+            "winner": 20,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "7e464943797bc40befc3932e82fe36cb4c5ccbfc4bbca04e3c6861f23adefce9"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 62,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d469ffce94bbd02b97d24677c1b780933acbfa3c8270faffbbb256dc41d95794"
+          },
+          "four": {
+            "winner": 20,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "7e464943797bc40befc3932e82fe36cb4c5ccbfc4bbca04e3c6861f23adefce9"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 85,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6ff7bc9be8edcc996126c80c85e3343f2025314255d00f2e4f9cac387e81a77a"
+          },
+          "four": {
+            "winner": 83,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ae8c5390e12538c64bf422b0ff571f3ac26315424c304bd743e8bafdf186aebf"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 190,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ad8ba84044559381b43d6b81fb7dd60434fec7134ed0bfb662feceae06adeb89"
+          },
+          "four": {
+            "winner": 83,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ae8c5390e12538c64bf422b0ff571f3ac26315424c304bd743e8bafdf186aebf"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 3,
+      "input_sha256": "421bc6db293cc8369899ce017e5806af6d1004e8d62d58686f70b1e287068051",
+      "runs": {
+        "6": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "6114314a9a6a6dd4252ac7842695fd983d37b2b2d6a48cc57e63550e388a8b16"
+        },
+        "8": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "ed932f846ed7f64ea478b5f7231cb7ab8c52aa43e6a1a5b7c9682308afa6b71c"
+        },
+        "10": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a04b895566997ac193c468a418613c1a20874980741835a39e2632e82d61d893"
+        },
+        "11": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "0dd1aedd36c65a57e3ac7e2045f6392d2709fe89b7b4e447a1d810058b99b5f5"
+        },
+        "104": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "8938dae343bce533882f485b07860be694488bc780b8aa378cd0770239c4c04a"
+        },
+        "193": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "fc231bc1c1144ef97e3e86ec28b19f38e2ac552a09c96d58dc90105cb8920c70"
+        },
+        "247": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "ca6338192f6478d026a3705a7ecab33826057288f186514d620e9b63948c8dca"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6114314a9a6a6dd4252ac7842695fd983d37b2b2d6a48cc57e63550e388a8b16"
+          },
+          "four": {
+            "winner": 8,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ed932f846ed7f64ea478b5f7231cb7ab8c52aa43e6a1a5b7c9682308afa6b71c"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a04b895566997ac193c468a418613c1a20874980741835a39e2632e82d61d893"
+          },
+          "four": {
+            "winner": 11,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "0dd1aedd36c65a57e3ac7e2045f6392d2709fe89b7b4e447a1d810058b99b5f5"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a04b895566997ac193c468a418613c1a20874980741835a39e2632e82d61d893"
+          },
+          "four": {
+            "winner": 11,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "0dd1aedd36c65a57e3ac7e2045f6392d2709fe89b7b4e447a1d810058b99b5f5"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 10,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a04b895566997ac193c468a418613c1a20874980741835a39e2632e82d61d893"
+          },
+          "four": {
+            "winner": 104,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "8938dae343bce533882f485b07860be694488bc780b8aa378cd0770239c4c04a"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 193,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "fc231bc1c1144ef97e3e86ec28b19f38e2ac552a09c96d58dc90105cb8920c70"
+          },
+          "four": {
+            "winner": 247,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ca6338192f6478d026a3705a7ecab33826057288f186514d620e9b63948c8dca"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 4,
+      "input_sha256": "f475255a4cbd30d9cffff255ec7410c59b1b7e9933403cb3edc664a5736da934",
+      "runs": {
+        "1": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "45ef9838e0db060d602cac0aa192fcef9a7dc42032fb5d9172daadf4bfc0d326"
+        },
+        "7": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "e7e6eeff8a0466c20085a63274756acb32fe85f945eb7fb2226dfe3e805f132d"
+        },
+        "25": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "32f11b491c70832b40f0a710c0634e71f535c1e074c8571610a6bcf115b79dc9"
+        },
+        "26": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "43993c37c1fdfc91cdbb83161d146eb901b3df1920467b9d9199536cb7663424"
+        },
+        "81": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "dcf700f1eeb337adcb2671b22054af56b890e56b73e430ee680f80839cc8b7ed"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "e7e6eeff8a0466c20085a63274756acb32fe85f945eb7fb2226dfe3e805f132d"
+          },
+          "four": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "45ef9838e0db060d602cac0aa192fcef9a7dc42032fb5d9172daadf4bfc0d326"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "32f11b491c70832b40f0a710c0634e71f535c1e074c8571610a6bcf115b79dc9"
+          },
+          "four": {
+            "winner": 26,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "43993c37c1fdfc91cdbb83161d146eb901b3df1920467b9d9199536cb7663424"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "32f11b491c70832b40f0a710c0634e71f535c1e074c8571610a6bcf115b79dc9"
+          },
+          "four": {
+            "winner": 26,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "43993c37c1fdfc91cdbb83161d146eb901b3df1920467b9d9199536cb7663424"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 81,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "dcf700f1eeb337adcb2671b22054af56b890e56b73e430ee680f80839cc8b7ed"
+          },
+          "four": {
+            "winner": 26,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "43993c37c1fdfc91cdbb83161d146eb901b3df1920467b9d9199536cb7663424"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 81,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "dcf700f1eeb337adcb2671b22054af56b890e56b73e430ee680f80839cc8b7ed"
+          },
+          "four": {
+            "winner": 26,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "43993c37c1fdfc91cdbb83161d146eb901b3df1920467b9d9199536cb7663424"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 5,
+      "input_sha256": "671cb4ac55a086411da4c16512127ed99e531886e46d17fe4f964c6869cb01d4",
+      "runs": {
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "dae9e08555a1b36e89ae5ab602cde5a390ed81014febeabb171c0abb1d7c1c93"
+        },
+        "7": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "36848245df10eb0235bbfee708b7e6f1e66816c29f84f537562ee3fbb0cbb405"
+        },
+        "13": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "e4a5dd6c1edcd253917654321cb67254fca7deb2c1a6dd93582cbce3a47f04e5"
+        },
+        "20": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "99e2a7f910c55ceb04dd4655c642e6e5ebbac6563e600b99b195b901499cf339"
+        },
+        "54": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "3968bc8a4feabe3ea984a7d5e3a3dd42984ce9c9c3031a68f9dfd87631414129"
+        },
+        "79": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "8fc90fd33a68e5cd03a2e0e6427584cea74dd1b39a0ca4e7e5085865aa90f701"
+        },
+        "142": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "d50d85ce000bf7fa07f62e07f7a64c15643b10b11b177ed817f85a6fa80a83bf"
+        },
+        "218": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "ea9ddb4ec7791e5463fe3a79f1e523fe2773937279cd63f709cfa91cf21a02d0"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 7,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "36848245df10eb0235bbfee708b7e6f1e66816c29f84f537562ee3fbb0cbb405"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "dae9e08555a1b36e89ae5ab602cde5a390ed81014febeabb171c0abb1d7c1c93"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 13,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "e4a5dd6c1edcd253917654321cb67254fca7deb2c1a6dd93582cbce3a47f04e5"
+          },
+          "four": {
+            "winner": 20,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "99e2a7f910c55ceb04dd4655c642e6e5ebbac6563e600b99b195b901499cf339"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 54,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "3968bc8a4feabe3ea984a7d5e3a3dd42984ce9c9c3031a68f9dfd87631414129"
+          },
+          "four": {
+            "winner": 20,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "99e2a7f910c55ceb04dd4655c642e6e5ebbac6563e600b99b195b901499cf339"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 79,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "8fc90fd33a68e5cd03a2e0e6427584cea74dd1b39a0ca4e7e5085865aa90f701"
+          },
+          "four": {
+            "winner": 20,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "99e2a7f910c55ceb04dd4655c642e6e5ebbac6563e600b99b195b901499cf339"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 218,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "ea9ddb4ec7791e5463fe3a79f1e523fe2773937279cd63f709cfa91cf21a02d0"
+          },
+          "four": {
+            "winner": 142,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d50d85ce000bf7fa07f62e07f7a64c15643b10b11b177ed817f85a6fa80a83bf"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 6,
+      "input_sha256": "f618ba6115d046bf85ec5a7c3172d8b428bf210bd83603f145782ebe0b68e57f",
+      "runs": {
+        "2": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "bc68f0d4ca335964e14ccf4c2006a011e35c0b87d0f36a601a7db23564f4a375"
+        },
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "86397df4686d74042dc41200cbdd01d535bef5d76b4d713047c4d15dd7debb10"
+        },
+        "17": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "b7e59b74e67b3abada8a1aebc340fb7d2e52b1e18b344b7ef4c7943b19f96143"
+        },
+        "22": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "50cd990cd2e5e22594312f9f5ae782646413ba14181d2cb8c86018d7c321f271"
+        },
+        "88": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "d73f72cb7ee4d5d996cdf1c9bef61e9c1bbd39cc8dbf68a4f3fdc448fe9cdc56"
+        },
+        "143": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "2996664a8f5dcbd2d477821beb46e48596b88e6ab14ab2b0187eab84d3811b90"
+        },
+        "239": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "45433815cc8c0881bb98b854a753729281d9589ae0d8f984fcc77d2d603ec81e"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 2,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "bc68f0d4ca335964e14ccf4c2006a011e35c0b87d0f36a601a7db23564f4a375"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "86397df4686d74042dc41200cbdd01d535bef5d76b4d713047c4d15dd7debb10"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 17,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b7e59b74e67b3abada8a1aebc340fb7d2e52b1e18b344b7ef4c7943b19f96143"
+          },
+          "four": {
+            "winner": 22,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "50cd990cd2e5e22594312f9f5ae782646413ba14181d2cb8c86018d7c321f271"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 17,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b7e59b74e67b3abada8a1aebc340fb7d2e52b1e18b344b7ef4c7943b19f96143"
+          },
+          "four": {
+            "winner": 22,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "50cd990cd2e5e22594312f9f5ae782646413ba14181d2cb8c86018d7c321f271"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 17,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b7e59b74e67b3abada8a1aebc340fb7d2e52b1e18b344b7ef4c7943b19f96143"
+          },
+          "four": {
+            "winner": 88,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d73f72cb7ee4d5d996cdf1c9bef61e9c1bbd39cc8dbf68a4f3fdc448fe9cdc56"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 239,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "45433815cc8c0881bb98b854a753729281d9589ae0d8f984fcc77d2d603ec81e"
+          },
+          "four": {
+            "winner": 143,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "2996664a8f5dcbd2d477821beb46e48596b88e6ab14ab2b0187eab84d3811b90"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 7,
+      "input_sha256": "9f14aa17f03080044643e64c766bab45a19b69a680cad444986062cd7cdfefdb",
+      "runs": {
+        "1": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "9a53a4dc105b4d3dabb7884763f68506f6b8c9862801991df9c0d3175c160c8b"
+        },
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "1f9bb0022a1d0e3c0eecdee8ba7f5568d069e97d768416f9248a66edcea909aa"
+        },
+        "32": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "6b74c9c63f96e0c18938617a123ea8b35e1f7c05a0ba5fa6aeba43987c62d91b"
+        },
+        "50": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "2ce7d2c66921e1384fbda740e7f86596b845dee9a6a9a7ff27ed953d86e10d96"
+        },
+        "81": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "beb272c358a18516672a90012e34a76ac6aac4120f46240d85575a705dd56f9a"
+        },
+        "149": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "dbccc2c88e2c24b8dfa85720fea27f978070d737d03ef3b39d8cca748036b771"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1f9bb0022a1d0e3c0eecdee8ba7f5568d069e97d768416f9248a66edcea909aa"
+          },
+          "four": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9a53a4dc105b4d3dabb7884763f68506f6b8c9862801991df9c0d3175c160c8b"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 32,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6b74c9c63f96e0c18938617a123ea8b35e1f7c05a0ba5fa6aeba43987c62d91b"
+          },
+          "four": {
+            "winner": 1,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "9a53a4dc105b4d3dabb7884763f68506f6b8c9862801991df9c0d3175c160c8b"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 32,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6b74c9c63f96e0c18938617a123ea8b35e1f7c05a0ba5fa6aeba43987c62d91b"
+          },
+          "four": {
+            "winner": 50,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "2ce7d2c66921e1384fbda740e7f86596b845dee9a6a9a7ff27ed953d86e10d96"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 32,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6b74c9c63f96e0c18938617a123ea8b35e1f7c05a0ba5fa6aeba43987c62d91b"
+          },
+          "four": {
+            "winner": 81,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "beb272c358a18516672a90012e34a76ac6aac4120f46240d85575a705dd56f9a"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 149,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "dbccc2c88e2c24b8dfa85720fea27f978070d737d03ef3b39d8cca748036b771"
+          },
+          "four": {
+            "winner": 81,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "beb272c358a18516672a90012e34a76ac6aac4120f46240d85575a705dd56f9a"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 8,
+      "input_sha256": "97efe31339468d4becec14eb6a7023503918c2af12a3aee85d242ef7bc10557b",
+      "runs": {
+        "6": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "1454dc807295990340fd05502037eb25c382d7d87882a39034da71b5b9b5cfd7"
+        },
+        "8": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "b507ef7f78a8392ae00046eedfc45d163c9b42254d5685906cee79b1ed5c5a4e"
+        },
+        "21": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "6205149ce38f8a23746ecbfbb5841132f823534e2c5bb82e2ef143211b56df73"
+        },
+        "54": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "3f8afc758dad16ad96a1944f6151eb031f7a3b3dec1195e04ebd9c2bc366ac8e"
+        },
+        "104": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "81242e24fc372cd08f4f9ff2254bb0946065de599279152f1ed65c83633a02ca"
+        },
+        "166": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "e3b80dca5b3854ed5d12691f02da2e73576b6de4e66a5f529528876bf70d3ce9"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "1454dc807295990340fd05502037eb25c382d7d87882a39034da71b5b9b5cfd7"
+          },
+          "four": {
+            "winner": 8,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b507ef7f78a8392ae00046eedfc45d163c9b42254d5685906cee79b1ed5c5a4e"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 21,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6205149ce38f8a23746ecbfbb5841132f823534e2c5bb82e2ef143211b56df73"
+          },
+          "four": {
+            "winner": 8,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "b507ef7f78a8392ae00046eedfc45d163c9b42254d5685906cee79b1ed5c5a4e"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 21,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "6205149ce38f8a23746ecbfbb5841132f823534e2c5bb82e2ef143211b56df73"
+          },
+          "four": {
+            "winner": 54,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "3f8afc758dad16ad96a1944f6151eb031f7a3b3dec1195e04ebd9c2bc366ac8e"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 104,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "81242e24fc372cd08f4f9ff2254bb0946065de599279152f1ed65c83633a02ca"
+          },
+          "four": {
+            "winner": 54,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "3f8afc758dad16ad96a1944f6151eb031f7a3b3dec1195e04ebd9c2bc366ac8e"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 104,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "81242e24fc372cd08f4f9ff2254bb0946065de599279152f1ed65c83633a02ca"
+          },
+          "four": {
+            "winner": 166,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "e3b80dca5b3854ed5d12691f02da2e73576b6de4e66a5f529528876bf70d3ce9"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 9,
+      "input_sha256": "5a7a664adf7f5a0904c2bc8cc7c109c5e1148b62fdc54ce3d67a13cdbd9e9708",
+      "runs": {
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "05b724399b4359048e130d4f9d52742e038e8441db4ad34ef64f5ce34681be44"
+        },
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "d368614568cac4f24ebcaeffc0abb7c0ceeea042234188db1b71da9ff8971307"
+        },
+        "9": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "88cfe47fc87943daf0c52d4bfab5b3004548b5b2f73a647c507bb2058e26779e"
+        },
+        "46": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "53638e2474fb934971149f409bb79073742288f7df2c31b4667c1bdbdd0424f2"
+        },
+        "103": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "d761d932a311715e277d6a0631cc60eefdb423a2c8a043b7c67cf59bdf7bc04a"
+        },
+        "210": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "448e92b2d6f6170a8260a54e513e2b12178b0a6dcead598766a84f7fc6c9cfed"
+        },
+        "237": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "e8feb5a057959001bf6fb368f90b9ef7eef7a5b9127c1b7d6c6c45e736236441"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "05b724399b4359048e130d4f9d52742e038e8441db4ad34ef64f5ce34681be44"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d368614568cac4f24ebcaeffc0abb7c0ceeea042234188db1b71da9ff8971307"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 9,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "88cfe47fc87943daf0c52d4bfab5b3004548b5b2f73a647c507bb2058e26779e"
+          },
+          "four": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d368614568cac4f24ebcaeffc0abb7c0ceeea042234188db1b71da9ff8971307"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 9,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "88cfe47fc87943daf0c52d4bfab5b3004548b5b2f73a647c507bb2058e26779e"
+          },
+          "four": {
+            "winner": 46,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "53638e2474fb934971149f409bb79073742288f7df2c31b4667c1bdbdd0424f2"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 103,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "d761d932a311715e277d6a0631cc60eefdb423a2c8a043b7c67cf59bdf7bc04a"
+          },
+          "four": {
+            "winner": 46,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "53638e2474fb934971149f409bb79073742288f7df2c31b4667c1bdbdd0424f2"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 237,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "e8feb5a057959001bf6fb368f90b9ef7eef7a5b9127c1b7d6c6c45e736236441"
+          },
+          "four": {
+            "winner": 210,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "448e92b2d6f6170a8260a54e513e2b12178b0a6dcead598766a84f7fc6c9cfed"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 10,
+      "input_sha256": "5b4b0116c2c207a51e22f2230f1a4b42a56abd6adc2b8e4146f699f0feca834f",
+      "runs": {
+        "3": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "2af24c0d6070467b63557b1ff4fdb81210aff5c191811878442441148b8cece1"
+        },
+        "8": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "2e80c87f534b73c4138cd521e3f31844cb64771dff82b95554bb9a093e2af32a"
+        },
+        "11": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "32ba374c50eb8cbf75e1dac215e2d45fcb73da70a1a26921c5e7d73969c2585f"
+        },
+        "25": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "56b18476642bc06f8f512a7a1f7a450942b0f320a2d8a59e6832798686d2b3b0"
+        },
+        "79": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "a45461b6e5c380eeda4eae11c5b14299df6e6919d0213a1e61bb40d121e5e9a1"
+        },
+        "252": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "99870b77aaa978a77cc6568c0369197475f4051cfedbca4a4e57061b1e7d8b3e"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 8,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "2e80c87f534b73c4138cd521e3f31844cb64771dff82b95554bb9a093e2af32a"
+          },
+          "four": {
+            "winner": 3,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "2af24c0d6070467b63557b1ff4fdb81210aff5c191811878442441148b8cece1"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 11,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "32ba374c50eb8cbf75e1dac215e2d45fcb73da70a1a26921c5e7d73969c2585f"
+          },
+          "four": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "56b18476642bc06f8f512a7a1f7a450942b0f320a2d8a59e6832798686d2b3b0"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 11,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "32ba374c50eb8cbf75e1dac215e2d45fcb73da70a1a26921c5e7d73969c2585f"
+          },
+          "four": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "56b18476642bc06f8f512a7a1f7a450942b0f320a2d8a59e6832798686d2b3b0"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 79,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "a45461b6e5c380eeda4eae11c5b14299df6e6919d0213a1e61bb40d121e5e9a1"
+          },
+          "four": {
+            "winner": 25,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "56b18476642bc06f8f512a7a1f7a450942b0f320a2d8a59e6832798686d2b3b0"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 252,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "99870b77aaa978a77cc6568c0369197475f4051cfedbca4a4e57061b1e7d8b3e"
+          },
+          "four": {
+            "winner": 252,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "99870b77aaa978a77cc6568c0369197475f4051cfedbca4a4e57061b1e7d8b3e"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 11,
+      "input_sha256": "8b76b8279ad4a1ddef6d6e3be63f2444288df97e6aab037ca3dcda0e7b215314",
+      "runs": {
+        "4": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "bbe573c8327da6b05796e32dcd89e13ca727892d57b7b181a8c48306014e02ac"
+        },
+        "6": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "aa1f3cf52ee89d37911fc7cfee151c37cb7dc00690f96532ec52a2e5c7310fe3"
+        },
+        "54": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "36bbb3f4cb2f3e5bb1de50505547a4d07987f427d537e0a546a6a78442fef383"
+        },
+        "182": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "0ce9fefa4e303e757dae619105eeb2c8d986d8825a33cfd00f0759b45bd0914d"
+        },
+        "246": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "671d8b6b535b71df65cecc710d2976aac4a7389b78750dd600239bfddfc1ece2"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "bbe573c8327da6b05796e32dcd89e13ca727892d57b7b181a8c48306014e02ac"
+          },
+          "four": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "aa1f3cf52ee89d37911fc7cfee151c37cb7dc00690f96532ec52a2e5c7310fe3"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "bbe573c8327da6b05796e32dcd89e13ca727892d57b7b181a8c48306014e02ac"
+          },
+          "four": {
+            "winner": 6,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "aa1f3cf52ee89d37911fc7cfee151c37cb7dc00690f96532ec52a2e5c7310fe3"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "bbe573c8327da6b05796e32dcd89e13ca727892d57b7b181a8c48306014e02ac"
+          },
+          "four": {
+            "winner": 54,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "36bbb3f4cb2f3e5bb1de50505547a4d07987f427d537e0a546a6a78442fef383"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 4,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "bbe573c8327da6b05796e32dcd89e13ca727892d57b7b181a8c48306014e02ac"
+          },
+          "four": {
+            "winner": 54,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "36bbb3f4cb2f3e5bb1de50505547a4d07987f427d537e0a546a6a78442fef383"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 182,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "0ce9fefa4e303e757dae619105eeb2c8d986d8825a33cfd00f0759b45bd0914d"
+          },
+          "four": {
+            "winner": 246,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "671d8b6b535b71df65cecc710d2976aac4a7389b78750dd600239bfddfc1ece2"
+          }
+        }
+      ]
+    },
+    {
+      "label": "control",
+      "number": 12,
+      "input_sha256": "7ee0660d29968b201b30b955aaf3bc57123f06f73569aa9b26c217f508a1a470",
+      "runs": {
+        "5": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "020911f5d994e85d2ac5125c0a89158c885c7b2dff6bc6d6de416dbb0552645e"
+        },
+        "8": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "3ad3871aa0891b7c0276310c05ab9740ba415e00698b4d0b1ff1eeda54c403fd"
+        },
+        "20": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "c9cf26a88e09914a6d187c4729fc96851adcb44a49478ce7a1cabcbe6d80b018"
+        },
+        "37": {
+          "terminal": {
+            "kind": "terminal",
+            "worker_result": -6,
+            "retained_past": 8,
+            "supported_history": 0,
+            "waits": 0,
+            "receiver_time": "frozen"
+          },
+          "accepted": 0,
+          "journal_sha256": "c27fad930ec48d019cda1c7649af2eed002e982b65461b15cec6abb6625f84ae"
+        }
+      },
+      "budgets": [
+        {
+          "budget": 8,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "020911f5d994e85d2ac5125c0a89158c885c7b2dff6bc6d6de416dbb0552645e"
+          },
+          "four": {
+            "winner": 8,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "3ad3871aa0891b7c0276310c05ab9740ba415e00698b4d0b1ff1eeda54c403fd"
+          }
+        },
+        {
+          "budget": 32,
+          "single": {
+            "winner": 5,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "020911f5d994e85d2ac5125c0a89158c885c7b2dff6bc6d6de416dbb0552645e"
+          },
+          "four": {
+            "winner": 20,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c9cf26a88e09914a6d187c4729fc96851adcb44a49478ce7a1cabcbe6d80b018"
+          }
+        },
+        {
+          "budget": 64,
+          "single": {
+            "winner": 37,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c27fad930ec48d019cda1c7649af2eed002e982b65461b15cec6abb6625f84ae"
+          },
+          "four": {
+            "winner": 37,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c27fad930ec48d019cda1c7649af2eed002e982b65461b15cec6abb6625f84ae"
+          }
+        },
+        {
+          "budget": 128,
+          "single": {
+            "winner": 37,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c27fad930ec48d019cda1c7649af2eed002e982b65461b15cec6abb6625f84ae"
+          },
+          "four": {
+            "winner": 37,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c27fad930ec48d019cda1c7649af2eed002e982b65461b15cec6abb6625f84ae"
+          }
+        },
+        {
+          "budget": 256,
+          "single": {
+            "winner": 37,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c27fad930ec48d019cda1c7649af2eed002e982b65461b15cec6abb6625f84ae"
+          },
+          "four": {
+            "winner": 37,
+            "terminal": {
+              "kind": "terminal",
+              "worker_result": -6,
+              "retained_past": 8,
+              "supported_history": 0,
+              "waits": 0,
+              "receiver_time": "frozen"
+            },
+            "accepted": 0,
+            "journal_sha256": "c27fad930ec48d019cda1c7649af2eed002e982b65461b15cec6abb6625f84ae"
+          }
+        }
+      ]
+    }
+  ]
+}

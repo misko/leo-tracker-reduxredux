@@ -731,3 +731,49 @@ The [combined-score replay](figures/2026_09_13_radio20_saved_iq_coverage/pilot-p
 and both analysis sources retain hashes and detailed results. Original cuts
 and C worker journals remain in local evidence. No RF, production source or
 gate changes occur; sustained native FPGA tracking remains unfinished.
+
+## Expanded candidates improve offline handoffs
+
+The same 26 saved cuts now evaluate budgets of 8, 32, 64, 128 and 256
+coarse candidates. Independent integer grids and extended selection reproduce
+the production selector's first eight candidates exactly. Single-pilot FFT
+ranking at that budget also reproduces the original C scores and winner.
+A diagnostic alternative averages four normalized pilot spectra at a common
+frequency bin, using nominal repeat offsets 0, 3333, 6667 and 10000 at
+2.5 MS/s. No reviewed trajectory positions enter either ranking.
+
+Every distinct winning candidate then enters the unchanged production C seed,
+resolver and historical measurement worker. IQ is already retained and receiver
+time is frozen, so these handoffs establish offline numerical support only.
+
+| Candidate budget | Positive cuts with worker handoff, single-pilot ranking | Positive cuts with worker handoff, four-pilot ranking | Control handoffs, either ranking |
+| --- | ---: | ---: | ---: |
+| 8 | 1 / 13 | 1 / 13 | 0 / 13 |
+| 32 | 3 / 13 | 3 / 13 | 0 / 13 |
+| 64 | 4 / 13 | 4 / 13 | 0 / 13 |
+| 128 | 4 / 13 | 4 / 13 | 0 / 13 |
+| 256 | 4 / 13 | 4 / 13 | 0 / 13 |
+
+Successful positive cuts are 0, 3, 4 and 12, each with 15 accepted historical
+measurements. Larger budgets recover additional pilot power, but those
+candidates do not accumulate enough accepted support. Four-pilot ranking
+recovers partial support in cuts 2 and 11 without producing extra handoffs.
+The small, adjacent control set does not establish a rare-false-alarm rate.
+
+Independent review passes all 138 distinct worker runs: 2,346 resolver
+hypotheses and 1,132 exact moment/dense-fit comparisons, including rejection
+bits and startup carrier checks. Four altered coherence/CFO records are rejected.
+The host harness builds with warnings treated as errors. No production source,
+acceptance gate, RF collection or radio deployment changes in this experiment.
+
+These results favor evaluating a bounded 64-candidate single-pilot scanner
+before paying for larger budgets or repeated-pilot ranking. The next required
+check is actual ARM selection/ranking latency and retained-source freshness;
+host replay cannot establish those budgets or live handoff behavior. Sustained
+30/60-MS/s native tracking, loss/reacquisition and refinement remain unfinished.
+
+The [ranking evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/expanded-proposals/ranking.json),
+[worker results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/expanded-proposals/worker.json)
+and [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/expanded-proposals/review.json)
+retain per-cut outcomes and hashes. Sources and worker journals are archived
+alongside them; original IQ remains in local evidence.
