@@ -878,3 +878,61 @@ The [build and host results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-
 and [sanitizer results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heap-scan/sanitizers.json)
 retain the evidence. Component patch, sources and both test reports are
 archived alongside them. Sustained 30/60-MS/s FPGA tracking remains unfinished.
+
+## Smaller ranking FFT restores ARM compute margin
+
+The global lease owner is polled until its process exits and the lease is
+unowned. Normal admission then succeeds for serial
+1040005e0b100007100010000bf33a5d4d at 192.168.1.20. The leased operator runs
+nine saved-IQ benchmarks, three per FFT size, with 64 heap-selected candidates
+and positive cut 12. No RF is collected, and the resident image is unchanged.
+
+Proposal ranking uses the same 3,300-sample pilot at 2.5 MS/s and tests FFT
+lengths 4,096, 8,192 and 16,384. Their frequency-bin spacings are respectively
+610.352, 305.176 and 152.588 Hz. This experiment changes only the ranking
+spectrum: the winning candidate enters the existing 16,384-bin, four-pilot
+resolver and unchanged historical acceptance gates. Ranking CFO bins are
+not substituted for refined carrier estimates.
+
+All 26 saved cuts are tested at every size. Independent NumPy spectra match
+4,992 host candidate scores. Each size produces handoffs on positive cuts
+0, 3, 4 and 12, with 15 accepted historical measurements per successful run;
+all 13 control cuts remain rejected. Some weak winners change, so smaller
+FFTs are not numerically equivalent to the old ranking and can have different
+recall on other inputs. These few controls do not calibrate rare false alarms.
+Independent review of all 78 worker runs verifies 1,326 resolver hypotheses
+and 708 exact moment/dense-fit records.
+
+| Ranking FFT | ARM bounded selection | ARM ranking | ARM full scan |
+| --- | ---: | ---: | ---: |
+| 4,096 | 2.823–3.721 ms | 137.831–144.398 ms | 575.512–580.168 ms |
+| 8,192 | 2.819–2.981 ms | 215.552–229.786 ms | 653.383–661.379 ms |
+| 16,384 | 2.834–2.991 ms | 480.697–510.284 ms | 922.569–941.586 ms |
+
+The approximately 3-ms heap selection replaces the earlier roughly 400-ms
+repeated-grid selection. Full scan includes the two-thread grid and an extra
+legacy eight-selection pass, as in the previous benchmark. It excludes input
+loading, FFT plan creation, full-resolution refinement, retained-IQ catch-up,
+capture DMA and concurrent native tracking. Three timings on one cut do not
+establish a worst-case deadline.
+
+The 4,096-bin ranking has materially more margin below the one-second seed-age
+limit than the 16,384-bin ranking, while preserving the observed offline
+handoffs. The next implementation is an explicitly bounded live profile using
+64 candidates and this ranking FFT, followed by end-to-end freshness and
+capture-contention checks. No seed-age limit or acceptance threshold changes
+are justified by these measurements alone.
+
+Independent ARM review passes all 576 candidate tuples and FFT scores against
+the independently checked host spectra. All nine runs select candidate 35.
+Payload and journal hashes, zero exit codes, serial/host, identical before/after
+identity and TX-safe state, and remote cleanup are verified. Host and Cortex-A9
+benchmark builds use warnings as errors. No persistent tracker is started.
+
+The [host ranking and worker results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/host.json),
+[independent worker review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/worker-review.json),
+[ARM operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/operator.json)
+and [ARM score/timing review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/arm-review.json)
+retain the measurements and hashes. Sources and ARM journals accompany them;
+full host journals remain in local evidence. Sustained live 30/60-MS/s FPGA
+tracking, physical loss/reacquisition and refinement remain unfinished.
