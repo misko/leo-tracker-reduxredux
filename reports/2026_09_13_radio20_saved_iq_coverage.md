@@ -1401,3 +1401,39 @@ and [sequence review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/s
 retain the evidence. Child reviews and journals accompany them; executable
 build, source patch and component tests are retained with the preceding
 60-MS/s result.
+
+## Early startup persistence does not add acquisition handoffs
+
+A further frozen-IQ diagnostic ranks the same 64 coarse proposals using
+three nominal pilot windows at startup frames 0, 9 and 18: offsets 0,
+30,000 and 60,000 samples at 2.5 MS/s. These match the first three frame
+ordinals used by the actual C bootstrap. Each window uses the unchanged
+3300-sample phase-zero reference and a 4096-bin spectrum. The original
+coarse epoch enters the unchanged resolver and worker; neither timing
+correction nor accepted history is supplied by the diagnostic.
+
+The diagnostic tests minimum, arithmetic-mean and geometric-mean power,
+using either the strongest eight first-window candidates or all 64. Here
+eight means a shortlist **after** the 64-candidate first-pilot ranking,
+not the legacy eight-coarse-candidate scanner. Every policy still acquires
+on positive cuts 0, 3, 4 and 12 only: 4/13 positive handoffs and 0/13 control
+handoffs. Cut 11 gains three accepted measurements under two all-candidate
+aggregations, but cannot establish a handoff.
+
+All 4992 candidate/window FFT maxima match explicit direct DFTs. Independent
+review verifies source hashes, original proposal association, all 156
+ranking decisions and 57 distinct frozen worker runs: 969 resolver
+hypotheses and 484 moment/dense fits. Two corrupted measurements are
+rejected. The finite positive/control cuts are not independent false-alarm
+calibration. ARM cost, live freshness with the additional ranking, and
+native tracking are not measured by this experiment.
+
+The [result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/startup-persistence/result.json)
+and [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/startup-persistence/independent-review.json)
+accompany diagnostic/reviewer sources and worker journals. No RF, runtime
+code, acceptance gate or radio configuration changes. This result does not
+justify extra ARM ranking work. Keep the current live policy. Recent weak
+physical captures at both rates still require a detectable reference signal
+before supported native feedback and physical loss/reacquisition can be
+qualified; the antenna/LNB connection, power and pointing question remains
+unanswered. The earlier bounded supported 30-MS/s result is not withdrawn.
