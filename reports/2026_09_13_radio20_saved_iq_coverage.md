@@ -1227,3 +1227,57 @@ and [repetition diagnostic](figures/2026_09_13_radio20_saved_iq_coverage/pilot-p
 retain the evidence. Worker journal and operator/diagnostic sources accompany
 them. Supported 60-MS/s native feedback, longer operation and autonomous
 loss/reacquisition remain unfinished.
+
+## Timing and repeat selection do not increase standalone acquisition coverage
+
+Two further diagnostics use the same 13 positive and 13 control cuts at
+2.5 MS/s, with the frozen C resolver, historical acceptance gates and worker
+unchanged. They collect no RF and make no firmware or deployment changes.
+
+| Ranking policy | Positive handoffs | Positive cut numbers | Control handoffs |
+| --- | ---: | --- | ---: |
+| Existing 64-candidate, first-repeat ranking | 4/13 | 0, 3, 4, 12 | 0/13 |
+| Timing-tolerant ranking, 64 or 256 candidates | 4/13 | 0, 3, 4, 12 | 0/13 |
+| Strongest of three repeats, 64 candidates | 4/13 | 0, 4, 11, 12 | 0/13 |
+
+Timing-tolerant ranking evaluates the 4096-bin pilot spectrum at offsets
+−8 through +8 samples (±3.2 microseconds), then selects using radii 0, 1, 2,
+4 and 8. The winning original coarse proposal enters the existing resolver;
+the ranking offset is not injected as a new seed. All ten budget/radius
+combinations preserve the same four handoffs. Some larger searches recover
+isolated accepted measurements, but no additional supported history. These
+results do not justify the extra ranking work.
+
+The repeat diagnostic jointly selects a candidate and one of offsets 0,
+3333 or 6667 samples. It replays a 447,851-sample cut starting at that repeat,
+and keeps the original proposal epoch within this rebased cut. Cut 11 gains
+a handoff with 15 accepted measurements, but cut 3 falls from a handoff to
+only one accepted measurement. Stronger initial pilot power therefore does
+not guarantee a better startup history. All control measurements remain
+rejected. The union with the existing policy covers five positive cuts,
+but this is a retrospective union, not a tested causal fallback policy.
+
+Independent review verifies source hashes and exact repeat-offset slices,
+all 286 selected ranking decisions and direct-DFT winning powers, and 122
+distinct frozen worker runs: 2074 resolver hypotheses and 1032 moment/dense
+fits. Four deliberate coherence/CFO corruptions are rejected. The repeat
+generation script additionally checks all 4992 candidate/repeat FFT maxima
+against explicit direct DFTs. The timing diagnostic's zero-offset scores
+match the existing C ranking benchmark. Neither diagnostic measures ARM
+cost or qualifies live tracking; repeat selection also needs explicit
+original-scan/repeat provenance before production use.
+
+Keep the current live ranking policy. A possible next acquisition experiment
+is a bounded alternate hypothesis after rejected startup, preserving the
+original scan coordinates and source-age checks. Its useful coverage must
+be demonstrated under paced ARM execution: the current roughly 0.6-second
+scan plus rejected-worker processing can already consume the one-second
+seed-age allowance, so frozen replay cannot justify a serial retry.
+
+The [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/ranking-diagnostics/review.json),
+[timing results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/ranking-diagnostics/timing-aware/result.json)
+and [repeat results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/ranking-diagnostics/repeat-phase/result.json)
+retain the measurements; worker journals and diagnostic/review sources
+accompany them. IQ remains in the pinned local corpus. The previous bounded
+30-MS/s native success stands; supported 60-MS/s native feedback, sustained
+operation and autonomous loss/reacquisition remain unfinished.
