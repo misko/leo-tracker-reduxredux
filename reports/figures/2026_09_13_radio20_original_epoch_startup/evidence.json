@@ -1,0 +1,5419 @@
+{
+  "scope": "radio20_original_epoch_seed_and_bounded_live_capture",
+  "serial": "1040005e0b100007100010000bf33a5d4d",
+  "evidence_root": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912",
+  "firmware_worktree_commit": "b42683a5e745b3e07547637d1bafa62f8f662152",
+  "live_tracking_qualified": false,
+  "records": {
+    "cpu-live30-long-lo1190-v1/operator.json": {
+      "rate": 30000000,
+      "requested_lo_hz": 1190312500,
+      "blocks": 4096,
+      "rf_sample_limit": 67108864,
+      "rf_duration_limit_s": 26.8435456,
+      "payload_sha256": {
+        "probe": "e355693a9a6964c81fff09f888074f788b8698b6017065c7d4bcfab5a4fdd7bd",
+        "bank": "d9f3452e45180c560a200bb76c9bfe2d7c46b17560fd46495ea74c50f50547f0",
+        "references": "78b50e1aea5c350889b0798fc691491299925932e496a918cd5fbd3b9bc4faf2"
+      },
+      "status": "failed",
+      "live_tracking_qualified": false,
+      "remote_directory": "/tmp/gli-live20-beb68f1b056a424aa696e24d4794bc99",
+      "before": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "memory_before": "MemTotal:         506876 kB\nMemFree:          441892 kB\nMemAvailable:     439256 kB\nBuffers:               0 kB\nCached:            48628 kB\nSwapCached:            0 kB\nActive:              140 kB\nInactive:           2524 kB\nActive(anon):        140 kB\nInactive(anon):     2524 kB\nActive(file):          0 kB\nInactive(file):        0 kB\nUnevictable:       48496 kB\nMlocked:               0 kB\nHighTotal:             0 kB\nHighFree:              0 kB\nLowTotal:         506876 kB\nLowFree:          441892 kB\nSwapTotal:             0 kB\nSwapFree:              0 kB\nDirty:                 0 kB\nWriteback:             0 kB\nAnonPages:          2596 kB\nMapped:             3988 kB\nShmem:               132 kB\nKReclaimable:       3192 kB\nSlab:               7064 kB\nSReclaimable:       3192 kB\nSUnreclaim:         3872 kB\nKernelStack:         504 kB\nPageTables:          340 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:      253436 kB\nCommitted_AS:      40400 kB\nVmallocTotal:     507904 kB\nVmallocUsed:         344 kB\nVmallocChunk:          0 kB\nPercpu:              176 kB\nCmaTotal:          65536 kB\nCmaFree:           65260 kB\n",
+      "memory_preflight": {
+        "available_kib": 439256,
+        "required_kib": 344064,
+        "headroom_kib": 81920
+      },
+      "tracking_before_configuration": "GLT1SNAP 00010000 474c5431 00000013 00000003 edf07d44 0000000c 00000002 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 01c9c380 00009ab0 b04a2fab 00000001",
+      "configured": {
+        "public_geometry_snapshot": "GLI1 00010000 30000000 2500000 1540 0 30000000 0 0 0 0 0 0 0 eb2801c8 00000001 fd2801bc 00000001 01800000 00000000 01800000 00000000 0000006a 00000000 00000000 00000000 120004fe 00000000 0180006b 00000000 00000000 00000000 00000000 00000038 008b3199 00000001 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 1a34f70b 0000002b edf0ca1f 0000000c 00000000 00000000 00000000 00000000 00000100 00000080 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00003333 00004ccd 00002667 00000001 00000000 01c9c380 0000027c",
+        "rf_state": {
+          "sampling_frequency": "30000000",
+          "rf_bandwidth": "2500000",
+          "gain_control_mode": "manual",
+          "hardwaregain": "30.000000 dB",
+          "rf_port_select": "A_BALANCED",
+          "rx_lo": "1190312500",
+          "tx_powerdown": "1",
+          "tx_gain": "-80.000000 dB",
+          "ensm_mode": "rx"
+        },
+        "requested_lo_hz": 1190312500,
+        "lo_rounding_hz": 0
+      },
+      "calibration": {
+        "flags": 17,
+        "max_freq": 0,
+        "source_rate": 30000000,
+        "status": "passed",
+        "before_rx_delay": 8,
+        "rf_before": {
+          "sampling_frequency": "30000000",
+          "rf_bandwidth": "2500000",
+          "gain_control_mode": "manual",
+          "hardwaregain": "30.000000 dB",
+          "rf_port_select": "A_BALANCED",
+          "rx_lo": "1190312500",
+          "tx_powerdown": "1",
+          "tx_gain": "-80.000000 dB",
+          "ensm_mode": "rx"
+        },
+        "registers_before": {
+          "0x006": 8,
+          "0x007": 9,
+          "0x013": 0,
+          "0x014": 73,
+          "0x015": 0,
+          "0x3f4": 0,
+          "0x3f5": 0
+        },
+        "selected_rx_delay": 8,
+        "eye": "CLK: 30000000 Hz 'o' = PASS\nDC0:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:\n0:o o o . . . . . . . o o o o o o \n1:o o o o . . . . . . . o o o o o \n2:o o o o o . . . . . . . o o o o \n3:o o o o o o . . . . . . . o o o \n4:o o o o o o o . . . . . . . . o \n5:o o o o o o o o . . . . . . . o \n6:o o o o o o o o o . . . . . . . \n7:o o o o o o o o o o . . . . . . \n8:o o o o o o o o o o o . . . . . \n9:o o o o o o o o o o o o . . . . \na:o o o o o o o o o o o o o . . . \nb:o o o o o o o o o o o o o . . . \nc:o o o o o o o o o o o o o o . . \nd:o o o o o o o o o o o o o o o . \ne:o o o o o o o o o o o o o o o o \nf:o o o o o o o o o o o o o o o o \n",
+        "clock_delay": 0,
+        "data_delay": 8,
+        "passing_points": 182,
+        "diagnostic_trigger_cleared": true,
+        "state_restored": true
+      },
+      "probe_exit_code": 1,
+      "artifacts": {
+        "capture.txt": {
+          "bytes": 2512844,
+          "sha256": "331a6eff29de0715bffe53c586e2f7c347e7113d22ffab4d966890d366d3273a"
+        },
+        "iq.ci16": {
+          "bytes": 251650048,
+          "sha256": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c"
+        },
+        "worker.jsonl": {
+          "bytes": 106994,
+          "sha256": "910f5983d6379082d29746201ee6df00da702ce5a56a783f1683c0bce54d6bda"
+        },
+        "worker.iq.ci16": {
+          "bytes": 2541824,
+          "sha256": "81816aae6c37399302c593981f9597619be347d44fc544eb50aa3f2a2e0988b6"
+        },
+        "grids.u32": {
+          "bytes": 2346432,
+          "sha256": "5467aaf1ece610a38b86ff99d576c25e88511b712151d47836bb2ecee0a66c0d"
+        },
+        "native.journal": {
+          "bytes": 6,
+          "sha256": "302eea27dbd69460f8d592f373cb6e534f29caee12864427a6a954e5f721fbc0"
+        }
+      },
+      "error": "CalledProcessError: Command '['sshpass', '-f', '/home/mouse9911/gits/plutosdr-fw-glrt-deployment-review/artifacts/device-tool-glrt-ethernet/artifacts/native-lnb-20-20260910/ssh-password', 'ssh', '-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/radio20.known_hosts', '-o', 'ConnectTimeout=5', 'root@192.168.1.20', '/tmp/gli-live20-beb68f1b056a424aa696e24d4794bc99/probe 30000000 1040005e0b100007100010000bf33a5d4d /tmp/gli-live20-beb68f1b056a424aa696e24d4794bc99/bank /tmp/gli-live20-beb68f1b056a424aa696e24d4794bc99/references /tmp/gli-live20-beb68f1b056a424aa696e24d4794bc99 4096']' returned non-zero exit status 1.",
+      "after": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "temporary_files_removed": true
+    },
+    "cpu-live30-long-lo1190-v1/independent-review.json": {
+      "status": "pass",
+      "scope": "partial_retained_capture_acquisition_rejection",
+      "capture_complete": false,
+      "rate": 30000000,
+      "exported_samples": 62917598,
+      "unretained_exported_samples": 5086,
+      "iq_samples": 62912512,
+      "rf_seconds": 25.1670392,
+      "coarse_origin": 4633229806,
+      "epoch_binding": [
+        9122201,
+        4,
+        55598989858,
+        4633249155
+      ],
+      "cdc_drops": 0,
+      "pacer_drops": 0,
+      "grid_values_checked": 586608,
+      "candidate_fft_scores_checked": 128,
+      "hypotheses_checked": 272,
+      "moment_heads_checked": 128,
+      "worker_iq_samples_checked": 635456,
+      "attempts": 16,
+      "supported_handoffs": 0,
+      "native_results": 0,
+      "max_refill_gap_ns": 6747294,
+      "timings": [
+        {
+          "attempt": 1,
+          "scan_ms": 764.81798,
+          "rank_ms": 67.307502,
+          "scan_and_rank_ms": 833.006588,
+          "worker_ms": 614.165886,
+          "seed_age_ms": 838.2392
+        },
+        {
+          "attempt": 2,
+          "scan_ms": 700.146673,
+          "rank_ms": 66.161035,
+          "scan_and_rank_ms": 766.95083,
+          "worker_ms": 608.899032,
+          "seed_age_ms": 772.7076
+        },
+        {
+          "attempt": 3,
+          "scan_ms": 757.951405,
+          "rank_ms": 67.146654,
+          "scan_and_rank_ms": 825.734534,
+          "worker_ms": 613.098696,
+          "seed_age_ms": 831.6892
+        },
+        {
+          "attempt": 4,
+          "scan_ms": 686.978563,
+          "rank_ms": 66.910573,
+          "scan_and_rank_ms": 754.561028,
+          "worker_ms": 615.062526,
+          "seed_age_ms": 759.6192
+        },
+        {
+          "attempt": 5,
+          "scan_ms": 683.051941,
+          "rank_ms": 67.095222,
+          "scan_and_rank_ms": 750.759871,
+          "worker_ms": 613.894026,
+          "seed_age_ms": 753.0384
+        },
+        {
+          "attempt": 6,
+          "scan_ms": 686.378305,
+          "rank_ms": 67.071559,
+          "scan_and_rank_ms": 754.159442,
+          "worker_ms": 612.760914,
+          "seed_age_ms": 759.6044
+        },
+        {
+          "attempt": 7,
+          "scan_ms": 758.063024,
+          "rank_ms": 66.87789,
+          "scan_and_rank_ms": 825.620516,
+          "worker_ms": 615.480486,
+          "seed_age_ms": 831.702
+        },
+        {
+          "attempt": 8,
+          "scan_ms": 677.874019,
+          "rank_ms": 67.170409,
+          "scan_and_rank_ms": 745.685054,
+          "worker_ms": 614.844258,
+          "seed_age_ms": 746.4872
+        },
+        {
+          "attempt": 9,
+          "scan_ms": 689.187073,
+          "rank_ms": 66.8295,
+          "scan_and_rank_ms": 756.734599,
+          "worker_ms": 613.604706,
+          "seed_age_ms": 766.1452
+        },
+        {
+          "attempt": 10,
+          "scan_ms": 693.084499,
+          "rank_ms": 66.276835,
+          "scan_and_rank_ms": 759.999548,
+          "worker_ms": 609.051354,
+          "seed_age_ms": 766.1384
+        },
+        {
+          "attempt": 11,
+          "scan_ms": 758.647196,
+          "rank_ms": 67.721928,
+          "scan_and_rank_ms": 826.988876,
+          "worker_ms": 606.935922,
+          "seed_age_ms": 831.6968
+        },
+        {
+          "attempt": 12,
+          "scan_ms": 760.647932,
+          "rank_ms": 65.887393,
+          "scan_and_rank_ms": 827.192037,
+          "worker_ms": 604.955214,
+          "seed_age_ms": 831.6748
+        },
+        {
+          "attempt": 13,
+          "scan_ms": 757.508341,
+          "rank_ms": 66.074773,
+          "scan_and_rank_ms": 824.339666,
+          "worker_ms": 607.172742,
+          "seed_age_ms": 825.1432
+        },
+        {
+          "attempt": 14,
+          "scan_ms": 760.505005,
+          "rank_ms": 66.554479,
+          "scan_and_rank_ms": 827.693234,
+          "worker_ms": 606.848658,
+          "seed_age_ms": 831.694
+        },
+        {
+          "attempt": 15,
+          "scan_ms": 761.289488,
+          "rank_ms": 66.256326,
+          "scan_and_rank_ms": 828.282104,
+          "worker_ms": 609.196068,
+          "seed_age_ms": 831.844
+        },
+        {
+          "attempt": 16,
+          "scan_ms": 759.153788,
+          "rank_ms": 66.394416,
+          "scan_and_rank_ms": 826.160864,
+          "worker_ms": 607.320403,
+          "seed_age_ms": 831.6972
+        }
+      ],
+      "live_tracking_qualified": false,
+      "reported_supported_history": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pre_epoch_drops": [
+        0,
+        0
+      ],
+      "reviewer_sha256": "ad547833a9389b4a69e767a98f9a50d66b8627cd52af0fe1d8827f8ff139135c",
+      "sha256": {
+        "operator.json": "22b837d288411faedb58b2f991cc6c62e73deaec7fff9e93271214cae12c0fb1",
+        "stdout.json": "0b69ef9d67f615f5581f01cec26276c6375b4856dacd870b51f4617de80bc46d",
+        "stderr.txt": "048e2ba89ae430962e02f5341cf60c694fb7e131cb417790075a56b32ca09992",
+        "capture.txt": "331a6eff29de0715bffe53c586e2f7c347e7113d22ffab4d966890d366d3273a",
+        "iq.ci16": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c",
+        "worker.jsonl": "910f5983d6379082d29746201ee6df00da702ce5a56a783f1683c0bce54d6bda",
+        "worker.iq.ci16": "81816aae6c37399302c593981f9597619be347d44fc544eb50aa3f2a2e0988b6",
+        "grids.u32": "5467aaf1ece610a38b86ff99d576c25e88511b712151d47836bb2ecee0a66c0d",
+        "native.journal": "302eea27dbd69460f8d592f373cb6e534f29caee12864427a6a954e5f721fbc0"
+      }
+    },
+    "cpu-live30-long-lo1690-v1/operator.json": {
+      "rate": 30000000,
+      "requested_lo_hz": 1690312496,
+      "blocks": 4096,
+      "rf_sample_limit": 67108864,
+      "rf_duration_limit_s": 26.8435456,
+      "payload_sha256": {
+        "probe": "e355693a9a6964c81fff09f888074f788b8698b6017065c7d4bcfab5a4fdd7bd",
+        "bank": "d9f3452e45180c560a200bb76c9bfe2d7c46b17560fd46495ea74c50f50547f0",
+        "references": "78b50e1aea5c350889b0798fc691491299925932e496a918cd5fbd3b9bc4faf2"
+      },
+      "status": "capture_complete_review_pending",
+      "live_tracking_qualified": false,
+      "remote_directory": "/tmp/gli-live20-9a4dd254a5174b09afe471383f368b3b",
+      "before": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "memory_before": "MemTotal:         506876 kB\nMemFree:          442836 kB\nMemAvailable:     440220 kB\nBuffers:               0 kB\nCached:            48636 kB\nSwapCached:            0 kB\nActive:              152 kB\nInactive:           2596 kB\nActive(anon):        152 kB\nInactive(anon):     2596 kB\nActive(file):          0 kB\nInactive(file):        0 kB\nUnevictable:       48496 kB\nMlocked:               0 kB\nHighTotal:             0 kB\nHighFree:              0 kB\nLowTotal:         506876 kB\nLowFree:          442836 kB\nSwapTotal:             0 kB\nSwapFree:              0 kB\nDirty:                 0 kB\nWriteback:             0 kB\nAnonPages:          2628 kB\nMapped:             3988 kB\nShmem:               140 kB\nKReclaimable:       3228 kB\nSlab:               7116 kB\nSReclaimable:       3228 kB\nSUnreclaim:         3888 kB\nKernelStack:         512 kB\nPageTables:          352 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:      253436 kB\nCommitted_AS:      40408 kB\nVmallocTotal:     507904 kB\nVmallocUsed:         344 kB\nVmallocChunk:          0 kB\nPercpu:              176 kB\nCmaTotal:          65536 kB\nCmaFree:           65260 kB\n",
+      "memory_preflight": {
+        "available_kib": 440220,
+        "required_kib": 344064,
+        "headroom_kib": 81920
+      },
+      "private_tmpfs_kib": 327680,
+      "filesystem_preflight": {
+        "available_kib": 327680,
+        "required_kib": 303104,
+        "mountpoint": "/tmp/gli-live20-9a4dd254a5174b09afe471383f368b3b",
+        "df": "Filesystem           1024-blocks    Used Available Capacity Mounted on\ntmpfs                   327680         0    327680   0% /tmp/gli-live20-9a4dd254a5174b09afe471383f368b3b\n"
+      },
+      "tracking_before_configuration": "GLT1SNAP 00010000 474c5431 00000019 00000004 b6e2440e 0000000e 00000002 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 01c9c380 00009ab0 b04a2fab 00000001",
+      "configured": {
+        "public_geometry_snapshot": "GLI1 00010000 30000000 2500000 3844 0 30000000 0 0 0 0 0 0 0 f1f1b9a4 0000000c 1ef24800 0000000d 03c00bde 00000000 03c00bde 00000000 0000006a 00000000 00000000 00000000 2d009373 00000000 03c00c49 00000000 00000000 00000000 00000000 00000038 008b3199 00000001 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 0d7bc38d 00000031 b6e2981a 0000000e 00000000 00000000 00000000 00000000 00000101 00000080 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00003333 00004ccd 00002667 00000001 00000000 01c9c380 0000027c",
+        "rf_state": {
+          "sampling_frequency": "30000000",
+          "rf_bandwidth": "2500000",
+          "gain_control_mode": "manual",
+          "hardwaregain": "30.000000 dB",
+          "rf_port_select": "A_BALANCED",
+          "rx_lo": "1690312496",
+          "tx_powerdown": "1",
+          "tx_gain": "-80.000000 dB",
+          "ensm_mode": "rx"
+        },
+        "requested_lo_hz": 1690312496,
+        "lo_rounding_hz": 0
+      },
+      "calibration": {
+        "flags": 17,
+        "max_freq": 0,
+        "source_rate": 30000000,
+        "status": "passed",
+        "before_rx_delay": 8,
+        "rf_before": {
+          "sampling_frequency": "30000000",
+          "rf_bandwidth": "2500000",
+          "gain_control_mode": "manual",
+          "hardwaregain": "30.000000 dB",
+          "rf_port_select": "A_BALANCED",
+          "rx_lo": "1690312496",
+          "tx_powerdown": "1",
+          "tx_gain": "-80.000000 dB",
+          "ensm_mode": "rx"
+        },
+        "registers_before": {
+          "0x006": 8,
+          "0x007": 9,
+          "0x013": 0,
+          "0x014": 73,
+          "0x015": 0,
+          "0x3f4": 0,
+          "0x3f5": 0
+        },
+        "selected_rx_delay": 8,
+        "eye": "CLK: 30000000 Hz 'o' = PASS\nDC0:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:\n0:o o o . . . . . . . o o o o o o \n1:o o o o . . . . . . . o o o o o \n2:o o o o o . . . . . . . o o o o \n3:o o o o o o . . . . . . . o o o \n4:o o o o o o o . . . . . . . . o \n5:o o o o o o o o . . . . . . . o \n6:o o o o o o o o o . . . . . . . \n7:o o o o o o o o o o . . . . . . \n8:o o o o o o o o o o o . . . . . \n9:o o o o o o o o o o o o . . . . \na:o o o o o o o o o o o o . . . . \nb:o o o o o o o o o o o o o . . . \nc:o o o o o o o o o o o o o o . . \nd:o o o o o o o o o o o o o o o . \ne:o o o o o o o o o o o o o o o o \nf:o o o o o o o o o o o o o o o o \n",
+        "clock_delay": 0,
+        "data_delay": 8,
+        "passing_points": 181,
+        "diagnostic_trigger_cleared": true,
+        "state_restored": true
+      },
+      "probe_exit_code": 0,
+      "artifacts": {
+        "capture.txt": {
+          "bytes": 2680268,
+          "sha256": "ffb5bcd612a02d13fdfa1524aaa65f9e103efa810a9428777d2b3cb4a84b7c70"
+        },
+        "iq.ci16": {
+          "bytes": 268435456,
+          "sha256": "1883010b926242b81baffaae18047a8a1cebf4df2ba2c5d3b29f202aa862c2d3"
+        },
+        "worker.jsonl": {
+          "bytes": 106986,
+          "sha256": "6c8f859a32d295c38cc451d15f870a49dc22a299d442f85319cd7bbcfe186301"
+        },
+        "worker.iq.ci16": {
+          "bytes": 2541824,
+          "sha256": "25600780f45637b0e7cc8ff6a9d8abb5c920370ce9fdd270a9ae5eee6507c890"
+        },
+        "grids.u32": {
+          "bytes": 2346432,
+          "sha256": "9a4676d9d8c1193596e550d01545ebbc4cefdf42b17850a8590e49abc9c902f3"
+        },
+        "native.journal": {
+          "bytes": 6,
+          "sha256": "302eea27dbd69460f8d592f373cb6e534f29caee12864427a6a954e5f721fbc0"
+        }
+      },
+      "rf_after": {
+        "sampling_frequency": "30000000",
+        "rf_bandwidth": "2500000",
+        "gain_control_mode": "manual",
+        "hardwaregain": "30.000000 dB",
+        "rf_port_select": "A_BALANCED",
+        "rx_lo": "1690312496",
+        "tx_powerdown": "1",
+        "tx_gain": "-80.000000 dB",
+        "ensm_mode": "rx"
+      },
+      "after": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "temporary_files_removed": true
+    },
+    "cpu-live30-long-lo1690-v1/independent-review.json": {
+      "status": "pass",
+      "scope": "loaded_ranked_acquisition_rejection",
+      "capture_complete": true,
+      "rate": 30000000,
+      "exported_samples": 67108864,
+      "unretained_exported_samples": 0,
+      "iq_samples": 67108864,
+      "rf_seconds": 26.8435456,
+      "coarse_origin": 5271671180,
+      "epoch_binding": [
+        9122201,
+        5,
+        63260286672,
+        5271690557
+      ],
+      "cdc_drops": 0,
+      "pacer_drops": 0,
+      "grid_values_checked": 586608,
+      "candidate_fft_scores_checked": 128,
+      "hypotheses_checked": 272,
+      "moment_heads_checked": 128,
+      "worker_iq_samples_checked": 635456,
+      "attempts": 16,
+      "supported_handoffs": 0,
+      "native_results": 0,
+      "max_refill_gap_ns": 7441068,
+      "timings": [
+        {
+          "attempt": 1,
+          "scan_ms": 764.988482,
+          "rank_ms": 66.781542,
+          "scan_and_rank_ms": 832.58849,
+          "worker_ms": 609.660102,
+          "seed_age_ms": 838.3388
+        },
+        {
+          "attempt": 2,
+          "scan_ms": 689.141053,
+          "rank_ms": 66.593041,
+          "scan_and_rank_ms": 756.396254,
+          "worker_ms": 609.17925,
+          "seed_age_ms": 759.6092
+        },
+        {
+          "attempt": 3,
+          "scan_ms": 686.473513,
+          "rank_ms": 66.37329,
+          "scan_and_rank_ms": 753.487639,
+          "worker_ms": 607.6074,
+          "seed_age_ms": 759.6428
+        },
+        {
+          "attempt": 4,
+          "scan_ms": 685.005931,
+          "rank_ms": 66.262483,
+          "scan_and_rank_ms": 752.009246,
+          "worker_ms": 608.624556,
+          "seed_age_ms": 753.0448
+        },
+        {
+          "attempt": 5,
+          "scan_ms": 682.269991,
+          "rank_ms": 66.094818,
+          "scan_and_rank_ms": 749.130919,
+          "worker_ms": 609.223308,
+          "seed_age_ms": 759.6128
+        },
+        {
+          "attempt": 6,
+          "scan_ms": 686.624431,
+          "rank_ms": 66.435925,
+          "scan_and_rank_ms": 753.737612,
+          "worker_ms": 607.14204,
+          "seed_age_ms": 759.6116
+        },
+        {
+          "attempt": 7,
+          "scan_ms": 688.745065,
+          "rank_ms": 66.389743,
+          "scan_and_rank_ms": 755.819762,
+          "worker_ms": 609.449616,
+          "seed_age_ms": 766.1412
+        },
+        {
+          "attempt": 8,
+          "scan_ms": 684.594732,
+          "rank_ms": 66.648727,
+          "scan_and_rank_ms": 751.877317,
+          "worker_ms": 609.49329,
+          "seed_age_ms": 753.0548
+        },
+        {
+          "attempt": 9,
+          "scan_ms": 688.846651,
+          "rank_ms": 66.233557,
+          "scan_and_rank_ms": 755.871452,
+          "worker_ms": 607.245792,
+          "seed_age_ms": 766.17
+        },
+        {
+          "attempt": 10,
+          "scan_ms": 688.825482,
+          "rank_ms": 66.291169,
+          "scan_and_rank_ms": 755.860585,
+          "worker_ms": 609.557796,
+          "seed_age_ms": 766.138
+        },
+        {
+          "attempt": 11,
+          "scan_ms": 683.607691,
+          "rank_ms": 66.452395,
+          "scan_and_rank_ms": 750.675584,
+          "worker_ms": 608.644932,
+          "seed_age_ms": 753.0496
+        },
+        {
+          "attempt": 12,
+          "scan_ms": 688.464013,
+          "rank_ms": 66.162924,
+          "scan_and_rank_ms": 755.355349,
+          "worker_ms": 607.3254,
+          "seed_age_ms": 759.5996
+        },
+        {
+          "attempt": 13,
+          "scan_ms": 686.192839,
+          "rank_ms": 65.523619,
+          "scan_and_rank_ms": 752.34443,
+          "worker_ms": 604.043874,
+          "seed_age_ms": 759.6152
+        },
+        {
+          "attempt": 14,
+          "scan_ms": 757.149739,
+          "rank_ms": 65.846809,
+          "scan_and_rank_ms": 823.68053,
+          "worker_ms": 604.337154,
+          "seed_age_ms": 831.694
+        },
+        {
+          "attempt": 15,
+          "scan_ms": 760.298533,
+          "rank_ms": 65.618143,
+          "scan_and_rank_ms": 826.566956,
+          "worker_ms": 602.029938,
+          "seed_age_ms": 831.6888
+        },
+        {
+          "attempt": 16,
+          "scan_ms": 765.781472,
+          "rank_ms": 65.89377,
+          "scan_and_rank_ms": 832.299656,
+          "worker_ms": 603.483678,
+          "seed_age_ms": 838.2936
+        }
+      ],
+      "live_tracking_qualified": false,
+      "reported_supported_history": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pre_epoch_drops": [
+        0,
+        0
+      ],
+      "reviewer_sha256": "ad547833a9389b4a69e767a98f9a50d66b8627cd52af0fe1d8827f8ff139135c",
+      "sha256": {
+        "operator.json": "1b942f0048437ebd9f98f8d38a3844196ce65369d3e17d13113dfed1f1b1d5d0",
+        "stdout.json": "3de23dac8b0147c109f1bb3e9cc19d34da7c01b82312246dc611df59ccd7b736",
+        "stderr.txt": "048e2ba89ae430962e02f5341cf60c694fb7e131cb417790075a56b32ca09992",
+        "capture.txt": "ffb5bcd612a02d13fdfa1524aaa65f9e103efa810a9428777d2b3cb4a84b7c70",
+        "iq.ci16": "1883010b926242b81baffaae18047a8a1cebf4df2ba2c5d3b29f202aa862c2d3",
+        "worker.jsonl": "6c8f859a32d295c38cc451d15f870a49dc22a299d442f85319cd7bbcfe186301",
+        "worker.iq.ci16": "25600780f45637b0e7cc8ff6a9d8abb5c920370ce9fdd270a9ae5eee6507c890",
+        "grids.u32": "9a4676d9d8c1193596e550d01545ebbc4cefdf42b17850a8590e49abc9c902f3",
+        "native.journal": "302eea27dbd69460f8d592f373cb6e534f29caee12864427a6a954e5f721fbc0"
+      }
+    },
+    "dense-saved-scan-v1/summary.json": {
+      "scope": "exploratory_dense_saved_iq_coarse_and_pilot_order",
+      "sources": [
+        {
+          "source": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/cpu-live30-long-lo1190-v1/iq.ci16",
+          "source_sha256": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c",
+          "samples": 62912512,
+          "spacing_samples": 125000,
+          "window_samples": 14000,
+          "best": {
+            "offset": 38500000,
+            "selected_rank": 0,
+            "peaks": [
+              [
+                2918,
+                10,
+                25141
+              ],
+              [
+                2291,
+                4,
+                23901
+              ],
+              [
+                2740,
+                4,
+                23513
+              ],
+              [
+                2510,
+                8,
+                23484
+              ],
+              [
+                1108,
+                4,
+                23352
+              ],
+              [
+                3218,
+                7,
+                23351
+              ],
+              [
+                2237,
+                6,
+                23346
+              ],
+              [
+                1411,
+                9,
+                23346
+              ]
+            ],
+            "single_pilot_power": [
+              0.08881486864999057,
+              0.003062053831830944,
+              0.003959260166406225,
+              0.003702943262595143,
+              0.0029711301776259545,
+              0.0040773166882119944,
+              0.003067010461655105,
+              0.004227786761259201
+            ]
+          },
+          "elapsed_s": 12.766150392824784,
+          "tracking_qualified": false
+        },
+        {
+          "source": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/cpu-live30-long-lo1690-v1/iq.ci16",
+          "source_sha256": "1883010b926242b81baffaae18047a8a1cebf4df2ba2c5d3b29f202aa862c2d3",
+          "samples": 67108864,
+          "spacing_samples": 125000,
+          "window_samples": 14000,
+          "best": {
+            "offset": 50000000,
+            "selected_rank": 3,
+            "peaks": [
+              [
+                1274,
+                6,
+                24812
+              ],
+              [
+                334,
+                3,
+                24303
+              ],
+              [
+                3100,
+                3,
+                23800
+              ],
+              [
+                2034,
+                9,
+                23375
+              ],
+              [
+                67,
+                7,
+                23328
+              ],
+              [
+                2548,
+                6,
+                23307
+              ],
+              [
+                2416,
+                5,
+                23274
+              ],
+              [
+                1133,
+                3,
+                23270
+              ]
+            ],
+            "single_pilot_power": [
+              0.0028008629268603414,
+              0.0034689962550512785,
+              0.002672487670063808,
+              0.01613899092452003,
+              0.0028470697259961554,
+              0.0031656642221167845,
+              0.0029085747149248877,
+              0.0035922525126249887
+            ]
+          },
+          "elapsed_s": 13.39824265288189,
+          "tracking_qualified": false
+        },
+        {
+          "source": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/paced-replay-input-v1/positive.ci16",
+          "source_sha256": "cafed4ae0e376bdf29d096eeba2902b0edae67ec67cd54073d2692bfa7f9b9ff",
+          "samples": 6250000,
+          "spacing_samples": 125000,
+          "window_samples": 14000,
+          "best": {
+            "offset": 1875000,
+            "selected_rank": 0,
+            "peaks": [
+              [
+                1709,
+                10,
+                24625
+              ],
+              [
+                635,
+                6,
+                24208
+              ],
+              [
+                1176,
+                8,
+                23630
+              ],
+              [
+                2638,
+                1,
+                23429
+              ],
+              [
+                1381,
+                4,
+                23416
+              ],
+              [
+                1770,
+                4,
+                23406
+              ],
+              [
+                2747,
+                4,
+                23379
+              ],
+              [
+                2643,
+                3,
+                23206
+              ]
+            ],
+            "single_pilot_power": [
+              0.08268613368209209,
+              0.0028597948291853464,
+              0.0028431263808820586,
+              0.0028673461513309974,
+              0.0028381549607842216,
+              0.002747979780882794,
+              0.0027457057798954726,
+              0.003810911731723755
+            ]
+          },
+          "elapsed_s": 1.2730100341141224,
+          "tracking_qualified": false
+        }
+      ],
+      "new_rf_samples": 0,
+      "reviewer_sha256": "50d73e08e502dab4b8529c7ca813a87bb3f1708d08113051211ba63f701a076c"
+    },
+    "current-ranked-replay-v1/summary.json": {
+      "scope": "current_saved_iq_with_simulated_arm_processing_cost",
+      "source_iq_sha256": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c",
+      "source_origin": 4633229806,
+      "cases": [
+        {
+          "case": 0,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 38500000,
+          "source_window": 4671729806,
+          "peaks": [
+            [
+              2918,
+              10,
+              25141
+            ],
+            [
+              2291,
+              4,
+              23901
+            ],
+            [
+              2740,
+              4,
+              23513
+            ],
+            [
+              2510,
+              8,
+              23484
+            ],
+            [
+              1108,
+              4,
+              23352
+            ],
+            [
+              3218,
+              7,
+              23351
+            ],
+            [
+              2237,
+              6,
+              23346
+            ],
+            [
+              1411,
+              9,
+              23346
+            ]
+          ],
+          "single_pilot_scores": [
+            0.08881486864999057,
+            0.003062053831830944,
+            0.003959260166406225,
+            0.003702943262595143,
+            0.0029711301776259545,
+            0.0040773166882119944,
+            0.003067010461655105,
+            0.004227786761259201
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4673616071,
+            4673616079,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 1,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 32125000,
+          "source_window": 4665354806,
+          "peaks": [
+            [
+              1419,
+              4,
+              24146
+            ],
+            [
+              2249,
+              7,
+              23758
+            ],
+            [
+              2918,
+              7,
+              23653
+            ],
+            [
+              2761,
+              2,
+              23396
+            ],
+            [
+              1218,
+              10,
+              23226
+            ],
+            [
+              2394,
+              6,
+              23153
+            ],
+            [
+              3131,
+              7,
+              23126
+            ],
+            [
+              824,
+              5,
+              23060
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0029055247901230226,
+            0.002649694245675839,
+            0.0025512916255790107,
+            0.002787227193036528,
+            0.08502534433725949,
+            0.0028682344947220783,
+            0.0028039416572272395,
+            0.003369597020807343
+          ],
+          "selected_rank": 4,
+          "worker_status": -6,
+          "summary": [
+            4667239371,
+            4667239379,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 2,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 28125000,
+          "source_window": 4661354806,
+          "peaks": [
+            [
+              1195,
+              10,
+              24556
+            ],
+            [
+              2127,
+              0,
+              24071
+            ],
+            [
+              3063,
+              3,
+              23787
+            ],
+            [
+              3128,
+              5,
+              23740
+            ],
+            [
+              325,
+              5,
+              23495
+            ],
+            [
+              2103,
+              1,
+              23461
+            ],
+            [
+              3191,
+              8,
+              23404
+            ],
+            [
+              2311,
+              2,
+              23319
+            ]
+          ],
+          "single_pilot_scores": [
+            0.08150109266811315,
+            0.0026438645608191608,
+            0.0027780916627375414,
+            0.002627881078870364,
+            0.0041655062894488835,
+            0.0026690902443915585,
+            0.002822334798396202,
+            0.002947623472818601
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4663239348,
+            4663239356,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 3,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 21250000,
+          "source_window": 4654479806,
+          "peaks": [
+            [
+              2931,
+              9,
+              24459
+            ],
+            [
+              3162,
+              8,
+              23794
+            ],
+            [
+              2817,
+              10,
+              23689
+            ],
+            [
+              2374,
+              3,
+              23685
+            ],
+            [
+              2866,
+              10,
+              23634
+            ],
+            [
+              3288,
+              4,
+              23611
+            ],
+            [
+              1649,
+              2,
+              23268
+            ],
+            [
+              2975,
+              4,
+              23179
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003133949224632276,
+            0.004072370297742379,
+            0.07811671854652223,
+            0.0026857082214106014,
+            0.004043280471615038,
+            0.0027648250719175408,
+            0.0030528262789210957,
+            0.0035430627817832593
+          ],
+          "selected_rank": 2,
+          "worker_status": -6,
+          "summary": [
+            4656365970,
+            4656365978,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 4,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 44625000,
+          "source_window": 4677854806,
+          "peaks": [
+            [
+              1402,
+              5,
+              25046
+            ],
+            [
+              1282,
+              10,
+              24194
+            ],
+            [
+              1955,
+              3,
+              23730
+            ],
+            [
+              2012,
+              1,
+              23647
+            ],
+            [
+              2839,
+              7,
+              23609
+            ],
+            [
+              1231,
+              7,
+              23502
+            ],
+            [
+              2965,
+              9,
+              23467
+            ],
+            [
+              1354,
+              5,
+              23368
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0029965124013763404,
+            0.07481572088208592,
+            0.0028459517917263713,
+            0.003217912666424254,
+            0.003150155463463126,
+            0.0032720780427790276,
+            0.0027411283913642143,
+            0.0030168645803684085
+          ],
+          "selected_rank": 1,
+          "worker_status": -6,
+          "summary": [
+            4679739435,
+            4679739443,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 5,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 51875000,
+          "source_window": 4685104806,
+          "peaks": [
+            [
+              1313,
+              10,
+              24322
+            ],
+            [
+              2672,
+              6,
+              24210
+            ],
+            [
+              535,
+              8,
+              24045
+            ],
+            [
+              642,
+              5,
+              23734
+            ],
+            [
+              2610,
+              4,
+              23667
+            ],
+            [
+              1653,
+              4,
+              23624
+            ],
+            [
+              1313,
+              8,
+              23464
+            ],
+            [
+              3234,
+              2,
+              23417
+            ]
+          ],
+          "single_pilot_scores": [
+            0.07268236854435413,
+            0.0025307619787506997,
+            0.0031909005878888457,
+            0.0028111088965321706,
+            0.0024105032965015508,
+            0.003396527780069674,
+            0.07268236854435413,
+            0.0024451345958367665
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4686989466,
+            4686989474,
+            21845,
+            68,
+            8,
+            0,
+            6,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 6,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 35625000,
+          "source_window": 4668854806,
+          "peaks": [
+            [
+              3226,
+              9,
+              23988
+            ],
+            [
+              1237,
+              10,
+              23971
+            ],
+            [
+              1514,
+              6,
+              23878
+            ],
+            [
+              1662,
+              5,
+              23698
+            ],
+            [
+              3321,
+              7,
+              23446
+            ],
+            [
+              683,
+              1,
+              23350
+            ],
+            [
+              682,
+              5,
+              23180
+            ],
+            [
+              528,
+              2,
+              23172
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003191272817929396,
+            0.06133022846129686,
+            0.003325207187283076,
+            0.002625857206151824,
+            0.0026609024452531847,
+            0.002756769585886352,
+            0.0028152056219615472,
+            0.0025575919083737964
+          ],
+          "selected_rank": 1,
+          "worker_status": -6,
+          "summary": [
+            4670739390,
+            4670739398,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 7,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 23375000,
+          "source_window": 4656604806,
+          "peaks": [
+            [
+              1165,
+              10,
+              24367
+            ],
+            [
+              2253,
+              5,
+              24050
+            ],
+            [
+              1992,
+              2,
+              23936
+            ],
+            [
+              923,
+              2,
+              23812
+            ],
+            [
+              284,
+              7,
+              23809
+            ],
+            [
+              1808,
+              4,
+              23797
+            ],
+            [
+              44,
+              3,
+              23790
+            ],
+            [
+              1706,
+              3,
+              23651
+            ]
+          ],
+          "single_pilot_scores": [
+            0.06086785060545125,
+            0.002893825351325109,
+            0.0036726201108606697,
+            0.003270569110580957,
+            0.0032953339091765775,
+            0.0031027377167697555,
+            0.0026823458196943116,
+            0.00307160923947004
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4658489318,
+            4658489326,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 8,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 0,
+          "source_window": 4633229806,
+          "peaks": [
+            [
+              3273,
+              3,
+              24300
+            ],
+            [
+              2974,
+              4,
+              23730
+            ],
+            [
+              1604,
+              2,
+              23576
+            ],
+            [
+              1947,
+              7,
+              23517
+            ],
+            [
+              2900,
+              7,
+              23361
+            ],
+            [
+              93,
+              6,
+              23311
+            ],
+            [
+              1630,
+              5,
+              23268
+            ],
+            [
+              2702,
+              4,
+              23262
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0037172580409553005,
+            0.0027140941248415887,
+            0.0031749885285564236,
+            0.002899033968611754,
+            0.003154806854024634,
+            0.0029951874676226297,
+            0.003261271857680382,
+            0.0024647273459461254
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4635116426,
+            4635116434,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 9,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 250000,
+          "source_window": 4633479806,
+          "peaks": [
+            [
+              3058,
+              8,
+              24442
+            ],
+            [
+              3008,
+              3,
+              23927
+            ],
+            [
+              674,
+              4,
+              23868
+            ],
+            [
+              2482,
+              4,
+              23712
+            ],
+            [
+              1382,
+              1,
+              23710
+            ],
+            [
+              1873,
+              4,
+              23617
+            ],
+            [
+              2058,
+              7,
+              23548
+            ],
+            [
+              2548,
+              3,
+              23515
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003495275650202264,
+            0.002750938778838662,
+            0.0027023189971815908,
+            0.0028264372065138817,
+            0.002736006409941936,
+            0.002602337541074943,
+            0.0025610304589797194,
+            0.002661016342229519
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4635366211,
+            4635366219,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 10,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 500000,
+          "source_window": 4633729806,
+          "peaks": [
+            [
+              3102,
+              3,
+              25148
+            ],
+            [
+              3330,
+              5,
+              24461
+            ],
+            [
+              56,
+              6,
+              23898
+            ],
+            [
+              494,
+              5,
+              23803
+            ],
+            [
+              2081,
+              5,
+              23708
+            ],
+            [
+              3054,
+              2,
+              23658
+            ],
+            [
+              2278,
+              4,
+              23509
+            ],
+            [
+              2602,
+              5,
+              23464
+            ]
+          ],
+          "single_pilot_scores": [
+            0.004434921826410428,
+            0.003667965661137622,
+            0.0024320548270042285,
+            0.0027671577313848877,
+            0.003308956649238196,
+            0.003339709765336844,
+            0.0033803156159778413,
+            0.003004923112840012
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4635616255,
+            4635616263,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 11,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 750000,
+          "source_window": 4633979806,
+          "peaks": [
+            [
+              1542,
+              4,
+              23509
+            ],
+            [
+              3007,
+              6,
+              23456
+            ],
+            [
+              1524,
+              7,
+              23367
+            ],
+            [
+              3263,
+              4,
+              23255
+            ],
+            [
+              849,
+              7,
+              23185
+            ],
+            [
+              2439,
+              5,
+              23110
+            ],
+            [
+              445,
+              7,
+              23107
+            ],
+            [
+              2356,
+              2,
+              23040
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0028064037738259905,
+            0.0026419032856362453,
+            0.0025346539334598745,
+            0.002670242435900886,
+            0.0024881447568242078,
+            0.0030396756532729157,
+            0.003918439817557932,
+            0.002444080872117656
+          ],
+          "selected_rank": 6,
+          "worker_status": -6,
+          "summary": [
+            4635863598,
+            4635863606,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        }
+      ],
+      "modeled_scan_ms": 840,
+      "modeled_resolver_ms": 600,
+      "modeled_past_pilot_ms": 2.5,
+      "real_arm_execution": false,
+      "live_tracking_qualified": false,
+      "new_rf_samples": 0,
+      "reviewer_sha256": "ce7a1899915e8ddff52ac640678427c8be8aeeb3ddf7da89b3335c91842826d8"
+    },
+    "current-original-seed-replay-v1/summary.json": {
+      "scope": "current_saved_iq_with_simulated_arm_processing_cost",
+      "source_iq_sha256": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c",
+      "source_origin": 4633229806,
+      "cases": [
+        {
+          "case": 0,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 38500000,
+          "source_window": 4671729806,
+          "peaks": [
+            [
+              2918,
+              10,
+              25141
+            ],
+            [
+              2291,
+              4,
+              23901
+            ],
+            [
+              2740,
+              4,
+              23513
+            ],
+            [
+              2510,
+              8,
+              23484
+            ],
+            [
+              1108,
+              4,
+              23352
+            ],
+            [
+              3218,
+              7,
+              23351
+            ],
+            [
+              2237,
+              6,
+              23346
+            ],
+            [
+              1411,
+              9,
+              23346
+            ]
+          ],
+          "single_pilot_scores": [
+            0.08881486864999057,
+            0.003062053831830944,
+            0.003959260166406225,
+            0.003702943262595143,
+            0.0029711301776259545,
+            0.0040773166882119944,
+            0.003067010461655105,
+            0.004227786761259201
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4671732738,
+            4671732746,
+            0,
+            68,
+            8,
+            0,
+            5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 1,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 32125000,
+          "source_window": 4665354806,
+          "peaks": [
+            [
+              1419,
+              4,
+              24146
+            ],
+            [
+              2249,
+              7,
+              23758
+            ],
+            [
+              2918,
+              7,
+              23653
+            ],
+            [
+              2761,
+              2,
+              23396
+            ],
+            [
+              1218,
+              10,
+              23226
+            ],
+            [
+              2394,
+              6,
+              23153
+            ],
+            [
+              3131,
+              7,
+              23126
+            ],
+            [
+              824,
+              5,
+              23060
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0029055247901230226,
+            0.002649694245675839,
+            0.0025512916255790107,
+            0.002787227193036528,
+            0.08502534433725949,
+            0.0028682344947220783,
+            0.0028039416572272395,
+            0.003369597020807343
+          ],
+          "selected_rank": 4,
+          "worker_status": 1,
+          "summary": [
+            4665356038,
+            4665356046,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            4669919403,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 2,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 28125000,
+          "source_window": 4661354806,
+          "peaks": [
+            [
+              1195,
+              10,
+              24556
+            ],
+            [
+              2127,
+              0,
+              24071
+            ],
+            [
+              3063,
+              3,
+              23787
+            ],
+            [
+              3128,
+              5,
+              23740
+            ],
+            [
+              325,
+              5,
+              23495
+            ],
+            [
+              2103,
+              1,
+              23461
+            ],
+            [
+              3191,
+              8,
+              23404
+            ],
+            [
+              2311,
+              2,
+              23319
+            ]
+          ],
+          "single_pilot_scores": [
+            0.08150109266811315,
+            0.0026438645608191608,
+            0.0027780916627375414,
+            0.002627881078870364,
+            0.0041655062894488835,
+            0.0026690902443915585,
+            0.002822334798396202,
+            0.002947623472818601
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            4661356015,
+            4661356023,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            4665919382,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 3,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 21250000,
+          "source_window": 4654479806,
+          "peaks": [
+            [
+              2931,
+              9,
+              24459
+            ],
+            [
+              3162,
+              8,
+              23794
+            ],
+            [
+              2817,
+              10,
+              23689
+            ],
+            [
+              2374,
+              3,
+              23685
+            ],
+            [
+              2866,
+              10,
+              23634
+            ],
+            [
+              3288,
+              4,
+              23611
+            ],
+            [
+              1649,
+              2,
+              23268
+            ],
+            [
+              2975,
+              4,
+              23179
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003133949224632276,
+            0.004072370297742379,
+            0.07811671854652223,
+            0.0026857082214106014,
+            0.004043280471615038,
+            0.0027648250719175408,
+            0.0030528262789210957,
+            0.0035430627817832593
+          ],
+          "selected_rank": 2,
+          "worker_status": -6,
+          "summary": [
+            4654482637,
+            4654482645,
+            0,
+            68,
+            8,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 4,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 44625000,
+          "source_window": 4677854806,
+          "peaks": [
+            [
+              1402,
+              5,
+              25046
+            ],
+            [
+              1282,
+              10,
+              24194
+            ],
+            [
+              1955,
+              3,
+              23730
+            ],
+            [
+              2012,
+              1,
+              23647
+            ],
+            [
+              2839,
+              7,
+              23609
+            ],
+            [
+              1231,
+              7,
+              23502
+            ],
+            [
+              2965,
+              9,
+              23467
+            ],
+            [
+              1354,
+              5,
+              23368
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0029965124013763404,
+            0.07481572088208592,
+            0.0028459517917263713,
+            0.003217912666424254,
+            0.003150155463463126,
+            0.0032720780427790276,
+            0.0027411283913642143,
+            0.0030168645803684085
+          ],
+          "selected_rank": 1,
+          "worker_status": -6,
+          "summary": [
+            4677856102,
+            4677856110,
+            0,
+            68,
+            85,
+            0,
+            81,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2652499972
+          ],
+          "simulated_elapsed_ms": 1652.499972
+        },
+        {
+          "case": 5,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 51875000,
+          "source_window": 4685104806,
+          "peaks": [
+            [
+              1313,
+              10,
+              24322
+            ],
+            [
+              2672,
+              6,
+              24210
+            ],
+            [
+              535,
+              8,
+              24045
+            ],
+            [
+              642,
+              5,
+              23734
+            ],
+            [
+              2610,
+              4,
+              23667
+            ],
+            [
+              1653,
+              4,
+              23624
+            ],
+            [
+              1313,
+              8,
+              23464
+            ],
+            [
+              3234,
+              2,
+              23417
+            ]
+          ],
+          "single_pilot_scores": [
+            0.07268236854435413,
+            0.0025307619787506997,
+            0.0031909005878888457,
+            0.0028111088965321706,
+            0.0024105032965015508,
+            0.003396527780069674,
+            0.07268236854435413,
+            0.0024451345958367665
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4685106133,
+            4685106141,
+            0,
+            68,
+            8,
+            0,
+            4,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 6,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 35625000,
+          "source_window": 4668854806,
+          "peaks": [
+            [
+              3226,
+              9,
+              23988
+            ],
+            [
+              1237,
+              10,
+              23971
+            ],
+            [
+              1514,
+              6,
+              23878
+            ],
+            [
+              1662,
+              5,
+              23698
+            ],
+            [
+              3321,
+              7,
+              23446
+            ],
+            [
+              683,
+              1,
+              23350
+            ],
+            [
+              682,
+              5,
+              23180
+            ],
+            [
+              528,
+              2,
+              23172
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003191272817929396,
+            0.06133022846129686,
+            0.003325207187283076,
+            0.002625857206151824,
+            0.0026609024452531847,
+            0.002756769585886352,
+            0.0028152056219615472,
+            0.0025575919083737964
+          ],
+          "selected_rank": 1,
+          "worker_status": -6,
+          "summary": [
+            4668856057,
+            4668856065,
+            0,
+            68,
+            8,
+            0,
+            5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 7,
+          "selected_strong_pilot": true,
+          "prior_track_id": null,
+          "input_sample": 23375000,
+          "source_window": 4656604806,
+          "peaks": [
+            [
+              1165,
+              10,
+              24367
+            ],
+            [
+              2253,
+              5,
+              24050
+            ],
+            [
+              1992,
+              2,
+              23936
+            ],
+            [
+              923,
+              2,
+              23812
+            ],
+            [
+              284,
+              7,
+              23809
+            ],
+            [
+              1808,
+              4,
+              23797
+            ],
+            [
+              44,
+              3,
+              23790
+            ],
+            [
+              1706,
+              3,
+              23651
+            ]
+          ],
+          "single_pilot_scores": [
+            0.06086785060545125,
+            0.002893825351325109,
+            0.0036726201108606697,
+            0.003270569110580957,
+            0.0032953339091765775,
+            0.0031027377167697555,
+            0.0026823458196943116,
+            0.00307160923947004
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            4656605985,
+            4656605993,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            4661169355,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 8,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 0,
+          "source_window": 4633229806,
+          "peaks": [
+            [
+              3273,
+              3,
+              24300
+            ],
+            [
+              2974,
+              4,
+              23730
+            ],
+            [
+              1604,
+              2,
+              23576
+            ],
+            [
+              1947,
+              7,
+              23517
+            ],
+            [
+              2900,
+              7,
+              23361
+            ],
+            [
+              93,
+              6,
+              23311
+            ],
+            [
+              1630,
+              5,
+              23268
+            ],
+            [
+              2702,
+              4,
+              23262
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0037172580409553005,
+            0.0027140941248415887,
+            0.0031749885285564236,
+            0.002899033968611754,
+            0.003154806854024634,
+            0.0029951874676226297,
+            0.003261271857680382,
+            0.0024647273459461254
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4633233093,
+            4633233101,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 9,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 250000,
+          "source_window": 4633479806,
+          "peaks": [
+            [
+              3058,
+              8,
+              24442
+            ],
+            [
+              3008,
+              3,
+              23927
+            ],
+            [
+              674,
+              4,
+              23868
+            ],
+            [
+              2482,
+              4,
+              23712
+            ],
+            [
+              1382,
+              1,
+              23710
+            ],
+            [
+              1873,
+              4,
+              23617
+            ],
+            [
+              2058,
+              7,
+              23548
+            ],
+            [
+              2548,
+              3,
+              23515
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003495275650202264,
+            0.002750938778838662,
+            0.0027023189971815908,
+            0.0028264372065138817,
+            0.002736006409941936,
+            0.002602337541074943,
+            0.0025610304589797194,
+            0.002661016342229519
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4633482878,
+            4633482886,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 10,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 500000,
+          "source_window": 4633729806,
+          "peaks": [
+            [
+              3102,
+              3,
+              25148
+            ],
+            [
+              3330,
+              5,
+              24461
+            ],
+            [
+              56,
+              6,
+              23898
+            ],
+            [
+              494,
+              5,
+              23803
+            ],
+            [
+              2081,
+              5,
+              23708
+            ],
+            [
+              3054,
+              2,
+              23658
+            ],
+            [
+              2278,
+              4,
+              23509
+            ],
+            [
+              2602,
+              5,
+              23464
+            ]
+          ],
+          "single_pilot_scores": [
+            0.004434921826410428,
+            0.003667965661137622,
+            0.0024320548270042285,
+            0.0027671577313848877,
+            0.003308956649238196,
+            0.003339709765336844,
+            0.0033803156159778413,
+            0.003004923112840012
+          ],
+          "selected_rank": 0,
+          "worker_status": -6,
+          "summary": [
+            4633732922,
+            4633732930,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 11,
+          "selected_strong_pilot": false,
+          "prior_track_id": null,
+          "input_sample": 750000,
+          "source_window": 4633979806,
+          "peaks": [
+            [
+              1542,
+              4,
+              23509
+            ],
+            [
+              3007,
+              6,
+              23456
+            ],
+            [
+              1524,
+              7,
+              23367
+            ],
+            [
+              3263,
+              4,
+              23255
+            ],
+            [
+              849,
+              7,
+              23185
+            ],
+            [
+              2439,
+              5,
+              23110
+            ],
+            [
+              445,
+              7,
+              23107
+            ],
+            [
+              2356,
+              2,
+              23040
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0028064037738259905,
+            0.0026419032856362453,
+            0.0025346539334598745,
+            0.002670242435900886,
+            0.0024881447568242078,
+            0.0030396756532729157,
+            0.003918439817557932,
+            0.002444080872117656
+          ],
+          "selected_rank": 6,
+          "worker_status": -6,
+          "summary": [
+            4633980265,
+            4633980273,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        }
+      ],
+      "seed_policy": "original_candidate_epoch",
+      "component_sha256": {
+        "tools/glrt_tracking_solver_bench.c": "6eba6fbb549794ac252a61fd18ffb332c65a097c7b015be36f8c986b350ec6cc",
+        "tools/glrt_native_radio.c": "61410941231b489bf13ccec0e89505f6a20c5488c6e7a0e65106155103f300d0",
+        "tools/glrt_cpu_seed.c": "b05e6e7f7d511024724815972c10ac5dd9abbf1382d4dc01b9c84bd8f9a76dd9",
+        "tools/glrt_tracking_bootstrap.h": "1157e649eb430056fb0e38e03703d901f707beef87c8db4b4abcdb10ffb918ec",
+        "tools/glrt_native_schedule.c": "19fb8397898053345c637352ce1381aad93176a2ec6b8c7c6656401b25cb7b1d",
+        "tools/glrt_cpu_coarse.c": "1c19045ddc98aded36eaa4d51de9595d251283c56f074125586b55572489a92a",
+        "tools/glrt_tracking_resolver.c": "346a40bc7888227c3d5d20f7a0f21f6b20ec4673050c9925628f4642fc325f24",
+        "tools/glrt_tracking_iq.h": "8a14b691dd0e870ff6eaa7452d356995cde245c8c240486ab3652912d3f98e04",
+        "tools/glrt_native_schedule.h": "03cea37a2788cfd6ac1e0ce7d3be4f7c35c502be0eaf16a8b6bf1ab7ddca8e82",
+        "tools/glrt_cpu_live_probe.c": "8339256e22b8f5f006bdbddb11c687fa27a7530819a9756f945821054d577986",
+        "tools/glrt_native_controller.h": "cf1137e0d4b2d857256a81293635b608707249665baebc2b20a0aa6a86e11ad7",
+        "tools/glrt_capture_source.c": "00b4b92ae80eed922f3707668888e8466f773f4d55ff3d7affba3278c4645138",
+        "tools/glrt_tracking_recenter.c": "74d38a2b72ac110aa2a191bb0d5f5d83c0d03149b049833904bfdc3277119c4c",
+        "tools/glrt_tracking_schedule.h": "bed303fbc65b83339b75cf3482a43d81a2830ca1714af84eab98690c0b03c80f",
+        "tools/glrt_tracking_recent_iq.c": "10469858350d20e428858909c5d2831f52f85b37565f225dfd1384a0037e4cce",
+        "tools/glrt_tracking_live_bootstrap.c": "4ae0f5dcfc9a1c8af38c98936f96b2d5e4063311ad9b6e765a348815a6d7d1f2",
+        "tools/glrt_tracking_worker.c": "c2ea5926ea40746b317dcf84f267f1fa26fde5476340922190d1752de440554a",
+        "tools/glrt_tracking_recenter.h": "a93f99ddf6de0cd68140802a805fd7f56f031138a2fd77915860ef89d16124e7",
+        "tools/glrt_tracking_schedule.c": "8745c2cf249e21c0af7cc4827a0277c468555f84d339cf154ccde87b8e02aaca",
+        "tools/glrt_native_trend.c": "e25ba2452f5a06d98238e985b6140c7628ee2e48b0ff1e8f130da78aa4fa8c60",
+        "tools/glrt_cpu_tracking_bench.c": "623866fe5aefe09ced8227465244c4302cb43fbe2801a48e62def75c6fd4e256",
+        "tools/glrt_native_solver_bench.c": "35879f6f380d9b1e114a5f73d34c339f23adc4e5da20156cccfc7f7c23343940",
+        "tools/glrt_cpu_seed.h": "e8ead5559e00267aa6faa00dea83c4f6e024e923ef013ec1400b5125d815badf",
+        "tools/glrt_cpu_coarse.h": "ea72bb9c1c83ba9a01a046a8ab3589560145e199dfc23c39fccb2aa1976d316d",
+        "tools/glrt_native_posix.h": "eb56bf0fa777aaedb65b854df26f8f3eb5bfc390d7e15e154fd973a0b9089585",
+        "tools/glrt_native_posix.c": "243d86de961d824d8f4014b8614c18d1915f7481ee57811e9b6322794284cf9e",
+        "tools/glrt_cpu_coarse_bench.c": "f9f6500e9ee6413e6fa63f51d5265d569c74c2fea25d8cd6dfc4e726f6ae30de",
+        "tools/glrt_radio_iio_probe.c": "b28e4504405a3f56e432fb43cd409c9d75534100a238671314931c9a3022d5cf",
+        "tools/glrt_tracking_worker.h": "783cdbd02f3539d077af5649a96f41dcf02a7dc460a44795dfc9f339486ec0f7",
+        "tools/glrt_tracking_session.c": "8c6d06224ba924863ce3b30921abc3aa3665faa8c79713f7dbddd91017d73a74",
+        "tools/glrt_tracking_iq.c": "ba13333be6c82f779e85c49fb2e8807f2fd96859221db69fb16399e621c50373",
+        "tools/glrt_tracking_seed.h": "b4fed0b2cd537d6abbfdd018b596bd19e65ee4eebf2375801e80378d5b2d583c",
+        "tools/glrt_tracking_transport.c": "02349c8d77108fa74166f722e0997f3927645b9b315e3a9beaa182ac3cfca84d",
+        "tools/glrt_iq_tracking_probe.c": "d28ac09c9af66f98619d9e0eda2734b4e52da498fbd844c8877ae7093388523d",
+        "tools/glrt_iq_tracking_source.h": "2d96e5c1664dda2f2693568f5292b2a32deba06a6639a23a64bcb3e93c2caa82",
+        "tools/glrt_tracking_live_bootstrap.h": "9fe10aa5393c18e59e33f4426f8a4b0a61d0134d05570f35cd76b0b92580d91b",
+        "tools/glrt_tracking_iq_owner.c": "70adae706ab0cdc0e0e0aa6d2d952b6c6233a6973a7bf803f76044bef1e73378",
+        "tools/glrt_tracking_iq_owner.h": "181e50f4d7448747d7b3f98075cd862742344df21c59019994632de3dd5d00fd",
+        "tools/glrt_iq_tracking_source.c": "43d11c8531fcce8de26b08ba95c6eb02fa9b6395bf60a493abde0e4771a9754b",
+        "tools/glrt_native_solver.c": "85e7601311dc5293617940701c5ea015bc6d9490d6941530b8a58534b89a967e",
+        "tools/glrt_native_solver.h": "b94288638df4b358fa2081e9382b42bedec16c3ff8ce728b1551c6bb34dee877",
+        "tools/glrt_tracking_session.h": "931d32a7d5f4f7a103d3979e99b27b896295b6b0b69c352a63a8584cdf95c5d4",
+        "tools/glrt_native_trend.h": "c3fe3cff95332369b24cd0a4c2a3e7d65849d9f2ed24ad5882344953f7200a6a",
+        "tools/glrt_native_io_probe.c": "01d2c80c9d9a1b00779752436f0b370781fc6e0de78b7f6594eb33398edbc840",
+        "tools/glrt_tracking_trend.h": "e10f31a9212e3b1f3f56fe4a79cf8a5a324428f52d8d6061c734c73d3a8215a2",
+        "tools/glrt_capture_source.h": "f97254aaa1100143bf3a5878eb14cffc3d6c5b499ac6e27a31e839046cef62e0",
+        "tools/glrt_tracking_bootstrap.c": "e55cf043da3bee2ee54128c4120a37edf5b28ce5fa75a601e4f9aec14c3a1b15",
+        "tools/glrt_native_controller.c": "4241310e55b5df52172ae0e277e15f66b65347f2cd377562a1735626bdbb2c9a",
+        "tools/glrt_tracking_recent_iq.h": "efee10708f1ce7c95ee8d7138fc222977849ddd133abd18a0cc9523726be081a",
+        "tools/glrt_tracking_transport.h": "473e0be527986b6bb8507292b36b54a95482d6ba27d4e11e30927ad82dd34f3c",
+        "tools/glrt_tracking_resolver.h": "85a408d5d4db15a7c380f5269b98853fef165994e15486716c3d4e7873dcd5ee",
+        "tools/glrt_tracking_seed.c": "1ccb7c5bafcbbb0beea0c425b6d271d607c5f0ed5f04ed3a134b794aa58f4bd1"
+      },
+      "modeled_scan_ms": 840,
+      "modeled_resolver_ms": 600,
+      "modeled_past_pilot_ms": 2.5,
+      "real_arm_execution": false,
+      "live_tracking_qualified": false,
+      "new_rf_samples": 0,
+      "reviewer_sha256": "7aae42e73944f5d7a74143604d62d587d1982630cae19ea46d2bc194e9c6c763"
+    },
+    "historical-ranked-replay-v1/summary.json": {
+      "scope": "historical_real_iq_with_simulated_arm_processing_cost",
+      "source_iq_sha256": "bef04ec4eea45ac7a08048373ae1c71825f6b295ab1b7541e750811e58da91f8",
+      "source_origin": 121709333,
+      "cases": [
+        {
+          "case": 0,
+          "historical_supported": true,
+          "historical_track_id": 1,
+          "input_sample": 28250000,
+          "source_window": 149959333,
+          "peaks": [
+            [
+              2332,
+              6,
+              24529
+            ],
+            [
+              2105,
+              5,
+              24502
+            ],
+            [
+              1851,
+              4,
+              24348
+            ],
+            [
+              1291,
+              9,
+              23875
+            ],
+            [
+              1134,
+              4,
+              23747
+            ],
+            [
+              1811,
+              4,
+              23631
+            ],
+            [
+              2713,
+              8,
+              23494
+            ],
+            [
+              2761,
+              3,
+              23423
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0030910891135352138,
+            0.002639856141790913,
+            0.0036169237040366,
+            0.028008881064643096,
+            0.0034987584764813668,
+            0.003114973036944797,
+            0.0029476386264669797,
+            0.002669244936813364
+          ],
+          "selected_rank": 3,
+          "worker_status": -6,
+          "summary": [
+            151843971,
+            151843979,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 1,
+          "historical_supported": true,
+          "historical_track_id": 2,
+          "input_sample": 72557948,
+          "source_window": 194267281,
+          "peaks": [
+            [
+              72,
+              10,
+              27227
+            ],
+            [
+              71,
+              8,
+              25917
+            ],
+            [
+              3279,
+              5,
+              24485
+            ],
+            [
+              2416,
+              4,
+              24174
+            ],
+            [
+              909,
+              3,
+              23979
+            ],
+            [
+              1594,
+              4,
+              23966
+            ],
+            [
+              3261,
+              7,
+              23835
+            ],
+            [
+              2474,
+              6,
+              23621
+            ]
+          ],
+          "single_pilot_scores": [
+            0.14976407122332006,
+            0.15932231441553557,
+            0.0028819555748612986,
+            0.0024937053273175135,
+            0.0025056694971763755,
+            0.002425957414614055,
+            0.0027705853987088293,
+            0.003004620854890163
+          ],
+          "selected_rank": 1,
+          "worker_status": -6,
+          "summary": [
+            196150699,
+            196150707,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 2,
+          "historical_supported": true,
+          "historical_track_id": 3,
+          "input_sample": 162517619,
+          "source_window": 284226952,
+          "peaks": [
+            [
+              3194,
+              3,
+              24303
+            ],
+            [
+              3250,
+              3,
+              24112
+            ],
+            [
+              2124,
+              7,
+              23675
+            ],
+            [
+              282,
+              10,
+              23673
+            ],
+            [
+              2852,
+              3,
+              23592
+            ],
+            [
+              1229,
+              6,
+              23314
+            ],
+            [
+              1292,
+              6,
+              23260
+            ],
+            [
+              2742,
+              6,
+              23213
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003089965301018226,
+            0.003026172287864076,
+            0.002835911498946369,
+            0.06344245283566864,
+            0.00336536447928422,
+            0.0026845420897926545,
+            0.0027000062184399155,
+            0.0026029614328881017
+          ],
+          "selected_rank": 3,
+          "worker_status": -6,
+          "summary": [
+            286110581,
+            286110589,
+            21845,
+            68,
+            8,
+            0,
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 3,
+          "historical_supported": true,
+          "historical_track_id": 4,
+          "input_sample": 170857894,
+          "source_window": 292567227,
+          "peaks": [
+            [
+              37,
+              10,
+              24962
+            ],
+            [
+              2605,
+              4,
+              23879
+            ],
+            [
+              1030,
+              6,
+              23764
+            ],
+            [
+              2231,
+              5,
+              23531
+            ],
+            [
+              3055,
+              3,
+              23474
+            ],
+            [
+              1635,
+              4,
+              23448
+            ],
+            [
+              2709,
+              9,
+              23367
+            ],
+            [
+              256,
+              6,
+              23315
+            ]
+          ],
+          "single_pilot_scores": [
+            0.07175202993220887,
+            0.0029428366346562554,
+            0.0030438387820701553,
+            0.0026835478759553435,
+            0.002767788914609829,
+            0.0037051804884195173,
+            0.002947269084310836,
+            0.0034494420827180863
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            294450611,
+            294450619,
+            21845,
+            68,
+            73,
+            0,
+            73,
+            1,
+            0,
+            1,
+            656,
+            296637297,
+            2500000,
+            0,
+            0,
+            2622499972
+          ],
+          "simulated_elapsed_ms": 1622.499972
+        },
+        {
+          "case": 4,
+          "historical_supported": true,
+          "historical_track_id": 5,
+          "input_sample": 181297938,
+          "source_window": 303007271,
+          "peaks": [
+            [
+              3041,
+              3,
+              23897
+            ],
+            [
+              18,
+              10,
+              23800
+            ],
+            [
+              3317,
+              6,
+              23771
+            ],
+            [
+              1735,
+              5,
+              23737
+            ],
+            [
+              2476,
+              10,
+              23530
+            ],
+            [
+              1012,
+              2,
+              23506
+            ],
+            [
+              1633,
+              1,
+              23391
+            ],
+            [
+              77,
+              6,
+              23347
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003046289174532943,
+            0.06276450708400497,
+            0.003416058176080827,
+            0.0029739493043212865,
+            0.0030306989523769933,
+            0.0032732129405219413,
+            0.003521672790861904,
+            0.0027708180373220244
+          ],
+          "selected_rank": 1,
+          "worker_status": 1,
+          "summary": [
+            304890636,
+            304890644,
+            21845,
+            68,
+            73,
+            0,
+            71,
+            1,
+            0,
+            1,
+            656,
+            307077316,
+            2500000,
+            0,
+            0,
+            2622499972
+          ],
+          "simulated_elapsed_ms": 1622.499972
+        },
+        {
+          "case": 5,
+          "historical_supported": true,
+          "historical_track_id": 6,
+          "input_sample": 181624613,
+          "source_window": 303333946,
+          "peaks": [
+            [
+              2514,
+              6,
+              24449
+            ],
+            [
+              10,
+              10,
+              24306
+            ],
+            [
+              436,
+              2,
+              24045
+            ],
+            [
+              185,
+              5,
+              23643
+            ],
+            [
+              940,
+              5,
+              23495
+            ],
+            [
+              135,
+              2,
+              23409
+            ],
+            [
+              2038,
+              2,
+              23351
+            ],
+            [
+              3092,
+              4,
+              23334
+            ]
+          ],
+          "single_pilot_scores": [
+            0.004089269842982323,
+            0.07448242987435072,
+            0.00262448969083389,
+            0.002741875043793107,
+            0.003215686677162869,
+            0.0031037879131421303,
+            0.003503186810739054,
+            0.0028855947101740376
+          ],
+          "selected_rank": 1,
+          "worker_status": 1,
+          "summary": [
+            305217303,
+            305217311,
+            21845,
+            68,
+            73,
+            0,
+            71,
+            1,
+            0,
+            1,
+            656,
+            307403984,
+            2500000,
+            0,
+            0,
+            2622499972
+          ],
+          "simulated_elapsed_ms": 1622.499972
+        },
+        {
+          "case": 6,
+          "historical_supported": true,
+          "historical_track_id": 7,
+          "input_sample": 186281285,
+          "source_window": 307990618,
+          "peaks": [
+            [
+              11,
+              10,
+              26543
+            ],
+            [
+              3050,
+              3,
+              24107
+            ],
+            [
+              1368,
+              4,
+              23836
+            ],
+            [
+              650,
+              3,
+              23810
+            ],
+            [
+              3274,
+              3,
+              23691
+            ],
+            [
+              527,
+              4,
+              23680
+            ],
+            [
+              254,
+              6,
+              23499
+            ],
+            [
+              2116,
+              2,
+              23442
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0750770138170582,
+            0.003179572406199914,
+            0.0028988421022507985,
+            0.0023076403184843284,
+            0.0029471428531223022,
+            0.0029037427233593502,
+            0.003249026948277621,
+            0.0031711824094615357
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            309873976,
+            309873984,
+            21845,
+            68,
+            73,
+            0,
+            73,
+            1,
+            0,
+            1,
+            656,
+            312060654,
+            2500000,
+            0,
+            0,
+            2622499972
+          ],
+          "simulated_elapsed_ms": 1622.499972
+        },
+        {
+          "case": 7,
+          "historical_supported": true,
+          "historical_track_id": 8,
+          "input_sample": 217744607,
+          "source_window": 339453940,
+          "peaks": [
+            [
+              3329,
+              9,
+              25136
+            ],
+            [
+              1652,
+              7,
+              24133
+            ],
+            [
+              1350,
+              4,
+              24010
+            ],
+            [
+              2380,
+              6,
+              23782
+            ],
+            [
+              2837,
+              9,
+              23406
+            ],
+            [
+              2828,
+              1,
+              23392
+            ],
+            [
+              1727,
+              6,
+              23382
+            ],
+            [
+              3072,
+              3,
+              23343
+            ]
+          ],
+          "single_pilot_scores": [
+            0.09605468936827007,
+            0.0034711137129479035,
+            0.00310703671254802,
+            0.0029504483830042525,
+            0.003184748122865467,
+            0.0030451438793902864,
+            0.0025853316365261722,
+            0.0030513119034758437
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            341340616,
+            341340624,
+            21845,
+            68,
+            73,
+            0,
+            73,
+            1,
+            0,
+            1,
+            655,
+            343523945,
+            2500000,
+            0,
+            0,
+            2622499972
+          ],
+          "simulated_elapsed_ms": 1622.499972
+        },
+        {
+          "case": 8,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 0,
+          "source_window": 121709333,
+          "peaks": [
+            [
+              2139,
+              4,
+              23995
+            ],
+            [
+              2834,
+              7,
+              23871
+            ],
+            [
+              2562,
+              4,
+              23586
+            ],
+            [
+              1548,
+              6,
+              23463
+            ],
+            [
+              1494,
+              2,
+              23425
+            ],
+            [
+              2473,
+              5,
+              23409
+            ],
+            [
+              2330,
+              6,
+              23290
+            ],
+            [
+              199,
+              5,
+              23280
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0031069307549781095,
+            0.004675378047806195,
+            0.0032805192015498866,
+            0.003006900292264425,
+            0.003703804075391756,
+            0.0036217005071962336,
+            0.002924463882679029,
+            0.0028680381791653586
+          ],
+          "selected_rank": 1,
+          "worker_status": -6,
+          "summary": [
+            123595514,
+            123595522,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 9,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 250000,
+          "source_window": 121959333,
+          "peaks": [
+            [
+              2069,
+              7,
+              23902
+            ],
+            [
+              3026,
+              8,
+              23776
+            ],
+            [
+              2793,
+              5,
+              23651
+            ],
+            [
+              2240,
+              6,
+              23518
+            ],
+            [
+              289,
+              3,
+              23470
+            ],
+            [
+              2889,
+              7,
+              23429
+            ],
+            [
+              3156,
+              5,
+              23405
+            ],
+            [
+              3202,
+              7,
+              23401
+            ]
+          ],
+          "single_pilot_scores": [
+            0.002905042859192335,
+            0.003240536844745305,
+            0.00278949471159873,
+            0.003708615172407436,
+            0.002672626147464676,
+            0.002662897836754181,
+            0.002515584958626987,
+            0.003072647770648879
+          ],
+          "selected_rank": 3,
+          "worker_status": -6,
+          "summary": [
+            123844920,
+            123844928,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 10,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 500000,
+          "source_window": 122209333,
+          "peaks": [
+            [
+              2033,
+              2,
+              23789
+            ],
+            [
+              1933,
+              2,
+              23785
+            ],
+            [
+              2643,
+              5,
+              23549
+            ],
+            [
+              1571,
+              5,
+              23485
+            ],
+            [
+              2099,
+              7,
+              23440
+            ],
+            [
+              459,
+              6,
+              23419
+            ],
+            [
+              52,
+              2,
+              23293
+            ],
+            [
+              1788,
+              7,
+              23172
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003358119109582159,
+            0.002398472151703626,
+            0.002349946032165714,
+            0.0033864260720418856,
+            0.0027405748482342085,
+            0.0029220773264411254,
+            0.0036586141836496802,
+            0.002710983561332895
+          ],
+          "selected_rank": 6,
+          "worker_status": -6,
+          "summary": [
+            124092732,
+            124092740,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 11,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 750000,
+          "source_window": 122459333,
+          "peaks": [
+            [
+              2956,
+              8,
+              23806
+            ],
+            [
+              980,
+              4,
+              23788
+            ],
+            [
+              3295,
+              5,
+              23430
+            ],
+            [
+              2005,
+              7,
+              23426
+            ],
+            [
+              2864,
+              7,
+              23407
+            ],
+            [
+              1953,
+              2,
+              23371
+            ],
+            [
+              2998,
+              5,
+              23319
+            ],
+            [
+              1212,
+              6,
+              23228
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0028637540283313802,
+            0.0027877604337891064,
+            0.0033899590844290776,
+            0.0034406625461308802,
+            0.0028520771108349664,
+            0.002727799760359348,
+            0.0027099787659490707,
+            0.0029242855326158186
+          ],
+          "selected_rank": 3,
+          "worker_status": -6,
+          "summary": [
+            124344685,
+            124344693,
+            21845,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        }
+      ],
+      "modeled_scan_ms": 840,
+      "modeled_resolver_ms": 600,
+      "modeled_past_pilot_ms": 2.5,
+      "real_arm_execution": false,
+      "live_tracking_qualified": false,
+      "new_rf_samples": 0,
+      "reviewer_sha256": "c7689519898499594555ac4ec7aa07885ee4882acced174967010e183112e84e"
+    },
+    "historical-original-seed-replay-v1/summary.json": {
+      "scope": "historical_real_iq_with_simulated_arm_processing_cost",
+      "source_iq_sha256": "bef04ec4eea45ac7a08048373ae1c71825f6b295ab1b7541e750811e58da91f8",
+      "source_origin": 121709333,
+      "cases": [
+        {
+          "case": 0,
+          "historical_supported": true,
+          "historical_track_id": 1,
+          "input_sample": 28250000,
+          "source_window": 149959333,
+          "peaks": [
+            [
+              2332,
+              6,
+              24529
+            ],
+            [
+              2105,
+              5,
+              24502
+            ],
+            [
+              1851,
+              4,
+              24348
+            ],
+            [
+              1291,
+              9,
+              23875
+            ],
+            [
+              1134,
+              4,
+              23747
+            ],
+            [
+              1811,
+              4,
+              23631
+            ],
+            [
+              2713,
+              8,
+              23494
+            ],
+            [
+              2761,
+              3,
+              23423
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0030910891135352138,
+            0.002639856141790913,
+            0.0036169237040366,
+            0.028008881064643096,
+            0.0034987584764813668,
+            0.003114973036944797,
+            0.0029476386264669797,
+            0.002669244936813364
+          ],
+          "selected_rank": 3,
+          "worker_status": -6,
+          "summary": [
+            149960638,
+            149960646,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 1,
+          "historical_supported": true,
+          "historical_track_id": 2,
+          "input_sample": 72557948,
+          "source_window": 194267281,
+          "peaks": [
+            [
+              72,
+              10,
+              27227
+            ],
+            [
+              71,
+              8,
+              25917
+            ],
+            [
+              3279,
+              5,
+              24485
+            ],
+            [
+              2416,
+              4,
+              24174
+            ],
+            [
+              909,
+              3,
+              23979
+            ],
+            [
+              1594,
+              4,
+              23966
+            ],
+            [
+              3261,
+              7,
+              23835
+            ],
+            [
+              2474,
+              6,
+              23621
+            ]
+          ],
+          "single_pilot_scores": [
+            0.14976407122332006,
+            0.15932231441553557,
+            0.0028819555748612986,
+            0.0024937053273175135,
+            0.0025056694971763755,
+            0.002425957414614055,
+            0.0027705853987088293,
+            0.003004620854890163
+          ],
+          "selected_rank": 1,
+          "worker_status": 1,
+          "summary": [
+            194267366,
+            194267374,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            198830668,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 2,
+          "historical_supported": true,
+          "historical_track_id": 3,
+          "input_sample": 162517619,
+          "source_window": 284226952,
+          "peaks": [
+            [
+              3194,
+              3,
+              24303
+            ],
+            [
+              3250,
+              3,
+              24112
+            ],
+            [
+              2124,
+              7,
+              23675
+            ],
+            [
+              282,
+              10,
+              23673
+            ],
+            [
+              2852,
+              3,
+              23592
+            ],
+            [
+              1229,
+              6,
+              23314
+            ],
+            [
+              1292,
+              6,
+              23260
+            ],
+            [
+              2742,
+              6,
+              23213
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003089965301018226,
+            0.003026172287864076,
+            0.002835911498946369,
+            0.06344245283566864,
+            0.00336536447928422,
+            0.0026845420897926545,
+            0.0027000062184399155,
+            0.0026029614328881017
+          ],
+          "selected_rank": 3,
+          "worker_status": 1,
+          "summary": [
+            284227248,
+            284227256,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            288790606,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 3,
+          "historical_supported": true,
+          "historical_track_id": 4,
+          "input_sample": 170857894,
+          "source_window": 292567227,
+          "peaks": [
+            [
+              37,
+              10,
+              24962
+            ],
+            [
+              2605,
+              4,
+              23879
+            ],
+            [
+              1030,
+              6,
+              23764
+            ],
+            [
+              2231,
+              5,
+              23531
+            ],
+            [
+              3055,
+              3,
+              23474
+            ],
+            [
+              1635,
+              4,
+              23448
+            ],
+            [
+              2709,
+              9,
+              23367
+            ],
+            [
+              256,
+              6,
+              23315
+            ]
+          ],
+          "single_pilot_scores": [
+            0.07175202993220887,
+            0.0029428366346562554,
+            0.0030438387820701553,
+            0.0026835478759553435,
+            0.002767788914609829,
+            0.0037051804884195173,
+            0.002947269084310836,
+            0.0034494420827180863
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            292567278,
+            292567286,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            297130631,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 4,
+          "historical_supported": true,
+          "historical_track_id": 5,
+          "input_sample": 181297938,
+          "source_window": 303007271,
+          "peaks": [
+            [
+              3041,
+              3,
+              23897
+            ],
+            [
+              18,
+              10,
+              23800
+            ],
+            [
+              3317,
+              6,
+              23771
+            ],
+            [
+              1735,
+              5,
+              23737
+            ],
+            [
+              2476,
+              10,
+              23530
+            ],
+            [
+              1012,
+              2,
+              23506
+            ],
+            [
+              1633,
+              1,
+              23391
+            ],
+            [
+              77,
+              6,
+              23347
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003046289174532943,
+            0.06276450708400497,
+            0.003416058176080827,
+            0.0029739493043212865,
+            0.0030306989523769933,
+            0.0032732129405219413,
+            0.003521672790861904,
+            0.0027708180373220244
+          ],
+          "selected_rank": 1,
+          "worker_status": 1,
+          "summary": [
+            303007303,
+            303007311,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            307570650,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 5,
+          "historical_supported": true,
+          "historical_track_id": 6,
+          "input_sample": 181624613,
+          "source_window": 303333946,
+          "peaks": [
+            [
+              2514,
+              6,
+              24449
+            ],
+            [
+              10,
+              10,
+              24306
+            ],
+            [
+              436,
+              2,
+              24045
+            ],
+            [
+              185,
+              5,
+              23643
+            ],
+            [
+              940,
+              5,
+              23495
+            ],
+            [
+              135,
+              2,
+              23409
+            ],
+            [
+              2038,
+              2,
+              23351
+            ],
+            [
+              3092,
+              4,
+              23334
+            ]
+          ],
+          "single_pilot_scores": [
+            0.004089269842982323,
+            0.07448242987435072,
+            0.00262448969083389,
+            0.002741875043793107,
+            0.003215686677162869,
+            0.0031037879131421303,
+            0.003503186810739054,
+            0.0028855947101740376
+          ],
+          "selected_rank": 1,
+          "worker_status": 1,
+          "summary": [
+            303333970,
+            303333978,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            307897317,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 6,
+          "historical_supported": true,
+          "historical_track_id": 7,
+          "input_sample": 186281285,
+          "source_window": 307990618,
+          "peaks": [
+            [
+              11,
+              10,
+              26543
+            ],
+            [
+              3050,
+              3,
+              24107
+            ],
+            [
+              1368,
+              4,
+              23836
+            ],
+            [
+              650,
+              3,
+              23810
+            ],
+            [
+              3274,
+              3,
+              23691
+            ],
+            [
+              527,
+              4,
+              23680
+            ],
+            [
+              254,
+              6,
+              23499
+            ],
+            [
+              2116,
+              2,
+              23442
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0750770138170582,
+            0.003179572406199914,
+            0.0028988421022507985,
+            0.0023076403184843284,
+            0.0029471428531223022,
+            0.0029037427233593502,
+            0.003249026948277621,
+            0.0031711824094615357
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            307990643,
+            307990651,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1369,
+            312553988,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 7,
+          "historical_supported": true,
+          "historical_track_id": 8,
+          "input_sample": 217744607,
+          "source_window": 339453940,
+          "peaks": [
+            [
+              3329,
+              9,
+              25136
+            ],
+            [
+              1652,
+              7,
+              24133
+            ],
+            [
+              1350,
+              4,
+              24010
+            ],
+            [
+              2380,
+              6,
+              23782
+            ],
+            [
+              2837,
+              9,
+              23406
+            ],
+            [
+              2828,
+              1,
+              23392
+            ],
+            [
+              1727,
+              6,
+              23382
+            ],
+            [
+              3072,
+              3,
+              23343
+            ]
+          ],
+          "single_pilot_scores": [
+            0.09605468936827007,
+            0.0034711137129479035,
+            0.00310703671254802,
+            0.0029504483830042525,
+            0.003184748122865467,
+            0.0030451438793902864,
+            0.0025853316365261722,
+            0.0030513119034758437
+          ],
+          "selected_rank": 0,
+          "worker_status": 1,
+          "summary": [
+            339457283,
+            339457291,
+            0,
+            68,
+            152,
+            0,
+            96,
+            1,
+            0,
+            1,
+            1368,
+            344017276,
+            2500000,
+            0,
+            0,
+            2819999972
+          ],
+          "simulated_elapsed_ms": 1819.999972
+        },
+        {
+          "case": 8,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 0,
+          "source_window": 121709333,
+          "peaks": [
+            [
+              2139,
+              4,
+              23995
+            ],
+            [
+              2834,
+              7,
+              23871
+            ],
+            [
+              2562,
+              4,
+              23586
+            ],
+            [
+              1548,
+              6,
+              23463
+            ],
+            [
+              1494,
+              2,
+              23425
+            ],
+            [
+              2473,
+              5,
+              23409
+            ],
+            [
+              2330,
+              6,
+              23290
+            ],
+            [
+              199,
+              5,
+              23280
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0031069307549781095,
+            0.004675378047806195,
+            0.0032805192015498866,
+            0.003006900292264425,
+            0.003703804075391756,
+            0.0036217005071962336,
+            0.002924463882679029,
+            0.0028680381791653586
+          ],
+          "selected_rank": 1,
+          "worker_status": -6,
+          "summary": [
+            121712181,
+            121712189,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 9,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 250000,
+          "source_window": 121959333,
+          "peaks": [
+            [
+              2069,
+              7,
+              23902
+            ],
+            [
+              3026,
+              8,
+              23776
+            ],
+            [
+              2793,
+              5,
+              23651
+            ],
+            [
+              2240,
+              6,
+              23518
+            ],
+            [
+              289,
+              3,
+              23470
+            ],
+            [
+              2889,
+              7,
+              23429
+            ],
+            [
+              3156,
+              5,
+              23405
+            ],
+            [
+              3202,
+              7,
+              23401
+            ]
+          ],
+          "single_pilot_scores": [
+            0.002905042859192335,
+            0.003240536844745305,
+            0.00278949471159873,
+            0.003708615172407436,
+            0.002672626147464676,
+            0.002662897836754181,
+            0.002515584958626987,
+            0.003072647770648879
+          ],
+          "selected_rank": 3,
+          "worker_status": -6,
+          "summary": [
+            121961587,
+            121961595,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 10,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 500000,
+          "source_window": 122209333,
+          "peaks": [
+            [
+              2033,
+              2,
+              23789
+            ],
+            [
+              1933,
+              2,
+              23785
+            ],
+            [
+              2643,
+              5,
+              23549
+            ],
+            [
+              1571,
+              5,
+              23485
+            ],
+            [
+              2099,
+              7,
+              23440
+            ],
+            [
+              459,
+              6,
+              23419
+            ],
+            [
+              52,
+              2,
+              23293
+            ],
+            [
+              1788,
+              7,
+              23172
+            ]
+          ],
+          "single_pilot_scores": [
+            0.003358119109582159,
+            0.002398472151703626,
+            0.002349946032165714,
+            0.0033864260720418856,
+            0.0027405748482342085,
+            0.0029220773264411254,
+            0.0036586141836496802,
+            0.002710983561332895
+          ],
+          "selected_rank": 6,
+          "worker_status": -6,
+          "summary": [
+            122209399,
+            122209407,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        },
+        {
+          "case": 11,
+          "historical_supported": false,
+          "historical_track_id": 0,
+          "input_sample": 750000,
+          "source_window": 122459333,
+          "peaks": [
+            [
+              2956,
+              8,
+              23806
+            ],
+            [
+              980,
+              4,
+              23788
+            ],
+            [
+              3295,
+              5,
+              23430
+            ],
+            [
+              2005,
+              7,
+              23426
+            ],
+            [
+              2864,
+              7,
+              23407
+            ],
+            [
+              1953,
+              2,
+              23371
+            ],
+            [
+              2998,
+              5,
+              23319
+            ],
+            [
+              1212,
+              6,
+              23228
+            ]
+          ],
+          "single_pilot_scores": [
+            0.0028637540283313802,
+            0.0027877604337891064,
+            0.0033899590844290776,
+            0.0034406625461308802,
+            0.0028520771108349664,
+            0.002727799760359348,
+            0.0027099787659490707,
+            0.0029242855326158186
+          ],
+          "selected_rank": 3,
+          "worker_status": -6,
+          "summary": [
+            122461352,
+            122461360,
+            0,
+            68,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2459999972
+          ],
+          "simulated_elapsed_ms": 1459.999972
+        }
+      ],
+      "seed_policy": "original_candidate_epoch",
+      "component_sha256": {
+        "tools/glrt_tracking_solver_bench.c": "6eba6fbb549794ac252a61fd18ffb332c65a097c7b015be36f8c986b350ec6cc",
+        "tools/glrt_native_radio.c": "61410941231b489bf13ccec0e89505f6a20c5488c6e7a0e65106155103f300d0",
+        "tools/glrt_cpu_seed.c": "b05e6e7f7d511024724815972c10ac5dd9abbf1382d4dc01b9c84bd8f9a76dd9",
+        "tools/glrt_tracking_bootstrap.h": "1157e649eb430056fb0e38e03703d901f707beef87c8db4b4abcdb10ffb918ec",
+        "tools/glrt_native_schedule.c": "19fb8397898053345c637352ce1381aad93176a2ec6b8c7c6656401b25cb7b1d",
+        "tools/glrt_cpu_coarse.c": "1c19045ddc98aded36eaa4d51de9595d251283c56f074125586b55572489a92a",
+        "tools/glrt_tracking_resolver.c": "346a40bc7888227c3d5d20f7a0f21f6b20ec4673050c9925628f4642fc325f24",
+        "tools/glrt_tracking_iq.h": "8a14b691dd0e870ff6eaa7452d356995cde245c8c240486ab3652912d3f98e04",
+        "tools/glrt_native_schedule.h": "03cea37a2788cfd6ac1e0ce7d3be4f7c35c502be0eaf16a8b6bf1ab7ddca8e82",
+        "tools/glrt_cpu_live_probe.c": "8339256e22b8f5f006bdbddb11c687fa27a7530819a9756f945821054d577986",
+        "tools/glrt_native_controller.h": "cf1137e0d4b2d857256a81293635b608707249665baebc2b20a0aa6a86e11ad7",
+        "tools/glrt_capture_source.c": "00b4b92ae80eed922f3707668888e8466f773f4d55ff3d7affba3278c4645138",
+        "tools/glrt_tracking_recenter.c": "74d38a2b72ac110aa2a191bb0d5f5d83c0d03149b049833904bfdc3277119c4c",
+        "tools/glrt_tracking_schedule.h": "bed303fbc65b83339b75cf3482a43d81a2830ca1714af84eab98690c0b03c80f",
+        "tools/glrt_tracking_recent_iq.c": "10469858350d20e428858909c5d2831f52f85b37565f225dfd1384a0037e4cce",
+        "tools/glrt_tracking_live_bootstrap.c": "4ae0f5dcfc9a1c8af38c98936f96b2d5e4063311ad9b6e765a348815a6d7d1f2",
+        "tools/glrt_tracking_worker.c": "c2ea5926ea40746b317dcf84f267f1fa26fde5476340922190d1752de440554a",
+        "tools/glrt_tracking_recenter.h": "a93f99ddf6de0cd68140802a805fd7f56f031138a2fd77915860ef89d16124e7",
+        "tools/glrt_tracking_schedule.c": "8745c2cf249e21c0af7cc4827a0277c468555f84d339cf154ccde87b8e02aaca",
+        "tools/glrt_native_trend.c": "e25ba2452f5a06d98238e985b6140c7628ee2e48b0ff1e8f130da78aa4fa8c60",
+        "tools/glrt_cpu_tracking_bench.c": "623866fe5aefe09ced8227465244c4302cb43fbe2801a48e62def75c6fd4e256",
+        "tools/glrt_native_solver_bench.c": "35879f6f380d9b1e114a5f73d34c339f23adc4e5da20156cccfc7f7c23343940",
+        "tools/glrt_cpu_seed.h": "e8ead5559e00267aa6faa00dea83c4f6e024e923ef013ec1400b5125d815badf",
+        "tools/glrt_cpu_coarse.h": "ea72bb9c1c83ba9a01a046a8ab3589560145e199dfc23c39fccb2aa1976d316d",
+        "tools/glrt_native_posix.h": "eb56bf0fa777aaedb65b854df26f8f3eb5bfc390d7e15e154fd973a0b9089585",
+        "tools/glrt_native_posix.c": "243d86de961d824d8f4014b8614c18d1915f7481ee57811e9b6322794284cf9e",
+        "tools/glrt_cpu_coarse_bench.c": "f9f6500e9ee6413e6fa63f51d5265d569c74c2fea25d8cd6dfc4e726f6ae30de",
+        "tools/glrt_radio_iio_probe.c": "b28e4504405a3f56e432fb43cd409c9d75534100a238671314931c9a3022d5cf",
+        "tools/glrt_tracking_worker.h": "783cdbd02f3539d077af5649a96f41dcf02a7dc460a44795dfc9f339486ec0f7",
+        "tools/glrt_tracking_session.c": "8c6d06224ba924863ce3b30921abc3aa3665faa8c79713f7dbddd91017d73a74",
+        "tools/glrt_tracking_iq.c": "ba13333be6c82f779e85c49fb2e8807f2fd96859221db69fb16399e621c50373",
+        "tools/glrt_tracking_seed.h": "b4fed0b2cd537d6abbfdd018b596bd19e65ee4eebf2375801e80378d5b2d583c",
+        "tools/glrt_tracking_transport.c": "02349c8d77108fa74166f722e0997f3927645b9b315e3a9beaa182ac3cfca84d",
+        "tools/glrt_iq_tracking_probe.c": "d28ac09c9af66f98619d9e0eda2734b4e52da498fbd844c8877ae7093388523d",
+        "tools/glrt_iq_tracking_source.h": "2d96e5c1664dda2f2693568f5292b2a32deba06a6639a23a64bcb3e93c2caa82",
+        "tools/glrt_tracking_live_bootstrap.h": "9fe10aa5393c18e59e33f4426f8a4b0a61d0134d05570f35cd76b0b92580d91b",
+        "tools/glrt_tracking_iq_owner.c": "70adae706ab0cdc0e0e0aa6d2d952b6c6233a6973a7bf803f76044bef1e73378",
+        "tools/glrt_tracking_iq_owner.h": "181e50f4d7448747d7b3f98075cd862742344df21c59019994632de3dd5d00fd",
+        "tools/glrt_iq_tracking_source.c": "43d11c8531fcce8de26b08ba95c6eb02fa9b6395bf60a493abde0e4771a9754b",
+        "tools/glrt_native_solver.c": "85e7601311dc5293617940701c5ea015bc6d9490d6941530b8a58534b89a967e",
+        "tools/glrt_native_solver.h": "b94288638df4b358fa2081e9382b42bedec16c3ff8ce728b1551c6bb34dee877",
+        "tools/glrt_tracking_session.h": "931d32a7d5f4f7a103d3979e99b27b896295b6b0b69c352a63a8584cdf95c5d4",
+        "tools/glrt_native_trend.h": "c3fe3cff95332369b24cd0a4c2a3e7d65849d9f2ed24ad5882344953f7200a6a",
+        "tools/glrt_native_io_probe.c": "01d2c80c9d9a1b00779752436f0b370781fc6e0de78b7f6594eb33398edbc840",
+        "tools/glrt_tracking_trend.h": "e10f31a9212e3b1f3f56fe4a79cf8a5a324428f52d8d6061c734c73d3a8215a2",
+        "tools/glrt_capture_source.h": "f97254aaa1100143bf3a5878eb14cffc3d6c5b499ac6e27a31e839046cef62e0",
+        "tools/glrt_tracking_bootstrap.c": "e55cf043da3bee2ee54128c4120a37edf5b28ce5fa75a601e4f9aec14c3a1b15",
+        "tools/glrt_native_controller.c": "4241310e55b5df52172ae0e277e15f66b65347f2cd377562a1735626bdbb2c9a",
+        "tools/glrt_tracking_recent_iq.h": "efee10708f1ce7c95ee8d7138fc222977849ddd133abd18a0cc9523726be081a",
+        "tools/glrt_tracking_transport.h": "473e0be527986b6bb8507292b36b54a95482d6ba27d4e11e30927ad82dd34f3c",
+        "tools/glrt_tracking_resolver.h": "85a408d5d4db15a7c380f5269b98853fef165994e15486716c3d4e7873dcd5ee",
+        "tools/glrt_tracking_seed.c": "1ccb7c5bafcbbb0beea0c425b6d271d607c5f0ed5f04ed3a134b794aa58f4bd1"
+      },
+      "modeled_scan_ms": 840,
+      "modeled_resolver_ms": 600,
+      "modeled_past_pilot_ms": 2.5,
+      "real_arm_execution": false,
+      "live_tracking_qualified": false,
+      "new_rf_samples": 0,
+      "reviewer_sha256": "2cb583d503a0e0b92b034d17c61656e992bc623785a57628d559dc8d7d2c4f53"
+    },
+    "paced-original-seed-input-v1/manifest.json": {
+      "scope": "current_saved_iq_original_epoch_seed",
+      "source_iq_sha256": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c",
+      "positive": {
+        "offset_samples": 32125000,
+        "source_window": 4665354806,
+        "samples": 6250000,
+        "sha256": "af991e03e69271c253d2fe6b5aeff110c9da5d5bd6ddda8c6850584f9e97b1c4"
+      },
+      "control": {
+        "offset_samples": 0,
+        "source_window": 4633229806,
+        "samples": 6250000,
+        "sha256": "5b945b575fbff519de733ded2418b2f82110458ff52237e2a3126d8d7a53d5b9"
+      }
+    },
+    "paced-original-seed-arm-v1-results/operator.json": {
+      "scope": "paced_saved_iq_arm_no_rx_no_native_io",
+      "new_rf_samples": 0,
+      "live_tracking_qualified": false,
+      "status": "replay_complete_review_pending",
+      "cases": {
+        "positive": {
+          "status": "complete",
+          "exit_code": 0,
+          "artifacts": {
+            "worker.jsonl": {
+              "bytes": 83887,
+              "sha256": "943147a8418b0b24f44aa5e302a2ba0ee9a0f6955ef50af048aeeca04501f5b9"
+            },
+            "worker.iq.ci16": {
+              "bytes": 1967264,
+              "sha256": "ba3496d31ba3d42a54fb5ae935822eaa200beb28c70fb3885db545f6ac2d5724"
+            },
+            "grids.u32": {
+              "bytes": 146652,
+              "sha256": "23d4de7b4d1e163818d5248d5098299b3b7e69b608b5ab983736d6465e29a19b"
+            }
+          },
+          "result": {
+            "scope": "paced_saved_iq_no_radio_io",
+            "worker_status": -8,
+            "source_samples": 4355760,
+            "elapsed_ms": 1737.95728,
+            "maximum_publication_lag_samples": 20568,
+            "rf_samples": 0,
+            "native_jobs": 0,
+            "status": 0
+          }
+        },
+        "control": {
+          "status": "complete",
+          "exit_code": 0,
+          "artifacts": {
+            "worker.jsonl": {
+              "bytes": 6347,
+              "sha256": "16241287b0516da64c02f084aeb8159feb97976e4c5127a2cd7f8bd2cd0b8567"
+            },
+            "worker.iq.ci16": {
+              "bytes": 158864,
+              "sha256": "89a94d8eab664eb44cad80348f054bda6815fae03295878e5ddbeffa4a5f65e4"
+            },
+            "grids.u32": {
+              "bytes": 146652,
+              "sha256": "e36ed782b8c35dc3cbe56fbd7c1a2ac26dab6ac57d2cef0587fedcb8976d1f61"
+            }
+          },
+          "result": {
+            "scope": "paced_saved_iq_no_radio_io",
+            "worker_status": -6,
+            "source_samples": 3520176,
+            "elapsed_ms": 1408.57305,
+            "maximum_publication_lag_samples": 21145,
+            "rf_samples": 0,
+            "native_jobs": 0,
+            "status": 0
+          }
+        }
+      },
+      "payload_sha256": {
+        "probe": "4ce0d52e64a36f99c00cbd29ac4d58a79c040383a46d902335893aeff8eee395",
+        "refs": "78b50e1aea5c350889b0798fc691491299925932e496a918cd5fbd3b9bc4faf2",
+        "bank": "d9f3452e45180c560a200bb76c9bfe2d7c46b17560fd46495ea74c50f50547f0"
+      },
+      "inputs": {
+        "scope": "current_saved_iq_original_epoch_seed",
+        "source_iq_sha256": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c",
+        "positive": {
+          "offset_samples": 32125000,
+          "source_window": 4665354806,
+          "samples": 6250000,
+          "sha256": "af991e03e69271c253d2fe6b5aeff110c9da5d5bd6ddda8c6850584f9e97b1c4"
+        },
+        "control": {
+          "offset_samples": 0,
+          "source_window": 4633229806,
+          "samples": 6250000,
+          "sha256": "5b945b575fbff519de733ded2418b2f82110458ff52237e2a3126d8d7a53d5b9"
+        }
+      },
+      "remote_directory": "/tmp/gli-paced-9943b28116314c8e80fef59a0c3e8b15",
+      "before": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "memory_available_kib": 438928,
+      "after": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "temporary_files_removed": true
+    },
+    "paced-original-seed-arm-v1-results/independent-review.json": {
+      "status": "pass",
+      "scope": "paced_arm_original_seed_numerical_and_freshness_review",
+      "new_rf_samples": 0,
+      "native_jobs": 0,
+      "live_tracking_qualified": false,
+      "cases": {
+        "positive": {
+          "status": "pass",
+          "worker_status": -8,
+          "grid_values_checked": 36663,
+          "ranking_scores_checked": 8,
+          "resolver_hypotheses_checked": 17,
+          "moment_heads_checked": 145,
+          "dense_svd_fits_checked": 145,
+          "accepted_observations": 136,
+          "supported_history": 96,
+          "worker_iq_samples_checked": 491816,
+          "elapsed_ms": 1737.95728,
+          "scan_ms": 758.624257,
+          "rank_ms": 63.855415,
+          "seed_age_ms": 824.89,
+          "handoff_lead_samples": -1228,
+          "handoff_fresh": false,
+          "retained_handoff_proposals": 1,
+          "sha256": {
+            "stdout.json": "feae4b6d9cc39420e3c5d1a2169523af47756c6cddcd26a8f9f6acb84d71aef0",
+            "stderr.txt": "048e2ba89ae430962e02f5341cf60c694fb7e131cb417790075a56b32ca09992",
+            "worker.jsonl": "943147a8418b0b24f44aa5e302a2ba0ee9a0f6955ef50af048aeeca04501f5b9",
+            "worker.iq.ci16": "ba3496d31ba3d42a54fb5ae935822eaa200beb28c70fb3885db545f6ac2d5724",
+            "grids.u32": "23d4de7b4d1e163818d5248d5098299b3b7e69b608b5ab983736d6465e29a19b"
+          }
+        },
+        "control": {
+          "status": "pass",
+          "worker_status": -6,
+          "grid_values_checked": 36663,
+          "ranking_scores_checked": 8,
+          "resolver_hypotheses_checked": 17,
+          "moment_heads_checked": 8,
+          "dense_svd_fits_checked": 8,
+          "accepted_observations": 0,
+          "supported_history": 0,
+          "worker_iq_samples_checked": 39716,
+          "elapsed_ms": 1408.57305,
+          "scan_ms": 757.0196,
+          "rank_ms": 63.992683,
+          "seed_age_ms": 824.942,
+          "handoff_lead_samples": null,
+          "handoff_fresh": false,
+          "retained_handoff_proposals": 0,
+          "sha256": {
+            "stdout.json": "0cb0f3a62995f0223b7c70015895d8eb2b91987e7dc1256fe08c2746a98e5a9e",
+            "stderr.txt": "048e2ba89ae430962e02f5341cf60c694fb7e131cb417790075a56b32ca09992",
+            "worker.jsonl": "16241287b0516da64c02f084aeb8159feb97976e4c5127a2cd7f8bd2cd0b8567",
+            "worker.iq.ci16": "89a94d8eab664eb44cad80348f054bda6815fae03295878e5ddbeffa4a5f65e4",
+            "grids.u32": "e36ed782b8c35dc3cbe56fbd7c1a2ac26dab6ac57d2cef0587fedcb8976d1f61"
+          }
+        }
+      },
+      "reviewer_sha256": "fa4855e2d6230a8a35e9eeba2f32fe00cbc9354d5838687946b5070d9b6e9951",
+      "operator_sha256": "b92ae66f32cacd3fb9fd988132cff441766728bbad47e82c2c1ea9134c9e00d2"
+    },
+    "paced-original-seed-arm-v2-results/operator.json": {
+      "scope": "paced_saved_iq_arm_no_rx_no_native_io",
+      "new_rf_samples": 0,
+      "live_tracking_qualified": false,
+      "status": "replay_complete_review_pending",
+      "cases": {
+        "positive": {
+          "status": "complete",
+          "exit_code": 0,
+          "artifacts": {
+            "worker.jsonl": {
+              "bytes": 84445,
+              "sha256": "39f4a4eabcf2ee5e48f302fe36a7a18437f34687256f100de9028a952c209278"
+            },
+            "worker.iq.ci16": {
+              "bytes": 1980464,
+              "sha256": "dd9e83e5b7e058189a48d39dacecbb2498f8e6ed1d36fe0c1650a92cc98d8404"
+            },
+            "grids.u32": {
+              "bytes": 146652,
+              "sha256": "23d4de7b4d1e163818d5248d5098299b3b7e69b608b5ab983736d6465e29a19b"
+            }
+          },
+          "result": {
+            "scope": "paced_saved_iq_no_radio_io",
+            "worker_status": 1,
+            "source_samples": 4355760,
+            "elapsed_ms": 1741.85148,
+            "maximum_publication_lag_samples": 17067,
+            "rf_samples": 0,
+            "native_jobs": 0,
+            "status": 0
+          }
+        },
+        "control": {
+          "status": "complete",
+          "exit_code": 0,
+          "artifacts": {
+            "worker.jsonl": {
+              "bytes": 6349,
+              "sha256": "e3406aade8c2ceb807750392453b36c21ce6a5c28a8b0945a2e657a358af031a"
+            },
+            "worker.iq.ci16": {
+              "bytes": 158864,
+              "sha256": "89a94d8eab664eb44cad80348f054bda6815fae03295878e5ddbeffa4a5f65e4"
+            },
+            "grids.u32": {
+              "bytes": 146652,
+              "sha256": "e36ed782b8c35dc3cbe56fbd7c1a2ac26dab6ac57d2cef0587fedcb8976d1f61"
+            }
+          },
+          "result": {
+            "scope": "paced_saved_iq_no_radio_io",
+            "worker_status": -6,
+            "source_samples": 3520176,
+            "elapsed_ms": 1406.0131,
+            "maximum_publication_lag_samples": 16843,
+            "rf_samples": 0,
+            "native_jobs": 0,
+            "status": 0
+          }
+        }
+      },
+      "payload_sha256": {
+        "probe": "8fd5aa8bd16d27c283e4259189847ac1a81a66a1029e3e277fdb5099fca59612",
+        "refs": "78b50e1aea5c350889b0798fc691491299925932e496a918cd5fbd3b9bc4faf2",
+        "bank": "d9f3452e45180c560a200bb76c9bfe2d7c46b17560fd46495ea74c50f50547f0"
+      },
+      "inputs": {
+        "scope": "current_saved_iq_original_epoch_seed",
+        "source_iq_sha256": "00a665775511cecc4d43aa3c0e3932a257ee0398c37fab9ba8ec93851a99115c",
+        "positive": {
+          "offset_samples": 32125000,
+          "source_window": 4665354806,
+          "samples": 6250000,
+          "sha256": "af991e03e69271c253d2fe6b5aeff110c9da5d5bd6ddda8c6850584f9e97b1c4"
+        },
+        "control": {
+          "offset_samples": 0,
+          "source_window": 4633229806,
+          "samples": 6250000,
+          "sha256": "5b945b575fbff519de733ded2418b2f82110458ff52237e2a3126d8d7a53d5b9"
+        }
+      },
+      "remote_directory": "/tmp/gli-paced-23ebf0e5b84249b684c6077848e5d627",
+      "before": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "memory_available_kib": 440504,
+      "after": {
+        "remote": {
+          "serial": "1040005e0b100007100010000bf33a5d4d",
+          "firmware": "glrt-iq-tracking-r30000000-v1",
+          "boot_id": "f6f290d1-21ff-4a31-bb88-3ccbb46f488b",
+          "qspi_bytes": "31457280",
+          "qspi_sha256": "e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5",
+          "fit_sha256": "c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703",
+          "all_buffer_enable": "0",
+          "dds_present": "0",
+          "tandem_present": "0",
+          "tx_hardwaregain_db": "-80.000000",
+          "tx_lo_powerdown": "1",
+          "tx_buffer_enable": "",
+          "tx_scan_enable": "",
+          "tx_dds_raw": "",
+          "tx_dds_scale": "",
+          "root_marker_present": "1",
+          "rx_dma_dt_state": "enabled",
+          "dds_dt_state": "disabled",
+          "tx_dma_dt_state": "disabled",
+          "tandem_dt_state": "disabled"
+        },
+        "ethernet": [
+          "1",
+          "1000",
+          "full"
+        ]
+      },
+      "temporary_files_removed": true
+    },
+    "paced-original-seed-arm-v2-results/independent-review.json": {
+      "status": "pass",
+      "scope": "paced_arm_original_seed_numerical_and_freshness_review",
+      "new_rf_samples": 0,
+      "native_jobs": 0,
+      "live_tracking_qualified": false,
+      "cases": {
+        "positive": {
+          "status": "pass",
+          "worker_status": 1,
+          "grid_values_checked": 36663,
+          "ranking_scores_checked": 8,
+          "resolver_hypotheses_checked": 17,
+          "moment_heads_checked": 146,
+          "dense_svd_fits_checked": 146,
+          "accepted_observations": 137,
+          "supported_history": 96,
+          "worker_iq_samples_checked": 495116,
+          "elapsed_ms": 1741.85148,
+          "scan_ms": 759.446768,
+          "rank_ms": 64.333951,
+          "seed_age_ms": 824.8628,
+          "handoff_lead_samples": 15169,
+          "handoff_fresh": true,
+          "retained_handoff_proposals": 1,
+          "sha256": {
+            "stdout.json": "01203acfaaa7f55b5930ba389369f6970bc8d9ce829f2c796127bd535703665e",
+            "stderr.txt": "048e2ba89ae430962e02f5341cf60c694fb7e131cb417790075a56b32ca09992",
+            "worker.jsonl": "39f4a4eabcf2ee5e48f302fe36a7a18437f34687256f100de9028a952c209278",
+            "worker.iq.ci16": "dd9e83e5b7e058189a48d39dacecbb2498f8e6ed1d36fe0c1650a92cc98d8404",
+            "grids.u32": "23d4de7b4d1e163818d5248d5098299b3b7e69b608b5ab983736d6465e29a19b"
+          }
+        },
+        "control": {
+          "status": "pass",
+          "worker_status": -6,
+          "grid_values_checked": 36663,
+          "ranking_scores_checked": 8,
+          "resolver_hypotheses_checked": 17,
+          "moment_heads_checked": 8,
+          "dense_svd_fits_checked": 8,
+          "accepted_observations": 0,
+          "supported_history": 0,
+          "worker_iq_samples_checked": 39716,
+          "elapsed_ms": 1406.0131,
+          "scan_ms": 764.874103,
+          "rank_ms": 63.051481,
+          "seed_age_ms": 831.3556,
+          "handoff_lead_samples": null,
+          "handoff_fresh": false,
+          "retained_handoff_proposals": 0,
+          "sha256": {
+            "stdout.json": "9495d5d452d9261f5196d54c4d6e55186b12620649e87c797d94b75fb6821847",
+            "stderr.txt": "048e2ba89ae430962e02f5341cf60c694fb7e131cb417790075a56b32ca09992",
+            "worker.jsonl": "e3406aade8c2ceb807750392453b36c21ce6a5c28a8b0945a2e657a358af031a",
+            "worker.iq.ci16": "89a94d8eab664eb44cad80348f054bda6815fae03295878e5ddbeffa4a5f65e4",
+            "grids.u32": "e36ed782b8c35dc3cbe56fbd7c1a2ac26dab6ac57d2cef0587fedcb8976d1f61"
+          }
+        }
+      },
+      "reviewer_sha256": "fa4855e2d6230a8a35e9eeba2f32fe00cbc9354d5838687946b5070d9b6e9951",
+      "operator_sha256": "8a97a8ad09c1e9d167bbb7f64c381b0b1d40e910f1371e336395dda208394012"
+    },
+    "cpu-live30-original-seed-lo1190-v1/operator.json": {
+      "rate": 30000000,
+      "requested_lo_hz": 1190312500,
+      "blocks": 4096,
+      "rf_sample_limit": 67108864,
+      "rf_duration_limit_s": 26.8435456,
+      "payload_sha256": {
+        "probe": "2c6784494a13d8b8a126c901011a870a9adeb4bf9f456cb2c100f079d96f388a",
+        "bank": "d9f3452e45180c560a200bb76c9bfe2d7c46b17560fd46495ea74c50f50547f0",
+        "references": "78b50e1aea5c350889b0798fc691491299925932e496a918cd5fbd3b9bc4faf2"
+      },
+      "status": "admission_refused",
+      "live_tracking_qualified": false,
+      "remote_directory": "/tmp/gli-live20-14ca4a8e63994fbda743064e9c5af4f9",
+      "error": "RadioBusyError: radio lease is busy: ('radio_pluto_5d4d',)",
+      "rf_samples_collected": 0
+    }
+  },
+  "sha256": {
+    "cpu-live30-long-lo1190-v1/operator.json": "22b837d288411faedb58b2f991cc6c62e73deaec7fff9e93271214cae12c0fb1",
+    "cpu-live30-long-lo1190-v1/independent-review.json": "77d2680840127ca0b9aaf42513845a75272c2ed06df0a74ff95f775eeb8e4ed8",
+    "cpu-live30-long-lo1690-v1/operator.json": "1b942f0048437ebd9f98f8d38a3844196ce65369d3e17d13113dfed1f1b1d5d0",
+    "cpu-live30-long-lo1690-v1/independent-review.json": "76020329885dbbbad816e81a1c474788be40ac4d95a8d249c7a967e57cb7114c",
+    "dense-saved-scan-v1/summary.json": "a101c94576baa009a3a8792ea5e82fc4f6449d84a409397b4ba79b74fafabe35",
+    "current-ranked-replay-v1/summary.json": "ee721f40893e44df707ebcf84ba268186f4dd36080ed85dcaf715b77bde7a7c3",
+    "current-original-seed-replay-v1/summary.json": "2fbc93d3f62eedd04b04bb7a63c9c49c33cc4762d53b069c6c3395b4aab7c910",
+    "historical-ranked-replay-v1/summary.json": "9d6872e8a6da4a8c92383b4c384cf40cd72b85fa750509fe4b212768820a1ff4",
+    "historical-original-seed-replay-v1/summary.json": "4498a250de086f79745c831ce680f48d9db39423e60929c5c4d241b9873c6a26",
+    "paced-original-seed-input-v1/manifest.json": "c9e3b07bffa32af61ad997895aa010f96940fd9e1772e41e8f1de0c0c0b79cd0",
+    "paced-original-seed-arm-v1-results/operator.json": "b92ae66f32cacd3fb9fd988132cff441766728bbad47e82c2c1ea9134c9e00d2",
+    "paced-original-seed-arm-v1-results/independent-review.json": "b0f44ca12c393c43936dd530a40c4134f7fc7ba45f74df2b647c2393ccb3699d",
+    "paced-original-seed-arm-v2-results/operator.json": "8a97a8ad09c1e9d167bbb7f64c381b0b1d40e910f1371e336395dda208394012",
+    "paced-original-seed-arm-v2-results/independent-review.json": "a52b81f91eaf3849cb31f933106f3889452f0dd9413a1e0132f1881ba8d63340",
+    "cpu-live30-original-seed-lo1190-v1/operator.json": "186ae1529e2952c00910f251a2c398afeb937889dbb75c449bab5809aaa85f88",
+    "glrt-cpu-live-probe-v4": "e355693a9a6964c81fff09f888074f788b8698b6017065c7d4bcfab5a4fdd7bd",
+    "glrt-cpu-live-probe-v5": "2c6784494a13d8b8a126c901011a870a9adeb4bf9f456cb2c100f079d96f388a",
+    "paced-original-seed-arm-v1": "4ce0d52e64a36f99c00cbd29ac4d58a79c040383a46d902335893aeff8eee395",
+    "paced-original-seed-arm-v2": "8fd5aa8bd16d27c283e4259189847ac1a81a66a1029e3e277fdb5099fca59612",
+    "paced_replay_original_seed.c": "cb1905826d3118d44b7625fbb1f3758424d9340b55af51819beb66ea38f9d00a",
+    "qualify_paced_original_seed.py": "bd49102ccc101c586a4c9dcccac7a09a8b7045bb67bccaadae49c804e8d302ef",
+    "qualify_paced_original_seed_v2.py": "8dffb3bfe4d47d658e67dc79fa1cbc26956d8687db2b466858863617e98796f3",
+    "review_loaded_ranked_v2.py": "ad547833a9389b4a69e767a98f9a50d66b8627cd52af0fe1d8827f8ff139135c",
+    "review_paced_original_seed.py": "fa4855e2d6230a8a35e9eeba2f32fe00cbc9354d5838687946b5070d9b6e9951",
+    "dense_saved_scan.py": "50d73e08e502dab4b8529c7ca813a87bb3f1708d08113051211ba63f701a076c",
+    "replay_current_candidates.py": "ce7a1899915e8ddff52ac640678427c8be8aeeb3ddf7da89b3335c91842826d8",
+    "replay_current_original_seed.py": "7aae42e73944f5d7a74143604d62d587d1982630cae19ea46d2bc194e9c6c763",
+    "replay_historical_original_seed.py": "2cb583d503a0e0b92b034d17c61656e992bc623785a57628d559dc8d7d2c4f53"
+  }
+}
