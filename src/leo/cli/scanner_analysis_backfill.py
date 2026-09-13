@@ -23,7 +23,6 @@ def main() -> None:
     # These are the existing public CLIs, each taking the shared nonblocking
     # analysis lease. No extra queue, scientific policy, or storage coupling.
     jobs = (
-        ("refinement", "leo.cli.scanner_refinement", "--maximum-seconds", "180"),
         (
             "adaptive",
             "leo.cli.adaptive_hop_analysis",
@@ -31,7 +30,9 @@ def main() -> None:
             "--maximum-visits",
             "2500",
             "--maximum-seconds",
-            "300",
+            # Measured native 10M analysis takes about 410 s with four workers.
+            # Finish its overview in this pass before optional derived products.
+            "580",
         ),
         (
             "fixed",
@@ -44,6 +45,7 @@ def main() -> None:
             "4",
             "--json",
         ),
+        ("refinement", "leo.cli.scanner_refinement", "--maximum-seconds", "180"),
         (
             "tracking",
             "leo.cli.scanner_tracking",

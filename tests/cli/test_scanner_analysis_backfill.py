@@ -64,7 +64,7 @@ def test_both_publication_paths_run_sequentially_even_after_failure(
     assert tracking[2] == "leo.cli.scanner_tracking"
     assert "--maximum-workers" not in tracking
     assert tracking[-4:] == ["--maximum-seconds", "180", "--maximum-sessions", "2"]
-    assert commands.pop(0) == [
+    assert commands.pop(2) == [
         sys.executable,
         "-m",
         "leo.cli.scanner_refinement",
@@ -84,7 +84,7 @@ def test_both_publication_paths_run_sequentially_even_after_failure(
             "--probe-stride-ms",
             "120",
         ]
-    assert commands[0][9:] == ["--pending", "--maximum-visits", "2500", "--maximum-seconds", "300"]
+    assert commands[0][9:] == ["--pending", "--maximum-visits", "2500", "--maximum-seconds", "580"]
     assert commands[1][9:] == [
         "--maximum-sessions",
         "1",
@@ -111,7 +111,7 @@ def test_explicit_worker_setting_only_changes_fixed_analysis(monkeypatch, worker
         ["backfill", "--site", "spinnaker-sausalito", "--fixed-maximum-workers", str(workers)],
     )
     cli.main()
-    adaptive, fixed = commands[1:3]
+    adaptive, fixed = commands[:2]
     assert adaptive[adaptive.index("--maximum-workers") + 1] == "2"
     assert fixed[fixed.index("--maximum-workers") + 1] == str(workers)
 
