@@ -22,6 +22,12 @@ records completed 17:30 and 17:40 scans at approximately 95.43% valid duty,
 successful restoration, complete native-rate analysis and real-browser output.
 This verifies fixed recording and publication, not adaptive feedback.
 
+Analysis release `2bb4c3b1ec806b7c9181ff577a1c87387331f604` now uses four bounded
+offline workers. Its first complete refinement/analysis/tracking cycle took
+7:43.408, leaving about 77 seconds within the ten-minute cadence after the timer
+pause. Scientific products matched two-worker replay exactly, and the concurrent
+capture remained qualified. See the [analysis cadence report](../../reports/2026_09_13_analysis_cadence/README.md).
+
 The host-wide acquisition lease can block a scheduled start while unrelated
 radio work holds it. Preserve its ownership, pause and drain semantics. Do not
 operate another radio or bypass the lease to qualify this profile.
