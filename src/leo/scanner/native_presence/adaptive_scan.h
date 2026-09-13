@@ -26,6 +26,13 @@ typedef struct {
     uint32_t maximum_result_age_ms, unhealthy_limit;
 } leo_adaptive_config_v1;
 
+/* Explicit native-10M single-RX admission. Legacy creation still admits only
+ * 2.5/5M and RX1. Numerical policy and observation layout are shared. */
+typedef struct {
+    leo_adaptive_config_v1 geometry;
+    uint32_t classification_rx, reserved;
+} leo_adaptive_config_v2;
+
 /* A completed configured search with no detection is NOT an absence claim.
  * healthy=1 also permits UNKNOWN (e.g. unbracketed fractional refinement).
  * Transport/worker failure has healthy=0 and must have outcome UNKNOWN. */
@@ -48,6 +55,7 @@ typedef struct leo_adaptive_scan leo_adaptive_scan;
 /* Allocate once before acquisition. Defaults are explicit at the composition
  * boundary, not hidden in the policy. Output is unchanged on failure. */
 int leo_adaptive_create(leo_adaptive_scan **, const leo_adaptive_config_v1 *);
+int leo_adaptive_create_v2(leo_adaptive_scan **, const leo_adaptive_config_v2 *);
 void leo_adaptive_destroy(leo_adaptive_scan *);
 /* Copy a result without applying it out of source order. Returns -EALREADY for
  * duplicates or results whose bounded wait expired. Neither rewrites history. */
