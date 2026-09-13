@@ -115,3 +115,24 @@ Evidence is retained beneath
 The [evidence manifest](figures/2026_09_13_radio20_causal_startup_carrier/evidence.json)
 contains the frozen development plan, exact-IQ diagnosis, C replay, independent
 checks, test receipt, host replay, network preflight and source/binary hashes.
+
+## Independent reviewer readiness
+
+Firmware-worktree commit `61143e7a46ed00c6f1872bcf0ba5a55bc0041845` adds a
+component-owned independent startup-carrier reviewer without changing runtime
+C. Its 14 new tests and the 52 bootstrap tests pass (66 combined). They cover
+actual C-generated jobs, incorrect held carriers, use of later measurements,
+malformed records and fallback at the forecast bounds. These checks overlap
+the earlier component suite; the two totals should not be added.
+
+The prepared live qualification reviewer checks each startup forecast against
+earlier accepted observations after the IQ and numerical checks. It pins the
+v11 probe hash and correctly refuses the previous v10 capture. On the saved
+paced host records, it verifies eight initial jobs per case, including five
+causal forecasts for the positive and none for the rejected control.
+
+The [reviewer readiness receipt](figures/2026_09_13_radio20_causal_startup_carrier/reviewer-readiness.json)
+records these checks and source hashes. At 03:37 UTC on September 13, `.20`
+still failed SSH and IIOD connection checks with a FAILED neighbor entry.
+This follow-up collected no RF, executed no new binary on the radio and sent
+no updater. Physical validation remains pending.
