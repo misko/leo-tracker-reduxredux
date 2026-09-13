@@ -777,3 +777,57 @@ The [ranking evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/
 and [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/expanded-proposals/review.json)
 retain per-cut outcomes and hashes. Sources and worker journals are archived
 alongside them; original IQ remains in local evidence.
+
+## ARM 64-candidate cost exceeds current freshness
+
+Firmware worktree commit `d8ce01365` adds an internal, opt-in selector accepting
+1–64 candidates, with caller-owned outputs and cancellation before each
+selection and publication. The legacy workspace layout and eight-candidate
+interface remain intact. Failure clears valid-sized outputs and publishes
+zero count. The live scanner still uses eight candidates.
+
+All 215 coarse, seed, tracking-benchmark and live-probe tests pass. Additional
+bounded-selector tests compare independent sorted maxima, including ties,
+circular suppression, empty grids, cancellation and malformed admission.
+Host and Cortex-A9 benchmark builds treat warnings as errors. Across all
+26 saved cuts and budgets 8/64, 52 host runs reproduce 1,872 independently
+computed coarse peaks and full-pilot FFT scores.
+
+After the external acquisition releases the global lease, the serial-bound
+operator runs six saved-IQ benchmarks on .20: three repeats per budget, using
+positive cut 12. It collects no RF and changes no image. Each run uses the
+existing two-thread coarse grid, then the bounded selector and single-pilot
+16,384-bin FFT ranking at the 2.5-MS/s analysis rate.
+
+| Budget | Grid plus legacy eight selection | Additional bounded selection | Full-pilot ranking | Total |
+| --- | ---: | ---: | ---: | ---: |
+| 8 | 439.785–440.108 ms | 14.303–14.572 ms | 60.163–63.230 ms | 514.574–517.342 ms |
+| 64 | 439.565–446.021 ms | 399.163–400.162 ms | 476.686–481.420 ms | 1317.561–1324.144 ms |
+
+The harness deliberately reports an extra legacy eight-selection pass inside
+the grid/search time, as well as the requested bounded selection. Removing
+that approximately 14-ms duplication cannot close the 64-candidate deficit.
+Input loading, FFT plan creation, resolver work, catch-up, capture DMA and
+concurrent native tracking are excluded. These are three measurements on one
+cut, not worst-case execution bounds.
+
+The live worker allows a maximum seed age of 2,500,000 coarse samples, or one
+second. The measured 64-candidate computation alone exceeds that limit.
+Frozen-IQ handoffs therefore do not justify activating this implementation
+live. Repeated full-grid selection consumes about 400 ms and is a measured
+optimization target; ranking also needs sufficient margin for refinement and
+capture contention. No age limit or acceptance gate is relaxed.
+
+Independent review verifies all 216 ARM candidate tuples and FFT scores,
+including the expected winners 8 and 35, payload/journal hashes, six successful
+exits, and identical before/after identity and TX-safe attestation. Temporary
+remote files are removed. The first local build attempt had an output
+file/directory naming collision; distinct result-directory naming resolved it
+before any host comparison or radio execution.
+
+The [build and host checks](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/bounded-scan/build.json),
+[ARM operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/bounded-scan/operator.json)
+and [independent ARM review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/bounded-scan/review.json)
+include source hashes and timings. Sources, component patch, test report and
+ARM journals are retained alongside them. Sustained live 30/60-MS/s FPGA
+tracking and physical loss/reacquisition remain unfinished.
