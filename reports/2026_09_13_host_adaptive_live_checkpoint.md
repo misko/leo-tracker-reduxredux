@@ -125,3 +125,17 @@ container allowed normal image loading. No UI change was required.
 Fixed production resumed and completed the 20:20 slot as
 `scan-hop-da9e419b1dd0a21e`, 2,387 visits, 95.4405% duty. The 10-minute schedule
 and exact radio003a binding remain unchanged.
+
+## Resumed at 20:41 UTC
+
+The user replied “please continue” after the explicit request for at most seven
+additional minutes. The allowance is now 2,220 s; historical charges remain
+593.374663 s, leaving 1,626.625337 s. Attempt 3 is reviewed as a failed partial
+capture with tested/staged deadline and terminal-drain fixes; it is not relabeled
+as passed. Reserve 1,500 s for the four canaries and first scheduled verification.
+
+Private acquisition and analysis cutover candidates were generated beneath the
+existing root-only backup directory and validated with the staged settings parser.
+The baseline acquisition environment still matches its backup. No selectors or
+production environment were changed. The 20:40 fixed scan is allowed to finish
+before pausing scheduled starts for the bounded canaries.
