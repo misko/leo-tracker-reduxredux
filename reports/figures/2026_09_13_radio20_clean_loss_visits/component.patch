@@ -1,0 +1,309 @@
+commit a8535dac0b139221dbf37acc2414bc4190d97377
+Author:     misko <misko@cs.toronto.edu>
+AuthorDate: Sun Sep 13 19:18:28 2026 +0000
+Commit:     misko <misko@cs.toronto.edu>
+CommitDate: Sun Sep 13 19:18:28 2026 +0000
+
+    Allow bounded frequency visits after proven clean native loss
+
+diff --git a/tests/starlink_glrt/test_cpu_live_probe.py b/tests/starlink_glrt/test_cpu_live_probe.py
+index 282f675c5..425564c4b 100644
+--- a/tests/starlink_glrt/test_cpu_live_probe.py
++++ b/tests/starlink_glrt/test_cpu_live_probe.py
+@@ -134,6 +134,7 @@ void live_join(struct test_live *t)
+     t->live.started=0;
+ }
+ int live_restart(struct test_live *t) { return restart_owner(&t->live,t->capture); }
++int live_visit_loss(struct test_live *t) { return live_visit_clean_loss(&t->live,1); }
+ int live_rebase(struct test_live *t,uint64_t *first)
+ {
+     int rc=rebase_source(&t->live,t->capture,9122201,first);
+@@ -251,7 +252,7 @@ def live_api(tmp_path_factory):
+     lib.unused_probe_main.argtypes = [c.c_int, c.POINTER(c.c_char_p)]
+     lib.live_rank.argtypes = [c.c_void_p,c.c_void_p,c.c_void_p,c.c_uint,c.c_void_p,c.c_void_p]
+     lib.live_free_unstarted.argtypes = [c.c_void_p]
+-    for name in ("live_start", "live_done", "live_stop", "live_close_source", "live_join", "live_restart"):
++    for name in ("live_start", "live_done", "live_stop", "live_close_source", "live_join", "live_restart", "live_visit_loss"):
+         getattr(lib, name).argtypes = [c.c_void_p]
+     lib.live_finish.argtypes = [c.c_void_p, c.c_void_p]
+     rom = root/"hdl/library/starlink_glrt"
+@@ -647,6 +648,7 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+             # This is the same capture-thread ordering as the executable:
+             # finished worker -> join -> retained/drained source check -> release owner.
+             lib.live_join(handle)
++            assert lib.live_visit_loss(handle)==int(not (mode=='loss_then_supported' and episode==1))
+             totals=(c.c_uint64*8)();lib.live_totals(handle,totals)
+             if initial_deadline is None: initial_deadline=totals[7]
+             assert totals[7]==initial_deadline
+@@ -668,6 +670,8 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+             fault={'full_profile':1,'worker_error':2,'retention_error':3,'restart_budget':4,
+                    'cancel':6,'deadline':7}.get(mode)
+             if fault: lib.live_restart_fault(handle,fault)
++            if mode in ('worker_error','retention_error','cancel'):
++                assert lib.live_visit_loss(handle)==0
+             if mode=='uncleared': radio.valid=True
+             if mode=='source_gap': radio.gap=True
+             if mode=='wrong_epoch': radio.epoch+=1
+diff --git a/tests/starlink_glrt/test_cpu_visit_probe.py b/tests/starlink_glrt/test_cpu_visit_probe.py
+index 0a663f30f..cc7446200 100644
+--- a/tests/starlink_glrt/test_cpu_visit_probe.py
++++ b/tests/starlink_glrt/test_cpu_visit_probe.py
+@@ -13,6 +13,17 @@ pytestmark=pytest.mark.fftw
+ WRAPPER=r'''
+ #include "glrt_cpu_visit_probe.c"
+ int inspect_idle_words(const uint32_t w[24],uint32_t rate) { return visit_idle_snapshot(w,rate); }
++int loss_disposition(unsigned fault) {
++    struct live s={0};s.done=1;s.result=GLRT_NATIVE_ACQUISITION_LOST;s.native_clean_loss=1;
++    interrupted=fault==1;
++    if(fault==2) s.done=0;
++    if(fault==3) s.started=1;
++    if(fault==4) s.observer_started=1;
++    if(fault==5) s.result=GLRT_NATIVE_RETENTION_ERROR;
++    if(fault==6) s.native_clean_loss=0;
++    if(fault==9) s.stop=1;
++    return live_visit_clean_loss(fault==8 ? NULL : &s,fault!=7);
++}
+ const char *iio_device_get_id(const struct iio_device *d) { (void)d;return "iio:device0"; }
+ int iio_channel_attr_read_longlong(const struct iio_channel *c,const char *n,long long *out)
+ { (void)c;(void)n;(void)out;return -1; }
+@@ -22,6 +33,9 @@ static int simulated_child(int argc,char **argv) {
+     if(argc!=6) return 9;
+     printf("retained child output\n");fprintf(stderr,"retained child diagnostics\n");
+     if(!strcmp(argv[1],"fail")) return 1;
++    if(!strcmp(argv[1],"clean_loss")) return LIVE_VISIT_CLEAN_LOSS_EXIT;
++    if(!strcmp(argv[1],"unknown")) return 4;
++    if(!strcmp(argv[1],"signal")) { raise(SIGKILL);return 0; }
+     if(!strcmp(argv[1],"hang")) {
+         signal(SIGTERM,SIG_IGN);
+         while(1) pause();
+@@ -64,17 +78,22 @@ def probe(tmp_path_factory):
+     return lib
+ 
+ 
+-@pytest.mark.parametrize('mode',['pass','fail','hang','existing'])
++@pytest.mark.parametrize('mode',['pass','fail','hang','existing','clean_loss','unknown','signal'])
+ def test_child_is_reaped_before_return_and_evidence_is_never_overwritten(probe,tmp_path,mode):
+     if mode=='existing':
+         (tmp_path/'visit-0').mkdir();(tmp_path/'visit-0/stdout.json').write_text('preserved')
+-    assert probe.exercise_child(os.fsencode(tmp_path),mode.encode())==(0 if mode=='pass' else -1)
++    assert probe.exercise_child(os.fsencode(tmp_path),mode.encode())==({'pass':0,'clean_loss':1}.get(mode,-1))
+     if mode=='existing': assert (tmp_path/'visit-0/stdout.json').read_text()=='preserved'
+-    elif mode!='hang':
++    elif mode not in ('hang','signal'):
+         assert (tmp_path/'visit-0/stdout.json').read_text()=='retained child output\n'
+         assert (tmp_path/'visit-0/stderr.txt').read_text()=='retained child diagnostics\n'
+ 
+ 
++@pytest.mark.parametrize('fault',range(10))
++def test_clean_loss_requires_terminal_joined_native_provenance(probe,fault):
++    assert probe.loss_disposition(fault)==int(fault==0)
++
++
+ @pytest.mark.parametrize('rate',[30000000,60000000])
+ @pytest.mark.parametrize('epoch',[0,1,7])
+ @pytest.mark.parametrize('mode',['idle','boot_drops','active','fault','configured','wrong_rate','unread'])
+diff --git a/tests/starlink_glrt/test_tracking_visit.py b/tests/starlink_glrt/test_tracking_visit.py
+index 9a9cacd94..991573f4e 100644
+--- a/tests/starlink_glrt/test_tracking_visit.py
++++ b/tests/starlink_glrt/test_tracking_visit.py
+@@ -12,6 +12,7 @@ BENCH=r'''
+ #include <string.h>
+ struct test {
+     const char *mode;
++    int loss;
+     struct glrt_visit_state state;
+     uint64_t now;
+     unsigned inspections,tunes,runs,retained;
+@@ -49,12 +50,15 @@ static int run(void *p,unsigned n,uint64_t deadline) {
+     if(!strcmp(t->mode,"run_rf")) t->state.lo_hz++;
+     if(!strcmp(t->mode,"deadline")) t->now=deadline;
+     if(!strcmp(t->mode,"clock_regress")) t->now=999;
+-    return !strcmp(t->mode,"child_fail") ? -1 : 0;
++    return !strcmp(t->mode,"child_fail") ? -1 :
++        t->loss ? GLRT_VISIT_CLEAN_LOSS :
++        !strcmp(t->mode,"unknown_result") ? 2 : 0;
+ }
+ static int retain(void *p,const char *kind,unsigned n,int result,const struct glrt_visit_state *s) {
+     struct test *t=p;(void)s;assert(n==t->retained/3);
+     const char *names[]={"before_tune","tuned","after_run"};assert(!strcmp(kind,names[t->retained%3]));
+-    if(!strcmp(kind,"after_run")) assert(result==(!strcmp(t->mode,"child_fail") ? -1 : 0));
++    if(!strcmp(kind,"after_run")) assert(result==(!strcmp(t->mode,"child_fail") ? -1 :
++        t->loss ? GLRT_VISIT_CLEAN_LOSS : !strcmp(t->mode,"unknown_result") ? 2 : 0));
+     t->retained++;
+     return (!strcmp(t->mode,"retention_before") && t->retained==1) ||
+         (!strcmp(t->mode,"retention_tuned") && t->retained==2) ||
+@@ -62,6 +66,8 @@ static int retain(void *p,const char *kind,unsigned n,int result,const struct gl
+ }
+ int main(int argc,char **argv) {
+     assert(argc==3);struct test t={0};t.mode=argv[1];t.now=1000;
++    if(!strcmp(t.mode,"loss")) { t.loss=1;t.mode="ready"; }
++    else if(!strncmp(t.mode,"loss_",5)) { t.loss=1;t.mode+=5; }
+     unsigned rate=(unsigned)strtoul(argv[2],NULL,10);
+     t.state=(struct glrt_visit_state){1690312496,1000000,rate,3,1,1};
+     struct glrt_visit_ports p={&t,clock_ns,cancelled,inspect,tune,run,retain};
+@@ -95,6 +101,11 @@ def probe(tmp_path_factory):
+     ('between_epoch',-2,1,1),('child_fail',-4,1,1),('deadline',-6,1,1),
+     ('clock_regress',-6,1,1),('cancel',-7,0,0),('retention_before',-5,0,0),
+     ('retention_tuned',-5,1,0),('retention_after',-5,1,1),
++    ('loss',0,2,2),('unknown_result',-4,1,1),
++    ('loss_after_busy',-2,1,1),('loss_no_epoch',-2,1,1),
++    ('loss_no_samples',-2,1,1),('loss_run_rf',-2,1,1),
++    ('loss_retention_after',-5,1,1),('loss_deadline',-6,1,1),
++    ('loss_clock_regress',-6,1,1),('loss_between_epoch',-2,1,1),
+ ])
+ def test_two_visits_preserve_fixed_rate_and_require_idle_retained_boundaries(probe,rate,mode,result,tunes,runs):
+     row=list(map(int,subprocess.check_output([str(probe),mode,str(rate)],text=True).split()))
+diff --git a/tools/glrt_cpu_live_probe.c b/tools/glrt_cpu_live_probe.c
+index 94f9dd611..2617464d1 100644
+--- a/tools/glrt_cpu_live_probe.c
++++ b/tools/glrt_cpu_live_probe.c
+@@ -610,7 +610,13 @@ static int open_native_episode(struct live *s,struct glrt_native_posix *p,
+     return n>0 && (size_t)n<sizeof(path) ?
+         glrt_native_posix_open(p,&s->native,device,path,8U*1024U*1024U) : -1;
+ }
+-int main(int argc,char **argv)
++#define LIVE_VISIT_CLEAN_LOSS_EXIT 3
++static int live_visit_clean_loss(const struct live *s,int worker_complete)
++{
++    return s && worker_complete && s->done && !s->started && !s->observer_started &&
++        !interrupted && !s->stop && s->result==GLRT_NATIVE_ACQUISITION_LOST && s->native_clean_loss;
++}
++static int live_probe_run(int argc,char **argv,int visit_mode)
+ {
+     struct live *s=NULL;
+     struct iio_context *ctx=NULL;struct iio_device *iq=NULL,*phy=NULL;struct iio_buffer *buffer=NULL;
+@@ -624,7 +630,7 @@ int main(int argc,char **argv)
+     uint32_t rate=0,visit=9122201,w[24],block=0;
+     uint64_t first=0,now=0,boundary=0,max_refill_ns=0,previous=0,published=0;
+     char text[4096],label[80],path[PATH_MAX],resolved[PATH_MAX];
+-    int n,rc=1,mutex=0,owned=0,rebased=0,joined=1,worker_complete=0;
++    int n,rc=1,mutex=0,owned=0,rebased=0,joined=1,worker_complete=0,visit_loss=0;
+     uint32_t completed_refills=0;
+     const char *stage="arguments";
+ #define NEED(x,name) do { stage=name; if(!(x)) goto done; } while(0)
+@@ -729,7 +735,8 @@ int main(int argc,char **argv)
+     }
+     if(worker_complete) { stage="worker_complete"; }
+     else { NEED(wide(capture.words+4)==CHUNK*limits.blocks && wide(capture.words+6)==CHUNK*limits.blocks && !(capture.words[19]&3),"finite_source_complete"); }
+-    rc=worker_complete && s->result ? 1 : 0;
++    visit_loss=visit_mode && live_visit_clean_loss(s,worker_complete);
++    rc=worker_complete && s->result && !visit_loss ? 1 : 0;
+ done:
+     if(s && s->started) {
+         void *result=NULL;
+@@ -771,6 +778,9 @@ done:
+         if(mutex && pthread_mutex_destroy(&s->mutex)) rc=1;
+     }
+     fftw_free(fft_storage);free(ring);alarm(0);
++    /* The typed visit result is available only after every cleanup and
++     * evidence close succeeded. Standalone probe exit semantics are unchanged. */
++    if(visit_loss && !rc) rc=interrupted ? 1 : LIVE_VISIT_CLEAN_LOSS_EXIT;
+     printf("{\"scope\":\"bounded_live_cpu_acquisition_native_feedback\",\"rate\":%u,\"status\":%d,"
+         "\"stage\":\"%s\",\"blocks\":%u,\"attempts\":%u,\"handoffs\":%u,\"native_results\":%u,\"max_refill_gap_ns\":%" PRIu64
+         ",\"reacquisitions\":%u,\"native_runs\":%u,\"native_completed_runs\":%u"
+@@ -780,3 +790,4 @@ done:
+         s && s->selected_iq ? "selected_windows" : "full",completed_refills,worker_complete,s ? s->scan_iq_samples : 0);
+     free(s);return rc;
+ }
++int main(int argc,char **argv) { return live_probe_run(argc,argv,0); }
+diff --git a/tools/glrt_cpu_visit_probe.c b/tools/glrt_cpu_visit_probe.c
+index 15c5a7bb6..924f5a68c 100644
+--- a/tools/glrt_cpu_visit_probe.c
++++ b/tools/glrt_cpu_visit_probe.c
+@@ -16,6 +16,7 @@ struct visit_context {
+     int (*probe_main)(int,char **);
+ };
+ static int visit_cancelled(void *unused) { (void)unused;return interrupted!=0; }
++static int visit_probe_main(int argc,char **argv) { return live_probe_run(argc,argv,1); }
+ static int channel_is(struct iio_channel *channel,const char *name,const char *expected)
+ {
+     char raw[128];ssize_t n;
+@@ -123,7 +124,9 @@ static int visit_child(void *pointer,unsigned number,uint64_t deadline)
+         if(stopping && (!now || now<stop_at || now-stop_at>=UINT64_C(2000000000))) kill(pid,SIGKILL);
+         nanosleep(&pause,NULL);
+     }
+-    return !stopping && WIFEXITED(status) && WEXITSTATUS(status)==0 ? 0 : -1;
++    if(stopping || !WIFEXITED(status)) return -1;
++    if(WEXITSTATUS(status)==LIVE_VISIT_CLEAN_LOSS_EXIT) return GLRT_VISIT_CLEAN_LOSS;
++    return WEXITSTATUS(status)==0 ? 0 : -1;
+ fail:
+     if(stdout_fd>=0) close(stdout_fd);
+     if(stderr_fd>=0) close(stderr_fd);
+@@ -139,7 +142,7 @@ int main(int argc,char **argv)
+         errno=0;lo[n]=strtoull(argv[6+n],&end,10);
+         if(errno || *end || !*argv[6+n]) return 2;
+     }
+-    context.args=argv;context.rate=(uint32_t)strtoul(argv[1],NULL,10);context.probe_main=glrt_cpu_probe_main;
++    context.args=argv;context.rate=(uint32_t)strtoul(argv[1],NULL,10);context.probe_main=visit_probe_main;
+     if(snprintf(path,sizeof(path),"%s/visits.txt",argv[5])<=0 || !(context.journal=fopen(path,"wx"))) return 2;
+     action.sa_handler=signal_stop;sigemptyset(&action.sa_mask);
+     if(sigaction(SIGALRM,&action,NULL) || sigaction(SIGTERM,&action,NULL) || sigaction(SIGINT,&action,NULL)) return 2;
+diff --git a/tools/glrt_native_radio.md b/tools/glrt_native_radio.md
+index 9a9354bc5..095a669ee 100644
+--- a/tools/glrt_native_radio.md
++++ b/tools/glrt_native_radio.md
+@@ -351,3 +351,20 @@ allows them only in epoch zero with capture disabled and tracking drained,
+ cleared and fault-free. Every nonzero acquisition epoch still requires zero
+ CDC/pacer drops. This matches the existing finite probe's baseline-versus-active
+ epoch distinction; it neither erases a counter nor accepts loss during capture.
++### Continuing visits after clean native loss
++
++The two-frequency composition has an internal clean-loss disposition. The
++standalone live probe keeps its existing exit semantics. Only the visit child
++can return exit 3, and only for a completed and joined worker whose native
++controller established acquisition loss, retained/popped every configured head,
++drained and cleared the controller, retained all paired IQ, and joined its
++observer. Cancellation, retention failures and all final capture/source,
++storage-close and cleanup failures prevent that disposition.
++
++The parent maps exit 3 to `GLRT_VISIT_CLEAN_LOSS` and retains result 1 on the
++`after_run` transition. It then applies the same idle, fixed-RF, advancing
++epoch/counter, retention, cancellation and global-deadline checks used after a
++successful capture before tuning again. Unknown exits and signals stop the
++sequence. This permits scanning after a qualified loss; it neither changes
++native support gates nor establishes sustained lock. Physical qualification
++must separately exercise a handoff, clean loss and subsequent frequency visit.
+diff --git a/tools/glrt_tracking_visit.c b/tools/glrt_tracking_visit.c
+index 4faf1d3b6..56325664d 100644
+--- a/tools/glrt_tracking_visit.c
++++ b/tools/glrt_tracking_visit.c
+@@ -46,13 +46,14 @@ int glrt_tracking_visit_run(const struct glrt_visit_ports *p,uint32_t rate,const
+         if(p->retain(p->context,"tuned",n,0,&tuned)) return GLRT_VISIT_RETENTION;
+         if((rc=guard(p,deadline,&last))) return rc;
+         rc=p->run(p->context,n,deadline);
+-        /* Verify and retain cleanup even if the child failed. A failed child
+-         * never authorizes another tune merely because hardware is now idle. */
++        /* Verify and retain cleanup even if the child failed. Only successful
++         * capture or the explicit clean-loss disposition permits another tune;
++         * an arbitrary failure is never promoted merely because hardware is idle. */
+         if(inspect(p,rate,&after)) return GLRT_VISIT_SOURCE;
+         if(after.lo_hz!=tuned.lo_hz || after.epoch<tuned.epoch || after.native_latest<tuned.native_latest)
+             return GLRT_VISIT_SOURCE;
+         if(p->retain(p->context,"after_run",n,rc,&after)) return GLRT_VISIT_RETENTION;
+-        if(rc) return GLRT_VISIT_RUN;
++        if(rc && rc!=GLRT_VISIT_CLEAN_LOSS) return GLRT_VISIT_RUN;
+         if(after.epoch==tuned.epoch || after.native_latest==tuned.native_latest) return GLRT_VISIT_SOURCE;
+         if((rc=guard(p,deadline,&last))) return rc;
+     }
+diff --git a/tools/glrt_tracking_visit.h b/tools/glrt_tracking_visit.h
+index f160724f8..98486251b 100644
+--- a/tools/glrt_tracking_visit.h
++++ b/tools/glrt_tracking_visit.h
+@@ -20,12 +20,15 @@ struct glrt_visit_ports {
+     int (*inspect)(void *,struct glrt_visit_state *);
+     int (*tune)(void *,uint64_t);
+     /* Must join its bounded child before returning, even on cancellation.
+-     * Return zero only for a successful finite probe, not arbitrary exit 1. */
++     * Return zero for successful finite capture, or GLRT_VISIT_CLEAN_LOSS for
++     * explicitly proven, retained and drained native loss after full cleanup.
++     * An arbitrary failed child never supplies this disposition. */
+     int (*run)(void *,unsigned,uint64_t);
+     int (*retain)(void *,const char *,unsigned,int,const struct glrt_visit_state *);
+ };
+ enum glrt_visit_result {
+-    GLRT_VISIT_DONE=0, GLRT_VISIT_INVALID=-1, GLRT_VISIT_SOURCE=-2,
++    GLRT_VISIT_DONE=0, GLRT_VISIT_CLEAN_LOSS=1,
++    GLRT_VISIT_INVALID=-1, GLRT_VISIT_SOURCE=-2,
+     GLRT_VISIT_TUNE=-3, GLRT_VISIT_RUN=-4, GLRT_VISIT_RETENTION=-5,
+     GLRT_VISIT_DEADLINE=-6, GLRT_VISIT_CANCELLED=-7
+ };
