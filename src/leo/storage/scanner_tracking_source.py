@@ -4,8 +4,7 @@ from pathlib import Path
 
 from leo.contracts.digests import canonical_digest
 from leo.contracts.scanner_tracking import TrackingCandidate, TrackingInput, TrackingProbe
-from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisConfigurationV1
-from leo.scanner.adaptive_hop_products import AdaptiveHopAnalysisBindingV1
+from leo.scanner.host_adaptive_products import bind_actual_visit_analysis
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.errors import BundleNotFoundError
@@ -104,13 +103,10 @@ class ScannerTrackingInputStore:
     def _adaptive(self, session_id: str) -> TrackingInput:
         published = self.adaptive.inspect(session_id)
         manifest, receipt = published.manifest, published.manifest.receipt
-        binding = AdaptiveHopAnalysisBindingV1(
+        binding = bind_actual_visit_analysis(
+            receipt,
             input_manifest_sha256=published.manifest_sha256,
-            receipt=receipt,
-            configuration=AdaptiveHopAnalysisConfigurationV1(
-                sample_rate_hz=receipt.plan.geometry.sample_rate_hz,
-                probe_stride_ms=120,
-            ),
+            probe_stride_ms=120,
         )
         probes, cursor = [], 0
         with self.adaptive_analysis.job(binding) as job:

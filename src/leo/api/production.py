@@ -225,6 +225,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             ),
             persistent_hop_sessions=persistent_hop_iq,
             adaptive_hop_sessions=AdaptiveHopPresentationStore(configured.bulk_root),
+            adaptive_hop_sessions_v2=AdaptiveHopPresentationStore(configured.bulk_root),
             adaptive_scanner_glrt=AdaptiveHopGlrtPresentationStore(configured.bulk_root),
             adaptive_hop_analysis=AdaptiveHopAnalysisPresentationStore(configured.bulk_root),
             scanner_refinement=ScannerRefinementStore(configured.bulk_root),

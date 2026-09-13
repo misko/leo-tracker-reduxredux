@@ -2,12 +2,37 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdaptiveHopBrowser, AdaptiveHopDetail } from "./AdaptiveHopPanel";
 import { getAdaptiveSession, getAdaptiveSessions } from "./adaptive-api";
-import { adaptiveDetailFixture, adaptivePageFixture } from "./adaptive-fixtures";
+import { adaptiveDetailFixture, adaptivePageFixture, hostAdaptiveDetailFixture } from "./adaptive-fixtures";
 
 const respond = (value: unknown, status = 200) => ({ ok: status === 200, status, json: async () => value }) as Response;
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive actual-visit presentation", () => {
+  it.each([0, 1] as const)("shows native RX%s and host delivery separately from policy", async receiver => {
+    const detail = hostAdaptiveDetailFixture(receiver);
+    const fetcher = vi.fn(async (path: string) => path === "/api/v2/scanner/adaptive-sessions/adaptive-test" ? respond(detail) : respond(null, 404));
+    vi.stubGlobal("fetch", fetcher);
+    render(<AdaptiveHopDetail sessionId="adaptive-test" />);
+    await screen.findByRole("heading", { name: `Host decisions · RX${receiver}` });
+    expect(screen.getByText("10 MS/s recording · 2.5 MS/s decimated decisions")).toBeInTheDocument();
+    expect(screen.queryByText(/both receivers retained/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Selected host decision")).toHaveTextContent("delivery accepted");
+    expect(fetcher.mock.calls.some(([path]) => path.endsWith("/glrt"))).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Next visits" }));
+    fireEvent.click(screen.getByRole("button", { name: "Inspect visit 52" }));
+    expect(screen.getByLabelText("Selected host decision")).toHaveTextContent("queue_overflow · forwarded verdict unknown · delivery source_ended");
+  });
+
+  it.each(["receiver", "rate", "inventory", "missing-decision", "rounded-counter"])("rejects invalid native %s", async fault => {
+    const detail = hostAdaptiveDetailFixture();
+    if (fault === "receiver") Object.assign(detail.capture, { physical_receiver: 2 });
+    if (fault === "rate") Object.assign(detail.capture, { sample_rate_hz: 2500000 });
+    if (fault === "inventory") detail.capture.host_feedback.accepted--;
+    if (fault === "missing-decision") detail.host_decisions!.pop();
+    if (fault === "rounded-counter") Object.assign(detail.visits[0], { valid_start_counter: Number(detail.visits[0].valid_start_counter) });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
+    await expect(getAdaptiveSession("adaptive-test")).rejects.toThrow();
+  });
   it("shows retained inventory, source time, shadow proposals and cooldown without claiming absence", async () => {
     const detail = adaptiveDetailFixture();
     const fetcher = vi.fn(async (path: string) => path.endsWith("/glrt") || path.includes("/analysis?") ? respond(null, 404) : respond(detail));
