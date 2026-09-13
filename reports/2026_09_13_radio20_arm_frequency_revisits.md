@@ -6,7 +6,9 @@ and the Cortex-A9/NEON build succeeds. A subsequent physical 30-MS/s run now
 verifies CH3 → CH4 → CH3 under one ARM parent: 21.0666876 seconds of RF,
 zero active source drops and passing independent reviews. There is no
 acquisition handoff, so sustained tracking and clean-loss continuation remain
-unqualified. The four-visit and 60-MS/s extensions still need physical checks.
+unqualified. The same three-visit plan now also passes physical and independent
+checks at 60 MS/s (21.0077364 seconds of RF). The four-visit physical check
+remains pending after its first attempt was refused by the shared lease.
 
 The previous composition accepted only two distinct centers. The new plan
 can express CH1 → CH2 → CH3 → CH4 or CH3 → CH4 → CH3. It validates every
@@ -88,8 +90,8 @@ uses retained views, counter continuity and overlapping cuts; it cannot offer
 the full-stream cross-check available in the earlier two-visit tests.
 
 The operator verifies unchanged serial/firmware/boot identity, fixed receive
-settings and TX disabled, then removes its temporary files. The last verified
-state is now 30 MS/s at **CH3 upper**, serial
+settings and TX disabled, then removes its temporary files. At the end of this
+30-MS/s run the radio is at **CH3 upper**, serial
 `1040005e0b100007100010000bf33a5d4d`. The staged binary is removed after the
 bounded test; this is not a persistent tracking service.
 
@@ -100,3 +102,47 @@ Operator/reviewer sources, admission tests and transition mutation results
 are retained beside it. Review change `ead0397c7` is a local firmware-worktree
 commit. Sustained tracking, physical clean-loss continuation, adaptive
 revisits and precision refinement remain incomplete.
+
+## Verified 60-MS/s revisit
+
+The frozen 30-to-60-MS/s image transition completes successfully, including
+source identity/idle checks, staged-image hashing, updater completion, MTD3
+FIT verification, reboot/return attestation and TX-safe verification. The
+deployment receipt is `0afb2dfe-42c4-43f7-84eb-0d5d29dfd6cb`; returned image
+`glrt-iq-tracking-r60000000-v1` has FIT SHA-256
+`19c1504e8cbf442f4fd2ee995a0ceaf3780a9a4559026a653f8fdaae53932f1b`.
+The returned boot is `ba41bda7-09ad-40e3-973d-4a8f070b35be`.
+
+`frequency-revisits60-v1` then runs the same ARM binary and CH3 → CH4 → CH3
+plan. Native sampling is 60 MS/s and ARM IQ remains 2.5 MS/s.
+
+| Visit | Actual LO | Epoch | Exported RF duration | Attempts / handoffs | Active CDC/pacer drops | Maximum refill gap |
+| --- | ---: | ---: | ---: | --- | --- | ---: |
+| CH3 upper | 1,690,312,498 Hz | 1 | 7.0068464 s | 6 / 0 | 0 / 0 | 6.701136 ms |
+| CH4 upper | 1,940,312,500 Hz | 2 | 7.0529468 s | 6 / 0 | 0 / 0 | 6.705678 ms |
+| Return to CH3 upper | 1,690,312,498 Hz | 3 | 6.9479432 s | 6 / 0 | 0 / 0 | 6.851460 ms |
+
+The total is 21.0077364 seconds of RF. All eighteen acquisition attempts
+reject their past measurements; no handoff, native measurement or observer
+episode occurs. Independent selected-IQ/source/arithmetic reviews and all
+nine retained parent transitions pass. The initial epoch-zero counters are
+also zero. Artifacts total 8,730,593 bytes; the same selected-IQ evidence
+limits apply as in the 30-MS/s test.
+
+The operator verifies unchanged image/boot identity across capture, fixed
+receive settings and TX disabled, and removes its temporary files. The last
+verified radio state is **60 MS/s at CH3 upper**, serial
+`1040005e0b100007100010000bf33a5d4d`. This is a bounded ARM-controlled revisit
+at both rates, not a persistent service or a supported tracking episode.
+
+A subsequent CH1 → CH2 → CH3 → CH4 sweep attempt is refused before radio
+contact because the shared acquisition lease is busy. The owning acquisition
+process, PID 671581, was verified live; the lease was not bypassed. That
+attempt collected zero RF samples and is retained as `frequency-sweep60-v1`.
+
+The [60-MS/s evidence manifest](figures/2026_09_13_radio20_arm_frequency_revisits/physical60-evidence.json)
+includes the successful deployment result, completed capture/reviews and the
+refused four-visit attempt. SHA-256:
+`ec9ce738675b1bf59f60602dc8185758896558453d76120d6d9741afd2113f4d`.
+Sustained tracking, physical clean-loss continuation, adaptive revisits and
+precision refinement remain incomplete.
