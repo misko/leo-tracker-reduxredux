@@ -1002,3 +1002,73 @@ and [independent physical review](figures/2026_09_13_radio20_saved_iq_coverage/p
 retain measurements and hashes. Sources, component patch, worker journal and
 both full-suite reports accompany them; original retained IQ remains in local
 evidence. Sustained live 30/60-MS/s FPGA tracking remains unfinished.
+
+## Acquired histories feed the scheduled observer on ARM
+
+A standalone harness calls the actual live probe's scanner, 64-candidate
+4,096-bin ranking, production acquisition worker, retained-IQ callbacks and
+three-frame observer. It provides no reviewed trajectory or externally trained
+history. The observer starts only after the acquisition worker returns a
+supported handoff. This closes a gap in earlier observer tests that supplied
+their starting history separately.
+
+The harness preloads 14,000 original samples, then a producer publishes
+16,384-sample chunks at absolute CLOCK_MONOTONIC deadlines corresponding to
+2.5 MS/s. The owner retains at most 5,000,000 samples. Positive cuts start
+at original offsets 0 and 1,343,553; the control starts at zero. The producer
+uses only the existing saved IQ, with no synthetic injection, wrapping,
+duplication or interpolation. Native-controller and IIO calls are excluded
+from the executable by section garbage collection; undefined-symbol inspection
+confirms no IIO dependency. This is paced software replay, not RF DMA or
+FPGA measurement execution.
+
+On the host, both positives acquire from eight accepted historical
+measurements and complete 200 observer measurements, accepting 200 and 182.
+The control's eight measurements are rejected. Host numerical and original-IQ
+review passes. On the leased, serial-attested .20 ARM, the slower computation
+requires substantially more retained-IQ catch-up:
+
+| ARM input | Scan | Acquisition worker | Accepted catch-up | Observer outcome |
+| --- | ---: | ---: | ---: | --- |
+| Positive cut 0 | 592.116 ms | 827.891 ms | 113 / 119 | 200 measured, 173 accepted; completed |
+| Positive cut 3 | 590.552 ms | 822.978 ms | 106 / 118 | 139 measured, all accepted; deadline after finite input |
+| Control cut 0 | 597.110 ms | 539.830 ms | 0 / 8 | No handoff or observer |
+
+Both positive worker runs return ready with their acquired history; no
+freshness or support gate is relaxed. The first observer takes 798.048 ms
+for its 200 measurements. It runs from frame 1065 through 1662 on the acquired
+frame numbering, with its final retained window starting at coarse sample
+5,541,269. Independent prediction review checks the rolling feedback history.
+
+The second cut contains only 4,906,447 remaining samples. Its last accepted
+observer window starts at 4,901,053, frame 1470. The next three-frame window
+would lie beyond that input. The harness deliberately leaves the owner open
+until observer completion; after publication ends, the observer therefore
+waits and exits with its existing three-second deadline. This is not a
+successful 200-measurement completion or physical loss/reacquisition test.
+It also must not be interpreted as rejection of those 139 supported pilots.
+
+Independent ARM review checks 51 resolver hypotheses, all 245 historical
+moment/dense-fit records including CFO and rejection bits, and all 339
+observer fits and causal feedback predictions. Every retained worker and
+observer IQ window equals the original saved input at its recorded coordinate.
+Seed copies meet the one-second age bound. Source views, recorded timestamps,
+natural observer joins, payload/journal hashes and zero process exits pass.
+Host and ARM sequences differ because acquisition latency changes how far
+catch-up must advance; their outputs are checked independently against IQ.
+
+Serial 1040005e0b100007100010000bf33a5d4d at 192.168.1.20 retains identical
+before/after identity and TX-safe state. All remote payloads and result files
+are retrieved and removed. No RF samples, native jobs, image changes or
+persistent tracker are introduced. The full goal still requires supported
+live handoff, native FPGA feedback, sustained operation and loss/reacquisition
+at both 30 and 60 MS/s.
+
+The [host build/results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/host.json),
+[host review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/host-review.json),
+[ARM operator](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/operator.json)
+and [ARM independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/arm-review.json)
+retain the evidence. Harness, build/operator/reviewer sources and ARM journals
+are archived alongside them. Retained IQ remains local. Initial local
+file/directory naming and versioned-input path errors were corrected before
+this final harness was executed on ARM; earlier outputs remain separate.
