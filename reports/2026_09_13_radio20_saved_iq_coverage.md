@@ -831,3 +831,50 @@ and [independent ARM review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-
 include source hashes and timings. Sources, component patch, test report and
 ARM journals are retained alongside them. Sustained live 30/60-MS/s FPGA
 tracking and physical loss/reacquisition remain unfinished.
+
+## Heap selection preserves proposal order
+
+Firmware worktree commit `505f6697a` replaces the repeated full-grid selection
+passes with a heap containing the eligible local maxima. Heap extraction uses
+the existing score, center-frequency preference, epoch and frequency tie order.
+Circular timing/frequency suppression still follows each previously selected
+candidate. This preserves the complete selection policy, including candidates
+outside the original top eight; it does not truncate a preliminary top-score
+list before suppression.
+
+Temporary allocation is bounded to 439,956 bytes and is released on success
+or failure. Cancellation is polled during collection, heap construction,
+each extraction and before publication. Allocation failure or cancellation
+clears outputs and leaves count zero. The legacy workspace layout remains
+unchanged. The heap also serves the existing eight-candidate interface, but
+the updated executable has not been activated on the radio.
+
+Across the same 26 saved cuts, budgets 8 and 64 reproduce all 1,872 candidate
+tuples and single-pilot FFT scores against independent evidence. Mean host
+64-candidate selection falls from 29.076 ms in the previous benchmark to
+0.225 ms, with total mean scanner computation falling from 53.971 to
+24.823 ms. These host measurements are subject to host scheduling and do not
+establish an ARM speedup or a live deadline bound.
+
+The existing 215-test coarse/seed/tracking-benchmark/live-probe suite passes.
+The final coarse suite passes 34 tests, adding allocation failure and
+cancellation immediately before publication to the already covered ordering,
+suppression, malformed-input and earlier-cancellation cases. Four saved-IQ
+benchmark runs under AddressSanitizer and UndefinedBehaviorSanitizer pass
+without diagnostics: positive cut 12 and control cut 10, each at budgets
+8 and 64. Both host and Cortex-A9 builds succeed with warnings treated as errors.
+
+The serial-bound ARM operator refuses admission before radio contact because
+the global acquisition lease is held. Process 1594587 is independently
+confirmed live, running the CH4-lower scanner on radio 003a; a later process
+and lease check confirms the same owner. This is not permission to bypass
+the global lease. No RF, remote files, image changes or ARM timing runs occur
+for this optimization. The prepared operator can run once normal admission
+succeeds, after which the full scanner still needs retained-source freshness,
+refinement and live capture-contention checks.
+
+The [build and host results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heap-scan/build.json),
+[admission refusal](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heap-scan/operator.json)
+and [sanitizer results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heap-scan/sanitizers.json)
+retain the evidence. Component patch, sources and both test reports are
+archived alongside them. Sustained 30/60-MS/s FPGA tracking remains unfinished.
