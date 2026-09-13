@@ -969,11 +969,18 @@ def test_durable_scanner_only_is_bounded_and_does_not_consume_ordinary_work() ->
 
 
 @pytest.mark.parametrize("persistent", [False, True])
-def test_restarted_single_scan_invocations_keep_cadence_and_leave_dwells_paused(persistent) -> None:
+@pytest.mark.parametrize("interval", [5, 600])
+def test_restarted_single_scan_invocations_keep_cadence_and_leave_dwells_paused(
+    persistent, interval
+) -> None:
     clock = _Clock()
     backend = _DurableSupervisorBackend(clock)
     backend.analyzed.set()
-    configuration = replace(backend.scanner_schedule(), requires_durable_queue=persistent)
+    configuration = replace(
+        backend.scanner_schedule(),
+        requires_durable_queue=persistent,
+        interval_seconds=interval,
+    )
     backend.scanner_schedule = lambda: configuration  # type: ignore[method-assign]
     start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
     ordinary = backend.enqueue_acquisition_operation(
@@ -999,7 +1006,7 @@ def test_restarted_single_scan_invocations_keep_cadence_and_leave_dwells_paused(
         )
         assert result.scanner_run_count == 1
         assert result.stopped_reason == "maximum_scanner_runs"
-    assert backend.scanner_capture_times == [0.0, 5.0]
+    assert backend.scanner_capture_times == [0.0, float(interval)]
     assert backend.capture_times == []
     assert backend.events.count("reconcile") == (0 if persistent else 2)
     assert ordinary.state == "pending" and ordinary.attempt_count == 0

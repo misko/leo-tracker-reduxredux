@@ -401,14 +401,18 @@ class CliSettings:
                     raise ValueError(
                         "persistent hopping requires a usable literal 192.168.1.* host"
                     )
+                admitted_intervals = (
+                    (600, 1200) if self.scanner_profile == SINGLE_RX_PROFILE_ID else (1200,)
+                )
                 if (
-                    self.scanner_interval_seconds != 1_200
+                    self.scanner_interval_seconds not in admitted_intervals
                     or self.scanner_run_seconds != 300
                     or self.scanner_dwell_ms != 120
                     or self.scanner_persistent_iiod_port != 30_432
                 ):
                     raise ValueError(
-                        "persistent hopping requires 1200-second cadence, 300-second runs, "
+                        "persistent hopping requires 1200-second cadence "
+                        "(or 600 seconds for the single-RX profile), 300-second runs, "
                         "120 ms valid visits, and alternate iiOD port 30432"
                     )
                 binary = self.scanner_persistent_iiod_binary_path

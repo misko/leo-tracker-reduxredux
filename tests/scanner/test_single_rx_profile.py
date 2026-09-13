@@ -10,20 +10,24 @@ from leo.scanner.single_rx import (
     SingleRxPersistentHopPlanV2,
     SingleRxScannerConfigurationV4,
     SingleRxScheduledScannerIntentV2,
+    SingleRxScheduledScannerIntentV3,
     compile_single_rx_hop_plan,
     compile_single_rx_scanner_intent,
+    parse_scheduled_scanner_intent,
     single_rx_for_operation,
 )
 
 
-def make_intent(index=0):
-    scheduled = datetime(2026, 9, 12, tzinfo=UTC) + timedelta(minutes=20 * index)
+def make_intent(index=0, interval_seconds=1200):
+    scheduled = datetime(2026, 9, 12, tzinfo=UTC)
+    if index:
+        scheduled += timedelta(seconds=interval_seconds * index)
     return compile_single_rx_scanner_intent(
         operation_key=f"scheduled-scanner:{scheduled.strftime('%Y%m%dT%H%M%SZ')}",
         radio_id="radio-pluto",
         radio_serial="serial-123",
         scheduled_for=scheduled,
-        interval_seconds=1200,
+        interval_seconds=interval_seconds,
         maximum_lateness_seconds=300,
         run_duration_seconds=300,
         dwell_ms=120,
@@ -88,3 +92,37 @@ def test_receiver_tampering_invalidates_the_bound_intent():
     document["configuration"]["receiver_ids"] = [1 - intent.configuration.receiver_ids[0]]
     with pytest.raises(ValidationError, match="choice disagrees"):
         SingleRxScheduledScannerIntentV2.model_validate(document)
+
+
+def test_ten_minute_intents_round_trip_and_preserve_receiver_on_shared_slots():
+    intents = [make_intent(i, 600) for i in range(100)]
+    assert {v.configuration.receiver_ids for v in intents} == {(0,), (1,)}
+    for i, intent in enumerate(intents):
+        assert type(intent) is SingleRxScheduledScannerIntentV3
+        assert parse_scheduled_scanner_intent(intent.model_dump(mode="json")) == intent
+        assert make_intent(i, 600) == intent
+        assert compile_single_rx_hop_plan(intent).nominal_device_sample_count == 3_000_000_000
+        if i % 2 == 0:
+            old = make_intent(i // 2)
+            assert old.operation_key == intent.operation_key
+            assert old.configuration == intent.configuration
+            assert old.intent_digest != intent.intent_digest
+
+
+def test_cadence_contract_versions_reject_each_others_bytes():
+    for model, intent in (
+        (SingleRxScheduledScannerIntentV2, make_intent(1, 600)),
+        (SingleRxScheduledScannerIntentV3, make_intent()),
+    ):
+        with pytest.raises(ValidationError):
+            model.model_validate_json(intent.model_dump_json())
+        document = intent.model_dump(mode="json")
+        document["schema_version"] = model.model_fields["schema_version"].default
+        with pytest.raises(ValidationError, match="canonical"):
+            model.model_validate(document)
+
+
+@pytest.mark.parametrize("interval", [0, 300, 601, 900, 1800, float("nan")])
+def test_unqualified_single_rx_cadences_are_rejected(interval):
+    with pytest.raises(ValueError, match="start interval"):
+        make_intent(interval_seconds=interval)
