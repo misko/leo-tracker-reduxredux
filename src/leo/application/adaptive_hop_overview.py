@@ -5,10 +5,7 @@ from contextlib import AbstractContextManager
 from typing import Protocol
 
 from leo.application.adaptive_hop_analysis import AdaptiveHopAnalysisInputs
-from leo.scanner.adaptive_hop_analysis import (
-    AdaptiveHopAnalysisConfigurationV1,
-    AdaptiveHopVisitAnalysisV1,
-)
+from leo.scanner.adaptive_hop_analysis import AdaptiveHopVisitAnalysisV1
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopOverviewManifestV1,
     RenderedAdaptiveOverview,
@@ -17,6 +14,7 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
 )
+from leo.scanner.host_adaptive_products import bind_actual_visit_analysis
 
 
 class AdaptiveOverviewJob(Protocol):
@@ -58,13 +56,10 @@ class AdaptiveHopOverviewService:
         with self._inputs.source(session_id) as source:
             if source.receipt.session_id != session_id:
                 raise ValueError("adaptive overview source identity differs")
-            binding = AdaptiveHopAnalysisBindingV1(
-                receipt=source.receipt,
+            binding = bind_actual_visit_analysis(
+                source.receipt,
                 input_manifest_sha256=source.input_manifest_sha256,
-                configuration=AdaptiveHopAnalysisConfigurationV1(
-                    sample_rate_hz=source.receipt.plan.geometry.sample_rate_hz,
-                    probe_stride_ms=probe_stride_ms,
-                ),
+                probe_stride_ms=probe_stride_ms,
             )
             with self._products.job(binding, writable=True) as job:
                 metrics = job.manifest()
