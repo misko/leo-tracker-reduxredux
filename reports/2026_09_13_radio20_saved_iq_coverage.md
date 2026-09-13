@@ -630,3 +630,49 @@ capture/worker journals, exact-profile wrapper, reviewer, implementation patch
 and test results accompany the report. The measured limitation is acquisition
 support; sustained 30/60-MS/s FPGA tracking and physical clean-loss continuation
 remain unqualified.
+
+## Latest live failures include predictable alignment drift
+
+An offline diagnostic searches the retained pilot cuts from the first live
+observer3 capture. Since each cut contains only 3,300 IQ samples, every
+hypothesis uses the same central 3,236 observed samples and an in-bounds slice
+of a pinned reference. No missing endpoint IQ is synthesized. The search
+covers ±16 samples in quarter-sample steps and resolver CFO ±1,000 Hz on a
+5-Hz grid. These are searched interior powers, not production C coherence or
+acceptance decisions.
+
+The first two attempts contain substantially more aligned pilot evidence than
+their later original measurements suggest. Frequency search alone does not
+recover it; timing adjustment also matters.
+
+| Attempt | Frame-63 power with fixed timing and frequency search | Frame-63 power with local timing/CFO search | First-four-fit held-out powers, frames 36–63 |
+| --- | ---: | ---: | --- |
+| 1 | 0.0011 | 0.0412 | 0.0422, 0.0381, 0.0384, 0.0341 |
+| 2 | 0.0005 | 0.0479 | 0.0478, 0.0447, 0.0444, 0.0472 |
+
+The held-out experiment fits only the first four diagnostic positions and
+frequencies, then freezes both models. Timing advances approximately 0.01667
+and 0.01944 coarse samples per frame relative to the nominal period
+(approximately 5.0 and 5.83 ppm). Changing the held-out localization values
+does not change either trained model. These fits use measurements rejected
+by the production worker and have no feedback authority.
+
+Attempts 3–6 remain near zero on held-out prediction. Three extrapolated
+reference positions exceed the available reference extent and are reported
+as unavailable rather than filled or scored. All 48 selected search peak
+powers reproduce with direct complex-dot calculations independent of the
+zoom-FFT evaluation.
+
+This establishes a timing/carrier prediction limitation in the first two
+attempts, rather than a simple disappearance of all matched evidence. However,
+most re-aligned diagnostic powers remain below 0.05, and their cropped/searched
+statistic is not the production gate. No additional acquisition is qualified,
+no acceptance threshold changes, and no new RF is collected. Another identical
+capture is not justified by this result alone. Any approach that combines
+evidence across weak pilots needs separate detection and false-alarm
+calibration before it can authorize a live handoff or native feedback.
+
+The [alignment search](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-alignment/alignment.json),
+[frozen held-out forecast](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-alignment/forecast.json)
+and both diagnostic sources retain all scores, source hashes, timing offsets
+and frequency estimates. Sustained native FPGA tracking remains unfinished.
