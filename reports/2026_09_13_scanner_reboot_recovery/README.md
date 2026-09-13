@@ -45,12 +45,34 @@ reported as a successful adaptive deployment.
 - The 17:10 UTC slot exhausted three attempts on `radio lease is busy` while a
   separate `.20` live RF test held the global acquisition lock. That test released
   the lock by 17:14:13, but a new `.20` firmware deployment held it again at
-  17:15:59. The service remains active on its ten-minute cadence, with the next
-  slot at 17:20 UTC. A completed new capture and its subsequent publication are
-  still required to verify recovery.
-- A user question is pending about asking the separate `.20` task to pause new
-  RF tests after its current capture for scanner verification. No task message
-  was sent, competing process stopped, or acquisition lock bypassed.
+  17:15:59. The 17:20 slot also exhausted its retries. This contention cleared
+  before the 17:30 and 17:40 slots, which both completed successfully.
+- The user reaffirmed exclusive use of serial `104000bac4950008230026001b440a003a`.
+  No task message was sent, competing process stopped, other radio controlled,
+  or acquisition lock bypassed.
+
+## Completed post-reboot verification
+
+The 17:30 slot published `scan-hop-64950599f64125fd`: native 10 MS/s, physical
+RX0, 2,386 complete visits, **95.4355% valid duty**, attested continuity and
+restored hardware. Acquisition started at 17:30:10.832830 UTC and publication
+finished at 17:35:17.248464 UTC. Full native-rate analysis finished at
+17:44:15.668024 UTC, covering all 2,386 visits.
+
+The next ten-minute slot published `scan-hop-9978db368a18a329`, also with 2,386
+visits and **95.4284% valid duty**. Its saved detail snapshot records analysis
+progress independently of capture completion. The supervisor restarted normally
+between slots; continuous scheduling is restored.
+
+A real Chromium session selected the recovered 17:30 recording and verified
+the displayed session ID, 10.0 MS/s, RX0 and 95.44% duty without JavaScript errors.
+The displayed images loaded successfully. Coverage, GLRT64 response and CFO
+trajectory endpoints independently returned HTTP 200 and valid PNG signatures;
+hashes are in `post-reboot-plot-assets.json`. Browser evidence is retained in
+`browser-post-reboot.json` and `browser-post-reboot.png`.
+
+These checks verify the deployed fixed-order scanner, native-rate analysis and
+web publication. They do not qualify the still-unreleased host adaptive path.
 
 The last successful pre-recovery scan was the 02:40 slot, on RX1 at 10 MS/s and
 95.4307% valid duty, with full analysis complete. The 02:50 slot failed on radio
