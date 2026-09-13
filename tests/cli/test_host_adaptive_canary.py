@@ -3,6 +3,7 @@ from types import SimpleNamespace as N
 
 import pytest
 
+import tools.run_host_adaptive_canary as canary
 from tools.run_host_adaptive_canary import qualify_result
 
 
@@ -30,3 +31,36 @@ def test_live_gate_never_qualifies_degraded_capture_or_policy(fault):
             qualify_result(result, receipt, detail, cancel)
     else:
         qualify_result(result, receipt, detail, cancel)
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_capture_deadline_covers_startup_but_ends_before_offline_verification(monkeypatch, failed):
+    calls = []
+
+    class Timer:
+        def __init__(self, duration, callback):
+            assert duration == 335
+            self.callback = callback
+
+        def start(self):
+            calls.append("armed")
+
+        def cancel(self):
+            calls.append("disarmed")
+
+    def capture(intent, *, cancel):
+        assert calls == ["armed"] and intent == "requested"
+        assert not cancel.is_set()
+        calls.append("capture")
+        if failed:
+            raise RuntimeError("capture failed")
+        return "receipt"
+
+    monkeypatch.setattr(canary, "Timer", Timer)
+    backend = N(capture_scheduled_scanner=capture)
+    if failed:
+        with pytest.raises(RuntimeError, match="capture failed"):
+            canary.capture_with_deadline(backend, "requested", Event())
+    else:
+        assert canary.capture_with_deadline(backend, "requested", Event()) == "receipt"
+    assert calls == ["armed", "capture", "disarmed"]

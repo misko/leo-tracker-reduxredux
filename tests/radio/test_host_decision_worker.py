@@ -105,6 +105,17 @@ def test_complete_evidence_serializes_but_expired_result_stays_unknown():
     assert result.evidence == evidence()
 
 
+def test_terminal_drain_keeps_workspace_for_later_terminal_iq():
+    engine = Engine()
+    worker = BoundedHostDecisionWorker(lambda: engine)
+    iq = np.ones((1, 1200000), dtype=np.complex64)
+    worker.submit(source(), iq, edge="upper")
+    assert len(worker.drain()) == 1
+    assert worker.pending_count == 0 and not engine.closed
+    worker.submit(source(1), iq, edge="lower")
+    assert len(worker.finish()) == 1 and engine.closed
+
+
 def test_detector_failure_is_explicit_unknown_without_healthy_negative():
     worker = BoundedHostDecisionWorker(lambda: Engine(fail=True))
     worker.submit(source(), np.zeros((1, 1200000), dtype=np.complex64), edge="upper")

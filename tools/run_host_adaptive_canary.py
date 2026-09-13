@@ -42,6 +42,18 @@ def qualify_result(result, receipt, detail, cancel):
         raise ValueError("canary exceeded its bounded deadline")
 
 
+def capture_with_deadline(backend, intent, cancel):
+    # Provider RF is bounded to 300 s. The host allowance includes measured
+    # startup/restoration, but ends before offline verification begins.
+    timer = Timer(335, cancel.set)
+    timer.daemon = True
+    timer.start()
+    try:
+        return backend.capture_scheduled_scanner(intent, cancel=cancel)
+    finally:
+        timer.cancel()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release", type=Path, required=True)
@@ -112,7 +124,7 @@ def main():
     with args.ledger.with_suffix(".lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         ledger = json.loads(args.ledger.read_text())
-        if ledger["remaining_seconds"] < 310 or any(
+        if ledger["remaining_seconds"] < 335 or any(
             e.get("state") in ("running", "failed") for e in ledger["entries"]
         ):
             raise ValueError("RF budget is insufficient or a previous canary requires review")
@@ -120,19 +132,18 @@ def main():
             "id": f"host-{args.mode}-rx{args.rx}"
             + (f"-attempt{args.attempt}" if args.attempt > 1 else ""),
             "state": "running",
-            "reserved_seconds": 310,
+            "reserved_seconds": 335,
             "report": str(args.output / "canary.json"),
         }
         if any(e["id"] == entry["id"] for e in ledger["entries"]):
             raise ValueError("this bounded canary was already attempted")
         ledger["entries"].append(entry)
         write(args.ledger, ledger)
-        timer = Timer(310, cancel.set)
-        timer.daemon = True
         started = time.monotonic()
-        timer.start()
+        capture_elapsed = None
         try:
-            result = backend.capture_scheduled_scanner(intent, cancel=cancel)
+            result = capture_with_deadline(backend, intent, cancel)
+            capture_elapsed = time.monotonic() - started
             captured = store.verify(result.published.session_id)
             receipt = captured.manifest.receipt
             detail = AdaptiveHopPresentationStore(args.output).detail_v2(captured.session_id)
@@ -161,13 +172,13 @@ def main():
             entry["state"] = "failed"
             raise
         finally:
-            timer.cancel()
             elapsed = time.monotonic() - started
-            entry["rf_seconds_upper_bound"] = elapsed
+            charged = elapsed if capture_elapsed is None else capture_elapsed
+            entry["rf_seconds_upper_bound"] = charged
             entry["reason"] = (
                 "Conservatively charge the entire capture call, including setup and restoration."
             )
-            ledger["charged_seconds"] += elapsed
+            ledger["charged_seconds"] += charged
             ledger["remaining_seconds"] = ledger["budget_seconds"] - ledger["charged_seconds"]
             ledger["reserved_next_canaries_seconds"] = max(
                 0, ledger["reserved_next_canaries_seconds"] - 300
