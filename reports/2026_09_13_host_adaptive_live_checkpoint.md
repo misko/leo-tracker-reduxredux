@@ -39,3 +39,40 @@ The new UI reader places native host-adaptive captures under Adaptive Scan,
 showing native 10 MS/s, physical RX and 2.5 MS/s decision processing. Historical
 fixed-order captures remain under Persistent Hop + Scan. This UI is staged,
 not yet the production reader.
+
+## Follow-up at 20:12 UTC
+
+The delayed 20:00 fixed scan completed with 2,387 visits and 95.4538% duty
+(`scan-hop-036f6e40a71ba826`). The service was paused after its success.
+The first lease failure was explicitly reviewed as pre-acquisition; its charge
+was preserved and the full successful-canary reservation restored.
+
+Shadow RX0 attempt 2 reached host startup but failed before opening the capture:
+`profile frequencies and CRC must be non-zero`. PPU validated the complete wire
+request before `prepare_plan` populated hardware fastlock CRCs. PPU commit
+`37fa76e161c1dd9fe2ee6b171c1f0a80ac2578e2` validates policy/configuration first,
+then validates the complete wire request after preparation. Regression coverage
+now starts with zero CRCs for both RXs and also rejects missing prepared CRCs.
+The focused PPU suite passed 666 tests. Corrected Leo release
+`da7edddafe2c06dbf281c1dbd4e7f6f54f1c9130` is being staged.
+
+The failed attempt remains charged 11.871408 s in the ledger; no receipt or IQ
+was published. Fixed acquisition was restarted, but its 20:10 slot exhausted
+retries on a separate shared-lease collision. The service remains scheduled for
+the next slot. No other task's process or radio was changed.
+
+An independent Python saved-trace verifier now checks every healthy HOPS choice
+against source-ordered applied host evidence, weights, cooldowns and revisit
+gaps. Its component tests plus canary gate tests passed 21 cases, including both
+RXs, changing activity, and deliberate trace corruption. It does not interpret
+feedback transport acceptance alone as proof of policy application.
+
+The native analysis measurement also exposed a 300 s per-pass backfill budget,
+shorter than the measured 407 s metrics computation. Commit `1bf2bf6f` moves
+adaptive analysis ahead of derived products and permits 580 s per pass, retaining
+four native workers and 120 ms probe stride. All 15 backfill tests passed.
+Release `2824e625b5f9f732696fab941c813c78cc353d57` contains this change plus the
+CRC fix and passed immutable staging, web asset generation and installed-runtime
+validation. It remains unselected pending live qualification. Full maintenance
+cycle timing must still be measured; the 410 s replay measured native analysis
+and overview only, not additional refinement/tracking jobs.
