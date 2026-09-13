@@ -4,16 +4,20 @@ import argparse
 import fcntl
 import json
 import signal
+import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event, Timer
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from leo.cli.composition import CliSettings, CompositionHooks, LocalAcquisitionBackend
 from leo.scanner.host_adaptive import HOST_ADAPTIVE_PROFILE_ID
 from leo.scanner.schedule import canonical_scheduled_scanner_operation_key
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_history import AdaptiveHopPresentationStore
+from tools.verify_host_adaptive_policy import verify_policy
 
 SERIAL = "104000bac4950008230026001b440a003a"
 
@@ -45,7 +49,10 @@ def main():
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--mode", choices=("shadow", "adaptive"), required=True)
     parser.add_argument("--rx", type=int, choices=(0, 1), required=True)
+    parser.add_argument("--attempt", type=int, default=1)
     args = parser.parse_args()
+    if args.attempt < 1:
+        raise ValueError("attempt must be positive")
     if Path(__import__("sys").executable).parent.parent != args.release / ".venv":
         raise ValueError("canary must use the explicitly staged release interpreter")
     values = {}
@@ -110,7 +117,8 @@ def main():
         ):
             raise ValueError("RF budget is insufficient or a previous canary requires review")
         entry = {
-            "id": f"host-{args.mode}-rx{args.rx}",
+            "id": f"host-{args.mode}-rx{args.rx}"
+            + (f"-attempt{args.attempt}" if args.attempt > 1 else ""),
             "state": "running",
             "reserved_seconds": 310,
             "report": str(args.output / "canary.json"),
@@ -135,6 +143,7 @@ def main():
                 capture=detail.capture.model_dump(mode="json"),
             )
             qualify_result(result, receipt, detail, cancel)
+            report["policy_verification"] = verify_policy(receipt)
             report["state"] = entry["state"] = "passed"
             print(
                 json.dumps(
