@@ -177,3 +177,27 @@ Native analysis of the actual adaptive RX0 recording
 `scan-hop-89ff5771b72d879c` is running separately to verify publication with its
 nonuniform actual visit history. The first scheduled production capture and live
 API/browser verification remain mandatory before completion.
+
+## Four canaries passed and production switched
+
+Adaptive RX1 (`scan-hop-106c90486d2e961d`) completed 300.0918175 s at 95.2508%
+duty, with 2,382 healthy decisions, no fallback and maximum revisit 1.023728 s.
+All independent policy choices matched. No targets became active, so uniform
+coverage after warmup was the correct policy result. Native analysis completed
+for both actual adaptive RX0 and RX1 canaries, with all three plots ready.
+
+Acquisition, API and analysis selected sealed release `52313e7f` between scans.
+The adaptive service started for the 21:20 UTC slot, and all relevant services
+and the analysis timer are enabled for reboot. The first scheduled scan
+`scan-hop-8a7616c1f7b47f4a` passed capture and independent policy verification:
+RX1, native 10 MS/s, 300.0546165 s, 95.2226% duty, all 2,381 decisions healthy,
+no fallback, maximum revisit 1.0360626 s. Its persisted V4 intent binds the exact
+radio003a, host decision rate 2.5 MS/s and interval 600 s.
+
+The qualification ledger is finalized at 2,179.136778 s of the approved 2,220 s.
+First-production native analysis completed all 2,381 visits; Chromium decoded
+all three production plots without page errors. The full production background
+cycle took 412.064 s and exited successfully. The 21:30 UTC operation was admitted
+on schedule with the approved profile and radio. See
+`2026_09_13_host_adaptive_deployment.md` for the deployment evidence and final
+web/cadence observations.

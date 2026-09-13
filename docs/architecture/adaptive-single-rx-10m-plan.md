@@ -208,11 +208,14 @@ an adaptive deployment. No firmware flash or corpus migration is planned.
 
 Done means the scheduled random-RX adaptive profile completes capture, native-10M
 analysis and web publication while satisfying these gates. Release
-`52313e7fc0b9f9f978fb0f613d25c1d152fce238` is staged and runtime-validated,
-but unselected. The first real shadow run was cancelled early by the qualification
-harness; startup/deadline and terminal-drain corrections are tested and staged.
-The additional bounded RF allowance is approved. The next step is a fresh RX0
-shadow canary and the remaining reserved live gates. See
+`52313e7fc0b9f9f978fb0f613d25c1d152fce238` is selected for production acquisition,
+API and analysis. All four corrected shadow/adaptive RX0/RX1 canaries passed.
+The first scheduled 21:20 UTC capture passed at 95.2226% duty; all 2,381 native
+visit analyses and three production browser plots passed. The next 21:30 UTC
+operation was admitted on schedule. Historical failed
+attempts remain recorded. The approved 2,220 s qualification allowance has
+2,179.136778 s charged and 40.863222 s unused. Normal ten-minute production
+continues under its separate authorization. See
 `reports/2026_09_13_host_adaptive_live_checkpoint.md` for actual results and ledger.
 Scheduler admission and source-bound runtime packaging are implemented; see
 `reports/2026_09_13_host_adaptive_admission.md`.
@@ -221,5 +224,5 @@ pass component tests, with all three native PNGs decoded in Chromium for both
 physical receivers using synthetic captures. Saved-data throughput checks and
 live qualification were the next gates; saved native analysis now completes in
 410 s and the real partial capture's three PNGs decode in Chromium. Successful
-full-length live qualification remains required before cutover; see
+full-length live qualification subsequently passed before cutover; see
 `reports/2026_09_13_host_adaptive_web.md` and the live checkpoint above.
