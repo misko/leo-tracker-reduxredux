@@ -19,9 +19,9 @@ from pathlib import Path
 QNAP = Path("/mnt/qnap01")
 PRODUCTION_METADATA_ABI = 3
 PRODUCTION_LIBIIO_SOURCE_COMMIT = "f6c450eada95ce99fe8756ebc244bfcf6ddcc72a"
-# This is the exact host transport exercised by the scanner canaries, not the
-# separately built ARM iiOD revision. Accepting it does not enable GLRT or RF.
-SCANNER_GLRT_LIBIIO_SOURCE_COMMIT = "a1088b61de3c57762cfed5533e1baf8076a7b726"
+# Explicit scanner runtime, including host feedback. Source pinning is a
+# packaging gate; it does not claim live qualification or enable GLRT/RF.
+SCANNER_GLRT_LIBIIO_SOURCE_COMMIT = "ab89268c42ae4d2e520e2a0eb1a491e0f459d8dd"
 RUNTIME_PROFILES = {
     "persistent-hop": PRODUCTION_LIBIIO_SOURCE_COMMIT,
     "scanner-glrt": SCANNER_GLRT_LIBIIO_SOURCE_COMMIT,
@@ -193,6 +193,10 @@ def validate(
     bundle_paths = bundle_validator["inventory"](
         release, expected_uid=expected_uid, expected_gid=expected_group
     )
+    host_validator = runpy.run_path(str(Path(__file__).with_name("validate-host-decision-bundle")))
+    host_paths = host_validator["inventory"](
+        release, expected_uid=expected_uid, expected_gid=expected_group
+    )
     expected_paths = (
         python,
         release / ".release-tools/uv",
@@ -203,6 +207,7 @@ def validate(
         release / "runtime/scanner-iiod/provenance.json",
         *runtime_paths,
         *bundle_paths,
+        *host_paths,
     )
     if len(lines) != 3 + len(expected_paths):
         raise ValueError("metadata digest inventory has unexpected cardinality")

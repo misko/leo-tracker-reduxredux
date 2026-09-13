@@ -58,11 +58,14 @@ def test_duplicate_manifest_is_rejected() -> None:
         binding(ENVIRONMENT + ENVIRONMENT.splitlines()[0] + "\n", TARGET)
 
 
-def test_single_rx_deployment_preserves_the_explicit_radio():
+@pytest.mark.parametrize(
+    "profile", ["single-rx-random-10m-300s-v1", "adaptive-single-rx-random-10m-300s-v1"]
+)
+def test_single_rx_deployment_preserves_the_explicit_radio(profile):
     policy = runpy.run_path(str(ROOT / "deploy/scripts/scanner-runtime-binding.py"))
     radio = {"radio_id": "radio_pluto_5d4d", "serial": "serial-20", "host": "192.168.1.20"}
     environment = {
-        "LEO_SCANNER_PROFILE": "single-rx-random-10m-300s-v1",
+        "LEO_SCANNER_PROFILE": profile,
         "LEO_SCANNER_RADIO_ID": radio["radio_id"],
         "LEO_RADIOS_JSON": json.dumps([radio]),
     }

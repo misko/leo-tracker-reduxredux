@@ -22,7 +22,10 @@ SCANNER_ONLY_BINDINGS = {
 
 def scanner_radio_bindings(environment: dict[str, str]) -> dict[str, str]:
     """Keep the explicitly selected single-profile radio through cutover."""
-    if environment.get("LEO_SCANNER_PROFILE") != "single-rx-random-10m-300s-v1":
+    if environment.get("LEO_SCANNER_PROFILE") not in (
+        "single-rx-random-10m-300s-v1",
+        "adaptive-single-rx-random-10m-300s-v1",
+    ):
         return dict(SCANNER_ONLY_BINDINGS)
     selected = environment.get("LEO_SCANNER_RADIO_ID")
     raw = environment.get("LEO_RADIOS_JSON", "")
