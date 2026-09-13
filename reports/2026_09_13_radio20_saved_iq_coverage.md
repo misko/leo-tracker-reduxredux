@@ -6,6 +6,11 @@ valid acquisition. Recent 30-MS/s visits have much weaker frame-period
 repetition, close to the saved control. No new RF was collected, and no
 runtime gate or firmware changed.
 
+Follow-up through the actual C worker now rejects all ten strongest
+time-separated missed proposals: **0 of 80 past measurements accepted**.
+Independent refinement/moment review passes. Thus wider scan coverage alone
+does not produce a valid handoff from these tested proposals.
+
 ## Spectral and repetition comparison
 
 All inputs are the exported 2.5-MS/s complex IQ, independently hash-checked
@@ -78,3 +83,44 @@ Analysis sources accompany them. The physical state remains the
 [last verified 30-MS/s CH4-upper visit](2026_09_13_radio20_clean_loss_visits.md),
 TX disabled, serial `1040005e0b100007100010000bf33a5d4d`. Sustained tracking and
 physical clean-loss continuation remain unfinished.
+
+## Do the stronger missed proposals support acquisition?
+
+The follow-up selects the ten highest-ranked proposals separated by at least
+500,000 samples (200 ms), each with enough retained data for a 447,851-sample
+replay. Each exact source cut is hash-checked. The unchanged C coarse scanner,
+full-pilot ranking, resolver, startup carrier prediction and catch-up worker
+run against that cut. The replay reproduces the previously computed ranking
+scores, then evaluates the actual repeated-pilot acceptance conditions.
+
+| Replay group | Accepted past measurements | Maximum past coherence | C worker outcome |
+| --- | ---: | ---: | --- |
+| Ten strongest spaced 60-MS/s CH3 proposals | 0 / 80 | 0.0403930 | Insufficient supported history in every case |
+| Saved positive input | 15 / 15 | 0.0872203 | Ready proposal with 15 supported observations |
+| Saved control input | 0 / 8 | 0.0048718 | Insufficient supported history |
+
+All 80 candidate measurements fail the existing 0.05 coherence requirement:
+57 fail coherence alone and 23 additionally fail local correction bounds.
+Independent NumPy resolver and dense-fit calculations verify 204 timing/CFO
+hypotheses and 103 moment/fit records across the twelve cases. The reviewer
+checks exact original-IQ cuts, moment words, coherence, CFO, rejection bits
+and causal startup forecasts; six deliberate coherence/CFO mutations are
+rejected.
+
+Receiver time is a frozen retained snapshot. The positive's ready proposal
+therefore demonstrates the offline software path, not a fresh ARM handoff or
+physical native tracking. The source window is deliberately rebased to zero
+for replay, with its original file offset retained separately. No RF or native
+measurement is submitted.
+
+This narrows the next step: improving proposal coverage remains useful, but
+these tested missed proposals also lack per-pilot support under the current
+policy. They cannot qualify clean-loss continuation or sustained tracking.
+Any proposed integration across multiple pilots would need separate evidence
+for its acceptance rule and resulting timing/carrier accuracy; this replay
+does not authorize weakening the existing gates.
+
+The [C replay result](figures/2026_09_13_radio20_saved_iq_coverage/missed-candidates/result.json),
+[independent review](figures/2026_09_13_radio20_saved_iq_coverage/missed-candidates/independent-review.json)
+and twelve retained worker journals are accompanied by the benchmark, runner
+and review source. Original IQ cuts remain in the local evidence directory.
