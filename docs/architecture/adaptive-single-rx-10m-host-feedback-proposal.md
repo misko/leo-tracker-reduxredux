@@ -1,8 +1,10 @@
 # Host decisions for the single-RX adaptive scanner — proposal
 
-Status: proposed, pending the user's decision. The accepted deployment plan still
-places decisions on the radio. This document does not activate a new profile or
-reduce probe coverage.
+Status: accepted for implementation, 2026-09-13. The user authorized continuous
+scheduled adaptive operation after the host-processing recommendation, then
+specified a ten-minute start interval. This supersedes the earlier on-radio
+execution location and twenty-minute cadence. All six probes remain required;
+activation still requires the qualification gates below.
 
 The unchanged six-window pipeline exceeds the ARM timing gate on both radios.
 The replacement `.17` radio replayed the same sixteen development cases with the
@@ -16,16 +18,17 @@ Neither benchmark qualifies a deployment or held-out detection fidelity.
 Keep capture and retune execution on the selected radio, with the existing
 counter-authoritative policy engine. Record native 10 MS/s CI16 from one physical
 RX chosen once per durable scan identity. Keep the 300-second duration, eight
-targets, 120 ms valid visits and 20-minute cadence.
+targets, 120 ms valid visits and 10-minute start cadence.
 
 On the host, process a separate decision copy of each complete visit through the
 sealed 10-to-2.5 MS/s filter, all six 20 ms screens, and at most one ranked blind
 confirmation. Preserve thresholds, promotion, demotion, exploration and uniform
 fallback semantics. The native recording and offline analysis retain 10 MS/s IQ.
 
-Use a bounded worker queue with two waiting native visits as the initial measured
-capacity candidate: 9.6 MB of CI16 payload, plus the active job and DSP workspace.
-Its final bound must be established by paced replay and simultaneous recording.
+Use a bounded worker with at most two outstanding native visits, including the
+active job and completed results awaiting consumption: at most 9.6 MB of CI16
+input plus the DSP workspace. Paced replay verifies the host bound; live
+qualification must establish behavior with feedback and simultaneous recording.
 A full queue is unhealthy feedback and triggers the existing fallback policy;
 healthy acceptance requires zero such events. Never obtain a timing pass by
 silently dropping probes or treating unevaluated work as a negative detection.
@@ -57,7 +60,7 @@ feedback-age gate and the existing consecutive-unhealthy-result fallback latch.
 
 ## Signal-time contract
 
-The provisional direct 161-tap linear-phase FIR has a nominal group delay of 80
+The sealed direct 161-tap linear-phase FIR has a nominal group delay of 80
 native samples (8 microseconds). At phase zero, output index `k` refers to source
 centre index `4k - 80`. Full causal support starts at output index 40 when the
 filter resets at a visit boundary. Carry this support interval separately from
@@ -78,8 +81,8 @@ opening the held-out corpus.
    After doubling blocks to 262,144 samples and correcting the AGC-restoration
    comparison, the 23:20 full scan passed at 95.4264% duty with zero loss.
    Preserve the counter/gap checks and qualify transport with the added feedback
-   traffic. Accept the execution location and seal one complete DSP configuration and
-   its reference protocol. Apply the existing response, arithmetic, synthetic
+   traffic. Host execution is accepted and the complete DSP configuration and
+   reference protocol are sealed. Preserve the response, arithmetic, synthetic
    boundary and 64-dwell held-out gates without tuning on held-out outcomes.
 2. Run 300-second paced host replay, including queueing, filtering, screening,
    confirmation and feedback serialization. Require mean ≤90 ms, p99 ≤100 ms,

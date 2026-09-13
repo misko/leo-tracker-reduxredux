@@ -13,6 +13,7 @@ struct leo_adaptive_scan {
     struct pending_visit *visits;
     uint64_t now, decision_counter, basis_visit;
     uint32_t committed, applied, cursor, selected, pending, fallback, unhealthy, pending_total;
+    uint32_t classification_rx;
 };
 
 static uint64_t samples(const leo_adaptive_scan *s, uint32_t ms)
@@ -21,10 +22,12 @@ static uint64_t samples(const leo_adaptive_scan *s, uint32_t ms)
 void leo_adaptive_destroy(leo_adaptive_scan *s)
 { if (s) { free(s->visits); free(s); } }
 
-int leo_adaptive_create(leo_adaptive_scan **out, const leo_adaptive_config_v1 *c)
+static int create(leo_adaptive_scan **out, const leo_adaptive_config_v1 *c,
+    uint32_t rx, int single_rx)
 {
     if (!out || !c || !c->session || !c->generation ||
-        (c->rate_hz!=2500000 && c->rate_hz!=5000000) ||
+        (single_rx ? c->rate_hz!=10000000 || rx>1 :
+            (c->rate_hz!=2500000 && c->rate_hz!=5000000) || rx!=1) ||
         !c->target_count || c->target_count>LEO_ADAPTIVE_MAX_TARGETS ||
         !c->maximum_visits || c->maximum_visits>LEO_ADAPTIVE_MAX_VISITS ||
         !c->warmup_visits || c->warmup_visits>16 ||
@@ -42,15 +45,25 @@ int leo_adaptive_create(leo_adaptive_scan **out, const leo_adaptive_config_v1 *c
     s->visits=calloc(c->maximum_visits,sizeof(*s->visits));
     if (!s->visits) { free(s); return -ENOMEM; }
     s->config=*c; s->now=c->start_counter; s->basis_visit=LEO_ADAPTIVE_NO_VISIT;
+    s->classification_rx=rx;
     *out=s;
     return 0;
+}
+
+int leo_adaptive_create(leo_adaptive_scan **out, const leo_adaptive_config_v1 *c)
+{ return create(out,c,1,0); }
+
+int leo_adaptive_create_v2(leo_adaptive_scan **out, const leo_adaptive_config_v2 *c)
+{
+    if (!c || c->reserved) return -EINVAL;
+    return create(out,&c->geometry,c->classification_rx,1);
 }
 
 int leo_adaptive_observe(leo_adaptive_scan *s, const leo_adaptive_observation_v1 *o,
     uint64_t received)
 {
     if (!s || !o || o->session!=s->config.session || o->generation!=s->config.generation ||
-        o->rate_hz!=s->config.rate_hz || o->rx!=1 || o->visit>=s->committed ||
+        o->rate_hz!=s->config.rate_hz || o->rx!=s->classification_rx || o->visit>=s->committed ||
         o->outcome>LEO_ADAPTIVE_NOT_DETECTED || o->healthy>1 ||
         (!o->healthy && o->outcome!=LEO_ADAPTIVE_UNKNOWN) || received<s->now ||
         received<o->valid_end) return -EINVAL;

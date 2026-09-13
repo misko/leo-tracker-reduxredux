@@ -156,7 +156,10 @@ def build(
 ):
     sources = [
         NATIVE / name
-        for name in ("presence.c", "fft.c", "window_rank.c", "dwell.c", "decision_decimator.c")
+        for name in (
+            "presence.c", "fft.c", "window_rank.c", "dwell.c", "decision_decimator.c",
+            "host_decision.c",
+        )
     ]
     if not shared:
         sources.append(ROOT / "tools/decimated_dwell_replay.c")
@@ -164,6 +167,7 @@ def build(
         sources.append(NATIVE / "decision_decimator_fft.c")
     dependencies = [
         *NATIVE.glob("*.[ch]"),
+        NATIVE / "host_decision_coefficients.inc",
         ROOT / "runtime/scanner-glrt/algorithm.json",
         ROOT / "src/leo/analysis/starlink/_native_acquisition_grid.inc",
         ROOT / "tools/decimated_dwell_replay.c",
