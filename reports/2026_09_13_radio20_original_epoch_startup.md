@@ -7,9 +7,10 @@ last checked paced source counter. A control rejected. This is an actual ARM
 saved-IQ replay, not a fresh-RF acquisition-to-native-feedback qualification.
 
 The target remains `192.168.1.20`, serial
-`1040005e0b100007100010000bf33a5d4d`, running
-`glrt-iq-tracking-r30000000-v1`. Its boot ID remained
-`f6f290d1-21ff-4a31-bb88-3ccbb46f488b` through the completed tests.
+`1040005e0b100007100010000bf33a5d4d`. The ARM replay checkpoint used
+`glrt-iq-tracking-r30000000-v1`, with boot ID
+`f6f290d1-21ff-4a31-bb88-3ccbb46f488b`. The subsequent live follow-up below
+also tested 60 MS/s; that is now the resident image.
 This follows the [loaded 30/60-MS/s tests](2026_09_12_radio20_loaded_30_60_tracking.md)
 and [historical paced ARM replay](2026_09_13_radio20_paced_arm_startup.md).
 
@@ -121,6 +122,74 @@ record was retained in the successful ARM run; the forced-refresh branch is
 specifically covered by component tests. These replays open no RX buffer and
 submit no native job. Firmware, boot, TX and idle state match before and after.
 
+## Corrected live startup at both native rates
+
+After the initial admission refusal, the corrected executable completed one
+26.8435456-second live capture at each native rate. Both used receive LO
+1,190,312,500 Hz, 2.5 MHz RF bandwidth, manual gain 30 dB and A_BALANCED.
+Each retained all 67,108,864 exported complex samples and made 16 attempts.
+
+| Native rate | Scan plus ordering | Resolver / initial catch-up | Maximum refill interval | Supported history / acquired native jobs |
+| --- | --- | --- | --- | --- |
+| 30 MS/s | 820.56–831.56 ms | 601.65–607.96 ms | 7.454 ms | One observation in one attempt; zero jobs |
+| 60 MS/s | 750.15–833.41 ms | 607.20–615.52 ms | 10.765 ms | Zero supported observations; zero jobs |
+
+Both captures had zero active-epoch CDC and pacer drops. Independent review
+checked another 1,173,216 coarse-grid values, 256 ordering scores, 544 resolver
+hypotheses, 256 integer moment sets and 1,270,912 copied worker samples.
+Both native journals contained only their headers: acquisition never authorized
+native submission. The operator verified unchanged receive settings, firmware,
+boot and TX/idle state within each run, retrieved all artifacts, then removed
+the private RAM filesystem. This adds 53.6870912 seconds of exported-sample
+duration to this report's earlier captures.
+
+The 60-MS/s deployment completed updater, FIT readback, reboot identity and
+SSH host-key rotation checks. Receipt
+`deploy60-original-seed-v1/receipts/b4d9084a-4e21-4248-8aaa-188dbb53be6f.json`
+identifies the same serial and image `glrt-iq-tracking-r60000000-v1`.
+The latest verified boot ID is `89459b01-4aeb-4ad1-a01b-4fe065b8ea76`.
+
+The native handoff preflight originally wrote an unrecognized journal kind.
+Commit `3a4d751fc` retains the same snapshot using the existing `snapshot`
+record, preserving compatibility with journal review and recovery. The actual
+composed worker tests now pass their complete simulated 1,500-head journals
+through the independent GLT1 reviewer at both rates. The 60-MS/s executable
+includes this fix; it changes evidence framing, not acquisition arithmetic.
+
+## Exact ARM vector acceleration
+
+Commit `932fcc20e` uses ARM NEON signed widening products for eight of the
+eleven taps in each coarse complex dot product, followed by three scalar
+taps. It preserves the exact integer square-root and normalized-score rules.
+The complete dot product is bounded to 1,476,395,008 for CI16 samples and
+validated CI12 coefficients; SIMD lanes and intermediate reductions therefore
+fit signed 32 bits. Portable builds retain the scalar path.
+
+The paired saved-IQ ARM benchmark on the resident 60-MS/s image measured
+638.54–645.63 ms per window for the scalar baseline and 456.90–463.46 ms for
+NEON: a 28.58% reduction in mean scan time, or 1.400x speedup. Every one of
+the 146,652 grid values per implementation and all selected peaks match the
+independent integer oracle. Before scanning, the actual NEON executable passed
+10,064 component-owned comparisons against wide-integer arithmetic, including
+rails and varied input alignment. Twelve host coarse-scanner tests also pass.
+
+The paired benchmark opens no RX buffer and submits no native job. After an
+initial lease refusal before radio contact, the vectorized executable also
+completed a live 60-MS/s capture at receive LO 1,190,312,500 Hz. It retained all
+67,108,864 exported samples over 26.8435456 seconds, with zero active-epoch
+CDC or pacer drops and a maximum refill interval of 7.293 ms.
+
+Under live capture load, coarse scanning took 472.28–533.12 ms, or
+538.57–599.43 ms including candidate ordering. Resolution and initial catch-up
+took 601.39–613.22 ms. All 16 attempts rejected with zero supported history;
+no acquired native jobs were submitted. Independent review passed all 586,608
+grid values, 128 ordering scores, 272 resolver hypotheses, 128 moment sets and
+635,456 copied worker samples. The operator retrieved all artifacts and removed
+the private filesystem after idle-state checks. This establishes faster
+acquisition computation during capture, while live acquired feedback remains
+unqualified. The preceding two-rate table describes the scalar executable;
+only the saved-IQ benchmark compares implementations on identical inputs.
+
 ## Implementation and remaining work
 
 Firmware-worktree commits are `cc3883329` (long dwell), `82db85843` (private
@@ -130,11 +199,10 @@ tests, 24 live-composition tests, 53 operator tests and two saved-benchmark
 tests. Reference ROMs and
 persisted GLA1/GLT1 contracts were preserved.
 
-The updated live executable is built. Its first live dispatch was refused
-before radio contact because another acquisition held the shared lease; that
-receipt records zero new RF samples. The corrected startup therefore still
-needs a fresh-RF acquired native-feedback test, followed by qualification at
-60 MS/s and autonomous scanning, reacquisition and refinement. The existing
+The corrected startup has now run on fresh RF at both rates, but no candidate
+passed the full history requirement. A supported fresh-RF acquired
+native-feedback loop, autonomous scanning, reacquisition and refinement remain
+unverified. The existing
 30/60-MS/s transport and arbitrary scheduled-job results remain separate
 evidence and do not establish this acquired feedback path.
 
@@ -151,6 +219,11 @@ Evidence root:
 - `paced-original-seed-input-v1/`: exact selected positive/control input bytes and manifest.
 - `paced-original-seed-arm-v1-results/`, `paced-original-seed-arm-v2-results/`: actual ARM journals and independent reviews.
 - `cpu-live30-original-seed-lo1190-v1/`: admission-refused receipt for the updated live executable.
+- `cpu-live30-original-seed-lo1190-v2/`, `cpu-live60-original-seed-lo1190-v2/`: complete corrected live captures and independent reviews.
+- `deploy60-original-seed-v1/`: successful 30-to-60-MS/s transition and readback/return evidence.
+- `coarse-neon-pair-v2/`: actual ARM scalar/NEON grids, timings and independent review.
+- `cpu-live60-neon-lo1190-v1/`: admission-refused receipt for the vectorized live executable.
+- `cpu-live60-neon-lo1190-v2/`: complete vectorized live capture and independent review.
 
 The checked-in [evidence manifest](figures/2026_09_13_radio20_original_epoch_startup/evidence.json)
 retains reviews, source and binary hashes, cohort summaries and operator receipts.
