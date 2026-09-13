@@ -1281,3 +1281,68 @@ retain the measurements; worker journals and diagnostic/review sources
 accompany them. IQ remains in the pinned local corpus. The previous bounded
 30-MS/s native success stands; supported 60-MS/s native feedback, sustained
 operation and autonomous loss/reacquisition remain unfinished.
+
+## Expanded scanning executes autonomous ARM frequency revisits at 60 MS/s
+
+Firmware worktree commit `20e605d1c` adds an opt-in trailing
+`1536-selected-observer3-scan64` argument to the existing ARM visit probe.
+The parent selects and journals this exact child profile for two to four
+visits. It validates the entire frequency/profile plan before IIO contact;
+existing invocations retain their existing profiles. The parent still joins
+each child, verifies drained hardware and retained epoch state, and permits
+another LO change only after successful bounded execution or the explicit
+clean-native-loss disposition. Arbitrary failures stop the sequence.
+
+The component suites pass 196 visit/child tests plus two combined live
+scan64/native-loss tests, one at each native rate. The latter verify
+three-frame observer evidence, native loss, observer join, no same-LO
+restart, and clean-loss evidence including deliberate corruptions. Ten
+operator admission tests pass. The Cortex-A9 build has SHA-256
+`5eff9cacccf945414c2f1ce2637142c85829b9484feecd12fd5b296063757a84`.
+
+A single physical run on `192.168.1.20`, serial
+`1040005e0b100007100010000bf33a5d4d`, runs CH3 → CH4 → CH3 on ARM, with
+the existing 60-MS/s native image and 2.5-MS/s exported IQ. Each visit uses
+64 coarse candidates, a 4096-bin ranking FFT, and unchanged refinement and
+acceptance gates. The global plan allows at most 60 seconds of wall time
+and 30.1989888 seconds of received data across these three visits.
+
+| Visit | Requested LO (Hz) | Acquisition epoch | RF seconds | Scans | Accepted startup measurements |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| CH3 | 1,690,312,500 | 2 | 7.4857032 | 6 | 0/48 |
+| CH4 | 1,940,312,500 | 3 | 7.4263632 | 6 | 0/48 |
+| CH3 revisit | 1,690,312,500 | 4 | 7.5182228 | 6 | 0/48 |
+
+The run completes after 22.4302892 seconds of received data. Independent
+review passes 659,934 coarse-grid values, 1152 ranking scores, 306 resolver
+hypotheses and 144 moment/dense fits. Each seed meets the original one-second
+source-age limit. Scan plus ranking takes 642.024–660.820 ms; rejected-worker
+processing takes 580.656–597.718 ms. Maximum refill gap is 7.204 ms, with
+zero active CDC/pacer drops. All parent transitions match their retained
+snapshots, fresh epochs and child evidence. Four deliberately corrupted
+profile/disposition/binary/epoch associations are rejected.
+
+There are no handoffs, native results or observer measurements. This proves
+physical autonomous frequency revisits after unsuccessful expanded scans;
+it does not prove supported 60-MS/s tracking or physical tracking-loss to
+reacquisition. The combined loss path has host test evidence at both rates.
+No gate or freshness allowance is relaxed to turn weak RF into a pass.
+
+Identity/image/TX-safe state agrees before and after the run. Final LO is
+1,690,312,498 Hz, manual gain 30 dB, RF bandwidth 2.5 MHz, buffers idle and
+TX disabled. All 8,912,999 evidence bytes are retrieved and temporary radio
+files removed. No persistent tracker is installed.
+
+The subsequent 30-MS/s transition passes local frozen-image validation but
+is refused before radio contact by the acquisition lease. The verified
+holder is PID 1814683, an active scanner-only acquisition on radio `003a`.
+No updater is dispatched; .20 stays on the 60-MS/s image and previously
+attested boot `cec63f8e-b9d8-49e9-b7a7-4fec44bae66b`. Physical execution of
+this expanded revisit profile at 30 MS/s remains pending.
+
+The [result summary](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits/result-summary.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits/operator.json)
+and [sequence review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits/independent-sequence-review.json)
+accompany child reviews/journals, build provenance, source patch and test
+results. Supported 60-MS/s native feedback, longer supported operation,
+physical loss/reacquisition and persistent ARM operation remain unfinished.
