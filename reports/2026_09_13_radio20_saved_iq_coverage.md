@@ -676,3 +676,58 @@ The [alignment search](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/
 [frozen held-out forecast](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-alignment/forecast.json)
 and both diagnostic sources retain all scores, source hashes, timing offsets
 and frequency estimates. Sustained native FPGA tracking remains unfinished.
+
+## Combined-pilot control replay exposes proposal-recall losses
+
+An exploratory score averages four normalized interior pilot powers, each
+measured using timing/CFO models fitted only to the preceding four pilots.
+It requires no inter-pilot phase alignment. Thirteen non-overlapping
+447,851-sample cuts are taken from each saved positive and control recording.
+Every cut first runs the actual C coarse selection, full-pilot ranking and
+resolver. Diagnostic training searches then use frames 0, 9, 18 and 27;
+scoring uses frames 36, 45, 54 and 63 without a held-out search.
+
+| Saved input | Evaluated scores | Reference-extent abstentions | Observed mean-power scores |
+| --- | ---: | ---: | --- |
+| Positive recording | 11 / 13 | 2 | First cut 0.076835; other evaluated cuts 0.000127–0.000502 |
+| Control recording | 12 / 13 | 1 | 0.000114–0.000430 |
+
+These few nearby cuts do not establish independent RF trials, absence of real
+signals in the control, or a rare-false-alarm rate. No threshold is selected
+or deployed. An extrapolation outside the retained reference extent abstains;
+it is not silently counted as a zero-power measurement.
+
+The positive result exposes an earlier limitation: the actual selector often
+chooses an unrelated weak hypothesis even though the previously reviewed C
+tracking trajectory contains supported pilots in that cut. Seven cuts have a
+supported pilot in the scanner's first timing interval. Recomputing their
+complete integer coarse grids and extending the same local-maximum,
+tie-breaking and suppression policy yields:
+
+| Positive cut | Reviewed supported frame | First retained coarse candidate within ±8 timing samples |
+| --- | ---: | ---: |
+| 1 | 134 | 165 |
+| 3 | 403 | 29 |
+| 4 | 538 | 10 |
+| 5 | 672 | 79 |
+| 8 | 1075 | 94 |
+| 9 | 1209 | 144 |
+| 12 | 1612 | 35 |
+
+The first eight candidates reproduce the actual C selector exactly. These
+oracle-assisted ranks accept any coarse frequency bin, since subsequent
+full-pilot ranking searches frequency separately. They establish missed timing
+coverage, not successful refinement or acquisition at the larger budgets.
+Only cuts with a reviewed supported position in that interval enter this
+table; the other cuts are not classified as lacking a signal.
+
+The next implementation question is proposal recall and ranking cost.
+Increasing candidate coverage or ranking evidence across repeated pilots must
+be tested against ARM latency and source freshness before deployment.
+Changing only the acceptance score would leave these top-eight misses intact.
+
+The [combined-score replay](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/combined-controls/result.json),
+[proposal-rank diagnosis](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/combined-controls/coverage.json)
+and both analysis sources retain hashes and detailed results. Original cuts
+and C worker journals remain in local evidence. No RF, production source or
+gate changes occur; sustained native FPGA tracking remains unfinished.
