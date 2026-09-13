@@ -2,6 +2,8 @@ import hashlib
 import os
 import runpy
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -34,6 +36,15 @@ def test_host_detector_inventory_is_sealed_into_release_metadata(tmp_path):
             stream.write(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path}\n")
     metadata.chmod(0o440)
     _validate(release, metadata)
+
+
+def test_staged_cli_uses_the_extractor_identity_before_root_leo_sealing(tmp_path):
+    target = bundle(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "deploy/scripts/validate-host-decision-bundle"),
+         str(tmp_path), "--staged"], capture_output=True, text=True, check=True,
+    )
+    assert set(result.stdout.splitlines()) == {str(path) for path in target.iterdir()}
 
 
 @pytest.mark.parametrize("fault", ["manifest", "binary", "mode", "extra", "symlink"])
