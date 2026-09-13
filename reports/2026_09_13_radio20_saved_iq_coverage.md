@@ -356,3 +356,42 @@ both measurement journals, benchmark, operator, reviewer, training records and
 build hashes accompany this report. ARM binary SHA-256 is
 `991750d4a82262694bcdfa085a4a71fcfee1aef954495a15a6cb028b3f85ae4f`.
 No RF or firmware changes occurred; sustained native tracking remains unfinished.
+
+## Lower-cadence feedback survives every tested two/three-frame alignment
+
+The unchanged C feedback loop was replayed at spacings of 2, 3, 6 and 9 frames,
+testing every starting offset for each spacing. All runs use the same saved
+positive and diagnostic first-32 training history. Testing every offset avoids
+selecting only a favorable alignment with the observed weak frames.
+
+| Spacing | Observation interval | Offsets reaching frame-1800 bound | Accepted / measured, by offset |
+| --- | ---: | ---: | --- |
+| 2 frames | 2.667 ms | 2 / 2 | 680/884; 683/884 |
+| 3 frames | 4.000 ms | 3 / 3 | 272/590; 545/589; 546/589 |
+| 6 frames | 8.000 ms | 3 / 6 | 7/12; 278/295; 274/295; 0/5; 202/228; 270/294 |
+| 9 frames | 12.000 ms | 1 / 9 | 7/13; 121/132; 186/197; 5/11; 138/151; 110/119; 6/13; 115/121; 113/123 |
+
+Rows that do not reach the bound terminate when the C predictor refuses a
+batch. The accepted/measured counts stop at that point. All 5,545 measured
+jobs across 20 runs pass independent dense-fit coherence, timing/CFO and
+rejection-bit checks. The replay uses existing validity gates and retains
+chronological frame numbers when measurements are skipped.
+
+Two- and three-frame spacing therefore merit ARM timing tests. Three-frame
+spacing allows a 4-ms interval, compared with the earlier measured 2.106-ms
+mean software cost, but that comparison is only a planning estimate. The new
+cadences have not yet been timed on ARM, and capture, logging, startup and
+freshness costs remain unqualified. Six- and nine-frame spacing are sensitive
+to starting alignment on this input.
+
+The ARM test attempt was refused by the global radio authority before radio
+contact. At the refusal, PID 879612 was verified live holding the lease for
+another acquisition run on radio `003a`. No lease was bypassed, no RF was
+collected and no firmware or production source changed. The refusal is
+retained separately from the host results.
+
+The [host review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/cadence/host-review.json),
+all 20 host journals, benchmark/reviewer/operator sources, build hashes and
+[admission refusal](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/cadence/arm-admission-refusal.json)
+are retained. This narrows the next hardware benchmark to the two- and
+three-frame schedules; it does not qualify native FPGA tracking.
