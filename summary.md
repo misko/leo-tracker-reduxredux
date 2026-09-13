@@ -1,5 +1,7 @@
 # Report summaries and relevance
 
+Latest controller implementation: [Continuing visits after clean native loss](reports/2026_09_13_radio20_clean_loss_visits.md) adds a distinct, retained clean-loss outcome so the ARM supervisor can visit the next frequency after drained native loss. All 215 focused tests and the ARM build pass. Ordinary errors, cancellation and cleanup failures still stop the sequence. This change is not yet deployed or physically qualified; the last physical result remains the verified 30-MS/s CH1/CH2 scan with no handoff.
+
 Reviewed 12 September 2026. This index covers **all 110 Markdown report files that were present under `reports/` at the start of the review**, including untracked drafts, nested receipts, and archived copies. It also covers 19 qualification/audit documents and seven supplemental analysis, timing, and implementation documents. Three reviewers read the August reports in parallel; the coordinating reviewer covered September, selected artifact checks, and literature. Summaries describe retained evidence, not a new execution or a statement about today's running firmware.
 
 The new [timing, frequency, resolution and FPGA assessment](/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_12_timing_frequency_resolution_and_fpga_review.md) combines the findings, gives quantitative comparison tables, revisits the literature, and proposes the next implementation milestone. It is listed separately below so the original 110-file coverage remains clear.
