@@ -457,3 +457,43 @@ ARM execution is still pending. Previous lease owner PID 913908 exited, but
 PID 933850 was verified live holding the global lease for another canary run.
 No additional admission was attempted while that owner was confirmed live.
 No radio, live-probe configuration or firmware changes occurred.
+
+## ARM verifies cadence margin and the actual observer
+
+After the global lease became available, the combined operator acquired the
+normal leases and ran five cadence cases plus three actual-observer cases on
+`192.168.1.20`, serial `1040005e0b100007100010000bf33a5d4d`.
+It verified payload hashes, unchanged before/after identity and TX-safe idle
+state, retrieved all results and removed the temporary files. The resident
+60-MS/s image was unchanged; no RX buffer or native job was opened.
+
+| ARM path | Mean computation / observation interval | Maximum measured computation | Result |
+| --- | --- | --- | --- |
+| Two-frame direct trend, both offsets | 2.126 ms / 2.667 ms, about 80% | 2.319 ms | All 1,768 jobs match host |
+| Three-frame direct trend, all offsets | 2.125–2.126 ms / 4 ms, about 53% | 2.350 ms | All 1,768 jobs match host |
+| Actual three-frame observer, all offsets | 0.438–0.439 s / 0.8 s represented time, about 55% | Per-job maximum not retained | All 600 jobs match host; each run reaches DONE |
+
+All 4,136 ARM jobs, rejection decisions and fitted values match the reviewed
+host baselines within numerical tolerances. The actual observer accepts
+95, 200 and 200 measurements for its three offsets, matching the host.
+No direct-trend computation exceeds its observation interval in these runs.
+
+Three-frame spacing has substantially more measured margin than two-frame
+spacing. This supports proceeding to receiver-paced observer testing before
+enabling it in the live probe. The direct timing excludes input loading and
+output serialization; observer timing includes its copy/guards and retention
+callback with buffered output, but neither path includes live capture/DMA
+contention or full production logging. A 53–55% compute ratio does not itself
+prove system throughput or source freshness.
+
+The first review rejected nonempty SSH stderr. Inspection found only the
+same exact OpenSSH key-exchange advisory in each result; the reviewer now
+allows that literal advisory or empty stderr and rejects additional content.
+The original stderr remains in the operator receipt. Numerical and
+acceptance checks were not relaxed.
+
+The [combined operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-cadences/operator.json),
+[comparison and timing review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-cadences/review.json),
+eight journals and operator/reviewer sources accompany this report. The
+three-frame live setting is still disabled. Sustained native FPGA tracking,
+receiver-paced freshness and physical clean-loss continuation remain unfinished.
