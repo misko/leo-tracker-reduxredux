@@ -165,10 +165,13 @@ Do not infer adaptive sensitivity or allocation benefit from counterfactual IQ.
 
 ## Live qualification and RF budget
 
-Keep the existing cumulative ledger. It has charged 237.331441 seconds, leaving
-1,562.668559 seconds of the 30-minute qualification allowance: 1,500 seconds are
-reserved for four canaries and the first scheduled verification, leaving only
-62.668559 seconds unreserved. Count partial failed attempts. Do not start an
+Keep the existing cumulative ledger. Following the shortened shadow run, the
+user said “please continue” in response to the explicit request for up to seven
+additional minutes. The cap is now 2,220 seconds (37 minutes), with 593.374663
+seconds already charged and 1,626.625337 remaining before the next attempt.
+Reserve 1,500 seconds for four successful canaries and first scheduled verification;
+126.625337 seconds remain for measured overhead. Count partial failed attempts.
+Do not start an
 unbudgeted baseline or retry, overlap another capture on the selected radio, or
 launch a multi-hour qualification campaign. Normal continuous production
 scheduling is separately authorized by the user.
@@ -208,8 +211,8 @@ analysis and web publication while satisfying these gates. Release
 `52313e7fc0b9f9f978fb0f613d25c1d152fce238` is staged and runtime-validated,
 but unselected. The first real shadow run was cancelled early by the qualification
 harness; startup/deadline and terminal-drain corrections are tested and staged.
-The next step is approval of the requested additional bounded RF allowance,
-then a fresh RX0 shadow canary and the remaining reserved live gates. See
+The additional bounded RF allowance is approved. The next step is a fresh RX0
+shadow canary and the remaining reserved live gates. See
 `reports/2026_09_13_host_adaptive_live_checkpoint.md` for actual results and ledger.
 Scheduler admission and source-bound runtime packaging are implemented; see
 `reports/2026_09_13_host_adaptive_admission.md`.
