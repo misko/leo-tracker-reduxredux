@@ -541,3 +541,38 @@ The [paced ARM review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/
 host/ARM journals, build manifest and benchmark/operator/reviewer sources
 accompany this report. Retained IQ stays in the local evidence directory
 with hashes in the receipt. Native FPGA tracking remains unfinished.
+
+## Bounded live profile explicitly selects three-frame observation
+
+Firmware worktree commit `7f6153b85` adds the opt-in
+`1536-selected-observer3` live profile. It retains the existing 1,536-block
+capture cap (10.0663296 seconds at 2.5 MS/s), six acquisition attempts,
+25-second process alarm and 12-second worker budget. Existing profiles still
+select nine-frame observation. The new profile changes only the passive
+observer cadence; it does not authorize native submissions or alter gates.
+
+The observer starts three frames after the imported history's last-seen frame,
+records `frame_spacing` in its internal start journal and advances at that
+spacing. The 200-measurement, source, deadline and join/cleanup limits remain.
+The cadence-aware independent reviewer takes the expected spacing from its
+caller; it does not silently trust a journal's declaration. Missing spacing
+means legacy nine-frame evidence.
+
+Validation passes 114 live-probe tests, including three-frame observer
+operation alongside the simulated native controller at both 30 and 60 MS/s.
+Independent review verifies 1,850 observer moment/dense-fit records across
+22 nonempty fixture cases and rejects 22 deliberate cadence mutations. All
+fixture worker journals, observer journals and retained IQ are copied from
+temporary test directories into durable local evidence with hashes.
+
+The Cortex-A9 executable builds under warnings-as-errors. Binary SHA-256:
+`5a5a44c93d87b04d1613d336da17c40530f054c1e52d06ca74b914a2c4cf59b9`.
+It has not been staged or run on the radio. A serial-bound live operator and
+complete capture/native review still need to bind this exact profile and
+binary before physical validation.
+
+The [implementation patch](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3/implementation.patch),
+[test results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3/tests.xml),
+[independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3/independent-review.json)
+and reviewer/retention manifest accompany the report. No RF or firmware
+changes occurred. Sustained native FPGA tracking remains unfinished.
