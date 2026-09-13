@@ -1,5 +1,12 @@
 # Radio .20: causal carrier prediction during startup
 
+**Later physical validation:** The global pause was cleared by the recovery
+process. Actual ARM replay and bounded live tests at both rates subsequently
+completed; see [physical causal startup and feedback](2026_09_13_radio20_live_causal_feedback.md).
+The 30-MS/s run produced 149 supported native measurements and reacquired after
+loss. The radio is now left idle on the 60-MS/s image. Sustained tracking
+remains unqualified.
+
 **September 13, 17:07 UTC update:** Radio `.20` returned after reboot with the
 correct serial and verified 60-MS/s image. The prepared transition to the
 30-MS/s image then deployed successfully. The next ARM replay was refused by
