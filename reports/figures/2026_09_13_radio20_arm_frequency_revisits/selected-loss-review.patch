@@ -1,0 +1,39 @@
+commit ead0397c710452185723ddbcc072b5eb568f6146
+Author:     misko <misko@cs.toronto.edu>
+AuthorDate: Sun Sep 13 19:55:59 2026 +0000
+Commit:     misko <misko@cs.toronto.edu>
+CommitDate: Sun Sep 13 19:55:59 2026 +0000
+
+    Validate clean native loss for selected-IQ visits
+
+diff --git a/tests/starlink_glrt/test_cpu_live_probe.py b/tests/starlink_glrt/test_cpu_live_probe.py
+index d7865ca4f..b6dc0d074 100644
+--- a/tests/starlink_glrt/test_cpu_live_probe.py
++++ b/tests/starlink_glrt/test_cpu_live_probe.py
+@@ -674,11 +674,11 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+             episodes.append(reviewed)
+             assert totals[3]==sum(len(r['heads']) for r in episodes)
+             assert totals[4]==int(mode=='loss_then_supported' and episode==1)
+-            if mode in ('full_profile','visit_full_profile'):
++            if mode in ('full_profile','visit_full_profile','visit_selected_profile'):
+                 rows=[json.loads(line) for line in (tmp_path/'worker.jsonl').read_text().splitlines()]
+                 observer_rows=[json.loads(line) for line in (tmp_path/'observer.jsonl').read_text().splitlines()]
+                 disposition=dict(status=3,stage='worker_complete',worker_complete=1,
+-                    retention_mode='full',reacquisitions=0,native_completed_runs=0,
++                    retention_mode='selected_windows' if mode=='visit_selected_profile' else 'full',reacquisitions=0,native_completed_runs=0,
+                     handoffs=1,native_runs=1,completed_refills=count//16384,blocks=count//16384,
+                     attempts=int(totals[0]),rate=rate,native_results=int(totals[3]))
+                 result=review_clean_loss(rows,data,disposition,observer_rows)
+diff --git a/tools/review_glrt_cpu_visit_loss.py b/tools/review_glrt_cpu_visit_loss.py
+index 0294f9e37..130a9b0bb 100644
+--- a/tools/review_glrt_cpu_visit_loss.py
++++ b/tools/review_glrt_cpu_visit_loss.py
+@@ -8,7 +8,7 @@ from .starlink_glrt_tracking_journal import review as review_native
+ 
+ def review_clean_loss(rows, journal, status, observer_rows):
+     assert status['status']==3 and status['stage']=='worker_complete'
+-    assert status['worker_complete']==1 and status['retention_mode']=='full'
++    assert status['worker_complete']==1 and status['retention_mode'] in ('full','selected_windows')
+     assert status['reacquisitions']==status['native_completed_runs']==0
+     assert status['handoffs']==status['native_runs']==1
+     assert 0<status['completed_refills']==status['blocks']<=1536
