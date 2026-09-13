@@ -372,6 +372,9 @@ describe("Observation Console", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
+      if (path.startsWith("/api/v2/scanner/adaptive-sessions")) {
+        return { ok: false, status: 404, json: async () => null } as Response;
+      }
       if (path === "/api/v1/scanner/adaptive-sessions") {
         return { ok: true, status: 200, json: async () => adaptivePageFixture() } as Response;
       }

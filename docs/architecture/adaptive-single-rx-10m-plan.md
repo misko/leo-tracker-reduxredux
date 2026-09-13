@@ -205,6 +205,8 @@ an adaptive deployment. No firmware flash or corpus migration is planned.
 
 Done means the scheduled random-RX adaptive profile completes capture, native-10M
 analysis and web publication while satisfying these gates. The immediate next
-implementation step is scheduler admission and API/UI integration for the new
-capture/analysis path, plus refinement and tracking reader support. Runtime
-packaging, saved-data throughput checks and live qualification remain required.
+implementation step is scheduler admission and runtime packaging for the new
+capture/analysis path. API/UI integration and refinement/tracking readers now
+pass component tests, with all three native PNGs decoded in Chromium for both
+physical receivers using synthetic captures. Saved-data throughput checks and
+live qualification remain required; see `reports/2026_09_13_host_adaptive_web.md`.

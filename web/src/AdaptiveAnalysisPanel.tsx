@@ -56,11 +56,11 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
       <option value={120}>Automatic overview · one probe per dwell</option>
       <option value={10}>Dense analysis · 10 ms stride (if published)</option>
     </select></label>
-    <p>{probeStrideMs === 120 ? "Automatic overview uses one 20 ms probe per 120 ms retained dwell, on both receivers, matching fixed-order scan plots. It does not analyze every sample; full recorded IQ is retained." : "Dense analysis uses overlapping 20 ms probes every 10 ms. It is a separate, more expensive analysis and is not scheduled automatically."}</p>
+    <p>{probeStrideMs === 120 ? `Automatic overview uses one 20 ms probe per 120 ms retained dwell, on ${capture.schema_version === 2 ? `RX${capture.physical_receiver} at native 10 MS/s` : "both receivers"}. It does not analyze every sample; full recorded IQ is retained.` : "Dense analysis uses overlapping 20 ms probes every 10 ms. It is a separate, more expensive analysis and is not scheduled automatically."}</p>
     {error ? <p role="alert">{error}. Recording and on-radio evidence remain separate.</p> : null}
     {!loading && !error && !status ? <p>Analysis presentation is unavailable for this capture on this server. It is not queued here.</p> : null}
     {status ? <>
-      <p>{status.checkpoint_visits} / {status.total_visits} retained visits have saved checkpoints · 20 ms probes / {status.configuration.probe_stride_ms} ms stride · both recorded receivers analyzed offline</p>
+      <p>{status.checkpoint_visits} / {status.total_visits} retained visits have saved checkpoints · 20 ms probes / {status.configuration.probe_stride_ms} ms stride · {capture.schema_version === 2 ? `RX${capture.physical_receiver} analyzed offline at 10 MS/s` : "both recorded receivers analyzed offline"}</p>
       {status.total_visits > 0 ? <progress aria-label="Saved adaptive analysis checkpoints" value={status.checkpoint_visits} max={status.total_visits} /> : <p>No complete dwell was retained in this capture.</p>}
       {status.state === "not_started" ? <p>No checkpoint has been published for this sampling policy. Opening this view does not start or queue analysis.</p> : null}
       {status.state === "partial" ? <p>This count reflects published checkpoint files. Their full numerical contents are verified when metrics are finalized; figures are not ready.</p> : null}
