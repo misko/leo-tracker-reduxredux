@@ -139,3 +139,41 @@ existing root-only backup directory and validated with the staged settings parse
 The baseline acquisition environment still matches its backup. No selectors or
 production environment were changed. The 20:40 fixed scan is allowed to finish
 before pausing scheduled starts for the bounded canaries.
+
+## Qualified canaries through 21:05 UTC
+
+| Mode / physical RX | Source span | Valid duty | Healthy host results | Longest revisit | Independent choices verified |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Shadow RX0, attempt 4 | 300.0797219 s | 95.2546% | 2,382 / 2,382 | 1.0274656 s | 2,382 |
+| Shadow RX1 | 300.1065474 s | 95.2461% | 2,382 / 2,382 | 1.0213422 s | 2,382 |
+| Adaptive RX0 | 300.1034083 s | 95.2071% | 2,381 / 2,381 | 2.7801128 s | 2,381 |
+
+All three completed with qualified capture receipts, verified restoration, no
+degraded feedback and no policy fallback. Adaptive RX0 made 2,296 weighted
+choices, 24 warmup choices and 61 none-active choices. Its target visit counts
+were 267, 301, 279, 395, 259, 244, 250 and 386; those actual choices matched the
+independent model. This establishes policy operation, not counterfactual
+sensitivity or satellite identity. After these three captures, 677.441983 s
+remain in the extended ledger for adaptive RX1 and scheduled verification.
+
+Shared global lease holders from a separate radio20 saved-IQ ARM qualification
+were observed between scans; this task waited for their actual processes to exit
+and did not interrupt them or access that radio. The final adaptive RX1 canary
+started after the lease became free at 21:06 UTC. Production acquisition remains
+stopped between scans until qualification/cutover finishes; API and fixed-history
+analysis continue on their baseline releases.
+
+The full background sequence on the fresh qualified shadow RX0 capture took
+436.306686 s: all 2,382 native visits and three plots completed, refinement
+completed in 44.579843 s, and tracking evaluation completed. Including the
+60 s timer interval and 15 s configured scheduling window gives 511.306686 s,
+below ten minutes. Evidence: `/var/tmp/leo-host-full-backfill-20260913.json`.
+Tracking explicitly declined projection because the capture lacks qualified UTC
+timing authority; it did not fail on native geometry. This measurement does not
+claim to time a TLE match when its prerequisites are absent. The production fixed
+backfill also reported no pending fixed sessions at 21:01 UTC.
+
+Native analysis of the actual adaptive RX0 recording
+`scan-hop-89ff5771b72d879c` is running separately to verify publication with its
+nonuniform actual visit history. The first scheduled production capture and live
+API/browser verification remain mandatory before completion.
