@@ -204,11 +204,19 @@ evidence. Uniform fallback within a scan protects capture but does not qualify
 an adaptive deployment. No firmware flash or corpus migration is planned.
 
 Done means the scheduled random-RX adaptive profile completes capture, native-10M
-analysis and web publication while satisfying these gates. The immediate next
-implementation step is immutable staging and runtime validation for the new
-capture/analysis path. Scheduler admission and source-bound runtime packaging
-are implemented; see `reports/2026_09_13_host_adaptive_admission.md`.
+analysis and web publication while satisfying these gates. Release
+`52313e7fc0b9f9f978fb0f613d25c1d152fce238` is staged and runtime-validated,
+but unselected. The first real shadow run was cancelled early by the qualification
+harness; startup/deadline and terminal-drain corrections are tested and staged.
+The next step is approval of the requested additional bounded RF allowance,
+then a fresh RX0 shadow canary and the remaining reserved live gates. See
+`reports/2026_09_13_host_adaptive_live_checkpoint.md` for actual results and ledger.
+Scheduler admission and source-bound runtime packaging are implemented; see
+`reports/2026_09_13_host_adaptive_admission.md`.
 API/UI integration and refinement/tracking readers now
 pass component tests, with all three native PNGs decoded in Chromium for both
 physical receivers using synthetic captures. Saved-data throughput checks and
-live qualification remain required; see `reports/2026_09_13_host_adaptive_web.md`.
+live qualification were the next gates; saved native analysis now completes in
+410 s and the real partial capture's three PNGs decode in Chromium. Successful
+full-length live qualification remains required before cutover; see
+`reports/2026_09_13_host_adaptive_web.md` and the live checkpoint above.
