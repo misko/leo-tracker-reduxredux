@@ -1,4 +1,39 @@
-# Adaptive deployment audit, 20:32 UTC
+# Adaptive deployment audit
+
+## Current status after the 21:20 UTC production slot
+
+The earlier blocked audit below is historical. The user subsequently approved
+continuation with the requested seven-minute qualification extension. All four
+corrected shadow/adaptive RX0/RX1 canaries passed, and production acquisition,
+API and analysis now select sealed release
+`52313e7fc0b9f9f978fb0f613d25c1d152fce238`. Acquisition/API services and the
+analysis timer are enabled for reboot.
+
+The first scheduled operation succeeded as `scan-hop-8a7616c1f7b47f4a` on RX1
+of the required radio at native 10 MS/s. Its 300.0546165 s source span, 95.2226%
+duty, restoration and stored IQ passed qualification. All 2,381 decisions were
+healthy, with no fallback. Independent replay matched every policy choice;
+maximum revisit was 1.0360626 s and applied feedback age 0.2703225 s.
+
+A fresh full background analysis cycle took 436.306686 s, or 511.306686 s with
+the timer interval and accuracy. Both actual adaptive canaries have complete
+native analysis and three plots. First-production analysis completed all 2,381
+visits, and Chromium decoded all three production plots without page errors.
+The production background cycle completed in 412.064 s. The 21:30 UTC operation
+was admitted with the exact approved radio, native/decision rates and interval.
+It subsequently completed as `scan-hop-8579105ea44ad910`, qualified at 95.2555%
+duty. The older fixed capture was also selected successfully in the production
+browser. All deployment gates are complete; normal ten-minute operation remains
+active. The historical audit below is retained as evidence, not current status.
+The V2 Adaptive Scan API already publishes the native recording with correct
+receiver/rates, while V4 Persistent Hop history remains available.
+
+Final qualification charges are 2,179.136778 s against the approved 2,220 s cap.
+All historical charges/failures remain intact. Normal ten-minute production has
+separate authorization. Tracking truthfully withholds timed TLE projection when
+UTC is unqualified. See `2026_09_13_host_adaptive_deployment.md` for evidence.
+
+## Historical audit, 20:32 UTC
 
 The objective remains incomplete. This audit does not authorize additional RF.
 The previous goal turn made progress: it corrected startup, terminal feedback and
