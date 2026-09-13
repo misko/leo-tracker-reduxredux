@@ -576,3 +576,57 @@ The [implementation patch](figures/2026_09_13_radio20_saved_iq_coverage/pilot-ph
 [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3/independent-review.json)
 and reviewer/retention manifest accompany the report. No RF or firmware
 changes occurred. Sustained native FPGA tracking remains unfinished.
+
+## First bounded live observer3 capture: insufficient acquisition support
+
+Firmware worktree commit `eb54683bf` binds operator admission to the explicit
+short profile and disables automatic clean-loss restarts for that profile.
+This closes an inherited selected-IQ behavior that otherwise could open
+additional native episodes despite the short operator's single-episode
+evidence contract. Longer three-frame requests are rejected before radio
+contact; legacy profiles retain their behavior.
+
+The exact Cortex-A9 binary, SHA-256
+`ecc236de41dac2b85c7ed44916bff679ffdda318e680345e907df44720954f29`,
+was staged and executed on .20 / serial
+`1040005e0b100007100010000bf33a5d4d` under both leases. The resident
+60-MS/s image was unchanged. Requested LO was 1,690,312,500 Hz; verified RX LO
+was 1,690,312,498 Hz, with 2.5-MHz bandwidth, manual gain 30 and TX disabled.
+
+| Physical result | Value |
+| --- | ---: |
+| Exported coarse samples / RF duration | 16,878,324 / 6.7513296 s |
+| Returned samples | 16,875,520 |
+| Acquisition attempts | 6 |
+| Accepted historical pilot measurements | 1 / 48 |
+| Maximum historical coherence | 0.0526653 |
+| Native handoffs / measurements | 0 / 0 |
+| Passive observer measurements | 0 |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill interval | 6.667 ms |
+| Retrieved artifact bytes | 2,884,726 |
+
+Independent review passes 219,978 coarse-grid values, 48 proposal ranks,
+102 resolver hypotheses, 48 moment/dense-fit records, startup causality,
+selected-IQ overlap consistency and epoch/source checks. Only selected
+windows are retained; 2,804 exported tail samples were not returned.
+All six workers reject insufficient history. Consequently the observer never
+starts, and this capture does not test simultaneous live native/observer
+processing or establish tracking.
+
+Identity and TX-safe state match before/after; RX settings match the configured
+values and temporary files are removed. The staged executable is not left as
+a running service. This adds one short RF capture, not a firmware deployment.
+
+The first combined host test run had 201 passes and one native-controller
+deadline failure during the 60-MS/s observer-retention fault case. All six
+related cases passed on focused rerun, followed by a complete 202-test pass.
+Both runs are retained; no numerical or deadline gate was loosened to obtain
+the rerun. This remains a host timing sensitivity to watch.
+
+The [physical review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3-physical/review.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3-physical/operator.json),
+capture/worker journals, exact-profile wrapper, reviewer, implementation patch
+and test results accompany the report. The measured limitation is acquisition
+support; sustained 30/60-MS/s FPGA tracking and physical clean-loss continuation
+remain unqualified.
