@@ -40,7 +40,7 @@ def main() -> None:
         ),
     )
     parser.add_argument("--session-id")
-    parser.add_argument("--maximum-workers", type=int, choices=(1, 2), default=2)
+    parser.add_argument("--maximum-workers", type=int, choices=(1, 2, 3, 4), default=2)
     parser.add_argument(
         "--tle-root",
         type=Path,

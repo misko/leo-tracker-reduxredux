@@ -18,6 +18,7 @@ def main() -> None:
         "--bulk-root", type=Path, default=Path(os.environ.get("LEO_BULK_ROOT", "/srv/bulk/leo"))
     )
     parser.add_argument("--site", choices=preset_names(), required=True)
+    parser.add_argument("--fixed-maximum-workers", type=int, choices=(1, 2, 3, 4), default=2)
     arguments = parser.parse_args()
     # These are the existing public CLIs, each taking the shared nonblocking
     # analysis lease. No extra queue, scientific policy, or storage coupling.
@@ -65,7 +66,12 @@ def main() -> None:
             *(
                 []
                 if name in ("refinement", "tracking")
-                else ["--maximum-workers", "2", "--probe-stride-ms", "120"]
+                else [
+                    "--maximum-workers",
+                    str(arguments.fixed_maximum_workers) if name == "fixed" else "2",
+                    "--probe-stride-ms",
+                    "120",
+                ]
             ),
             *options,
         ]
