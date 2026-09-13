@@ -51,6 +51,14 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"leo.analysis" = [
+  "native_presence/*.c",
+  "native_presence/*.h",
+  "native_presence/*.inc",
+  "starlink/_native_acquisition_grid.inc",
+]
+
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = ["tests"]
