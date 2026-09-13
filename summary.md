@@ -188,6 +188,8 @@ The relevance column says what each report contributes now. “Historical,” �
 
 ## Scope and verification
 
+Paced ARM follow-up: [Radio .20 startup on historical IQ](reports/2026_09_13_radio20_paced_arm_startup.md) reaches a fresh handoff proposal on actual ARM in 1.56 seconds with 68 supported observations and 5.21 ms of lead over its paced source clock; a selected control rejects. Independent IQ/grid/FFT/moment checks pass. This uses saved 60-MS/s-derived IQ at 2.5 MS/s on the resident 30-MS/s image, with no RX capture or native submissions; fresh physical acquired feedback remains unqualified.
+
 Loaded tracking follow-up: [Radio .20 loaded 30/60-MS/s acquisition](reports/2026_09_12_radio20_loaded_30_60_tracking.md) records continuous FPGA IQ export alongside ARM scanning, full-pilot candidate ordering and catch-up at both rates, with zero active CDC/pacer losses. Scan plus ordering stays below 837 ms in the baseline runs. Bounded upper-edge visits found a candidate with three supported catch-up observations, short of the required eight; no acquired native jobs were submitted. Supported physical feedback remains unqualified. The latest resident image is 30 MS/s.
 
 CPU acquisition follow-up: [Radio .20 CPU acquisition and catch-up](reports/2026_09_12_radio20_cpu_acquisition_catchup.md) connects software proposals to the existing resolver/worker without fabricated FPGA decisions. Synthetic pilots pass the complete chain. ARM replay of four windows from each saved 30/60-MS/s capture rejects all eight strongest proposals; independent grids, FFTs and integer moments agree. The receiver clock is frozen in this benchmark, so live acquisition and native feedback remain unqualified.
