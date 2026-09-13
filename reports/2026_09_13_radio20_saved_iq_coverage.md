@@ -273,3 +273,44 @@ Its [replay source](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/che
 builds the unchanged collector and solver into a host library. No RF,
 firmware, acceptance gate or production runtime changes occur. Sustained
 30/60-MS/s native tracking remains unqualified.
+
+## Production C feedback sustains the saved positive replay
+
+The production C trend predictor and scheduler now replace the diagnostic
+Python fit. Training still comes from the preceding offline localized
+measurements: all first-32 outcomes, including rejections, enter the C history
+port, which retains 26 accepted positive observations. There is no change to
+production source or acceptance gates.
+
+Both frozen history and causal feedback accept 27/32 measurements in frames
+32–63. Extending the test uses the exact original positive input, SHA-256
+`af991e03e69271c253d2fe6b5aeff110c9da5d5bd6ddda8c6850584f9e97b1c4`,
+with enough retained IQ to test through frame 1799.
+
+| C predictor mode | Measured frames | Accepted measurements | Outcome |
+| --- | --- | ---: | --- |
+| Frozen first-32 history | 32–63 | 27 / 32 | Refuses frame 64 because history is stale |
+| Feedback after each measurement | 32–1799 | 1,367 / 1,768 | Still supported at frame 1799 |
+| Weak candidate or control, either mode | None | 0 | Refuses initial forecast with no supported training history |
+
+The feedback run covers 2.357 seconds of frame intervals. Its longest sequence
+of rejected measurements is four frames; the final measurement passes with
+coherence 0.07728. Each prediction precedes its IQ measurement, and rejected
+estimates enter the existing history API with their rejection bits intact.
+They do not become supported observations. The frozen-history result also
+shows that a predictor cannot continue indefinitely on its training data.
+
+All 1,800 measured records in the extended comparison have exact C integer
+moments and dense-fit corrections/coherence/rejection checked independently.
+C job quantization matches the rational scheduler oracle, and batch prediction
+leaves its input history unchanged. This is coarse 2.5-MS/s saved-IQ feedback,
+not native 30/60-MS/s FPGA feedback, receiver-paced catch-up or a live handoff.
+The diagnostic training search remains outside the production acquisition
+path. ARM execution cost and source-time freshness still require measurement.
+
+The [short C trend replay](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-c-trend-v1.json)
+and [extended replay](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-c-trend-long-v1.json)
+retain every measured job, moment word, fit and terminal refusal, with their
+sources alongside. This establishes a useful production-C feedback baseline
+for a bounded ARM replay; it does not yet complete the FPGA tracking goal.
+No RF is collected or firmware changed.
