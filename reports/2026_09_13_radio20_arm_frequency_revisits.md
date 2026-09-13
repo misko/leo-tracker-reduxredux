@@ -7,8 +7,9 @@ verifies CH3 → CH4 → CH3 under one ARM parent: 21.0666876 seconds of RF,
 zero active source drops and passing independent reviews. There is no
 acquisition handoff, so sustained tracking and clean-loss continuation remain
 unqualified. The same three-visit plan now also passes physical and independent
-checks at 60 MS/s (21.0077364 seconds of RF). The four-visit physical check
-remains pending after its first attempt was refused by the shared lease.
+checks at 60 MS/s (21.0077364 seconds of RF). After the shared lease becomes
+available, a four-channel 60-MS/s sweep also passes physical and independent
+checks (28.3947288 seconds of RF), with no handoff.
 
 The previous composition accepted only two distinct centers. The new plan
 can express CH1 → CH2 → CH3 → CH4 or CH3 → CH4 → CH3. It validates every
@@ -130,8 +131,8 @@ also zero. Artifacts total 8,730,593 bytes; the same selected-IQ evidence
 limits apply as in the 30-MS/s test.
 
 The operator verifies unchanged image/boot identity across capture, fixed
-receive settings and TX disabled, and removes its temporary files. The last
-verified radio state is **60 MS/s at CH3 upper**, serial
+receive settings and TX disabled, and removes its temporary files. At the end
+of this three-visit run the radio is **60 MS/s at CH3 upper**, serial
 `1040005e0b100007100010000bf33a5d4d`. This is a bounded ARM-controlled revisit
 at both rates, not a persistent service or a supported tracking episode.
 
@@ -146,3 +147,39 @@ refused four-visit attempt. SHA-256:
 `ec9ce738675b1bf59f60602dc8185758896558453d76120d6d9741afd2113f4d`.
 Sustained tracking, physical clean-loss continuation, adaptive revisits and
 precision refinement remain incomplete.
+
+## Verified four-channel 60-MS/s sweep
+
+The shared-lease owner PID 671581 was rechecked and remained live, then its
+process handle disappeared. A fresh attempt, `frequency-sweep60-v2`, acquired
+the normal leases and executed CH1 → CH2 → CH3 → CH4. The original refused
+attempt remains preserved; no lock was bypassed and no firmware changed.
+
+| Visit | Actual LO | Epoch | Exported RF duration | Attempts / handoffs | Active CDC/pacer drops | Maximum refill gap |
+| --- | ---: | ---: | ---: | --- | --- | ---: |
+| CH1 upper | 1,190,312,500 Hz | 4 | 6.9806984 s | 6 / 0 | 0 / 0 | 7.496844 ms |
+| CH2 upper | 1,440,312,500 Hz | 5 | 6.9741244 s | 6 / 0 | 0 / 0 | 6.767904 ms |
+| CH3 upper | 1,690,312,498 Hz | 6 | 7.1052560 s | 6 / 0 | 0 / 0 | 7.818144 ms |
+| CH4 upper | 1,940,312,500 Hz | 7 | 7.3346500 s | 6 / 0 | 0 / 0 | 7.329942 ms |
+
+The run exports 28.3947288 seconds of RF within its 40.2653184-second cap.
+All 24 attempts reject their past measurements; no native descriptor or
+observer episode starts. Independent review passes all four visits, including
+879,912 integer acquisition-grid values, 192 moment/dense fits, retained-IQ
+overlap checks, source counters and all twelve parent transition records.
+
+Selected-IQ artifacts total 11,682,210 bytes. This verifies execution of the
+longer plan with the selected recorder, not complete-stream IQ retention.
+The operator verifies unchanged image/boot identity, fixed receive settings
+and TX disabled, then removes its temporary files. The last verified radio
+state is now **60 MS/s at CH4 upper**, serial
+`1040005e0b100007100010000bf33a5d4d`, on boot
+`ba41bda7-09ad-40e3-973d-4a8f070b35be`.
+
+The [four-channel evidence](figures/2026_09_13_radio20_arm_frequency_revisits/sweep60-evidence.json)
+retains the operator, four child reviews, sequence review and prior refusal.
+SHA-256: `ecadfb4b7d7a1633d6977fa31866483b8598294c536a553ebbb78ae294db9c5e`.
+Bounded three-visit operation is physically verified at both rates, and a
+four-channel sweep is physically verified at 60 MS/s. These results do not
+establish sustained tracking, physical clean-loss continuation, adaptive
+frequency selection or precision refinement.
