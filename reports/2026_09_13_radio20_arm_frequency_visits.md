@@ -123,6 +123,32 @@ two-frequency scan transitions in this run. It does not prove support-bearing
 tracking, an adaptive revisit policy, continuation after native loss or
 physical operation of this visit composition at 30 MS/s.
 
+## Why the recent visits did not hand off
+
+A descriptive comparison of the retained inputs finds much weaker pilot
+evidence in the two recent visits than in the saved positive recording:
+
+| Recording | Maximum single-pilot ranking power | Maximum startup coherence | Accepted startup measurements |
+| --- | ---: | ---: | ---: |
+| Corrected CH3-upper visit | 0.003888 | 0.002962 | 0 / 48 |
+| Corrected CH4-upper visit | 0.004453 | 0.001873 | 0 / 48 |
+| Saved positive | 0.085025 | 0.090910 | 113 / 118 |
+| Saved control | 0.003717 | 0.000740 | 0 / 8 |
+
+All four IQ files contain nonzero input and no CI16 rail pairs. The recent
+CH3/CH4 complex RMS values are 7.375 and 5.228 counts, versus 8.485 and 8.125
+for the saved positive/control. These are stored-IQ statistics, not calibrated
+RF powers. The examined recent proposals are far below the unchanged 0.05
+startup coherence gate; this evidence does not justify lowering that gate.
+It supports broader frequency coverage as the next acquisition investigation.
+It does not establish that the whole band is empty, diagnose antenna health,
+or turn the saved control into independent ground truth.
+
+The [comparison data](figures/2026_09_13_radio20_arm_frequency_visits/recent-visit-input-comparison-v1.json)
+includes complete-file amplitude statistics and per-scan ranking maxima. Input
+hashes match the independent child reviews and frozen replay manifest. This
+comparison collects no new RF and changes no numerical policy.
+
 The [evidence manifest](figures/2026_09_13_radio20_arm_frequency_visits/evidence.json)
 retains both binary hashes, test receipts, the physical child reviews, the
 rejected parent association and the retry refusal. The separate
