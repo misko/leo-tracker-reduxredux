@@ -1,0 +1,138 @@
+commit 8ae289d73c5e5617953acafa3408060bf25a4a47
+Author:     misko <misko@cs.toronto.edu>
+AuthorDate: Sun Sep 13 20:49:37 2026 +0000
+Commit:     misko <misko@cs.toronto.edu>
+CommitDate: Sun Sep 13 20:49:37 2026 +0000
+
+    Add explicit three-frame passive observer cadence
+
+diff --git a/tests/starlink_glrt/test_tracking_observer.py b/tests/starlink_glrt/test_tracking_observer.py
+index 4c723c6df..759b80b22 100644
+--- a/tests/starlink_glrt/test_tracking_observer.py
++++ b/tests/starlink_glrt/test_tracking_observer.py
+@@ -96,6 +96,12 @@ int main(int argc,char **argv)
+     if(!strcmp(mode,"init_source")) limit=first+3299;
+     if(!strcmp(mode,"init_long_source")) limit=first+12500001;
+     if(!strncmp(mode,"init_",5)) {
++        if(!strncmp(mode,"init_spacing",12)) {
++            assert(glrt_tracking_observer_init_cadence(&observer,&original,frame,
++                (unsigned)atoi(mode+12),maximum,limit,now,budget)==-1);
++            assert(observer.status==GLRT_OBSERVER_INVALID);
++            free(iq);free(storage);puts("PASS");return 0;
++        }
+         assert(glrt_tracking_observer_init(&observer,&original,frame,maximum,limit,now,budget)==-1);
+         assert(observer.status==GLRT_OBSERVER_INVALID);
+         free(iq);free(storage);puts("PASS");return 0;
+@@ -182,11 +188,19 @@ int main(int argc,char **argv)
+ '''
+ 
+ 
+-@pytest.fixture(scope="module")
+-def observer_binary(tmp_path_factory):
++@pytest.fixture(scope="module", params=[9, 3])
++def observer_binary(tmp_path_factory, request):
+     root = Path(__file__).resolve().parents[2]
+     out = tmp_path_factory.mktemp("passive-observer")
+-    (out/"test.c").write_text(BENCH)
++    source = BENCH
++    if request.param == 3:
++        source = source.replace('glrt_tracking_observer_init(', 'glrt_tracking_observer_init_cadence(')
++        source = source.replace('frame,maximum,limit,now,budget)', 'frame,3,maximum,limit,now,budget)')
++        source = source.replace('k*30000+n', 'k*10000+n')
++        source = source.replace('trace.frame==72+n*9', 'trace.frame==72+n*3')
++        source = source.replace('trace.job.start==first+n*30000', 'trace.job.start==first+n*10000')
++        source = source.replace('jobs==3 && c.retained==3', 'jobs==8 && c.retained==8')
++    (out/"test.c").write_text(source)
+     sources = ["glrt_tracking_observer.c", "glrt_tracking_iq_owner.c", "glrt_tracking_recent_iq.c",
+                "glrt_tracking_iq.c", "glrt_native_trend.c", "glrt_native_schedule.c",
+                "glrt_tracking_schedule.c", "glrt_native_solver.c"]
+@@ -208,6 +222,7 @@ def observer_binary(tmp_path_factory):
+     "clock_during_retention", "init_rate", "init_history", "init_frame", "init_far_frame",
+     "init_count", "init_zero_count", "init_budget", "init_zero_budget", "init_overflow",
+     "init_source", "init_long_source",
++    "init_spacing0", "init_spacing1", "init_spacing2", "init_spacing6", "init_spacing10",
+ ])
+ def test_passive_owner_measurements_and_fences(observer_binary, mode):
+     binary, references = observer_binary
+diff --git a/tools/glrt_tracking_observer.c b/tools/glrt_tracking_observer.c
+index 39878c91f..973ed9220 100644
+--- a/tools/glrt_tracking_observer.c
++++ b/tools/glrt_tracking_observer.c
+@@ -14,6 +14,13 @@ static int finish(struct glrt_tracking_observer *s,
+ int glrt_tracking_observer_init(struct glrt_tracking_observer *s,
+     const struct glrt_tracking_trend *history, uint32_t first, uint32_t maximum,
+     uint64_t source_limit, uint64_t now, uint64_t budget)
++{
++    return glrt_tracking_observer_init_cadence(s,history,first,9,maximum,source_limit,now,budget);
++}
++
++int glrt_tracking_observer_init_cadence(struct glrt_tracking_observer *s,
++    const struct glrt_tracking_trend *history, uint32_t first, uint32_t spacing,
++    uint32_t maximum, uint64_t source_limit, uint64_t now, uint64_t budget)
+ {
+     struct glrt_tracking_trend retained;
+     struct glrt_tracking_batch batch;
+@@ -22,13 +29,14 @@ int glrt_tracking_observer_init(struct glrt_tracking_observer *s,
+     if(!s) return -1;
+     if(history) retained=*history;
+     memset(s,0,sizeof(*s));s->status=GLRT_OBSERVER_INVALID;
+-    if(!history || retained.rate!=2500000 || !maximum || maximum>200 ||
++    if(!history || retained.rate!=2500000 || (spacing!=3 && spacing!=9) || !maximum || maximum>200 ||
+        !now || !budget || budget>UINT64_C(5000000000) || now>UINT64_MAX-budget ||
+-       !glrt_tracking_trend_handoff_valid(&retained,first,maximum*9) ||
++       !glrt_tracking_trend_handoff_valid(&retained,first,maximum*spacing) ||
+        glrt_tracking_trend_batch(&retained,first,1,1,0,&batch,&slope) ||
+        glrt_tracking_prediction(&batch,0,&job) || job.start>UINT64_MAX-3300 ||
+        source_limit<job.start+3300 || source_limit-job.start>12500000) return -1;
+     s->trend=retained;s->next_frame=first;s->maximum_measurements=maximum;
++    s->frame_spacing=spacing;
+     s->deadline_ns=now+budget;s->last_ns=now;s->source_limit=source_limit;
+     s->status=GLRT_OBSERVER_WAIT;
+     return 0;
+@@ -70,7 +78,8 @@ int glrt_tracking_observer_step(struct glrt_tracking_observer *s,
+     if(!s || !trace || !refs || !scratch || !ports || !ports->clock_ns ||
+        !ports->cancelled || !ports->retain) return finish(s,trace,GLRT_OBSERVER_INVALID);
+     if(s->status!=GLRT_OBSERVER_WAIT) return s->status;
+-    if(s->trend.rate!=2500000 || !s->maximum_measurements || s->maximum_measurements>200)
++    if(s->trend.rate!=2500000 || !s->maximum_measurements || s->maximum_measurements>200 ||
++       (s->frame_spacing!=3 && s->frame_spacing!=9))
+         return finish(s,trace,GLRT_OBSERVER_INVALID);
+     if(s->measurements>=s->maximum_measurements) return finish(s,trace,GLRT_OBSERVER_DONE);
+     rc=guard(s,owner,ports,&checked);
+@@ -98,7 +107,7 @@ int glrt_tracking_observer_step(struct glrt_tracking_observer *s,
+     if(ports->retain(ports->context,&next,scratch)) return finish(s,trace,GLRT_OBSERVER_RETENTION);
+     rc=guard(s,owner,ports,&checked);
+     if(rc!=GLRT_OBSERVER_WAIT) return finish(s,trace,rc);
+-    s->trend=pending;s->measurements++;s->next_frame+=9;
++    s->trend=pending;s->measurements++;s->next_frame+=s->frame_spacing;
+     *trace=next;
+     return GLRT_OBSERVER_MEASURED;
+ }
+diff --git a/tools/glrt_tracking_observer.h b/tools/glrt_tracking_observer.h
+index 6eee10307..af30b5a48 100644
+--- a/tools/glrt_tracking_observer.h
++++ b/tools/glrt_tracking_observer.h
+@@ -21,7 +21,7 @@ struct glrt_tracking_observer_trace {
+ struct glrt_tracking_observer {
+     struct glrt_tracking_trend trend;
+     uint64_t deadline_ns, last_ns, source_limit, last_source;
+-    uint32_t next_frame, measurements, maximum_measurements;
++    uint32_t next_frame, measurements, maximum_measurements, frame_spacing;
+     int status;
+ };
+ struct glrt_tracking_observer_ports {
+@@ -48,6 +48,14 @@ int glrt_tracking_observer_init(struct glrt_tracking_observer *,
+     const struct glrt_tracking_trend *, uint32_t first_frame, uint32_t maximum_measurements,
+     uint64_t source_limit, uint64_t now_ns, uint64_t wall_budget_ns);
+ 
++/* Explicit internal cadence: three or nine frames. The legacy initializer
++ * selects nine. All ownership, evidence, history and budget limits above
++ * still apply; a denser cadence does not authorize native measurements. */
++int glrt_tracking_observer_init_cadence(struct glrt_tracking_observer *,
++    const struct glrt_tracking_trend *, uint32_t first_frame, uint32_t frame_spacing,
++    uint32_t maximum_measurements, uint64_t source_limit, uint64_t now_ns,
++    uint64_t wall_budget_ns);
++
+ /* One bounded copied-IQ calculation, or WAIT without a fabricated measurement.
+  * refs is four pinned 3300x4 phase banks; scratch is 3300 CI16 pairs. Neither
+  * may alias owner's storage. The caller owns worker lifetime: close, join all

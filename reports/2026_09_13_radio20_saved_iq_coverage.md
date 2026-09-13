@@ -395,3 +395,33 @@ all 20 host journals, benchmark/reviewer/operator sources, build hashes and
 [admission refusal](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/cadence/arm-admission-refusal.json)
 are retained. This narrows the next hardware benchmark to the two- and
 three-frame schedules; it does not qualify native FPGA tracking.
+
+## Passive observer gains an explicit three-frame option
+
+Firmware worktree commit `8ae289d73` adds the internal
+`glrt_tracking_observer_init_cadence` initializer, accepting three or nine
+frames. The legacy initializer selects nine, so existing live probe callers
+retain their behavior. The cadence is validated at initialization and before
+stepping; source-horizon validation and chronological advancement use the
+selected spacing.
+
+This is the actual passive observer component, including copied-IQ ownership,
+retention before history update, terminal cancellation/deadline/source checks
+and the unchanged solver gates. It still has no native submission or radio
+configuration port. The 200-measurement cap remains: three-frame spacing
+covers about 0.8 seconds, rather than the approximately 2.4 seconds available
+with nine-frame spacing. This option does not silently extend a run's budget.
+
+Validation passes 78 component cases across the legacy nine-frame path and
+explicit three-frame path, including supported measurements, rejected-history
+termination, all reference phases, source failures, deadlines, cancellation
+and retention failures. Unsupported spacings 0, 1, 2, 6 and 10 are rejected.
+All 91 live-probe integration tests pass, and the observer compiles with the
+Cortex-A9 ARM toolchain under warnings-as-errors.
+
+The [implementation patch](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/observer-cadence/implementation.patch)
+and component/integration JUnit results accompany this report. The option is
+not enabled in the live probe and is not deployed. ARM cadence benchmarking
+remains pending: a second admission attempt was refused before radio contact,
+with the new global lease owner PID 913908 verified live. No radio or firmware
+changes were made by these attempts. Native tracking remains incomplete.
