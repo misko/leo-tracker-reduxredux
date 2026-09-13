@@ -46,3 +46,10 @@ At 19:46 UTC, fixed production scans at 19:30 and 19:40 had succeeded with
 954,348 and 954,445 ppm duty. No runtime selector or radio was changed during
 this implementation. Staging, saved-data analysis cadence, bounded live canaries,
 and the scheduled adaptive cutover still remain. RF budget is unchanged.
+
+Staging caught two packaging defects before any cutover: the host bundle's
+pre-seal ownership check needed the extractor's UID/GID, and setuptools omitted
+the C/header source files required by the installed detector loader. The former
+now has a CLI regression test; the latter is fixed by explicit wheel package
+data. A freshly built wheel contains all 27 manifest-bound sources with exact
+hashes. Failed unpublished releases were removed by normal staging cleanup.
