@@ -1,11 +1,12 @@
 # Radio .20: bounded ARM-local frequency visits
 
 The ARM can now run two bounded upper-edge visits and change the receive LO
-between them without a host command for each visit. The first physical test
-completed both captures, but review found a parent snapshot-recording defect.
-The defect is fixed and tested; a corrected hardware retry was refused by the
-shared acquisition lease before RF collection. **Parent transition qualification
-and sustained tracking remain incomplete.**
+between them without a host command for each visit. The corrected physical
+60-MS/s run now passes exact parent snapshot/transition association and both
+child source/IQ/arithmetic reviews. **This bounded two-visit path is verified at
+60 MS/s; sustained tracking and physical 30-MS/s visit qualification remain
+incomplete.** The initial snapshot-recording defect and intervening lease
+refusal are retained separately below.
 
 The firmware-worktree implementation starts at `c2a6d5f9f`; the corrected
 version is `fd72f856e2de4c370c3e930f800c7b1c2950a285`. It extends the
@@ -95,11 +96,38 @@ The first binary is preserved with SHA-256
 
 The corrected retry is recorded as `admission_refused`, with zero RF samples:
 an acquisition process for radio `003a` held the shared global lease. That
-process was not interrupted and its lease was not bypassed. A fresh bounded
-run and exact sequence review are still required when access is available.
+process was not interrupted and its lease was not bypassed. After that process
+exited, a fresh bounded run executed the corrected binary.
+
+## Corrected physical result
+
+The corrected run completed CH3-upper and CH4-upper visits at 60 MS/s, each
+lasting 10.0663296 seconds. Its actual LOs were again 1,690,312,498 and
+1,940,312,500 Hz. The first child advanced epoch 5 to 6; the second advanced
+epoch 6 to 7. All six before-tune, tuned and after-run transition records now
+match their exact retained native snapshots. Snapshot generations and native
+counters advance monotonically, and the children bind to the expected epochs.
+Six deliberate mutations of LO, rate, epoch, counter and idle/fixed flags are
+rejected by independent sequence review.
+
+Both child captures again pass full-IQ, grid, resolver, startup moment/fit and
+source-counter checks. Each completes six rejected acquisition attempts,
+25,165,824 coarse samples, zero CDC/pacer drops and no native handoff. Maximum
+refill intervals are 7.254840 and 6.712590 ms. The operator confirms unchanged
+image/boot identity, disabled TX and expected final RF settings, then removes
+its temporary files. The final image remains 60 MS/s at CH4 upper.
+
+The initial and corrected physical runs collected **40.2653184 seconds of RF
+in total**; the refused attempt collected none. This result proves the fixed
+two-frequency scan transitions in this run. It does not prove support-bearing
+tracking, an adaptive revisit policy, continuation after native loss or
+physical operation of this visit composition at 30 MS/s.
 
 The [evidence manifest](figures/2026_09_13_radio20_arm_frequency_visits/evidence.json)
 retains both binary hashes, test receipts, the physical child reviews, the
-rejected parent association and the retry refusal. This is a fixed two-visit
-scanning path; adaptive revisits, continuation after qualified native loss,
-sustained tracking at both rates and precision refinement remain unqualified.
+rejected parent association and the retry refusal. The separate
+[corrected evidence](figures/2026_09_13_radio20_arm_frequency_visits/evidence-corrected.json)
+contains the successful sequence review, both child reviews and mutation
+checks, preserving the original failure evidence unchanged. Adaptive revisits,
+continuation after qualified native loss, sustained tracking at both rates and
+precision refinement remain unqualified.
