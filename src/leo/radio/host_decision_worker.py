@@ -163,6 +163,17 @@ class BoundedHostDecisionWorker:
             self._executor.shutdown(wait=False)
         return tuple(output)
 
+    def drain(self, *, timeout: float = 2.0) -> tuple[HostDecisionWorkResult, ...]:
+        """Finish submitted jobs before radio restoration, retaining the workspace."""
+        if not 0 < timeout <= 10:
+            raise ValueError("host decision drain timeout must be within (0, 10]")
+        deadline = time.monotonic() + timeout
+        output = []
+        while self._pending:
+            output.append(self._pending[0].result(timeout=max(0, deadline - time.monotonic())))
+            self._pending.popleft()
+        return tuple(output)
+
     def _destroy(self) -> None:
         if self._engine is not None:
             self._engine.close()

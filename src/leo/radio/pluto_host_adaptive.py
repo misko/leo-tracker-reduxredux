@@ -353,7 +353,11 @@ class _HostAdaptiveSession:
                 )
             worker = BoundedHostDecisionWorker(self._engine_factory)
             self._ready.set()
-            iterator = iter(self._upstream.visits())
+            def before_release() -> None:
+                assert worker is not None
+                self._flush(worker.drain())
+
+            iterator = iter(self._upstream.visits(before_release=before_release))
             while not self._cancel.is_set():
                 self._flush(worker.poll())
                 try:
@@ -362,7 +366,7 @@ class _HostAdaptiveSession:
                     break
                 self._flush(worker.poll())
                 self._accept(sampled, worker)
-            self._upstream.close()
+            self._upstream.close(before_release=before_release)
             for sampled in self._upstream.take_terminal_visits():
                 self._flush(worker.poll())
                 self._accept(sampled, worker)

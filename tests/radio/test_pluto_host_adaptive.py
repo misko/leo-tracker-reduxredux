@@ -43,6 +43,7 @@ class Client:
         self.feedback = []
         self.pacing, self.reject = pacing, reject
         self.calls = []
+        self.restoration_delay = 0
 
     def owned(self, name):
         assert threading.get_ident() == self.owner
@@ -75,7 +76,7 @@ class Client:
             self.source.plan.classification_receiver,
         )
 
-    def visits(self):
+    def visits(self, *, before_release=None):
         self.owned("visits")
         while self.next_index < self.source.complete_visit_count:
             if self.pacing:
@@ -83,6 +84,9 @@ class Client:
             self.owned("read")
             yield self.sampled()
         self.closed = True
+        if before_release is not None:
+            before_release()
+        time.sleep(self.restoration_delay)
 
     def submit_feedback(self, feedback):
         self.owned("feedback")
@@ -93,9 +97,11 @@ class Client:
         self.feedback.append(feedback)
         return not self.closed
 
-    def close(self):
+    def close(self, *, before_release=None):
         self.owned("close")
         self.closed = True
+        if before_release is not None:
+            before_release()
         return self.receipt
 
     def take_terminal_visits(self):
@@ -261,3 +267,18 @@ def test_admission_failure_does_not_construct_a_worker_or_leave_a_thread():
     assert not engines
     assert radio.open() == radio.identity
     radio.close()
+
+
+def test_slow_restoration_does_not_expire_pending_terminal_feedback():
+    receipt = host_receipt(count=4)
+    radio, clients, _ = setup(receipt, engine_delay=0.01)
+    radio.open()
+    try:
+        session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+        clients[0].restoration_delay = 1.1
+        drain(session)
+        recorded = session.finish()
+        assert all(record.health == "healthy" for record in recorded.host_decisions)
+        assert recorded.host_decisions[-1].feedback_disposition == "source_ended"
+    finally:
+        radio.close()
