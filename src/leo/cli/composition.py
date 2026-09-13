@@ -1194,6 +1194,9 @@ class LocalAcquisitionBackend:
             coalesce_pending_kind=coalesce_pending_kind,
         )
 
+    def acquisition_operation_by_key(self, operation_key: str) -> AcquisitionOperationRecord | None:
+        return self._acquisition_operation_catalog().acquisition_operation_by_key(operation_key)
+
     def active_acquisition_operations(
         self,
         *,

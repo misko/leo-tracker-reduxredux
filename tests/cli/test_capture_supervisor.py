@@ -227,6 +227,9 @@ class _DurableSupervisorBackend(_SupervisorBackend):
         self.operations.append(item)
         return item
 
+    def acquisition_operation_by_key(self, operation_key):
+        return next((op for op in self.operations if op.operation_key == operation_key), None)
+
     def active_acquisition_operations(self, *, limit=200, kinds=None):
         active = tuple(
             item
@@ -1011,6 +1014,66 @@ def test_restarted_single_scan_invocations_keep_cadence_and_leave_dwells_paused(
     assert backend.events.count("reconcile") == (0 if persistent else 2)
     assert ordinary.state == "pending" and ordinary.attempt_count == 0
     assert len([op for op in backend.operations if op.kind == "scheduled_recording"]) == 1
+
+
+@pytest.mark.parametrize("previous_state", ["succeeded", "failed", "cancelled"])
+def test_cadence_change_preserves_old_slot_and_starts_next_ten_minute_slot(previous_state):
+    from leo.scanner.single_rx import compile_single_rx_scanner_intent
+
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    start = datetime(2026, 9, 13, tzinfo=UTC)
+
+    def intent(interval, operation_key, scheduled_for):
+        return compile_single_rx_scanner_intent(
+            operation_key=operation_key,
+            scheduled_for=scheduled_for,
+            radio_id="radio-a",
+            radio_serial="serial-a",
+            interval_seconds=interval,
+            maximum_lateness_seconds=300,
+            run_duration_seconds=300,
+            dwell_ms=120,
+            gain_db=40,
+            margin_gate=0.025,
+            maximum_acquisition_candidates=8,
+        )
+
+    key = "scheduled-scanner:20260913T000000Z"
+    old_payload = intent(1200, key, start).model_dump(mode="json")
+    old = backend.enqueue_acquisition_operation(
+        operation_key=key, kind="scanner_sweep", payload=old_payload, scheduled_for=start
+    )
+    old.state = previous_state
+    clock.now = 360
+    backend.scanner_schedule = lambda: ScheduledScannerConfiguration(
+        interval_seconds=600,
+        maximum_lateness_seconds=300,
+        run_duration_seconds=300,
+        requires_durable_queue=True,
+    )
+    backend.scheduled_scanner_intent = lambda **kwargs: intent(600, **kwargs)
+    result = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=600,
+        maximum_captures=None,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+        scanner_only=True,
+        maximum_scanner_runs=1,
+    )
+    assert result.stopped_reason == "maximum_scanner_runs"
+    assert backend.scanner_capture_times == [600.0]
+    assert old.payload == old_payload and old.state == previous_state
+    assert len(backend.operations) == 2
+    assert backend.operations[1].payload["schema_version"] == 3
+    assert backend.operations[1].payload["interval_seconds"] == 600
 
 
 def test_scanner_only_stops_after_a_failed_started_run() -> None:
