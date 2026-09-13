@@ -273,15 +273,19 @@ def test_persistent_hop_mode_rejects_noncanonical_cadence_or_host(
         _settings(tmp_path, **updates)
 
 
-@pytest.mark.parametrize("single_rx", [False, True])
-def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path, single_rx) -> None:
+@pytest.mark.parametrize("single_rx, interval", [(False, 1200), (True, 1200), (True, 600)])
+def test_scheduled_persistent_hop_publishes_and_reuses_one_session(
+    tmp_path, single_rx, interval
+) -> None:
     from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID, parse_scheduled_scanner_intent
 
     radio = _BoundedPersistentRadio()
     lifecycle = _Lifecycle()
     backend = LocalAcquisitionBackend(
         _settings(
-            tmp_path, scanner_profile=SINGLE_RX_PROFILE_ID if single_rx else "alternating-2p5m-5m"
+            tmp_path,
+            scanner_profile=SINGLE_RX_PROFILE_ID if single_rx else "alternating-2p5m-5m",
+            scanner_interval_seconds=interval,
         ),
         CompositionHooks(
             persistent_hop_radio_factory=lambda _configuration: radio,

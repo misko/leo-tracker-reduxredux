@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 from datetime import UTC, datetime
-from typing import Any, Literal, Self
+from typing import Any, ClassVar, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -27,11 +27,10 @@ SINGLE_RX_RATE_HZ: Literal[10_000_000] = 10_000_000
 
 
 def parse_scheduled_scanner_intent(payload: dict) -> ScheduledScannerRunIntentV1:
-    model = (
-        SingleRxScheduledScannerIntentV2
-        if payload.get("schema_version") == 2
-        else ScheduledScannerRunIntentV1
-    )
+    model = {
+        2: SingleRxScheduledScannerIntentV2,
+        3: SingleRxScheduledScannerIntentV3,
+    }.get(payload.get("schema_version"), ScheduledScannerRunIntentV1)
     return model.model_validate(payload)
 
 
@@ -81,6 +80,7 @@ class SingleRxScannerConfigurationV4(ScannerConfigurationV3):
 
 
 class SingleRxScheduledScannerIntentV2(ScheduledScannerRunIntentV1):
+    required_interval_seconds: ClassVar[int] = 1200
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     policy_id: Literal["single-rx-random-10m-300s-v1"] = SINGLE_RX_PROFILE_ID  # type: ignore[assignment]
     run_duration_seconds: Literal[300] = 300
@@ -90,10 +90,13 @@ class SingleRxScheduledScannerIntentV2(ScheduledScannerRunIntentV1):
     def _intent_is_closed(self) -> Self:
         if self.scheduled_for.tzinfo is None or self.scheduled_for.utcoffset() is None:
             raise ValueError("scheduled scanner clock must be timezone-aware")
-        if self.interval_seconds != 1200 or self.operation_key != (
+        if self.interval_seconds != self.required_interval_seconds or self.operation_key != (
             canonical_scheduled_scanner_operation_key(self.scheduled_for)
         ):
-            raise ValueError("single-RX intent requires a canonical 20-minute operation")
+            raise ValueError(
+                "single-RX intent requires a canonical "
+                f"{self.required_interval_seconds // 60}-minute operation"
+            )
         seconds = self.scheduled_for.astimezone(UTC).timestamp()
         if self.cadence_ordinal != int(seconds // self.interval_seconds) or not math.isclose(
             seconds, self.cadence_ordinal * self.interval_seconds, rel_tol=0, abs_tol=1e-6
@@ -108,6 +111,13 @@ class SingleRxScheduledScannerIntentV2(ScheduledScannerRunIntentV1):
         ):
             raise ValueError("single-RX intent digest does not match content")
         return self
+
+
+class SingleRxScheduledScannerIntentV3(SingleRxScheduledScannerIntentV2):
+    """Ten-minute start cadence; V2 remains the published twenty-minute contract."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    required_interval_seconds: ClassVar[int] = 600
 
 
 def compile_single_rx_scanner_intent(
@@ -126,6 +136,13 @@ def compile_single_rx_scanner_intent(
 ) -> SingleRxScheduledScannerIntentV2:
     if run_duration_seconds != 300 or dwell_ms != 120:
         raise ValueError("single-RX profile requires 300 seconds and 120 ms visits")
+    if interval_seconds not in (600, 1200):
+        raise ValueError("single-RX profile requires a 600- or 1200-second start interval")
+    model = (
+        SingleRxScheduledScannerIntentV3
+        if interval_seconds == 600
+        else SingleRxScheduledScannerIntentV2
+    )
     if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
         raise ValueError("scheduled scanner clock must be timezone-aware")
     canonical = scheduled_for.astimezone(UTC)
@@ -139,7 +156,7 @@ def compile_single_rx_scanner_intent(
         maximum_acquisition_candidates=maximum_acquisition_candidates,
         targets=scheduled_low_band_targets(bandwidth_hz=5_000_000),
     )
-    candidate = SingleRxScheduledScannerIntentV2.model_construct(
+    candidate = model.model_construct(
         intent_digest="sha256:" + "0" * 64,
         operation_key=operation_key,
         radio_id=radio_id,
@@ -151,7 +168,7 @@ def compile_single_rx_scanner_intent(
         configuration=configuration,
     )
     document = candidate.model_dump(mode="json", exclude={"intent_digest"})
-    return SingleRxScheduledScannerIntentV2.model_validate(
+    return model.model_validate(
         {**document, "intent_digest": canonical_digest(document)}
     )
 
