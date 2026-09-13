@@ -9,6 +9,7 @@ from contextlib import suppress
 
 from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
+from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.storage.adaptive_hop import AdaptiveHopSessionWriter, PublishedAdaptiveHopIqSession
 from leo.storage.errors import BundleStateError
@@ -30,7 +31,9 @@ class QueuedAdaptiveHopSessionWriter:
         if type(capacity_visits) is not int or not 1 <= capacity_visits <= 64:
             raise ValueError("adaptive storage queue capacity must be within 1..64")
         self._writer = writer
-        self._queue: queue.Queue[AdaptiveHopVisitBlock] = queue.Queue(capacity_visits)
+        self._queue: queue.Queue[AdaptiveHopVisitBlock | HostAdaptiveHopVisitBlock] = queue.Queue(
+            capacity_visits
+        )
         self._closing = threading.Event()
         self._abort = threading.Event()
         self._error: BaseException | None = None
@@ -59,7 +62,7 @@ class QueuedAdaptiveHopSessionWriter:
                 f"adaptive storage worker failed: {self._error}"
             ) from self._error
 
-    def append(self, block: AdaptiveHopVisitBlock) -> None:
+    def append(self, block: AdaptiveHopVisitBlock | HostAdaptiveHopVisitBlock) -> None:
         self._raise_error()
         if self._closed or self._closing.is_set() or self._abort.is_set():
             raise BundleStateError("adaptive storage queue is closed or failed")

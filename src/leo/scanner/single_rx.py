@@ -27,6 +27,12 @@ SINGLE_RX_RATE_HZ: Literal[10_000_000] = 10_000_000
 
 
 def parse_scheduled_scanner_intent(payload: dict) -> ScheduledScannerRunIntentV1:
+    if type(payload.get("schema_version")) is not int:
+        raise ValueError("scheduled scanner schema version must be an exact integer")
+    if payload["schema_version"] == 4:
+        from leo.scanner.host_adaptive_schedule import HostAdaptiveScheduledScannerIntentV4
+
+        return HostAdaptiveScheduledScannerIntentV4.model_validate(payload)
     model = {
         2: SingleRxScheduledScannerIntentV2,
         3: SingleRxScheduledScannerIntentV3,

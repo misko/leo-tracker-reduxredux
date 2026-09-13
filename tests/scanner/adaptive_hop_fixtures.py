@@ -37,6 +37,8 @@ def receipt_fixture(
     radio_serial="synthetic-only",
     radio_uri="ip:192.168.1.14",
     transition_samples=20,
+    receipt_factory=AdaptiveHopReceiptV1,
+    terminal_factory=AdaptiveHopTerminalV1,
 ):
     plan = plan or AdaptiveHopPlanV1(
         geometry=compile_persistent_hop_plan_v1(sample_rate_hz=rate),
@@ -95,7 +97,7 @@ def receipt_fixture(
         gain_mode=GainMode.MANUAL,
         gains=tuple(ReceiverGainV1(receiver_id=i, gain_db=40) for i in (0, 1)),
     )
-    return AdaptiveHopReceiptV1(
+    return receipt_factory(
         session_id=session_id,
         radio_id=radio_id,
         radio_serial=radio_serial,
@@ -105,7 +107,7 @@ def receipt_fixture(
         source_span_attested=bool(events),
         kernel_buffers_requested=g.kernel_buffers,
         kernel_buffers_readback=g.kernel_buffers,
-        terminal=AdaptiveHopTerminalV1(
+        terminal=terminal_factory(
             state="completed" if complete else "cancelled",
             reason="complete" if complete else "client_close",
             session_id=persistent_hop_wire_session_id(session_id),
@@ -156,8 +158,8 @@ def block_fixture(receipt, index):
     return AdaptiveHopVisitBlock(samples, (0, 1), visit)
 
 
-def timing_fixture(receipt):
-    return PersistentHopUtcTimingAuthorityV1.from_host_bracket(
+def timing_fixture(receipt, timing_model=PersistentHopUtcTimingAuthorityV1):
+    return timing_model.from_host_bracket(
         session_id=receipt.session_id,
         session_start_device_sample_counter=receipt.terminal.first_counter,
         sample_rate_hz=receipt.plan.geometry.sample_rate_hz,
