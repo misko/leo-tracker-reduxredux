@@ -187,8 +187,8 @@ def analyze_persistent_hop_sweep_v2(
     selected = configuration or PersistentHopGlrt64Configuration(source.plan)
     if selected.plan != source.plan:
         raise ValueError("persistent-hop V2 analysis configuration disagrees with source")
-    if not 1 <= maximum_workers <= 2:
-        raise ValueError("persistent-hop V2 worker count must lie in 1..2")
+    if type(maximum_workers) is not int or not 1 <= maximum_workers <= 4:
+        raise ValueError("persistent-hop V2 worker count must lie in 1..4")
     spans = tuple(item for item in source.visits if item.sweep_index == sweep_index)
     if not spans:
         raise ValueError("persistent-hop V2 analysis sweep does not exist")

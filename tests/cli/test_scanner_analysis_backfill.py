@@ -95,3 +95,33 @@ def test_both_publication_paths_run_sequentially_even_after_failure(
         "--json",
     ]
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("workers", [3, 4])
+def test_explicit_worker_setting_only_changes_fixed_analysis(monkeypatch, workers):
+    commands = []
+    monkeypatch.setattr(
+        cli.subprocess,
+        "run",
+        lambda command, **kw: commands.append(command) or SimpleNamespace(returncode=0),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["backfill", "--site", "spinnaker-sausalito", "--fixed-maximum-workers", str(workers)],
+    )
+    cli.main()
+    adaptive, fixed = commands[1:3]
+    assert adaptive[adaptive.index("--maximum-workers") + 1] == "2"
+    assert fixed[fixed.index("--maximum-workers") + 1] == str(workers)
+
+
+@pytest.mark.parametrize("count", ["0", "5", "true"])
+def test_backfill_rejects_unbounded_worker_settings_before_starting_jobs(monkeypatch, count):
+    monkeypatch.setattr(cli.subprocess, "run", lambda *a, **kw: pytest.fail("unexpected job"))
+    monkeypatch.setattr(
+        sys, "argv", ["backfill", "--site", "spinnaker-sausalito", "--fixed-maximum-workers", count]
+    )
+    with pytest.raises(SystemExit) as raised:
+        cli.main()
+    assert raised.value.code == 2

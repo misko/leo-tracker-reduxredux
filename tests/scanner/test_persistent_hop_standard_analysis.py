@@ -179,6 +179,34 @@ def test_sweep_product_parallel_path_is_ordered_and_uses_one_probe_per_visit(
     ]
 
 
+@pytest.mark.parametrize("receiver_id", [0, 1])
+@pytest.mark.parametrize("workers", [3, 4])
+def test_workers_preserve_native_single_rx_scientific_rows(monkeypatch, receiver_id, workers):
+    source, _ = _source(visit_count=8, receiver_id=receiver_id)
+    monkeypatch.setattr(persistent_source_module, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    monkeypatch.setattr(persistent_product_module, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    configuration = PersistentHopGlrt64Configuration(source.plan, probe_stride_ms=120)
+    serial = analyze_persistent_hop_sweep_v2(source, 0, configuration=configuration)
+    parallel = analyze_persistent_hop_sweep_v2(
+        source,
+        0,
+        configuration=configuration,
+        maximum_workers=workers,
+    )
+    assert parallel == serial
+    assert [(p.visit_index, p.receiver_id) for p in parallel.probes] == [
+        (index, receiver_id) for index in range(8)
+    ]
+
+
+@pytest.mark.parametrize("count", [0, 5, True, 2.0])
+def test_fractional_analysis_rejects_unbounded_or_inexact_worker_count(count):
+    source, reader = _source(visit_count=1)
+    with pytest.raises(ValueError, match="worker count"):
+        analyze_persistent_hop_sweep_v2(source, 0, maximum_workers=count)
+    assert not reader.calls
+
+
 def _fake_fractional_dwell(_samples, configuration, *, edge) -> DwellGlrt64Analysis:
     probes = []
     for probe_index in range(configuration.scheduled_probe_count):
