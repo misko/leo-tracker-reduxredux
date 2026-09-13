@@ -1,5 +1,13 @@
 # Radio .20: causal carrier prediction during startup
 
+**September 13, 17:07 UTC update:** Radio `.20` returned after reboot with the
+correct serial and verified 60-MS/s image. The prepared transition to the
+30-MS/s image then deployed successfully. The next ARM replay was refused by
+the shared capture authority because acquisition remains globally paused after
+a separate service restart. No new replay or RF capture started. The earlier
+network outage described below is resolved; physical tracking validation is
+still pending.
+
 A small startup change recovers all eight required initial measurements from
 the exact retained IQ of the previous near-acquisition. The old C implementation
 reproduces the recorded six-of-eight result; the new C implementation accepts
@@ -136,3 +144,23 @@ records these checks and source hashes. At 03:37 UTC on September 13, `.20`
 still failed SSH and IIOD connection checks with a FAILED neighbor entry.
 This follow-up collected no RF, executed no new binary on the radio and sent
 no updater. Physical validation remains pending.
+
+## Reboot recovery and successful 30-MS/s deployment
+
+The rebooted device was independently identified through IIOD and SSH as
+`1040005e0b100007100010000bf33a5d4d`. Its ephemeral SSH key was renewed through
+the existing serial-attested procedure. The resident 60-MS/s FIT hash, idle
+buffers, disabled TX and 1-Gb/s full-duplex Ethernet all passed verification.
+
+Deployment receipt `e310b182-e5c3-408e-bb58-42c3d7755fec` records a successful
+transition to `glrt-iq-tracking-r30000000-v1`. The written FIT hash and returned
+serial were verified; the returned boot ID is
+`318e812d-83f2-4341-8706-1502bcb06b04`. Return checks confirm idle RX and disabled
+TX. This is a deployment result, not execution of the new causal-startup probe.
+
+The saved-IQ ARM replay was refused before radio execution because
+`/srv/bulk/leo/control/capture-authority-v1.json` retained the global pause set
+by `component-cutover`. The separate acquisition-service restart completed
+with capture still paused. That global control has not been overridden.
+The [reboot and deployment evidence](figures/2026_09_13_radio20_causal_startup_carrier/reboot-return.json)
+includes source-receipt hashes, return attestation and the replay refusal.
