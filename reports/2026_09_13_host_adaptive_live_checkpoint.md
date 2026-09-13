@@ -76,3 +76,52 @@ CRC fix and passed immutable staging, web asset generation and installed-runtime
 validation. It remains unselected pending live qualification. Full maintenance
 cycle timing must still be measured; the 410 s replay measured native analysis
 and overview only, not additional refinement/tracking jobs.
+
+## Real RX0 shadow attempt and corrections
+
+Attempt 3 on release `da7eddda` published partial session
+`scan-hop-1d536e8d58c6d191`, manifest
+`sha256:e70544b30d6c936c61858d3b99b413b165956aa433069d96d0a072d3d9970a33`.
+It retained 2,371 visits across 298.8281694 s with 95.2119% duty, no policy
+fallback and verified restoration. It is **not qualified**: the harness's
+310 s deadline included startup and cancelled about 1.2 s before completion.
+Its entire 336.168990 s call plus verification remains charged. The ledger now
+has 593.374663 s charged and 1,206.625337 s remaining. A fresh RX0 canary plus
+the remaining three canaries and first scheduled verification need 1,500 s of
+RF before overhead. An additional allowance of at most 420 s was requested;
+no further qualification RF is authorized unless that request is approved.
+
+All 2,372 observed policy choices passed the independent replay. Maximum actual
+revisit was 1.0287823 s and maximum applied source age was 0.263521 s. The one
+degraded result was the final visit, explicitly `source_ended`: detector work
+took 170.907 ms but feedback age reached 1,321.141 ms across restoration. None
+of the 2,370 accepted records was degraded. These observations do not turn the
+cancelled scan into a successful live gate.
+
+PPU `ac7dae8796099ad63dad2bc9700bf52638c8450a` provides an owner-thread terminal
+drain before restoration, explicitly marking results unapplied once terminal
+status proves the source ended. Leo drains bounded outstanding computation there,
+then processes any final retained IQ and closes its worker normally. Tests cover
+callback failure cleanup, slow restoration, and preservation of workspace for
+terminal IQ. The canary now bounds the capture call to 335 s, disarms that timer
+before verification, and charges the capture call rather than offline verification
+on future attempts. Historical charges are unchanged. PPU passed 682 tests;
+Leo passed 59 focused tests, mypy and Ruff. Corrected immutable release
+`52313e7fc0b9f9f978fb0f613d25c1d152fce238` passed staging and remains unselected.
+
+The real partial capture completed native 10 MS/s analysis for all 2,371 visits,
+publishing metrics and all three overview artifacts. Binding:
+`sha256:307f0cc44d494fe7281c1772dd4e30786e62fff242dd02ab4ce5f4699d7f2919`;
+metrics: `sha256:5b2fde3a3bfe1c340c0bcab359ed7f665a9e883bf1189cc55fba842ebfe1532f`.
+Evidence: `/var/tmp/leo-host-shadow-rx0-analysis-20260913.log`. A local preview
+uses the staged release and real read-only capture/products; unrelated app data
+uses fixtures. This is not production publication or full qualification.
+Chromium decoded the real three PNGs at 2480×1040, 2480×1152 and 2480×1840
+with no page errors. Evidence: `/var/tmp/leo-host-live-browser-ready.json` and
+`/var/tmp/leo-host-live-browser-ready.png`. The first browser check incorrectly
+waited for an offscreen lazy image before scrolling; scrolling its visible figure
+container allowed normal image loading. No UI change was required.
+
+Fixed production resumed and completed the 20:20 slot as
+`scan-hop-da9e419b1dd0a21e`, 2,387 visits, 95.4405% duty. The 10-minute schedule
+and exact radio003a binding remain unchanged.

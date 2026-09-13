@@ -1,0 +1,72 @@
+{
+  "schema": "adaptive-deployment-qualification-rf-ledger-v1",
+  "budget_seconds": 1800,
+  "charged_seconds": 593.3746626792804,
+  "remaining_seconds": 1206.6253373207196,
+  "entries": [
+    {
+      "id": "metadata-canary-preflight",
+      "rf_seconds_upper_bound": 0,
+      "reason": "failed before remote staging and capture"
+    },
+    {
+      "id": "metadata-canary-startup-failure",
+      "rf_seconds_upper_bound": 9.285046554,
+      "reason": "conservatively charge entire capture call including bufferless preparation and cleanup; incomplete first valid visit; restoration attested"
+    },
+    {
+      "id": "radio003a-canary-cancel-failure",
+      "rf_seconds_upper_bound": 34.276158086024225,
+      "reason": "RX1 cancellation failed because metadata-closed visits exceeded retained IQ; owned daemon cleaned; capture stopped"
+    },
+    {
+      "id": "radio003a-canary-cancel-pass",
+      "rf_seconds_upper_bound": 34.30456104292534,
+      "reason": "RX1 bounded recheck passed after draining closed-visit IQ; cancellation and restoration attested"
+    },
+    {
+      "id": "radio003a-affinity-failure",
+      "rf_seconds_upper_bound": 10.723047730047256,
+      "reason": "One bounded CPU1 worker-affinity comparison; one-block counter gap; ownership cleanup and original receiver settings restored; candidate rejected"
+    },
+    {
+      "id": "radio003a-block262144-restore-failure",
+      "rf_seconds_upper_bound": 74.41723082610406,
+      "reason": "262144-sample block comparison sustained about 65 seconds without reported counter gap; cancellation failed at duplicate AGC-gain restoration equality check; owned daemon stopped"
+    },
+    {
+      "id": "radio003a-block262144-restoration-pass",
+      "rf_seconds_upper_bound": 74.32539723417722,
+      "reason": "262144-sample refill recheck on sealed eefcb4f0; 65.0196636s device span, 95.4172% duty, zero missing/overflow/event gaps, cancellation and settable-state restoration passed"
+    },
+    {
+      "id": "host-shadow-rx0",
+      "state": "reviewed_pre_acquisition_failure",
+      "reserved_seconds": 310,
+      "report": "/srv/bulk/leo/qualification/host-adaptive-20260913/shadow-rx0/canary.json",
+      "rf_seconds_upper_bound": 8.002823177001119,
+      "reason": "Conservatively charge the entire capture call, including setup and restoration.",
+      "review": "Authority claim failed before capture. Preserve full wall-time charge; retry uses separate attempt identity and report."
+    },
+    {
+      "id": "host-shadow-rx0-attempt2",
+      "state": "reviewed_pre_acquisition_failure",
+      "reserved_seconds": 310,
+      "report": "/srv/bulk/leo/qualification/host-adaptive-20260913/shadow-rx0-attempt2/canary.json",
+      "rf_seconds_upper_bound": 11.871407579001243,
+      "reason": "Conservatively charge the entire capture call, including setup and restoration.",
+      "review": "Host client failed wire validation before backend creation. PPU 37fa76e moves CRC validation after preparation; 666 focused tests passed. Full wall-time charge retained."
+    },
+    {
+      "id": "host-shadow-rx0-attempt3",
+      "state": "failed",
+      "reserved_seconds": 310,
+      "report": "/srv/bulk/leo/qualification/host-adaptive-20260913/shadow-rx0-attempt3/canary.json",
+      "rf_seconds_upper_bound": 336.1689904499999,
+      "reason": "Conservatively charge the entire capture call, including setup and restoration."
+    }
+  ],
+  "reserved_next_canaries_seconds": 1200,
+  "unallocated_seconds": 6.625337320719609,
+  "collection_stopped_on_failure": true
+}

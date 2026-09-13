@@ -183,6 +183,9 @@ def main():
             ledger["reserved_next_canaries_seconds"] = max(
                 0, ledger["reserved_next_canaries_seconds"] - 300
             )
+            ledger["unallocated_seconds"] = (
+                ledger["remaining_seconds"] - ledger["reserved_next_canaries_seconds"]
+            )
             report.update(elapsed_seconds=elapsed, finished_utc_ns=time.time_ns())
             write(args.output / "canary.json", report)
             write(args.ledger, ledger)
