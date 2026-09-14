@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from leo.contracts.digests import canonical_digest
 from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopReceiptV1
 from leo.scanner.host_adaptive import (
+    HOST_ADAPTIVE_RX0_PROFILE_ID,
     HostAdaptiveHopPlanV2,
     HostAdaptiveHopReceiptV2,
     HostDecisionConfigurationV1,
@@ -15,8 +16,10 @@ from leo.scanner.host_adaptive import (
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.host_adaptive_schedule import (
+    HostAdaptiveRx0ScheduledScannerIntentV5,
     HostAdaptiveScheduledScannerIntentV4,
     compile_host_adaptive_hop_plan,
+    compile_host_adaptive_rx0_scanner_intent,
     compile_host_adaptive_scanner_intent,
 )
 from leo.scanner.single_rx import parse_scheduled_scanner_intent
@@ -191,6 +194,37 @@ def intent(**changes):
             **changes,
         }
     )
+
+
+def test_fixed_rx0_profile_is_new_durable_major_and_never_selects_rx1():
+    arguments = {
+        "radio_id": "synthetic",
+        "radio_serial": "synthetic-only",
+        "mode": "adaptive",
+        "decision": decision_configuration(),
+        "maximum_lateness_seconds": 60,
+        "gain_db": 40,
+        "margin_gate": 0.025,
+        "maximum_acquisition_candidates": 4,
+    }
+    runs = [
+        compile_host_adaptive_rx0_scanner_intent(
+            scheduled_for=datetime(2026, 9, 13, 18, 30, tzinfo=UTC) + timedelta(minutes=10 * index),
+            **arguments,
+        )
+        for index in range(32)
+    ]
+    assert {run.configuration.receiver_ids for run in runs} == {(0,)}
+    assert all(
+        isinstance(
+            parse_scheduled_scanner_intent(run.model_dump(mode="json")),
+            HostAdaptiveRx0ScheduledScannerIntentV5,
+        )
+        for run in runs
+    )
+    assert all(run.schema_version == 5 for run in runs)
+    assert all(run.policy_id == HOST_ADAPTIVE_RX0_PROFILE_ID for run in runs)
+    assert len({run.operation_key for run in runs}) == len(runs)
 
 
 def test_durable_intent_binds_mode_configuration_slot_and_retry_receiver():

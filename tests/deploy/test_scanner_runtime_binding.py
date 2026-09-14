@@ -59,7 +59,12 @@ def test_duplicate_manifest_is_rejected() -> None:
 
 
 @pytest.mark.parametrize(
-    "profile", ["single-rx-random-10m-300s-v1", "adaptive-single-rx-random-10m-300s-v1"]
+    "profile",
+    [
+        "single-rx-random-10m-300s-v1",
+        "adaptive-single-rx-random-10m-300s-v1",
+        "adaptive-single-rx0-10m-300s-v1",
+    ],
 )
 def test_single_rx_deployment_preserves_the_explicit_radio(profile):
     policy = runpy.run_path(str(ROOT / "deploy/scripts/scanner-runtime-binding.py"))
