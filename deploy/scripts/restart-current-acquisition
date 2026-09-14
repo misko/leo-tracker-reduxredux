@@ -55,7 +55,7 @@ run_leo() {
     *) echo "restart helper permits only capture-authority commands" >&2; return 64 ;;
   esac
   /usr/sbin/runuser -u leo -- /bin/bash -c \
-    'set -a; source /etc/leo/leo.env; source /etc/leo/acquisition.env; set +a; export LEO_SCANNER_ENABLED=false; exec "$@"' \
+    'set -a; source /etc/leo/leo.env; source /etc/leo/acquisition.env; set +a; export LEO_SCANNER_ENABLED=false LEO_SCANNER_PROFILE=alternating-2p5m-5m LEO_SCANNER_HOP_POLICY=fixed; unset LEO_SCANNER_HOST_DECISION_MANIFEST_PATH LEO_SCANNER_HOST_DECISION_MANIFEST_SHA256 LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ; exec "$@"' \
     acquisition-component-cutover "$release/.venv/bin/leo" "$@"
 }
 
