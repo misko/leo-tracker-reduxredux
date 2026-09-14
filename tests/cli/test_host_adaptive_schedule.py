@@ -94,6 +94,17 @@ def test_host_adaptive_spool_requires_separate_absolute_local_storage(tmp_path):
         spool = tmp_path / "nvme"
         configured = replace(backend.settings, scanner_adaptive_spool_root=spool)
         assert configured.scanner_adaptive_spool_root == spool
+        control_configuration = replace(
+            backend.settings,
+            scanner_profile="alternating-2p5m-5m",
+            scanner_hop_policy="fixed",
+            scanner_interval_seconds=1200,
+            scanner_host_decision_manifest_path=None,
+            scanner_host_decision_manifest_sha256=None,
+            scanner_adaptive_sample_rates_hz=(2_500_000, 5_000_000),
+            scanner_adaptive_spool_root=spool,
+        )
+        assert control_configuration.scanner_adaptive_spool_root == spool
         for invalid in (
             Path("relative-spool"),
             Path("/mnt/qnap01/scanner-spool"),
