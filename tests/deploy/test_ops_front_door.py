@@ -751,6 +751,28 @@ def test_stage_only_stages_exact_main_without_cutover_or_rate_receipt(
     assert f"STAGED-ONLY revision={target}" in capsys.readouterr().out
 
 
+def test_release_staging_requests_feedback_capable_scanner_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    current = "1" * 40
+    commands: list[tuple[str, ...]] = []
+
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(Path, "is_file", lambda self: self == Path("/usr/bin/python3.14"))
+    monkeypatch.setattr(
+        OPS.subprocess,
+        "run",
+        lambda command, **_kwargs: commands.append(tuple(command)),
+    )
+
+    OPS._stage_release(target)
+
+    assert len(commands) == 1
+    assert "--scanner-glrt" in commands[0]
+    assert commands[0][-1] == "--execute"
+
+
 @pytest.mark.parametrize("local_head, accepted", (("3" * 40, True), ("4" * 40, False)))
 def test_stage_only_accepts_only_main_or_clean_local_head(
     monkeypatch: pytest.MonkeyPatch,
