@@ -88,6 +88,41 @@ def test_host_adaptive_queue_accepts_measured_storage_stall_capacity(tmp_path):
         store.close()
 
 
+def test_host_adaptive_spool_requires_separate_absolute_local_storage(tmp_path):
+    backend, _radio, store, _events = fixture(tmp_path)
+    try:
+        spool = tmp_path / "nvme"
+        configured = replace(backend.settings, scanner_adaptive_spool_root=spool)
+        assert configured.scanner_adaptive_spool_root == spool
+        for invalid in (
+            Path("relative-spool"),
+            Path("/mnt/qnap01/scanner-spool"),
+            backend.settings.bulk_root,
+            backend.settings.bulk_root / "spool",
+        ):
+            with pytest.raises(ValueError, match="outside bulk storage"):
+                replace(backend.settings, scanner_adaptive_spool_root=invalid)
+    finally:
+        store.close()
+
+
+def test_default_composition_wires_adaptive_spool_into_capture_store(tmp_path):
+    backend, _radio, fixture_store, _events = fixture(tmp_path)
+    spool = tmp_path / "nvme"
+    spool.mkdir()
+    try:
+        configured = replace(backend.settings, scanner_adaptive_spool_root=spool)
+        production_backend = LocalAcquisitionBackend(configured)
+        capture_store = production_backend._adaptive_hop_iq_store()
+        try:
+            assert capture_store._spool_root is not None
+            assert capture_store._spool_root.root == spool
+        finally:
+            capture_store.close()
+    finally:
+        fixture_store.close()
+
+
 def intent(backend, slot=datetime(2026, 9, 13, 0, 0, tzinfo=UTC)):
     return backend.scheduled_scanner_intent(
         operation_key=canonical_scheduled_scanner_operation_key(slot),
