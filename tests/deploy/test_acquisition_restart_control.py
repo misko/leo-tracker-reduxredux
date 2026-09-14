@@ -19,7 +19,15 @@ def test_restart_control_commands_ignore_scanner_admission_only_in_child(tmp_pat
     environment = tmp_path / "leo.env"
     component = tmp_path / "acquisition.env"
     environment.write_text("LEO_RADIO_BACKEND=pluto\nLEO_SCANNER_ENABLED=true\n")
-    component.write_text("LEO_SCANNER_CAPTURE_MODE=persistent_hop\nLEO_SCANNER_ENABLED=true\n")
+    component.write_text(
+        "LEO_SCANNER_CAPTURE_MODE=persistent_hop\n"
+        "LEO_SCANNER_ENABLED=true\n"
+        "LEO_SCANNER_PROFILE=adaptive-single-rx-random-10m-300s-v1\n"
+        "LEO_SCANNER_HOP_POLICY=adaptive\n"
+        "LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=10000000\n"
+        "LEO_SCANNER_HOST_DECISION_MANIFEST_PATH=/release/manifest.json\n"
+        f"LEO_SCANNER_HOST_DECISION_MANIFEST_SHA256=sha256:{'1' * 64}\n"
+    )
     release = tmp_path / "release"
     executable = release / ".venv/bin/leo"
     executable.parent.mkdir(parents=True)
@@ -28,7 +36,11 @@ def test_restart_control_commands_ignore_scanner_admission_only_in_child(tmp_pat
         "import json,os,sys\n"
         "from leo.cli.composition import CliSettings\n"
         "settings=CliSettings.from_environ(os.environ)\n"
-        "print(json.dumps({'scanner_enabled':settings.scanner_enabled,'argv':sys.argv[1:]}))\n"
+        "print(json.dumps({'scanner_enabled':settings.scanner_enabled,"
+        "'scanner_profile':settings.scanner_profile,"
+        "'scanner_hop_policy':settings.scanner_hop_policy,"
+        "'adaptive_rates':settings.scanner_adaptive_sample_rates_hz,"
+        "'argv':sys.argv[1:]}))\n"
     )
     executable.chmod(0o700)
     # Replace only the OS user/credential-file adapters with fixture resources.
@@ -59,6 +71,9 @@ def test_restart_control_commands_ignore_scanner_admission_only_in_child(tmp_pat
         assert result.returncode == 0, result.stderr
         assert json.loads(result.stdout) == {
             "scanner_enabled": False,
+            "scanner_profile": "alternating-2p5m-5m",
+            "scanner_hop_policy": "fixed",
+            "adaptive_rates": [2_500_000, 5_000_000],
             "argv": ["acquire", command, "--json"],
         }
     assert "LEO_SCANNER_ENABLED=true" in component.read_text()
