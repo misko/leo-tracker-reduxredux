@@ -27,17 +27,18 @@ SINGLE_RX_RATE_HZ: Literal[10_000_000] = 10_000_000
 
 
 def parse_scheduled_scanner_intent(payload: dict) -> ScheduledScannerRunIntentV1:
-    if type(payload.get("schema_version")) is not int:
+    version = payload.get("schema_version")
+    if type(version) is not int:
         raise ValueError("scheduled scanner schema version must be an exact integer")
-    if payload["schema_version"] == 4:
+    if version == 4:
         from leo.scanner.host_adaptive_schedule import HostAdaptiveScheduledScannerIntentV4
 
         return HostAdaptiveScheduledScannerIntentV4.model_validate(payload)
-    model = {
-        2: SingleRxScheduledScannerIntentV2,
-        3: SingleRxScheduledScannerIntentV3,
-    }.get(payload.get("schema_version"), ScheduledScannerRunIntentV1)
-    return model.model_validate(payload)
+    if version == 2:
+        return SingleRxScheduledScannerIntentV2.model_validate(payload)
+    if version == 3:
+        return SingleRxScheduledScannerIntentV3.model_validate(payload)
+    return ScheduledScannerRunIntentV1.model_validate(payload)
 
 
 def single_rx_for_operation(operation_key: str, radio_serial: str) -> Literal[0, 1]:
@@ -174,9 +175,7 @@ def compile_single_rx_scanner_intent(
         configuration=configuration,
     )
     document = candidate.model_dump(mode="json", exclude={"intent_digest"})
-    return model.model_validate(
-        {**document, "intent_digest": canonical_digest(document)}
-    )
+    return model.model_validate({**document, "intent_digest": canonical_digest(document)})
 
 
 class SingleRxPersistentHopPlanV2(PersistentHopPlanV1):

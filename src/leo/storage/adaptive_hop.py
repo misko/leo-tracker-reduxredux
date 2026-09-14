@@ -15,6 +15,7 @@ import re
 import stat
 import time
 from collections.abc import Iterator
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, ClassVar, Literal, Self
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
     from leo.storage.adaptive_hop_queue import QueuedAdaptiveHopSessionWriter
 
 _NAMESPACE = "scanner-adaptive-recordings"
+_SPOOL_NAMESPACE = "scanner-adaptive-spool"
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MAX_MANIFEST_BYTES = 32 * 1024 * 1024
 _MAX_CHUNK_BYTES = 64 * 1024 * 1024
@@ -221,12 +223,88 @@ def _read_regular(directory: PinnedLocalRoot, name: str, maximum: int) -> bytes:
         os.close(descriptor)
 
 
+def _copy_regular_verified(
+    source: PinnedLocalRoot,
+    destination: PinnedLocalRoot,
+    name: str,
+    *,
+    maximum: int,
+    expected_size: int,
+    expected_digest: str,
+) -> None:
+    source_fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=source.fileno())
+    destination_fd = -1
+    try:
+        before = os.fstat(source_fd)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or before.st_size != expected_size
+            or before.st_size > maximum
+        ):
+            raise BundleCorruptionError("adaptive spool file is not the sealed regular file")
+        destination_fd = os.open(
+            name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+            0o640,
+            dir_fd=destination.fileno(),
+        )
+        digest = hashlib.sha256()
+        copied = 0
+        while True:
+            payload = os.read(source_fd, min(4 * 1024 * 1024, maximum + 1 - copied))
+            if not payload:
+                break
+            copied += len(payload)
+            if copied > maximum:
+                raise BundleCorruptionError("adaptive spool file exceeds its manifest bound")
+            digest.update(payload)
+            view = memoryview(payload)
+            while view:
+                written = os.write(destination_fd, view)
+                if written <= 0:
+                    raise OSError("adaptive RAID copy made no progress")
+                view = view[written:]
+        after = os.fstat(source_fd)
+        fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns", "st_nlink")
+        if (
+            copied != expected_size
+            or f"sha256:{digest.hexdigest()}" != expected_digest
+            or any(getattr(before, field) != getattr(after, field) for field in fields)
+        ):
+            raise BundleCorruptionError("adaptive spool file changed or failed digest verification")
+        os.fsync(destination_fd)
+    except BaseException:
+        if destination_fd >= 0:
+            os.close(destination_fd)
+            destination_fd = -1
+        with suppress(FileNotFoundError):
+            os.unlink(name, dir_fd=destination.fileno())
+        raise
+    finally:
+        if destination_fd >= 0:
+            os.close(destination_fd)
+        os.close(source_fd)
+
+
 class AdaptiveHopIqStore:
-    def __init__(self, root: Path, *, read_only: bool = False) -> None:
+    def __init__(
+        self, root: Path, *, read_only: bool = False, spool_root: Path | None = None
+    ) -> None:
         self._root = PinnedLocalRoot(root)
         self._read_only = read_only
+        self._spool_root = None if read_only or spool_root is None else PinnedLocalRoot(spool_root)
+        if self._spool_root is not None:
+            try:
+                self.recover_spooled_sessions()
+            except BaseException:
+                self._spool_root.close()
+                self._root.close()
+                raise
 
     def close(self) -> None:
+        if self._spool_root is not None:
+            self._spool_root.close()
         self._root.close()
 
     def begin_queued(
@@ -251,9 +329,13 @@ class AdaptiveHopIqStore:
             HostAdaptiveHopPlanV2 if isinstance(plan, HostAdaptiveHopPlanV2) else AdaptiveHopPlanV1
         )
         plan = plan_model.model_validate(plan.model_dump())
-        namespace = self._root.child(_NAMESPACE, create=True)
+        if self.contains_session(session_id):
+            raise FileExistsError(session_id)
+        write_root = self._spool_root or self._root
+        namespace_name = _SPOOL_NAMESPACE if self._spool_root is not None else _NAMESPACE
+        namespace = write_root.child(namespace_name, create=True)
         try:
-            os.fsync(self._root.fileno())
+            os.fsync(write_root.fileno())
             # Existing incomplete or published sessions cannot be overwritten.
             os.mkdir(session_id, mode=0o750, dir_fd=namespace.fileno())
             os.fsync(namespace.fileno())
@@ -261,7 +343,10 @@ class AdaptiveHopIqStore:
         finally:
             namespace.close()
         try:
-            return AdaptiveHopSessionWriter(directory, session_id, plan)
+            writer = AdaptiveHopSessionWriter(directory, session_id, plan)
+            if self._spool_root is None:
+                return writer
+            return _SpoolingAdaptiveHopSessionWriter(writer, self, session_id)
         except BaseException:
             directory.close()
             raise
@@ -311,9 +396,170 @@ class AdaptiveHopIqStore:
         try:
             directory = self._session(session_id)
         except BundleNotFoundError:
-            return False
+            return self._spooled_session_exists(session_id)
         directory.close()
         return True
+
+    def _spooled_session_exists(self, session_id: str) -> bool:
+        _identifier(session_id)
+        if self._spool_root is None:
+            return False
+        try:
+            namespace = self._spool_root.child(_SPOOL_NAMESPACE)
+        except ValueError as error:
+            if isinstance(error.__cause__, FileNotFoundError):
+                return False
+            raise
+        try:
+            info = os.stat(session_id, dir_fd=namespace.fileno(), follow_symlinks=False)
+            if not stat.S_ISDIR(info.st_mode):
+                raise BundleCorruptionError("adaptive spool session is not a directory")
+            return True
+        except FileNotFoundError:
+            return False
+        finally:
+            namespace.close()
+
+    def recover_spooled_sessions(self) -> tuple[str, ...]:
+        """Publish sealed NVMe sessions left by a stopped transfer.
+
+        Unsealed acquisition evidence remains untouched and continues to reserve
+        its session ID. A destination becomes discoverable only after every
+        manifest-bound file has been copied and verified.
+        """
+        if self._read_only or self._spool_root is None:
+            return ()
+        try:
+            namespace = self._spool_root.child(_SPOOL_NAMESPACE)
+        except ValueError as error:
+            if isinstance(error.__cause__, FileNotFoundError):
+                return ()
+            raise
+        try:
+            names = tuple(sorted(os.listdir(namespace.fileno())))
+        finally:
+            namespace.close()
+        recovered: list[str] = []
+        for name in names:
+            if not _IDENTIFIER.fullmatch(name):
+                continue
+            source = self._spool_root.child(_SPOOL_NAMESPACE, name)
+            try:
+                try:
+                    os.stat("manifest.json", dir_fd=source.fileno(), follow_symlinks=False)
+                except FileNotFoundError:
+                    continue
+            finally:
+                source.close()
+            self._transfer_spooled_session(name)
+            recovered.append(name)
+        return tuple(recovered)
+
+    def _transfer_spooled_session(self, session_id: str) -> PublishedAdaptiveHopIqSession:
+        assert self._spool_root is not None
+        source = self._spool_root.child(_SPOOL_NAMESPACE, session_id)
+        try:
+            manifest_payload = _read_regular(source, "manifest.json", _MAX_MANIFEST_BYTES)
+            seal = _ManifestSeal.model_validate_json(manifest_payload)
+            if seal.manifest.session_id != session_id:
+                raise BundleCorruptionError("adaptive spool changed session identity")
+            expected_files = {"manifest.json"}
+            expected_files.update(chunk.relative_path for chunk in seal.manifest.chunks)
+            actual_files = set(os.listdir(source.fileno()))
+            if actual_files != expected_files:
+                raise BundleCorruptionError("adaptive spool contains files outside its manifest")
+
+            try:
+                published = self.inspect(session_id)
+            except BundleNotFoundError:
+                published = None
+            if published is not None:
+                if published.manifest_sha256 != seal.sha256:
+                    raise BundleStateError("adaptive RAID destination conflicts with sealed spool")
+                self._remove_spooled_session(session_id, expected_files)
+                return published
+
+            destination_namespace = self._root.child(_NAMESPACE, create=True)
+            staging_name = f".transfer-{session_id}.partial"
+            try:
+                os.fsync(self._root.fileno())
+                try:
+                    os.mkdir(staging_name, mode=0o750, dir_fd=destination_namespace.fileno())
+                except FileExistsError:
+                    self._remove_staging(destination_namespace, staging_name)
+                    os.mkdir(staging_name, mode=0o750, dir_fd=destination_namespace.fileno())
+                staging = destination_namespace.child(staging_name)
+                try:
+                    for chunk in seal.manifest.chunks:
+                        _copy_regular_verified(
+                            source,
+                            staging,
+                            chunk.relative_path,
+                            maximum=chunk.compressed_bytes,
+                            expected_size=chunk.compressed_bytes,
+                            expected_digest=chunk.compressed_sha256,
+                        )
+                    _copy_regular_verified(
+                        source,
+                        staging,
+                        "manifest.json",
+                        maximum=_MAX_MANIFEST_BYTES,
+                        expected_size=len(manifest_payload),
+                        expected_digest=sha256_digest(manifest_payload),
+                    )
+                    os.fsync(staging.fileno())
+                except BaseException:
+                    staging.close()
+                    self._remove_staging(destination_namespace, staging_name)
+                    raise
+                else:
+                    staging.close()
+                _rename_noreplace(
+                    destination_namespace.fileno(),
+                    os.fsencode(staging_name),
+                    os.fsencode(session_id),
+                )
+                os.fsync(destination_namespace.fileno())
+            finally:
+                destination_namespace.close()
+        finally:
+            source.close()
+        published = self.inspect(session_id)
+        if published.manifest_sha256 != seal.sha256:
+            raise BundleCorruptionError("adaptive RAID publication differs from sealed spool")
+        self._remove_spooled_session(session_id, expected_files)
+        return published
+
+    def _remove_staging(self, namespace: PinnedLocalRoot, name: str) -> None:
+        directory = namespace.child(name)
+        try:
+            for member in os.listdir(directory.fileno()):
+                info = os.stat(member, dir_fd=directory.fileno(), follow_symlinks=False)
+                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                    raise BundleCorruptionError("adaptive transfer staging is unsafe")
+                os.unlink(member, dir_fd=directory.fileno())
+        finally:
+            directory.close()
+        os.rmdir(name, dir_fd=namespace.fileno())
+        os.fsync(namespace.fileno())
+
+    def _remove_spooled_session(self, session_id: str, names: set[str]) -> None:
+        assert self._spool_root is not None
+        namespace = self._spool_root.child(_SPOOL_NAMESPACE)
+        try:
+            directory = namespace.child(session_id)
+            try:
+                if set(os.listdir(directory.fileno())) != names:
+                    raise BundleCorruptionError("adaptive spool changed before cleanup")
+                for name in names:
+                    os.unlink(name, dir_fd=directory.fileno())
+                os.fsync(directory.fileno())
+            finally:
+                directory.close()
+            os.rmdir(session_id, dir_fd=namespace.fileno())
+            os.fsync(namespace.fileno())
+        finally:
+            namespace.close()
 
     def session_ids(self) -> tuple[str, ...]:
         return tuple(session.session_id for session in self.iter_sessions())
@@ -623,3 +869,30 @@ class AdaptiveHopSessionWriter:
                 self._compressed.abort()
         finally:
             self._directory.close()
+
+
+class _SpoolingAdaptiveHopSessionWriter(AdaptiveHopSessionWriter):
+    """Seal on the capture filesystem, then atomically publish a verified RAID copy."""
+
+    def __init__(
+        self, writer: AdaptiveHopSessionWriter, store: AdaptiveHopIqStore, session_id: str
+    ) -> None:
+        self._writer = writer
+        self._store = store
+        self._session_id = session_id
+
+    def append(self, block: AdaptiveHopVisitBlock | HostAdaptiveHopVisitBlock) -> None:
+        self._writer.append(block)
+
+    def finish(
+        self,
+        receipt: AdaptiveHopReceiptV1,
+        *,
+        timing: PersistentHopUtcTimingAuthorityV1 | None,
+        queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
+    ) -> PublishedAdaptiveHopIqSession:
+        self._writer.finish(receipt, timing=timing, queue_telemetry=queue_telemetry)
+        return self._store._transfer_spooled_session(self._session_id)
+
+    def abort(self) -> None:
+        self._writer.abort()

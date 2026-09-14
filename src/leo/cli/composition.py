@@ -327,6 +327,7 @@ class CliSettings:
     scanner_host_decision_manifest_path: Path | None = None
     scanner_host_decision_manifest_sha256: str | None = None
     scanner_adaptive_sample_rates_hz: tuple[int, ...] = (2_500_000, 5_000_000)
+    scanner_adaptive_spool_root: Path | None = None
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
     ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
     direct_async_enabled: bool = False
@@ -412,6 +413,19 @@ class CliSettings:
             or not 1 <= self.scanner_persistent_queue_capacity_visits <= 256
         ):
             raise ValueError("adaptive storage queue capacity must be an integer within 1..256")
+        if self.scanner_adaptive_spool_root is not None:
+            spool = self.scanner_adaptive_spool_root
+            if (
+                not spool.is_absolute()
+                or spool == Path("/mnt/qnap01")
+                or Path("/mnt/qnap01") in spool.parents
+                or spool == self.bulk_root
+                or self.bulk_root in spool.parents
+                or self.scanner_hop_policy == "fixed"
+            ):
+                raise ValueError(
+                    "adaptive spool must be an absolute local path outside bulk storage"
+                )
         if self.scanner_glrt is not None:
             if not isinstance(self.scanner_glrt, ScannerGlrtOptions):
                 raise ValueError("scanner GLRT options have an invalid type")
@@ -663,6 +677,11 @@ class CliSettings:
                     for rate in values.get(
                         "LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ", "2500000,5000000"
                     ).split(",")
+                ),
+                scanner_adaptive_spool_root=(
+                    Path(values["LEO_SCANNER_ADAPTIVE_SPOOL_ROOT"])
+                    if values.get("LEO_SCANNER_ADAPTIVE_SPOOL_ROOT")
+                    else None
                 ),
                 scanner_persistent_transition_guard_us=int(
                     values.get("LEO_SCANNER_PERSISTENT_TRANSITION_GUARD_US", "1000")
@@ -1904,6 +1923,7 @@ class LocalAcquisitionBackend:
                 "adaptive capture cancelled before radio setup", ExitCode.CONFLICT
             )
         self._admit_persistent_hop_iq(geometry)
+        self._admit_adaptive_spool(geometry)
         plan = (
             host_plan
             if host_plan is not None
@@ -2972,10 +2992,30 @@ class LocalAcquisitionBackend:
 
     def _adaptive_hop_iq_store(self) -> AdaptiveHopIqStore:
         if self._adaptive_hop_store is None:
-            self._adaptive_hop_store = self.hooks.adaptive_hop_store_factory(
-                self.settings.bulk_root
-            )
+            if self.hooks.adaptive_hop_store_factory is AdaptiveHopIqStore:
+                self._adaptive_hop_store = AdaptiveHopIqStore(
+                    self.settings.bulk_root,
+                    spool_root=self.settings.scanner_adaptive_spool_root,
+                )
+            else:
+                self._adaptive_hop_store = self.hooks.adaptive_hop_store_factory(
+                    self.settings.bulk_root
+                )
         return self._adaptive_hop_store
+
+    def _admit_adaptive_spool(self, plan: PersistentHopPlanV1) -> None:
+        root = self.settings.scanner_adaptive_spool_root
+        if root is None:
+            return
+        raw_iq_bytes = plan.nominal_device_sample_count * len(plan.receiver_ids) * 4
+        required_free_bytes = raw_iq_bytes + self.settings.safety_reserve_bytes
+        available_free_bytes = max(0, int(shutil.disk_usage(root).free))
+        if available_free_bytes < required_free_bytes:
+            raise CliBackendError(
+                "adaptive NVMe spool has insufficient free space for the uncompressed "
+                f"capture bound: needs {required_free_bytes}, has {available_free_bytes}",
+                ExitCode.CONFLICT,
+            )
 
     def _admit_persistent_hop_iq(self, plan: PersistentHopPlanV1) -> None:
         # Admit against the uncompressed upper bound. RF is never opened on a

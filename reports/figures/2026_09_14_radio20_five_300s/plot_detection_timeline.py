@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 
 HERE = Path(__file__).resolve().parent
 CAMPAIGN = Path(
-    "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/"
-    "five-300s-30ms-scan64-v1"
+    "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/five-300s-30ms-scan64-v1"
 )
 ROOT = CAMPAIGN.parent
 PRIMARY = [f"recording-{index}" for index in range(1, 6)]
@@ -39,11 +38,7 @@ def wilson(successes: int, trials: int) -> list[float]:
 
 
 def summarize_run(run: dict) -> dict:
-    return {
-        key: value
-        for key, value in run.items()
-        if key != "attempts"
-    } | {
+    return {key: value for key, value in run.items() if key != "attempts"} | {
         "maximum_single_pilot_power": max(
             item["max_single_pilot_power"] for item in run["attempts"]
         ),
@@ -103,11 +98,7 @@ def review(
 
 def main() -> None:
     campaign_summary = json.loads((HERE / "campaign-summary.json").read_text())
-    campaign_runs = {
-        run["name"]: run
-        for run in campaign_summary["runs"]
-        if run["name"] in PRIMARY
-    }
+    campaign_runs = {run["name"]: run for run in campaign_summary["runs"] if run["name"] in PRIMARY}
     current = [
         review(
             name,
@@ -176,7 +167,12 @@ def main() -> None:
         axes[0].scatter(
             [item["elapsed_s"] for item in hits],
             [item["max_single_pilot_power"] for item in hits],
-            marker="*", s=180, color=color, edgecolor="black", linewidth=0.7, zorder=5,
+            marker="*",
+            s=180,
+            color=color,
+            edgecolor="black",
+            linewidth=0.7,
+            zorder=5,
         )
     axes[0].set(
         title="All five 30-MS/s recordings: acquisition evidence through time",
@@ -184,8 +180,13 @@ def main() -> None:
         ylabel="Maximum single-pilot ranking power",
     )
     axes[0].text(
-        0.99, 0.96, "star = actual FPGA handoff\nline = proposal evidence only",
-        transform=axes[0].transAxes, ha="right", va="top", fontsize=9,
+        0.99,
+        0.96,
+        "star = actual FPGA handoff\nline = proposal evidence only",
+        transform=axes[0].transAxes,
+        ha="right",
+        va="top",
+        fontsize=9,
         bbox={"facecolor": "white", "edgecolor": "0.8", "alpha": 0.9},
     )
     axes[0].grid(alpha=0.2)
@@ -199,17 +200,28 @@ def main() -> None:
         axes[1].hlines(row, 0, run["duration_s"], color=line_color, lw=2.2, alpha=0.75)
         axes[1].scatter(
             [item["elapsed_s"] for item in run["attempts"]],
-            [row] * len(run["attempts"]), s=7, marker="|", color=line_color, alpha=0.55,
+            [row] * len(run["attempts"]),
+            s=7,
+            marker="|",
+            color=line_color,
+            alpha=0.55,
         )
         hits = [item for item in run["attempts"] if item["handoff"]]
         axes[1].scatter(
-            [item["terminal_elapsed_s"] for item in hits], [row] * len(hits),
-            marker="*", s=130, color="#009E73", edgecolor="black", linewidth=0.6, zorder=5,
+            [item["terminal_elapsed_s"] for item in hits],
+            [row] * len(hits),
+            marker="*",
+            s=130,
+            color="#009E73",
+            edgecolor="black",
+            linewidth=0.6,
+            zorder=5,
         )
     axes[1].axhline(len(historical) - 0.5, color="black", lw=0.8)
     axes[1].set(
         title="Actual handoffs versus all earlier comparable 30-MS/s scan64 dwells",
-        xlabel="Elapsed dwell time (s)", ylabel="Dwell",
+        xlabel="Elapsed dwell time (s)",
+        ylabel="Dwell",
     )
     axes[1].set_yticks(range(len(labels)), labels)
     axes[1].invert_yaxis()
@@ -218,7 +230,10 @@ def main() -> None:
         0.99,
         0.96,
         "grey = previous 10.066-s dwells\nblue = current campaign\nstar = actual FPGA handoff",
-        transform=axes[1].transAxes, ha="right", va="top", fontsize=9,
+        transform=axes[1].transAxes,
+        ha="right",
+        va="top",
+        fontsize=9,
         bbox={"facecolor": "white", "edgecolor": "0.8", "alpha": 0.9},
     )
     fig.savefig(HERE / "detection-timeline-comparison.png", dpi=180)
