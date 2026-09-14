@@ -1437,3 +1437,67 @@ physical captures at both rates still require a detectable reference signal
 before supported native feedback and physical loss/reacquisition can be
 qualified; the antenna/LNB connection, power and pointing question remains
 unanswered. The earlier bounded supported 30-MS/s result is not withdrawn.
+
+## Confirmed receive path exposes weak peaks missed by the shortlist
+
+On September 14 the user confirms the antenna/LNB connection, LNB power and
+pointing. This resolves the previously unanswered receive-path question.
+After a verified external lease holder exits, one bounded CH3 capture runs
+on .20 at 30 MS/s with the existing scan64 executable and unchanged gates.
+No new firmware is built or deployed.
+
+The capture returns 1083 blocks and exports 7.098626 seconds of IQ at
+2.5 MS/s. Six searches yield 0/48 accepted historical measurements, no
+handoff and no native or observer measurements. Independent review passes
+219,978 coarse-grid values, 384 ranking scores, 102 resolver hypotheses and
+48 moment/dense fits, including source freshness and overlapping retained
+IQ. There are zero active CDC/pacer drops; maximum refill gap is 6.983 ms.
+Scan plus ranking takes 585.254–636.295 ms and worker processing takes
+575.935–579.349 ms.
+
+An offline diagnostic bypasses shortlist pruning: it evaluates all integer
+epoch offsets 0 through 9998, each with a 4096-bin full-pilot ranking FFT,
+in each of these six retained scan windows. The same calculation includes
+the earlier successful 30-MS/s scan as a positive comparison. All 448
+original shortlisted powers match this calculation. Three contiguous
+3333-offset groups retain their maxima; each of these 21 maxima agrees
+with an explicit direct DFT. The saved arrays retain maximum power and
+winning FFT bin per delay, not the entire delay/frequency surface.
+
+The new windows contain repeating pilot-like peaks separated by 3333 or
+3334 samples. Their strongest powers per window range from 0.011990 to
+0.020259, while the original shortlist peaks range from 0.003736 to
+0.004834. Thus the shortlist misses stronger reference responses. The
+successful comparison window reaches 0.102873 under the same exhaustive
+calculation. These measurements do not establish RF identity or calibrated
+false-alarm rates.
+
+A subsequent 16,384-bin frequency search within ±2 integer samples of each
+group winner checks all 105 evaluations against direct DFTs. The largest
+recent peak rises to 0.023191, compared with 0.121226 in the successful
+window. Recent peak CFO estimates decrease consistently from approximately
+529.3 kHz to 509.8 kHz across the six searches. These are single-pilot
+ranking quantities, not worker/dense-fit acceptance decisions or measured
+tracking accuracy. No handoff is inferred from them.
+
+This result changes the diagnosis: absence of a supported acquisition does
+not mean absence of a pilot-like response. The confirmed receive path has
+weak, repeating responses that the current shortlist misses. The next
+acquisition question is whether they can be recovered within the ARM
+budget and yield accepted history with unchanged gates. Exhaustive host
+ranking is diagnostic only; ARM cost, causal startup and native feedback
+are not qualified by it.
+
+Identity/image and TX-safe state agree before and after; all 2,931,897
+artifact bytes are retrieved and temporary radio files removed. Radio .20
+remains idle on the 30-MS/s image, boot
+`7c103cbd-d589-4ed2-aeea-da2fce8f5a80`, CH3 LO 1,690,312,498 Hz, gain 30 dB,
+2.5-MHz RF bandwidth and TX disabled. Supported 60-MS/s tracking, repeatable
+longer supported operation and physical loss/reacquisition remain open.
+
+The [operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/operator.json),
+[capture review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/capture-review.json),
+[exhaustive ranking result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/full-delay/result.json)
+and [finer ranking result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/full-delay/refined.json)
+retain the evidence. Worker/capture journals, per-delay maxima and
+diagnostic sources accompany them; no production acceptance gates change.
