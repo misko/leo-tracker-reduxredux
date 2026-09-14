@@ -50,10 +50,12 @@ def _seconds(text: str) -> float:
 
 
 def next_pending(captures, presentation, *, probe_stride_ms: int) -> str | None:
-    """Resume saved work before older unstarted captures; never read IQ to select.
+    """Resume saved work, then keep native 10M captures current; never read IQ.
 
-    Finish metrics-only jobs first. Oldest creation time breaks ties, preventing
-    a newly arriving capture from repeatedly preempting an unfinished one.
+    Finish metrics-only and partial jobs first. A newly published native capture
+    precedes the historical legacy backlog so its complete overview and tracking
+    products can be published before the next ten-minute acquisition. Legacy
+    work retains oldest-first ordering.
     """
     selected = None
     for capture in captures.iter_sessions():
@@ -62,8 +64,20 @@ def next_pending(captures, presentation, *, probe_stride_ms: int) -> str | None:
             raise ValueError("published adaptive capture disappeared during selection")
         if status.state == "figures_ready":
             continue
-        priority = {"metrics_complete": 0, "partial": 1, "not_started": 2}[status.state]
-        candidate = (priority, capture.manifest.created_utc_ns, capture.session_id)
+        host_native = isinstance(
+            getattr(capture.manifest, "receipt", None), HostAdaptiveHopReceiptV2
+        )
+        priority = {
+            "metrics_complete": 0,
+            "partial": 1,
+            "not_started": 2 if host_native else 3,
+        }[status.state]
+        creation_order = (
+            -capture.manifest.created_utc_ns
+            if host_native and status.state == "not_started"
+            else capture.manifest.created_utc_ns
+        )
+        candidate = (priority, creation_order, capture.session_id)
         if selected is None or candidate < selected:
             selected = candidate
     return selected[2] if selected is not None else None

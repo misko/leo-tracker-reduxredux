@@ -12,8 +12,11 @@ from leo.cli.composition import CompositionHooks, LocalAcquisitionBackend
 from leo.cli.runner import ContinuousAcquisitionRunner
 from leo.radio.host_decision_release import HostDecisionRelease
 from leo.scanner.adaptive_hop_application import AdaptiveHopCaptureError
-from leo.scanner.host_adaptive import HOST_ADAPTIVE_PROFILE_ID
-from leo.scanner.host_adaptive_schedule import HostAdaptiveScheduledScannerIntentV4
+from leo.scanner.host_adaptive import HOST_ADAPTIVE_PROFILE_ID, HOST_ADAPTIVE_RX0_PROFILE_ID
+from leo.scanner.host_adaptive_schedule import (
+    HostAdaptiveRx0ScheduledScannerIntentV5,
+    HostAdaptiveScheduledScannerIntentV4,
+)
 from leo.scanner.schedule import canonical_scheduled_scanner_operation_key
 from leo.scanner.single_rx import parse_scheduled_scanner_intent
 from tests.cli.test_adaptive_hop_schedule import RecordingStore, ScheduledFixtureRadio
@@ -44,10 +47,10 @@ class NativeRadio(ScheduledFixtureRadio):
         )
 
 
-def fixture(tmp_path, mode="adaptive", fault=None):
+def fixture(tmp_path, mode="adaptive", fault=None, profile=HOST_ADAPTIVE_PROFILE_ID):
     settings = _settings(
         tmp_path,
-        scanner_profile=HOST_ADAPTIVE_PROFILE_ID,
+        scanner_profile=profile,
         scanner_hop_policy=mode,
         scanner_interval_seconds=600,
         scanner_adaptive_sample_rates_hz=(10_000_000,),
@@ -72,6 +75,20 @@ def fixture(tmp_path, mode="adaptive", fault=None):
     )
     backend._capture_authority = _RecordingAuthority(events)
     return backend, radio, store, events
+
+
+def test_fixed_rx0_profile_schedules_only_rx0_and_round_trips(tmp_path):
+    backend, _radio, store, _events = fixture(tmp_path, profile=HOST_ADAPTIVE_RX0_PROFILE_ID)
+    try:
+        slots = [datetime(2026, 9, 13, tzinfo=UTC) + timedelta(minutes=10 * i) for i in range(20)]
+        scheduled = [intent(backend, slot) for slot in slots]
+        assert all(isinstance(item, HostAdaptiveRx0ScheduledScannerIntentV5) for item in scheduled)
+        assert {item.configuration.receiver_ids for item in scheduled} == {(0,)}
+        assert [
+            parse_scheduled_scanner_intent(item.model_dump(mode="json")) for item in scheduled
+        ] == scheduled
+    finally:
+        store.close()
 
 
 def test_host_adaptive_queue_accepts_measured_storage_stall_capacity(tmp_path):

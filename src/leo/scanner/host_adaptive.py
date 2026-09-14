@@ -24,6 +24,7 @@ from leo.scanner.adaptive_hop import (
 from leo.scanner.single_rx import SingleRxPersistentHopPlanV2
 
 HOST_ADAPTIVE_PROFILE_ID = "adaptive-single-rx-random-10m-300s-v1"
+HOST_ADAPTIVE_RX0_PROFILE_ID = "adaptive-single-rx0-10m-300s-v1"
 Finite = Annotated[float, Field(allow_inf_nan=False)]
 Duration = Annotated[float, Field(ge=0, allow_inf_nan=False)]
 Outcome = Literal["unknown", "detected", "not_detected"]

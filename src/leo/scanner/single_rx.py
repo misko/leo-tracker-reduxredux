@@ -34,6 +34,10 @@ def parse_scheduled_scanner_intent(payload: dict) -> ScheduledScannerRunIntentV1
         from leo.scanner.host_adaptive_schedule import HostAdaptiveScheduledScannerIntentV4
 
         return HostAdaptiveScheduledScannerIntentV4.model_validate(payload)
+    if version == 5:
+        from leo.scanner.host_adaptive_schedule import HostAdaptiveRx0ScheduledScannerIntentV5
+
+        return HostAdaptiveRx0ScheduledScannerIntentV5.model_validate(payload)
     if version == 2:
         return SingleRxScheduledScannerIntentV2.model_validate(payload)
     if version == 3:

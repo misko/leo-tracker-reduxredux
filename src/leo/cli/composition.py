@@ -189,11 +189,17 @@ from leo.scanner import (
 from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPolicyV1
 from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource
-from leo.scanner.host_adaptive import HOST_ADAPTIVE_PROFILE_ID, HostAdaptiveHopPlanV2
+from leo.scanner.host_adaptive import (
+    HOST_ADAPTIVE_PROFILE_ID,
+    HOST_ADAPTIVE_RX0_PROFILE_ID,
+    HostAdaptiveHopPlanV2,
+)
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio
 from leo.scanner.host_adaptive_schedule import (
+    HostAdaptiveRx0ScheduledScannerIntentV5,
     HostAdaptiveScheduledScannerIntentV4,
     compile_host_adaptive_hop_plan,
+    compile_host_adaptive_rx0_scanner_intent,
     compile_host_adaptive_scanner_intent,
 )
 from leo.station.resolver import FixtureAuthorityFileReference
@@ -335,11 +341,15 @@ class CliSettings:
     def __post_init__(self) -> None:
         from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID
 
-        host_adaptive = self.scanner_profile == HOST_ADAPTIVE_PROFILE_ID
+        host_adaptive = self.scanner_profile in (
+            HOST_ADAPTIVE_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_PROFILE_ID,
+        )
         if self.scanner_profile not in (
             "alternating-2p5m-5m",
             SINGLE_RX_PROFILE_ID,
             HOST_ADAPTIVE_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_PROFILE_ID,
         ):
             raise ValueError("unknown scheduled scanner profile")
         if host_adaptive and (
@@ -1450,9 +1460,9 @@ class LocalAcquisitionBackend:
         if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
         expected_operation_key = canonical_scheduled_scanner_operation_key(scheduled_for)
-        if (
-            operation_key != expected_operation_key
-            and self.settings.scanner_profile != HOST_ADAPTIVE_PROFILE_ID
+        if operation_key != expected_operation_key and self.settings.scanner_profile not in (
+            HOST_ADAPTIVE_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_PROFILE_ID,
         ):
             raise CliBackendError(
                 "scheduled scanner operation key disagrees with its UTC cadence slot",
@@ -1464,11 +1474,19 @@ class LocalAcquisitionBackend:
             for radio in self.settings.radios
             if radio.radio_id == self.settings.scanner_radio_id
         )
-        if self.settings.scanner_profile == HOST_ADAPTIVE_PROFILE_ID:
+        if self.settings.scanner_profile in (
+            HOST_ADAPTIVE_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_PROFILE_ID,
+        ):
             release = self._host_decision_release()
             mode = self.settings.scanner_hop_policy
             assert mode in ("shadow", "adaptive")
-            intent = compile_host_adaptive_scanner_intent(
+            host_compiler = (
+                compile_host_adaptive_rx0_scanner_intent
+                if self.settings.scanner_profile == HOST_ADAPTIVE_RX0_PROFILE_ID
+                else compile_host_adaptive_scanner_intent
+            )
+            intent = host_compiler(
                 radio_id=configured.radio_id,
                 radio_serial=configured.serial or configured.radio_id,
                 scheduled_for=scheduled_for,
@@ -1856,7 +1874,10 @@ class LocalAcquisitionBackend:
                 kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
                 samples_per_block=self.settings.scanner_persistent_samples_per_block,
             )
-            if isinstance(intent, HostAdaptiveScheduledScannerIntentV4)
+            if isinstance(
+                intent,
+                (HostAdaptiveScheduledScannerIntentV4, HostAdaptiveRx0ScheduledScannerIntentV5),
+            )
             else None
         )
         geometry = (

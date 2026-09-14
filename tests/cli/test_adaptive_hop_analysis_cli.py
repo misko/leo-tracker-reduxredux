@@ -8,6 +8,7 @@ import leo.cli.adaptive_hop_analysis as cli
 import leo.scanner.adaptive_hop_analysis as detector
 from leo.storage.persistent_hop_analysis import PersistentHopAnalysisStore
 from leo.storage.persistent_hop_analysis_v2 import PersistentHopAnalysisStoreV2
+from tests.scanner.host_adaptive_fixtures import host_receipt
 from tests.scanner.test_persistent_hop_standard_analysis import _fake_fractional_dwell
 from tests.storage.test_adaptive_hop_history import publish_capture
 
@@ -33,6 +34,32 @@ def test_pending_selection_resumes_then_orders_oldest_without_reading_iq():
     assert cli.next_pending(captures, presentation, probe_stride_ms=10) == "new"
     states["new"] = "figures_ready"
     assert cli.next_pending(captures, presentation, probe_stride_ms=10) is None
+
+
+def test_pending_selection_prioritizes_newest_native_capture_before_legacy_backlog():
+    states = {"legacy": "not_started", "native-old": "not_started", "native-new": "not_started"}
+    captures = SimpleNamespace(
+        iter_sessions=lambda: iter(
+            (
+                SimpleNamespace(
+                    session_id="legacy",
+                    manifest=SimpleNamespace(created_utc_ns=1, receipt=None),
+                ),
+                SimpleNamespace(
+                    session_id="native-old",
+                    manifest=SimpleNamespace(created_utc_ns=2, receipt=host_receipt()),
+                ),
+                SimpleNamespace(
+                    session_id="native-new",
+                    manifest=SimpleNamespace(created_utc_ns=3, receipt=host_receipt()),
+                ),
+            )
+        )
+    )
+    presentation = SimpleNamespace(status=lambda name, **kw: SimpleNamespace(state=states[name]))
+    assert cli.next_pending(captures, presentation, probe_stride_ms=120) == "native-new"
+    states["native-old"] = "partial"
+    assert cli.next_pending(captures, presentation, probe_stride_ms=120) == "native-old"
 
 
 @pytest.mark.parametrize("stride", [10, 120])
