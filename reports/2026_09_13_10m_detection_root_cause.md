@@ -6,10 +6,10 @@ The recent sparse production captures selected physical RX1 on radio
 `104000bac4950008230026001b440a003a`. Saved same-radio 10 MS/s qualification
 captures show strong signals and detections on RX0, but nearly noise-only input
 on RX1. The failure is localized to the RX1 acquisition/input path, upstream of
-offline analysis and host decimation. The exact physical cause is not established
-by saved IQ: cabling, LNB power, RF port selection and receiver hardware remain
-possibilities. No new RF acquisition, radio settings change or scanner restart
-was performed for this investigation.
+offline analysis and host decimation. The user subsequently confirmed that only
+RX0 is connected to an antenna feed; RX1 is intentionally unconnected. No new RF
+acquisition, radio settings change or scanner restart was performed for this
+investigation.
 
 | Same-radio 10 MS/s evidence | Adaptive RX0 canary | Adaptive RX1 canary |
 | --- | ---: | ---: |
@@ -73,9 +73,8 @@ used the deployed interpreter and detector with BLAS/OMP/MKL limited to one.
 PPU `configure_source_locked_receiver_geometry` selects the requested physical
 channels, applies manual gain to each selected channel, and checks rate,
 bandwidth, channel identity, gain mode and gain readback. Inspection found no
-obvious RX0-only gain assignment when selecting RX1. This source check cannot
-prove correct external wiring or analog path health, nor exclude a lower-level
-hardware routing problem.
+obvious RX0-only gain assignment when selecting RX1. This source check is
+consistent with the confirmed external wiring.
 
 Random selection permits consecutive RX1 recordings; it does not alternate RXs.
 That exposes the weak path and explains why recent production looks far worse
@@ -91,12 +90,13 @@ broad if read as evidence of comparable detection sensitivity on both inputs.
 
 ## Corrective direction
 
-Confirm which RX connectors on radio003a have powered antenna/LNB feeds. If only
-RX0 has a valid feed, random selection must be restricted to that eligible input;
-the existing user-requested random-RX profile has not been changed by this RCA.
-If both should have feeds, inspect RX1 cabling/power/port configuration and use a
-separately authorized bounded swap/control test to isolate feed versus receiver.
-Do not lower detector thresholds to conceal absent input signal.
+Only RX0 has a valid feed, so production should be restricted to RX0 while the
+wiring remains unchanged. The existing random-RX profile was not changed by this
+RCA or by publishing its web explanation. Do not lower detector thresholds to
+conceal absent input signal.
+
+The production UI links a concise version of this RCA from native radio003a
+Adaptive Scan details at `/reports/radio003a-rx-input-rca.html`.
 
 Separately, cross-channel trajectory/TLE plots remain unavailable because these
 captures lack qualified UTC timing. That does not cause the missing GLRT/CFO
