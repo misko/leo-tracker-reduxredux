@@ -1,0 +1,100 @@
+{
+  "identity_caveat": "Detector-positive pilot evidence is not independent proof of Starlink identity.",
+  "current_fpga_campaign": {
+    "native_rate_sps": 30000000,
+    "exported_acquisition_rate_sps": 2500000,
+    "rf_seconds": 1344.2547711999998,
+    "qualified_tracking_seconds": 2.672,
+    "qualified_tracking_time_percent": 0.19877184424011662,
+    "successful_dwells": 1,
+    "dwell_count": 5,
+    "dwell_hit_percent": 20.0,
+    "timeline": [
+      {
+        "name": "recording-1",
+        "duration_s": 294.912,
+        "handoff_times_s": [],
+        "qualified_tracking_intervals": []
+      },
+      {
+        "name": "recording-2",
+        "duration_s": 294.912,
+        "handoff_times_s": [],
+        "qualified_tracking_intervals": []
+      },
+      {
+        "name": "recording-3",
+        "duration_s": 294.912,
+        "handoff_times_s": [],
+        "qualified_tracking_intervals": []
+      },
+      {
+        "name": "recording-4",
+        "duration_s": 164.6067712,
+        "handoff_times_s": [
+          143.783540268,
+          162.575286853
+        ],
+        "qualified_tracking_intervals": [
+          {
+            "start_s": 143.783540268,
+            "end_s": 144.455540268,
+            "duration_s": 0.672,
+            "results": 504,
+            "supported": 383
+          },
+          {
+            "start_s": 162.575286853,
+            "end_s": 164.575286853,
+            "duration_s": 2.0,
+            "results": 1500,
+            "supported": 907
+          }
+        ]
+      },
+      {
+        "name": "recording-5",
+        "duration_s": 294.912,
+        "handoff_times_s": [],
+        "qualified_tracking_intervals": []
+      }
+    ]
+  },
+  "earlier_same_handoff_detector": {
+    "successful_dwells": 1,
+    "dwell_count": 5,
+    "dwell_hit_percent": 20.0
+  },
+  "historical_2p5_msps_lightweight_scanner": {
+    "runs": [
+      {
+        "name": "Sep 10 live adaptive",
+        "positive": 1991,
+        "visits": 2357,
+        "capture_duty_percent": 94.2621,
+        "source": "reports/2026_09_10_scanner_live.md",
+        "positive_visit_percent": 84.47178616885871
+      },
+      {
+        "name": "Sep 10 LNB verification",
+        "positive": 1452,
+        "visits": 2364,
+        "capture_duty_percent": 94.5317,
+        "source": "reports/2026_09_10_scanner_lnb_live_checkpoint.md",
+        "positive_visit_percent": 61.421319796954315
+      },
+      {
+        "name": "Sep 10 production rollout",
+        "positive": 1475,
+        "visits": 2364,
+        "capture_duty_percent": 94.5483,
+        "source": "reports/2026_09_10_scanner_production_rollout.md",
+        "positive_visit_percent": 62.39424703891709
+      }
+    ],
+    "pooled_positive": 4918,
+    "pooled_visits": 7085,
+    "pooled_positive_visit_percent": 69.41425546930134,
+    "comparability": "These 120-ms visits hop across eight targets and use a lightweight positive-only detector. They are not equivalent to a four-pilot FPGA handoff."
+  }
+}
