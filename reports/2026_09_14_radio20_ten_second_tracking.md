@@ -12,6 +12,14 @@ The second physical run reached four handoffs in 80.0129024 seconds and complete
 
 This is a material acquisition improvement, but it does not qualify ten-second tracking. The strict operator reports the second run as failed because the fourth clean loss occurred after the configured three-restart budget; independent epoch, ownership and journal review passes all four cleanly drained episodes. The contrast between 18/18 supported coarse observations and 4/136 supported native estimates makes native-path support the next limiter. Increasing the episode length again would not help.
 
+## Same-pilot diagnosis
+
+The run retained coarse IQ for the first 64 native results. Independent review binds each coarse window to the corresponding native head, recomputes both estimators, and verifies their original acceptance decisions. All 64 coarse measurements pass; only 4 of the same 64 pilots pass in the native domain. Median coherence is 0.07163 coarse and 0.04492 native around the unchanged 0.05 gate.
+
+The pilot itself is largely preserved. Median coarse/native matched-energy ratio is 0.8183, close to the earlier filter-transfer prediction, while coarse/native total-energy ratio is 0.5193. The higher native-band total energy explains most of the coherence reduction. A timing search still supports all 64 coarse windows, so timing error is not the dominant loss in this cohort.
+
+This argues against lowering the native threshold from this post-selected run. The next lean experiment should replay a causal coarse-authority continuation on the retained episodes: use the already filtered 2.5-MS/s observer trend to schedule the existing 30-MS/s FPGA jobs, keep native estimates as separately labeled diagnostics, and preserve all current false-positive and source-continuity gates. If that survives held-out controls, it provides a direct FPGA+ARM path without pretending that coherence values from two bandwidths share one calibrated threshold.
+
 | Stage | Rate | Result | Remaining risk |
 |---|---:|---|---|
 | FPGA IQ intake | 30 MS/s | Zero CDC/pacer drops in both runs | Longer service operation remains unqualified |
@@ -21,10 +29,10 @@ This is a material acquisition improvement, but it does not qualify ten-second t
 | FPGA scheduled tracking | 750 measurements/s | 136 results; longest episode 74 results | Native coherence support collapses almost immediately |
 | ARM passive observer | 83.33 measurements/s | 18/18 supported beside the four episodes | Diagnostic only; it has no feedback authority |
 
-The most stable next step is to use these paired episodes to isolate the native/coarse support difference and test a causal refinement or path-specific normalization on retained evidence. Any feedback change should first reproduce the existing 18 supported coarse observations, preserve the current false-positive controls, and then be admitted as another opt-in profile. The ten-second ceiling should remain in place so the next successful native-support change can be measured without another artificial two-second stop.
+The most stable next step is a retained-IQ causal replay of coarse-authority continuation, followed by an opt-in live profile only if the controls remain rejected. The ten-second ceiling should remain in place so the next successful support change can be measured without another artificial two-second stop.
 
 ## Evidence and state
 
-Machine-readable reviews are preserved for the [three-frame run](figures/2026_09_14_radio20_track10/observer3-independent-review.json), [nine-frame run](figures/2026_09_14_radio20_track10/observer9-independent-review.json), [first zero-RF check](figures/2026_09_14_radio20_track10/observer3-zero-rf-smoke.json), and [second zero-RF check](figures/2026_09_14_radio20_track10/observer9-zero-rf-smoke.json).
+Machine-readable reviews are preserved for the [three-frame run](figures/2026_09_14_radio20_track10/observer3-independent-review.json), [nine-frame run](figures/2026_09_14_radio20_track10/observer9-independent-review.json), [same-pilot comparison](figures/2026_09_14_radio20_track10/paired-coherence-review.json), [first zero-RF check](figures/2026_09_14_radio20_track10/observer3-zero-rf-smoke.json), and [second zero-RF check](figures/2026_09_14_radio20_track10/observer9-zero-rf-smoke.json).
 
 Both evidence sets were written to `/srv/postgres-nvme` first, copied through a RAID partial directory, checked against `SHA256SUMS`, and atomically finalized beneath `/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/`. The SSD sources remain present. The radio finished on `glrt-iq-tracking-r30000000-v1`, with all IIO buffers disabled and TX powered down at -80 dB.
