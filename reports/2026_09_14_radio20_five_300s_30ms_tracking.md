@@ -79,8 +79,9 @@ The new `scan80-local2` profile uses a deliberately staged search:
 
 1. Keep the best 80 inexpensive coarse proposals.
 2. Test each proposal at coarse timing offsets -2 through +2 with a 512-sample pilot prefix and a 512-point frequency FFT.
-3. Send only the best adjusted proposal to the unchanged four-pilot resolver and acceptance gates.
-4. Build the required eight-observation startup history every third 750-Hz frame, matching the already measured passive-observer cadence.
+3. For scan80 only, send proposals with normalized prefix power at least 0.03 to the unchanged four-pilot resolver. Usually prefilter weaker proposals, but send every fourth weak attempt through the full resolver so weak-signal sensitivity is never permanently disabled.
+4. Send only the best adjusted proposal to the unchanged four-pilot resolver and acceptance gates.
+5. Build the required eight-observation startup history every third 750-Hz frame, matching the already measured passive-observer cadence.
 
 Across the retained cuts, the earlier scan64 path handed off on 4/13 positive cuts and 0/13 controls. The new path handed off on 5/13 positives and 0/13 controls. The recovered cut's proposal was raw coarse rank 79 and needed a +2-sample adjustment. With the former nine-frame startup cadence it retained only 6 accepted observations and could not hand off; the three-frame cadence retained 42 and completed handoff. The acceptance thresholds and required eight-observation history were not relaxed.
 
@@ -88,11 +89,13 @@ Across the retained cuts, the earlier scan64 path handed off on 4/13 positive cu
 
 The exact new ranking loop was cross-compiled for ARM and run ten times on radio `.20`, serial `1040005e0b100007100010000bf33a5d4d`, against the recovered physical cut. It took 81.594 ms mean, 81.196 ms minimum and 82.386 ms maximum, and selected rank 79 with the expected +2 correction. Before and after the benchmark, the radio reported the 30-MS/s image, idle buffers, disabled DDS/TX DMA, -80 dB TX gain and powered-down TX LO. The benchmark used saved IQ and collected zero RF samples.
 
-The focused component suite passes 334 tests, and the stripped production ARM probe passed an executable-load and profile-admission smoke test on the same attested radio. Firmware source commit `ca0fbe768` is pushed on `codex/radio20-tracking-qualification`. The local qualification artifact now points to SHA-256 `64f3254be6460ea408c0fa181f361c470c0c7eaf71d2076bfcb92f6ca6dd4aab`; the previous scan64 binary is retained by its checksum for rollback.
+Applying the guarded prefilter to the 1,113 completed retained campaign scans sends 335 attempts to the resolver and skips it for 778, or 69.9%. Both observed physical handoffs remain resolver attempts. Using the measured 626-ms scan-and-rank and 570-ms resolver medians projects an attempt rate increase from 0.836 Hz to 1.254 Hz, about 1.50 times. This is a timing model over retained decisions; it still needs a short physical cadence measurement.
+
+Nine focused scan80 tests pass repeatedly, and 356 non-real-time component tests pass. The broader run passed 379/390 tests; its 11 failures are pre-existing wall-clock-sensitive native-feedback cases in profiles with rank budgets below 80, which this policy does not alter. The production ARM probe passed executable-load and profile-admission smoke on the same attested radio. Firmware source commit `ac5aa8227` is pushed on `codex/radio20-tracking-qualification`. The local qualification artifact now points to SHA-256 `8237642185fd4915fbf0eb2ce712b5089a5fd8bdad302384c83c68fb5aaf1d17`; both the prior scan80 artifact and scan64 artifact remain retained by checksum for rollback.
 
 This is a retained-IQ and ARM-timing improvement, not a new physical acquisition qualification. The capture authority is currently paused to preserve a failed RX artifact while storage queue exhaustion is investigated, so no live RF run was started. A short bounded physical comparison is the next acquisition gate after that operational issue is cleared and new RF collection is authorized.
 
-Machine-readable inputs and receipts are retained as [detection timeline summary](figures/2026_09_14_radio20_five_300s/detection-timeline-summary.json), [retained-cut evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-retained-evaluation.json), [ARM benchmark](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-arm-benchmark.json), and [radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-radio-smoke.json).
+Machine-readable inputs and receipts are retained as [detection timeline summary](figures/2026_09_14_radio20_five_300s/detection-timeline-summary.json), [retained-cut evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-retained-evaluation.json), [guarded-prefilter evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-evaluation.json), [ARM benchmark](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-arm-benchmark.json), [initial scan80 radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-radio-smoke.json), and [guarded-prefilter radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-radio-smoke.json).
 
 ## Tracking and reacquisition evidence
 
