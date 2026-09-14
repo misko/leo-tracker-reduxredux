@@ -10,6 +10,21 @@ The requested 300 seconds is a nominal ceiling. The finite profile exports 45,00
 
 ![Campaign duration and tracking outcomes](figures/2026_09_14_radio20_five_300s/campaign-overview.png)
 
+## Duty and longest track
+
+“Duty” has three different denominators in this campaign. They must not be combined into one percentage:
+
+| Measure | Calculation | Result | Interpretation |
+|---|---:|---:|---|
+| Active-capture data completeness | delivered samples / admitted samples, with zero CDC and pacer drops | 100% at counter resolution | The receive path did not report missing samples while each capture was active. This is a transport-completeness result, not wall-clock availability. |
+| Nominal campaign RF duty | 1,344.255 / (5 × 300 s) | 89.62% | Four recordings ran to their exact sample ceiling; recording 4 stopped early after successful completion. |
+| Exact-profile utilization | 1,344.255 / (5 × 294.912 s) | 91.16% | Uses the executable's realizable ceiling rather than the rounded 300-second request. |
+| Time executing native tracking in recording 4 | (504 + 1,500) / 750 / 164.607 | 1.62% | The remaining recording time was acquisition scanning, refinement, reacquisition and setup. |
+| Time executing native tracking across all five primary recordings | 2.672 / 1,344.255 | 0.20% | Only recording 4 handed off. |
+| Supported native estimates while tracking | 1,290 / 2,004 | 64.37% | This is estimator support, not capture duty. Rejected estimates remain retained evidence. |
+
+The longest uninterrupted native FPGA track was **2.000 seconds**, exactly 1,500 scheduled estimates at 750 Hz. An earlier episode in the same recording lasted **0.672 seconds** (504 estimates), then declared clean loss and returned to scanning. The campaign therefore establishes full sample delivery during active captures and a two-second longest qualified track. It does not establish full-duty tracking over a recording or continuous wall-clock operation.
+
 ## Fixed setup and rates
 
 | Component | Location | Rate or cadence | Role |
