@@ -386,6 +386,12 @@ def test_acquisition_loads_fixed_scanner_iiod_credentials_and_release_binary() -
     ) in service
     assert "CREDENTIALS_DIRECTORY" not in acquisition_environment
     assert "LEO_SCANNER_ENABLED=true" in acquisition_environment
+    assert "LEO_SCANNER_ADAPTIVE_SPOOL_ROOT=/srv/postgres-nvme/leo-scanner-spool" in (
+        acquisition_environment
+    )
+    assert (
+        service.count("/srv/postgres-nvme/leo-scanner-spool") == 2
+    )  # mount dependency and the narrow writable path
     assert (
         "LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH="
         "/opt/leo-tracker/releases/REPLACE_WITH_SELECTED_ACQUISITION_SHA/"

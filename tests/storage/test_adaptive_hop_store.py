@@ -221,6 +221,64 @@ def test_adaptive_manifest_publication_is_atomic_no_replace(tmp_path):
     store.close()
 
 
+def test_adaptive_spool_keeps_capture_writes_off_bulk_until_verified_publish(tmp_path, monkeypatch):
+    import leo.storage.adaptive_hop as storage
+
+    bulk = tmp_path / "bulk"
+    spool = tmp_path / "nvme"
+    bulk.mkdir()
+    spool.mkdir()
+    receipt = receipt_fixture(count=2)
+    store = AdaptiveHopIqStore(bulk, spool_root=spool)
+    writer = store.begin(receipt.session_id, receipt.plan)
+    writer.append(block_fixture(receipt, 0))
+    assert not (bulk / "scanner-adaptive-recordings").exists()
+    assert tuple((spool / "scanner-adaptive-spool" / receipt.session_id).glob("*.partial"))
+
+    original = storage._copy_regular_verified
+
+    def observe_hidden_copy(*args, **kwargs):
+        assert store.session_ids() == ()
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(storage, "_copy_regular_verified", observe_hidden_copy)
+    published = writer.finish(receipt, timing=timing_fixture(receipt))
+    assert store.verify(receipt.session_id) == published
+    assert not (spool / "scanner-adaptive-spool" / receipt.session_id).exists()
+    assert not tuple((bulk / "scanner-adaptive-recordings").glob(".transfer-*"))
+    store.close()
+
+
+def test_adaptive_spool_recovers_sealed_session_after_transfer_failure(tmp_path, monkeypatch):
+    import leo.storage.adaptive_hop as storage
+
+    bulk = tmp_path / "bulk"
+    spool = tmp_path / "nvme"
+    bulk.mkdir()
+    spool.mkdir()
+    receipt = receipt_fixture(count=2)
+    store = AdaptiveHopIqStore(bulk, spool_root=spool)
+    writer = store.begin(receipt.session_id, receipt.plan)
+    writer.append(block_fixture(receipt, 0))
+
+    def fail_copy(*_args, **_kwargs):
+        raise OSError("injected RAID failure")
+
+    monkeypatch.setattr(storage, "_copy_regular_verified", fail_copy)
+    with pytest.raises(OSError, match="injected RAID failure"):
+        writer.finish(receipt, timing=timing_fixture(receipt))
+    assert not store.session_ids()
+    assert (spool / "scanner-adaptive-spool" / receipt.session_id / "manifest.json").is_file()
+    store.close()
+
+    monkeypatch.undo()
+    recovered = AdaptiveHopIqStore(bulk, spool_root=spool)
+    assert recovered.session_ids() == (receipt.session_id,)
+    assert recovered.verify(receipt.session_id).manifest.receipt == receipt
+    assert not (spool / "scanner-adaptive-spool" / receipt.session_id).exists()
+    recovered.close()
+
+
 def test_adaptive_pinned_root_survives_path_replacement(tmp_path):
     root = tmp_path / "local"
     root.mkdir()

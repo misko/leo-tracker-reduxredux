@@ -66,6 +66,13 @@ The qualified runtime uses alternate iiOD port 30432, a 1 ms transition guard,
 and a 64-visit storage queue. The 16-visit storage queue is forbidden because it
 exhausted the kernel buffers during the first durable 2.5 MS/s attempt.
 
+Adaptive capture may set `LEO_SCANNER_ADAPTIVE_SPOOL_ROOT` to the dedicated
+`/srv/postgres-nvme/leo-scanner-spool` directory. The writer seals IQ on that
+NVMe filesystem after the radio closes, copies each manifest-bound file into a
+hidden RAID staging directory with digest and size verification, and atomically
+publishes the completed RAID directory. Startup resumes any sealed interrupted
+transfer; incomplete capture evidence remains reserved and is never overwritten.
+
 The release-specific acquisition environment binds
 `LEO_SCANNER_PERSISTENT_IIOD_BINARY_PATH` to
 `/opt/leo-tracker/releases/FULL_SHA/runtime/scanner-iiod/iiod`; a `current*`
