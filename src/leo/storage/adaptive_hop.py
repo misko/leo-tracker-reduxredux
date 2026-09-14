@@ -289,12 +289,18 @@ def _copy_regular_verified(
 
 class AdaptiveHopIqStore:
     def __init__(
-        self, root: Path, *, read_only: bool = False, spool_root: Path | None = None
+        self,
+        root: Path,
+        *,
+        read_only: bool = False,
+        spool_root: Path | None = None,
+        defer_spool_transfer: bool = False,
     ) -> None:
         self._root = PinnedLocalRoot(root)
         self._read_only = read_only
         self._spool_root = None if read_only or spool_root is None else PinnedLocalRoot(spool_root)
-        if self._spool_root is not None:
+        self._defer_spool_transfer = defer_spool_transfer
+        if self._spool_root is not None and not defer_spool_transfer:
             try:
                 self.recover_spooled_sessions()
             except BaseException:
@@ -891,7 +897,9 @@ class _SpoolingAdaptiveHopSessionWriter(AdaptiveHopSessionWriter):
         timing: PersistentHopUtcTimingAuthorityV1 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
     ) -> PublishedAdaptiveHopIqSession:
-        self._writer.finish(receipt, timing=timing, queue_telemetry=queue_telemetry)
+        sealed = self._writer.finish(receipt, timing=timing, queue_telemetry=queue_telemetry)
+        if self._store._defer_spool_transfer:
+            return sealed
         return self._store._transfer_spooled_session(self._session_id)
 
     def abort(self) -> None:

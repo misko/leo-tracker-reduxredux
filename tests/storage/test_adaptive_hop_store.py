@@ -279,6 +279,27 @@ def test_adaptive_spool_recovers_sealed_session_after_transfer_failure(tmp_path,
     recovered.close()
 
 
+def test_adaptive_spool_can_defer_raid_transfer_for_background_mover(tmp_path):
+    bulk = tmp_path / "bulk"
+    spool = tmp_path / "nvme"
+    bulk.mkdir()
+    spool.mkdir()
+    receipt = receipt_fixture(count=2)
+    capture_store = AdaptiveHopIqStore(bulk, spool_root=spool, defer_spool_transfer=True)
+    writer = capture_store.begin(receipt.session_id, receipt.plan)
+    writer.append(block_fixture(receipt, 0))
+    sealed = writer.finish(receipt, timing=timing_fixture(receipt))
+    assert sealed.manifest.receipt == receipt
+    assert capture_store.session_ids() == ()
+    assert (spool / "scanner-adaptive-spool" / receipt.session_id / "manifest.json").is_file()
+    capture_store.close()
+
+    mover = AdaptiveHopIqStore(bulk, spool_root=spool)
+    assert mover.verify(receipt.session_id).manifest_sha256 == sealed.manifest_sha256
+    assert not (spool / "scanner-adaptive-spool" / receipt.session_id).exists()
+    mover.close()
+
+
 def test_adaptive_pinned_root_survives_path_replacement(tmp_path):
     root = tmp_path / "local"
     root.mkdir()

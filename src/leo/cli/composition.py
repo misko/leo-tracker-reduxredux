@@ -2995,6 +2995,7 @@ class LocalAcquisitionBackend:
                 self._adaptive_hop_store = AdaptiveHopIqStore(
                     self.settings.bulk_root,
                     spool_root=self.settings.scanner_adaptive_spool_root,
+                    defer_spool_transfer=self.settings.scanner_adaptive_spool_root is not None,
                 )
             else:
                 self._adaptive_hop_store = self.hooks.adaptive_hop_store_factory(
