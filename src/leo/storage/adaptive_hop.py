@@ -234,8 +234,8 @@ class AdaptiveHopIqStore:
     ) -> QueuedAdaptiveHopSessionWriter:
         from leo.storage.adaptive_hop_queue import QueuedAdaptiveHopSessionWriter
 
-        if type(capacity_visits) is not int or not 1 <= capacity_visits <= 64:
-            raise ValueError("adaptive storage queue capacity must be within 1..64")
+        if type(capacity_visits) is not int or not 1 <= capacity_visits <= 256:
+            raise ValueError("adaptive storage queue capacity must be within 1..256")
         writer = self.begin(session_id, plan)
         try:
             return QueuedAdaptiveHopSessionWriter(writer, capacity_visits=capacity_visits)

@@ -28,8 +28,8 @@ class QueuedAdaptiveHopSessionWriter:
     """
 
     def __init__(self, writer: AdaptiveHopSessionWriter, *, capacity_visits: int) -> None:
-        if type(capacity_visits) is not int or not 1 <= capacity_visits <= 64:
-            raise ValueError("adaptive storage queue capacity must be within 1..64")
+        if type(capacity_visits) is not int or not 1 <= capacity_visits <= 256:
+            raise ValueError("adaptive storage queue capacity must be within 1..256")
         self._writer = writer
         self._queue: queue.Queue[AdaptiveHopVisitBlock | HostAdaptiveHopVisitBlock] = queue.Queue(
             capacity_visits

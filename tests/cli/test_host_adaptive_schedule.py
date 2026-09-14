@@ -74,6 +74,20 @@ def fixture(tmp_path, mode="adaptive", fault=None):
     return backend, radio, store, events
 
 
+def test_host_adaptive_queue_accepts_measured_storage_stall_capacity(tmp_path):
+    backend, _radio, store, _events = fixture(tmp_path)
+    try:
+        settings = replace(
+            backend.settings,
+            scanner_persistent_queue_capacity_visits=256,
+        )
+        assert settings.scanner_persistent_queue_capacity_visits == 256
+        with pytest.raises(ValueError, match="within 1..256"):
+            replace(settings, scanner_persistent_queue_capacity_visits=257)
+    finally:
+        store.close()
+
+
 def intent(backend, slot=datetime(2026, 9, 13, 0, 0, tzinfo=UTC)):
     return backend.scheduled_scanner_intent(
         operation_key=canonical_scheduled_scanner_operation_key(slot),
