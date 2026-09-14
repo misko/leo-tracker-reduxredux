@@ -2903,6 +2903,7 @@ def _stage_release(target: str) -> None:
         str(python),
         "--uv-bin",
         str(uv),
+        "--scanner-glrt",
         "--execute",
     )
     subprocess.run(command, check=True)
