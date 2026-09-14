@@ -1,0 +1,149 @@
+{
+  "schema": "radio20-observer9-track10-review-v1",
+  "status": "pass_bounded_clean_loss",
+  "operator_status": "failed",
+  "probe_exit_code": 1,
+  "live_tracking_qualified": false,
+  "interpretation": "The nine-frame catch-up profile reached four physical handoffs and three bounded reacquisitions with no FPGA transport drops. Every episode ended in clean native acquisition loss; the final loss followed exhaustion of the three-restart budget, so the strict operator retained a failed disposition. Ten-second tracking is not qualified.",
+  "serial": "1040005e0b100007100010000bf33a5d4d",
+  "sample_rate_sps": 30000000,
+  "profile": "45000-selected-observer9-scan80-local2-track10",
+  "rf_seconds": 80.0129024,
+  "attempts": 102,
+  "attempt_rate_hz": 1.2858117955300588,
+  "handoffs": 4,
+  "reacquisitions": 3,
+  "native_runs": 4,
+  "native_results": 136,
+  "native_supported": 4,
+  "longest_native_results": 74,
+  "longest_native_seconds": 0.09866666666666667,
+  "native_result_limit": 7500,
+  "native_seconds_limit": 10,
+  "native_episodes": [
+    {
+      "episode": 0,
+      "epoch": 16,
+      "results": 22,
+      "supported": 0,
+      "first_frame": 1055,
+      "last_frame": 1076,
+      "duration_s": 0.029333333333333333
+    },
+    {
+      "episode": 1,
+      "epoch": 17,
+      "results": 74,
+      "supported": 4,
+      "first_frame": 1070,
+      "last_frame": 1143,
+      "duration_s": 0.09866666666666667
+    },
+    {
+      "episode": 2,
+      "epoch": 18,
+      "results": 17,
+      "supported": 0,
+      "first_frame": 1069,
+      "last_frame": 1085,
+      "duration_s": 0.02266666666666667
+    },
+    {
+      "episode": 3,
+      "epoch": 19,
+      "results": 23,
+      "supported": 0,
+      "first_frame": 1063,
+      "last_frame": 1085,
+      "duration_s": 0.030666666666666665
+    }
+  ],
+  "observer_measurements": 18,
+  "observer_supported": 18,
+  "maximum_refill_gap_ns": 8573262,
+  "cdc_drops": 0,
+  "pacer_drops": 0,
+  "epoch_review": {
+    "status": "pass",
+    "scope": "bounded_reacquisition_epochs_and_native_ownership",
+    "epoch_bindings": [
+      [
+        9122201,
+        16,
+        1731560750050,
+        144296729171
+      ],
+      [
+        9122201,
+        17,
+        1733609406278,
+        144467450524
+      ],
+      [
+        9122201,
+        18,
+        1733799132323,
+        144483261027
+      ],
+      [
+        9122201,
+        19,
+        1733900386039,
+        144491698837
+      ]
+    ],
+    "episodes": [
+      {
+        "episode": 0,
+        "epoch": 16,
+        "results": 22,
+        "supported": 0,
+        "controller_result": -4
+      },
+      {
+        "episode": 1,
+        "epoch": 17,
+        "results": 74,
+        "supported": 4,
+        "controller_result": -4
+      },
+      {
+        "episode": 2,
+        "epoch": 18,
+        "results": 17,
+        "supported": 0,
+        "controller_result": -4
+      },
+      {
+        "episode": 3,
+        "epoch": 19,
+        "results": 23,
+        "supported": 0,
+        "controller_result": -4
+      }
+    ],
+    "reacquisitions": 3,
+    "native_results": 136,
+    "native_completed_runs": 0,
+    "paired_results": 64,
+    "native_results_per_completed_run": 7500,
+    "live_tracking_qualified": false
+  },
+  "artifact_sha256": {
+    "native.journal": "07c8babba4fb7f98c35faa9936d044839a885f382824a7f4ca97745ad58afb69",
+    "native-3.journal": "87f183f16551e5b93149a45ef745e1d364ed2cd1e225853b48fcf8c3855a7a49",
+    "stderr.txt": "048e2ba89ae430962e02f5341cf60c694fb7e131cb417790075a56b32ca09992",
+    "observer.jsonl": "c38bc87a933062b0501c8256bd5550ec74147118cf82efb3ada99899be544238",
+    "worker.jsonl": "82b3b04e025593172ba07ba7837dc985f460a408fc4c93dafd84b264d9fbc7d2",
+    "operator.json": "47cfd07f9be6e4352544cfb20a26e9986613ac2dd56b85ebdaa18d449fc5f3fa",
+    "grids.u32": "3a47d5d8dc4c34f81e216b4b705d24e43a6c10bfda534e92abe9e09d4984883e",
+    "worker.iq.ci16": "515da7ed6d9d3b9ca756d34158943499eb0be4f389f3a270d129986de0c13a79",
+    "native-2.journal": "c0650ca7e4a0dc30ad681f5b945132356901b532a6b4d5e4fb1d2e549548b215",
+    "native-1.journal": "329d4cd8f56f7bcaa730e06f62296ea77767f0406d4a288a6dc075b6d29ef036",
+    "native.coarse.ci16": "d2e11d1a6a78262972bc8313d8aaeb0e329e1cc3ec59daddbb39d0ff23695a3d",
+    "observer.iq.ci16": "7139daa9ee93b0413ebbd07a872f54407812b94a2744811ec02f9a85c003c6ec",
+    "stdout.json": "956e8630f916767253998606fd68ecd8ce20c248579f0b9eb5255350188650dd",
+    "scan.iq.ci16": "5c122c664e9c7d463d07863b93aefb7a5041e75b433f2a27b58e3a7226ef7dca",
+    "capture.txt": "0b0201b0d31fe156c5efc7f0541a7745bbda4a2cab4bcd2c64697af8b54d4187"
+  }
+}
