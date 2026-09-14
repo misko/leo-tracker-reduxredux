@@ -18,8 +18,8 @@ def project_scanner_candidates(source: TrackingInput) -> tuple[PersistentHopCfoC
         raise PersistentHopTrajectoryProjectionError(
             "capture lacks complete counter-continuity authority"
         )
-    if timing is None or not timing.qualified:
-        raise PersistentHopTrajectoryProjectionError("capture lacks qualified UTC timing authority")
+    if timing is None:
+        raise PersistentHopTrajectoryProjectionError("capture lacks UTC timing authority")
     if timing.sample_rate_hz != source.sample_rate_hz or timing.session_id != source.session_id:
         raise PersistentHopTrajectoryProjectionError(
             "UTC authority does not bind sample rate and session"

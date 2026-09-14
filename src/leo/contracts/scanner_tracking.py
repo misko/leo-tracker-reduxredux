@@ -147,6 +147,22 @@ class ScannerTrackingProductV1(ContractModel):
         return self
 
 
+class ScannerTrackingProductV2(ScannerTrackingProductV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v2"] = "scanner-shared-tracking-v2"  # type: ignore[assignment]
+    trajectory_time_basis: Literal["qualified-utc", "device-counter-relative"]
+
+    @model_validator(mode="after")
+    def _time_basis(self) -> Self:
+        if self.trajectory_time_basis == "device-counter-relative" and (
+            self.tle_state not in ("pending", "unavailable")
+            or self.tle_candidates
+            or self.original_tle_snapshot is not None
+        ):
+            raise ValueError("device-relative trajectories cannot claim catalogue authority")
+        return self
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -155,8 +171,16 @@ class ScannerTrackingStatusV1(ContractModel):
     product: ScannerTrackingProductV1 | None = None
 
 
+class ScannerTrackingStatusV2(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV2 | None = None
+
+
 class ScannerTrackingReader(Protocol):
-    def status(self, session_id: str) -> ScannerTrackingStatusV1: ...
+    def status(self, session_id: str) -> ScannerTrackingStatusV1 | ScannerTrackingStatusV2: ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 
 

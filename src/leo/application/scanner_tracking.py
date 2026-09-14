@@ -21,18 +21,18 @@ from leo.application.scanner_trajectory import project_scanner_candidates
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTrackingInputs,
-    ScannerTrackingProductV1,
-    ScannerTrackingStatusV1,
+    ScannerTrackingProductV2,
+    ScannerTrackingStatusV2,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def status(self, session_id: str) -> ScannerTrackingStatusV1: ...
-    def save(self, status: ScannerTrackingStatusV1) -> None: ...
+    def status(self, session_id: str) -> ScannerTrackingStatusV2: ...
+    def save(self, status: ScannerTrackingStatusV2) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV1) -> None: ...
+    def publish(self, product: ScannerTrackingProductV2) -> None: ...
 
 
 class ScannerTrackingService:
@@ -61,7 +61,7 @@ class ScannerTrackingService:
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v1",
+                "algorithm": "scanner-shared-tracking-v2",
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
                 "selection": "eligible-first-longest-support-v1",
@@ -69,7 +69,7 @@ class ScannerTrackingService:
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV1(
+        product = status.product or ScannerTrackingProductV2(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -81,6 +81,11 @@ class ScannerTrackingService:
             tle_state="pending",
             observer_site=self.site,
             group_limit=group_limit,
+            trajectory_time_basis=(
+                "qualified-utc"
+                if source.timing is not None and source.timing.qualified
+                else "device-counter-relative"
+            ),
         )
         if (
             product.input_manifest_sha256 != source.input_manifest_sha256
@@ -91,7 +96,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV1(
+                ScannerTrackingStatusV2(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -140,6 +145,18 @@ class ScannerTrackingService:
                     "artifacts": (ref,),
                 }
             )
+        if source.timing is None or not source.timing.qualified:
+            product = product.model_copy(
+                update={
+                    "tle_state": "unavailable",
+                    "reasons": (
+                        "Measured trajectories use device-counter timing; "
+                        "TLE comparison requires qualified absolute UTC.",
+                    ),
+                }
+            )
+            self.products.publish(product)
+            return self.products.status(session_id)
         save("tle-matching")
         if selected:
             try:

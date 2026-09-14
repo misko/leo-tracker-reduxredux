@@ -11,7 +11,9 @@ from leo.contracts.digests import sha256_digest
 from leo.contracts.scanner_tracking import (
     ArtifactName,
     ScannerTrackingProductV1,
+    ScannerTrackingProductV2,
     ScannerTrackingStatusV1,
+    ScannerTrackingStatusV2,
     SessionId,
     TrackingArtifactV1,
 )
@@ -29,37 +31,51 @@ class ScannerTrackingStore:
         self.root, self.read_only = root, read_only
 
     @contextmanager
-    def directory(self, session_id: str, *, create: bool = False):
+    def directory(self, session_id: str, *, create: bool = False, version: int = 2):
         TypeAdapter(SessionId).validate_python(session_id)
         if create and self.read_only:
             raise PermissionError("tracking store is read-only")
         root = PinnedLocalRoot(self.root)
         directory = None
         try:
-            directory = root.child("scanner-shared-tracking-v1", session_id, create=create)
+            directory = root.child(f"scanner-shared-tracking-v{version}", session_id, create=create)
             yield directory
         finally:
             if directory is not None:
                 directory.close()
             root.close()
 
-    def status(self, session_id: str) -> ScannerTrackingStatusV1:
+    def status(self, session_id: str) -> ScannerTrackingStatusV2 | ScannerTrackingStatusV1:
+        current = self._status_v2(session_id)
+        if current.state != "pending":
+            return current
+        legacy = self._status_v1(session_id)
+        if (
+            legacy.state == "complete"
+            and legacy.product is not None
+            and legacy.product.trajectory_state == "unsupported"
+            and any("qualified UTC timing authority" in reason for reason in legacy.product.reasons)
+        ):
+            return current
+        return legacy if legacy.state != "pending" else current
+
+    def _status_v2(self, session_id: str) -> ScannerTrackingStatusV2:
         try:
             with self.directory(session_id) as directory:
                 try:
                     product = _unseal(
-                        _read(directory, "manifest.json", _LIMIT), ScannerTrackingProductV1
+                        _read(directory, "manifest.json", _LIMIT), ScannerTrackingProductV2
                     )
-                    result = ScannerTrackingStatusV1(
+                    result = ScannerTrackingStatusV2(
                         session_id=session_id, state="complete", phase="complete", product=product
                     )
                 except FileNotFoundError:
                     try:
                         result = _unseal(
-                            _read(directory, "checkpoint.json", _LIMIT), ScannerTrackingStatusV1
+                            _read(directory, "checkpoint.json", _LIMIT), ScannerTrackingStatusV2
                         )
                     except FileNotFoundError:
-                        result = ScannerTrackingStatusV1(session_id=session_id)
+                        result = ScannerTrackingStatusV2(session_id=session_id)
                 if result.session_id != session_id or (
                     result.product and result.product.session_id != session_id
                 ):
@@ -67,11 +83,28 @@ class ScannerTrackingStore:
                 return result
         except ValueError as error:
             if isinstance(error.__cause__, FileNotFoundError):
+                return ScannerTrackingStatusV2(session_id=session_id)
+            raise
+
+    def _status_v1(self, session_id: str) -> ScannerTrackingStatusV1:
+        try:
+            with self.directory(session_id, version=1) as directory:
+                try:
+                    product = _unseal(
+                        _read(directory, "manifest.json", _LIMIT), ScannerTrackingProductV1
+                    )
+                    return ScannerTrackingStatusV1(
+                        session_id=session_id, state="complete", phase="complete", product=product
+                    )
+                except FileNotFoundError:
+                    return ScannerTrackingStatusV1(session_id=session_id)
+        except ValueError as error:
+            if isinstance(error.__cause__, FileNotFoundError):
                 return ScannerTrackingStatusV1(session_id=session_id)
             raise
 
-    def save(self, status: ScannerTrackingStatusV1) -> None:
-        status = ScannerTrackingStatusV1.model_validate(status.model_dump())
+    def save(self, status: ScannerTrackingStatusV2) -> None:
+        status = ScannerTrackingStatusV2.model_validate(status.model_dump())
         with self.directory(status.session_id, create=True) as directory:
             try:
                 _read(directory, "manifest.json", _LIMIT)
@@ -108,8 +141,8 @@ class ScannerTrackingStore:
                     raise ValueError("tracking artifact is immutable")
         return reference
 
-    def publish(self, product: ScannerTrackingProductV1) -> None:
-        product = ScannerTrackingProductV1.model_validate(product.model_dump())
+    def publish(self, product: ScannerTrackingProductV2) -> None:
+        product = ScannerTrackingProductV2.model_validate(product.model_dump())
         if product.tle_state == "pending":
             raise ValueError("cannot finalize pending TLE comparisons")
         with self.directory(product.session_id, create=True) as directory:
@@ -132,7 +165,11 @@ class ScannerTrackingStore:
         ref = next((r for r in product.artifacts if r.name == name), None) if product else None
         if ref is None:
             return None
-        with self.directory(session_id) as directory:
+        assert product is not None
+        with self.directory(
+            session_id,
+            version=2 if product.analysis_id == "scanner-shared-tracking-v2" else 1,
+        ) as directory:
             payload = _read(directory, name + ".png", _LIMIT)
         if len(payload) != ref.byte_count or sha256_digest(payload) != ref.sha256:
             raise ValueError("tracking artifact digest differs")

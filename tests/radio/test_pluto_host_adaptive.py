@@ -1,5 +1,6 @@
 import threading
 import time
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -34,7 +35,7 @@ class Engine:
 
 
 class Client:
-    def __init__(self, receipt, *, pacing=0.04, reject=False):
+    def __init__(self, receipt, *, pacing=0.04, reject=False, clock_brackets=None):
         self.owner = threading.get_ident()
         self.source = receipt
         self.receipt = upstream_receipt(receipt)
@@ -42,6 +43,7 @@ class Client:
         self.next_index = 0
         self.feedback = []
         self.pacing, self.reject = pacing, reject
+        self.clock_brackets = clock_brackets
         self.calls = []
         self.restoration_delay = 0
 
@@ -60,7 +62,9 @@ class Client:
     @property
     def start_clock_bracket(self):
         self.owned("clock")
-        return None
+        if self.clock_brackets is None:
+            return None
+        return self.clock_brackets[min(self.next_index, 1)]
 
     @property
     def stream_generation(self):
@@ -112,12 +116,28 @@ class Client:
         )
 
 
-def setup(receipt, *, pacing=0.04, reject=False, engine_delay=0, engine_fail=False, read_ahead=8):
+def setup(
+    receipt,
+    *,
+    pacing=0.04,
+    reject=False,
+    engine_delay=0,
+    engine_fail=False,
+    read_ahead=8,
+    clock_brackets=None,
+):
     clients, engines = [], []
 
     def client_factory(uri, serial):
         assert uri == receipt.radio_uri and serial == receipt.radio_serial
-        clients.append(Client(receipt, pacing=pacing, reject=reject))
+        clients.append(
+            Client(
+                receipt,
+                pacing=pacing,
+                reject=reject,
+                clock_brackets=clock_brackets,
+            )
+        )
         return clients[-1]
 
     def engine_factory():
@@ -172,6 +192,36 @@ def test_client_construction_admission_iio_and_feedback_have_one_owner(receiver,
     finally:
         radio.close()
     assert clients[0].closed
+
+
+def test_first_visit_replaces_buffer_open_clock_bracket():
+    receipt = host_receipt(count=3)
+    broad = SimpleNamespace(
+        before_realtime_ns=1_000_000_000,
+        before_monotonic_ns=2_000_000_000,
+        after_realtime_ns=1_207_000_000,
+        after_monotonic_ns=2_207_000_000,
+    )
+    precise = SimpleNamespace(
+        before_realtime_ns=1_100_000_000,
+        before_monotonic_ns=2_100_000_000,
+        after_realtime_ns=1_101_500_000,
+        after_monotonic_ns=2_101_500_000,
+    )
+    radio, clients, _ = setup(receipt, pacing=0, clock_brackets=(broad, precise))
+    radio.open()
+    try:
+        session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+        assert tuple(drain(session)) == receipt.visits
+        session.finish()
+        assert (
+            session.start_clock_bracket.after_monotonic_ns
+            - session.start_clock_bracket.before_monotonic_ns
+            == 1_500_000
+        )
+    finally:
+        radio.close()
+    assert clients[0].calls.count("clock") >= 2
 
 
 @pytest.mark.parametrize("fault", ["overflow", "detector_failure", "feedback_rejected"])

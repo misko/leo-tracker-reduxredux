@@ -332,6 +332,16 @@ class _HostAdaptiveSession:
                 )
             self._records.append(record)
 
+    def _refresh_start_clock_bracket(self) -> None:
+        bracket = self._upstream.start_clock_bracket
+        if bracket is not None:
+            self._bracket = PersistentHopStartClockBracketV1(
+                before_realtime_ns=bracket.before_realtime_ns,
+                before_monotonic_ns=bracket.before_monotonic_ns,
+                after_realtime_ns=bracket.after_realtime_ns,
+                after_monotonic_ns=bracket.after_monotonic_ns,
+            )
+
     def _run(self) -> None:
         worker: BoundedHostDecisionWorker | None = None
         try:
@@ -343,16 +353,10 @@ class _HostAdaptiveSession:
                 session_id=persistent_hop_wire_session_id(self._session_id),
                 tandem_request=_load_tandem_hold_request(),
             )
-            bracket = self._upstream.start_clock_bracket
-            if bracket is not None:
-                self._bracket = PersistentHopStartClockBracketV1(
-                    before_realtime_ns=bracket.before_realtime_ns,
-                    before_monotonic_ns=bracket.before_monotonic_ns,
-                    after_realtime_ns=bracket.after_realtime_ns,
-                    after_monotonic_ns=bracket.after_monotonic_ns,
-                )
+            self._refresh_start_clock_bracket()
             worker = BoundedHostDecisionWorker(self._engine_factory)
             self._ready.set()
+
             def before_release() -> None:
                 assert worker is not None
                 self._flush(worker.drain())
@@ -364,9 +368,14 @@ class _HostAdaptiveSession:
                     sampled = next(iterator)
                 except StopIteration:
                     break
+                if not self._produced:
+                    # The IIO backend replaces its broad OPEN bracket when it
+                    # receives block zero and can bind the FPGA sample counter.
+                    self._refresh_start_clock_bracket()
                 self._flush(worker.poll())
                 self._accept(sampled, worker)
             self._upstream.close(before_release=before_release)
+            self._refresh_start_clock_bracket()
             for sampled in self._upstream.take_terminal_visits():
                 self._flush(worker.poll())
                 self._accept(sampled, worker)
