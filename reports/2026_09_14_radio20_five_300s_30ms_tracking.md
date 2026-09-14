@@ -54,6 +54,29 @@ The maximum refill gap was 16.061 ms across the primary recordings, with no acti
 
 Acquisition opportunity varied strongly with time. Recording 4 reached maximum single-pilot ranking power 0.08182 and the initial recording-5 diagnostic reached 0.08007. Full recordings without handoff peaked between 0.01131 and 0.04507. This supports keeping the acceptance gates unchanged while improving how weak, correctly aligned proposals enter the refinement shortlist.
 
+## Post-campaign acquisition refinement
+
+The retained campaign cuts were used to improve acquisition without collecting more RF. Sending every one of the original 256 coarse proposals from each of 13 positive and 13 matched control cuts through the production resolver did not recover another handoff: only positive cuts 0, 3, 4 and 12 handed off, and none of the controls did. Exhaustively choosing the best full-pilot delay in each cut produced the same result. This rules out shortlist length alone as the complete explanation.
+
+The new `scan80-local2` profile uses a deliberately staged search:
+
+1. Keep the best 80 inexpensive coarse proposals.
+2. Test each proposal at coarse timing offsets -2 through +2 with a 512-sample pilot prefix and a 512-point frequency FFT.
+3. Send only the best adjusted proposal to the unchanged four-pilot resolver and acceptance gates.
+4. Build the required eight-observation startup history every third 750-Hz frame, matching the already measured passive-observer cadence.
+
+Across the retained cuts, the earlier scan64 path handed off on 4/13 positive cuts and 0/13 controls. The new path handed off on 5/13 positives and 0/13 controls. The recovered cut's proposal was raw coarse rank 79 and needed a +2-sample adjustment. With the former nine-frame startup cadence it retained only 6 accepted observations and could not hand off; the three-frame cadence retained 42 and completed handoff. The acceptance thresholds and required eight-observation history were not relaxed.
+
+![Retained-IQ acquisition refinement result](figures/2026_09_14_radio20_five_300s/postcampaign-acquisition-refinement.png)
+
+The exact new ranking loop was cross-compiled for ARM and run ten times on radio `.20`, serial `1040005e0b100007100010000bf33a5d4d`, against the recovered physical cut. It took 81.594 ms mean, 81.196 ms minimum and 82.386 ms maximum, and selected rank 79 with the expected +2 correction. Before and after the benchmark, the radio reported the 30-MS/s image, idle buffers, disabled DDS/TX DMA, -80 dB TX gain and powered-down TX LO. The benchmark used saved IQ and collected zero RF samples.
+
+The focused component suite passes 334 tests, and the stripped production ARM probe passed an executable-load and profile-admission smoke test on the same attested radio. Firmware source commit `ca0fbe768` is pushed on `codex/radio20-tracking-qualification`. The local qualification artifact now points to SHA-256 `64f3254be6460ea408c0fa181f361c470c0c7eaf71d2076bfcb92f6ca6dd4aab`; the previous scan64 binary is retained by its checksum for rollback.
+
+This is a retained-IQ and ARM-timing improvement, not a new physical acquisition qualification. The capture authority is currently paused to preserve a failed RX artifact while storage queue exhaustion is investigated, so no live RF run was started. A short bounded physical comparison is the next acquisition gate after that operational issue is cleared and new RF collection is authorized.
+
+Machine-readable inputs and receipts are retained as [retained-cut evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-retained-evaluation.json), [ARM benchmark](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-arm-benchmark.json), and [radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-radio-smoke.json).
+
 ## Tracking and reacquisition evidence
 
 Recording 4 had two native episodes:
