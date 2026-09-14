@@ -25,6 +25,23 @@ The requested 300 seconds is a nominal ceiling. The finite profile exports 45,00
 
 The longest uninterrupted native FPGA track was **2.000 seconds**, exactly 1,500 scheduled estimates at 750 Hz. An earlier episode in the same recording lasted **0.672 seconds** (504 estimates), then declared clean loss and returned to scanning. The campaign therefore establishes full sample delivery during active captures and a two-second longest qualified track. It does not establish full-duty tracking over a recording or continuous wall-clock operation.
 
+### Detected-signal time and historical 2.5-MS/s duty
+
+The time plot below uses the strict operational definition: green begins only after an ARM acquisition passes the full history gates and hands off to native FPGA tracking. Recording 4 contains the only two such intervals, approximately 143.784–144.456 seconds and 162.575–164.575 seconds. Their combined 2.672 seconds are **0.1988% of the 1,344.255 primary RF seconds**. The plot labels these as qualified detector state rather than confirmed Starlink identity; pilot evidence alone does not identify a transmitter.
+
+![Qualified signal detections and historical 2.5-MS/s duty comparison](figures/2026_09_14_radio20_five_300s/signal-detection-duty-comparison.png)
+
+Historical percentages answer different questions:
+
+| Measure | Current campaign | Historical 2.5-MS/s comparison | Interpretation |
+|---|---:|---:|---|
+| Recordings/dwells with at least one strict FPGA handoff | 1/5, **20.0%** | Earlier comparable scan64: 1/5, **20.0%** | Like-for-like detector comparison; equal point estimates, but each 1/5 fraction has a wide 3.6–62.4% Wilson interval. |
+| Time in qualified native FPGA tracking | 2.672/1,344.255 s, **0.1988%** | No equivalent long-duration historical metric | This is the actual tracking on-time, constrained by rare handoff and the configured 2-second successful terminal horizon. |
+| Lightweight detector-positive 120-ms visits | Not equivalent | **84.47%, 61.42%, 62.39%** in three September 10 runs; pooled 4,918/7,085, **69.41%** | These scans hopped across eight channel/edge targets and used a positive-only lightweight screen. They measure candidate presence, not full four-pilot handoff duty. |
+| Valid-IQ capture duty | 100% completeness while the five captures were active; **89.62%** against five nominal 300-second slots | **94.26–94.55%** across the three 2.5-MS/s scanner runs | Transport/listening duty; independent of whether the detector accepted a signal. |
+
+The current **20% dwell hit rate is consistent with the small earlier same-detector cohort**, but the **0.1988% tracking-time duty is not an expected Starlink visibility fraction**. It is an operational outcome of intermittent strict acquisition plus deliberately short native episodes. The 61–84% historical visit-positive fractions show that pilot-like energy was often available somewhere in the eight-target hopping schedule, but they cannot be used as an expected duty for this fixed-frequency, stricter tracker.
+
 ## Fixed setup and rates
 
 | Component | Location | Rate or cadence | Role |
@@ -101,7 +118,7 @@ Attempt starts measured 1.237 Hz over the cut, within 1.4% of the 1.254-Hz retai
 
 The capture used confirmed serial `1040005e0b100007100010000bf33a5d4d`, image `glrt-iq-tracking-r30000000-v1`, exact 30,000,000-sample/s input, 2.5-MHz receive bandwidth and TX powerdown before and after. Raw and diagnostic artifacts were first retrieved to `/srv/postgres-nvme/radio20-scan80-prefilter-30ms-20260914-v5`. The closed evidence set was copied through a partial directory, every file passed SHA-256 verification, and the destination was atomically finalized at `/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/scan80-prefilter30-live-v1`. The SSD source is retained until normal evidence-retention cleanup.
 
-Machine-readable inputs and receipts are retained as [detection timeline summary](figures/2026_09_14_radio20_five_300s/detection-timeline-summary.json), [retained-cut evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-retained-evaluation.json), [guarded-prefilter evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-evaluation.json), [ARM benchmark](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-arm-benchmark.json), [initial scan80 radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-radio-smoke.json), [guarded-prefilter radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-radio-smoke.json), [live operator receipt](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-live-operator.json), and [live cadence review](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-live-review.json).
+Machine-readable inputs and receipts are retained as [detection timeline summary](figures/2026_09_14_radio20_five_300s/detection-timeline-summary.json), [signal-detection duty summary](figures/2026_09_14_radio20_five_300s/signal-detection-duty-summary.json), [retained-cut evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-retained-evaluation.json), [guarded-prefilter evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-evaluation.json), [ARM benchmark](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-arm-benchmark.json), [initial scan80 radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-radio-smoke.json), [guarded-prefilter radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-radio-smoke.json), [live operator receipt](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-live-operator.json), and [live cadence review](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-prefilter-live-review.json).
 
 ## Tracking and reacquisition evidence
 
