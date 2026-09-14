@@ -175,9 +175,7 @@ def compile_single_rx_scanner_intent(
         configuration=configuration,
     )
     document = candidate.model_dump(mode="json", exclude={"intent_digest"})
-    return model.model_validate(
-        {**document, "intent_digest": canonical_digest(document)}
-    )
+    return model.model_validate({**document, "intent_digest": canonical_digest(document)})
 
 
 class SingleRxPersistentHopPlanV2(PersistentHopPlanV1):
