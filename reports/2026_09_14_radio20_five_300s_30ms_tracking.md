@@ -54,6 +54,23 @@ The maximum refill gap was 16.061 ms across the primary recordings, with no acti
 
 Acquisition opportunity varied strongly with time. Recording 4 reached maximum single-pilot ranking power 0.08182 and the initial recording-5 diagnostic reached 0.08007. Full recordings without handoff peaked between 0.01131 and 0.04507. This supports keeping the acceptance gates unchanged while improving how weak, correctly aligned proposals enter the refinement shortlist.
 
+### Detection through time and comparison with previous dwells
+
+For this comparison, a **detection** means a `worker_terminal` row with `status=1`: the ARM acquisition path passed its history gates and handed control to the native FPGA estimator. A ranking-power peak is proposal evidence and is not counted as a detection. Elapsed event times below come from the worker's monotonic timestamps; RF exposure comes from the sample counters.
+
+![Detection timeline and previous-dwell comparison](figures/2026_09_14_radio20_five_300s/detection-timeline-comparison.png)
+
+Both the current campaign and all five earlier comparable 30-MS/s scan64 dwells contain one successful dwell out of five. The current result is two handoffs in 1,344.255 RF seconds and 1,116 declared attempts; both occur in recording 4, at 143.784 and 162.575 elapsed seconds. The previous cohort has one handoff in 50.332 RF seconds and 28 attempts, at 5.168 seconds in the original live scan64 dwell.
+
+| Cohort | RF seconds | Attempts | Handoffs | Dwells with handoff | Handoffs / 1,000 RF s | Handoffs / 1,000 attempts |
+|---|---:|---:|---:|---:|---:|---:|
+| Five primary recordings | 1,344.255 | 1,116 | 2 | 1/5 (20%) | 1.488 | 1.792 |
+| All earlier comparable 30-MS/s scan64 dwells | 50.332 | 28 | 1 | 1/5 (20%) | 19.868 | 35.714 |
+
+The equal 20% dwell hit fraction is compatible with the small historical sample, but it is weak evidence: the 95% Wilson interval for either 1/5 result is 3.6–62.4%. The exposure-normalized rates differ sharply because the earlier cohort consists of five 10.066-second dwells and contains only one event. Attempts within a dwell are serial observations of the same changing RF opportunity, so treating all 1,144 attempts as independent Bernoulli trials would give false precision.
+
+The result is therefore reasonable as a continuation of the previously observed intermittent acquisition behavior, not as tracker performance. Four much longer recordings still produce no handoff, native tracking occupies only 0.20% of primary RF time, and ranking peaks up to 0.04507 fail while recording 4's second handoff occurs at 0.04557. Acquisition depends on timing, frequency and history consistency as well as the displayed single-pilot power. The stable next step remains the retained-IQ scan80/local-timing improvement followed by a short controlled physical comparison when capture authority and RF authorization permit it.
+
 ## Post-campaign acquisition refinement
 
 The retained campaign cuts were used to improve acquisition without collecting more RF. Sending every one of the original 256 coarse proposals from each of 13 positive and 13 matched control cuts through the production resolver did not recover another handoff: only positive cuts 0, 3, 4 and 12 handed off, and none of the controls did. Exhaustively choosing the best full-pilot delay in each cut produced the same result. This rules out shortlist length alone as the complete explanation.
@@ -75,7 +92,7 @@ The focused component suite passes 334 tests, and the stripped production ARM pr
 
 This is a retained-IQ and ARM-timing improvement, not a new physical acquisition qualification. The capture authority is currently paused to preserve a failed RX artifact while storage queue exhaustion is investigated, so no live RF run was started. A short bounded physical comparison is the next acquisition gate after that operational issue is cleared and new RF collection is authorized.
 
-Machine-readable inputs and receipts are retained as [retained-cut evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-retained-evaluation.json), [ARM benchmark](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-arm-benchmark.json), and [radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-radio-smoke.json).
+Machine-readable inputs and receipts are retained as [detection timeline summary](figures/2026_09_14_radio20_five_300s/detection-timeline-summary.json), [retained-cut evaluation](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-retained-evaluation.json), [ARM benchmark](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-arm-benchmark.json), and [radio smoke test](figures/2026_09_14_radio20_five_300s/postcampaign-scan80-radio-smoke.json).
 
 ## Tracking and reacquisition evidence
 
