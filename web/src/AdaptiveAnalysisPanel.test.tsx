@@ -32,6 +32,25 @@ export function analysisFixture(state: AdaptiveAnalysisStatus["state"] = "figure
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive analysis publication", () => {
+  it.each([0, 1] as const)("links the site receiver-input RCA for radio003a RX%s", async receiver => {
+    const native = hostAdaptiveDetailFixture(receiver).capture;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(null, 404)));
+    render(<AdaptiveAnalysisPanel capture={native} />);
+    const link = await screen.findByRole("link", { name: "Read the RX0/RX1 detection root-cause analysis" });
+    expect(link).toHaveAttribute("href", "/reports/radio003a-rx-input-rca.html");
+    expect(screen.getByRole("complementary", { name: "Receiver input status" })).toHaveTextContent(
+      receiver === 1 ? "RX1 has no connected antenna feed" : "RX0 is the connected antenna input",
+    );
+  });
+
+  it("does not apply the site receiver-input finding to another radio", async () => {
+    const native = { ...hostAdaptiveDetailFixture(1).capture, radio_serial: "different-radio" };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(null, 404)));
+    render(<AdaptiveAnalysisPanel capture={native} />);
+    await screen.findByText(/It is not queued here/);
+    expect(screen.queryByRole("link", { name: "Read the RX0/RX1 detection root-cause analysis" })).not.toBeInTheDocument();
+  });
+
   it.each([0, 1] as const)("binds native analysis and PNGs to physical RX%s", async receiver => {
     const native = hostAdaptiveDetailFixture(receiver).capture;
     const value = analysisFixture();
