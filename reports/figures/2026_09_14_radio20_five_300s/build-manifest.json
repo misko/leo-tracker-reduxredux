@@ -1,0 +1,34 @@
+{
+  "firmware_repository": "https://github.com/misko/plutosdr-fw.git",
+  "firmware_base_commit": "20e605d1c8bc872630198fb65a4e6461adf0c0db",
+  "firmware_implementation_commit": "ab1509a20f82a8b41bcd35e04e968805c3bb2d48",
+  "firmware_branch": "codex/radio20-tracking-qualification",
+  "source_sha256": {
+    "tools/glrt_cpu_live_probe.c": "ce5215e4d17f8d7a9c01d6aa6c57cd14c2fead693007fc1bf16f5800452e84fb",
+    "scripts/qualify_glrt_cpu_live20.py": "bda413ffa9f5d6eb564cb807c428aef5d9c2f4201dbbbcb533eee54bf610ed45",
+    "tools/review_glrt_cpu_live_epochs.py": "cf92db802b0e3a13c2cc6e37499ef46b28027e7abe901b2d4b29ea331055d2bf"
+  },
+  "executables": [
+    {
+      "version": "v1",
+      "sha256": "5939c896ec2864b5c0899120709d9ec8f6b0a2392ce624797f3b8dc1bc5074a7",
+      "use": "recording 1; exposed finite-source cleanup classification"
+    },
+    {
+      "version": "v2",
+      "sha256": "6cee8f7291ea927a8671b606fc48d72906f70448df1a60ce794bd463acee2617",
+      "use": "recordings 2 and 3, plus the initial recording-4 clean-loss diagnostic"
+    },
+    {
+      "version": "v3",
+      "sha256": "78586a05d935f494c30eb70c057f60cb61edc923ea52e7e9e27f523ae82207b3",
+      "use": "bounded clean-loss reacquisition in recording 4; initial source-loss diagnostic and replacement recording 5"
+    }
+  ],
+  "test_result": {
+    "focused_suite": "234 passed, 1 failed in 47.20 s",
+    "failure": "timing-sensitive observer_retention case ended at 631 rather than 1500 simulated results under host load",
+    "isolated_rerun": "1 passed in 4.74 s",
+    "junit": ["firmware-tests.xml", "firmware-flaky-rerun.xml"]
+  }
+}
