@@ -421,7 +421,6 @@ class CliSettings:
                 or Path("/mnt/qnap01") in spool.parents
                 or spool == self.bulk_root
                 or self.bulk_root in spool.parents
-                or self.scanner_hop_policy == "fixed"
             ):
                 raise ValueError(
                     "adaptive spool must be an absolute local path outside bulk storage"
