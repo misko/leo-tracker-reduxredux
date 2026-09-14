@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 type Product = {
   session_id: string; input_manifest_sha256: string; sample_rate_hz: number;
+  trajectory_time_basis?: "qualified-utc" | "device-counter-relative";
   trajectory_state: string; tle_state: string; reasons: string[];
   physical_group_count: number; eligible_group_count: number; attempted_group_count: number;
   deferred_group_count: number;
@@ -48,6 +49,10 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
     {p && <>
       <p>{p.eligible_group_count} eligible of {p.physical_group_count} groups across hypotheses · {p.attempted_group_count} comparisons attempted · {p.deferred_group_count} deferred.</p>
       {p.tle_state === "pending" && <p>Measured trajectories are available; catalogue comparisons are still processing.</p>}
+      {p.trajectory_state === "complete" && p.tle_state === "unavailable" &&
+        (p.trajectory_time_basis === "device-counter-relative" ||
+          p.reasons.some(reason => reason.includes("qualified absolute UTC"))) &&
+        <p>Relative trajectories are available; catalogue comparison requires qualified absolute UTC.</p>}
       {p.tle_state === "no-eligible-groups" && <p>No group has the required 20 observations spanning at least 20 seconds.</p>}
       {p.reasons.map((reason, i) => <p key={i}>{reason}</p>)}
       {p.unscored_groups.map(g => <p key={g.physical_group_id}>Unscored group: {g.reason}</p>)}

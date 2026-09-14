@@ -36,3 +36,24 @@ it("keeps the measured PNG visible while matching is pending", async () => {
   expect(await screen.findByRole("img")).toHaveAttribute("src", expect.stringContaining("/trajectory.png"));
   expect(screen.getByText(/catalogue comparisons are still processing/)).toBeInTheDocument();
 });
+
+it("distinguishes relative trajectories from unavailable catalogue timing", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+    session_id: "scan-test", state: "complete", phase: "complete", product: {
+      ...product,
+      trajectory_state: "complete",
+      trajectory_time_basis: "device-counter-relative",
+      tle_state: "unavailable",
+      physical_group_count: 46,
+      eligible_group_count: 21,
+      attempted_group_count: 0,
+      deferred_group_count: 21,
+      reasons: ["Measured trajectories use device-counter timing; TLE comparison requires qualified absolute UTC."],
+      artifacts: [product.artifacts[0]],
+    },
+  }) }));
+  render(<ScannerTrackingPanel sessionId="scan-test" />);
+  expect(await screen.findByText(/Relative trajectories are available/)).toBeInTheDocument();
+  expect(screen.getByText(/21 eligible of 46 groups/)).toBeInTheDocument();
+  expect(screen.getByRole("img")).toHaveAttribute("src", expect.stringContaining("/trajectory.png"));
+});

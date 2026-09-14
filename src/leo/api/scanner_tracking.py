@@ -6,13 +6,14 @@ from leo.contracts.scanner_tracking import (
     ArtifactName,
     ScannerTrackingReader,
     ScannerTrackingStatusV1,
+    ScannerTrackingStatusV2,
 )
 
 
 def scanner_tracking_router(reader: ScannerTrackingReader | None) -> APIRouter:
     router = APIRouter(prefix="/api/v1/scanner/tracking")
 
-    @router.get("/{session_id}", response_model=ScannerTrackingStatusV1)
+    @router.get("/{session_id}", response_model=ScannerTrackingStatusV2 | ScannerTrackingStatusV1)
     def status(session_id: str):
         if reader is None:
             raise HTTPException(404, "shared tracking is unavailable")

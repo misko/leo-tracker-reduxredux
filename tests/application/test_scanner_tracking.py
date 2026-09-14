@@ -111,7 +111,15 @@ def test_projection_rejects_missing_or_mismatched_authority(fault):
         project_scanner_candidates(data)
 
 
-def service(tmp_path, monkeypatch, *, archive_error=False, clock=lambda: 0):
+def test_projection_accepts_counter_authority_with_unqualified_absolute_utc():
+    data = source()
+    data = replace(data, timing=data.timing.model_copy(update={"qualified": False}))
+    rows = project_scanner_candidates(data)
+    assert len(rows) == len(data.probes)
+    assert rows[2].support_center_utc_ns - rows[0].support_center_utc_ns == 3_000_000_000
+
+
+def service(tmp_path, monkeypatch, *, archive_error=False, clock=lambda: 0, input_source=None):
     # Real reconstruction of known tracks; only the costly catalogue matcher is fault-injected.
     rows = tuple(
         _candidate(
@@ -142,7 +150,7 @@ def service(tmp_path, monkeypatch, *, archive_error=False, clock=lambda: 0):
         raise ValueError("eligible satellite propagation failed")
 
     runner = tracking.ScannerTrackingService(
-        inputs=SimpleNamespace(load=lambda _: source()),
+        inputs=SimpleNamespace(load=lambda _: input_source or source()),
         products=store,
         tle_archive=SimpleNamespace(select_latest_before=select, read=lambda _: raw),
         observer_site=_site(),
@@ -162,6 +170,25 @@ def test_catalogue_failure_keeps_trajectory_png_and_reason(tmp_path, monkeypatch
     assert "no causal snapshot" in result.product.reasons[0]
     assert store.artifact("scan-test", "trajectory") == PNG
     assert runner.run("scan-test") == result
+
+
+def test_unqualified_utc_keeps_relative_trajectory_and_skips_catalogue(tmp_path, monkeypatch):
+    data = source()
+    data = replace(data, timing=data.timing.model_copy(update={"qualified": False}))
+    runner, store = service(tmp_path, monkeypatch, input_source=data)
+    runner.archive = SimpleNamespace(
+        select_latest_before=lambda _: pytest.fail("unqualified UTC queried catalogue")
+    )
+    result = runner.run("scan-test")
+    assert result.state == "complete"
+    assert result.product.trajectory_state == "complete"
+    assert result.product.tle_state == "unavailable"
+    assert result.product.physical_group_count > 0
+    assert result.product.eligible_group_count > 0
+    assert result.product.attempted_group_count == 0
+    assert "device-counter timing" in result.product.reasons[0]
+    assert store.artifact("scan-test", "trajectory") == PNG
+    assert store.artifact("scan-test", "trajectory-tle") is None
 
 
 def test_budget_resume_and_failed_group_receipts(tmp_path, monkeypatch):

@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from leo.contracts.scanner_tracking import ScannerTrackingProductV1
+from leo.contracts.scanner_tracking import ScannerTrackingProductV1, ScannerTrackingProductV2
 from tests.application.test_persistent_hop_tracking import _site
 from tests.application.test_scanner_tracking import source
 
@@ -36,3 +36,13 @@ def product():
 def test_publication_rejects_incoherent_accounting_and_identity_claims(update):
     with pytest.raises(ValueError):
         ScannerTrackingProductV1.model_validate({**product().model_dump(), **update})
+
+
+def test_device_relative_v2_cannot_publish_catalogue_claims():
+    legacy = product()
+    relative = ScannerTrackingProductV2(
+        **legacy.model_dump(exclude={"schema_version", "analysis_id"}),
+        trajectory_time_basis="device-counter-relative",
+    )
+    with pytest.raises(ValueError, match="catalogue authority"):
+        ScannerTrackingProductV2.model_validate({**relative.model_dump(), "tle_state": "complete"})
