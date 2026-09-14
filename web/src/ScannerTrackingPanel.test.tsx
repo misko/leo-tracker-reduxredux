@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { ScannerTrackingPanel } from "./ScannerTrackingPanel";
 
@@ -12,14 +12,16 @@ const product = {
   tle_candidates: [], artifacts: [{ name: "trajectory", sha256: "a" }, { name: "trajectory-tle", sha256: "b" }],
 };
 
-it.each([2500000, 5000000])("shows figures and actual failures at %s samples/s", async rate => {
+it.each([2500000, 5000000, 10000000])("shows every published figure and actual failures at %s samples/s", async rate => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ session_id: "scan-test", state: "complete", phase: "complete", product: { ...product, sample_rate_hz: rate } }) }));
   render(<ScannerTrackingPanel sessionId="scan-test" inputDigest="sha256:test" />);
   expect(await screen.findByText(/catalogue population propagation is incomplete/)).toBeInTheDocument();
   expect(screen.queryByText(/No group has the required/)).not.toBeInTheDocument();
-  expect(screen.getByRole("img")).toHaveAttribute("src", expect.stringContaining("trajectory-tle.png"));
-  fireEvent.click(screen.getByRole("tab", { name: "Measured trajectories" }));
-  expect(screen.getByRole("img")).toHaveAttribute("src", expect.stringContaining("/trajectory.png"));
+  const images = screen.getAllByRole("img");
+  expect(images).toHaveLength(2);
+  expect(images[0]).toHaveAttribute("src", expect.stringContaining("/trajectory.png"));
+  expect(images[1]).toHaveAttribute("src", expect.stringContaining("trajectory-tle.png"));
+  expect(screen.getAllByRole("link", { name: /Open .* PNG/ })).toHaveLength(2);
   expect(screen.getByRole("link", { name: "Download tracking evidence" })).toBeInTheDocument();
 });
 

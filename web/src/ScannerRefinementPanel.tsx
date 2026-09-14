@@ -23,13 +23,12 @@ export function ScannerRefinementPanel({ sessionId, inputDigest }: {
 }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [artifact, setArtifact] = useState<Artifact>("shift-recovery");
   const base = `/api/v2/scanner/refinement-comparisons/${encodeURIComponent(sessionId)}`;
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
     let busy = false;
-    setStatus(null); setError(null); setArtifact("shift-recovery");
+    setStatus(null); setError(null);
     const load = async () => {
       if (busy) return;
       busy = true;
@@ -67,17 +66,20 @@ export function ScannerRefinementPanel({ sessionId, inputDigest }: {
     {error ? <p role="alert">{error}</p> : !m ? <p role="status">{status?.state === "partial"
       ? "Comparison checkpoints are saved; PNGs will appear after publication."
       : "Comparison PNGs have not been published yet."}</p> : <>
-      <div className="scanner-artifact-tabs" role="tablist" aria-label="Refinement comparison figures">
-        <button type="button" role="tab" aria-selected={artifact === "shift-recovery"} onClick={() => { setArtifact("shift-recovery"); setError(null); }}>Shift-recovery RMS</button>
-        <button type="button" role="tab" aria-selected={artifact === "probe-comparison"} onClick={() => { setArtifact("probe-comparison"); setError(null); }}>Individual probe errors</button>
-      </div>
-      <div className="scanner-artifact-viewport">
-        <img loading="lazy" src={`${base}/${artifact}.png?evidence=${encodeURIComponent(m.evidence_sha256)}`}
-          alt={artifact === "shift-recovery" ? "GLRT settings compared using known shift recovery" : "Individual raw timing and frequency errors including alias jumps"}
-          onError={() => setError("The comparison PNG could not be loaded")} />
+      <div className="scanner-artifact-gallery" aria-label="Refinement comparison figures">
+        {m.artifacts.map(item => <figure key={`${item.name}:${item.sha256}`}>
+          <figcaption>{item.name === "shift-recovery" ? "Shift-recovery RMS" : "Individual probe errors"}</figcaption>
+          <a href={`${base}/${item.name}.png?evidence=${encodeURIComponent(m.evidence_sha256)}`} target="_blank" rel="noreferrer" aria-label={`Open ${item.name} PNG`}>
+            <div className="scanner-artifact-viewport">
+              <img loading="lazy" src={`${base}/${item.name}.png?evidence=${encodeURIComponent(m.evidence_sha256)}`}
+                alt={item.name === "shift-recovery" ? "GLRT settings compared using known shift recovery" : "Individual raw timing and frequency errors including alias jumps"}
+                onError={() => setError(`The ${item.name} comparison PNG could not be loaded`)} />
+            </div>
+          </a>
+        </figure>)}
       </div>
       <p>{m.completed_probes} of {m.scheduled_probes} bounded probes evaluated · {m.failed_probes} probe failures · {m.sample_rate_hz / 1e6} MS/s.</p>
-      <p><a href={`${base}/${artifact}.png`}>Open comparison PNG</a> · <a href={`${base}/evidence.json`}>Download numerical evidence</a></p>
+      <p><a href={`${base}/evidence.json`}>Download numerical evidence</a></p>
     </>}
     <p className="scanner-artifact-caption">Relative shift consistency, not absolute timing or Doppler accuracy. These experimental comparisons do not change scanner detection or hopping decisions.</p>
     <a href="https://github.com/misko/leo-tracker-reduxredux/blob/main/reports/2026_09_11_glrt_refinement_prototype/README.md">Read the historical 2.5 / 5 MS/s study</a>
