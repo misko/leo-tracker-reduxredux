@@ -307,6 +307,12 @@ if [[ -e "$staging_dir/runtime/scanner-glrt" || -L "$staging_dir/runtime/scanner
     "$staging_dir/runtime/scanner-glrt/worker"
   chmod 0750 "$staging_dir/runtime/scanner-glrt"
 fi
+if [[ -e "$staging_dir/runtime/scanner-host-decision" || -L "$staging_dir/runtime/scanner-host-decision" ]]; then
+  host_detector_paths=$("$staging_dir/deploy/scripts/validate-host-decision-bundle" "$staging_dir" --staged)
+  mapfile -t host_detector_inventory <<<"$host_detector_paths"
+  [[ ${#host_detector_inventory[@]} -eq 4 ]] || exit 65
+  chmod 0440 "${host_detector_inventory[@]}"
+fi
 "$staging_dir/deploy/scripts/check-staged-release" "$staging_dir" "$revision"
 chown -R leo:leo "$staging_dir"
 chmod -R o-rwx "$staging_dir"
@@ -385,6 +391,8 @@ bundle_root = release / "runtime/scanner-glrt"
 if bundle_root.exists() or bundle_root.is_symlink():
     bundle_validator = runpy.run_path(str(release / "deploy/scripts/validate-scanner-glrt-bundle"))
     paths.extend(bundle_validator["inventory"](release))
+host_validator = runpy.run_path(str(release / "deploy/scripts/validate-host-decision-bundle"))
+paths.extend(host_validator["inventory"](release))
 print(*(str(path) for path in paths), sep="\n")
 PY
 ); then
@@ -392,7 +400,7 @@ PY
   exit 65
 fi
 mapfile -t metadata_runtime_paths <<<"$metadata_runtime_path_text"
-[[ ${#metadata_runtime_paths[@]} -eq 3 || ${#metadata_runtime_paths[@]} -eq 15 ]] || {
+[[ ${#metadata_runtime_paths[@]} -eq 3 || ${#metadata_runtime_paths[@]} -eq 7 || ${#metadata_runtime_paths[@]} -eq 15 || ${#metadata_runtime_paths[@]} -eq 19 ]] || {
   echo "metadata runtime inventory has unexpected cardinality" >&2
   exit 65
 }

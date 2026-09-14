@@ -326,6 +326,17 @@ class CatalogRepository:
                 )
             return _acquisition_operation_record(operation)
 
+    def acquisition_operation_by_key(self, operation_key: str) -> AcquisitionOperationRecord | None:
+        """Read the immutable intent for a cadence slot, including terminal history."""
+
+        with self._sessions() as session:
+            operation = session.scalar(
+                select(AcquisitionOperation).where(
+                    AcquisitionOperation.operation_key == operation_key
+                )
+            )
+            return None if operation is None else _acquisition_operation_record(operation)
+
     def active_acquisition_operations(
         self,
         *,

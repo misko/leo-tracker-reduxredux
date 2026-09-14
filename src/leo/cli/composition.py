@@ -147,7 +147,6 @@ from leo.qualification import (
     resolve_soak_evidence,
 )
 from leo.radio import (
-    PERSISTENT_HOP_EXCLUDED_SERIAL,
     PERSISTENT_HOP_IIOD_KNOWN_HOSTS_CREDENTIAL,
     PERSISTENT_HOP_IIOD_PASSWORD_CREDENTIAL,
     FakeRadioSource,
@@ -159,7 +158,10 @@ from leo.radio import (
     RadioSource,
     create_pluto_userspace_iiod_lifecycle,
 )
+from leo.radio.host_decision_release import HostDecisionRelease, load_host_decision_release
+from leo.radio.persistent_hop_iiod_lifecycle import attach_iiod_failure_diagnostics
 from leo.radio.pluto_adaptive_hop import PlutoAdaptiveHopRadio
+from leo.radio.pluto_host_adaptive import PlutoHostAdaptiveHopRadio
 from leo.radio.scanner_glrt_metadata import ScannerGlrtOptions
 from leo.scanner import (
     PersistentHopPlanV1,
@@ -187,6 +189,13 @@ from leo.scanner import (
 from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPolicyV1
 from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource
+from leo.scanner.host_adaptive import HOST_ADAPTIVE_PROFILE_ID, HostAdaptiveHopPlanV2
+from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio
+from leo.scanner.host_adaptive_schedule import (
+    HostAdaptiveScheduledScannerIntentV4,
+    compile_host_adaptive_hop_plan,
+    compile_host_adaptive_scanner_intent,
+)
 from leo.station.resolver import FixtureAuthorityFileReference
 from leo.storage import (
     PersistentHopIqStore,
@@ -199,7 +208,10 @@ from leo.storage import (
     capture_persistent_hop_to_store,
 )
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
-from leo.storage.adaptive_hop_capture import capture_adaptive_hop_to_store
+from leo.storage.adaptive_hop_capture import (
+    capture_adaptive_hop_to_store,
+    capture_host_adaptive_hop_to_store,
+)
 from leo.storage.errors import BundleNotFoundError
 from leo.storage.scanner_glrt import ScannerGlrtStore
 
@@ -312,6 +324,8 @@ class CliSettings:
     scanner_glrt: ScannerGlrtOptions | None = None
     scanner_profile: str = "alternating-2p5m-5m"
     scanner_hop_policy: Literal["fixed", "shadow", "adaptive"] = "fixed"
+    scanner_host_decision_manifest_path: Path | None = None
+    scanner_host_decision_manifest_sha256: str | None = None
     scanner_adaptive_sample_rates_hz: tuple[int, ...] = (2_500_000, 5_000_000)
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
     ddr_ring_max_rate_hz: Literal[0, 10_000_000, 15_000_000, 20_000_000] = 0
@@ -320,8 +334,34 @@ class CliSettings:
     def __post_init__(self) -> None:
         from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID
 
-        if self.scanner_profile not in ("alternating-2p5m-5m", SINGLE_RX_PROFILE_ID):
+        host_adaptive = self.scanner_profile == HOST_ADAPTIVE_PROFILE_ID
+        if self.scanner_profile not in (
+            "alternating-2p5m-5m",
+            SINGLE_RX_PROFILE_ID,
+            HOST_ADAPTIVE_PROFILE_ID,
+        ):
             raise ValueError("unknown scheduled scanner profile")
+        if host_adaptive and (
+            not self.scanner_enabled
+            or self.scanner_capture_mode != "persistent_hop"
+            or self.scanner_hop_policy not in ("shadow", "adaptive")
+            or self.scanner_glrt is not None
+            or self.scanner_run_seconds != 300
+            or self.scanner_dwell_ms != 120
+            or self.scanner_interval_seconds != 600
+            or len(self.radios) != 1
+            or self.scanner_host_decision_manifest_path is None
+            or self.scanner_host_decision_manifest_sha256 is None
+        ):
+            raise ValueError(
+                "host adaptive profile requires one radio, 10-minute cadence, "
+                "300s/120ms hopping and a pinned host detector"
+            )
+        if not host_adaptive and (
+            self.scanner_host_decision_manifest_path is not None
+            or self.scanner_host_decision_manifest_sha256 is not None
+        ):
+            raise ValueError("host detector binding requires the host adaptive profile")
         if self.scanner_profile == SINGLE_RX_PROFILE_ID and (
             self.scanner_capture_mode != "persistent_hop"
             or self.scanner_hop_policy != "fixed"
@@ -345,15 +385,23 @@ class CliSettings:
         if (
             not isinstance(rates, tuple)
             or not rates
-            or any(type(rate) is not int or rate not in (2_500_000, 5_000_000) for rate in rates)
+            or any(
+                type(rate) is not int
+                or rate not in ((10_000_000,) if host_adaptive else (2_500_000, 5_000_000))
+                for rate in rates
+            )
             or len(set(rates)) != len(rates)
         ):
             raise ValueError("scanner adaptive sample rates must be unique supported integer rates")
-        if self.scanner_hop_policy != "fixed" and (
-            not self.scanner_enabled
-            or self.scanner_capture_mode != "persistent_hop"
-            or not isinstance(self.scanner_glrt, ScannerGlrtOptions)
-            or self.scanner_glrt.mode != "positive-only-v1"
+        if (
+            self.scanner_hop_policy != "fixed"
+            and not host_adaptive
+            and (
+                not self.scanner_enabled
+                or self.scanner_capture_mode != "persistent_hop"
+                or not isinstance(self.scanner_glrt, ScannerGlrtOptions)
+                or self.scanner_glrt.mode != "positive-only-v1"
+            )
         ):
             raise ValueError(
                 "adaptive/shadow policy requires enabled persistent hopping "
@@ -401,16 +449,22 @@ class CliSettings:
                     raise ValueError(
                         "persistent hopping requires a usable literal 192.168.1.* host"
                     )
-                if configured.serial == PERSISTENT_HOP_EXCLUDED_SERIAL:
-                    raise ValueError("persistent hopping cannot use the excluded Pluto serial")
+                admitted_intervals = (
+                    (600,)
+                    if host_adaptive
+                    else (600, 1200)
+                    if self.scanner_profile == SINGLE_RX_PROFILE_ID
+                    else (1200,)
+                )
                 if (
-                    self.scanner_interval_seconds != 1_200
+                    self.scanner_interval_seconds not in admitted_intervals
                     or self.scanner_run_seconds != 300
                     or self.scanner_dwell_ms != 120
                     or self.scanner_persistent_iiod_port != 30_432
                 ):
                     raise ValueError(
-                        "persistent hopping requires 1200-second cadence, 300-second runs, "
+                        "persistent hopping requires 1200-second cadence "
+                        "(or 600 seconds for the single-RX profile), 300-second runs, "
                         "120 ms valid visits, and alternate iiOD port 30432"
                     )
                 binary = self.scanner_persistent_iiod_binary_path
@@ -592,6 +646,14 @@ class CliSettings:
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
                 scanner_glrt=scanner_glrt_options(values),
                 scanner_profile=values.get("LEO_SCANNER_PROFILE", "alternating-2p5m-5m"),
+                scanner_host_decision_manifest_path=(
+                    Path(values["LEO_SCANNER_HOST_DECISION_MANIFEST_PATH"])
+                    if values.get("LEO_SCANNER_HOST_DECISION_MANIFEST_PATH")
+                    else None
+                ),
+                scanner_host_decision_manifest_sha256=values.get(
+                    "LEO_SCANNER_HOST_DECISION_MANIFEST_SHA256"
+                ),
                 scanner_hop_policy=cast(
                     Literal["fixed", "shadow", "adaptive"],
                     values.get("LEO_SCANNER_HOP_POLICY", "fixed"),
@@ -657,6 +719,12 @@ class CompositionHooks:
     scanner_radio_factory: ScannerRadioFactory | None = None
     persistent_hop_radio_factory: PersistentHopRadioFactory | None = None
     adaptive_hop_radio_factory: Callable[[RadioConfigurationV1], AdaptiveHopRadio] | None = None
+    host_adaptive_hop_radio_factory: (
+        Callable[[RadioConfigurationV1], HostAdaptiveHopRadio] | None
+    ) = None
+    host_decision_release_loader: Callable[[Path, str], HostDecisionRelease] = (
+        load_host_decision_release
+    )
     persistent_hop_iiod_lifecycle_factory: PersistentHopIiodLifecycleFactory = (
         create_pluto_userspace_iiod_lifecycle
     )
@@ -1192,6 +1260,9 @@ class LocalAcquisitionBackend:
             coalesce_pending_kind=coalesce_pending_kind,
         )
 
+    def acquisition_operation_by_key(self, operation_key: str) -> AcquisitionOperationRecord | None:
+        return self._acquisition_operation_catalog().acquisition_operation_by_key(operation_key)
+
     def active_acquisition_operations(
         self,
         *,
@@ -1361,7 +1432,10 @@ class LocalAcquisitionBackend:
         if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
         expected_operation_key = canonical_scheduled_scanner_operation_key(scheduled_for)
-        if operation_key != expected_operation_key:
+        if (
+            operation_key != expected_operation_key
+            and self.settings.scanner_profile != HOST_ADAPTIVE_PROFILE_ID
+        ):
             raise CliBackendError(
                 "scheduled scanner operation key disagrees with its UTC cadence slot",
                 ExitCode.INVALID_CONFIGURATION,
@@ -1372,6 +1446,29 @@ class LocalAcquisitionBackend:
             for radio in self.settings.radios
             if radio.radio_id == self.settings.scanner_radio_id
         )
+        if self.settings.scanner_profile == HOST_ADAPTIVE_PROFILE_ID:
+            release = self._host_decision_release()
+            mode = self.settings.scanner_hop_policy
+            assert mode in ("shadow", "adaptive")
+            intent = compile_host_adaptive_scanner_intent(
+                radio_id=configured.radio_id,
+                radio_serial=configured.serial or configured.radio_id,
+                scheduled_for=scheduled_for,
+                mode=mode,
+                decision=release.configuration,
+                maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
+                gain_db=self.settings.scanner_gain_db,
+                margin_gate=self.settings.scanner_margin_gate,
+                maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
+            )
+            # The queue keeps the canonical UTC slot key across profile changes;
+            # the persisted V4 payload binds its profile, mode and detector too.
+            if operation_key not in (expected_operation_key, intent.operation_key):
+                raise CliBackendError(
+                    "host adaptive operation key differs from its durable slot",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            return intent
         from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID, compile_single_rx_scanner_intent
 
         compiler = (
@@ -1683,6 +1780,8 @@ class LocalAcquisitionBackend:
                         before_publish=cleanup_before_publish,
                     )
                 except BaseException as primary:
+                    if lifecycle_active and not cleanup_attempted:
+                        attach_iiod_failure_diagnostics(lifecycle, primary)
                     try:
                         cleanup_before_publish()
                     except BaseException as cleanup:
@@ -1732,15 +1831,29 @@ class LocalAcquisitionBackend:
         self, intent: ScheduledScannerRunIntentV1, *, cancel: Event
     ) -> ScheduledAdaptiveHopRun:
         configured = next(r for r in self.settings.radios if r.radio_id == intent.radio_id)
-        geometry = compile_scheduled_persistent_hop_plan_v1(
-            intent,
-            transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
-            kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
-            samples_per_block=self.settings.scanner_persistent_samples_per_block,
+        host_plan = (
+            compile_host_adaptive_hop_plan(
+                intent,
+                transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
+                kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
+                samples_per_block=self.settings.scanner_persistent_samples_per_block,
+            )
+            if isinstance(intent, HostAdaptiveScheduledScannerIntentV4)
+            else None
+        )
+        geometry = (
+            host_plan.geometry
+            if host_plan is not None
+            else compile_scheduled_persistent_hop_plan_v1(
+                intent,
+                transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
+                kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
+                samples_per_block=self.settings.scanner_persistent_samples_per_block,
+            )
         )
         mode = self.settings.scanner_hop_policy
         options = self.settings.scanner_glrt
-        assert mode in ("shadow", "adaptive") and options is not None
+        assert mode in ("shadow", "adaptive") and (options is not None or host_plan is not None)
         session_id = f"scan-hop-{intent.intent_digest.removeprefix('sha256:')[:16]}"
         store = self._adaptive_hop_iq_store()
 
@@ -1758,6 +1871,7 @@ class LocalAcquisitionBackend:
             receipt = existing.manifest.receipt
             if (
                 receipt.plan.geometry != geometry
+                or (host_plan is not None and receipt.plan != host_plan)
                 or receipt.plan.policy.mode != mode
                 or receipt.radio_id != configured.radio_id
                 or receipt.radio_serial != configured.serial
@@ -1768,11 +1882,15 @@ class LocalAcquisitionBackend:
                     "persisted adaptive capture disagrees with scheduled policy or radio",
                     ExitCode.CONFLICT,
                 )
-            warning = existing_scanner_glrt_warning(
-                existing,
-                options,
-                store_factory=self.hooks.scanner_glrt_store_factory,
-                bulk_root=self.settings.bulk_root,
+            warning = (
+                None
+                if options is None
+                else existing_scanner_glrt_warning(
+                    existing,
+                    options,
+                    store_factory=self.hooks.scanner_glrt_store_factory,
+                    bulk_root=self.settings.bulk_root,
+                )
             )
             if warning:
                 logging.getLogger(__name__).warning("%s: %s; IQ preserved", session_id, warning)
@@ -1786,11 +1904,19 @@ class LocalAcquisitionBackend:
                 "adaptive capture cancelled before radio setup", ExitCode.CONFLICT
             )
         self._admit_persistent_hop_iq(geometry)
-        plan = AdaptiveHopPlanV1(
-            geometry=geometry,
-            policy=AdaptiveHopPolicyV1(mode=mode, generation=secrets.randbits(64) or 1),
+        plan = (
+            host_plan
+            if host_plan is not None
+            else AdaptiveHopPlanV1(
+                geometry=geometry,
+                policy=AdaptiveHopPolicyV1(mode=mode, generation=secrets.randbits(64) or 1),
+            )
         )
-        radio = self._adaptive_hop_radio(configured)
+        radio = (
+            self._host_adaptive_hop_radio(configured)
+            if host_plan is not None
+            else self._adaptive_hop_radio(configured)
+        )
         try:
             with self._authority().claim(
                 (configured.radio_id,), task_id=session_id, task_kind=CaptureTaskKind.SCANNER_SWEEP
@@ -1818,16 +1944,29 @@ class LocalAcquisitionBackend:
                 try:
                     lifecycle.enter_and_attest()
                     active = True
-                    published = capture_adaptive_hop_to_store(
-                        radio,
-                        plan,
-                        session_id=session_id,
-                        store=store,
-                        cancel=cancel,
-                        queue_capacity_visits=self.settings.scanner_persistent_queue_capacity_visits,
-                        before_publish=cleanup_before_publish,
-                    )
+                    if isinstance(plan, HostAdaptiveHopPlanV2):
+                        published = capture_host_adaptive_hop_to_store(
+                            cast(HostAdaptiveHopRadio, radio),
+                            plan,
+                            session_id=session_id,
+                            store=store,
+                            cancel=cancel,
+                            queue_capacity_visits=self.settings.scanner_persistent_queue_capacity_visits,
+                            before_publish=cleanup_before_publish,
+                        )
+                    else:
+                        published = capture_adaptive_hop_to_store(
+                            cast(AdaptiveHopRadio, radio),
+                            plan,
+                            session_id=session_id,
+                            store=store,
+                            cancel=cancel,
+                            queue_capacity_visits=self.settings.scanner_persistent_queue_capacity_visits,
+                            before_publish=cleanup_before_publish,
+                        )
                 except BaseException as primary:
+                    if active and not cleanup_attempted:
+                        attach_iiod_failure_diagnostics(lifecycle, primary)
                     try:
                         cleanup_before_publish()
                     except BaseException as cleanup:
@@ -1835,13 +1974,17 @@ class LocalAcquisitionBackend:
                     raise
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
-        warning = publish_scanner_glrt(
-            cast(ScannerGlrtEvidenceSource, radio),
-            published,
-            options,
-            store_factory=self.hooks.scanner_glrt_store_factory,
-            bulk_root=self.settings.bulk_root,
-            realtime_ns=self.hooks.scanner_utc_ns,
+        warning = (
+            None
+            if options is None
+            else publish_scanner_glrt(
+                cast(ScannerGlrtEvidenceSource, radio),
+                published,
+                options,
+                store_factory=self.hooks.scanner_glrt_store_factory,
+                bulk_root=self.settings.bulk_root,
+                realtime_ns=self.hooks.scanner_utc_ns,
+            )
         )
         return ScheduledAdaptiveHopRun(intent, published, warning)
 
@@ -2945,6 +3088,48 @@ class LocalAcquisitionBackend:
             read_ahead_visits=self.settings.scanner_persistent_read_ahead_visits,
             scanner_glrt=self.settings.scanner_glrt,
         )
+
+    def _host_decision_release(self) -> HostDecisionRelease:
+        manifest = self.settings.scanner_host_decision_manifest_path
+        digest = self.settings.scanner_host_decision_manifest_sha256
+        if manifest is None or digest is None:
+            raise CliBackendError(
+                "host adaptive detector release is not pinned", ExitCode.INVALID_CONFIGURATION
+            )
+        return self.hooks.host_decision_release_loader(manifest, digest)
+
+    def _host_adaptive_hop_radio(self, configuration: RadioConfigurationV1) -> HostAdaptiveHopRadio:
+        release = self._host_decision_release()
+        if configuration.host is None or configuration.serial is None:
+            raise CliBackendError(
+                "host adaptive radio requires an exact Ethernet identity",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        factory = self.hooks.host_adaptive_hop_radio_factory
+        radio = (
+            factory(configuration)
+            if factory is not None
+            else PlutoHostAdaptiveHopRadio(
+                configuration.host,
+                expected_serial=configuration.serial,
+                radio_id=configuration.radio_id,
+                decision=release.configuration,
+                decision_engine_factory=release.create_engine,
+                iiod_port=self.settings.scanner_persistent_iiod_port,
+                read_ahead_visits=self.settings.scanner_persistent_read_ahead_visits,
+            )
+        )
+        if (
+            radio.identity.radio_id != configuration.radio_id
+            or radio.identity.serial != configuration.serial
+            or radio.identity.uri
+            != f"ip:{configuration.host}:{self.settings.scanner_persistent_iiod_port}"
+        ):
+            raise CliBackendError(
+                "host adaptive factory changed the admitted radio identity",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        return radio
 
     def _adaptive_hop_radio(self, configuration: RadioConfigurationV1) -> AdaptiveHopRadio:
         if self.hooks.adaptive_hop_radio_factory is not None:

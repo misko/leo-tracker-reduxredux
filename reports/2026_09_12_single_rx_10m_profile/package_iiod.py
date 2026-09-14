@@ -1,5 +1,6 @@
 """Package the bounded local iiOD build and its exact source provenance; no RF."""
 
+import argparse
 import hashlib
 import json
 import re
@@ -13,6 +14,17 @@ SOURCE = Path("/home/mouse9911/gits/libiio-single-rx-10m")
 BUILD = Path("/tmp/leo-single-rx-iiod-arm")
 NATIVE = Path("/tmp/leo-single-rx-iiod-native")
 SDK = Path("/home/mouse9911/gits/plutosdr-fw/buildroot/output/host")
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--source", type=Path, default=SOURCE)
+parser.add_argument("--arm-build", type=Path, default=BUILD)
+parser.add_argument("--native-build", type=Path, default=NATIVE)
+parser.add_argument("--destination", type=Path, default=ROOT / "runtime/scanner-iiod/iiod")
+args = parser.parse_args()
+SOURCE, BUILD, NATIVE = args.source.resolve(), args.arm_build.resolve(), args.native_build.resolve()
+destination = args.destination.resolve()
+if destination.is_relative_to(Path("/mnt/qnap01")):
+    parser.error("QNAP is read-only")
 
 
 def command(*args, cwd=None):
@@ -41,6 +53,7 @@ tests = [
     "test_spf_hop_session",
     "test_spf_hop_protocol",
     "test_spf_hop_adaptive",
+    "test_spf_sampler_coverage",
 ]
 for test in tests:
     subprocess.run([NATIVE / "tests" / test], check=True, timeout=30)
@@ -94,7 +107,7 @@ document["configuration"]["arm_cmake_cache_sha256"] = digest(BUILD / "CMakeCache
 for key in ("alternate_tcp_server_command", "alternate_tcp_server_command_explicit_local_context"):
     document["runtime"][key][0] = f"/path/to/iiod-armv7l-{revision[:7]}"
 document["configuration"]["single_rx_10m_capability"] = "iio,buffer-persistent-hop-single-rx-10m=1"
-destination = ROOT / "runtime/scanner-iiod/iiod"
+destination.parent.mkdir(parents=True, exist_ok=True)
 shutil.copyfile(binary, destination)
 destination.chmod(0o755)
 (destination.parent / "provenance.json").write_text(json.dumps(document, indent=2) + "\n")

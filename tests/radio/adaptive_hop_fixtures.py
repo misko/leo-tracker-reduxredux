@@ -30,18 +30,37 @@ from pluto_plus.persistent_hop import (
 )
 
 from leo.radio.adaptive_hop_mapping import load_adaptive_policy
+from leo.radio.host_adaptive_mapping import load_host_decision, load_host_policy
 from leo.radio.pluto_persistent_hop import _load_plan
+from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2
 from tests.scanner.adaptive_hop_fixtures import block_fixture
 
 
 def upstream_receipt(receipt):
+    host = isinstance(receipt.plan, HostAdaptiveHopPlanV2)
+    request_type = AdaptiveHopRequestV2
+    status_type = AdaptiveHopStatusV2
+    stream_type = AdaptiveHopStreamReceiptV2
+    capture_type = AdaptiveHopCaptureReceiptV2
+    request_extra = ()
+    capture_extra = (None,)
+    policy = load_host_policy(receipt.plan) if host else load_adaptive_policy(receipt.plan)
+    if host:
+        from pluto_plus.host_adaptive_hop import HostAdaptiveHopRequestV3, HostAdaptiveHopStatusV3
+        from pluto_plus.host_adaptive_hop_client import HostAdaptiveHopCaptureReceiptV3
+        from pluto_plus.host_adaptive_hop_stream import HostAdaptiveHopStreamReceiptV3
+
+        request_type, status_type = HostAdaptiveHopRequestV3, HostAdaptiveHopStatusV3
+        stream_type, capture_type = HostAdaptiveHopStreamReceiptV3, HostAdaptiveHopCaptureReceiptV3
+        request_extra = (load_host_decision(receipt.plan),)
+        capture_extra = ()
     plan = _load_plan(receipt.plan.geometry)
     # Substitute hardware-prepared CRCs, as the real backend does before OPEN.
     plan = dataclasses.replace(
         plan, profiles=tuple(dataclasses.replace(p, profile_crc32=1) for p in plan.profiles)
     )
-    request = AdaptiveHopRequestV2(
-        plan.request(session_id=receipt.terminal.session_id), load_adaptive_policy(receipt.plan)
+    request = request_type(
+        plan.request(session_id=receipt.terminal.session_id), policy, *request_extra
     )
     events, choices = [], []
     reasons = ("warmup", "weighted", "exploration", "none_active", "fault_fallback")
@@ -114,9 +133,9 @@ def upstream_receipt(receipt):
         gain_modes=(settings.gain_mode.value,) * 2,
         gain_db=tuple(g.gain_db for g in settings.gains),
     )
-    stream = AdaptiveHopStreamReceiptV2(
+    stream = stream_type(
         request=request,
-        status=AdaptiveHopStatusV2(PersistentHopStatusV1(**fields)),
+        status=status_type(PersistentHopStatusV1(**fields)),
         stream_generation=receipt.stream_generation,
         visits=visits,
         events=tuple(events),
@@ -144,7 +163,7 @@ def upstream_receipt(receipt):
             )
         },
     )
-    return AdaptiveHopCaptureReceiptV2(
+    return capture_type(
         stream,
         receipt.radio_serial,
         receipt.radio_uri,
@@ -152,7 +171,7 @@ def upstream_receipt(receipt):
         None,
         receipt.kernel_buffers_requested,
         receipt.kernel_buffers_readback,
-        None,
+        *capture_extra,
     )
 
 

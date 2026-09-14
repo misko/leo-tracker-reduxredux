@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -21,6 +21,13 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
 )
+from leo.scanner.host_adaptive_analysis import (
+    HostAdaptiveAnalysisConfigurationV2,
+    HostAdaptiveAnalysisSource,
+    analyze_host_adaptive_visit,
+    analyze_host_adaptive_visit_batch,
+)
+from leo.scanner.host_adaptive_products import HostAdaptiveAnalysisBindingV2
 
 
 class AdaptiveHopAnalysisInputs(Protocol):
@@ -52,6 +59,8 @@ class AdaptiveHopAnalysisRun:
 
 
 class AdaptiveHopAnalysisService:
+    _host_adaptive = False
+
     def __init__(
         self,
         *,
@@ -73,13 +82,14 @@ class AdaptiveHopAnalysisService:
     ) -> AdaptiveHopAnalysisRun:
         """Budget/cancel at visit boundaries; never truncate scientific windows.
 
-        A running batch (at most two visits) may exceed the time budget. Completed
+        A running bounded batch may exceed the time budget. Completed
         checkpoints survive errors; metrics completion does not assert UI readiness.
         """
         if type(maximum_visits) is not int or not 1 <= maximum_visits <= 2500:
             raise ValueError("adaptive analysis visit budget must be in 1..2500")
-        if type(maximum_workers) is not int or maximum_workers not in (1, 2):
-            raise ValueError("adaptive analysis worker count must be 1 or 2")
+        worker_limit = 4 if self._host_adaptive else 2
+        if type(maximum_workers) is not int or not 1 <= maximum_workers <= worker_limit:
+            raise ValueError(f"adaptive analysis worker count must be within 1..{worker_limit}")
         if (
             isinstance(maximum_seconds, bool)
             or not math.isfinite(maximum_seconds)
@@ -87,18 +97,35 @@ class AdaptiveHopAnalysisService:
         ):
             raise ValueError("adaptive analysis time budget must be in (0, 1800] seconds")
         # Validate geometry/options before opening source or output directories.
-        AdaptiveHopAnalysisConfigurationV1(
-            sample_rate_hz=2_500_000, probe_stride_ms=probe_stride_ms
+        configuration_model: type[AdaptiveHopAnalysisConfigurationV1] = (
+            HostAdaptiveAnalysisConfigurationV2
+            if self._host_adaptive
+            else AdaptiveHopAnalysisConfigurationV1
+        )
+        configuration_model.model_validate(
+            dict(
+                sample_rate_hz=10_000_000 if self._host_adaptive else 2_500_000,
+                receiver_ids=(0,) if self._host_adaptive else (0, 1),
+                probe_stride_ms=probe_stride_ms,
+            )
         )
         started = self._clock()
         with self._inputs.source(session_id) as source:
+            if isinstance(source, HostAdaptiveAnalysisSource) != self._host_adaptive:
+                raise ValueError("adaptive analysis service does not match the source major")
             if source.receipt.session_id != session_id:
                 raise ValueError("adaptive analysis input changed requested identity")
-            configuration = AdaptiveHopAnalysisConfigurationV1(
+            configuration = configuration_model(
                 sample_rate_hz=source.receipt.plan.geometry.sample_rate_hz,
+                receiver_ids=source.receipt.plan.geometry.receiver_ids,
                 probe_stride_ms=probe_stride_ms,
             )
-            binding = AdaptiveHopAnalysisBindingV1(
+            binding_model: type[AdaptiveHopAnalysisBindingV1] = (
+                HostAdaptiveAnalysisBindingV2
+                if self._host_adaptive
+                else AdaptiveHopAnalysisBindingV1
+            )
+            binding = binding_model(
                 receipt=source.receipt,
                 input_manifest_sha256=source.input_manifest_sha256,
                 configuration=configuration,
@@ -123,17 +150,32 @@ class AdaptiveHopAnalysisService:
                         indexes = tuple(
                             pending[offset : offset + min(maximum_workers, maximum_visits - count)]
                         )
-                        analyses = (
-                            (
-                                analyze_adaptive_hop_visit(
-                                    source, indexes[0], configuration=configuration
-                                ),
+                        analyses: Iterable[AdaptiveHopVisitAnalysisV1]
+                        if isinstance(source, HostAdaptiveAnalysisSource):
+                            assert isinstance(configuration, HostAdaptiveAnalysisConfigurationV2)
+                            analyses = (
+                                analyze_host_adaptive_visit_batch(
+                                    source, indexes, configuration=configuration
+                                )
+                                if maximum_workers > 1
+                                else (
+                                    analyze_host_adaptive_visit(
+                                        source, indexes[0], configuration=configuration
+                                    ),
+                                )
                             )
-                            if maximum_workers == 1
-                            else analyze_adaptive_hop_visit_batch(
-                                source, indexes, configuration=configuration
+                        else:
+                            analyses = (
+                                (
+                                    analyze_adaptive_hop_visit(
+                                        source, indexes[0], configuration=configuration
+                                    ),
+                                )
+                                if maximum_workers == 1
+                                else analyze_adaptive_hop_visit_batch(
+                                    source, indexes, configuration=configuration
+                                )
                             )
-                        )
                         for index, product in zip(indexes, analyses, strict=True):
                             job.write_visit(product)
                             completed.add(index)
@@ -149,3 +191,9 @@ class AdaptiveHopAnalysisService:
                     newly_analyzed_visits=count,
                     stop_reason=reason,
                 )
+
+
+class HostAdaptiveAnalysisService(AdaptiveHopAnalysisService):
+    """Explicit native single-RX service, admitting at most four offline workers."""
+
+    _host_adaptive = True

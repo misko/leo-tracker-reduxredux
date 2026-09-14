@@ -38,11 +38,13 @@ from leo.scanner.persistent_hop_ports import (
 )
 from leo.scanner.ports import ScanRadioIdentity
 
+# Historical identifier retained for import compatibility; no longer a denylist.
 PERSISTENT_HOP_EXCLUDED_SERIAL = "104000bac4950008230026001b440a003a"
 _DEFAULT_READ_AHEAD_VISITS = 8
 _MAXIMUM_READ_AHEAD_VISITS = 64
 _PRODUCER_POLL_SECONDS = 0.05
 _PRODUCER_JOIN_TIMEOUT_SECONDS = 15.0
+_CANCEL_DRAIN_TIMEOUT_SECONDS = 10.0
 
 PersistentHopClientFactory = Callable[..., Any]
 PersistentHopPlanFactory = Callable[[PersistentHopPlanV1], Any]
@@ -77,8 +79,6 @@ class PlutoPersistentHopRadio:
         self._uri = _physical_lan_uri(host, iiod_port=iiod_port)
         if not expected_serial or expected_serial != expected_serial.strip():
             raise ValueError("persistent-hop serial must be one trimmed nonempty value")
-        if expected_serial == PERSISTENT_HOP_EXCLUDED_SERIAL:
-            raise ValueError("the excluded Pluto serial cannot run persistent hopping")
         if not radio_id or radio_id != radio_id.strip():
             raise ValueError("persistent-hop radio ID must be one trimmed nonempty value")
         if (
@@ -204,6 +204,7 @@ class _PlutoPersistentHopSession:
         self._wire_session_id = wire_session_id
         self._visits: queue.Queue[PersistentHopVisitBlock] = queue.Queue(maxsize=read_ahead_visits)
         self._cancel_requested = threading.Event()
+        self._cancel_drain_started: float | None = None
         self._producer_done = threading.Event()
         self._producer_error: BaseException | None = None
         self._producer_error_observed = False
@@ -287,7 +288,7 @@ class _PlutoPersistentHopSession:
         try:
             visits = iter(self._upstream.visits())
             while True:
-                if self._cancel_requested.is_set():
+                if self._cancel_at_retained_boundary():
                     self._cancel_upstream()
                     self._receipt = self._map_receipt()
                     return
@@ -300,7 +301,7 @@ class _PlutoPersistentHopSession:
                 block = self._map_sampled_visit(sampled)
                 self._put_completed_visit(block)
                 self._produced_evidence.append(block.evidence)
-                if self._cancel_requested.is_set():
+                if self._cancel_at_retained_boundary():
                     self._cancel_upstream()
                     self._receipt = self._map_receipt()
                     return
@@ -319,6 +320,24 @@ class _PlutoPersistentHopSession:
                     # independently validated recording from completing.
                     self._classification_error = f"classification snapshot failed: {error}"
             self._producer_done.set()
+
+    def _cancel_at_retained_boundary(self) -> bool:
+        if not self._cancel_requested.is_set():
+            return False
+        # Queued metadata can close a visit before its last IQ refill arrives.
+        # PPU's cancellation receipt includes those closed visits. Consume their
+        # actual IQ before closing the transport; never trim or invent a receipt.
+        completed = getattr(self._upstream, "completed_visits", None)
+        if completed is None or len(completed) == len(self._produced_evidence):
+            return True
+        if len(completed) < len(self._produced_evidence):
+            raise PlutoPersistentHopError("PPU completed visit inventory regressed")
+        now = time.monotonic()
+        if self._cancel_drain_started is None:
+            self._cancel_drain_started = now
+        if now - self._cancel_drain_started >= _CANCEL_DRAIN_TIMEOUT_SECONDS:
+            raise PlutoPersistentHopError("cancellation timed out draining closed-visit IQ")
+        return False
 
     def _map_sampled_visit(self, sampled: Any) -> PersistentHopVisitBlock:
         evidence = _map_visit(sampled.visit, self._plan)
@@ -414,7 +433,8 @@ class _PlutoPersistentHopSession:
             )
             if receipt.visits != tuple(self._produced_evidence):
                 raise PlutoPersistentHopError(
-                    "PPU terminal visits disagree with produced IQ visits"
+                    "PPU terminal visits disagree with produced IQ visits: "
+                    f"terminal={len(receipt.visits)}, produced={len(self._produced_evidence)}"
                 )
             return receipt
         except PlutoPersistentHopError:

@@ -51,6 +51,14 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"leo.analysis" = [
+  "native_presence/*.c",
+  "native_presence/*.h",
+  "native_presence/*.inc",
+  "starlink/_native_acquisition_grid.inc",
+]
+
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = ["tests"]
@@ -97,4 +105,4 @@ module = ["sgp4.*"]
 ignore_missing_imports = true
 
 [tool.uv.sources]
-pluto-plus-utils = { git = "https://github.com/misko/pluto-plus-utils", rev = "b513e0b0dab1c15ce790317b35b5edf1abbacfff" }
+pluto-plus-utils = { git = "https://github.com/misko/pluto-plus-utils", rev = "ac7dae8796099ad63dad2bc9700bf52638c8450a" }

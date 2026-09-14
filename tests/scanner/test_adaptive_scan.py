@@ -36,6 +36,11 @@ class Observation(ct.Structure):
     ] + [(k, ct.c_uint32) for k in ("rate_hz", "rx", "target", "outcome", "healthy")]
 
 
+class ConfigV2(ct.Structure):
+    _fields_ = [("geometry", Config), ("classification_rx", ct.c_uint32),
+                ("reserved", ct.c_uint32)]
+
+
 class Choice(ct.Structure):
     _fields_ = [
         (k, ct.c_uint64)
@@ -74,6 +79,7 @@ def policy(tmp_path_factory):
     )
     lib = ct.CDLL(str(output))
     lib.leo_adaptive_create.argtypes = [ct.POINTER(ct.c_void_p), ct.POINTER(Config)]
+    lib.leo_adaptive_create_v2.argtypes = [ct.POINTER(ct.c_void_p), ct.POINTER(ConfigV2)]
     lib.leo_adaptive_destroy.argtypes = [ct.c_void_p]
     lib.leo_adaptive_choose.argtypes = [ct.c_void_p, ct.c_uint64, ct.POINTER(Choice)]
     lib.leo_adaptive_commit.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64]
@@ -85,7 +91,8 @@ def policy(tmp_path_factory):
 
 
 class Scan:
-    def __init__(self, lib, *, rate=2500000, targets=8, start=2**53 + 217, **changes):
+    def __init__(self, lib, *, rate=2500000, targets=8, start=2**53 + 217,
+                 single_rx=None, **changes):
         self.lib = lib
         self.config = Config(
             71, 9, start, rate, targets, 2500, 3, 3, 3, 1, 2000, 3000, 160, 1000, 3
@@ -93,7 +100,12 @@ class Scan:
         for k, v in changes.items():
             setattr(self.config, k, v)
         self.ptr = ct.c_void_p()
-        assert lib.leo_adaptive_create(ct.byref(self.ptr), ct.byref(self.config)) == 0
+        self.rx = 1 if single_rx is None else single_rx
+        if single_rx is None:
+            assert lib.leo_adaptive_create(ct.byref(self.ptr), ct.byref(self.config)) == 0
+        else:
+            config = ConfigV2(self.config, single_rx, 0)
+            assert lib.leo_adaptive_create_v2(ct.byref(self.ptr), ct.byref(config)) == 0
         self.now = start
 
     def close(self):
@@ -109,7 +121,9 @@ class Scan:
         start = self.now
         self.now += self.config.rate_hz * 120 // 1000
         assert self.lib.leo_adaptive_commit(self.ptr, start, self.now) == 0
-        return Observation(71, 9, c.visit, start, self.now, self.config.rate_hz, 1, c.target, 0, 1)
+        return Observation(
+            71, 9, c.visit, start, self.now, self.config.rate_hz, self.rx, c.target, 0, 1,
+        )
 
     def observe(self, o):
         assert self.lib.leo_adaptive_observe(self.ptr, ct.byref(o), self.now) == 0
@@ -409,6 +423,7 @@ def test_scan_reset_does_not_reuse_activity(policy):
     [
         ("session", 0),
         ("rate_hz", 60000000),
+        ("rate_hz", 10000000),
         ("target_count", 9),
         ("maximum_visits", 2501),
         ("warmup_visits", 0),
@@ -427,4 +442,41 @@ def test_invalid_configuration_is_rejected_without_changing_output(policy, field
     setattr(c, field, value)
     ptr = ct.c_void_p(123)
     assert policy.leo_adaptive_create(ct.byref(ptr), ct.byref(c)) == -errno.EINVAL
+    assert ptr.value == 123
+
+
+@pytest.mark.parametrize("rx", [0, 1])
+@pytest.mark.parametrize("mask", [0, 1, 85, 255])
+def test_native_10m_single_rx_policy_and_wrong_receiver_rejection(policy, rx, mask):
+    s = Scan(policy, rate=10000000, single_rx=rx, start=2**53 + 2**32 - 400000)
+    counts = Counter()
+    try:
+        for index in range(200):
+            c = s.choose()
+            assert c.reason != 4  # healthy processing never enters fault fallback
+            if index >= 48:
+                assert c.active_mask == mask
+                assert c.quiet_mask == mask ^ 255
+                counts[c.target] += 1
+            o = s.commit(c)
+            o.outcome = 1 if mask & (1 << c.target) else 2
+            o.rx = 1 - rx
+            assert policy.leo_adaptive_observe(s.ptr, ct.byref(o), s.now) == -errno.EINVAL
+            o.rx = rx
+            s.observe(o)
+            assert policy.leo_adaptive_observe(s.ptr, ct.byref(o), s.now) == -errno.EALREADY
+        assert set(counts) == set(range(8))
+        if mask == 1:
+            assert counts[0] > 2 * counts[1]
+    finally:
+        s.close()
+
+
+@pytest.mark.parametrize("rx,reserved,rate", [(2, 0, 10000000), (0, 1, 10000000),
+                                            (0, 0, 2500000), (1, 0, 5000000)])
+def test_single_rx_api_rejects_unsupported_admission(policy, rx, reserved, rate):
+    config = ConfigV2(Config(71, 9, 0, rate, 8, 2500, 3, 3, 3, 1,
+                            2000, 3000, 160, 1000, 3), rx, reserved)
+    ptr = ct.c_void_p(123)
+    assert policy.leo_adaptive_create_v2(ct.byref(ptr), ct.byref(config)) == -errno.EINVAL
     assert ptr.value == 123

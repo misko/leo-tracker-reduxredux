@@ -34,6 +34,28 @@ def test_cadence_enqueue_is_idempotent_and_conflicts_fail_closed(catalog_harness
         )
 
 
+@pytest.mark.postgres
+@pytest.mark.parametrize("terminal", [False, True])
+def test_lookup_returns_original_intent_including_terminal_history(catalog_harness, terminal):
+    repository = catalog_harness.repository
+    key = "scanner:original-slot"
+    assert repository.acquisition_operation_by_key(key) is None
+    first = _enqueue(catalog_harness, key, "scanner_sweep")
+    if terminal:
+        lease = repository.claim_acquisition_operation(
+            worker_id="lookup-test", lease_for=timedelta(minutes=10)
+        )
+        assert lease is not None
+        repository.complete_acquisition_operation(
+            operation_id=lease.operation_id, worker_id="lookup-test", outcome="complete"
+        )
+    found = repository.acquisition_operation_by_key(key)
+    assert found is not None and found.payload == first.payload
+    assert found.operation_id == first.operation_id
+    assert found.state == ("succeeded" if terminal else "pending")
+    assert repository.acquisition_operation_by_key(key + "-other") is None
+
+
 def test_coalesced_cadence_keeps_only_newest_pending_intent(catalog_harness) -> None:
     due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
     for offset in range(3):
