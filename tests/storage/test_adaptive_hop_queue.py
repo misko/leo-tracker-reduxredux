@@ -80,8 +80,16 @@ def test_adaptive_queue_faults_never_block_capture_or_publish(monkeypatch, fault
 def test_adaptive_invalid_queue_capacity_does_not_reserve_storage(tmp_path):
     store = AdaptiveHopIqStore(tmp_path)
     receipt = receipt_fixture(count=0)
-    for capacity in (0, True, 65, 1.0):
+    for capacity in (0, True, 257, 1.0):
         with pytest.raises(ValueError):
             store.begin_queued(receipt.session_id, receipt.plan, capacity_visits=capacity)
     assert list(tmp_path.iterdir()) == []
     store.close()
+
+
+def test_adaptive_queue_accepts_capacity_for_measured_storage_stalls():
+    base = BlockedWriter()
+    base.release.set()
+    writer = QueuedAdaptiveHopSessionWriter(base, capacity_visits=256)
+    assert writer.telemetry.capacity_visits == 256
+    writer.abort()

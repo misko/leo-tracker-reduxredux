@@ -409,9 +409,9 @@ class CliSettings:
             )
         if self.scanner_hop_policy != "fixed" and (
             type(self.scanner_persistent_queue_capacity_visits) is not int
-            or not 1 <= self.scanner_persistent_queue_capacity_visits <= 64
+            or not 1 <= self.scanner_persistent_queue_capacity_visits <= 256
         ):
-            raise ValueError("adaptive storage queue capacity must be an integer within 1..64")
+            raise ValueError("adaptive storage queue capacity must be an integer within 1..256")
         if self.scanner_glrt is not None:
             if not isinstance(self.scanner_glrt, ScannerGlrtOptions):
                 raise ValueError("scanner GLRT options have an invalid type")
