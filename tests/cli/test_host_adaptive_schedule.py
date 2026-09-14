@@ -128,6 +128,7 @@ def test_default_composition_wires_adaptive_spool_into_capture_store(tmp_path):
         try:
             assert capture_store._spool_root is not None
             assert capture_store._spool_root.root == spool
+            assert capture_store._defer_spool_transfer is True
         finally:
             capture_store.close()
     finally:
