@@ -1,0 +1,95 @@
+{
+  "status": "failed",
+  "started_utc_ns": 1789249123796911336,
+  "maximum_rf_seconds": 300,
+  "purpose": "metadata polling margin baseline canary; no adaptive decisions",
+  "provider_sha256": "5b833a81ce5f6db315b5d39fa9710e926ca526e8c2b045228b2d34bc3285d010",
+  "provider_revision": "10e72e8b3e8c4e4d62067d2d1d21ef365b6c8fcf",
+  "isolated_bulk_root": "/srv/bulk/leo-metadata-canary-20260912-02",
+  "intent": {
+    "schema_version": 2,
+    "policy_id": "single-rx-random-10m-300s-v1",
+    "intent_digest": "sha256:1455548ef7453123e82540b091c2b9ae04c338ddc492d37ac7beb3a64dd7ee7f",
+    "operation_key": "scheduled-scanner:20260912T212000Z",
+    "radio_id": "radio_pluto_5d4d",
+    "radio_serial": "1040005e0b100007100010000bf33a5d4d",
+    "scheduled_for": "2026-09-12T21:20:00Z",
+    "cadence_ordinal": 1491040,
+    "interval_seconds": 1200.0,
+    "maximum_lateness_seconds": 300.0,
+    "run_duration_seconds": 300,
+    "configuration": {
+      "schema_version": 4,
+      "band_plan_id": "starlink-low-ch1-ch4-pilot-centered-single-rx-v1",
+      "lnb_lo_hz": 9750000000,
+      "sample_rate_hz": 10000000,
+      "bandwidth_hz": 10000000,
+      "dwell_ms": 120,
+      "probe_ms": 20,
+      "kernel_buffers": 8,
+      "receiver_ids": [
+        1
+      ],
+      "gain_mode": "manual",
+      "gain_db": 40.0,
+      "glrt64_margin_gate": 0.025,
+      "maximum_acquisition_candidates": 10,
+      "targets": [
+        {
+          "channel": 1,
+          "edge": "lower",
+          "rf_center_hz": 10709687500,
+          "if_center_hz": 959687500
+        },
+        {
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10959687500,
+          "if_center_hz": 1209687500
+        },
+        {
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11209687500,
+          "if_center_hz": 1459687500
+        },
+        {
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11459687500,
+          "if_center_hz": 1709687500
+        },
+        {
+          "channel": 1,
+          "edge": "upper",
+          "rf_center_hz": 10940312500,
+          "if_center_hz": 1190312500
+        },
+        {
+          "channel": 2,
+          "edge": "upper",
+          "rf_center_hz": 11190312500,
+          "if_center_hz": 1440312500
+        },
+        {
+          "channel": 3,
+          "edge": "upper",
+          "rf_center_hz": 11440312500,
+          "if_center_hz": 1690312500
+        },
+        {
+          "channel": 4,
+          "edge": "upper",
+          "rf_center_hz": 11690312500,
+          "if_center_hz": 1940312500
+        }
+      ],
+      "tuning_settle_us": 250,
+      "reset_receive_buffer_before_each_target": true,
+      "require_device_metadata": true
+    }
+  },
+  "capture_started_utc_ns": 1789249124162031092,
+  "error": "PersistentHopCaptureError: capture=PersistentHopClientError: persistent-hop IQ blocks do not cover the attested valid visit: visit=0 expected=1200000 covered=1178950 valid=[2461472970257,2461474170257) retained=[2461472991307,2461474170955) segments=9; capture_note=persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=18241633989516712117, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.CANCELLED: 4>, reason=<PersistentHopTerminalReason.CLIENT_CLOSE: 2>, error_code=0, flags=<PersistentHopStatusFlag.TERMINAL|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 57>, session_id=18241633989516712117, planned_dwells=2500, visits_started=2, events_emitted=2, next_event_sequence=2, last_block_sequence=8, last_block_end_counter=2461474170955, first_counter=2461472908417, final_counter=2461474637419, restore_before_counter=2461474637419, restore_after_counter=2461474701961, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=1, restored_profile_index=255, startup_invalid_start_counter=2461472908417, startup_invalid_end_counter_exclusive=2461472970257, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=()); recovery=PlutoPersistentHopError: persistent-hop finish requires a server-attested terminal receipt",
+  "finished_utc_ns": 1789249133447077646
+}

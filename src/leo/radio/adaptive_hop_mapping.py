@@ -13,6 +13,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopDecisionV1,
     AdaptiveHopEventV1,
     AdaptiveHopPlanV1,
+    AdaptiveHopPolicyV1,
     AdaptiveHopReceiptV1,
     AdaptiveHopTerminalV1,
     AdaptiveHopVisitV1,
@@ -29,10 +30,15 @@ _REASONS = ("warmup", "weighted", "exploration", "none_active", "fault_fallback"
 
 def load_adaptive_policy(plan: AdaptiveHopPlanV1) -> Any:
     plan = AdaptiveHopPlanV1.model_validate(plan)
+    return _load_policy(plan.policy)
+
+
+def _load_policy(policy: AdaptiveHopPolicyV1) -> Any:
+    policy = AdaptiveHopPolicyV1.model_validate(policy)
     module = importlib.import_module("pluto_plus.adaptive_hop")
     return module.AdaptiveHopPolicyV2(
-        generation=plan.policy.generation,
-        mode=module.AdaptiveHopMode[plan.policy.mode.upper()],
+        generation=policy.generation,
+        mode=module.AdaptiveHopMode[policy.mode.upper()],
     )
 
 
@@ -118,6 +124,20 @@ def map_adaptive_capture(
     if not isinstance(upstream, module.AdaptiveHopCaptureReceiptV2):
         raise ValueError("adaptive application requires an explicit V2 capture receipt")
     plan = AdaptiveHopPlanV1.model_validate(plan)
+    return _map_capture(upstream, plan=plan, identity=identity, session_id=session_id)
+
+
+def _map_capture(
+    upstream: Any,
+    *,
+    plan: AdaptiveHopPlanV1,
+    identity: ScanRadioIdentity,
+    session_id: str,
+    terminal_model: type[AdaptiveHopTerminalV1] = AdaptiveHopTerminalV1,
+    receipt_model: type[AdaptiveHopReceiptV1] = AdaptiveHopReceiptV1,
+    receipt_fields: dict[str, Any] | None = None,
+) -> AdaptiveHopReceiptV1:
+    """Shared source accounting after each public adapter admits its exact major."""
     stream = upstream.stream
     stream.request.pack()
     stream.status.pack()
@@ -127,7 +147,7 @@ def map_adaptive_capture(
     if (
         upstream.radio_serial != identity.serial
         or upstream.radio_uri != identity.uri
-        or stream.request.policy != load_adaptive_policy(plan)
+        or stream.request.policy != _load_policy(plan.policy)
         or dataclasses.replace(stream.request.geometry, profiles=expected.profiles) != expected
         or any(
             dataclasses.replace(actual, profile_crc32=0) != wanted
@@ -140,14 +160,14 @@ def map_adaptive_capture(
     status = stream.status.geometry
     fields = {
         name: getattr(status, name)
-        for name in AdaptiveHopTerminalV1.model_fields
+        for name in terminal_model.model_fields
         if name
         not in {"schema_version", "wire_protocol_version", "wire_feature_flags", "state", "reason"}
     }
     fields["flags"] = int(status.flags)
     for name in ("active_profile_index", "restored_profile_index"):
         fields[name] = None if fields[name] == 255 else fields[name]
-    terminal = AdaptiveHopTerminalV1.model_validate(
+    terminal = terminal_model.model_validate(
         dict(
             fields,
             state=_state_name(status.state),
@@ -164,7 +184,8 @@ def map_adaptive_capture(
         receive_buffer_closed=True,
         fastlock_inactive=True,
     )
-    receipt = AdaptiveHopReceiptV1(
+    receipt = receipt_model(
+        **(receipt_fields or {}),
         session_id=session_id,
         radio_id=identity.radio_id,
         radio_serial=identity.serial,

@@ -18,11 +18,11 @@ def main() -> None:
         "--bulk-root", type=Path, default=Path(os.environ.get("LEO_BULK_ROOT", "/srv/bulk/leo"))
     )
     parser.add_argument("--site", choices=preset_names(), required=True)
+    parser.add_argument("--fixed-maximum-workers", type=int, choices=(1, 2, 3, 4), default=2)
     arguments = parser.parse_args()
     # These are the existing public CLIs, each taking the shared nonblocking
     # analysis lease. No extra queue, scientific policy, or storage coupling.
     jobs = (
-        ("refinement", "leo.cli.scanner_refinement", "--maximum-seconds", "180"),
         (
             "adaptive",
             "leo.cli.adaptive_hop_analysis",
@@ -30,7 +30,9 @@ def main() -> None:
             "--maximum-visits",
             "2500",
             "--maximum-seconds",
-            "300",
+            # Measured native 10M analysis takes about 410 s with four workers.
+            # Finish its overview in this pass before optional derived products.
+            "580",
         ),
         (
             "fixed",
@@ -43,6 +45,7 @@ def main() -> None:
             "4",
             "--json",
         ),
+        ("refinement", "leo.cli.scanner_refinement", "--maximum-seconds", "180"),
         (
             "tracking",
             "leo.cli.scanner_tracking",
@@ -65,7 +68,12 @@ def main() -> None:
             *(
                 []
                 if name in ("refinement", "tracking")
-                else ["--maximum-workers", "2", "--probe-stride-ms", "120"]
+                else [
+                    "--maximum-workers",
+                    str(arguments.fixed_maximum_workers) if name == "fixed" else "2",
+                    "--probe-stride-ms",
+                    "120",
+                ]
             ),
             *options,
         ]

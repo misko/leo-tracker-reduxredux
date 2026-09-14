@@ -478,20 +478,31 @@ class ContinuousAcquisitionRunner:
                     and now_utc >= next_scanner_due
                 ):
                     operation_key = canonical_scheduled_scanner_operation_key(next_scanner_due)
-                    scanner_intent = scanner.scheduled_scanner_intent(
-                        operation_key=operation_key,
-                        scheduled_for=next_scanner_due,
-                    )
-                    queue.enqueue_acquisition_operation(
-                        operation_key=operation_key,
-                        kind=CaptureTaskKind.SCANNER_SWEEP.value,
-                        payload=scanner_intent.model_dump(mode="json"),
-                        scheduled_for=next_scanner_due,
-                        priority=_SCANNER_CADENCE_PRIORITY,
-                        # Paused capture still accrues cadence intents. Retain their
-                        # history, but honor the one-pending-intent-per-kind invariant.
-                        coalesce_pending_kind=True,
-                    )
+                    existing = queue.acquisition_operation_by_key(operation_key)
+                    if existing is not None:
+                        if (
+                            existing.kind != CaptureTaskKind.SCANNER_SWEEP.value
+                            or existing.scheduled_for != next_scanner_due
+                        ):
+                            raise ValueError("scanner cadence key belongs to another operation")
+                        # A deployment may change the cadence while this UTC slot
+                        # already has an immutable intent. Preserve its history;
+                        # pending work still passes normal runtime-policy admission.
+                    else:
+                        scanner_intent = scanner.scheduled_scanner_intent(
+                            operation_key=operation_key,
+                            scheduled_for=next_scanner_due,
+                        )
+                        queue.enqueue_acquisition_operation(
+                            operation_key=operation_key,
+                            kind=CaptureTaskKind.SCANNER_SWEEP.value,
+                            payload=scanner_intent.model_dump(mode="json"),
+                            scheduled_for=next_scanner_due,
+                            priority=_SCANNER_CADENCE_PRIORITY,
+                            # Paused capture still accrues cadence intents. Retain their
+                            # history, but honor the one-pending-intent-per-kind invariant.
+                            coalesce_pending_kind=True,
+                        )
                     next_scanner_due += timedelta(seconds=scanner_configuration.interval_seconds)
 
                 control = self._capture_control_snapshot()

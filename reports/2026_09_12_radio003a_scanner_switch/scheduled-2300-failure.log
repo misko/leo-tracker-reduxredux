@@ -1,0 +1,266 @@
+Sep 12 23:00:00 gauss env[492062]: validated release publication metadata: /opt/leo-tracker/release-metadata/98207d6fc6eaeaab1ab870998c1519afe0a6b892.txt
+Sep 12 23:00:04 gauss env[492065]: validated published release runtime: /opt/leo-tracker/releases/98207d6fc6eaeaab1ab870998c1519afe0a6b892
+Sep 12 23:00:29 gauss env[464246]: durable_acquisition_operation_failed
+Sep 12 23:00:29 gauss env[464246]: Traceback (most recent call last):
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 256, in read_visit
+Sep 12 23:00:29 gauss env[464246]:     return self._visits.get(timeout=_PRODUCER_POLL_SECONDS)
+Sep 12 23:00:29 gauss env[464246]:            ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 12 23:00:29 gauss env[464246]:   File "/usr/lib/python3.14/queue.py", line 209, in get
+Sep 12 23:00:29 gauss env[464246]:     raise Empty
+Sep 12 23:00:29 gauss env[464246]: _queue.Empty
+Sep 12 23:00:29 gauss env[464246]: During handling of the above exception, another exception occurred:
+Sep 12 23:00:29 gauss env[464246]: Traceback (most recent call last):
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/scanner/persistent_hop_application.py", line 86, in capture_persistent_hop_session
+Sep 12 23:00:29 gauss env[464246]:     block = session.read_visit()
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 261, in read_visit
+Sep 12 23:00:29 gauss env[464246]:     self._raise_producer_error()
+Sep 12 23:00:29 gauss env[464246]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 423, in _raise_producer_error
+Sep 12 23:00:29 gauss env[464246]:     raise self._producer_error
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 296, in _run_producer
+Sep 12 23:00:29 gauss env[464246]:     sampled = next(visits)
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/persistent_hop.py", line 1435, in visits
+Sep 12 23:00:29 gauss env[464246]:     for block in self._decoded_blocks():
+Sep 12 23:00:29 gauss env[464246]:                  ~~~~~~~~~~~~~~~~~~~~^^
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/persistent_hop.py", line 1487, in _decoded_blocks
+Sep 12 23:00:29 gauss env[464246]:     for wire in self._backend.blocks():
+Sep 12 23:00:29 gauss env[464246]:                 ~~~~~~~~~~~~~~~~~~~~^^
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_persistent_hop.py", line 288, in blocks
+Sep 12 23:00:29 gauss env[464246]:     raw = capture.read_block()
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_metadata.py", line 1342, in read_block
+Sep 12 23:00:29 gauss env[464246]:     buffer.refill()
+Sep 12 23:00:29 gauss env[464246]:     ~~~~~~~~~~~~~^^
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/iio.py", line 1435, in refill
+Sep 12 23:00:29 gauss env[464246]:     _buffer_refill_with_metadata(
+Sep 12 23:00:29 gauss env[464246]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+Sep 12 23:00:29 gauss env[464246]:         self._buffer,
+Sep 12 23:00:29 gauss env[464246]:         ^^^^^^^^^^^^^
+Sep 12 23:00:29 gauss env[464246]:     ...<2 lines>...
+Sep 12 23:00:29 gauss env[464246]:         _byref(metadata_bytes),
+Sep 12 23:00:29 gauss env[464246]:         ^^^^^^^^^^^^^^^^^^^^^^^
+Sep 12 23:00:29 gauss env[464246]:     )
+Sep 12 23:00:29 gauss env[464246]:     ^
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/iio.py", line 65, in _check_negative
+Sep 12 23:00:29 gauss env[464246]:     raise OSError(-result, _strerror(-result))
+Sep 12 23:00:29 gauss env[464246]: OSError: [Errno 84] Invalid or incomplete multibyte or wide character
+Sep 12 23:00:29 gauss env[464246]: persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=13857950649899365162, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.FAILED: 5>, reason=<PersistentHopTerminalReason.COUNTER_DISCONTINUITY: 7>, error_code=-84, flags=<PersistentHopStatusFlag.TERMINAL|CONTINUITY_FAULT|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 61>, session_id=13857950649899365162, planned_dwells=2500, visits_started=115, events_emitted=115, next_event_sequence=115, last_block_sequence=1066, last_block_end_counter=73475060622, first_counter=73335604003, final_counter=73479351088, restore_before_counter=73479351088, restore_after_counter=73479414007, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=2, restored_profile_index=255, startup_invalid_start_counter=73335604003, startup_invalid_end_counter_exclusive=73335731833, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('slow_attack', 'slow_attack'), gain_db=(46.0, 71.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('slow_attack', 'slow_attack'), gain_db=(46.0, 71.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=())
+Sep 12 23:00:29 gauss env[464246]: The above exception was the direct cause of the following exception:
+Sep 12 23:00:29 gauss env[464246]: Traceback (most recent call last):
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/runner.py", line 635, in _run_durable_supervised
+Sep 12 23:00:29 gauss env[464246]:     captured = scanner.capture_scheduled_scanner(
+Sep 12 23:00:29 gauss env[464246]:         scanner_intent,
+Sep 12 23:00:29 gauss env[464246]:         cancel=cancel,
+Sep 12 23:00:29 gauss env[464246]:     )
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1432, in capture_scheduled_scanner
+Sep 12 23:00:29 gauss env[464246]:     return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
+Sep 12 23:00:29 gauss env[464246]:            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1672, in _capture_scheduled_persistent_hop
+Sep 12 23:00:29 gauss env[464246]:     published = capture_persistent_hop_to_store(
+Sep 12 23:00:29 gauss env[464246]:         radio,
+Sep 12 23:00:29 gauss env[464246]:     ...<7 lines>...
+Sep 12 23:00:29 gauss env[464246]:         before_publish=cleanup_before_publish,
+Sep 12 23:00:29 gauss env[464246]:     )
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/storage/persistent_hop_capture.py", line 39, in capture_persistent_hop_to_store
+Sep 12 23:00:29 gauss env[464246]:     receipt = capture_persistent_hop_session(
+Sep 12 23:00:29 gauss env[464246]:         radio,
+Sep 12 23:00:29 gauss env[464246]:     ...<4 lines>...
+Sep 12 23:00:29 gauss env[464246]:         timing_sink=timings.append,
+Sep 12 23:00:29 gauss env[464246]:     )
+Sep 12 23:00:29 gauss env[464246]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/scanner/persistent_hop_application.py", line 146, in capture_persistent_hop_session
+Sep 12 23:00:29 gauss env[464246]:     raise failure from primary_error
+Sep 12 23:00:29 gauss env[464246]: leo.scanner.persistent_hop_application.PersistentHopCaptureError: capture=OSError: [Errno 84] Invalid or incomplete multibyte or wide character; capture_note=persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=13857950649899365162, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.FAILED: 5>, reason=<PersistentHopTerminalReason.COUNTER_DISCONTINUITY: 7>, error_code=-84, flags=<PersistentHopStatusFlag.TERMINAL|CONTINUITY_FAULT|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 61>, session_id=13857950649899365162, planned_dwells=2500, visits_started=115, events_emitted=115, next_event_sequence=115, last_block_sequence=1066, last_block_end_counter=73475060622, first_counter=73335604003, final_counter=73479351088, restore_before_counter=73479351088, restore_after_counter=73479414007, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=2, restored_profile_index=255, startup_invalid_start_counter=73335604003, startup_invalid_end_counter_exclusive=73335731833, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('slow_attack', 'slow_attack'), gain_db=(46.0, 71.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('slow_attack', 'slow_attack'), gain_db=(46.0, 71.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=()); recovery=PlutoPersistentHopError: persistent-hop finish requires a server-attested terminal receipt
+Sep 12 23:00:29 gauss env[464246]: alternate iiOD advisory daemon log tail:
+Sep 12 23:00:29 gauss env[464246]: 572800 transported_frames=600 wall_ns=7943549725 stage=metadata_build count=600 total_ns=360959033 max_ns=1331160
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=314572800 transported_frames=600 wall_ns=7943549725 stage=transport_frame count=600 total_ns=6146986277 max_ns=11968854
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=314572800 transported_frames=600 wall_ns=7943549725 stage=transport_iq count=600 total_ns=5567378958 max_ns=10900302
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=367001600 transported_frames=700 wall_ns=9293968250 stage=sampler_admit count=700 total_ns=286236505 max_ns=3531276
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=367001600 transported_frames=700 wall_ns=9293968250 stage=dma_refill count=700 total_ns=36427710 max_ns=336972
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=367001600 transported_frames=700 wall_ns=9293968250 stage=sampler_finish count=700 total_ns=872230686 max_ns=4589244
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=367001600 transported_frames=700 wall_ns=9293968250 stage=metadata_build count=700 total_ns=420938316 max_ns=1331160
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=367001600 transported_frames=700 wall_ns=9293968250 stage=transport_frame count=700 total_ns=7168762629 max_ns=11968854
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=367001600 transported_frames=700 wall_ns=9293968250 stage=transport_iq count=700 total_ns=6491769111 max_ns=10900302
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=419430400 transported_frames=800 wall_ns=10685834908 stage=sampler_admit count=800 total_ns=326555798 max_ns=3531276
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=419430400 transported_frames=800 wall_ns=10685834908 stage=dma_refill count=800 total_ns=41470518 max_ns=336972
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=419430400 transported_frames=800 wall_ns=10685834908 stage=sampler_finish count=800 total_ns=1003192220 max_ns=4589244
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=419430400 transported_frames=800 wall_ns=10685834908 stage=metadata_build count=800 total_ns=481568390 max_ns=1331160
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=419430400 transported_frames=800 wall_ns=10685834908 stage=transport_frame count=800 total_ns=8191042770 max_ns=11968854
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=419430400 transported_frames=800 wall_ns=10685834908 stage=transport_iq count=800 total_ns=7415836270 max_ns=10900302
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=471859200 transported_frames=900 wall_ns=12043106081 stage=sampler_admit count=900 total_ns=363420201 max_ns=3531276
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=471859200 transported_frames=900 wall_ns=12043106081 stage=dma_refill count=900 total_ns=46304766 max_ns=336972
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=471859200 transported_frames=900 wall_ns=12043106081 stage=sampler_finish count=900 total_ns=1131001976 max_ns=4632678
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=471859200 transported_frames=900 wall_ns=12043106081 stage=metadata_build count=900 total_ns=542883993 max_ns=1331160
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=471859200 transported_frames=900 wall_ns=12043106081 stage=transport_frame count=900 total_ns=9214593227 max_ns=11968854
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=471859200 transported_frames=900 wall_ns=12043106081 stage=transport_iq count=900 total_ns=8340323491 max_ns=10900302
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288000 transported_frames=1000 wall_ns=13461807835 stage=sampler_admit count=1000 total_ns=403382561 max_ns=3531276
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288000 transported_frames=1000 wall_ns=13461807835 stage=dma_refill count=1000 total_ns=52632384 max_ns=336972
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288000 transported_frames=1000 wall_ns=13461807835 stage=sampler_finish count=1000 total_ns=1258692352 max_ns=4632678
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288000 transported_frames=1000 wall_ns=13461807835 stage=metadata_build count=1000 total_ns=604461495 max_ns=1331160
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288000 transported_frames=1000 wall_ns=13461807835 stage=transport_frame count=1000 total_ns=10236815018 max_ns=11968854
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=524288000 transported_frames=1000 wall_ns=13461807835 stage=transport_iq count=1000 total_ns=9265644339 max_ns=10900302
+Sep 12 23:00:29 gauss env[464246]: SPF metadata streaming counter gap accounted: frame=1067 first_sample=73475191694 missing=131072 ring_prefix_complete=0
+Sep 12 23:00:29 gauss env[464246]: SPF persistent-hop block failed: error=-84 state=5 reason=7 session_error=-84 block=1068 first=73475191694 end=73475322766 visits=115 events=115
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=559415296 transported_frames=1067 wall_ns=14382626543 stage=sampler_admit count=1068 total_ns=429547679 max_ns=3531276
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=559415296 transported_frames=1067 wall_ns=14382626543 stage=dma_refill count=1068 total_ns=56323776 max_ns=336972
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=559415296 transported_frames=1067 wall_ns=14382626543 stage=sampler_finish count=1068 total_ns=1347789421 max_ns=4632678
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=559415296 transported_frames=1067 wall_ns=14382626543 stage=metadata_build count=1068 total_ns=655516414 max_ns=9690823
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=559415296 transported_frames=1067 wall_ns=14382626543 stage=transport_frame count=1068 total_ns=10931487152 max_ns=12245382
+Sep 12 23:00:29 gauss env[464246]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=559415296 transported_frames=1067 wall_ns=14382626543 stage=transport_iq count=1067 total_ns=9884155262 max_ns=11185722
+Sep 12 23:00:29 gauss env[464246]: Scanner-only run stopped: error; 1 scanner run(s) started.
+Sep 12 23:00:29 gauss systemd[1]: leo-acquisition.service: Main process exited, code=exited, status=21/n/a
+Sep 12 23:00:29 gauss systemd[1]: leo-acquisition.service: Failed with result 'exit-code'.
+Sep 12 23:00:29 gauss systemd[1]: leo-acquisition.service: Consumed 25.206s CPU time over 19min 7.235s wall clock time, 1012M memory peak.
+Sep 12 23:00:34 gauss systemd[1]: leo-acquisition.service: Scheduled restart job, restart counter is at 1.
+Sep 12 23:00:34 gauss systemd[1]: Started leo-acquisition.service - LEO Tracker Pluto+ acquisition and scanner supervisor.
+Sep 12 23:00:35 gauss env[492279]: /var/lib/leo/.config/matplotlib is not a writable directory
+Sep 12 23:00:35 gauss env[492279]: Matplotlib created a temporary cache directory at /tmp/matplotlib-yz66sys8 because there was an issue with the default path ({configdir}); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Sep 12 23:00:36 gauss env[492285]: validated release publication metadata: /opt/leo-tracker/release-metadata/98207d6fc6eaeaab1ab870998c1519afe0a6b892.txt
+Sep 12 23:00:40 gauss env[492287]: validated published release runtime: /opt/leo-tracker/releases/98207d6fc6eaeaab1ab870998c1519afe0a6b892
+Sep 12 23:01:27 gauss env[492279]: durable_acquisition_operation_failed
+Sep 12 23:01:27 gauss env[492279]: Traceback (most recent call last):
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 256, in read_visit
+Sep 12 23:01:27 gauss env[492279]:     return self._visits.get(timeout=_PRODUCER_POLL_SECONDS)
+Sep 12 23:01:27 gauss env[492279]:            ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sep 12 23:01:27 gauss env[492279]:   File "/usr/lib/python3.14/queue.py", line 209, in get
+Sep 12 23:01:27 gauss env[492279]:     raise Empty
+Sep 12 23:01:27 gauss env[492279]: _queue.Empty
+Sep 12 23:01:27 gauss env[492279]: During handling of the above exception, another exception occurred:
+Sep 12 23:01:27 gauss env[492279]: Traceback (most recent call last):
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/scanner/persistent_hop_application.py", line 86, in capture_persistent_hop_session
+Sep 12 23:01:27 gauss env[492279]:     block = session.read_visit()
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 261, in read_visit
+Sep 12 23:01:27 gauss env[492279]:     self._raise_producer_error()
+Sep 12 23:01:27 gauss env[492279]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 423, in _raise_producer_error
+Sep 12 23:01:27 gauss env[492279]:     raise self._producer_error
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/radio/pluto_persistent_hop.py", line 296, in _run_producer
+Sep 12 23:01:27 gauss env[492279]:     sampled = next(visits)
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/persistent_hop.py", line 1435, in visits
+Sep 12 23:01:27 gauss env[492279]:     for block in self._decoded_blocks():
+Sep 12 23:01:27 gauss env[492279]:                  ~~~~~~~~~~~~~~~~~~~~^^
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/persistent_hop.py", line 1487, in _decoded_blocks
+Sep 12 23:01:27 gauss env[492279]:     for wire in self._backend.blocks():
+Sep 12 23:01:27 gauss env[492279]:                 ~~~~~~~~~~~~~~~~~~~~^^
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_persistent_hop.py", line 288, in blocks
+Sep 12 23:01:27 gauss env[492279]:     raw = capture.read_block()
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_metadata.py", line 1342, in read_block
+Sep 12 23:01:27 gauss env[492279]:     buffer.refill()
+Sep 12 23:01:27 gauss env[492279]:     ~~~~~~~~~~~~~^^
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/iio.py", line 1435, in refill
+Sep 12 23:01:27 gauss env[492279]:     _buffer_refill_with_metadata(
+Sep 12 23:01:27 gauss env[492279]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+Sep 12 23:01:27 gauss env[492279]:         self._buffer,
+Sep 12 23:01:27 gauss env[492279]:         ^^^^^^^^^^^^^
+Sep 12 23:01:27 gauss env[492279]:     ...<2 lines>...
+Sep 12 23:01:27 gauss env[492279]:         _byref(metadata_bytes),
+Sep 12 23:01:27 gauss env[492279]:         ^^^^^^^^^^^^^^^^^^^^^^^
+Sep 12 23:01:27 gauss env[492279]:     )
+Sep 12 23:01:27 gauss env[492279]:     ^
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/iio.py", line 65, in _check_negative
+Sep 12 23:01:27 gauss env[492279]:     raise OSError(-result, _strerror(-result))
+Sep 12 23:01:27 gauss env[492279]: OSError: [Errno 84] Invalid or incomplete multibyte or wide character
+Sep 12 23:01:27 gauss env[492279]: persistent-hop cleanup also failed: backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact
+Sep 12 23:01:27 gauss env[492279]: persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=13857950649899365162, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.FAILED: 5>, reason=<PersistentHopTerminalReason.COUNTER_DISCONTINUITY: 7>, error_code=-84, flags=<PersistentHopStatusFlag.TERMINAL|CONTINUITY_FAULT|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 61>, session_id=13857950649899365162, planned_dwells=2500, visits_started=293, events_emitted=293, next_event_sequence=293, last_block_sequence=2774, last_block_end_counter=74481526484, first_counter=74118262195, final_counter=74485881283, restore_before_counter=74485881283, restore_after_counter=74485952637, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=4, restored_profile_index=255, startup_invalid_start_counter=74118262195, startup_invalid_end_counter_exclusive=74118372170, device_dropped_events=0), host_lifecycle=None, cleanup_errors=('backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact',))
+Sep 12 23:01:27 gauss env[492279]: The above exception was the direct cause of the following exception:
+Sep 12 23:01:27 gauss env[492279]: Traceback (most recent call last):
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/runner.py", line 635, in _run_durable_supervised
+Sep 12 23:01:27 gauss env[492279]:     captured = scanner.capture_scheduled_scanner(
+Sep 12 23:01:27 gauss env[492279]:         scanner_intent,
+Sep 12 23:01:27 gauss env[492279]:         cancel=cancel,
+Sep 12 23:01:27 gauss env[492279]:     )
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1432, in capture_scheduled_scanner
+Sep 12 23:01:27 gauss env[492279]:     return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
+Sep 12 23:01:27 gauss env[492279]:            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1672, in _capture_scheduled_persistent_hop
+Sep 12 23:01:27 gauss env[492279]:     published = capture_persistent_hop_to_store(
+Sep 12 23:01:27 gauss env[492279]:         radio,
+Sep 12 23:01:27 gauss env[492279]:     ...<7 lines>...
+Sep 12 23:01:27 gauss env[492279]:         before_publish=cleanup_before_publish,
+Sep 12 23:01:27 gauss env[492279]:     )
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/storage/persistent_hop_capture.py", line 39, in capture_persistent_hop_to_store
+Sep 12 23:01:27 gauss env[492279]:     receipt = capture_persistent_hop_session(
+Sep 12 23:01:27 gauss env[492279]:         radio,
+Sep 12 23:01:27 gauss env[492279]:     ...<4 lines>...
+Sep 12 23:01:27 gauss env[492279]:         timing_sink=timings.append,
+Sep 12 23:01:27 gauss env[492279]:     )
+Sep 12 23:01:27 gauss env[492279]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/scanner/persistent_hop_application.py", line 146, in capture_persistent_hop_session
+Sep 12 23:01:27 gauss env[492279]:     raise failure from primary_error
+Sep 12 23:01:27 gauss env[492279]: leo.scanner.persistent_hop_application.PersistentHopCaptureError: capture=OSError: [Errno 84] Invalid or incomplete multibyte or wide character; capture_note=persistent-hop cleanup also failed: backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact; capture_note=persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=13857950649899365162, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.FAILED: 5>, reason=<PersistentHopTerminalReason.COUNTER_DISCONTINUITY: 7>, error_code=-84, flags=<PersistentHopStatusFlag.TERMINAL|CONTINUITY_FAULT|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 61>, session_id=13857950649899365162, planned_dwells=2500, visits_started=293, events_emitted=293, next_event_sequence=293, last_block_sequence=2774, last_block_end_counter=74481526484, first_counter=74118262195, final_counter=74485881283, restore_before_counter=74485881283, restore_after_counter=74485952637, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=4, restored_profile_index=255, startup_invalid_start_counter=74118262195, startup_invalid_end_counter_exclusive=74118372170, device_dropped_events=0), host_lifecycle=None, cleanup_errors=('backend release: RadioConfigurationError: persistent-hop host settings restoration was not exact',)); recovery=PlutoPersistentHopError: persistent-hop finish requires a server-attested terminal receipt
+Sep 12 23:01:27 gauss env[492279]: alternate iiOD advisory daemon log tail:
+Sep 12 23:01:27 gauss env[492279]: 06
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1205862400 transported_frames=2300 wall_ns=30415192028 stage=transport_frame count=2300 total_ns=23544742301 max_ns=14233326
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1205862400 transported_frames=2300 wall_ns=30415192028 stage=transport_iq count=2300 total_ns=21311905721 max_ns=12540558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1258291200 transported_frames=2400 wall_ns=31737482548 stage=sampler_admit count=2400 total_ns=967202803 max_ns=3765726
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1258291200 transported_frames=2400 wall_ns=31737482548 stage=dma_refill count=2400 total_ns=173590736 max_ns=1860558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1258291200 transported_frames=2400 wall_ns=31737482548 stage=sampler_finish count=2400 total_ns=3002636474 max_ns=8844750
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1258291200 transported_frames=2400 wall_ns=31737482548 stage=metadata_build count=2400 total_ns=1454667264 max_ns=3833406
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1258291200 transported_frames=2400 wall_ns=31737482548 stage=transport_frame count=2400 total_ns=24571157411 max_ns=14233326
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1258291200 transported_frames=2400 wall_ns=31737482548 stage=transport_iq count=2400 total_ns=22239798795 max_ns=12540558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1310720000 transported_frames=2500 wall_ns=33081353669 stage=sampler_admit count=2500 total_ns=1005156283 max_ns=3765726
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1310720000 transported_frames=2500 wall_ns=33081353669 stage=dma_refill count=2500 total_ns=178947914 max_ns=1860558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1310720000 transported_frames=2500 wall_ns=33081353669 stage=sampler_finish count=2500 total_ns=3133199373 max_ns=8844750
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1310720000 transported_frames=2500 wall_ns=33081353669 stage=metadata_build count=2500 total_ns=1516080462 max_ns=3833406
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1310720000 transported_frames=2500 wall_ns=33081353669 stage=transport_frame count=2500 total_ns=25592436242 max_ns=14233326
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1310720000 transported_frames=2500 wall_ns=33081353669 stage=transport_iq count=2500 total_ns=23162944824 max_ns=12540558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1363148800 transported_frames=2600 wall_ns=34429242648 stage=sampler_admit count=2600 total_ns=1043501923 max_ns=3765726
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1363148800 transported_frames=2600 wall_ns=34429242648 stage=dma_refill count=2600 total_ns=184398632 max_ns=1860558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1363148800 transported_frames=2600 wall_ns=34429242648 stage=sampler_finish count=2600 total_ns=3261898721 max_ns=8844750
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1363148800 transported_frames=2600 wall_ns=34429242648 stage=metadata_build count=2600 total_ns=1578144264 max_ns=3833406
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1363148800 transported_frames=2600 wall_ns=34429242648 stage=transport_frame count=2600 total_ns=26613175242 max_ns=14233326
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1363148800 transported_frames=2600 wall_ns=34429242648 stage=transport_iq count=2600 total_ns=24085031536 max_ns=12540558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1415577600 transported_frames=2700 wall_ns=35741575453 stage=sampler_admit count=2700 total_ns=1083277753 max_ns=3765726
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1415577600 transported_frames=2700 wall_ns=35741575453 stage=dma_refill count=2700 total_ns=189488966 max_ns=1860558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1415577600 transported_frames=2700 wall_ns=35741575453 stage=sampler_finish count=2700 total_ns=3385212320 max_ns=8844750
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1415577600 transported_frames=2700 wall_ns=35741575453 stage=metadata_build count=2700 total_ns=1639787508 max_ns=3833406
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1415577600 transported_frames=2700 wall_ns=35741575453 stage=transport_frame count=2700 total_ns=27642537183 max_ns=16569678
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=1 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1415577600 transported_frames=2700 wall_ns=35741575453 stage=transport_iq count=2700 total_ns=25017478591 max_ns=15676668
+Sep 12 23:01:27 gauss env[492279]: SPF metadata streaming counter gap accounted: frame=2775 first_sample=74481657556 missing=131072 ring_prefix_complete=0
+Sep 12 23:01:27 gauss env[492279]: SPF persistent-hop block failed: error=-84 state=5 reason=7 session_error=-84 block=2776 first=74481657556 end=74481788628 visits=293 events=293
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1454899200 transported_frames=2775 wall_ns=36770584770 stage=sampler_admit count=2776 total_ns=1116438943 max_ns=3765726
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1454899200 transported_frames=2775 wall_ns=36770584770 stage=dma_refill count=2776 total_ns=193364726 max_ns=1860558
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1454899200 transported_frames=2775 wall_ns=36770584770 stage=sampler_finish count=2776 total_ns=3480051165 max_ns=8844750
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1454899200 transported_frames=2775 wall_ns=36770584770 stage=metadata_build count=2776 total_ns=1697233740 max_ns=11104314
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1454899200 transported_frames=2775 wall_ns=36770584770 stage=transport_frame count=2776 total_ns=28419260904 max_ns=16569678
+Sep 12 23:01:27 gauss env[492279]: SPF_IIOD_TIMING_V1 snapshot=0 dev=cf-ad9361-lpc metadata=1 burst=0 ring=0 direct=0 frame_iq_bytes=524288 transported_iq_bytes=1454899200 transported_frames=2775 wall_ns=36770584770 stage=transport_iq count=2775 total_ns=25709131708 max_ns=15676668
+Sep 12 23:01:27 gauss env[492279]: Scanner-only run stopped: error; 1 scanner run(s) started.
+Sep 12 23:01:28 gauss systemd[1]: leo-acquisition.service: Main process exited, code=exited, status=21/n/a
+Sep 12 23:01:28 gauss systemd[1]: leo-acquisition.service: Failed with result 'exit-code'.
+Sep 12 23:01:28 gauss systemd[1]: leo-acquisition.service: Consumed 22.434s CPU time over 58.550s wall clock time, 1.5G memory peak.
+Sep 12 23:01:33 gauss systemd[1]: leo-acquisition.service: Scheduled restart job, restart counter is at 2.
+Sep 12 23:01:33 gauss systemd[1]: Started leo-acquisition.service - LEO Tracker Pluto+ acquisition and scanner supervisor.
+Sep 12 23:01:33 gauss env[493490]: /var/lib/leo/.config/matplotlib is not a writable directory
+Sep 12 23:01:33 gauss env[493490]: Matplotlib created a temporary cache directory at /tmp/matplotlib-4cwvmy_9 because there was an issue with the default path ({configdir}); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Sep 12 23:01:34 gauss env[493567]: validated release publication metadata: /opt/leo-tracker/release-metadata/98207d6fc6eaeaab1ab870998c1519afe0a6b892.txt
+Sep 12 23:01:39 gauss env[493569]: validated published release runtime: /opt/leo-tracker/releases/98207d6fc6eaeaab1ab870998c1519afe0a6b892
+Sep 12 23:01:40 gauss systemd[1]: Stopping leo-acquisition.service - LEO Tracker Pluto+ acquisition and scanner supervisor...
+Sep 12 23:01:46 gauss env[493490]: durable_acquisition_operation_failed
+Sep 12 23:01:46 gauss env[493490]: Traceback (most recent call last):
+Sep 12 23:01:46 gauss env[493490]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/runner.py", line 635, in _run_durable_supervised
+Sep 12 23:01:46 gauss env[493490]:     captured = scanner.capture_scheduled_scanner(
+Sep 12 23:01:46 gauss env[493490]:         scanner_intent,
+Sep 12 23:01:46 gauss env[493490]:         cancel=cancel,
+Sep 12 23:01:46 gauss env[493490]:     )
+Sep 12 23:01:46 gauss env[493490]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1432, in capture_scheduled_scanner
+Sep 12 23:01:46 gauss env[493490]:     return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
+Sep 12 23:01:46 gauss env[493490]:            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+Sep 12 23:01:46 gauss env[493490]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/cli/composition.py", line 1672, in _capture_scheduled_persistent_hop
+Sep 12 23:01:46 gauss env[493490]:     published = capture_persistent_hop_to_store(
+Sep 12 23:01:46 gauss env[493490]:         radio,
+Sep 12 23:01:46 gauss env[493490]:     ...<7 lines>...
+Sep 12 23:01:46 gauss env[493490]:         before_publish=cleanup_before_publish,
+Sep 12 23:01:46 gauss env[493490]:     )
+Sep 12 23:01:46 gauss env[493490]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/storage/persistent_hop_capture.py", line 39, in capture_persistent_hop_to_store
+Sep 12 23:01:46 gauss env[493490]:     receipt = capture_persistent_hop_session(
+Sep 12 23:01:46 gauss env[493490]:         radio,
+Sep 12 23:01:46 gauss env[493490]:     ...<4 lines>...
+Sep 12 23:01:46 gauss env[493490]:         timing_sink=timings.append,
+Sep 12 23:01:46 gauss env[493490]:     )
+Sep 12 23:01:46 gauss env[493490]:   File "/opt/leo-tracker/releases/caa67df2b6a04d284da15979b75b956071b26e30/.venv/lib/python3.14/site-packages/leo/scanner/persistent_hop_application.py", line 57, in capture_persistent_hop_session
+Sep 12 23:01:46 gauss env[493490]:     raise PersistentHopCaptureError("persistent-hop capture was cancelled before open")
+Sep 12 23:01:46 gauss env[493490]: leo.scanner.persistent_hop_application.PersistentHopCaptureError: persistent-hop capture was cancelled before open
+Sep 12 23:01:46 gauss env[493490]: alternate iiOD advisory daemon log tail:
+Sep 12 23:01:46 gauss env[493490]: <empty>
+Sep 12 23:01:46 gauss env[493490]: Scanner-only run stopped: error; 1 scanner run(s) started.
+Sep 12 23:01:46 gauss systemd[1]: leo-acquisition.service: Main process exited, code=exited, status=21/n/a
+Sep 12 23:01:46 gauss systemd[1]: leo-acquisition.service: Failed with result 'exit-code'.
+Sep 12 23:01:46 gauss systemd[1]: Stopped leo-acquisition.service - LEO Tracker Pluto+ acquisition and scanner supervisor.
+Sep 12 23:01:46 gauss systemd[1]: leo-acquisition.service: Consumed 10.033s CPU time over 18.652s wall clock time, 971.4M memory peak.

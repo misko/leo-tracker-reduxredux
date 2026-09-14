@@ -1,0 +1,55 @@
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 255, in read_visit
+    return self._visits.get(timeout=_PRODUCER_POLL_SECONDS)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/queue.py", line 209, in get
+    raise Empty
+_queue.Empty
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/scanner/persistent_hop_application.py", line 86, in capture_persistent_hop_session
+    block = session.read_visit()
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 260, in read_visit
+    self._raise_producer_error()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 404, in _raise_producer_error
+    raise self._producer_error
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/radio/pluto_persistent_hop.py", line 295, in _run_producer
+    sampled = next(visits)
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/persistent_hop.py", line 1454, in visits
+    sampled = _sampled_visit_from_segments(visit, segments, self.plan.receiver_ids)
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/.venv/lib/python3.13/site-packages/pluto_plus/persistent_hop.py", line 2047, in _sampled_visit_from_segments
+    raise PersistentHopClientError(
+    ...<4 lines>...
+    )
+pluto_plus.persistent_hop.PersistentHopClientError: persistent-hop IQ blocks do not cover the attested valid visit: visit=0 expected=1200000 covered=1178950 valid=[2461472970257,2461474170257) retained=[2461472991307,2461474170955) segments=9
+persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=18241633989516712117, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.CANCELLED: 4>, reason=<PersistentHopTerminalReason.CLIENT_CLOSE: 2>, error_code=0, flags=<PersistentHopStatusFlag.TERMINAL|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 57>, session_id=18241633989516712117, planned_dwells=2500, visits_started=2, events_emitted=2, next_event_sequence=2, last_block_sequence=8, last_block_end_counter=2461474170955, first_counter=2461472908417, final_counter=2461474637419, restore_before_counter=2461474637419, restore_after_counter=2461474701961, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=1, restored_profile_index=255, startup_invalid_start_counter=2461472908417, startup_invalid_end_counter_exclusive=2461472970257, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=())
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/reports/2026_09_12_adaptive_decimated_dwell/run_metadata_canary.py", line 107, in <module>
+    main()
+    ~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/reports/2026_09_12_adaptive_decimated_dwell/run_metadata_canary.py", line 78, in main
+    result = backend.capture_scheduled_scanner(intent, cancel=cancel)
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/cli/composition.py", line 1434, in capture_scheduled_scanner
+    return self._capture_scheduled_persistent_hop(intent, cancel=cancel)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/cli/composition.py", line 1674, in _capture_scheduled_persistent_hop
+    published = capture_persistent_hop_to_store(
+        radio,
+    ...<7 lines>...
+        before_publish=cleanup_before_publish,
+    )
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/storage/persistent_hop_capture.py", line 39, in capture_persistent_hop_to_store
+    receipt = capture_persistent_hop_session(
+        radio,
+    ...<4 lines>...
+        timing_sink=timings.append,
+    )
+  File "/home/mouse9911/gits/leo-tracker-single-rx-10m/src/leo/scanner/persistent_hop_application.py", line 146, in capture_persistent_hop_session
+    raise failure from primary_error
+leo.scanner.persistent_hop_application.PersistentHopCaptureError: capture=PersistentHopClientError: persistent-hop IQ blocks do not cover the attested valid visit: visit=0 expected=1200000 covered=1178950 valid=[2461472970257,2461474170257) retained=[2461472991307,2461474170955) segments=9; capture_note=persistent-hop released-client diagnostics (not a capture receipt): PersistentHopFailureDiagnosticsV1(session_id=18241633989516712117, terminal_status=PersistentHopStatusV1(state=<PersistentHopSessionState.CANCELLED: 4>, reason=<PersistentHopTerminalReason.CLIENT_CLOSE: 2>, error_code=0, flags=<PersistentHopStatusFlag.TERMINAL|RESTORE_ATTEMPTED|RESTORE_SUCCEEDED|RESTORE_REQUIRED: 57>, session_id=18241633989516712117, planned_dwells=2500, visits_started=2, events_emitted=2, next_event_sequence=2, last_block_sequence=8, last_block_end_counter=2461474170955, first_counter=2461472908417, final_counter=2461474637419, restore_before_counter=2461474637419, restore_after_counter=2461474701961, restored_lo_frequency_hz=959687500, restore_error_code=0, active_profile_index=1, restored_profile_index=255, startup_invalid_start_counter=2461472908417, startup_invalid_end_counter_exclusive=2461472970257, device_dropped_events=0), host_lifecycle=PersistentHopHostLifecycleReceiptV1(original_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), restored_settings=PersistentHopReceiverSettingsV1(center_frequency_hz=2400000000.0, sample_rate_hz=30720000.0, bandwidth_hz=18000000.0, channels=(0, 1), gain_modes=('manual', 'manual'), gain_db=(40.0, 40.0)), receive_buffer_closed=True, fastlock_inactive=True), cleanup_errors=()); recovery=PlutoPersistentHopError: persistent-hop finish requires a server-attested terminal receipt

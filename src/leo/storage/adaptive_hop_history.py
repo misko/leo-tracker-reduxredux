@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
 from leo.scanner.adaptive_hop_history import (
@@ -14,6 +15,14 @@ from leo.scanner.adaptive_hop_history import (
     AdaptiveHopVisitViewV1,
 )
 from leo.scanner.glrt_publication import validate_glrt_adaptive_binding
+from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive_history import (
+    AdaptiveHistoryPageV2,
+    HostAdaptiveHistoryItemV2,
+    HostAdaptiveSessionDetailV2,
+    HostDecisionViewV1,
+    HostFeedbackSummaryV1,
+)
 from leo.storage.adaptive_hop import AdaptiveHopIqStore, PublishedAdaptiveHopIqSession
 from leo.storage.errors import BundleNotFoundError
 from leo.storage.scanner_glrt import ScannerGlrtStore
@@ -55,7 +64,43 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
                 maximum_unobserved_seconds=blind / rate if blind is not None else None,
             )
         )
-    return AdaptiveHopHistoryItemV1(
+    model: type[AdaptiveHopHistoryItemV1] = AdaptiveHopHistoryItemV1
+    fields: dict[str, Any] = {}
+    duty_met = receipt.duty_target_met
+    if isinstance(receipt, HostAdaptiveHopReceiptV2):
+        model = HostAdaptiveHistoryItemV2
+        duty_met = receipt.qualification_duty_floor_met
+        records = receipt.host_decisions
+        calls = [
+            d.feedback_call_elapsed_ns / 1e6
+            for d in records
+            if d.feedback_call_elapsed_ns is not None
+        ]
+        fields = dict(
+            radio_serial=receipt.radio_serial,
+            physical_receiver=receipt.plan.classification_receiver,
+            decision_configuration=receipt.plan.decision,
+            host_feedback=HostFeedbackSummaryV1(
+                complete_visits=len(records),
+                healthy=sum(d.health == "healthy" for d in records),
+                degraded=sum(d.health != "healthy" for d in records),
+                unknown_feedback=sum(d.feedback_outcome == "unknown" for d in records),
+                accepted=sum(d.feedback_disposition == "accepted" for d in records),
+                source_ended=sum(d.feedback_disposition == "source_ended" for d in records),
+                rejected=sum(d.feedback_disposition == "rejected" for d in records),
+                not_submitted=sum(d.feedback_disposition == "not_submitted" for d in records),
+                maximum_host_result_age_ms=max(
+                    ((d.feedback_monotonic_ns - d.submitted_monotonic_ns) / 1e6 for d in records),
+                    default=None,
+                ),
+                maximum_feedback_call_ms=max(calls, default=None),
+                first_feedback_error=next(
+                    (d.feedback_error for d in records if d.feedback_error), None
+                ),
+            ),
+        )
+    return model(
+        **fields,
         session_id=session.session_id,
         input_manifest_sha256=session.manifest_sha256,
         radio_id=receipt.radio_id,
@@ -77,7 +122,7 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
         valid_duty_ppm=receipt.valid_duty_ppm if receipt.source_span_attested else None,
         capture_qualified=receipt.terminal.state == "completed"
         and receipt.source_span_attested
-        and receipt.duty_target_met,
+        and duty_met,
         terminal_state=receipt.terminal.state,
         fallback_choices=sum(e.decision.reason == "fault_fallback" for e in receipt.events),
         target_coverage=tuple(coverage),
@@ -91,19 +136,34 @@ class AdaptiveHopPresentationStore:
         self._root = root
 
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1:
+        return self._page(cursor=cursor, limit=limit, include_host=False)
+
+    def page_v2(self, *, cursor: int, limit: int) -> AdaptiveHistoryPageV2:
+        result = self._page(cursor=cursor, limit=limit, include_host=True)
+        assert isinstance(result, AdaptiveHistoryPageV2)
+        return result
+
+    def _page(self, *, cursor: int, limit: int, include_host: bool) -> AdaptiveHopHistoryPageV1:
         if type(cursor) is not int or cursor < 0 or type(limit) is not int or not 1 <= limit <= 20:
             raise ValueError("adaptive history pagination is out of bounds")
         store = AdaptiveHopIqStore(self._root, read_only=True)
         try:
             # Keep only ordering keys, not every scan's up-to-2,500-event manifest.
-            sessions = [(s.manifest.finalized_utc_ns, s.session_id) for s in store.iter_sessions()]
+            sessions = [
+                (s.manifest.finalized_utc_ns, s.session_id)
+                for s in store.iter_sessions()
+                if include_host or not isinstance(s.manifest.receipt, HostAdaptiveHopReceiptV2)
+            ]
             sessions.sort(reverse=True)
             items = tuple(
                 _summary(store.inspect(key)) for _, key in sessions[cursor : cursor + limit]
             )
         finally:
             store.close()
-        return AdaptiveHopHistoryPageV1(
+        model: type[AdaptiveHopHistoryPageV1] = (
+            AdaptiveHistoryPageV2 if include_host else AdaptiveHopHistoryPageV1
+        )
+        return model(
             cursor=cursor,
             limit=limit,
             total=len(sessions),
@@ -122,10 +182,18 @@ class AdaptiveHopPresentationStore:
             store.close()
 
     def detail(self, session_id: str) -> AdaptiveHopSessionDetailV1 | None:
+        return self._detail(session_id, include_host=False)
+
+    def detail_v2(self, session_id: str) -> AdaptiveHopSessionDetailV1 | None:
+        return self._detail(session_id, include_host=True)
+
+    def _detail(self, session_id: str, *, include_host: bool) -> AdaptiveHopSessionDetailV1 | None:
         session = self._inspect(session_id)
         if session is None:
             return None
         receipt = session.manifest.receipt
+        if isinstance(receipt, HostAdaptiveHopReceiptV2) and not include_host:
+            return None
         origin = receipt.terminal.first_counter
         rate = receipt.plan.geometry.sample_rate_hz
         rows = []
@@ -156,7 +224,35 @@ class AdaptiveHopPresentationStore:
                     cooldown_remaining_seconds=decision.cooldown_remaining_samples / rate,
                 )
             )
-        return AdaptiveHopSessionDetailV1(
+        model: type[AdaptiveHopSessionDetailV1] = AdaptiveHopSessionDetailV1
+        fields: dict[str, Any] = {}
+        if isinstance(receipt, HostAdaptiveHopReceiptV2):
+            model = HostAdaptiveSessionDetailV2
+            fields = dict(
+                host_decisions=tuple(
+                    HostDecisionViewV1(
+                        visit_index=d.visit_index,
+                        numerics=d.numerics,
+                        health=d.health,
+                        failure=d.failure,
+                        feedback_outcome=d.feedback_outcome,
+                        feedback_disposition=d.feedback_disposition,
+                        feedback_error=d.feedback_error,
+                        host_result_age_ms=(d.feedback_monotonic_ns - d.submitted_monotonic_ns)
+                        / 1e6,
+                        worker_elapsed_ms=(d.completed_monotonic_ns - d.started_monotonic_ns) / 1e6
+                        if d.completed_monotonic_ns is not None
+                        and d.started_monotonic_ns is not None
+                        else None,
+                        feedback_call_ms=d.feedback_call_elapsed_ns / 1e6
+                        if d.feedback_call_elapsed_ns is not None
+                        else None,
+                    )
+                    for d in receipt.host_decisions
+                )
+            )
+        return model(
+            **fields,
             capture=_summary(session),
             source_origin_counter=origin if receipt.source_span_attested else None,
             visits=tuple(rows),
@@ -164,7 +260,7 @@ class AdaptiveHopPresentationStore:
 
     def glrt(self, session_id: str) -> ScannerGlrtPublicationV1 | None:
         session = self._inspect(session_id)
-        if session is None:
+        if session is None or isinstance(session.manifest.receipt, HostAdaptiveHopReceiptV2):
             return None
         publication = ScannerGlrtStore.open_read_only(self._root).read(session_id)
         if publication is not None:

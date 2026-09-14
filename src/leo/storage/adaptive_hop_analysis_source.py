@@ -8,6 +8,8 @@ import numpy.typing as npt
 
 from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopVisitV1
 from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisSource
+from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive_analysis import HostAdaptiveAnalysisSource
 from leo.storage.adaptive_hop import AdaptiveHopIqReader, AdaptiveHopIqStore
 
 
@@ -41,4 +43,9 @@ class AdaptiveHopAnalysisInputStore:
     @contextmanager
     def source(self, session_id: str) -> Iterator[AdaptiveHopAnalysisSource]:
         with self._store.reader(session_id) as reader:
-            yield AdaptiveHopAnalysisSource(_BoundReader(reader))
+            model = (
+                HostAdaptiveAnalysisSource
+                if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV2)
+                else AdaptiveHopAnalysisSource
+            )
+            yield model(_BoundReader(reader))

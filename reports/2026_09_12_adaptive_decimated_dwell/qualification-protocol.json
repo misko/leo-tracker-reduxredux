@@ -1,0 +1,38 @@
+{
+  "schema": "adaptive-decimated-dwell-qualification-research-v1",
+  "status": "frozen before holdout evaluation",
+  "sessions": ["scan-hop-b80df494d948f78a", "scan-hop-b96cfdd5fb0ee91c"],
+  "holdout_sweeps": [3, 57, 153, 287],
+  "selection": "all eight visits in each selected sweep, both RX sessions; 64 dwells",
+  "excluded_development_sweeps": [40, 110, 180, 250],
+  "source_rate_hz": 10000000,
+  "decision_rate_hz": 2500000,
+  "screen_windows": 6,
+  "maximum_confirmations": 1,
+  "seeded_confirmation": false,
+  "minimum_exact_score": 0.175,
+  "minimum_margin": 0.025,
+  "filter_response_gates": {
+    "passband_hz": [0, 800000],
+    "maximum_passband_deviation_db": 0.01,
+    "stopband_hz": [1250000, 5000000],
+    "minimum_stopband_rejection_db": 65
+  },
+  "arithmetic_reference": "independent integer convolution of sealed Q15 coefficients, round ties toward positive infinity, saturate after each stage",
+  "arithmetic_tolerance": {
+    "integer_arm_max_error_lsb": 0,
+    "fp32_arm_max_error_lsb": 2,
+    "require_no_unexplained_detector_changes_against_same_coefficient_reference": true
+  },
+  "scientific_comparator": "257-tap Kaiser beta 8.6, 1MHz cutoff, factor-four reference plus same six-window-screen/one-confirmation detector; report candidate differences separately from RF truth",
+  "service_time_gates_ms": {"mean": 90, "p99": 100},
+  "paced_replay": {
+    "duration_s": 300,
+    "approximate_arrival_interval_ms": 126,
+    "maximum_feedback_age_ms": 1000,
+    "allow_overload_skips": false,
+    "allow_expired_results": false,
+    "allow_growing_queue": false
+  },
+  "limits": "Development and synthetic controls are not holdout sensitivity or false-alarm calibration. A timing pass does not qualify boundaries, receiver binding, live RF coexistence, transport, analysis, web assets or deployment. No thresholds or holdout selections may be tuned after inspecting holdout outcomes."
+}

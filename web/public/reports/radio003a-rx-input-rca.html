@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Radio003a receiver-input detection RCA</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #101513; color: #e8f0ec; }
+    body { max-width: 960px; margin: 0 auto; padding: 2rem; line-height: 1.55; }
+    h1, h2 { line-height: 1.2; } h1 { color: #8de0bd; } h2 { margin-top: 2rem; }
+    code { color: #8ed6e8; overflow-wrap: anywhere; } a { color: #8ed6e8; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .65rem; border: 1px solid #3a4741; text-align: left; }
+    th { background: #19221e; } .finding { padding: 1rem; border-left: .3rem solid #e4b45f; background: #211d15; }
+    small { color: #a8b3ae; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Why recent RX1 scans have very few detections</h1>
+    <p><small>Radio <code>104000bac4950008230026001b440a003a</code> · evidence reviewed 2026-09-13 UTC</small></p>
+    <p class="finding"><strong>Root cause:</strong> only RX0 is connected to an antenna feed at this installation. The sparse recent captures selected RX1. Their recording transport is healthy, but the retained input is almost entirely receiver noise.</p>
+
+    <h2>Same-radio controls at 10 MS/s</h2>
+    <table>
+      <thead><tr><th>Measurement</th><th>Connected RX0</th><th>Unconnected RX1</th></tr></thead>
+      <tbody>
+        <tr><td>Qualification session</td><td><code>scan-hop-89ff5771b72d879c</code></td><td><code>scan-hop-106c90486d2e961d</code></td></tr>
+        <tr><td>Online detected visits</td><td>1,448</td><td>0</td></tr>
+        <tr><td>Offline selected observations</td><td>1,063</td><td>1</td></tr>
+        <tr><td>Candidate associations</td><td>92</td><td>0</td></tr>
+        <tr><td>First eight probe RMS</td><td>65.8–209.1 ADC counts</td><td>2.44–2.52 ADC counts</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Why duty still looks healthy</h2>
+    <p>Source-counter duty measures how much valid IQ was retained during the 300-second acquisition. It does not measure antenna signal, detection rate, or the share of wall time assigned to one channel. Recent RX1 production scans retained about 95.2% valid IQ, but that IQ came from an unconnected input.</p>
+
+    <h2>Sample-rate and decimation checks</h2>
+    <p>Strong RX0 signals remain strong when analyzed from the native 10 MS/s stream and after independent low-pass decimation to 2.5 MS/s. Decimating the RX1 recordings does not recover detections. Older signal-rich 2.5 MS/s probes also remain detectable after independent interpolation to 10 MS/s. The evidence therefore rejects a general 10 MS/s detector failure as the explanation.</p>
+
+    <h2>Scope and corrective direction</h2>
+    <p>The saved evidence localizes the loss before decimation and plotting, at the selected receiver input. It does not diagnose a cable or receiver hardware fault because RX1 is intentionally unconnected. Production should select RX0 while this wiring remains unchanged. Detector thresholds should not be lowered to compensate for an absent input signal.</p>
+    <p>Cross-channel trajectory/TLE figures may also be unavailable when UTC timing is unqualified. That is separate from the missing GLRT/CFO detections.</p>
+    <p><a href="/">Return to LEO Tracker</a></p>
+  </main>
+</body>
+</html>

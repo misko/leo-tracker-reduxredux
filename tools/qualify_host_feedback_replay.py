@@ -1,0 +1,182 @@
+"""Five-minute paced saved-IQ replay through the bounded worker and wire codec.
+
+Never opens a radio. Frozen holdout inputs are replayed for timing only; no
+detector/filter parameters or scientific gates are selected from these results.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import resource
+import time
+from dataclasses import asdict
+from pathlib import Path
+
+import numpy as np
+from pluto_plus.host_adaptive_hop import HostDecisionOutcome, HostFeedbackV1
+
+from leo.analysis.host_decision import NativeHostDecision
+from leo.radio.host_decision_worker import BoundedHostDecisionWorker
+from leo.storage.persistent_hop import PersistentHopIqStore
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def run(seal: Path, output: Path, bulk_root: Path) -> None:
+    frozen = json.loads((seal / "sealed.json").read_text())
+    for path, expected in frozen["sources_sha256"].items():
+        if sha(Path(path)) != expected:
+            raise ValueError(f"sealed source changed: {path}")
+    if sha(seal / "decision.so") != frozen["library_sha256"]:
+        raise ValueError("sealed library changed")
+    output.mkdir(parents=True, exist_ok=False)
+    rows = [json.loads(line) for line in (seal / "holdout.jsonl").read_text().splitlines()]
+    store = PersistentHopIqStore.open_read_only(bulk_root)
+    corpus: dict[int, list[tuple[np.ndarray, str]]] = {0: [], 1: []}
+    for sid in frozen["protocol"]["sessions"]:
+        session = store.inspect(sid)
+        rx = session.manifest.receiver_ids[0]
+        for sweep in frozen["protocol"]["holdout_sweeps"]:
+            visits, values = store.read_sweep_ci16(session, sweep)
+            for index, visit in enumerate(visits):
+                iq = np.ascontiguousarray(values[index * 1200000 : (index + 1) * 1200000, 0, :])
+                row = next(
+                    r for r in rows if r["session_id"] == sid and r["visit"] == sweep * 8 + index
+                )
+                if hashlib.sha256(iq.tobytes()).hexdigest() != row["iq_sha256"]:
+                    raise ValueError("saved input changed after holdout")
+                samples = np.empty((1, 1200000), dtype=np.complex64)
+                samples.real[0] = iq[:, 0]
+                samples.imag[0] = iq[:, 1]
+                samples.setflags(write=False)
+                corpus[rx].append(
+                    (samples, session.manifest.plan.profiles[visit.target_index].target.edge)
+                )
+    identity = bytes.fromhex(sha(seal / "sealed.json"))
+    worker = BoundedHostDecisionWorker(lambda: NativeHostDecision(seal / "decision.so"))
+    # Workspace/template startup is explicit and excluded from steady-state gates.
+    warm_source = HostFeedbackV1(
+        1, 1, 1, 0, 0, 0, 1200000, 0, 0, HostDecisionOutcome.UNKNOWN, 0, 0, 0, identity
+    )
+    worker.submit(warm_source, corpus[0][0][0], edge=corpus[0][0][1])
+    while worker.pending_count:
+        warm = worker.poll()
+        if warm:
+            if warm[0].failure:
+                raise ValueError(warm[0].failure)
+            startup_service_ms = (warm[0].completed_ns - warm[0].submitted_ns) / 1e6
+            break
+        time.sleep(0.005)
+    count = 2381
+    interval = 0.126
+    measurements = []
+    rss_before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    start = time.monotonic()
+    with (output / "rows.jsonl").open("x") as stream:
+
+        def collect(results):
+            for result in results:
+                now = time.monotonic_ns()
+                feedback = result.feedback(now)
+                packet = feedback.pack()
+                assert HostFeedbackV1.unpack(packet) == feedback
+                serialized_ns = time.monotonic_ns()
+                serialization_ns = serialized_ns - now
+                row = {
+                    "rx": feedback.receiver_id,
+                    "visit": feedback.visit,
+                    "service_ms": (result.completed_ns - result.submitted_ns + serialization_ns)
+                    / 1e6,
+                    "serialization_ms": serialization_ns / 1e6,
+                    "queue_ms": (result.started_ns - result.submitted_ns) / 1e6,
+                    "feedback_age_ms": (serialized_ns - result.submitted_ns) / 1e6,
+                    "healthy": feedback.healthy,
+                    "failure": result.failure,
+                    "evidence": asdict(result.evidence) if result.evidence else None,
+                    "feedback_hex": packet.hex(),
+                }
+                measurements.append(row)
+                stream.write(json.dumps(row, allow_nan=False) + "\n")
+
+        try:
+            for index in range(count):
+                due = start + index * interval
+                time.sleep(max(0, due - time.monotonic()))
+                collect(worker.poll())
+                rx = int(index >= 1191)
+                visit = index if rx == 0 else index - 1191
+                samples, edge = corpus[rx][visit % len(corpus[rx])]
+                first = (1 << 53) + visit * 1260000
+                source = HostFeedbackV1(
+                    71 + rx,
+                    9,
+                    13 + rx,
+                    visit,
+                    visit,
+                    first,
+                    first + 1200000,
+                    rx,
+                    visit % 8,
+                    HostDecisionOutcome.UNKNOWN,
+                    0,
+                    0,
+                    0,
+                    identity,
+                )
+                worker.submit(source, samples, edge=edge)
+                if index % 240 == 0:
+                    print(
+                        f"paced replay {index}/{count}; pending={worker.pending_count}", flush=True
+                    )
+            time.sleep(max(0, start + 300 - time.monotonic()))
+            collect(worker.finish())
+        finally:
+            worker.finish()
+    service = [m["service_ms"] for m in measurements]
+    ages = [m["feedback_age_ms"] for m in measurements]
+    healthy = all(m["healthy"] == 1 and m["failure"] is None for m in measurements)
+    summary = {
+        "startup_service_ms": startup_service_ms,
+        "duration_seconds": time.monotonic() - start,
+        "jobs": len(measurements),
+        "mean_service_ms": float(np.mean(service)),
+        "p99_service_ms": float(np.percentile(service, 99)),
+        "maximum_feedback_age_ms": max(ages),
+        "all_healthy": healthy,
+        "queue_high_watermark": worker.high_watermark,
+        "queue_capacity": worker.capacity,
+        "rss_peak_before_kib": rss_before,
+        "rss_peak_after_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "worker_source_sha256": sha(
+            Path(__file__).resolve().parents[1] / "src/leo/radio/host_decision_worker.py"
+        ),
+        "qualification_script_sha256": sha(Path(__file__)),
+        "sealed_sha256": identity.hex(),
+        "rows_sha256": sha(output / "rows.jsonl"),
+        "limits": ("Saved-IQ host timing/serialization only; "
+                   "no live transport or adaptive RF qualification."),
+    }
+    summary["passed"] = (
+        len(measurements) == count
+        and healthy
+        and max(ages) <= 1000
+        and summary["mean_service_ms"] <= 90
+        and summary["p99_service_ms"] <= 100
+    )
+    (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print(json.dumps(summary, indent=2), flush=True)
+    if not summary["passed"]:
+        raise ValueError("paced feedback replay failed its frozen gates")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("seal", type=Path)
+    parser.add_argument("output", type=Path)
+    parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
+    args = parser.parse_args()
+    run(args.seal, args.output, args.bulk_root)

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus } from "./adaptive-analysis-api";
-import { adaptiveDetailFixture } from "./adaptive-fixtures";
+import { adaptiveDetailFixture, hostAdaptiveDetailFixture } from "./adaptive-fixtures";
 
 const capture = adaptiveDetailFixture().capture;
 const respond = (value: unknown, status = 200) => ({ ok: status === 200, status, json: async () => value }) as Response;
@@ -32,6 +32,44 @@ export function analysisFixture(state: AdaptiveAnalysisStatus["state"] = "figure
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive analysis publication", () => {
+  it.each([0, 1] as const)("links the site receiver-input RCA for radio003a RX%s", async receiver => {
+    const native = hostAdaptiveDetailFixture(receiver).capture;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(null, 404)));
+    render(<AdaptiveAnalysisPanel capture={native} />);
+    const link = await screen.findByRole("link", { name: "Read the RX0/RX1 detection root-cause analysis" });
+    expect(link).toHaveAttribute("href", "/reports/radio003a-rx-input-rca.html");
+    expect(screen.getByRole("complementary", { name: "Receiver input status" })).toHaveTextContent(
+      receiver === 1 ? "RX1 has no connected antenna feed" : "RX0 is the connected antenna input",
+    );
+  });
+
+  it("does not apply the site receiver-input finding to another radio", async () => {
+    const native = { ...hostAdaptiveDetailFixture(1).capture, radio_serial: "different-radio" };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(null, 404)));
+    render(<AdaptiveAnalysisPanel capture={native} />);
+    await screen.findByText(/It is not queued here/);
+    expect(screen.queryByRole("link", { name: "Read the RX0/RX1 detection root-cause analysis" })).not.toBeInTheDocument();
+  });
+
+  it.each([0, 1] as const)("binds native analysis and PNGs to physical RX%s", async receiver => {
+    const native = hostAdaptiveDetailFixture(receiver).capture;
+    const value = analysisFixture();
+    value.schema_version = 2;
+    Object.assign(value.configuration, { schema_version: 2, analyzer_id: "host-adaptive-native-10m-fractional-glrt64-cfo-v2", sample_rate_hz: 10000000, receiver_ids: [receiver] });
+    Object.assign(value.overview!, { schema_version: 2, presentation_id: "host-adaptive-native-10m-overview-v2" });
+    const fetcher = vi.fn().mockResolvedValue(respond(value));
+    vi.stubGlobal("fetch", fetcher);
+    render(<AdaptiveAnalysisPanel capture={native} />);
+    await screen.findByRole("img", { name: "Retained channel coverage" });
+    expect(screen.getByText(new RegExp(`RX${receiver} analyzed offline at 10 MS/s`))).toBeInTheDocument();
+    expect(fetcher.mock.calls[0][0]).toContain("/api/v2/");
+    expect(adaptiveFigureUrl(value, value.overview!.artifacts[0])).toContain("/api/v2/");
+    value.configuration.receiver_ids = [receiver === 0 ? 1 : 0];
+    await expect(getAdaptiveAnalysis(native)).rejects.toThrow(/configuration/);
+    value.configuration.receiver_ids = [receiver];
+    value.overview!.selected_observation_count = native.retained_visits + 1;
+    await expect(getAdaptiveAnalysis(native)).rejects.toThrow(/figures/);
+  });
   it.each(["not_started", "partial", "metrics_complete", "figures_ready"] as const)("shows %s without inventing live-worker status", async state => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(analysisFixture(state))));
     render(<AdaptiveAnalysisPanel capture={capture} />);

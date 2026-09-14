@@ -1,0 +1,42 @@
+{
+  "schema": "adaptive-decision-budget-research-v1",
+  "sessions": [
+    "scan-hop-b80df494d948f78a",
+    "scan-hop-b96cfdd5fb0ee91c"
+  ],
+  "sweeps": [
+    40,
+    110,
+    180,
+    250
+  ],
+  "source_rate_hz": 10000000,
+  "decision_rates_hz": [
+    5000000,
+    2500000
+  ],
+  "selection": "four-frozen-sweeps-all-eight-targets",
+  "thresholds": {
+    "minimum_exact_score": 0.175,
+    "minimum_margin": 0.025
+  },
+  "reference": "5M-filtered-all-six-confirmations; not RF truth",
+  "host": "Linux-7.0.0-30-generic-x86_64-with-glibc2.43",
+  "machine": "x86_64",
+  "fft": "portable native FFT; not deployed ARM FFTW timing",
+  "fewer_probe_timing": "sum of measured independent confirmations; no screening",
+  "filter_timing": "NumPy polyphase full-dwell causal FIR including CI16 conversion",
+  "partial_misses": "UNKNOWN: insufficient coverage to demote using old policy",
+  "filters": {
+    "5000000": {
+      "taps": 129,
+      "sha256": "eaf9981acccb2ee47a6f9a2ebf95da27edef7b5d6a37f572f6f3e7de8c022d8b",
+      "group_delay_us": 6.4
+    },
+    "2500000": {
+      "taps": 257,
+      "sha256": "a4a349ef83d89b07f129aa7b865cca2c370926db775d6ff777cb5e123c993dc2",
+      "group_delay_us": 12.8
+    }
+  }
+}

@@ -372,6 +372,9 @@ describe("Observation Console", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
+      if (path.startsWith("/api/v2/scanner/adaptive-sessions")) {
+        return { ok: false, status: 404, json: async () => null } as Response;
+      }
       if (path === "/api/v1/scanner/adaptive-sessions") {
         return { ok: true, status: 200, json: async () => adaptivePageFixture() } as Response;
       }
@@ -452,7 +455,7 @@ describe("Observation Console", () => {
     expect(screen.queryByRole("heading", { name: "Actual channel visits" })).not.toBeInTheDocument();
   });
 
-  it("shows the physical RX1 selection for a single-receiver 10 MS/s scan", async () => {
+  it("shows physical RX1 without requesting the disabled radio classifier for a fixed 10 MS/s scan", async () => {
     const normalFetch = fetch as ReturnType<typeof vi.fn>;
     const capture = {
       ...persistentHopCapture, schema_version: 2, sample_rate_hz: 10000000,
@@ -474,6 +477,10 @@ describe("Observation Console", () => {
     fireEvent.click(await screen.findByRole("button", { name: new RegExp(capture.session_id) }));
     expect(await screen.findByText("RX1 · held for this scan")).toBeInTheDocument();
     expect(screen.getByLabelText("Persistent hop summary")).toHaveTextContent("10.0 MS/s · 10.0 MHz");
+    expect(screen.queryByText(/Loading radio-side GLRT evidence/)).not.toBeInTheDocument();
+    expect((fetch as ReturnType<typeof vi.fn>).mock.calls.some(([input]) =>
+      new URL(String(input), "http://localhost").pathname.endsWith(`/${capture.session_id}/glrt`)
+    )).toBe(false);
   });
 
   it("stops and starts capture with explicit accessible controls", async () => {

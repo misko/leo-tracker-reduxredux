@@ -6,7 +6,7 @@ import math
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Annotated, Literal, Protocol, Self
+from typing import Annotated, ClassVar, Literal, Protocol, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -221,13 +221,14 @@ class AdaptiveHopAnalysisReader(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class AdaptiveHopAnalysisSource:
+    _receipt_model: ClassVar[type[AdaptiveHopReceiptV1]] = AdaptiveHopReceiptV1
     reader: AdaptiveHopAnalysisReader = field(repr=False, compare=False)
     receipt: AdaptiveHopReceiptV1 = field(init=False)
     visits: tuple[AdaptiveHopVisitV1, ...] = field(init=False)
     input_manifest_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        receipt = AdaptiveHopReceiptV1.model_validate(self.reader.receipt.model_dump())
+        receipt = self._receipt_model.model_validate(self.reader.receipt.model_dump())
         if self.reader.session_id != receipt.session_id:
             raise ValueError("adaptive analysis reader changed session identity")
         # Validate the digest at admission, not after expensive scientific work.
@@ -247,14 +248,18 @@ class AdaptiveHopAnalysisSource:
         evidence, values = self.reader.read_visit_ci16(index)
         if evidence != self.visits[index]:
             raise ValueError("adaptive analysis reader changed actual visit evidence")
-        expected = (self.visits[index].valid_sample_count, 2, 2)
+        expected = (
+            self.visits[index].valid_sample_count,
+            len(self.receipt.plan.geometry.receiver_ids),
+            2,
+        )
         if (
             not isinstance(values, np.ndarray)
             or values.dtype != np.dtype("<i2")
             or values.shape != expected
             or not values.flags.c_contiguous
         ):
-            raise ValueError("adaptive analysis reader did not supply complete dual-RX CI16")
+            raise ValueError("adaptive analysis reader did not supply complete source-bound CI16")
         output = np.empty(expected[:2], dtype=np.complex64)
         output.real = values[:, :, 0]
         output.imag = values[:, :, 1]
@@ -374,6 +379,7 @@ def _analyze_loaded_visit(
     visit_index: int,
     samples: npt.NDArray[np.complex64],
     cfg: AdaptiveHopAnalysisConfigurationV1,
+    product_model: type[AdaptiveHopVisitAnalysisV1] = AdaptiveHopVisitAnalysisV1,
 ) -> AdaptiveHopVisitAnalysisV1:
     visit = source.visits[visit_index]
     event = visit.event
@@ -408,7 +414,7 @@ def _analyze_loaded_visit(
                 winning_candidate_rank=winner.candidate_rank if winner else None,
             )
         )
-    return AdaptiveHopVisitAnalysisV1(
+    return product_model(
         session_id=source.receipt.session_id,
         input_manifest_sha256=source.input_manifest_sha256,
         configuration=cfg,
@@ -452,6 +458,7 @@ def _compare_source_fields(
         product.session_id != receipt.session_id
         or product.input_manifest_sha256 != input_manifest_sha256
         or product.configuration.sample_rate_hz != receipt.plan.geometry.sample_rate_hz
+        or product.configuration.receiver_ids != receipt.plan.geometry.receiver_ids
         or product.policy_generation != receipt.plan.policy.generation
         or product.source_origin_counter != receipt.terminal.first_counter
         or product.target_index != event.target_index

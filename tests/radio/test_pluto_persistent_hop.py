@@ -8,7 +8,9 @@ import pytest
 
 from leo.radio.pluto_persistent_hop import (
     PERSISTENT_HOP_EXCLUDED_SERIAL,
+    PlutoPersistentHopError,
     PlutoPersistentHopRadio,
+    _map_restoration,
 )
 from leo.radio.scanner_glrt_metadata import ScannerGlrtMetadataExtension, ScannerGlrtOptions
 from leo.scanner.fake_persistent_hop import FakePersistentHopRadio
@@ -369,6 +371,26 @@ def test_radio_passes_one_extension_to_capable_factory_and_retains_failure_evide
     assert radio.classification_error == "injected unsupported provider"
 
 
+@pytest.mark.parametrize("mode", ["slow_attack", "fast_attack", "manual"])
+def test_restoration_keeps_manual_gains_exact_and_projects_agc_observations(mode) -> None:
+    _plan, _blocks, upstream = _cancelled_source(visit_count=0)
+    host = upstream.receipt.host_lifecycle
+    host.original_settings.gain_modes = (mode, mode)
+    host.original_settings.gain_db = (11.0, 12.0)
+    host.restored_settings = SimpleNamespace(**vars(host.original_settings))
+    host.restored_settings.gain_db = (9.0, 13.0)
+    if mode == "manual":
+        with pytest.raises(PlutoPersistentHopError, match="exact two-layer restoration"):
+            _map_restoration(upstream.receipt)
+    else:
+        mapped = _map_restoration(upstream.receipt)
+        assert mapped.status == "restored"
+        assert mapped.original_settings == mapped.restored_settings
+        assert mapped.original_settings.gains == ()
+        assert host.original_settings.gain_db == (11.0, 12.0)
+        assert host.restored_settings.gain_db == (9.0, 13.0)
+
+
 def test_adapter_targets_one_explicit_alternate_iiod_port() -> None:
     plan, _source_blocks, upstream = _cancelled_source(visit_count=0)
     upstream.receipt.radio_uri = "ip:192.168.1.18:30432"
@@ -464,6 +486,44 @@ def test_adapter_cancel_is_producer_owned_and_retains_current_completed_visit() 
     assert upstream.cancelled
     assert upstream.cancel_thread_id == upstream.visit_thread_id
     assert upstream.cancel_thread_id != get_ident()
+    radio.close()
+
+
+@pytest.mark.parametrize("deadline", [False, True])
+def test_cancel_drains_metadata_closed_visits_before_transport_close(monkeypatch, deadline):
+    from leo.radio import pluto_persistent_hop as module
+
+    plan, source_blocks, source = _cancelled_source(visit_count=2)
+    upstream = _HeldVisitUpstream(source._blocks, source.receipt)
+    upstream.completed_visits = source.receipt.visits
+    if deadline:
+        monkeypatch.setattr(module, "_CANCEL_DRAIN_TIMEOUT_SECONDS", 0)
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.18",
+        expected_serial="allowed-serial",
+        radio_id="scanner-radio",
+        client_factory=lambda *_: _Client(
+            upstream, persistent_hop_wire_session_id("adapter-session")
+        ),
+        plan_factory=lambda selected: selected,
+        tandem_request_factory=lambda: "hold",
+    )
+    radio.open()
+    session = radio.begin_session(plan, session_id="adapter-session")
+    assert upstream.visit_entered.wait(timeout=2)
+    session.request_cancel()
+    upstream.release_visit.set()
+    assert session.read_visit().evidence == source_blocks[0].evidence
+    if deadline:
+        with pytest.raises(module.PlutoPersistentHopError, match="timed out draining"):
+            session.read_visit()
+    else:
+        assert session.read_visit().evidence == source_blocks[1].evidence
+        with pytest.raises(StopIteration):
+            session.read_visit()
+        assert session.finish().visits == tuple(block.evidence for block in source_blocks)
+    assert upstream.cancelled
+    assert upstream.cancel_thread_id == upstream.visit_thread_id
     radio.close()
 
 
@@ -612,13 +672,14 @@ def test_adapter_rejects_nonliteral_or_nonlocal_lan_hosts(host: str) -> None:
         PlutoPersistentHopRadio(host, expected_serial="allowed", radio_id="scanner")
 
 
-def test_adapter_hard_denies_excluded_serial() -> None:
-    with pytest.raises(ValueError, match="excluded"):
-        PlutoPersistentHopRadio(
-            "192.168.1.18",
-            expected_serial=PERSISTENT_HOP_EXCLUDED_SERIAL,
-            radio_id="scanner",
-        )
+def test_adapter_accepts_explicitly_selected_formerly_excluded_serial() -> None:
+    radio = PlutoPersistentHopRadio(
+        "192.168.1.17",
+        expected_serial=PERSISTENT_HOP_EXCLUDED_SERIAL,
+        radio_id="radio_pluto_003a",
+    )
+    assert radio.open().serial == PERSISTENT_HOP_EXCLUDED_SERIAL
+    radio.close()
 
 
 @pytest.mark.parametrize("port", [0, 65_536, True, "30432"])

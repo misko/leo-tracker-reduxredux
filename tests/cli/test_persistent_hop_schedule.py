@@ -205,6 +205,21 @@ def test_persistent_hop_mode_is_default_off() -> None:
     assert settings.scanner_capture_mode == "sequential"
 
 
+def test_settings_accept_newly_selected_exact_radio(tmp_path) -> None:
+    settings = _settings(
+        tmp_path,
+        radios=(
+            RadioConfigurationV1(
+                radio_id="radio_pluto_003a",
+                serial="104000bac4950008230026001b440a003a",
+                host="192.168.1.17",
+            ),
+        ),
+        scanner_radio_id="radio_pluto_003a",
+    )
+    assert settings.radios[0].serial == "104000bac4950008230026001b440a003a"
+
+
 def test_persistent_hop_credentials_are_derived_from_fixed_systemd_names(tmp_path) -> None:
     settings = _settings(tmp_path)
 
@@ -258,15 +273,19 @@ def test_persistent_hop_mode_rejects_noncanonical_cadence_or_host(
         _settings(tmp_path, **updates)
 
 
-@pytest.mark.parametrize("single_rx", [False, True])
-def test_scheduled_persistent_hop_publishes_and_reuses_one_session(tmp_path, single_rx) -> None:
+@pytest.mark.parametrize("single_rx, interval", [(False, 1200), (True, 1200), (True, 600)])
+def test_scheduled_persistent_hop_publishes_and_reuses_one_session(
+    tmp_path, single_rx, interval
+) -> None:
     from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID, parse_scheduled_scanner_intent
 
     radio = _BoundedPersistentRadio()
     lifecycle = _Lifecycle()
     backend = LocalAcquisitionBackend(
         _settings(
-            tmp_path, scanner_profile=SINGLE_RX_PROFILE_ID if single_rx else "alternating-2p5m-5m"
+            tmp_path,
+            scanner_profile=SINGLE_RX_PROFILE_ID if single_rx else "alternating-2p5m-5m",
+            scanner_interval_seconds=interval,
         ),
         CompositionHooks(
             persistent_hop_radio_factory=lambda _configuration: radio,
@@ -372,17 +391,30 @@ def test_lifecycle_startup_failure_relies_on_transactional_entry_and_never_captu
     assert radio.open_count == 0
 
 
-def test_capture_failure_aborts_then_cleans_before_claim_release(tmp_path) -> None:
+@pytest.mark.parametrize("diagnostic_error", [False, True])
+def test_capture_failure_aborts_then_cleans_before_claim_release(
+    tmp_path, diagnostic_error
+) -> None:
     events: list[str] = []
     radio = _CaptureFailureRadio(events)
-    lifecycle = _Lifecycle(events)
+
+    class DiagnosticLifecycle(_Lifecycle):
+        def diagnostic_tail(self):
+            events.append("lifecycle.diagnostic")
+            if diagnostic_error:
+                raise RuntimeError("diagnostic connection lost")
+            return "missing_samples=21050"
+
+    lifecycle = DiagnosticLifecycle(events)
     backend, intent, _configurations = _recording_backend(tmp_path, radio, lifecycle, events)
 
-    with pytest.raises(Exception, match="injected capture failure"):
+    with pytest.raises(Exception, match="injected capture failure") as caught:
         backend.capture_scheduled_scanner(intent, cancel=Event())
 
     assert "store.publish" not in events
-    assert events[-3:] == ["store.abort", "lifecycle.exit", "claim.release"]
+    assert events[-4:] == ["store.abort", "lifecycle.diagnostic", "lifecycle.exit", "claim.release"]
+    expected = "diagnostic connection lost" if diagnostic_error else "missing_samples=21050"
+    assert expected in "\n".join(caught.value.__notes__)
     assert (radio.open_count, radio.close_count) == (1, 1)
 
 

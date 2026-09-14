@@ -1,0 +1,46 @@
+{
+  "schema": "adaptive-deployment-qualification-rf-ledger-v1",
+  "budget_seconds": 1800,
+  "charged_seconds": 237.3314414732781,
+  "remaining_seconds": 1562.6685585267219,
+  "entries": [
+    {
+      "id": "metadata-canary-preflight",
+      "rf_seconds_upper_bound": 0,
+      "reason": "failed before remote staging and capture"
+    },
+    {
+      "id": "metadata-canary-startup-failure",
+      "rf_seconds_upper_bound": 9.285046554,
+      "reason": "conservatively charge entire capture call including bufferless preparation and cleanup; incomplete first valid visit; restoration attested"
+    },
+    {
+      "id": "radio003a-canary-cancel-failure",
+      "rf_seconds_upper_bound": 34.276158086024225,
+      "reason": "RX1 cancellation failed because metadata-closed visits exceeded retained IQ; owned daemon cleaned; capture stopped"
+    },
+    {
+      "id": "radio003a-canary-cancel-pass",
+      "rf_seconds_upper_bound": 34.30456104292534,
+      "reason": "RX1 bounded recheck passed after draining closed-visit IQ; cancellation and restoration attested"
+    },
+    {
+      "id": "radio003a-affinity-failure",
+      "rf_seconds_upper_bound": 10.723047730047256,
+      "reason": "One bounded CPU1 worker-affinity comparison; one-block counter gap; ownership cleanup and original receiver settings restored; candidate rejected"
+    },
+    {
+      "id": "radio003a-block262144-restore-failure",
+      "rf_seconds_upper_bound": 74.41723082610406,
+      "reason": "262144-sample block comparison sustained about 65 seconds without reported counter gap; cancellation failed at duplicate AGC-gain restoration equality check; owned daemon stopped"
+    },
+    {
+      "id": "radio003a-block262144-restoration-pass",
+      "rf_seconds_upper_bound": 74.32539723417722,
+      "reason": "262144-sample refill recheck on sealed eefcb4f0; 65.0196636s device span, 95.4172% duty, zero missing/overflow/event gaps, cancellation and settable-state restoration passed"
+    }
+  ],
+  "reserved_next_canaries_seconds": 1500,
+  "unallocated_seconds": 62.66855852672188,
+  "collection_stopped_on_failure": true
+}

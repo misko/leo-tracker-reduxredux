@@ -38,6 +38,16 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
 )
+from leo.scanner.host_adaptive_analysis import HostAdaptiveVisitAnalysisV2
+from leo.scanner.host_adaptive_presentation import (
+    HostAdaptiveAnalysisStatusV2,
+    HostAdaptiveOverviewManifestV2,
+)
+from leo.scanner.host_adaptive_products import (
+    HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveMetricsManifestV2,
+    HostAdaptiveVisitReferenceV2,
+)
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError
 from leo.storage.pinned import PinnedLocalRoot
 
@@ -45,7 +55,7 @@ _NAMESPACE = "scanner-adaptive-analysis"
 _MAX_BINDING = 32 * 1024 * 1024
 _MAX_VISIT = 2 * 1024 * 1024
 _MAX_MANIFEST = 4 * 1024 * 1024
-_VISIT = re.compile(r"visit-([0-9]{6})\.v1\.json\.zst")
+_VISIT = re.compile(r"visit-([0-9]{6})\.v[12]\.json\.zst")
 
 
 def _read(directory: PinnedLocalRoot, name: str, maximum: int) -> bytes:
@@ -132,7 +142,13 @@ class AdaptiveHopAnalysisStore:
     def job(
         self, binding: AdaptiveHopAnalysisBindingV1, *, writable: bool = False
     ) -> Iterator[AdaptiveHopAnalysisJob]:
-        binding = AdaptiveHopAnalysisBindingV1.model_validate(binding.model_dump())
+        binding_model = (
+            HostAdaptiveAnalysisBindingV2
+            if isinstance(binding, HostAdaptiveAnalysisBindingV2)
+            else AdaptiveHopAnalysisBindingV1
+        )
+        binding = binding_model.model_validate(binding.model_dump())
+        binding_filename = f"binding.v{binding.schema_version}.json"
         if writable and self._read_only:
             raise PermissionError("adaptive analysis store is read-only")
         handles: list[PinnedLocalRoot] = []
@@ -171,13 +187,11 @@ class AdaptiveHopAnalysisStore:
                         "adaptive analysis binding already has a worker"
                     ) from error
             try:
-                existing = _unseal(
-                    _read(parent, "binding.v1.json", _MAX_BINDING), AdaptiveHopAnalysisBindingV1
-                )
+                existing = _unseal(_read(parent, binding_filename, _MAX_BINDING), binding_model)
             except FileNotFoundError:
                 if not writable:
                     raise BundleNotFoundError("adaptive analysis binding is unpublished") from None
-                _publish(parent, "binding.v1.json", _seal(binding), _MAX_BINDING)
+                _publish(parent, binding_filename, _seal(binding), _MAX_BINDING)
             else:
                 if existing != binding:
                     raise BundleCorruptionError("adaptive analysis binding changed")
@@ -197,11 +211,28 @@ class AdaptiveHopAnalysisJob:
     ):
         self._directory, self.binding, self._writable = directory, binding, writable
         self._binding_sha256 = binding.sha256
+        self._version = binding.schema_version
+        host = isinstance(binding, HostAdaptiveAnalysisBindingV2)
+        self._visit_model: type[AdaptiveHopVisitAnalysisV1] = (
+            HostAdaptiveVisitAnalysisV2 if host else AdaptiveHopVisitAnalysisV1
+        )
+        self._reference_model: type[AdaptiveHopVisitReferenceV1] = (
+            HostAdaptiveVisitReferenceV2 if host else AdaptiveHopVisitReferenceV1
+        )
+        self._metrics_model: type[AdaptiveHopMetricsManifestV1] = (
+            HostAdaptiveMetricsManifestV2 if host else AdaptiveHopMetricsManifestV1
+        )
+        self._overview_model: type[AdaptiveHopOverviewManifestV1] = (
+            HostAdaptiveOverviewManifestV2 if host else AdaptiveHopOverviewManifestV1
+        )
+        self._status_model: type[AdaptiveHopAnalysisStatusV1] = (
+            HostAdaptiveAnalysisStatusV2 if host else AdaptiveHopAnalysisStatusV1
+        )
 
     def _index(self, index: int) -> str:
         if type(index) is not int or not 0 <= index < self.binding.receipt.complete_visit_count:
             raise ValueError("adaptive analysis visit is not retained by the source")
-        return f"visit-{index:06d}.v1.json.zst"
+        return f"visit-{index:06d}.v{self._version}.json.zst"
 
     def _read_visit(
         self, index: int
@@ -219,11 +250,11 @@ class AdaptiveHopAnalysisJob:
             )
         except zstd.ZstdError as error:
             raise BundleCorruptionError("adaptive analysis decompression failed") from error
-        product = _unseal(raw, AdaptiveHopVisitAnalysisV1)
+        product = _unseal(raw, self._visit_model)
         self._validate(product)
         if product.visit_index != index:
             raise BundleCorruptionError("adaptive analysis path changed visit identity")
-        reference = AdaptiveHopVisitReferenceV1(
+        reference = self._reference_model(
             visit_index=index,
             relative_path=name,
             compressed_sha256=sha256_digest(compressed),
@@ -262,7 +293,8 @@ class AdaptiveHopAnalysisJob:
                     if match is None:
                         raise BundleCorruptionError("malformed adaptive analysis visit filename")
                     index = int(match.group(1))
-                    self._index(index)
+                    if entry.name != self._index(index):
+                        raise BundleCorruptionError("adaptive checkpoint changed its schema major")
                     info = entry.stat(follow_symlinks=False)
                     if (
                         not stat.S_ISREG(info.st_mode)
@@ -301,7 +333,7 @@ class AdaptiveHopAnalysisJob:
     def write_visit(self, product: AdaptiveHopVisitAnalysisV1) -> AdaptiveHopVisitReferenceV1:
         if not self._writable:
             raise PermissionError("adaptive analysis job is read-only")
-        product = AdaptiveHopVisitAnalysisV1.model_validate(product.model_dump())
+        product = self._visit_model.model_validate(product.model_dump())
         self._validate(product)
         name = self._index(product.visit_index)
         try:
@@ -324,10 +356,10 @@ class AdaptiveHopAnalysisJob:
 
     def manifest(self) -> AdaptiveHopMetricsManifestV1 | None:
         try:
-            raw = _read(self._directory, "metrics-manifest.v1.json", _MAX_MANIFEST)
+            raw = _read(self._directory, f"metrics-manifest.v{self._version}.json", _MAX_MANIFEST)
         except FileNotFoundError:
             return None
-        result = _unseal(raw, AdaptiveHopMetricsManifestV1)
+        result = _unseal(raw, self._metrics_model)
         if (
             result.session_id != self.binding.session_id
             or result.binding_sha256 != self._binding_sha256
@@ -350,7 +382,7 @@ class AdaptiveHopAnalysisJob:
         existing = self.verify()
         if existing is not None:
             return existing
-        manifest = AdaptiveHopMetricsManifestV1(
+        manifest = self._metrics_model(
             session_id=self.binding.session_id,
             input_manifest_sha256=self.binding.input_manifest_sha256,
             binding_sha256=self._binding_sha256,
@@ -359,15 +391,20 @@ class AdaptiveHopAnalysisJob:
             visits=self._references(),
             finalized_utc_ns=time.time_ns(),
         )
-        _publish(self._directory, "metrics-manifest.v1.json", _seal(manifest), _MAX_MANIFEST)
+        _publish(
+            self._directory,
+            f"metrics-manifest.v{self._version}.json",
+            _seal(manifest),
+            _MAX_MANIFEST,
+        )
         return manifest
 
     def overview(self) -> AdaptiveHopOverviewManifestV1 | None:
         try:
-            raw = _read(self._directory, "overview-manifest.v1.json", _MAX_MANIFEST)
+            raw = _read(self._directory, f"overview-manifest.v{self._version}.json", _MAX_MANIFEST)
         except FileNotFoundError:
             return None
-        overview = _unseal(raw, AdaptiveHopOverviewManifestV1)
+        overview = _unseal(raw, self._overview_model)
         metrics = self.manifest()
         if (
             metrics is None
@@ -375,12 +412,13 @@ class AdaptiveHopAnalysisJob:
             or overview.binding_sha256 != self._binding_sha256
             or overview.metrics_manifest_sha256
             != sha256_digest(canonical_json_bytes(metrics.model_dump(mode="json")))
-            or overview.selected_observation_count > 2 * metrics.complete_visit_count
+            or overview.selected_observation_count
+            > (len(self.binding.configuration.receiver_ids) * metrics.complete_visit_count)
         ):
             raise BundleCorruptionError("adaptive overview differs from source metrics")
         for artifact in overview.artifacts:
             info = os.stat(
-                f"overview-v1-{artifact.name}.png",
+                f"overview-v{self._version}-{artifact.name}.png",
                 dir_fd=self._directory.fileno(),
                 follow_symlinks=False,
             )
@@ -406,7 +444,7 @@ class AdaptiveHopAnalysisJob:
                 )
                 if info.st_size != ref.compressed_bytes:
                     raise BundleCorruptionError("adaptive metrics checkpoint size differs")
-        return AdaptiveHopAnalysisStatusV1(
+        return self._status_model(
             session_id=self.binding.session_id,
             input_manifest_sha256=self.binding.input_manifest_sha256,
             binding_sha256=self._binding_sha256,
@@ -450,7 +488,9 @@ class AdaptiveHopAnalysisJob:
         reference = next(a for a in overview.artifacts if a.name == name)
         if reference.sha256 != expected_sha256:
             raise BundleCorruptionError("adaptive overview artifact request changed digest")
-        payload = _read(self._directory, f"overview-v1-{name}.png", MAX_OVERVIEW_PNG_BYTES)
+        payload = _read(
+            self._directory, f"overview-v{self._version}-{name}.png", MAX_OVERVIEW_PNG_BYTES
+        )
         if len(payload) != reference.byte_count or sha256_digest(payload) != reference.sha256:
             raise BundleCorruptionError("adaptive overview PNG digest differs")
         self._png(payload)
@@ -474,7 +514,7 @@ class AdaptiveHopAnalysisJob:
                 )
             )
         existing = self.overview()
-        manifest = AdaptiveHopOverviewManifestV1(
+        manifest = self._overview_model(
             session_id=self.binding.session_id,
             binding_sha256=self._binding_sha256,
             metrics_manifest_sha256=sha256_digest(
@@ -487,12 +527,14 @@ class AdaptiveHopAnalysisJob:
             association_count=rendered.association_count,
             truncated_association_count=rendered.truncated_association_count,
         )
-        if manifest.selected_observation_count > 2 * metrics.complete_visit_count:
+        if manifest.selected_observation_count > (
+            len(self.binding.configuration.receiver_ids) * metrics.complete_visit_count
+        ):
             raise ValueError("adaptive overview association input count exceeds retained visits")
         if existing is not None and manifest != existing:
             raise BundleCorruptionError("adaptive overview publication cannot be overwritten")
         for name in OVERVIEW_ARTIFACTS:
-            destination, payload = f"overview-v1-{name}.png", rendered.artifacts[name]
+            destination, payload = f"overview-v{self._version}-{name}.png", rendered.artifacts[name]
             try:
                 old = _read(self._directory, destination, MAX_OVERVIEW_PNG_BYTES)
             except FileNotFoundError:
@@ -501,5 +543,10 @@ class AdaptiveHopAnalysisJob:
                 if old != payload:
                     raise BundleCorruptionError("adaptive overview artifact cannot be overwritten")
         if existing is None:
-            _publish(self._directory, "overview-manifest.v1.json", _seal(manifest), _MAX_MANIFEST)
+            _publish(
+                self._directory,
+                f"overview-manifest.v{self._version}.json",
+                _seal(manifest),
+                _MAX_MANIFEST,
+            )
         return manifest

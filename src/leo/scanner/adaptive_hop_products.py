@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Self
+from typing import Annotated, ClassVar, Literal, Self
 
 from pydantic import Field, model_validator
 
@@ -17,6 +17,7 @@ from leo.scanner.adaptive_hop_analysis import (
 
 
 class AdaptiveHopAnalysisBindingV1(AdaptiveModel):
+    _visit_model: ClassVar[type[AdaptiveHopVisitAnalysisV1]] = AdaptiveHopVisitAnalysisV1
     schema_version: Literal[1] = 1
     kind: Literal["adaptive_hop_fractional_analysis_binding"] = (
         "adaptive_hop_fractional_analysis_binding"
@@ -27,8 +28,11 @@ class AdaptiveHopAnalysisBindingV1(AdaptiveModel):
 
     @model_validator(mode="after")
     def _rate_matches_source(self) -> Self:
-        if self.configuration.sample_rate_hz != self.receipt.plan.geometry.sample_rate_hz:
-            raise ValueError("adaptive analysis binding changes source sample rate")
+        if (
+            self.configuration.sample_rate_hz != self.receipt.plan.geometry.sample_rate_hz
+            or self.configuration.receiver_ids != self.receipt.plan.geometry.receiver_ids
+        ):
+            raise ValueError("adaptive analysis binding changes source sample rate or receiver")
         return self
 
     @property
@@ -40,13 +44,14 @@ class AdaptiveHopAnalysisBindingV1(AdaptiveModel):
         return sha256_digest(canonical_json_bytes(self.model_dump(mode="json")))
 
     def validate_visit(self, product: AdaptiveHopVisitAnalysisV1) -> None:
-        product = AdaptiveHopVisitAnalysisV1.model_validate(product.model_dump())
+        product = self._visit_model.model_validate(product.model_dump())
         _compare_source_fields(product, self.receipt, self.input_manifest_sha256)
         if product.configuration != self.configuration:
             raise ValueError("adaptive visit changed analysis configuration")
 
 
 class AdaptiveHopVisitReferenceV1(AdaptiveModel):
+    _filename_version: ClassVar[int] = 1
     visit_index: Index
     relative_path: Annotated[str, Field(pattern=r"^visit-[0-9]{6}\.v1\.json\.zst$")]
     compressed_sha256: Sha256Digest
@@ -61,7 +66,7 @@ class AdaptiveHopVisitReferenceV1(AdaptiveModel):
     @model_validator(mode="after")
     def _inventory(self) -> Self:
         if (
-            self.relative_path != f"visit-{self.visit_index:06d}.v1.json.zst"
+            self.relative_path != f"visit-{self.visit_index:06d}.v{self._filename_version}.json.zst"
             or not self.passed_fractional_candidate_count
             <= self.fractional_candidate_count
             <= self.candidate_count
@@ -86,7 +91,9 @@ class AdaptiveHopMetricsManifestV1(AdaptiveModel):
 
     @model_validator(mode="after")
     def _all_actual_visits_complete(self) -> Self:
-        expected_probes = 2 * self.configuration.scheduled_probe_count
+        expected_probes = (
+            len(self.configuration.receiver_ids) * self.configuration.scheduled_probe_count
+        )
         if tuple(v.visit_index for v in self.visits) != tuple(
             range(self.complete_visit_count)
         ) or any(v.probe_count != expected_probes for v in self.visits):

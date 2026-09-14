@@ -2,12 +2,16 @@
 
 from pathlib import Path
 
-from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisConfigurationV1
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisStatusV1,
     AdaptiveOverviewArtifact,
 )
 from leo.scanner.adaptive_hop_products import AdaptiveHopAnalysisBindingV1
+from leo.scanner.host_adaptive_presentation import HostAdaptiveAnalysisStatusV2
+from leo.scanner.host_adaptive_products import (
+    HostAdaptiveAnalysisBindingV2,
+    bind_actual_visit_analysis,
+)
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.errors import BundleNotFoundError
@@ -26,13 +30,10 @@ class AdaptiveHopAnalysisPresentationStore:
                 capture = store.inspect(session_id)
             except BundleNotFoundError:
                 return None
-            return AdaptiveHopAnalysisBindingV1(
-                receipt=capture.manifest.receipt,
+            return bind_actual_visit_analysis(
+                capture.manifest.receipt,
                 input_manifest_sha256=capture.manifest_sha256,
-                configuration=AdaptiveHopAnalysisConfigurationV1(
-                    sample_rate_hz=capture.manifest.receipt.plan.geometry.sample_rate_hz,
-                    probe_stride_ms=probe_stride_ms,
-                ),
+                probe_stride_ms=probe_stride_ms,
             )
         finally:
             store.close()
@@ -49,7 +50,12 @@ class AdaptiveHopAnalysisPresentationStore:
                 with store.job(binding) as job:
                     return job.status()
             except BundleNotFoundError:
-                return AdaptiveHopAnalysisStatusV1(
+                status_model: type[AdaptiveHopAnalysisStatusV1] = (
+                    HostAdaptiveAnalysisStatusV2
+                    if isinstance(binding, HostAdaptiveAnalysisBindingV2)
+                    else AdaptiveHopAnalysisStatusV1
+                )
+                return status_model(
                     session_id=session_id,
                     input_manifest_sha256=binding.input_manifest_sha256,
                     binding_sha256=binding.sha256,

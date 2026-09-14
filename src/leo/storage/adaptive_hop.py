@@ -17,7 +17,7 @@ import time
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Literal, Self
+from typing import TYPE_CHECKING, Annotated, ClassVar, Literal, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -36,7 +36,10 @@ from leo.scanner.adaptive_hop import (
     SessionId,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
+from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2, HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
+from leo.scanner.single_rx import SingleRxHopTimingV2
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError, BundleStateError
 from leo.storage.persistent_hop import PersistentHopQueueTelemetryV1
 from leo.storage.pinned import PinnedLocalRoot
@@ -69,6 +72,10 @@ class AdaptiveHopIqChunkV1(AdaptiveModel):
 
 
 class AdaptiveHopIqManifestV1(AdaptiveModel):
+    _bytes_per_sample: ClassVar[int] = 8
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = (
+        PersistentHopUtcTimingAuthorityV1
+    )
     schema_version: Literal[1] = 1
     kind: Literal["starlink_adaptive_hop_iq"] = "starlink_adaptive_hop_iq"
     session_id: SessionId
@@ -101,7 +108,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
             if receipt.events:
                 raise ValueError("adaptive received events require a UTC timing authority")
         else:
-            PersistentHopUtcTimingAuthorityV1.model_validate(self.timing.model_dump())
+            self._timing_model.model_validate(self.timing.model_dump())
             if (
                 self.timing.session_id != self.session_id
                 or self.timing.sample_rate_hz != g.sample_rate_hz
@@ -118,7 +125,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                 or (index < len(self.chunks) - 1 and chunk.visit_count != 8)
                 or next_visit + chunk.visit_count > receipt.complete_visit_count
                 or chunk.sample_count != chunk.visit_count * g.valid_visit_samples
-                or chunk.uncompressed_bytes != chunk.sample_count * 8
+                or chunk.uncompressed_bytes != chunk.sample_count * self._bytes_per_sample
             ):
                 raise ValueError("adaptive IQ chunks disagree with actual valid visits")
             next_visit += chunk.visit_count
@@ -128,7 +135,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
             next_visit != receipt.complete_visit_count
             or next_sample != receipt.valid_sample_count
             or self.total_sample_count != next_sample
-            or self.uncompressed_bytes != next_sample * 8
+            or self.uncompressed_bytes != next_sample * self._bytes_per_sample
             or self.compressed_bytes != compressed
         ):
             raise ValueError("adaptive IQ manifest accounting is incomplete")
@@ -137,8 +144,24 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
         return self
 
 
+class HostAdaptiveHopIqChunkV2(AdaptiveHopIqChunkV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    sample_count: Annotated[int, Field(strict=True, gt=0, le=9_600_000)]
+
+
+class HostAdaptiveHopIqManifestV2(AdaptiveHopIqManifestV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    _bytes_per_sample: ClassVar[int] = 4
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = SingleRxHopTimingV2
+    receipt: HostAdaptiveHopReceiptV2
+    timing: SingleRxHopTimingV2 | None
+    chunks: Annotated[tuple[HostAdaptiveHopIqChunkV2, ...], Field(max_length=313)]
+
+
 class _ManifestSeal(AdaptiveModel):
-    manifest: AdaptiveHopIqManifestV1
+    manifest: Annotated[
+        AdaptiveHopIqManifestV1 | HostAdaptiveHopIqManifestV2, Field(discriminator="schema_version")
+    ]
     sha256: Digest
 
     @model_validator(mode="after")
@@ -224,7 +247,10 @@ class AdaptiveHopIqStore:
         if self._read_only:
             raise BundleStateError("adaptive IQ store is read-only")
         _identifier(session_id)
-        plan = AdaptiveHopPlanV1.model_validate(plan)
+        plan_model = (
+            HostAdaptiveHopPlanV2 if isinstance(plan, HostAdaptiveHopPlanV2) else AdaptiveHopPlanV1
+        )
+        plan = plan_model.model_validate(plan.model_dump())
         namespace = self._root.child(_NAMESPACE, create=True)
         try:
             os.fsync(self._root.fileno())
@@ -411,7 +437,8 @@ class AdaptiveHopIqReader:
             ) from error
         if len(raw) != chunk.uncompressed_bytes or sha256_digest(raw) != chunk.uncompressed_sha256:
             raise BundleCorruptionError("adaptive uncompressed size/digest mismatch")
-        values = np.frombuffer(raw, dtype="<i2").reshape(chunk.sample_count, 2, 2)
+        receivers = len(self.session.manifest.receipt.plan.geometry.receiver_ids)
+        values = np.frombuffer(raw, dtype="<i2").reshape(chunk.sample_count, receivers, 2)
         self._cached_index = chunk_index
         self._cached_values = values
         return visits, values
@@ -430,6 +457,9 @@ class AdaptiveHopSessionWriter:
         self._directory = directory
         self._session_id = session_id
         self._plan = plan
+        self._receiver_count = len(plan.geometry.receiver_ids)
+        self._bytes_per_sample = self._receiver_count * 4
+        self._host_adaptive = isinstance(plan, HostAdaptiveHopPlanV2)
         self._created_ns = time.time_ns()
         self._closed = False
         self._failed = False
@@ -444,7 +474,7 @@ class AdaptiveHopSessionWriter:
         if self._closed or self._failed:
             raise BundleStateError("adaptive IQ writer is closed or failed")
 
-    def append(self, block: AdaptiveHopVisitBlock) -> None:
+    def append(self, block: AdaptiveHopVisitBlock | HostAdaptiveHopVisitBlock) -> None:
         self._require_open()
         try:
             visit = AdaptiveHopVisitV1.model_validate(block.evidence)
@@ -467,7 +497,9 @@ class AdaptiveHopSessionWriter:
                 )
             ):
                 raise ValueError("adaptive IQ visit differs from plan or source order")
-            ci16 = receiver_major_complex_to_ci16(block.samples.T, 2, visit.valid_sample_count)
+            ci16 = receiver_major_complex_to_ci16(
+                block.samples.T, self._receiver_count, visit.valid_sample_count
+            )
             if self._compressed is None:
                 name = f"iq-block-{len(self._chunks):06d}.ci16.zst.partial"
                 self._compressed = _CompressedFileWriter(self._directory.io_root / name, level=3)
@@ -491,15 +523,16 @@ class AdaptiveHopSessionWriter:
         first = len(self._visits) - count
         dwell = self._plan.geometry.valid_visit_samples
         index = len(self._chunks)
+        chunk_model = HostAdaptiveHopIqChunkV2 if self._host_adaptive else AdaptiveHopIqChunkV1
         self._chunks.append(
-            AdaptiveHopIqChunkV1(
+            chunk_model(
                 chunk_index=index,
                 first_visit_index=first,
                 visit_count=count,
                 sample_start=first * dwell,
                 sample_count=count * dwell,
                 relative_path=f"iq-block-{index:06d}.ci16.zst",
-                uncompressed_bytes=count * dwell * 8,
+                uncompressed_bytes=count * dwell * self._bytes_per_sample,
                 compressed_bytes=compressed_bytes,
                 uncompressed_sha256=f"sha256:{self._chunk_digest.hexdigest()}",
                 compressed_sha256=compressed_digest,
@@ -518,7 +551,10 @@ class AdaptiveHopSessionWriter:
     ) -> PublishedAdaptiveHopIqSession:
         self._require_open()
         try:
-            receipt = AdaptiveHopReceiptV1.model_validate(receipt)
+            receipt_model = (
+                HostAdaptiveHopReceiptV2 if self._host_adaptive else AdaptiveHopReceiptV1
+            )
+            receipt = receipt_model.model_validate(receipt.model_dump())
             if (
                 receipt.session_id != self._session_id
                 or receipt.plan != self._plan
@@ -526,7 +562,10 @@ class AdaptiveHopSessionWriter:
             ):
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
-            manifest = AdaptiveHopIqManifestV1(
+            manifest_model: type[AdaptiveHopIqManifestV1] = (
+                HostAdaptiveHopIqManifestV2 if self._host_adaptive else AdaptiveHopIqManifestV1
+            )
+            manifest = manifest_model(
                 session_id=self._session_id,
                 created_utc_ns=self._created_ns,
                 finalized_utc_ns=time.time_ns(),
@@ -534,13 +573,15 @@ class AdaptiveHopSessionWriter:
                 timing=timing,
                 chunks=tuple(self._chunks),
                 total_sample_count=receipt.valid_sample_count,
-                uncompressed_bytes=receipt.valid_sample_count * 8,
+                uncompressed_bytes=receipt.valid_sample_count * self._bytes_per_sample,
                 compressed_bytes=sum(c.compressed_bytes for c in self._chunks),
                 uncompressed_sha256=f"sha256:{self._digest.hexdigest()}",
                 compression=CompressionSettingsV1(
                     policy_id="adaptive-eight-visit-chunks-v1",
                     level=3,
-                    target_uncompressed_bytes=self._plan.geometry.valid_visit_samples * 8 * 8,
+                    target_uncompressed_bytes=(
+                        self._plan.geometry.valid_visit_samples * 8 * self._bytes_per_sample
+                    ),
                 ),
                 queue_telemetry=queue_telemetry,
             )

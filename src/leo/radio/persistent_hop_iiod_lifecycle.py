@@ -40,3 +40,28 @@ class PersistentHopIiodLifecycle(Protocol):
     def enter_and_attest(self) -> None: ...
 
     def exit_and_verify(self) -> None: ...
+
+
+def attach_iiod_failure_diagnostics(
+    lifecycle: PersistentHopIiodLifecycle, primary: BaseException
+) -> None:
+    """Read the optional diagnostic port before cleanup; always preserve failure.
+
+    Advisory exception notes do not replace capture or restoration receipts.
+    Missing/failed diagnostics cannot prevent the mandatory cleanup attempt.
+    """
+    read = getattr(lifecycle, "diagnostic_tail", None)
+    if not callable(read):
+        primary.add_note("alternate iiOD diagnostic tail unavailable: provider lacks support")
+        return
+    try:
+        tail = read()
+        if not isinstance(tail, str) or len(tail) > 8192:
+            raise ValueError("invalid bounded daemon diagnostic text")
+    except BaseException as error:
+        primary.add_note(
+            f"alternate iiOD diagnostic tail unavailable: {type(error).__name__}: "
+            f"{str(error)[:512]}"
+        )
+    else:
+        primary.add_note("alternate iiOD advisory daemon log tail:\n" + (tail or "<empty>"))

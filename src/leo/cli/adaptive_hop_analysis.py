@@ -13,10 +13,21 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from leo.application.adaptive_hop_analysis import AdaptiveHopAnalysisService
+from leo.application.adaptive_hop_analysis import (
+    AdaptiveHopAnalysisService,
+    HostAdaptiveAnalysisService,
+)
 from leo.application.adaptive_hop_overview import AdaptiveHopOverviewService
-from leo.presentation.adaptive_hop_analysis import render_adaptive_hop_overview
+from leo.presentation.adaptive_hop_analysis import (
+    render_adaptive_hop_overview,
+    render_host_adaptive_hop_overview,
+)
 from leo.scanner.adaptive_hop import SessionId
+from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive_products import (
+    HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveMetricsManifestV2,
+)
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
@@ -69,6 +80,13 @@ def main() -> None:
         "--pending", action="store_true", help="Resume one pending published capture, then return."
     )
     parser.add_argument("--maximum-workers", type=int, choices=(1, 2), default=1)
+    parser.add_argument(
+        "--host-maximum-workers",
+        type=int,
+        choices=(1, 2, 3, 4),
+        default=4,
+        help="Worker bound for native-10M single-RX captures; legacy jobs keep their own bound.",
+    )
     parser.add_argument("--maximum-visits", type=_visits, default=2500)
     parser.add_argument(
         "--maximum-seconds",
@@ -76,7 +94,7 @@ def main() -> None:
         default=300,
         help=(
             "Metrics budget checked at batch boundaries; "
-            "at most two in-flight visits finish first. "
+            "in-flight visits finish first (two legacy or four native single-RX). "
             "Overview rendering follows completion and is outside this budget."
         ),
     )
@@ -128,7 +146,11 @@ def main() -> None:
                             )
                         )
                         return
-                result = AdaptiveHopAnalysisService(
+                host = isinstance(
+                    captures.inspect(session_id).manifest.receipt, HostAdaptiveHopReceiptV2
+                )
+                service = HostAdaptiveAnalysisService if host else AdaptiveHopAnalysisService
+                result = service(
                     inputs=AdaptiveHopAnalysisInputStore(captures),
                     products=products,
                 ).analyze_session(
@@ -136,14 +158,14 @@ def main() -> None:
                     maximum_visits=args.maximum_visits,
                     maximum_seconds=args.maximum_seconds,
                     probe_stride_ms=args.probe_stride_ms,
-                    maximum_workers=args.maximum_workers,
+                    maximum_workers=args.host_maximum_workers if host else args.maximum_workers,
                 )
                 payload = {**asdict(result), "overview_state": "not_ready"}
                 if result.state == "metrics_complete" and not args.metrics_only:
                     overview = AdaptiveHopOverviewService(
                         inputs=AdaptiveHopAnalysisInputStore(captures),
                         products=products,
-                        renderer=render_adaptive_hop_overview,
+                        renderer=_render_overview,
                     ).render_session(session_id, probe_stride_ms=args.probe_stride_ms)
                     payload["overview_state"] = "ready"
                     payload["overview_metrics_manifest_sha256"] = overview.metrics_manifest_sha256
@@ -156,6 +178,13 @@ def main() -> None:
             file=sys.stderr,
         )
         raise SystemExit(1) from error
+
+
+def _render_overview(binding, metrics, visits):
+    if isinstance(binding, HostAdaptiveAnalysisBindingV2):
+        metrics = HostAdaptiveMetricsManifestV2.model_validate(metrics.model_dump())
+        return render_host_adaptive_hop_overview(binding, metrics, visits)
+    return render_adaptive_hop_overview(binding, metrics, visits)
 
 
 if __name__ == "__main__":
