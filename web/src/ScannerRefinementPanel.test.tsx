@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 
@@ -17,18 +17,22 @@ it("uses the versioned API to display a native 10 MS/s comparison", async () => 
   const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => value });
   vi.stubGlobal("fetch", fetch);
   render(<ScannerRefinementPanel sessionId="scan-one" inputDigest={digest} />);
-  expect(await screen.findByRole("img")).toHaveAttribute("src", expect.stringContaining("/api/v2/scanner/refinement-comparisons/scan-one/"));
+  const images = await screen.findAllByRole("img");
+  expect(images).toHaveLength(2);
+  expect(images[0]).toHaveAttribute("src", expect.stringContaining("/api/v2/scanner/refinement-comparisons/scan-one/"));
   expect(screen.getByText(/10 MS\/s/)).toBeInTheDocument();
 });
 
 it("shows both saved PNG comparisons and preserves failure and accuracy context", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => fixture() }));
   render(<ScannerRefinementPanel sessionId="scan-one" inputDigest={digest} />);
-  expect(await screen.findByRole("img")).toHaveAttribute("src", expect.stringContaining("shift-recovery.png"));
+  const images = await screen.findAllByRole("img");
+  expect(images).toHaveLength(2);
+  expect(images[0]).toHaveAttribute("src", expect.stringContaining("shift-recovery.png"));
+  expect(images[1]).toHaveAttribute("src", expect.stringContaining("probe-comparison.png"));
   expect(screen.getByText(/1 probe failures/)).toBeInTheDocument();
   expect(screen.getByText(/not absolute timing/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("tab", { name: "Individual probe errors" }));
-  expect(screen.getByRole("img")).toHaveAttribute("src", expect.stringContaining("probe-comparison.png"));
+  expect(screen.getAllByRole("link", { name: /Open .* PNG/ })).toHaveLength(2);
   expect(screen.getByRole("link", { name: "Download numerical evidence" })).toHaveAttribute("href", expect.stringContaining("evidence.json"));
 });
 
