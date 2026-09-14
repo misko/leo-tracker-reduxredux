@@ -1501,3 +1501,40 @@ The [operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/
 and [finer ranking result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/full-delay/refined.json)
 retain the evidence. Worker/capture journals, per-delay maxima and
 diagnostic sources accompany them; no production acceptance gates change.
+
+## Weak confirmed-path peaks rank far below the coarse shortlist
+
+The exhaustive first-period winners are associated with the original
+retained coarse grids using the independently tested score ordering and
+nonmaximum suppression. All first 64 proposals exactly match the deployed
+scanner's journals. The search continues through every remaining proposal,
+then locates the earliest one within the existing ±8-sample resolver radius
+of the exhaustive winner. Frequency is left unrestricted here because the
+subsequent resolver searches the full frequency range.
+
+| Recent scan | Exhaustive pilot epoch | First nearby proposal rank | Proposal timing offset (samples) |
+| --- | ---: | ---: | ---: |
+| 1 | 2500 | 408 | −4 |
+| 2 | 1485 | 114 | −8 |
+| 3 | 1823 | 253 | +5 |
+| 4 | 2160 | 98 | −1 |
+| 5 | 2214 | 149 | +8 |
+| 6 | 2549 | 408 | +1 |
+| Earlier successful scan | 3228 | 1 | 0 |
+
+There are 621–645 surviving coarse proposals per recent grid. In the
+successful comparison, the exact pilot epoch also has the highest coarse
+score in the entire grid. In the recent scans, 568–12,377 grid cells score
+above the largest score at the exact pilot epoch. This is evidence of poor
+coarse-score ordering for these weaker reference responses, not merely a
+single off-by-one cutoff. Some nearby proposals also require appreciable
+timing refinement, so expanding the candidate budget alone does not prove
+the exact-epoch ranking will select them.
+
+The [association result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx-coarse-recall/result.json)
+and [diagnostic source](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx-coarse-recall/check_confirmed_rx_coarse_recall.py)
+retain source-grid hashes and all nearby proposals. No new RF, worker
+handoff, ARM timing or native feedback is measured. The evidence directs
+further work toward improving coarse scoring within the measured ARM
+budget; simply deploying a much larger shortlist is not justified. The
+unchanged acceptance and source-age gates remain requirements.
