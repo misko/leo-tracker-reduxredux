@@ -38,6 +38,11 @@ def test_unknown_path_fails_closed() -> None:
             "runtime/scanner-glrt/worker",
             "runtime/scanner-glrt/bundle.json",
         ),
+        (
+            "runtime/scanner-host-decision/decision.so",
+            "runtime/scanner-host-decision/manifest.json",
+            "runtime/scanner-host-decision/qualification-seal.json",
+        ),
     ),
 )
 def test_scanner_iiod_release_assets_select_acquisition_and_deployment_gates(
