@@ -115,14 +115,8 @@ def main():
         "reproduction": {
             "script": str(Path(__file__).relative_to(ROOT)),
             "commands": [
-                [
-                    "cmake",
-                    "-S",
-                    str(SOURCE),
-                    "-B",
-                    str(BUILD),
-                    "-DCMAKE_TOOLCHAIN_FILE=" + str(SDK / "share/buildroot/toolchainfile.cmake"),
-                ],
+                ["cmake", "-S", str(SOURCE), "-B", str(BUILD),
+                 "-DCMAKE_TOOLCHAIN_FILE=" + str(SDK / "share/buildroot/toolchainfile.cmake")],
                 ["cmake", "--build", str(BUILD), "--target", "iiod", "-j4"],
             ],
             "compiler_version": command(str(SDK / "bin/arm-linux-gnueabihf-gcc"), "--version"),

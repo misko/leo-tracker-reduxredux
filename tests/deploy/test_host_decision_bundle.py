@@ -41,15 +41,8 @@ def test_host_detector_inventory_is_sealed_into_release_metadata(tmp_path):
 def test_staged_cli_uses_the_extractor_identity_before_root_leo_sealing(tmp_path):
     target = bundle(tmp_path)
     result = subprocess.run(
-        [
-            sys.executable,
-            str(ROOT / "deploy/scripts/validate-host-decision-bundle"),
-            str(tmp_path),
-            "--staged",
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
+        [sys.executable, str(ROOT / "deploy/scripts/validate-host-decision-bundle"),
+         str(tmp_path), "--staged"], capture_output=True, text=True, check=True,
     )
     assert set(result.stdout.splitlines()) == {str(path) for path in target.iterdir()}
 

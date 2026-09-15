@@ -157,10 +157,8 @@ def run(seal: Path, output: Path, bulk_root: Path) -> None:
         "qualification_script_sha256": sha(Path(__file__)),
         "sealed_sha256": identity.hex(),
         "rows_sha256": sha(output / "rows.jsonl"),
-        "limits": (
-            "Saved-IQ host timing/serialization only; "
-            "no live transport or adaptive RF qualification."
-        ),
+        "limits": ("Saved-IQ host timing/serialization only; "
+                   "no live transport or adaptive RF qualification."),
     }
     summary["passed"] = (
         len(measurements) == count

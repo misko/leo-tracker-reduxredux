@@ -25,11 +25,7 @@ def native(tmp_path_factory):
     )
     lib = ct.CDLL(str(path))
     lib.leo_decimator_create.argtypes = [
-        ct.c_void_p,
-        ct.c_uint,
-        ct.c_void_p,
-        ct.c_uint,
-        ct.c_size_t,
+        ct.c_void_p, ct.c_uint, ct.c_void_p, ct.c_uint, ct.c_size_t
     ]
     lib.leo_decimator_create.restype = ct.c_void_p
     lib.leo_decimator_run.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_size_t, ct.c_void_p]
