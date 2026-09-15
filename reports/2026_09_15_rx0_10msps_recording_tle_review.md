@@ -11,6 +11,29 @@ A single recording can contain several transmitters and several competing
 interpretations of a track. Assigning one satellite name to each file would
 overstate what these measurements establish.
 
+## Executive assessment: tracking is strong; identity remains unproven
+
+The system now has strong evidence that it can repeatedly extract and follow
+structured carrier trajectories from the 10 MS/s scanner recordings. It does
+not yet have strong evidence that it can attach a unique Starlink catalogue
+identity to those trajectories.
+
+| Question | Evidence | Assessment |
+|---|---|---|
+| Did the scanner retain usable IQ? | 47 sealed 300 s recordings; median valid source-counter duty 95.2415%; qualified UTC | High confidence for this cohort |
+| Can GLRT form sustained CFO tracks? | 647 eligible tracklets; median span 27.96 s; median training/heldout leader RMS 59.91/110.55 Hz | Strong descriptive tracking evidence |
+| Is the catalogue ranking temporally stable? | 609/647 training leaders (94.1%) remain heldout rank one | Strong ranking stability within this screen |
+| Does one TLE generally separate from retained alternatives? | Median training winner-to-runner gap 294.55 Hz; leader beats the best other retained heldout candidate on 609/647 tracks | Often strong descriptive separation |
+| Do simple negative controls pass? | 526/647 tracklets pass all descriptive gates; 121 have one or more concerns | Encouraging, but thresholds are exploratory and tracklets are correlated |
+| Does a named satellite beat a strong radio-only explanation? | All three covariance-aware, support-integrated audits favor or tie the radio polynomial and abstain | No confirmed association |
+| Can we claim a specific Starlink identity? | No calibrated false-association rate, no independent truth, no antenna pointing authority, and only RX0 | No |
+
+The important distinction is between **tracking a radio trajectory** and
+**identifying its spacecraft**. The former is working well. The latter remains
+a candidate-ranking capability. A heldout rank-one result among roughly 450–618
+visible candidates is useful, but a short, nearly linear arc plus a fitted
+carrier offset can match more than one satellite or receiver-drift curve.
+
 All **47 recordings** were screened, covering **647 eligible unique tracklets**.
 Of these, **526** pass the descriptive checks below, with at least one in each
 recording. These counts are correlated tracklets, not satellite counts. The
@@ -140,6 +163,132 @@ declared covariance and nuisance uncertainty. A lower RMS alone does not prove
 that the orbital explanation is better supported than receiver drift.
 The [full audit evidence](figures/2026_09_15_rx0_10msps_recording_tle_review/deep-checks/README.md)
 preserves all candidate and control scores.
+
+## Comparison with the similar 2.5 MS/s 300-second report
+
+The closest existing comparison is
+[`scan-hop-09970e41439adea3`](2026_09_07_scan_09970e_fractional_glrt_trajectory_tle_review.md),
+a 300-second, 2.5 MS/s scan recorded on September 7. It is scientifically useful
+but is **not a controlled sample-rate experiment**. The 2.5 MS/s analysis used
+both receivers, consolidated receiver replicas and lower/upper edges into 24
+physical channel episodes, and used 0.25 s TLE time-shift steps. The 10 MS/s
+cohort uses RX0 only, reports 647 unique lane tracklets across 47 recordings,
+and uses 1 s time-shift steps plus explicit ±500 s controls. Denominators and
+screen gates therefore differ.
+
+![10 MS/s versus 2.5 MS/s TLE comparison](figures/2026_09_15_10msps_vs_2p5msps_starlink_tracking/10msps-vs-2p5msps-tle-comparison.png)
+
+| Quantity | RX0 10 MS/s cohort | Similar 2.5 MS/s scan | Interpretation |
+|---|---:|---:|---|
+| Recordings / duration | 47 × 300 s | 1 × 300 s | 10 MS/s establishes repeatability across time; 2.5 MS/s is one detailed case |
+| Receivers | RX0 only | RX0 + RX1 | The 2.5 MS/s report has receiver corroboration unavailable at 10 MS/s |
+| Median valid capture duty | 95.2415% | 95.5594% | Operational capture quality is effectively similar |
+| Analysis unit | 647 lane tracklets | 24 consolidated episodes | Counts are not directly comparable |
+| Median support | 27.96 s | 12.05 s | Longer 10 MS/s tracklets help expose divergence, but reflect selection/construction too |
+| Median candidates scored | 520 | 511.5 | Both solve a similarly dense catalogue problem |
+| Median leader training RMS | 59.91 Hz | 54.95 Hz | No demonstrated 10 MS/s RMS improvement |
+| Median leader heldout RMS | 110.55 Hz | 113.51 Hz | Essentially the same typical predictive residual |
+| Median training winner gap | 294.55 Hz | 35.86 Hz | Better separation in the 10 MS/s cohort, but not attributable to sample rate alone |
+| Training leader remains heldout rank one | 609/647 (94.1%) | 22/24 (91.7%) | Both rank candidates consistently on most tracks |
+| Protocol-specific screen pass | 526/647 (81.3%) | 12/24 (50.0%) | Different gates and consolidation prohibit a direct sensitivity claim |
+| TLE beats stated simple radio null | 622/647 (96.1%) | 22/24 (91.7%) | Different polynomial null definitions; descriptive only |
+| Strongest stricter association | 0/3 audited tracks pass | 0/1 cross-channel handoff passes | Neither report confirms a named satellite |
+
+The median RMS result is the most useful rate comparison: 10 MS/s and 2.5 MS/s
+are nearly identical for catalogue-leader CFO prediction. This is consistent
+with GLRT carrier tracking drawing most of its identity-bearing information
+from trajectory shape over time rather than from raw ADC sample count. More
+samples can improve local timing or acquisition, but they do not create more
+orbital curvature during the same 20–30 second arc.
+
+The larger 10 MS/s winner gap is promising. Its median training gap is 8.2 times
+the 2.5 MS/s value, and 94.1% of leaders survive holdout. That is not yet proof
+of a bandwidth benefit because the 10 MS/s set contains many more epochs,
+longer median tracks, only one receiver, different track boundaries, different
+time-shift resolution, and different control gates. A valid sample-rate claim
+requires replaying the same RX0 IQ through matched native-10 and derived-2.5
+pipelines with identical probes, tracks, candidate universe, nuisance parameters,
+and frozen thresholds.
+
+The detailed 2.5 MS/s report reached one especially promising cross-channel
+candidate: STARLINK-34856 / NORAD 65687, with 109.4 Hz training RMS and 138.4 Hz
+heldout RMS. It remained rank one, but the strict left-to-right handoff gave
+112.8 Hz for the TLE and a better 92.9 Hz for the radio-only cubic. It therefore
+abstained. Its 12 provisional single-channel passes collapsed to seven NORAD
+families, also without an identity claim.
+
+![10 MS/s session-by-session association summary](figures/2026_09_15_10msps_vs_2p5msps_starlink_tracking/10msps-session-association-summary.png)
+
+The 10 MS/s result is not carried by one favorable recording. Every recording
+contains at least two descriptive-pass tracklets, session median heldout RMS is
+generally near 100 Hz, and most session-level leader-stability fractions are
+above 0.9. The repeated evidence strengthens confidence in the tracking system,
+while correlated tracks and repeated constellation geometry prevent treating
+47 recordings as 47 independent satellite identifications.
+
+## What the wider bandwidth did help
+
+The matched PSS replay on these same 10 MS/s recordings found candidate-bearing
+visits in 149/376 native windows versus 53/376 after deriving 2.5 MS/s from the
+same IQ, a 2.81-fold increase. This shows that the wider stream contains useful
+waveform-acquisition information. It is not yet a detection-rate result: the
+pilot-only control also formed stable candidate tracks, so PSS remains
+candidate-only. The additional bandwidth has therefore demonstrated acquisition
+potential, not improved satellite identity.
+
+For GLRT/TLE association, the present data do not show a better typical RMS at
+10 MS/s. The next matched experiment should hold the observation times and
+trajectory graph fixed and compare native 10 MS/s with a deterministic 2.5 MS/s
+decimation. The primary endpoints should be heldout TLE-versus-radio score,
+winner-to-runner margin, rank stability, and a preregistered false-association
+rate—not merely the number of passing tracks.
+
+## Complete analysis and figure index
+
+The report keeps summary figures inline and links the exhaustive per-track
+figures rather than embedding 256 large PNGs into one page.
+
+### RX0 10 MS/s cohort
+
+- [Per-recording assessment index](figures/2026_09_15_rx0_10msps_recording_tle_review/README.md): all 47 recordings, track tables, candidates, controls, and evidence downloads.
+- [All-track CFO/TLE overlay gallery](figures/2026_09_15_rx0_10msps_recording_tle_review/all-track-overlays/README.md): 128 PNGs covering all 647 tracks, with top-three TLE curves and residuals.
+- [Ranked RMS gallery](figures/2026_09_15_rx0_10msps_recording_tle_review/rms-plots/README.md): 128 PNGs covering all 647 tracks and the retained top-five candidates.
+- [Candidate comparison ledger](figures/2026_09_15_rx0_10msps_recording_tle_review/candidate-comparisons.csv): 4,079 unrounded candidate rows and top-one gains.
+- [Machine-readable summary](figures/2026_09_15_rx0_10msps_recording_tle_review/summary.json), [element identities](figures/2026_09_15_rx0_10msps_recording_tle_review/shortlist-element-identities.json), and [provenance](figures/2026_09_15_rx0_10msps_recording_tle_review/provenance.json).
+- [Stricter three-track audit](figures/2026_09_15_rx0_10msps_recording_tle_review/deep-checks/README.md).
+
+The broader eight-hour scanner evidence is included here:
+
+![Capture duty and online detections](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/capture-duty-and-detections.png)
+
+![GLRT rates and fitted residuals](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/glrt-tracklet-rate-residuals.png)
+
+![Controlled refinement RMS](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/controlled-refinement-rms.png)
+
+![Native 10 MS/s versus derived 2.5 MS/s PSS candidates](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/bandwidth-comparison.png)
+
+![Conditional PSS timing repeatability](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/conditional-timing.png)
+
+![Historical PSS/GLRT timing comparison](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/historical-pss-glrt-timing-comparison.png)
+
+### Similar 2.5 MS/s 300-second scan
+
+The [complete original 2.5 MS/s report](2026_09_07_scan_09970e_fractional_glrt_trajectory_tle_review.md)
+contains the method, tables, and machine-readable evidence. Its ten figures are:
+
+1. [Linear/quadratic/cubic residuals](figures/2026_09_07_scan_09970e_trajectory_tle_review/01-linear-quadratic-cubic-residuals.png)
+2. [Merged upper/lower physical tracks](figures/2026_09_07_scan_09970e_trajectory_tle_review/02-upper-lower-merged-tracks.png)
+3. [Merge RMS and rate resolution](figures/2026_09_07_scan_09970e_trajectory_tle_review/03-upper-lower-rms-resolution.png)
+4. [Cross-channel candidates](figures/2026_09_07_scan_09970e_trajectory_tle_review/04-cross-channel-join-candidates.png)
+5. [Leading model orders](figures/2026_09_07_scan_09970e_trajectory_tle_review/05-top-candidate-model-orders.png)
+6. [All cross-channel TLE checks](figures/2026_09_07_scan_09970e_trajectory_tle_review/06-all-cross-channel-tle-checks.png)
+7. [STARLINK-34856 detail](figures/2026_09_07_scan_09970e_trajectory_tle_review/07-top-cross-channel-tle-detail.png)
+8. [All single-channel TLE checks](figures/2026_09_07_scan_09970e_trajectory_tle_review/08-all-single-channel-tle-checks.png)
+9. [All candidate summary](figures/2026_09_07_scan_09970e_trajectory_tle_review/09-all-candidate-tle-summary.png)
+10. [Strongest single-channel details](figures/2026_09_07_scan_09970e_trajectory_tle_review/10-best-single-channel-tle-details.png)
+
+The comparison inputs and exact summary statistics are preserved in
+[comparison summary JSON](figures/2026_09_15_10msps_vs_2p5msps_starlink_tracking/summary.json).
 
 ## Limits and reproduction
 
