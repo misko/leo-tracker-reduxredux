@@ -14,7 +14,12 @@ import numpy as np
 from leo.analysis.host_decision import NativeHostDecision
 from leo.storage.persistent_hop import PersistentHopIqStore
 from tools.investigate_adaptive_decision_budget import decimate
-from tools.prepare_decimated_dwell_replay import build, coefficients, reference
+from tools.prepare_decimated_dwell_replay import (
+    build,
+    coefficients,
+    multirate_coefficients,
+    reference,
+)
 from tools.presence_dwell import NativeDwell, unpack
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,12 +50,24 @@ def seal(output: Path) -> None:
         "sealed_at": datetime.now(UTC).isoformat(),
         "protocol_sha256": digest(PROTOCOL), "protocol": protocol,
         "library_sha256": digest(library), "sources_sha256": sources,
-        "filter": {"id": "direct161-q15-phase0-reset-mask40-v1",
-                   "coefficients_q15": coefficients("direct")[1].tolist(),
-                   "source_rate_hz": 10000000, "decision_rate_hz": 2500000,
-                   "group_delay_source_samples": 80, "phase": 0,
-                   "supported_output_interval": [40, 300000],
-                   "candidate_support": "window>0 or integer epoch>=42; +/-2 fractional support"},
+        "filters": [
+            {"id": "direct161-q15-phase0-reset-mask40-v1",
+             "coefficients_q15": coefficients("direct")[1].tolist(),
+             "source_rate_hz": 10000000, "decision_rate_hz": 2500000,
+             "group_delay_source_samples": 80, "phase": 0,
+             "supported_output_interval": [40, 300000]},
+            {"id": "direct201-q15-phase0-reset-mask34-v1",
+             "coefficients_q15": multirate_coefficients(15000000).tolist(),
+             "source_rate_hz": 15000000, "decision_rate_hz": 2500000,
+             "group_delay_source_samples": 100, "phase": 0,
+             "supported_output_interval": [34, 300000]},
+            {"id": "direct257-q15-phase0-reset-mask32-v1",
+             "coefficients_q15": multirate_coefficients(20000000).tolist(),
+             "source_rate_hz": 20000000, "decision_rate_hz": 2500000,
+             "group_delay_source_samples": 128, "phase": 0,
+             "supported_output_interval": [32, 300000]},
+        ],
+        "candidate_support": "window>0 or integer epoch>=42; +/-2 fractional support",
         "decision": {"screen_mask": 63, "maximum_confirmations": 1,
                      "seeded": False, "minimum_exact_score": .175, "minimum_margin": .025},
         "limits": "Holdout is not RF truth. Compare reference decisions, not calibrated recall.",

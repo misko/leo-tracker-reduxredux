@@ -191,14 +191,17 @@ from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource
 from leo.scanner.host_adaptive import (
     HOST_ADAPTIVE_PROFILE_ID,
+    HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
     HOST_ADAPTIVE_RX0_PROFILE_ID,
     HostAdaptiveHopPlanV2,
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio
 from leo.scanner.host_adaptive_schedule import (
+    HostAdaptiveRx0MultirateScheduledScannerIntentV6,
     HostAdaptiveRx0ScheduledScannerIntentV5,
     HostAdaptiveScheduledScannerIntentV4,
     compile_host_adaptive_hop_plan,
+    compile_host_adaptive_rx0_multirate_scanner_intent,
     compile_host_adaptive_rx0_scanner_intent,
     compile_host_adaptive_scanner_intent,
 )
@@ -344,12 +347,14 @@ class CliSettings:
         host_adaptive = self.scanner_profile in (
             HOST_ADAPTIVE_PROFILE_ID,
             HOST_ADAPTIVE_RX0_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
         )
         if self.scanner_profile not in (
             "alternating-2p5m-5m",
             SINGLE_RX_PROFILE_ID,
             HOST_ADAPTIVE_PROFILE_ID,
             HOST_ADAPTIVE_RX0_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
         ):
             raise ValueError("unknown scheduled scanner profile")
         if host_adaptive and (
@@ -398,12 +403,24 @@ class CliSettings:
             or not rates
             or any(
                 type(rate) is not int
-                or rate not in ((10_000_000,) if host_adaptive else (2_500_000, 5_000_000))
+                or rate
+                not in (
+                    (15_000_000, 20_000_000)
+                    if self.scanner_profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID
+                    else (10_000_000,)
+                    if host_adaptive
+                    else (2_500_000, 5_000_000)
+                )
                 for rate in rates
             )
             or len(set(rates)) != len(rates)
         ):
             raise ValueError("scanner adaptive sample rates must be unique supported integer rates")
+        if (
+            self.scanner_profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID
+            and rates != (15_000_000, 20_000_000)
+        ):
+            raise ValueError("15/20 MS/s adaptive profile requires both rates in canonical order")
         if (
             self.scanner_hop_policy != "fixed"
             and not host_adaptive
@@ -1463,6 +1480,7 @@ class LocalAcquisitionBackend:
         if operation_key != expected_operation_key and self.settings.scanner_profile not in (
             HOST_ADAPTIVE_PROFILE_ID,
             HOST_ADAPTIVE_RX0_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
         ):
             raise CliBackendError(
                 "scheduled scanner operation key disagrees with its UTC cadence slot",
@@ -1477,26 +1495,33 @@ class LocalAcquisitionBackend:
         if self.settings.scanner_profile in (
             HOST_ADAPTIVE_PROFILE_ID,
             HOST_ADAPTIVE_RX0_PROFILE_ID,
+            HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
         ):
             release = self._host_decision_release()
             mode = self.settings.scanner_hop_policy
             assert mode in ("shadow", "adaptive")
-            host_compiler = (
-                compile_host_adaptive_rx0_scanner_intent
-                if self.settings.scanner_profile == HOST_ADAPTIVE_RX0_PROFILE_ID
-                else compile_host_adaptive_scanner_intent
-            )
-            intent = host_compiler(
+            common = dict(
                 radio_id=configured.radio_id,
                 radio_serial=configured.serial or configured.radio_id,
                 scheduled_for=scheduled_for,
                 mode=mode,
-                decision=release.configuration,
                 maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
                 gain_db=self.settings.scanner_gain_db,
                 margin_gate=self.settings.scanner_margin_gate,
                 maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
             )
+            if self.settings.scanner_profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID:
+                intent = compile_host_adaptive_rx0_multirate_scanner_intent(
+                    **common,
+                    decision_manifest_sha256=release.configuration.detector_manifest_sha256,
+                )
+            else:
+                host_compiler = (
+                    compile_host_adaptive_rx0_scanner_intent
+                    if self.settings.scanner_profile == HOST_ADAPTIVE_RX0_PROFILE_ID
+                    else compile_host_adaptive_scanner_intent
+                )
+                intent = host_compiler(**common, decision=release.configuration)
             # The queue keeps the canonical UTC slot key across profile changes;
             # the persisted V4 payload binds its profile, mode and detector too.
             if operation_key not in (expected_operation_key, intent.operation_key):
@@ -1876,7 +1901,11 @@ class LocalAcquisitionBackend:
             )
             if isinstance(
                 intent,
-                (HostAdaptiveScheduledScannerIntentV4, HostAdaptiveRx0ScheduledScannerIntentV5),
+                (
+                    HostAdaptiveScheduledScannerIntentV4,
+                    HostAdaptiveRx0ScheduledScannerIntentV5,
+                    HostAdaptiveRx0MultirateScheduledScannerIntentV6,
+                ),
             )
             else None
         )
@@ -1953,7 +1982,7 @@ class LocalAcquisitionBackend:
             )
         )
         radio = (
-            self._host_adaptive_hop_radio(configured)
+            self._host_adaptive_hop_radio(configured, host_plan.decision)
             if host_plan is not None
             else self._adaptive_hop_radio(configured)
         )
@@ -3159,8 +3188,12 @@ class LocalAcquisitionBackend:
             )
         return self.hooks.host_decision_release_loader(manifest, digest)
 
-    def _host_adaptive_hop_radio(self, configuration: RadioConfigurationV1) -> HostAdaptiveHopRadio:
+    def _host_adaptive_hop_radio(
+        self, configuration: RadioConfigurationV1, decision=None
+    ) -> HostAdaptiveHopRadio:
         release = self._host_decision_release()
+        if decision is not None and decision.schema_version == 2:
+            release = release.bind(decision)
         if configuration.host is None or configuration.serial is None:
             raise CliBackendError(
                 "host adaptive radio requires an exact Ethernet identity",

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus } from "./adaptive-analysis-api";
-import { adaptiveDetailFixture, hostAdaptiveDetailFixture } from "./adaptive-fixtures";
+import { adaptiveDetailFixture, hostAdaptiveDetailFixture, multirateAdaptiveDetailFixture } from "./adaptive-fixtures";
 
 const capture = adaptiveDetailFixture().capture;
 const respond = (value: unknown, status = 200) => ({ ok: status === 200, status, json: async () => value }) as Response;
@@ -32,6 +32,18 @@ export function analysisFixture(state: AdaptiveAnalysisStatus["state"] = "figure
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive analysis publication", () => {
+  it.each([15000000, 20000000] as const)("binds V3 analysis and all PNGs at %s S/s", async rate => {
+    const native = multirateAdaptiveDetailFixture(rate).capture;
+    const value = analysisFixture();
+    value.schema_version = 3;
+    Object.assign(value.configuration, { schema_version: 3, analyzer_id: "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3", sample_rate_hz: rate, receiver_ids: [0] });
+    Object.assign(value.overview!, { schema_version: 3, presentation_id: "host-adaptive-native-15m-20m-overview-v3" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    render(<AdaptiveAnalysisPanel capture={native} />);
+    expect(await screen.findAllByRole("img")).toHaveLength(3);
+    expect(screen.getByText(new RegExp(`RX0 analyzed offline at ${rate / 1e6} MS/s`))).toBeInTheDocument();
+    await expect(getAdaptiveAnalysis(native)).resolves.toEqual(value);
+  });
   it.each([0, 1] as const)("links the site receiver-input RCA for radio003a RX%s", async receiver => {
     const native = hostAdaptiveDetailFixture(receiver).capture;
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(null, 404)));

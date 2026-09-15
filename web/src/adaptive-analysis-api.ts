@@ -7,11 +7,11 @@ export interface AdaptiveFigure {
   name: AdaptiveArtifact; content_type: "image/png"; sha256: string; byte_count: number;
 }
 export interface AdaptiveAnalysisStatus {
-  schema_version: 1 | 2; kind: "adaptive_hop_analysis_status";
+  schema_version: 1 | 2 | 3; kind: "adaptive_hop_analysis_status";
   session_id: string; input_manifest_sha256: string; binding_sha256: string;
   configuration: {
-    schema_version: 1 | 2; analyzer_id: "adaptive-hop-fractional-glrt64-cfo-v1" | "host-adaptive-native-10m-fractional-glrt64-cfo-v2";
-    sample_rate_hz: 2500000 | 5000000 | 10000000; valid_visit_ms: 120; probe_ms: 20;
+    schema_version: 1 | 2 | 3; analyzer_id: "adaptive-hop-fractional-glrt64-cfo-v1" | "host-adaptive-native-10m-fractional-glrt64-cfo-v2" | "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3";
+    sample_rate_hz: 2500000 | 5000000 | 10000000 | 15000000 | 20000000; valid_visit_ms: 120; probe_ms: 20;
     probe_stride_ms: number; glrt64_margin_gate: number; maximum_acquisition_candidates: number;
     receiver_ids: [0, 1] | [0] | [1]; timing_refinement: "circular-five-cell-log-parabola-plus-lanczos16-v1";
     decision_score: "fractional-epoch-conditioned-glrt64-v1";
@@ -21,8 +21,8 @@ export interface AdaptiveAnalysisStatus {
   progress_basis: "no_checkpoints" | "file_inventory" | "sealed_metrics_manifest";
   worker_activity: "not_observed"; metrics_manifest_sha256: string | null;
   overview: null | {
-    schema_version: 1 | 2; kind: "adaptive_hop_fractional_overview";
-    presentation_id: "adaptive-actual-visit-glrt64-overview-v1" | "host-adaptive-native-10m-overview-v2";
+    schema_version: 1 | 2 | 3; kind: "adaptive_hop_fractional_overview";
+    presentation_id: "adaptive-actual-visit-glrt64-overview-v1" | "host-adaptive-native-10m-overview-v2" | "host-adaptive-native-15m-20m-overview-v3";
     session_id: string; binding_sha256: string; metrics_manifest_sha256: string;
     finalized_utc_ns: string; artifacts: AdaptiveFigure[];
     trajectory_configuration_sha256: string;
@@ -42,12 +42,16 @@ export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: Abo
   if (!response.ok) throw new Error(`Adaptive analysis request failed (${response.status})`);
   const value = await response.json() as AdaptiveAnalysisStatus;
   const cfg = value?.configuration;
-  const native = capture.schema_version === 2;
+  const native = capture.schema_version !== 1;
+  const analyzer = capture.schema_version === 3 ? "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3"
+    : native ? "host-adaptive-native-10m-fractional-glrt64-cfo-v2" : "adaptive-hop-fractional-glrt64-cfo-v1";
+  const presentation = capture.schema_version === 3 ? "host-adaptive-native-15m-20m-overview-v3"
+    : native ? "host-adaptive-native-10m-overview-v2" : "adaptive-actual-visit-glrt64-overview-v1";
   const receivers = native ? [capture.physical_receiver] : [0, 1];
   if (!value || value.schema_version !== capture.schema_version || value.kind !== "adaptive_hop_analysis_status"
       || value.session_id !== capture.session_id || value.input_manifest_sha256 !== capture.input_manifest_sha256
       || !digest(value.binding_sha256) || !cfg || cfg.schema_version !== capture.schema_version
-      || cfg.analyzer_id !== (native ? "host-adaptive-native-10m-fractional-glrt64-cfo-v2" : "adaptive-hop-fractional-glrt64-cfo-v1") || cfg.sample_rate_hz !== capture.sample_rate_hz
+      || cfg.analyzer_id !== analyzer || cfg.sample_rate_hz !== capture.sample_rate_hz
       || cfg.valid_visit_ms !== 120 || cfg.probe_ms !== 20 || cfg.probe_stride_ms !== probeStrideMs
       || !Number.isFinite(cfg.glrt64_margin_gate) || cfg.glrt64_margin_gate <= 0
       || !count(cfg.maximum_acquisition_candidates, 16) || cfg.maximum_acquisition_candidates < 1
@@ -68,7 +72,7 @@ export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: Abo
   }
   const overview = value.overview;
   if (overview !== null && (!overview || overview.schema_version !== capture.schema_version || overview.kind !== "adaptive_hop_fractional_overview"
-      || overview.presentation_id !== (native ? "host-adaptive-native-10m-overview-v2" : "adaptive-actual-visit-glrt64-overview-v1")
+      || overview.presentation_id !== presentation
       || overview.session_id !== value.session_id || overview.binding_sha256 !== value.binding_sha256
       || overview.metrics_manifest_sha256 !== value.metrics_manifest_sha256 || !u64(overview.finalized_utc_ns)
       || !digest(overview.trajectory_configuration_sha256)

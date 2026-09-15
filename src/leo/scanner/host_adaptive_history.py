@@ -12,7 +12,11 @@ from leo.scanner.adaptive_hop_history import (
     Seconds,
     VisitCount,
 )
-from leo.scanner.host_adaptive import HostDecisionConfigurationV1, HostDecisionNumericsV1
+from leo.scanner.host_adaptive import (
+    HostDecisionConfigurationV1,
+    HostDecisionConfigurationV2,
+    HostDecisionNumericsV1,
+)
 
 
 class HostFeedbackSummaryV1(AdaptiveModel):
@@ -94,10 +98,46 @@ class HostAdaptiveSessionDetailV2(AdaptiveHopSessionDetailV1):
         return self
 
 
+class HostAdaptiveHistoryItemV3(HostAdaptiveHistoryItemV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    sample_rate_hz: Literal[15_000_000, 20_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[15_000_000, 20_000_000]  # type: ignore[assignment]
+    physical_receiver: Literal[0] = 0  # type: ignore[assignment]
+    decision_configuration: HostDecisionConfigurationV2
+
+    @model_validator(mode="after")
+    def _host_binding(self) -> Self:
+        if self.host_feedback.complete_visits != self.retained_visits:
+            raise ValueError("host feedback differs from retained native visits")
+        if self.sample_rate_hz != self.bandwidth_hz:
+            raise ValueError("multirate adaptive history changed source bandwidth")
+        if self.capture_qualified and (
+            self.valid_duty_ppm is None or self.valid_duty_ppm < 900_000
+        ):
+            raise ValueError("multirate adaptive capture does not meet its duty floor")
+        return self
+
+
+class HostAdaptiveSessionDetailV3(HostAdaptiveSessionDetailV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    capture: HostAdaptiveHistoryItemV3
+
+
 class AdaptiveHistoryPageV2(AdaptiveHopHistoryPageV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     items: Annotated[
         tuple[AdaptiveHopHistoryItemV1 | HostAdaptiveHistoryItemV2, ...], Field(max_length=20)
+    ]
+
+
+class AdaptiveHistoryPageV3(AdaptiveHistoryPageV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    items: Annotated[
+        tuple[
+            AdaptiveHopHistoryItemV1 | HostAdaptiveHistoryItemV2 | HostAdaptiveHistoryItemV3,
+            ...,
+        ],
+        Field(max_length=20),
     ]
 
 

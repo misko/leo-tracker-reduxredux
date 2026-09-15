@@ -37,6 +37,38 @@ def coefficients(kind):
     raise ValueError("unknown filter candidate")
 
 
+def multirate_coefficients(source_rate_hz):
+    """Reproduce the sealed direct FIR for a 15/20M to 2.5M reduction."""
+    geometry = {
+        15_000_000: (201, 1.0 / 15.0),
+        20_000_000: (257, 1.0 / 20.0),
+    }
+    try:
+        taps, cutoff = geometry[source_rate_hz]
+    except KeyError as error:
+        raise ValueError("multirate source must be 15 or 20 MS/s") from error
+    x = np.arange(taps) - (taps - 1) / 2
+    h = 2 * cutoff * np.sinc(2 * cutoff * x) * np.kaiser(taps, 8.6)
+    q = np.rint(h / h.sum() * 32768).astype(np.int64)
+    q[taps // 2] += 32768 - q.sum()
+    assert np.max(np.abs(q)) < 32768 and np.sum(np.abs(q)) < 65536
+    return q.astype("<i2")
+
+
+def multirate_reference(iq, source_rate_hz):
+    """Independent causal Q15 reference for one reset 15/20M dwell."""
+    factor = source_rate_hz // 2_500_000
+    h = multirate_coefficients(source_rate_hz).astype(np.int64)
+    values = np.stack(
+        [
+            np.convolve(iq[:, channel].astype(np.int64), h)[: len(iq) : factor]
+            for channel in (0, 1)
+        ],
+        axis=1,
+    )
+    return np.clip((values + 16384) // 32768, -32768, 32767).astype("<i2")
+
+
 def recursive_denominator():
     # SciPy 1.16.2 ellipord/ellip: fs=5 MHz, pass=.8, stop=1.25,
     # ripple=.004 dB, rejection=71.5 dB. Polyphase denominator obtained by

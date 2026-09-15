@@ -30,7 +30,9 @@ from leo.scanner.adaptive_hop_products import (
 )
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveAnalysisBindingV3,
     HostAdaptiveMetricsManifestV2,
+    HostAdaptiveMetricsManifestV3,
 )
 
 _EDGE_COLORS = ("#287da1", "#bd3653")
@@ -78,12 +80,15 @@ def project_adaptive_overview(
 
 
 def project_host_adaptive_overview(
-    binding: HostAdaptiveAnalysisBindingV2,
-    manifest: HostAdaptiveMetricsManifestV2,
+    binding: HostAdaptiveAnalysisBindingV2 | HostAdaptiveAnalysisBindingV3,
+    manifest: HostAdaptiveMetricsManifestV2 | HostAdaptiveMetricsManifestV3,
     visits: Iterable[AdaptiveHopVisitAnalysisV1],
 ) -> AdaptiveOverviewData:
-    binding = HostAdaptiveAnalysisBindingV2.model_validate(binding.model_dump())
-    manifest = HostAdaptiveMetricsManifestV2.model_validate(manifest.model_dump())
+    wide = isinstance(binding, HostAdaptiveAnalysisBindingV3)
+    binding_model = HostAdaptiveAnalysisBindingV3 if wide else HostAdaptiveAnalysisBindingV2
+    manifest_model = HostAdaptiveMetricsManifestV3 if wide else HostAdaptiveMetricsManifestV2
+    binding = binding_model.model_validate(binding.model_dump())
+    manifest = manifest_model.model_validate(manifest.model_dump())
     return _project_overview(binding, manifest, visits)
 
 
@@ -264,8 +269,8 @@ def render_adaptive_hop_overview(
 
 
 def render_host_adaptive_hop_overview(
-    binding: HostAdaptiveAnalysisBindingV2,
-    manifest: HostAdaptiveMetricsManifestV2,
+    binding: HostAdaptiveAnalysisBindingV2 | HostAdaptiveAnalysisBindingV3,
+    manifest: HostAdaptiveMetricsManifestV2 | HostAdaptiveMetricsManifestV3,
     visits: Iterable[AdaptiveHopVisitAnalysisV1],
     *,
     test_data: TestData | None = None,

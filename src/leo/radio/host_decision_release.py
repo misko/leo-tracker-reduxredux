@@ -11,7 +11,7 @@ import numpy as np
 
 from leo.analysis.host_decision import NativeHostDecision
 from leo.analysis.starlink.templates import qin_edge_pilot_frame
-from leo.scanner.host_adaptive import HostDecisionConfigurationV1
+from leo.scanner.host_adaptive import HostDecisionConfigurationV1, HostDecisionConfigurationV2
 
 
 def _sha(data: bytes) -> str:
@@ -36,11 +36,22 @@ def _verified_file(root: Path, relative: str, digest: str) -> Path:
 
 @dataclass(frozen=True, slots=True)
 class HostDecisionRelease:
-    configuration: HostDecisionConfigurationV1
+    configuration: HostDecisionConfigurationV1 | HostDecisionConfigurationV2
     library: Path
 
     def create_engine(self) -> NativeHostDecision:
-        return NativeHostDecision(self.library)
+        return NativeHostDecision(
+            self.library, source_rate_hz=self.configuration.source_rate_hz
+        )
+
+    def bind(self, configuration: HostDecisionConfigurationV2) -> HostDecisionRelease:
+        configuration = HostDecisionConfigurationV2.model_validate(configuration)
+        if (
+            configuration.detector_manifest_sha256
+            != self.configuration.detector_manifest_sha256
+        ):
+            raise ValueError("host detector configuration changed release identity")
+        return HostDecisionRelease(configuration, self.library)
 
 
 def load_host_decision_release(manifest: Path, expected_sha256: str) -> HostDecisionRelease:

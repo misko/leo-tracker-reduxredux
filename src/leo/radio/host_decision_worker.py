@@ -59,8 +59,13 @@ class BoundedHostDecisionWorker:
 
     capacity = 2
 
-    def __init__(self, factory: Callable[[], HostDecisionEngine]) -> None:
+    def __init__(
+        self, factory: Callable[[], HostDecisionEngine], *, source_sample_count: int = 1_200_000
+    ) -> None:
+        if source_sample_count not in (1_200_000, 1_800_000, 2_400_000):
+            raise ValueError("host decision source sample count is unsupported")
         self._factory = factory
+        self._source_sample_count = source_sample_count
         self._engine: HostDecisionEngine | None = None
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="host-decision")
         self._pending: deque[Future[HostDecisionWorkResult]] = deque()
@@ -93,7 +98,7 @@ class BoundedHostDecisionWorker:
         if (
             not isinstance(samples, np.ndarray)
             or samples.dtype != np.complex64
-            or samples.shape != (1, 1_200_000)
+            or samples.shape != (1, self._source_sample_count)
             or edge not in ("lower", "upper")
         ):
             raise ValueError("host decision input must be one complete native single-RX dwell")

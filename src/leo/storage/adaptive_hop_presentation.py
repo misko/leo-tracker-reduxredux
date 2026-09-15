@@ -7,9 +7,13 @@ from leo.scanner.adaptive_hop_presentation import (
     AdaptiveOverviewArtifact,
 )
 from leo.scanner.adaptive_hop_products import AdaptiveHopAnalysisBindingV1
-from leo.scanner.host_adaptive_presentation import HostAdaptiveAnalysisStatusV2
+from leo.scanner.host_adaptive_presentation import (
+    HostAdaptiveAnalysisStatusV2,
+    HostAdaptiveAnalysisStatusV3,
+)
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveAnalysisBindingV3,
     bind_actual_visit_analysis,
 )
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
@@ -51,7 +55,9 @@ class AdaptiveHopAnalysisPresentationStore:
                     return job.status()
             except BundleNotFoundError:
                 status_model: type[AdaptiveHopAnalysisStatusV1] = (
-                    HostAdaptiveAnalysisStatusV2
+                    HostAdaptiveAnalysisStatusV3
+                    if isinstance(binding, HostAdaptiveAnalysisBindingV3)
+                    else HostAdaptiveAnalysisStatusV2
                     if isinstance(binding, HostAdaptiveAnalysisBindingV2)
                     else AdaptiveHopAnalysisStatusV1
                 )

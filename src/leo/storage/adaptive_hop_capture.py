@@ -11,7 +11,7 @@ from leo.scanner.adaptive_hop_application import (
     capture_host_adaptive_hop_session,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
-from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2
+from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2, HostAdaptiveHopPlanV3
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio
 from leo.storage.adaptive_hop import AdaptiveHopIqStore, PublishedAdaptiveHopIqSession
 
@@ -48,7 +48,7 @@ def capture_adaptive_hop_to_store(
 
 def capture_host_adaptive_hop_to_store(
     radio: HostAdaptiveHopRadio,
-    plan: HostAdaptiveHopPlanV2,
+    plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3,
     *,
     session_id: str,
     store: AdaptiveHopIqStore,
@@ -56,7 +56,8 @@ def capture_host_adaptive_hop_to_store(
     queue_capacity_visits: int = 64,
     before_publish: Callable[[], None] | None = None,
 ) -> PublishedAdaptiveHopIqSession:
-    plan = HostAdaptiveHopPlanV2.model_validate(plan)
+    plan_model = HostAdaptiveHopPlanV3 if plan.schema_version == 3 else HostAdaptiveHopPlanV2
+    plan = plan_model.model_validate(plan)
     writer = store.begin_queued(session_id, plan, capacity_visits=queue_capacity_visits)
     try:
         capture = capture_host_adaptive_hop_session(

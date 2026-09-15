@@ -33,7 +33,8 @@ def package(qualification: Path, output: Path) -> str:
         # The historical seal contains absolute paths. Translate its repository
         # relative suffix; never change the sealed document to make it portable.
         parts = original.parts
-        root_index = parts.index("leo-tracker-single-rx-10m")
+        repository_names = (source.name, "leo-tracker-single-rx-10m")
+        root_index = next(parts.index(name) for name in repository_names if name in parts)
         relative = Path(*parts[root_index + 1 :])
         current = source / relative
         if digest(current) != expected:

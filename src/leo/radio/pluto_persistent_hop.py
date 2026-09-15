@@ -691,7 +691,11 @@ def _load_plan(plan: PersistentHopPlanV1) -> Any:
     plan_type = module.PersistentHopPlanV1
     extra: dict[str, Any] = {}
     if len(plan.receiver_ids) == 1:
-        plan_type = module.SingleRxPersistentHopPlanV2
+        plan_type = (
+            module.SingleRxMultiratePersistentHopPlanV3
+            if plan.sample_rate_hz in (15_000_000, 20_000_000)
+            else module.SingleRxPersistentHopPlanV2
+        )
         extra["receiver_id"] = plan.receiver_ids[0]
     return plan_type(
         **extra,

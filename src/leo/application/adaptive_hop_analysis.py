@@ -23,11 +23,16 @@ from leo.scanner.adaptive_hop_products import (
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveAnalysisConfigurationV2,
+    HostAdaptiveAnalysisConfigurationV3,
     HostAdaptiveAnalysisSource,
+    HostAdaptiveAnalysisSourceV3,
     analyze_host_adaptive_visit,
     analyze_host_adaptive_visit_batch,
 )
-from leo.scanner.host_adaptive_products import HostAdaptiveAnalysisBindingV2
+from leo.scanner.host_adaptive_products import (
+    HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveAnalysisBindingV3,
+)
 
 
 class AdaptiveHopAnalysisInputs(Protocol):
@@ -97,12 +102,12 @@ class AdaptiveHopAnalysisService:
         ):
             raise ValueError("adaptive analysis time budget must be in (0, 1800] seconds")
         # Validate geometry/options before opening source or output directories.
-        configuration_model: type[AdaptiveHopAnalysisConfigurationV1] = (
+        initial_configuration_model: type[AdaptiveHopAnalysisConfigurationV1] = (
             HostAdaptiveAnalysisConfigurationV2
             if self._host_adaptive
             else AdaptiveHopAnalysisConfigurationV1
         )
-        configuration_model.model_validate(
+        initial_configuration_model.model_validate(
             dict(
                 sample_rate_hz=10_000_000 if self._host_adaptive else 2_500_000,
                 receiver_ids=(0,) if self._host_adaptive else (0, 1),
@@ -115,13 +120,23 @@ class AdaptiveHopAnalysisService:
                 raise ValueError("adaptive analysis service does not match the source major")
             if source.receipt.session_id != session_id:
                 raise ValueError("adaptive analysis input changed requested identity")
+            wide = isinstance(source, HostAdaptiveAnalysisSourceV3)
+            configuration_model: type[AdaptiveHopAnalysisConfigurationV1] = (
+                HostAdaptiveAnalysisConfigurationV3
+                if wide
+                else HostAdaptiveAnalysisConfigurationV2
+                if self._host_adaptive
+                else AdaptiveHopAnalysisConfigurationV1
+            )
             configuration = configuration_model(
                 sample_rate_hz=source.receipt.plan.geometry.sample_rate_hz,
                 receiver_ids=source.receipt.plan.geometry.receiver_ids,
                 probe_stride_ms=probe_stride_ms,
             )
             binding_model: type[AdaptiveHopAnalysisBindingV1] = (
-                HostAdaptiveAnalysisBindingV2
+                HostAdaptiveAnalysisBindingV3
+                if wide
+                else HostAdaptiveAnalysisBindingV2
                 if self._host_adaptive
                 else AdaptiveHopAnalysisBindingV1
             )
@@ -152,7 +167,13 @@ class AdaptiveHopAnalysisService:
                         )
                         analyses: Iterable[AdaptiveHopVisitAnalysisV1]
                         if isinstance(source, HostAdaptiveAnalysisSource):
-                            assert isinstance(configuration, HostAdaptiveAnalysisConfigurationV2)
+                            assert isinstance(
+                                configuration,
+                                (
+                                    HostAdaptiveAnalysisConfigurationV2,
+                                    HostAdaptiveAnalysisConfigurationV3,
+                                ),
+                            )
                             analyses = (
                                 analyze_host_adaptive_visit_batch(
                                     source, indexes, configuration=configuration

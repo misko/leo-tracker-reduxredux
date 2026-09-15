@@ -21,7 +21,7 @@ from leo.scanner.adaptive_hop_analysis import (
     _analyze_loaded_visit,
     _compare_source_fields,
 )
-from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3
 
 
 class HostAdaptiveAnalysisConfigurationV2(AdaptiveHopAnalysisConfigurationV1):
@@ -51,70 +51,127 @@ class HostAdaptiveVisitAnalysisV2(AdaptiveHopVisitAnalysisV1):
     probes: Annotated[tuple[AdaptiveHopProbeAnalysisV1, ...], Field(min_length=1, max_length=11)]
 
 
+class HostAdaptiveAnalysisConfigurationV3(HostAdaptiveAnalysisConfigurationV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    analyzer_id: Literal["host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3"] = (  # type: ignore[assignment]
+        "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3"  # type: ignore[assignment]
+    )
+    sample_rate_hz: Literal[15_000_000, 20_000_000]  # type: ignore[assignment]
+    receiver_ids: tuple[Literal[0]] = (0,)  # type: ignore[assignment]
+
+    @field_validator("receiver_ids", mode="before")
+    @classmethod
+    def _exact_receivers(cls, value: object) -> object:
+        if not isinstance(value, (tuple, list)) or tuple(value) != (0,):
+            raise ValueError("multirate host adaptive analysis requires RX0")
+        return value
+
+
+class HostAdaptiveVisitAnalysisV3(HostAdaptiveVisitAnalysisV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    configuration: HostAdaptiveAnalysisConfigurationV3
+
+
 @dataclass(frozen=True, slots=True)
 class HostAdaptiveAnalysisSource(AdaptiveHopAnalysisSource):
     _receipt_model: ClassVar[type[HostAdaptiveHopReceiptV2]] = HostAdaptiveHopReceiptV2
     receipt: HostAdaptiveHopReceiptV2 = field(init=False)
 
 
+@dataclass(frozen=True, slots=True)
+class HostAdaptiveAnalysisSourceV3(HostAdaptiveAnalysisSource):
+    _receipt_model: ClassVar[type[HostAdaptiveHopReceiptV3]] = HostAdaptiveHopReceiptV3
+    receipt: HostAdaptiveHopReceiptV3 = field(init=False)
+
+
 def _configuration(
-    source: HostAdaptiveAnalysisSource, value: HostAdaptiveAnalysisConfigurationV2 | None
-) -> HostAdaptiveAnalysisConfigurationV2:
-    cfg = value or HostAdaptiveAnalysisConfigurationV2(
-        receiver_ids=source.receipt.plan.geometry.receiver_ids
+    source: HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3,
+    value: HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3 | None,
+) -> HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3:
+    model = (
+        HostAdaptiveAnalysisConfigurationV3
+        if isinstance(source, HostAdaptiveAnalysisSourceV3)
+        else HostAdaptiveAnalysisConfigurationV2
     )
-    cfg = HostAdaptiveAnalysisConfigurationV2.model_validate(cfg.model_dump())
+    if value is not None:
+        cfg = model.model_validate(value.model_dump())
+    elif isinstance(source, HostAdaptiveAnalysisSourceV3):
+        cfg = HostAdaptiveAnalysisConfigurationV3(
+            sample_rate_hz=source.receipt.plan.geometry.sample_rate_hz,
+            receiver_ids=(0,),
+        )
+    else:
+        cfg = HostAdaptiveAnalysisConfigurationV2(
+            sample_rate_hz=source.receipt.plan.geometry.sample_rate_hz,
+            receiver_ids=source.receipt.plan.geometry.receiver_ids,
+        )
+    cfg = model.model_validate(cfg.model_dump())
     if cfg.receiver_ids != source.receipt.plan.geometry.receiver_ids:
         raise ValueError("host adaptive analysis changed the physical source receiver")
     return cfg
 
 
 def analyze_host_adaptive_visit(
-    source: HostAdaptiveAnalysisSource,
+    source: HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3,
     visit_index: int,
     *,
-    configuration: HostAdaptiveAnalysisConfigurationV2 | None = None,
-) -> HostAdaptiveVisitAnalysisV2:
+    configuration: (
+        HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3 | None
+    ) = None,
+) -> HostAdaptiveVisitAnalysisV2 | HostAdaptiveVisitAnalysisV3:
     cfg = _configuration(source, configuration)
-    result = _analyze_loaded_visit(
-        source, visit_index, source.read_visit(visit_index), cfg, HostAdaptiveVisitAnalysisV2
+    product_model = (
+        HostAdaptiveVisitAnalysisV3
+        if isinstance(cfg, HostAdaptiveAnalysisConfigurationV3)
+        else HostAdaptiveVisitAnalysisV2
     )
-    assert isinstance(result, HostAdaptiveVisitAnalysisV2)
+    result = _analyze_loaded_visit(
+        source, visit_index, source.read_visit(visit_index), cfg, product_model
+    )
+    assert isinstance(result, (HostAdaptiveVisitAnalysisV2, HostAdaptiveVisitAnalysisV3))
     return result
 
 
 def analyze_host_adaptive_visit_batch(
-    source: HostAdaptiveAnalysisSource,
+    source: HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3,
     visit_indexes: tuple[int, ...],
     *,
-    configuration: HostAdaptiveAnalysisConfigurationV2,
-) -> Iterator[HostAdaptiveVisitAnalysisV2]:
+    configuration: HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3,
+) -> Iterator[HostAdaptiveVisitAnalysisV2 | HostAdaptiveVisitAnalysisV3]:
     """At most four visits; only the owner reads IQ, and results retain order."""
     if not 1 <= len(visit_indexes) <= 4 or len(set(visit_indexes)) != len(visit_indexes):
         raise ValueError("host adaptive analysis batch requires one to four distinct visits")
     cfg = _configuration(source, configuration)
+    product_model = (
+        HostAdaptiveVisitAnalysisV3
+        if isinstance(cfg, HostAdaptiveAnalysisConfigurationV3)
+        else HostAdaptiveVisitAnalysisV2
+    )
     samples = tuple(source.read_visit(index) for index in visit_indexes)
     with ThreadPoolExecutor(
         max_workers=len(visit_indexes), thread_name_prefix="leo-host-native"
     ) as pool:
         futures = [
             pool.submit(
-                _analyze_loaded_visit, source, index, values, cfg, HostAdaptiveVisitAnalysisV2
+                _analyze_loaded_visit, source, index, values, cfg, product_model
             )
             for index, values in zip(visit_indexes, samples, strict=True)
         ]
         for future in futures:
             result = future.result()
-            assert isinstance(result, HostAdaptiveVisitAnalysisV2)
+            assert isinstance(result, (HostAdaptiveVisitAnalysisV2, HostAdaptiveVisitAnalysisV3))
             yield result
 
 
 def validate_host_adaptive_analysis_binding(
-    product: HostAdaptiveVisitAnalysisV2,
-    receipt: HostAdaptiveHopReceiptV2,
+    product: HostAdaptiveVisitAnalysisV2 | HostAdaptiveVisitAnalysisV3,
+    receipt: HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3,
     *,
     input_manifest_sha256: str,
 ) -> None:
-    product = HostAdaptiveVisitAnalysisV2.model_validate(product.model_dump())
-    receipt = HostAdaptiveHopReceiptV2.model_validate(receipt.model_dump())
+    wide = isinstance(receipt, HostAdaptiveHopReceiptV3)
+    product_model = HostAdaptiveVisitAnalysisV3 if wide else HostAdaptiveVisitAnalysisV2
+    receipt_model = HostAdaptiveHopReceiptV3 if wide else HostAdaptiveHopReceiptV2
+    product = product_model.model_validate(product.model_dump())
+    receipt = receipt_model.model_validate(receipt.model_dump())
     _compare_source_fields(product, receipt, input_manifest_sha256)

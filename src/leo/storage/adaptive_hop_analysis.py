@@ -38,15 +38,23 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
 )
-from leo.scanner.host_adaptive_analysis import HostAdaptiveVisitAnalysisV2
+from leo.scanner.host_adaptive_analysis import (
+    HostAdaptiveVisitAnalysisV2,
+    HostAdaptiveVisitAnalysisV3,
+)
 from leo.scanner.host_adaptive_presentation import (
     HostAdaptiveAnalysisStatusV2,
+    HostAdaptiveAnalysisStatusV3,
     HostAdaptiveOverviewManifestV2,
+    HostAdaptiveOverviewManifestV3,
 )
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveAnalysisBindingV3,
     HostAdaptiveMetricsManifestV2,
+    HostAdaptiveMetricsManifestV3,
     HostAdaptiveVisitReferenceV2,
+    HostAdaptiveVisitReferenceV3,
 )
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError
 from leo.storage.pinned import PinnedLocalRoot
@@ -55,7 +63,7 @@ _NAMESPACE = "scanner-adaptive-analysis"
 _MAX_BINDING = 32 * 1024 * 1024
 _MAX_VISIT = 2 * 1024 * 1024
 _MAX_MANIFEST = 4 * 1024 * 1024
-_VISIT = re.compile(r"visit-([0-9]{6})\.v[12]\.json\.zst")
+_VISIT = re.compile(r"visit-([0-9]{6})\.v[123]\.json\.zst")
 
 
 def _read(directory: PinnedLocalRoot, name: str, maximum: int) -> bytes:
@@ -143,7 +151,9 @@ class AdaptiveHopAnalysisStore:
         self, binding: AdaptiveHopAnalysisBindingV1, *, writable: bool = False
     ) -> Iterator[AdaptiveHopAnalysisJob]:
         binding_model = (
-            HostAdaptiveAnalysisBindingV2
+            HostAdaptiveAnalysisBindingV3
+            if isinstance(binding, HostAdaptiveAnalysisBindingV3)
+            else HostAdaptiveAnalysisBindingV2
             if isinstance(binding, HostAdaptiveAnalysisBindingV2)
             else AdaptiveHopAnalysisBindingV1
         )
@@ -212,21 +222,42 @@ class AdaptiveHopAnalysisJob:
         self._directory, self.binding, self._writable = directory, binding, writable
         self._binding_sha256 = binding.sha256
         self._version = binding.schema_version
+        wide = isinstance(binding, HostAdaptiveAnalysisBindingV3)
         host = isinstance(binding, HostAdaptiveAnalysisBindingV2)
         self._visit_model: type[AdaptiveHopVisitAnalysisV1] = (
-            HostAdaptiveVisitAnalysisV2 if host else AdaptiveHopVisitAnalysisV1
+            HostAdaptiveVisitAnalysisV3
+            if wide
+            else HostAdaptiveVisitAnalysisV2
+            if host
+            else AdaptiveHopVisitAnalysisV1
         )
         self._reference_model: type[AdaptiveHopVisitReferenceV1] = (
-            HostAdaptiveVisitReferenceV2 if host else AdaptiveHopVisitReferenceV1
+            HostAdaptiveVisitReferenceV3
+            if wide
+            else HostAdaptiveVisitReferenceV2
+            if host
+            else AdaptiveHopVisitReferenceV1
         )
         self._metrics_model: type[AdaptiveHopMetricsManifestV1] = (
-            HostAdaptiveMetricsManifestV2 if host else AdaptiveHopMetricsManifestV1
+            HostAdaptiveMetricsManifestV3
+            if wide
+            else HostAdaptiveMetricsManifestV2
+            if host
+            else AdaptiveHopMetricsManifestV1
         )
         self._overview_model: type[AdaptiveHopOverviewManifestV1] = (
-            HostAdaptiveOverviewManifestV2 if host else AdaptiveHopOverviewManifestV1
+            HostAdaptiveOverviewManifestV3
+            if wide
+            else HostAdaptiveOverviewManifestV2
+            if host
+            else AdaptiveHopOverviewManifestV1
         )
         self._status_model: type[AdaptiveHopAnalysisStatusV1] = (
-            HostAdaptiveAnalysisStatusV2 if host else AdaptiveHopAnalysisStatusV1
+            HostAdaptiveAnalysisStatusV3
+            if wide
+            else HostAdaptiveAnalysisStatusV2
+            if host
+            else AdaptiveHopAnalysisStatusV1
         )
 
     def _index(self, index: int) -> str:
