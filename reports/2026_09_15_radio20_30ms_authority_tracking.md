@@ -139,6 +139,8 @@ Firmware branch `codex/radio20-tracking-qualification` contains:
   bounded multi-visit operator;
 - `bb8744243`: adds a radio-local 16-result scout across two to four LOs and
   launches one 751-result sparse follow-up on the first proven signal.
+- `ac6984526`: also launches refinement from a retained scan64 activity peak,
+  leaving scan80/local-2 and all native tracking gates unchanged.
 
 The prior focused suite passes **527 tests**. The sparse change additionally
 passes 319 controller/journal/operator checks and all 171 live-probe checks; the
@@ -162,6 +164,21 @@ The post-deployment buffer is disabled, TX LO is powered down and TX gain is
 -80 dB.
 Three existing wall-clock-sensitive live simulations failed in one broad run
 and passed individually on rerun.
+
+Post-campaign analysis showed why native-handoff-only scouting was too strict.
+In the historical scan64 corpus, a normalized single-pilot power floor of 0.04
+within the six attempts ending at a handoff covers four of five handoffs. The
+new campaign contained 57 such observations in 32 scout children, including 29
+observations at 1.4403125 GHz, but no scan64 native handoff. The revised parent
+therefore treats one retained power observation at or above 0.04 as an activity
+trigger. It then runs the stronger scan80/local±2 sparse child, whose unchanged
+resolver and native gates decide whether tracking exists. Activity is never
+reported as a completed track. The strict retained-journal parser rejects
+missing, duplicated, nonfinite and oversized evidence; the revised focused
+suites pass 231 plus 37 cases. The deployed ARM binary SHA-256 is
+`b400ccae1887a012b5c4b4b58d1791535e3009d3ee08b185798dc0f12ab6e7a6`.
+Its remote hash, runtime libraries, no-IIO argument preflight and TX-safe state
+verify on the bound radio. It has not started a new RF campaign.
 
 ## Radio-local scout campaign
 
