@@ -428,3 +428,22 @@ step is offline replay and profiling of v32's retained IQ to reduce the
 observer-to-authority delay and to keep the authority update ahead of the
 descriptor frontier. The 100-second run remains gated on one independently
 verified 2,251-result, exactly 30-second run.
+
+Timing analysis of v32 and v33 shows the nine-frame passive observer operating
+at its source-time limit: its mean interval is 12.00 ms, median is about
+12.99 ms and p95 is about 13.8 ms, while nine pilot frames provide exactly
+12 ms. Firmware commit `6befc76cf` therefore preserves the proven nine-frame
+acquisition bootstrap but aligns only the long-profile passive observer with
+the stride-ten FPGA schedule. That provides 13.33 ms per observer result and
+reduces ARM load by ten percent. The combined component and operator suite
+passes 692 tests; a further 271 serial-bound operator tests pass after the ARM
+payload is hash-pinned.
+
+Physical cycle v34 used that cadence-aligned payload, but none of its four
+scouts crossed the retained-activity trigger. It correctly performed no
+follow-up and is not evidence for or against the cadence change. All 45 SSD
+and RAID manifest entries pass, radio identity and TX-safe state were restored,
+and acquisition is active. Commit `d6dc86951` adds publication, application
+and latency timestamps to each subsequently retained coarse-authority record,
+so the next signal-bearing run can separate observer computation delay from
+controller polling delay without changing scheduling authority.
