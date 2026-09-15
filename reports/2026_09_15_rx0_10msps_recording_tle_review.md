@@ -33,6 +33,14 @@ The comparison pages expose their union and the full scored population count.
 [All candidate comparisons as CSV](figures/2026_09_15_rx0_10msps_recording_tle_review/candidate-comparisons.csv)
 provide the unrounded values.
 
+The [ranked RMS gallery](figures/2026_09_15_rx0_10msps_recording_tle_review/rms-plots/README.md)
+and each comparison page link plots covering every track. The
+plots show training and held-out RMS for the same training-ranked satellites,
+capped at ten hits. This archive retained five per ranking, so five are plotted;
+the missing ranks are not inferred from the union of different shortlists.
+Each panel reports the full scored satellite count and the leader's held-out
+rank. Logarithmic axes above 1 Hz keep large and small errors readable.
+
 The [per-recording index](figures/2026_09_15_rx0_10msps_recording_tle_review/README.md)
 links each UTC timestamp and recording ID to its complete track table, measured
 CFO/TLE overlays, residual plots, top-three training candidates, heldout rank,
@@ -155,6 +163,7 @@ PYTHONPATH=src:. OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python \
 PYTHONPATH=src:. python tools/validate_scanner_tle_screen.py /tmp/rx0-tle-review-fresh
 PYTHONPATH=src:. python tools/publish_scanner_tle_review.py \
   /tmp/rx0-tle-review-fresh /tmp/rx0-tle-report
+PYTHONPATH=src:. python tools/plot_scanner_candidate_rms.py /tmp/rx0-tle-report
 ```
 
 `backfill_scanner_review_metrics.py` handles missing analyses into an explicit
