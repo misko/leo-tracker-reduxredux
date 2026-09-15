@@ -26,6 +26,7 @@ def scanner_radio_bindings(environment: dict[str, str]) -> dict[str, str]:
         "single-rx-random-10m-300s-v1",
         "adaptive-single-rx-random-10m-300s-v1",
         "adaptive-single-rx0-10m-300s-v1",
+        "adaptive-single-rx0-random-15m-20m-300s-v1",
     ):
         return dict(SCANNER_ONLY_BINDINGS)
     selected = environment.get("LEO_SCANNER_RADIO_ID")
