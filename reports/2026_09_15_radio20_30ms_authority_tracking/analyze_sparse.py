@@ -33,7 +33,7 @@ def main() -> None:
         manifest[name] = sha
 
     result = {"schema": "radio20-30ms-sparse10-review/v1", "runs": []}
-    for number in range(2, 8):
+    for number in range(2, 10):
         name = f"run-sparse10-v{number}"
         root = args.evidence / name
         for path in root.iterdir():
