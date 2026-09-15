@@ -8,6 +8,10 @@ Scientific status: retrospective, truth-revealed evaluation of location-blind
 inference; exploratory accuracy evidence from one stationary receiver and one
 eight-hour interval, not a calibrated confidence guarantee
 
+The follow-up [detection and position limit diagnosis](2026_09_15_rx0_10msps_detection_and_position_limits.md)
+works backward from the final miss using per-episode Doppler sensitivity,
+inferred sky geometry, and training-only RMS/elevation gate sweeps.
+
 ## Result
 
 Starting with a **5,000 × 5,000 km map-square prior** centred at
