@@ -10,6 +10,7 @@ from leo.scanner.host_adaptive import (
     HostDecisionConfigurationV1,
     HostDecisionConfigurationV2,
     HostDecisionNumericsV1,
+    HostDecisionNumericsV2,
     HostDecisionRecordV1,
     HostDecisionRecordV2,
 )
@@ -56,6 +57,14 @@ def numerics():
         cpu_ms=15,
         wall_ms=16,
         screen_scores=(0.1,) * 6,
+    )
+
+
+def multirate_numerics(rate):
+    return HostDecisionNumericsV2(
+        **numerics().model_dump(exclude={"schema_version", "supported_start"}),
+        source_rate_hz=rate,
+        supported_start={15_000_000: 34, 20_000_000: 32}[rate],
     )
 
 
@@ -150,7 +159,7 @@ def multirate_host_receipt(*, rate=20_000_000, mode="adaptive", plan=None, **kwa
                 completed_monotonic_ns=16_000_000 + e.visit_index * 126_000_000,
                 feedback_monotonic_ns=20_000_000 + e.visit_index * 126_000_000,
                 feedback_completed_monotonic_ns=20_002_000 + e.visit_index * 126_000_000,
-                numerics=numerics(),
+                numerics=multirate_numerics(plan.geometry.sample_rate_hz),
                 health="healthy",
                 feedback_outcome="not_detected",
                 feedback_disposition="accepted",

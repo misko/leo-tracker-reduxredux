@@ -159,6 +159,30 @@ class HostDecisionNumericsV1(AdaptiveModel):
         return 4 * (window * 50_000 + self.epoch + self.fractional_offset) - 80
 
 
+class HostDecisionNumericsV2(HostDecisionNumericsV1):
+    """Wide-source detector output after the declared 2.5 MS/s reduction."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    source_rate_hz: Literal[15_000_000, 20_000_000]
+    supported_start: Literal[34, 32]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _rate_geometry_is_exact(self) -> Self:
+        if self.supported_start != {15_000_000: 34, 20_000_000: 32}[self.source_rate_hz]:
+            raise ValueError("host decision numerics differ from source-rate FIR geometry")
+        return self
+
+    @property
+    def first_candidate_source_epoch_offset(self) -> float | None:
+        if not self.candidate_supported or not self.fractional_complete:
+            return None
+        factor, delay = {15_000_000: (6, 100), 20_000_000: (8, 128)}[
+            self.source_rate_hz
+        ]
+        window = self.confirmation_mask.bit_length() - 1
+        return factor * (window * 50_000 + self.epoch + self.fractional_offset) - delay
+
+
 class HostDecisionRecordV1(AdaptiveModel):
     """One emitted visit's computation and transport, never a policy-apply claim."""
 
@@ -236,6 +260,7 @@ class HostDecisionRecordV1(AdaptiveModel):
 class HostDecisionRecordV2(HostDecisionRecordV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     source_rate_hz: Literal[15_000_000, 20_000_000]
+    numerics: HostDecisionNumericsV2 | None  # type: ignore[assignment]
 
     @model_validator(mode="after")
     def _evidence_is_consistent(self) -> Self:
@@ -248,6 +273,8 @@ class HostDecisionRecordV2(HostDecisionRecordV1):
             or (self.started_monotonic_ns is None) != (self.completed_monotonic_ns is None)
         ):
             raise ValueError("host decision source or clock interval is inconsistent")
+        if self.numerics is not None and self.numerics.source_rate_hz != self.source_rate_hz:
+            raise ValueError("host decision numerics differ from the recorded source rate")
         if self.started_monotonic_ns is not None:
             assert self.completed_monotonic_ns is not None
             if not (

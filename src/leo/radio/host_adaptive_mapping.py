@@ -17,6 +17,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV3,
     HostAdaptiveHopTerminalV2,
     HostDecisionNumericsV1,
+    HostDecisionNumericsV2,
     HostDecisionRecordV1,
     HostDecisionRecordV2,
 )
@@ -140,7 +141,17 @@ def map_host_work_result(
             feedback_completed_monotonic_ns=(
                 feedback_ns if feedback_completed_ns is None else feedback_completed_ns
             ),
-            numerics=HostDecisionNumericsV1.model_validate(dataclasses.asdict(evidence))
+            numerics=(
+                HostDecisionNumericsV1.model_validate(dataclasses.asdict(evidence))
+                if source_rate_hz == 10_000_000
+                else HostDecisionNumericsV2.model_validate(
+                    {
+                        **dataclasses.asdict(evidence),
+                        "schema_version": 2,
+                        "source_rate_hz": source_rate_hz,
+                    }
+                )
+            )
             if evidence is not None
             else None,
             health=health,
