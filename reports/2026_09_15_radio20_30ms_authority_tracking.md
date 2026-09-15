@@ -165,27 +165,27 @@ and passed individually on rerun.
 
 ## Radio-local scout campaign
 
-The composition subsequently ran on the physical radio in 40 bounded cycles
-split across three admitted tranches.
+The composition subsequently ran on the physical radio in 45 bounded cycles
+split across four admitted tranches.
 Each cycle visited all four reviewed upper-edge LOs in the order 1.9403125,
-1.1903125, 1.4403125 and 1.6903125 GHz. All 160 child scouts ended with status 0,
+1.1903125, 1.4403125 and 1.6903125 GHz. All 180 child scouts ended with status 0,
 `worker_complete=1`, six acquisition attempts, no handoff and no native result.
 The parent therefore exhausted each plan cleanly and correctly launched no
 sparse follow-up.
 
-The children retained 188,156 source blocks, or 1,233.0991616 seconds
-(20.5517 minutes) of 2.5-MS/s IQ equivalent, across 960 acquisition attempts.
+The children retained 211,900 source blocks, or 1,388.70784 seconds
+(23.1451 minutes) of 2.5-MS/s IQ equivalent, across 1,080 acquisition attempts.
 The campaign stopped within the 30-minute RF bound. It produced no candidate
 track, so it cannot establish the requested ten-second result.
 
 Each tranche's before/after radio attestations are identical: serial and boot identity,
 30-MS/s image and FIT hash, every buffer disabled, TX datapaths absent, TX LO
-powered down and TX gain at -80 dB. All 1,843 manifest-listed evidence files
+powered down and TX gain at -80 dB. All 2,074 manifest-listed evidence files
 were written to SSD and copied to the `radio-local-scout-followup-20260915-v1`,
-`-v3` and `-v4` directories beneath
+`-v3`, `-v4` and `-v5` directories beneath
 `/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912`.
-Each SSD and RAID SHA-256 manifest matches; the three RAID copies total about
-1.1 GB. The `-v2` name records an admission refusal and contains no RF run.
+Each SSD and RAID SHA-256 manifest matches; the four RAID copies total about
+1.2 GB. The `-v2` name records an admission refusal and contains no RF run.
 The compact campaign totals are retained in
 [`radio_local_scout_summary.json`](2026_09_15_radio20_30ms_authority_tracking/radio_local_scout_summary.json).
 
