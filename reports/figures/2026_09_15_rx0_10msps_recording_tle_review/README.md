@@ -2,6 +2,8 @@
 
 Frozen September 14, 2026, 15:28–23:28 UTC cohort: 47 RX0 10 MS/s recordings. All results are candidate-only; no satellite identity is established.
 
+Every recording page links its satellite-by-satellite RMS and top-1 gain tables. [Download all candidate comparisons](candidate-comparisons.csv).
+
 47 recordings screened; 647 eligible unique tracklets; 526 tracklets in 47 recordings pass descriptive checks.
 
 A descriptive pass requires the training leader to remain first on heldout data, stay above the horizon throughout its measured support, avoid the ±5 s time-shift boundary, and beat both ±500 s controls and both linear/quadratic radio-drift controls on heldout RMS. These checks are not calibrated identity probabilities. Tracklets across lanes are correlated.

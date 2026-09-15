@@ -4,6 +4,8 @@ Recorded **2026-09-14T19:30:12.583313Z**, RX0, 10 MS/s.
 
 **Candidates pass descriptive checks; no identification.** Candidates: 68245 (4 tracklets), 62303 (2 tracklets), 59027 (1 tracklets).
 
+[Satellite RMS comparisons and top-1 gains](scan-hop-dc538fa7df739a79-candidates.md).
+
 Counts are correlated lane tracklets, not independent detections or satellite counts. A recording can contain multiple transmitters; these are not one-label-per-file assignments.
 
 ![Six longest eligible tracks and training-selected TLE curves](scan-hop-dc538fa7df739a79.png)
