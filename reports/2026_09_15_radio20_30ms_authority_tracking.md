@@ -393,3 +393,38 @@ V28 and v29 are retained under matching NVMe and RAID directories named
 `activity-followup-20260915-v28` and `-v29` beneath the established deployment
 root. Their manifests contain 30 and 41 entries respectively and verify in
 both locations.
+
+Firmware commit `30683eb4b` implemented that 64-frame coast for only the new
+30- and 100-second profiles. It retained the 32-frame behavior and journal
+format for every earlier profile, added an explicit horizon to the new cadence
+record, and made the independent reviewer enforce it. The focused predictor,
+observer, controller, journal and live-profile suite passed 408 tests; 271
+visit/operator tests also passed. In the expanded live suite, 491 tests passed
+and the existing load-sensitive scan80 timing case passed when rerun alone.
+
+Physical cycle v32 selected 1.1903125 GHz. Its three native episodes retained
+144, 1,101 and 166 results, spanning 1.907, **14.667** and 2.200 seconds. The
+middle episode supported 710 native diagnostics and 1,215/1,222 observer
+measurements. It ended after four consecutive observer rejections: the last
+retained authority was frame 12096, the committed FPGA frontier reached 12156,
+and frame 12166 was 70 frames beyond authority. A supported observer result at
+12141 arrived only after the controller had begun draining. This is longer than
+v29's 12.600 seconds, but it does not meet the 2,251-result gate. Independent
+epoch review passes all 1,411 results and three reacquisitions. Every final
+snapshot has zero FPGA, CDC and pacing faults; both SSD and RAID manifests pass.
+
+Commit `5d62b7533` bounds the long-profile coast at 96 frames, equal to the
+existing retained trend fit window, and preserves review of the persisted
+64-frame journal. Cycle v33 selected 1.6903125 GHz but encountered much weaker
+activity: its two episodes retained 70 and 139 results, with one supported
+native diagnostic in each, and spanned 0.920 and 1.840 seconds. The observers
+supported 68/73 and 142/148 measurements. Independent review passes all 209
+results and two reacquisitions with zero FPGA, CDC and pacing faults; both
+manifests pass and the exact radio was restored with acquisition active.
+
+The 96-frame trial did not complete 30 seconds, and a wider coast would merely
+increase extrapolation without addressing the measured race. The stable next
+step is offline replay and profiling of v32's retained IQ to reduce the
+observer-to-authority delay and to keep the authority update ahead of the
+descriptor frontier. The 100-second run remains gated on one independently
+verified 2,251-result, exactly 30-second run.
