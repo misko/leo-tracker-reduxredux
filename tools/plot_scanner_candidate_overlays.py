@@ -39,6 +39,68 @@ def track_pages(tracks, page_size=_TRACKS_PER_PAGE):
     return [ordered[offset : offset + page_size] for offset in range(0, len(ordered), page_size)]
 
 
+def top_three_analysis(track):
+    """Summarize the training leader and first two training-ranked alternatives."""
+    candidates = track["fields"]["0"].get("top_training", [])[:3]
+    if not candidates:
+        return None
+    runners = candidates[1:]
+    leader = candidates[0]
+    best_runner = min(runners, key=lambda item: item["heldout_rms_hz"], default=None)
+    if best_runner is None or best_runner["heldout_rms_hz"] <= 0:
+        ratio = None
+        reduction = None
+    else:
+        ratio = best_runner["heldout_rms_hz"] / leader["heldout_rms_hz"]
+        reduction = (
+            100
+            * (best_runner["heldout_rms_hz"] - leader["heldout_rms_hz"])
+            / best_runner["heldout_rms_hz"]
+        )
+    return {
+        "candidates": candidates,
+        "best_runner": best_runner,
+        "heldout_ratio": ratio,
+        "heldout_reduction_percent": reduction,
+    }
+
+
+def candidate_cell(candidate):
+    if candidate is None:
+        return "—"
+    return (
+        f"{candidate['name']} / {candidate['catalog_number']}: "
+        f"{candidate['training_rms_hz']:.1f} / {candidate['heldout_rms_hz']:.1f} Hz"
+    )
+
+
+def comparison_table(tracks):
+    rows = []
+    for track in tracks:
+        analysis = top_three_analysis(track)
+        if analysis is None:
+            continue
+        candidates = analysis["candidates"]
+        gain = "—"
+        if analysis["heldout_ratio"] is not None:
+            gain = (
+                f"{analysis['heldout_ratio']:.2f}× / "
+                f"{analysis['heldout_reduction_percent']:.1f}% lower"
+            )
+        rows.append(
+            f"| CH{track['channel']} {track['edge']}, "
+            f"{track['time_s'][0]:.1f}–{track['time_s'][-1]:.1f} s | "
+            f"{candidate_cell(candidates[0])} | "
+            f"{candidate_cell(candidates[1] if len(candidates) > 1 else None)} | "
+            f"{candidate_cell(candidates[2] if len(candidates) > 2 else None)} | {gain} |"
+        )
+    return (
+        "| Track | Top TLE, train / heldout RMS | Runner-up 1, train / heldout RMS | "
+        "Runner-up 2, train / heldout RMS | Top vs best shown runner, heldout |\n"
+        "|---|---:|---:|---:|---:|\n" + "\n".join(rows)
+    )
+
+
 def prediction(track, candidate, *, start_utc_ns, catalogue, lookup, site):
     times_s = np.asarray(track["time_s"], dtype=float)
     times = tuple(
@@ -62,8 +124,9 @@ def render_page(*, record, tracks, page_number, start, catalogue, lookup, site, 
         times = np.asarray(track["time_s"], dtype=float)
         measured = np.asarray(track["cfo_hz"], dtype=float)
         split = track["training_count"]
+        analysis = top_three_analysis(track)
         axis[0].plot(times, measured, ".", color="black", ms=3, label="Measured GLRT")
-        for candidate in track["fields"]["0"].get("top_training", [])[:3]:
+        for candidate in analysis["candidates"]:
             curve = prediction(
                 track,
                 candidate,
@@ -72,7 +135,10 @@ def render_page(*, record, tracks, page_number, start, catalogue, lookup, site, 
                 lookup=lookup,
                 site=site,
             )
-            label = f"NORAD {candidate['catalog_number']}"
+            label = (
+                f"NORAD {candidate['catalog_number']} · "
+                f"T/H {candidate['training_rms_hz']:.0f}/{candidate['heldout_rms_hz']:.0f} Hz"
+            )
             axis[0].plot(times, curve, label=label, lw=1)
             axis[1].plot(times, measured - curve, ".-", label=label, ms=2, lw=0.7)
         for ax in axis:
@@ -86,7 +152,13 @@ def render_page(*, record, tracks, page_number, start, catalogue, lookup, site, 
             f"CH{track['channel']} {track['edge']} · "
             f"{times[0]:.1f}–{times[-1]:.1f} s · {track['span_s']:.1f} s span"
         )
-        axis[1].set_title("Training-fitted offset and time shift; no heldout refit")
+        title = "Training-fitted offset and time shift; no heldout refit"
+        if analysis["heldout_ratio"] is not None:
+            title += (
+                f"\nTop vs best shown runner: {analysis['heldout_ratio']:.2f}×; "
+                f"{analysis['heldout_reduction_percent']:.1f}% lower heldout RMS"
+            )
+        axis[1].set_title(title)
     for ax in axes[-1]:
         ax.set_xlabel("Seconds since recording start")
     fig.suptitle(
@@ -159,6 +231,11 @@ def render(root, *, capture_root=Path("/srv/bulk/leo"), tle_root=Path("/var/lib/
                 "training-ranked TLE curves on the left, residuals on the right. Offset and "
                 "time shift are fitted only on the first 60%; the last 40% is held out. "
                 "These are candidate diagnostics, not satellite identifications.\n\n"
+                "RMS cells below are `training / heldout` in Hz. Runner-up 1 and 2 are "
+                "training ranks two and three. The gain compares the top TLE with whichever "
+                "of those two has lower heldout RMS.\n\n"
+                + comparison_table([track for _, tracks in pages for track in tracks])
+                + "\n\n"
                 + "\n\n".join(
                     f"## Page {page}\n\n![All-track TLE overlays, page {page}]"
                     f"(all-track-overlays/{filename})"
