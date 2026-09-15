@@ -32,7 +32,7 @@ native samples; the scheduled measurement rate is **75/s**. The 751st result is
 exactly 10.000 seconds after the first result in source time. The existing dense
 profiles and their persisted GLT1 bodies are unchanged.
 
-Six physical sparse-cadence dwells covered all four reviewed upper LOs. They
+Eight physical sparse-cadence dwells covered all four reviewed upper LOs. They
 produced ten handoffs and 1,040 scheduled measurements. The longest operational
 episode contained 428 measurements spanning **5.693 seconds**. Independent
 review exposed that the first five dwells sometimes retained a newer coarse
@@ -81,6 +81,11 @@ model margin while remaining below the ARM port capacity.
 | sparse-v5 | 1.4403125 GHz | 225.942 s | 256 | 3 | 15 / 0.187 s | One 2-result journal passes; later journals expose the stale refresh |
 | sparse-v6 | 1.6903125 GHz | 221.557 s | 256 | 0 | none | Clean negative dwell |
 | sparse-v7 | 1.9403125 GHz | 227.443 s | 256 | 2 | 124 / 1.640 s | **Both journals pass independent review** |
+| sparse-v8 | 1.9403125 GHz | 211.019 s | 256 | 0 | none | Clean negative dwell after authority fix |
+| sparse-v9 | 1.9403125 GHz | 219.559 s | 256 | 0 | none | Clean negative dwell after authority fix |
+
+The eight dwells total 1,672.040 seconds (27.867 minutes) of exported-IQ time,
+inside the 30-minute collection cap.
 
 All sparse terminals were clean acquisition loss rather than controller
 deadline. The strongest v2 episode scheduled and drained 428 results without
@@ -147,7 +152,7 @@ contains `SHA256SUMS`, and the SSD originals remain in place.
 
 The sparse runs were likewise written to NVMe first and copied to
 `/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/sparse10-30ms-20260915-v1`.
-All 82 SSD and RAID files match by SHA-256. The RAID copy is 516 MB and contains
+All 106 SSD and RAID files match by SHA-256. The RAID copy is 684 MB and contains
 its reproducible `SHA256SUMS`; SSD originals remain in place.
 
 The acceptance gate remains:
@@ -164,7 +169,7 @@ records zero qualifying ten-second episodes, so acceptance is **not passed**.
 
 The next stable step is to use the existing 2.5-MS/s scanner as the trigger for
 the corrected sparse binary instead of running more blind five-minute dwells.
-The four-frequency campaign produced only ten handoffs in 1,406 searches, and
+The four-frequency campaign produced only ten handoffs in 1,918 searches, and
 its longest interval remained below six seconds. A scanner-triggered visit can
 start the 30-MS/s controller near the beginning of an active interval and
 preserve the full remaining source span. The native diagnostic gates should
