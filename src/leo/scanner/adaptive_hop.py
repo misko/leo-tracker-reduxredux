@@ -305,9 +305,8 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             terminal.startup_invalid_start_counter or terminal.startup_invalid_end_counter_exclusive
         ):
             raise ValueError("adaptive empty receipt has an invented startup event")
-        if (
-            tuple(sorted(set(retained_indices))) != tuple(retained_indices)
-            or any(index < 0 or index >= len(self.events) for index in retained_indices)
+        if tuple(sorted(set(retained_indices))) != tuple(retained_indices) or any(
+            index < 0 or index >= len(self.events) for index in retained_indices
         ):
             raise ValueError("adaptive retained visit inventory is invalid")
         valid = len(retained_indices) * g.valid_visit_samples
@@ -324,8 +323,7 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
         )
         if (
             retained_indices
-            and self.events[retained_indices[-1]].valid_start_counter
-            + g.valid_visit_samples
+            and self.events[retained_indices[-1]].valid_start_counter + g.valid_visit_samples
             > terminal.last_block_end_counter
         ):
             raise ValueError("adaptive receipt claims valid IQ beyond delivered counters")
