@@ -3,7 +3,7 @@
 **Date:** 15 September 2026  
 **Radio:** `1040005e0b100007100010000bf33a5d4d` (`192.168.1.20`)  
 **Image:** `glrt-iq-tracking-r30000000-v1`  
-**Result:** the first complete 10-second, 751-measurement physical 30-MS/s FPGA tracking run passes
+**Result:** complete 10-second and 30-second physical 30-MS/s FPGA tracking runs pass; the 100-second gate remains open
 
 ## Result
 
@@ -630,3 +630,65 @@ bounded activity-triggered cycle with this same payload. It must first show a
 prior-local scan after a clean native loss and then independently retain all
 2,251 results in one uninterrupted 30-second episode. The 7,501-result
 100-second profile remains gated on that result.
+
+## Verified 30-second gate and direct 100-second follow-up
+
+Cycle v45 confirms that activity on the separate `003a` receiver is not a
+reliable trigger for radio `.20`: all twelve `.20` scouts remain between
+0.00358 and 0.00458 despite a contemporaneous `003a` detection. Firmware
+commit `4990f28b3` therefore adds an opt-in, same-radio wait profile. It keeps
+the one-attempt four-LO scout on `.20`, permits at most twelve scan rounds and
+three 30-second segments, and has a 900-second wall cutoff. Its four-LO
+worst-case source budget is 630.640 seconds. The selection and transition
+reviewer attests these limits rather than inferring them from process exit.
+
+Cycle v46 passes the exact 30-second gate on its first scan round. The
+1.4403125-GHz scout has peak isolated pilot power 0.08567; the other three LOs
+remain below 0.00403. The retained-activity transition hands off on its first
+refinement attempt and completes exactly **2,251 scheduled FPGA results** in
+one native episode with zero reacquisitions. The concurrent observer records
+2,251 measurements spanning 30.001183 seconds, accepts 2,247, and has median
+coherence 0.10256. The native terminal is clean and complete. Independent
+continuity review passes all five child visits and the 223,543,296-sample
+executed-plan accounting. SSD and RAID manifests both verify, post-run radio
+identity and TX-safe state match, and acquisition is restored active. This is
+the required uninterrupted 30-second 30-MS/s result and supersedes v42's
+16.44-second record.
+
+The first separately launched 100-second cycle, v47, sees no qualified
+activity on its two longer scouts and correctly starts no follow-up. Firmware
+commit `40bb12f1a` removes this launch gap with
+`sparse100-wait12-after-scout1`: quick same-radio scans select activity and
+enter the existing exact 7,501-result 100-second tracker in the same process.
+It permits one long follow-up and has a 1,200-second wall cutoff; with two LOs
+its worst-case source budget is 536.504 seconds.
+
+Cycle v48 verifies that combined transition but does not complete tracking.
+Its first round selects 1.9403125 GHz from a 0.02987 scout peak. The long
+refinement produces two native episodes of 61 and 183 results, or about 0.81
+and 2.44 seconds at 75 Hz, before acquisition loss. Across both episodes it
+retains 244 FPGA results; the passive observer accepts 225 of 233 measurements
+over 7.556 seconds. The worker then exhausts its bounded 256 attempts. This is
+real partial tracking evidence, not a 100-second result.
+
+The successful v46 trigger was 2.87 times stronger than the v48 trigger.
+Firmware commit `010e545e5` consequently makes a narrow, profile-specific
+change: only the 100-second wait profile requires scout peak power of at least
+0.05. Other discovery and tracking gates remain unchanged. Cycle v49 scans
+both LOs for all twelve rounds. Its maximum peak is 0.04669, so it correctly
+uses no long follow-up. All 24 boundary visits, the 603,979,776-sample executed
+budget, SSD and RAID manifests, and radio restoration pass independent review.
+
+The wait-to-100 implementation and reviewer pass 288 focused tests and the
+Cortex-A9 build with warnings treated as errors. A wider CPU run passes 739
+tests; one unrelated load-sensitive scan80 noise test times out at its
+30-second test deadline on two reruns. The deployed v31 payload is pinned as
+`41973ca0c22b3a1313ae984eaba14695021a0827fde38a4612973db3e0566a34`.
+
+The stable next action is another bounded v49-equivalent cycle during a
+stronger `.20` interval. No host-side trigger or relaunch is required. A scout
+at or above 0.05 will transition immediately to the existing 100-second
+tracker; success requires exactly 7,501 results in one completed native run.
+If another above-0.05 trigger produces only short native episodes, the retained
+IQ should be used to diagnose support loss before changing any acceptance
+gate or running another RF cycle.
