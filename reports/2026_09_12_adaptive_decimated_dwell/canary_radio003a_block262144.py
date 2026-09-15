@@ -22,10 +22,9 @@ def main():
     with urlopen("http://192.168.1.142:8090/api/v1/acquisition-queue", timeout=10) as stream:
         queue = json.load(stream)
     assert not queue["truncated"] and not any(x["state"] == "leased" for x in queue["items"])
-    assert (
-        subprocess.run(["systemctl", "is-active", "--quiet", "leo-acquisition.service"]).returncode
-        in (3, 4)
-    )
+    assert subprocess.run(
+        ["systemctl", "is-active", "--quiet", "leo-acquisition.service"]
+    ).returncode in (3, 4)
     values = {}
     for path in (Path("/etc/leo/leo.env"), Path("/etc/leo/acquisition.env")):
         for line in path.read_text().splitlines():
@@ -121,4 +120,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
