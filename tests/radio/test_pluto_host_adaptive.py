@@ -105,6 +105,8 @@ class Client:
     def visits(self, *, before_release=None):
         self.owned("visits")
         while self.next_index < self.source.complete_visit_count:
+            if self.direct_async_frames:
+                assert len(self.feedback) == self.next_index
             if self.pacing:
                 time.sleep(self.pacing)
             self.owned("read")

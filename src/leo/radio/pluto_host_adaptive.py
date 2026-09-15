@@ -416,6 +416,11 @@ class _HostAdaptiveSession:
                     self._refresh_start_clock_bracket()
                 self._flush(worker.poll())
                 self._accept(sampled, worker)
+                if self.plan.schema_version == 3:
+                    # A one-frame direct segment deliberately exposes no next
+                    # refill until this visit's causal feedback is acknowledged
+                    # and the transport is rearmed.
+                    self._flush(worker.drain())
             self._upstream.close(before_release=before_release)
             self._refresh_start_clock_bracket()
             for sampled in self._upstream.take_terminal_visits():
