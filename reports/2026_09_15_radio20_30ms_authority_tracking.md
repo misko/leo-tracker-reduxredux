@@ -141,6 +141,8 @@ Firmware branch `codex/radio20-tracking-qualification` contains:
   launches one 751-result sparse follow-up on the first proven signal.
 - `ac6984526`: also launches refinement from a retained scan64 activity peak,
   leaving scan80/local-2 and all native tracking gates unchanged.
+- `f80841de7`: adds the bounded production operator for one activity-triggered
+  cycle, SSD-first evidence, exact restoration and hash-verified RAID copy.
 
 The prior focused suite passes **527 tests**. The sparse change additionally
 passes 319 controller/journal/operator checks and all 171 live-probe checks; the
@@ -179,6 +181,15 @@ suites pass 231 plus 37 cases. The deployed ARM binary SHA-256 is
 `b400ccae1887a012b5c4b4b58d1791535e3009d3ee08b185798dc0f12ab6e7a6`.
 Its remote hash, runtime libraries, no-IIO argument preflight and TX-safe state
 verify on the bound radio. It has not started a new RF campaign.
+
+The next cycle is now a concrete reproducible command rather than a temporary
+harness. `qualify_glrt_cpu_radio_local20.py` admits only the reviewed image,
+binary, bank, references and upper-edge LOs; proves the 335.1773184-second
+worst-case source bound; validates the exact executed scout/follow-up archive;
+and rehashes the SSD-to-RAID copy. Its pure operator and controller coverage
+passes 239 focused tests. A suggested LO order is 1.4403125, 1.9403125,
+1.1903125, then 1.6903125 GHz because the first LO contained 29 of the 57
+campaign observations above the activity floor.
 
 ## Radio-local scout campaign
 
