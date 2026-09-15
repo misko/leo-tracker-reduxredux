@@ -39,9 +39,7 @@ def test_independent_filter_and_existing_detector_parity(library, edge):
         np.testing.assert_array_equal(actual.screen_scores, expected.rank.scores)
         c = expected.confirmations[0].candidates[0]
         assert (actual.epoch, actual.exact_score, actual.margin) == (
-            c.epoch,
-            c.exact_score,
-            c.margin,
+            c.epoch, c.exact_score, c.margin,
         )
         host.run(np.zeros_like(iq), edge="upper")
         repeated = host.run(iq, edge=edge)
@@ -51,21 +49,10 @@ def test_independent_filter_and_existing_detector_parity(library, edge):
     np.testing.assert_array_equal(iq, original)
 
 
-@pytest.mark.parametrize(
-    "window,epoch,expected",
-    [
-        (0, 0, 0),
-        (0, 39, 0),
-        (0, 41, 0),
-        (0, 42, 1),
-        (0, 3332, 1),
-        (1, 0, 1),
-        (5, 0, 1),
-        (6, 42, 0),
-        (0, -1, 0),
-        (0, 3333, 0),
-    ],
-)
+@pytest.mark.parametrize("window,epoch,expected", [
+    (0, 0, 0), (0, 39, 0), (0, 41, 0), (0, 42, 1), (0, 3332, 1),
+    (1, 0, 1), (5, 0, 1), (6, 42, 0), (0, -1, 0), (0, 3333, 0),
+])
 def test_fractional_candidate_support_boundary(library, window, epoch, expected):
     native = ct.CDLL(str(library))
     native.leo_host_decision_supported_v1.argtypes = [ct.c_uint32, ct.c_int32]
@@ -74,11 +61,9 @@ def test_fractional_candidate_support_boundary(library, window, epoch, expected)
 
 def test_rejects_wrong_rate_geometry_and_closed_workspace(library):
     with NativeHostDecision(library) as host:
-        for values in (
-            np.zeros((300000, 2), dtype=np.int16),
-            np.zeros((1200000, 4), dtype=np.int16),
-            np.zeros((1200000, 2), dtype=np.float32),
-        ):
+        for values in (np.zeros((300000, 2), dtype=np.int16),
+                       np.zeros((1200000, 4), dtype=np.int16),
+                       np.zeros((1200000, 2), dtype=np.float32)):
             with pytest.raises(ValueError, match="complete"):
                 host.run(values, edge="lower")
     with pytest.raises(ValueError, match="closed"):
@@ -87,7 +72,9 @@ def test_rejects_wrong_rate_geometry_and_closed_workspace(library):
 
 
 @pytest.mark.parametrize("source_rate_hz", [15_000_000, 20_000_000])
-def test_multirate_direct_decimator_matches_independent_q15_reference(library, source_rate_hz):
+def test_multirate_direct_decimator_matches_independent_q15_reference(
+    library, source_rate_hz
+):
     native = ct.CDLL(str(library))
     native.leo_decimator_create_factor.argtypes = [
         ct.c_void_p,
@@ -104,7 +91,9 @@ def test_multirate_direct_decimator_matches_independent_q15_reference(library, s
     ]
     native.leo_decimator_destroy.argtypes = [ct.c_void_p]
     factor = source_rate_hz // 2_500_000
-    iq = np.random.default_rng(source_rate_hz).integers(-30_000, 30_001, (2400, 2), dtype=np.int16)
+    iq = np.random.default_rng(source_rate_hz).integers(
+        -30_000, 30_001, (2400, 2), dtype=np.int16
+    )
     coefficients_q15 = multirate_coefficients(source_rate_hz)
     expected = multirate_reference(iq, source_rate_hz)
     actual = np.empty_like(expected)
@@ -113,7 +102,9 @@ def test_multirate_direct_decimator_matches_independent_q15_reference(library, s
     )
     assert workspace
     try:
-        assert native.leo_decimator_run(workspace, iq.ctypes.data, len(iq), actual.ctypes.data) == 0
+        assert native.leo_decimator_run(
+            workspace, iq.ctypes.data, len(iq), actual.ctypes.data
+        ) == 0
     finally:
         native.leo_decimator_destroy(workspace)
     np.testing.assert_array_equal(actual, expected)

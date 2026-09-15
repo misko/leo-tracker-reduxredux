@@ -37,7 +37,8 @@ class Observation(ct.Structure):
 
 
 class ConfigV2(ct.Structure):
-    _fields_ = [("geometry", Config), ("classification_rx", ct.c_uint32), ("reserved", ct.c_uint32)]
+    _fields_ = [("geometry", Config), ("classification_rx", ct.c_uint32),
+                ("reserved", ct.c_uint32)]
 
 
 class Choice(ct.Structure):
@@ -90,9 +91,8 @@ def policy(tmp_path_factory):
 
 
 class Scan:
-    def __init__(
-        self, lib, *, rate=2500000, targets=8, start=2**53 + 217, single_rx=None, **changes
-    ):
+    def __init__(self, lib, *, rate=2500000, targets=8, start=2**53 + 217,
+                 single_rx=None, **changes):
         self.lib = lib
         self.config = Config(
             71, 9, start, rate, targets, 2500, 3, 3, 3, 1, 2000, 3000, 160, 1000, 3
@@ -122,16 +122,7 @@ class Scan:
         self.now += self.config.rate_hz * 120 // 1000
         assert self.lib.leo_adaptive_commit(self.ptr, start, self.now) == 0
         return Observation(
-            71,
-            9,
-            c.visit,
-            start,
-            self.now,
-            self.config.rate_hz,
-            self.rx,
-            c.target,
-            0,
-            1,
+            71, 9, c.visit, start, self.now, self.config.rate_hz, self.rx, c.target, 0, 1,
         )
 
     def observe(self, o):
@@ -495,21 +486,12 @@ def test_wide_host_decimated_rx0_policy(policy, rate):
         s.close()
 
 
-@pytest.mark.parametrize(
-    "rx,reserved,rate",
-    [
-        (2, 0, 10000000),
-        (0, 1, 10000000),
-        (0, 0, 2500000),
-        (1, 0, 5000000),
-        (1, 0, 15000000),
-        (1, 0, 20000000),
-    ],
-)
+@pytest.mark.parametrize("rx,reserved,rate", [(2, 0, 10000000), (0, 1, 10000000),
+                                            (0, 0, 2500000), (1, 0, 5000000),
+                                            (1, 0, 15000000), (1, 0, 20000000)])
 def test_single_rx_api_rejects_unsupported_admission(policy, rx, reserved, rate):
-    config = ConfigV2(
-        Config(71, 9, 0, rate, 8, 2500, 3, 3, 3, 1, 2000, 3000, 160, 1000, 3), rx, reserved
-    )
+    config = ConfigV2(Config(71, 9, 0, rate, 8, 2500, 3, 3, 3, 1,
+                            2000, 3000, 160, 1000, 3), rx, reserved)
     ptr = ct.c_void_p(123)
     assert policy.leo_adaptive_create_v2(ct.byref(ptr), ct.byref(config)) == -errno.EINVAL
     assert ptr.value == 123
