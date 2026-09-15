@@ -800,3 +800,15 @@ acquisition is active. Together v57 and v58 cover both companion-band choices
 around 1.4403125 GHz with 160 scouts and no above-0.05 event. The remaining
 100-second qualification now depends on observing a persistent RF interval;
 no evidence supports lowering the detection, tracking or completion gates.
+
+Cycle v59 starts ten minutes later on 1.4403125 and 1.9403125 GHz and physically
+verifies the new rejection branch. Two isolated 1.4403125-GHz candidates score
+0.05417 and 0.05316. Their immediately following same-LO scouts score only
+0.00431 and 0.00402, respectively. The controller therefore withholds both
+long attempts and completes all forty rounds and eighty scouts. This is the
+intended behavior for the short bursts that consumed v55/v56's attempts.
+Independent transition review passes the 2,013,265,920-sample executed plan,
+both manifests verify, radio restoration passes and acquisition is active.
+The negative and rejection branches of the persistent gate are now physically
+qualified. Its positive transition, and the exact 7,501-result completion
+gate behind it, still require a genuinely persistent interval.
