@@ -62,6 +62,8 @@ def load_rows(base: Path, truth: tuple[float, float]) -> list[dict]:
                 "episode_count": coarse["episode_count"],
                 "polish_episode_count": polish["episode_count"],
                 "orbit_group_count": polish["orbit_group_count"],
+                "source_segment_count": polish["source_segment_count"],
+                "point_count": polish["point_count"],
                 "coarse_latitude_deg": coarse["latitude_deg"],
                 "coarse_longitude_deg": coarse["longitude_deg"],
                 "coarse_error_km": haversine_km(
@@ -234,12 +236,169 @@ def plot_validation(rows: list[dict], output: Path) -> None:
     plt.close(fig)
 
 
+def nominal_model(document: dict) -> dict:
+    return next(model for model in document["models"] if not model["fit_orbit_time"])
+
+
+def comparison_metrics(
+    previous_evaluation: Path,
+    previous_fixed_path: Path,
+    previous_height_path: Path,
+    current_fixed_path: Path,
+    current_height_path: Path,
+    current_truth: tuple[float, float],
+) -> dict:
+    evaluation = json.loads(previous_evaluation.read_text())
+    previous_truth = (
+        evaluation["truth"]["latitude_deg"],
+        evaluation["truth"]["longitude_deg"],
+    )
+    documents = {
+        "previous_fixed": json.loads(previous_fixed_path.read_text()),
+        "previous_height": json.loads(previous_height_path.read_text()),
+        "current_fixed": json.loads(current_fixed_path.read_text()),
+        "current_height": json.loads(current_height_path.read_text()),
+    }
+    models = {key: nominal_model(value) for key, value in documents.items()}
+
+    def position(model: dict) -> tuple[float, float]:
+        return model["latitude_deg"], model["longitude_deg"]
+
+    return {
+        "scientific_status": "retrospective comparison; different RF cohorts and truth references",
+        "previous": {
+            "sample_rates_msps": [2.5, 5.0],
+            "receiver_paths": "RX0 and RX1 consolidated",
+            "scan_count": 24,
+            "episode_count_before_polish": 502,
+            "polish_episode_count": documents["previous_fixed"]["episode_count"],
+            "source_segment_count": documents["previous_fixed"]["source_segment_count"],
+            "point_count": documents["previous_fixed"]["point_count"],
+            "orbit_group_count": documents["previous_fixed"]["orbit_group_count"],
+            "fixed_height_error_km": haversine_km(
+                position(models["previous_fixed"]), previous_truth
+            ),
+            "unknown_height_error_km": haversine_km(
+                position(models["previous_height"]), previous_truth
+            ),
+            "fixed_height_heldout_rms_hz": models["previous_fixed"]["heldout_rms_hz"],
+            "unknown_height_heldout_rms_hz": models["previous_height"]["heldout_rms_hz"],
+            "unknown_height_km": models["previous_height"]["position_km"][2],
+            "unknown_height_converged": models["previous_height"]["converged"],
+            "error_against_current_reference_km": haversine_km(
+                position(models["previous_height"]), current_truth
+            ),
+        },
+        "current": {
+            "sample_rates_msps": [10.0],
+            "receiver_paths": "RX0 only",
+            "scan_count": 47,
+            "episode_count_before_polish": 302,
+            "polish_episode_count": documents["current_fixed"]["episode_count"],
+            "source_segment_count": documents["current_fixed"]["source_segment_count"],
+            "point_count": documents["current_fixed"]["point_count"],
+            "orbit_group_count": documents["current_fixed"]["orbit_group_count"],
+            "fixed_height_error_km": haversine_km(position(models["current_fixed"]), current_truth),
+            "unknown_height_error_km": haversine_km(
+                position(models["current_height"]), current_truth
+            ),
+            "fixed_height_heldout_rms_hz": models["current_fixed"]["heldout_rms_hz"],
+            "unknown_height_heldout_rms_hz": models["current_height"]["heldout_rms_hz"],
+            "unknown_height_km": models["current_height"]["position_km"][2],
+            "unknown_height_converged": models["current_height"]["converged"],
+        },
+        "truth_reference_separation_km": haversine_km(previous_truth, current_truth),
+        "input_digests": {
+            str(path): digest(path)
+            for path in (
+                previous_evaluation,
+                previous_fixed_path,
+                previous_height_path,
+                current_fixed_path,
+                current_height_path,
+            )
+        },
+    }
+
+
+def plot_comparison(comparison: dict, output: Path) -> None:
+    previous, current = comparison["previous"], comparison["current"]
+    labels = ["Earlier mixed\n2.5/5 MS/s", "Current RX0\n10 MS/s"]
+    colours = ["#3182bd", "#e6550d"]
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5.2), constrained_layout=True)
+    x = np.arange(2)
+    fixed = [previous["fixed_height_error_km"], current["fixed_height_error_km"]]
+    unknown = [previous["unknown_height_error_km"], current["unknown_height_error_km"]]
+    axes[0].bar(x - 0.18, fixed, width=0.36, color=colours, alpha=0.95, label="fixed height")
+    axes[0].bar(
+        x + 0.18,
+        unknown,
+        width=0.36,
+        color=colours,
+        alpha=0.45,
+        hatch=[None, "///"],
+        label="unknown height",
+    )
+    axes[0].set(
+        xticks=x,
+        xticklabels=labels,
+        ylabel="Horizontal error (km)",
+        title="Own-reference truth error",
+    )
+    axes[0].legend(fontsize=9)
+    axes[0].text(1.18, unknown[1] + 0.15, "bound; not converged", ha="center", fontsize=8)
+    heldout = [previous["fixed_height_heldout_rms_hz"], current["fixed_height_heldout_rms_hz"]]
+    bars = axes[1].bar(x, heldout, color=colours)
+    axes[1].bar_label(bars, fmt="%.0f Hz", padding=3)
+    axes[1].set(
+        xticks=x,
+        xticklabels=labels,
+        ylabel="Held-out CFO RMS (Hz)",
+        title="Fixed-height prediction",
+    )
+    categories = (
+        "scan_count",
+        "episode_count_before_polish",
+        "source_segment_count",
+        "point_count",
+        "orbit_group_count",
+    )
+    names = ("scans", "episodes", "segments", "observations", "orbit groups")
+    old_values = [previous[key] for key in categories]
+    new_values = [current[key] for key in categories]
+    xx = np.arange(len(categories))
+    axes[2].bar(
+        xx - 0.19, old_values, width=0.38, color=colours[0], label=labels[0].replace("\n", " ")
+    )
+    axes[2].bar(
+        xx + 0.19, new_values, width=0.38, color=colours[1], label=labels[1].replace("\n", " ")
+    )
+    axes[2].set(
+        xticks=xx,
+        xticklabels=names,
+        yscale="log",
+        ylabel="Count (log scale)",
+        title="Evidence entering the solve",
+    )
+    axes[2].tick_params(axis="x", rotation=25)
+    axes[2].legend(fontsize=8)
+    for ax in axes:
+        ax.grid(axis="y", alpha=0.25)
+    fig.suptitle("The 1.8 km and 6.8 km results use different evidence populations")
+    fig.savefig(output, dpi=180)
+    plt.close(fig)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--experiment", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--truth-lat", type=float, required=True)
     parser.add_argument("--truth-lon", type=float, required=True)
+    parser.add_argument("--previous-evaluation", type=Path, required=True)
+    parser.add_argument("--previous-fixed", type=Path, required=True)
+    parser.add_argument("--previous-height", type=Path, required=True)
+    parser.add_argument("--current-height", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("output must be fresh")
@@ -248,7 +407,7 @@ def main() -> None:
     rows = load_rows(args.experiment, truth)
     with (args.output / "horizon-results.csv").open("w", newline="") as stream:
         flat = [{k: v for k, v in row.items() if k != "source_digests"} for row in rows]
-        writer = csv.DictWriter(stream, fieldnames=list(flat[0]))
+        writer = csv.DictWriter(stream, fieldnames=list(flat[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(flat)
     (args.output / "results.json").write_text(
@@ -270,6 +429,16 @@ def main() -> None:
     plot_convergence(rows, args.output / "02-error-and-ambiguity.png")
     plot_maps(args.experiment, rows, truth, args.output / "03-global-score-maps.png")
     plot_validation(rows, args.output / "04-heldout-and-evidence.png")
+    comparison = comparison_metrics(
+        args.previous_evaluation,
+        args.previous_fixed,
+        args.previous_height,
+        args.experiment / "8h-polish.json",
+        args.current_height,
+        truth,
+    )
+    (args.output / "comparison.json").write_text(json.dumps(comparison, indent=2) + "\n")
+    plot_comparison(comparison, args.output / "05-study-comparison.png")
     print(f"Rendered {len(rows)} horizons to {args.output}")
 
 

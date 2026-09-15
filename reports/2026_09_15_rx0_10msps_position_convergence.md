@@ -142,22 +142,87 @@ The location-blind export and truth-revealed renderer are
 [`prepare_rx0_positioning_evidence.py`](../tools/prepare_rx0_positioning_evidence.py)
 and [`report_rx0_position_convergence.py`](../tools/report_rx0_position_convergence.py).
 
-## Relationship to the earlier 2.5/5 MS/s study
+## Comparison with the earlier result within 2 km
 
 The earlier [continental positioning study](2026_09_07_blind_regional_doppler_positioning.md)
-reported 1.805 km horizontal error after 24 mixed 2.5/5 MS/s scans. Its separate
-location-assisted pooled benchmark reached 669 m, but used the known site to
-select satellite identities and is not an autonomous-location comparison.
+reported **1.805 km** horizontal error after 24 mixed 2.5/5 MS/s scans. That
+headline used an unknown-height continuous fit. Its fixed-height nominal result,
+which matches the present model, was **2.179 km**. The present 10 MS/s fixed-height
+result is **6.789 km**, 3.1 times the earlier error.
 
-The present 10 MS/s blind result is worse at 6.79 km after the full window. That
-does **not** show that 10 MS/s harms positioning. The experiments are unpaired:
-they observe different passes on different dates, use different TLE snapshots,
-and use different RF episode construction. The earlier blind study accumulated
-502 consolidated channel episodes; this stricter adapter retains 302 longest
-channel/edge representatives to prevent known-site association leakage. Sample
-rate improves the resolution of each retained waveform measurement, but
-position accuracy here is dominated by orbit, UTC, association and model
-systematics rather than sample quantization.
+| Quantity | Earlier mixed 2.5/5 MS/s | Current RX0 10 MS/s | Current / earlier |
+|---|---:|---:|---:|
+| Completed scans | 24 | 47 | 1.96× |
+| RF episodes before continuous gate | 502 | 302 | 0.60× |
+| Episodes entering continuous fit | 493 | 286 | 0.58× |
+| Source segments | 1,069 | 286 | 0.27× |
+| Full observations in continuous fit | 22,694 | 10,561 | 0.47× |
+| NORAD/TLE-snapshot orbit groups | 279 | 159 | 0.57× |
+| Fixed-height horizontal error | **2.179 km** | **6.789 km** | 3.12× |
+| Fixed-height training RMS | 124.9 Hz | 148.0 Hz | 1.19× |
+| Fixed-height held-out RMS | **283.4 Hz** | **587.4 Hz** | 2.07× |
+| Unknown-height error | **1.805 km**, converged | 6.177 km, **not converged** | not comparable |
+
+![Study comparison](figures/2026_09_15_rx0_10msps_position_convergence/05-study-comparison.png)
+
+*Figure 5 — Accuracy, held-out prediction and evidence volume for the two blind
+studies. The hatched current unknown-height result reached the −500 m bound after
+two iterations and did not converge; it is a sensitivity result, not a replacement
+headline.*
+
+### Why the earlier tracking study did better
+
+The current scanner produced more recordings, but the positioning solver received
+less geometric evidence. The earlier study combined RX0 and RX1, joined compatible
+upper/lower tracks into physical channel episodes, and carried 1,069 source
+segments into the continuous fit. The current study is RX0-only and deliberately
+keeps one longest RF-only representative per channel/edge so the known-site TLE
+screen cannot leak into a cold-start experiment. It therefore supplies only 286
+segments. More scan files did not compensate for losing nearly three quarters of
+the independently offset trajectory segments.
+
+The earlier evidence is also more consistent with its frozen satellite hypotheses.
+Its 283 Hz held-out RMS is less than half the current 587 Hz. That difference is
+consistent with cleaner satellite assignments, more favourable pass geometry,
+better TLE/UTC agreement, or cleaner CFO tracks. It is not explained by grid
+resolution: the current 125 km whole-prior grid finds the correct basin, whereas
+the earlier 125 km branch failed and required an independent 50 km, 10,000-cell
+global search. The current experiment is stronger at coarse global disambiguation
+and weaker at local physical fit.
+
+The positioning estimator consumes CFO-versus-time trajectories. It does not use
+raw-sample carrier phase, PSS time of arrival, pseudorange, or the 100 ns sample
+interval as a ranging observable. Its regional stage also retains at most six CFO
+points per training and held-out partition. Consequently 10 MS/s helps only when
+it produces more accurate or longer CFO trajectories; four times the waveform
+sample rate does not automatically provide four times the positioning information.
+
+### Other differences that prevent a sample-rate conclusion
+
+The cohorts observe different satellite passes on different dates, use different
+causal TLE snapshots, and use different receiver and episode construction. The
+earlier evaluation coordinate was 37.849043° N, 122.485674° W, while the present
+report uses the configured 37.858988° N, 122.478103° W site. Those references are
+1.290 km apart. Re-evaluating the earlier unknown-height estimate against the
+current reference places it 1.220 km away, so the reference change does not explain
+away its advantage, but the two published headline errors are not measured against
+an identical truth point.
+
+The current unknown-height fit improves the apparent error from 6.789 to 6.177 km,
+but it runs directly into the −500 m height bound and reports non-convergence. The
+earlier unknown-height solution converged at −265 m and improved its fixed-height
+error by 374 m. Neither inferred height has surveyed-altitude accuracy authority;
+height can absorb orbit and model bias.
+
+The defensible conclusion is that the **earlier RF evidence population supports a
+substantially better local Doppler fit**. This comparison does not establish that
+2.5/5 MS/s is intrinsically better than 10 MS/s. A controlled sample-rate test
+would need simultaneous or replay-equivalent RF, the same receiver paths, the same
+track-selection policy, the same TLE snapshots, and one frozen evaluation
+coordinate.
+
+The exact comparison values and source digests are retained in
+[`comparison.json`](figures/2026_09_15_rx0_10msps_position_convergence/comparison.json).
 
 ## What can be claimed
 

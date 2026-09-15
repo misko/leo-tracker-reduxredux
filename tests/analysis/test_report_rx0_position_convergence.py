@@ -17,3 +17,13 @@ def test_haversine_is_zero_and_handles_known_degree_scale():
 
 def test_requested_horizons_are_monotonic_and_complete():
     assert module.HORIZONS == (("30m", 0.5), ("1h", 1.0), ("2h", 2.0), ("4h", 4.0), ("8h", 8.0))
+
+
+def test_nominal_model_excludes_orbit_time_variant():
+    document = {
+        "models": [
+            {"fit_orbit_time": True, "name": "bounded"},
+            {"fit_orbit_time": False, "name": "nominal"},
+        ]
+    }
+    assert module.nominal_model(document)["name"] == "nominal"
