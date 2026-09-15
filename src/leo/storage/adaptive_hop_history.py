@@ -15,7 +15,11 @@ from leo.scanner.adaptive_hop_history import (
     AdaptiveHopVisitViewV1,
 )
 from leo.scanner.glrt_publication import validate_glrt_adaptive_binding
-from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3
+from leo.scanner.host_adaptive import (
+    HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV3,
+    HostDecisionRecordV2,
+)
 from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
     AdaptiveHistoryPageV3,
@@ -24,6 +28,7 @@ from leo.scanner.host_adaptive_history import (
     HostAdaptiveSessionDetailV2,
     HostAdaptiveSessionDetailV3,
     HostDecisionViewV1,
+    HostDecisionViewV2,
     HostFeedbackSummaryV1,
 )
 from leo.storage.adaptive_hop import AdaptiveHopIqStore, PublishedAdaptiveHopIqSession
@@ -254,7 +259,12 @@ class AdaptiveHopPresentationStore:
             )
             fields = dict(
                 host_decisions=tuple(
-                    HostDecisionViewV1(
+                    (
+                        HostDecisionViewV2
+                        if isinstance(d, HostDecisionRecordV2)
+                        else HostDecisionViewV1
+                    )(
+                        schema_version=2 if isinstance(d, HostDecisionRecordV2) else 1,
                         visit_index=d.visit_index,
                         numerics=d.numerics,
                         health=d.health,

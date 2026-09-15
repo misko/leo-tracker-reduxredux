@@ -16,6 +16,7 @@ from leo.scanner.host_adaptive import (
     HostDecisionConfigurationV1,
     HostDecisionConfigurationV2,
     HostDecisionNumericsV1,
+    HostDecisionNumericsV2,
 )
 
 
@@ -84,6 +85,11 @@ class HostDecisionViewV1(AdaptiveModel):
     feedback_call_ms: Seconds | None
 
 
+class HostDecisionViewV2(HostDecisionViewV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    numerics: HostDecisionNumericsV2 | None  # type: ignore[assignment]
+
+
 class HostAdaptiveSessionDetailV2(AdaptiveHopSessionDetailV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     capture: HostAdaptiveHistoryItemV2
@@ -121,6 +127,7 @@ class HostAdaptiveHistoryItemV3(HostAdaptiveHistoryItemV2):
 class HostAdaptiveSessionDetailV3(HostAdaptiveSessionDetailV2):
     schema_version: Literal[3] = 3  # type: ignore[assignment]
     capture: HostAdaptiveHistoryItemV3
+    host_decisions: Annotated[tuple[HostDecisionViewV2, ...], Field(max_length=2500)]
 
 
 class AdaptiveHistoryPageV2(AdaptiveHopHistoryPageV1):

@@ -17,7 +17,7 @@ from leo.radio.host_decision_worker import HostDecisionWorkResult
 from leo.scanner.ports import ScanRadioIdentity
 from tests.radio.adaptive_hop_fixtures import upstream_receipt
 from tests.scanner.adaptive_hop_fixtures import receipt_fixture
-from tests.scanner.host_adaptive_fixtures import host_receipt
+from tests.scanner.host_adaptive_fixtures import host_receipt, multirate_host_receipt
 
 
 @pytest.mark.parametrize("receiver", [0, 1])
@@ -127,3 +127,40 @@ def test_worker_mapping_preserves_unknown_failure_and_feedback_acceptance(state)
     if state == "expired":
         assert mapped.numerics == record.numerics
     assert mapped.feedback_call_elapsed_ns == 1_000_000
+
+
+@pytest.mark.parametrize("rate,supported_start", [(15_000_000, 34), (20_000_000, 32)])
+def test_worker_mapping_versions_wide_filter_numerics(rate, supported_start):
+    record = multirate_host_receipt(rate=rate, count=2).host_decisions[0]
+    source = HostFeedbackV1(
+        session_id=record.session_id,
+        generation=record.generation,
+        stream_id=record.stream_generation,
+        visit=record.visit_index,
+        event_sequence=record.event_sequence,
+        receiver_id=0,
+        target_index=record.target_index,
+        valid_start=record.valid_start_counter,
+        valid_end=record.valid_end_counter_exclusive,
+        configuration_sha256=bytes.fromhex(record.configuration_sha256[7:]),
+        outcome=HostDecisionOutcome.NOT_DETECTED,
+        healthy=1,
+        screen_mask=63,
+        confirmation_mask=2,
+    )
+    assert record.numerics is not None
+    evidence = HostDecisionEvidence(
+        **record.numerics.model_dump(exclude={"schema_version", "source_rate_hz"})
+    )
+    mapped = map_host_work_result(
+        HostDecisionWorkResult(source, evidence, None, 100, 200, 10_000_000),
+        feedback_ns=20_000_000,
+        feedback_completed_ns=21_000_000,
+        accepted=True,
+        source_rate_hz=rate,
+    )
+    assert mapped.schema_version == 2
+    assert mapped.numerics is not None
+    assert mapped.numerics.schema_version == 2
+    assert mapped.numerics.source_rate_hz == rate
+    assert mapped.numerics.supported_start == supported_start
