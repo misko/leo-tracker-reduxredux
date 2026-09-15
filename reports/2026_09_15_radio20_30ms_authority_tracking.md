@@ -470,3 +470,38 @@ track identity across explicitly marked unsupported gaps, reacquire with the
 existing gates, and report supported duty separately from scheduled coverage.
 The exact 30-second single-episode gate remains unmet, so no 100-second RF run
 has been launched.
+
+Firmware commit `8d3e3e627` implements the first bounded continuity controller
+without changing any published single-follow-up profile. The new
+`continuity30-after-scout16` plan permits three scan/segment rounds. Each round
+uses the existing four-LO FPGA/ARM scout followed by a 7,500-refill segment
+that retains the exact 2,251-result gate but returns to the parent on its first
+verified clean loss. Three worst-case four-LO rounds account for 670,629,888
+source samples, or 268.252 seconds at the retained 2.5-MS/s coarse-IQ rate,
+below the previous plan's 335.177-second ceiling. Direct state-machine tests
+cover completion after rescan, three clean losses and three empty sweeps with
+contiguous evidence numbering. The wider controller, observer, solver,
+transport and journal suite passes 1,882 tests. The Cortex-A9 v21 payload is
+hash-pinned as
+`80723a8562148641ceea41895281144dfc2a0dc7f3450b906f80553829c56dc7`.
+
+Physical cycle v36 validates the new transition path. It completes three scan
+rounds and three clean-loss segments in seven child visits. The first two
+rounds select 1.1903125 GHz; the third rescans through that LO and selects
+1.9403125 GHz. The segments retain 14, 45 and 306 FPGA results over 0.173,
+0.587 and 4.067 seconds. Their native supported counts are 0, 0 and 140; the
+passive observers accept 5/8, 34/40 and 204/249 measurements. Independent
+epoch and ownership review passes all three journals. Commit `461a70867` adds
+an independent decoder for the parent transition journal; it verifies all
+three scan/segment transitions, seven contiguous evidence visits and the
+469,303,296-sample executed-plan ceiling. Both SSD and RAID manifests verify,
+all retained boundary and native final snapshots have zero FPGA, CDC and
+pacing faults, radio identity and TX-safe state match before and after, and the
+acquisition service is active.
+
+V36 proves autonomous frequency rescan and reacquisition, including a change
+of selected LO, but its RF interval is weaker than v32 and does not extend the
+14.667-second record. Short segments are intentionally not accumulated toward
+the qualification gate. The next informative physical action is one bounded
+continuity run during a stronger signal interval; a segment must independently
+reach 2,251 results before the 7,501-result 100-second run is admitted.
