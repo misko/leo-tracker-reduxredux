@@ -15,7 +15,7 @@ GLOBALS = runpy.run_path(str(VALIDATOR))
 
 
 def test_ppu_pin_is_one_exact_dependency_authority() -> None:
-    expected = "c34b44cf0b1a99d77869f5983d97e6545b7a9a7f"
+    expected = "187cf817d196ada46ff67132c80ee1265ce9455b"
     with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
     provenance = json.loads((PROJECT_ROOT / "docs/dependencies/pluto-plus-utils.json").read_text())

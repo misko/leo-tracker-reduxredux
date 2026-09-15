@@ -384,11 +384,15 @@ class _HostAdaptiveSession:
             direct_options: dict[str, int] = (
                 {
                     "direct_async_frames": (
-                        self.plan.geometry.valid_visit_samples
-                        + self.plan.geometry.samples_per_block
-                        - 1
+                        1
+                        + (
+                            self.plan.geometry.valid_visit_samples
+                            + self.plan.geometry.transition_guard_samples
+                            + self.plan.geometry.samples_per_block
+                            - 1
+                        )
+                        // self.plan.geometry.samples_per_block
                     )
-                    // self.plan.geometry.samples_per_block
                 }
                 if self.plan.schema_version == 3
                 else {}
