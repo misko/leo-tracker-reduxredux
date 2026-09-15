@@ -825,3 +825,15 @@ review, both manifests, radio restoration and acquisition-service restoration
 pass. The exact 100-second result remains dependent on an external persistent
 RF interval; all implemented detection, confirmation, tracking and review
 paths are ready, and the scientific gates remain unchanged.
+
+Cycle v61 repeats the pinned four-LO qualification on serial
+`1040005e0b100007100010000bf33a5d4d`. It completes all twenty rounds and
+eighty scouts at 30 MS/s. Two isolated candidates at 1.4403125 GHz score
+0.06572 and 0.06512, at visits 37 and 45 respectively. The intervening
+same-LO visit is below the unchanged 0.05 gate, so neither candidate satisfies
+the consecutive-round persistence rule and no long child starts. The executed
+2,013,265,920-sample plan passes continuity review, SSD and RAID evidence
+archives and manifests match, the radio is restored TX-safe, and acquisition
+is active. This independently repeats the intended rejection behavior across
+the four-LO scan; the exact 7,501-result positive qualification still requires
+one persistent RF interval.
