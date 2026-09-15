@@ -679,13 +679,39 @@ both LOs for all twelve rounds. Its maximum peak is 0.04669, so it correctly
 uses no long follow-up. All 24 boundary visits, the 603,979,776-sample executed
 budget, SSD and RAID manifests, and radio restoration pass independent review.
 
+Cycle v50 repeats the strong-gated twelve-round plan and sees a maximum peak
+of only 0.00491. It also starts no follow-up and passes both manifests. This
+second complete negative window motivates longer monitoring rather than a
+lower gate. Firmware commit `8075b4a22` adds a distinct
+`sparse100-wait40-after-scout1` profile while preserving the published
+twelve-round behavior. The two-LO plan permits forty rounds and one long
+follow-up, has a 1,800-second wall cutoff, and conservatively accounts for at
+most 1,100.218 seconds of source time. The profile and reviewer pass 302
+focused tests; its Cortex-A9 payload is
+`d2c9dfb794583610eba7953c1ceb54d0f07ed72da9cc9dbec62eeae35d0b56f5`.
+
+Cycle v51 exercises all forty rounds and eighty contiguous child visits. Its
+strongest peak is 0.02766, below the 0.05 long-follow-up gate, so it correctly
+retains the sole 100-second attempt. Independent review passes the
+2,013,265,920-sample executed-plan accounting, both manifests verify, the
+post-run radio remains TX-safe, and acquisition is active. This extended
+negative window establishes that immediate retries cannot substitute for a
+stronger RF interval.
+
+The repository's TLE field is not an admissible trigger for this radio run.
+Its documented output is geometric visibility rather than received payload
+activity, and this evidence set has no reviewed antenna-boresight binding.
+Scheduling from it would therefore be indirect in the same way that the
+separate `003a` receiver was indirect in v45. The `.20` scout remains the
+authoritative trigger.
+
 The wait-to-100 implementation and reviewer pass 288 focused tests and the
 Cortex-A9 build with warnings treated as errors. A wider CPU run passes 739
 tests; one unrelated load-sensitive scan80 noise test times out at its
 30-second test deadline on two reruns. The deployed v31 payload is pinned as
 `41973ca0c22b3a1313ae984eaba14695021a0827fde38a4612973db3e0566a34`.
 
-The stable next action is another bounded v49-equivalent cycle during a
+The stable next action is another bounded v51-equivalent cycle during a
 stronger `.20` interval. No host-side trigger or relaunch is required. A scout
 at or above 0.05 will transition immediately to the existing 100-second
 tracker; success requires exactly 7,501 results in one completed native run.
