@@ -790,3 +790,13 @@ retained v55/v56 journals shows that none of their four above-0.05 triggers had
 a same-LO above-0.05 candidate in the preceding round, so all four short-lived
 long attempts would have been withheld. Positive physical confirmation still
 requires a future interval with qualifying activity in consecutive rounds.
+
+Cycle v58 applies the same persistent profile to 1.1903125 and 1.4403125 GHz.
+It also completes forty rounds and eighty contiguous scouts without a
+qualifying candidate; the strongest score is 0.03694. No long child starts.
+Independent transition review again passes the 2,013,265,920-sample executed
+plan, both storage manifests verify, the exact radio is restored TX-safe and
+acquisition is active. Together v57 and v58 cover both companion-band choices
+around 1.4403125 GHz with 160 scouts and no above-0.05 event. The remaining
+100-second qualification now depends on observing a persistent RF interval;
+no evidence supports lowering the detection, tracking or completion gates.
