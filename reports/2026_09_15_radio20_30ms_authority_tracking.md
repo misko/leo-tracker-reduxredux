@@ -3,7 +3,7 @@
 **Date:** 15 September 2026  
 **Radio:** `1040005e0b100007100010000bf33a5d4d` (`192.168.1.20`)  
 **Image:** `glrt-iq-tracking-r30000000-v1`  
-**Result:** implementation and bounded operation pass; ten-second physical tracking does not yet pass
+**Result:** sustainable 30-MS/s scheduling and bounded operation pass; ten-second physical tracking does not yet pass
 
 ## Result
 
@@ -23,6 +23,28 @@ previous 74-result/98.7-ms physical maximum, but it remains well short of the
 fix contain no qualifying handoff, so they cannot validate that fix against a
 physical signal.
 
+The dense 750-result/s experiments also established that ARM/sysfs retention
+drains about 96.5 results/s. A dense controller therefore falls behind the
+750-Hz source clock even when its wall deadline is extended. Firmware commit
+`fc77d57dc` adds an opt-in cadence that measures one pilot every ten 750-Hz
+frames. Each pilot still enters the FPGA at **30 MS/s** and contains 39,600
+native samples; the scheduled measurement rate is **75/s**. The 751st result is
+exactly 10.000 seconds after the first result in source time. The existing dense
+profiles and their persisted GLT1 bodies are unchanged.
+
+Six physical sparse-cadence dwells covered all four reviewed upper LOs. They
+produced ten handoffs and 1,040 scheduled measurements. The longest operational
+episode contained 428 measurements spanning **5.693 seconds**. Independent
+review exposed that the first five dwells sometimes retained a newer coarse
+authority when it was 33 frames behind the next descriptor frontier, outside
+the predictor's 32-frame bound. No descriptor used that stale record, but those
+journals correctly fail evidence review. Commit `627654e9c` now refuses such a
+refresh until the next observer update. The corrected CH4 validation produced
+two independently reviewable clean-loss episodes spanning **1.640 s** and
+**0.987 s**. No physical episode reached 751 measurements.
+
+![Sparse-cadence episode lengths and four-frequency visits](2026_09_15_radio20_30ms_authority_tracking/sparse_tracking_outcomes.png)
+
 ![Scheduled episode lengths and handoff times](2026_09_15_radio20_30ms_authority_tracking/tracking_outcomes.png)
 
 ## Rates and limits
@@ -31,6 +53,7 @@ physical signal.
 | --- | ---: | --- |
 | FPGA receive and scheduled-pilot input | 30 MS/s | 39,600 native samples per 1.32-ms pilot |
 | FPGA scheduled measurements | 750 results/s of signal time | 7,500 results define the ten-second target |
+| Sustainable FPGA measurement profile | 30 MS/s input; one pilot every 10 frames (75 measurements/s) | 751 measurements span exactly 10 seconds and stay below measured ARM drain capacity |
 | Exported IQ and ARM acquisition | 2.5 MS/s | Continuous GLI1 stream in original 30-MS/s coordinates |
 | ARM coarse authority observer | 2.5 MS/s, one pilot every 9 frames (83.33 measurements/s) | Up to 1,024 measurements and 12 seconds of source span |
 | ARM native-result retention | Measured about 96.5 results/s in run-v4 | Drains FPGA heads through sysfs; it is slower than signal time |
@@ -38,9 +61,35 @@ physical signal.
 | Whole worker | 300 s | Fixed total bound; operator alarm is 325 s |
 
 The measured run-v4 drain rate projects 7,500 results in about 77.7 wall
-seconds. The new 120-second controller deadline therefore has useful margin
-inside the unchanged 300-second worker bound. This remains a projection until a
-physical ten-second episode completes.
+seconds, but the source advances ten seconds while ARM drains only about 965
+results. Later dense jobs therefore become late before they can be submitted;
+the 120-second wall deadline cannot repair that causal backlog.
+
+The sparse profile has about 21.5 results/s of measured drain margin. A
+15-frame/50-Hz prototype was rejected before deployment because it leaves only
+seven observations in the estimator's 96-frame causal window; the estimator
+requires at least eight. Ten frames is the slowest cadence that retains useful
+model margin while remaining below the ARM port capacity.
+
+## Sparse-cadence physical runs
+
+| Run | LO | Exported-IQ time | Searches | Handoffs | Longest source span | Evidence review |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| sparse-v2 | 1.9403125 GHz | 122.887 s | 126 | 4 | 428 measurements / 5.693 s | Fails: retained 33-frame stale authority |
+| sparse-v3 | 1.9403125 GHz | 221.413 s | 256 | 0 | none | Clean negative dwell |
+| sparse-v4 | 1.1903125 GHz | 222.219 s | 256 | 1 | 158 / 2.093 s | Fails: retained 33-frame stale authority |
+| sparse-v5 | 1.4403125 GHz | 225.942 s | 256 | 3 | 15 / 0.187 s | One 2-result journal passes; later journals expose the stale refresh |
+| sparse-v6 | 1.6903125 GHz | 221.557 s | 256 | 0 | none | Clean negative dwell |
+| sparse-v7 | 1.9403125 GHz | 227.443 s | 256 | 2 | 124 / 1.640 s | **Both journals pass independent review** |
+
+All sparse terminals were clean acquisition loss rather than controller
+deadline. The strongest v2 episode scheduled and drained 428 results without
+falling behind source time. Of those, 12 pass the unchanged native diagnostic
+gate; most other pilots report low coherence (rejection 64), with 80 also
+outside the local timing window (rejection 96). Sparse-v7 retained and popped
+all 199 configured results, passed cadence/descriptor/head/estimate
+association, drained and cleared the FPGA, and restored the exact serial,
+image, buffers and TX-safe state.
 
 ## Physical runs
 
@@ -76,10 +125,17 @@ Firmware branch `codex/radio20-tracking-qualification` contains:
 - `ede05fb9e`: descriptor counts use the newest valid authority horizon,
   including a partial final batch;
 - `aa8d4070d`: separates ten seconds of source work from the 120-second ARM
-  drain deadline and records both limits accurately.
+  drain deadline and records both limits accurately;
+- `fc77d57dc`: adds the opt-in 75-Hz sparse cadence, explicit retained cadence
+  evidence, independent reconstruction, operator admission and ARM profile;
+- `627654e9c`: rejects observer authority more than 32 frames behind the next
+  descriptor frontier.
 
-The final focused suite passes **527 tests**. The current ARM executable SHA-256
-is `480b6c60a212af3c5d17a4b365164b4bdf8021df8c229d06155f295a92cbe174`.
+The prior focused suite passes **527 tests**. The sparse change additionally
+passes 319 controller/journal/operator checks and all 171 live-probe checks; the
+post-review admission fix passes 222 controller/journal checks. The corrected
+ARM executable SHA-256 is
+`32155cdd3cd376ac23e458b71ae40e2ccfebe55e1fa90321f8f328a695485f51`.
 
 ## Evidence and acceptance
 
@@ -89,27 +145,35 @@ to
 The SSD and RAID SHA-256 manifests match for every file; the 246-MB RAID copy
 contains `SHA256SUMS`, and the SSD originals remain in place.
 
+The sparse runs were likewise written to NVMe first and copied to
+`/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/sparse10-30ms-20260915-v1`.
+All 82 SSD and RAID files match by SHA-256. The RAID copy is 516 MB and contains
+its reproducible `SHA256SUMS`; SSD originals remain in place.
+
 The acceptance gate remains:
 
-1. two repeatable episodes of at least 7,500 results/10 seconds;
+1. two repeatable dense episodes of at least 7,500 results/10 seconds, or two
+   explicitly sparse episodes of 751 measurements spanning 10 seconds;
 2. clean loss and reacquisition;
 3. zero active capture, CDC and pacer drops;
 4. exact radio and TX-safe restoration.
 
-This campaign establishes the implementation, causal authority chain, zero-loss
-capture, clean negative behavior and restoration. It records zero qualifying
-ten-second episodes, so acceptance is **not passed**.
+This campaign establishes sustainable 30-MS/s FPGA scheduling, causal authority
+admission, zero-loss capture, clean negative behavior and restoration. It
+records zero qualifying ten-second episodes, so acceptance is **not passed**.
 
-The next stable step is to connect this authority profile to the existing
-bounded frequency-visit scanner. Recent fixed-frequency yield is too sparse:
-all five handoffs clustered in runs v3/v4, followed by 512 unsuccessful searches
-over two long dwells. A multi-frequency acquisition pass can select an active
-channel before spending the bounded 120-second native drain budget. Once a
-same-frequency handoff appears, repeat the unchanged v3 binary until two
-ten-second completions and a clean loss/reacquisition are retained. Native
-diagnostics should remain separately labeled; their lower support rate is not a
-reason to alter the coarse authority or its gates.
+The next stable step is to use the existing 2.5-MS/s scanner as the trigger for
+the corrected sparse binary instead of running more blind five-minute dwells.
+The four-frequency campaign produced only ten handoffs in 1,406 searches, and
+its longest interval remained below six seconds. A scanner-triggered visit can
+start the 30-MS/s controller near the beginning of an active interval and
+preserve the full remaining source span. The native diagnostic gates should
+remain unchanged; their lower support rate is evidence about signal quality,
+not a reason to relabel a track.
 
 The figure and `summary.json` are regenerated by
 [`analyze.py`](2026_09_15_radio20_30ms_authority_tracking/analyze.py) from the
-hash-verified RAID evidence.
+original hash-verified RAID evidence. The sparse figure and
+`sparse_summary.json` are regenerated by
+[`analyze_sparse.py`](2026_09_15_radio20_30ms_authority_tracking/analyze_sparse.py)
+from the sparse RAID evidence.
