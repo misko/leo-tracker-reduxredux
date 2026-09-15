@@ -335,6 +335,25 @@ def test_python_quality_gates_force_configured_exclusions() -> None:
     assert "--force-exclude" in ruff_format.command
 
 
+def test_frozen_report_scripts_are_not_reformatted_by_release_gates() -> None:
+    paths = (
+        "reports/frozen_analysis.py",
+        "src/leo/analysis/standard/final_reports.py",
+    )
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
+
+    formatter_arguments = {
+        argument
+        for gate in gates
+        if gate.name in {"ruff-check", "ruff-format"}
+        for argument in gate.command
+    }
+    assert "reports/frozen_analysis.py" not in formatter_arguments
+    assert "src/leo/analysis/standard/final_reports.py" in formatter_arguments
+
+
 def test_deleted_python_path_selects_owner_without_formatter_file_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
