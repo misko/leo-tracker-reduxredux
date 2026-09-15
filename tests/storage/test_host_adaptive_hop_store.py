@@ -79,8 +79,7 @@ def test_multirate_store_uses_bounded_four_visit_chunks(tmp_path, rate):
         assert [chunk.visit_count for chunk in published.manifest.chunks] == [4, 2]
         assert [chunk.sample_count for chunk in published.manifest.chunks] == [4 * dwell, 2 * dwell]
         assert all(
-            chunk.uncompressed_bytes <= 64 * 1024 * 1024
-            for chunk in published.manifest.chunks
+            chunk.uncompressed_bytes <= 64 * 1024 * 1024 for chunk in published.manifest.chunks
         )
         assert published.manifest.compression.policy_id == "adaptive-four-visit-chunks-v1"
         assert store.verify(receipt.session_id) == published

@@ -180,9 +180,7 @@ def sparse_multirate_host_receipt(*, rate=20_000_000, **kwargs):
     retained = (0, 1, 3, 4, 5)
     valid = len(retained) * dense.plan.geometry.valid_visit_samples
     unclassified = (
-        dense.duty_denominator_sample_count
-        - valid
-        - dense.transition_invalid_sample_count
+        dense.duty_denominator_sample_count - valid - dense.transition_invalid_sample_count
     )
     return HostAdaptiveHopReceiptV4(
         **dense.model_dump(

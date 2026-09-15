@@ -79,7 +79,7 @@ def observations_from_search(search: PssBandSearch) -> tuple[PssObservation, ...
                     candidate.robust_z,
                 )
             )
-    retained = []
+    retained: list[PssObservation] = []
     for row in sorted(rows, key=lambda x: (-x.score, x.frame_phase_s, x.cfo_hz)):
         if not any(
             abs(circular_residual(row.frame_phase_s, other.frame_phase_s)) <= 2e-6

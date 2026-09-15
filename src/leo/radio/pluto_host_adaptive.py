@@ -314,36 +314,36 @@ class _HostAdaptiveSession:
             feedback_completed_ns = time.monotonic_ns()
             if isinstance(result, _Overflow):
                 values = dict(
-                        session_id=feedback.session_id,
-                        generation=feedback.generation,
-                        stream_generation=feedback.stream_id,
-                        visit_index=feedback.visit,
-                        event_sequence=feedback.event_sequence,
-                        receiver_id=feedback.receiver_id,
-                        target_index=feedback.target_index,
-                        valid_start_counter=feedback.valid_start,
-                        valid_end_counter_exclusive=feedback.valid_end,
-                        configuration_sha256="sha256:" + feedback.configuration_sha256.hex(),
-                        submitted_monotonic_ns=result.submitted_ns,
-                        started_monotonic_ns=None,
-                        completed_monotonic_ns=None,
-                        feedback_monotonic_ns=now,
-                        feedback_completed_monotonic_ns=feedback_completed_ns,
-                        numerics=None,
-                        health="queue_overflow",
-                        failure="host decision capacity of two reached",
-                        feedback_outcome="unknown",
-                        feedback_disposition=(
-                            "rejected"
-                            if self._feedback_fault and attempted
-                            else "not_submitted"
-                            if not attempted
-                            else "accepted"
-                            if accepted
-                            else "source_ended"
-                        ),
-                        feedback_error=self._feedback_fault,
-                    )
+                    session_id=feedback.session_id,
+                    generation=feedback.generation,
+                    stream_generation=feedback.stream_id,
+                    visit_index=feedback.visit,
+                    event_sequence=feedback.event_sequence,
+                    receiver_id=feedback.receiver_id,
+                    target_index=feedback.target_index,
+                    valid_start_counter=feedback.valid_start,
+                    valid_end_counter_exclusive=feedback.valid_end,
+                    configuration_sha256="sha256:" + feedback.configuration_sha256.hex(),
+                    submitted_monotonic_ns=result.submitted_ns,
+                    started_monotonic_ns=None,
+                    completed_monotonic_ns=None,
+                    feedback_monotonic_ns=now,
+                    feedback_completed_monotonic_ns=feedback_completed_ns,
+                    numerics=None,
+                    health="queue_overflow",
+                    failure="host decision capacity of two reached",
+                    feedback_outcome="unknown",
+                    feedback_disposition=(
+                        "rejected"
+                        if self._feedback_fault and attempted
+                        else "not_submitted"
+                        if not attempted
+                        else "accepted"
+                        if accepted
+                        else "source_ended"
+                    ),
+                    feedback_error=self._feedback_fault,
+                )
                 if self.plan.decision.source_rate_hz == 10_000_000:
                     record = HostDecisionRecordV1.model_validate(values)
                 else:
@@ -381,7 +381,7 @@ class _HostAdaptiveSession:
         worker: BoundedHostDecisionWorker | None = None
         try:
             client = self._client_factory(self._identity.uri, self._identity.serial)
-            direct_options = (
+            direct_options: dict[str, int] = (
                 {"direct_async_frames": 8192} if self.plan.schema_version == 3 else {}
             )
             self._upstream = client.start(
