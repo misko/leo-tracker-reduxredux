@@ -202,6 +202,7 @@ def search_pss_frame_timing(
     nominal_frequency_offset_hz: float,
     frequency_offsets_hz: tuple[float, ...] | None = None,
     config: PssTimingSearchConfig | None = None,
+    template_samples: npt.ArrayLike | None = None,
 ) -> PssFrameTimingResult:
     """Search one continuous IQ block and refine every accepted PSS frame.
 
@@ -209,6 +210,10 @@ def search_pss_frame_timing(
     after the blind epoch search.  The blind pass uses
     ``nominal_frequency_offset_hz`` so runtime scales with IQ length rather
     than with the number of supplied CFO hypotheses.
+
+    ``template_samples`` optionally supplies a receiver-projected template on
+    this sample grid, before the CFO phasor is applied. It is copied, validated,
+    normalized and digest-bound. Omission preserves the legacy projection.
     """
 
     values = np.asarray(samples, dtype=np.complex64)
@@ -225,10 +230,19 @@ def search_pss_frame_timing(
         nominal_frequency_offset_hz=nominal_frequency_offset_hz,
         frequency_offsets_hz=frequency_offsets_hz,
     )
-    template = pss_subband_template(
-        sample_rate_hz,
-        slice_center_offset_hz=slice_center_offset_hz,
-    )
+    if template_samples is None:
+        template = pss_subband_template(
+            sample_rate_hz,
+            slice_center_offset_hz=slice_center_offset_hz,
+        )
+    else:
+        template = np.asarray(template_samples, dtype=np.complex64).copy()
+        if template.ndim != 1 or not template.size or not np.all(np.isfinite(template)):
+            raise ValueError("PSS template must be finite nonempty one-dimensional IQ")
+        norm = float(np.linalg.norm(template))
+        if not math.isfinite(norm) or norm <= 0:
+            raise ValueError("PSS template must have nonzero finite energy")
+        template /= norm
     frame_period = sample_rate_hz / FRAME_RATE_HZ
     minimum_samples = math.ceil(policy.minimum_frame_support * frame_period) + len(template)
     template_digest = hashlib.sha256(
