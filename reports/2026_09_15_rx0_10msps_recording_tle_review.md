@@ -68,7 +68,11 @@ The [all-track overlay gallery](figures/2026_09_15_rx0_10msps_recording_tle_revi
 extends the original six-longest-track image to all 647 eligible tracks. Each
 row shows measured CFO with the top three training-ranked TLE curves alongside
 their residuals. Sessions are split into pages of at most six rows and tracks
-are ordered by recording time.
+are ordered by recording time. Every session page now includes a top-three table
+for each track: training/heldout RMS for the leader and first two training
+runner-ups, plus the leader's heldout ratio and percentage improvement versus
+the better of those two runners. The same RMS values are printed in each plot's
+legend and the gain is printed over its residual panel.
 
 The [per-recording index](figures/2026_09_15_rx0_10msps_recording_tle_review/README.md)
 links each UTC timestamp and recording ID to its complete track table, measured
