@@ -25,8 +25,11 @@ void leo_adaptive_destroy(leo_adaptive_scan *s)
 static int create(leo_adaptive_scan **out, const leo_adaptive_config_v1 *c,
     uint32_t rx, int single_rx)
 {
+    int single_rx_rate = c && (c->rate_hz==10000000 ||
+        (rx==0 && (c->rate_hz==15000000 || c->rate_hz==20000000)));
+
     if (!out || !c || !c->session || !c->generation ||
-        (single_rx ? c->rate_hz!=10000000 || rx>1 :
+        (single_rx ? !single_rx_rate || rx>1 :
             (c->rate_hz!=2500000 && c->rate_hz!=5000000) || rx!=1) ||
         !c->target_count || c->target_count>LEO_ADAPTIVE_MAX_TARGETS ||
         !c->maximum_visits || c->maximum_visits>LEO_ADAPTIVE_MAX_VISITS ||

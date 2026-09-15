@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = Path("/home/mouse9911/gits/libiio-adaptive-multirate")
 BUILD = Path("/var/tmp/leo-host-multirate-provider")
 NATIVE = Path("/var/tmp/leo-host-multirate-native")
-SCANNER_ARCHIVE = Path("/var/tmp/leo-host-production-20260913/libscanner.a")
+SCANNER_ARCHIVE = Path("/var/tmp/leo-host-production-20260915/libscanner.a")
 SDK = Path("/home/mouse9911/gits/plutosdr-fw/buildroot/output/host")
 
 
