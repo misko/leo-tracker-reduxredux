@@ -755,3 +755,17 @@ is to keep the 0.05 same-radio trigger and prioritize the lower pair containing
 opportunities on 1.9403125-GHz bursts. Increasing the epoch bound is useful
 for tracking through intermittent service, but it is a separate aggregate
 continuity qualification and must not weaken the exact 7,501-result gate.
+
+Cycle v56 tests that lower-pair hypothesis with 1.1903125 and 1.4403125 GHz.
+It also starts two long children, but shows that instantaneous scout strength
+still does not predict persistence. A 0.09168 scout at 1.4403125 GHz, stronger
+than v46's successful 30-second trigger, produces four episodes totaling only
+192 results. The later 0.06826 trigger at 1.1903125 GHz produces four episodes
+totaling 475 results; its longest episode is 257 results, or 3.43 seconds.
+Independent epoch review passes all 667 results and six reacquisitions, both
+storage manifests verify, and the radio and acquisition service are restored.
+Across v55 and v56, four qualifying one-scout triggers all lead to short
+episodes. The next acquisition change should therefore require the same LO to
+remain above the unchanged 0.05 isolation floor in consecutive scan rounds
+before consuming a long attempt. This adds temporal persistence to the trigger
+without changing the detector, tracker or 7,501-result acceptance gate.
