@@ -28,10 +28,10 @@ The strongest supported conclusions are:
   No row claims identity. Thirty-five other trajectory products could not score
   a catalogue because population propagation was incomplete. The data support
   Doppler-like trajectories, but no satellite identification.
-* The production cohort has **zero PSS products**. It is therefore impossible to
-  construct a matched PSS-versus-GLRT comparison for these eight hours without
-  introducing a new, unvalidated replay method. The retained September 12
-  five-dwell experiment supplies the honest historical paired comparison.
+* The frozen production cohort has **zero PSS products**. A subsequent bounded,
+  matched replay finds candidate peaks in **149/376 native 10 MS/s visits** versus
+  **53/376 derived 2.5 MS/s visits**. These are experimental candidates: pilot-only
+  controls also form stable tracks, so this is not verified PSS detection.
 
 ![Capture duty and online detections](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/capture-duty-and-detections.png)
 
@@ -137,13 +137,81 @@ folded CFO RMS agree; joint512 was **1.285 Hz**.
 
 ![Controlled refinement RMS](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/controlled-refinement-rms.png)
 
-## PSS and the matched historical comparison
+## Matched bandwidth-aware PSS replay
 
-No PSS analyzer ran on these production sessions and no PSS product is persisted.
-The 10 MHz edge recording is usable for some partial-band PSS experiments, but
-the production adapter and acceptance policy were not validated for this cohort.
-Running a new search now would create a method-selected post-hoc result rather
-than the requested matched production comparison.
+This September 15 extension replays the frozen corpus with the new
+[reusable numerical module](../docs/pss-bandwidth-tracking.md). It does not change
+the production snapshot or enable production PSS acceptance. A deterministic
+hash selects one complete visit per target per session, independently of detector
+outcomes: 47 sessions × eight targets = **376 matched visits per bandwidth**.
+Both arms use the same ADC data and blind 13-point CFO bank from −1.2 to +1.2 MHz
+in 200 kHz steps, robust-z gate 6, peak/median gate 1.15, and at least four frames.
+Each frequency hypothesis searches timing independently. Online GLRT outcomes
+are joined by exact visit; they are not used to select the replay samples.
+
+Native templates use the entire modeled overlap of the captured passband and
+the shifted PSS channel: approximately **9.805 MHz at nominal CFO** for these
+edge centers. They preserve the 4.4 µs symbol aperture and original sample grid.
+The receiver response is assumed rectangular, not measured. The paired narrow
+arm uses ideal FFT projection to 2.5 MS/s and trims 64 output samples at each end;
+it is distinct from the scanner's Q15 decision decimator.
+
+| Matched replay measurement | Native 10 MS/s | Derived 2.5 MS/s |
+|---|---:|---:|
+| Visits with qualified candidate peaks | 149/376 (39.63%) | 53/376 (14.10%) |
+| Candidates among 250 GLRT-positive visits | 140 | 53 |
+| Candidates among 87 GLRT-negative visits | 7 | 0 |
+| Candidates among 39 visits with unknown GLRT outcome | 2 | 0 |
+| Tracking-state updates in separate 432-visit sequence | 63 | 7 |
+| Median conditional alternating-frame prediction RMS | 1,008.57 ns | 1,112.23 ns |
+
+![Matched bandwidth replay](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/bandwidth-comparison.png)
+
+Tracking uses nine fixed chronological sessions and the first six visits per
+target at or after 120 s: 72 separate source/target chains and 432 updates per
+band. The counts above are updates in `tracking` state, not distinct emitters or
+verified tracks. The tracker preserves counter gaps, uses only past state and
+current observations, and can coast, lose lock and reacquire.
+
+Timing statistics select the strongest qualified mode in each passing visit,
+fit a linear frame-phase model to alternating frames, and evaluate the others.
+The two bandwidths have different passing subsets. This is conditional internal
+repeatability, not a matched common-subset accuracy comparison or true arrival
+time. It does not reproduce the historical nanosecond-scale precision.
+
+![Conditional timing repeatability](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/conditional-timing.png)
+
+**Qualification failed on interference controls.** The same search budget was
+run on six blocks of noise, tone and pilot-only IQ at each of two channel edges.
+Noise generated one passing native candidate out of 12 blocks and no stable
+track; tones generated none. Pilot-only IQ generated six passing candidates out
+of 12 blocks in each bandwidth and four `tracking` updates in each arm. Therefore
+the 2.81× increase in candidate-bearing visits cannot be interpreted as a PSS
+detection-probability improvement. The engine always labels results
+`candidate_only`; independent pilot-interference rejection and acceptance
+calibration are required before production use.
+
+The [summary](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/summary.json),
+[visit rows](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/visits.csv),
+[tracking rows](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/tracking.csv),
+[control evidence](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/controls.json),
+and [archive manifest](figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle/pss-bandwidth/archive-manifest.json)
+retain the results, source bindings and compressed per-hypothesis/frame evidence.
+
+Reproduce from retained IQ into a fresh directory:
+
+```bash
+PYTHONPATH=src:. OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python \
+  tools/replay_scanner_pss_bandwidth.py \
+  --input reports/figures/2026_09_14_eight_hour_rx0_10msps_pss_glrt_tle \
+  --output /tmp/pss-bandwidth-fresh
+```
+
+`--aggregate-only` regenerates tables and figures from the archived session JSON
+or JSON.gz without reading IQ. The reusable module also supports a bounded
+coarse-to-fine search; this fixed-budget comparison deliberately does not use it.
+
+## PSS and the matched historical comparison
 
 The September 12 five-dwell experiment remains the strongest matched evidence.
 It used the same ADC at native 25 MS/s and a derived 2.5 MS/s stream, plus a

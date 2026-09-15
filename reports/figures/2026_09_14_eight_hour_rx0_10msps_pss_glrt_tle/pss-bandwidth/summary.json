@@ -1,0 +1,107 @@
+{
+  "protocol": {
+    "version": 1,
+    "selection": "minimum sha256(salt:manifest_digest:visit_index) per session/target",
+    "salt": "eight-hour-matched-pss-glrt-v1",
+    "frequency_bank_hz": [
+      -1200000.0,
+      -1000000.0,
+      -800000.0,
+      -600000.0,
+      -400000.0,
+      -200000.0,
+      0.0,
+      200000.0,
+      400000.0,
+      600000.0,
+      800000.0,
+      1000000.0,
+      1200000.0
+    ],
+    "bands": [
+      "native10",
+      "derived2p5"
+    ],
+    "derived_filter": "existing ideal FFT projection; trim 64 output samples each end",
+    "receiver_response": "ideal rectangular; hardware analogue response uncalibrated",
+    "tracking_sessions": [
+      0,
+      6,
+      12,
+      18,
+      24,
+      30,
+      36,
+      42,
+      46
+    ],
+    "tracking_selection": "first six visits per target at/after 120 seconds",
+    "z_gate": 6.0,
+    "peak_to_median_gate": 1.15,
+    "minimum_frame_support": 4,
+    "candidate_only": true
+  },
+  "sessions": 47,
+  "visits_per_band": {
+    "native10": 376,
+    "derived2p5": 376
+  },
+  "detected_per_band": {
+    "native10": 149,
+    "derived2p5": 53
+  },
+  "glrt_outcomes": {
+    "native10": {
+      "detected": 250,
+      "not_detected": 87,
+      "unknown": 39
+    },
+    "derived2p5": {
+      "detected": 250,
+      "not_detected": 87,
+      "unknown": 39
+    }
+  },
+  "cross_tabs": {
+    "native10": {
+      "pss=False,glrt=detected": 110,
+      "pss=False,glrt=not_detected": 80,
+      "pss=False,glrt=unknown": 37,
+      "pss=True,glrt=detected": 140,
+      "pss=True,glrt=not_detected": 7,
+      "pss=True,glrt=unknown": 2
+    },
+    "derived2p5": {
+      "pss=False,glrt=detected": 197,
+      "pss=False,glrt=not_detected": 87,
+      "pss=False,glrt=unknown": 39,
+      "pss=True,glrt=detected": 53
+    }
+  },
+  "tracking_states": {
+    "native10": {
+      "acquiring": 157,
+      "coasting": 31,
+      "lost": 181,
+      "tracking": 63
+    },
+    "derived2p5": {
+      "acquiring": 154,
+      "lost": 243,
+      "coasting": 28,
+      "tracking": 7
+    }
+  },
+  "conditional_timing": {
+    "native10": {
+      "visits": 149,
+      "median_linear_fit_rms_ns": 972.6939571734575,
+      "median_alternating_validation_rms_ns": 1008.5680816494475
+    },
+    "derived2p5": {
+      "visits": 53,
+      "median_linear_fit_rms_ns": 1101.6147007093577,
+      "median_alternating_validation_rms_ns": 1112.2263091760383
+    }
+  }
+}
