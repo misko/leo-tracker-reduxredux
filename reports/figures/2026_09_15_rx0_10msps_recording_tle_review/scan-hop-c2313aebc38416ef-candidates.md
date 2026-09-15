@@ -1,5 +1,7 @@
 # Candidate RMS comparisons: scan-hop-c2313aebc38416ef
 
+[Ranked RMS plots for every track](scan-hop-c2313aebc38416ef-rms.md).
+
 Recorded **2026-09-14T16:30:12.553220Z**, RX0, 10 MS/s.
 
 [Recording assessment and plots](scan-hop-c2313aebc38416ef.md).
