@@ -234,7 +234,15 @@ def test_wide_rate_uses_feedback_interleaved_direct_async_segments(rate):
         assert tuple(drain(session)) == receipt.visits
         result = session.finish()
         assert result.plan.geometry.sample_rate_hz == rate
-        assert clients[0].direct_async_frames == 1
+        assert (
+            clients[0].direct_async_frames
+            == (
+                receipt.plan.geometry.valid_visit_samples
+                + receipt.plan.geometry.samples_per_block
+                - 1
+            )
+            // receipt.plan.geometry.samples_per_block
+        )
     finally:
         radio.close()
 
