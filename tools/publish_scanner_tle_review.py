@@ -304,6 +304,7 @@ def publish(source, output):
             + f"**{status}.** Candidates: {candidate_text}.\n\n"
             + audit_note
             + f"[Satellite RMS comparisons and top-1 gains]({sid}-candidates.md).\n\n"
+            + f"[Measured CFO/TLE overlays for every track]({sid}-all-tracks.md).\n\n"
             + "Counts are correlated lane tracklets, "
             "not independent detections or satellite counts. "
             "A recording can contain multiple transmitters; "
@@ -349,6 +350,8 @@ def publish(source, output):
         "All results are candidate-only; no satellite identity is established.\n\n"
         "Every recording page links its satellite-by-satellite RMS and top-1 gain tables. "
         "[Download all candidate comparisons](candidate-comparisons.csv).\n\n"
+        "[Browse measured CFO/TLE overlays for every eligible track]"
+        "(all-track-overlays/README.md).\n\n"
         f"{counts['screened']} recordings screened; "
         f"{counts['tracklets']} eligible unique tracklets; "
         f"{counts['descriptive_passes']} tracklets in "
