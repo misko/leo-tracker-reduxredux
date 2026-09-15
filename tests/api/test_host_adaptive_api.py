@@ -27,6 +27,7 @@ def test_native_api_history_analysis_and_all_bound_pngs(tmp_path, monkeypatch, r
     base = "/api/v2/scanner/adaptive-sessions"
     route = f"{base}/{capture.session_id}"
     assert client.get(base).json() == history.page_v2(cursor=0, limit=20).model_dump(mode="json")
+    assert client.get(base.replace("v2", "v3")).json() == client.get(base).json()
     detail = client.get(route)
     assert detail.status_code == 200 and detail.json()["capture"]["physical_receiver"] == receiver
     assert detail.json()["host_decisions"][0]["feedback_disposition"] == "accepted"
