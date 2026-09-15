@@ -410,9 +410,7 @@ def compile_host_adaptive_hop_plan(
             kernel_buffers=kernel_buffers,
             samples_per_block=samples_per_block,
             profiles=tuple(
-                PersistentHopProfileV1(
-                    target_index=i, fastlock_profile_index=i, target=target
-                )
+                PersistentHopProfileV1(target_index=i, fastlock_profile_index=i, target=target)
                 for i, target in enumerate(configuration.targets)
             ),
         )

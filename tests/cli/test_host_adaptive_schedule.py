@@ -107,8 +107,7 @@ def test_multirate_profile_is_retry_stable_rx0_only_and_uniform(tmp_path):
         slots = [datetime(2026, 9, 13, tzinfo=UTC) + timedelta(minutes=10 * i) for i in range(512)]
         scheduled = [intent(backend, slot) for slot in slots]
         assert all(
-            isinstance(item, HostAdaptiveRx0MultirateScheduledScannerIntentV6)
-            for item in scheduled
+            isinstance(item, HostAdaptiveRx0MultirateScheduledScannerIntentV6) for item in scheduled
         )
         rates = [item.configuration.sample_rate_hz for item in scheduled]
         assert set(rates) == {15_000_000, 20_000_000}
@@ -122,8 +121,7 @@ def test_multirate_profile_is_retry_stable_rx0_only_and_uniform(tmp_path):
             plan = compile_host_adaptive_hop_plan(item)
             assert plan.geometry.receiver_ids == (0,)
             assert (
-                plan.geometry.valid_visit_samples
-                == item.configuration.sample_rate_hz * 120 // 1000
+                plan.geometry.valid_visit_samples == item.configuration.sample_rate_hz * 120 // 1000
             )
             assert plan.decision.source_rate_hz == item.configuration.sample_rate_hz
     finally:

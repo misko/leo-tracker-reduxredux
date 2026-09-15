@@ -474,18 +474,14 @@ def create_app(
         "/scanner/adaptive-sessions/{session_id}",
         methods=["GET", "HEAD"],
         response_model=(
-            AdaptiveHopSessionDetailV1
-            | HostAdaptiveSessionDetailV2
-            | HostAdaptiveSessionDetailV3
+            AdaptiveHopSessionDetailV1 | HostAdaptiveSessionDetailV2 | HostAdaptiveSessionDetailV3
         ),
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions/{session_id}",
         methods=["GET", "HEAD"],
         response_model=(
-            AdaptiveHopSessionDetailV1
-            | HostAdaptiveSessionDetailV2
-            | HostAdaptiveSessionDetailV3
+            AdaptiveHopSessionDetailV1 | HostAdaptiveSessionDetailV2 | HostAdaptiveSessionDetailV3
         ),
     )
     def adaptive_detail_v2(

@@ -40,16 +40,11 @@ class HostDecisionRelease:
     library: Path
 
     def create_engine(self) -> NativeHostDecision:
-        return NativeHostDecision(
-            self.library, source_rate_hz=self.configuration.source_rate_hz
-        )
+        return NativeHostDecision(self.library, source_rate_hz=self.configuration.source_rate_hz)
 
     def bind(self, configuration: HostDecisionConfigurationV2) -> HostDecisionRelease:
         configuration = HostDecisionConfigurationV2.model_validate(configuration)
-        if (
-            configuration.detector_manifest_sha256
-            != self.configuration.detector_manifest_sha256
-        ):
+        if configuration.detector_manifest_sha256 != self.configuration.detector_manifest_sha256:
             raise ValueError("host detector configuration changed release identity")
         return HostDecisionRelease(configuration, self.library)
 

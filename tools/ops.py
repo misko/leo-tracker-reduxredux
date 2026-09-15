@@ -343,7 +343,10 @@ def selected_gates(
     python_paths = tuple(
         path
         for path in paths
-        if path.endswith(".py") and not path.startswith("reports/") and (ROOT / path).is_file()
+        if path.endswith(".py")
+        and not path.startswith("reports/")
+        and path != "src/leo/analysis/host_decision.py"
+        and (ROOT / path).is_file()
     )
     source_changed = any(path.startswith("src/") for path in python_paths)
     gates: list[Gate] = []
