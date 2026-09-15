@@ -837,3 +837,13 @@ archives and manifests match, the radio is restored TX-safe, and acquisition
 is active. This independently repeats the intended rejection behavior across
 the four-LO scan; the exact 7,501-result positive qualification still requires
 one persistent RF interval.
+
+Cycle v62 immediately follows v61 with the same pinned payload, radio and
+four-LO profile. It again completes twenty rounds and eighty scouts, but the
+strongest score has fallen to 0.04485 at 1.9403125 GHz; the per-LO maxima are
+0.04143, 0.04072, 0.01066 and 0.04485, in LO order from 1.1903125 through
+1.9403125 GHz. No scout reaches the unchanged 0.05 floor and no long child
+starts. Continuity review and both 885-entry SSD/RAID manifests pass, the radio
+is restored TX-safe, and acquisition is active. Together, v61 and v62 show an
+active but transient interval followed by sub-threshold decay, rather than the
+continuous interval required by the exact 100-second gate.
