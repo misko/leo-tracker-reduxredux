@@ -60,10 +60,7 @@ def multirate_reference(iq, source_rate_hz):
     factor = source_rate_hz // 2_500_000
     h = multirate_coefficients(source_rate_hz).astype(np.int64)
     values = np.stack(
-        [
-            np.convolve(iq[:, channel].astype(np.int64), h)[: len(iq) : factor]
-            for channel in (0, 1)
-        ],
+        [np.convolve(iq[:, channel].astype(np.int64), h)[: len(iq) : factor] for channel in (0, 1)],
         axis=1,
     )
     return np.clip((values + 16384) // 32768, -32768, 32767).astype("<i2")
@@ -189,7 +186,11 @@ def build(
     sources = [
         NATIVE / name
         for name in (
-            "presence.c", "fft.c", "window_rank.c", "dwell.c", "decision_decimator.c",
+            "presence.c",
+            "fft.c",
+            "window_rank.c",
+            "dwell.c",
+            "decision_decimator.c",
             "host_decision.c",
         )
     ]

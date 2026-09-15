@@ -7,19 +7,28 @@ import pytest
 from tools.qualify_host_adaptive_decisions import verdict, write_new
 
 
-@pytest.mark.parametrize("window,epoch,complete,score,expected", [
-    (0, 41, True, .9, "unknown"),
-    (0, 42, True, .9, "detected"),
-    (1, 0, True, .9, "detected"),
-    (5, 50, False, .9, "unknown"),
-    (5, 50, True, .1, "not_detected"),
-])
+@pytest.mark.parametrize(
+    "window,epoch,complete,score,expected",
+    [
+        (0, 41, True, 0.9, "unknown"),
+        (0, 42, True, 0.9, "detected"),
+        (1, 0, True, 0.9, "detected"),
+        (5, 50, False, 0.9, "unknown"),
+        (5, 50, True, 0.1, "not_detected"),
+    ],
+)
 def test_reference_verdict_requires_supported_fractional_confirmation(
-    window, epoch, complete, score, expected,
+    window,
+    epoch,
+    complete,
+    score,
+    expected,
 ):
-    c = SimpleNamespace(epoch=epoch, fractional_complete=complete, exact_score=score, margin=.1)
-    result = SimpleNamespace(rank=SimpleNamespace(order=[window]),
-                             confirmations=[SimpleNamespace(candidates=[c], candidate_count=1)])
+    c = SimpleNamespace(epoch=epoch, fractional_complete=complete, exact_score=score, margin=0.1)
+    result = SimpleNamespace(
+        rank=SimpleNamespace(order=[window]),
+        confirmations=[SimpleNamespace(candidates=[c], candidate_count=1)],
+    )
     assert verdict(result, 40) == expected
 
 

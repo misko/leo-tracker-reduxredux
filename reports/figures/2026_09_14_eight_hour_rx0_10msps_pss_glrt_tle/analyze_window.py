@@ -276,9 +276,7 @@ def main(output: Path) -> None:
     for (case, profile), rows in sorted(grouped.items()):
         common = sum(x["common"] for x in rows)
 
-        def pooled(
-            name: str, rows: list[dict] = rows, common: int = common
-        ) -> float | None:
+        def pooled(name: str, rows: list[dict] = rows, common: int = common) -> float | None:
             return (
                 math.sqrt(sum(x["common"] * x[name] ** 2 for x in rows) / common)
                 if common

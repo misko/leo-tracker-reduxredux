@@ -113,9 +113,7 @@ def main() -> None:
             ),
         },
     }
-    (HERE / "signal-detection-duty-summary.json").write_text(
-        json.dumps(summary, indent=2) + "\n"
-    )
+    (HERE / "signal-detection-duty-summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 9), layout="constrained")
 
