@@ -19,11 +19,13 @@ def _candidate(value) -> TrackingCandidate:
 
 
 class ScannerTrackingInputStore:
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, *, adaptive_analysis_root: Path | None = None):
         self.fixed = PersistentHopIqStore.open_read_only(root)
         self.fixed_analysis = PersistentHopAnalysisStoreV2.open_read_only(root)
         self.adaptive = AdaptiveHopIqStore(root, read_only=True)
-        self.adaptive_analysis = AdaptiveHopAnalysisStore(root, read_only=True)
+        self.adaptive_analysis = AdaptiveHopAnalysisStore(
+            adaptive_analysis_root if adaptive_analysis_root is not None else root, read_only=True
+        )
 
     def close(self) -> None:
         self.adaptive.close()
