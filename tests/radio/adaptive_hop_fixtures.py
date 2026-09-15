@@ -15,6 +15,7 @@ from pluto_plus.adaptive_hop_stream import (
     AdaptiveHopSampledVisitV2,
     AdaptiveHopStreamReceiptV2,
     AdaptiveHopVisitV2,
+    SparseAdaptiveHopStreamAccountingV1,
 )
 from pluto_plus.persistent_hop import (
     PersistentHopEventFlag,
@@ -46,12 +47,22 @@ def upstream_receipt(receipt):
     capture_extra = (None,)
     policy = load_host_policy(receipt.plan) if host else load_adaptive_policy(receipt.plan)
     if host:
-        from pluto_plus.host_adaptive_hop import HostAdaptiveHopRequestV3, HostAdaptiveHopStatusV3
+        from pluto_plus.host_adaptive_hop import (
+            HostAdaptiveHopRequestV3,
+            HostAdaptiveHopRequestV4,
+            HostAdaptiveHopStatusV3,
+        )
         from pluto_plus.host_adaptive_hop_client import HostAdaptiveHopCaptureReceiptV3
-        from pluto_plus.host_adaptive_hop_stream import HostAdaptiveHopStreamReceiptV3
+        from pluto_plus.host_adaptive_hop_stream import (
+            HostAdaptiveHopStreamReceiptV3,
+            HostAdaptiveHopStreamReceiptV4,
+        )
 
-        request_type, status_type = HostAdaptiveHopRequestV3, HostAdaptiveHopStatusV3
-        stream_type, capture_type = HostAdaptiveHopStreamReceiptV3, HostAdaptiveHopCaptureReceiptV3
+        wide = receipt.plan.schema_version == 3
+        request_type = HostAdaptiveHopRequestV4 if wide else HostAdaptiveHopRequestV3
+        status_type = HostAdaptiveHopStatusV3
+        stream_type = HostAdaptiveHopStreamReceiptV4 if wide else HostAdaptiveHopStreamReceiptV3
+        capture_type = HostAdaptiveHopCaptureReceiptV3
         request_extra = (load_host_decision(receipt.plan),)
         capture_extra = ()
     plan = _load_plan(receipt.plan.geometry)
@@ -117,12 +128,12 @@ def upstream_receipt(receipt):
     )
     visits = tuple(
         AdaptiveHopVisitV2(
-            events[i],
-            choices[i],
+            events[e.event.visit_index],
+            choices[e.event.visit_index],
             plan.profiles[e.event.target_index],
             e.valid_end_counter_exclusive,
         )
-        for i, e in enumerate(receipt.visits)
+        for e in receipt.visits
     )
     settings = receipt.restoration.original_settings
     original = PersistentHopReceiverSettingsV1(
@@ -162,6 +173,14 @@ def upstream_receipt(receipt):
                 "source_span_attested",
             )
         },
+        sparse=(
+            SparseAdaptiveHopStreamAccountingV1(
+                receipt.retained_visit_indices,
+                receipt.transport_missing_sample_count,
+            )
+            if hasattr(receipt, "retained_visit_indices")
+            else None
+        ),
     )
     return capture_type(
         stream,

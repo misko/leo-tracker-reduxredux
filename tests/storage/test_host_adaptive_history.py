@@ -3,11 +3,11 @@ from pydantic import ValidationError
 
 from leo.scanner.adaptive_hop_history import AdaptiveHopHistoryPageV1
 from leo.scanner.host_adaptive_history import AdaptiveHistoryPageV2, HostAdaptiveSessionDetailV2
-from leo.scanner.single_rx import SingleRxHopTimingV2
+from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 from leo.storage.adaptive_hop import AdaptiveHopIqReader, AdaptiveHopIqStore
 from leo.storage.adaptive_hop_history import AdaptiveHopPresentationStore
 from tests.scanner.adaptive_hop_fixtures import timing_fixture
-from tests.scanner.host_adaptive_fixtures import host_receipt
+from tests.scanner.host_adaptive_fixtures import host_receipt, sparse_multirate_host_receipt
 from tests.storage.test_adaptive_hop_history import publish_capture
 from tests.storage.test_host_adaptive_hop_store import block
 
@@ -59,3 +59,23 @@ def test_mixed_history_preserves_legacy_major_and_exposes_host_evidence(
     payload["host_decisions"] = payload["host_decisions"][:-1]
     with pytest.raises(ValidationError):
         HostAdaptiveSessionDetailV2.model_validate(payload)
+
+
+def test_sparse_wide_history_exposes_original_source_visit_indices(tmp_path):
+    receipt = sparse_multirate_host_receipt(session_id="host-wide-sparse-history")
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(receipt.session_id, receipt.plan)
+    try:
+        for ordinal in range(receipt.complete_visit_count):
+            writer.append(block(receipt, ordinal))
+        writer.finish(receipt, timing=timing_fixture(receipt, SingleRxHopTimingV3))
+    finally:
+        writer.abort()
+        store.close()
+    reader = AdaptiveHopPresentationStore(tmp_path)
+    detail = reader.detail_v2(receipt.session_id)
+    assert detail is not None
+    assert detail.capture.sample_rate_hz == 20_000_000
+    assert detail.capture.retained_visits == 5
+    assert [decision.visit_index for decision in detail.host_decisions] == [0, 1, 3, 4, 5]
+    assert [visit.visit_index for visit in detail.visits if visit.retained] == [0, 1, 3, 4, 5]

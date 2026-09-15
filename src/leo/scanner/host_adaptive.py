@@ -335,13 +335,14 @@ class HostAdaptiveHopReceiptV2(AdaptiveHopReceiptV1):
     def _host_evidence_is_source_bound(self) -> Self:
         if len(self.host_decisions) != self.complete_visit_count:
             raise ValueError("host decisions must account for every complete native visit")
-        for index, record in enumerate(self.host_decisions):
-            event = self.events[index]
+        retained = getattr(self, "retained_visit_indices", range(self.complete_visit_count))
+        for source_index, record in zip(retained, self.host_decisions, strict=True):
+            event = self.events[source_index]
             if (
                 record.session_id != self.terminal.session_id
                 or record.generation != self.plan.policy.generation
                 or record.stream_generation != self.stream_generation
-                or record.visit_index != index
+                or record.visit_index != source_index
                 or record.receiver_id != self.plan.classification_receiver
                 or record.target_index != event.target_index
                 or record.valid_start_counter != event.valid_start_counter
@@ -362,13 +363,14 @@ class HostAdaptiveHopReceiptV3(HostAdaptiveHopReceiptV2):
         if len(self.host_decisions) != self.complete_visit_count:
             raise ValueError("host decisions must account for every complete native visit")
         source_samples = self.plan.decision.source_dwell_samples
-        for index, record in enumerate(self.host_decisions):
-            event = self.events[index]
+        retained = getattr(self, "retained_visit_indices", range(self.complete_visit_count))
+        for source_index, record in zip(retained, self.host_decisions, strict=True):
+            event = self.events[source_index]
             if (
                 record.session_id != self.terminal.session_id
                 or record.generation != self.plan.policy.generation
                 or record.stream_generation != self.stream_generation
-                or record.visit_index != index
+                or record.visit_index != source_index
                 or record.receiver_id != 0
                 or record.source_rate_hz != self.plan.decision.source_rate_hz
                 or record.target_index != event.target_index
@@ -377,4 +379,22 @@ class HostAdaptiveHopReceiptV3(HostAdaptiveHopReceiptV2):
                 or record.configuration_sha256 != self.plan.decision.configuration_sha256
         ):
                 raise ValueError("host decision differs from its native source or configuration")
+        return self
+
+
+class HostAdaptiveHopReceiptV4(HostAdaptiveHopReceiptV3):
+    """Wide-rate capture with explicit source gaps and sparse retained IQ visits."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    retained_visit_indices: Annotated[tuple[int, ...], Field(max_length=2500)]
+    transport_missing_sample_count: Counter
+
+    @model_validator(mode="after")
+    def _sparse_transport_accounting_is_exact(self) -> Self:
+        if not (
+            self.unclassified_sample_count
+            <= self.transport_missing_sample_count
+            <= self.duty_denominator_sample_count
+        ):
+            raise ValueError("transport gaps do not bound unclassified source time")
         return self

@@ -11,7 +11,11 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
 )
-from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3
+from leo.scanner.host_adaptive import (
+    HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV3,
+    HostAdaptiveHopReceiptV4,
+)
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveAnalysisConfigurationV2,
     HostAdaptiveAnalysisConfigurationV3,
@@ -46,7 +50,7 @@ class HostAdaptiveMetricsManifestV2(AdaptiveHopMetricsManifestV1):
 class HostAdaptiveAnalysisBindingV3(HostAdaptiveAnalysisBindingV2):
     schema_version: Literal[3] = 3  # type: ignore[assignment]
     _visit_model: ClassVar[type[HostAdaptiveVisitAnalysisV3]] = HostAdaptiveVisitAnalysisV3
-    receipt: HostAdaptiveHopReceiptV3
+    receipt: HostAdaptiveHopReceiptV3 | HostAdaptiveHopReceiptV4
     configuration: HostAdaptiveAnalysisConfigurationV3
 
 

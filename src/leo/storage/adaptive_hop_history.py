@@ -222,10 +222,13 @@ class AdaptiveHopPresentationStore:
         origin = receipt.terminal.first_counter
         rate = receipt.plan.geometry.sample_rate_hz
         rows = []
+        retained_indices = set(
+            getattr(receipt, "retained_visit_indices", range(receipt.complete_visit_count))
+        )
         for event in receipt.events:
             end = (
                 event.valid_start_counter + receipt.plan.geometry.valid_visit_samples
-                if event.visit_index < receipt.complete_visit_count
+                if event.visit_index in retained_indices
                 else None
             )
             decision = event.decision

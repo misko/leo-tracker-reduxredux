@@ -63,8 +63,11 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
             self.finalized_at < self.recorded_at
             or self.sample_rate_hz != self.bandwidth_hz
             or self.retained_visits > self.started_visits
-            or self.retained_visits
-            != max(0, self.started_visits - (self.terminal_state == "cancelled"))
+            or (
+                self.schema_version != 3
+                and self.retained_visits
+                != max(0, self.started_visits - (self.terminal_state == "cancelled"))
+            )
             or self.source_span_attested != bool(self.started_visits)
             or self.policy_generation == 0
             or self.fallback_choices > self.started_visits
@@ -173,8 +176,15 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
             self.capture.source_span_attested != (self.source_origin_counter is not None)
             or len(self.visits) != self.capture.started_visits
             or tuple(v.visit_index for v in self.visits) != tuple(range(len(self.visits)))
-            or tuple(v.retained for v in self.visits)
-            != tuple(i < self.capture.retained_visits for i in range(len(self.visits)))
+            or (
+                self.capture.schema_version != 3
+                and tuple(v.retained for v in self.visits)
+                != tuple(i < self.capture.retained_visits for i in range(len(self.visits)))
+            )
+            or (
+                self.capture.schema_version == 3
+                and sum(v.retained for v in self.visits) != self.capture.retained_visits
+            )
         ):
             raise ValueError("adaptive detail differs from started/retained inventory")
         if self.source_origin_counter is not None:

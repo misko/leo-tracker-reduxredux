@@ -18,6 +18,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV3,
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
+    HostAdaptiveHopReceiptV4,
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio, HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
@@ -34,7 +35,7 @@ class CapturedAdaptiveHopSession:
 
 @dataclass(frozen=True, slots=True)
 class CapturedHostAdaptiveHopSession:
-    receipt: HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3
+    receipt: HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3 | HostAdaptiveHopReceiptV4
     timing: SingleRxHopTimingV2 | SingleRxHopTimingV3 | None
 
 
@@ -168,11 +169,17 @@ def _capture[
                     raise ValueError("adaptive stream ended without terminal status") from None
                 break
             evidence = AdaptiveHopVisitV1.model_validate(block.evidence)
-            if evidence.event.visit_index != len(visits):
+            if visits and evidence.event.visit_index <= visits[-1].event.visit_index:
                 raise ValueError("adaptive capture visits arrived out of order")
             visit_sink(block)
             visits.append(evidence)
-        receipt = receipt_model.model_validate(session.finish())
+        raw_receipt = session.finish()
+        receipt = (
+            HostAdaptiveHopReceiptV4.model_validate(raw_receipt)
+            if receipt_model is HostAdaptiveHopReceiptV3
+            and getattr(raw_receipt, "schema_version", None) == 4
+            else receipt_model.model_validate(raw_receipt)
+        )
         terminal_real = realtime_ns()
         terminal_mono = monotonic_ns()
         if (
@@ -210,7 +217,13 @@ def _capture[
             try:
                 if not session.complete:
                     session.request_cancel()
-                receipt = receipt_model.model_validate(session.finish())
+                raw_receipt = session.finish()
+                receipt = (
+                    HostAdaptiveHopReceiptV4.model_validate(raw_receipt)
+                    if receipt_model is HostAdaptiveHopReceiptV3
+                    and getattr(raw_receipt, "schema_version", None) == 4
+                    else receipt_model.model_validate(raw_receipt)
+                )
             except BaseException as recovery:
                 primary.add_note(f"adaptive terminal recovery also failed: {recovery!r}")
     finally:

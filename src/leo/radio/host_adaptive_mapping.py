@@ -15,6 +15,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV3,
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
+    HostAdaptiveHopReceiptV4,
     HostAdaptiveHopTerminalV2,
     HostDecisionNumericsV1,
     HostDecisionNumericsV2,
@@ -79,16 +80,27 @@ def map_host_capture(
     identity: ScanRadioIdentity,
     session_id: str,
     host_decisions: tuple[HostDecisionRecordV1 | HostDecisionRecordV2, ...],
-) -> HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3:
+) -> HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3 | HostAdaptiveHopReceiptV4:
     module = importlib.import_module("pluto_plus.host_adaptive_hop_client")
     if not isinstance(upstream, module.HostAdaptiveHopCaptureReceiptV3):
         raise ValueError("host adaptive application requires provider major 3")
     plan = _validated_plan(plan)
     if upstream.stream.request.decision != load_host_decision(plan):
         raise ValueError("host adaptive provider changed the detector configuration or receiver")
+    sparse = getattr(upstream.stream, "sparse", None)
     receipt_model = (
-        HostAdaptiveHopReceiptV3 if plan.schema_version == 3 else HostAdaptiveHopReceiptV2
+        HostAdaptiveHopReceiptV4
+        if sparse is not None
+        else HostAdaptiveHopReceiptV3
+        if plan.schema_version == 3
+        else HostAdaptiveHopReceiptV2
     )
+    receipt_fields = {"host_decisions": host_decisions}
+    if sparse is not None:
+        receipt_fields.update(
+            retained_visit_indices=sparse.retained_visit_indices,
+            transport_missing_sample_count=sparse.missing_sample_count,
+        )
     receipt = _map_capture(
         upstream,
         plan=plan,
@@ -96,9 +108,11 @@ def map_host_capture(
         session_id=session_id,
         terminal_model=HostAdaptiveHopTerminalV2,
         receipt_model=receipt_model,
-        receipt_fields={"host_decisions": host_decisions},
+        receipt_fields=receipt_fields,
     )
-    assert isinstance(receipt, (HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3))
+    assert isinstance(
+        receipt, (HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3, HostAdaptiveHopReceiptV4)
+    )
     return receipt
 
 
