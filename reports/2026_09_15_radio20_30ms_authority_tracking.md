@@ -184,6 +184,12 @@ suites pass 231 plus 37 cases. The deployed ARM binary SHA-256 is
 Its remote hash, runtime libraries, no-IIO argument preflight and TX-safe state
 verify on the bound radio. It has not started a new RF campaign.
 
+Replaying the new trigger over all 45 physical cycles would have launched
+refinement in 22 cycles. Seven cycles had activity at more than one LO. With
+the proposed 1.4403-first order, the first selected LO would be 1.4403 GHz in
+15 cycles, 1.1903 GHz in five and 1.9403 GHz in two. This replay predicts trigger
+behavior only; it cannot predict whether scan80 would complete 751 results.
+
 The next cycle is now a concrete reproducible command rather than a temporary
 harness. `qualify_glrt_cpu_radio_local20.py` admits only the reviewed image,
 binary, bank, references and upper-edge LOs; proves the 335.1773184-second
