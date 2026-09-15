@@ -769,3 +769,24 @@ episodes. The next acquisition change should therefore require the same LO to
 remain above the unchanged 0.05 isolation floor in consecutive scan rounds
 before consuming a long attempt. This adds temporal persistence to the trigger
 without changing the detector, tracker or 7,501-result acceptance gate.
+
+Firmware commits `0f9996d48` and `8a25fae66` implement and independently
+review that temporal gate as the opt-in
+`sparse100-wait40x2-confirm2-after-scout1` profile. The strongest qualifying LO
+must recur in the immediately following complete scan round. A long child
+clears the pending confirmation, so a second child also requires two fresh
+rounds. Existing profiles are unchanged. The wider live/visit suite passes 581
+tests, the focused operator/reviewer suite passes 334 tests, and the Cortex-A9
+payload is pinned as
+`33a44e515d86a2f0bf45b64089f272f4522c25d411965c69613fa6198cc71606`.
+
+Cycle v57 deploys that payload at 30 MS/s on 1.4403125 and 1.9403125 GHz. It
+completes all forty rounds and eighty contiguous scouts; the strongest score is
+0.02484, so it starts no long child. Independent transition review passes the
+2,013,265,920-sample executed plan, both SSD/RAID manifests verify, the radio is
+restored TX-safe, and acquisition is active. This negative interval verifies
+the new profile's bounded no-signal path. Retrospective application to the
+retained v55/v56 journals shows that none of their four above-0.05 triggers had
+a same-LO above-0.05 candidate in the preceding round, so all four short-lived
+long attempts would have been withheld. Positive physical confirmation still
+requires a future interval with qualifying activity in consecutive rounds.
