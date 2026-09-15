@@ -235,7 +235,7 @@ def test_wide_rate_uses_feedback_interleaved_direct_async_segments(rate):
         result = session.finish()
         assert result.plan.geometry.sample_rate_hz == rate
         assert clients[0].direct_async_frames == (
-            1
+            3
             + (
                 receipt.plan.geometry.valid_visit_samples
                 + receipt.plan.geometry.transition_guard_samples

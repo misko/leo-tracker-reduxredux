@@ -48,6 +48,7 @@ from leo.scanner.ports import ScanRadioIdentity
 
 _POLL_SECONDS = 0.025
 _JOIN_SECONDS = 15.0
+_MAXIMUM_EVENT_LAG_BLOCKS = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -384,7 +385,8 @@ class _HostAdaptiveSession:
             direct_options: dict[str, int] = (
                 {
                     "direct_async_frames": (
-                        1
+                        _MAXIMUM_EVENT_LAG_BLOCKS
+                        + 1
                         + (
                             self.plan.geometry.valid_visit_samples
                             + self.plan.geometry.transition_guard_samples
