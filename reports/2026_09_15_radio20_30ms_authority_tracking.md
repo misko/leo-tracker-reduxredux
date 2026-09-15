@@ -155,6 +155,11 @@ success only from the child's retained summary after cleanup. Controller,
 fork, classification and profile-limit tests pass (220 plus 37 focused cases),
 and the cross-built ARM executable SHA-256 is
 `fdf8bebec321cf780dd14bcb96adc10363a019f7131d4dada844032b52130c83`.
+That exact executable is staged on the attested radio serial at
+`/tmp/glrt-cpu-scout-followup-fdf8bebec321cf78`; its remote hash and dynamic
+libraries verify, and an invalid-argument preflight exits 2 before IIO access.
+The post-deployment buffer is disabled, TX LO is powered down and TX gain is
+-80 dB.
 Three existing wall-clock-sensitive live simulations failed in one broad run
 and passed individually on rerun. The new composition has not yet run against
 the physical radio, so it does not change the acceptance result below.
