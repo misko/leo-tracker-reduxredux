@@ -505,3 +505,40 @@ of selected LO, but its RF interval is weaker than v32 and does not extend the
 the qualification gate. The next informative physical action is one bounded
 continuity run during a stronger signal interval; a segment must independently
 reach 2,251 results before the 7,501-result 100-second run is admitted.
+
+Cycle v37 evaluates complete-LO activity ranking. Its first round records
+qualifying powers of 0.0369 at 1.9403125 GHz and 0.0786 at 1.4403125 GHz, then
+correctly selects 1.4403125 GHz. That segment acquires but retains only 15 FPGA
+results before clean loss. The second round records 0.0297, 0.0613 and 0.0180
+at three LOs and correctly selects 1.9403125 GHz. By then the selected activity
+is stale: scan80 uses 62 attempts and all 7,500 refills without a handoff. This
+exposed a typed-status defect: a finite no-handoff child has
+`worker_complete=0`, but the parent originally required one and mapped the
+otherwise valid `NO_TRACK` to a run failure. The first independent transition
+review also compared that mapped parent result directly with the raw child
+outcome. The radio was still restored correctly. The corrected reviewer passes
+both ranked transitions and the recovered immutable evidence is published as
+116 verified files on SSD and RAID with a separate recovery receipt.
+
+Commit `3d206cb9c` fixes finite `NO_TRACK`, maps raw child failures correctly in
+the independent reviewer, and ensures a future review failure is recorded and
+published to RAID before the operator returns an error. It also adds
+`continuity30-fresh-after-scout1`: one scan64 attempt per LO, selection of the
+strongest recent isolated activity, and at most sixteen scan80 refinement
+attempts before rescanning. A successful handoff still has all 7,500 refills
+and the unchanged 2,251-result requirement. The focused profile, controller,
+operator and reviewer suites pass 383 tests; the separately rerun load-sensitive
+scan80 case passes. The Cortex-A9 v23 payload is
+`079e70f769d31a457bed789402fd8cc0fca30815693a312dc3a62709ddd412a3`.
+
+Physical cycle v38 validates the fresh controller's negative path. It completes
+three four-LO rounds in twelve contiguous one-attempt scout visits and admits
+no segment. The strongest raw values recur at 1.9403125 GHz (0.0372--0.0431),
+but they do not satisfy the unchanged six-times-local-floor isolation gate.
+The parent therefore reports no selection and a 301,989,888-sample executed
+ceiling. Independent transition review passes, all retained boundary snapshots
+have zero FPGA, CDC and pacing faults, both manifests verify, the exact radio
+state matches before and after, and acquisition is active. No immediate repeat
+is warranted in this weak interval. The next positive qualification must use
+the same reviewed fresh controller when isolated activity returns; the
+30-second and subsequent 100-second gates remain unchanged.
