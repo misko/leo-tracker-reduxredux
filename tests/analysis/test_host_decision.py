@@ -8,7 +8,13 @@ import pytest
 
 from leo.analysis.host_decision import NativeHostDecision
 from tools.investigate_adaptive_decision_budget import control_iq
-from tools.prepare_decimated_dwell_replay import build, coefficients, reference
+from tools.prepare_decimated_dwell_replay import (
+    build,
+    coefficients,
+    multirate_coefficients,
+    multirate_reference,
+    reference,
+)
 from tools.presence_dwell import NativeDwell
 
 
@@ -63,6 +69,61 @@ def test_rejects_wrong_rate_geometry_and_closed_workspace(library):
     with pytest.raises(ValueError, match="closed"):
         host.run(np.zeros((1200000, 2), dtype=np.int16), edge="lower")
     host.close()
+
+
+@pytest.mark.parametrize("source_rate_hz", [15_000_000, 20_000_000])
+def test_multirate_direct_decimator_matches_independent_q15_reference(
+    library, source_rate_hz
+):
+    native = ct.CDLL(str(library))
+    native.leo_decimator_create_factor.argtypes = [
+        ct.c_void_p,
+        ct.c_uint,
+        ct.c_uint,
+        ct.c_size_t,
+    ]
+    native.leo_decimator_create_factor.restype = ct.c_void_p
+    native.leo_decimator_run.argtypes = [
+        ct.c_void_p,
+        ct.c_void_p,
+        ct.c_size_t,
+        ct.c_void_p,
+    ]
+    native.leo_decimator_destroy.argtypes = [ct.c_void_p]
+    factor = source_rate_hz // 2_500_000
+    iq = np.random.default_rng(source_rate_hz).integers(
+        -30_000, 30_001, (2400, 2), dtype=np.int16
+    )
+    coefficients_q15 = multirate_coefficients(source_rate_hz)
+    expected = multirate_reference(iq, source_rate_hz)
+    actual = np.empty_like(expected)
+    workspace = native.leo_decimator_create_factor(
+        coefficients_q15.ctypes.data, len(coefficients_q15), factor, len(iq)
+    )
+    assert workspace
+    try:
+        assert native.leo_decimator_run(
+            workspace, iq.ctypes.data, len(iq), actual.ctypes.data
+        ) == 0
+    finally:
+        native.leo_decimator_destroy(workspace)
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    ("source_rate_hz", "supported_start"),
+    [(15_000_000, 34), (20_000_000, 32)],
+)
+def test_multirate_host_decision_accepts_exact_dwell_and_resets(
+    library, source_rate_hz, supported_start
+):
+    iq = np.zeros((source_rate_hz * 120 // 1000, 2), dtype=np.int16)
+    with NativeHostDecision(library, source_rate_hz=source_rate_hz) as host:
+        first = host.run(iq, edge="lower")
+        second = host.run(iq, edge="upper")
+    assert first.supported_start == second.supported_start == supported_start
+    assert first.supported_end == second.supported_end == 300_000
+    assert first.outcome == second.outcome == "not_detected"
 
 
 @pytest.mark.parametrize("edge", ["lower", "upper"])

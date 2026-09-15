@@ -38,6 +38,12 @@ def parse_scheduled_scanner_intent(payload: dict) -> ScheduledScannerRunIntentV1
         from leo.scanner.host_adaptive_schedule import HostAdaptiveRx0ScheduledScannerIntentV5
 
         return HostAdaptiveRx0ScheduledScannerIntentV5.model_validate(payload)
+    if version == 6:
+        from leo.scanner.host_adaptive_schedule import (
+            HostAdaptiveRx0MultirateScheduledScannerIntentV6,
+        )
+
+        return HostAdaptiveRx0MultirateScheduledScannerIntentV6.model_validate(payload)
     if version == 2:
         return SingleRxScheduledScannerIntentV2.model_validate(payload)
     if version == 3:
@@ -209,6 +215,32 @@ class SingleRxPersistentHopPlanV2(PersistentHopPlanV1):
         return self
 
 
+class SingleRxMultiratePersistentHopPlanV3(SingleRxPersistentHopPlanV2):
+    """New RX0-only geometry for a source rate selected before radio admission."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    sample_rate_hz: Literal[15_000_000, 20_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[15_000_000, 20_000_000]  # type: ignore[assignment]
+    receiver_ids: tuple[Literal[0]] = (0,)  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_exact(self) -> Self:
+        if (
+            self.sample_rate_hz != self.bandwidth_hz
+            or not math.isfinite(self.gain_db)
+            or self.transition_guard_samples >= self.valid_visit_samples
+            or self.planned_valid_duty_ppm < self.minimum_valid_duty_ppm
+        ):
+            raise ValueError("multirate single-RX geometry is inconsistent")
+        expected = tuple(
+            PersistentHopProfileV1(target_index=i, fastlock_profile_index=i, target=target)
+            for i, target in enumerate(scheduled_low_band_targets(bandwidth_hz=5_000_000))
+        )
+        if self.profiles != expected:
+            raise ValueError("multirate single-RX targets must remain pilot-centred")
+        return self
+
+
 class SingleRxHopReceiptV2(PersistentHopSessionReceiptV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     plan: SingleRxPersistentHopPlanV2
@@ -217,6 +249,11 @@ class SingleRxHopReceiptV2(PersistentHopSessionReceiptV1):
 class SingleRxHopTimingV2(PersistentHopUtcTimingAuthorityV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     sample_rate_hz: Literal[10_000_000] = SINGLE_RX_RATE_HZ  # type: ignore[assignment]
+
+
+class SingleRxHopTimingV3(SingleRxHopTimingV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    sample_rate_hz: Literal[15_000_000, 20_000_000]  # type: ignore[assignment]
 
 
 def compile_single_rx_hop_plan(

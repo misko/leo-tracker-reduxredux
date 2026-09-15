@@ -2,12 +2,20 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdaptiveHopBrowser, AdaptiveHopDetail } from "./AdaptiveHopPanel";
 import { getAdaptiveSession, getAdaptiveSessions } from "./adaptive-api";
-import { adaptiveDetailFixture, adaptivePageFixture, hostAdaptiveDetailFixture } from "./adaptive-fixtures";
+import { adaptiveDetailFixture, adaptivePageFixture, hostAdaptiveDetailFixture, multirateAdaptiveDetailFixture } from "./adaptive-fixtures";
 
 const respond = (value: unknown, status = 200) => ({ ok: status === 200, status, json: async () => value }) as Response;
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive actual-visit presentation", () => {
+  it.each([15000000, 20000000] as const)("validates and shows RX0 at %s S/s", async rate => {
+    const detail = multirateAdaptiveDetailFixture(rate);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
+    render(<AdaptiveHopDetail sessionId="adaptive-test" />);
+    await screen.findByRole("heading", { name: "Host decisions · RX0" });
+    expect(screen.getByText(`${rate / 1e6} MS/s recording · 2.5 MS/s decimated decisions`)).toBeInTheDocument();
+    await expect(getAdaptiveSession("adaptive-test")).resolves.toEqual(detail);
+  });
   it.each([0, 1] as const)("shows native RX%s and host delivery separately from policy", async receiver => {
     const detail = hostAdaptiveDetailFixture(receiver);
     const fetcher = vi.fn(async (path: string) => path === "/api/v2/scanner/adaptive-sessions/adaptive-test" ? respond(detail) : respond(null, 404));

@@ -63,8 +63,16 @@ class HostDecisionEvidence:
 class NativeHostDecision:
     """One non-reentrant, bounded native workspace; no runtime compilation."""
 
-    def __init__(self, library: Path):
+    def __init__(self, library: Path, *, source_rate_hz: int = 10_000_000):
         self._library = ct.CDLL(str(library))
+        if source_rate_hz not in (10_000_000, 15_000_000, 20_000_000):
+            raise ValueError("unsupported host decision source rate")
+        self._source_rate_hz = source_rate_hz
+        self._source_count = source_rate_hz * 120 // 1000
+        self._result_version = 1 if source_rate_hz == 10_000_000 else 2
+        self._supported_start = {10_000_000: 40, 15_000_000: 34, 20_000_000: 32}[
+            source_rate_hz
+        ]
         self._library.leo_host_decision_create_v1.argtypes = [ct.c_void_p, ct.c_size_t]
         self._library.leo_host_decision_create_v1.restype = ct.c_void_p
         self._library.leo_host_decision_destroy_v1.argtypes = [ct.c_void_p]
@@ -73,12 +81,26 @@ class NativeHostDecision:
             ct.c_void_p, ct.c_void_p, ct.c_size_t, ct.c_uint32, ct.POINTER(_Result),
         ]
         self._library.leo_host_decision_run_v1.restype = ct.c_int
+        self._library.leo_host_decision_create_v2.argtypes = [
+            ct.c_void_p,
+            ct.c_size_t,
+            ct.c_uint32,
+        ]
+        self._library.leo_host_decision_create_v2.restype = ct.c_void_p
+        self._library.leo_host_decision_run_v2.argtypes = [
+            ct.c_void_p, ct.c_void_p, ct.c_size_t, ct.c_uint32, ct.POINTER(_Result),
+        ]
+        self._library.leo_host_decision_run_v2.restype = ct.c_int
         templates = np.ascontiguousarray([
             qin_edge_pilot_frame(2500000, edge, symbol_roll=roll)
             for edge in ("lower", "upper") for roll in (0, 17)
         ], dtype=np.complex128)
-        self._workspace = self._library.leo_host_decision_create_v1(
-            templates.ctypes.data, templates.shape[1],
+        self._workspace = (
+            self._library.leo_host_decision_create_v1(templates.ctypes.data, templates.shape[1])
+            if source_rate_hz == 10_000_000
+            else self._library.leo_host_decision_create_v2(
+                templates.ctypes.data, templates.shape[1], source_rate_hz
+            )
         )
         if not self._workspace:
             raise ValueError("host decision workspace rejected its configuration")
@@ -99,18 +121,24 @@ class NativeHostDecision:
         if not self._workspace:
             raise ValueError("host decision workspace is closed")
         if (not isinstance(iq, np.ndarray) or iq.dtype != np.dtype("<i2")
-                or iq.shape != (1200000, 2) or edge not in ("lower", "upper")):
-            raise ValueError("host decisions require one complete native-10M CI16 dwell")
+                or iq.shape != (self._source_count, 2) or edge not in ("lower", "upper")):
+            raise ValueError("host decisions require one complete configured native CI16 dwell")
         values = np.ascontiguousarray(iq)
         result = _Result()
-        if self._library.leo_host_decision_run_v1(
+        runner = (
+            self._library.leo_host_decision_run_v1
+            if self._result_version == 1
+            else self._library.leo_host_decision_run_v2
+        )
+        if runner(
             self._workspace, values.ctypes.data, len(values), int(edge == "upper"),
             ct.byref(result),
         ):
             raise ValueError("native host decision failed; result is unknown")
-        if (result.version != 1 or result.reserved or result.outcome > 2
+        if (result.version != self._result_version or result.reserved or result.outcome > 2
                 or result.screen_mask != 63 or result.confirmation_mask not in (1, 2, 4, 8, 16, 32)
-                or result.supported_start != 40 or result.supported_end != 300000):
+                or result.supported_start != self._supported_start
+                or result.supported_end != 300000):
             raise ValueError("native host decision returned incompatible evidence")
         return HostDecisionEvidence(
             outcome=("unknown", "detected", "not_detected")[result.outcome],

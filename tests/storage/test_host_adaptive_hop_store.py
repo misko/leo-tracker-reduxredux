@@ -3,19 +3,24 @@ import pytest
 from pydantic import ValidationError
 
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
-from leo.scanner.single_rx import SingleRxHopTimingV2
+from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 from leo.storage.adaptive_hop import (
     AdaptiveHopIqManifestV1,
     AdaptiveHopIqStore,
     HostAdaptiveHopIqManifestV2,
+    HostAdaptiveHopIqManifestV3,
 )
 from leo.storage.errors import BundleStateError
 from tests.scanner.adaptive_hop_fixtures import block_fixture, receipt_fixture, timing_fixture
-from tests.scanner.host_adaptive_fixtures import host_receipt
+from tests.scanner.host_adaptive_fixtures import host_receipt, multirate_host_receipt
 
 
 def block(receipt, index):
-    values = np.full((1_200_000, 1), (index + 1) - 32768j, np.complex64)
+    values = np.full(
+        (receipt.plan.geometry.valid_visit_samples, 1),
+        (index + 1) - 32768j,
+        np.complex64,
+    )
     values[0, 0] = -32768 + 32767j
     return HostAdaptiveHopVisitBlock(
         values, receipt.plan.geometry.receiver_ids, receipt.visits[index]
@@ -50,6 +55,36 @@ def test_native_single_rx_store_full_chunk_tail_and_source_hashes(tmp_path, rece
                 assert not iq.flags.writeable
         with pytest.raises(ValidationError):
             AdaptiveHopIqManifestV1.model_validate_json(published.manifest.model_dump_json())
+    finally:
+        writer.abort()
+        store.close()
+
+
+@pytest.mark.parametrize("rate", [15_000_000, 20_000_000])
+def test_multirate_store_uses_bounded_four_visit_chunks(tmp_path, rate):
+    receipt = multirate_host_receipt(rate=rate, count=7, session_id=f"wide-{rate}")
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(receipt.session_id, receipt.plan)
+    try:
+        for index in range(receipt.complete_visit_count):
+            writer.append(block(receipt, index))
+        published = writer.finish(receipt, timing=timing_fixture(receipt, SingleRxHopTimingV3))
+        dwell = rate * 120 // 1000
+        assert isinstance(published.manifest, HostAdaptiveHopIqManifestV3)
+        assert [chunk.visit_count for chunk in published.manifest.chunks] == [4, 2]
+        assert [chunk.sample_count for chunk in published.manifest.chunks] == [4 * dwell, 2 * dwell]
+        assert all(
+            chunk.uncompressed_bytes <= 64 * 1024 * 1024
+            for chunk in published.manifest.chunks
+        )
+        assert published.manifest.compression.policy_id == "adaptive-four-visit-chunks-v1"
+        assert store.verify(receipt.session_id) == published
+        with store.reader(receipt.session_id, expected=published) as reader:
+            for index in (5, 0, 3, 4):
+                visit, iq = reader.read_visit_ci16(index)
+                assert visit == receipt.visits[index]
+                assert iq.shape == (dwell, 1, 2)
+                np.testing.assert_array_equal(iq[1, 0], [index + 1, -32768])
     finally:
         writer.abort()
         store.close()

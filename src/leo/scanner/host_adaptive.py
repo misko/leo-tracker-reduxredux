@@ -21,10 +21,11 @@ from leo.scanner.adaptive_hop import (
     PositiveCounter,
     TargetIndex,
 )
-from leo.scanner.single_rx import SingleRxPersistentHopPlanV2
+from leo.scanner.single_rx import SingleRxMultiratePersistentHopPlanV3, SingleRxPersistentHopPlanV2
 
 HOST_ADAPTIVE_PROFILE_ID = "adaptive-single-rx-random-10m-300s-v1"
 HOST_ADAPTIVE_RX0_PROFILE_ID = "adaptive-single-rx0-10m-300s-v1"
+HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID = "adaptive-single-rx0-random-15m-20m-300s-v1"
 Finite = Annotated[float, Field(allow_inf_nan=False)]
 Duration = Annotated[float, Field(ge=0, allow_inf_nan=False)]
 Outcome = Literal["unknown", "detected", "not_detected"]
@@ -61,6 +62,30 @@ class HostDecisionConfigurationV1(AdaptiveModel):
         return canonical_digest(self.model_dump(mode="json"))
 
 
+class HostDecisionConfigurationV2(HostDecisionConfigurationV1):
+    """Rate-bound 15/20 MS/s source reduced to the established 2.5 MS/s detector."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    source_rate_hz: Literal[15_000_000, 20_000_000]  # type: ignore[assignment]
+    decimation_factor: Literal[6, 8]  # type: ignore[assignment]
+    filter_taps: Literal[201, 257]  # type: ignore[assignment]
+    group_delay_source_samples: Literal[100, 128]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _rate_geometry_is_exact(self) -> Self:
+        expected = {
+            15_000_000: (6, 201, 100),
+            20_000_000: (8, 257, 128),
+        }[self.source_rate_hz]
+        if (self.decimation_factor, self.filter_taps, self.group_delay_source_samples) != expected:
+            raise ValueError("host decision rate, reduction and FIR geometry disagree")
+        return self
+
+    @property
+    def source_dwell_samples(self) -> int:
+        return self.source_rate_hz * 120 // 1000
+
+
 class HostAdaptiveHopPlanV2(AdaptiveHopPlanV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     geometry: SingleRxPersistentHopPlanV2
@@ -80,6 +105,24 @@ class HostAdaptiveHopPlanV2(AdaptiveHopPlanV1):
         SingleRxPersistentHopPlanV2.model_validate(self.geometry.model_dump())
         if self.geometry.receiver_ids != (self.classification_receiver,):
             raise ValueError("host classification receiver differs from the recorded receiver")
+        return self
+
+
+class HostAdaptiveHopPlanV3(HostAdaptiveHopPlanV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    geometry: SingleRxMultiratePersistentHopPlanV3
+    decision: HostDecisionConfigurationV2
+    qualification_minimum_valid_duty_ppm: Literal[900_000] = 900_000  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_revalidated(self) -> Self:
+        if (
+            self.geometry.sample_rate_hz != self.decision.source_rate_hz
+            or self.geometry.bandwidth_hz != self.decision.source_rate_hz
+            or self.geometry.receiver_ids != (0,)
+            or self.classification_receiver != 0
+        ):
+            raise ValueError("multirate host decision differs from RX0 source geometry")
         return self
 
 
@@ -190,6 +233,59 @@ class HostDecisionRecordV1(AdaptiveModel):
         return self.feedback_completed_monotonic_ns - self.feedback_monotonic_ns
 
 
+class HostDecisionRecordV2(HostDecisionRecordV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    source_rate_hz: Literal[15_000_000, 20_000_000]
+
+    @model_validator(mode="after")
+    def _evidence_is_consistent(self) -> Self:
+        expected_samples = self.source_rate_hz * 120 // 1000
+        if (
+            self.event_sequence != self.visit_index
+            or self.valid_end_counter_exclusive - self.valid_start_counter != expected_samples
+            or self.feedback_monotonic_ns < self.submitted_monotonic_ns
+            or self.feedback_completed_monotonic_ns < self.feedback_monotonic_ns
+            or (self.started_monotonic_ns is None) != (self.completed_monotonic_ns is None)
+        ):
+            raise ValueError("host decision source or clock interval is inconsistent")
+        if self.started_monotonic_ns is not None:
+            assert self.completed_monotonic_ns is not None
+            if not (
+                self.submitted_monotonic_ns
+                <= self.started_monotonic_ns
+                <= self.completed_monotonic_ns
+                <= self.feedback_monotonic_ns
+            ):
+                raise ValueError("host computation clocks are not ordered")
+        elif self.health != "queue_overflow":
+            raise ValueError("host computation requires its worker clock interval")
+        if self.health == "healthy":
+            if (
+                self.numerics is None
+                or self.failure is not None
+                or self.feedback_outcome != self.numerics.outcome
+                or self.feedback_monotonic_ns - self.submitted_monotonic_ns > 1_000_000_000
+            ):
+                raise ValueError("healthy host decision lacks fresh complete evidence")
+        elif self.feedback_outcome != "unknown" or self.failure is None:
+            raise ValueError("degraded host decision must retain an explicit unknown and reason")
+        if self.health in ("queue_overflow", "detector_failure") and self.numerics is not None:
+            raise ValueError("failed host computation cannot invent numerical evidence")
+        if self.health == "queue_overflow" and self.started_monotonic_ns is not None:
+            raise ValueError("overflowed host work cannot claim worker execution")
+        if (self.feedback_disposition in ("rejected", "not_submitted")) != (
+            self.feedback_error is not None
+        ):
+            raise ValueError("host feedback rejection must retain its transport error")
+        return self
+
+    @property
+    def feedback_call_elapsed_ns(self) -> int | None:
+        if self.feedback_disposition == "not_submitted":
+            return None
+        return self.feedback_completed_monotonic_ns - self.feedback_monotonic_ns
+
+
 class HostAdaptiveHopTerminalV2(AdaptiveHopTerminalV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     wire_protocol_version: Literal[3] = 3  # type: ignore[assignment]
@@ -225,5 +321,33 @@ class HostAdaptiveHopReceiptV2(AdaptiveHopReceiptV1):
                 or record.valid_end_counter_exclusive != event.valid_start_counter + 1_200_000
                 or record.configuration_sha256 != self.plan.decision.configuration_sha256
             ):
+                raise ValueError("host decision differs from its native source or configuration")
+        return self
+
+
+class HostAdaptiveHopReceiptV3(HostAdaptiveHopReceiptV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    plan: HostAdaptiveHopPlanV3
+    host_decisions: Annotated[tuple[HostDecisionRecordV2, ...], Field(max_length=2500)]
+
+    @model_validator(mode="after")
+    def _host_evidence_is_source_bound(self) -> Self:
+        if len(self.host_decisions) != self.complete_visit_count:
+            raise ValueError("host decisions must account for every complete native visit")
+        source_samples = self.plan.decision.source_dwell_samples
+        for index, record in enumerate(self.host_decisions):
+            event = self.events[index]
+            if (
+                record.session_id != self.terminal.session_id
+                or record.generation != self.plan.policy.generation
+                or record.stream_generation != self.stream_generation
+                or record.visit_index != index
+                or record.receiver_id != 0
+                or record.source_rate_hz != self.plan.decision.source_rate_hz
+                or record.target_index != event.target_index
+                or record.valid_start_counter != event.valid_start_counter
+                or record.valid_end_counter_exclusive != event.valid_start_counter + source_samples
+                or record.configuration_sha256 != self.plan.decision.configuration_sha256
+        ):
                 raise ValueError("host decision differs from its native source or configuration")
         return self

@@ -27,6 +27,7 @@ struct leo_decimator {
     int16_t *source, *middle;
     float *prefiltered, denominator[8], state[4][2][2];
     int recursive;
+    unsigned factor;
 #if defined(LEO_DECIMATOR_FFT)
     leo_decimator_fft *fast;
 #endif
@@ -61,6 +62,7 @@ leo_decimator *leo_decimator_create(const int16_t *h1, unsigned n1,
     if (!w) return NULL;
     if ((n1 && configure(&w->a,h1,n1)) || configure(&w->b,h2,n2)) goto fail;
     w->count=count;
+    w->factor=4;
 #if defined(LEO_DECIMATOR_FFT)
     if (!n1) {
         w->fast=leo_decimator_fft_create(h2,n2,count);
@@ -70,6 +72,23 @@ leo_decimator *leo_decimator_create(const int16_t *h1, unsigned n1,
     w->source=calloc(2*(TILE+MAX_TAPS+16),sizeof(int16_t));
     w->middle=calloc(2*(TILE/2+MAX_TAPS+16),sizeof(int16_t));
     if (!w->source || !w->middle) goto fail;
+    return w;
+fail:
+    leo_decimator_destroy(w); return NULL;
+}
+
+leo_decimator *leo_decimator_create_factor(const int16_t *h, unsigned n,
+    unsigned factor, size_t count)
+{
+    if (!count || count>2400000 || factor<2 || factor>8 || count%factor) return NULL;
+    leo_decimator *w=calloc(1,sizeof(*w));
+    if (!w) return NULL;
+    if (configure(&w->b,h,n)) goto fail;
+    w->count=count; w->factor=factor;
+    /* The general path keeps one reset-prefixed source extent. This avoids
+     * inventing phase at tile boundaries when factor does not divide TILE. */
+    w->source=calloc(2*(count+MAX_TAPS+16),sizeof(int16_t));
+    if (!w->source) goto fail;
     return w;
 fail:
     leo_decimator_destroy(w); return NULL;
@@ -134,6 +153,19 @@ static void filter(const struct fir *f, const int16_t *x, size_t count,
     unsigned factor, int16_t *out, float *floating)
 {
     size_t m=0, length=count/factor;
+#if defined(__ARM_NEON)
+    if (factor!=2 && factor!=4) {
+        for (;m<length;++m) {
+            int32_t re=0,im=0;
+            for (unsigned k=0;k<f->used;++k) {
+                ptrdiff_t p=2*((ptrdiff_t)(m*factor)-(ptrdiff_t)f->offset[k]);
+                re+=(int32_t)x[p]*f->h[k]; im+=(int32_t)x[p+1]*f->h[k];
+            }
+            out[2*m]=quantize(re); out[2*m+1]=quantize(im);
+        }
+        return;
+    }
+#endif
 #if defined(__ARM_NEON) && defined(LEO_DECIMATOR_COMPACT)
     if (!floating && factor==2 && !(length%16)) {
         if (f->kernel==15) { compact_15(f,x,count,out); return; }
@@ -342,6 +374,13 @@ int leo_decimator_run(leo_decimator *w, const int16_t *iq, size_t count, int16_t
 #if defined(LEO_DECIMATOR_FFT)
     if (w->fast) return leo_decimator_fft_run(w->fast,iq,count,out);
 #endif
+    if (!w->a.count && w->factor!=4) {
+        int16_t *source=w->source+2*MAX_TAPS;
+        memset(w->source,0,2*MAX_TAPS*sizeof(int16_t));
+        memcpy(source,iq,4*count);
+        filter(&w->b,source,count,w->factor,out,NULL);
+        return 0;
+    }
     int16_t *source=w->source+2*MAX_TAPS, *middle=w->middle+2*MAX_TAPS;
     memset(w->source,0,2*MAX_TAPS*sizeof(int16_t));
     memset(w->middle,0,2*MAX_TAPS*sizeof(int16_t));

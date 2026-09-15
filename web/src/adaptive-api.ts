@@ -30,7 +30,7 @@ export interface HostFeedbackSummary {
   maximum_host_result_age_ms: number | null; maximum_feedback_call_ms: number | null;
   first_feedback_error: string | null;
 }
-export interface HostAdaptiveCapture extends Omit<LegacyAdaptiveCapture, "schema_version" | "sample_rate_hz" | "bandwidth_hz" | "analysis_state"> {
+export interface HostAdaptiveCaptureV2 extends Omit<LegacyAdaptiveCapture, "schema_version" | "sample_rate_hz" | "bandwidth_hz" | "analysis_state"> {
   schema_version: 2; sample_rate_hz: 10000000; bandwidth_hz: 10000000; analysis_state: "separate_product";
   radio_serial: string; physical_receiver: 0 | 1;
   decision_configuration: { schema_version: 1; execution: "host"; decision_rate_hz: 2500000;
@@ -38,6 +38,14 @@ export interface HostAdaptiveCapture extends Omit<LegacyAdaptiveCapture, "schema
     maximum_confirmations: 1; detector_manifest_sha256: string };
   host_feedback: HostFeedbackSummary;
 }
+export interface HostAdaptiveCaptureV3 extends Omit<HostAdaptiveCaptureV2, "schema_version" | "sample_rate_hz" | "bandwidth_hz" | "physical_receiver" | "decision_configuration"> {
+  schema_version: 3; sample_rate_hz: 15000000 | 20000000; bandwidth_hz: 15000000 | 20000000;
+  physical_receiver: 0;
+  decision_configuration: { schema_version: 2; execution: "host"; decision_rate_hz: 2500000;
+    source_rate_hz: 15000000 | 20000000; decimation_factor: 6 | 8; filter_taps: 201 | 257;
+    screen_count: 6; maximum_confirmations: 1; detector_manifest_sha256: string };
+}
+export type HostAdaptiveCapture = HostAdaptiveCaptureV2 | HostAdaptiveCaptureV3;
 export type AdaptiveCapture = LegacyAdaptiveCapture | HostAdaptiveCapture;
 export interface HostDecisionView {
   schema_version: 1; visit_index: number;
@@ -62,13 +70,13 @@ export interface AdaptiveVisit {
 }
 
 export interface AdaptivePage {
-  schema_version: 1 | 2; kind: "adaptive_hop_history_page";
+  schema_version: 1 | 2 | 3; kind: "adaptive_hop_history_page";
   cursor: number; limit: number; total: number; next_cursor: number | null;
   items: AdaptiveCapture[];
 }
 
 export interface AdaptiveDetail {
-  schema_version: 1 | 2; kind: "adaptive_hop_session_detail";
+  schema_version: 1 | 2 | 3; kind: "adaptive_hop_session_detail";
   capture: AdaptiveCapture; source_origin_counter: string | null; visits: AdaptiveVisit[];
   host_decisions?: HostDecisionView[];
 }
@@ -86,14 +94,14 @@ function seconds(value: unknown): value is number {
 function optionalSeconds(value: unknown): boolean { return value === null || seconds(value); }
 
 function validateCapture(c: AdaptiveCapture): void {
-  if (!c || c.kind !== "adaptive_hop_history_item" || ![1, 2].includes(c.schema_version)
+  if (!c || c.kind !== "adaptive_hop_history_item" || ![1, 2, 3].includes(c.schema_version)
       || typeof c.session_id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(c.session_id)
       || !/^sha256:[0-9a-f]{64}$/.test(c.input_manifest_sha256) || !counter(c.policy_generation)
       || !["adaptive", "shadow"].includes(c.mode) || typeof c.radio_id !== "string"
       || ![c.recorded_at, c.finalized_at].every(v => typeof v === "string" && Number.isFinite(Date.parse(v)))
       || (c.captured_at !== null && (typeof c.captured_at !== "string" || !Number.isFinite(Date.parse(c.captured_at))))
       || c.nominal_duration_seconds !== 300 || c.valid_visit_ms !== 120
-      || !(c.schema_version === 2 ? c.sample_rate_hz === 10000000 : [2500000, 5000000].includes(c.sample_rate_hz)) || c.bandwidth_hz !== c.sample_rate_hz
+      || !(c.schema_version === 3 ? [15000000, 20000000].includes(c.sample_rate_hz) : c.schema_version === 2 ? c.sample_rate_hz === 10000000 : [2500000, 5000000].includes(c.sample_rate_hz)) || c.bandwidth_hz !== c.sample_rate_hz
       || !integer(c.started_visits, 2500) || !integer(c.retained_visits, c.started_visits)
       || !integer(c.fallback_choices, c.started_visits)
       || !optionalSeconds(c.source_span_seconds) || !optionalSeconds(c.utc_bracket_width_ms)
@@ -104,14 +112,17 @@ function validateCapture(c: AdaptiveCapture): void {
       || c.source_span_attested !== (c.valid_duty_ppm !== null)
       || (c.utc_qualified && c.captured_at === null)
       || !["completed", "cancelled"].includes(c.terminal_state) || c.restoration_status !== "restored"
-      || c.analysis_state !== (c.schema_version === 2 ? "separate_product" : "not_integrated") || !Array.isArray(c.target_coverage) || c.target_coverage.length !== 8) {
+      || c.analysis_state !== (c.schema_version !== 1 ? "separate_product" : "not_integrated") || !Array.isArray(c.target_coverage) || c.target_coverage.length !== 8) {
     throw new Error("Adaptive capture evidence is invalid");
   }
-  if (c.schema_version === 2) {
+  if (c.schema_version !== 1) {
     const d = c.decision_configuration, h = c.host_feedback;
     if (![0, 1].includes(c.physical_receiver) || typeof c.radio_serial !== "string" || !c.radio_serial
-        || !d || d.schema_version !== 1 || d.execution !== "host" || d.source_rate_hz !== 10000000
-        || d.decision_rate_hz !== 2500000 || d.decimation_factor !== 4 || d.filter_taps !== 161
+        || !d || d.schema_version !== c.schema_version - 1 || d.execution !== "host" || d.source_rate_hz !== c.sample_rate_hz
+        || d.decision_rate_hz !== 2500000
+        || !(c.schema_version === 2 ? d.decimation_factor === 4 && d.filter_taps === 161
+          : c.physical_receiver === 0 && ((c.sample_rate_hz === 15000000 && d.decimation_factor === 6 && d.filter_taps === 201)
+            || (c.sample_rate_hz === 20000000 && d.decimation_factor === 8 && d.filter_taps === 257)))
         || d.screen_count !== 6 || d.maximum_confirmations !== 1 || !/^sha256:[0-9a-f]{64}$/.test(d.detector_manifest_sha256)
         || !h || h.schema_version !== 1 || h.complete_visits !== c.retained_visits
         || ![h.healthy, h.degraded, h.unknown_feedback, h.accepted, h.source_ended, h.rejected, h.not_submitted].every(v => integer(v, c.retained_visits))
@@ -138,12 +149,13 @@ function validateCapture(c: AdaptiveCapture): void {
 }
 
 export async function getAdaptiveSessions(cursor: number, signal?: AbortSignal): Promise<AdaptivePage | null> {
-  let response = await fetch(`/api/v2/scanner/adaptive-sessions?cursor=${cursor}&limit=5`, { signal });
+  let response = await fetch(`/api/v3/scanner/adaptive-sessions?cursor=${cursor}&limit=5`, { signal });
+  if (response.status === 404) response = await fetch(`/api/v2/scanner/adaptive-sessions?cursor=${cursor}&limit=5`, { signal });
   if (response.status === 404) response = await fetch(`/api/v1/scanner/adaptive-sessions?cursor=${cursor}&limit=5`, { signal });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Adaptive history request failed (${response.status})`);
   const page = await response.json() as AdaptivePage;
-  if (!page || ![1, 2].includes(page.schema_version) || page.kind !== "adaptive_hop_history_page"
+  if (!page || ![1, 2, 3].includes(page.schema_version) || page.kind !== "adaptive_hop_history_page"
       || page.cursor !== cursor || page.limit !== 5 || !integer(page.total)
       || !Array.isArray(page.items) || page.items.length > page.limit
       || (page.next_cursor !== null && page.next_cursor !== cursor + page.limit)) {
@@ -154,17 +166,18 @@ export async function getAdaptiveSessions(cursor: number, signal?: AbortSignal):
 }
 
 export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal): Promise<AdaptiveDetail> {
-  let response = await fetch(`/api/v2/scanner/adaptive-sessions/${encodeURIComponent(sessionId)}`, { signal });
+  let response = await fetch(`/api/v3/scanner/adaptive-sessions/${encodeURIComponent(sessionId)}`, { signal });
+  if (response.status === 404) response = await fetch(`/api/v2/scanner/adaptive-sessions/${encodeURIComponent(sessionId)}`, { signal });
   if (response.status === 404) response = await fetch(`/api/v1/scanner/adaptive-sessions/${encodeURIComponent(sessionId)}`, { signal });
   if (!response.ok) throw new Error(`Adaptive detail request failed (${response.status})`);
   const detail = await response.json() as AdaptiveDetail;
-  if (!detail || ![1, 2].includes(detail.schema_version) || detail.kind !== "adaptive_hop_session_detail") {
+  if (!detail || ![1, 2, 3].includes(detail.schema_version) || detail.kind !== "adaptive_hop_session_detail") {
     throw new Error("Adaptive detail response is invalid");
   }
   validateCapture(detail.capture);
   const c = detail.capture;
   if (detail.schema_version !== c.schema_version) throw new Error("Adaptive detail major differs from capture");
-  if (c.schema_version === 2) {
+  if (c.schema_version !== 1) {
     if (!Array.isArray(detail.host_decisions) || detail.host_decisions.length !== c.retained_visits) throw new Error("Host decision inventory is incomplete");
     detail.host_decisions.forEach((d, i) => {
       if (!d || d.schema_version !== 1 || d.visit_index !== i

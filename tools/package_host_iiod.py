@@ -9,9 +9,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = Path("/home/mouse9911/gits/libiio-single-rx-10m")
-BUILD = Path("/var/tmp/leo-host-production-20260913")
-NATIVE = Path("/var/tmp/leo-host-feedback-sdk-20260913/build")
+SOURCE = Path("/home/mouse9911/gits/libiio-adaptive-multirate")
+BUILD = Path("/var/tmp/leo-host-multirate-provider")
+NATIVE = Path("/var/tmp/leo-host-multirate-native")
+SCANNER_ARCHIVE = Path("/var/tmp/leo-host-production-20260913/libscanner.a")
 SDK = Path("/home/mouse9911/gits/plutosdr-fw/buildroot/output/host")
 
 
@@ -39,7 +40,7 @@ def main():
     ]
     results = {test: command(str(NATIVE / "tests" / test)) for test in tests}
     destination = ROOT / "runtime/scanner-iiod/iiod"
-    shutil.copyfile(BUILD / "arm/iiod/iiod", destination)
+    shutil.copyfile(BUILD / "iiod/iiod", destination)
     command(str(SDK / "bin/arm-linux-gnueabihf-strip"), "--strip-unneeded", str(destination))
     destination.chmod(0o755)
     dynamic = command("readelf", "-d", str(destination))
@@ -53,7 +54,7 @@ def main():
         "created_at_utc": datetime.now(UTC).isoformat(),
         "hardware_accessed": False,
         "artifact": {
-            "path": str(BUILD / "arm/iiod/iiod"),
+            "path": str(BUILD / "iiod/iiod"),
             "sha256": digest(destination),
             "size_bytes": destination.stat().st_size,
             "elf_machine": "ARM",
@@ -79,7 +80,7 @@ def main():
             },
         },
         "scanner_sdk": {
-            "archive_sha256": digest(BUILD / "libscanner.a"),
+            "archive_sha256": digest(SCANNER_ARCHIVE),
             "source_sha256": {
                 str(path.relative_to(ROOT)): digest(path)
                 for path in sorted((ROOT / "src/leo/scanner/native_presence").glob("*"))
@@ -90,9 +91,9 @@ def main():
             "build_type": "Release",
             "build_shared_libs": False,
             "dns_sd": False,
-            "arm_cmake_cache_sha256": digest(BUILD / "arm/CMakeCache.txt"),
-            "single_rx_10m_capability": "iio,buffer-persistent-hop-single-rx-10m=1",
-            "host_feedback_wire_version": 3,
+            "arm_cmake_cache_sha256": digest(BUILD / "CMakeCache.txt"),
+            "single_rx_multirate_capability": "15/20 MS/s; RX0; 2.5 MS/s decisions",
+            "host_feedback_wire_versions": [3, 4],
             "note": (
                 "Host-adaptive requests disable on-radio GLRT. "
                 "Legacy GLRT uses its separate companion bundle."
@@ -113,7 +114,11 @@ def main():
         },
         "reproduction": {
             "script": str(Path(__file__).relative_to(ROOT)),
-            "commands": json.loads((BUILD / "commands.json").read_text()),
+            "commands": [
+                ["cmake", "-S", str(SOURCE), "-B", str(BUILD),
+                 "-DCMAKE_TOOLCHAIN_FILE=" + str(SDK / "share/buildroot/toolchainfile.cmake")],
+                ["cmake", "--build", str(BUILD), "--target", "iiod", "-j4"],
+            ],
             "compiler_version": command(str(SDK / "bin/arm-linux-gnueabihf-gcc"), "--version"),
             "toolchain_file_sha256": digest(SDK / "share/buildroot/toolchainfile.cmake"),
             "strip": [

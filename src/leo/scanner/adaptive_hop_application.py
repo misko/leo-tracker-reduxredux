@@ -13,12 +13,17 @@ from leo.scanner.adaptive_hop_ports import (
     AdaptiveHopRadio,
     AdaptiveHopVisitBlock,
 )
-from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2, HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive import (
+    HostAdaptiveHopPlanV2,
+    HostAdaptiveHopPlanV3,
+    HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV3,
+)
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio, HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 from leo.scanner.ports import ScanRadioIdentity
-from leo.scanner.single_rx import SingleRxHopTimingV2
+from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,8 +34,8 @@ class CapturedAdaptiveHopSession:
 
 @dataclass(frozen=True, slots=True)
 class CapturedHostAdaptiveHopSession:
-    receipt: HostAdaptiveHopReceiptV2
-    timing: SingleRxHopTimingV2 | None
+    receipt: HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3
+    timing: SingleRxHopTimingV2 | SingleRxHopTimingV3 | None
 
 
 class _CaptureSession[P: AdaptiveHopPlanV1, R: AdaptiveHopReceiptV1, B](Protocol):
@@ -86,7 +91,7 @@ def capture_adaptive_hop_session(
 
 def capture_host_adaptive_hop_session(
     radio: HostAdaptiveHopRadio,
-    plan: HostAdaptiveHopPlanV2,
+    plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3,
     *,
     session_id: str,
     visit_sink: Callable[[HostAdaptiveHopVisitBlock], None],
@@ -94,6 +99,7 @@ def capture_host_adaptive_hop_session(
     realtime_ns: Callable[[], int] = time.time_ns,
     monotonic_ns: Callable[[], int] = time.monotonic_ns,
 ) -> CapturedHostAdaptiveHopSession:
+    wide = isinstance(plan, HostAdaptiveHopPlanV3)
     receipt, timing = _capture(
         radio,
         plan,
@@ -102,9 +108,9 @@ def capture_host_adaptive_hop_session(
         cancel=cancel,
         realtime_ns=realtime_ns,
         monotonic_ns=monotonic_ns,
-        plan_model=HostAdaptiveHopPlanV2,
-        receipt_model=HostAdaptiveHopReceiptV2,
-        timing_model=SingleRxHopTimingV2,
+        plan_model=HostAdaptiveHopPlanV3 if wide else HostAdaptiveHopPlanV2,
+        receipt_model=HostAdaptiveHopReceiptV3 if wide else HostAdaptiveHopReceiptV2,
+        timing_model=SingleRxHopTimingV3 if wide else SingleRxHopTimingV2,
     )
     return CapturedHostAdaptiveHopSession(receipt, timing)
 

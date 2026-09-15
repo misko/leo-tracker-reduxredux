@@ -12,30 +12,51 @@ from leo.radio.adaptive_hop_mapping import _load_policy, _map_capture, map_adapt
 from leo.radio.host_decision_worker import HostDecisionWorkResult
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV2,
+    HostAdaptiveHopPlanV3,
     HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV3,
     HostAdaptiveHopTerminalV2,
     HostDecisionNumericsV1,
     HostDecisionRecordV1,
+    HostDecisionRecordV2,
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.ports import ScanRadioIdentity
 
 
-def load_host_policy(plan: HostAdaptiveHopPlanV2) -> Any:
-    plan = HostAdaptiveHopPlanV2.model_validate(plan)
+def _validated_plan(plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3):
+    model = HostAdaptiveHopPlanV3 if plan.schema_version == 3 else HostAdaptiveHopPlanV2
+    return model.model_validate(plan)
+
+
+def load_host_policy(plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3) -> Any:
+    plan = _validated_plan(plan)
     return _load_policy(plan.policy)
 
 
-def load_host_decision(plan: HostAdaptiveHopPlanV2) -> Any:
-    plan = HostAdaptiveHopPlanV2.model_validate(plan)
+def load_host_decision(plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3) -> Any:
+    plan = _validated_plan(plan)
     module = importlib.import_module("pluto_plus.host_adaptive_hop")
-    return module.HostDecisionConfigurationV1(
+    model = (
+        module.HostDecisionConfigurationV2
+        if isinstance(plan, HostAdaptiveHopPlanV3)
+        else module.HostDecisionConfigurationV1
+    )
+    fields = (
+        {"source_rate_hz": plan.decision.source_rate_hz}
+        if isinstance(plan, HostAdaptiveHopPlanV3)
+        else {}
+    )
+    return model(
         receiver_id=plan.classification_receiver,
         configuration_sha256=bytes.fromhex(plan.decision.configuration_sha256[7:]),
+        **fields,
     )
 
 
-def map_host_sampled_visit(sampled: Any, plan: HostAdaptiveHopPlanV2) -> HostAdaptiveHopVisitBlock:
+def map_host_sampled_visit(
+    sampled: Any, plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3
+) -> HostAdaptiveHopVisitBlock:
     module = importlib.import_module("pluto_plus.host_adaptive_hop_stream")
     if not isinstance(sampled, module.HostAdaptiveHopSampledVisitV3):
         raise ValueError("host adaptive samples require provider major 3")
@@ -53,27 +74,30 @@ def map_host_sampled_visit(sampled: Any, plan: HostAdaptiveHopPlanV2) -> HostAda
 def map_host_capture(
     upstream: Any,
     *,
-    plan: HostAdaptiveHopPlanV2,
+    plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3,
     identity: ScanRadioIdentity,
     session_id: str,
-    host_decisions: tuple[HostDecisionRecordV1, ...],
-) -> HostAdaptiveHopReceiptV2:
+    host_decisions: tuple[HostDecisionRecordV1 | HostDecisionRecordV2, ...],
+) -> HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3:
     module = importlib.import_module("pluto_plus.host_adaptive_hop_client")
     if not isinstance(upstream, module.HostAdaptiveHopCaptureReceiptV3):
         raise ValueError("host adaptive application requires provider major 3")
-    plan = HostAdaptiveHopPlanV2.model_validate(plan)
+    plan = _validated_plan(plan)
     if upstream.stream.request.decision != load_host_decision(plan):
         raise ValueError("host adaptive provider changed the detector configuration or receiver")
+    receipt_model = (
+        HostAdaptiveHopReceiptV3 if plan.schema_version == 3 else HostAdaptiveHopReceiptV2
+    )
     receipt = _map_capture(
         upstream,
         plan=plan,
         identity=identity,
         session_id=session_id,
         terminal_model=HostAdaptiveHopTerminalV2,
-        receipt_model=HostAdaptiveHopReceiptV2,
+        receipt_model=receipt_model,
         receipt_fields={"host_decisions": host_decisions},
     )
-    assert isinstance(receipt, HostAdaptiveHopReceiptV2)
+    assert isinstance(receipt, (HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3))
     return receipt
 
 
@@ -85,7 +109,8 @@ def map_host_work_result(
     feedback_error: str | None = None,
     feedback_completed_ns: int | None = None,
     submitted: bool = True,
-) -> HostDecisionRecordV1:
+    source_rate_hz: int = 10_000_000,
+) -> HostDecisionRecordV1 | HostDecisionRecordV2:
     """Map the exact feedback-time snapshot used for submission by the IIO owner."""
     feedback = result.feedback(feedback_ns)
     evidence = result.evidence
@@ -97,8 +122,7 @@ def map_host_work_result(
     elif not feedback.healthy:
         health = "expired"
         failure = "host decision exceeded its one-second processing age"
-    return HostDecisionRecordV1.model_validate(
-        dict(
+    values = dict(
             session_id=feedback.session_id,
             generation=feedback.generation,
             stream_generation=feedback.stream_id,
@@ -131,4 +155,8 @@ def map_host_work_result(
             else "source_ended",
             feedback_error=feedback_error,
         )
+    if source_rate_hz == 10_000_000:
+        return HostDecisionRecordV1.model_validate(values)
+    return HostDecisionRecordV2.model_validate(
+        {**values, "schema_version": 2, "source_rate_hz": source_rate_hz}
     )

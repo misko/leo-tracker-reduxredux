@@ -26,7 +26,9 @@ from leo.scanner.adaptive_hop import SessionId
 from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveAnalysisBindingV3,
     HostAdaptiveMetricsManifestV2,
+    HostAdaptiveMetricsManifestV3,
 )
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
@@ -195,6 +197,9 @@ def main() -> None:
 
 
 def _render_overview(binding, metrics, visits):
+    if isinstance(binding, HostAdaptiveAnalysisBindingV3):
+        metrics = HostAdaptiveMetricsManifestV3.model_validate(metrics.model_dump())
+        return render_host_adaptive_hop_overview(binding, metrics, visits)
     if isinstance(binding, HostAdaptiveAnalysisBindingV2):
         metrics = HostAdaptiveMetricsManifestV2.model_validate(metrics.model_dump())
         return render_host_adaptive_hop_overview(binding, metrics, visits)

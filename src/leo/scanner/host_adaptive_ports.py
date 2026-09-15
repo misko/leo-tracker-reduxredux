@@ -9,7 +9,12 @@ import numpy as np
 import numpy.typing as npt
 
 from leo.scanner.adaptive_hop import AdaptiveHopVisitV1
-from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2, HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive import (
+    HostAdaptiveHopPlanV2,
+    HostAdaptiveHopPlanV3,
+    HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV3,
+)
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 from leo.scanner.ports import ScanRadioIdentity
 
@@ -30,27 +35,27 @@ class HostAdaptiveHopVisitBlock:
             or len(self.receiver_ids) != 1
             or type(self.receiver_ids[0]) is not int
             or self.receiver_ids[0] not in (0, 1)
-            or self.evidence.valid_sample_count != 1_200_000
+            or self.evidence.valid_sample_count not in (1_200_000, 1_800_000, 2_400_000)
             or values.dtype != np.complex64
-            or values.shape != (1_200_000, 1)
+            or values.shape != (self.evidence.valid_sample_count, 1)
             or not values.flags.c_contiguous
             or not np.isfinite(values).all()
         ):
-            raise ValueError("host adaptive IQ requires a native-10M visit and one physical RX")
+            raise ValueError("host adaptive IQ requires a supported native-rate visit and one RX")
         values.setflags(write=False)
         object.__setattr__(self, "samples", values)
 
 
 class HostAdaptiveHopSession(Protocol):
     @property
-    def plan(self) -> HostAdaptiveHopPlanV2: ...
+    def plan(self) -> HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3: ...
     @property
     def complete(self) -> bool: ...
     @property
     def start_clock_bracket(self) -> PersistentHopStartClockBracketV1 | None: ...
     def read_visit(self) -> HostAdaptiveHopVisitBlock: ...
     def request_cancel(self) -> None: ...
-    def finish(self) -> HostAdaptiveHopReceiptV2: ...
+    def finish(self) -> HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3: ...
 
 
 class HostAdaptiveHopRadio(Protocol):
@@ -58,6 +63,6 @@ class HostAdaptiveHopRadio(Protocol):
     def identity(self) -> ScanRadioIdentity: ...
     def open(self) -> ScanRadioIdentity: ...
     def begin_session(
-        self, plan: HostAdaptiveHopPlanV2, *, session_id: str
+        self, plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3, *, session_id: str
     ) -> HostAdaptiveHopSession: ...
     def close(self) -> None: ...

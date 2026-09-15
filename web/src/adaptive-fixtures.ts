@@ -1,4 +1,4 @@
-import type { AdaptiveDetail, AdaptivePage, HostAdaptiveCapture } from "./adaptive-api";
+import type { AdaptiveDetail, AdaptivePage, HostAdaptiveCapture, HostAdaptiveCaptureV3 } from "./adaptive-api";
 
 // Synthetic metadata only; not RF evidence or a quality/performance fixture.
 export function adaptiveDetailFixture(sessionId = "adaptive-test", count = 54): AdaptiveDetail {
@@ -62,6 +62,36 @@ export function hostAdaptiveDetailFixture(receiver: 0 | 1 = 0): AdaptiveDetail &
       analysis_state: "separate_product", radio_serial: "104000bac4950008230026001b440a003a", physical_receiver: receiver,
       decision_configuration: { schema_version: 1, execution: "host", source_rate_hz: 10000000, decision_rate_hz: 2500000,
         decimation_factor: 4, filter_taps: 161, screen_count: 6, maximum_confirmations: 1, detector_manifest_sha256: `sha256:${"a".repeat(64)}` },
+      host_feedback: { schema_version: 1, complete_visits: count, healthy: count - 1, degraded: 1, unknown_feedback: 1,
+        accepted: count - 1, source_ended: 1, rejected: 0, not_submitted: 0, maximum_host_result_age_ms: 129,
+        maximum_feedback_call_ms: 3, first_feedback_error: null } },
+    host_decisions: Array.from({ length: count }, (_, i) => ({ schema_version: 1, visit_index: i,
+      health: i === count - 1 ? "queue_overflow" : "healthy", failure: i === count - 1 ? "Queue full" : null,
+      feedback_error: null, feedback_outcome: i === count - 1 ? "unknown" : "not_detected",
+      feedback_disposition: i === count - 1 ? "source_ended" : "accepted", host_result_age_ms: 129,
+      worker_elapsed_ms: i === count - 1 ? null : 38, feedback_call_ms: 3,
+      numerics: i === count - 1 ? null : { schema_version: 1, outcome: "not_detected", screen_mask: 63,
+        confirmation_mask: 4, supported_start: 40, supported_end: 300000, screen_scores: [.01, .02, .03, .01, .02, .01],
+        candidate_supported: true, fractional_complete: true } })),
+  };
+}
+
+export function multirateAdaptiveDetailFixture(rate: 15000000 | 20000000): AdaptiveDetail & { capture: HostAdaptiveCaptureV3 } {
+  const legacy = adaptiveDetailFixture();
+  const origin = BigInt(legacy.source_origin_counter!);
+  const factor = BigInt(rate / 2_500_000);
+  const scale = (counter: string) => String(origin + (BigInt(counter) - origin) * factor);
+  const count = legacy.capture.retained_visits;
+  const geometry = rate === 15000000
+    ? { decimation_factor: 6 as const, filter_taps: 201 as const }
+    : { decimation_factor: 8 as const, filter_taps: 257 as const };
+  return { ...legacy, schema_version: 3,
+    visits: legacy.visits.map(v => ({ ...v, valid_start_counter: scale(v.valid_start_counter),
+      valid_end_counter: v.valid_end_counter === null ? null : scale(v.valid_end_counter), decision_counter: scale(v.decision_counter) })),
+    capture: { ...legacy.capture, schema_version: 3, sample_rate_hz: rate, bandwidth_hz: rate,
+      analysis_state: "separate_product", radio_serial: "104000bac4950008230026001b440a003a", physical_receiver: 0,
+      decision_configuration: { schema_version: 2, execution: "host", source_rate_hz: rate, decision_rate_hz: 2500000,
+        ...geometry, screen_count: 6, maximum_confirmations: 1, detector_manifest_sha256: `sha256:${"a".repeat(64)}` },
       host_feedback: { schema_version: 1, complete_visits: count, healthy: count - 1, degraded: 1, unknown_feedback: 1,
         accepted: count - 1, source_ended: 1, rejected: 0, not_submitted: 0, maximum_host_result_age_ms: 129,
         maximum_feedback_call_ms: 3, first_feedback_error: null } },

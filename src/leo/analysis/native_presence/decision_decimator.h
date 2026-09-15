@@ -13,6 +13,10 @@
 typedef struct leo_decimator leo_decimator;
 leo_decimator *leo_decimator_create(const int16_t *h1, unsigned n1,
     const int16_t *h2, unsigned n2, size_t count);
+/* Direct causal FIR with an explicit integer reduction. V1 above remains the
+ * sealed factor-four entry point. */
+leo_decimator *leo_decimator_create_factor(const int16_t *h, unsigned n,
+    unsigned factor, size_t count);
 /* Research polyphase recursive candidate: Q15 first stage, Q14 non-symmetric
  * numerator, then four stable all-pole sections at the output rate. No constant
  * group-delay claim applies. History resets at each run, including recursive

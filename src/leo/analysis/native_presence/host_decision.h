@@ -29,4 +29,10 @@ int leo_host_decision_run_v1(leo_host_decision *, const int16_t *iq,
  * uses +/-2 samples. Conservatively require that whole candidate frame start
  * is supported, including its complete fractional search interval. */
 int leo_host_decision_supported_v1(uint32_t window, int32_t epoch);
+/* V2 accepts one complete 120 ms RX0 dwell at exactly 15 or 20 MS/s and
+ * reduces it to the same 2.5 MS/s decision coordinates. */
+leo_host_decision *leo_host_decision_create_v2(const leo_presence_complex *templates,
+    size_t template_count, uint32_t source_rate_hz);
+int leo_host_decision_run_v2(leo_host_decision *, const int16_t *iq,
+    size_t count, uint32_t edge, leo_host_decision_result_v1 *);
 #endif

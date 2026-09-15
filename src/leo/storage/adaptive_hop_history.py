@@ -15,11 +15,14 @@ from leo.scanner.adaptive_hop_history import (
     AdaptiveHopVisitViewV1,
 )
 from leo.scanner.glrt_publication import validate_glrt_adaptive_binding
-from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3
 from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
+    AdaptiveHistoryPageV3,
     HostAdaptiveHistoryItemV2,
+    HostAdaptiveHistoryItemV3,
     HostAdaptiveSessionDetailV2,
+    HostAdaptiveSessionDetailV3,
     HostDecisionViewV1,
     HostFeedbackSummaryV1,
 )
@@ -68,7 +71,11 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
     fields: dict[str, Any] = {}
     duty_met = receipt.duty_target_met
     if isinstance(receipt, HostAdaptiveHopReceiptV2):
-        model = HostAdaptiveHistoryItemV2
+        model = (
+            HostAdaptiveHistoryItemV3
+            if isinstance(receipt, HostAdaptiveHopReceiptV3)
+            else HostAdaptiveHistoryItemV2
+        )
         duty_met = receipt.qualification_duty_floor_met
         records = receipt.host_decisions
         calls = [
@@ -138,9 +145,11 @@ class AdaptiveHopPresentationStore:
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1:
         return self._page(cursor=cursor, limit=limit, include_host=False)
 
-    def page_v2(self, *, cursor: int, limit: int) -> AdaptiveHistoryPageV2:
+    def page_v2(
+        self, *, cursor: int, limit: int
+    ) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3:
         result = self._page(cursor=cursor, limit=limit, include_host=True)
-        assert isinstance(result, AdaptiveHistoryPageV2)
+        assert isinstance(result, (AdaptiveHistoryPageV2, AdaptiveHistoryPageV3))
         return result
 
     def _page(self, *, cursor: int, limit: int, include_host: bool) -> AdaptiveHopHistoryPageV1:
@@ -161,7 +170,11 @@ class AdaptiveHopPresentationStore:
         finally:
             store.close()
         model: type[AdaptiveHopHistoryPageV1] = (
-            AdaptiveHistoryPageV2 if include_host else AdaptiveHopHistoryPageV1
+            AdaptiveHistoryPageV3
+            if include_host and any(isinstance(item, HostAdaptiveHistoryItemV3) for item in items)
+            else AdaptiveHistoryPageV2
+            if include_host
+            else AdaptiveHopHistoryPageV1
         )
         return model(
             cursor=cursor,
@@ -184,7 +197,14 @@ class AdaptiveHopPresentationStore:
     def detail(self, session_id: str) -> AdaptiveHopSessionDetailV1 | None:
         return self._detail(session_id, include_host=False)
 
-    def detail_v2(self, session_id: str) -> AdaptiveHopSessionDetailV1 | None:
+    def detail_v2(
+        self, session_id: str
+    ) -> (
+        AdaptiveHopSessionDetailV1
+        | HostAdaptiveSessionDetailV2
+        | HostAdaptiveSessionDetailV3
+        | None
+    ):
         return self._detail(session_id, include_host=True)
 
     def _detail(self, session_id: str, *, include_host: bool) -> AdaptiveHopSessionDetailV1 | None:
@@ -227,7 +247,11 @@ class AdaptiveHopPresentationStore:
         model: type[AdaptiveHopSessionDetailV1] = AdaptiveHopSessionDetailV1
         fields: dict[str, Any] = {}
         if isinstance(receipt, HostAdaptiveHopReceiptV2):
-            model = HostAdaptiveSessionDetailV2
+            model = (
+                HostAdaptiveSessionDetailV3
+                if isinstance(receipt, HostAdaptiveHopReceiptV3)
+                else HostAdaptiveSessionDetailV2
+            )
             fields = dict(
                 host_decisions=tuple(
                     HostDecisionViewV1(

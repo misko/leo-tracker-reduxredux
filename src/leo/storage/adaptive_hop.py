@@ -37,10 +37,15 @@ from leo.scanner.adaptive_hop import (
     SessionId,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
-from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2, HostAdaptiveHopReceiptV2
+from leo.scanner.host_adaptive import (
+    HostAdaptiveHopPlanV2,
+    HostAdaptiveHopPlanV3,
+    HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV3,
+)
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
-from leo.scanner.single_rx import SingleRxHopTimingV2
+from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError, BundleStateError
 from leo.storage.persistent_hop import PersistentHopQueueTelemetryV1
 from leo.storage.pinned import PinnedLocalRoot
@@ -75,6 +80,7 @@ class AdaptiveHopIqChunkV1(AdaptiveModel):
 
 class AdaptiveHopIqManifestV1(AdaptiveModel):
     _bytes_per_sample: ClassVar[int] = 8
+    _visits_per_chunk: ClassVar[int] = 8
     _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = (
         PersistentHopUtcTimingAuthorityV1
     )
@@ -124,7 +130,10 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                 or chunk.first_visit_index != next_visit
                 or chunk.sample_start != next_sample
                 or chunk.relative_path != f"iq-block-{index:06d}.ci16.zst"
-                or (index < len(self.chunks) - 1 and chunk.visit_count != 8)
+                or (
+                    index < len(self.chunks) - 1
+                    and chunk.visit_count != self._visits_per_chunk
+                )
                 or next_visit + chunk.visit_count > receipt.complete_visit_count
                 or chunk.sample_count != chunk.visit_count * g.valid_visit_samples
                 or chunk.uncompressed_bytes != chunk.sample_count * self._bytes_per_sample
@@ -160,9 +169,25 @@ class HostAdaptiveHopIqManifestV2(AdaptiveHopIqManifestV1):
     chunks: Annotated[tuple[HostAdaptiveHopIqChunkV2, ...], Field(max_length=313)]
 
 
+class HostAdaptiveHopIqChunkV3(HostAdaptiveHopIqChunkV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    chunk_index: Annotated[int, Field(strict=True, ge=0, le=624)]
+    visit_count: Annotated[int, Field(strict=True, ge=1, le=4)]
+
+
+class HostAdaptiveHopIqManifestV3(HostAdaptiveHopIqManifestV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    _visits_per_chunk: ClassVar[int] = 4
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = SingleRxHopTimingV3
+    receipt: HostAdaptiveHopReceiptV3
+    timing: SingleRxHopTimingV3 | None
+    chunks: Annotated[tuple[HostAdaptiveHopIqChunkV3, ...], Field(max_length=625)]
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
-        AdaptiveHopIqManifestV1 | HostAdaptiveHopIqManifestV2, Field(discriminator="schema_version")
+        AdaptiveHopIqManifestV1 | HostAdaptiveHopIqManifestV2 | HostAdaptiveHopIqManifestV3,
+        Field(discriminator="schema_version"),
     ]
     sha256: Digest
 
@@ -332,7 +357,11 @@ class AdaptiveHopIqStore:
             raise BundleStateError("adaptive IQ store is read-only")
         _identifier(session_id)
         plan_model = (
-            HostAdaptiveHopPlanV2 if isinstance(plan, HostAdaptiveHopPlanV2) else AdaptiveHopPlanV1
+            HostAdaptiveHopPlanV3
+            if isinstance(plan, HostAdaptiveHopPlanV3)
+            else HostAdaptiveHopPlanV2
+            if isinstance(plan, HostAdaptiveHopPlanV2)
+            else AdaptiveHopPlanV1
         )
         plan = plan_model.model_validate(plan.model_dump())
         if self.contains_session(session_id):
@@ -698,8 +727,9 @@ class AdaptiveHopIqReader:
     def read_visit_ci16(self, visit_index: int) -> tuple[AdaptiveHopVisitV1, npt.NDArray[np.int16]]:
         if type(visit_index) is not int or not 0 <= visit_index < len(self._visits):
             raise ValueError("adaptive IQ visit does not exist")
-        visits, values = self.read_chunk_ci16(visit_index // 8)
-        local = visit_index % 8
+        visits_per_chunk = self.session.manifest._visits_per_chunk
+        visits, values = self.read_chunk_ci16(visit_index // visits_per_chunk)
+        local = visit_index % visits_per_chunk
         count = visits[local].valid_sample_count
         return visits[local], values[local * count : (local + 1) * count]
 
@@ -711,7 +741,10 @@ class AdaptiveHopSessionWriter:
         self._plan = plan
         self._receiver_count = len(plan.geometry.receiver_ids)
         self._bytes_per_sample = self._receiver_count * 4
-        self._host_adaptive = isinstance(plan, HostAdaptiveHopPlanV2)
+        self._host_adaptive_version = (
+            plan.schema_version if isinstance(plan, HostAdaptiveHopPlanV2) else 0
+        )
+        self._visits_per_chunk = 4 if self._host_adaptive_version == 3 else 8
         self._created_ns = time.time_ns()
         self._closed = False
         self._failed = False
@@ -761,7 +794,7 @@ class AdaptiveHopSessionWriter:
             self._digest.update(payload)
             self._visits.append(visit)
             self._chunk_visits += 1
-            if self._chunk_visits == 8:
+            if self._chunk_visits == self._visits_per_chunk:
                 self._finish_chunk()
         except BaseException:
             self._failed = True
@@ -775,7 +808,13 @@ class AdaptiveHopSessionWriter:
         first = len(self._visits) - count
         dwell = self._plan.geometry.valid_visit_samples
         index = len(self._chunks)
-        chunk_model = HostAdaptiveHopIqChunkV2 if self._host_adaptive else AdaptiveHopIqChunkV1
+        chunk_model = (
+            HostAdaptiveHopIqChunkV3
+            if self._host_adaptive_version == 3
+            else HostAdaptiveHopIqChunkV2
+            if self._host_adaptive_version == 2
+            else AdaptiveHopIqChunkV1
+        )
         self._chunks.append(
             chunk_model(
                 chunk_index=index,
@@ -804,7 +843,11 @@ class AdaptiveHopSessionWriter:
         self._require_open()
         try:
             receipt_model = (
-                HostAdaptiveHopReceiptV2 if self._host_adaptive else AdaptiveHopReceiptV1
+                HostAdaptiveHopReceiptV3
+                if self._host_adaptive_version == 3
+                else HostAdaptiveHopReceiptV2
+                if self._host_adaptive_version == 2
+                else AdaptiveHopReceiptV1
             )
             receipt = receipt_model.model_validate(receipt.model_dump())
             if (
@@ -815,7 +858,11 @@ class AdaptiveHopSessionWriter:
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
             manifest_model: type[AdaptiveHopIqManifestV1] = (
-                HostAdaptiveHopIqManifestV2 if self._host_adaptive else AdaptiveHopIqManifestV1
+                HostAdaptiveHopIqManifestV3
+                if self._host_adaptive_version == 3
+                else HostAdaptiveHopIqManifestV2
+                if self._host_adaptive_version == 2
+                else AdaptiveHopIqManifestV1
             )
             manifest = manifest_model(
                 session_id=self._session_id,
@@ -829,10 +876,16 @@ class AdaptiveHopSessionWriter:
                 compressed_bytes=sum(c.compressed_bytes for c in self._chunks),
                 uncompressed_sha256=f"sha256:{self._digest.hexdigest()}",
                 compression=CompressionSettingsV1(
-                    policy_id="adaptive-eight-visit-chunks-v1",
+                    policy_id=(
+                        "adaptive-four-visit-chunks-v1"
+                        if self._visits_per_chunk == 4
+                        else "adaptive-eight-visit-chunks-v1"
+                    ),
                     level=3,
                     target_uncompressed_bytes=(
-                        self._plan.geometry.valid_visit_samples * 8 * self._bytes_per_sample
+                        self._plan.geometry.valid_visit_samples
+                        * self._visits_per_chunk
+                        * self._bytes_per_sample
                     ),
                 ),
                 queue_telemetry=queue_telemetry,

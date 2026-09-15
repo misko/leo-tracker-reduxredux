@@ -12,10 +12,16 @@ from leo.cli.composition import CompositionHooks, LocalAcquisitionBackend
 from leo.cli.runner import ContinuousAcquisitionRunner
 from leo.radio.host_decision_release import HostDecisionRelease
 from leo.scanner.adaptive_hop_application import AdaptiveHopCaptureError
-from leo.scanner.host_adaptive import HOST_ADAPTIVE_PROFILE_ID, HOST_ADAPTIVE_RX0_PROFILE_ID
+from leo.scanner.host_adaptive import (
+    HOST_ADAPTIVE_PROFILE_ID,
+    HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
+    HOST_ADAPTIVE_RX0_PROFILE_ID,
+)
 from leo.scanner.host_adaptive_schedule import (
+    HostAdaptiveRx0MultirateScheduledScannerIntentV6,
     HostAdaptiveRx0ScheduledScannerIntentV5,
     HostAdaptiveScheduledScannerIntentV4,
+    compile_host_adaptive_hop_plan,
 )
 from leo.scanner.schedule import canonical_scheduled_scanner_operation_key
 from leo.scanner.single_rx import parse_scheduled_scanner_intent
@@ -53,7 +59,9 @@ def fixture(tmp_path, mode="adaptive", fault=None, profile=HOST_ADAPTIVE_PROFILE
         scanner_profile=profile,
         scanner_hop_policy=mode,
         scanner_interval_seconds=600,
-        scanner_adaptive_sample_rates_hz=(10_000_000,),
+        scanner_adaptive_sample_rates_hz=(15_000_000, 20_000_000)
+        if profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID
+        else (10_000_000,),
         scanner_host_decision_manifest_path=tmp_path / "manifest.json",
         scanner_host_decision_manifest_sha256=decision_configuration().detector_manifest_sha256,
     )
@@ -87,6 +95,49 @@ def test_fixed_rx0_profile_schedules_only_rx0_and_round_trips(tmp_path):
         assert [
             parse_scheduled_scanner_intent(item.model_dump(mode="json")) for item in scheduled
         ] == scheduled
+    finally:
+        store.close()
+
+
+def test_multirate_profile_is_retry_stable_rx0_only_and_uniform(tmp_path):
+    backend, _radio, store, _events = fixture(
+        tmp_path, profile=HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID
+    )
+    try:
+        slots = [datetime(2026, 9, 13, tzinfo=UTC) + timedelta(minutes=10 * i) for i in range(512)]
+        scheduled = [intent(backend, slot) for slot in slots]
+        assert all(
+            isinstance(item, HostAdaptiveRx0MultirateScheduledScannerIntentV6)
+            for item in scheduled
+        )
+        rates = [item.configuration.sample_rate_hz for item in scheduled]
+        assert set(rates) == {15_000_000, 20_000_000}
+        assert 220 <= rates.count(15_000_000) <= 292
+        assert all(item.configuration.receiver_ids == (0,) for item in scheduled)
+        assert [intent(backend, slot) for slot in slots] == scheduled
+        assert [
+            parse_scheduled_scanner_intent(item.model_dump(mode="json")) for item in scheduled
+        ] == scheduled
+        for item in scheduled[:16]:
+            plan = compile_host_adaptive_hop_plan(item)
+            assert plan.geometry.receiver_ids == (0,)
+            assert (
+                plan.geometry.valid_visit_samples
+                == item.configuration.sample_rate_hz * 120 // 1000
+            )
+            assert plan.decision.source_rate_hz == item.configuration.sample_rate_hz
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize("rates", [(15_000_000,), (20_000_000,), (20_000_000, 15_000_000)])
+def test_multirate_profile_rejects_incomplete_or_reordered_rate_set(tmp_path, rates):
+    backend, _radio, store, _events = fixture(
+        tmp_path, profile=HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID
+    )
+    try:
+        with pytest.raises(ValueError, match="both rates in canonical order"):
+            replace(backend.settings, scanner_adaptive_sample_rates_hz=rates)
     finally:
         store.close()
 

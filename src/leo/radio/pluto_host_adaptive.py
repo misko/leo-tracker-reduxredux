@@ -34,9 +34,12 @@ from leo.radio.scanner_iio_compat import scanner_adi_module
 from leo.scanner.adaptive_hop import AdaptiveHopVisitV1
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV2,
+    HostAdaptiveHopPlanV3,
     HostAdaptiveHopReceiptV2,
     HostDecisionConfigurationV1,
+    HostDecisionConfigurationV2,
     HostDecisionRecordV1,
+    HostDecisionRecordV2,
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import persistent_hop_wire_session_id
@@ -66,7 +69,7 @@ class PlutoHostAdaptiveHopRadio:
         *,
         expected_serial: str,
         radio_id: str,
-        decision: HostDecisionConfigurationV1,
+        decision: HostDecisionConfigurationV1 | HostDecisionConfigurationV2,
         decision_engine_factory: Callable[[], HostDecisionEngine],
         iiod_port: int | None = None,
         read_ahead_visits: int = 8,
@@ -80,7 +83,12 @@ class PlutoHostAdaptiveHopRadio:
         if type(read_ahead_visits) is not int or not 1 <= read_ahead_visits <= 64:
             raise ValueError("host adaptive read-ahead must be within 1..64")
         self._identity = ScanRadioIdentity(radio_id, expected_serial, uri)
-        self._decision = HostDecisionConfigurationV1.model_validate(decision)
+        decision_model = (
+            HostDecisionConfigurationV2
+            if getattr(decision, "schema_version", None) == 2
+            else HostDecisionConfigurationV1
+        )
+        self._decision = decision_model.model_validate(decision)
         self._engine_factory = decision_engine_factory
         self._client_factory = client_factory or _load_client
         self._read_ahead = read_ahead_visits
@@ -98,11 +106,12 @@ class PlutoHostAdaptiveHopRadio:
         return self.identity
 
     def begin_session(
-        self, plan: HostAdaptiveHopPlanV2, *, session_id: str
+        self, plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3, *, session_id: str
     ) -> _HostAdaptiveSession:
         if not self._opened or self._session is not None:
             raise RuntimeError("host adaptive radio must be open without another session")
-        plan = HostAdaptiveHopPlanV2.model_validate(plan)
+        plan_model = HostAdaptiveHopPlanV3 if plan.schema_version == 3 else HostAdaptiveHopPlanV2
+        plan = plan_model.model_validate(plan)
         if plan.decision != self._decision:
             raise ValueError("host adaptive plan differs from the loaded detector release")
         persistent_hop_wire_session_id(session_id)
@@ -158,7 +167,7 @@ class _HostAdaptiveSession:
         self._receipt: HostAdaptiveHopReceiptV2 | None = None
         self._bracket: PersistentHopStartClockBracketV1 | None = None
         self._produced: list[AdaptiveHopVisitV1] = []
-        self._records: list[HostDecisionRecordV1] = []
+        self._records: list[HostDecisionRecordV1 | HostDecisionRecordV2] = []
         self._completed: dict[int, HostDecisionWorkResult | _Overflow] = {}
         self._feedback_fault: str | None = None
         self._producer = threading.Thread(
@@ -240,7 +249,12 @@ class _HostAdaptiveSession:
         event = block.evidence.event
         if event.visit_index != len(self._produced):
             raise ValueError("host adaptive native visits arrived out of order")
-        source = HostFeedbackV1(
+        feedback_model = (
+            importlib.import_module("pluto_plus.host_adaptive_hop").HostFeedbackV2
+            if self.plan.decision.source_rate_hz in (15_000_000, 20_000_000)
+            else HostFeedbackV1
+        )
+        source = feedback_model(
             session_id=persistent_hop_wire_session_id(self._session_id),
             generation=self.plan.policy.generation,
             stream_id=self._upstream.stream_generation,
@@ -255,6 +269,11 @@ class _HostAdaptiveSession:
             healthy=0,
             screen_mask=0,
             confirmation_mask=0,
+            **(
+                {"source_rate_hz": self.plan.decision.source_rate_hz}
+                if self.plan.decision.source_rate_hz != 10_000_000
+                else {}
+            ),
         )
         if worker.pending_count == worker.capacity:
             # Retain only small source metadata, never an extra IQ work item.
@@ -288,8 +307,7 @@ class _HostAdaptiveSession:
                     self._feedback_fault = f"{type(error).__name__}: {error}"[:2048]
             feedback_completed_ns = time.monotonic_ns()
             if isinstance(result, _Overflow):
-                record = HostDecisionRecordV1.model_validate(
-                    dict(
+                values = dict(
                         session_id=feedback.session_id,
                         generation=feedback.generation,
                         stream_generation=feedback.stream_id,
@@ -320,7 +338,16 @@ class _HostAdaptiveSession:
                         ),
                         feedback_error=self._feedback_fault,
                     )
-                )
+                if self.plan.decision.source_rate_hz == 10_000_000:
+                    record = HostDecisionRecordV1.model_validate(values)
+                else:
+                    record = HostDecisionRecordV2.model_validate(
+                        {
+                            **values,
+                            "schema_version": 2,
+                            "source_rate_hz": self.plan.decision.source_rate_hz,
+                        }
+                    )
             else:
                 record = map_host_work_result(
                     result,
@@ -329,6 +356,7 @@ class _HostAdaptiveSession:
                     feedback_error=self._feedback_fault,
                     feedback_completed_ns=feedback_completed_ns,
                     submitted=attempted,
+                    source_rate_hz=self.plan.decision.source_rate_hz,
                 )
             self._records.append(record)
 
@@ -354,7 +382,10 @@ class _HostAdaptiveSession:
                 tandem_request=_load_tandem_hold_request(),
             )
             self._refresh_start_clock_bracket()
-            worker = BoundedHostDecisionWorker(self._engine_factory)
+            worker = BoundedHostDecisionWorker(
+                self._engine_factory,
+                source_sample_count=self.plan.geometry.valid_visit_samples,
+            )
             self._ready.set()
 
             def before_release() -> None:

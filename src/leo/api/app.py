@@ -170,10 +170,15 @@ from leo.scanner.adaptive_hop_presentation import (
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
 from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
+    AdaptiveHistoryPageV3,
     AdaptiveHistoryReaderV2,
     HostAdaptiveSessionDetailV2,
+    HostAdaptiveSessionDetailV3,
 )
-from leo.scanner.host_adaptive_presentation import HostAdaptiveAnalysisStatusV2
+from leo.scanner.host_adaptive_presentation import (
+    HostAdaptiveAnalysisStatusV2,
+    HostAdaptiveAnalysisStatusV3,
+)
 from leo.scanner.persistent_hop_history import (
     PersistentHopHistoryPageV4,
     SingleRxHopSessionDetailV3,
@@ -442,15 +447,20 @@ def create_app(
             raise HTTPException(status_code=404, detail="adaptive session not found")
         return detail
 
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveHistoryPageV3,
+    )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHistoryPageV2,
+        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3,
     )
     def adaptive_history_v2(
         cursor: Annotated[int, Query(ge=0)] = 0,
         limit: Annotated[int, Query(ge=1, le=20)] = 20,
-    ) -> AdaptiveHistoryPageV2:
+    ) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3:
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
         try:
@@ -460,10 +470,23 @@ def create_app(
                 status_code=409, detail="adaptive history is unavailable"
             ) from error
 
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}",
+        methods=["GET", "HEAD"],
+        response_model=(
+            AdaptiveHopSessionDetailV1
+            | HostAdaptiveSessionDetailV2
+            | HostAdaptiveSessionDetailV3
+        ),
+    )
     @v2_router.api_route(
         "/scanner/adaptive-sessions/{session_id}",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHopSessionDetailV1 | HostAdaptiveSessionDetailV2,
+        response_model=(
+            AdaptiveHopSessionDetailV1
+            | HostAdaptiveSessionDetailV2
+            | HostAdaptiveSessionDetailV3
+        ),
     )
     def adaptive_detail_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
@@ -480,10 +503,23 @@ def create_app(
             raise HTTPException(status_code=404, detail="adaptive session not found")
         return detail
 
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis",
+        methods=["GET", "HEAD"],
+        response_model=(
+            AdaptiveHopAnalysisStatusV1
+            | HostAdaptiveAnalysisStatusV2
+            | HostAdaptiveAnalysisStatusV3
+        ),
+    )
     @v2_router.api_route(
         "/scanner/adaptive-sessions/{session_id}/analysis",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHopAnalysisStatusV1 | HostAdaptiveAnalysisStatusV2,
+        response_model=(
+            AdaptiveHopAnalysisStatusV1
+            | HostAdaptiveAnalysisStatusV2
+            | HostAdaptiveAnalysisStatusV3
+        ),
     )
     def adaptive_analysis_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
@@ -530,6 +566,10 @@ def create_app(
         response.headers["Cache-Control"] = "no-store"
         return status
 
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/{artifact}.png",
+        methods=["GET", "HEAD"],
+    )
     @v2_router.api_route(
         "/scanner/adaptive-sessions/{session_id}/analysis/{artifact}.png",
         methods=["GET", "HEAD"],
