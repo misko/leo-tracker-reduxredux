@@ -450,7 +450,7 @@ def create_app(
     @v3_router.api_route(
         "/scanner/adaptive-sessions",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHistoryPageV3,
+        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3,
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
