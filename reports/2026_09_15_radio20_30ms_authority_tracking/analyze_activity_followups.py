@@ -42,8 +42,11 @@ def main() -> None:
     from tools.starlink_glrt_tracking_journal import review
 
     result = {"schema": "radio20-30ms-activity-followup-review/v1", "cycles": []}
-    for number in range(1, 12):
-        root = args.evidence_root / f"activity-followup-20260915-v{number}"
+    for number in range(1, 14):
+        name = f"activity-followup-20260915-v{number}"
+        root = args.evidence_root / name
+        if not root.exists():
+            root = args.evidence_root.parent / name
         if not root.exists():
             continue
         operator = json.loads((root / "operator.json").read_text())
@@ -101,7 +104,7 @@ def main() -> None:
             "children": children,
             "retained_evidence": retained.exists(),
             "ssd_manifest_pass": manifest_passes(root),
-            "raid_manifest_pass": manifest_passes(args.raid_root / f"activity-followup-20260915-v{number}"),
+            "raid_manifest_pass": manifest_passes(args.raid_root / name),
             "radio_restored": operator.get("radio_restored", False),
         })
 
@@ -146,8 +149,11 @@ def main() -> None:
     axes[1].set_title("Triggered sparse follow-up episodes")
     axes[1].legend(loc="lower right")
     for index, ((_, episode), span, count) in enumerate(zip(episode_rows, spans, supported, strict=True)):
-        axes[1].text(span + 0.08, index, f"{episode['measurements']} results; {count} supported",
-                     va="center", fontsize=8)
+        long = span > 9
+        axes[1].text(span - 0.08 if long else span + 0.08, index,
+                     f"{episode['measurements']} results; {count} supported",
+                     ha="right" if long else "left", va="center", fontsize=8,
+                     color="white" if long else "black")
     fig.savefig(args.output / "activity_followup_outcomes.png", dpi=180)
 
 
