@@ -382,7 +382,7 @@ class _HostAdaptiveSession:
         try:
             client = self._client_factory(self._identity.uri, self._identity.serial)
             direct_options: dict[str, int] = (
-                {"direct_async_frames": 8192} if self.plan.schema_version == 3 else {}
+                {"direct_async_frames": 1} if self.plan.schema_version == 3 else {}
             )
             self._upstream = client.start(
                 _load_plan(self.plan.geometry),

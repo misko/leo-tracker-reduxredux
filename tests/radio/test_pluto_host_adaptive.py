@@ -223,7 +223,7 @@ def test_client_construction_admission_iio_and_feedback_have_one_owner(receiver,
 
 
 @pytest.mark.parametrize("rate", [15_000_000, 20_000_000])
-def test_wide_rate_uses_one_long_direct_async_request(rate):
+def test_wide_rate_uses_feedback_interleaved_direct_async_segments(rate):
     receipt = multirate_host_receipt(rate=rate, count=3)
     radio, clients, _ = setup(receipt, pacing=0)
     radio.open()
@@ -232,7 +232,7 @@ def test_wide_rate_uses_one_long_direct_async_request(rate):
         assert tuple(drain(session)) == receipt.visits
         result = session.finish()
         assert result.plan.geometry.sample_rate_hz == rate
-        assert clients[0].direct_async_frames == 8192
+        assert clients[0].direct_async_frames == 1
     finally:
         radio.close()
 
