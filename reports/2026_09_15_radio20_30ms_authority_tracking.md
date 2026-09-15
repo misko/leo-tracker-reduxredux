@@ -143,6 +143,8 @@ Firmware branch `codex/radio20-tracking-qualification` contains:
   leaving scan80/local-2 and all native tracking gates unchanged.
 - `f80841de7`: adds the bounded production operator for one activity-triggered
   cycle, SSD-first evidence, exact restoration and hash-verified RAID copy.
+- `ee14bf8ad`: adds a non-RF dry run that validates and prints the exact cycle
+  before the radio lease can be claimed.
 
 The prior focused suite passes **527 tests**. The sparse change additionally
 passes 319 controller/journal/operator checks and all 171 live-probe checks; the
@@ -190,6 +192,14 @@ and rehashes the SSD-to-RAID copy. Its pure operator and controller coverage
 passes 239 focused tests. A suggested LO order is 1.4403125, 1.9403125,
 1.1903125, then 1.6903125 GHz because the first LO contained 29 of the 57
 campaign observations above the activity floor.
+
+The actual dry run passes with that order, the bound radio serial, reviewed
+deployment receipt and all three payload hashes. It declares 335.1773184
+seconds maximum source time, SSD output
+`/srv/postgres-nvme/codex-radio20-authority/activity-followup-20260915-v1`
+and the corresponding hash-verified RAID destination. The focused suite now
+passes 240 cases. The dry run performed no RF collection and created neither
+output path.
 
 ## Radio-local scout campaign
 
