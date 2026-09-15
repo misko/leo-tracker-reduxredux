@@ -711,10 +711,47 @@ tests; one unrelated load-sensitive scan80 noise test times out at its
 30-second test deadline on two reruns. The deployed v31 payload is pinned as
 `41973ca0c22b3a1313ae984eaba14695021a0827fde38a4612973db3e0566a34`.
 
-The stable next action is another bounded v51-equivalent cycle during a
-stronger `.20` interval. No host-side trigger or relaunch is required. A scout
-at or above 0.05 will transition immediately to the existing 100-second
-tracker; success requires exactly 7,501 results in one completed native run.
-If another above-0.05 trigger produces only short native episodes, the retained
-IQ should be used to diagnose support loss before changing any acceptance
-gate or running another RF cycle.
+Commit `7a6580b37` extends the long monitor to two 100-second opportunities
+without exceeding the 30-minute RF bound. Cycle v52 exercises all forty rounds
+and eighty scouts without activity above 0.05. Cycle v53 then selects
+1.4403125 GHz at 0.05478 and records 113 native results, but exposes an
+orchestration defect: the completely joined clean-loss child is reported as a
+generic failure, so the parent cannot resume scanning. Commit `bdecfb1a7`
+maps that exact disposition to typed clean loss. Cycle v54 physically verifies
+the correction. Its 0.06529 trigger at 1.4403125 GHz produces episodes of 148
+and 172 results, returns clean loss to the parent, and resumes all forty scan
+rounds. Both transition reviews, both storage manifests and radio restoration
+pass.
+
+Commit `f72cfc572` gives the 100-second child the already tested search-only
+retained prior after clean native loss. The new profile preserves the same
+45,000-block, 256-attempt, 7,501-result and 150-second limits. Its host suite
+passes 565 live/visit tests plus 318 operator/reviewer tests; the deployed ARM
+payload is pinned as
+`00eadbc420c9f0d3c1794a9755299aeca0f73d6befd062115b9891cf61e571f5`.
+
+Cycle v55 triggers twice at 1.9403125 GHz, first at 0.06018 and later at
+0.07000. The first long child retains 2,040 results in three nonempty native
+episodes of 570, 972 and 498 results before exhausting all 256 acquisition
+attempts; a final fourth epoch contains no result. The second retains 240
+results in four episodes of 34, 34, 157 and 15 results before reaching the
+four-epoch bound with 115 acquisition attempts unused. Thus the longest
+uninterrupted episode is **972 results, or 12.95 seconds at 75 Hz**, while the
+best child accumulates 27.2 seconds of valid measurements across clean
+reacquisitions. The retained-prior branch is physically exercised by five
+local scans: median local scan time is 4.6 ms versus 495 ms for the full
+80-candidate scans in that child. Independent epoch/ownership review passes
+all 2,280 results, seven nonempty episodes and six reacquisitions. The
+continuity review, identical SSD/RAID manifests, exact radio identity, TX-safe
+state and acquisition-service restoration also pass.
+
+The 100-second gate remains open: success still requires exactly 7,501 results
+in one completed native run. v55 shows that local reacquisition works and that
+the fixed four-epoch bound can terminate a child before its attempt budget,
+but it also shows that reacquisition cannot turn 12.95-second intermittent
+episodes into one uninterrupted 100-second track. The most stable next RF step
+is to keep the 0.05 same-radio trigger and prioritize the lower pair containing
+1.4403125 GHz, where v46 completed 30 seconds, rather than spending both long
+opportunities on 1.9403125-GHz bursts. Increasing the epoch bound is useful
+for tracking through intermittent service, but it is a separate aggregate
+continuity qualification and must not weaken the exact 7,501-result gate.
