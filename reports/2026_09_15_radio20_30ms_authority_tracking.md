@@ -812,3 +812,16 @@ both manifests verify, radio restoration passes and acquisition is active.
 The negative and rejection branches of the persistent gate are now physically
 qualified. Its positive transition, and the exact 7,501-result completion
 gate behind it, still require a genuinely persistent interval.
+
+Firmware commit `0fddd57b1` adds a four-LO variant without increasing the RF
+ceiling. It uses twenty complete rounds over all four reviewed upper-edge LOs,
+two persistent confirmations and at most two long children. Its worst-case
+source budget remains 1,395.130368 seconds. The profile passes 595 broader and
+348 focused tests; its Cortex-A9 payload is
+`31921dc650a19a0c2bc3ac4db4d6bb665f8f11c38da656f37707d06702d4ca88`.
+Cycle v60 deploys it and completes all twenty rounds and eighty scouts. The
+strongest score is 0.02851, so no long child starts. The four-LO transition
+review, both manifests, radio restoration and acquisition-service restoration
+pass. The exact 100-second result remains dependent on an external persistent
+RF interval; all implemented detection, confirmation, tracking and review
+paths are ready, and the scientific gates remain unchanged.
