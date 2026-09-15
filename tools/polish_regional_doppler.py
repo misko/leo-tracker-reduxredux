@@ -24,13 +24,39 @@ from leo.analysis.research.regional_doppler import (
 from leo.sky.propagation import parse_element_sets
 
 
-def polish(run, evidence, output, fit_height=False):
+def training_episode_gate(signal_weight, train_rms_hz, minimum_weight, maximum_rms_hz):
+    if not 0 <= minimum_weight <= 1 or not maximum_rms_hz > 0:
+        raise ValueError("invalid training-only episode gate")
+    return (np.asarray(signal_weight) >= minimum_weight) & (
+        np.asarray(train_rms_hz) <= maximum_rms_hz
+    )
+
+
+def candidate_elevation_deg(position_km, receiver_km, receiver_up):
+    delta = np.asarray(position_km) - np.asarray(receiver_km)
+    sine = np.sum(delta * receiver_up, axis=-1) / np.linalg.norm(delta, axis=-1)
+    return np.rad2deg(np.arcsin(np.clip(sine, -1, 1)))
+
+
+def polish(
+    run,
+    evidence,
+    output,
+    fit_height=False,
+    min_signal_weight=0.95,
+    max_train_rms_hz=500.0,
+    min_training_elevation_deg=-90.0,
+):
     if output.exists():
         raise ValueError("fresh output required")
+    training_episode_gate([], [], min_signal_weight, max_train_rms_hz)
+    if not -90 <= min_training_elevation_deg <= 90:
+        raise ValueError("invalid training elevation gate")
     parent = json.loads((run / "result.json").read_text())
     if not parent["complete"] or parent["position_truth_used"]:
         raise ValueError("finished blind parent run required")
     region = Region(**parent["region"])
+    parent_point = region.points([parent["east_km"]], [parent["north_km"]], parent["altitude_m"])
     history = json.loads((run / "history.json").read_text())
     index = parent["best_index"]
     catalogues, groups, records = {}, {}, []
@@ -52,14 +78,37 @@ def polish(run, evidence, output, fit_height=False):
         catalogue, numbers = catalogues[key]
         saved = np.load(run / f"{scan['session_id']}.npz")
         # Gate is predeclared and uses no held-out or known-site evidence.
-        keep = (saved["signal_weight"][:, index] >= 0.95) & (
-            saved["best_train_rms_hz"][:, index] <= 500.0
+        keep = training_episode_gate(
+            saved["signal_weight"][:, index],
+            saved["best_train_rms_hz"][:, index],
+            min_signal_weight,
+            max_train_rms_hz,
         )
         arcs = load_observations(document, 0, parent["individual_sources"])
         for j, (episode_id, arc) in enumerate(arcs):
             if not keep[j]:
                 continue
             norad = int(saved["best_norad"][j, index])
+            training_indices = np.flatnonzero(arc.training)
+            training_middle = training_indices[len(training_indices) // 2]
+            sky_position, _, sky_ids = state_arrays(
+                catalogue,
+                [numbers[norad]],
+                metadata["reference_utc_ns"],
+                arc.time_s,
+                clock_s=parent["clock_s"],
+            )
+            if len(sky_ids) != 1:
+                continue
+            training_elevation_deg = float(
+                candidate_elevation_deg(
+                    sky_position[0, training_middle],
+                    parent_point.ecef_km[0],
+                    parent_point.up[0],
+                )
+            )
+            if training_elevation_deg < min_training_elevation_deg:
+                continue
             group_key = (key, norad)
             group = groups.setdefault(group_key, len(groups))
             n = len(arc.time_s)
@@ -76,6 +125,7 @@ def polish(run, evidence, output, fit_height=False):
                     "session_id": scan["session_id"],
                     "tle_digest": key,
                     "segments": len(np.unique(arc.segment)),
+                    "training_elevation_deg": training_elevation_deg,
                 }
             )
             frequencies.extend(arc.frequency_hz)
@@ -164,6 +214,11 @@ def polish(run, evidence, output, fit_height=False):
             "region": as_region(region),
             "position_truth_used": False,
             "identity_source": "blind regional training mode",
+            "training_only_episode_gate": {
+                "minimum_signal_weight": min_signal_weight,
+                "maximum_training_rms_hz": max_train_rms_hz,
+                "minimum_training_elevation_deg": min_training_elevation_deg,
+            },
             "point_count": offset,
             "source_segment_count": segment_count,
             "orbit_group_count": len(groups),
@@ -172,7 +227,17 @@ def polish(run, evidence, output, fit_height=False):
             "complete": True,
             "models": results,
             "assignments": [
-                {k: r[k] for k in ("norad", "group", "episode_id", "session_id", "tle_digest")}
+                {
+                    k: r[k]
+                    for k in (
+                        "norad",
+                        "group",
+                        "episode_id",
+                        "session_id",
+                        "tle_digest",
+                        "training_elevation_deg",
+                    )
+                }
                 for r in records
             ],
         },
@@ -194,8 +259,19 @@ def main():
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--fit-height", action="store_true")
+    parser.add_argument("--min-signal-weight", type=float, default=0.95)
+    parser.add_argument("--max-train-rms-hz", type=float, default=500.0)
+    parser.add_argument("--min-training-elevation-deg", type=float, default=-90.0)
     args = parser.parse_args()
-    polish(args.run, args.evidence, args.output, args.fit_height)
+    polish(
+        args.run,
+        args.evidence,
+        args.output,
+        args.fit_height,
+        args.min_signal_weight,
+        args.max_train_rms_hz,
+        args.min_training_elevation_deg,
+    )
 
 
 if __name__ == "__main__":
