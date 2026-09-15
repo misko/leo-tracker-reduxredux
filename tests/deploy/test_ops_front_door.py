@@ -338,6 +338,7 @@ def test_python_quality_gates_force_configured_exclusions() -> None:
 def test_frozen_report_scripts_are_not_reformatted_by_release_gates() -> None:
     paths = (
         "reports/frozen_analysis.py",
+        "src/leo/analysis/host_decision.py",
         "src/leo/analysis/standard/final_reports.py",
     )
     selected = OPS.components_for_paths(paths, OPS.load_components())
@@ -351,6 +352,7 @@ def test_frozen_report_scripts_are_not_reformatted_by_release_gates() -> None:
         for argument in gate.command
     }
     assert "reports/frozen_analysis.py" not in formatter_arguments
+    assert "src/leo/analysis/host_decision.py" not in formatter_arguments
     assert "src/leo/analysis/standard/final_reports.py" in formatter_arguments
 
 
