@@ -64,6 +64,7 @@ def test_duplicate_manifest_is_rejected() -> None:
         "single-rx-random-10m-300s-v1",
         "adaptive-single-rx-random-10m-300s-v1",
         "adaptive-single-rx0-10m-300s-v1",
+        "adaptive-single-rx0-random-15m-20m-300s-v1",
     ],
 )
 def test_single_rx_deployment_preserves_the_explicit_radio(profile):
