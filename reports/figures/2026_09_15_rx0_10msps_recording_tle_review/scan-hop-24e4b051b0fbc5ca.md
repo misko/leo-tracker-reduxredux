@@ -6,6 +6,8 @@ Recorded **2026-09-14T16:20:12.023849Z**, RX0, 10 MS/s.
 
 **Stricter audit of one shortlisted track: ABSTAIN; leading NORAD 60413.** radio-polynomial-null-not-worse-on-heldout. [Full audit](deep-checks/scan-hop-24e4b051b0fbc5ca.json.gz).
 
+[Satellite RMS comparisons and top-1 gains](scan-hop-24e4b051b0fbc5ca-candidates.md).
+
 Counts are correlated lane tracklets, not independent detections or satellite counts. A recording can contain multiple transmitters; these are not one-label-per-file assignments.
 
 ![Six longest eligible tracks and training-selected TLE curves](scan-hop-24e4b051b0fbc5ca.png)

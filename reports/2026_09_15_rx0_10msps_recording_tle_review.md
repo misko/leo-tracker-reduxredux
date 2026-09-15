@@ -17,6 +17,22 @@ recording. These counts are correlated tracklets, not satellite counts. The
 three stronger audits all abstain. All 47 per-recording PNGs and evidence
 archives are included; there are no unavailable recordings in this review.
 
+Each recording now links a **satellite RMS comparison** page for every eligible
+track. It lists the retained Starlink names/NORADs, training and heldout RMS,
+training/heldout ranks, and the training leader's advantage over each alternative
+in Hz and percent. Positive gain means lower RMS for the leader; negative gain
+means the alternative does better. The percentage uses the alternative's RMS
+as denominator and is not identification confidence. A separate sentence compares
+the leader against the best other heldout candidate, which can differ from the
+training runner-up. These are within-track comparisons, not a pooled satellite
+ranking across a recording's potentially different transmitters.
+
+The archived screen retained the top five training and top five heldout
+candidates per track, not the entire scored population's identities and scores.
+The comparison pages expose their union and the full scored population count.
+[All candidate comparisons as CSV](figures/2026_09_15_rx0_10msps_recording_tle_review/candidate-comparisons.csv)
+provide the unrounded values.
+
 The [per-recording index](figures/2026_09_15_rx0_10msps_recording_tle_review/README.md)
 links each UTC timestamp and recording ID to its complete track table, measured
 CFO/TLE overlays, residual plots, top-three training candidates, heldout rank,

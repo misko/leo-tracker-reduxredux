@@ -11,6 +11,125 @@ from collections import Counter
 from pathlib import Path
 
 
+def candidate_comparisons(track):
+    """Compare a frozen training leader with retained alternatives on equal support."""
+    field = track["fields"]["0"]
+    training = field.get("top_training", [])
+    if not training:
+        return []
+    leader = training[0]
+    candidates = {c["catalog_number"]: c for c in training}
+    candidates.update({c["catalog_number"]: c for c in field["top_heldout"]})
+    ranks = {c["catalog_number"]: i + 1 for i, c in enumerate(training)}
+    held_ranks = {c["catalog_number"]: i + 1 for i, c in enumerate(field["top_heldout"])}
+    rows = []
+    for number, c in candidates.items():
+        train_gain = c["training_rms_hz"] - leader["training_rms_hz"]
+        held_gain = c["heldout_rms_hz"] - leader["heldout_rms_hz"]
+        rows.append(
+            {
+                "catalog_number": number,
+                "name": c["name"],
+                "training_rank": ranks.get(number),
+                "heldout_rank": held_ranks.get(number),
+                "training_rms_hz": c["training_rms_hz"],
+                "heldout_rms_hz": c["heldout_rms_hz"],
+                "leader_training_gain_hz": train_gain,
+                "leader_heldout_gain_hz": held_gain,
+                "leader_heldout_gain_percent": (
+                    100 * held_gain / c["heldout_rms_hz"] if c["heldout_rms_hz"] > 0 else None
+                ),
+                "tau_s": c["tau_s"],
+            }
+        )
+    return rows
+
+
+def comparison_page(record):
+    sid = record["session_id"]
+    lines = [
+        f"# Candidate RMS comparisons: {sid}",
+        f"Recorded **{record['capture_start_utc']}**, RX0, 10 MS/s.",
+        f"[Recording assessment and plots]({sid}.md).",
+        "Each track has its own training-selected leader; there is no single satellite "
+        "assignment for the whole recording. Lower RMS is better. The same observations "
+        "and chronological split are used for all candidates within a track.",
+        "Gain = alternative RMS − training-leader RMS. Positive gain favors the leader; "
+        "negative heldout gain means the alternative predicts better. Percent gain uses "
+        "the alternative RMS as denominator; it is not identification confidence. "
+        "Tau and carrier offset were selected on training data and remain frozen on heldout.",
+        "The archived screen retained the top five training candidates and top five "
+        "heldout candidates, whose union is listed below. Candidate counts describe the "
+        "full scored population; names/scores outside these retained lists were not "
+        "archived. A blank rank means outside that top-five list. Catalogue exclusions "
+        "and control results are in the linked recording assessment and evidence.",
+    ]
+    flat = []
+    for track in record["screen"]["tracks"]:
+        rows = candidate_comparisons(track)
+        if not rows:
+            continue
+        field = track["fields"]["0"]
+        leader = field["top_training"][0]
+        alternatives = [
+            c for c in field["top_heldout"] if c["catalog_number"] != leader["catalog_number"]
+        ]
+        best_other = min(alternatives, key=lambda c: c["heldout_rms_hz"], default=None)
+        lines.extend(
+            [
+                f"## CH{track['channel']} {track['edge']}, "
+                f"{track['time_s'][0]:.2f}–{track['time_s'][-1]:.2f} s",
+                f"Track `{track['tracklet_id']}`; {track['observations']} observations; "
+                f"{field['candidate_count']} nominal-time satellites scored. "
+                f"Training leader: **{leader['name']} (NORAD {leader['catalog_number']})**; "
+                f"heldout rank {field['winner_heldout_rank']} in the full scored population.",
+            ]
+        )
+        if best_other:
+            gain = best_other["heldout_rms_hz"] - leader["heldout_rms_hz"]
+            lines.append(
+                f"Against the best other heldout candidate, {best_other['name']} "
+                f"(NORAD {best_other['catalog_number']}): leader heldout RMS "
+                f"**{leader['heldout_rms_hz']:.2f} Hz** versus "
+                f"**{best_other['heldout_rms_hz']:.2f} Hz**; "
+                f"gain **{gain:+.2f} Hz**. This alternative is selected on heldout data "
+                "for diagnosis, not used to refit the leader."
+            )
+        lines.extend(
+            [
+                "| Satellite | NORAD | Train rank | Heldout rank | Train RMS Hz | Heldout RMS Hz | "
+                "Leader train gain Hz | Leader heldout gain Hz | Leader heldout gain % | Tau s |\n"
+                "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n"
+                + "\n".join(
+                    f"| {r['name']} | {r['catalog_number']} | {r['training_rank'] or '—'} | "
+                    f"{r['heldout_rank'] or '—'} | {r['training_rms_hz']:.2f} | "
+                    f"{r['heldout_rms_hz']:.2f} | "
+                    f"{r['leader_training_gain_hz']:+.2f} | {r['leader_heldout_gain_hz']:+.2f} | "
+                    + (
+                        f"{r['leader_heldout_gain_percent']:+.2f}"
+                        if r["leader_heldout_gain_percent"] is not None
+                        else "undefined"
+                    )
+                    + f" | {r['tau_s']:+.0f} |"
+                    for r in rows
+                )
+            ]
+        )
+        for row in rows:
+            flat.append(
+                {
+                    "session_id": sid,
+                    "tracklet_id": track["tracklet_id"],
+                    "channel": track["channel"],
+                    "edge": track["edge"],
+                    "candidate_count": field["candidate_count"],
+                    "training_leader_norad": leader["catalog_number"],
+                    **row,
+                }
+            )
+    return "\n\n".join(lines) + "\n", flat
+
+
 def concerns(track):
     """Conservative descriptive checks; never converts a screen to identity."""
     fields = track["fields"]
@@ -53,6 +172,7 @@ def publish(source, output):
     counts = Counter()
     summary = []
     all_tracks = []
+    all_comparisons = []
     archive = []
     maximum_rms_change = 0.0
     for record in records:
@@ -86,6 +206,9 @@ def publish(source, output):
             continue
         if "exact_center_validation" not in screen:
             raise ValueError("exact-time validation missing: " + sid)
+        page, comparisons = comparison_page(record)
+        (output / (sid + "-candidates.md")).write_text(page)
+        all_comparisons.extend(comparisons)
         maximum_rms_change = max(
             maximum_rms_change, screen["exact_center_validation"]["maximum_rms_change_hz"]
         )
@@ -180,6 +303,7 @@ def publish(source, output):
             header
             + f"**{status}.** Candidates: {candidate_text}.\n\n"
             + audit_note
+            + f"[Satellite RMS comparisons and top-1 gains]({sid}-candidates.md).\n\n"
             + "Counts are correlated lane tracklets, "
             "not independent detections or satellite counts. "
             "A recording can contain multiple transmitters; "
@@ -196,7 +320,11 @@ def publish(source, output):
             + f"\n\n[Full candidate, control and measured-CFO evidence]({sid}.json.gz).\n"
         )
         (output / (sid + ".md")).write_text(detail)
-    for name, rows in [("recordings.csv", summary), ("tracks.csv", all_tracks)]:
+    for name, rows in [
+        ("recordings.csv", summary),
+        ("tracks.csv", all_tracks),
+        ("candidate-comparisons.csv", all_comparisons),
+    ]:
         with (output / name).open("w", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
             writer.writeheader()
@@ -219,6 +347,8 @@ def publish(source, output):
         "# Per-recording Starlink TLE candidate review\n\n"
         "Frozen September 14, 2026, 15:28–23:28 UTC cohort: 47 RX0 10 MS/s recordings. "
         "All results are candidate-only; no satellite identity is established.\n\n"
+        "Every recording page links its satellite-by-satellite RMS and top-1 gain tables. "
+        "[Download all candidate comparisons](candidate-comparisons.csv).\n\n"
         f"{counts['screened']} recordings screened; "
         f"{counts['tracklets']} eligible unique tracklets; "
         f"{counts['descriptive_passes']} tracklets in "

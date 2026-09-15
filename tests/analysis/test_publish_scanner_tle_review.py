@@ -1,6 +1,57 @@
 from copy import deepcopy
 
-from tools.publish_scanner_tle_review import concerns
+from tools.publish_scanner_tle_review import candidate_comparisons, concerns
+
+
+def test_candidate_gains_preserve_training_leader_when_heldout_leader_changes():
+    leader = {
+        "catalog_number": 1,
+        "name": "STARLINK-A",
+        "training_rms_hz": 10,
+        "heldout_rms_hz": 30,
+        "tau_s": 1,
+    }
+    runner = {
+        "catalog_number": 2,
+        "name": "STARLINK-B",
+        "training_rms_hz": 20,
+        "heldout_rms_hz": 60,
+        "tau_s": -1,
+    }
+    challenger = {
+        "catalog_number": 3,
+        "name": "STARLINK-C",
+        "training_rms_hz": 40,
+        "heldout_rms_hz": 15,
+        "tau_s": 0,
+    }
+    rows = candidate_comparisons(
+        {
+            "fields": {
+                "0": {"top_training": [leader, runner], "top_heldout": [challenger, leader, runner]}
+            }
+        }
+    )
+    assert [r["catalog_number"] for r in rows] == [1, 2, 3]
+    assert rows[1]["leader_training_gain_hz"] == 10
+    assert rows[1]["leader_heldout_gain_hz"] == 30
+    assert rows[1]["leader_heldout_gain_percent"] == 50
+    assert rows[2]["training_rank"] is None
+    assert rows[2]["leader_heldout_gain_hz"] == -15
+    assert rows[2]["leader_heldout_gain_percent"] == -100
+
+
+def test_zero_rms_does_not_produce_infinite_gain():
+    c = {
+        "catalog_number": 1,
+        "name": "STARLINK-A",
+        "training_rms_hz": 0,
+        "heldout_rms_hz": 0,
+        "tau_s": 0,
+    }
+    rows = candidate_comparisons({"fields": {"0": {"top_training": [c], "top_heldout": [c]}}})
+    assert rows[0]["leader_heldout_gain_hz"] == 0
+    assert rows[0]["leader_heldout_gain_percent"] is None
 
 
 def track():
