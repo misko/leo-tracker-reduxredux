@@ -416,9 +416,9 @@ class CliSettings:
             or len(set(rates)) != len(rates)
         ):
             raise ValueError("scanner adaptive sample rates must be unique supported integer rates")
-        if (
-            self.scanner_profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID
-            and rates != (15_000_000, 20_000_000)
+        if self.scanner_profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID and rates != (
+            15_000_000,
+            20_000_000,
         ):
             raise ValueError("15/20 MS/s adaptive profile requires both rates in canonical order")
         if (
@@ -1500,19 +1500,18 @@ class LocalAcquisitionBackend:
             release = self._host_decision_release()
             mode = self.settings.scanner_hop_policy
             assert mode in ("shadow", "adaptive")
-            common = dict(
-                radio_id=configured.radio_id,
-                radio_serial=configured.serial or configured.radio_id,
-                scheduled_for=scheduled_for,
-                mode=mode,
-                maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
-                gain_db=self.settings.scanner_gain_db,
-                margin_gate=self.settings.scanner_margin_gate,
-                maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
-            )
+            radio_serial = configured.serial or configured.radio_id
+            intent: ScheduledScannerRunIntentV1
             if self.settings.scanner_profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID:
                 intent = compile_host_adaptive_rx0_multirate_scanner_intent(
-                    **common,
+                    radio_id=configured.radio_id,
+                    radio_serial=radio_serial,
+                    scheduled_for=scheduled_for,
+                    mode=mode,
+                    maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
+                    gain_db=self.settings.scanner_gain_db,
+                    margin_gate=self.settings.scanner_margin_gate,
+                    maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
                     decision_manifest_sha256=release.configuration.detector_manifest_sha256,
                 )
             else:
@@ -1521,7 +1520,17 @@ class LocalAcquisitionBackend:
                     if self.settings.scanner_profile == HOST_ADAPTIVE_RX0_PROFILE_ID
                     else compile_host_adaptive_scanner_intent
                 )
-                intent = host_compiler(**common, decision=release.configuration)
+                intent = host_compiler(
+                    radio_id=configured.radio_id,
+                    radio_serial=radio_serial,
+                    scheduled_for=scheduled_for,
+                    mode=mode,
+                    decision=release.configuration,
+                    maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
+                    gain_db=self.settings.scanner_gain_db,
+                    margin_gate=self.settings.scanner_margin_gate,
+                    maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
+                )
             # The queue keeps the canonical UTC slot key across profile changes;
             # the persisted V4 payload binds its profile, mode and detector too.
             if operation_key not in (expected_operation_key, intent.operation_key):

@@ -6,7 +6,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from threading import Event
-from typing import Protocol
+from typing import Protocol, cast
 
 from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopReceiptV1, AdaptiveHopVisitV1
 from leo.scanner.adaptive_hop_ports import (
@@ -174,11 +174,12 @@ def _capture[
             visit_sink(block)
             visits.append(evidence)
         raw_receipt = session.finish()
-        receipt = (
+        receipt = cast(
+            R,
             HostAdaptiveHopReceiptV4.model_validate(raw_receipt)
             if receipt_model is HostAdaptiveHopReceiptV3
             and getattr(raw_receipt, "schema_version", None) == 4
-            else receipt_model.model_validate(raw_receipt)
+            else receipt_model.model_validate(raw_receipt),
         )
         terminal_real = realtime_ns()
         terminal_mono = monotonic_ns()
@@ -218,11 +219,12 @@ def _capture[
                 if not session.complete:
                     session.request_cancel()
                 raw_receipt = session.finish()
-                receipt = (
+                receipt = cast(
+                    R,
                     HostAdaptiveHopReceiptV4.model_validate(raw_receipt)
                     if receipt_model is HostAdaptiveHopReceiptV3
                     and getattr(raw_receipt, "schema_version", None) == 4
-                    else receipt_model.model_validate(raw_receipt)
+                    else receipt_model.model_validate(raw_receipt),
                 )
             except BaseException as recovery:
                 primary.add_note(f"adaptive terminal recovery also failed: {recovery!r}")

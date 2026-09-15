@@ -32,11 +32,7 @@ class Engine:
             time.sleep(self.delay)
         if self.fail:
             raise RuntimeError("synthetic detector failure")
-        values = (
-            numerics()
-            if self.rate == 10_000_000
-            else multirate_numerics(self.rate)
-        )
+        values = numerics() if self.rate == 10_000_000 else multirate_numerics(self.rate)
         return HostDecisionEvidence(
             **values.model_dump(exclude={"schema_version", "source_rate_hz"})
         )

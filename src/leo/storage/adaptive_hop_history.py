@@ -150,9 +150,7 @@ class AdaptiveHopPresentationStore:
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1:
         return self._page(cursor=cursor, limit=limit, include_host=False)
 
-    def page_v2(
-        self, *, cursor: int, limit: int
-    ) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3:
+    def page_v2(self, *, cursor: int, limit: int) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3:
         result = self._page(cursor=cursor, limit=limit, include_host=True)
         assert isinstance(result, (AdaptiveHistoryPageV2, AdaptiveHistoryPageV3))
         return result
@@ -260,34 +258,53 @@ class AdaptiveHopPresentationStore:
                 if isinstance(receipt, HostAdaptiveHopReceiptV3)
                 else HostAdaptiveSessionDetailV2
             )
-            fields = dict(
-                host_decisions=tuple(
-                    (
-                        HostDecisionViewV2
-                        if isinstance(d, HostDecisionRecordV2)
-                        else HostDecisionViewV1
-                    )(
-                        schema_version=2 if isinstance(d, HostDecisionRecordV2) else 1,
-                        visit_index=d.visit_index,
-                        numerics=d.numerics,
-                        health=d.health,
-                        failure=d.failure,
-                        feedback_outcome=d.feedback_outcome,
-                        feedback_disposition=d.feedback_disposition,
-                        feedback_error=d.feedback_error,
-                        host_result_age_ms=(d.feedback_monotonic_ns - d.submitted_monotonic_ns)
-                        / 1e6,
-                        worker_elapsed_ms=(d.completed_monotonic_ns - d.started_monotonic_ns) / 1e6
-                        if d.completed_monotonic_ns is not None
-                        and d.started_monotonic_ns is not None
-                        else None,
-                        feedback_call_ms=d.feedback_call_elapsed_ns / 1e6
-                        if d.feedback_call_elapsed_ns is not None
-                        else None,
-                    )
-                    for d in receipt.host_decisions
+            decision_views: list[HostDecisionViewV1 | HostDecisionViewV2] = []
+            for d in receipt.host_decisions:
+                worker_elapsed_ms = (
+                    (d.completed_monotonic_ns - d.started_monotonic_ns) / 1e6
+                    if d.completed_monotonic_ns is not None and d.started_monotonic_ns is not None
+                    else None
                 )
-            )
+                feedback_call_ms = (
+                    d.feedback_call_elapsed_ns / 1e6
+                    if d.feedback_call_elapsed_ns is not None
+                    else None
+                )
+                if isinstance(d, HostDecisionRecordV2):
+                    decision_views.append(
+                        HostDecisionViewV2(
+                            schema_version=2,
+                            numerics=d.numerics,
+                            visit_index=d.visit_index,
+                            health=d.health,
+                            failure=d.failure,
+                            feedback_outcome=d.feedback_outcome,
+                            feedback_disposition=d.feedback_disposition,
+                            feedback_error=d.feedback_error,
+                            host_result_age_ms=(d.feedback_monotonic_ns - d.submitted_monotonic_ns)
+                            / 1e6,
+                            worker_elapsed_ms=worker_elapsed_ms,
+                            feedback_call_ms=feedback_call_ms,
+                        )
+                    )
+                else:
+                    decision_views.append(
+                        HostDecisionViewV1(
+                            schema_version=1,
+                            numerics=d.numerics,
+                            visit_index=d.visit_index,
+                            health=d.health,
+                            failure=d.failure,
+                            feedback_outcome=d.feedback_outcome,
+                            feedback_disposition=d.feedback_disposition,
+                            feedback_error=d.feedback_error,
+                            host_result_age_ms=(d.feedback_monotonic_ns - d.submitted_monotonic_ns)
+                            / 1e6,
+                            worker_elapsed_ms=worker_elapsed_ms,
+                            feedback_call_ms=feedback_call_ms,
+                        )
+                    )
+            fields = dict(host_decisions=tuple(decision_views))
         return model(
             **fields,
             capture=_summary(session),
