@@ -6,6 +6,8 @@ Recorded **2026-09-14T22:00:12.420019Z**, RX0, 10 MS/s.
 
 [Satellite RMS comparisons and top-1 gains](scan-hop-8a7c8202a5bf67c8-candidates.md).
 
+[Measured CFO/TLE overlays for every track](scan-hop-8a7c8202a5bf67c8-all-tracks.md).
+
 Counts are correlated lane tracklets, not independent detections or satellite counts. A recording can contain multiple transmitters; these are not one-label-per-file assignments.
 
 ![Six longest eligible tracks and training-selected TLE curves](scan-hop-8a7c8202a5bf67c8.png)

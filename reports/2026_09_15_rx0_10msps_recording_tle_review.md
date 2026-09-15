@@ -41,6 +41,12 @@ the missing ranks are not inferred from the union of different shortlists.
 Each panel reports the full scored satellite count and the leader's held-out
 rank. Logarithmic axes above 1 Hz keep large and small errors readable.
 
+The [all-track overlay gallery](figures/2026_09_15_rx0_10msps_recording_tle_review/all-track-overlays/README.md)
+extends the original six-longest-track image to all 647 eligible tracks. Each
+row shows measured CFO with the top three training-ranked TLE curves alongside
+their residuals. Sessions are split into pages of at most six rows and tracks
+are ordered by recording time.
+
 The [per-recording index](figures/2026_09_15_rx0_10msps_recording_tle_review/README.md)
 links each UTC timestamp and recording ID to its complete track table, measured
 CFO/TLE overlays, residual plots, top-three training candidates, heldout rank,
@@ -164,6 +170,7 @@ PYTHONPATH=src:. python tools/validate_scanner_tle_screen.py /tmp/rx0-tle-review
 PYTHONPATH=src:. python tools/publish_scanner_tle_review.py \
   /tmp/rx0-tle-review-fresh /tmp/rx0-tle-report
 PYTHONPATH=src:. python tools/plot_scanner_candidate_rms.py /tmp/rx0-tle-report
+PYTHONPATH=src:. python tools/plot_scanner_candidate_overlays.py /tmp/rx0-tle-report
 ```
 
 `backfill_scanner_review_metrics.py` handles missing analyses into an explicit

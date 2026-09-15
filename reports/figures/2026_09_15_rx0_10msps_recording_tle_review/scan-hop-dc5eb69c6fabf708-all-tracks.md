@@ -1,0 +1,27 @@
+# All track overlays: scan-hop-dc5eb69c6fabf708
+
+Recorded **2026-09-14T18:10:12.734255Z**, RX0, 10 MS/s. All **25 eligible tracks** are shown in chronological order.
+
+[Recording assessment](scan-hop-dc5eb69c6fabf708.md) · [Candidate RMS and gains](scan-hop-dc5eb69c6fabf708-candidates.md)
+
+Each row matches the requested view: measured GLRT CFO and the top three training-ranked TLE curves on the left, residuals on the right. Offset and time shift are fitted only on the first 60%; the last 40% is held out. These are candidate diagnostics, not satellite identifications.
+
+## Page 1
+
+![All-track TLE overlays, page 1](all-track-overlays/scan-hop-dc5eb69c6fabf708-01.png)
+
+## Page 2
+
+![All-track TLE overlays, page 2](all-track-overlays/scan-hop-dc5eb69c6fabf708-02.png)
+
+## Page 3
+
+![All-track TLE overlays, page 3](all-track-overlays/scan-hop-dc5eb69c6fabf708-03.png)
+
+## Page 4
+
+![All-track TLE overlays, page 4](all-track-overlays/scan-hop-dc5eb69c6fabf708-04.png)
+
+## Page 5
+
+![All-track TLE overlays, page 5](all-track-overlays/scan-hop-dc5eb69c6fabf708-05.png)
