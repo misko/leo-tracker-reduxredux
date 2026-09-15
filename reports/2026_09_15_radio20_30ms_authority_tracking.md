@@ -562,6 +562,26 @@ acquisition is active.
 V39 proves the complete fresh scan/refinement negative path, including skipped
 activity rounds, without lowering acquisition gates. It did not produce a
 native handoff, so v32 remains the strongest tracking evidence and the exact
-30-second and gated 100-second qualifications remain open. Further immediate
-RF retries in this interval would not distinguish implementation from signal
-availability; the next run should wait for a new isolated-activity interval.
+30-second and gated 100-second qualifications remain open.
+
+Retained-moment reconstruction gives a more specific result for the second
+refinement. Attempt 3 at 1.6903125 GHz resolved a coherent branch near
+332 kHz CFO and accepted 67 of 72 scheduled measurements; 66 entered the trend
+history. It still returned `GLRT_WORKER_HISTORY` because only seven accepted
+points remained inside the unchanged 96-frame trend window after recent
+rejections at frames 558, 603, 612 and 630. Eight recent points are required.
+At that decision the best descriptor inside the unchanged 32-frame forecast
+horizon was also about 1.32 million coarse samples (528 ms) behind the live
+receiver, versus the required 12,500-sample future lead. Lowering the history
+count alone therefore cannot make this candidate admissible.
+
+This changes the next engineering step. The retained v39 evidence should first
+drive an offline prior-guided reacquisition experiment: carry the supported
+timing/CFO state only as a search prior into the next retained 14,000-sample
+scan, resolve a fresh local candidate from those actual samples, and require
+the existing eight-point support and 32-frame handoff checks again. If that
+reduces the full scan/ranking delay while rejecting controls, implement it as
+an opt-in refinement path and exercise one bounded physical 30-second gate.
+Only a complete independently reviewed 2,251-result episode admits the
+7,501-result 100-second run. Further immediate RF retries before this replay
+would add little information.
