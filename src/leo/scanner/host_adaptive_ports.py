@@ -14,6 +14,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV3,
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
+    HostAdaptiveHopReceiptV4,
 )
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 from leo.scanner.ports import ScanRadioIdentity
@@ -55,7 +56,9 @@ class HostAdaptiveHopSession(Protocol):
     def start_clock_bracket(self) -> PersistentHopStartClockBracketV1 | None: ...
     def read_visit(self) -> HostAdaptiveHopVisitBlock: ...
     def request_cancel(self) -> None: ...
-    def finish(self) -> HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3: ...
+    def finish(
+        self,
+    ) -> HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3 | HostAdaptiveHopReceiptV4: ...
 
 
 class HostAdaptiveHopRadio(Protocol):

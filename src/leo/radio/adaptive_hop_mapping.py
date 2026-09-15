@@ -211,7 +211,7 @@ def _map_capture(
         restoration=restoration,
     )
     if tuple(map_adaptive_visit(v, plan) for v in stream.visits) != receipt.visits:
-        raise ValueError("adaptive complete visits disagree with its event prefix")
+        raise ValueError("adaptive complete visits disagree with retained source inventory")
     if tuple(
         (c.target_index, c.visit_count, c.valid_sample_count) for c in stream.target_coverage
     ) != tuple(

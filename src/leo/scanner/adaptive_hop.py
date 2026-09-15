@@ -240,6 +240,9 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
     @model_validator(mode="after")
     def _receipt_reproduces_source_accounting(self) -> Self:
         g, p, terminal = self.plan.geometry, self.plan.policy, self.terminal
+        retained_indices = getattr(
+            self, "retained_visit_indices", tuple(range(self.complete_visit_count))
+        )
         PersistentHopRestorationReceiptV1.model_validate(self.restoration.model_dump())
         if (
             terminal.session_id != persistent_hop_wire_session_id(self.session_id)
@@ -247,8 +250,12 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             or self.kernel_buffers_requested != g.kernel_buffers
             or self.kernel_buffers_readback != g.kernel_buffers
             or self.restoration.status != "restored"
-            or self.complete_visit_count
-            != max(0, len(self.events) - (terminal.state == "cancelled"))
+            or self.complete_visit_count != len(retained_indices)
+            or (
+                not hasattr(self, "retained_visit_indices")
+                and self.complete_visit_count
+                != max(0, len(self.events) - (terminal.state == "cancelled"))
+            )
             or (self.events and self.stream_generation is None)
             or self.source_span_attested != bool(self.events)
         ):
@@ -298,7 +305,12 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             terminal.startup_invalid_start_counter or terminal.startup_invalid_end_counter_exclusive
         ):
             raise ValueError("adaptive empty receipt has an invented startup event")
-        valid = self.complete_visit_count * g.valid_visit_samples
+        if (
+            tuple(sorted(set(retained_indices))) != tuple(retained_indices)
+            or any(index < 0 or index >= len(self.events) for index in retained_indices)
+        ):
+            raise ValueError("adaptive retained visit inventory is invalid")
+        valid = len(retained_indices) * g.valid_visit_samples
         invalid = sum(
             max(
                 0,
@@ -311,8 +323,8 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             terminal.final_counter - terminal.first_counter if self.source_span_attested else 0
         )
         if (
-            self.complete_visit_count
-            and self.events[self.complete_visit_count - 1].valid_start_counter
+            retained_indices
+            and self.events[retained_indices[-1]].valid_start_counter
             + g.valid_visit_samples
             > terminal.last_block_end_counter
         ):
@@ -344,7 +356,11 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             or self.transition_invalid_sample_count != invalid
             or self.duty_denominator_sample_count != denominator
             or self.unclassified_sample_count != unclassified
-            or (terminal.state == "completed" and unclassified)
+            or (
+                terminal.state == "completed"
+                and unclassified
+                and not hasattr(self, "retained_visit_indices")
+            )
             or self.unreceived_tail_sample_count
             != max(
                 0,
@@ -367,7 +383,12 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
                     e.valid_start_counter + self.plan.geometry.valid_visit_samples
                 ),
             )
-            for e in self.events[: self.complete_visit_count]
+            for e in (
+                self.events[index]
+                for index in getattr(
+                    self, "retained_visit_indices", range(self.complete_visit_count)
+                )
+            )
         )
 
     @property
@@ -378,11 +399,21 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
                 target=p.target,
                 visit_count=sum(
                     e.target_index == p.target_index
-                    for e in self.events[: self.complete_visit_count]
+                    for e in (
+                        self.events[index]
+                        for index in getattr(
+                            self, "retained_visit_indices", range(self.complete_visit_count)
+                        )
+                    )
                 ),
                 valid_sample_count=sum(
                     e.target_index == p.target_index
-                    for e in self.events[: self.complete_visit_count]
+                    for e in (
+                        self.events[index]
+                        for index in getattr(
+                            self, "retained_visit_indices", range(self.complete_visit_count)
+                        )
+                    )
                 )
                 * self.plan.geometry.valid_visit_samples,
             )

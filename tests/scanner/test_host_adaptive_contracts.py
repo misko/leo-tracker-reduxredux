@@ -10,6 +10,7 @@ from leo.scanner.host_adaptive import (
     HOST_ADAPTIVE_RX0_PROFILE_ID,
     HostAdaptiveHopPlanV2,
     HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV4,
     HostDecisionConfigurationV1,
     HostDecisionNumericsV1,
     HostDecisionRecordV1,
@@ -28,6 +29,7 @@ from tests.scanner.host_adaptive_fixtures import (
     host_plan,
     host_receipt,
     numerics,
+    sparse_multirate_host_receipt,
 )
 
 
@@ -85,6 +87,22 @@ def test_receipt_requires_every_complete_visit_and_revalidates_copies():
         HostAdaptiveHopPlanV2.model_validate(
             host_plan().model_copy(update={"classification_receiver": 1})
         )
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("retained_visit_indices", (0, 1, 1, 4, 5)),
+        ("retained_visit_indices", (0, 1, 4, 3, 5)),
+        ("retained_visit_indices", (0, 1, 3, 4, 7)),
+        ("transport_missing_sample_count", 0),
+    ],
+)
+def test_sparse_wide_receipt_rejects_false_gap_accounting(field, value):
+    payload = sparse_multirate_host_receipt().model_dump()
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        HostAdaptiveHopReceiptV4.model_validate(payload)
 
 
 @pytest.mark.parametrize(

@@ -9,10 +9,15 @@ from leo.storage.adaptive_hop import (
     AdaptiveHopIqStore,
     HostAdaptiveHopIqManifestV2,
     HostAdaptiveHopIqManifestV3,
+    HostAdaptiveHopIqManifestV4,
 )
 from leo.storage.errors import BundleStateError
 from tests.scanner.adaptive_hop_fixtures import block_fixture, receipt_fixture, timing_fixture
-from tests.scanner.host_adaptive_fixtures import host_receipt, multirate_host_receipt
+from tests.scanner.host_adaptive_fixtures import (
+    host_receipt,
+    multirate_host_receipt,
+    sparse_multirate_host_receipt,
+)
 
 
 def block(receipt, index):
@@ -85,6 +90,35 @@ def test_multirate_store_uses_bounded_four_visit_chunks(tmp_path, rate):
                 assert visit == receipt.visits[index]
                 assert iq.shape == (dwell, 1, 2)
                 np.testing.assert_array_equal(iq[1, 0], [index + 1, -32768])
+    finally:
+        writer.abort()
+        store.close()
+
+
+def test_sparse_multirate_store_retains_source_indices_and_packed_iq_order(tmp_path):
+    receipt = sparse_multirate_host_receipt(session_id="wide-sparse")
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(receipt.session_id, receipt.plan)
+    try:
+        for index in range(receipt.complete_visit_count):
+            writer.append(block(receipt, index))
+        published = writer.finish(receipt, timing=timing_fixture(receipt, SingleRxHopTimingV3))
+        assert isinstance(published.manifest, HostAdaptiveHopIqManifestV4)
+        assert published.manifest.receipt.retained_visit_indices == (0, 1, 3, 4, 5)
+        assert [visit.event.visit_index for visit in published.manifest.receipt.visits] == [
+            0,
+            1,
+            3,
+            4,
+            5,
+        ]
+        assert [chunk.visit_count for chunk in published.manifest.chunks] == [4, 1]
+        assert store.verify(receipt.session_id) == published
+        with store.reader(receipt.session_id, expected=published) as reader:
+            for ordinal, source_index in enumerate((0, 1, 3, 4, 5)):
+                visit, iq = reader.read_visit_ci16(ordinal)
+                assert visit.event.visit_index == source_index
+                np.testing.assert_array_equal(iq[1, 0], [ordinal + 1, -32768])
     finally:
         writer.abort()
         store.close()

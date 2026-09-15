@@ -97,8 +97,15 @@ class HostAdaptiveSessionDetailV2(AdaptiveHopSessionDetailV1):
 
     @model_validator(mode="after")
     def _decision_inventory(self) -> Self:
-        if tuple(d.visit_index for d in self.host_decisions) != tuple(
-            range(self.capture.retained_visits)
+        indices = tuple(d.visit_index for d in self.host_decisions)
+        expected = tuple(range(self.capture.retained_visits))
+        if (
+            indices != expected
+            and not (
+                isinstance(self.capture, HostAdaptiveHistoryItemV3)
+                and len(indices) == self.capture.retained_visits
+                and indices == tuple(sorted(set(indices)))
+            )
         ):
             raise ValueError("host decision view must cover every retained visit in order")
         return self

@@ -42,6 +42,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV3,
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
+    HostAdaptiveHopReceiptV4,
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
@@ -184,9 +185,17 @@ class HostAdaptiveHopIqManifestV3(HostAdaptiveHopIqManifestV2):
     chunks: Annotated[tuple[HostAdaptiveHopIqChunkV3, ...], Field(max_length=625)]
 
 
+class HostAdaptiveHopIqManifestV4(HostAdaptiveHopIqManifestV3):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    receipt: HostAdaptiveHopReceiptV4
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
-        AdaptiveHopIqManifestV1 | HostAdaptiveHopIqManifestV2 | HostAdaptiveHopIqManifestV3,
+        AdaptiveHopIqManifestV1
+        | HostAdaptiveHopIqManifestV2
+        | HostAdaptiveHopIqManifestV3
+        | HostAdaptiveHopIqManifestV4,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -766,7 +775,12 @@ class AdaptiveHopSessionWriter:
             g = self._plan.geometry
             e = visit.event
             if (
-                e.visit_index != len(self._visits)
+                (
+                    e.visit_index != len(self._visits)
+                    if self._host_adaptive_version != 3
+                    else bool(self._visits)
+                    and e.visit_index <= self._visits[-1].event.visit_index
+                )
                 or e.target != g.profiles[e.target_index].target
                 or e.decision.mode != self._plan.policy.mode
                 or e.decision.generation != self._plan.policy.generation
@@ -775,6 +789,7 @@ class AdaptiveHopSessionWriter:
                 or block.receiver_ids != g.receiver_ids
                 or (
                     self._visits
+                    and self._host_adaptive_version != 3
                     and (
                         e.from_profile_index != self._visits[-1].event.target_index
                         or e.invalid_start_counter != self._visits[-1].valid_end_counter_exclusive
@@ -843,7 +858,9 @@ class AdaptiveHopSessionWriter:
         self._require_open()
         try:
             receipt_model = (
-                HostAdaptiveHopReceiptV3
+                HostAdaptiveHopReceiptV4
+                if getattr(receipt, "schema_version", None) == 4
+                else HostAdaptiveHopReceiptV3
                 if self._host_adaptive_version == 3
                 else HostAdaptiveHopReceiptV2
                 if self._host_adaptive_version == 2
@@ -858,7 +875,9 @@ class AdaptiveHopSessionWriter:
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
             manifest_model: type[AdaptiveHopIqManifestV1] = (
-                HostAdaptiveHopIqManifestV3
+                HostAdaptiveHopIqManifestV4
+                if getattr(receipt, "schema_version", None) == 4
+                else HostAdaptiveHopIqManifestV3
                 if self._host_adaptive_version == 3
                 else HostAdaptiveHopIqManifestV2
                 if self._host_adaptive_version == 2

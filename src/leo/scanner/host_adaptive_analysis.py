@@ -21,7 +21,11 @@ from leo.scanner.adaptive_hop_analysis import (
     _analyze_loaded_visit,
     _compare_source_fields,
 )
-from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV2, HostAdaptiveHopReceiptV3
+from leo.scanner.host_adaptive import (
+    HostAdaptiveHopReceiptV2,
+    HostAdaptiveHopReceiptV3,
+    HostAdaptiveHopReceiptV4,
+)
 
 
 class HostAdaptiveAnalysisConfigurationV2(AdaptiveHopAnalysisConfigurationV1):
@@ -84,8 +88,16 @@ class HostAdaptiveAnalysisSourceV3(HostAdaptiveAnalysisSource):
     receipt: HostAdaptiveHopReceiptV3 = field(init=False)
 
 
+@dataclass(frozen=True, slots=True)
+class HostAdaptiveAnalysisSourceV4(HostAdaptiveAnalysisSourceV3):
+    _receipt_model: ClassVar[type[HostAdaptiveHopReceiptV4]] = HostAdaptiveHopReceiptV4
+    receipt: HostAdaptiveHopReceiptV4 = field(init=False)
+
+
 def _configuration(
-    source: HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3,
+    source: (
+        HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3 | HostAdaptiveAnalysisSourceV4
+    ),
     value: HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3 | None,
 ) -> HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3:
     model = (
@@ -112,7 +124,9 @@ def _configuration(
 
 
 def analyze_host_adaptive_visit(
-    source: HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3,
+    source: (
+        HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3 | HostAdaptiveAnalysisSourceV4
+    ),
     visit_index: int,
     *,
     configuration: (
@@ -133,7 +147,9 @@ def analyze_host_adaptive_visit(
 
 
 def analyze_host_adaptive_visit_batch(
-    source: HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3,
+    source: (
+        HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3 | HostAdaptiveAnalysisSourceV4
+    ),
     visit_indexes: tuple[int, ...],
     *,
     configuration: HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3,
@@ -165,13 +181,19 @@ def analyze_host_adaptive_visit_batch(
 
 def validate_host_adaptive_analysis_binding(
     product: HostAdaptiveVisitAnalysisV2 | HostAdaptiveVisitAnalysisV3,
-    receipt: HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3,
+    receipt: HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3 | HostAdaptiveHopReceiptV4,
     *,
     input_manifest_sha256: str,
 ) -> None:
     wide = isinstance(receipt, HostAdaptiveHopReceiptV3)
     product_model = HostAdaptiveVisitAnalysisV3 if wide else HostAdaptiveVisitAnalysisV2
-    receipt_model = HostAdaptiveHopReceiptV3 if wide else HostAdaptiveHopReceiptV2
+    receipt_model = (
+        HostAdaptiveHopReceiptV4
+        if isinstance(receipt, HostAdaptiveHopReceiptV4)
+        else HostAdaptiveHopReceiptV3
+        if wide
+        else HostAdaptiveHopReceiptV2
+    )
     product = product_model.model_validate(product.model_dump())
     receipt = receipt_model.model_validate(receipt.model_dump())
     _compare_source_fields(product, receipt, input_manifest_sha256)

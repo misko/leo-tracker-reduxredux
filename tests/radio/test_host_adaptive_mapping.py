@@ -17,7 +17,11 @@ from leo.radio.host_decision_worker import HostDecisionWorkResult
 from leo.scanner.ports import ScanRadioIdentity
 from tests.radio.adaptive_hop_fixtures import upstream_receipt
 from tests.scanner.adaptive_hop_fixtures import receipt_fixture
-from tests.scanner.host_adaptive_fixtures import host_receipt, multirate_host_receipt
+from tests.scanner.host_adaptive_fixtures import (
+    host_receipt,
+    multirate_host_receipt,
+    sparse_multirate_host_receipt,
+)
 
 
 @pytest.mark.parametrize("receiver", [0, 1])
@@ -47,6 +51,20 @@ def test_major3_maps_actual_tuning_single_payload_and_complete_receipt(receiver,
         map_adaptive_capture(
             upstream, plan=receipt.plan, identity=identity, session_id=receipt.session_id
         )
+
+
+def test_wide_sparse_mapping_preserves_retained_source_visit_inventory():
+    receipt = sparse_multirate_host_receipt(session_id="sparse-map")
+    upstream = upstream_receipt(receipt)
+    mapped = map_host_capture(
+        upstream,
+        plan=receipt.plan,
+        identity=ScanRadioIdentity(receipt.radio_id, receipt.radio_serial, receipt.radio_uri),
+        session_id=receipt.session_id,
+        host_decisions=receipt.host_decisions,
+    )
+    assert mapped == receipt
+    assert [visit.event.visit_index for visit in mapped.visits] == [0, 1, 3, 4, 5]
 
 
 @pytest.mark.parametrize("fault", ["major", "configuration", "receiver", "serial", "uri"])

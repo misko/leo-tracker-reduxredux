@@ -169,6 +169,8 @@ class _HostAdaptiveSession:
         self._produced: list[AdaptiveHopVisitV1] = []
         self._records: list[HostDecisionRecordV1 | HostDecisionRecordV2] = []
         self._completed: dict[int, HostDecisionWorkResult | _Overflow] = {}
+        self._decision_order: list[int] = []
+        self._records_emitted = 0
         self._feedback_fault: str | None = None
         self._producer = threading.Thread(
             target=self._run, name=f"leo-host-adaptive-{session_id}", daemon=False
@@ -247,7 +249,7 @@ class _HostAdaptiveSession:
     def _accept(self, sampled: Any, worker: BoundedHostDecisionWorker) -> None:
         block = map_host_sampled_visit(sampled, self.plan)
         event = block.evidence.event
-        if event.visit_index != len(self._produced):
+        if self._produced and event.visit_index <= self._produced[-1].event.visit_index:
             raise ValueError("host adaptive native visits arrived out of order")
         feedback_model = (
             importlib.import_module("pluto_plus.host_adaptive_hop").HostFeedbackV2
@@ -280,6 +282,7 @@ class _HostAdaptiveSession:
             self._completed[event.visit_index] = _Overflow(source, time.monotonic_ns())
         else:
             worker.submit(source, sampled.samples, edge=event.target.edge.value)
+        self._decision_order.append(event.visit_index)
         try:
             self._visits.put_nowait(block)
         except queue.Full as error:
@@ -291,8 +294,11 @@ class _HostAdaptiveSession:
     def _flush(self, results: tuple[HostDecisionWorkResult, ...]) -> None:
         for completed in results:
             self._completed[completed.source.visit] = completed
-        while len(self._records) in self._completed:
-            result = self._completed.pop(len(self._records))
+        while (
+            self._records_emitted < len(self._decision_order)
+            and self._decision_order[self._records_emitted] in self._completed
+        ):
+            result = self._completed.pop(self._decision_order[self._records_emitted])
             now = time.monotonic_ns()
             feedback = result.source if isinstance(result, _Overflow) else result.feedback(now)
             accepted = False
@@ -359,6 +365,7 @@ class _HostAdaptiveSession:
                     source_rate_hz=self.plan.decision.source_rate_hz,
                 )
             self._records.append(record)
+            self._records_emitted += 1
 
     def _refresh_start_clock_bracket(self) -> None:
         bracket = self._upstream.start_clock_bracket
@@ -374,12 +381,16 @@ class _HostAdaptiveSession:
         worker: BoundedHostDecisionWorker | None = None
         try:
             client = self._client_factory(self._identity.uri, self._identity.serial)
+            direct_options = (
+                {"direct_async_frames": 8192} if self.plan.schema_version == 3 else {}
+            )
             self._upstream = client.start(
                 _load_plan(self.plan.geometry),
                 policy=load_host_policy(self.plan),
                 decision=load_host_decision(self.plan),
                 session_id=persistent_hop_wire_session_id(self._session_id),
                 tandem_request=_load_tandem_hold_request(),
+                **direct_options,
             )
             self._refresh_start_clock_bracket()
             worker = BoundedHostDecisionWorker(

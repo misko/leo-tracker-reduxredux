@@ -9,25 +9,37 @@ from pluto_plus.host_adaptive_hop_stream import HostAdaptiveHopSampledVisitV3
 from leo.analysis.host_decision import HostDecisionEvidence
 from leo.radio.pluto_host_adaptive import PlutoHostAdaptiveHopRadio
 from tests.radio.adaptive_hop_fixtures import upstream_receipt
-from tests.scanner.host_adaptive_fixtures import host_receipt, numerics
+from tests.scanner.host_adaptive_fixtures import (
+    host_receipt,
+    multirate_host_receipt,
+    multirate_numerics,
+    numerics,
+)
 
 
 class Engine:
-    def __init__(self, *, delay=0, fail=False):
+    def __init__(self, *, rate=10_000_000, delay=0, fail=False):
         self.threads = [threading.get_ident()]
-        self.delay, self.fail = delay, fail
+        self.rate, self.delay, self.fail = rate, delay, fail
         self.closed = False
 
     def run(self, iq, *, edge):
         self.threads.append(threading.get_ident())
-        assert iq.dtype == np.dtype("<i2") and iq.shape == (1_200_000, 2)
+        assert iq.dtype == np.dtype("<i2") and iq.shape == (self.rate * 120 // 1000, 2)
         assert not iq.flags.writeable
         assert edge in ("lower", "upper")
         if self.delay:
             time.sleep(self.delay)
         if self.fail:
             raise RuntimeError("synthetic detector failure")
-        return HostDecisionEvidence(**numerics().model_dump(exclude={"schema_version"}))
+        values = (
+            numerics()
+            if self.rate == 10_000_000
+            else multirate_numerics(self.rate)
+        )
+        return HostDecisionEvidence(
+            **values.model_dump(exclude={"schema_version", "source_rate_hz"})
+        )
 
     def close(self):
         self.threads.append(threading.get_ident())
@@ -51,12 +63,22 @@ class Client:
         assert threading.get_ident() == self.owner
         self.calls.append(name)
 
-    def start(self, plan, *, policy, decision, session_id, tandem_request):
+    def start(
+        self,
+        plan,
+        *,
+        policy,
+        decision,
+        session_id,
+        tandem_request,
+        direct_async_frames=0,
+    ):
         self.owned("start")
         assert plan.receiver_id == decision.receiver_id == self.source.plan.classification_receiver
         assert policy == self.receipt.stream.request.policy
         assert decision == self.receipt.stream.request.decision
         assert session_id == self.source.terminal.session_id
+        self.direct_async_frames = direct_async_frames
         return self
 
     @property
@@ -76,7 +98,11 @@ class Client:
         self.next_index += 1
         return HostAdaptiveHopSampledVisitV3(
             self.receipt.stream.visits[index],
-            np.full((1, 1_200_000), index + 2j, np.complex64),
+            np.full(
+                (1, self.source.plan.geometry.valid_visit_samples),
+                index + 2j,
+                np.complex64,
+            ),
             self.source.plan.classification_receiver,
         )
 
@@ -141,7 +167,13 @@ def setup(
         return clients[-1]
 
     def engine_factory():
-        engines.append(Engine(delay=engine_delay, fail=engine_fail))
+        engines.append(
+            Engine(
+                rate=receipt.plan.geometry.sample_rate_hz,
+                delay=engine_delay,
+                fail=engine_fail,
+            )
+        )
         return engines[-1]
 
     radio = PlutoHostAdaptiveHopRadio(
@@ -192,6 +224,21 @@ def test_client_construction_admission_iio_and_feedback_have_one_owner(receiver,
     finally:
         radio.close()
     assert clients[0].closed
+
+
+@pytest.mark.parametrize("rate", [15_000_000, 20_000_000])
+def test_wide_rate_uses_one_long_direct_async_request(rate):
+    receipt = multirate_host_receipt(rate=rate, count=3)
+    radio, clients, _ = setup(receipt, pacing=0)
+    radio.open()
+    try:
+        session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+        assert tuple(drain(session)) == receipt.visits
+        result = session.finish()
+        assert result.plan.geometry.sample_rate_hz == rate
+        assert clients[0].direct_async_frames == 8192
+    finally:
+        radio.close()
 
 
 def test_first_visit_replaces_buffer_open_clock_bracket():
