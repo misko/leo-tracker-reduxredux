@@ -176,9 +176,7 @@ class HostDecisionNumericsV2(HostDecisionNumericsV1):
     def first_candidate_source_epoch_offset(self) -> float | None:
         if not self.candidate_supported or not self.fractional_complete:
             return None
-        factor, delay = {15_000_000: (6, 100), 20_000_000: (8, 128)}[
-            self.source_rate_hz
-        ]
+        factor, delay = {15_000_000: (6, 100), 20_000_000: (8, 128)}[self.source_rate_hz]
         window = self.confirmation_mask.bit_length() - 1
         return factor * (window * 50_000 + self.epoch + self.fractional_offset) - delay
 
@@ -377,7 +375,7 @@ class HostAdaptiveHopReceiptV3(HostAdaptiveHopReceiptV2):
                 or record.valid_start_counter != event.valid_start_counter
                 or record.valid_end_counter_exclusive != event.valid_start_counter + source_samples
                 or record.configuration_sha256 != self.plan.decision.configuration_sha256
-        ):
+            ):
                 raise ValueError("host decision differs from its native source or configuration")
         return self
 

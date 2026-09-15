@@ -131,10 +131,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                 or chunk.first_visit_index != next_visit
                 or chunk.sample_start != next_sample
                 or chunk.relative_path != f"iq-block-{index:06d}.ci16.zst"
-                or (
-                    index < len(self.chunks) - 1
-                    and chunk.visit_count != self._visits_per_chunk
-                )
+                or (index < len(self.chunks) - 1 and chunk.visit_count != self._visits_per_chunk)
                 or next_visit + chunk.visit_count > receipt.complete_visit_count
                 or chunk.sample_count != chunk.visit_count * g.valid_visit_samples
                 or chunk.uncompressed_bytes != chunk.sample_count * self._bytes_per_sample
@@ -778,8 +775,7 @@ class AdaptiveHopSessionWriter:
                 (
                     e.visit_index != len(self._visits)
                     if self._host_adaptive_version != 3
-                    else bool(self._visits)
-                    and e.visit_index <= self._visits[-1].event.visit_index
+                    else bool(self._visits) and e.visit_index <= self._visits[-1].event.visit_index
                 )
                 or e.target != g.profiles[e.target_index].target
                 or e.decision.mode != self._plan.policy.mode

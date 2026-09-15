@@ -168,9 +168,7 @@ def analyze_host_adaptive_visit_batch(
         max_workers=len(visit_indexes), thread_name_prefix="leo-host-native"
     ) as pool:
         futures = [
-            pool.submit(
-                _analyze_loaded_visit, source, index, values, cfg, product_model
-            )
+            pool.submit(_analyze_loaded_visit, source, index, values, cfg, product_model)
             for index, values in zip(visit_indexes, samples, strict=True)
         ]
         for future in futures:

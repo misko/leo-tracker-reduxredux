@@ -138,48 +138,48 @@ def map_host_work_result(
         health = "expired"
         failure = "host decision exceeded its one-second processing age"
     values = dict(
-            session_id=feedback.session_id,
-            generation=feedback.generation,
-            stream_generation=feedback.stream_id,
-            visit_index=feedback.visit,
-            event_sequence=feedback.event_sequence,
-            receiver_id=feedback.receiver_id,
-            target_index=feedback.target_index,
-            valid_start_counter=feedback.valid_start,
-            valid_end_counter_exclusive=feedback.valid_end,
-            configuration_sha256="sha256:" + feedback.configuration_sha256.hex(),
-            submitted_monotonic_ns=result.submitted_ns,
-            started_monotonic_ns=result.started_ns,
-            completed_monotonic_ns=result.completed_ns,
-            feedback_monotonic_ns=feedback_ns,
-            feedback_completed_monotonic_ns=(
-                feedback_ns if feedback_completed_ns is None else feedback_completed_ns
-            ),
-            numerics=(
-                HostDecisionNumericsV1.model_validate(dataclasses.asdict(evidence))
-                if source_rate_hz == 10_000_000
-                else HostDecisionNumericsV2.model_validate(
-                    {
-                        **dataclasses.asdict(evidence),
-                        "schema_version": 2,
-                        "source_rate_hz": source_rate_hz,
-                    }
-                )
+        session_id=feedback.session_id,
+        generation=feedback.generation,
+        stream_generation=feedback.stream_id,
+        visit_index=feedback.visit,
+        event_sequence=feedback.event_sequence,
+        receiver_id=feedback.receiver_id,
+        target_index=feedback.target_index,
+        valid_start_counter=feedback.valid_start,
+        valid_end_counter_exclusive=feedback.valid_end,
+        configuration_sha256="sha256:" + feedback.configuration_sha256.hex(),
+        submitted_monotonic_ns=result.submitted_ns,
+        started_monotonic_ns=result.started_ns,
+        completed_monotonic_ns=result.completed_ns,
+        feedback_monotonic_ns=feedback_ns,
+        feedback_completed_monotonic_ns=(
+            feedback_ns if feedback_completed_ns is None else feedback_completed_ns
+        ),
+        numerics=(
+            HostDecisionNumericsV1.model_validate(dataclasses.asdict(evidence))
+            if source_rate_hz == 10_000_000
+            else HostDecisionNumericsV2.model_validate(
+                {
+                    **dataclasses.asdict(evidence),
+                    "schema_version": 2,
+                    "source_rate_hz": source_rate_hz,
+                }
             )
-            if evidence is not None
-            else None,
-            health=health,
-            failure=failure[:2048] if failure else None,
-            feedback_outcome=feedback.outcome.name.lower(),
-            feedback_disposition="rejected"
-            if feedback_error and submitted
-            else "not_submitted"
-            if not submitted
-            else "accepted"
-            if accepted
-            else "source_ended",
-            feedback_error=feedback_error,
         )
+        if evidence is not None
+        else None,
+        health=health,
+        failure=failure[:2048] if failure else None,
+        feedback_outcome=feedback.outcome.name.lower(),
+        feedback_disposition="rejected"
+        if feedback_error and submitted
+        else "not_submitted"
+        if not submitted
+        else "accepted"
+        if accepted
+        else "source_ended",
+        feedback_error=feedback_error,
+    )
     if source_rate_hz == 10_000_000:
         return HostDecisionRecordV1.model_validate(values)
     return HostDecisionRecordV2.model_validate(
