@@ -447,3 +447,26 @@ and acquisition is active. Commit `d6dc86951` adds publication, application
 and latency timestamps to each subsequently retained coarse-authority record,
 so the next signal-bearing run can separate observer computation delay from
 controller polling delay without changing scheduling authority.
+
+Cycle v35 selected 1.1903125 GHz and exercised the timestamped cadence-aligned
+path. The RF interval was weak: its two episodes retained 12 and 15 FPGA
+measurements, spanning 0.147 and 0.187 seconds, with one and six supported
+native diagnostics. Their passive observers supported 3/6 and 6/9
+measurements. Seven coarse-authority applications measure 0.471 ms mean,
+0.423 ms median, 0.580 ms p95 and 0.616 ms maximum publication-to-application
+latency. This rules out controller polling as the material delay seen in v32.
+Both journals pass independent epoch and ownership review, all FPGA, CDC and
+pacing counters are zero, all SSD and RAID manifest entries pass, and the
+radio and acquisition service are restored.
+
+The evidence now separates two cases. V32 demonstrates a strong 14.667-second
+episode where a 96-frame fit-window coast would bridge the measured
+four-rejection burst. V33 and v35 demonstrate weak intervals where neither a
+larger coast nor faster authority application can create truthful RF support.
+Further RF retries in the same window would be an uninformative campaign. The
+next engineering task is to use the retained observer and scan IQ to qualify a
+reacquisition/continuity state machine: preserve the bounded Doppler model and
+track identity across explicitly marked unsupported gaps, reacquire with the
+existing gates, and report supported duty separately from scheduled coverage.
+The exact 30-second single-episode gate remains unmet, so no 100-second RF run
+has been launched.
