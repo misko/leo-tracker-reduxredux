@@ -235,6 +235,11 @@ or a direct 10 MS/s PSS number.
 
 ## TLE correlation and association limits
 
+A subsequent [per-recording TLE candidate review](2026_09_15_rx0_10msps_recording_tle_review.md)
+provides individual candidate tables, exact-time orbital overlays, residuals,
+and a stricter audit of three examples. It is separate research evidence and
+does not change the frozen production counts below.
+
 All current captures have qualified UTC, so UTC itself did not block catalogue
 matching. The eligible snapshot contained about 11,128 objects and was collected
 a median **55.52 minutes** before the associated captures. Across 40 trajectory
