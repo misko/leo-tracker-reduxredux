@@ -585,3 +585,48 @@ an opt-in refinement path and exercise one bounded physical 30-second gate.
 Only a complete independently reviewed 2,251-result episode admits the
 7,501-result 100-second run. Further immediate RF retries before this replay
 would add little information.
+
+Firmware commits `4897fc631` through `30bd9ce84` implement that replayed
+design as the opt-in `continuity30-prior-after-scout1` profile. A previous
+measured trend can only center a fresh circular timing search over eight
+coarse epochs; the selected point is still the maximum of newly computed
+11-frequency-row evidence. The resolver then evaluates four complete pilots
+over a two-sample timing radius, reducing its FFT count from 68 to 20, and
+the worker must rebuild at least eight supported measurements before the
+unchanged 32-frame live handoff gate. The prior cannot directly create an
+FPGA descriptor. On a clean post-handoff loss, the profile now retains the
+joined passive observer history as the same search-only prior, rebases the
+source into a new hardware epoch, and attempts fresh reacquisition within the
+same 49.152-second segment.
+
+Saved v39 IQ validates the local computation against the full algorithms. An
+eight-sample local coarse search selects the same grid maxima as the global
+scan in attempts 4, 5 and 7. For attempts 4 and 5, the two-sample four-pilot
+resolver selects the identical best timing/CFO hypothesis as the 17-shift
+resolver while using 20 rather than 68 FFTs. The focused validation passes
+277 resolver/coarse/trend/seed/worker tests, 258 visit/operator/reviewer tests,
+and an isolated end-to-end synthetic test that performs the local scan,
+20-FFT resolver, rebuilt history, handoff and all 1,500 scheduled results.
+
+Physical cycle v41 stopped at strict host decoding after the ARM parent omitted
+the new activity-policy field; radio state and acquisition were restored and
+its five-file pre-review record was hash-verified from SSD to RAID. Commit
+`603f50b83` fixes that identity only. Cycle v42 then passes the independent
+transition review and both storage manifests. It selects 1.4403125 GHz,
+hands off on its second refinement attempt and retains **1,233 exact FPGA
+results**, or **16.44 seconds** at the 75-Hz stride-ten measurement cadence.
+This exceeds v32's 1,101-result/14.67-second record. The episode ends in a
+clean supported-history loss with 11 recent supported measurements. Because
+handoff preceded the bootstrap-history failure, the new prior-local branch was
+not invoked; this observation motivated the bounded post-loss rebase in
+`30bd9ce84` rather than any relaxation of support thresholds.
+
+Cycles v43 and v44 use that post-loss payload and each complete three four-LO
+scan rounds with no activity above the unchanged isolation gate. Both perform
+zero tracking segments, pass independent transition review, verify SSD-to-RAID
+publication and restore the exact radio with acquisition active. They therefore
+do not test the physical restart branch. The next informative run is another
+bounded activity-triggered cycle with this same payload. It must first show a
+prior-local scan after a clean native loss and then independently retain all
+2,251 results in one uninterrupted 30-second episode. The 7,501-result
+100-second profile remains gated on that result.
