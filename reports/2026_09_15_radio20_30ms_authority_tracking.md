@@ -3,7 +3,7 @@
 **Date:** 15 September 2026  
 **Radio:** `1040005e0b100007100010000bf33a5d4d` (`192.168.1.20`)  
 **Image:** `glrt-iq-tracking-r30000000-v1`  
-**Result:** sustainable 30-MS/s scheduling and bounded operation pass; ten-second physical tracking does not yet pass
+**Result:** the first complete 10-second, 751-measurement physical 30-MS/s FPGA tracking run passes
 
 ## Result
 
@@ -11,17 +11,24 @@ Retained 2.5-MS/s ARM observations can now extend the causal scheduling
 horizon of existing 30-MS/s FPGA pilot jobs. The implementation preserves a
 separate native-result history, retains every authority update before use, and
 does not rewrite work already submitted to the FPGA. Synthetic positive and
-negative controls pass, as do 527 live/controller tests.
+negative controls pass; the final change passes 368 focused controller,
+journal, visit, operator and live-authority tests.
 
-Four physical runs exercised the new path. Two acquired the signal and produced
+The final activity-triggered v13 run completed all **751** stride-ten FPGA
+measurements from frame 1,290 through frame 8,790. That is exactly **10.000
+seconds** of scheduled source time; the retained FPGA head starts span
+10.000038 seconds. The unchanged native diagnostic accepted 466 results and
+rejected 285, while 699 retained coarse-authority refreshes kept future work
+scheduled. The controller completed and drained normally with zero capture,
+CDC and pacer drops. The independent epoch/ownership and journal reviewers
+pass all 751 heads, 64 paired-IQ records, and the final clear.
+
+Before the sparse work, four physical runs exercised the dense path. Two acquired the signal and produced
 five FPGA episodes. The strongest episode contains **1,158 consecutive FPGA
 results, or 1.544 seconds at the 750-Hz pilot cadence**. Its concurrent ARM
 observer supports 124 of 130 measurements, while 416 of 1,158 wider native
-diagnostics pass their unchanged gate. This is a large improvement over the
-previous 74-result/98.7-ms physical maximum, but it remains well short of the
-7,500-result/10-second target. The two runs made after the final wall-deadline
-fix contain no qualifying handoff, so they cannot validate that fix against a
-physical signal.
+diagnostics pass their unchanged gate. Those runs established the dense-path
+limit and motivated the sustainable stride-ten cadence used by v13.
 
 The dense 750-result/s experiments also established that ARM/sysfs retention
 drains about 96.5 results/s. A dense controller therefore falls behind the
@@ -41,7 +48,7 @@ the predictor's 32-frame bound. No descriptor used that stale record, but those
 journals correctly fail evidence review. Commit `627654e9c` now refuses such a
 refresh until the next observer update. The corrected CH4 validation produced
 two independently reviewable clean-loss episodes spanning **1.640 s** and
-**0.987 s**. No physical episode reached 751 measurements.
+**0.987 s**. None of those earlier sparse dwells reached 751 measurements.
 
 The later radio-local activity campaign ran ten admitted cycles after one
 lease refusal. Three cycles triggered refinement. The final corrected cycle
@@ -50,8 +57,8 @@ proved the complete scan-to-follow-up-to-reacquisition path at 1.9403125 GHz:
 reacquisitions. The episodes contained 17, 25, 16 and 16 FPGA results; 50 of 74
 native diagnostics passed the unchanged gate, and the longest episode spanned
 **0.320 s**. Independent epoch/ownership review passes, all FPGA fault and drop
-counters are zero, and the exact radio state was restored. This is a successful
-bounded reacquisition result, but it is not a ten-second continuous track.
+counters are zero, and the exact radio state was restored. That result exposed
+the cadence-alias authority issue fixed before v13.
 
 ![Radio-local activity triggers and follow-up episode lengths](2026_09_15_radio20_30ms_authority_tracking/activity_followup_outcomes.png)
 
@@ -272,6 +279,18 @@ concurrent ARM observer retained 81 measurements. The parent returned explicit
 clean loss after the bounded third restart and did not promote the run to a
 completed track.
 
+V12 failed before radio attestation or RF collection because its selected host
+Python environment lacked the SSH transport dependency. V13 used the reviewed
+environment and the cadence-authority fix from firmware commit `9c8ca3952`.
+The two scouts at 1.9403125 and 1.4403125 GHz retained activity but no native
+handoff; the radio-local parent selected 1.4403125 GHz and launched the long
+follow-up. Its 189th acquisition attempt produced one native episode that
+completed all 751 measurements without a restart. Independent review reports
+466 supported native diagnostics, 285 rejection-code-64 diagnostics, 699
+monotonic coarse-authority refreshes, and a 10.000-second frame span. The
+successful child processed 27,326 source blocks and returned status 0 with
+`worker_complete=1`.
+
 Every complete admitted cycle has matching SSD and RAID manifests. V10 is
 explicitly marked incomplete because only its parent stdout and before/after
 operator receipt survived. The reproducible cycle summary and plot are
@@ -295,8 +314,11 @@ its reproducible `SHA256SUMS`; SSD originals remain in place.
 
 The complete activity-triggered cycles are stored under matching
 `activity-followup-20260915-vN` paths on NVMe and RAID. V11 contains 26 retained
-files, and its entire RAID manifest verifies. V10 has no RAID copy for the
-documented pre-fix evidence-ordering reason.
+files, and its entire RAID manifest verifies. V13 contains 34 retained child
+files; all 38 manifest entries match independently on both SSD and RAID. Its
+before/after attestation is identical, including serial, boot ID, 30-MS/s image,
+FIT/QSPI hashes, disabled buffers and TX-safe state. V10 has no RAID copy for
+the documented pre-fix evidence-ordering reason.
 
 The acceptance gate remains:
 
@@ -307,18 +329,17 @@ The acceptance gate remains:
 4. exact radio and TX-safe restoration.
 
 This campaign establishes sustainable 30-MS/s FPGA scheduling, causal authority
-admission, zero-loss capture, clean negative behavior and restoration. It
-records zero qualifying ten-second episodes, so acceptance is **not passed**.
+admission, zero-loss capture, clean negative behavior and restoration. V13 is
+one qualifying sparse ten-second episode, so the single-run milestone is
+**passed**. The stated acceptance gate asks for two repeatable episodes, so the
+repeatability gate remains open until a second independent 751-result run.
 
-The next stable step is offline replay of the v11 retained windows and explicit
-design of a session-level tracking contract. The physical system now scans,
-selects an LO, starts FPGA measurements, detects clean loss and reacquires on
-ARM without host intervention. Real support arrives in short episodes, so a
-useful ten-second operational result should retain episode boundaries and gap
-time while continuing reacquisition across the observation window. That new
-session evidence must remain distinct from the existing 751-result continuous
-episode gate. The native diagnostic gates should remain unchanged; their
-support rate is evidence about signal quality, not a reason to relabel a track.
+The next stable step is analysis and replay of v13, followed by one independent
+repeat rather than changing the native diagnostic threshold. The physical
+system now scans, selects an LO, acquires, schedules 30-MS/s FPGA measurements,
+uses retained ARM history through native cadence gaps, and drains a ten-second
+run without host feedback. Native support is 62.1% in v13; that remains useful
+signal-quality evidence and is not relabeled as 100% continuous RF support.
 
 The figure and `summary.json` are regenerated by
 [`analyze.py`](2026_09_15_radio20_30ms_authority_tracking/analyze.py) from the

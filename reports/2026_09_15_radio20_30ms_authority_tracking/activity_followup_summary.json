@@ -755,15 +755,112 @@
       "ssd_manifest_pass": true,
       "raid_manifest_pass": true,
       "radio_restored": true
+    },
+    {
+      "cycle": "v12",
+      "operator_status": "started",
+      "los_hz": [
+        1940312500,
+        1440312500
+      ],
+      "parent": null,
+      "children": [],
+      "retained_evidence": false,
+      "ssd_manifest_pass": false,
+      "raid_manifest_pass": false,
+      "radio_restored": false
+    },
+    {
+      "cycle": "v13",
+      "operator_status": "track_complete_review_pending",
+      "los_hz": [
+        1940312500,
+        1440312500
+      ],
+      "parent": {
+        "scope": "bounded_arm_scout_sparse_followup",
+        "rate": 30000000,
+        "result": 0,
+        "rf_sample_limit": 787611648,
+        "followup_started": 1,
+        "track_complete": 1,
+        "selection": "retained_activity",
+        "selected_index": 1
+      },
+      "children": [
+        {
+          "visit": 0,
+          "role": "scout",
+          "lo_hz": 1940312500,
+          "blocks": 1256,
+          "source_duration_s": 8.2313216,
+          "attempts": 6,
+          "handoffs": 0,
+          "native_results": 0,
+          "native_completed_runs": 0,
+          "reacquisitions": 0,
+          "maximum_single_pilot_power": 0.004152063795688911,
+          "episodes": []
+        },
+        {
+          "visit": 1,
+          "role": "scout",
+          "lo_hz": 1440312500,
+          "blocks": 1338,
+          "source_duration_s": 8.7687168,
+          "attempts": 6,
+          "handoffs": 0,
+          "native_results": 0,
+          "native_completed_runs": 0,
+          "reacquisitions": 0,
+          "maximum_single_pilot_power": 0.0644824984006842,
+          "episodes": []
+        },
+        {
+          "visit": 2,
+          "role": "followup",
+          "lo_hz": 1440312500,
+          "blocks": 27326,
+          "source_duration_s": 179.0836736,
+          "attempts": 189,
+          "handoffs": 1,
+          "native_results": 751,
+          "native_completed_runs": 1,
+          "reacquisitions": 0,
+          "maximum_single_pilot_power": 0.07239646281387356,
+          "episodes": [
+            {
+              "episode": 0,
+              "epoch": 266,
+              "controller_result": 0,
+              "measurements": 751,
+              "supported": 466,
+              "rejections": {
+                "0": 466,
+                "64": 285
+              },
+              "source_span_s": 10.0,
+              "faults": 0,
+              "cdc_drops": 0,
+              "pacer_drops": 0,
+              "journal_review": "pass"
+            }
+          ]
+        }
+      ],
+      "retained_evidence": true,
+      "ssd_manifest_pass": true,
+      "raid_manifest_pass": true,
+      "radio_restored": true
     }
   ],
   "acceptance": {
     "target_measurements": 751,
     "target_source_span_s": 10,
-    "completed_cycles": 0,
-    "followup_cycles": 3,
-    "longest_episode_measurements": 25,
-    "longest_episode_source_span_s": 0.32,
-    "passed": false
+    "completed_cycles": 1,
+    "followup_cycles": 4,
+    "longest_episode_measurements": 751,
+    "longest_episode_source_span_s": 10.0,
+    "passed": true
   }
 }
