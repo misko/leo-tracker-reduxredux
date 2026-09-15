@@ -472,8 +472,23 @@ def test_native_10m_single_rx_policy_and_wrong_receiver_rejection(policy, rx, ma
         s.close()
 
 
+@pytest.mark.parametrize("rate", [15000000, 20000000])
+def test_wide_host_decimated_rx0_policy(policy, rate):
+    s = Scan(policy, rate=rate, single_rx=0)
+    try:
+        for _ in range(64):
+            c = s.choose()
+            o = s.commit(c)
+            o.outcome = 1 if c.target == 0 else 2
+            s.observe(o)
+        assert s.choose().active_mask == 1
+    finally:
+        s.close()
+
+
 @pytest.mark.parametrize("rx,reserved,rate", [(2, 0, 10000000), (0, 1, 10000000),
-                                            (0, 0, 2500000), (1, 0, 5000000)])
+                                            (0, 0, 2500000), (1, 0, 5000000),
+                                            (1, 0, 15000000), (1, 0, 20000000)])
 def test_single_rx_api_rejects_unsupported_admission(policy, rx, reserved, rate):
     config = ConfigV2(Config(71, 9, 0, rate, 8, 2500, 3, 3, 3, 1,
                             2000, 3000, 160, 1000, 3), rx, reserved)

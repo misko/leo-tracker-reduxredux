@@ -26,8 +26,9 @@ typedef struct {
     uint32_t maximum_result_age_ms, unhealthy_limit;
 } leo_adaptive_config_v1;
 
-/* Explicit native-10M single-RX admission. Legacy creation still admits only
- * 2.5/5M and RX1. Numerical policy and observation layout are shared. */
+/* Explicit single-RX admission: native 10M on RX0/RX1 and host-decimated
+ * 15/20M on RX0. Legacy creation still admits only 2.5/5M and RX1. Numerical
+ * policy and observation layout are shared. */
 typedef struct {
     leo_adaptive_config_v1 geometry;
     uint32_t classification_rx, reserved;
