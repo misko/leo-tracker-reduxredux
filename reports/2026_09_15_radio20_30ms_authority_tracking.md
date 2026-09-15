@@ -531,14 +531,37 @@ operator and reviewer suites pass 383 tests; the separately rerun load-sensitive
 scan80 case passes. The Cortex-A9 v23 payload is
 `079e70f769d31a457bed789402fd8cc0fca30815693a312dc3a62709ddd412a3`.
 
-Physical cycle v38 validates the fresh controller's negative path. It completes
-three four-LO rounds in twelve contiguous one-attempt scout visits and admits
-no segment. The strongest raw values recur at 1.9403125 GHz (0.0372--0.0431),
-but they do not satisfy the unchanged six-times-local-floor isolation gate.
-The parent therefore reports no selection and a 301,989,888-sample executed
-ceiling. Independent transition review passes, all retained boundary snapshots
-have zero FPGA, CDC and pacing faults, both manifests verify, the exact radio
-state matches before and after, and acquisition is active. No immediate repeat
-is warranted in this weak interval. The next positive qualification must use
-the same reviewed fresh controller when isolated activity returns; the
-30-second and subsequent 100-second gates remain unchanged.
+Physical cycle v38 completes three four-LO rounds in twelve contiguous
+one-attempt scout visits but admits no segment. Its retained evidence corrects
+the initial interpretation: the strongest values recur at 1.9403125 GHz
+(0.0372--0.0431) with isolation ratios of 13.4--15.1, so they do satisfy the
+unchanged activity gate. The new scout profile measured these events correctly,
+but the parent activity parser recognized only the older scout profile name and
+discarded them. Independent transition review and both manifests still pass;
+all boundary fault counters are zero and the radio is restored. Commit
+`8df05772a` adds the missing dispatch and a child-level regression that decodes
+the retained worker file and exposes its activity to the ranked parent. The
+Cortex-A9 v24 payload is
+`75b30ff21ba099fc0f787f4dcb0616825adb098b157b82052f930a0ba9193407`.
+
+Physical cycle v39 verifies that correction. Round zero scans all four LOs,
+selects the only qualified recent activity at 1.4403125 GHz (0.0499), and its
+bounded sixteen-attempt scan80 refinement returns typed `NO_TRACK`. Round one
+has no qualified activity. Round two selects 1.6903125 GHz (0.0693) and also
+returns `NO_TRACK` without promoting a weak acquisition to FPGA tracking. The
+parent accounts for fourteen visits, two segments and a 547,749,888-sample
+executed ceiling. Its first independent review correctly fails closed and the
+operator still publishes all evidence to both stores. The failure exposes two
+review-only assumptions: segment-bearing rounds need not be contiguous, and
+the attested AD9361 LO may round by two hertz within the controller's existing
+16-Hz tolerance. Commit `f0bcebb8b` corrects both and adds regression cases.
+The recovered review passes both transitions and all 160 SSD/RAID manifest
+entries verify. Radio identity and TX-safe state match before and after and
+acquisition is active.
+
+V39 proves the complete fresh scan/refinement negative path, including skipped
+activity rounds, without lowering acquisition gates. It did not produce a
+native handoff, so v32 remains the strongest tracking evidence and the exact
+30-second and gated 100-second qualifications remain open. Further immediate
+RF retries in this interval would not distinguish implementation from signal
+availability; the next run should wait for a new isolated-activity interval.
