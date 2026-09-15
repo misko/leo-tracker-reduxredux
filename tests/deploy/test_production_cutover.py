@@ -980,7 +980,9 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
 
 @pytest.mark.parametrize("selected_index", [0, 1, 2])
 def test_single_rx_live_probe_checks_only_selected_frozen_radio(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, selected_index: int
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    selected_index: int,
 ) -> None:
     payload = _live_station_probe_payload()
     if selected_index == 2:
@@ -1029,6 +1031,15 @@ def test_single_rx_live_probe_checks_only_selected_frozen_radio(
     radio["metadata_abi_version"] = 2
     with pytest.raises(ValueError, match="metadata ABI"):
         function(tmp_path, scanner_environment=environment)
+
+
+def test_live_probe_accepts_every_reviewed_single_radio_scanner_profile() -> None:
+    assert SCRIPT_GLOBALS["SINGLE_RADIO_SCANNER_PROFILES"] == {
+        "single-rx-random-10m-300s-v1",
+        "adaptive-single-rx-random-10m-300s-v1",
+        "adaptive-single-rx0-10m-300s-v1",
+        "adaptive-single-rx0-random-15m-20m-300s-v1",
+    }
 
 
 def test_native_bandwidth_receipt_uses_staged_contract_and_exact_v5_authority(

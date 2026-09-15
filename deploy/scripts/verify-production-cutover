@@ -299,6 +299,14 @@ EXPECTED_ACQUISITION_EXEC_START = (
     "--interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} "
     "--scanner-only --max-scanner-runs 1"
 )
+SINGLE_RADIO_SCANNER_PROFILES = frozenset(
+    {
+        "single-rx-random-10m-300s-v1",
+        "adaptive-single-rx-random-10m-300s-v1",
+        "adaptive-single-rx0-10m-300s-v1",
+        "adaptive-single-rx0-random-15m-20m-300s-v1",
+    }
+)
 LIVE_STATION_PROBE_PROGRAM = """
 import json
 import sys
@@ -1355,7 +1363,7 @@ def probe_live_station_radios(
     )
     selection: tuple[str, ...] = ()
     if scanner_environment is not None:
-        if scanner_environment.get("LEO_SCANNER_PROFILE") != "single-rx-random-10m-300s-v1":
+        if scanner_environment.get("LEO_SCANNER_PROFILE") not in SINGLE_RADIO_SCANNER_PROFILES:
             raise ValueError("narrow live probe requires the single-RX scanner profile")
         bindings = _scanner_radio_bindings(scanner_environment)
         selected = bindings["LEO_SCANNER_RADIO_ID"]
@@ -3966,7 +3974,7 @@ def verify(args: argparse.Namespace) -> list[str]:
             key, separator, value = line.partition("=")
             if separator and not line.lstrip().startswith("#"):
                 acquisition_environment[key.strip()] = value.strip().strip("'\"")
-        if acquisition_environment.get("LEO_SCANNER_PROFILE") == "single-rx-random-10m-300s-v1":
+        if acquisition_environment.get("LEO_SCANNER_PROFILE") in SINGLE_RADIO_SCANNER_PROFILES:
             probe_live_station_radios(release, scanner_environment=acquisition_environment)
         else:
             probe_live_station_radios(release)
