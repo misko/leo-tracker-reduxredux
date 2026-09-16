@@ -43,7 +43,9 @@ class Engine:
 
 
 class Client:
-    def __init__(self, receipt, *, pacing=0.04, reject=False, clock_brackets=None):
+    def __init__(
+        self, receipt, *, pacing=0.04, reject=False, clock_brackets=None, fail_after=None
+    ):
         self.owner = threading.get_ident()
         self.source = receipt
         self.receipt = upstream_receipt(receipt)
@@ -52,6 +54,7 @@ class Client:
         self.feedback = []
         self.pacing, self.reject = pacing, reject
         self.clock_brackets = clock_brackets
+        self.fail_after = fail_after
         self.calls = []
         self.restoration_delay = 0
 
@@ -105,6 +108,8 @@ class Client:
     def visits(self, *, before_release=None):
         self.owned("visits")
         while self.next_index < self.source.complete_visit_count:
+            if self.fail_after is not None and self.next_index >= self.fail_after:
+                raise OSError(61, "synthetic finite segment ended")
             if self.direct_async_frames:
                 assert len(self.feedback) == self.next_index
             if self.pacing:
@@ -149,6 +154,7 @@ def setup(
     engine_fail=False,
     read_ahead=8,
     clock_brackets=None,
+    fail_after=None,
 ):
     clients, engines = [], []
 
@@ -160,6 +166,7 @@ def setup(
                 pacing=pacing,
                 reject=reject,
                 clock_brackets=clock_brackets,
+                fail_after=fail_after,
             )
         )
         return clients[-1]
@@ -321,6 +328,25 @@ def test_decision_fault_preserves_every_native_visit_with_explicit_evidence(faul
     finally:
         radio.close()
     assert engines[0].closed
+
+
+def test_transport_failure_reports_decision_and_feedback_progress():
+    receipt = multirate_host_receipt(rate=20_000_000, count=3)
+    radio, _, _ = setup(receipt, pacing=0, reject=True, fail_after=1)
+    radio.open()
+    try:
+        session = radio.begin_session(receipt.plan, session_id=receipt.session_id)
+        assert session.read_visit().evidence == receipt.visits[0]
+        with pytest.raises(OSError, match="finite segment ended") as raised:
+            session.read_visit()
+        assert any(
+            "produced=1 decisions=1 pending=0" in note
+            and "feedback_fault=OSError: synthetic provider rejection" in note
+            for note in raised.value.__notes__
+        )
+    finally:
+        with pytest.raises(OSError, match="finite segment ended"):
+            radio.close()
 
 
 def test_cancel_is_only_a_cross_thread_signal_and_restoration_stays_owned():
