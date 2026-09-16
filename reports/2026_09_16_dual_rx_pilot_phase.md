@@ -8,7 +8,7 @@ Re-analysis of an existing 2.5 MS/s recording gives a 15-second receiver-pair tr
 
 This report supersedes the earlier conversational claim of a recovered 15.3-degree geometric change and a 5.55 cm baseline projection. Those quantities were inferred using an incorrect pilot edge and an insufficiently validated satellite association. They must not be used as path-length or baseline measurements.
 
-The results concern one recording and one radio, not all five previously surveyed recordings or a comparison between radios `19f2` and `5d4d`. No new RF collection was performed.
+Sections 1–10 describe the initial one-recording experiment. Section 11 extends the same corrected method to all five previously surveyed recordings and compares the selected `19f2` and `5d4d` tracks. No new RF collection was performed.
 
 | Quantity | Measured result |
 | --- | --- |
@@ -261,9 +261,88 @@ The committed data contain all candidate coarse and fine windows, including reje
 From a Python environment with NumPy and Matplotlib, regenerate both figures and the numerical summary without hardware, network access, PostgreSQL, or the raw corpus:
 
 ```bash
-python reports/figures/2026_09_16_dual_rx_pilot_phase/reproduce_figures.py
+uv run python reports/figures/2026_09_16_dual_rx_pilot_phase/reproduce_figures.py
 ```
 
 This command reproduces the presentation and summary from the committed measurements, not the raw-IQ extraction. Reimplementing the extraction requires the local corpus and the models, thresholds, and pseudocode above. Repository numerical references are [pilot templates](../src/leo/analysis/starlink/templates.py) and [polynomial frequency/phase conventions](../src/leo/analysis/starlink/kalman_tracking.py). The template source identifies the Qin Appendix-A pilot states and their provenance.
 
 The extraction's vectorized symbol correlations were checked against the earlier scalar implementation on real IQ at numerical tolerance before the extended runs. Publication checks regenerate figures and summary, reconcile acceptance counts and run lengths with the stored windows, and validate local report links. This report adds research documentation and artifacts; it does not change a production analyzer or a public persisted contract.
+
+## 11. Five-recording extension
+
+The corrected coherent pilot method produces strong local RX0–RX1 phase estimates on a selected track in **all five recordings**. With 20 ms integration at 10 ms cadence, **5,392 of 5,413** candidate single-signal windows pass the same receiver-pair checks. The measurements overlap heavily; 100 centers/s is not 100 independent observations/s.
+
+Each row uses one radio's two simultaneous receivers. RX0 and RX1 always use the same raw sample indices. Applied tuning independently determines the pilot edge for each capture.
+
+| Recording (2026-08-25) | Radio | Pilot edge | Fine interval from first sample | Accepted / tested | Longest accepted run | Median accepted concentration |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| 08:05:32 | 5d4d | Upper | 39.100–49.225 s | 1,011 / 1,011 | 10.10 s | 0.987 |
+| 08:08:05 | 19f2 | Lower | 48.225–58.150 s | 990 / 991 | 7.55 s | 0.950 |
+| 10:59:15 | 5d4d | Upper | 25.175–36.000 s | 1,071 / 1,081 | 10.70 s | 0.987 |
+| 11:27:54 | 19f2 | Lower | 38.850–50.625 s | 1,166 / 1,176 | 6.23 s | 0.947 |
+| 11:30:26 | 5d4d | Upper | 45.250–56.800 s | 1,154 / 1,154 | 11.53 s | 0.991 |
+
+Fine intervals are analyzed supports, not promises of uninterrupted acceptance. The fine pass selects one strong track per recording. The coarse pass examines all eligible reported RX0/RX1 branch pairs on that radio: 5, 2, 4, 5, and 11 pairs in recording order. Split and aliased branches can describe the same physical signal, so those counts are not satellite counts.
+
+![Five-recording phase coverage and integration-time comparison](figures/2026_09_16_dual_rx_pilot_phase/five-recording-coherent-phase-coverage.png)
+
+**Figure 3.** Top: accepted 150 ms centers across every tested track and accepted 20 ms centers for the selected track. Coarse coverage is a union of observations, not a cycle-connected phase track. Bottom: median and 10th–90th percentile phase concentration for fitted windows on the selected track, before the concentration threshold is applied.
+
+### 11.1 Why 20 ms matters, especially for `19f2`
+
+For the selected `5d4d` tracks, median phase concentration rises from 0.959–0.970 at 150 ms to 0.987–0.991 at 20 ms. The selected `19f2` tracks change much more: 0.468 and 0.452 at 150 ms become 0.950 and 0.947 at 20 ms.
+
+The `19f2` pilot evidence is nevertheless strong. Median fine exact/control ratios are approximately 85/60 and 84/85 for RX0/RX1 in its two captures. The longer-window loss therefore does not mean the pilot is absent. It means a constant residual-frequency model does not describe the receiver-product phase over 150 ms as well as it does over 20 ms. Oscillator phase variation, model curvature, timing effects, or a combination could cause this; the present experiment does not separate them. Because the radios observed different times and RF edges, this is not a controlled hardware comparison.
+
+Concentration near one means that receiver products align after a local rotation is fitted. It does not mean raw RX0–RX1 phase is constant, that the absolute LNB offset is calibrated, or that geometric phase has been recovered.
+
+### 11.2 Two-signal cancellation over longer tracks
+
+Two distinguishable simultaneous pilot tracks were available in the 10:59:15 and 11:30:26 captures. Apparent duplicate or aliased tracks were not counted as separate signals: for example, the two overlapping reported 08:08:05 tracks differ by only about 272 Hz after reduction by the pilot-symbol alias. This survey is not an exhaustive second-signal non-detection test.
+
+For each signal, phase is RX1 minus RX0. The two receiver-relative phases are evaluated at a common window center and subtracted:
+
+$$
+D(t)=\operatorname{wrap}\{[\phi_{1A}(t)-\phi_{0A}(t)]-[\phi_{1B}(t)-\phi_{0B}(t)]\}.
+$$
+
+This ideally cancels receiver phase that is common to the two signals. Frequency-dependent hardware phase, timing bias, multipath, and differing within-window weights can remain.
+
+| Recording | Accepted-center span | Accepted / tested | Descriptive circular slope | Circular-fit concentration | Circular residual RMS |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 10:59:15 | 23.61–30.62 s | 650 / 704 | +12.1 degrees/s | 0.986 | 10.47 degrees |
+| 11:30:26 | 2.01–9.56 s | 680 / 756 | +20.9 degrees/s | 0.986 | 9.81 degrees |
+
+![Two-signal double-difference phase tracks](figures/2026_09_16_dual_rx_pilot_phase/five-recording-double-difference-phase.png)
+
+**Figure 4.** Accepted 20 ms double-difference phases and descriptive circular linear fits. The first panel reuses the corrected measurement from Sections 1–10. The second uses cohort tracks T9 and T10, whose alias-reduced RX0 separation is approximately 16 kHz near their overlap midpoint. In both captures, the principal structure is a changing mean with fluctuations and occasional outliers. No periodic component is established.
+
+The straight lines maximize circular concentration over slopes from −90 to +90 degrees/s in 0.1 degree/s increments. That range encodes an assumption of slowly changing double difference; it is not an independent ambiguity solution. No cycles are inferred across rejected windows. The two slopes must not yet be converted to path length or baseline: satellite association, frequency alias, receiver group delay, and geometric phase ambiguity remain unverified. The previously withdrawn 5.55 cm estimate remains withdrawn.
+
+### 11.3 Selection, continuity, and frequency caution
+
+The captures are `cap-20260825T080532-93144a3d5014`, `cap-20260825T080805-6e1d7b635ec8`, `cap-20260825T105915-2770b84587cc`, `cap-20260825T112754-81caaf92ce27`, and `cap-20260825T113026-5f7f357ca4b9`.
+
+The five-recording pass retains unique reported branch pairs having slope disagreement no greater than 100 Hz/s and at least 0.5 s common support, excluding the first second. Pilot candidates seed the frame epoch and frequency branches. Adjacent ±1 pilot-symbol aliases are explicitly tested in both receivers on an anchor window, and the combination maximizing the weaker receiver's exact/control ratio is selected. This is a bounded acquisition procedure, not a calibrated absolute-frequency solution or held-out significance test.
+
+The same coherent 64-symbol extraction, symbol-roll-17 control, RX0-only timing training, identical RX0/RX1 indices, frame gates, and phase fit described in Sections 5–6 are then applied. The coarse survey uses 150 ms windows at 75 ms cadence. The fine pass chooses the track with the most pilot-qualified coarse support, without requiring the 150 ms phase fit itself to be strong, and re-analyzes at 20 ms / 10 ms for at most 12 seconds.
+
+Selected stream manifests report zero gaps, missing samples, overflows, clipped samples, and constant-IQ refills. Gap maps have no boundaries and indicate one continuous segment. These metadata support sample continuity but cannot rule out every analog or acquisition artifact.
+
+Under the selected aliases, median apparent RX1-minus-RX0 offsets are approximately −562.386, −618.239, −560.701, −616.526, and −561.218 kHz in recording order. The approximately 227.273 kHz symbol alias is not independently resolved, so these are reproducibility coordinates—not calibrated LNB offsets—and must not be used as a physical `19f2` versus `5d4d` comparison.
+
+### 11.4 Extended artifacts and reproduction
+
+- [Five-recording machine-readable summary](figures/2026_09_16_dual_rx_pilot_phase/five-recording-coherent-phase-summary.json)
+- Coarse data: `080532-cohort-coherent-phase.json`, `080805-cohort-coherent-phase.json`, `105915-cohort-coherent-phase.json`, `112754-cohort-coherent-phase.json`, and `113026-cohort-coherent-phase.json` in the same figure directory.
+- Fine data: corresponding `*-cohort-fine-phase.json` files, including attempted windows and rejection flags.
+- [New 11:30:26 two-signal data](figures/2026_09_16_dual_rx_pilot_phase/113026-cohort-double-fine-phase.json)
+- [Five-recording figure and summary reproduction script](figures/2026_09_16_dual_rx_pilot_phase/reproduce_five_recording_figures.py)
+
+Regenerate Figures 3–4 and the extended summary from committed measurements:
+
+```bash
+uv run python reports/figures/2026_09_16_dual_rx_pilot_phase/reproduce_five_recording_figures.py
+```
+
+The five-recording result strengthens the empirical conclusion: coherent pilot discrimination with short integration yields reliable local same-radio receiver-phase estimates throughout this cohort. Recovering an absolute or exclusively geometric phase remains a separate calibration and association problem.
