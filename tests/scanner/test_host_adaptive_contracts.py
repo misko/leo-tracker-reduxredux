@@ -112,6 +112,25 @@ def test_sparse_wide_receipt_bounds_discarded_visit_expansion_from_one_missing_s
     assert receipt.unclassified_sample_count > receipt.transport_missing_sample_count
 
 
+def test_sparse_wide_receipt_bounds_terminal_refill_with_declared_transport_gap():
+    payload = sparse_multirate_host_receipt(complete=True).model_dump()
+    geometry = payload["plan"]["geometry"]
+    terminal = payload["terminal"]
+    terminal["last_block_end_counter"] = (
+        terminal["final_counter"]
+        + geometry["samples_per_block"]
+        + payload["transport_missing_sample_count"]
+    )
+    terminal["restore_before_counter"] = terminal["last_block_end_counter"]
+    terminal["restore_after_counter"] = terminal["last_block_end_counter"] + 1
+
+    restored = HostAdaptiveHopReceiptV4.model_validate(payload)
+
+    assert restored.terminal.last_block_end_counter > (
+        restored.terminal.final_counter + restored.plan.geometry.samples_per_block
+    )
+
+
 @pytest.mark.parametrize(
     "field,value",
     [
