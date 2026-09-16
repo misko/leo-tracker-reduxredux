@@ -43,9 +43,7 @@ class Engine:
 
 
 class Client:
-    def __init__(
-        self, receipt, *, pacing=0.04, reject=False, clock_brackets=None, fail_after=None
-    ):
+    def __init__(self, receipt, *, pacing=0.04, reject=False, clock_brackets=None, fail_after=None):
         self.owner = threading.get_ident()
         self.source = receipt
         self.receipt = upstream_receipt(receipt)
