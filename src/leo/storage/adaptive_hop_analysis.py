@@ -261,7 +261,14 @@ class AdaptiveHopAnalysisJob:
         )
 
     def _index(self, index: int) -> str:
-        if type(index) is not int or not 0 <= index < self.binding.receipt.complete_visit_count:
+        retained = set(
+            getattr(
+                self.binding.receipt,
+                "retained_visit_indices",
+                range(self.binding.receipt.complete_visit_count),
+            )
+        )
+        if type(index) is not int or index not in retained:
             raise ValueError("adaptive analysis visit is not retained by the source")
         return f"visit-{index:06d}.v{self._version}.json.zst"
 
@@ -344,7 +351,10 @@ class AdaptiveHopAnalysisJob:
     def read_visit(self, index: int) -> AdaptiveHopVisitAnalysisV1:
         product, reference = self._read_visit(index)
         manifest = self.manifest()
-        if manifest is not None and manifest.visits[index] != reference:
+        expected = None if manifest is None else next(
+            (item for item in manifest.visits if item.visit_index == index), None
+        )
+        if manifest is not None and expected != reference:
             raise BundleCorruptionError("adaptive published visit digest differs from manifest")
         return product
 
@@ -353,10 +363,17 @@ class AdaptiveHopAnalysisJob:
         manifest = self.manifest()
         if manifest is None:
             raise BundleNotFoundError("adaptive metrics have not been finalized")
-        if self.checkpoint_file_indexes() != tuple(range(manifest.complete_visit_count)):
+        expected_indexes = tuple(
+            getattr(
+                self.binding.receipt,
+                "retained_visit_indices",
+                range(self.binding.receipt.complete_visit_count),
+            )
+        )
+        if self.checkpoint_file_indexes() != expected_indexes:
             raise BundleCorruptionError("adaptive published metrics inventory differs")
-        for index, expected in enumerate(manifest.visits):
-            product, reference = self._read_visit(index)
+        for expected in manifest.visits:
+            product, reference = self._read_visit(expected.visit_index)
             if reference != expected:
                 raise BundleCorruptionError("adaptive published metrics digest differs")
             yield product
@@ -467,7 +484,14 @@ class AdaptiveHopAnalysisJob:
         indexes = self.checkpoint_file_indexes()
         overview = self.overview()
         if metrics is not None:
-            if indexes != tuple(range(metrics.complete_visit_count)):
+            expected_indexes = tuple(
+                getattr(
+                    self.binding.receipt,
+                    "retained_visit_indices",
+                    range(self.binding.receipt.complete_visit_count),
+                )
+            )
+            if indexes != expected_indexes:
                 raise BundleCorruptionError("adaptive metrics checkpoint inventory is incomplete")
             for ref in metrics.visits:
                 info = os.stat(

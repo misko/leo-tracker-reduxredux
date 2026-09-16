@@ -151,7 +151,11 @@ class AdaptiveHopAnalysisService:
                 completed = set(job.completed_visits())
                 reason: Literal["complete", "visit_budget", "time_budget", "cancelled"] = "complete"
                 if manifest is None:
-                    pending = [index for index in range(total) if index not in completed]
+                    pending = [
+                        ordinal
+                        for ordinal, visit in enumerate(source.visits)
+                        if visit.event.visit_index not in completed
+                    ]
                     for offset in range(0, len(pending), maximum_workers):
                         if cancelled():
                             reason = "cancelled"
@@ -197,9 +201,9 @@ class AdaptiveHopAnalysisService:
                                     source, indexes, configuration=configuration
                                 )
                             )
-                        for index, product in zip(indexes, analyses, strict=True):
+                        for _index, product in zip(indexes, analyses, strict=True):
                             job.write_visit(product)
-                            completed.add(index)
+                            completed.add(product.visit_index)
                             count += 1
                     if len(completed) == total:
                         manifest = job.finalize_metrics()

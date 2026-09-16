@@ -111,9 +111,19 @@ def _project_overview(
     )
     winner_cursor = passed_cursor = visited = 0
     groups = defaultdict(list)
+    expected_indexes = tuple(
+        getattr(
+            binding.receipt,
+            "retained_visit_indices",
+            range(binding.receipt.complete_visit_count),
+        )
+    )
     for product in visits:
         binding.validate_visit(product)
-        if product.visit_index != visited or visited >= manifest.complete_visit_count:
+        if (
+            visited >= manifest.complete_visit_count
+            or product.visit_index != expected_indexes[visited]
+        ):
             raise ValueError("adaptive overview requires every actual visit once in source order")
         reference = manifest.visits[visited]
         counts = (
@@ -157,7 +167,7 @@ def _project_overview(
         for receiver, (probe, candidate) in strongest.items():
             groups[(product.target_index, receiver)].append(
                 TrajectoryObservation(
-                    observation_id=f"{product.session_id}:visit:{visited}:rx:{receiver}:probe:{probe.probe_index}:candidate:{candidate.candidate_rank}",
+                    observation_id=f"{product.session_id}:visit:{product.visit_index}:rx:{receiver}:probe:{probe.probe_index}:candidate:{candidate.candidate_rank}",
                     method=PilotMethod.GLRT64,
                     sample_start=candidate.integer_session_sample,
                     time_s=candidate.fractional_time_s,

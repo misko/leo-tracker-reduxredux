@@ -24,6 +24,8 @@ def run_session(root: Path, session_id: str, deadline: float) -> str:
     if products.status(session_id).state == "complete":
         return "complete"
     with comparison_source(root, session_id) as source:
+        if source.sample_rate_hz not in (2_500_000, 5_000_000, 10_000_000):
+            return "unsupported"
         implementation = (
             "sha256:"
             + hashlib.sha256(
@@ -107,14 +109,28 @@ def main() -> None:
         candidates = (
             (args.session_id,) if args.session_id else comparison_session_ids(args.bulk_root)
         )
-        pending = next((s for s in candidates if store.status(s).state != "complete"), None)
-        if pending is None:
+        pending = tuple(s for s in candidates if store.status(s).state != "complete")
+        if not pending:
             print(json.dumps({"state": "idle"}))
             return
-        state = run_session(args.bulk_root, pending, started + args.maximum_seconds)
+        skipped = []
+        selected = None
+        state = "idle"
+        for candidate in pending:
+            state = run_session(args.bulk_root, candidate, started + args.maximum_seconds)
+            if state == "unsupported":
+                skipped.append(candidate)
+                continue
+            selected = candidate
+            break
         print(
             json.dumps(
-                {"session_id": pending, "state": state, "seconds": time.monotonic() - started}
+                {
+                    "session_id": selected,
+                    "state": state,
+                    "unsupported_session_ids": skipped,
+                    "seconds": time.monotonic() - started,
+                }
             )
         )
 

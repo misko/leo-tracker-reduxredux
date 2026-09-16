@@ -451,7 +451,10 @@ def _compare_source_fields(
     full-receipt parse during checkpointing. Public standalone ingress above
     still revalidates both models, including unchecked model_copy instances.
     """
-    if product.visit_index >= receipt.complete_visit_count:
+    retained = tuple(
+        getattr(receipt, "retained_visit_indices", range(receipt.complete_visit_count))
+    )
+    if product.visit_index not in retained:
         raise ValueError("adaptive analysis claims a non-retained visit")
     event = receipt.events[product.visit_index]
     if (
