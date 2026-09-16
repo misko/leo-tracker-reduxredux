@@ -3,10 +3,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus } from "./adaptive-analysis-api";
+import type { AdaptivePhaseStatus } from "./adaptive-phase-api";
 import { adaptiveDetailFixture, hostAdaptiveDetailFixture, multirateAdaptiveDetailFixture } from "./adaptive-fixtures";
 
 const capture = adaptiveDetailFixture().capture;
 const respond = (value: unknown, status = 200) => ({ ok: status === 200, status, json: async () => value }) as Response;
+const analysisFetch = (value: unknown) => vi.fn((url: string) => Promise.resolve(
+  respond(url.includes("dual-rx-phase") ? null : value, url.includes("dual-rx-phase") ? 404 : 200),
+));
 const sha = (letter: string) => `sha256:${letter.repeat(64)}`;
 export function analysisFixture(state: AdaptiveAnalysisStatus["state"] = "figures_ready"): AdaptiveAnalysisStatus {
   const complete = state === "figures_ready" || state === "metrics_complete";
@@ -29,6 +33,21 @@ export function analysisFixture(state: AdaptiveAnalysisStatus["state"] = "figure
     },
   };
 }
+function phaseFixture(sessionId = capture.session_id): AdaptivePhaseStatus {
+  return {
+    schema_version: 1, kind: "adaptive_dual_rx_phase_status", session_id: sessionId,
+    input_manifest_sha256: capture.input_manifest_sha256, receiver_ids: [0, 1], state: "ready",
+    reason: "published_phase_evidence", worker_activity: "not_observed",
+    manifest: {
+      schema_version: 1, kind: "adaptive_dual_rx_phase_manifest", analysis_id: "adaptive-qin-pilot-double-difference-v1",
+      session_id: sessionId, input_manifest_sha256: capture.input_manifest_sha256,
+      glrt_binding_sha256: sha("a"), glrt_metrics_manifest_sha256: sha("b"),
+      state: "ready", reason: "published_phase_evidence", qualified_phase_count: 19,
+      association_count: 3, finalized_utc_ns: "1789000000000000000",
+      artifact: { name: "dual-rx-phase-progression", content_type: "image/png", sha256: sha("f"), byte_count: 541025 },
+    },
+  };
+}
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive analysis publication", () => {
@@ -38,7 +57,7 @@ describe("adaptive analysis publication", () => {
     value.schema_version = 3;
     Object.assign(value.configuration, { schema_version: 3, analyzer_id: "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3", sample_rate_hz: rate, receiver_ids: [0] });
     Object.assign(value.overview!, { schema_version: 3, presentation_id: "host-adaptive-native-15m-20m-overview-v3" });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    vi.stubGlobal("fetch", analysisFetch(value));
     render(<AdaptiveAnalysisPanel capture={native} />);
     expect(await screen.findAllByRole("img")).toHaveLength(3);
     expect(screen.getByText(new RegExp(`RX0 analyzed offline at ${rate / 1e6} MS/s`))).toBeInTheDocument();
@@ -63,7 +82,7 @@ describe("adaptive analysis publication", () => {
     expect(screen.queryByRole("link", { name: "Read the RX0/RX1 detection root-cause analysis" })).not.toBeInTheDocument();
   });
 
-  it("renders the frozen dual-RX phase replay beside standard adaptive analysis", async () => {
+  it("renders digest-bound dual-RX phase beside standard adaptive analysis", async () => {
     const historical = {
       ...capture,
       session_id: "scan-hop-bfc60ea18ace593b",
@@ -72,27 +91,27 @@ describe("adaptive analysis publication", () => {
     value.session_id = historical.session_id;
     value.input_manifest_sha256 = historical.input_manifest_sha256;
     value.overview!.session_id = historical.session_id;
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    vi.stubGlobal("fetch", vi.fn((url: string) => Promise.resolve(respond(url.includes("dual-rx-phase") ? phaseFixture(historical.session_id) : value))));
     render(<AdaptiveAnalysisPanel capture={historical} />);
     const image = await screen.findByRole("img", {
       name: "GLRT tracks with dual-RX phase progression",
     });
     expect(image).toHaveAttribute(
       "src",
-      "/reports/adaptive-dual-rx-phase/scan-hop-bfc60ea18ace593b-c0e379c8d7c897a2.png",
+      expect.stringContaining("/api/v1/scanner/adaptive-sessions/scan-hop-bfc60ea18ace593b/analysis/dual-rx-phase/artifact.png?"),
     );
     expect(image.closest("figure")).toHaveAttribute(
       "data-artifact-sha256",
-      "sha256:c0e379c8d7c897a2d676d95102450dbe4caf6dd40c31c60bb96acfc52fdfbb2d",
+      sha("f"),
     );
     expect(image.closest("figure")).toHaveAttribute("data-artifact-bytes", "541025");
     expect(screen.getAllByRole("img")).toHaveLength(4);
-    expect(screen.getByText(/Frozen historical replay for this exact recording/)).toBeInTheDocument();
-    expect(screen.getByText(/not inferred for recordings without a published artifact/)).toBeInTheDocument();
+    expect(screen.getByText(/19 qualified double-difference estimates/)).toBeInTheDocument();
+    expect(screen.getByText(/supplemental evidence/)).toBeInTheDocument();
   });
 
   it("does not invent phase evidence for an unregistered or single-RX recording", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(analysisFixture())));
+    vi.stubGlobal("fetch", analysisFetch(analysisFixture()));
     const view = render(<AdaptiveAnalysisPanel capture={capture} />);
     await screen.findByRole("img", { name: "Retained channel coverage" });
     expect(screen.queryByRole("img", { name: "GLRT tracks with dual-RX phase progression" })).not.toBeInTheDocument();
@@ -111,7 +130,7 @@ describe("adaptive analysis publication", () => {
     value.schema_version = 2;
     Object.assign(value.configuration, { schema_version: 2, analyzer_id: "host-adaptive-native-10m-fractional-glrt64-cfo-v2", sample_rate_hz: 10000000, receiver_ids: [receiver] });
     Object.assign(value.overview!, { schema_version: 2, presentation_id: "host-adaptive-native-10m-overview-v2" });
-    const fetcher = vi.fn().mockResolvedValue(respond(value));
+    const fetcher = analysisFetch(value);
     vi.stubGlobal("fetch", fetcher);
     render(<AdaptiveAnalysisPanel capture={native} />);
     await screen.findByRole("img", { name: "Retained channel coverage" });
@@ -125,7 +144,7 @@ describe("adaptive analysis publication", () => {
     await expect(getAdaptiveAnalysis(native)).rejects.toThrow(/figures/);
   });
   it.each(["not_started", "partial", "metrics_complete", "figures_ready"] as const)("shows %s without inventing live-worker status", async state => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(analysisFixture(state))));
+    vi.stubGlobal("fetch", analysisFetch(analysisFixture(state)));
     render(<AdaptiveAnalysisPanel capture={capture} />);
     await screen.findByRole("progressbar", { name: "Saved adaptive analysis checkpoints" });
     expect(screen.getByText(/not a live-worker status/)).toBeInTheDocument();
@@ -167,7 +186,7 @@ describe("adaptive analysis publication", () => {
     if (fault === "wrong-metrics") value.overview!.metrics_manifest_sha256 = sha("9");
     if (fault === "rounded-epoch") Object.assign(value.overview!, { finalized_utc_ns: Number(value.overview!.finalized_utc_ns) });
     if (fault === "receiver") Object.assign(value.configuration, { receiver_ids: [false, true] });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    vi.stubGlobal("fetch", analysisFetch(value));
     await expect(getAdaptiveAnalysis(capture)).rejects.toThrow();
   });
 
@@ -177,7 +196,7 @@ describe("adaptive analysis publication", () => {
     vi.stubGlobal("fetch", fetcher);
     const view = render(<AdaptiveAnalysisPanel capture={capture} />);
     await act(async () => { vi.advanceTimersByTime(60000); });
-    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledTimes(2);
     view.unmount();
     expect(fetcher.mock.calls[0][1].signal.aborted).toBe(true);
   });
@@ -204,7 +223,10 @@ describe("adaptive analysis publication", () => {
     dense.configuration.probe_stride_ms = 10;
     dense.binding_sha256 = sha("1");
     dense.overview!.binding_sha256 = dense.binding_sha256;
-    const fetcher = vi.fn().mockResolvedValueOnce(respond(analysisFixture())).mockResolvedValue(respond(dense));
+    const fetcher = vi.fn((url: string) => Promise.resolve(
+      url.includes("dual-rx-phase") ? respond(null, 404)
+        : respond(url.includes("probe_stride_ms=10") ? dense : analysisFixture()),
+    ));
     vi.stubGlobal("fetch", fetcher);
     render(<AdaptiveAnalysisPanel capture={capture} />);
     await screen.findByRole("img", { name: "Fractional GLRT response" });
@@ -212,7 +234,7 @@ describe("adaptive analysis publication", () => {
     expect(screen.getByText(/20 ms probes \/ 120 ms stride/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole("combobox", { name: "Analysis sampling" }), { target: { value: "10" } });
     await screen.findByText(/20 ms probes \/ 10 ms stride/);
-    expect(fetcher.mock.calls[1][0]).toContain("probe_stride_ms=10");
+    expect(fetcher.mock.calls[2][0]).toContain("probe_stride_ms=10");
     expect(screen.getByText(/not scheduled automatically/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open fractional glrt response PNG" }).getAttribute("href")).toContain("probe_stride_ms=10");
   });

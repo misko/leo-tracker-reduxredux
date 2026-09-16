@@ -33,6 +33,12 @@ def test_native_api_history_analysis_and_all_bound_pngs(tmp_path, monkeypatch, r
     assert detail.json()["host_decisions"][0]["feedback_disposition"] == "accepted"
     assert client.get(route.replace("v2", "v1")).status_code == 404
     assert client.get(route + "/analysis").json()["state"] == "not_started"
+    phase = client.get(route + "/analysis/dual-rx-phase")
+    assert phase.status_code == 200
+    assert phase.json()["state"] == "not_applicable"
+    assert phase.json()["reason"] == "requires_simultaneous_rx0_rx1"
+    assert phase.json()["manifest"] is None
+    assert not (tmp_path / "scanner-adaptive-dual-rx-phase").exists()
     assert client.get(route.replace("v2", "v1") + "/analysis").status_code == 404
     captures, products = (
         AdaptiveHopIqStore(tmp_path, read_only=True),
