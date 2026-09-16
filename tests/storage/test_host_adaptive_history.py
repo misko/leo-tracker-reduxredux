@@ -61,6 +61,31 @@ def test_mixed_history_preserves_legacy_major_and_exposes_host_evidence(
         HostAdaptiveSessionDetailV2.model_validate(payload)
 
 
+def test_combined_history_indexes_before_parsing_only_the_requested_page(tmp_path, monkeypatch):
+    older = publish_capture(tmp_path, count=3, session_id="older-legacy")
+    newer = publish_native(tmp_path)
+    inspected: list[str] = []
+    original_inspect = AdaptiveHopIqStore.inspect
+
+    def inspect(store, session_id):
+        inspected.append(session_id)
+        return original_inspect(store, session_id)
+
+    monkeypatch.setattr(AdaptiveHopIqStore, "inspect", inspect)
+    monkeypatch.setattr(
+        AdaptiveHopIqStore,
+        "iter_sessions",
+        lambda *_args, **_kwargs: pytest.fail("combined history must use the bounded index"),
+    )
+
+    page = AdaptiveHopPresentationStore(tmp_path).page_v2(cursor=0, limit=1)
+
+    assert page.total == 2
+    assert page.items[0].session_id == newer.session_id
+    assert inspected == [newer.session_id]
+    assert older.session_id not in inspected
+
+
 def test_sparse_wide_history_exposes_original_source_visit_indices(tmp_path):
     receipt = sparse_multirate_host_receipt(session_id="host-wide-sparse-history")
     store = AdaptiveHopIqStore(tmp_path)
