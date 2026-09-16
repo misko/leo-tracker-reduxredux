@@ -185,12 +185,19 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
   validateCapture(detail.capture);
   const c = detail.capture;
   if (detail.schema_version !== c.schema_version) throw new Error("Adaptive detail major differs from capture");
+  if (c.session_id !== sessionId || !Array.isArray(detail.visits) || detail.visits.length !== c.started_visits
+      || (c.source_span_attested ? !counter(detail.source_origin_counter) : detail.source_origin_counter !== null)) {
+    throw new Error("Adaptive detail source binding is invalid");
+  }
+  const sparse = c.schema_version === 3;
+  const retainedIndices = detail.visits.filter(v => v?.retained === true).map(v => v.visit_index);
+  if (retainedIndices.length !== c.retained_visits) throw new Error("Adaptive retained visit inventory differs");
   if (c.schema_version !== 1) {
     if (!Array.isArray(detail.host_decisions) || detail.host_decisions.length !== c.retained_visits) throw new Error("Host decision inventory is incomplete");
     detail.host_decisions.forEach((d, i) => {
       const wide = c.schema_version === 3;
       const expectedStart = wide ? (c.sample_rate_hz === 15000000 ? 34 : 32) : 40;
-      if (!d || d.schema_version !== (wide ? 2 : 1) || d.visit_index !== i
+      if (!d || d.schema_version !== (wide ? 2 : 1) || d.visit_index !== (wide ? retainedIndices[i] : i)
           || !["healthy", "queue_overflow", "detector_failure", "expired"].includes(d.health)
           || !["unknown", "detected", "not_detected"].includes(d.feedback_outcome)
           || !["accepted", "source_ended", "rejected", "not_submitted"].includes(d.feedback_disposition)
@@ -213,13 +220,10 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
           || (["queue_overflow", "detector_failure"].includes(d.health) && d.numerics !== null)) throw new Error("Host decision evidence is invalid");
     });
   }
-  if (c.session_id !== sessionId || !Array.isArray(detail.visits) || detail.visits.length !== c.started_visits
-      || (c.source_span_attested ? !counter(detail.source_origin_counter) : detail.source_origin_counter !== null)) {
-    throw new Error("Adaptive detail source binding is invalid");
-  }
   detail.visits.forEach((v, i) => {
     if (!v || v.visit_index !== i || !integer(v.target_index, 7) || !integer(v.proposed_target_index, 7)
-        || v.retained !== (i < c.retained_visits) || !counter(v.valid_start_counter) || !counter(v.decision_counter)
+        || typeof v.retained !== "boolean" || (!sparse && v.retained !== (i < c.retained_visits))
+        || !counter(v.valid_start_counter) || !counter(v.decision_counter)
         || (v.retained ? !counter(v.valid_end_counter) : v.valid_end_counter !== null)
         || !seconds(v.invalid_start_seconds) || !seconds(v.valid_start_seconds)
         || (v.retained ? !seconds(v.valid_end_seconds) || v.valid_end_seconds <= v.valid_start_seconds : v.valid_end_seconds !== null)

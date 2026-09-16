@@ -85,9 +85,17 @@ export function multirateAdaptiveDetailFixture(rate: 15000000 | 20000000): Adapt
   const geometry = rate === 15000000
     ? { decimation_factor: 6 as const, filter_taps: 201 as const }
     : { decimation_factor: 8 as const, filter_taps: 257 as const };
+  const visits = legacy.visits.map((v, i) => {
+    const validStart = scale(v.valid_start_counter);
+    const retained = i === 7 ? false : i === legacy.visits.length - 1 ? true : v.retained;
+    const validEnd = retained ? String(BigInt(validStart) + BigInt(rate * .12)) : null;
+    return { ...v, retained, valid_start_counter: validStart,
+      valid_end_counter: validEnd, decision_counter: scale(v.decision_counter),
+      valid_end_seconds: validEnd === null ? null : Number(BigInt(validEnd) - origin) / rate };
+  });
+  const retainedIndices = visits.filter(v => v.retained).map(v => v.visit_index);
   return { ...legacy, schema_version: 3,
-    visits: legacy.visits.map(v => ({ ...v, valid_start_counter: scale(v.valid_start_counter),
-      valid_end_counter: v.valid_end_counter === null ? null : scale(v.valid_end_counter), decision_counter: scale(v.decision_counter) })),
+    visits,
     capture: { ...legacy.capture, schema_version: 3, sample_rate_hz: rate, bandwidth_hz: rate,
       analysis_state: "separate_product", radio_serial: "104000bac4950008230026001b440a003a", physical_receiver: 0,
       decision_configuration: { schema_version: 2, execution: "host", source_rate_hz: rate, decision_rate_hz: 2500000,
@@ -95,7 +103,7 @@ export function multirateAdaptiveDetailFixture(rate: 15000000 | 20000000): Adapt
       host_feedback: { schema_version: 1, complete_visits: count, healthy: count - 1, degraded: 1, unknown_feedback: 1,
         accepted: count - 1, source_ended: 1, rejected: 0, not_submitted: 0, maximum_host_result_age_ms: 129,
         maximum_feedback_call_ms: 3, first_feedback_error: null } },
-    host_decisions: Array.from({ length: count }, (_, i) => ({ schema_version: 2, visit_index: i,
+    host_decisions: retainedIndices.map((visitIndex, i) => ({ schema_version: 2, visit_index: visitIndex,
       health: i === count - 1 ? "queue_overflow" : "healthy", failure: i === count - 1 ? "Queue full" : null,
       feedback_error: null, feedback_outcome: i === count - 1 ? "unknown" : "not_detected",
       feedback_disposition: i === count - 1 ? "source_ended" : "accepted", host_result_age_ms: 129,
