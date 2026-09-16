@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { AdaptiveCapture } from "./adaptive-api";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus, AdaptiveArtifact, AdaptiveFigure, AdaptiveProbeStride } from "./adaptive-analysis-api";
+import { frozenAdaptivePhaseArtifact } from "./adaptive-phase-artifacts";
+import type { FrozenAdaptivePhaseArtifact } from "./adaptive-phase-artifacts";
 
 const figureCopy: Record<AdaptiveArtifact, { title: string; detail: string }> = {
   "coverage": { title: "Retained channel coverage", detail: "Actual valid intervals; empty time is not interpolated. An outlined marker is an incomplete hop start." },
@@ -28,11 +30,37 @@ function FigureView({ status, figure }: { status: AdaptiveAnalysisStatus; figure
   </figure>;
 }
 
+function FrozenPhaseFigure({ artifact }: { artifact: FrozenAdaptivePhaseArtifact }) {
+  const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const title = "GLRT tracks with dual-RX phase progression";
+  return <figure
+    className="adaptive-analysis-figure adaptive-phase-replay"
+    data-artifact-sha256={artifact.sha256}
+    data-artifact-bytes={artifact.byteCount}
+  >
+    <figcaption>
+      <h4>{title}</h4>
+      <p>Frozen historical replay for this exact recording. Gray marks are passed RX0 GLRT candidates; phase-colored connectors pair simultaneous two-signal tracks. Diamonds and the lower panels show phase-blind associations and wrapped/unwrapped receiver-phase double differences. Lines stop at unresolved gaps.</p>
+      <p>This replay is supplemental evidence, not part of the live detector decision and not inferred for recordings without a published artifact.</p>
+    </figcaption>
+    {failed ? <p role="alert">The published dual-RX phase replay could not be loaded.</p> : <>
+      {!loaded ? <p role="status">Loading dual-RX phase replay…</p> : null}
+      <a href={artifact.href} target="_blank" rel="noreferrer" aria-label={`Open ${title.toLowerCase()} PNG`}>
+        <img src={artifact.href} alt={title} loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
+      </a>
+    </>}
+  </figure>;
+}
+
 export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture }) {
   const [probeStrideMs, setProbeStrideMs] = useState<AdaptiveProbeStride>(120);
   const [status, setStatus] = useState<AdaptiveAnalysisStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const phaseArtifact = capture.schema_version === 1
+    ? frozenAdaptivePhaseArtifact(capture.session_id)
+    : null;
   useEffect(() => {
     let active = true; let busy = false;
     const controller = new AbortController();
@@ -81,6 +109,8 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
         {status.overview.truncated_association_count > 0 ? <p role="status">{status.overview.truncated_association_count} association hypotheses exceeded the configured output bound. All passed CFO candidates remain in the scatter plot.</p> : null}
         {status.overview.artifacts.map(figure => <FigureView key={`${status.binding_sha256}:${figure.name}:${figure.sha256}`} status={status} figure={figure} />)}
       </> : null}
+      {phaseArtifact ? <FrozenPhaseFigure artifact={phaseArtifact} /> : null}
     </> : null}
+    {!status && phaseArtifact ? <FrozenPhaseFigure artifact={phaseArtifact} /> : null}
   </section>;
 }
