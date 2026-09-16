@@ -453,6 +453,12 @@ class _HostAdaptiveSession:
             if self._receipt.visits != tuple(self._produced):
                 raise ValueError("host adaptive terminal receipt differs from produced native IQ")
         except BaseException as error:
+            error.add_note(
+                "host adaptive decision progress: "
+                f"produced={len(self._produced)} decisions={len(self._records)} "
+                f"pending={len(self._decision_order) - self._records_emitted} "
+                f"feedback_fault={self._feedback_fault or 'none'}"
+            )
             self._error = error
         finally:
             for cleanup in (
