@@ -222,14 +222,10 @@ def matched_window_metrics(window_documents: dict[int, list[dict[str, Any]]]) ->
             "rms_phase_shift_deg": float(np.sqrt(np.mean(np.asarray(differences) ** 2)))
             if differences
             else None,
-            "p90_abs_phase_shift_deg": float(
-                np.percentile(abs(np.asarray(differences)), 90)
-            )
+            "p90_abs_phase_shift_deg": float(np.percentile(abs(np.asarray(differences)), 90))
             if differences
             else None,
-            "within_20_deg_fraction": float(
-                np.mean(abs(np.asarray(differences)) <= 20)
-            )
+            "within_20_deg_fraction": float(np.mean(abs(np.asarray(differences)) <= 20))
             if differences
             else None,
             "phase_shifts_deg": differences,
