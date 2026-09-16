@@ -40,3 +40,16 @@ def test_checkpoint_resumes_without_repeating_completed_probes(
     assert cli.run_session(tmp_path, "scan-one", time.monotonic() + 60) == "complete"
     assert len(reads) == 1
     assert ScannerRefinementStore(tmp_path).status("scan-one").manifest.completed_probes == 1
+
+
+@pytest.mark.parametrize("sample_rate_hz", [15_000_000, 20_000_000])
+def test_wide_adaptive_capture_is_explicitly_unsupported_without_checkpoint(
+    monkeypatch, tmp_path, sample_rate_hz
+):
+    @contextmanager
+    def source(root, session):
+        yield SimpleNamespace(sample_rate_hz=sample_rate_hz)
+
+    monkeypatch.setattr(cli, "comparison_source", source)
+    assert cli.run_session(tmp_path, "scan-wide", time.monotonic() + 60) == "unsupported"
+    assert ScannerRefinementStore(tmp_path).status("scan-wide").state == "not_started"

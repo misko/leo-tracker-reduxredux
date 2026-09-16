@@ -5,14 +5,16 @@ import pytest
 import leo.scanner.adaptive_hop_analysis as detector
 from leo.application.adaptive_hop_analysis import HostAdaptiveAnalysisService
 from leo.application.scanner_trajectory import project_scanner_candidates
-from leo.scanner.single_rx import SingleRxHopTimingV2
+from leo.presentation.adaptive_hop_analysis import project_host_adaptive_overview
+from leo.scanner.host_adaptive_products import bind_actual_visit_analysis
+from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
 from leo.storage.scanner_refinement_source import comparison_source
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 from tests.scanner.adaptive_hop_fixtures import timing_fixture
-from tests.scanner.host_adaptive_fixtures import host_receipt
+from tests.scanner.host_adaptive_fixtures import host_receipt, sparse_multirate_host_receipt
 from tests.scanner.test_persistent_hop_standard_analysis import _fake_fractional_dwell
 from tests.storage.test_host_adaptive_hop_store import block
 
@@ -64,6 +66,50 @@ def test_native_adaptive_refinement_and_tracking_use_actual_rx_and_clock(
             assert projected and all(c.receiver_id == receiver for c in projected)
         finally:
             reader.close()
+    finally:
+        writer.abort()
+        captures.close()
+        products.close()
+
+
+def test_sparse_wide_analysis_preserves_source_visit_indices_through_resume_and_overview(
+    tmp_path, monkeypatch
+):
+    receipt = sparse_multirate_host_receipt(session_id="wide-sparse-analysis")
+    captures, products = AdaptiveHopIqStore(tmp_path), AdaptiveHopAnalysisStore(tmp_path)
+    writer = captures.begin(receipt.session_id, receipt.plan)
+    monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    try:
+        for ordinal in range(receipt.complete_visit_count):
+            writer.append(block(receipt, ordinal))
+        writer.finish(receipt, timing=timing_fixture(receipt, SingleRxHopTimingV3))
+        service = HostAdaptiveAnalysisService(
+            inputs=AdaptiveHopAnalysisInputStore(captures), products=products
+        )
+        first = service.analyze_session(
+            receipt.session_id, probe_stride_ms=120, maximum_visits=2, maximum_workers=2
+        )
+        assert first.state == "partial" and first.completed_visits == 2
+        second = service.analyze_session(
+            receipt.session_id, probe_stride_ms=120, maximum_workers=4
+        )
+        assert second.state == "metrics_complete" and second.newly_analyzed_visits == 3
+        with products.job(
+            bind_actual_visit_analysis(
+                receipt,
+                input_manifest_sha256=captures.inspect(receipt.session_id).manifest_sha256,
+                probe_stride_ms=120,
+            )
+        ) as job:
+            metrics = job.verify()
+            assert metrics is not None
+            expected = receipt.retained_visit_indices
+            assert job.completed_visits() == expected
+            assert tuple(ref.visit_index for ref in metrics.visits) == expected
+            visits = tuple(job.published_visits())
+            assert tuple(visit.visit_index for visit in visits) == expected
+            data = project_host_adaptive_overview(job.binding, metrics, visits)
+            assert data.winners.shape[1] == 4
     finally:
         writer.abort()
         captures.close()

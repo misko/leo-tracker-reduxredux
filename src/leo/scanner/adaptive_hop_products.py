@@ -94,8 +94,11 @@ class AdaptiveHopMetricsManifestV1(AdaptiveModel):
         expected_probes = (
             len(self.configuration.receiver_ids) * self.configuration.scheduled_probe_count
         )
-        if tuple(v.visit_index for v in self.visits) != tuple(
-            range(self.complete_visit_count)
-        ) or any(v.probe_count != expected_probes for v in self.visits):
+        indexes = tuple(v.visit_index for v in self.visits)
+        if (
+            len(indexes) != self.complete_visit_count
+            or indexes != tuple(sorted(set(indexes)))
+            or any(v.probe_count != expected_probes for v in self.visits)
+        ):
             raise ValueError("adaptive metrics manifest does not cover every complete visit")
         return self
