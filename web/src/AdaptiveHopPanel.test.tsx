@@ -10,6 +10,8 @@ afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("adaptive actual-visit presentation", () => {
   it.each([15000000, 20000000] as const)("validates and shows RX0 at %s S/s", async rate => {
     const detail = multirateAdaptiveDetailFixture(rate);
+    expect(detail.host_decisions![0].schema_version).toBe(2);
+    expect(detail.host_decisions![0].numerics?.supported_start).toBe(rate === 15000000 ? 34 : 32);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
     render(<AdaptiveHopDetail sessionId="adaptive-test" />);
     await screen.findByRole("heading", { name: "Host decisions · RX0" });
