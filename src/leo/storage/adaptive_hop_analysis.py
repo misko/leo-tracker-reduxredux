@@ -351,8 +351,10 @@ class AdaptiveHopAnalysisJob:
     def read_visit(self, index: int) -> AdaptiveHopVisitAnalysisV1:
         product, reference = self._read_visit(index)
         manifest = self.manifest()
-        expected = None if manifest is None else next(
-            (item for item in manifest.visits if item.visit_index == index), None
+        expected = (
+            None
+            if manifest is None
+            else next((item for item in manifest.visits if item.visit_index == index), None)
         )
         if manifest is not None and expected != reference:
             raise BundleCorruptionError("adaptive published visit digest differs from manifest")
