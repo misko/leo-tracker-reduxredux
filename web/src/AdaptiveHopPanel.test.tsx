@@ -12,6 +12,8 @@ describe("adaptive actual-visit presentation", () => {
     const detail = multirateAdaptiveDetailFixture(rate);
     expect(detail.host_decisions![0].schema_version).toBe(2);
     expect(detail.host_decisions![0].numerics?.supported_start).toBe(rate === 15000000 ? 34 : 32);
+    expect(detail.host_decisions!.map(d => d.visit_index)).toEqual(detail.visits.filter(v => v.retained).map(v => v.visit_index));
+    expect(detail.host_decisions!.some((d, i) => d.visit_index !== i)).toBe(true);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
     render(<AdaptiveHopDetail sessionId="adaptive-test" />);
     await screen.findByRole("heading", { name: "Host decisions · RX0" });
