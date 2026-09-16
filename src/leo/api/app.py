@@ -157,6 +157,7 @@ from leo.scanner import (
     ScannerReportV4,
     ScannerReportV5,
 )
+from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatusV1
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopHistoryPageV1,
     AdaptiveHopPresentationReader,
@@ -604,6 +605,88 @@ def create_app(
                 "ETag": f'"{artifact_sha256}"',
                 "Cache-Control": "private, max-age=3600, immutable",
                 "Content-Disposition": f'inline; filename="adaptive-{artifact}.png"',
+            },
+        )
+
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveDualRxPhaseStatusV1,
+    )
+    @v2_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveDualRxPhaseStatusV1,
+    )
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveDualRxPhaseStatusV1,
+    )
+    def adaptive_phase_status(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        response: Response,
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 120,
+    ) -> AdaptiveDualRxPhaseStatusV1:
+        if adaptive_hop_analysis is None:
+            raise HTTPException(
+                status_code=404, detail="adaptive phase presentation is unavailable"
+            )
+        try:
+            status = adaptive_hop_analysis.phase_status(session_id, probe_stride_ms=probe_stride_ms)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive phase metadata is unavailable"
+            ) from error
+        if status is None:
+            raise HTTPException(status_code=404, detail="adaptive session not found")
+        response.headers["Cache-Control"] = "no-store"
+        return status
+
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase/artifact.png",
+        methods=["GET", "HEAD"],
+    )
+    @v2_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase/artifact.png",
+        methods=["GET", "HEAD"],
+    )
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase/artifact.png",
+        methods=["GET", "HEAD"],
+    )
+    def adaptive_phase_artifact(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        glrt_binding_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        artifact_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 120,
+    ) -> Response:
+        if adaptive_hop_analysis is None:
+            raise HTTPException(
+                status_code=404, detail="adaptive phase presentation is unavailable"
+            )
+        try:
+            payload = adaptive_hop_analysis.phase_artifact(
+                session_id,
+                glrt_binding_sha256=glrt_binding_sha256,
+                artifact_sha256=artifact_sha256,
+                probe_stride_ms=probe_stride_ms,
+            )
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive phase figure is unavailable"
+            ) from error
+        if payload is None:
+            raise HTTPException(
+                status_code=404, detail="adaptive phase figure has not been published"
+            )
+        return Response(
+            content=payload,
+            media_type="image/png",
+            headers={
+                "ETag": f'"{artifact_sha256}"',
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": 'inline; filename="adaptive-dual-rx-phase-progression.png"',
             },
         )
 

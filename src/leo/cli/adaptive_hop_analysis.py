@@ -185,6 +185,10 @@ def main() -> None:
                     ).render_session(session_id, probe_stride_ms=args.probe_stride_ms)
                     payload["overview_state"] = "ready"
                     payload["overview_metrics_manifest_sha256"] = overview.metrics_manifest_sha256
+                phase = AdaptiveHopAnalysisPresentationStore(args.bulk_root).phase_status(
+                    session_id, probe_stride_ms=args.probe_stride_ms
+                )
+                payload["dual_rx_phase_state"] = None if phase is None else phase.state
                 print(json.dumps(payload, sort_keys=True))
     except Exception as error:
         print(
