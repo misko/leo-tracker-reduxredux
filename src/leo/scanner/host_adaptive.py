@@ -389,10 +389,17 @@ class HostAdaptiveHopReceiptV4(HostAdaptiveHopReceiptV3):
 
     @model_validator(mode="after")
     def _sparse_transport_accounting_is_exact(self) -> Self:
+        skipped_visit_count = len(self.events) - len(self.retained_visit_indices)
+        maximum_gap_expansion = skipped_visit_count * (
+            self.plan.geometry.valid_visit_samples - 1
+        )
         if not (
-            self.unclassified_sample_count
+            0
             <= self.transport_missing_sample_count
             <= self.duty_denominator_sample_count
+            and self.unclassified_sample_count
+            <= self.transport_missing_sample_count + maximum_gap_expansion
+            and (not self.unclassified_sample_count or self.transport_missing_sample_count)
         ):
             raise ValueError("transport gaps do not bound unclassified source time")
         return self

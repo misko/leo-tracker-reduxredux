@@ -105,6 +105,13 @@ def test_sparse_wide_receipt_rejects_false_gap_accounting(field, value):
         HostAdaptiveHopReceiptV4.model_validate(payload)
 
 
+def test_sparse_wide_receipt_bounds_discarded_visit_expansion_from_one_missing_sample():
+    payload = sparse_multirate_host_receipt().model_dump()
+    payload["transport_missing_sample_count"] = 1
+    receipt = HostAdaptiveHopReceiptV4.model_validate(payload)
+    assert receipt.unclassified_sample_count > receipt.transport_missing_sample_count
+
+
 @pytest.mark.parametrize(
     "field,value",
     [
