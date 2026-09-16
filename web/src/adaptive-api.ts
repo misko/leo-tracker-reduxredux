@@ -47,17 +47,25 @@ export interface HostAdaptiveCaptureV3 extends Omit<HostAdaptiveCaptureV2, "sche
 }
 export type HostAdaptiveCapture = HostAdaptiveCaptureV2 | HostAdaptiveCaptureV3;
 export type AdaptiveCapture = LegacyAdaptiveCapture | HostAdaptiveCapture;
-export interface HostDecisionView {
-  schema_version: 1; visit_index: number;
+export interface HostDecisionNumericsV1 {
+  schema_version: 1; outcome: "unknown" | "detected" | "not_detected";
+  screen_mask: 63; confirmation_mask: number; screen_scores: number[];
+  supported_start: 40; supported_end: 300000; candidate_supported: boolean; fractional_complete: boolean;
+}
+export interface HostDecisionNumericsV2 extends Omit<HostDecisionNumericsV1, "schema_version" | "supported_start"> {
+  schema_version: 2; source_rate_hz: 15000000 | 20000000; supported_start: 34 | 32;
+}
+interface HostDecisionViewBase {
+  visit_index: number;
   health: "healthy" | "queue_overflow" | "detector_failure" | "expired";
   failure: string | null; feedback_error: string | null;
   feedback_outcome: "unknown" | "detected" | "not_detected";
   feedback_disposition: "accepted" | "source_ended" | "rejected" | "not_submitted";
   host_result_age_ms: number; worker_elapsed_ms: number | null; feedback_call_ms: number | null;
-  numerics: null | { schema_version: 1; outcome: "unknown" | "detected" | "not_detected";
-    screen_mask: 63; confirmation_mask: number; screen_scores: number[];
-    supported_start: 40; supported_end: 300000; candidate_supported: boolean; fractional_complete: boolean };
 }
+export interface HostDecisionViewV1 extends HostDecisionViewBase { schema_version: 1; numerics: HostDecisionNumericsV1 | null; }
+export interface HostDecisionViewV2 extends HostDecisionViewBase { schema_version: 2; numerics: HostDecisionNumericsV2 | null; }
+export type HostDecisionView = HostDecisionViewV1 | HostDecisionViewV2;
 
 export interface AdaptiveVisit {
   visit_index: number; target_index: number; retained: boolean;
@@ -180,7 +188,9 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
   if (c.schema_version !== 1) {
     if (!Array.isArray(detail.host_decisions) || detail.host_decisions.length !== c.retained_visits) throw new Error("Host decision inventory is incomplete");
     detail.host_decisions.forEach((d, i) => {
-      if (!d || d.schema_version !== 1 || d.visit_index !== i
+      const wide = c.schema_version === 3;
+      const expectedStart = wide ? (c.sample_rate_hz === 15000000 ? 34 : 32) : 40;
+      if (!d || d.schema_version !== (wide ? 2 : 1) || d.visit_index !== i
           || !["healthy", "queue_overflow", "detector_failure", "expired"].includes(d.health)
           || !["unknown", "detected", "not_detected"].includes(d.feedback_outcome)
           || !["accepted", "source_ended", "rejected", "not_submitted"].includes(d.feedback_disposition)
@@ -190,9 +200,10 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
           || (d.feedback_error !== null) !== ["rejected", "not_submitted"].includes(d.feedback_disposition)
           || (d.feedback_call_ms === null) !== (d.feedback_disposition === "not_submitted")
           || (d.worker_elapsed_ms === null) !== (d.health === "queue_overflow")
-          || (d.numerics !== null && (d.numerics.schema_version !== 1 || d.numerics.screen_mask !== 63
+          || (d.numerics !== null && (d.numerics.schema_version !== (wide ? 2 : 1) || d.numerics.screen_mask !== 63
             || ![1, 2, 4, 8, 16, 32].includes(d.numerics.confirmation_mask)
-            || d.numerics.supported_start !== 40 || d.numerics.supported_end !== 300000
+            || d.numerics.supported_start !== expectedStart || d.numerics.supported_end !== 300000
+            || (wide && (d.numerics.schema_version !== 2 || d.numerics.source_rate_hz !== c.sample_rate_hz))
             || !["unknown", "detected", "not_detected"].includes(d.numerics.outcome)
             || typeof d.numerics.candidate_supported !== "boolean" || typeof d.numerics.fractional_complete !== "boolean"
             || !Array.isArray(d.numerics.screen_scores) || d.numerics.screen_scores.length !== 6

@@ -95,13 +95,13 @@ export function multirateAdaptiveDetailFixture(rate: 15000000 | 20000000): Adapt
       host_feedback: { schema_version: 1, complete_visits: count, healthy: count - 1, degraded: 1, unknown_feedback: 1,
         accepted: count - 1, source_ended: 1, rejected: 0, not_submitted: 0, maximum_host_result_age_ms: 129,
         maximum_feedback_call_ms: 3, first_feedback_error: null } },
-    host_decisions: Array.from({ length: count }, (_, i) => ({ schema_version: 1, visit_index: i,
+    host_decisions: Array.from({ length: count }, (_, i) => ({ schema_version: 2, visit_index: i,
       health: i === count - 1 ? "queue_overflow" : "healthy", failure: i === count - 1 ? "Queue full" : null,
       feedback_error: null, feedback_outcome: i === count - 1 ? "unknown" : "not_detected",
       feedback_disposition: i === count - 1 ? "source_ended" : "accepted", host_result_age_ms: 129,
       worker_elapsed_ms: i === count - 1 ? null : 38, feedback_call_ms: 3,
-      numerics: i === count - 1 ? null : { schema_version: 1, outcome: "not_detected", screen_mask: 63,
-        confirmation_mask: 4, supported_start: 40, supported_end: 300000, screen_scores: [.01, .02, .03, .01, .02, .01],
+      numerics: i === count - 1 ? null : { schema_version: 2, source_rate_hz: rate, outcome: "not_detected", screen_mask: 63,
+        confirmation_mask: 4, supported_start: rate === 15000000 ? 34 : 32, supported_end: 300000, screen_scores: [.01, .02, .03, .01, .02, .01],
         candidate_supported: true, fractional_complete: true } })),
   };
 }
