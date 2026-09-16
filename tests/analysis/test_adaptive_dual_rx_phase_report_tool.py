@@ -133,9 +133,9 @@ def test_phase_metrics_recover_a_linear_track_after_association() -> None:
     assert metrics["linear_slope_deg_s"] == pytest.approx(24.0)
     assert metrics["linear_residual_rms_deg"] == pytest.approx(0.0, abs=1e-10)
     assert metrics["increment_concentration"] == pytest.approx(1.0)
-    assert metrics["median_abs_rate_prediction_error_deg"] == pytest.approx(
-        0.0, abs=1e-10
-    )
+    assert metrics["median_abs_rate_prediction_error_deg"] == pytest.approx(0.0, abs=1e-10)
+    assert metrics["forward_holdout_rms_error_deg"] == pytest.approx(0.0, abs=1e-10)
+    assert metrics["forward_holdout_max_abs_error_deg"] == pytest.approx(0.0, abs=1e-10)
 
 
 def test_phase_restoration_counts_individual_residual_cfo_once() -> None:
@@ -148,14 +148,26 @@ def test_phase_restoration_counts_individual_residual_cfo_once() -> None:
     reference_phase_rad = 0.37
     # The coherent frame product already contains each individual residual's
     # propagation from its receiver reference to the common center.
-    product_phase_at_center = reference_phase_rad + 2 * np.pi * (
-        residuals[1] * (center_sample - references[1])
-        - residuals[0] * (center_sample - references[0])
-    ) / sample_rate_hz
-    expected = reference_phase_rad + 2 * np.pi * (
-        (acquired[1] + residuals[1]) * (center_sample - references[1])
-        - (acquired[0] + residuals[0]) * (center_sample - references[0])
-    ) / sample_rate_hz
+    product_phase_at_center = (
+        reference_phase_rad
+        + 2
+        * np.pi
+        * (
+            residuals[1] * (center_sample - references[1])
+            - residuals[0] * (center_sample - references[0])
+        )
+        / sample_rate_hz
+    )
+    expected = (
+        reference_phase_rad
+        + 2
+        * np.pi
+        * (
+            (acquired[1] + residuals[1]) * (center_sample - references[1])
+            - (acquired[0] + residuals[0]) * (center_sample - references[0])
+        )
+        / sample_rate_hz
+    )
 
     observed = tool.restore_receiver_relative_phase(
         product_phase_at_center,
@@ -193,6 +205,19 @@ def test_pairing_uses_common_receiver_offset_instead_of_fixed_prior() -> None:
     selected = tool.select_consistent_receiver_pairs(edges)
 
     assert {(edge[0], edge[1]) for edge in selected} == {(0, 0), (1, 1), (2, 2)}
+
+
+def test_pairing_finds_global_assignment_when_greedy_edge_blocks_two_pairs() -> None:
+    tool = _tool()
+    edges = [
+        (0, 0, -620_000.0, 1.0),
+        (0, 1, -620_000.0, 0.8),
+        (1, 0, -620_000.0, 0.8),
+    ]
+
+    selected = tool.select_consistent_receiver_pairs(edges)
+
+    assert {(edge[0], edge[1]) for edge in selected} == {(0, 1), (1, 0)}
 
 
 def test_simultaneous_double_difference_cancels_common_phase_motion() -> None:

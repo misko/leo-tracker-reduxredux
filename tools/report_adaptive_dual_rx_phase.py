@@ -71,9 +71,7 @@ def oriented_states(document: dict[str, Any]) -> list[AssociationState]:
                     separation_hz=float(row["signal_separation_hz"]),
                     phase_deg=sign * phase_deg,
                     phase_rate_hz=sign * phase_rate_hz,
-                    quality=float(
-                        row.get("association_quality_floor", row["quality_floor"])
-                    ),
+                    quality=float(row.get("association_quality_floor", row["quality_floor"])),
                     legacy_phase_deg=(
                         sign * float(row["legacy_double_difference_deg"])
                         if "legacy_double_difference_deg" in row
@@ -117,12 +115,8 @@ def best_path(
     candidates: list[AssociationState], blocked_hypotheses: set[int]
 ) -> list[AssociationState]:
     """Find the longest admissible path, breaking ties by transition cost."""
-    available = [
-        state for state in candidates if state.hypothesis_id not in blocked_hypotheses
-    ]
-    available.sort(
-        key=lambda state: (state.visit_index, state.hypothesis_id, state.orientation)
-    )
+    available = [state for state in candidates if state.hypothesis_id not in blocked_hypotheses]
+    available.sort(key=lambda state: (state.visit_index, state.hypothesis_id, state.orientation))
     if not available:
         return []
     lengths = [1] * len(available)
@@ -136,15 +130,12 @@ def best_path(
             proposed_length = lengths[left_index] + 1
             proposed_cost = costs[left_index] + cost
             if proposed_length > lengths[right_index] or (
-                proposed_length == lengths[right_index]
-                and proposed_cost < costs[right_index]
+                proposed_length == lengths[right_index] and proposed_cost < costs[right_index]
             ):
                 lengths[right_index] = proposed_length
                 costs[right_index] = proposed_cost
                 previous[right_index] = left_index
-    end: int | None = max(
-        range(len(available)), key=lambda index: (lengths[index], -costs[index])
-    )
+    end: int | None = max(range(len(available)), key=lambda index: (lengths[index], -costs[index]))
     path: list[AssociationState] = []
     while end is not None:
         path.append(available[end])
@@ -172,9 +163,7 @@ def circular_degrees(values_deg: np.ndarray) -> np.ndarray:
     return np.degrees(np.angle(np.exp(1j * np.radians(values_deg))))
 
 
-def phase_metrics(
-    path: list[AssociationState], rng: np.random.Generator
-) -> dict[str, Any]:
+def phase_metrics(path: list[AssociationState], rng: np.random.Generator) -> dict[str, Any]:
     """Evaluate phase only after an association has been frozen."""
     time_s = np.asarray([state.time_s for state in path])
     wrapped_rad = np.radians([state.phase_deg for state in path])
@@ -183,36 +172,28 @@ def phase_metrics(
     concentration = float(abs(np.mean(np.exp(1j * increments_rad))))
     centered_time_s = time_s - np.mean(time_s)
     slope_rad_s, intercept_rad = np.polyfit(centered_time_s, unwrapped_rad, 1)
-    residual_deg = np.degrees(
-        unwrapped_rad - (slope_rad_s * centered_time_s + intercept_rad)
-    )
+    residual_deg = np.degrees(unwrapped_rad - (slope_rad_s * centered_time_s + intercept_rad))
 
     phase_rate_hz = np.asarray([state.phase_rate_hz for state in path])
     predicted_increment_rad = (
-        2
-        * np.pi
-        * 0.5
-        * (phase_rate_hz[1:] + phase_rate_hz[:-1])
-        * np.diff(time_s)
+        2 * np.pi * 0.5 * (phase_rate_hz[1:] + phase_rate_hz[:-1]) * np.diff(time_s)
     )
     rate_prediction_error_deg = np.degrees(
         np.angle(np.exp(1j * (np.diff(wrapped_rad) - predicted_increment_rad)))
     )
 
     random_increments = rng.uniform(-np.pi, np.pi, (200_000, len(increments_rad)))
-    uniform_concentrations = abs(
-        np.mean(np.exp(1j * random_increments), axis=1)
-    )
+    uniform_concentrations = abs(np.mean(np.exp(1j * random_increments), axis=1))
     permutation_concentrations = np.empty(20_000)
     for index in range(len(permutation_concentrations)):
         shuffled = rng.permutation(wrapped_rad)
-        permutation_concentrations[index] = abs(
-            np.mean(np.exp(1j * np.diff(shuffled)))
-        )
+        permutation_concentrations[index] = abs(np.mean(np.exp(1j * np.diff(shuffled))))
 
     training_count = max(3, (len(path) + 1) // 2)
     holdout_time_s = time_s[training_count:]
     holdout_median_error_deg: float | None = None
+    holdout_rms_error_deg: float | None = None
+    holdout_max_error_deg: float | None = None
     if len(holdout_time_s):
         training_time_s = time_s[:training_count]
         training_phase_rad = np.unwrap(wrapped_rad[:training_count])
@@ -220,13 +201,17 @@ def phase_metrics(
         forward_slope, forward_intercept = np.polyfit(
             training_relative_time_s, training_phase_rad, 1
         )
-        predicted_rad = (
-            forward_slope * (holdout_time_s - training_time_s[0]) + forward_intercept
-        )
-        error_rad = np.angle(
-            np.exp(1j * (wrapped_rad[training_count:] - predicted_rad))
-        )
-        holdout_median_error_deg = float(np.median(abs(np.degrees(error_rad))))
+        predicted_rad = forward_slope * (holdout_time_s - training_time_s[0]) + forward_intercept
+        error_rad = np.angle(np.exp(1j * (wrapped_rad[training_count:] - predicted_rad)))
+        error_deg = np.degrees(error_rad)
+        holdout_median_error_deg = float(np.median(abs(error_deg)))
+        holdout_rms_error_deg = float(np.sqrt(np.mean(error_deg**2)))
+        holdout_max_error_deg = float(np.max(abs(error_deg)))
+
+    separations_hz = np.asarray([state.separation_hz for state in path])
+    separation_time_correlation: float | None = None
+    if np.std(time_s) > 0 and np.std(separations_hz) > 0:
+        separation_time_correlation = float(np.corrcoef(time_s, separations_hz)[0, 1])
 
     legacy_metrics: dict[str, float] = {}
     if all(state.legacy_phase_deg is not None for state in path):
@@ -237,23 +222,17 @@ def phase_metrics(
             centered_time_s, legacy_unwrapped_rad, 1
         )
         legacy_residual_deg = np.degrees(
-            legacy_unwrapped_rad
-            - (legacy_slope_rad_s * centered_time_s + legacy_intercept_rad)
+            legacy_unwrapped_rad - (legacy_slope_rad_s * centered_time_s + legacy_intercept_rad)
         )
         legacy_metrics = {
             "legacy_increment_concentration": float(
                 abs(np.mean(np.exp(1j * np.diff(legacy_unwrapped_rad))))
             ),
             "legacy_linear_slope_deg_s": float(np.degrees(legacy_slope_rad_s)),
-            "legacy_linear_residual_rms_deg": float(
-                np.sqrt(np.mean(legacy_residual_deg**2))
-            ),
+            "legacy_linear_residual_rms_deg": float(np.sqrt(np.mean(legacy_residual_deg**2))),
         }
     uncertainty_metrics: dict[str, float] = {}
-    if all(
-        state.phase_sigma_deg is not None and state.phase_sigma_deg > 0
-        for state in path
-    ):
+    if all(state.phase_sigma_deg is not None and state.phase_sigma_deg > 0 for state in path):
         sigma_deg = np.asarray([float(state.phase_sigma_deg) for state in path])
         weights = 1 / sigma_deg**2
         design = np.column_stack((centered_time_s, np.ones(len(path))))
@@ -281,25 +260,18 @@ def phase_metrics(
         "first_time_s": float(time_s[0]),
         "last_time_s": float(time_s[-1]),
         "increment_concentration": concentration,
-        "uniform_increment_p": float(
-            np.mean(uniform_concentrations >= concentration)
-        ),
-        "phase_permutation_p": float(
-            np.mean(permutation_concentrations >= concentration)
-        ),
+        "uniform_increment_p": float(np.mean(uniform_concentrations >= concentration)),
+        "phase_permutation_p": float(np.mean(permutation_concentrations >= concentration)),
         "linear_slope_deg_s": float(np.degrees(slope_rad_s)),
         "linear_residual_rms_deg": float(np.sqrt(np.mean(residual_deg**2))),
-        "median_abs_rate_prediction_error_deg": float(
-            np.median(abs(rate_prediction_error_deg))
-        ),
-        "median_abs_within_dwell_phase_rate_hz": float(
-            np.median(abs(phase_rate_hz))
-        ),
+        "median_abs_rate_prediction_error_deg": float(np.median(abs(rate_prediction_error_deg))),
+        "median_abs_within_dwell_phase_rate_hz": float(np.median(abs(phase_rate_hz))),
         "forward_holdout_count": len(holdout_time_s),
         "forward_holdout_median_abs_error_deg": holdout_median_error_deg,
-        "median_signal_separation_hz": float(
-            np.median([state.separation_hz for state in path])
-        ),
+        "forward_holdout_rms_error_deg": holdout_rms_error_deg,
+        "forward_holdout_max_abs_error_deg": holdout_max_error_deg,
+        "separation_time_correlation": separation_time_correlation,
+        "median_signal_separation_hz": float(np.median([state.separation_hz for state in path])),
         **legacy_metrics,
         **uncertainty_metrics,
     }
@@ -323,9 +295,7 @@ def summarize_documents(documents: list[dict[str, Any]]) -> list[dict[str, Any]]
                     "minimum_track_points": MINIMUM_TRACK_POINTS,
                 },
                 "tracks": [phase_metrics(track, rng) for track in tracks],
-                "track_states": [
-                    [asdict(state) for state in track] for track in tracks
-                ],
+                "track_states": [[asdict(state) for state in track] for track in tracks],
             }
         )
     return summary
@@ -340,8 +310,7 @@ def plot_all_five(
     qualified = [int(item["qualified_double_difference_visits"]) for item in ordered]
     attempted = [int(item["attempted_two_pair_visits"]) for item in ordered]
     fractions = [
-        100 * accepted / tested
-        for accepted, tested in zip(qualified, attempted, strict=True)
+        100 * accepted / tested for accepted, tested in zip(qualified, attempted, strict=True)
     ]
     best_tracks = [
         max(by_session[item["session_id"]]["tracks"], key=lambda row: row["count"], default=None)
@@ -371,9 +340,7 @@ def plot_all_five(
     axes[1].set_ylabel("Longest phase-blind track (visits)")
     axes[1].set_ylim(0, max(counts) + 3)
     axes[1].set_title("Track length and post-association phase-increment concentration")
-    for bar, count, concentration in zip(
-        bars, counts, concentrations, strict=True
-    ):
+    for bar, count, concentration in zip(bars, counts, concentrations, strict=True):
         label = "none" if count == 0 else f"R={concentration:.2f}"
         axes[1].text(
             bar.get_x() + bar.get_width() / 2,
@@ -391,14 +358,10 @@ def plot_all_five(
 
 
 def plot_best_recovery(summary: list[dict[str, Any]], output: Path) -> None:
-    session = next(
-        item for item in summary if item["session_id"] == "scan-hop-bfc60ea18ace593b"
-    )
+    session = next(item for item in summary if item["session_id"] == "scan-hop-bfc60ea18ace593b")
     candidates = [
         (track, states)
-        for track, states in zip(
-            session["tracks"], session["track_states"], strict=True
-        )
+        for track, states in zip(session["tracks"], session["track_states"], strict=True)
         if track["target_index"] == 0
     ]
     candidates.sort(key=lambda item: item[0]["first_time_s"])
@@ -410,18 +373,13 @@ def plot_best_recovery(summary: list[dict[str, Any]], output: Path) -> None:
     ):
         time_s = np.asarray([row["time_s"] for row in states])
         relative_time_s = time_s - time_s[0]
-        phase_deg = np.degrees(
-            np.unwrap(np.radians([row["phase_deg"] for row in states]))
-        )
+        phase_deg = np.degrees(np.unwrap(np.radians([row["phase_deg"] for row in states])))
         centered_time_s = relative_time_s - np.mean(relative_time_s)
         slope_deg_s, intercept_deg = np.polyfit(centered_time_s, phase_deg, 1)
         fitted_deg = slope_deg_s * centered_time_s + intercept_deg
         label = f"Track {index}"
         sigma_deg = np.asarray(
-            [
-                np.nan if row["phase_sigma_deg"] is None else row["phase_sigma_deg"]
-                for row in states
-            ]
+            [np.nan if row["phase_sigma_deg"] is None else row["phase_sigma_deg"] for row in states]
         )
         if np.all(np.isfinite(sigma_deg)):
             axes[0, 0].errorbar(
@@ -436,9 +394,7 @@ def plot_best_recovery(summary: list[dict[str, Any]], output: Path) -> None:
         else:
             axes[0, 0].plot(relative_time_s, phase_deg, "o-", color=color, label=label)
         axes[0, 0].plot(relative_time_s, fitted_deg, "--", color=color, alpha=0.75)
-        axes[1, 0].plot(
-            relative_time_s, phase_deg - fitted_deg, "o-", color=color, label=label
-        )
+        axes[1, 0].plot(relative_time_s, phase_deg - fitted_deg, "o-", color=color, label=label)
         axes[0, 1].plot(
             relative_time_s,
             np.asarray([row["separation_hz"] for row in states]) / 1000,
@@ -447,9 +403,7 @@ def plot_best_recovery(summary: list[dict[str, Any]], output: Path) -> None:
             label=label,
         )
         rates_hz = np.asarray([row["phase_rate_hz"] for row in states])
-        predicted_deg = (
-            360 * 0.5 * (rates_hz[:-1] + rates_hz[1:]) * np.diff(time_s)
-        )
+        predicted_deg = 360 * 0.5 * (rates_hz[:-1] + rates_hz[1:]) * np.diff(time_s)
         observed_deg = circular_degrees(np.diff(phase_deg))
         error_deg = circular_degrees(observed_deg - predicted_deg)
         axes[1, 1].plot(
@@ -500,30 +454,20 @@ def plot_best_recovery(summary: list[dict[str, Any]], output: Path) -> None:
 
 def plot_reference_correction(summary: list[dict[str, Any]], output: Path) -> None:
     """Compare legacy and reference-consistent phase on identical associations."""
-    session = next(
-        item for item in summary if item["session_id"] == "scan-hop-bfc60ea18ace593b"
-    )
+    session = next(item for item in summary if item["session_id"] == "scan-hop-bfc60ea18ace593b")
     candidates = [
         (track, states)
-        for track, states in zip(
-            session["tracks"], session["track_states"], strict=True
-        )
+        for track, states in zip(session["tracks"], session["track_states"], strict=True)
         if track["target_index"] == 0 and "legacy_linear_residual_rms_deg" in track
     ]
     candidates.sort(key=lambda item: item[0]["count"], reverse=True)
     selected = candidates[:2]
     figure, axes = plt.subplots(2, 1, figsize=(12, 8), layout="constrained")
-    for axis, (metrics, states) in zip(
-        axes[: len(selected)], selected, strict=True
-    ):
+    for axis, (metrics, states) in zip(axes[: len(selected)], selected, strict=True):
         time_s = np.asarray([row["time_s"] for row in states])
         relative_time_s = time_s - time_s[0]
-        corrected_deg = np.degrees(
-            np.unwrap(np.radians([row["phase_deg"] for row in states]))
-        )
-        legacy_deg = np.degrees(
-            np.unwrap(np.radians([row["legacy_phase_deg"] for row in states]))
-        )
+        corrected_deg = np.degrees(np.unwrap(np.radians([row["phase_deg"] for row in states])))
+        legacy_deg = np.degrees(np.unwrap(np.radians([row["legacy_phase_deg"] for row in states])))
         axis.plot(
             relative_time_s,
             legacy_deg,
@@ -540,8 +484,7 @@ def plot_reference_correction(summary: list[dict[str, Any]], output: Path) -> No
             "o-",
             color="tab:blue",
             label=(
-                "Reference-consistent restoration "
-                f"(RMS {metrics['linear_residual_rms_deg']:.1f}°)"
+                f"Reference-consistent restoration (RMS {metrics['linear_residual_rms_deg']:.1f}°)"
             ),
         )
         axis.set_ylabel("Unwrapped double difference (deg)")
@@ -568,14 +511,10 @@ def window_sensitivity_row(
     documents: list[dict[str, Any]],
     summary: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    bfc60 = next(
-        item for item in summary if item["session_id"] == "scan-hop-bfc60ea18ace593b"
-    )
+    bfc60 = next(item for item in summary if item["session_id"] == "scan-hop-bfc60ea18ace593b")
     longest = max(bfc60["tracks"], key=lambda item: item["count"], default=None)
     attempted = sum(int(item["attempted_two_pair_visits"]) for item in documents)
-    qualified = sum(
-        int(item["qualified_double_difference_visits"]) for item in documents
-    )
+    qualified = sum(int(item["qualified_double_difference_visits"]) for item in documents)
     return {
         "frame_radius": radius,
         "nominal_support_ms": (2 * radius - 1) / 750 * 1000,
@@ -589,20 +528,10 @@ def window_sensitivity_row(
 def plot_window_sensitivity(rows: list[dict[str, Any]], output: Path) -> None:
     support_ms = np.asarray([row["nominal_support_ms"] for row in rows])
     qualified_percent = np.asarray([row["qualified_percent"] for row in rows])
-    counts = np.asarray(
-        [row["bfc60_longest_track"]["count"] for row in rows], dtype=float
-    )
-    rms_deg = np.asarray(
-        [
-            row["bfc60_longest_track"]["linear_residual_rms_deg"]
-            for row in rows
-        ]
-    )
+    counts = np.asarray([row["bfc60_longest_track"]["count"] for row in rows], dtype=float)
+    rms_deg = np.asarray([row["bfc60_longest_track"]["linear_residual_rms_deg"] for row in rows])
     rate_error_deg = np.asarray(
-        [
-            row["bfc60_longest_track"]["median_abs_rate_prediction_error_deg"]
-            for row in rows
-        ]
+        [row["bfc60_longest_track"]["median_abs_rate_prediction_error_deg"] for row in rows]
     )
     figure, axes = plt.subplots(3, 1, figsize=(10, 10), sharex=True, layout="constrained")
     axes[0].plot(support_ms, qualified_percent, "o-", color="tab:blue")
@@ -672,22 +601,16 @@ def main() -> None:
             if not separator:
                 raise ValueError("sensitivity input must have the form RADIUS=DIR")
             directory = Path(directory_text)
-            sensitivity_paths = sorted(
-                directory.glob("scan-hop-*-adaptive-double-difference.json")
-            )
+            sensitivity_paths = sorted(directory.glob("scan-hop-*-adaptive-double-difference.json"))
             if len(sensitivity_paths) != 5:
                 raise ValueError(
                     f"expected five sensitivity inputs in {directory}, "
                     f"found {len(sensitivity_paths)}"
                 )
-            sensitivity_documents = [
-                json.loads(path.read_text()) for path in sensitivity_paths
-            ]
+            sensitivity_documents = [json.loads(path.read_text()) for path in sensitivity_paths]
             sensitivity_summary = summarize_documents(sensitivity_documents)
             sensitivity_rows.append(
-                window_sensitivity_row(
-                    int(radius_text), sensitivity_documents, sensitivity_summary
-                )
+                window_sensitivity_row(int(radius_text), sensitivity_documents, sensitivity_summary)
             )
         sensitivity_rows.sort(key=lambda item: item["frame_radius"])
         (arguments.output_dir / "adaptive-phase-window-sensitivity.json").write_text(
