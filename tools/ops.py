@@ -2675,7 +2675,7 @@ def _verify_acquisition_environment_revision(expected: str) -> None:
 
 def _acquisition_desired_state(release: Path) -> str:
     completed = _run_as_leo(
-        (str(release / ".venv/bin/leo"), "acquire", "status", "--json"),
+        _capture_authority_command(release, "status", "--json"),
         source_environment=True,
         component_environment=PRODUCTION_ACQUISITION_ENVIRONMENT,
         capture_output=True,
@@ -2691,9 +2691,8 @@ def _acquisition_desired_state(release: Path) -> str:
 
 def _resume_acquisition_after_rollback(release: Path) -> None:
     _run_as_leo(
-        (
-            str(release / ".venv/bin/leo"),
-            "acquire",
+        _capture_authority_command(
+            release,
             "resume",
             "--operator",
             "ops-rollback",
@@ -2703,6 +2702,26 @@ def _resume_acquisition_after_rollback(release: Path) -> None:
         ),
         source_environment=True,
         component_environment=PRODUCTION_ACQUISITION_ENVIRONMENT,
+    )
+
+
+def _capture_authority_command(release: Path, action: str, *arguments: str) -> tuple[str, ...]:
+    """Build a radio-free authority command without requiring unit credentials."""
+    return (
+        "/usr/bin/env",
+        "-u",
+        "LEO_SCANNER_HOST_DECISION_MANIFEST_PATH",
+        "-u",
+        "LEO_SCANNER_HOST_DECISION_MANIFEST_SHA256",
+        "-u",
+        "LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ",
+        "LEO_SCANNER_ENABLED=false",
+        "LEO_SCANNER_PROFILE=alternating-2p5m-5m",
+        "LEO_SCANNER_HOP_POLICY=fixed",
+        str(release / ".venv/bin/leo"),
+        "acquire",
+        action,
+        *arguments,
     )
 
 
