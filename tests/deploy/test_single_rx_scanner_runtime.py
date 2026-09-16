@@ -22,7 +22,7 @@ def test_single_rx_scanner_runtime_provenance_is_exact(tmp_path):
     checks["validate_scanner_iiod_provenance"](tmp_path)
     assert b"iio,buffer-persistent-hop-single-rx-10m" in (destination / "iiod").read_bytes()
     document = json.loads(provenance.read_text())
-    assert document["source"]["head"] == "0d60b270ee28545f799b3dd8154e291f5f388157"
+    assert document["source"]["head"] == "b702129de0dec8556058b7174b665e00a93428e8"
     document["artifact"]["sha256"] = "0" * 64
     provenance.chmod(0o640)
     provenance.write_text(json.dumps(document))
