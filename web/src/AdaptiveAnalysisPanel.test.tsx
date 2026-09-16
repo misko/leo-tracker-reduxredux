@@ -63,6 +63,48 @@ describe("adaptive analysis publication", () => {
     expect(screen.queryByRole("link", { name: "Read the RX0/RX1 detection root-cause analysis" })).not.toBeInTheDocument();
   });
 
+  it("renders the frozen dual-RX phase replay beside standard adaptive analysis", async () => {
+    const historical = {
+      ...capture,
+      session_id: "scan-hop-bfc60ea18ace593b",
+    };
+    const value = analysisFixture();
+    value.session_id = historical.session_id;
+    value.input_manifest_sha256 = historical.input_manifest_sha256;
+    value.overview!.session_id = historical.session_id;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    render(<AdaptiveAnalysisPanel capture={historical} />);
+    const image = await screen.findByRole("img", {
+      name: "GLRT tracks with dual-RX phase progression",
+    });
+    expect(image).toHaveAttribute(
+      "src",
+      "/reports/adaptive-dual-rx-phase/scan-hop-bfc60ea18ace593b-c0e379c8d7c897a2.png",
+    );
+    expect(image.closest("figure")).toHaveAttribute(
+      "data-artifact-sha256",
+      "sha256:c0e379c8d7c897a2d676d95102450dbe4caf6dd40c31c60bb96acfc52fdfbb2d",
+    );
+    expect(image.closest("figure")).toHaveAttribute("data-artifact-bytes", "541025");
+    expect(screen.getAllByRole("img")).toHaveLength(4);
+    expect(screen.getByText(/Frozen historical replay for this exact recording/)).toBeInTheDocument();
+    expect(screen.getByText(/not inferred for recordings without a published artifact/)).toBeInTheDocument();
+  });
+
+  it("does not invent phase evidence for an unregistered or single-RX recording", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(analysisFixture())));
+    const view = render(<AdaptiveAnalysisPanel capture={capture} />);
+    await screen.findByRole("img", { name: "Retained channel coverage" });
+    expect(screen.queryByRole("img", { name: "GLRT tracks with dual-RX phase progression" })).not.toBeInTheDocument();
+    view.unmount();
+
+    const native = hostAdaptiveDetailFixture(0).capture;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(null, 404)));
+    render(<AdaptiveAnalysisPanel capture={{ ...native, session_id: "scan-hop-bfc60ea18ace593b" }} />);
+    await screen.findByText(/It is not queued here/);
+    expect(screen.queryByRole("img", { name: "GLRT tracks with dual-RX phase progression" })).not.toBeInTheDocument();
+  });
+
   it.each([0, 1] as const)("binds native analysis and PNGs to physical RX%s", async receiver => {
     const native = hostAdaptiveDetailFixture(receiver).capture;
     const value = analysisFixture();
