@@ -339,13 +339,17 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
                 + self.events[-1].valid_start_counter
                 - self.events[-1].invalid_start_counter
             )
+            transport_missing = getattr(self, "transport_missing_sample_count", 0)
             if (
                 not g.nominal_device_sample_count
                 <= denominator
-                <= g.nominal_device_sample_count + overshoot
+                <= g.nominal_device_sample_count + overshoot + transport_missing
             ):
                 raise ValueError("adaptive complete capture is outside its 300-second envelope")
-            if terminal.last_block_end_counter - terminal.final_counter > g.samples_per_block:
+            if (
+                terminal.last_block_end_counter - terminal.final_counter
+                > g.samples_per_block + transport_missing
+            ):
                 raise ValueError("adaptive terminal retained more than one boundary refill")
         unclassified = denominator - valid - invalid
         duty = valid * 1_000_000 // denominator if denominator else 0
