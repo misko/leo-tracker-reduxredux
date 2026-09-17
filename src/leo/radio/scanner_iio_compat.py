@@ -10,17 +10,26 @@ from types import SimpleNamespace
 
 def scanner_adi_module() -> SimpleNamespace:
     # PPU's public injection port keeps this optional hardware dependency lazy.
-    return SimpleNamespace(ad9361=_ad9361, ad9364=_ad9361)
+    return SimpleNamespace(ad9361=_ad9361, ad9364=_ad9364)
 
 
 def _ad9361(*, uri: str):
+    return _ad936x(uri=uri, facade_name="ad9361")
+
+
+def _ad9364(*, uri: str):
+    return _ad936x(uri=uri, facade_name="ad9364")
+
+
+def _ad936x(*, uri: str, facade_name: str):
     preflight = importlib.import_module("pluto_plus.hardware.preflight")
     preflight.verify_metadata_runtime(3)
     adi = importlib.import_module("adi")
     iio = importlib.import_module("iio")
     context = iio.Context(uri)
+    facade = getattr(adi, facade_name)
     if context.find_device("cf-ad9361-dds-core-lpc") is not None:
-        return adi.ad9361(uri_ctx=context)
+        return facade(uri_ctx=context)
     rx_def = importlib.import_module("adi.rx_tx").rx_def
 
     def initialize(receiver):
@@ -28,8 +37,12 @@ def _ad9361(*, uri: str):
 
     # No DDS device exists in this context. PHY TX attenuation and all other
     # PPU receive/identity/restoration checks still run unchanged.
-    facade = type("ReceiveOnlyAd9361", (adi.ad9361,), {"__init__": initialize, "disable_dds": None})
-    return facade()
+    receive_only = type(
+        f"ReceiveOnly{facade_name.upper()}",
+        (facade,),
+        {"__init__": initialize, "disable_dds": None},
+    )
+    return receive_only()
 
 
 def endpoint_probe(host: str, port: int, expected_serial: str, timeout_s: float) -> bool:
