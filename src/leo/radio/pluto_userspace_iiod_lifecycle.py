@@ -8,6 +8,8 @@ from leo.radio.persistent_hop_iiod_lifecycle import (
     PersistentHopIiodLifecycle,
     PersistentHopIiodLifecycleConfiguration,
 )
+
+
 class PlutoUserspaceIiodLifecycleError(RuntimeError):
     """The concrete no-flash lifecycle dependency could not be used safely."""
 
