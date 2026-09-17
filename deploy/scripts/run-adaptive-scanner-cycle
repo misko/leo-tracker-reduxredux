@@ -8,11 +8,13 @@ now_epoch="${LEO_SCANNER_CYCLE_NOW_EPOCH:-$(date -u +%s)}"
 next_ordinal=$(((now_epoch + 599) / 600))
 if ((next_ordinal % 3 == 0)); then
     export LEO_SCANNER_PROFILE=adaptive-single-rx0-10m-300s-v1
+    export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=10000000
 else
     export LEO_SCANNER_PROFILE=adaptive-single-rx0-random-15m-20m-300s-v1
+    export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=15000000,20000000
 fi
 
-echo "adaptive scanner cycle: slot=${next_ordinal} profile=${LEO_SCANNER_PROFILE}"
+echo "adaptive scanner cycle: slot=${next_ordinal} profile=${LEO_SCANNER_PROFILE} rates=${LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ}"
 if [[ "${LEO_SCANNER_CYCLE_DRY_RUN:-}" == "1" ]]; then
     exit 0
 fi
