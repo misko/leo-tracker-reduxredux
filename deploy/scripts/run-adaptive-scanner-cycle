@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Choose the profile for the next canonical ten-minute slot.  Profile-specific
+# operation keys keep retries stable; the multirate profile makes its own
+# durable 15/20 MS/s choice from that key.
+now_epoch="${LEO_SCANNER_CYCLE_NOW_EPOCH:-$(date -u +%s)}"
+next_ordinal=$(((now_epoch + 599) / 600))
+if ((next_ordinal % 3 == 0)); then
+    export LEO_SCANNER_PROFILE=adaptive-single-rx0-10m-300s-v1
+else
+    export LEO_SCANNER_PROFILE=adaptive-single-rx0-random-15m-20m-300s-v1
+fi
+
+echo "adaptive scanner cycle: slot=${next_ordinal} profile=${LEO_SCANNER_PROFILE}"
+if [[ "${LEO_SCANNER_CYCLE_DRY_RUN:-}" == "1" ]]; then
+    exit 0
+fi
+
+exec /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run \
+    --profile "${LEO_CAPTURE_PROFILE}" \
+    --radio "${LEO_SCANNER_RADIO_ID}" \
+    --interval-seconds "${LEO_SCANNER_INTERVAL_SECONDS}" \
+    --scanner-only \
+    --max-scanner-runs 1
