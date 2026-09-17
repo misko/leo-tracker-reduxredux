@@ -148,4 +148,6 @@ def test_host_adaptive_loader_configures_physical_rx0_layout(monkeypatch):
 def test_receive_only_facade_supports_both_live_ad936x_model_names():
     module = compat.scanner_adi_module()
 
-    assert module.ad9361 is module.ad9364
+    assert callable(module.ad9361)
+    assert callable(module.ad9364)
+    assert module.ad9361 is not module.ad9364
