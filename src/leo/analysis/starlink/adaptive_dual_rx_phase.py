@@ -231,7 +231,7 @@ def select_consistent_receiver_pairs(
 
         def assignment_score(
             selected_edges: tuple[tuple[int, int, float, float], ...],
-            anchor_hz: float = anchor_frequency_hz,
+            anchor_hz: float,
         ) -> tuple[int, float, float]:
             return (
                 len(selected_edges),
@@ -250,12 +250,18 @@ def select_consistent_receiver_pairs(
                     proposed = (*selected_edges, edge)
                     new_mask = used_right_mask | bit
                     incumbent = updated.get(new_mask)
-                    if incumbent is None or assignment_score(proposed) > assignment_score(
-                        incumbent
-                    ):
+                    if incumbent is None or assignment_score(
+                        proposed, anchor_frequency_hz
+                    ) > assignment_score(incumbent, anchor_frequency_hz):
                         updated[new_mask] = proposed
             assignments = updated
-        selected = list(max(assignments.values(), key=assignment_score))
+        selected_tuple: tuple[tuple[int, int, float, float], ...] = ()
+        selected_score: tuple[int, float, float] | None = None
+        for candidate in assignments.values():
+            candidate_score = assignment_score(candidate, anchor_frequency_hz)
+            if selected_score is None or candidate_score > selected_score:
+                selected_tuple, selected_score = candidate, candidate_score
+        selected = list(selected_tuple)
         spread = sum(
             abs(circular_frequency_delta(anchor_frequency_hz, edge[2])) for edge in selected
         )

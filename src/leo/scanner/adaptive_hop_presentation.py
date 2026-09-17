@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, Literal, Protocol, Self
+from typing import TYPE_CHECKING, Annotated, Literal, Protocol, Self
 
 from pydantic import Field, model_validator
 
@@ -11,6 +11,9 @@ from leo.contracts.digests import Sha256Digest
 from leo.contracts.scanner_glrt_frame import U64
 from leo.scanner.adaptive_hop import AdaptiveModel, Count, SessionId
 from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisConfigurationV1
+
+if TYPE_CHECKING:
+    from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatusV1
 
 AdaptiveOverviewArtifact = Literal["coverage", "glrt64-response", "cfo-trajectories"]
 OVERVIEW_ARTIFACTS: tuple[AdaptiveOverviewArtifact, ...] = (
@@ -123,4 +126,17 @@ class AdaptiveHopAnalysisPresentationReader(Protocol):
         binding_sha256: str,
         artifact_sha256: str,
         probe_stride_ms: int = 10,
+    ) -> bytes | None: ...
+
+    def phase_status(
+        self, session_id: str, *, probe_stride_ms: int = 120
+    ) -> AdaptiveDualRxPhaseStatusV1 | None: ...
+
+    def phase_artifact(
+        self,
+        session_id: str,
+        *,
+        glrt_binding_sha256: str,
+        artifact_sha256: str,
+        probe_stride_ms: int = 120,
     ) -> bytes | None: ...

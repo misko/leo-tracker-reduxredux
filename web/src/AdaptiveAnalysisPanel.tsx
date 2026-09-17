@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import type { AdaptiveCapture } from "./adaptive-api";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus, AdaptiveArtifact, AdaptiveFigure, AdaptiveProbeStride } from "./adaptive-analysis-api";
-import { frozenAdaptivePhaseArtifact } from "./adaptive-phase-artifacts";
-import type { FrozenAdaptivePhaseArtifact } from "./adaptive-phase-artifacts";
+import { adaptivePhaseFigureUrl, getAdaptivePhase } from "./adaptive-phase-api";
+import type { AdaptivePhaseStatus } from "./adaptive-phase-api";
 
 const figureCopy: Record<AdaptiveArtifact, { title: string; detail: string }> = {
   "coverage": { title: "Retained channel coverage", detail: "Actual valid intervals; empty time is not interpolated. An outlined marker is an incomplete hop start." },
@@ -30,24 +30,24 @@ function FigureView({ status, figure }: { status: AdaptiveAnalysisStatus; figure
   </figure>;
 }
 
-function FrozenPhaseFigure({ artifact }: { artifact: FrozenAdaptivePhaseArtifact }) {
+function PhaseFigure({ status, probeStrideMs }: { status: AdaptivePhaseStatus; probeStrideMs: number }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const title = "GLRT tracks with dual-RX phase progression";
   return <figure
     className="adaptive-analysis-figure adaptive-phase-replay"
-    data-artifact-sha256={artifact.sha256}
-    data-artifact-bytes={artifact.byteCount}
+    data-artifact-sha256={status.manifest?.artifact?.sha256}
+    data-artifact-bytes={status.manifest?.artifact?.byte_count}
   >
     <figcaption>
       <h4>{title}</h4>
-      <p>Frozen historical replay for this exact recording. Gray marks are passed RX0 GLRT candidates; phase-colored connectors pair simultaneous two-signal tracks. Diamonds and the lower panels show phase-blind associations and wrapped/unwrapped receiver-phase double differences. Lines stop at unresolved gaps.</p>
-      <p>This replay is supplemental evidence, not part of the live detector decision and not inferred for recordings without a published artifact.</p>
+      <p>Gray marks are passed RX0 GLRT candidates; phase-colored connectors pair simultaneous two-signal tracks. Diamonds and the lower panels show phase-blind associations and wrapped/unwrapped receiver-phase double differences. Lines stop at unresolved gaps.</p>
+      <p>{status.manifest?.qualified_phase_count} qualified double-difference estimates · {status.manifest?.association_count} phase-blind associations. This is supplemental evidence and is not part of the live detector decision.</p>
     </figcaption>
     {failed ? <p role="alert">The published dual-RX phase replay could not be loaded.</p> : <>
       {!loaded ? <p role="status">Loading dual-RX phase replay…</p> : null}
-      <a href={artifact.href} target="_blank" rel="noreferrer" aria-label={`Open ${title.toLowerCase()} PNG`}>
-        <img src={artifact.href} alt={title} loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
+      <a href={adaptivePhaseFigureUrl(status, probeStrideMs)} target="_blank" rel="noreferrer" aria-label={`Open ${title.toLowerCase()} PNG`}>
+        <img src={adaptivePhaseFigureUrl(status, probeStrideMs)} alt={title} loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
       </a>
     </>}
   </figure>;
@@ -58,19 +58,24 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
   const [status, setStatus] = useState<AdaptiveAnalysisStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const phaseArtifact = capture.schema_version === 1
-    ? frozenAdaptivePhaseArtifact(capture.session_id)
-    : null;
+  const [phase, setPhase] = useState<AdaptivePhaseStatus | null>(null);
+  const [phaseError, setPhaseError] = useState<string | null>(null);
   useEffect(() => {
     let active = true; let busy = false;
     const controller = new AbortController();
-    setStatus(null); setLoading(true); setError(null);
+    setStatus(null); setPhase(null); setLoading(true); setError(null); setPhaseError(null);
     const refresh = async () => {
       if (busy) return;
       busy = true;
       try {
-        const result = await getAdaptiveAnalysis(capture, controller.signal, probeStrideMs);
-        if (active) { setStatus(result); setError(null); }
+        const [result, phaseResult] = await Promise.all([
+          getAdaptiveAnalysis(capture, controller.signal, probeStrideMs),
+          getAdaptivePhase(capture, controller.signal, probeStrideMs).catch(failure => {
+            if (active) setPhaseError(failure instanceof Error ? failure.message : "Adaptive phase is unavailable");
+            return null;
+          }),
+        ]);
+        if (active) { setStatus(result); setPhase(phaseResult); setError(null); if (phaseResult) setPhaseError(null); }
       } catch (failure) {
         if (active) { setStatus(null); setError(failure instanceof Error ? failure.message : "Adaptive analysis is unavailable"); }
       } finally { busy = false; if (active) setLoading(false); }
@@ -109,8 +114,12 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
         {status.overview.truncated_association_count > 0 ? <p role="status">{status.overview.truncated_association_count} association hypotheses exceeded the configured output bound. All passed CFO candidates remain in the scatter plot.</p> : null}
         {status.overview.artifacts.map(figure => <FigureView key={`${status.binding_sha256}:${figure.name}:${figure.sha256}`} status={status} figure={figure} />)}
       </> : null}
-      {phaseArtifact ? <FrozenPhaseFigure artifact={phaseArtifact} /> : null}
+      {phase?.state === "ready" ? <PhaseFigure status={phase} probeStrideMs={probeStrideMs} /> : null}
+      {phase?.state === "pending" ? <p>Dual-RX pilot phase analysis has not been published for this recording yet.</p> : null}
+      {phase?.state === "insufficient_signal" ? <p>No simultaneous two-signal pilot pair passed the phase-quality gates, so no phase figure was published.</p> : null}
+      {phase?.state === "not_applicable" ? <p>Dual-RX phase is not applicable: this capture retained only one physical receiver.</p> : null}
+      {phaseError ? <p role="alert">{phaseError}. GLRT figures remain independently available.</p> : null}
     </> : null}
-    {!status && phaseArtifact ? <FrozenPhaseFigure artifact={phaseArtifact} /> : null}
+    {!status && phase?.state === "ready" ? <PhaseFigure status={phase} probeStrideMs={probeStrideMs} /> : null}
   </section>;
 }

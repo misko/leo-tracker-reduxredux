@@ -161,11 +161,15 @@ class AdaptiveHopPresentationStore:
         store = AdaptiveHopIqStore(self._root, read_only=True)
         try:
             # Keep only ordering keys, not every scan's up-to-2,500-event manifest.
-            sessions = [
-                (s.manifest.finalized_utc_ns, s.session_id)
-                for s in store.iter_sessions()
-                if include_host or not isinstance(s.manifest.receipt, HostAdaptiveHopReceiptV2)
-            ]
+            sessions = (
+                list(store.history_index())
+                if include_host
+                else [
+                    (s.manifest.finalized_utc_ns, s.session_id)
+                    for s in store.iter_sessions()
+                    if not isinstance(s.manifest.receipt, HostAdaptiveHopReceiptV2)
+                ]
+            )
             sessions.sort(reverse=True)
             items = tuple(
                 _summary(store.inspect(key)) for _, key in sessions[cursor : cursor + limit]

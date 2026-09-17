@@ -1,7 +1,9 @@
 """Read-only adaptive analysis metadata/PNG adapter; never starts or runs analysis."""
 
 from pathlib import Path
+from typing import Literal, cast
 
+from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatusV1
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisStatusV1,
     AdaptiveOverviewArtifact,
@@ -16,6 +18,7 @@ from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV3,
     bind_actual_visit_analysis,
 )
+from leo.storage.adaptive_dual_rx_phase import AdaptiveDualRxPhaseStore
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.errors import BundleNotFoundError
@@ -97,5 +100,66 @@ class AdaptiveHopAnalysisPresentationStore:
                     return job.read_artifact(artifact, expected_sha256=artifact_sha256)
             except BundleNotFoundError:
                 return None
+        finally:
+            store.close()
+
+    def phase_status(
+        self, session_id: str, *, probe_stride_ms: int = 120
+    ) -> AdaptiveDualRxPhaseStatusV1 | None:
+        """Return only sealed metadata; never read IQ or decode GLRT visits."""
+        binding = self._binding(session_id, probe_stride_ms)
+        if binding is None:
+            return None
+        receiver_ids = cast(tuple[Literal[0, 1], ...], tuple(binding.configuration.receiver_ids))
+        if receiver_ids != (0, 1):
+            return AdaptiveDualRxPhaseStatusV1(
+                session_id=session_id,
+                input_manifest_sha256=binding.input_manifest_sha256,
+                receiver_ids=receiver_ids,
+                state="not_applicable",
+                reason="requires_simultaneous_rx0_rx1",
+                manifest=None,
+            )
+        store = AdaptiveDualRxPhaseStore(self._root, read_only=True)
+        try:
+            manifest = store.manifest(session_id, binding.input_manifest_sha256)
+        finally:
+            store.close()
+        if manifest is None:
+            return AdaptiveDualRxPhaseStatusV1(
+                session_id=session_id,
+                input_manifest_sha256=binding.input_manifest_sha256,
+                receiver_ids=receiver_ids,
+                state="pending",
+                reason="awaiting_phase_analysis",
+                manifest=None,
+            )
+        if manifest.glrt_binding_sha256 != binding.sha256:
+            raise ValueError("adaptive phase result changed the GLRT binding")
+        return AdaptiveDualRxPhaseStatusV1(
+            session_id=session_id,
+            input_manifest_sha256=binding.input_manifest_sha256,
+            receiver_ids=receiver_ids,
+            state=manifest.state,
+            reason=manifest.reason,
+            manifest=manifest,
+        )
+
+    def phase_artifact(
+        self,
+        session_id: str,
+        *,
+        glrt_binding_sha256: str,
+        artifact_sha256: str,
+        probe_stride_ms: int = 120,
+    ) -> bytes | None:
+        status = self.phase_status(session_id, probe_stride_ms=probe_stride_ms)
+        if status is None or status.manifest is None:
+            return None
+        if status.manifest.glrt_binding_sha256 != glrt_binding_sha256:
+            raise ValueError("adaptive phase artifact changed the GLRT binding")
+        store = AdaptiveDualRxPhaseStore(self._root, read_only=True)
+        try:
+            return store.artifact(status.manifest, expected_sha256=artifact_sha256)
         finally:
             store.close()
