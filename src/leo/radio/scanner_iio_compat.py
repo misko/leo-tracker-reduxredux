@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 def scanner_adi_module() -> SimpleNamespace:
     # PPU's public injection port keeps this optional hardware dependency lazy.
-    return SimpleNamespace(ad9361=_ad9361)
+    return SimpleNamespace(ad9361=_ad9361, ad9364=_ad9361)
 
 
 def _ad9361(*, uri: str):
