@@ -292,12 +292,7 @@ REVIEWED_CAPTURE_PROFILE_SHA256 = {
 }
 ACQUISITION_SERVICE_RELATIVE_PATH = Path("deploy/systemd/leo-acquisition.service")
 EXPECTED_ACQUISITION_EXEC_START = (
-    "/usr/bin/env PYTHONDONTWRITEBYTECODE=1 "
-    "/opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
-    "--profile ${LEO_CAPTURE_PROFILE} "
-    "--radio ${LEO_SCANNER_RADIO_ID} "
-    "--interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} "
-    "--scanner-only --max-scanner-runs 1"
+    "/opt/leo-tracker/current-acquisition/deploy/scripts/run-adaptive-scanner-cycle"
 )
 SINGLE_RADIO_SCANNER_PROFILES = frozenset(
     {

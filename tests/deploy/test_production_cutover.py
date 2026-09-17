@@ -906,23 +906,19 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     service = release / SCRIPT_GLOBALS["ACQUISITION_SERVICE_RELATIVE_PATH"]
     service.parent.mkdir(parents=True)
     expected = SCRIPT_GLOBALS["EXPECTED_ACQUISITION_EXEC_START"]
-    assert expected.startswith(
-        "/usr/bin/env PYTHONDONTWRITEBYTECODE=1 "
-        "/opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
+    assert expected == (
+        "/opt/leo-tracker/current-acquisition/deploy/scripts/"
+        "run-adaptive-scanner-cycle"
     )
     service.write_text(f"[Service]\nExecStart={expected}\n", encoding="utf-8")
     _call("verify_staged_acquisition_service", release)
 
-    radio_b = "--radio ${LEO_SCANNER_RADIO_ID} "
-    scanner_mode = "--scanner-only --max-scanner-runs 1"
     tampered_commands = (
-        expected.replace("PYTHONDONTWRITEBYTECODE=1 ", ""),
-        expected.replace("--profile ${LEO_CAPTURE_PROFILE} ", ""),
-        expected.replace(radio_b, "--radio radio_pluto_5d4d "),
-        expected.replace(radio_b, ""),
-        expected.replace(radio_b, radio_b + "--radio unexpected-radio "),
-        expected.replace(scanner_mode, ""),
-        expected.replace(scanner_mode, "--scanner-only --max-scanner-runs 2"),
+        expected + " --unexpected",
+        expected.replace("current-acquisition", "current"),
+        expected.replace("/opt/leo-tracker", "/usr/local/libexec"),
+        expected.replace("run-adaptive-scanner-cycle", "leo"),
+        expected.removeprefix("/"),
     )
     assert len(set(tampered_commands)) == len(tampered_commands)
     for command in tampered_commands:
