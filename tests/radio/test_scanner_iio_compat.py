@@ -110,3 +110,36 @@ def test_adaptive_loader_keeps_extension_and_injects_receive_facade(monkeypatch)
 
     monkeypatch.setattr(ppu, "iio_adaptive_hop_client", create)
     assert _load_client("ip:192.168.1.20:30432", "serial", metadata_extension=extension) is client
+
+
+def test_host_adaptive_loader_configures_physical_rx0_layout(monkeypatch):
+    import pluto_plus.hardware.iio as ppu_iio
+    import pluto_plus.hardware.iio_host_adaptive_hop as ppu
+
+    from leo.radio.pluto_host_adaptive import _load_client
+
+    configured = []
+
+    class Radio:
+        def __init__(self, uri, **kwargs):
+            assert uri == "ip:192.168.1.17:30432"
+            assert kwargs["serial"] == "serial"
+            assert kwargs["expected_metadata_abi"] == 3
+
+        def configure_rx_layout(self, expectation):
+            configured.append(expectation)
+
+    client = object()
+
+    def create(uri, *, expected_serial, adi_module, radio_factory):
+        assert (uri, expected_serial) == ("ip:192.168.1.17:30432", "serial")
+        assert callable(adi_module.ad9361)
+        radio_factory(uri, expected_serial)
+        return client
+
+    monkeypatch.setattr(ppu_iio, "IioRadioDevice", Radio)
+    monkeypatch.setattr(ppu, "iio_host_adaptive_hop_client", create)
+
+    assert _load_client("ip:192.168.1.17:30432", "serial") is client
+    assert len(configured) == 1
+    assert configured[0].receiver_channels == (0,)
