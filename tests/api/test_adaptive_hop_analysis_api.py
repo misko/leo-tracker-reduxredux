@@ -3,6 +3,7 @@ import pytest
 import leo.scanner.adaptive_hop_analysis as detector
 from leo.application.adaptive_hop_analysis import AdaptiveHopAnalysisService
 from leo.application.adaptive_hop_overview import AdaptiveHopOverviewService
+from leo.storage.adaptive_dual_rx_phase import AdaptiveDualRxPhaseStore
 from leo.storage.adaptive_hop import AdaptiveHopIqReader, AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisJob, AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
@@ -39,6 +40,20 @@ def test_additive_status_progress_and_digest_bound_pngs_without_read_side_analys
     AdaptiveHopOverviewService(
         inputs=inputs, products=products, renderer=lambda *args: rendered_fixture()
     ).render_session(capture.session_id)
+    analysis_status = AdaptiveHopAnalysisPresentationStore(tmp_path).status(capture.session_id)
+    assert analysis_status is not None and analysis_status.metrics_manifest_sha256 is not None
+    phase_png = rendered_fixture().artifacts["coverage"]
+    phase_store = AdaptiveDualRxPhaseStore(tmp_path)
+    phase_manifest = phase_store.publish(
+        session_id=capture.session_id,
+        input_manifest_sha256=analysis_status.input_manifest_sha256,
+        glrt_binding_sha256=analysis_status.binding_sha256,
+        glrt_metrics_manifest_sha256=analysis_status.metrics_manifest_sha256,
+        qualified_phase_count=7,
+        association_count=2,
+        png=phase_png,
+    )
+    phase_store.close()
     monkeypatch.setattr(
         AdaptiveHopIqReader, "read_visit_ci16", lambda *args: pytest.fail("API cannot read IQ")
     )
@@ -72,6 +87,22 @@ def test_additive_status_progress_and_digest_bound_pngs_without_read_side_analys
             client.get(url, params={**query, "artifact_sha256": "sha256:" + "9" * 64}).status_code
             == 409
         )
+    phase_route = route + "/dual-rx-phase"
+    phase = client.get(phase_route, params={"probe_stride_ms": 10})
+    assert phase.status_code == 200 and phase.json()["state"] == "ready"
+    assert phase.json()["manifest"]["qualified_phase_count"] == 7
+    assert phase_manifest.artifact is not None
+    phase_image = client.get(
+        phase_route + "/artifact.png",
+        params={
+            "probe_stride_ms": 10,
+            "glrt_binding_sha256": analysis_status.binding_sha256,
+            "artifact_sha256": phase_manifest.artifact.sha256,
+        },
+    )
+    assert phase_image.status_code == 200 and phase_image.content == phase_png
+    assert phase_image.headers["etag"] == f'"{phase_manifest.artifact.sha256}"'
+    assert client.head(phase_route, params={"probe_stride_ms": 10}).content == b""
     assert client.head(route).content == b"" and client.post(route).status_code == 405
     assert client.get(route, params={"probe_stride_ms": 120}).json()["state"] == "not_started"
     assert client.get(route, params={"probe_stride_ms": 9}).status_code == 422

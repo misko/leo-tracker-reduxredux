@@ -90,9 +90,7 @@ def test_sparse_wide_analysis_preserves_source_visit_indices_through_resume_and_
             receipt.session_id, probe_stride_ms=120, maximum_visits=2, maximum_workers=2
         )
         assert first.state == "partial" and first.completed_visits == 2
-        second = service.analyze_session(
-            receipt.session_id, probe_stride_ms=120, maximum_workers=4
-        )
+        second = service.analyze_session(receipt.session_id, probe_stride_ms=120, maximum_workers=4)
         assert second.state == "metrics_complete" and second.newly_analyzed_visits == 3
         with products.job(
             bind_actual_visit_analysis(
