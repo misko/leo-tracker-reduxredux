@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from leo.cli.firmware_adaptive_import import import_pending
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 
 
@@ -23,7 +24,19 @@ def main() -> int:
         recovered = store.recover_spooled_sessions()
     finally:
         store.close()
-    print(json.dumps({"published_session_ids": recovered}, sort_keys=True))
+    imported, unsupported = import_pending(
+        arguments.spool_root / "v052-adaptive", arguments.bulk_root
+    )
+    print(
+        json.dumps(
+            {
+                "published_session_ids": recovered,
+                "firmware_imported_session_ids": imported,
+                "firmware_unsupported": unsupported,
+            },
+            sort_keys=True,
+        )
+    )
     return 0
 
 
