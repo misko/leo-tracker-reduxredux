@@ -1,0 +1,72 @@
+{
+  "schema": "ethernet_chunk_probe_v1",
+  "started_utc": "2026-09-16T14:55:59.344231+00:00",
+  "serial": "104000bac4950008230026001b440a003a",
+  "uri": "ip:192.168.1.17",
+  "wire_bytes_per_complex_sample": 4,
+  "samples_per_frame": 1000000,
+  "kernel_buffers": 50,
+  "host_runtime": {
+    "metadata_abi": 3,
+    "source_ref": "948d6a246bb937fe3a62ed15233d9f592ab71d6a",
+    "source_commit": "948d6a246bb937fe3a62ed15233d9f592ab71d6a",
+    "native_libiio_path": "/opt/leo-tracker/releases/af88cba2ec302eae9dfc8553f04e647fde12d7be/.venv/lib/libiio.so.0.25",
+    "native_libiio_sha256": "c74385df05c5ffeba9f3be9cdd46cbe5b00375e9f5ba40fedb7fac219b636c5a",
+    "pylibiio_path": "/opt/leo-tracker/releases/af88cba2ec302eae9dfc8553f04e647fde12d7be/.venv/lib/python3.14/site-packages/iio.py",
+    "pylibiio_sha256": "943995d22acef36a57362e0f8871ef0578d11f80ebf45114c86246d76c5a4be5",
+    "receipt_path": "/opt/leo-tracker/releases/af88cba2ec302eae9dfc8553f04e647fde12d7be/.venv/share/pluto-plus-utils/metadata-runtime.json"
+  },
+  "cells": [
+    {
+      "rate_hz": 20000000,
+      "nominal_seconds": 300.0,
+      "requested_seconds": 300.0,
+      "ram_slots": 0,
+      "frames": [],
+      "complete": false,
+      "allocated_kernel_buffers": 50,
+      "error": {
+        "type": "OSError",
+        "message": "[Errno 22] Invalid argument",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/mouse9911/gits/leo-rx0-tle-review/reports/figures/2026_09_16_ppu_20m_300s/probe.py\", line 113, in cell\n    block = capture.read_block()\n  File \"/opt/leo-tracker/current-acquisition/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_metadata.py\", line 742, in read_block\n    return self._read_block()\n           ~~~~~~~~~~~~~~~~^^\n  File \"/opt/leo-tracker/current-acquisition/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_metadata.py\", line 755, in _read_block\n    read_interleaved_complex64(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        self._sdr,\n        ^^^^^^^^^^\n        samples_per_channel=self._samples_per_channel,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        channels=self._channels,\n        ^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/opt/leo-tracker/current-acquisition/.venv/lib/python3.14/site-packages/pluto_plus/hardware/iio_iq_decode.py\", line 87, in read_interleaved_complex64\n    buffer.refill()\n    ~~~~~~~~~~~~~^^\n  File \"/opt/leo-tracker/current-acquisition/.venv/lib/python3.14/site-packages/iio.py\", line 1444, in refill\n    _buffer_refill_with_metadata(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        self._buffer,\n        ^^^^^^^^^^^^^\n    ...<2 lines>...\n        _byref(metadata_bytes),\n        ^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/opt/leo-tracker/current-acquisition/.venv/lib/python3.14/site-packages/iio.py\", line 65, in _check_negative\n    raise OSError(-result, _strerror(-result))\nOSError: [Errno 22] Invalid argument\n"
+      },
+      "cycle_seconds": 0.911076892982237,
+      "settings": {
+        "center_frequency_hz": 959687500.0,
+        "sample_rate_hz": 20000000.0,
+        "bandwidth_hz": 20000000.0,
+        "gain_mode": "manual",
+        "gain_db": 40.0,
+        "channels": [
+          0
+        ]
+      },
+      "repeat": 0
+    }
+  ],
+  "rx_only": true,
+  "iq_saved": false,
+  "settings_restored": true,
+  "scope": "Finite direct-async sessions; gaps between sessions excluded from source coverage.",
+  "identity": {
+    "radio_id": "104000bac4950008230026001b440a003a",
+    "serial": "104000bac4950008230026001b440a003a",
+    "uri": "ip:192.168.1.17",
+    "transport": "iio_ip",
+    "model": "Analog Devices PlutoSDR Rev.C (Z7010-AD9361)",
+    "firmware_version": "v0.49-plutoplus-spf-iq-direct-async-v4",
+    "usb_path": null
+  },
+  "original_settings": {
+    "center_frequency_hz": 959687500.0,
+    "sample_rate_hz": 10000000.0,
+    "bandwidth_hz": 10000000.0,
+    "gain_mode": "manual",
+    "gain_db": 40.0,
+    "channels": [
+      0,
+      1
+    ]
+  },
+  "finished_utc": "2026-09-16T14:56:01.949920+00:00"
+}
