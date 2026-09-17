@@ -376,7 +376,10 @@ def test_scanner_is_scheduled_by_the_capture_supervisor() -> None:
 
     assert "acquisition and scanner supervisor" in acquisition["Unit"]["Description"]
     assert acquisition["Service"]["ExecStart"].endswith("run-adaptive-scanner-cycle")
-    assert "leo acquire run" in (PROJECT_ROOT / "deploy/scripts/run-adaptive-scanner-cycle").read_text()
+    assert (
+        "leo acquire run"
+        in (PROJECT_ROOT / "deploy/scripts/run-adaptive-scanner-cycle").read_text()
+    )
     assert not (UNIT_ROOT / "leo-scanner.service").exists()
     assert not (UNIT_ROOT / "leo-scanner.timer").exists()
     assert not (PROJECT_ROOT / "deploy/scripts/run-periodic-starlink-scan").exists()
