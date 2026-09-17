@@ -6,6 +6,7 @@ import argparse
 import json
 import time
 from pathlib import Path
+from typing import Literal, cast
 
 import numpy as np
 import zstandard as zstd
@@ -63,14 +64,24 @@ def _load(path: Path) -> tuple[dict, bytes]:
     return document, payload
 
 
-def _decision_configuration(rate: int, digest: str):
+def _decision_configuration(
+    rate: int, digest: str
+) -> HostDecisionConfigurationV1 | HostDecisionConfigurationV2:
     detector_digest = f"sha256:{digest}"
     if rate == 10_000_000:
         return HostDecisionConfigurationV1(detector_manifest_sha256=detector_digest)
-    factor, taps, delay = {15_000_000: (6, 201, 100), 20_000_000: (8, 257, 128)}[rate]
+    if rate not in (15_000_000, 20_000_000):
+        raise ValueError("firmware adaptive source rate is unsupported")
+    wide_rate = cast(Literal[15_000_000, 20_000_000], rate)
+    if wide_rate == 15_000_000:
+        factor: Literal[6, 8] = 6
+        taps: Literal[201, 257] = 201
+        delay: Literal[100, 128] = 100
+    else:
+        factor, taps, delay = 8, 257, 128
     return HostDecisionConfigurationV2(
         detector_manifest_sha256=detector_digest,
-        source_rate_hz=rate,
+        source_rate_hz=wide_rate,
         decimation_factor=factor,
         filter_taps=taps,
         group_delay_source_samples=delay,
@@ -93,47 +104,58 @@ def _settings(value: dict) -> RadioSettingsV1:
     )
 
 
-def _plan(document: dict):
+def _plan(document: dict) -> HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3:
     setup = document["setup"]
     rate = int(setup["source_rate_hz"])
     profiles = tuple(
         PersistentHopProfileV1(target_index=index, fastlock_profile_index=index, target=target)
         for index, target in enumerate(scheduled_low_band_targets(bandwidth_hz=5_000_000))
     )
-    geometry_fields = dict(
+    policy = AdaptiveHopPolicyV1(mode="adaptive", generation=int(setup["generation"]))
+    decision = _decision_configuration(rate, setup["analysis_digest"])
+    if rate == 10_000_000:
+        geometry = SingleRxPersistentHopPlanV2(
+            receiver_ids=(0,),
+            gain_db=40.0,
+            transition_guard_samples=rate // 1000,
+            samples_per_block=1_000_000,
+            kernel_buffers=16,
+            profiles=profiles,
+        )
+        return HostAdaptiveHopPlanV2(
+            geometry=geometry,
+            classification_receiver=0,
+            policy=policy,
+            decision=cast(HostDecisionConfigurationV1, decision),
+        )
+    wide_rate = cast(Literal[15_000_000, 20_000_000], rate)
+    wide_geometry = SingleRxMultiratePersistentHopPlanV3(
+        sample_rate_hz=wide_rate,
+        bandwidth_hz=wide_rate,
         receiver_ids=(0,),
         gain_db=40.0,
-        # Firmware's 20 ms transition budget includes retune time.  Its delivered
-        # valid interval begins after that whole budget; retain the canonical
-        # 1 ms post-transition guard and account for the rest as transition time.
-        transition_guard_samples=rate // 1000,
+        transition_guard_samples=wide_rate // 1000,
         samples_per_block=1_000_000,
         kernel_buffers=16,
         profiles=profiles,
     )
-    geometry = (
-        SingleRxPersistentHopPlanV2(**geometry_fields)
-        if rate == 10_000_000
-        else SingleRxMultiratePersistentHopPlanV3(
-            sample_rate_hz=rate, bandwidth_hz=rate, **geometry_fields
-        )
-    )
-    model = HostAdaptiveHopPlanV2 if rate == 10_000_000 else HostAdaptiveHopPlanV3
-    return model(
-        geometry=geometry,
+    return HostAdaptiveHopPlanV3(
+        geometry=wide_geometry,
         classification_receiver=0,
-        policy=AdaptiveHopPolicyV1(mode="adaptive", generation=int(setup["generation"])),
-        decision=_decision_configuration(rate, setup["analysis_digest"]),
+        policy=policy,
+        decision=cast(HostDecisionConfigurationV2, decision),
     )
 
 
-def _events(document: dict, plan) -> tuple[AdaptiveHopEventV1, ...]:
+def _events(
+    document: dict, plan: HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3
+) -> tuple[AdaptiveHopEventV1, ...]:
     by_frequency = {
         target.if_center_hz: index
         for index, target in enumerate(scheduled_low_band_targets(bandwidth_hz=5_000_000))
     }
-    events = []
-    previous_end = None
+    events: list[AdaptiveHopEventV1] = []
+    previous_end: int | None = None
     source_first = max(
         0,
         int(document["visits"][-1]["record"]["valid_end"])
@@ -251,9 +273,11 @@ def _receipt(document: dict, archive_digest: str):
             feedback_error="firmware feedback is preserved in the source archive",
         )
         records.append(
-            HostDecisionRecordV1(**common)
+            HostDecisionRecordV1.model_validate(common)
             if plan.geometry.sample_rate_hz == 10_000_000
-            else HostDecisionRecordV2(source_rate_hz=plan.geometry.sample_rate_hz, **common)
+            else HostDecisionRecordV2.model_validate(
+                {**common, "source_rate_hz": plan.geometry.sample_rate_hz}
+            )
         )
     common_receipt = dict(
         session_id=session_id,
