@@ -66,7 +66,9 @@ def test_default_adapter_lazily_constructs_exact_ppu_deployment(
     assert arguments["binary_path"] == configuration.binary_path
     assert arguments["known_hosts_path"] == configuration.known_hosts_path
     assert arguments["password_path"] == configuration.password_path
-    assert callable(arguments["serial_probe"])
+    # PPU owns endpoint attestation.  In particular, its v0.52-aware default
+    # configures the physical 1R1T/RX0 layout before probing radio 003a.
+    assert "serial_probe" not in arguments
     lifecycle.enter_and_attest()
     lifecycle.exit_and_verify()
 
