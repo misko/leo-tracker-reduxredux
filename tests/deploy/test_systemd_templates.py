@@ -157,12 +157,16 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
     soak = _unit("leo-acquisition-soak.service")["Service"]
     api = _unit("leo-api.service")["Service"]
 
-    assert acquisition["ExecStart"].endswith(
-        "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} "
-        "--radio ${LEO_SCANNER_RADIO_ID} "
-        "--interval-seconds ${LEO_SCANNER_INTERVAL_SECONDS} "
-        "--scanner-only --max-scanner-runs 1"
+    assert acquisition["ExecStart"] == (
+        "/opt/leo-tracker/current-acquisition/deploy/scripts/run-adaptive-scanner-cycle"
     )
+    cycle = (PROJECT_ROOT / "deploy/scripts/run-adaptive-scanner-cycle").read_text()
+    assert "/.venv/bin/leo acquire run" in cycle
+    assert '--profile "${LEO_CAPTURE_PROFILE}"' in cycle
+    assert '--radio "${LEO_SCANNER_RADIO_ID}"' in cycle
+    assert '--interval-seconds "${LEO_SCANNER_INTERVAL_SECONDS}"' in cycle
+    assert "--scanner-only" in cycle
+    assert "--max-scanner-runs 1" in cycle
     assert acquisition["Restart"] == "always"
     assert "radio_pluto_5d4d" not in acquisition["ExecStart"]
     assert "--mixed-rate-policy" not in acquisition["ExecStart"]
@@ -200,6 +204,12 @@ def test_every_python_service_forces_bytecode_suppression_at_exec_boundary() -> 
         text = path.read_text()
         service = _unit(path.name)["Service"]
         command = shlex.split(service["ExecStart"])
+        if not any("/.venv/bin/" in argument for argument in command):
+            assert path.name == "leo-acquisition.service"
+            assert command == [
+                "/opt/leo-tracker/current-acquisition/deploy/scripts/run-adaptive-scanner-cycle"
+            ]
+            continue
         executable_index = next(
             index for index, argument in enumerate(command) if "/.venv/bin/" in argument
         )
@@ -365,7 +375,8 @@ def test_scanner_is_scheduled_by_the_capture_supervisor() -> None:
     readme = (UNIT_ROOT / "README.md").read_text()
 
     assert "acquisition and scanner supervisor" in acquisition["Unit"]["Description"]
-    assert "leo acquire run" in acquisition["Service"]["ExecStart"]
+    assert acquisition["Service"]["ExecStart"].endswith("run-adaptive-scanner-cycle")
+    assert "leo acquire run" in (PROJECT_ROOT / "deploy/scripts/run-adaptive-scanner-cycle").read_text()
     assert not (UNIT_ROOT / "leo-scanner.service").exists()
     assert not (UNIT_ROOT / "leo-scanner.timer").exists()
     assert not (PROJECT_ROOT / "deploy/scripts/run-periodic-starlink-scan").exists()
