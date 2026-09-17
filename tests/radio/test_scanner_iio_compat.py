@@ -143,3 +143,9 @@ def test_host_adaptive_loader_configures_physical_rx0_layout(monkeypatch):
     assert _load_client("ip:192.168.1.17:30432", "serial") is client
     assert len(configured) == 1
     assert configured[0].receiver_channels == (0,)
+
+
+def test_receive_only_facade_supports_both_live_ad936x_model_names():
+    module = compat.scanner_adi_module()
+
+    assert module.ad9361 is module.ad9364
