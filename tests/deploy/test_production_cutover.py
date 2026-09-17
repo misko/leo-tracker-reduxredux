@@ -949,7 +949,7 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
 
     payload = _live_station_probe_payload()
     payload["radios"][0]["firmware_version"] = "v0.44-plutoplus-spf-ddr-ring-prefill-v1"
-    with pytest.raises(ValueError, match="exact qualified v0.49"):
+    with pytest.raises(ValueError, match="differs from its exact qualification"):
         _call("probe_live_station_radios", release)
 
     payload = _live_station_probe_payload()
@@ -986,6 +986,7 @@ def test_single_rx_live_probe_checks_only_selected_frozen_radio(
             radio_id="radio_pluto_003a",
             serial="104000bac4950008230026001b440a003a",
             uri="ip:192.168.1.17",
+            firmware_version="v0.52-plutoplus-spf-adaptive-scan-v1",
         )
         payload["radios"].append(replacement)
     radio = payload["radios"][selected_index]
