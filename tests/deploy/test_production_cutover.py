@@ -907,8 +907,7 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     service.parent.mkdir(parents=True)
     expected = SCRIPT_GLOBALS["EXPECTED_ACQUISITION_EXEC_START"]
     assert expected == (
-        "/opt/leo-tracker/current-acquisition/deploy/scripts/"
-        "run-adaptive-scanner-cycle"
+        "/opt/leo-tracker/current-acquisition/deploy/scripts/run-adaptive-scanner-cycle"
     )
     service.write_text(f"[Service]\nExecStart={expected}\n", encoding="utf-8")
     _call("verify_staged_acquisition_service", release)
