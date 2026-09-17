@@ -307,6 +307,8 @@ import json
 import sys
 
 from leo.radio import PlutoIioRadioSource
+from pluto_plus.hardware.iio import IioRadioDevice
+from pluto_plus.setup_profiles import AD9361_1R1T_TARGET_PROFILE
 
 targets = (
     ("radio_pluto_5d4d", "192.168.1.20", "1040005e0b100007100010000bf33a5d4d"),
@@ -318,7 +320,20 @@ radios = []
 for radio_id, host, serial in targets:
     if len(sys.argv) > 1 and radio_id != sys.argv[1]:
         continue
-    source = PlutoIioRadioSource(host, expected_serial=serial, radio_id=radio_id)
+    device_factory = None
+    if radio_id == "radio_pluto_003a":
+        def rx0_device(uri, **kwargs):
+            device = IioRadioDevice(uri, **kwargs)
+            device.configure_rx_layout(AD9361_1R1T_TARGET_PROFILE.rx_layout_expectation)
+            return device
+
+        device_factory = rx0_device
+    source = PlutoIioRadioSource(
+        host,
+        expected_serial=serial,
+        radio_id=radio_id,
+        device_factory=device_factory,
+    )
     try:
         identity = source.open()
         capabilities = source.capabilities
