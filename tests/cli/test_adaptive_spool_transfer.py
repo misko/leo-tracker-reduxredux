@@ -52,34 +52,35 @@ def test_transfer_is_incremental_and_only_reports_current_deltas(
         {"session_id": "scan-fw-second", "reason": "missing visit"},
     )
     assert first.as_json()["published_session_ids"] == ("scan-host-current",)
+    assert not (spool / "v052-adaptive" / "scan-fw-first").exists()
+    assert (spool / "v052-adaptive" / "scan-fw-second").is_dir()
 
     calls.clear()
     _Store.recovered = ()
     second = subject.transfer_pending(bulk, spool, importer=importer)
     assert calls == []
-    assert second.unchanged_count == 2
+    assert second.unchanged_count == 1
     assert second.firmware_imported_session_ids == ()
     assert second.firmware_unsupported == ()
     assert second.as_json()["firmware_imported_count"] == 0
 
 
-def test_changed_manifest_is_reimported(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_imported_archive_is_retired_after_ledger_checkpoint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     spool, bulk = tmp_path / "spool", tmp_path / "bulk"
     bulk.mkdir()
     archive = _archive(spool, "scan-fw-change", b"before")
     monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
-    calls: list[bytes] = []
 
     def importer(path: Path, _bulk: Path) -> tuple[str, str]:
-        calls.append((path / "manifest.json").read_bytes())
         return "imported", path.name
 
-    subject.transfer_pending(bulk, spool, importer=importer)
-    (archive / "manifest.json").write_bytes(b"after")
     result = subject.transfer_pending(bulk, spool, importer=importer)
-    assert calls == [b"before", b"after"]
     assert result.firmware_imported_session_ids == ("scan-fw-change",)
-    assert result.unchanged_count == 0
+    assert not archive.exists()
+    ledger = json.loads((spool / subject._LEDGER_NAME).read_bytes())
+    assert ledger["entries"]["scan-fw-change"]["status"] == "imported"
 
 
 def test_changed_importer_revisits_an_unchanged_unsupported_archive(
@@ -129,7 +130,7 @@ def test_ledger_checkpoints_each_archive_before_later_failure(
     calls.clear()
     inject_failure = False
     result = subject.transfer_pending(bulk, spool, importer=failing)
-    assert result.unchanged_count == 1
+    assert result.unchanged_count == 0
     assert result.firmware_imported_session_ids == ("scan-fw-a",)
 
 
@@ -158,8 +159,47 @@ def test_firmware_reconciliation_can_be_bounded_between_capture_slots(
         bulk, spool, importer=importer, maximum_firmware_imports=1
     )
     assert calls == ["scan-fw-b"]
-    assert second.unchanged_count == 1
+    assert second.unchanged_count == 0
     assert second.deferred_firmware_count == 1
+
+
+def test_failed_and_unsupported_archives_are_not_retired(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spool, bulk = tmp_path / "spool", tmp_path / "bulk"
+    bulk.mkdir()
+    failed = _archive(spool, "scan-fw-failed", b"failed")
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
+
+    def failure(_archive: Path, _bulk: Path) -> tuple[str, str]:
+        raise RuntimeError("copy failed")
+
+    with pytest.raises(RuntimeError, match="copy failed"):
+        subject.transfer_pending(bulk, spool, importer=failure)
+    assert failed.is_dir()
+
+    def unsupported(archive: Path, _bulk: Path) -> tuple[str, str]:
+        return "unsupported", archive.name
+
+    result = subject.transfer_pending(bulk, spool, importer=unsupported)
+    assert result.firmware_unsupported
+    assert failed.is_dir()
+
+
+def test_interrupted_retirement_is_finished_before_import(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spool, bulk = tmp_path / "spool", tmp_path / "bulk"
+    bulk.mkdir()
+    retired = _archive(spool, ".retired-scan-fw-old", b"old")
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
+
+    result = subject.transfer_pending(
+        bulk, spool, importer=lambda archive, _bulk: ("imported", archive.name)
+    )
+
+    assert not retired.exists()
+    assert result.firmware_imported_session_ids == ()
 
 
 def test_bounded_reconciliation_prioritizes_newest_capture(
