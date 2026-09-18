@@ -1,0 +1,27 @@
+[Unit]
+Description=LEO adaptive scanner analysis queue worker %i
+After=network-online.target local-fs.target postgresql.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker/current-worker
+EnvironmentFile=/etc/leo/leo.env
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+ExecStart=/opt/leo-tracker/current-worker/.venv/bin/python -m leo.cli.adaptive_processing_queue worker --worker-id adaptive-worker-%i --bulk-root /srv/bulk/leo
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=60s
+Nice=10
+CPUWeight=100
+IOWeight=100
+IOSchedulingClass=idle
+OOMScoreAdjust=500
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo
+InaccessiblePaths=/mnt/qnap01
+

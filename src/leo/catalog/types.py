@@ -42,6 +42,20 @@ class JobLease:
 
 
 @dataclass(frozen=True, slots=True)
+class AdaptiveAnalysisJobLease:
+    """Lease for an adaptive scanner job carried by the shared processing queue."""
+
+    job_id: int
+    session_id: str
+    input_manifest_digest: str
+    configuration_digest: str
+    attempt_number: int
+    worker_id: str
+    lease_expires_at: datetime
+    resource_class: str
+
+
+@dataclass(frozen=True, slots=True)
 class AcquisitionOperationRecord:
     operation_id: int
     operation_key: str

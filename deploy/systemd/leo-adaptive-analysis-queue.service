@@ -1,0 +1,22 @@
+[Unit]
+Description=Enqueue published adaptive scanner analyses in shared processing queue
+After=local-fs.target postgresql.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker/current-worker
+EnvironmentFile=/etc/leo/leo.env
+ExecStart=/opt/leo-tracker/current-worker/.venv/bin/python -m leo.cli.adaptive_processing_queue enqueue --bulk-root /srv/bulk/leo
+Nice=15
+CPUWeight=25
+IOWeight=25
+IOSchedulingClass=idle
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo
+InaccessiblePaths=/mnt/qnap01
+
