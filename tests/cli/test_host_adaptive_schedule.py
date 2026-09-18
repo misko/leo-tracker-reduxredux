@@ -238,7 +238,7 @@ def test_native_capture_retries_reuse_exact_receiver_and_recording(tmp_path, mod
         store.close()
 
 
-def test_restart_reproduces_rx_selection_and_mode_change_rejects_old_intent(tmp_path):
+def test_restart_executes_persisted_profile_mode_and_receiver(tmp_path):
     backend, radio, store, _ = fixture(tmp_path)
     try:
         slots = [datetime(2026, 9, 13, tzinfo=UTC) + timedelta(minutes=10 * i) for i in range(20)]
@@ -246,11 +246,17 @@ def test_restart_reproduces_rx_selection_and_mode_change_rejects_old_intent(tmp_
         assert {item.configuration.receiver_ids for item in scheduled} == {(0,), (1,)}
         assert [intent(backend, slot) for slot in slots] == scheduled
         changed = LocalAcquisitionBackend(
-            replace(backend.settings, scanner_hop_policy="shadow"), backend.hooks
+            replace(
+                backend.settings,
+                scanner_profile=HOST_ADAPTIVE_RX0_PROFILE_ID,
+                scanner_hop_policy="shadow",
+            ),
+            backend.hooks,
         )
-        with pytest.raises(CliBackendError):
-            changed.capture_scheduled_scanner(scheduled[0], cancel=Event())
-        assert radio.open_count == 0
+        captured = changed.capture_scheduled_scanner(scheduled[0], cancel=Event())
+        assert captured.intent == scheduled[0]
+        assert captured.published.manifest.receipt.plan.policy.mode == "adaptive"
+        assert radio.open_count == 1
     finally:
         store.close()
 

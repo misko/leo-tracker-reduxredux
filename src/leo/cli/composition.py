@@ -1582,17 +1582,43 @@ class LocalAcquisitionBackend:
     ) -> ScheduledScannerRunLike:
         if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
-        expected = self.scheduled_scanner_intent(
-            operation_key=intent.operation_key,
-            scheduled_for=intent.scheduled_for,
+        host_adaptive_intent = isinstance(
+            intent,
+            (
+                HostAdaptiveScheduledScannerIntentV4,
+                HostAdaptiveRx0ScheduledScannerIntentV5,
+                HostAdaptiveRx0MultirateScheduledScannerIntentV6,
+            ),
         )
-        if intent != expected:
-            raise CliBackendError(
-                "scheduled scanner intent disagrees with runtime policy",
-                ExitCode.INVALID_CONFIGURATION,
+        if host_adaptive_intent:
+            # The queue payload is the immutable authority for this slot.  In
+            # particular, do not recompile it from the process's current
+            # profile, mode, or detector release: those may legitimately have
+            # changed between persistence and a retry after restart.
+            configured = next(
+                (radio for radio in self.settings.radios if radio.radio_id == intent.radio_id),
+                None,
             )
-        if self.settings.scanner_capture_mode == "persistent_hop":
             if (
+                configured is None
+                or (configured.serial or configured.radio_id) != intent.radio_serial
+            ):
+                raise CliBackendError(
+                    "durable host adaptive intent disagrees with configured radio identity",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+        else:
+            expected = self.scheduled_scanner_intent(
+                operation_key=intent.operation_key,
+                scheduled_for=intent.scheduled_for,
+            )
+            if intent != expected:
+                raise CliBackendError(
+                    "scheduled scanner intent disagrees with runtime policy",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+        if self.settings.scanner_capture_mode == "persistent_hop":
+            if host_adaptive_intent or (
                 self.settings.scanner_hop_policy != "fixed"
                 and intent.configuration.sample_rate_hz
                 in self.settings.scanner_adaptive_sample_rates_hz
@@ -1928,7 +1954,7 @@ class LocalAcquisitionBackend:
                 samples_per_block=self.settings.scanner_persistent_samples_per_block,
             )
         )
-        mode = self.settings.scanner_hop_policy
+        mode = host_plan.policy.mode if host_plan is not None else self.settings.scanner_hop_policy
         options = self.settings.scanner_glrt
         assert mode in ("shadow", "adaptive") and (options is not None or host_plan is not None)
         session_id = f"scan-hop-{intent.intent_digest.removeprefix('sha256:')[:16]}"
