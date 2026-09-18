@@ -7,6 +7,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
     HostAdaptiveHopReceiptV4,
+    HostAdaptiveHopReceiptV5,
     HostAdaptiveHopTerminalV2,
     HostDecisionConfigurationV1,
     HostDecisionConfigurationV2,
@@ -183,6 +184,37 @@ def sparse_multirate_host_receipt(*, rate=20_000_000, **kwargs):
         dense.duty_denominator_sample_count - valid - dense.transition_invalid_sample_count
     )
     return HostAdaptiveHopReceiptV4(
+        **dense.model_dump(
+            exclude={
+                "schema_version",
+                "complete_visit_count",
+                "valid_sample_count",
+                "unclassified_sample_count",
+                "valid_duty_ppm",
+                "duty_target_met",
+                "host_decisions",
+            }
+        ),
+        retained_visit_indices=retained,
+        transport_missing_sample_count=unclassified,
+        complete_visit_count=len(retained),
+        valid_sample_count=valid,
+        unclassified_sample_count=unclassified,
+        valid_duty_ppm=valid * 1_000_000 // dense.duty_denominator_sample_count,
+        duty_target_met=False,
+        host_decisions=tuple(dense.host_decisions[index] for index in retained),
+    )
+
+
+def sparse_host_receipt(**kwargs):
+    """Native-10M completed source with one explicitly absent IQ visit."""
+    dense = host_receipt(count=7, **kwargs)
+    retained = (0, 1, 3, 4, 5)
+    valid = len(retained) * dense.plan.geometry.valid_visit_samples
+    unclassified = (
+        dense.duty_denominator_sample_count - valid - dense.transition_invalid_sample_count
+    )
+    return HostAdaptiveHopReceiptV5(
         **dense.model_dump(
             exclude={
                 "schema_version",

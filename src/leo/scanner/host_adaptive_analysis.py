@@ -25,6 +25,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
     HostAdaptiveHopReceiptV4,
+    HostAdaptiveHopReceiptV5,
 )
 
 
@@ -94,9 +95,18 @@ class HostAdaptiveAnalysisSourceV4(HostAdaptiveAnalysisSourceV3):
     receipt: HostAdaptiveHopReceiptV4 = field(init=False)
 
 
+@dataclass(frozen=True, slots=True)
+class HostAdaptiveAnalysisSourceV5(HostAdaptiveAnalysisSource):
+    _receipt_model: ClassVar[type[HostAdaptiveHopReceiptV5]] = HostAdaptiveHopReceiptV5
+    receipt: HostAdaptiveHopReceiptV5 = field(init=False)
+
+
 def _configuration(
     source: (
-        HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3 | HostAdaptiveAnalysisSourceV4
+        HostAdaptiveAnalysisSource
+        | HostAdaptiveAnalysisSourceV3
+        | HostAdaptiveAnalysisSourceV4
+        | HostAdaptiveAnalysisSourceV5
     ),
     value: HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3 | None,
 ) -> HostAdaptiveAnalysisConfigurationV2 | HostAdaptiveAnalysisConfigurationV3:
@@ -125,7 +135,10 @@ def _configuration(
 
 def analyze_host_adaptive_visit(
     source: (
-        HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3 | HostAdaptiveAnalysisSourceV4
+        HostAdaptiveAnalysisSource
+        | HostAdaptiveAnalysisSourceV3
+        | HostAdaptiveAnalysisSourceV4
+        | HostAdaptiveAnalysisSourceV5
     ),
     visit_index: int,
     *,
@@ -148,7 +161,10 @@ def analyze_host_adaptive_visit(
 
 def analyze_host_adaptive_visit_batch(
     source: (
-        HostAdaptiveAnalysisSource | HostAdaptiveAnalysisSourceV3 | HostAdaptiveAnalysisSourceV4
+        HostAdaptiveAnalysisSource
+        | HostAdaptiveAnalysisSourceV3
+        | HostAdaptiveAnalysisSourceV4
+        | HostAdaptiveAnalysisSourceV5
     ),
     visit_indexes: tuple[int, ...],
     *,
@@ -179,14 +195,21 @@ def analyze_host_adaptive_visit_batch(
 
 def validate_host_adaptive_analysis_binding(
     product: HostAdaptiveVisitAnalysisV2 | HostAdaptiveVisitAnalysisV3,
-    receipt: HostAdaptiveHopReceiptV2 | HostAdaptiveHopReceiptV3 | HostAdaptiveHopReceiptV4,
+    receipt: (
+        HostAdaptiveHopReceiptV2
+        | HostAdaptiveHopReceiptV3
+        | HostAdaptiveHopReceiptV4
+        | HostAdaptiveHopReceiptV5
+    ),
     *,
     input_manifest_sha256: str,
 ) -> None:
     wide = isinstance(receipt, HostAdaptiveHopReceiptV3)
     product_model = HostAdaptiveVisitAnalysisV3 if wide else HostAdaptiveVisitAnalysisV2
     receipt_model = (
-        HostAdaptiveHopReceiptV4
+        HostAdaptiveHopReceiptV5
+        if isinstance(receipt, HostAdaptiveHopReceiptV5)
+        else HostAdaptiveHopReceiptV4
         if isinstance(receipt, HostAdaptiveHopReceiptV4)
         else HostAdaptiveHopReceiptV3
         if wide
