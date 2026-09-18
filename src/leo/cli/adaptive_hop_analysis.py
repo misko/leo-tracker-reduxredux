@@ -60,7 +60,7 @@ def next_pending(captures, presentation, *, probe_stride_ms: int) -> str | None:
     """
     selected = None
     for capture in captures.iter_sessions():
-        status = presentation.status(capture.session_id, probe_stride_ms=probe_stride_ms)
+        status = presentation.status_for_capture(capture, probe_stride_ms=probe_stride_ms)
         if status is None:
             raise ValueError("published adaptive capture disappeared during selection")
         if status.state == "figures_ready":
@@ -93,7 +93,7 @@ def pending_sessions(
     pending = []
     current = None
     for capture in captures.iter_sessions():
-        status = presentation.status(capture.session_id, probe_stride_ms=probe_stride_ms)
+        status = presentation.status_for_capture(capture, probe_stride_ms=probe_stride_ms)
         if status is None:
             raise ValueError("published adaptive capture disappeared during selection")
         if status.state != "figures_ready":

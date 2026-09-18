@@ -51,6 +51,25 @@ class AdaptiveHopAnalysisPresentationStore:
         binding = self._binding(session_id, probe_stride_ms)
         if binding is None:
             return None
+        return self._status(binding)
+
+    def status_for_capture(
+        self, capture, *, probe_stride_ms: int = 10
+    ) -> AdaptiveHopAnalysisStatusV1:
+        """Read status for an already validated capture without reopening its manifest."""
+        binding = bind_actual_visit_analysis(
+            capture.manifest.receipt,
+            input_manifest_sha256=capture.manifest_sha256,
+            probe_stride_ms=probe_stride_ms,
+        )
+        return self._status(binding)
+
+    def _status(
+        self,
+        binding: AdaptiveHopAnalysisBindingV1
+        | HostAdaptiveAnalysisBindingV2
+        | HostAdaptiveAnalysisBindingV3,
+    ) -> AdaptiveHopAnalysisStatusV1:
         store = AdaptiveHopAnalysisStore(self._root, read_only=True)
         try:
             try:
@@ -65,7 +84,7 @@ class AdaptiveHopAnalysisPresentationStore:
                     else AdaptiveHopAnalysisStatusV1
                 )
                 return status_model(
-                    session_id=session_id,
+                    session_id=binding.session_id,
                     input_manifest_sha256=binding.input_manifest_sha256,
                     binding_sha256=binding.sha256,
                     configuration=binding.configuration,
