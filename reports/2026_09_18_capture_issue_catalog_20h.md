@@ -76,3 +76,15 @@ The acceptance dashboard should report four distinct quantities per rate:
 scheduled slots, successful firmware terminals, importer-accepted sessions, and
 analysis-qualified sessions. Collapsing these into one “capture success” number
 would hide both firmware loss and recoverable sparse data.
+
+## Filed follow-ups
+
+| Finding | Tracking issue |
+|---|---|
+| Rate-dependent firmware `ETIME` and skipped-transition behavior | [`plutosdr-fw#106`](https://github.com/misko/plutosdr-fw/issues/106), updated with the 20-hour production cohort and exact acceptance campaign |
+| Qualified device-counter to UTC timing | [`plutosdr-fw#107`](https://github.com/misko/plutosdr-fw/issues/107) |
+| Alternate iiOD lifecycle readiness | [`pluto-plus-utils#121`](https://github.com/misko/pluto-plus-utils/issues/121) |
+| Metadata-buffer capability negotiation | [`libiio#12`](https://github.com/misko/libiio/issues/12) |
+| Sparse firmware archive import and incorrect rate diagnostic | [`leo-tracker-reduxredux#29`](https://github.com/misko/leo-tracker-reduxredux/issues/29) |
+| Durable-slot idempotency | [`leo-tracker-reduxredux#30`](https://github.com/misko/leo-tracker-reduxredux/issues/30) |
+| Transfer/import memory and incremental reconciliation | [`leo-tracker-reduxredux#31`](https://github.com/misko/leo-tracker-reduxredux/issues/31) |
