@@ -90,6 +90,7 @@ from leo.catalog.types import (
     AcquisitionOperationLease,
     AcquisitionOperationRecord,
     ActiveJobRecord,
+    AdaptiveAnalysisJobLease,
     CapturePathAuthorityRecord,
     CaptureReceiverBinding,
     CaptureRecordingIdentity,
@@ -1987,6 +1988,8 @@ class CatalogRepository:
             dependency_node_ids = tuple(
                 item for item in raw_dependency_node_ids if item is not None
             )
+            if job.run_id is None:
+                raise InvalidStateError("pipeline job lacks analysis run")
             return JobLease(
                 job_id=job.id,
                 run_id=job.run_id,
@@ -2209,6 +2212,132 @@ class CatalogRepository:
             attempt.completed_at = now
             job.state = JobState.SUCCEEDED.value
             job.outcome = outcome
+            job.error = None
+            _clear_lease(job)
+
+    def enqueue_adaptive_analysis_job(
+        self,
+        *,
+        session_id: str,
+        input_manifest_digest: str,
+        configuration_digest: str,
+        priority: int = 0,
+        resource_class: str = "memory",
+    ) -> bool:
+        """Create one immutable adaptive job in the shared processing queue."""
+        if resource_class not in {"streaming", "cpu", "memory", "heavy"}:
+            raise ValueError("job resource class is outside the finite scheduler vocabulary")
+        with self._sessions.begin() as session:
+            existing = session.scalar(
+                select(ProcessingJob.id).where(
+                    ProcessingJob.job_kind == "adaptive_scan",
+                    ProcessingJob.adaptive_session_id == session_id,
+                    ProcessingJob.adaptive_input_manifest_digest == input_manifest_digest,
+                    ProcessingJob.adaptive_configuration_digest == configuration_digest,
+                )
+            )
+            if existing is not None:
+                return False
+            session.add(
+                ProcessingJob(
+                    run_id=None,
+                    job_kind="adaptive_scan",
+                    adaptive_session_id=session_id,
+                    adaptive_input_manifest_digest=input_manifest_digest,
+                    adaptive_configuration_digest=configuration_digest,
+                    stage_key="adaptive-analysis-v1",
+                    scope_key="session",
+                    resource_class=resource_class,
+                    iq_access="none",
+                    priority=priority,
+                    max_attempts=32,
+                )
+            )
+            return True
+
+    def claim_adaptive_analysis_job(
+        self, *, worker_id: str, lease_for: timedelta
+    ) -> AdaptiveAnalysisJobLease | None:
+        _require_positive_duration(lease_for)
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            session.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                {"key": "processing-resource:memory"},
+            )
+            capacity = session.scalar(
+                select(ProcessingResourceCapacity.maximum_leases).where(
+                    ProcessingResourceCapacity.resource_class == "memory"
+                )
+            )
+            if capacity is None:
+                raise InvalidStateError("resource capacity is absent: memory")
+            leased = session.scalar(
+                select(func.count()).select_from(ProcessingJob).where(
+                    ProcessingJob.state == JobState.LEASED.value,
+                    ProcessingJob.resource_class == "memory",
+                    ProcessingJob.lease_expires_at > now,
+                )
+            )
+            if int(leased or 0) >= capacity:
+                return None
+            job = session.execute(
+                select(ProcessingJob)
+                .where(
+                    ProcessingJob.job_kind == "adaptive_scan",
+                    ProcessingJob.state == JobState.PENDING.value,
+                    ProcessingJob.available_at <= now,
+                    ProcessingJob.attempt_count < ProcessingJob.max_attempts,
+                )
+                .order_by(ProcessingJob.priority.desc(), ProcessingJob.created_at, ProcessingJob.id)
+                .with_for_update(skip_locked=True)
+                .limit(1)
+            ).scalar_one_or_none()
+            if job is None:
+                return None
+            job.state = JobState.LEASED.value
+            job.attempt_count += 1
+            job.lease_owner = worker_id
+            job.lease_expires_at = now + lease_for
+            job.heartbeat_at = now
+            session.add(
+                ProcessingJobAttempt(
+                    job_id=job.id,
+                    attempt_number=job.attempt_count,
+                    worker_id=worker_id,
+                    state=AttemptState.LEASED.value,
+                    lease_expires_at=job.lease_expires_at,
+                )
+            )
+            if (
+                job.adaptive_session_id is None
+                or job.adaptive_input_manifest_digest is None
+                or job.adaptive_configuration_digest is None
+            ):
+                raise InvalidStateError("adaptive queue job lacks immutable binding")
+            return AdaptiveAnalysisJobLease(
+                job_id=job.id,
+                session_id=job.adaptive_session_id,
+                input_manifest_digest=job.adaptive_input_manifest_digest,
+                configuration_digest=job.adaptive_configuration_digest,
+                attempt_number=job.attempt_count,
+                worker_id=worker_id,
+                lease_expires_at=job.lease_expires_at,
+                resource_class=job.resource_class,
+            )
+
+    def yield_adaptive_analysis_job(self, *, job_id: int, worker_id: str) -> None:
+        """Requeue a checkpointed slice without treating it as a failed attempt."""
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            job = _locked_job(session, job_id)
+            _require_live_lease(job, worker_id, now)
+            if job.job_kind != "adaptive_scan":
+                raise InvalidStateError("job is not adaptive")
+            session.delete(_current_attempt(session, job))
+            job.attempt_count -= 1
+            job.state = JobState.PENDING.value
+            job.available_at = now
             job.error = None
             _clear_lease(job)
 

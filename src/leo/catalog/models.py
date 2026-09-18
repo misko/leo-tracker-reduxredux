@@ -858,9 +858,15 @@ class ProcessingJob(Base):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    run_id: Mapped[str] = mapped_column(
-        ForeignKey("analysis_run.id", ondelete="CASCADE"), nullable=False, index=True
+    run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="CASCADE"), index=True
     )
+    job_kind: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pipeline_stage", server_default="pipeline_stage"
+    )
+    adaptive_session_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    adaptive_input_manifest_digest: Mapped[str | None] = mapped_column(String(71))
+    adaptive_configuration_digest: Mapped[str | None] = mapped_column(String(71))
     stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
     node_id: Mapped[str | None] = mapped_column(String(128))
     resource_class: Mapped[str] = mapped_column(
