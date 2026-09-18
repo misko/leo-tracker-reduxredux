@@ -9,7 +9,7 @@ User=leo
 Group=leo
 WorkingDirectory=/opt/leo-tracker/current-worker
 EnvironmentFile=/etc/leo/leo.env
-ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-worker/.venv/bin/python -m leo.cli.adaptive_processing_queue enqueue --bulk-root /srv/bulk/leo
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-worker/.venv/bin/python -m leo.cli.adaptive_processing_queue --bulk-root /srv/bulk/leo enqueue
 Nice=15
 CPUWeight=25
 IOWeight=25

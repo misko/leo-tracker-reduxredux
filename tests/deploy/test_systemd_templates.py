@@ -232,7 +232,6 @@ def test_every_systemd_cli_command_exists_in_the_real_inventory() -> None:
     assert isinstance(process, TyperGroup)
     assert {"run", "qualify", "soak"} <= acquire.commands.keys()
     assert {"worker", "reconcile", "retention-run"} <= process.commands.keys()
-
     retention = process.commands["retention-run"]
     automatic = next(
         parameter
@@ -241,6 +240,14 @@ def test_every_systemd_cli_command_exists_in_the_real_inventory() -> None:
     )
     assert getattr(automatic, "hidden", False)
 
+
+def test_adaptive_analysis_units_put_global_arguments_before_the_subcommand() -> None:
+    for unit, subcommand in (
+        ("leo-adaptive-analysis-queue.service", "enqueue"),
+        ("leo-adaptive-analysis-worker@.service", "worker"),
+    ):
+        command = shlex.split(_unit(unit)["Service"]["ExecStart"])
+        assert command.index("--bulk-root") < command.index(subcommand)
 
 def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     acquisition = _unit("leo-acquisition.service")["Service"]
