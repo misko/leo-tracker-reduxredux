@@ -206,7 +206,14 @@ def transfer_pending(
         deferred = 0
         firmware_root = spool_root / "v052-adaptive"
         importer_digest = _importer_digest(importer)
-        for manifest in sorted(firmware_root.glob("scan-fw-*/manifest.json")):
+        # Publish the newest sealed capture first.  A historical backlog must not
+        # delay the current scan from reaching the scanner page for hours.
+        manifests = sorted(
+            firmware_root.glob("scan-fw-*/manifest.json"),
+            key=lambda path: (path.stat().st_mtime_ns, path.parent.name),
+            reverse=True,
+        )
+        for manifest in manifests:
             session_id = manifest.parent.name
             digest = _manifest_digest(manifest)
             previous = ledger.get(session_id)
