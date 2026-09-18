@@ -2230,13 +2230,55 @@ class CatalogRepository:
         priority: int = 0,
         resource_class: str = "memory",
     ) -> bool:
-        """Create one immutable adaptive job in the shared processing queue."""
+        """Create one immutable adaptive metrics job in the shared processing queue."""
+        return self._enqueue_adaptive_job(
+            job_kind="adaptive_scan",
+            stage_key="adaptive-analysis-v1",
+            session_id=session_id,
+            input_manifest_digest=input_manifest_digest,
+            configuration_digest=configuration_digest,
+            priority=priority,
+            resource_class=resource_class,
+        )
+
+    def enqueue_adaptive_tracking_job(
+        self,
+        *,
+        session_id: str,
+        input_manifest_digest: str,
+        configuration_digest: str,
+        priority: int = 0,
+    ) -> bool:
+        """Create one immutable adaptive trajectory/TLE job in the shared queue."""
+        return self._enqueue_adaptive_job(
+            job_kind="adaptive_tracking",
+            stage_key="adaptive-tracking-v2",
+            session_id=session_id,
+            input_manifest_digest=input_manifest_digest,
+            configuration_digest=configuration_digest,
+            priority=priority,
+            resource_class="heavy",
+        )
+
+    def _enqueue_adaptive_job(
+        self,
+        *,
+        job_kind: str,
+        stage_key: str,
+        session_id: str,
+        input_manifest_digest: str,
+        configuration_digest: str,
+        priority: int,
+        resource_class: str,
+    ) -> bool:
         if resource_class not in {"streaming", "cpu", "memory", "heavy"}:
             raise ValueError("job resource class is outside the finite scheduler vocabulary")
+        if job_kind not in {"adaptive_scan", "adaptive_tracking"}:
+            raise ValueError("adaptive job kind is not supported")
         with self._sessions.begin() as session:
             existing = session.scalar(
                 select(ProcessingJob.id).where(
-                    ProcessingJob.job_kind == "adaptive_scan",
+                    ProcessingJob.job_kind == job_kind,
                     ProcessingJob.adaptive_session_id == session_id,
                     ProcessingJob.adaptive_input_manifest_digest == input_manifest_digest,
                     ProcessingJob.adaptive_configuration_digest == configuration_digest,
@@ -2247,11 +2289,11 @@ class CatalogRepository:
             session.add(
                 ProcessingJob(
                     run_id=None,
-                    job_kind="adaptive_scan",
+                    job_kind=job_kind,
                     adaptive_session_id=session_id,
                     adaptive_input_manifest_digest=input_manifest_digest,
                     adaptive_configuration_digest=configuration_digest,
-                    stage_key="adaptive-analysis-v1",
+                    stage_key=stage_key,
                     scope_key="session",
                     resource_class=resource_class,
                     iq_access="none",
@@ -2261,41 +2303,46 @@ class CatalogRepository:
             )
             return True
 
-    def claim_adaptive_analysis_job(
+    def claim_adaptive_job(
         self, *, worker_id: str, lease_for: timedelta
     ) -> AdaptiveAnalysisJobLease | None:
         _require_positive_duration(lease_for)
         with self._sessions.begin() as session:
             now = _database_now(session)
-            session.execute(
-                text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
-                {"key": "processing-resource:memory"},
-            )
-            capacity = session.scalar(
-                select(ProcessingResourceCapacity.maximum_leases).where(
-                    ProcessingResourceCapacity.resource_class == "memory"
+            available_resources: list[str] = []
+            for resource_class in ("heavy", "memory"):
+                session.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                    {"key": f"processing-resource:{resource_class}"},
                 )
-            )
-            if capacity is None:
-                raise InvalidStateError("resource capacity is absent: memory")
-            leased = session.scalar(
-                select(func.count())
-                .select_from(ProcessingJob)
-                .where(
-                    ProcessingJob.state == JobState.LEASED.value,
-                    ProcessingJob.resource_class == "memory",
-                    ProcessingJob.lease_expires_at > now,
+                capacity = session.scalar(
+                    select(ProcessingResourceCapacity.maximum_leases).where(
+                        ProcessingResourceCapacity.resource_class == resource_class
+                    )
                 )
-            )
-            if int(leased or 0) >= capacity:
+                if capacity is None:
+                    raise InvalidStateError(f"resource capacity is absent: {resource_class}")
+                leased = session.scalar(
+                    select(func.count())
+                    .select_from(ProcessingJob)
+                    .where(
+                        ProcessingJob.state == JobState.LEASED.value,
+                        ProcessingJob.resource_class == resource_class,
+                        ProcessingJob.lease_expires_at > now,
+                    )
+                )
+                if int(leased or 0) < capacity:
+                    available_resources.append(resource_class)
+            if not available_resources:
                 return None
             job = session.execute(
                 select(ProcessingJob)
                 .where(
-                    ProcessingJob.job_kind == "adaptive_scan",
+                    ProcessingJob.job_kind.in_(("adaptive_scan", "adaptive_tracking")),
                     ProcessingJob.state == JobState.PENDING.value,
                     ProcessingJob.available_at <= now,
                     ProcessingJob.attempt_count < ProcessingJob.max_attempts,
+                    ProcessingJob.resource_class.in_(available_resources),
                 )
                 .order_by(ProcessingJob.priority.desc(), ProcessingJob.created_at, ProcessingJob.id)
                 .with_for_update(skip_locked=True)
@@ -2325,6 +2372,7 @@ class CatalogRepository:
                 raise InvalidStateError("adaptive queue job lacks immutable binding")
             return AdaptiveAnalysisJobLease(
                 job_id=job.id,
+                job_kind=job.job_kind,
                 session_id=job.adaptive_session_id,
                 input_manifest_digest=job.adaptive_input_manifest_digest,
                 configuration_digest=job.adaptive_configuration_digest,
@@ -2334,13 +2382,19 @@ class CatalogRepository:
                 resource_class=job.resource_class,
             )
 
+    def claim_adaptive_analysis_job(
+        self, *, worker_id: str, lease_for: timedelta
+    ) -> AdaptiveAnalysisJobLease | None:
+        """Compatibility alias for callers upgraded with the adaptive queue."""
+        return self.claim_adaptive_job(worker_id=worker_id, lease_for=lease_for)
+
     def yield_adaptive_analysis_job(self, *, job_id: int, worker_id: str) -> None:
         """Requeue a checkpointed slice without treating it as a failed attempt."""
         with self._sessions.begin() as session:
             now = _database_now(session)
             job = _locked_job(session, job_id)
             _require_live_lease(job, worker_id, now)
-            if job.job_kind != "adaptive_scan":
+            if job.job_kind not in {"adaptive_scan", "adaptive_tracking"}:
                 raise InvalidStateError("job is not adaptive")
             session.delete(_current_attempt(session, job))
             job.attempt_count -= 1
