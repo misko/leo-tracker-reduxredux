@@ -1,0 +1,70 @@
+{
+  "protocol": {
+    "selection": "minimum sha256(salt:manifest_digest:visit_index) per present target",
+    "salt": "sixteen-hour-multirate-pss-v1",
+    "frequency_bank_hz": [
+      -1200000.0,
+      -1000000.0,
+      -800000.0,
+      -600000.0,
+      -400000.0,
+      -200000.0,
+      0.0,
+      200000.0,
+      400000.0,
+      600000.0,
+      800000.0,
+      1000000.0,
+      1200000.0
+    ],
+    "candidate_only": true,
+    "receiver_response": "ideal rectangular; analogue response uncalibrated",
+    "timing_metric": "alternating-frame linear prediction RMS on strongest qualified mode",
+    "tracking_selection": "first six retained visits per present target at or after 120 seconds"
+  },
+  "sessions": 65,
+  "by_sample_rate_hz": {
+    "10000000": {
+      "sessions": 30,
+      "selected_visits": 210,
+      "candidate_visits": 31,
+      "candidate_visit_percent": 14.761904761904763,
+      "timed_visits": 31,
+      "median_alternating_validation_rms_ns": 1032.1968719978797,
+      "p10_p90_alternating_validation_rms_ns": [
+        840.1903822617754,
+        1159.4798336890606
+      ],
+      "tracking_updates": 88,
+      "sessions_reaching_tracking": 17
+    },
+    "15000000": {
+      "sessions": 27,
+      "selected_visits": 189,
+      "candidate_visits": 44,
+      "candidate_visit_percent": 23.280423280423282,
+      "timed_visits": 44,
+      "median_alternating_validation_rms_ns": 1028.9215281110328,
+      "p10_p90_alternating_validation_rms_ns": [
+        781.8491198889876,
+        1161.9814512558403
+      ],
+      "tracking_updates": 114,
+      "sessions_reaching_tracking": 15
+    },
+    "20000000": {
+      "sessions": 8,
+      "selected_visits": 56,
+      "candidate_visits": 9,
+      "candidate_visit_percent": 16.071428571428573,
+      "timed_visits": 9,
+      "median_alternating_validation_rms_ns": 905.0766762649197,
+      "p10_p90_alternating_validation_rms_ns": [
+        788.7502724186355,
+        1208.8515936045355
+      ],
+      "tracking_updates": 55,
+      "sessions_reaching_tracking": 5
+    }
+  }
+}
