@@ -9,6 +9,7 @@ import inspect
 import json
 import multiprocessing
 import os
+import shutil
 from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
@@ -26,6 +27,7 @@ _LOCK_NAME = ".adaptive-spool-transfer.lock"
 _DIGEST_CHUNK_BYTES = 1024 * 1024
 _IMPORT_TIMEOUT_SECONDS = 15 * 60.0
 _CHILD_EXIT_GRACE_SECONDS = 5.0
+_RETIRED_PREFIX = ".retired-"
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,6 +128,35 @@ def _write_ledger(path: Path, entries: dict[str, dict[str, str]]) -> None:
             temporary.unlink()
 
 
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _retire_imported_archive(archive: Path, firmware_root: Path) -> None:
+    """Remove a source only after its imported ledger checkpoint is durable."""
+    if archive.parent != firmware_root or archive.is_symlink() or not archive.is_dir():
+        raise ValueError("firmware archive retirement escaped its spool root")
+    retired = firmware_root / f"{_RETIRED_PREFIX}{archive.name}"
+    if retired.exists():
+        raise FileExistsError(f"firmware retirement path already exists: {retired.name}")
+    os.replace(archive, retired)
+    _fsync_directory(firmware_root)
+    shutil.rmtree(retired)
+    _fsync_directory(firmware_root)
+
+
+def _finish_interrupted_retirements(firmware_root: Path) -> None:
+    for retired in firmware_root.glob(f"{_RETIRED_PREFIX}scan-fw-*"):
+        if retired.is_symlink() or not retired.is_dir():
+            raise ValueError("firmware retirement path is not a directory")
+        shutil.rmtree(retired)
+        _fsync_directory(firmware_root)
+
+
 def _import_worker(connection: Any, archive: str, bulk_root: str) -> None:
     try:
         connection.send(("imported", import_archive(Path(archive), Path(bulk_root))))
@@ -205,6 +236,8 @@ def transfer_pending(
         attempted = 0
         deferred = 0
         firmware_root = spool_root / "v052-adaptive"
+        firmware_root.mkdir(parents=True, exist_ok=True)
+        _finish_interrupted_retirements(firmware_root)
         importer_digest = _importer_digest(importer)
         # Publish the newest sealed capture first.  A historical backlog must not
         # delay the current scan from reaching the scanner page for hours.
@@ -249,6 +282,8 @@ def transfer_pending(
             ledger[session_id] = entry
             # Checkpoint every terminal item. A crash only repeats the current archive.
             _write_ledger(ledger_path, ledger)
+            if status == "imported":
+                _retire_imported_archive(manifest.parent, firmware_root)
         return TransferSummary(
             tuple(recovered), tuple(imported), tuple(unsupported), unchanged, deferred
         )
