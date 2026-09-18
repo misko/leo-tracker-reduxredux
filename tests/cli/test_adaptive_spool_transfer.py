@@ -148,16 +148,12 @@ def test_firmware_reconciliation_can_be_bounded_between_capture_slots(
         calls.append(archive.name)
         return "imported", archive.name
 
-    first = subject.transfer_pending(
-        bulk, spool, importer=importer, maximum_firmware_imports=1
-    )
+    first = subject.transfer_pending(bulk, spool, importer=importer, maximum_firmware_imports=1)
     assert calls == ["scan-fw-c"]
     assert first.deferred_firmware_count == 2
 
     calls.clear()
-    second = subject.transfer_pending(
-        bulk, spool, importer=importer, maximum_firmware_imports=1
-    )
+    second = subject.transfer_pending(bulk, spool, importer=importer, maximum_firmware_imports=1)
     assert calls == ["scan-fw-b"]
     assert second.unchanged_count == 0
     assert second.deferred_firmware_count == 1
@@ -224,9 +220,7 @@ def test_bounded_reconciliation_prioritizes_newest_capture(
         calls.append(archive.name)
         return "imported", archive.name
 
-    result = subject.transfer_pending(
-        bulk, spool, importer=importer, maximum_firmware_imports=1
-    )
+    result = subject.transfer_pending(bulk, spool, importer=importer, maximum_firmware_imports=1)
     assert calls == ["scan-fw-new"]
     assert result.deferred_firmware_count == 1
 
@@ -235,9 +229,7 @@ def test_firmware_reconciliation_rejects_nonpositive_bound(
     tmp_path: Path,
 ) -> None:
     with pytest.raises(ValueError, match="must be positive"):
-        subject.transfer_pending(
-            tmp_path / "bulk", tmp_path / "spool", maximum_firmware_imports=0
-        )
+        subject.transfer_pending(tmp_path / "bulk", tmp_path / "spool", maximum_firmware_imports=0)
 
 
 def test_manifest_digest_reads_in_bounded_chunks(
