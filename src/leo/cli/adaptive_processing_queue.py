@@ -11,6 +11,8 @@ import time
 from datetime import timedelta
 from pathlib import Path
 
+from sqlalchemy import Engine
+
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
@@ -24,6 +26,15 @@ def _catalog() -> CatalogRepository:
     if not database_url:
         raise RuntimeError("LEO_DATABASE_URL is required")
     return CatalogRepository(create_session_factory(create_catalog_engine(database_url)))
+
+
+def _worker_catalog() -> tuple[CatalogRepository, Engine]:
+    """Create the single bounded database pool owned by one worker process."""
+    database_url = os.environ.get("LEO_DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("LEO_DATABASE_URL is required")
+    engine = create_catalog_engine(database_url, pool_size=1, max_overflow=0)
+    return CatalogRepository(create_session_factory(engine)), engine
 
 
 def enqueue_pending(*, bulk_root: Path) -> tuple[str, ...]:
@@ -51,8 +62,8 @@ def enqueue_pending(*, bulk_root: Path) -> tuple[str, ...]:
     return tuple(queued)
 
 
-def run_once(*, bulk_root: Path, worker_id: str) -> bool:
-    catalog = _catalog()
+def run_once(*, bulk_root: Path, worker_id: str, catalog: CatalogRepository | None = None) -> bool:
+    catalog = _catalog() if catalog is None else catalog
     lease = catalog.claim_adaptive_analysis_job(worker_id=worker_id, lease_for=_LEASE)
     if lease is None:
         return False
@@ -92,6 +103,18 @@ def run_once(*, bulk_root: Path, worker_id: str) -> bool:
     return True
 
 
+def run_worker(*, bulk_root: Path, worker_id: str, poll_seconds: float) -> None:
+    """Run without allocating a new database pool for every idle poll."""
+    catalog, engine = _worker_catalog()
+    try:
+        while True:
+            claimed = run_once(bulk_root=bulk_root, worker_id=worker_id, catalog=catalog)
+            if not claimed:
+                time.sleep(poll_seconds)
+    finally:
+        engine.dispose()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
@@ -105,12 +128,14 @@ def main() -> None:
     if args.command == "enqueue":
         print(json.dumps({"queued_session_ids": enqueue_pending(bulk_root=args.bulk_root)}))
         return
-    while True:
-        claimed = run_once(bulk_root=args.bulk_root, worker_id=args.worker_id)
-        if args.once:
-            return
-        if not claimed:
-            time.sleep(args.poll_seconds)
+    if args.once:
+        run_once(bulk_root=args.bulk_root, worker_id=args.worker_id)
+        return
+    run_worker(
+        bulk_root=args.bulk_root,
+        worker_id=args.worker_id,
+        poll_seconds=args.poll_seconds,
+    )
 
 
 if __name__ == "__main__":

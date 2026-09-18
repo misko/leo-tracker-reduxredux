@@ -71,6 +71,7 @@ _REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 _SELECTOR_COMPONENTS = ("global", "api", "worker", "acquisition")
 _WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
 _WORKER_UNIT_PATTERN = "leo-worker@*.service"
+_ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN = "leo-adaptive-analysis-worker@*.service"
 _ADAPTIVE_ANALYSIS_WORKER_UNITS = tuple(
     f"leo-adaptive-analysis-worker@{index}.service" for index in range(1, 5)
 )
@@ -2271,20 +2272,21 @@ def _quiesce_runtime() -> None:
         ("/usr/bin/systemctl", "stop", *_LEO_SERVICE_UNITS),
         check=False,
     )
-    subprocess.run(
-        (
-            "/usr/bin/systemctl",
-            "kill",
-            "--kill-who=all",
-            "--signal=SIGKILL",
-            _WORKER_UNIT_PATTERN,
-        ),
-        check=False,
-    )
-    subprocess.run(
-        ("/usr/bin/systemctl", "stop", _WORKER_UNIT_PATTERN),
-        check=False,
-    )
+    for worker_pattern in (_WORKER_UNIT_PATTERN, _ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN):
+        subprocess.run(
+            (
+                "/usr/bin/systemctl",
+                "kill",
+                "--kill-who=all",
+                "--signal=SIGKILL",
+                worker_pattern,
+            ),
+            check=False,
+        )
+        subprocess.run(
+            ("/usr/bin/systemctl", "stop", worker_pattern),
+            check=False,
+        )
     _verify_runtime_quiesced()
 
 
@@ -2501,7 +2503,7 @@ def _start_runtime() -> None:
         raise OpsError("global immutable release selector is unavailable")
     ships_persistent_analysis = _release_ships_persistent_hop_analysis(selected_revision)
     ships_adaptive_analysis_queue = _release_ships_adaptive_analysis_queue(selected_revision)
-    if ships_persistent_analysis:
+    if ships_persistent_analysis and not ships_adaptive_analysis_queue:
         # A guarded cutover intentionally stops an in-flight oneshot.  systemd
         # retains that SIGTERM as Result=signal even after the unit is inactive,
         # so clear only this stale operational result before startup health is
@@ -2527,7 +2529,7 @@ def _start_runtime() -> None:
     )
     persistent_analysis_timer = "leo-persistent-hop-analysis.timer"
     adaptive_analysis_queue_timer = "leo-adaptive-analysis-queue.timer"
-    if ships_persistent_analysis:
+    if ships_persistent_analysis and not ships_adaptive_analysis_queue:
         normal_timers = (
             "leo-reconcile.timer",
             persistent_analysis_timer,
@@ -2591,7 +2593,9 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
         "leo-worker@1.service",
         "leo-worker@20.service",
     ]
-    if _release_ships_persistent_hop_analysis(selector_revisions["global"]):
+    if _release_ships_persistent_hop_analysis(
+        selector_revisions["global"]
+    ) and not _release_ships_adaptive_analysis_queue(selector_revisions["global"]):
         expected_active_units.append("leo-persistent-hop-analysis.timer")
     if _release_ships_adaptive_analysis_queue(selector_revisions["global"]):
         expected_active_units.extend(
@@ -2609,7 +2613,9 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
     ).stdout.splitlines()
     if states != ["active"] * len(expected_active_units):
         raise OpsError(f"runtime service state is not active: {states}")
-    if _release_ships_persistent_hop_analysis(selector_revisions["global"]):
+    if _release_ships_persistent_hop_analysis(
+        selector_revisions["global"]
+    ) and not _release_ships_adaptive_analysis_queue(selector_revisions["global"]):
         _verify_persistent_hop_analysis_startup()
 
 

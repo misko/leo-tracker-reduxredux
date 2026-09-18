@@ -1712,6 +1712,14 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
         ("/usr/bin/systemctl", "stop", OPS._WORKER_UNIT_PATTERN),
         (
             "/usr/bin/systemctl",
+            "kill",
+            "--kill-who=all",
+            "--signal=SIGKILL",
+            OPS._ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN,
+        ),
+        ("/usr/bin/systemctl", "stop", OPS._ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN),
+        (
+            "/usr/bin/systemctl",
             "list-units",
             "leo-*",
             "--state=active,activating,reloading",
@@ -1778,17 +1786,17 @@ def test_runtime_start_enables_persistent_analysis_only_for_a_release_that_ships
 
     OPS._start_runtime()
 
-    assert calls[0] == (
+    assert (
         "/usr/bin/systemctl",
-        "reset-failed",
-        "leo-persistent-hop-analysis.service",
-    )
+        "disable",
+        "--now",
+        "leo-persistent-hop-analysis.timer",
+    ) in calls
     assert calls[-1] == (
         "/usr/bin/systemctl",
         "enable",
         "--now",
         "leo-reconcile.timer",
-        "leo-persistent-hop-analysis.timer",
         "leo-retention.timer",
         "leo-tle-collection.timer",
         "leo-adaptive-analysis-queue.timer",
