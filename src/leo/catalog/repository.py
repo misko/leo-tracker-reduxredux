@@ -1788,7 +1788,7 @@ class CatalogRepository:
             now = _database_now(session)
             rows = session.execute(
                 select(ProcessingJob, AnalysisRun, AnalysisScope, RadioStream.radio_id)
-                .join(AnalysisRun, AnalysisRun.id == ProcessingJob.run_id)
+                .outerjoin(AnalysisRun, AnalysisRun.id == ProcessingJob.run_id)
                 .outerjoin(AnalysisScope, AnalysisScope.id == ProcessingJob.scope_id)
                 .outerjoin(
                     RadioStream,
@@ -1815,9 +1815,15 @@ class CatalogRepository:
             return tuple(
                 ActiveJobRecord(
                     job_id=job.id,
-                    run_id=run.id,
-                    session_id=run.session_id,
-                    pipeline_release_id=run.pipeline_release_id,
+                    run_id="adaptive-queue" if run is None else run.id,
+                    session_id=(
+                        job.adaptive_session_id or "unbound-adaptive-session"
+                        if run is None
+                        else run.session_id
+                    ),
+                    pipeline_release_id=(
+                        "adaptive-queue" if run is None else run.pipeline_release_id
+                    ),
                     stage_key=job.stage_key,
                     node_id=job.node_id,
                     state=job.state,
