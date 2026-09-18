@@ -34,7 +34,6 @@ from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
-from leo.storage.analysis_worker_lock import analysis_worker_lock
 
 
 def _visits(text: str) -> int:
@@ -83,6 +82,31 @@ def next_pending(captures, presentation, *, probe_stride_ms: int) -> str | None:
         if selected is None or candidate < selected:
             selected = candidate
     return selected[2] if selected is not None else None
+
+
+def pending_sessions(
+    captures, presentation, *, probe_stride_ms: int, limit: int
+) -> tuple[str, ...]:
+    """Choose a current session and an old session without starving either lane."""
+    if limit < 1:
+        raise ValueError("pending session limit must be positive")
+    pending = []
+    for capture in captures.iter_sessions():
+        status = presentation.status(capture.session_id, probe_stride_ms=probe_stride_ms)
+        if status is None:
+            raise ValueError("published adaptive capture disappeared during selection")
+        if status.state != "figures_ready":
+            pending.append((capture.manifest.created_utc_ns, capture.session_id))
+    if not pending:
+        return ()
+    current = next_pending(captures, presentation, probe_stride_ms=probe_stride_ms)
+    selected = [current] if current is not None else []
+    for _, session_id in sorted(pending):
+        if session_id not in selected:
+            selected.append(session_id)
+        if len(selected) == limit:
+            break
+    return tuple(selected)
 
 
 def main() -> None:
@@ -139,33 +163,28 @@ def main() -> None:
             resources.callback(products.close)
             captures = AdaptiveHopIqStore(args.bulk_root, read_only=True)
             resources.callback(captures.close)
-            # Use the existing public worker lease so fixed and adaptive desktop
-            # analysis cannot compete. No fixed input/product is read or modified.
-            with analysis_worker_lock(args.bulk_root) as acquired:
-                if not acquired:
-                    print(json.dumps({"state": "busy", "reason": "analysis worker is active"}))
-                    return
-                session_id = args.session_id
-                if args.pending:
-                    session_id = next_pending(
-                        captures,
-                        AdaptiveHopAnalysisPresentationStore(args.bulk_root),
-                        probe_stride_ms=args.probe_stride_ms,
-                    )
-                    if session_id is None:
-                        print(
-                            json.dumps(
-                                {
-                                    "state": "idle",
-                                    "reason": "all published adaptive figures are ready",
-                                }
-                            )
-                        )
-                        return
-                host = isinstance(
-                    captures.inspect(session_id).manifest.receipt, HostAdaptiveHopReceiptV2
+            session_id = args.session_id
+            if args.pending:
+                session_id = next_pending(
+                    captures,
+                    AdaptiveHopAnalysisPresentationStore(args.bulk_root),
+                    probe_stride_ms=args.probe_stride_ms,
                 )
-                service = HostAdaptiveAnalysisService if host else AdaptiveHopAnalysisService
+                if session_id is None:
+                    print(
+                        json.dumps(
+                            {
+                                "state": "idle",
+                                "reason": "all published adaptive figures are ready",
+                            }
+                        )
+                    )
+                    return
+            host = isinstance(
+                captures.inspect(session_id).manifest.receipt, HostAdaptiveHopReceiptV2
+            )
+            service = HostAdaptiveAnalysisService if host else AdaptiveHopAnalysisService
+            try:
                 result = service(
                     inputs=AdaptiveHopAnalysisInputStore(captures),
                     products=products,
@@ -176,20 +195,23 @@ def main() -> None:
                     probe_stride_ms=args.probe_stride_ms,
                     maximum_workers=args.host_maximum_workers if host else args.maximum_workers,
                 )
-                payload = {**asdict(result), "overview_state": "not_ready"}
-                if result.state == "metrics_complete" and not args.metrics_only:
-                    overview = AdaptiveHopOverviewService(
-                        inputs=AdaptiveHopAnalysisInputStore(captures),
-                        products=products,
-                        renderer=_render_overview,
-                    ).render_session(session_id, probe_stride_ms=args.probe_stride_ms)
-                    payload["overview_state"] = "ready"
-                    payload["overview_metrics_manifest_sha256"] = overview.metrics_manifest_sha256
-                phase = AdaptiveHopAnalysisPresentationStore(args.bulk_root).phase_status(
-                    session_id, probe_stride_ms=args.probe_stride_ms
-                )
-                payload["dual_rx_phase_state"] = None if phase is None else phase.state
-                print(json.dumps(payload, sort_keys=True))
+            except BlockingIOError:
+                print(json.dumps({"state": "busy", "session_id": session_id}))
+                return
+            payload = {**asdict(result), "overview_state": "not_ready"}
+            if result.state == "metrics_complete" and not args.metrics_only:
+                overview = AdaptiveHopOverviewService(
+                    inputs=AdaptiveHopAnalysisInputStore(captures),
+                    products=products,
+                    renderer=_render_overview,
+                ).render_session(session_id, probe_stride_ms=args.probe_stride_ms)
+                payload["overview_state"] = "ready"
+                payload["overview_metrics_manifest_sha256"] = overview.metrics_manifest_sha256
+            phase = AdaptiveHopAnalysisPresentationStore(args.bulk_root).phase_status(
+                session_id, probe_stride_ms=args.probe_stride_ms
+            )
+            payload["dual_rx_phase_state"] = None if phase is None else phase.state
+            print(json.dumps(payload, sort_keys=True))
     except Exception as error:
         print(
             json.dumps(

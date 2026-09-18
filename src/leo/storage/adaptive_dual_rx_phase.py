@@ -110,6 +110,8 @@ class AdaptiveDualRxPhaseStore:
                 session_id,
                 input_manifest_sha256.removeprefix("sha256:"),
             ):
+                if not create:
+                    os.stat(component, dir_fd=parent.fileno(), follow_symlinks=False)
                 child = parent.child(component, create=create)
                 handles.append(child)
                 parent = child
@@ -122,7 +124,10 @@ class AdaptiveDualRxPhaseStore:
     def manifest(
         self, session_id: str, input_manifest_sha256: str
     ) -> AdaptiveDualRxPhaseManifestV1 | None:
-        handles = self._directory(session_id, input_manifest_sha256, create=False)
+        try:
+            handles = self._directory(session_id, input_manifest_sha256, create=False)
+        except FileNotFoundError:
+            return None
         try:
             try:
                 envelope = json.loads(_read(handles[-1], _MANIFEST, _MAX_MANIFEST))
