@@ -48,7 +48,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("uq_processing_job_adaptive_binding", table_name="processing_job")
-    op.drop_constraint("ck_processing_job_job_family_binding", "processing_job", type_="check")
+    op.drop_constraint("job_family_binding", "processing_job", type_="check")
     op.drop_column("processing_job", "adaptive_configuration_digest")
     op.drop_column("processing_job", "adaptive_input_manifest_digest")
     op.drop_column("processing_job", "adaptive_session_id")

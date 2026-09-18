@@ -854,7 +854,23 @@ class ProcessingJob(Base):
             "OR (state <> 'leased' AND lease_owner IS NULL AND lease_expires_at IS NULL)",
             name="lease_state_coherence",
         ),
+        CheckConstraint(
+            "(job_kind = 'pipeline_stage' AND run_id IS NOT NULL AND adaptive_session_id IS NULL) "
+            "OR (job_kind = 'adaptive_scan' AND run_id IS NULL AND adaptive_session_id IS NOT NULL "
+            "AND adaptive_input_manifest_digest IS NOT NULL "
+            "AND adaptive_configuration_digest IS NOT NULL)",
+            name="job_family_binding",
+        ),
         Index("ix_processing_job_claim", "state", "available_at", "priority", "created_at"),
+        Index(
+            "uq_processing_job_adaptive_binding",
+            "adaptive_session_id",
+            "adaptive_input_manifest_digest",
+            "adaptive_configuration_digest",
+            "stage_key",
+            unique=True,
+            postgresql_where=text("job_kind = 'adaptive_scan'"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -864,7 +880,7 @@ class ProcessingJob(Base):
     job_kind: Mapped[str] = mapped_column(
         String(32), nullable=False, default="pipeline_stage", server_default="pipeline_stage"
     )
-    adaptive_session_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    adaptive_session_id: Mapped[str | None] = mapped_column(String(128))
     adaptive_input_manifest_digest: Mapped[str | None] = mapped_column(String(71))
     adaptive_configuration_digest: Mapped[str | None] = mapped_column(String(71))
     stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
