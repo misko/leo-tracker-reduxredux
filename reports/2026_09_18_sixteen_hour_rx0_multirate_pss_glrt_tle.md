@@ -46,6 +46,37 @@ reliability. These data show no evidence that a higher native rate improves the
 GLRT carrier estimate. They also do not show degradation among successful
 captures.
 
+### Fractional edge-pilot frame timing
+
+A deterministic known-delay replay measures timing directly: apply a declared
+30–300 ns fractional delay to retained IQ, rerun the production grid512
+fractional GLRT estimator, and subtract the declared delay from the recovered
+epoch change modulo the 750 Hz frame period. The left panel is conditional on
+recovering the same qualified candidate; the right panel prevents that
+conditioning from being hidden.
+
+![Fractional GLRT timing by native rate](figures/2026_09_18_sixteen_hour_rx0_multirate_pss_glrt_tle/glrt-timing-by-sample-rate.png)
+
+| Native rate | Qualified / attempted probes | Conditional delay RMS | Median absolute error | 90th-percentile absolute error |
+|---|---:|---:|---:|---:|
+| 10 MS/s | 93 / 420 (22.14%) | 2.59 ns | 1.55 ns | 4.21 ns |
+| 15 MS/s | 8 / 21 (38.10%) | 2.69 ns | 2.37 ns | 4.00 ns |
+| 20 MS/s | 5 / 21 (23.81%) | 1.43 ns | 1.30 ns | 1.94 ns |
+
+The result to retain is **roughly 1–3 ns conditional frame-epoch precision**
+when the edge pilot is strong enough to recover. At 10 and 15 MS/s the measured
+RMS is effectively the same. The 20 MS/s subset is numerically tighter, but five
+recovered probes are insufficient to claim a sample-rate improvement. The
+larger 10 MS/s inventory comes from all 30 standardized refinement products;
+15 and 20 MS/s use three deterministic sessions each, so availability percentages
+are descriptive rather than population detection probabilities.
+
+This is relative delay recovery on the same IQ, not absolute UTC accuracy and
+not a bound on the 1.333 ms frame number. Higher native rates give finer raw
+sample spacing (100, 66.7, and 50 ns), but interpolation of the full edge-pilot
+waveform provides the nanosecond-scale conditional estimate. Signal quality and
+correct candidate association dominate simple sample spacing.
+
 ![GLRT carrier rate and local-fit residual](figures/2026_09_18_sixteen_hour_rx0_multirate_pss_glrt_tle/glrt-tracklet-rate-residuals.png)
 
 The successful-session duty distribution is extremely narrow: 85.44–85.52%.
