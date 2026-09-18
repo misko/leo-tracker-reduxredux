@@ -856,7 +856,8 @@ class ProcessingJob(Base):
         ),
         CheckConstraint(
             "(job_kind = 'pipeline_stage' AND run_id IS NOT NULL AND adaptive_session_id IS NULL) "
-            "OR (job_kind = 'adaptive_scan' AND run_id IS NULL AND adaptive_session_id IS NOT NULL "
+            "OR (job_kind IN ('adaptive_scan', 'adaptive_tracking') AND run_id IS NULL "
+            "AND adaptive_session_id IS NOT NULL "
             "AND adaptive_input_manifest_digest IS NOT NULL "
             "AND adaptive_configuration_digest IS NOT NULL)",
             name="job_family_binding",
@@ -869,7 +870,7 @@ class ProcessingJob(Base):
             "adaptive_configuration_digest",
             "stage_key",
             unique=True,
-            postgresql_where=text("job_kind = 'adaptive_scan'"),
+            postgresql_where=text("job_kind IN ('adaptive_scan', 'adaptive_tracking')"),
         ),
     )
 

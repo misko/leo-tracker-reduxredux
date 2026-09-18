@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
 from leo.application.scanner_tracking import ScannerTrackingService
@@ -30,10 +31,16 @@ def main():
     parser.add_argument("--session-id")
     parser.add_argument("--maximum-seconds", type=float, default=180)
     parser.add_argument("--maximum-sessions", type=int, default=2)
+    parser.add_argument(
+        "--queue-worker",
+        action="store_true",
+        help="The processing queue owns the session lease; do not take the standalone lock.",
+    )
     args = parser.parse_args()
     if not 0 < args.maximum_seconds <= 1800 or not 1 <= args.maximum_sessions <= 100:
         parser.error("invalid work bounds")
-    with analysis_worker_lock(args.bulk_root) as acquired:
+    lock = nullcontext(True) if args.queue_worker else analysis_worker_lock(args.bulk_root)
+    with lock as acquired:
         if not acquired:
             print(json.dumps({"state": "busy"}))
             return

@@ -46,6 +46,7 @@ class AdaptiveAnalysisJobLease:
     """Lease for an adaptive scanner job carried by the shared processing queue."""
 
     job_id: int
+    job_kind: str
     session_id: str
     input_manifest_digest: str
     configuration_digest: str
