@@ -2293,6 +2293,12 @@ def _quiesce_runtime() -> None:
         check=False,
     )
     for worker_pattern in (_WORKER_UNIT_PATTERN, _ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN):
+        # A normal stop gives adaptive workers a bounded opportunity to yield
+        # their current checkpoint before the hard fence below.
+        subprocess.run(
+            ("/usr/bin/systemctl", "stop", worker_pattern),
+            check=False,
+        )
         subprocess.run(
             (
                 "/usr/bin/systemctl",
@@ -2301,10 +2307,6 @@ def _quiesce_runtime() -> None:
                 "--signal=SIGKILL",
                 worker_pattern,
             ),
-            check=False,
-        )
-        subprocess.run(
-            ("/usr/bin/systemctl", "stop", worker_pattern),
             check=False,
         )
     _verify_runtime_quiesced()
@@ -2553,6 +2555,7 @@ def _start_runtime() -> None:
     )
     persistent_analysis_timer = "leo-persistent-hop-analysis.timer"
     adaptive_analysis_queue_timer = "leo-adaptive-analysis-queue.timer"
+    normal_timers: tuple[str, ...]
     if ships_persistent_analysis and not ships_adaptive_analysis_queue:
         normal_timers = (
             "leo-reconcile.timer",
