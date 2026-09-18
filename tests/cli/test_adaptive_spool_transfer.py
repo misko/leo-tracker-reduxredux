@@ -133,6 +133,44 @@ def test_ledger_checkpoints_each_archive_before_later_failure(
     assert result.firmware_imported_session_ids == ("scan-fw-b",)
 
 
+def test_firmware_reconciliation_can_be_bounded_between_capture_slots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spool, bulk = tmp_path / "spool", tmp_path / "bulk"
+    bulk.mkdir()
+    for name in ("scan-fw-a", "scan-fw-b", "scan-fw-c"):
+        _archive(spool, name, name.encode())
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
+    calls: list[str] = []
+
+    def importer(archive: Path, _bulk: Path) -> tuple[str, str]:
+        calls.append(archive.name)
+        return "imported", archive.name
+
+    first = subject.transfer_pending(
+        bulk, spool, importer=importer, maximum_firmware_imports=1
+    )
+    assert calls == ["scan-fw-a"]
+    assert first.deferred_firmware_count == 2
+
+    calls.clear()
+    second = subject.transfer_pending(
+        bulk, spool, importer=importer, maximum_firmware_imports=1
+    )
+    assert calls == ["scan-fw-b"]
+    assert second.unchanged_count == 1
+    assert second.deferred_firmware_count == 1
+
+
+def test_firmware_reconciliation_rejects_nonpositive_bound(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="must be positive"):
+        subject.transfer_pending(
+            tmp_path / "bulk", tmp_path / "spool", maximum_firmware_imports=0
+        )
+
+
 def test_manifest_digest_reads_in_bounded_chunks(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
