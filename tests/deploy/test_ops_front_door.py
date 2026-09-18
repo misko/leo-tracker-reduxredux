@@ -1701,7 +1701,9 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
 
     assert commands == [
         ("/usr/bin/systemctl", "stop", *OPS._LEO_TIMER_UNITS),
+        ("/usr/bin/systemctl", "stop", *OPS._EXTERNAL_SCANNER_TIMER_UNITS),
         ("/usr/bin/systemctl", "stop", *OPS._LEO_SERVICE_UNITS),
+        ("/usr/bin/systemctl", "stop", *OPS._EXTERNAL_SCANNER_SERVICE_UNITS),
         (
             "/usr/bin/systemctl",
             "kill",
@@ -1747,6 +1749,10 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
         "leo-retention.timer",
         "leo-tle-collection.timer",
     } == set(OPS._LEO_TIMER_UNITS)
+    assert set(OPS._EXTERNAL_SCANNER_TIMER_UNITS) == {
+        "leo-v052-adaptive.timer",
+        "leo-adaptive-spool-transfer.timer",
+    }
     unit_root = ROOT / "deploy/systemd"
     assert set(OPS._LEO_SERVICE_UNITS) == {
         path.name for path in unit_root.glob("leo-*.service") if not path.name.endswith("@.service")
@@ -2068,9 +2074,7 @@ def test_restored_runtime_verifies_divergent_selectors_and_service_health(
     monkeypatch.setattr(
         OPS.subprocess,
         "run",
-        lambda *_args, **_kwargs: type(
-            "Result", (), {"stdout": "active\nactive\nactive\nactive\nactive\n"}
-        )(),
+        lambda *_args, **_kwargs: type("Result", (), {"stdout": "active\n" * 7})(),
     )
 
     OPS._verify_restored_runtime(selectors)
