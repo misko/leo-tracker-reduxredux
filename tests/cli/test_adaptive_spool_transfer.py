@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 import pytest
@@ -222,6 +223,34 @@ def test_bounded_reconciliation_prioritizes_newest_capture(
 
     result = subject.transfer_pending(bulk, spool, importer=importer, maximum_firmware_imports=1)
     assert calls == ["scan-fw-new"]
+    assert result.deferred_firmware_count == 1
+
+
+def test_two_import_lanes_process_newest_and_oldest_concurrently(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spool, bulk = tmp_path / "spool", tmp_path / "bulk"
+    bulk.mkdir()
+    manifests = [
+        _archive(spool, f"scan-fw-{name}", name.encode()) / "manifest.json"
+        for name in ("old", "middle", "new")
+    ]
+    for index, manifest in enumerate(manifests, start=1):
+        import os
+
+        os.utime(manifest, ns=(index * 1_000_000_000, index * 1_000_000_000))
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
+    barrier = threading.Barrier(2, timeout=2)
+    calls: list[str] = []
+
+    def importer(archive: Path, _bulk: Path) -> tuple[str, str]:
+        calls.append(archive.name)
+        barrier.wait()
+        return "imported", archive.name
+
+    result = subject.transfer_pending(bulk, spool, importer=importer, maximum_firmware_imports=2)
+    assert set(calls) == {"scan-fw-new", "scan-fw-old"}
+    assert set(result.firmware_imported_session_ids) == set(calls)
     assert result.deferred_firmware_count == 1
 
 

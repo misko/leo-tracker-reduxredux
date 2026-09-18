@@ -62,6 +62,24 @@ def test_pending_selection_prioritizes_newest_native_capture_before_legacy_backl
     assert cli.next_pending(captures, presentation, probe_stride_ms=120) == "native-old"
 
 
+def test_pending_sessions_pairs_current_work_with_oldest_backlog():
+    states = {"old": "not_started", "middle": "not_started", "new": "not_started"}
+    captures = SimpleNamespace(
+        iter_sessions=lambda: iter(
+            SimpleNamespace(
+                session_id=name,
+                manifest=SimpleNamespace(created_utc_ns=index, receipt=host_receipt()),
+            )
+            for index, name in enumerate(states, start=1)
+        )
+    )
+    presentation = SimpleNamespace(status=lambda name, **kw: SimpleNamespace(state=states[name]))
+    assert cli.pending_sessions(captures, presentation, probe_stride_ms=120, limit=2) == (
+        "new",
+        "old",
+    )
+
+
 @pytest.mark.parametrize("stride", [10, 120])
 def test_pending_cli_publishes_figures_then_is_idle(monkeypatch, tmp_path, capsys, stride):
     capture = publish_capture(tmp_path, count=3)
@@ -161,19 +179,22 @@ def test_cli_metrics_only_then_failed_render_can_resume_without_reanalyzing(
 
 
 @pytest.mark.parametrize("store_type", [PersistentHopAnalysisStore, PersistentHopAnalysisStoreV2])
-def test_cli_obeys_existing_fixed_worker_lock_without_analyzing(
+def test_cli_can_analyze_a_distinct_adaptive_session_while_fixed_worker_is_active(
     monkeypatch, tmp_path, capsys, store_type
 ):
+    capture = publish_capture(tmp_path, count=2)
     coordinator = store_type(tmp_path)
     monkeypatch.setattr(cli.os, "nice", lambda _: None)
+    monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
     monkeypatch.setattr(
-        sys, "argv", ["analysis", "--bulk-root", str(tmp_path), "--session-id", "absent"]
+        sys,
+        "argv",
+        ["analysis", "--bulk-root", str(tmp_path), "--session-id", capture.session_id],
     )
     with coordinator.worker_lock() as acquired:
         assert acquired
         cli.main()
-    assert json.loads(capsys.readouterr().out)["state"] == "busy"
-    assert not (tmp_path / "scanner-adaptive-analysis").exists()
+    assert json.loads(capsys.readouterr().out)["state"] == "metrics_complete"
 
 
 @pytest.mark.parametrize(

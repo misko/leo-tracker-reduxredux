@@ -9,6 +9,12 @@ def digest(letter: str) -> str:
     return "sha256:" + letter * 64
 
 
+def test_missing_read_only_phase_product_is_pending_state_not_corruption(tmp_path):
+    store = AdaptiveDualRxPhaseStore(tmp_path, read_only=True)
+    assert store.manifest("scan-hop-missing", digest("1")) is None
+    store.close()
+
+
 def test_phase_product_is_immutable_digest_bound_and_read_only(tmp_path):
     png = rendered_fixture().artifacts["coverage"]
     store = AdaptiveDualRxPhaseStore(tmp_path)

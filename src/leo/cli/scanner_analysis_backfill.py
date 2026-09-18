@@ -7,9 +7,36 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from leo.cli.adaptive_hop_analysis import pending_sessions
 from leo.sky.sites import preset_names
+from leo.storage.adaptive_hop import AdaptiveHopIqStore
+from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
+
+
+def _pending_adaptive_sessions(bulk_root: Path, *, limit: int) -> tuple[str, ...]:
+    captures = AdaptiveHopIqStore(bulk_root, read_only=True)
+    try:
+        return pending_sessions(
+            captures,
+            AdaptiveHopAnalysisPresentationStore(bulk_root),
+            probe_stride_ms=120,
+            limit=limit,
+        )
+    finally:
+        captures.close()
+
+
+def _run(command: list[str]) -> dict[str, object] | None:
+    try:
+        result = subprocess.run(command, check=False)
+        if result.returncode:
+            return {"job": command[2], "returncode": result.returncode}
+    except OSError as error:
+        return {"job": command[2], "error_type": type(error).__name__}
+    return None
 
 
 def main() -> None:
@@ -19,21 +46,38 @@ def main() -> None:
     )
     parser.add_argument("--site", choices=preset_names(), required=True)
     parser.add_argument("--fixed-maximum-workers", type=int, choices=(1, 2, 3, 4), default=2)
+    parser.add_argument("--adaptive-sessions", type=int, choices=(1, 2), default=2)
     arguments = parser.parse_args()
-    # These are the existing public CLIs, each taking the shared nonblocking
-    # analysis lease. No extra queue, scientific policy, or storage coupling.
-    jobs = (
-        (
-            "adaptive",
+    adaptive_commands = [
+        [
+            sys.executable,
+            "-m",
             "leo.cli.adaptive_hop_analysis",
-            "--pending",
+            "--bulk-root",
+            str(arguments.bulk_root),
+            "--maximum-workers",
+            "2",
+            "--probe-stride-ms",
+            "120",
+            "--session-id",
+            session_id,
             "--maximum-visits",
             "2500",
             "--maximum-seconds",
-            # Measured native 10M analysis takes about 410 s with four workers.
-            # Finish its overview in this pass before optional derived products.
             "580",
-        ),
+        ]
+        for session_id in _pending_adaptive_sessions(
+            arguments.bulk_root, limit=arguments.adaptive_sessions
+        )
+    ]
+    failures = []
+    with ThreadPoolExecutor(max_workers=arguments.adaptive_sessions) as executor:
+        for failure in executor.map(_run, adaptive_commands):
+            if failure is not None:
+                failures.append(failure)
+
+    # Shared fixed-analysis and catalogue publication remain serialized.
+    jobs = (
         (
             "fixed",
             "leo.cli.persistent_hop_analysis",
@@ -57,7 +101,6 @@ def main() -> None:
             "2",
         ),
     )
-    failures = []
     for name, module, *options in jobs:
         command = [
             sys.executable,
@@ -70,19 +113,17 @@ def main() -> None:
                 if name in ("refinement", "tracking")
                 else [
                     "--maximum-workers",
-                    str(arguments.fixed_maximum_workers) if name == "fixed" else "2",
+                    str(arguments.fixed_maximum_workers),
                     "--probe-stride-ms",
                     "120",
                 ]
             ),
             *options,
         ]
-        try:
-            result = subprocess.run(command, check=False)
-            if result.returncode:
-                failures.append({"job": name, "returncode": result.returncode})
-        except OSError as error:
-            failures.append({"job": name, "error_type": type(error).__name__})
+        failure = _run(command)
+        if failure is not None:
+            failure["job"] = name
+            failures.append(failure)
     if failures:
         print(json.dumps({"state": "failed", "jobs": failures}), file=sys.stderr)
         raise SystemExit(1)

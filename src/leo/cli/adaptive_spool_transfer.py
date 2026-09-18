@@ -11,6 +11,7 @@ import multiprocessing
 import os
 import shutil
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +29,7 @@ _DIGEST_CHUNK_BYTES = 1024 * 1024
 _IMPORT_TIMEOUT_SECONDS = 15 * 60.0
 _CHILD_EXIT_GRACE_SECONDS = 5.0
 _RETIRED_PREFIX = ".retired-"
+_MAXIMUM_PARALLEL_IMPORTS = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,13 +241,19 @@ def transfer_pending(
         firmware_root.mkdir(parents=True, exist_ok=True)
         _finish_interrupted_retirements(firmware_root)
         importer_digest = _importer_digest(importer)
-        # Publish the newest sealed capture first.  A historical backlog must not
-        # delay the current scan from reaching the scanner page for hours.
-        manifests = sorted(
+        ordered = sorted(
             firmware_root.glob("scan-fw-*/manifest.json"),
             key=lambda path: (path.stat().st_mtime_ns, path.parent.name),
-            reverse=True,
         )
+        # First make the newest capture visible, then spend the second lane on
+        # the oldest backlog. Continue alternating when an operator requests a
+        # larger bounded recovery batch.
+        manifests = []
+        while ordered:
+            manifests.append(ordered.pop())
+            if ordered:
+                manifests.append(ordered.pop(0))
+        candidates: list[tuple[Path, str, str]] = []
         for manifest in manifests:
             session_id = manifest.parent.name
             digest = _manifest_digest(manifest)
@@ -257,33 +265,42 @@ def transfer_pending(
             ):
                 unchanged += 1
                 continue
-            if maximum_firmware_imports is not None and attempted >= maximum_firmware_imports:
-                deferred += 1
-                continue
-            attempted += 1
-            status, detail = importer(manifest.parent, bulk_root)
-            if status == "imported":
-                imported.append(detail)
-                entry: dict[str, str] = {
-                    "manifest_sha256": digest,
-                    "importer_sha256": importer_digest,
-                    "status": "imported",
-                }
-            elif status == "unsupported":
-                unsupported.append({"session_id": session_id, "reason": detail})
-                entry = {
-                    "manifest_sha256": digest,
-                    "importer_sha256": importer_digest,
-                    "status": "unsupported",
-                    "reason": detail,
-                }
-            else:
-                raise RuntimeError(f"firmware importer returned unknown status: {status}")
-            ledger[session_id] = entry
-            # Checkpoint every terminal item. A crash only repeats the current archive.
-            _write_ledger(ledger_path, ledger)
-            if status == "imported":
-                _retire_imported_archive(manifest.parent, firmware_root)
+            candidates.append((manifest, session_id, digest))
+        selected = (
+            candidates
+            if maximum_firmware_imports is None
+            else candidates[:maximum_firmware_imports]
+        )
+        deferred = len(candidates) - len(selected)
+        attempted = len(selected)
+        with ThreadPoolExecutor(
+            max_workers=max(1, min(_MAXIMUM_PARALLEL_IMPORTS, attempted))
+        ) as executor:
+            results = executor.map(lambda item: importer(item[0].parent, bulk_root), selected)
+            completed = zip(selected, results, strict=True)
+            for (manifest, session_id, digest), (status, detail) in completed:
+                if status == "imported":
+                    imported.append(detail)
+                    entry: dict[str, str] = {
+                        "manifest_sha256": digest,
+                        "importer_sha256": importer_digest,
+                        "status": "imported",
+                    }
+                elif status == "unsupported":
+                    unsupported.append({"session_id": session_id, "reason": detail})
+                    entry = {
+                        "manifest_sha256": digest,
+                        "importer_sha256": importer_digest,
+                        "status": "unsupported",
+                        "reason": detail,
+                    }
+                else:
+                    raise RuntimeError(f"firmware importer returned unknown status: {status}")
+                ledger[session_id] = entry
+                # Checkpoint every terminal item. A crash only repeats the current archive.
+                _write_ledger(ledger_path, ledger)
+                if status == "imported":
+                    _retire_imported_archive(manifest.parent, firmware_root)
         return TransferSummary(
             tuple(recovered), tuple(imported), tuple(unsupported), unchanged, deferred
         )
@@ -295,7 +312,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--spool-root", type=Path, required=True)
-    parser.add_argument("--maximum-firmware-imports", type=int, default=1)
+    parser.add_argument("--maximum-firmware-imports", type=int, default=2)
     arguments = parser.parse_args()
     summary = transfer_pending(
         arguments.bulk_root,
