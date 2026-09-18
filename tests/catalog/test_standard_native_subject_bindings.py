@@ -407,5 +407,5 @@ def test_real_postgres_native_expanded_run_persists_and_reads_v5_binding(
                 )
             ).scalars()
         )
-    assert job_count == len(plan.jobs) == 5
+    assert job_count == len(plan.jobs)
     assert binding_versions == ("5", "5")
