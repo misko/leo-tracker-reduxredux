@@ -49,6 +49,9 @@ def test_expected_service_and_timer_templates_exist() -> None:
     expected = {
         "leo-acquisition.service",
         "leo-acquisition-soak.service",
+        "leo-adaptive-analysis-queue.service",
+        "leo-adaptive-analysis-queue.timer",
+        "leo-adaptive-analysis-worker@.service",
         "leo-worker@.service",
         "leo-api.service",
         "leo-reconcile.service",
@@ -334,6 +337,8 @@ def test_every_service_uses_immutable_release_and_denies_qnap() -> None:
     selectors = {
         "leo-api.service": "current-api",
         "leo-worker@.service": "current-worker",
+        "leo-adaptive-analysis-queue.service": "current-worker",
+        "leo-adaptive-analysis-worker@.service": "current-worker",
         "leo-acquisition.service": "current-acquisition",
         "leo-persistent-hop-analysis.service": "current-api",
     }

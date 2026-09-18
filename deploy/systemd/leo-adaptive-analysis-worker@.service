@@ -10,7 +10,7 @@ Group=leo
 WorkingDirectory=/opt/leo-tracker/current-worker
 EnvironmentFile=/etc/leo/leo.env
 Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
-ExecStart=/opt/leo-tracker/current-worker/.venv/bin/python -m leo.cli.adaptive_processing_queue worker --worker-id adaptive-worker-%i --bulk-root /srv/bulk/leo
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-worker/.venv/bin/python -m leo.cli.adaptive_processing_queue worker --worker-id adaptive-worker-%i --bulk-root /srv/bulk/leo
 Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=60s
@@ -19,9 +19,13 @@ CPUWeight=100
 IOWeight=100
 IOSchedulingClass=idle
 OOMScoreAdjust=500
+UMask=0027
 NoNewPrivileges=yes
+PrivateTmp=yes
 ProtectHome=yes
 ProtectSystem=strict
 ReadWritePaths=/srv/bulk/leo
 InaccessiblePaths=/mnt/qnap01
-
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=yes
+LockPersonality=yes

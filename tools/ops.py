@@ -71,7 +71,11 @@ _REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 _SELECTOR_COMPONENTS = ("global", "api", "worker", "acquisition")
 _WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
 _WORKER_UNIT_PATTERN = "leo-worker@*.service"
+_ADAPTIVE_ANALYSIS_WORKER_UNITS = tuple(
+    f"leo-adaptive-analysis-worker@{index}.service" for index in range(1, 5)
+)
 _LEO_TIMER_UNITS = (
+    "leo-adaptive-analysis-queue.timer",
     "leo-persistent-hop-analysis.timer",
     "leo-qualification.timer",
     "leo-reconcile.timer",
@@ -82,6 +86,7 @@ _LEO_TIMER_UNITS = (
 _LEO_SERVICE_UNITS = (
     "leo-acquisition.service",
     "leo-acquisition-soak.service",
+    "leo-adaptive-analysis-queue.service",
     "leo-api.service",
     "leo-persistent-hop-analysis.service",
     "leo-qualification.service",
@@ -2495,6 +2500,7 @@ def _start_runtime() -> None:
     if selected_revision is None:
         raise OpsError("global immutable release selector is unavailable")
     ships_persistent_analysis = _release_ships_persistent_hop_analysis(selected_revision)
+    ships_adaptive_analysis_queue = _release_ships_adaptive_analysis_queue(selected_revision)
     if ships_persistent_analysis:
         # A guarded cutover intentionally stops an in-flight oneshot.  systemd
         # retains that SIGTERM as Result=signal even after the unit is inactive,
@@ -2514,11 +2520,13 @@ def _start_runtime() -> None:
             "start",
             "leo-api.service",
             *_WORKER_UNITS,
+            *(_ADAPTIVE_ANALYSIS_WORKER_UNITS if ships_adaptive_analysis_queue else ()),
             "leo-acquisition.service",
         ),
         check=True,
     )
     persistent_analysis_timer = "leo-persistent-hop-analysis.timer"
+    adaptive_analysis_queue_timer = "leo-adaptive-analysis-queue.timer"
     if ships_persistent_analysis:
         normal_timers = (
             "leo-reconcile.timer",
@@ -2535,6 +2543,13 @@ def _start_runtime() -> None:
             "leo-reconcile.timer",
             "leo-retention.timer",
             "leo-tle-collection.timer",
+        )
+    if ships_adaptive_analysis_queue:
+        normal_timers = (*normal_timers, adaptive_analysis_queue_timer)
+    else:
+        subprocess.run(
+            ("/usr/bin/systemctl", "disable", "--now", adaptive_analysis_queue_timer),
+            check=False,
         )
     subprocess.run(
         (
@@ -2578,6 +2593,10 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
     ]
     if _release_ships_persistent_hop_analysis(selector_revisions["global"]):
         expected_active_units.append("leo-persistent-hop-analysis.timer")
+    if _release_ships_adaptive_analysis_queue(selector_revisions["global"]):
+        expected_active_units.extend(
+            ("leo-adaptive-analysis-queue.timer", *_ADAPTIVE_ANALYSIS_WORKER_UNITS)
+        )
     states = subprocess.run(
         (
             "/usr/bin/systemctl",
@@ -2597,6 +2616,13 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
 def _release_ships_persistent_hop_analysis(revision: str) -> bool:
     return (
         RELEASE_ROOT / "releases" / revision / "deploy/systemd/leo-persistent-hop-analysis.timer"
+    ).is_file()
+
+
+def _release_ships_adaptive_analysis_queue(revision: str) -> bool:
+    release = RELEASE_ROOT / "releases" / revision / "deploy/systemd"
+    return (release / "leo-adaptive-analysis-queue.timer").is_file() and (
+        release / "leo-adaptive-analysis-worker@.service"
     ).is_file()
 
 
