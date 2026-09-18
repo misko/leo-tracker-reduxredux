@@ -12,8 +12,10 @@ from leo.contracts.scanner_tracking import (
     ArtifactName,
     ScannerTrackingProductV1,
     ScannerTrackingProductV2,
+    ScannerTrackingProductV3,
     ScannerTrackingStatusV1,
     ScannerTrackingStatusV2,
+    ScannerTrackingStatusV3,
     SessionId,
     TrackingArtifactV1,
 )
@@ -31,7 +33,7 @@ class ScannerTrackingStore:
         self.root, self.read_only = root, read_only
 
     @contextmanager
-    def directory(self, session_id: str, *, create: bool = False, version: int = 2):
+    def directory(self, session_id: str, *, create: bool = False, version: int = 3):
         TypeAdapter(SessionId).validate_python(session_id)
         if create and self.read_only:
             raise PermissionError("tracking store is read-only")
@@ -45,10 +47,15 @@ class ScannerTrackingStore:
                 directory.close()
             root.close()
 
-    def status(self, session_id: str) -> ScannerTrackingStatusV2 | ScannerTrackingStatusV1:
-        current = self._status_v2(session_id)
+    def status(
+        self, session_id: str
+    ) -> ScannerTrackingStatusV3 | ScannerTrackingStatusV2 | ScannerTrackingStatusV1:
+        current = self._status_v3(session_id)
         if current.state != "pending":
             return current
+        current_v2 = self._status_v2(session_id)
+        if current_v2.state != "pending":
+            return current_v2
         legacy = self._status_v1(session_id)
         if (
             legacy.state == "complete"
@@ -58,6 +65,28 @@ class ScannerTrackingStore:
         ):
             return current
         return legacy if legacy.state != "pending" else current
+
+    def _status_v3(self, session_id: str) -> ScannerTrackingStatusV3:
+        try:
+            with self.directory(session_id, version=3) as directory:
+                try:
+                    product = _unseal(
+                        _read(directory, "manifest.json", _LIMIT), ScannerTrackingProductV3
+                    )
+                    return ScannerTrackingStatusV3(
+                        session_id=session_id, state="complete", phase="complete", product=product
+                    )
+                except FileNotFoundError:
+                    try:
+                        return _unseal(
+                            _read(directory, "checkpoint.json", _LIMIT), ScannerTrackingStatusV3
+                        )
+                    except FileNotFoundError:
+                        return ScannerTrackingStatusV3(session_id=session_id)
+        except ValueError as error:
+            if isinstance(error.__cause__, FileNotFoundError):
+                return ScannerTrackingStatusV3(session_id=session_id)
+            raise
 
     def _status_v2(self, session_id: str) -> ScannerTrackingStatusV2:
         try:
@@ -103,8 +132,8 @@ class ScannerTrackingStore:
                 return ScannerTrackingStatusV1(session_id=session_id)
             raise
 
-    def save(self, status: ScannerTrackingStatusV2) -> None:
-        status = ScannerTrackingStatusV2.model_validate(status.model_dump())
+    def save(self, status: ScannerTrackingStatusV3) -> None:
+        status = ScannerTrackingStatusV3.model_validate(status.model_dump())
         with self.directory(status.session_id, create=True) as directory:
             try:
                 _read(directory, "manifest.json", _LIMIT)
@@ -141,8 +170,8 @@ class ScannerTrackingStore:
                     raise ValueError("tracking artifact is immutable")
         return reference
 
-    def publish(self, product: ScannerTrackingProductV2) -> None:
-        product = ScannerTrackingProductV2.model_validate(product.model_dump())
+    def publish(self, product: ScannerTrackingProductV3) -> None:
+        product = ScannerTrackingProductV3.model_validate(product.model_dump())
         if product.tle_state == "pending":
             raise ValueError("cannot finalize pending TLE comparisons")
         with self.directory(product.session_id, create=True) as directory:
@@ -168,7 +197,9 @@ class ScannerTrackingStore:
         assert product is not None
         with self.directory(
             session_id,
-            version=2 if product.analysis_id == "scanner-shared-tracking-v2" else 1,
+            version=3
+            if product.analysis_id == "scanner-shared-tracking-v3"
+            else (2 if product.analysis_id == "scanner-shared-tracking-v2" else 1),
         ) as directory:
             payload = _read(directory, name + ".png", _LIMIT)
         if len(payload) != ref.byte_count or sha256_digest(payload) != ref.sha256:

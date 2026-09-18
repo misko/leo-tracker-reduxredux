@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from leo.contracts.scanner_tracking import ScannerTrackingProductV1, ScannerTrackingStatusV2
+from leo.contracts.scanner_tracking import ScannerTrackingProductV1, ScannerTrackingStatusV3
 from leo.storage.adaptive_hop_analysis import _seal
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from tests.application.test_scanner_tracking import PNG, service
@@ -16,7 +16,7 @@ def test_pending_read_is_read_only_and_rejects_unsafe_ids(tmp_path):
     with pytest.raises(ValueError):
         store.status("../escape")
     with pytest.raises(PermissionError):
-        store.save(ScannerTrackingStatusV2(session_id="scan-test"))
+        store.save(ScannerTrackingStatusV3(session_id="scan-test"))
     with pytest.raises(ValueError):
         ScannerTrackingStore(Path("/mnt/qnap01"))
 
@@ -26,10 +26,10 @@ def test_sealed_publication_tamper_detection_and_immutability(tmp_path, monkeypa
     product = runner.run("scan-test").product
     store.publish(product)
     with pytest.raises(ValueError):
-        store.save(ScannerTrackingStatusV2(session_id="scan-test"))
+        store.save(ScannerTrackingStatusV3(session_id="scan-test"))
     with pytest.raises(ValueError):
         store.put_artifact("scan-test", "trajectory", PNG + b"changed")
-    (tmp_path / "scanner-shared-tracking-v2" / "scan-test" / "trajectory.png").write_bytes(
+    (tmp_path / "scanner-shared-tracking-v3" / "scan-test" / "trajectory.png").write_bytes(
         PNG + b"changed"
     )
     with pytest.raises(ValueError, match="digest"):
@@ -59,8 +59,8 @@ def test_legacy_utc_blocked_publication_is_pending_for_v2_reconstruction(tmp_pat
             "tle_match_config_digest": None,
         }
     )
-    v2 = tmp_path / "scanner-shared-tracking-v2"
-    shutil.rmtree(v2)
+    v3 = tmp_path / "scanner-shared-tracking-v3"
+    shutil.rmtree(v3)
     directory = tmp_path / "scanner-shared-tracking-v1" / "scan-test"
     directory.mkdir(parents=True)
     (directory / "manifest.json").write_bytes(_seal(legacy))

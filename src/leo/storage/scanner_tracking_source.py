@@ -100,6 +100,8 @@ class ScannerTrackingInputStore:
             receipt.capture_outcome == "complete" and receipt.continuity_attested,
             tuple(probes),
             chunks[0].configuration.probe_ms,
+            None,
+            None,
         )
 
     def _adaptive(self, session_id: str) -> TrackingInput:
@@ -147,4 +149,17 @@ class ScannerTrackingInputStore:
             manifest.timing,
             receipt.terminal.state == "completed" and receipt.source_span_attested,
             tuple(probes),
+            capture_start_utc_ns=(
+                manifest.timing.first_sample_estimate_utc_ns if manifest.timing else None
+            ),
+            capture_end_utc_ns=(
+                manifest.timing.first_sample_estimate_utc_ns
+                + round(
+                    (receipt.terminal.final_counter - receipt.terminal.first_counter)
+                    * 1e9
+                    / receipt.plan.geometry.sample_rate_hz
+                )
+                if manifest.timing
+                else None
+            ),
         )
