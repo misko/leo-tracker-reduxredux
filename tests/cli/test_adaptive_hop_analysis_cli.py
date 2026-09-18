@@ -26,7 +26,9 @@ def test_pending_selection_resumes_then_orders_oldest_without_reading_iq():
             for i, name in enumerate(states)
         )
     )
-    presentation = SimpleNamespace(status=lambda name, **kw: SimpleNamespace(state=states[name]))
+    presentation = SimpleNamespace(
+        status_for_capture=lambda capture, **kw: SimpleNamespace(state=states[capture.session_id])
+    )
     assert cli.next_pending(captures, presentation, probe_stride_ms=10) == "metrics"
     states["metrics"] = "figures_ready"
     assert cli.next_pending(captures, presentation, probe_stride_ms=10) == "partial"
@@ -56,7 +58,9 @@ def test_pending_selection_prioritizes_newest_native_capture_before_legacy_backl
             )
         )
     )
-    presentation = SimpleNamespace(status=lambda name, **kw: SimpleNamespace(state=states[name]))
+    presentation = SimpleNamespace(
+        status_for_capture=lambda capture, **kw: SimpleNamespace(state=states[capture.session_id])
+    )
     assert cli.next_pending(captures, presentation, probe_stride_ms=120) == "native-new"
     states["native-old"] = "partial"
     assert cli.next_pending(captures, presentation, probe_stride_ms=120) == "native-old"
@@ -78,7 +82,9 @@ def test_pending_sessions_pairs_current_work_with_oldest_backlog():
         )
 
     captures = SimpleNamespace(iter_sessions=iter_sessions)
-    presentation = SimpleNamespace(status=lambda name, **kw: SimpleNamespace(state=states[name]))
+    presentation = SimpleNamespace(
+        status_for_capture=lambda capture, **kw: SimpleNamespace(state=states[capture.session_id])
+    )
     assert cli.pending_sessions(captures, presentation, probe_stride_ms=120, limit=2) == (
         "new",
         "old",
