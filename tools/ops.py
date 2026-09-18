@@ -96,6 +96,18 @@ _LEO_SERVICE_UNITS = (
     "leo-retention.service",
     "leo-tle-collection.service",
 )
+# These production scanner units are installed independently of the immutable
+# application release, but they use its queue and presentation contracts.
+# Include them in the cutover fence so a release never changes contracts while
+# an external scanner or spool transfer is still running.
+_EXTERNAL_SCANNER_TIMER_UNITS = (
+    "leo-v052-adaptive.timer",
+    "leo-adaptive-spool-transfer.timer",
+)
+_EXTERNAL_SCANNER_SERVICE_UNITS = (
+    "leo-v052-adaptive.service",
+    "leo-adaptive-spool-transfer.service",
+)
 _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_CAPTURE_PROFILE": "starlink-ch4-lower-2p5m-60s-native-bandwidth-v4",
     "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-native-bandwidth-v4",
@@ -2262,14 +2274,22 @@ def _backup_database(*, target: str, database_url: str) -> Path:
 
 def _quiesce_runtime() -> None:
     # Timers are stopped first so no passive unit can be activated while the
-    # corresponding services are being drained.  The inventory mirrors every
-    # service and timer shipped beneath deploy/systemd.
+    # corresponding services are being drained.  Release-owned units and the
+    # external scanner that consumes their contracts share this cutover fence.
     subprocess.run(
         ("/usr/bin/systemctl", "stop", *_LEO_TIMER_UNITS),
         check=False,
     )
     subprocess.run(
+        ("/usr/bin/systemctl", "stop", *_EXTERNAL_SCANNER_TIMER_UNITS),
+        check=False,
+    )
+    subprocess.run(
         ("/usr/bin/systemctl", "stop", *_LEO_SERVICE_UNITS),
+        check=False,
+    )
+    subprocess.run(
+        ("/usr/bin/systemctl", "stop", *_EXTERNAL_SCANNER_SERVICE_UNITS),
         check=False,
     )
     for worker_pattern in (_WORKER_UNIT_PATTERN, _ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN):
@@ -2527,6 +2547,10 @@ def _start_runtime() -> None:
         ),
         check=True,
     )
+    subprocess.run(
+        ("/usr/bin/systemctl", "start", *_EXTERNAL_SCANNER_TIMER_UNITS),
+        check=True,
+    )
     persistent_analysis_timer = "leo-persistent-hop-analysis.timer"
     adaptive_analysis_queue_timer = "leo-adaptive-analysis-queue.timer"
     if ships_persistent_analysis and not ships_adaptive_analysis_queue:
@@ -2601,6 +2625,7 @@ def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
         expected_active_units.extend(
             ("leo-adaptive-analysis-queue.timer", *_ADAPTIVE_ANALYSIS_WORKER_UNITS)
         )
+    expected_active_units.extend(_EXTERNAL_SCANNER_TIMER_UNITS)
     states = subprocess.run(
         (
             "/usr/bin/systemctl",
