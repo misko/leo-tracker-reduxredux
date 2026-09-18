@@ -46,7 +46,7 @@ def test_transfer_is_incremental_and_only_reports_current_deltas(
         return "imported", archive.name
 
     first = subject.transfer_pending(bulk, spool, importer=importer)
-    assert calls == ["scan-fw-first", "scan-fw-second"]
+    assert calls == ["scan-fw-second", "scan-fw-first"]
     assert first.firmware_imported_session_ids == ("scan-fw-first",)
     assert first.firmware_unsupported == (
         {"session_id": "scan-fw-second", "reason": "missing visit"},
@@ -117,20 +117,20 @@ def test_ledger_checkpoints_each_archive_before_later_failure(
     def failing(archive: Path, _bulk: Path) -> tuple[str, str]:
         nonlocal inject_failure
         calls.append(archive.name)
-        if inject_failure and archive.name == "scan-fw-b":
+        if inject_failure and archive.name == "scan-fw-a":
             raise RuntimeError("injected")
         return "imported", archive.name
 
     with pytest.raises(RuntimeError, match="injected"):
         subject.transfer_pending(bulk, spool, importer=failing)
     ledger = json.loads((spool / subject._LEDGER_NAME).read_bytes())
-    assert set(ledger["entries"]) == {"scan-fw-a"}
+    assert set(ledger["entries"]) == {"scan-fw-b"}
 
     calls.clear()
     inject_failure = False
     result = subject.transfer_pending(bulk, spool, importer=failing)
     assert result.unchanged_count == 1
-    assert result.firmware_imported_session_ids == ("scan-fw-b",)
+    assert result.firmware_imported_session_ids == ("scan-fw-a",)
 
 
 def test_firmware_reconciliation_can_be_bounded_between_capture_slots(
@@ -150,7 +150,7 @@ def test_firmware_reconciliation_can_be_bounded_between_capture_slots(
     first = subject.transfer_pending(
         bulk, spool, importer=importer, maximum_firmware_imports=1
     )
-    assert calls == ["scan-fw-a"]
+    assert calls == ["scan-fw-c"]
     assert first.deferred_firmware_count == 2
 
     calls.clear()
@@ -160,6 +160,35 @@ def test_firmware_reconciliation_can_be_bounded_between_capture_slots(
     assert calls == ["scan-fw-b"]
     assert second.unchanged_count == 1
     assert second.deferred_firmware_count == 1
+
+
+def test_bounded_reconciliation_prioritizes_newest_capture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spool, bulk = tmp_path / "spool", tmp_path / "bulk"
+    bulk.mkdir()
+    old = _archive(spool, "scan-fw-old", b"old") / "manifest.json"
+    new = _archive(spool, "scan-fw-new", b"new") / "manifest.json"
+    old.touch()
+    new.touch()
+    old_mtime = old.stat().st_mtime_ns
+    new_mtime = old_mtime + 1_000_000_000
+    import os
+
+    os.utime(old, ns=(old_mtime, old_mtime))
+    os.utime(new, ns=(new_mtime, new_mtime))
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
+    calls: list[str] = []
+
+    def importer(archive: Path, _bulk: Path) -> tuple[str, str]:
+        calls.append(archive.name)
+        return "imported", archive.name
+
+    result = subject.transfer_pending(
+        bulk, spool, importer=importer, maximum_firmware_imports=1
+    )
+    assert calls == ["scan-fw-new"]
+    assert result.deferred_firmware_count == 1
 
 
 def test_firmware_reconciliation_rejects_nonpositive_bound(
