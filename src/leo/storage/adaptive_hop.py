@@ -634,6 +634,41 @@ class AdaptiveHopIqStore:
     def session_ids(self) -> tuple[str, ...]:
         return tuple(session.session_id for session in self.iter_sessions())
 
+    def publication_index(self) -> tuple[tuple[int, str], ...]:
+        """Return newest-first immutable manifest mtimes without reading manifests."""
+        try:
+            os.stat(_NAMESPACE, dir_fd=self._root.fileno(), follow_symlinks=False)
+        except FileNotFoundError:
+            return ()
+        namespace = self._root.child(_NAMESPACE)
+        try:
+            index = []
+            for name in os.listdir(namespace.fileno()):
+                if not _IDENTIFIER.fullmatch(name):
+                    continue
+                info = os.stat(name, dir_fd=namespace.fileno(), follow_symlinks=False)
+                if not stat.S_ISDIR(info.st_mode):
+                    raise BundleCorruptionError("adaptive session path is not a directory")
+                directory = namespace.child(name)
+                try:
+                    manifest = os.stat(
+                        "manifest.json", dir_fd=directory.fileno(), follow_symlinks=False
+                    )
+                except FileNotFoundError:
+                    continue
+                finally:
+                    directory.close()
+                if (
+                    not stat.S_ISREG(manifest.st_mode)
+                    or manifest.st_nlink != 1
+                    or not 0 < manifest.st_size <= _MAX_MANIFEST_BYTES
+                ):
+                    raise BundleCorruptionError("adaptive manifest index entry is invalid")
+                index.append((manifest.st_mtime_ns, name))
+            return tuple(sorted(index, reverse=True))
+        finally:
+            namespace.close()
+
     def history_index(self) -> tuple[tuple[int, str], ...]:
         """Return immutable publication keys without parsing every multi-megabyte receipt."""
         try:

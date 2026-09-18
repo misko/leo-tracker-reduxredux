@@ -87,38 +87,14 @@ def next_pending(captures, presentation, *, probe_stride_ms: int) -> str | None:
 def pending_sessions(
     captures, presentation, *, probe_stride_ms: int, limit: int
 ) -> tuple[str, ...]:
-    """Choose a current session and an old session without starving either lane."""
+    """Choose newest pending sessions; spare capacity continuously drains backlog."""
     if limit < 1:
         raise ValueError("pending session limit must be positive")
-    pending = []
-    current = None
-    for capture in captures.iter_sessions():
+    selected = []
+    for _, session_id in captures.publication_index():
+        capture = captures.inspect(session_id)
         status = presentation.status_for_capture(capture, probe_stride_ms=probe_stride_ms)
-        if status is None:
-            raise ValueError("published adaptive capture disappeared during selection")
         if status.state != "figures_ready":
-            pending.append((capture.manifest.created_utc_ns, capture.session_id))
-            host_native = isinstance(
-                getattr(capture.manifest, "receipt", None), HostAdaptiveHopReceiptV2
-            )
-            priority = {
-                "metrics_complete": 0,
-                "partial": 1,
-                "not_started": 2 if host_native else 3,
-            }[status.state]
-            creation_order = (
-                -capture.manifest.created_utc_ns
-                if host_native and status.state == "not_started"
-                else capture.manifest.created_utc_ns
-            )
-            candidate = (priority, creation_order, capture.session_id)
-            if current is None or candidate < current:
-                current = candidate
-    if not pending:
-        return ()
-    selected = [current[2]] if current is not None else []
-    for _, session_id in sorted(pending):
-        if session_id not in selected:
             selected.append(session_id)
         if len(selected) == limit:
             break

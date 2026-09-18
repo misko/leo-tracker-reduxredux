@@ -41,6 +41,9 @@ def test_adaptive_store_lossless_actual_visit_roundtrip(tmp_path, rate, mode):
     assert store.inspect(published.session_id) == published
     assert store.verify(published.session_id) == published
     assert store.session_ids() == (published.session_id,)
+    publication_index = store.publication_index()
+    assert publication_index[0][0] > 0
+    assert publication_index[0][1] == published.session_id
     assert [c.visit_count for c in published.manifest.chunks] == [8, 8, 8, 5]
     event, samples = store.read_visit_ci16(published, 25)
     assert event.event.target_index == (2 if mode == "adaptive" else 1)
@@ -62,6 +65,7 @@ def test_adaptive_read_only_and_missing_records_create_nothing(tmp_path):
     receipt = receipt_fixture(count=0)
     store = AdaptiveHopIqStore(tmp_path, read_only=True)
     assert store.session_ids() == ()
+    assert store.publication_index() == ()
     with pytest.raises(BundleNotFoundError):
         store.inspect(receipt.session_id)
     with pytest.raises(BundleStateError, match="read-only"):
