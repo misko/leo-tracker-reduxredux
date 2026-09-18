@@ -19,6 +19,8 @@ def render_persistent_hop_tracking_png(
     associations: tuple[PersistentHopTleCandidateV1, ...],
     *,
     catalogue_diagnostics: bool = True,
+    capture_start_utc_ns: int | None = None,
+    capture_end_utc_ns: int | None = None,
 ) -> bytes:
     """Plot the primary TLE-blind tracks and annotate candidate-only matches."""
 
@@ -30,7 +32,7 @@ def render_persistent_hop_tracking_png(
         for tracklet_id in item.tracklet_ids
     }
     primary_ids = set(trajectory.hypotheses[0].tracklet_ids)
-    start_ns = min(
+    first_support_ns = min(
         by_candidate[point.candidate_id].support_center_utc_ns
         for tracklet in trajectory.tracklets
         if tracklet.tracklet_id in primary_ids
@@ -45,7 +47,8 @@ def render_persistent_hop_tracking_png(
             item for item in trajectory.tracklets if item.tracklet_id in primary_ids
         ):
             rows = tuple(by_candidate[point.candidate_id] for point in tracklet.points)
-            x = [(item.support_center_utc_ns - start_ns) / 1e9 for item in rows]
+            origin_ns = capture_start_utc_ns or first_support_ns
+            x = [(item.support_center_utc_ns - origin_ns) / 1e9 for item in rows]
             y = [point.normalized_dealiased_cfo_hz for point in tracklet.points]
             channel, edge, receiver_id, _actual_rf_hz = tracklet.lane_key
             association = association_by_tracklet.get(tracklet.tracklet_id)
@@ -72,7 +75,9 @@ def render_persistent_hop_tracking_png(
                 color=colors[index % len(colors)],
                 label=label,
             )
-        axis.set_xlabel("UTC-bound time since first retained support (s)")
+        axis.set_xlabel("Device time since capture start (s)")
+        if capture_start_utc_ns is not None and capture_end_utc_ns is not None:
+            axis.set_xlim(0.0, (capture_end_utc_ns - capture_start_utc_ns) / 1e9)
         axis.set_ylabel(
             f"Dealiased CFO normalized to {trajectory.canonical_rf_hz / 1e9:.1f} GHz (Hz)"
         )

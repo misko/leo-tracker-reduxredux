@@ -62,6 +62,8 @@ class TrackingInput:
     qualified: bool
     probes: tuple[TrackingProbe, ...]
     probe_ms: int = 20
+    capture_start_utc_ns: int | None = None
+    capture_end_utc_ns: int | None = None
 
 
 class TrackingArtifactV1(ContractModel):
@@ -163,6 +165,11 @@ class ScannerTrackingProductV2(ScannerTrackingProductV1):
         return self
 
 
+class ScannerTrackingProductV3(ScannerTrackingProductV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v3"] = "scanner-shared-tracking-v3"  # type: ignore[assignment]
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -179,8 +186,18 @@ class ScannerTrackingStatusV2(ContractModel):
     product: ScannerTrackingProductV2 | None = None
 
 
+class ScannerTrackingStatusV3(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV3 | None = None
+
+
 class ScannerTrackingReader(Protocol):
-    def status(self, session_id: str) -> ScannerTrackingStatusV1 | ScannerTrackingStatusV2: ...
+    def status(
+        self, session_id: str
+    ) -> ScannerTrackingStatusV1 | ScannerTrackingStatusV2 | ScannerTrackingStatusV3: ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 
 
