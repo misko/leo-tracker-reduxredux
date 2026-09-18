@@ -34,6 +34,7 @@ class TransferSummary:
     firmware_imported_session_ids: tuple[str, ...]
     firmware_unsupported: tuple[dict[str, str], ...]
     unchanged_count: int
+    deferred_firmware_count: int = 0
 
     def as_json(self) -> dict[str, Any]:
         # IDs are current-run deltas, never the repeatedly emitted history.
@@ -45,6 +46,7 @@ class TransferSummary:
             "firmware_unsupported_count": len(self.firmware_unsupported),
             "firmware_unsupported": self.firmware_unsupported,
             "unchanged_count": self.unchanged_count,
+            "deferred_firmware_count": self.deferred_firmware_count,
         }
 
 
@@ -181,7 +183,10 @@ def transfer_pending(
     spool_root: Path,
     *,
     importer: Callable[[Path, Path], tuple[str, str]] = _isolated_import,
+    maximum_firmware_imports: int | None = None,
 ) -> TransferSummary:
+    if maximum_firmware_imports is not None and maximum_firmware_imports < 1:
+        raise ValueError("maximum_firmware_imports must be positive")
     spool_root.mkdir(parents=True, exist_ok=True)
     lock_fd = os.open(spool_root / _LOCK_NAME, os.O_RDWR | os.O_CREAT, 0o640)
     try:
@@ -197,6 +202,8 @@ def transfer_pending(
         imported: list[str] = []
         unsupported: list[dict[str, str]] = []
         unchanged = 0
+        attempted = 0
+        deferred = 0
         firmware_root = spool_root / "v052-adaptive"
         importer_digest = _importer_digest(importer)
         for manifest in sorted(firmware_root.glob("scan-fw-*/manifest.json")):
@@ -210,6 +217,10 @@ def transfer_pending(
             ):
                 unchanged += 1
                 continue
+            if maximum_firmware_imports is not None and attempted >= maximum_firmware_imports:
+                deferred += 1
+                continue
+            attempted += 1
             status, detail = importer(manifest.parent, bulk_root)
             if status == "imported":
                 imported.append(detail)
@@ -231,7 +242,9 @@ def transfer_pending(
             ledger[session_id] = entry
             # Checkpoint every terminal item. A crash only repeats the current archive.
             _write_ledger(ledger_path, ledger)
-        return TransferSummary(tuple(recovered), tuple(imported), tuple(unsupported), unchanged)
+        return TransferSummary(
+            tuple(recovered), tuple(imported), tuple(unsupported), unchanged, deferred
+        )
     finally:
         os.close(lock_fd)
 
@@ -240,8 +253,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--spool-root", type=Path, required=True)
+    parser.add_argument("--maximum-firmware-imports", type=int, default=1)
     arguments = parser.parse_args()
-    summary = transfer_pending(arguments.bulk_root, arguments.spool_root)
+    summary = transfer_pending(
+        arguments.bulk_root,
+        arguments.spool_root,
+        maximum_firmware_imports=arguments.maximum_firmware_imports,
+    )
     print(
         json.dumps(
             summary.as_json(),
