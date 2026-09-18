@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 import leo.cli.firmware_adaptive_import as importer
+from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV4, HostAdaptiveHopReceiptV5
 
 
 def document(*, first_frequency: int = 959_687_498) -> dict:
@@ -65,3 +66,79 @@ def test_pending_import_keeps_known_unsupported_archives_visible(monkeypatch, tm
 
     assert imported == ("scan-fw-new",)
     assert unsupported == ({"session_id": "scan-fw-old", "reason": "old center"},)
+
+
+def sparse_document(rate: int) -> dict:
+    dwell = rate * 120 // 1000
+    guard = rate // 1000
+    count = 4
+    final = 10_000_000_000
+    source_first = final - rate * 300
+    first_valid = source_first + guard
+    visits = []
+    for ordinal in range(count):
+        valid_start = first_valid + ordinal * (dwell + guard)
+        visits.append(
+            {
+                "iq": None if ordinal == 1 else {"relative_path": f"visit-{ordinal:06d}.ci16.zst"},
+                "record": {
+                    "frequency_hz": 959_687_498,
+                    "selection_counter": valid_start - 2 * guard,
+                    "transition_before": valid_start - guard,
+                    "valid_start": valid_start,
+                    "valid_end": valid_start + dwell,
+                },
+            }
+        )
+    # The importer derives the 300-second source origin from the last record.
+    shift = final - visits[-1]["record"]["valid_end"]
+    for entry in visits:
+        for key in ("selection_counter", "transition_before", "valid_start", "valid_end"):
+            entry["record"][key] += shift
+    settings = {
+        "center_frequency_hz": 1_000_000_000,
+        "sample_rate_hz": rate,
+        "bandwidth_hz": rate,
+        "gain_modes": ["manual"],
+        "gain_db": [40.0],
+    }
+    return {
+        "schema": "org.leo.firmware-adaptive-iq/v1",
+        "physical_receiver": 0,
+        "session_id": f"scan-fw-sparse-{rate}",
+        "setup": {
+            "source_rate_hz": rate,
+            "duration_ms": 300_000,
+            "generation": 7,
+            "session": 11,
+            "analysis_digest": "a" * 64,
+        },
+        "visits": visits,
+        "terminal": {"restore_after": final + 1},
+        "evidence": {
+            "preparation": {"original": settings},
+            "restoration": {"observed": settings},
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    ("rate", "receipt_type"),
+    [
+        (10_000_000, HostAdaptiveHopReceiptV5),
+        (15_000_000, HostAdaptiveHopReceiptV4),
+        (20_000_000, HostAdaptiveHopReceiptV4),
+    ],
+)
+def test_sparse_firmware_receipt_preserves_source_gap_without_interpolation(
+    rate, receipt_type
+) -> None:
+    receipt = importer._receipt(sparse_document(rate), "sha256:" + "b" * 64)
+
+    assert isinstance(receipt, receipt_type)
+    assert receipt.retained_visit_indices == (0, 2, 3)
+    assert tuple(visit.event.visit_index for visit in receipt.visits) == (0, 2, 3)
+    assert receipt.complete_visit_count == 3
+    assert receipt.valid_sample_count == 3 * rate * 120 // 1000
+    assert receipt.transport_missing_sample_count == rate * 120 // 1000
+    assert receipt.unclassified_sample_count >= receipt.transport_missing_sample_count

@@ -24,6 +24,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV3,
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV4,
+    HostAdaptiveHopReceiptV5,
     HostAdaptiveHopTerminalV2,
     HostDecisionConfigurationV1,
     HostDecisionConfigurationV2,
@@ -163,10 +164,6 @@ def _events(
     )
     for ordinal, entry in enumerate(document["visits"]):
         record = entry["record"]
-        if entry["iq"] is None:
-            raise UnsupportedFirmwareArchiveError(
-                "firmware archive contains a skipped visit; sparse 10 MS/s import is unsupported"
-            )
         frequency = int(record["frequency_hz"])
         target_index = min(by_frequency, key=lambda value: abs(value - frequency))
         if abs(target_index - frequency) > 10:
@@ -215,13 +212,14 @@ def _events(
 def _receipt(document: dict, archive_digest: str):
     plan = _plan(document)
     events = _events(document, plan)
+    retained = tuple(index for index, entry in enumerate(document["visits"]) if entry["iq"])
     session_id = document["session_id"]
     first, final = (
         events[0].invalid_start_counter,
         events[-1].valid_start_counter + plan.geometry.valid_visit_samples,
     )
     invalid = sum(event.valid_start_counter - event.invalid_start_counter for event in events)
-    valid = len(events) * plan.geometry.valid_visit_samples
+    valid = len(retained) * plan.geometry.valid_visit_samples
     denominator = final - first
     original = _settings(document["evidence"]["preparation"]["original"])
     restored = _settings(document["evidence"]["restoration"]["observed"])
@@ -233,7 +231,11 @@ def _receipt(document: dict, archive_digest: str):
         events_emitted=len(events),
         next_event_sequence=len(events),
         last_block_sequence=max(0, len(events) - 1),
-        last_block_end_counter=final,
+        last_block_end_counter=(
+            events[retained[-1]].valid_start_counter + plan.geometry.valid_visit_samples
+            if retained
+            else first
+        ),
         first_counter=first,
         final_counter=final,
         restore_before_counter=final,
@@ -247,7 +249,8 @@ def _receipt(document: dict, archive_digest: str):
     imported_at = time.monotonic_ns()
     failure = f"firmware-v0.52 source archive {archive_digest}; online host GLRT was not run"
     records = []
-    for event in events:
+    for source_index in retained:
+        event = events[source_index]
         common = dict(
             session_id=terminal.session_id,
             generation=plan.policy.generation,
@@ -291,7 +294,7 @@ def _receipt(document: dict, archive_digest: str):
         kernel_buffers_readback=16,
         terminal=terminal,
         events=events,
-        complete_visit_count=len(events),
+        complete_visit_count=len(retained),
         valid_sample_count=valid,
         transition_invalid_sample_count=invalid,
         unclassified_sample_count=denominator - valid - invalid,
@@ -308,12 +311,19 @@ def _receipt(document: dict, archive_digest: str):
         ),
         host_decisions=tuple(records),
     )
-    if plan.geometry.sample_rate_hz == 10_000_000:
+    missing = (len(events) - len(retained)) * plan.geometry.valid_visit_samples
+    if plan.geometry.sample_rate_hz == 10_000_000 and len(retained) == len(events):
         return HostAdaptiveHopReceiptV2(**common_receipt)
+    if plan.geometry.sample_rate_hz == 10_000_000:
+        return HostAdaptiveHopReceiptV5(
+            **common_receipt,
+            retained_visit_indices=retained,
+            transport_missing_sample_count=missing,
+        )
     return HostAdaptiveHopReceiptV4(
         **common_receipt,
-        retained_visit_indices=tuple(range(len(events))),
-        transport_missing_sample_count=0,
+        retained_visit_indices=retained,
+        transport_missing_sample_count=missing,
     )
 
 
@@ -346,8 +356,13 @@ def import_archive(archive: Path, bulk_root: Path) -> str:
             pass
         writer = store.begin(receipt.session_id, receipt.plan)
         try:
-            for entry, visit in zip(document["visits"], receipt.visits, strict=True):
+            retained = getattr(
+                receipt, "retained_visit_indices", range(receipt.complete_visit_count)
+            )
+            for source_index, visit in zip(retained, receipt.visits, strict=True):
+                entry = document["visits"][source_index]
                 iq = entry["iq"]
+                assert iq is not None
                 compressed = (archive / iq["relative_path"]).read_bytes()
                 if sha256_digest(compressed) != iq["compressed_sha256"]:
                     raise ValueError("firmware archive compressed IQ digest mismatch")

@@ -10,12 +10,14 @@ from leo.storage.adaptive_hop import (
     HostAdaptiveHopIqManifestV2,
     HostAdaptiveHopIqManifestV3,
     HostAdaptiveHopIqManifestV4,
+    HostAdaptiveHopIqManifestV5,
 )
 from leo.storage.errors import BundleStateError
 from tests.scanner.adaptive_hop_fixtures import block_fixture, receipt_fixture, timing_fixture
 from tests.scanner.host_adaptive_fixtures import (
     host_receipt,
     multirate_host_receipt,
+    sparse_host_receipt,
     sparse_multirate_host_receipt,
 )
 
@@ -118,6 +120,29 @@ def test_sparse_multirate_store_retains_source_indices_and_packed_iq_order(tmp_p
                 visit, iq = reader.read_visit_ci16(ordinal)
                 assert visit.event.visit_index == source_index
                 np.testing.assert_array_equal(iq[1, 0], [ordinal + 1, -32768])
+    finally:
+        writer.abort()
+        store.close()
+
+
+def test_sparse_10m_store_retains_source_indices_and_packed_iq_order(tmp_path):
+    receipt = sparse_host_receipt(session_id="native-10m-sparse")
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(receipt.session_id, receipt.plan)
+    try:
+        for index in range(receipt.complete_visit_count):
+            writer.append(block(receipt, index))
+        published = writer.finish(receipt, timing=timing_fixture(receipt, SingleRxHopTimingV2))
+        assert isinstance(published.manifest, HostAdaptiveHopIqManifestV5)
+        assert published.manifest.receipt.retained_visit_indices == (0, 1, 3, 4, 5)
+        assert [visit.event.visit_index for visit in published.manifest.receipt.visits] == [
+            0,
+            1,
+            3,
+            4,
+            5,
+        ]
+        assert store.verify(receipt.session_id) == published
     finally:
         writer.abort()
         store.close()
