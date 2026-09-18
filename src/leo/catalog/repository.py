@@ -2273,7 +2273,9 @@ class CatalogRepository:
             if capacity is None:
                 raise InvalidStateError("resource capacity is absent: memory")
             leased = session.scalar(
-                select(func.count()).select_from(ProcessingJob).where(
+                select(func.count())
+                .select_from(ProcessingJob)
+                .where(
                     ProcessingJob.state == JobState.LEASED.value,
                     ProcessingJob.resource_class == "memory",
                     ProcessingJob.lease_expires_at > now,

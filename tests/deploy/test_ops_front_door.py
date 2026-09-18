@@ -1721,6 +1721,7 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
         ),
     ]
     assert {
+        "leo-adaptive-analysis-queue.service",
         "leo-persistent-hop-analysis.service",
         "leo-acquisition-soak.service",
         "leo-qualification.service",
@@ -1730,6 +1731,7 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
         "leo-tle-collection.service",
     } <= set(OPS._LEO_SERVICE_UNITS)
     assert {
+        "leo-adaptive-analysis-queue.timer",
         "leo-persistent-hop-analysis.timer",
         "leo-qualification.timer",
         "leo-release-qualification.timer",
@@ -1739,7 +1741,7 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
     } == set(OPS._LEO_TIMER_UNITS)
     unit_root = ROOT / "deploy/systemd"
     assert set(OPS._LEO_SERVICE_UNITS) == {
-        path.name for path in unit_root.glob("leo-*.service") if path.name != "leo-worker@.service"
+        path.name for path in unit_root.glob("leo-*.service") if not path.name.endswith("@.service")
     }
     assert set(OPS._LEO_TIMER_UNITS) == {path.name for path in unit_root.glob("leo-*.timer")}
 
@@ -1771,6 +1773,7 @@ def test_runtime_start_enables_persistent_analysis_only_for_a_release_that_ships
 
     monkeypatch.setattr(OPS, "_selected_release_revision", lambda: revision)
     monkeypatch.setattr(OPS, "_release_ships_persistent_hop_analysis", lambda _revision: True)
+    monkeypatch.setattr(OPS, "_release_ships_adaptive_analysis_queue", lambda _revision: True)
     monkeypatch.setattr(OPS.subprocess, "run", run)
 
     OPS._start_runtime()
@@ -1788,10 +1791,12 @@ def test_runtime_start_enables_persistent_analysis_only_for_a_release_that_ships
         "leo-persistent-hop-analysis.timer",
         "leo-retention.timer",
         "leo-tle-collection.timer",
+        "leo-adaptive-analysis-queue.timer",
     )
 
     calls.clear()
     monkeypatch.setattr(OPS, "_release_ships_persistent_hop_analysis", lambda _revision: False)
+    monkeypatch.setattr(OPS, "_release_ships_adaptive_analysis_queue", lambda _revision: False)
     OPS._start_runtime()
 
     assert not any("reset-failed" in call for call in calls)
