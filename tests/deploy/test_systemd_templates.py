@@ -249,6 +249,7 @@ def test_adaptive_analysis_units_put_global_arguments_before_the_subcommand() ->
         command = shlex.split(_unit(unit)["Service"]["ExecStart"])
         assert command.index("--bulk-root") < command.index(subcommand)
 
+
 def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     acquisition = _unit("leo-acquisition.service")["Service"]
     worker = _unit("leo-worker@.service")["Service"]
