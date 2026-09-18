@@ -66,30 +66,33 @@ def test_pending_selection_prioritizes_newest_native_capture_before_legacy_backl
     assert cli.next_pending(captures, presentation, probe_stride_ms=120) == "native-old"
 
 
-def test_pending_sessions_pairs_current_work_with_oldest_backlog():
+def test_pending_sessions_uses_spare_lane_to_drain_next_backlog_item():
     states = {"old": "not_started", "middle": "not_started", "new": "not_started"}
-    iterations = 0
-
-    def iter_sessions():
-        nonlocal iterations
-        iterations += 1
-        return iter(
-            SimpleNamespace(
-                session_id=name,
-                manifest=SimpleNamespace(created_utc_ns=index, receipt=host_receipt()),
-            )
-            for index, name in enumerate(states, start=1)
+    sessions = {
+        name: SimpleNamespace(
+            session_id=name,
+            manifest=SimpleNamespace(created_utc_ns=index, receipt=host_receipt()),
         )
+        for index, name in enumerate(states, start=1)
+    }
+    inspected = []
 
-    captures = SimpleNamespace(iter_sessions=iter_sessions)
+    def inspect(session_id):
+        inspected.append(session_id)
+        return sessions[session_id]
+
+    captures = SimpleNamespace(
+        publication_index=lambda: ((3, "new"), (2, "middle"), (1, "old")),
+        inspect=inspect,
+    )
     presentation = SimpleNamespace(
         status_for_capture=lambda capture, **kw: SimpleNamespace(state=states[capture.session_id])
     )
     assert cli.pending_sessions(captures, presentation, probe_stride_ms=120, limit=2) == (
         "new",
-        "old",
+        "middle",
     )
-    assert iterations == 1
+    assert inspected == ["new", "middle"]
 
 
 @pytest.mark.parametrize("stride", [10, 120])
