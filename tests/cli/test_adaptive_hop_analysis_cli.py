@@ -64,20 +64,26 @@ def test_pending_selection_prioritizes_newest_native_capture_before_legacy_backl
 
 def test_pending_sessions_pairs_current_work_with_oldest_backlog():
     states = {"old": "not_started", "middle": "not_started", "new": "not_started"}
-    captures = SimpleNamespace(
-        iter_sessions=lambda: iter(
+    iterations = 0
+
+    def iter_sessions():
+        nonlocal iterations
+        iterations += 1
+        return iter(
             SimpleNamespace(
                 session_id=name,
                 manifest=SimpleNamespace(created_utc_ns=index, receipt=host_receipt()),
             )
             for index, name in enumerate(states, start=1)
         )
-    )
+
+    captures = SimpleNamespace(iter_sessions=iter_sessions)
     presentation = SimpleNamespace(status=lambda name, **kw: SimpleNamespace(state=states[name]))
     assert cli.pending_sessions(captures, presentation, probe_stride_ms=120, limit=2) == (
         "new",
         "old",
     )
+    assert iterations == 1
 
 
 @pytest.mark.parametrize("stride", [10, 120])
