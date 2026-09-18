@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -86,7 +87,11 @@ def run_once(*, bulk_root: Path, worker_id: str, catalog: CatalogRepository | No
         "--maximum-seconds",
         str(_SLICE_SECONDS),
     ]
-    completed = subprocess.run(command, text=True, capture_output=True, check=False)
+    try:
+        completed = subprocess.run(command, text=True, capture_output=True, check=False)
+    except KeyboardInterrupt:
+        catalog.yield_adaptive_analysis_job(job_id=lease.job_id, worker_id=worker_id)
+        raise
     payload = json.loads(completed.stdout) if completed.stdout.strip().startswith("{") else {}
     if completed.returncode or payload.get("state") == "failed":
         catalog.fail_job(
@@ -106,13 +111,19 @@ def run_once(*, bulk_root: Path, worker_id: str, catalog: CatalogRepository | No
 def run_worker(*, bulk_root: Path, worker_id: str, poll_seconds: float) -> None:
     """Run without allocating a new database pool for every idle poll."""
     catalog, engine = _worker_catalog()
+    previous_sigterm = signal.signal(signal.SIGTERM, _interrupt_worker)
     try:
         while True:
             claimed = run_once(bulk_root=bulk_root, worker_id=worker_id, catalog=catalog)
             if not claimed:
                 time.sleep(poll_seconds)
     finally:
+        signal.signal(signal.SIGTERM, previous_sigterm)
         engine.dispose()
+
+
+def _interrupt_worker(_signal_number: int, _frame: object) -> None:
+    raise KeyboardInterrupt
 
 
 def main() -> None:

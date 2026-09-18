@@ -69,6 +69,29 @@ def test_run_once_yields_checkpointed_slice(monkeypatch, tmp_path) -> None:
     assert calls == [{"job_id": 7, "worker_id": "worker-1"}]
 
 
+def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:
+    calls: list[dict[str, object]] = []
+
+    class Catalog:
+        def claim_adaptive_analysis_job(self, **kwargs):
+            return _lease()
+
+        def yield_adaptive_analysis_job(self, **kwargs):
+            calls.append(kwargs)
+
+    monkeypatch.setattr(subject, "_catalog", Catalog)
+    monkeypatch.setattr(
+        subject.subprocess,
+        "run",
+        lambda *args, **kwargs: (_ for _ in ()).throw(KeyboardInterrupt),
+    )
+
+    with suppress(KeyboardInterrupt):
+        subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
+
+    assert calls == [{"job_id": 7, "worker_id": "worker-1"}]
+
+
 def test_worker_reuses_one_bounded_catalog_pool_and_disposes_it(monkeypatch, tmp_path) -> None:
     class Catalog:
         pass

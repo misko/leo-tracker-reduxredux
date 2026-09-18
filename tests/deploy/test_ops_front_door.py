@@ -1704,6 +1704,7 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
         ("/usr/bin/systemctl", "stop", *OPS._EXTERNAL_SCANNER_TIMER_UNITS),
         ("/usr/bin/systemctl", "stop", *OPS._LEO_SERVICE_UNITS),
         ("/usr/bin/systemctl", "stop", *OPS._EXTERNAL_SCANNER_SERVICE_UNITS),
+        ("/usr/bin/systemctl", "stop", OPS._WORKER_UNIT_PATTERN),
         (
             "/usr/bin/systemctl",
             "kill",
@@ -1711,7 +1712,7 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
             "--signal=SIGKILL",
             OPS._WORKER_UNIT_PATTERN,
         ),
-        ("/usr/bin/systemctl", "stop", OPS._WORKER_UNIT_PATTERN),
+        ("/usr/bin/systemctl", "stop", OPS._ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN),
         (
             "/usr/bin/systemctl",
             "kill",
@@ -1719,7 +1720,6 @@ def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
             "--signal=SIGKILL",
             OPS._ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN,
         ),
-        ("/usr/bin/systemctl", "stop", OPS._ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN),
         (
             "/usr/bin/systemctl",
             "list-units",
