@@ -23,7 +23,10 @@ from leo.analysis.persistent_hop_trajectory import (
     reconstruct_persistent_hop_trajectories,
 )
 from leo.analysis.research.scanner_tle_screen import rank_curves, sample_grid
-from leo.application.scanner_trajectory import project_scanner_candidates
+from leo.application.scanner_trajectory import (
+    project_scanner_candidates,
+    timing_is_qualified_for_tle,
+)
 from leo.contracts.catalogue_association import CataloguePredictionSupportV1
 from leo.contracts.digests import canonical_digest
 from leo.operations.tle_archive import TleArchiveReader
@@ -37,6 +40,14 @@ from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 def _rms(values: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.square(values))))
+
+
+def _qualified_start_utc_ns(source) -> int:
+    """Use the same current UTC qualification policy as catalogue matching."""
+
+    if not timing_is_qualified_for_tle(source.timing):
+        raise ValueError("qualified UTC is required")
+    return source.timing.first_sample_estimate_utc_ns
 
 
 def _apply_common_limits(left, right) -> None:
@@ -200,9 +211,7 @@ def build_report(
         source = sources.load(session_id)
     finally:
         sources.close()
-    if source.timing is None or not source.timing.qualified:
-        raise ValueError("qualified UTC is required")
-    start = source.timing.first_sample_estimate_utc_ns
+    start = _qualified_start_utc_ns(source)
     site = resolve_preset(site_name)
     trajectory_config = PersistentHopTrajectoryConfig()
     trajectory = reconstruct_persistent_hop_trajectories(
