@@ -1682,6 +1682,13 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
     assert order == ["quiesce", "migration", "preflight", "start", "quiesce"]
 
 
+def test_adaptive_worker_inventory_matches_four_heavy_and_four_memory_slots() -> None:
+    assert (
+        tuple(f"leo-adaptive-analysis-worker@{index}.service" for index in range(1, 9))
+        == OPS._ADAPTIVE_ANALYSIS_WORKER_UNITS
+    )
+
+
 def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
