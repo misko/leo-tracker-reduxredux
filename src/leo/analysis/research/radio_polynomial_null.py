@@ -1,10 +1,12 @@
 """Training-frozen support-integrated radio-polynomial prediction null.
 
 This pure analyzer is an equal-row, equal-noise descriptive comparator for the
-catalogue model.  It fits line, quadratic, and cubic receiver-relative CFO
-polynomials on an explicit chronological training prefix, freezes each fit,
-and scores the identical future suffix once.  Coefficient uncertainty from the
-training fit is propagated into the dense future predictive covariance.
+catalogue model. It fits line, quadratic, and cubic receiver-relative CFO
+polynomials on an explicit training partition and scores the frozen fit on the
+same evaluation partition. The default is chronological prediction; a labelled
+randomized-observation policy is used for fixed-orbit TLE residual comparison.
+Coefficient uncertainty from the training fit is propagated into the dense
+evaluation predictive covariance.
 
 The null does not rank NORADs, produce identity probabilities, calibrate a
 threshold, or authorize execution on the opened long arcs.  It is intended to
@@ -27,6 +29,7 @@ from leo.contracts.catalogue_association import (
 from leo.contracts.digests import canonical_digest
 
 _ALGORITHM_VERSION = "training-frozen-support-integrated-radio-polynomial-null-v1"
+_RANDOMIZED_PARTITION_POLICY = "deterministic-randomized-observation-v1"
 
 
 class RadioPolynomialNullInputError(ValueError):
@@ -41,12 +44,20 @@ class RadioPolynomialNullNumericalError(ValueError):
 class RadioPolynomialNullConfig:
     training_observation_ids: tuple[str, ...]
     evaluation_observation_ids: tuple[str, ...]
+    observation_partition_policy: Literal[
+        "chronological-future-v1", "deterministic-randomized-observation-v1"
+    ] = "chronological-future-v1"
     polynomial_degrees: tuple[int, int, int] = (1, 2, 3)
     calendar_block_duration_s: float = 1.0
     maximum_observation_count: int = 4_096
     maximum_dense_evaluation_rows: int = 2_048
 
     def __post_init__(self) -> None:
+        if self.observation_partition_policy not in (
+            "chronological-future-v1",
+            _RANDOMIZED_PARTITION_POLICY,
+        ):
+            raise RadioPolynomialNullInputError("null observation partition policy is unsupported")
         if self.polynomial_degrees != (1, 2, 3):
             raise RadioPolynomialNullInputError("null degrees must be exactly line/quadratic/cubic")
         if len(self.training_observation_ids) < 4 or not self.evaluation_observation_ids:
@@ -94,6 +105,9 @@ class RadioPolynomialNullScore:
 class RadioPolynomialNullResult:
     graph_content_digest: str
     observation_partition_digest: str
+    observation_partition_policy: Literal[
+        "chronological-future-v1", "deterministic-randomized-observation-v1"
+    ]
     training_observation_ids: tuple[str, ...]
     evaluation_observation_ids: tuple[str, ...]
     scores: tuple[RadioPolynomialNullScore, ...]
@@ -107,7 +121,7 @@ class RadioPolynomialNullResult:
     support_integrated_design: Literal[True] = field(default=True, init=False)
     observation_uncertainty_used: Literal[True] = field(default=True, init=False)
     training_only_fit: Literal[True] = field(default=True, init=False)
-    future_scored_once_without_refit: Literal[True] = field(default=True, init=False)
+    evaluation_scored_once_without_refit: Literal[True] = field(default=True, init=False)
     thresholds_are_unset: Literal[True] = field(default=True, init=False)
     identity_probability_produced: Literal[False] = field(default=False, init=False)
     association_gate_produced: Literal[False] = field(default=False, init=False)
@@ -173,7 +187,10 @@ def score_radio_polynomial_null(
         for item in sorted(evaluation, key=lambda row: row.support_center_utc_ns)
     ):
         raise RadioPolynomialNullInputError("partition inventories must be chronological")
-    if training[-1].support_end_utc_ns > evaluation[0].support_start_utc_ns:
+    if (
+        config.observation_partition_policy == "chronological-future-v1"
+        and training[-1].support_end_utc_ns > evaluation[0].support_start_utc_ns
+    ):
         raise RadioPolynomialNullInputError("training support must end before future support")
 
     reference_utc_ns = training[len(training) // 2].support_center_utc_ns
@@ -191,6 +208,7 @@ def score_radio_polynomial_null(
         {
             "algorithm_version": _ALGORITHM_VERSION,
             "graph_content_digest": graph.content_digest,
+            "observation_partition_policy": config.observation_partition_policy,
             "training_observation_ids": config.training_observation_ids,
             "evaluation_observation_ids": config.evaluation_observation_ids,
             "polynomial_degrees": config.polynomial_degrees,
@@ -200,6 +218,7 @@ def score_radio_polynomial_null(
     return RadioPolynomialNullResult(
         graph_content_digest=graph.content_digest,
         observation_partition_digest=partition_digest,
+        observation_partition_policy=config.observation_partition_policy,
         training_observation_ids=config.training_observation_ids,
         evaluation_observation_ids=config.evaluation_observation_ids,
         scores=scores,
@@ -366,6 +385,7 @@ def _revalidate_config(config: RadioPolynomialNullConfig) -> RadioPolynomialNull
         return RadioPolynomialNullConfig(
             training_observation_ids=tuple(config.training_observation_ids),
             evaluation_observation_ids=tuple(config.evaluation_observation_ids),
+            observation_partition_policy=config.observation_partition_policy,
             polynomial_degrees=tuple(config.polynomial_degrees),  # type: ignore[arg-type]
             calendar_block_duration_s=config.calendar_block_duration_s,
             maximum_observation_count=config.maximum_observation_count,
