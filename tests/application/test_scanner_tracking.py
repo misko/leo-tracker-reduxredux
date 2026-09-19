@@ -7,7 +7,13 @@ import leo.application.scanner_tracking as tracking
 from leo.analysis.persistent_hop_trajectory import reconstruct_persistent_hop_trajectories
 from leo.application.scanner_trajectory import project_scanner_candidates
 from leo.contracts.digests import canonical_digest, sha256_digest
-from leo.contracts.scanner_tracking import TrackingCandidate, TrackingInput, TrackingProbe
+from leo.contracts.scanner_tracking import (
+    ScannerTleReviewCandidateV1,
+    ScannerTleTrackReviewV1,
+    TrackingCandidate,
+    TrackingInput,
+    TrackingProbe,
+)
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from tests.analysis.test_persistent_hop_trajectory import _candidate
@@ -128,7 +134,15 @@ def test_projection_accepts_counter_authority_with_unqualified_absolute_utc():
     assert rows[2].support_center_utc_ns - rows[0].support_center_utc_ns == 3_000_000_000
 
 
-def service(tmp_path, monkeypatch, *, archive_error=False, clock=lambda: 0, input_source=None):
+def service(
+    tmp_path,
+    monkeypatch,
+    *,
+    archive_error=False,
+    clock=lambda: 0,
+    input_source=None,
+    review_renderer=lambda _session_id: (),
+):
     # Real reconstruction of known tracks; only the costly catalogue matcher is fault-injected.
     rows = tuple(
         _candidate(
@@ -169,6 +183,7 @@ def service(tmp_path, monkeypatch, *, archive_error=False, clock=lambda: 0, inpu
         tle_archive=SimpleNamespace(select_latest_before=select, read=lambda _: raw),
         observer_site=_site(),
         renderer=lambda *a, **k: PNG,
+        review_renderer=review_renderer,
         matcher=fail,
         clock=clock,
     )
@@ -250,6 +265,41 @@ def test_budget_resume_and_failed_group_receipts(tmp_path, monkeypatch):
     assert "eligible satellite propagation failed" in final.product.unscored_groups[0].reason
     assert store.artifact("scan-test", "trajectory-tle") == PNG
     assert final.product.attempted_group_count == len(final.product.unscored_groups)
+
+
+def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, monkeypatch):
+    review = ScannerTleTrackReviewV1(
+        tracklet_id=canonical_digest({"tracklet": 1}),
+        channel=2,
+        edge="upper",
+        start_s=15.7,
+        end_s=48.0,
+        observation_count=33,
+        fit_observation_count=19,
+        randomized_evaluation_observation_count=14,
+        artifact_name="tle-review-01",
+        candidates=(
+            ScannerTleReviewCandidateV1(
+                rank=1,
+                catalog_number=66601,
+                selected_tau_s=0.0,
+                fitted_offset_hz=100.0,
+                fit_rms_hz=62.0,
+                randomized_evaluation_rms_hz=31.0,
+            ),
+        ),
+    )
+    runner, store = service(
+        tmp_path,
+        monkeypatch,
+        review_renderer=lambda _session_id: ((review, PNG + b"review"),),
+    )
+
+    result = runner.run("scan-test")
+
+    assert result.product.track_reviews == (review,)
+    assert result.product.analysis_id == "scanner-shared-tracking-v10"
+    assert store.artifact("scan-test", "tle-review-01") == PNG + b"review"
 
 
 def test_ineligible_groups_do_not_consume_matching_slots(tmp_path, monkeypatch):

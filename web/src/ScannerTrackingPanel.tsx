@@ -9,10 +9,21 @@ type Product = {
   catalogue_exclusions: Array<{ catalog_number: number; name: string; reason: string }>;
   unscored_groups: Array<{ physical_group_id: string; reason: string }>;
   tle_candidates: Array<{ physical_group_id: string; leading_catalog_number: number | null;
-    support_span_s: number; abstention_recommended: boolean; abstention_reasons: string[] }>;
-  artifacts: Array<{ name: "trajectory" | "trajectory-tle"; sha256: string }>;
+    support_span_s: number; abstention_recommended: boolean; abstention_reasons: string[];
+    leading_candidate_persisted_on_heldout?: boolean;
+    heldout_runner_negative_log_score_margin?: number | null }>;
+  artifacts: Array<{
+    name: "trajectory" | "trajectory-tle" | `tle-review-${string}`;
+    sha256: string;
+  }>;
 };
 type Status = { session_id: string; state: string; phase: string; failure_summary: string | null; product: Product | null };
+
+function artifactCaption(name: Product["artifacts"][number]["name"]): string {
+  if (name === "trajectory") return "Measured trajectories";
+  if (name === "trajectory-tle") return "TLE comparison";
+  return `Per-track TLE review ${Number(name.slice("tle-review-".length))}`;
+}
 
 export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: string; inputDigest?: string }) {
   const [status, setStatus] = useState<Status | null>(null);
@@ -56,12 +67,16 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
       {p.unscored_groups.map(g => <p key={g.physical_group_id}>Unscored group: {g.reason}</p>)}
       {p.catalogue_exclusions.length > 0 && <details><summary>{p.catalogue_exclusions.length} catalogue-labelled debris objects excluded before matching</summary>
         <ul>{p.catalogue_exclusions.map(c => <li key={c.catalog_number}>NORAD {c.catalog_number} · {c.name}</li>)}</ul></details>}
-      {p.tle_candidates.length > 0 && <table className="scanner-table" aria-label="Shared TLE diagnostics"><thead><tr><th>Candidate</th><th>Support</th><th>Disposition</th></tr></thead>
+      {p.tle_candidates.length > 0 && <table className="scanner-table" aria-label="Shared TLE diagnostics"><thead><tr><th>Candidate</th><th>Support</th><th>Randomized evaluation</th><th>Disposition</th></tr></thead>
         <tbody>{p.tle_candidates.map(c => <tr key={c.physical_group_id}><td>{c.leading_catalog_number === null ? "Restricted null" : `NORAD ${c.leading_catalog_number}`}</td>
-          <td>{c.support_span_s.toFixed(1)} s</td><td>{c.abstention_recommended ? `Abstain: ${c.abstention_reasons.join(", ")}` : "Candidate survived controls"}</td></tr>)}</tbody></table>}
+          <td>{c.support_span_s.toFixed(1)} s</td>
+          <td>{c.leading_candidate_persisted_on_heldout === undefined ? "—" : c.leading_candidate_persisted_on_heldout
+            ? `Leader retained${c.heldout_runner_negative_log_score_margin == null ? "" : ` · runner +${c.heldout_runner_negative_log_score_margin.toFixed(3)} NLL`}`
+            : "Leader changed"}</td>
+          <td>{c.abstention_recommended ? `Abstain: ${c.abstention_reasons.join(", ")}` : "Candidate survived controls"}</td></tr>)}</tbody></table>}
       {p.artifacts.length > 0 && <div className="scanner-artifact-gallery" aria-label="Trajectory figures">
         {p.artifacts.map(artifact => <figure key={`${artifact.name}:${artifact.sha256}`}>
-          <figcaption>{artifact.name === "trajectory" ? "Measured trajectories" : "TLE comparison"}</figcaption>
+          <figcaption>{artifactCaption(artifact.name)}</figcaption>
           <a href={`${base}/${artifact.name}.png`} target="_blank" rel="noreferrer" aria-label={`Open ${artifact.name} PNG`}>
             <div className="scanner-artifact-viewport"><img loading="lazy" src={`${base}/${artifact.name}.png`} alt={`${artifact.name} for ${sessionId}`} /></div>
           </a>
@@ -69,6 +84,6 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
       </div>}
       <a href={base} download={`${sessionId}-tracking.json`}>Download tracking evidence</a>
     </>}
-    <p className="scanner-artifact-caption">Tracks are reconstructed before catalogue access. TLE comparisons use chronological heldout data, ±500 s wrong-time controls, and a radio-polynomial control. Candidate labels do not establish satellite identity.</p>
+    <p className="scanner-artifact-caption">Tracks are reconstructed before catalogue access. TLE comparisons use deterministic randomized evaluation samples, ±500 s wrong-time controls, and a radio-polynomial control. Candidate labels do not establish satellite identity.</p>
   </section>;
 }

@@ -270,6 +270,65 @@ class ScannerTrackingProductV9(ScannerTrackingProductV8):
     )
 
 
+class ScannerTleReviewCandidateV1(ContractModel):
+    rank: Annotated[int, Field(ge=1, le=5)]
+    catalog_number: Annotated[int, Field(gt=0)]
+    selected_tau_s: float
+    fitted_offset_hz: float
+    fit_rms_hz: Annotated[float, Field(ge=0)]
+    randomized_evaluation_rms_hz: Annotated[float, Field(ge=0)]
+
+
+class ScannerTleTrackReviewV1(ContractModel):
+    tracklet_id: Sha256Digest
+    channel: Annotated[int, Field(ge=1, le=4)]
+    edge: Literal["lower", "upper"]
+    start_s: float
+    end_s: float
+    observation_count: Annotated[int, Field(ge=14)]
+    fit_observation_count: Annotated[int, Field(ge=2)]
+    randomized_evaluation_observation_count: Annotated[int, Field(ge=1)]
+    artifact_name: ArtifactName
+    candidates: tuple[ScannerTleReviewCandidateV1, ...]
+
+    @model_validator(mode="after")
+    def _coherent(self) -> Self:
+        if (
+            self.end_s <= self.start_s
+            or self.fit_observation_count + self.randomized_evaluation_observation_count
+            != self.observation_count
+            or not 1 <= len(self.candidates) <= 5
+            or self.artifact_name in ("trajectory", "trajectory-tle")
+        ):
+            raise ValueError("TLE track review evidence is incoherent")
+        if tuple(item.rank for item in self.candidates) != tuple(
+            range(1, len(self.candidates) + 1)
+        ):
+            raise ValueError("TLE track review ranks are not canonical")
+        return self
+
+
+class ScannerTrackingProductV10(ScannerTrackingProductV9):
+    """Randomized evaluation with material control margins and per-track reviews."""
+
+    schema_version: Literal[10] = 10  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v10"] = "scanner-shared-tracking-v10"  # type: ignore[assignment]
+    control_comparison_policy: Literal["minimum-0.01-nll-per-evaluation-observation-v1"] = (
+        "minimum-0.01-nll-per-evaluation-observation-v1"
+    )
+    track_reviews: tuple[ScannerTleTrackReviewV1, ...] = ()
+
+    @model_validator(mode="after")
+    def _track_review_artifacts(self) -> Self:
+        artifact_names = {item.name for item in self.artifacts}
+        review_names = tuple(item.artifact_name for item in self.track_reviews)
+        if len(set(review_names)) != len(review_names) or any(
+            name not in artifact_names for name in review_names
+        ):
+            raise ValueError("TLE track review artifacts are incomplete")
+        return self
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -342,6 +401,14 @@ class ScannerTrackingStatusV9(ContractModel):
     product: ScannerTrackingProductV9 | None = None
 
 
+class ScannerTrackingStatusV10(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV10 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -355,6 +422,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV7
         | ScannerTrackingStatusV8
         | ScannerTrackingStatusV9
+        | ScannerTrackingStatusV10
     ): ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 

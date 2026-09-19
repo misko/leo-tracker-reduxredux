@@ -8,6 +8,7 @@ from leo.analysis.catalogue_prediction import (
 )
 from leo.analysis.persistent_hop_tle_match import (
     PersistentHopTleMatchConfig,
+    _control_materially_better,
     match_persistent_hop_track_to_tles,
 )
 from leo.contracts.catalogue_association import (
@@ -45,6 +46,21 @@ def _site() -> ObserverSiteV1:
         longitude_deg=-122.478103,
         altitude_m=-29.0,
         label="synthetic-known-site",
+    )
+
+
+def test_control_requires_a_material_predictive_advantage() -> None:
+    assert not _control_materially_better(
+        117.47327495084896,
+        117.4842466387268,
+        evaluation_observation_count=14,
+        minimum_advantage_per_observation_nll=0.01,
+    )
+    assert _control_materially_better(
+        117.30,
+        117.4842466387268,
+        evaluation_observation_count=14,
+        minimum_advantage_per_observation_nll=0.01,
     )
 
 
