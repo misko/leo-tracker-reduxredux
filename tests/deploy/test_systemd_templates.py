@@ -305,6 +305,14 @@ def test_persistent_hop_analysis_is_restartable_bounded_and_capture_subordinate(
     assert timer["Unit"] == "leo-persistent-hop-analysis.service"
 
 
+def test_adaptive_tracking_worker_provisions_its_versioned_output_root() -> None:
+    worker_text = (UNIT_ROOT / "leo-adaptive-analysis-worker@.service").read_text()
+    assert (
+        "ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 "
+        "/srv/bulk/leo/scanner-shared-tracking-v4"
+    ) in worker_text
+
+
 def test_worker_allows_ten_numerical_threads_at_the_exec_boundary() -> None:
     worker_text = (UNIT_ROOT / "leo-worker@.service").read_text()
     worker = _unit("leo-worker@.service")["Service"]
