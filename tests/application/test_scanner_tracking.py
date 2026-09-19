@@ -142,6 +142,11 @@ def service(tmp_path, monkeypatch, *, archive_error=False, clock=lambda: 0, inpu
         for p in range(31)
     )
     monkeypatch.setattr(tracking, "project_scanner_candidates", lambda _: rows)
+    monkeypatch.setattr(
+        tracking,
+        "exclude_starlink_sgp4_failures",
+        lambda payload, **_: (payload, ()),
+    )
     raw = _snapshot_payload()
 
     def select(_):

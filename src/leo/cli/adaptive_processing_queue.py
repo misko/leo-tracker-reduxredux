@@ -47,7 +47,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     preset = resolve_preset(site)
     return canonical_digest(
         {
-            "analysis_id": "scanner-shared-tracking-v7",
+            "analysis_id": "scanner-shared-tracking-v8",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -57,7 +57,8 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "metrics_manifest": metrics_manifest_sha256,
             "observer_site": preset.model_dump(mode="json"),
             "group_limit": _TRACKING_GROUP_LIMIT,
-            "catalogue": "exclude-labelled-starlink-debris-before-response-v1",
+            "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
+            "propagation_screen": "capture-and-control-boundaries-v1",
         }
     )
 

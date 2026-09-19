@@ -323,6 +323,10 @@ def test_adaptive_tracking_worker_provisions_its_versioned_output_roots() -> Non
         "ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 "
         "/srv/bulk/leo/scanner-shared-tracking-v7"
     ) in worker_text
+    assert (
+        "ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 "
+        "/srv/bulk/leo/scanner-shared-tracking-v8"
+    ) in worker_text
 
 
 def test_worker_allows_ten_numerical_threads_at_the_exec_boundary() -> None:

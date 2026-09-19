@@ -78,6 +78,25 @@ class CatalogueExclusionV1(ContractModel):
     reason: Literal["catalogue-labelled-debris"] = "catalogue-labelled-debris"
 
 
+class CataloguePropagationExclusionV1(ContractModel):
+    catalog_number: Annotated[int, Field(gt=0)]
+    name: str
+    selected_element_digest: Sha256Digest
+    error_codes: tuple[Annotated[int, Field(gt=0)], ...]
+    screened_utc_ns: tuple[Annotated[int, Field(gt=0)], ...]
+    reason: Literal["sgp4-propagation-error"] = "sgp4-propagation-error"
+
+    @model_validator(mode="after")
+    def _coherent(self) -> Self:
+        if not self.name.strip() or not self.error_codes or not self.screened_utc_ns:
+            raise ValueError("propagation exclusion evidence is incomplete")
+        if tuple(sorted(set(self.error_codes))) != self.error_codes:
+            raise ValueError("propagation exclusion codes are not canonical")
+        if tuple(sorted(set(self.screened_utc_ns))) != self.screened_utc_ns:
+            raise ValueError("propagation exclusion times are not canonical")
+        return self
+
+
 class ScannerTrackingProductV1(ContractModel):
     schema_version: Literal[1] = 1
     analysis_id: Literal["scanner-shared-tracking-v1"] = "scanner-shared-tracking-v1"
@@ -143,7 +162,8 @@ class ScannerTrackingProductV1(ContractModel):
             if (
                 original.provider != eligible.provider
                 or original.collected_utc_ns != eligible.collected_utc_ns
-                or original.object_count - eligible.object_count != len(self.catalogue_exclusions)
+                or original.object_count - eligible.object_count
+                != len(self.catalogue_exclusions) + len(getattr(self, "propagation_exclusions", ()))
             ):
                 raise ValueError("catalogue exclusion inventory does not close")
         return self
@@ -194,6 +214,17 @@ class ScannerTrackingProductV7(ScannerTrackingProductV6):
 
     schema_version: Literal[7] = 7  # type: ignore[assignment]
     analysis_id: Literal["scanner-shared-tracking-v7"] = "scanner-shared-tracking-v7"  # type: ignore[assignment]
+
+
+class ScannerTrackingProductV8(ScannerTrackingProductV7):
+    """Response-blind SGP4 failures are excluded with persisted evidence."""
+
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v8"] = "scanner-shared-tracking-v8"  # type: ignore[assignment]
+    catalogue_policy: Literal["exclude-labelled-debris-and-sgp4-failures-before-response-v1"] = (
+        "exclude-labelled-debris-and-sgp4-failures-before-response-v1"  # type: ignore[assignment]
+    )
+    propagation_exclusions: tuple[CataloguePropagationExclusionV1, ...] = ()
 
 
 class ScannerTrackingStatusV1(ContractModel):
@@ -252,6 +283,14 @@ class ScannerTrackingStatusV7(ContractModel):
     product: ScannerTrackingProductV7 | None = None
 
 
+class ScannerTrackingStatusV8(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV8 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -263,6 +302,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV5
         | ScannerTrackingStatusV6
         | ScannerTrackingStatusV7
+        | ScannerTrackingStatusV8
     ): ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 
