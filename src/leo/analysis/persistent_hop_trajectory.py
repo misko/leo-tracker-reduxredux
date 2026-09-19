@@ -42,7 +42,7 @@ class PersistentHopTrajectoryConfig:
     # retains a measured path through one missed revisit without filling an
     # unsampled interval.
     maximum_gap_s: float = 4.0
-    minimum_span_s: float = 8.0
+    minimum_span_s: float = 4.0
     minimum_support: int = 8
     minimum_point_weight: float = 0.1
     # A 30 kHz/s search over 300 s needs <= 16.7 Hz/s spacing so the

@@ -163,6 +163,13 @@ def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining()
 
 
 def test_time_balanced_scoring_keeps_the_endpoints_and_work_bound() -> None:
+    defaults = PersistentHopTleMatchConfig(
+        selection_protocol_digest=canonical_digest({"protocol": "eligibility-defaults"}),
+        nominal_rf_hz=11_200_000_000.0,
+    )
+    assert defaults.minimum_support_observations == 14
+    assert defaults.minimum_support_span_s == 7.0
+
     payload = _snapshot_payload()
     graph = _zero_response_graph(payload)
     support = CataloguePredictionSupportV1.from_graph(graph)

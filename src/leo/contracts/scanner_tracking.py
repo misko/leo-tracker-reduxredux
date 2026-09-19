@@ -189,6 +189,13 @@ class ScannerTrackingProductV6(ScannerTrackingProductV5):
     analysis_id: Literal["scanner-shared-tracking-v6"] = "scanner-shared-tracking-v6"  # type: ignore[assignment]
 
 
+class ScannerTrackingProductV7(ScannerTrackingProductV6):
+    """Four-second Hough tracks with 14-observation/seven-second TLE eligibility."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v7"] = "scanner-shared-tracking-v7"  # type: ignore[assignment]
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -237,6 +244,14 @@ class ScannerTrackingStatusV6(ContractModel):
     product: ScannerTrackingProductV6 | None = None
 
 
+class ScannerTrackingStatusV7(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV7 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -247,6 +262,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV4
         | ScannerTrackingStatusV5
         | ScannerTrackingStatusV6
+        | ScannerTrackingStatusV7
     ): ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 

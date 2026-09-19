@@ -154,6 +154,7 @@ def test_default_four_second_gap_retains_delayed_adaptive_revisits() -> None:
     result = reconstruct_persistent_hop_trajectories(candidates)
 
     assert PersistentHopTrajectoryConfig().maximum_gap_s == 4.0
+    assert PersistentHopTrajectoryConfig().minimum_span_s == 4.0
     assert len(result.tracklets) == 1
     assert len(result.tracklets[0].points) == len(candidates)
 
