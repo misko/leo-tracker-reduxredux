@@ -82,7 +82,7 @@ class PersistentHopUtcTimingAuthorityV1(ScannerModel):
         begin_after_monotonic_ns: int,
         terminal_realtime_ns: int,
         terminal_monotonic_ns: int,
-        qualification_limit_ns: int = 50_000_000,
+        qualification_limit_ns: int = 2_000_000_000,
     ) -> PersistentHopUtcTimingAuthorityV1:
         offsets = (
             begin_before_realtime_ns - begin_before_monotonic_ns,
