@@ -51,7 +51,7 @@ from leo.contracts.catalogue_association import (
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 
-_ALGORITHM_VERSION = "persistent-hop-randomized-residual-tle-match-v2"
+_ALGORITHM_VERSION = "persistent-hop-randomized-residual-tle-match-v3"
 
 
 class PersistentHopTleMatchInputError(ValueError):
@@ -95,6 +95,7 @@ class PersistentHopTleMatchConfig:
     training_fraction: float = 0.6
     nuisance_offset_prior_sigma_hz: float = 1_000_000.0
     calendar_block_duration_s: float = 5.0
+    control_minimum_advantage_per_evaluation_observation_nll: float = 0.01
     tau_policy: ExactTauPolicy = field(default_factory=_default_tau_policy)
     population_policy: StarlinkHorizonPopulationPolicy = field(
         default_factory=_default_population_policy
@@ -125,6 +126,8 @@ class PersistentHopTleMatchConfig:
             or self.nuisance_offset_prior_sigma_hz <= 0.0
             or not math.isfinite(self.calendar_block_duration_s)
             or self.calendar_block_duration_s <= 0.0
+            or not math.isfinite(self.control_minimum_advantage_per_evaluation_observation_nll)
+            or self.control_minimum_advantage_per_evaluation_observation_nll < 0.0
         ):
             raise PersistentHopTleMatchInputError("TLE match controls are invalid")
 
@@ -160,8 +163,8 @@ class PersistentHopTleMatchResult:
     abstention_recommended: bool
     abstention_reasons: tuple[str, ...]
     content_digest: Sha256Digest
-    algorithm_version: Literal["persistent-hop-randomized-residual-tle-match-v2"] = field(
-        default="persistent-hop-randomized-residual-tle-match-v2", init=False
+    algorithm_version: Literal["persistent-hop-randomized-residual-tle-match-v3"] = field(
+        default="persistent-hop-randomized-residual-tle-match-v3", init=False
     )
     all_banks_built_before_response_scoring: Literal[True] = field(default=True, init=False)
     wrong_time_controls_are_observe_only: Literal[True] = field(default=True, init=False)
@@ -173,6 +176,19 @@ class PersistentHopTleMatchResult:
 class _FieldBank:
     population: ResponseFreeFieldPopulation
     bank: CataloguePredictionBankV1
+
+
+def _control_materially_better(
+    control_nll: float,
+    nominal_nll: float,
+    *,
+    evaluation_observation_count: int,
+    minimum_advantage_per_observation_nll: float,
+) -> bool:
+    return (
+        control_nll + minimum_advantage_per_observation_nll * evaluation_observation_count
+        <= nominal_nll
+    )
 
 
 def match_persistent_hop_track_to_tles(
@@ -267,17 +283,31 @@ def match_persistent_hop_track_to_tles(
     best_radio_nll = min(
         item.evaluation_predictive_negative_log_likelihood for item in radio_null.scores
     )
-    if best_radio_nll <= nominal_training_winner.heldout_predictive_negative_log_score:
-        reasons.append("radio-polynomial-null-not-worse-on-heldout")
+    if _control_materially_better(
+        best_radio_nll,
+        nominal_training_winner.heldout_predictive_negative_log_score,
+        evaluation_observation_count=len(evaluation_ids),
+        minimum_advantage_per_observation_nll=(
+            config.control_minimum_advantage_per_evaluation_observation_nll
+        ),
+    ):
+        reasons.append("radio-polynomial-null-materially-better-on-randomized-evaluation")
     for field_match in field_matches:
         if field_match.field_delta_s == 0:
             continue
         wrong_winner = field_match.association.scores[0]
-        if (
-            wrong_winner.heldout_predictive_negative_log_score
-            <= nominal_training_winner.heldout_predictive_negative_log_score
+        if _control_materially_better(
+            wrong_winner.heldout_predictive_negative_log_score,
+            nominal_training_winner.heldout_predictive_negative_log_score,
+            evaluation_observation_count=len(evaluation_ids),
+            minimum_advantage_per_observation_nll=(
+                config.control_minimum_advantage_per_evaluation_observation_nll
+            ),
         ):
-            reasons.append(f"wrong-time-{field_match.field_delta_s:+d}s-not-worse-on-heldout")
+            reasons.append(
+                f"wrong-time-{field_match.field_delta_s:+d}s-"
+                "materially-better-on-randomized-evaluation"
+            )
     reasons = sorted(set(reasons))
 
     payload = {

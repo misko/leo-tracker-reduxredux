@@ -1,6 +1,7 @@
 """One bounded, resumable trajectory/TLE pipeline for both scan modes."""
 
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -26,19 +27,20 @@ from leo.application.scanner_trajectory import (
 )
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
+    ScannerTleTrackReviewV1,
     ScannerTrackingInputs,
-    ScannerTrackingProductV9,
-    ScannerTrackingStatusV9,
+    ScannerTrackingProductV10,
+    ScannerTrackingStatusV10,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV9: ...
-    def save(self, status: ScannerTrackingStatusV9) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV10: ...
+    def save(self, status: ScannerTrackingStatusV10) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV9) -> None: ...
+    def publish(self, product: ScannerTrackingProductV10) -> None: ...
 
 
 class ScannerTrackingService:
@@ -50,11 +52,15 @@ class ScannerTrackingService:
         tle_archive,
         observer_site: ObserverSiteV1,
         renderer,
+        review_renderer: Callable[
+            [str], tuple[tuple[ScannerTleTrackReviewV1, bytes], ...]
+        ] = lambda _session_id: (),
         matcher=match_persistent_hop_track_to_tles,
         clock=time.monotonic,
     ):
         self.inputs, self.products, self.archive = inputs, products, tle_archive
-        self.site, self.renderer, self.matcher, self.clock = observer_site, renderer, matcher, clock
+        self.site, self.renderer, self.review_renderer = observer_site, renderer, review_renderer
+        self.matcher, self.clock = matcher, clock
 
     def run(self, session_id: str, *, maximum_seconds: float = 180, group_limit: int = 4):
         if not 0 < maximum_seconds <= 1800 or not 1 <= group_limit <= 32:
@@ -67,7 +73,7 @@ class ScannerTrackingService:
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v9",
+                "algorithm": "scanner-shared-tracking-v10",
                 "utc_qualification_limit_ns": 2_000_000_000,
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
@@ -76,7 +82,7 @@ class ScannerTrackingService:
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV9(
+        product = status.product or ScannerTrackingProductV10(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -103,7 +109,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV9(
+                ScannerTrackingStatusV10(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -291,22 +297,21 @@ class ScannerTrackingService:
                 capture_end_utc_ns=source.capture_end_utc_ns,
             ),
         )
+        reviews = self.review_renderer(session_id) if selected else ()
         review_refs = tuple(
             self.products.put_artifact(
                 session_id,
-                f"tle-review-{index:02d}",
-                self.renderer(
-                    trajectory,
-                    candidates,
-                    (candidate,),
-                    capture_start_utc_ns=source.capture_start_utc_ns,
-                    capture_end_utc_ns=source.capture_end_utc_ns,
-                ),
+                review.artifact_name,
+                payload,
             )
-            for index, candidate in enumerate(product.tle_candidates, start=1)
+            for review, payload in reviews
         )
         product = product.model_copy(
-            update={"tle_state": state, "artifacts": (*product.artifacts, ref, *review_refs)}
+            update={
+                "tle_state": state,
+                "artifacts": (*product.artifacts, ref, *review_refs),
+                "track_reviews": tuple(review for review, _payload in reviews),
+            }
         )
         self.products.publish(product)
         return self.products.analysis_status(session_id)

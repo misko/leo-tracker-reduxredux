@@ -6,10 +6,18 @@ import os
 import time
 from contextlib import nullcontext
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import cast
 
 from leo.application.scanner_tracking import ScannerTrackingService
-from leo.contracts.scanner_tracking import ScannerTrackingStatusV9
+from leo.contracts.scanner_tracking import (
+    ArtifactName,
+    ScannerTleReviewCandidateV1,
+    ScannerTleTrackReviewV1,
+    ScannerTrackingStatusV10,
+)
 from leo.contracts.sky import ObserverSiteV1
+from leo.operations.scanner_tle_review_report import build_report
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.persistent_hop_tracking import render_persistent_hop_tracking_png
 from leo.sky.sites import preset_names, resolve_preset
@@ -17,6 +25,52 @@ from leo.storage.analysis_worker_lock import analysis_worker_lock
 from leo.storage.errors import BundleNotFoundError
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
+
+
+def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str):
+    def render(session_id: str) -> tuple[tuple[ScannerTleTrackReviewV1, bytes], ...]:
+        with TemporaryDirectory(prefix="leo-tle-review-") as temporary:
+            output = Path(temporary)
+            report = build_report(
+                session_id,
+                output,
+                bulk_root=bulk_root,
+                tle_root=tle_root,
+                site_name=site_name,
+            )
+            rendered = []
+            for index, (track, filename) in enumerate(
+                zip(report["tracks"], report["track_figures"], strict=True), start=1
+            ):
+                if index > 32:
+                    raise ValueError("track review artifact count exceeds contract bound")
+                artifact_name = cast(ArtifactName, f"tle-review-{index:02d}")
+                review = ScannerTleTrackReviewV1(
+                    tracklet_id=track["tracklet_id"],
+                    channel=track["channel"],
+                    edge=track["edge"],
+                    start_s=track["start_s"],
+                    end_s=track["end_s"],
+                    observation_count=track["observation_count"],
+                    fit_observation_count=track["training_count"],
+                    randomized_evaluation_observation_count=track["heldout_count"],
+                    artifact_name=artifact_name,
+                    candidates=tuple(
+                        ScannerTleReviewCandidateV1(
+                            rank=item["standard_rank"],
+                            catalog_number=item["catalog_number"],
+                            selected_tau_s=item["selected_tau_s"],
+                            fitted_offset_hz=item["offset_hz"],
+                            fit_rms_hz=item["offset_only_training_rms_hz"],
+                            randomized_evaluation_rms_hz=item["offset_only_heldout_rms_hz"],
+                        )
+                        for item in track["candidates"]
+                    ),
+                )
+                rendered.append((review, (output / filename).read_bytes()))
+            return tuple(rendered)
+
+    return render
 
 
 def main():
@@ -58,6 +112,11 @@ def main():
                 label=site.label,
             ),
             renderer=render_persistent_hop_tracking_png,
+            review_renderer=_review_renderer(
+                bulk_root=args.bulk_root,
+                tle_root=args.tle_root,
+                site_name=args.site,
+            ),
         )
         try:
             ids = (args.session_id,) if args.session_id else sources.session_ids()
@@ -85,7 +144,7 @@ def main():
                 except Exception as error:
                     prior = products.analysis_status(sid)
                     products.save(
-                        ScannerTrackingStatusV9(
+                        ScannerTrackingStatusV10(
                             session_id=sid,
                             state="failed",
                             phase=prior.phase,
