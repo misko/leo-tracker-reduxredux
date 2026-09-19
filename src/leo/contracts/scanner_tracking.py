@@ -170,6 +170,11 @@ class ScannerTrackingProductV3(ScannerTrackingProductV2):
     analysis_id: Literal["scanner-shared-tracking-v3"] = "scanner-shared-tracking-v3"  # type: ignore[assignment]
 
 
+class ScannerTrackingProductV4(ScannerTrackingProductV3):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v4"] = "scanner-shared-tracking-v4"  # type: ignore[assignment]
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -194,10 +199,23 @@ class ScannerTrackingStatusV3(ContractModel):
     product: ScannerTrackingProductV3 | None = None
 
 
+class ScannerTrackingStatusV4(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV4 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
-    ) -> ScannerTrackingStatusV1 | ScannerTrackingStatusV2 | ScannerTrackingStatusV3: ...
+    ) -> (
+        ScannerTrackingStatusV1
+        | ScannerTrackingStatusV2
+        | ScannerTrackingStatusV3
+        | ScannerTrackingStatusV4
+    ): ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 
 
