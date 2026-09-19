@@ -27,18 +27,18 @@ from leo.application.scanner_trajectory import (
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTrackingInputs,
-    ScannerTrackingProductV8,
-    ScannerTrackingStatusV8,
+    ScannerTrackingProductV9,
+    ScannerTrackingStatusV9,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV8: ...
-    def save(self, status: ScannerTrackingStatusV8) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV9: ...
+    def save(self, status: ScannerTrackingStatusV9) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV8) -> None: ...
+    def publish(self, product: ScannerTrackingProductV9) -> None: ...
 
 
 class ScannerTrackingService:
@@ -67,7 +67,7 @@ class ScannerTrackingService:
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v8",
+                "algorithm": "scanner-shared-tracking-v9",
                 "utc_qualification_limit_ns": 2_000_000_000,
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
@@ -76,7 +76,7 @@ class ScannerTrackingService:
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV8(
+        product = status.product or ScannerTrackingProductV9(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -103,7 +103,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV8(
+                ScannerTrackingStatusV9(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -291,8 +291,22 @@ class ScannerTrackingService:
                 capture_end_utc_ns=source.capture_end_utc_ns,
             ),
         )
+        review_refs = tuple(
+            self.products.put_artifact(
+                session_id,
+                f"tle-review-{index:02d}",
+                self.renderer(
+                    trajectory,
+                    candidates,
+                    (candidate,),
+                    capture_start_utc_ns=source.capture_start_utc_ns,
+                    capture_end_utc_ns=source.capture_end_utc_ns,
+                ),
+            )
+            for index, candidate in enumerate(product.tle_candidates, start=1)
+        )
         product = product.model_copy(
-            update={"tle_state": state, "artifacts": (*product.artifacts, ref)}
+            update={"tle_state": state, "artifacts": (*product.artifacts, ref, *review_refs)}
         )
         self.products.publish(product)
         return self.products.analysis_status(session_id)

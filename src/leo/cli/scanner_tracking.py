@@ -8,7 +8,7 @@ from contextlib import nullcontext
 from pathlib import Path
 
 from leo.application.scanner_tracking import ScannerTrackingService
-from leo.contracts.scanner_tracking import ScannerTrackingStatusV8
+from leo.contracts.scanner_tracking import ScannerTrackingStatusV9
 from leo.contracts.sky import ObserverSiteV1
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.persistent_hop_tracking import render_persistent_hop_tracking_png
@@ -85,7 +85,7 @@ def main():
                 except Exception as error:
                     prior = products.analysis_status(sid)
                     products.save(
-                        ScannerTrackingStatusV8(
+                        ScannerTrackingStatusV9(
                             session_id=sid,
                             state="failed",
                             phase=prior.phase,

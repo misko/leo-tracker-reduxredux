@@ -19,7 +19,15 @@ from leo.scanner.persistent_hop_tracking import (
 )
 
 SessionId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
-ArtifactName = Literal["trajectory", "trajectory-tle"]
+ArtifactName = Literal[
+    "trajectory", "trajectory-tle", "tle-review-01", "tle-review-02", "tle-review-03",
+    "tle-review-04", "tle-review-05", "tle-review-06", "tle-review-07", "tle-review-08",
+    "tle-review-09", "tle-review-10", "tle-review-11", "tle-review-12", "tle-review-13",
+    "tle-review-14", "tle-review-15", "tle-review-16", "tle-review-17", "tle-review-18",
+    "tle-review-19", "tle-review-20", "tle-review-21", "tle-review-22", "tle-review-23",
+    "tle-review-24", "tle-review-25", "tle-review-26", "tle-review-27", "tle-review-28",
+    "tle-review-29", "tle-review-30", "tle-review-31", "tle-review-32",
+]
 
 
 @dataclass(frozen=True)
@@ -227,6 +235,14 @@ class ScannerTrackingProductV8(ScannerTrackingProductV7):
     propagation_exclusions: tuple[CataloguePropagationExclusionV1, ...] = ()
 
 
+class ScannerTrackingProductV9(ScannerTrackingProductV8):
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v9"] = "scanner-shared-tracking-v9"  # type: ignore[assignment]
+    tle_residual_partition_policy: Literal["deterministic-randomized-observation-v1"] = (
+        "deterministic-randomized-observation-v1"
+    )
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -289,6 +305,14 @@ class ScannerTrackingStatusV8(ContractModel):
     phase: str = "waiting-for-analysis"
     failure_summary: str | None = None
     product: ScannerTrackingProductV8 | None = None
+
+
+class ScannerTrackingStatusV9(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV9 | None = None
 
 
 class ScannerTrackingReader(Protocol):
