@@ -75,12 +75,15 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
             : "Leader changed"}</td>
           <td>{c.abstention_recommended ? `Abstain: ${c.abstention_reasons.join(", ")}` : "Candidate survived controls"}</td></tr>)}</tbody></table>}
       {p.artifacts.length > 0 && <div className="scanner-artifact-gallery" aria-label="Trajectory figures">
-        {p.artifacts.map(artifact => <figure key={`${artifact.name}:${artifact.sha256}`}>
-          <figcaption>{artifactCaption(artifact.name)}</figcaption>
-          <a href={`${base}/${artifact.name}.png`} target="_blank" rel="noreferrer" aria-label={`Open ${artifact.name} PNG`}>
-            <div className="scanner-artifact-viewport"><img loading="lazy" src={`${base}/${artifact.name}.png`} alt={`${artifact.name} for ${sessionId}`} /></div>
-          </a>
-        </figure>)}
+        {p.artifacts.map(artifact => {
+          const artifactUrl = `${base}/${artifact.name}.png?sha256=${encodeURIComponent(artifact.sha256)}`;
+          return <figure key={`${artifact.name}:${artifact.sha256}`}>
+            <figcaption>{artifactCaption(artifact.name)}</figcaption>
+            <a href={artifactUrl} target="_blank" rel="noreferrer" aria-label={`Open ${artifact.name} PNG`}>
+              <div className="scanner-artifact-viewport"><img loading="lazy" src={artifactUrl} alt={`${artifact.name} for ${sessionId}`} /></div>
+            </a>
+          </figure>;
+        })}
       </div>}
       <a href={base} download={`${sessionId}-tracking.json`}>Download tracking evidence</a>
     </>}

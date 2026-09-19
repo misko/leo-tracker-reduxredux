@@ -10,7 +10,7 @@ const product = {
   catalogue_exclusions: [{ catalog_number: 69730, name: "STARLINK-34343 DEB", reason: "catalogue-labelled-debris" }],
   unscored_groups: [{ physical_group_id: "group", reason: "catalogue population propagation is incomplete" }],
   tle_candidates: [], artifacts: [
-    { name: "trajectory", sha256: "a" },
+    { name: "trajectory", sha256: "a/b/c" },
     { name: "trajectory-tle", sha256: "b" },
     { name: "tle-review-01", sha256: "c" },
   ],
@@ -24,8 +24,11 @@ it.each([2500000, 5000000, 10000000])("shows every published figure and actual f
   const images = screen.getAllByRole("img");
   expect(images).toHaveLength(3);
   expect(images[0]).toHaveAttribute("src", expect.stringContaining("/trajectory.png"));
+  expect(images[0]).toHaveAttribute("src", expect.stringContaining("sha256=a%2Fb%2Fc"));
   expect(images[1]).toHaveAttribute("src", expect.stringContaining("trajectory-tle.png"));
+  expect(images[1]).toHaveAttribute("src", expect.stringContaining("sha256=b"));
   expect(images[2]).toHaveAttribute("src", expect.stringContaining("tle-review-01.png"));
+  expect(images[2]).toHaveAttribute("src", expect.stringContaining("sha256=c"));
   expect(screen.getByText("Per-track TLE review 1")).toBeInTheDocument();
   expect(screen.getAllByRole("link", { name: /Open .* PNG/ })).toHaveLength(3);
   expect(screen.getByRole("link", { name: "Download tracking evidence" })).toBeInTheDocument();
