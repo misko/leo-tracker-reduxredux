@@ -12,6 +12,7 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingStatusV5,
     ScannerTrackingStatusV6,
     ScannerTrackingStatusV7,
+    ScannerTrackingStatusV8,
 )
 
 
@@ -20,7 +21,8 @@ def scanner_tracking_router(reader: ScannerTrackingReader | None) -> APIRouter:
 
     @router.get(
         "/{session_id}",
-        response_model=ScannerTrackingStatusV7
+        response_model=ScannerTrackingStatusV8
+        | ScannerTrackingStatusV7
         | ScannerTrackingStatusV6
         | ScannerTrackingStatusV5
         | ScannerTrackingStatusV4

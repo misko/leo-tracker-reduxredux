@@ -4,7 +4,10 @@ import time
 from datetime import UTC, datetime
 from typing import Protocol
 
-from leo.analysis.catalogue_eligibility import exclude_labelled_starlink_debris
+from leo.analysis.catalogue_eligibility import (
+    exclude_labelled_starlink_debris,
+    exclude_starlink_sgp4_failures,
+)
 from leo.analysis.persistent_hop_tle_match import (
     PersistentHopTleMatchConfig,
     match_persistent_hop_track_to_tles,
@@ -24,18 +27,18 @@ from leo.application.scanner_trajectory import (
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTrackingInputs,
-    ScannerTrackingProductV7,
-    ScannerTrackingStatusV7,
+    ScannerTrackingProductV8,
+    ScannerTrackingStatusV8,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV7: ...
-    def save(self, status: ScannerTrackingStatusV7) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV8: ...
+    def save(self, status: ScannerTrackingStatusV8) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV7) -> None: ...
+    def publish(self, product: ScannerTrackingProductV8) -> None: ...
 
 
 class ScannerTrackingService:
@@ -64,16 +67,16 @@ class ScannerTrackingService:
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v7",
+                "algorithm": "scanner-shared-tracking-v8",
                 "utc_qualification_limit_ns": 2_000_000_000,
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
                 "selection": "eligible-first-longest-support-v1",
-                "catalogue": "exclude-labelled-starlink-debris-before-response-v1",
+                "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV7(
+        product = status.product or ScannerTrackingProductV8(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -100,7 +103,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV7(
+                ScannerTrackingStatusV8(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -181,6 +184,22 @@ class ScannerTrackingService:
                     object_count=count_element_sets(raw),
                 )
                 payload, exclusions = exclude_labelled_starlink_debris(raw)
+                control_margin_ns = 505_000_000_000
+                screen_start_utc_ns = source.capture_start_utc_ns or min(
+                    candidate.support_start_utc_ns for candidate in candidates
+                )
+                screen_end_utc_ns = source.capture_end_utc_ns or max(
+                    candidate.support_end_utc_ns for candidate in candidates
+                )
+                payload, propagation_exclusions = exclude_starlink_sgp4_failures(
+                    payload,
+                    screened_utc_ns=(
+                        screen_start_utc_ns - control_margin_ns,
+                        screen_start_utc_ns,
+                        screen_end_utc_ns,
+                        screen_end_utc_ns + control_margin_ns,
+                    ),
+                )
                 eligible = original.model_copy(
                     update={
                         "digest": sha256_digest(payload.encode("ascii")),
@@ -194,6 +213,7 @@ class ScannerTrackingService:
                         "original_tle_snapshot": original,
                         "eligible_tle_snapshot": eligible,
                         "catalogue_exclusions": exclusions,
+                        "propagation_exclusions": propagation_exclusions,
                     }
                 )
                 save("tle-matching")
