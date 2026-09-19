@@ -139,6 +139,25 @@ def test_reconstructs_one_cross_channel_trajectory_across_a_full_300_seconds() -
     assert result.used_candidate_count == len(candidates)
 
 
+def test_default_four_second_gap_retains_delayed_adaptive_revisits() -> None:
+    candidates = tuple(
+        _candidate(
+            lane=0,
+            point=point,
+            normalized_rate_hz_per_s=-2_000.0,
+            normalized_intercept_hz=50_000.0,
+            alias_index=0,
+        )
+        for point in range(0, 29, 4)
+    )
+
+    result = reconstruct_persistent_hop_trajectories(candidates)
+
+    assert PersistentHopTrajectoryConfig().maximum_gap_s == 4.0
+    assert len(result.tracklets) == 1
+    assert len(result.tracklets[0].points) == len(candidates)
+
+
 def test_keeps_incompatible_normalized_rates_as_separate_physical_groups() -> None:
     candidates = tuple(
         _candidate(

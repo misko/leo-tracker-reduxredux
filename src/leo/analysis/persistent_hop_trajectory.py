@@ -38,7 +38,10 @@ class PersistentHopTrajectoryConfig:
     minimum_slope_hz_per_s: float = -15_000.0
     maximum_slope_hz_per_s: float = 15_000.0
     residual_gate_hz: float = 2_500.0
-    maximum_gap_s: float = 2.0
+    # Adaptive visits may be delayed by capture scheduling.  Four seconds
+    # retains a measured path through one missed revisit without filling an
+    # unsampled interval.
+    maximum_gap_s: float = 4.0
     minimum_span_s: float = 8.0
     minimum_support: int = 8
     minimum_point_weight: float = 0.1
