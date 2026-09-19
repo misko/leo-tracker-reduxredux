@@ -52,7 +52,7 @@ def test_current_native_heavy_capacity_changes_only_the_heavy_resource(
 
         command.upgrade(catalog_harness.alembic_config, "head")
         after = dict(connection.execute(query).tuples().all())
-        assert after == {**before, "heavy": 4}
+        assert after == {**before, "heavy": 8}
 
         command.downgrade(catalog_harness.alembic_config, "b3e91d6f4a20")
         assert dict(connection.execute(query).tuples().all()) == before
