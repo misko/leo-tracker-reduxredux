@@ -1,8 +1,28 @@
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from PIL import Image
 
-from tools.report_scanner_tle_polynomial_rms import _render_track_plots
+from leo.operations.scanner_tle_review_report import (
+    _qualified_start_utc_ns,
+    _render_track_plots,
+)
+
+
+def test_report_uses_current_two_second_utc_qualification_policy() -> None:
+    timing = SimpleNamespace(
+        qualified=False,
+        first_sample_estimate_utc_ns=123,
+        first_sample_bracket_width_ns=1_500_000_000,
+        maximum_realtime_monotonic_offset_spread_ns=10,
+    )
+
+    assert _qualified_start_utc_ns(SimpleNamespace(timing=timing)) == 123
+
+    timing.first_sample_bracket_width_ns = 2_000_000_001
+    with pytest.raises(ValueError, match="qualified UTC is required"):
+        _qualified_start_utc_ns(SimpleNamespace(timing=timing))
 
 
 def test_track_renderer_emits_separate_linear_scale_figure(tmp_path: Path) -> None:
