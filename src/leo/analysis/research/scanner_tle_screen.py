@@ -7,7 +7,7 @@ matcher and not an identity probability. Predictions must be frozen beforehand.
 import numpy as np
 
 
-def rank_curves(measured, predictions, *, training_count):
+def rank_curves(measured, predictions, *, training_count=None, training_mask=None):
     y = np.asarray(measured, dtype=float)
     p = np.asarray(predictions, dtype=float)
     if (
@@ -15,18 +15,26 @@ def rank_curves(measured, predictions, *, training_count):
         or p.ndim != 3
         or p.shape[2] != len(y)
         or min(p.shape[:2]) < 1
-        or not 2 <= training_count < len(y)
         or not np.all(np.isfinite(y))
         or not np.all(np.isfinite(p))
     ):
-        raise ValueError("invalid curve bank or chronological split")
-    offsets = np.mean(y[:training_count] - p[:, :, :training_count], axis=2)
+        raise ValueError("invalid curve bank")
+    if training_mask is None:
+        if not isinstance(training_count, int) or not 2 <= training_count < len(y):
+            raise ValueError("invalid chronological split")
+        training_mask = np.arange(len(y)) < training_count
+    else:
+        training_mask = np.asarray(training_mask, dtype=bool)
+        if training_mask.shape != y.shape or not 2 <= int(training_mask.sum()) < len(y):
+            raise ValueError("invalid training mask")
+    evaluation_mask = ~training_mask
+    offsets = np.mean(y[training_mask] - p[:, :, training_mask], axis=2)
     residual = y - p - offsets[:, :, None]
-    training = np.sqrt(np.mean(residual[:, :, :training_count] ** 2, axis=2))
+    training = np.sqrt(np.mean(residual[:, :, training_mask] ** 2, axis=2))
     tau_indices = np.argmin(training, axis=1)
     rows = np.arange(len(p))
     train = training[rows, tau_indices]
-    held = np.sqrt(np.mean(residual[rows, tau_indices, training_count:] ** 2, axis=1))
+    held = np.sqrt(np.mean(residual[rows, tau_indices][:, evaluation_mask] ** 2, axis=1))
     order = np.argsort(train, kind="stable")
     held_order = np.argsort(held, kind="stable")
     return {
