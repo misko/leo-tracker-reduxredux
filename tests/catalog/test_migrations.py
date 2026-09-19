@@ -37,7 +37,7 @@ def test_empty_schema_upgrades_to_single_head_without_model_drift(
         command.check(catalog_harness.alembic_config)
 
 
-def test_initial_native_heavy_cap_changes_only_the_heavy_resource(
+def test_current_native_heavy_capacity_changes_only_the_heavy_resource(
     catalog_harness: CatalogHarness,
 ) -> None:
     query = text(
@@ -52,7 +52,7 @@ def test_initial_native_heavy_cap_changes_only_the_heavy_resource(
 
         command.upgrade(catalog_harness.alembic_config, "head")
         after = dict(connection.execute(query).tuples().all())
-        assert after == {**before, "heavy": 2}
+        assert after == {**before, "heavy": 4}
 
         command.downgrade(catalog_harness.alembic_config, "b3e91d6f4a20")
         assert dict(connection.execute(query).tuples().all()) == before
