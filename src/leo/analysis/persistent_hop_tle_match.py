@@ -87,8 +87,8 @@ class PersistentHopTleMatchConfig:
     nominal_rf_hz: float
     catalogue_fields_s: tuple[int, int, int] = (-500, 0, 500)
     maximum_support_observations: int = 128
-    minimum_support_observations: int = 20
-    minimum_support_span_s: float = 20.0
+    minimum_support_observations: int = 14
+    minimum_support_span_s: float = 7.0
     training_fraction: float = 0.6
     nuisance_offset_prior_sigma_hz: float = 1_000_000.0
     calendar_block_duration_s: float = 5.0
