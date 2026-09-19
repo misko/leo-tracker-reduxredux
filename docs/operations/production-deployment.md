@@ -487,7 +487,7 @@ The full-cutover transaction runs any required `alembic upgrade head` while
 every LEO unit is quiescent. Before starting any worker, its cutover preflight reads
 `public.processing_resource_capacity` as `leo` with `psql --no-psqlrc` and
 requires the complete ordered inventory to be exactly `streaming=16`, `cpu=8`,
-`memory=4`, and `heavy=2`. A missing, duplicate, extra, malformed, or drifted
+`memory=4`, and `heavy=4`. A missing, duplicate, extra, malformed, or drifted
 row blocks startup.
 
 The historical target-bound 3 MS/s qualification receipt is not a cutover gate:
@@ -689,7 +689,7 @@ sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process r
 Start in dependency order. Twenty worker processes remain the global process
 bound on the 24-logical-CPU production host. Catalog admission is intentionally
 stricter by resource class: `streaming=16`, `cpu=8`, `memory=4`, and initially
-`heavy=2`. Each worker forces OpenBLAS, OpenMP, and MKL to at most ten threads
+`heavy=4`. Each worker forces OpenBLAS, OpenMP, and MKL to at most ten threads
 at the exec boundary, after environment-file composition. The two-lease HEAVY
 cap therefore permits at most two independent native path jobs and roughly
 twenty numerical-library threads at once, leaving four CPUs for acquisition,
