@@ -47,7 +47,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     preset = resolve_preset(site)
     return canonical_digest(
         {
-            "analysis_id": "scanner-shared-tracking-v5",
+            "analysis_id": "scanner-shared-tracking-v6",
             "trajectory_maximum_gap_s": 4.0,
             "utc_qualification_limit_ns": 2_000_000_000,
             "capture_manifest": capture.manifest_sha256,

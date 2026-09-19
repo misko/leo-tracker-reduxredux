@@ -24,18 +24,18 @@ from leo.application.scanner_trajectory import (
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTrackingInputs,
-    ScannerTrackingProductV5,
-    ScannerTrackingStatusV5,
+    ScannerTrackingProductV6,
+    ScannerTrackingStatusV6,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV5: ...
-    def save(self, status: ScannerTrackingStatusV5) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV6: ...
+    def save(self, status: ScannerTrackingStatusV6) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV5) -> None: ...
+    def publish(self, product: ScannerTrackingProductV6) -> None: ...
 
 
 class ScannerTrackingService:
@@ -64,7 +64,7 @@ class ScannerTrackingService:
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v5",
+                "algorithm": "scanner-shared-tracking-v6",
                 "utc_qualification_limit_ns": 2_000_000_000,
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
@@ -73,7 +73,7 @@ class ScannerTrackingService:
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV5(
+        product = status.product or ScannerTrackingProductV6(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -100,7 +100,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV5(
+                ScannerTrackingStatusV6(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )

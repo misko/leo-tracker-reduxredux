@@ -22,7 +22,7 @@ def render_persistent_hop_tracking_png(
     capture_start_utc_ns: int | None = None,
     capture_end_utc_ns: int | None = None,
 ) -> bytes:
-    """Plot the primary TLE-blind tracks and annotate candidate-only matches."""
+    """Plot every reconstructed TLE-blind track and annotate candidate-only matches."""
 
     by_candidate = {item.candidate_id: item for item in candidates}
     association_by_tracklet = {
@@ -31,11 +31,9 @@ def render_persistent_hop_tracking_png(
         if item.hypothesis_rank == 1
         for tracklet_id in item.tracklet_ids
     }
-    primary_ids = set(trajectory.hypotheses[0].tracklet_ids)
     first_support_ns = min(
         by_candidate[point.candidate_id].support_center_utc_ns
         for tracklet in trajectory.tracklets
-        if tracklet.tracklet_id in primary_ids
         for point in tracklet.points
     )
     with _RENDER_LOCK:
@@ -43,9 +41,7 @@ def render_persistent_hop_tracking_png(
         FigureCanvasAgg(figure)
         axis = figure.subplots(1, 1)
         colors = ("#1976d2", "#d32f2f", "#00897b", "#8e24aa", "#ef6c00", "#455a64")
-        for index, tracklet in enumerate(
-            item for item in trajectory.tracklets if item.tracklet_id in primary_ids
-        ):
+        for index, tracklet in enumerate(trajectory.tracklets):
             rows = tuple(by_candidate[point.candidate_id] for point in tracklet.points)
             origin_ns = capture_start_utc_ns or first_support_ns
             x = [(item.support_center_utc_ns - origin_ns) / 1e9 for item in rows]
