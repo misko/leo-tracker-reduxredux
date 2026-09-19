@@ -182,6 +182,13 @@ class ScannerTrackingProductV5(ScannerTrackingProductV4):
     analysis_id: Literal["scanner-shared-tracking-v5"] = "scanner-shared-tracking-v5"  # type: ignore[assignment]
 
 
+class ScannerTrackingProductV6(ScannerTrackingProductV5):
+    """All reconstructed tracklets are rendered in the independent PNG evidence."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v6"] = "scanner-shared-tracking-v6"  # type: ignore[assignment]
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -222,6 +229,14 @@ class ScannerTrackingStatusV5(ContractModel):
     product: ScannerTrackingProductV5 | None = None
 
 
+class ScannerTrackingStatusV6(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV6 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -231,6 +246,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV3
         | ScannerTrackingStatusV4
         | ScannerTrackingStatusV5
+        | ScannerTrackingStatusV6
     ): ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 
