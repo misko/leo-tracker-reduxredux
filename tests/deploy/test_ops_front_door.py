@@ -1684,7 +1684,7 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
 
 def test_adaptive_worker_inventory_matches_four_heavy_and_four_memory_slots() -> None:
     assert (
-        tuple(f"leo-adaptive-analysis-worker@{index}.service" for index in range(1, 9))
+        tuple(f"leo-adaptive-analysis-worker@{index}.service" for index in range(1, 17))
         == OPS._ADAPTIVE_ANALYSIS_WORKER_UNITS
     )
 
