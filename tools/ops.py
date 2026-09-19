@@ -73,7 +73,7 @@ _WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
 _WORKER_UNIT_PATTERN = "leo-worker@*.service"
 _ADAPTIVE_ANALYSIS_WORKER_UNIT_PATTERN = "leo-adaptive-analysis-worker@*.service"
 _ADAPTIVE_ANALYSIS_WORKER_UNITS = tuple(
-    f"leo-adaptive-analysis-worker@{index}.service" for index in range(1, 5)
+    f"leo-adaptive-analysis-worker@{index}.service" for index in range(1, 9)
 )
 _LEO_TIMER_UNITS = (
     "leo-adaptive-analysis-queue.timer",
