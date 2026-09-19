@@ -15,6 +15,7 @@ from leo.analysis.nearest_neighbour_association import (
     NearestNeighbourInputError,
     NearestNeighbourNumericalError,
     associate_single_episode_nearest_neighbour,
+    deterministic_randomized_observation_partition,
     gaussian_innovation_score,
 )
 from leo.contracts.catalogue_association import (
@@ -566,6 +567,38 @@ def test_response_selection_partition_and_truncation_poison_are_rejected() -> No
     )
     with pytest.raises(NearestNeighbourInputError, match="truncated"):
         associate_single_episode_nearest_neighbour(graph, truncated, config=config)
+
+
+def test_deterministic_randomized_partition_is_non_temporal_and_response_free() -> None:
+    curve = (0.0, 10.0, 20.0, 30.0, 40.0, 50.0)
+    graph = _graph(tuple(50.0 + item for item in curve))
+    bank = _bank(graph, {10001: {0.0: curve}})
+    ids = graph.episodes[0].observation_ids
+    seed = _digest("capture-metadata", "immutable")
+
+    training_ids, evaluation_ids = deterministic_randomized_observation_partition(
+        ids, training_fraction=0.5, split_seed=seed
+    )
+    assert (training_ids, evaluation_ids) == deterministic_randomized_observation_partition(
+        ids, training_fraction=0.5, split_seed=seed
+    )
+    assert set(training_ids) | set(evaluation_ids) == set(ids)
+    assert not set(training_ids) & set(evaluation_ids)
+    assert training_ids != ids[: len(training_ids)]
+
+    result = associate_single_episode_nearest_neighbour(
+        graph,
+        bank,
+        config=replace(
+            _config(graph),
+            training_observation_ids=training_ids,
+            evaluation_observation_ids=evaluation_ids,
+            observation_partition_policy="deterministic-randomized-observation-v1",
+        ),
+    )
+    assert result.observation_partition_policy == "deterministic-randomized-observation-v1"
+    assert result.training_observation_ids == training_ids
+    assert result.evaluation_observation_ids == evaluation_ids
 
 
 def test_stale_nested_graph_and_bank_mutations_fail_roundtrip_validation() -> None:

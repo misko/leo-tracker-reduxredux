@@ -1,11 +1,15 @@
-"""Training-frozen covariance-aware nearest-neighbour association baseline.
+"""Partition-frozen covariance-aware nearest-neighbour association baseline.
 
 This pure analyzer is a deliberately small literature baseline, not a
 satellite-identity or NORAD claim.  It consumes one TLE-blind physical CFO
 episode and a complete, frozen, response-free catalogue prediction bank.  An
-explicit chronological observation partition is part of the configuration:
-candidate, tau, and additive-offset fits use training rows only; every fitted
-hypothesis is then frozen and scored exactly once on the same future rows.
+explicit observation partition is part of the configuration: candidate, tau,
+and additive-offset fits use training rows only; every fitted hypothesis is
+then frozen and scored exactly once on the evaluation rows.  The default
+partition is chronological for prospective prediction.  A separately labelled
+deterministic randomized-observation partition is available for fixed-orbit
+TLE residual comparison; it is an out-of-sample interpolation diagnostic, not
+a temporal forecast.
 
 Every catalogue candidate and the restricted zero-curve null receive the same
 proper Gaussian offset prior and tau-profile opportunity.  Candidate-selection
@@ -34,6 +38,9 @@ from leo.contracts.catalogue_association import (
 from leo.contracts.digests import canonical_digest
 
 type HypothesisKind = Literal["catalogue-candidate", "restricted-zero-curve-null"]
+type ObservationPartitionPolicy = Literal[
+    "chronological-future-v1", "deterministic-randomized-observation-v1"
+]
 type AbstentionDiagnostic = Literal[
     "exact-heldout-tie",
     "exact-training-tie",
@@ -51,6 +58,7 @@ type DescriptiveDiagnostic = Literal[
 
 _ALGORITHM_VERSION = "training-frozen-covariance-nearest-neighbour-v1"
 _FIT_PARTITION_ATTESTATION = "candidate-tau-offset-fit-on-training-partition-v1"
+_RANDOMIZED_PARTITION_POLICY = "deterministic-randomized-observation-v1"
 _SHA256_PREFIX = "sha256:"
 _SHA256_HEX_LENGTH = 64
 
@@ -67,8 +75,12 @@ class NearestNeighbourNumericalError(ValueError):
 class NearestNeighbourAssociationConfig:
     """Non-persisted controls for one training-frozen association episode.
 
-    The partition must exhaust one episode, be disjoint, and put every
-    training row before every evaluation row.  The expected selection digests
+    The partition must exhaust one episode and be disjoint.  The default
+    ``chronological-future-v1`` policy also requires every training row to
+    precede every evaluation row.  ``deterministic-randomized-observation-v1``
+    is for fixed-orbit residual comparisons: it evaluates a frozen TLE/tau/
+    offset fit on interleaved observations and must never be described as a
+    future-time forecast.  The expected selection digests
     bind an independently frozen response-free candidate-population protocol.
     That protocol may use the full scheduled support geometry because it has
     no CFO response.  The separate fit attestation and explicit partition bind
@@ -84,6 +96,7 @@ class NearestNeighbourAssociationConfig:
     expected_selection_protocol_digest: str
     expected_selection_policy_digest: str
     nuisance_offset_prior_sigma_hz: float
+    observation_partition_policy: ObservationPartitionPolicy = "chronological-future-v1"
     restricted_null_prediction_cfo_hz: float = 0.0
     restricted_null_prediction_standard_uncertainty_hz: float = 1.0
     descriptive_ambiguity_negative_log_score_margin: float | None = None
@@ -93,12 +106,19 @@ class NearestNeighbourAssociationConfig:
     )
 
     def __post_init__(self) -> None:
+        if self.observation_partition_policy not in (
+            "chronological-future-v1",
+            _RANDOMIZED_PARTITION_POLICY,
+        ):
+            raise NearestNeighbourInputError("observation partition policy is unsupported")
         if len(self.training_observation_ids) < 2:
             raise NearestNeighbourInputError("at least two training observations are required")
         if not self.evaluation_observation_ids:
             raise NearestNeighbourInputError(
                 "at least one future evaluation observation is required"
             )
+
+
         for name, values in (
             ("training_observation_ids", self.training_observation_ids),
             ("evaluation_observation_ids", self.evaluation_observation_ids),
@@ -143,6 +163,41 @@ class NearestNeighbourAssociationConfig:
             raise NearestNeighbourInputError(
                 "candidate, tau, and offset fit must be attested as training-partition only"
             )
+
+
+def deterministic_randomized_observation_partition(
+    observation_ids: Sequence[str],
+    *,
+    training_fraction: float,
+    split_seed: str,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return a reproducible non-temporal train/evaluation partition."""
+
+    ids = tuple(observation_ids)
+    if len(ids) < 3:
+        raise NearestNeighbourInputError("at least three observations are required")
+    if len(set(ids)) != len(ids) or any(not _is_sha256_digest(item) for item in ids):
+        raise NearestNeighbourInputError("observation_ids must be unique tagged SHA-256 digests")
+    if not 0.0 < training_fraction < 1.0:
+        raise NearestNeighbourInputError("training_fraction must lie strictly between zero and one")
+    if not _is_sha256_digest(split_seed):
+        raise NearestNeighbourInputError("split_seed must be a tagged SHA-256 digest")
+    training_count = min(max(2, math.floor(len(ids) * training_fraction)), len(ids) - 1)
+    ranked_ids = sorted(
+        ids,
+        key=lambda observation_id: canonical_digest(
+            {
+                "partition_policy": _RANDOMIZED_PARTITION_POLICY,
+                "split_seed": split_seed,
+                "observation_id": observation_id,
+            }
+        ),
+    )
+    training_set = set(ranked_ids[:training_count])
+    return (
+        tuple(item for item in ids if item in training_set),
+        tuple(item for item in ids if item not in training_set),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +269,7 @@ class NearestNeighbourAssociationResult:
     prediction_bank_content_digest: str
     candidate_universe_digest: str
     observation_partition_digest: str
+    observation_partition_policy: ObservationPartitionPolicy
     training_observation_ids: tuple[str, ...]
     evaluation_observation_ids: tuple[str, ...]
     selection_protocol_digest: str
@@ -680,6 +736,7 @@ def associate_single_episode_nearest_neighbour(
     partition_digest = canonical_digest(
         {
             "algorithm_version": _ALGORITHM_VERSION,
+            "observation_partition_policy": config.observation_partition_policy,
             "response_free_support_digest": prediction_bank.support.content_digest,
             "training_observation_ids": config.training_observation_ids,
             "evaluation_observation_ids": config.evaluation_observation_ids,
@@ -690,6 +747,7 @@ def associate_single_episode_nearest_neighbour(
         prediction_bank_content_digest=prediction_bank.content_digest,
         candidate_universe_digest=prediction_bank.candidate_universe_digest,
         observation_partition_digest=partition_digest,
+        observation_partition_policy=config.observation_partition_policy,
         training_observation_ids=config.training_observation_ids,
         evaluation_observation_ids=config.evaluation_observation_ids,
         selection_protocol_digest=prediction_bank.selection_protocol_digest,
@@ -967,16 +1025,18 @@ def _validate_frozen_inputs(
         raise NearestNeighbourInputError("training observations must preserve episode order")
     if config.evaluation_observation_ids != expected_evaluation_order:
         raise NearestNeighbourInputError("evaluation observations must preserve episode order")
-    latest_training_end = max(
-        observation_by_id[item].support_end_utc_ns for item in config.training_observation_ids
-    )
-    earliest_evaluation_start = min(
-        observation_by_id[item].support_start_utc_ns for item in config.evaluation_observation_ids
-    )
-    if latest_training_end > earliest_evaluation_start:
-        raise NearestNeighbourInputError(
-            "training support must be half-open and precede evaluation support"
+    if config.observation_partition_policy == "chronological-future-v1":
+        latest_training_end = max(
+            observation_by_id[item].support_end_utc_ns for item in config.training_observation_ids
         )
+        earliest_evaluation_start = min(
+            observation_by_id[item].support_start_utc_ns
+            for item in config.evaluation_observation_ids
+        )
+        if latest_training_end > earliest_evaluation_start:
+            raise NearestNeighbourInputError(
+                "training support must be half-open and precede evaluation support"
+            )
     return observations
 
 
@@ -1003,6 +1063,7 @@ def _roundtrip_revalidate_inputs(
             expected_selection_protocol_digest=config.expected_selection_protocol_digest,
             expected_selection_policy_digest=config.expected_selection_policy_digest,
             nuisance_offset_prior_sigma_hz=config.nuisance_offset_prior_sigma_hz,
+            observation_partition_policy=config.observation_partition_policy,
             restricted_null_prediction_cfo_hz=config.restricted_null_prediction_cfo_hz,
             restricted_null_prediction_standard_uncertainty_hz=(
                 config.restricted_null_prediction_standard_uncertainty_hz

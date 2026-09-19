@@ -3,7 +3,9 @@
 The physical track is frozen before this module receives it.  Candidate
 population uses only its time support, all nominal and wrong-time prediction
 banks are built before response scoring, and catalogue/tau/offset fitting uses
-only a chronological prefix.  The future suffix is scored once without refit.
+a deterministic randomized observation partition. The evaluation observations
+are scored once without refit; this is fixed-orbit residual evidence, not a
+future-time extrapolation claim.
 
 This is deliberately an abstaining matcher.  It can name a leading Starlink
 catalogue candidate, but it never turns one 300-second scan into a secure
@@ -33,6 +35,7 @@ from leo.analysis.nearest_neighbour_association import (
     NearestNeighbourAssociationConfig,
     NearestNeighbourAssociationResult,
     associate_single_episode_nearest_neighbour,
+    deterministic_randomized_observation_partition,
 )
 from leo.analysis.research.radio_polynomial_null import (
     RadioPolynomialNullConfig,
@@ -48,7 +51,7 @@ from leo.contracts.catalogue_association import (
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 
-_ALGORITHM_VERSION = "persistent-hop-causal-heldout-tle-match-v1"
+_ALGORITHM_VERSION = "persistent-hop-randomized-residual-tle-match-v2"
 
 
 class PersistentHopTleMatchInputError(ValueError):
@@ -157,8 +160,8 @@ class PersistentHopTleMatchResult:
     abstention_recommended: bool
     abstention_reasons: tuple[str, ...]
     content_digest: Sha256Digest
-    algorithm_version: Literal["persistent-hop-causal-heldout-tle-match-v1"] = field(
-        default="persistent-hop-causal-heldout-tle-match-v1", init=False
+    algorithm_version: Literal["persistent-hop-randomized-residual-tle-match-v2"] = field(
+        default="persistent-hop-randomized-residual-tle-match-v2", init=False
     )
     all_banks_built_before_response_scoring: Literal[True] = field(default=True, init=False)
     wrong_time_controls_are_observe_only: Literal[True] = field(default=True, init=False)
@@ -180,7 +183,7 @@ def match_persistent_hop_track_to_tles(
     observer_site: ObserverSiteV1,
     config: PersistentHopTleMatchConfig,
 ) -> PersistentHopTleMatchResult:
-    """Match one frozen tracklet with chronological and wrong-time controls."""
+    """Match one frozen tracklet with randomized residual and wrong-time controls."""
 
     graph = _revalidate_graph(graph)
     tle_snapshot = _revalidate_snapshot(tle_snapshot)
@@ -210,10 +213,18 @@ def match_persistent_hop_track_to_tles(
         for field_delta_s in config.catalogue_fields_s
     )
 
-    training_count = max(4, int(math.floor(len(rows) * config.training_fraction)))
-    training_count = min(training_count, len(rows) - 1)
-    training_ids = tuple(item.observation_id for item in rows[:training_count])
-    evaluation_ids = tuple(item.observation_id for item in rows[training_count:])
+    split_seed = canonical_digest(
+        {
+            "policy": "persistent-hop-fixed-orbit-randomized-residual-v1",
+            "response_free_support_digest": support.content_digest,
+            "selection_protocol_digest": config.selection_protocol_digest,
+        }
+    )
+    training_ids, evaluation_ids = deterministic_randomized_observation_partition(
+        tuple(item.observation_id for item in rows),
+        training_fraction=config.training_fraction,
+        split_seed=split_seed,
+    )
     field_matches = tuple(
         _score_field(
             item,
@@ -229,6 +240,7 @@ def match_persistent_hop_track_to_tles(
         RadioPolynomialNullConfig(
             training_observation_ids=training_ids,
             evaluation_observation_ids=evaluation_ids,
+            observation_partition_policy="deterministic-randomized-observation-v1",
             calendar_block_duration_s=config.calendar_block_duration_s,
         ),
     )
@@ -376,6 +388,7 @@ def _score_field(
             expected_selection_protocol_digest=field.bank.selection_protocol_digest,
             expected_selection_policy_digest=field.bank.selection_policy_digest,
             nuisance_offset_prior_sigma_hz=config.nuisance_offset_prior_sigma_hz,
+            observation_partition_policy="deterministic-randomized-observation-v1",
         ),
     )
     return PersistentHopTleFieldMatch(
