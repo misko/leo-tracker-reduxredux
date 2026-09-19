@@ -171,6 +171,26 @@ def test_persistent_hop_utc_authority_rejects_a_wide_begin_bracket() -> None:
     assert timing.qualified is False
 
 
+def test_persistent_hop_utc_authority_accepts_default_two_second_bracket() -> None:
+    from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
+
+    timing = PersistentHopUtcTimingAuthorityV1.from_host_bracket(
+        session_id="hop-two-second-bracket",
+        session_start_device_sample_counter=10,
+        sample_rate_hz=5_000_000,
+        begin_before_realtime_ns=1_000_000_000_000,
+        begin_before_monotonic_ns=100_000_000_000,
+        begin_after_realtime_ns=1_001_500_000_000,
+        begin_after_monotonic_ns=101_500_000_000,
+        terminal_realtime_ns=1_300_000_000_000,
+        terminal_monotonic_ns=400_000_000_000,
+    )
+
+    assert timing.qualification_limit_ns == 2_000_000_000
+    assert timing.first_sample_bracket_width_ns == 1_500_000_000
+    assert timing.qualified is True
+
+
 def test_persistent_hop_application_preserves_cancel_receipt_after_sink_failure() -> None:
     radio = FakePersistentHopRadio()
     plan = compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000)
