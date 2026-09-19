@@ -113,7 +113,16 @@ def test_projection_rejects_missing_or_mismatched_authority(fault):
 
 def test_projection_accepts_counter_authority_with_unqualified_absolute_utc():
     data = source()
-    data = replace(data, timing=data.timing.model_copy(update={"qualified": False}))
+    data = replace(
+        data,
+        timing=data.timing.model_copy(
+            update={
+                "qualified": False,
+                "first_sample_bracket_width_ns": 3_000_000_000,
+                "qualification_limit_ns": 3_000_000_000,
+            }
+        ),
+    )
     rows = project_scanner_candidates(data)
     assert len(rows) == len(data.probes)
     assert rows[2].support_center_utc_ns - rows[0].support_center_utc_ns == 3_000_000_000
@@ -174,7 +183,16 @@ def test_catalogue_failure_keeps_trajectory_png_and_reason(tmp_path, monkeypatch
 
 def test_unqualified_utc_keeps_relative_trajectory_and_skips_catalogue(tmp_path, monkeypatch):
     data = source()
-    data = replace(data, timing=data.timing.model_copy(update={"qualified": False}))
+    data = replace(
+        data,
+        timing=data.timing.model_copy(
+            update={
+                "qualified": False,
+                "first_sample_bracket_width_ns": 3_000_000_000,
+                "qualification_limit_ns": 3_000_000_000,
+            }
+        ),
+    )
     runner, store = service(tmp_path, monkeypatch, input_source=data)
     runner.archive = SimpleNamespace(
         select_latest_before=lambda _: pytest.fail("unqualified UTC queried catalogue")
@@ -186,9 +204,32 @@ def test_unqualified_utc_keeps_relative_trajectory_and_skips_catalogue(tmp_path,
     assert result.product.physical_group_count > 0
     assert result.product.eligible_group_count > 0
     assert result.product.attempted_group_count == 0
-    assert "device-counter timing" in result.product.reasons[0]
+    assert "two-second association policy" in result.product.reasons[0]
     assert store.artifact("scan-test", "trajectory") == PNG
     assert store.artifact("scan-test", "trajectory-tle") is None
+
+
+def test_two_second_policy_reuses_historically_unqualified_timing(tmp_path, monkeypatch):
+    data = source()
+    data = replace(
+        data,
+        timing=data.timing.model_copy(
+            update={
+                # This receipt was created under the former 50 ms policy.  V4
+                # must evaluate the immutable bracket evidence against its own
+                # explicit two-second association policy.
+                "qualified": False,
+                "first_sample_bracket_width_ns": 201_000_000,
+                "qualification_limit_ns": 50_000_000,
+            }
+        ),
+    )
+    runner, _ = service(tmp_path, monkeypatch, input_source=data)
+    result = runner.run("scan-test")
+    assert result.product.trajectory_time_basis == "qualified-utc"
+    assert result.product.eligible_group_count > 0
+    assert result.product.attempted_group_count > 0
+    assert result.product.tle_state == "unavailable"
 
 
 def test_budget_resume_and_failed_group_receipts(tmp_path, monkeypatch):

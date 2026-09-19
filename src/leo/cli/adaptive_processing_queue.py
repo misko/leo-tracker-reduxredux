@@ -47,7 +47,8 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     preset = resolve_preset(site)
     return canonical_digest(
         {
-            "analysis_id": "scanner-shared-tracking-v3",
+            "analysis_id": "scanner-shared-tracking-v4",
+            "utc_qualification_limit_ns": 2_000_000_000,
             "capture_manifest": capture.manifest_sha256,
             "metrics_manifest": metrics_manifest_sha256,
             "observer_site": preset.model_dump(mode="json"),
@@ -83,7 +84,7 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
                 continue
             if status.metrics_manifest_sha256 is None:
                 raise ValueError("figures-ready adaptive analysis lacks metrics authority")
-            if tracking.status(session_id).state == "complete":
+            if tracking.analysis_status(session_id).state == "complete":
                 continue
             if catalog.enqueue_adaptive_tracking_job(
                 session_id=session_id,
@@ -133,7 +134,7 @@ def enqueue_tracking_backfill(
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
                 continue
-            if tracking.status(session_id).state == "complete":
+            if tracking.analysis_status(session_id).state == "complete":
                 continue
             if catalog.enqueue_adaptive_tracking_job(
                 session_id=session_id,

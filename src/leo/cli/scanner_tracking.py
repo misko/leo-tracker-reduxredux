@@ -8,7 +8,7 @@ from contextlib import nullcontext
 from pathlib import Path
 
 from leo.application.scanner_tracking import ScannerTrackingService
-from leo.contracts.scanner_tracking import ScannerTrackingStatusV3
+from leo.contracts.scanner_tracking import ScannerTrackingStatusV4
 from leo.contracts.sky import ObserverSiteV1
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.persistent_hop_tracking import render_persistent_hop_tracking_png
@@ -64,11 +64,14 @@ def main():
             pending = [
                 s
                 for s in ids
-                if products.status(s).state != "complete"
-                and (args.session_id or products.status(s).state != "failed")
+                if products.analysis_status(s).state != "complete"
+                and (args.session_id or products.analysis_status(s).state != "failed")
             ]
             pending.sort(
-                key=lambda s: (products.status(s).state != "running", -sources.captured_at(s))
+                key=lambda s: (
+                    products.analysis_status(s).state != "running",
+                    -sources.captured_at(s),
+                )
             )
             started, attempted, failures = time.monotonic(), 0, []
             for sid in pending:
@@ -80,9 +83,9 @@ def main():
                 except BundleNotFoundError:
                     continue
                 except Exception as error:
-                    prior = products.status(sid)
+                    prior = products.analysis_status(sid)
                     products.save(
-                        ScannerTrackingStatusV3(
+                        ScannerTrackingStatusV4(
                             session_id=sid,
                             state="failed",
                             phase=prior.phase,

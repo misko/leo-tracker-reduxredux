@@ -17,22 +17,25 @@ from leo.analysis.persistent_hop_trajectory import (
 )
 from leo.application.persistent_hop_tracking import PersistentHopTrackingService, _GroupWork
 from leo.application.persistent_hop_trajectory import PersistentHopTrajectoryProjectionError
-from leo.application.scanner_trajectory import project_scanner_candidates
+from leo.application.scanner_trajectory import (
+    project_scanner_candidates,
+    timing_is_qualified_for_tle,
+)
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTrackingInputs,
-    ScannerTrackingProductV3,
-    ScannerTrackingStatusV3,
+    ScannerTrackingProductV4,
+    ScannerTrackingStatusV4,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def status(self, session_id: str) -> ScannerTrackingStatusV3: ...
-    def save(self, status: ScannerTrackingStatusV3) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV4: ...
+    def save(self, status: ScannerTrackingStatusV4) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV3) -> None: ...
+    def publish(self, product: ScannerTrackingProductV4) -> None: ...
 
 
 class ScannerTrackingService:
@@ -54,14 +57,15 @@ class ScannerTrackingService:
         if not 0 < maximum_seconds <= 1800 or not 1 <= group_limit <= 32:
             raise ValueError("tracking work bounds are invalid")
         started = self.clock()
-        status = self.products.status(session_id)
+        status = self.products.analysis_status(session_id)
         if status.state == "complete":
             return status
         source = self.inputs.load(session_id)
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v3",
+                "algorithm": "scanner-shared-tracking-v4",
+                "utc_qualification_limit_ns": 2_000_000_000,
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
                 "selection": "eligible-first-longest-support-v1",
@@ -69,7 +73,7 @@ class ScannerTrackingService:
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV3(
+        product = status.product or ScannerTrackingProductV4(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -83,7 +87,7 @@ class ScannerTrackingService:
             group_limit=group_limit,
             trajectory_time_basis=(
                 "qualified-utc"
-                if source.timing is not None and source.timing.qualified
+                if timing_is_qualified_for_tle(source.timing)
                 else "device-counter-relative"
             ),
         )
@@ -96,7 +100,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV3(
+                ScannerTrackingStatusV4(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -118,7 +122,7 @@ class ScannerTrackingService:
                 }
             )
             self.products.publish(product)
-            return self.products.status(session_id)
+            return self.products.analysis_status(session_id)
         config = PersistentHopTleMatchConfig(
             selection_protocol_digest=policy_digest, nominal_rf_hz=trajectory_config.canonical_rf_hz
         )
@@ -152,18 +156,18 @@ class ScannerTrackingService:
                     "artifacts": (ref,),
                 }
             )
-        if source.timing is None or not source.timing.qualified:
+        if not timing_is_qualified_for_tle(source.timing):
             product = product.model_copy(
                 update={
                     "tle_state": "unavailable",
                     "reasons": (
-                        "Measured trajectories use device-counter timing; "
-                        "TLE comparison requires qualified absolute UTC.",
+                        "UTC bracket exceeds the two-second association policy; "
+                        "TLE comparison requires a qualified absolute UTC anchor.",
                     ),
                 }
             )
             self.products.publish(product)
-            return self.products.status(session_id)
+            return self.products.analysis_status(session_id)
         save("tle-matching")
         if selected:
             try:
@@ -201,7 +205,7 @@ class ScannerTrackingService:
                     }
                 )
                 self.products.publish(product)
-                return self.products.status(session_id)
+                return self.products.analysis_status(session_id)
             completed = {c.physical_group_id for c in product.tle_candidates} | {
                 c.physical_group_id for c in product.unscored_groups
             }
@@ -210,7 +214,7 @@ class ScannerTrackingService:
                     continue
                 if self.clock() - started >= maximum_seconds:
                     save("tle-matching")
-                    return self.products.status(session_id)
+                    return self.products.analysis_status(session_id)
                 try:
                     result = self.matcher(
                         persistent_hop_tracklet_graph(
@@ -271,7 +275,7 @@ class ScannerTrackingService:
             update={"tle_state": state, "artifacts": (*product.artifacts, ref)}
         )
         self.products.publish(product)
-        return self.products.status(session_id)
+        return self.products.analysis_status(session_id)
 
 
 def eligible_groups(trajectory, config):

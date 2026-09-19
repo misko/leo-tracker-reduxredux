@@ -11,6 +11,20 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.scanner_tracking import TrackingInput
 from leo.contracts.states import StarlinkEdge
 
+_UTC_QUALIFICATION_LIMIT_NS = 2_000_000_000
+
+
+def timing_is_qualified_for_tle(timing) -> bool:
+    """Apply the current association policy to immutable timing evidence."""
+    return (
+        timing is not None
+        and max(
+            timing.first_sample_bracket_width_ns,
+            timing.maximum_realtime_monotonic_offset_spread_ns,
+        )
+        <= _UTC_QUALIFICATION_LIMIT_NS
+    )
+
 
 def project_scanner_candidates(source: TrackingInput) -> tuple[PersistentHopCfoCandidate, ...]:
     timing = source.timing

@@ -2252,7 +2252,7 @@ class CatalogRepository:
         """Create one immutable adaptive trajectory/TLE job in the shared queue."""
         return self._enqueue_adaptive_job(
             job_kind="adaptive_tracking",
-            stage_key="adaptive-tracking-v3",
+            stage_key="adaptive-tracking-v4",
             session_id=session_id,
             input_manifest_digest=input_manifest_digest,
             configuration_digest=configuration_digest,
