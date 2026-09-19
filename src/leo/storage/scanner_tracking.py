@@ -18,6 +18,7 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingProductV6,
     ScannerTrackingProductV7,
     ScannerTrackingProductV8,
+    ScannerTrackingProductV9,
     ScannerTrackingStatusV1,
     ScannerTrackingStatusV2,
     ScannerTrackingStatusV3,
@@ -26,6 +27,7 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingStatusV6,
     ScannerTrackingStatusV7,
     ScannerTrackingStatusV8,
+    ScannerTrackingStatusV9,
     SessionId,
     TrackingArtifactV1,
 )
@@ -43,7 +45,7 @@ class ScannerTrackingStore:
         self.root, self.read_only = root, read_only
 
     @contextmanager
-    def directory(self, session_id: str, *, create: bool = False, version: int = 8):
+    def directory(self, session_id: str, *, create: bool = False, version: int = 9):
         TypeAdapter(SessionId).validate_python(session_id)
         if create and self.read_only:
             raise PermissionError("tracking store is read-only")
@@ -60,7 +62,8 @@ class ScannerTrackingStore:
     def status(
         self, session_id: str
     ) -> (
-        ScannerTrackingStatusV8
+        ScannerTrackingStatusV9
+        | ScannerTrackingStatusV8
         | ScannerTrackingStatusV7
         | ScannerTrackingStatusV6
         | ScannerTrackingStatusV5
@@ -69,9 +72,12 @@ class ScannerTrackingStore:
         | ScannerTrackingStatusV2
         | ScannerTrackingStatusV1
     ):
-        current = self._status_v8(session_id)
+        current = self._status_v9(session_id)
         if current.state != "pending":
             return current
+        current_v8 = self._status_v8(session_id)
+        if current_v8.state != "pending":
+            return current_v8
         current_v7 = self._status_v7(session_id)
         if current_v7.state != "pending":
             return current_v7
@@ -100,14 +106,36 @@ class ScannerTrackingStore:
             return current
         return legacy if legacy.state != "pending" else current
 
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV8:
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV9:
         """Return only the current analysis version's state for queue workers.
 
         Public readers retain the newest published historical product while a
         newer analysis version is pending.  Workers must instead see that
-        pending V8 state so an intentional eligibility revision is actually run.
+        pending V9 state so an intentional eligibility revision is actually run.
         """
-        return self._status_v8(session_id)
+        return self._status_v9(session_id)
+
+    def _status_v9(self, session_id: str) -> ScannerTrackingStatusV9:
+        try:
+            with self.directory(session_id, version=9) as directory:
+                try:
+                    product = _unseal(
+                        _read(directory, "manifest.json", _LIMIT), ScannerTrackingProductV9
+                    )
+                    return ScannerTrackingStatusV9(
+                        session_id=session_id, state="complete", phase="complete", product=product
+                    )
+                except FileNotFoundError:
+                    try:
+                        return _unseal(
+                            _read(directory, "checkpoint.json", _LIMIT), ScannerTrackingStatusV9
+                        )
+                    except FileNotFoundError:
+                        return ScannerTrackingStatusV9(session_id=session_id)
+        except ValueError as error:
+            if isinstance(error.__cause__, FileNotFoundError):
+                return ScannerTrackingStatusV9(session_id=session_id)
+            raise
 
     def _status_v8(self, session_id: str) -> ScannerTrackingStatusV8:
         try:
@@ -120,12 +148,7 @@ class ScannerTrackingStore:
                         session_id=session_id, state="complete", phase="complete", product=product
                     )
                 except FileNotFoundError:
-                    try:
-                        return _unseal(
-                            _read(directory, "checkpoint.json", _LIMIT), ScannerTrackingStatusV8
-                        )
-                    except FileNotFoundError:
-                        return ScannerTrackingStatusV8(session_id=session_id)
+                    return ScannerTrackingStatusV8(session_id=session_id)
         except ValueError as error:
             if isinstance(error.__cause__, FileNotFoundError):
                 return ScannerTrackingStatusV8(session_id=session_id)
@@ -285,8 +308,8 @@ class ScannerTrackingStore:
                 return ScannerTrackingStatusV1(session_id=session_id)
             raise
 
-    def save(self, status: ScannerTrackingStatusV8) -> None:
-        status = ScannerTrackingStatusV8.model_validate(status.model_dump())
+    def save(self, status: ScannerTrackingStatusV9) -> None:
+        status = ScannerTrackingStatusV9.model_validate(status.model_dump())
         with self.directory(status.session_id, create=True) as directory:
             try:
                 _read(directory, "manifest.json", _LIMIT)
@@ -323,8 +346,8 @@ class ScannerTrackingStore:
                     raise ValueError("tracking artifact is immutable")
         return reference
 
-    def publish(self, product: ScannerTrackingProductV8) -> None:
-        product = ScannerTrackingProductV8.model_validate(product.model_dump())
+    def publish(self, product: ScannerTrackingProductV9) -> None:
+        product = ScannerTrackingProductV9.model_validate(product.model_dump())
         if product.tle_state == "pending":
             raise ValueError("cannot finalize pending TLE comparisons")
         with self.directory(product.session_id, create=True) as directory:
@@ -350,8 +373,8 @@ class ScannerTrackingStore:
         assert product is not None
         with self.directory(
             session_id,
-            version=8
-            if product.analysis_id == "scanner-shared-tracking-v8"
+            version=9
+            if product.analysis_id == "scanner-shared-tracking-v9"
             else 7
             if product.analysis_id == "scanner-shared-tracking-v7"
             else 6
