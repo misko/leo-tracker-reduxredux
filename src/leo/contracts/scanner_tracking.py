@@ -20,13 +20,40 @@ from leo.scanner.persistent_hop_tracking import (
 
 SessionId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
 ArtifactName = Literal[
-    "trajectory", "trajectory-tle", "tle-review-01", "tle-review-02", "tle-review-03",
-    "tle-review-04", "tle-review-05", "tle-review-06", "tle-review-07", "tle-review-08",
-    "tle-review-09", "tle-review-10", "tle-review-11", "tle-review-12", "tle-review-13",
-    "tle-review-14", "tle-review-15", "tle-review-16", "tle-review-17", "tle-review-18",
-    "tle-review-19", "tle-review-20", "tle-review-21", "tle-review-22", "tle-review-23",
-    "tle-review-24", "tle-review-25", "tle-review-26", "tle-review-27", "tle-review-28",
-    "tle-review-29", "tle-review-30", "tle-review-31", "tle-review-32",
+    "trajectory",
+    "trajectory-tle",
+    "tle-review-01",
+    "tle-review-02",
+    "tle-review-03",
+    "tle-review-04",
+    "tle-review-05",
+    "tle-review-06",
+    "tle-review-07",
+    "tle-review-08",
+    "tle-review-09",
+    "tle-review-10",
+    "tle-review-11",
+    "tle-review-12",
+    "tle-review-13",
+    "tle-review-14",
+    "tle-review-15",
+    "tle-review-16",
+    "tle-review-17",
+    "tle-review-18",
+    "tle-review-19",
+    "tle-review-20",
+    "tle-review-21",
+    "tle-review-22",
+    "tle-review-23",
+    "tle-review-24",
+    "tle-review-25",
+    "tle-review-26",
+    "tle-review-27",
+    "tle-review-28",
+    "tle-review-29",
+    "tle-review-30",
+    "tle-review-31",
+    "tle-review-32",
 ]
 
 
@@ -327,6 +354,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV6
         | ScannerTrackingStatusV7
         | ScannerTrackingStatusV8
+        | ScannerTrackingStatusV9
     ): ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 

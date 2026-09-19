@@ -118,7 +118,6 @@ class NearestNeighbourAssociationConfig:
                 "at least one future evaluation observation is required"
             )
 
-
         for name, values in (
             ("training_observation_ids", self.training_observation_ids),
             ("evaluation_observation_ids", self.evaluation_observation_ids),
