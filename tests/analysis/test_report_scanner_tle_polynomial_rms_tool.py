@@ -24,16 +24,12 @@ def test_track_renderer_emits_separate_linear_scale_figure(tmp_path: Path) -> No
         if rank <= 2:
             candidate["plot_evidence"] = {
                 "time_s": [10.0, 11.0, 12.0, 13.0],
-                    "training_mask": [True, False, True, False],
+                "training_mask": [True, False, True, False],
                 "measured_cfo_hz": [100.0, 90.0, 80.0, 70.0],
                 "tle_cfo_hz": [96.0, 87.0, 78.0, 69.0],
                 "raw_tle_residual_hz": [4.0, 3.0, 2.0, 1.0],
-                "fitted_cfo_hz": {
-                    str(degree): [100.0, 90.0, 80.0, 70.0] for degree in (1, 2, 3)
-                },
-                "postfit_residual_hz": {
-                    str(degree): [0.0, 0.0, 0.0, 0.0] for degree in (1, 2, 3)
-                },
+                "fitted_cfo_hz": {str(degree): [100.0, 90.0, 80.0, 70.0] for degree in (1, 2, 3)},
+                "postfit_residual_hz": {str(degree): [0.0, 0.0, 0.0, 0.0] for degree in (1, 2, 3)},
             }
         candidates.append(candidate)
     tracks = [

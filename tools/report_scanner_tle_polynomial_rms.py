@@ -57,9 +57,7 @@ def _render_track_plots(session_id: str, tracks: list[dict], output: Path) -> li
         candidates = track["candidates"]
         leaders = candidates[:2]
         x = np.arange(1, len(candidates) + 1)
-        labels = [
-            f"#{row['standard_rank']}\n{row['catalog_number']}" for row in candidates
-        ]
+        labels = [f"#{row['standard_rank']}\n{row['catalog_number']}" for row in candidates]
         fig, axes = plt.subplots(3, 2, figsize=(15, 14))
         for axis, metric, title in (
             (axes[0, 0], "offset_only_training_rms_hz", "Fit RMS"),
@@ -90,11 +88,19 @@ def _render_track_plots(session_id: str, tracks: list[dict], output: Path) -> li
         training_mask = np.asarray(fit_plot["training_mask"], dtype=bool)
         for axis in (axes[1, 0], axes[1, 1]):
             axis.plot(
-                time_s[training_mask], measured[training_mask], "o", color="black", ms=3,
+                time_s[training_mask],
+                measured[training_mask],
+                "o",
+                color="black",
+                ms=3,
                 label="GLRT fit",
             )
             axis.plot(
-                time_s[~training_mask], measured[~training_mask], "x", color="#666666", ms=4,
+                time_s[~training_mask],
+                measured[~training_mask],
+                "x",
+                color="#666666",
+                ms=4,
                 label="GLRT evaluation",
             )
 
@@ -126,7 +132,11 @@ def _render_track_plots(session_id: str, tracks: list[dict], output: Path) -> li
             residual_axis = axes[2, column]
             raw_residual = np.asarray(plot["raw_tle_residual_hz"])
             residual_axis.plot(
-                time_s[training_mask], raw_residual[training_mask], "o", color="black", ms=3,
+                time_s[training_mask],
+                raw_residual[training_mask],
+                "o",
+                color="black",
+                ms=3,
                 label="GLRT fit",
             )
             residual_axis.plot(
@@ -358,8 +368,7 @@ def build_report(session_id: str, output: Path) -> dict:
         "protocol": "scanner-top5-tle-polynomial-residual-rms-v1",
         "candidate_ranking": "constant-offset and integer tau [-5,+5] seconds, training rows only",
         "polynomial_fit": (
-            "degree 1/2/3 additive residual polynomial, training rows only, "
-            "frozen on held-out rows"
+            "degree 1/2/3 additive residual polynomial, training rows only, frozen on held-out rows"
         ),
         "minimum_observations": 14,
         "minimum_span_s": 7,

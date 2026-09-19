@@ -192,7 +192,7 @@ def _validate_common_partition(
         raise PredictiveEvidenceInputError("predictive partition must be unique and disjoint")
     if not association.heldout_rows_scored_once_without_refit:
         raise PredictiveEvidenceInputError("catalogue future rows were not frozen before scoring")
-    if not radio_null.future_scored_once_without_refit:
+    if not radio_null.evaluation_scored_once_without_refit:
         raise PredictiveEvidenceInputError("radio future rows were not frozen before scoring")
     if association.likelihoods_are_calibrated_identity_probabilities:
         raise PredictiveEvidenceInputError("catalogue score has an unsupported probability claim")
