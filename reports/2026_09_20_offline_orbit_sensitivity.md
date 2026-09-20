@@ -1,0 +1,84 @@
+# Closer-epoch retrospective TLEs substantially reduce the recent position bias
+
+Replacing only the orbital elements reduces the selected fixed-clock position
+error from **4,582.8 m to 1,132.3 m**. Satellite identities, RF observations,
+randomized partitions, quality selection, and fitting procedure are unchanged.
+This is the strongest explanatory lead from the recent audits, but **not yet
+sub-kilometre accuracy and not a causal real-time result**.
+
+## Selection independent of RF residuals and location
+
+For each frozen satellite identity, choose the archived element epoch nearest
+the recording start. Unlike the earlier causal audit, later publications and
+later element epochs are permitted. Selection uses only epoch distance, then
+collection time and digest as deterministic tie-breaks. It does not examine
+signal residuals or the known antenna coordinate.
+
+The read-only audit considered 176 available archive snapshots collected between
+seven days before the earliest recording and seven days after the latest one.
+The latter bound does not imply seven days of future data exist: only currently
+archived snapshots were considered. All 622 assignments have an available
+replacement; 560 selections were published after the corresponding capture.
+The median original element age is 20.52 h; the median absolute selected epoch
+distance is 3.30 h. Exact element texts, collection times, and digests are saved.
+
+## Results
+
+| Cohort | Clock model | Original error (m) | Closer-epoch error (m) | New evaluation RMS (Hz) |
+|---|---|---:|---:|---:|
+| All 622 tracks | Fixed recorded UTC | 4,800.8 | 1,202.6 | 794.15 |
+| All 622 tracks | Shared ±0.5 s | 3,805.0 | 1,430.1 | 793.69 |
+| Selected 190 tracks | Fixed recorded UTC | 4,582.8 | 1,132.3 | 86.15 |
+| Selected 190 tracks | Shared ±0.5 s | 3,887.7 | 1,730.5 | 84.88 |
+
+The selected fixed-clock evaluation RMS was 85.91 Hz before and is 86.15 Hz
+after. Nearly unchanged short-track residual RMS accompanies a large change in
+absolute position error. This illustrates why low Doppler residual alone cannot
+establish absolute positioning accuracy when the orbits are uncertain.
+
+The propagated satellite-state displacement has median **5,228 m** and maximum
+**707,262 m** across all observation epochs. This is disagreement between TLE
+solutions, not a measured satellite-position error. All replacements pass the
+existing propagation validity checks, but that does not establish their accuracy.
+The substantially worse all-cohort RMS shows that closer epoch is not uniformly
+better for every original assignment; incorrect identities, manoeuvres, or bad
+orbital solutions remain possible. The frozen selected cohort avoids that large
+RMS increase without being reselected using the new result.
+
+The fit still uses original causal catalogues for the preceding wide-region
+search and original identities. Therefore this establishes **local orbit
+sensitivity after independent wide acquisition**, not an independent global
+search performed with the retrospective catalogues. The antenna coordinate is
+used only after inference to compute the table's distances.
+
+## What this changes
+
+The results support orbit prediction uncertainty as a substantial contributor
+to the shared bias. Earlier frame, channel, sample-rate, altitude, and capped-
+observation audits produced much smaller improvements. They do not prove that
+these retrospective TLEs are exact or that future-data access solves the full
+problem. A practical device would need better causal orbit products, a justified
+orbit-error model, or independent geometric constraints.
+
+A useful next diagnostic is to compare the nearest preceding and succeeding
+element epochs separately and assess whether their propagated disagreement
+predicts the position sensitivity. No model or orbit should be chosen by its
+distance from the antenna reference.
+
+## Evidence and reproduction
+
+`tools/audit_causal_tle_freshness.py --nearest-offline` enables this explicitly
+non-causal selection; default causal selection is unchanged.
+`tools/replay_wide_alternative_tles.py` validates parent digest, assignment order,
+satellite identity, UTC, observation values, and randomized partitions before
+replacing propagated states. Invalid propagation would retain the original
+state and be logged; none occurred here.
+
+Six focused tests pass, covering strict causal selection, explicit offline
+nearest-epoch selection, rejection of non-causal updates by the existing causal
+replay, and refusal of mismatched assignment order/identities. Existing physical
+fitter tests remain the numerical basis for the unchanged fitting procedure.
+No production timestamps, TLE policy, or scanner configuration changed.
+
+- [Selected element texts, epochs and provenance](2026_09_20_offline_orbit_sensitivity/nearest-epoch-audit.json)
+- [All fits and state-disagreement statistics](2026_09_20_offline_orbit_sensitivity/inference.json)
