@@ -21,6 +21,14 @@ def flagged(row):
     )
 
 
+def orbit_selection_key(epoch, collected, capture, digest_value, strictly_causal):
+    if strictly_causal:
+        if epoch >= capture or collected >= capture:
+            return None
+        return (-epoch, -collected, digest_value)
+    return (abs(epoch - capture), collected, digest_value)
+
+
 def main():
     from leo.operations.tle_archive import TleArchiveReader
 
@@ -28,13 +36,19 @@ def main():
     for key in ["archive", "run", "replay", "residual-audit", "evidence", "output"]:
         p.add_argument("--" + key, type=Path, required=True)
     p.add_argument("--all-tracks", action="store_true")
+    p.add_argument("--strictly-causal", action="store_true")
     a = p.parse_args()
+    if a.strictly_causal and not a.all_tracks:
+        raise ValueError("causal comparison requires the full original cohort")
     if a.output.exists():
         raise ValueError("fresh output required")
     parent = json.loads((a.run / "inference.json").read_text())
-    replay = json.loads(a.replay.read_text())
+    replay = json.loads(a.replay.read_text()) if not a.strictly_causal else parent
     residual = json.loads(a.residual_audit.read_text())
-    if any(x["parent_digest"] != digest(a.run / "inference.json") for x in [replay, residual]):
+    if any(
+        x["parent_digest"] != digest(a.run / "inference.json")
+        for x in ([residual] if a.strictly_causal else [replay, residual])
+    ):
         raise ValueError("parent mismatch")
     # Signal-only exploratory trigger; never an automatic exclusion policy.
     flags = [r for r in residual["rows"] if a.all_tracks or flagged(r)]
@@ -56,7 +70,7 @@ def main():
         for s in archive.list_snapshots()
         if min(times.values()) - 7 * 86400e9
         <= s.collected_utc_ns
-        <= max(times.values()) + 7 * 86400e9
+        <= max(times.values()) + (0 if a.strictly_causal else 7 * 86400e9)
     ]
     for index, s in enumerate(snapshots):
         text = archive.read(s)
@@ -73,14 +87,20 @@ def main():
             if not name.startswith("STARLINK"):
                 continue
             for sid, t in times.items():
-                key = (abs(epoch - t), s.collected_utc_ns, s.digest)
+                key = orbit_selection_key(epoch, s.collected_utc_ns, t, s.digest, a.strictly_causal)
+                if key is None:
+                    continue
                 if norad not in best[sid] or key < best[sid][norad][0]:
-                    best[sid][norad] = (key, record.text)
+                    best[sid][norad] = (key, record.text, int(epoch), s.collected_utc_ns, s.digest)
         if index % 20 == 0:
             print("archive", index + 1, len(snapshots), flush=True)
     region = Region(**parent["region"])
     # Predetermined model definition, not selected by evaluation error.
-    model = next(m for m in replay["models"] if m["selection"] == "all" and not m["clock_fitted"])
+    model = (
+        parent["models"][0]
+        if a.strictly_causal
+        else next(m for m in replay["models"] if m["selection"] == "all" and not m["clock_fitted"])
+    )
     grid = region.points([model["x_km"][0]], [model["x_km"][1]])
     results = []
     for row in flags:
@@ -105,6 +125,14 @@ def main():
             ).hexdigest(),
         )
         result["winning_tle_text"] = best[sid][result["best_norad"]][1] if winner >= 0 else None
+        if winner >= 0:
+            chosen = best[sid][result["best_norad"]]
+            result.update(
+                winning_epoch_utc_ns=chosen[2],
+                winning_collected_utc_ns=chosen[3],
+                winning_snapshot_digest=chosen[4],
+                capture_start_utc_ns=times[sid],
+            )
         results.append(result)
         if not a.all_tracks or len(results) % 25 == 0:
             print(
@@ -120,14 +148,17 @@ def main():
     write_json(
         a.output,
         dict(
-            offline_noncausal=True,
+            offline_noncausal=not a.strictly_causal,
+            strictly_causal=a.strictly_causal,
             all_tracks=a.all_tracks,
             evaluation_location_used=False,
             parent_digest=digest(a.run / "inference.json"),
-            replay_digest=digest(a.replay),
+            replay_digest=None if a.strictly_causal else digest(a.replay),
             residual_audit_digest=digest(a.residual_audit),
             snapshot_digests=[s.digest for s in snapshots],
-            model="all-fixed-clock nearest-epoch replay",
+            model="original causal all-fixed-clock wide fit"
+            if a.strictly_causal
+            else "all-fixed-clock nearest-epoch replay",
             rows=results,
         ),
     )

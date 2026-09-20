@@ -57,6 +57,13 @@ def main():
         cat = parse_element_sets(row["winning_tle_text"])
         if cat.satellite_numbers != (row["best_norad"],):
             raise ValueError("winning orbit identity mismatch")
+        if rerank.get("strictly_causal"):
+            capture = doc["inventory"]["reference_utc_ns"]
+            if row["capture_start_utc_ns"] != capture or not (
+                row["winning_collected_utc_ns"] < capture
+                and cat.element_epoch_utc_ns()[0] == row["winning_epoch_utc_ns"] < capture
+            ):
+                raise ValueError("noncausal winning orbit")
         for shift in [0.0, -0.5, 0.5]:
             pp, vv, valid = state_arrays(
                 cat, [0], doc["inventory"]["reference_utc_ns"], arc.time_s, clock_s=shift
@@ -68,7 +75,8 @@ def main():
         data["norad"][mask] = row["best_norad"]
     ids = [i for i, r in enumerate(parent["assignments"]) if r in parent["selected_assignments"]]
     out = dict(
-        offline_noncausal=True,
+        offline_noncausal=rerank["offline_noncausal"],
+        strictly_causal=rerank.get("strictly_causal", False),
         evaluation_location_used=False,
         parent_digest=digest(a.run / "inference.json"),
         rerank_digest=digest(a.rerank),

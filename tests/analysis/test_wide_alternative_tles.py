@@ -4,6 +4,16 @@ import numpy as np
 import pytest
 
 
+def test_strict_causal_orbits_reject_either_future_authority(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from rerank_offline_orbit_flags import orbit_selection_key
+
+    for epoch, collected in [(101, 90), (90, 101), (100, 90), (90, 100)]:
+        assert orbit_selection_key(epoch, collected, 100, "x", True) is None
+    assert orbit_selection_key(99, 98, 100, "x", True) < orbit_selection_key(95, 99, 100, "x", True)
+    assert orbit_selection_key(101, 102, 100, "x", False) is not None
+
+
 def test_reassociation_binding_preserves_original_cohort(monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
     from refit_offline_reassociations import bind_rows

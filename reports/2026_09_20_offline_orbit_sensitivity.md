@@ -1,5 +1,10 @@
 # Closer-epoch retrospective TLEs substantially reduce the recent position bias
 
+**Operational correction:** this report permits information collected after
+capture. It does not satisfy the subsequently required strict pre-capture TLE
+cutoff. The [matched strict comparison](2026_09_20_strict_causal_vs_retrospective.md)
+gives 4.50 km full-data shared-clock error versus the retrospective 0.862 km.
+
 Replacing only the orbital elements reduces the selected fixed-clock position
 error from **4,582.8 m to 1,132.3 m**. Satellite identities, RF observations,
 randomized partitions, quality selection, and fitting procedure are unchanged.
