@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -35,6 +36,10 @@ def episode_metadata(assignments, evidence):
                 sample_rate_hz=doc["inventory"]["sample_rate_hz"],
                 channel=str(next(iter(channels))) if len(channels) == 1 else "mixed",
                 edge=next(iter(edges)) if len(edges) == 1 else "mixed",
+                utc_6h=datetime.fromtimestamp(
+                    (doc["inventory"]["reference_utc_ns"] // (21600 * 10**9)) * 21600,
+                    tz=UTC,
+                ).isoformat(),
             )
         )
     return rows, sources
@@ -44,6 +49,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ["run", "evidence", "output"]:
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument(
+        "--grouping", action="append", choices=["sample_rate_hz", "channel", "edge", "utc_6h"]
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("fresh output required")
@@ -69,7 +77,7 @@ def main():
         interpretation="conditional subgroup diagnostics; identities frozen from full wide search",
         models=[],
     )
-    for grouping in ["sample_rate_hz", "channel", "edge"]:
+    for grouping in args.grouping or ["sample_rate_hz", "channel", "edge"]:
         labels = np.asarray([r[grouping] for r in rows])[data["episode"]]
         for label in np.unique(labels):
             for cohort in ["all", "selected"]:

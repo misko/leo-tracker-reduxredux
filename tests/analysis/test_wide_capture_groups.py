@@ -11,7 +11,7 @@ def test_metadata_joins_by_identity_not_source_order(tmp_path, monkeypatch):
     root = tmp_path / "evidence"
     root.mkdir()
     doc = dict(
-        inventory=dict(sample_rate_hz=20000000),
+        inventory=dict(sample_rate_hz=20000000, reference_utc_ns=1_600_000_000_000_000_000),
         episodes=[dict(episode_id="b", members=["b1"]), dict(episode_id="a", members=["a1", "a2"])],
         series=[
             dict(tracklet_id="b1", channel=2, edge="upper"),
@@ -28,6 +28,7 @@ def test_metadata_joins_by_identity_not_source_order(tmp_path, monkeypatch):
     rows, sources = episode_metadata(assignments, tmp_path)
     assert [(r["channel"], r["edge"]) for r in rows] == [("1", "mixed"), ("2", "upper")]
     assert all(r["sample_rate_hz"] == 20000000 for r in rows)
+    assert all(r["utc_6h"] == "2020-09-13T12:00:00+00:00" for r in rows)
     assert len(sources) == 1
     doc["series"].pop()
     path.write_text(json.dumps(doc))
