@@ -57,7 +57,7 @@ def counter_document(rate=10_000_000, *, calibrated=True):
     policy = (
         TimingPolicy(
             calibration_reference="synthetic-independent-clock",
-            calibration_radio_serial="fixture",
+            calibration_radio_serial=document["evidence"]["radio_serial"],
             calibration_boot_id="01" * 16,
             maximum_rate_error_ppm=100,
             maximum_acquisition_delay_ns=10_000,
@@ -66,7 +66,11 @@ def counter_document(rate=10_000_000, *, calibrated=True):
         else TimingPolicy()
     )
     evidence = CounterUtcEvidence(
-        session=11, generation=7, radio_serial="fixture", policy=policy, anchors=tuple(anchors)
+        session=11,
+        generation=7,
+        radio_serial=document["evidence"]["radio_serial"],
+        policy=policy,
+        anchors=tuple(anchors),
     )
     document["evidence"]["counter_utc_timing"] = evidence.model_dump(mode="json")
     document["evidence"]["utc_timing"] = {
