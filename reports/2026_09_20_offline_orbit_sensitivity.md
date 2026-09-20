@@ -130,3 +130,36 @@ Reproduction uses `--epoch-side preceding`, `succeeding`, or `interpolated` on
 `tools/replay_wide_alternative_tles.py` with the saved bracketing audit. All three
 require explicit offline provenance. Model inputs remain frozen from the same
 independent wide acquisition.
+
+## Nearest-epoch orbits with recorded clock bounds
+
+The next replay preserves all satellite identities and the original quality
+selection. Each recording's measured first-sample UTC bracket constrains its
+clock correction. The shared-clock variant uses the intersection of brackets
+for the recordings actually present in that cohort. Neither inference nor
+bound construction reads the evaluation coordinate.
+
+| Cohort | Clock model | Horizontal error (m) | Random held-out RMS (Hz) |
+|---|---|---:|---:|
+| All | Fixed | 1202.56 | 794.15 |
+| All | Shared, original ±0.5 s | 1430.05 | 793.69 |
+| All | Shared, recorded bounds | 847.71 | 793.96 |
+| All | Per recording, recorded bounds | 1169.06 | 792.70 |
+| Selected | Fixed | 1132.29 | 86.15 |
+| Selected | Shared, original ±0.5 s | 1730.46 | 84.88 |
+| Selected | Shared, recorded bounds | 999.33 | 85.49 |
+| Selected | Per recording, recorded bounds | 1254.08 | 82.09 |
+
+Both shared recorded-bound fits hit a clock bound. The selected result is only
+0.67 m inside 1 km, insufficient margin for a verified sub-kilometre claim.
+Exact orbit propagation at the fitted clock, numerical convergence and
+group-deletion stability remain to be checked. The all-track result also has
+large residuals, so its lower position error does not establish a better model.
+These remain retrospective orbit replays, including elements published after
+capture, rather than a demonstrated real-time device solution.
+
+Four focused tests pass, including subset-specific intersection, incompatible
+bounds and missing group rejection. Reproduce the nearest-epoch command with
+`--timing-audit reports/2026_09_20_track_position_information/capture-timing-audit.json`.
+
+[Inference and recorded input digests](2026_09_20_offline_orbit_sensitivity/recorded-clock-inference.json)

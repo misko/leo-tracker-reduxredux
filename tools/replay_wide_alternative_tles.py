@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 from compare_positioning_cohorts import fit
 from replay_regional_doppler import digest, load_observations, state_arrays, write_json
+from replay_wide_session_clocks import recorded_clock_bounds
 
 from leo.analysis.research.regional_doppler import Region
 from leo.sky.propagation import parse_element_sets
@@ -18,6 +19,14 @@ def validate_assignment_order(assignments, rows):
 
     if [keys(a) for a in assignments] != [keys(r) for r in rows]:
         raise ValueError("audit assignment order or identity differs")
+
+
+def shared_clock_bounds(bounds, groups):
+    intervals = np.asarray([bounds[int(g)] for g in np.unique(groups)])
+    lower, upper = float(intervals[:, 0].max()), float(intervals[:, 1].min())
+    if not np.isfinite([lower, upper]).all() or lower >= upper:
+        raise ValueError("recorded clocks have no shared interval")
+    return {0: (lower, upper)}
 
 
 def blend_states(p0, v0, p1, v1, elapsed_s, interval_s):
@@ -42,6 +51,7 @@ def main():
         choices=["nearest", "preceding", "succeeding", "interpolated"],
         default="nearest",
     )
+    parser.add_argument("--timing-audit", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("fresh output required")
@@ -60,12 +70,20 @@ def main():
         raise ValueError("completed independent parent required")
     validate_assignment_order(parent["assignments"], audit["rows"])
     data = dict(np.load(args.run / "states.npz"))
+    bounds = (
+        recorded_clock_bounds(
+            data, parent["assignments"], json.loads(args.timing_audit.read_text()), args.evidence
+        )
+        if args.timing_audit
+        else None
+    )
     out = dict(
         evaluation_location_used=False,
         offline_noncausal=audit["offline_noncausal"],
         parent_digest=digest(parent_path),
         audit_digest=digest(args.audit),
         states_digest=digest(args.run / "states.npz"),
+        timing_audit_digest=digest(args.timing_audit) if args.timing_audit else None,
         invalid_replacements=[],
         unavailable_replacements=[],
         interpolation_fallback_to_nearest=[],
@@ -156,6 +174,24 @@ def main():
             )
             out["models"].append(dict(selection=selection, **result))
             print(selection, clock, result["latitude_deg"], result["longitude_deg"], flush=True)
+        if bounds is not None:
+            selected = np.ones(len(data["y"]), bool) if mask is None else mask
+            for mode in ["shared_recorded", "per_recording_recorded"]:
+                result = fit(
+                    data,
+                    Region(**parent["region"]),
+                    parent["initial"],
+                    "observation",
+                    True,
+                    subset=mask,
+                    fit_clock=True,
+                    clock_groups=data["session"] if mode == "per_recording_recorded" else None,
+                    clock_bounds=bounds
+                    if mode == "per_recording_recorded"
+                    else shared_clock_bounds(bounds, data["session"][selected]),
+                )
+                out["models"].append(dict(selection=selection, clock_model=mode, **result))
+                print(selection, mode, result["latitude_deg"], result["longitude_deg"], flush=True)
     write_json(args.output, out)
 
 
