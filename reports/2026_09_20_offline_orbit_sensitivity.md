@@ -163,3 +163,41 @@ bounds and missing group rejection. Reproduce the nearest-epoch command with
 `--timing-audit reports/2026_09_20_track_position_information/capture-timing-audit.json`.
 
 [Inference and recorded input digests](2026_09_20_offline_orbit_sensitivity/recorded-clock-inference.json)
+
+### Exact propagation and deletion stability
+
+The shared recorded-clock solutions were repropagated with SGP4 at their fitted
+clock correction (+0.09965843 s), then position and frequency offsets were
+refitted with that correction fixed. Errors remain 847.710 m (all) and
+999.326 m (selected). This verifies the local interpolation approximation at
+the fitted clock; it is not independent validation of orbit accuracy.
+
+All 32 deletion fits converged. Each removes a deterministic modulo-eight
+satellite or recording group, retaining the original identities and quality
+selection for remaining data. The shared clock interval is recomputed from
+the recordings that remain. These groups are sensitivity probes, not detected
+faulty data or proposed exclusion rules.
+
+| Cohort | Satellite-group deletion error range | Recording-group deletion error range |
+|---|---:|---:|
+| All | 750–1,018 m | 773–923 m |
+| Selected | 845–1,320 m | 808–1,263 m |
+
+Thus this retrospective replay has verified point estimates below 1 km, but
+does not establish robust sub-kilometre accuracy. The larger all-track cohort
+remains less sensitive to deletions but has much worse residual RMS; neither
+cohort should be selected because its reference position error is lower.
+The fitted shared correction is at the recorded upper bound in both full
+cohorts. The effect of orbital uncertainty and absolute clock calibration
+remains unresolved.
+
+![Group-deletion sensitivity](2026_09_20_offline_orbit_sensitivity/stability/stability.png)
+
+- [Full verification inference](2026_09_20_offline_orbit_sensitivity/verified-clock-inference.json)
+- [Evaluation with input hashes](2026_09_20_offline_orbit_sensitivity/stability/evaluation.json)
+
+Reproduce with `--verify-shared` added to the recorded-clock replay command.
+Generate the figure with `tools/report_orbit_clock_stability.py`, passing the
+sealed inference, evaluation reference, and fresh output directory. Five
+focused tests pass; scientific execution additionally checks all replacement
+orbits propagate successfully and all deletion fits converge.
