@@ -67,3 +67,21 @@ def test_replay_recovers_position_without_evaluation_leakage(monkeypatch):
     c = module.fit(data, region, [0, 0], "observation", False, fit_clock=True)
     np.testing.assert_allclose(c["x_km"][:2], truth, atol=0.001)
     assert abs(c["clock_s"] - 0.2) < 1e-4
+    # Independent acquisition groups may have distinct UTC offsets. Neither is
+    # allowed to change an orbit or refit using evaluation measurements.
+    clock_groups = segment % 2
+    shifted_delta = p - receiver
+    nominal_y = (
+        -REFERENCE_RF_HZ
+        / LIGHT_KM_S
+        * np.sum(shifted_delta * v, axis=1)
+        / np.linalg.norm(shifted_delta, axis=1)
+        + segment * 10000
+    )
+    data["y"][clock_groups == 0] = nominal_y[clock_groups == 0]
+    grouped = module.fit(
+        data, region, [0, 0], "observation", False, fit_clock=True, clock_groups=clock_groups
+    )
+    np.testing.assert_allclose(grouped["x_km"][:2], truth, atol=0.001)
+    np.testing.assert_allclose(grouped["clock_offsets_s"], [0, 0.2], atol=1e-4)
+    assert grouped["clock_s"] is None
