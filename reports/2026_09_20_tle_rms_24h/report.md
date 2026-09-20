@@ -14,6 +14,12 @@ Across rates, **375/396 (94.7%)** retain the better RMS against the fit-ranked r
 
 ## Every paired track, over time
 
+### Direct XY comparison
+
+Each point is one track: best randomized held-out RMS on X, runner-up on Y. Colors distinguish sample rates. Points above the dashed equality line favor the fit-ranked best candidate. The green region marks best RMS <60 Hz and runner-up RMS >300 Hz; it is not an association-acceptance label. Both axes are linear and all 396 tracks are shown.
+
+![Best versus runner-up RMS scatter](heldout-rms-scatter.png)
+
 Blue is the fit-ranked best TLE; orange is the fit-ranked runner-up. Vertical segments connect the two RMS values for each track. Multiple tracks share the session publication timestamp. All panels share linear Y limits, and all data points are included.
 
 ![Randomized held-out RMS timeline](heldout-rms-timeline.png)
