@@ -1,4 +1,4 @@
-"""Test whether acquisition-rate UTC biases explain the current position bias."""
+"""Test acquisition-rate or recording UTC biases in the current conditional cohort."""
 
 import argparse
 import json
@@ -15,6 +15,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     for key in ["states", "inference", "information", "output"]:
         p.add_argument("--" + key, type=Path, required=True)
+    p.add_argument("--grouping", choices=["sample-rate", "recording"], default="sample-rate")
     a = p.parse_args()
     if a.output.exists():
         raise ValueError("fresh output required")
@@ -34,7 +35,7 @@ def main():
         models=[],
     )
     for subset, mask in [("all", None), ("clean", np.isin(d["segment"], ids))]:
-        for grouping in ["shared", "sample-rate"]:
+        for grouping in ["shared", a.grouping]:
             row = fit(
                 d,
                 region,
@@ -43,7 +44,13 @@ def main():
                 True,
                 subset=mask,
                 fit_clock=True,
-                clock_groups=d["rate"] if grouping == "sample-rate" else None,
+                clock_groups=(
+                    None
+                    if grouping == "shared"
+                    else d["rate"]
+                    if grouping == "sample-rate"
+                    else d["session"]
+                ),
             )
             out["models"].append(dict(subset=subset, grouping=grouping, **row))
             print(
