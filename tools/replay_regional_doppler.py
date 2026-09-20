@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Blind regional search of RF-only archived scan evidence and causal TLEs.
+"""Regional search of archived RF observations and causal TLEs.
 
-No import of the earlier known-site scorer is allowed. This adapter whitelists
-observation fields, verifies source/catalogue digests, and never reads prior
-matching results, site configuration, or a true position. Output is exploratory.
+The default path uses no prior identities or receiver position. A separately
+labelled conditional inventory may supply fixed candidates; that provenance is
+preserved in outputs and cannot be silently used by a blind inventory.
+All source/catalogue digests are verified. Output is exploratory.
 """
 
 from __future__ import annotations
@@ -65,10 +66,15 @@ def load_observations(document, max_per_partition=8, individual=False):
             if len(t) != len(y) or len(t) != len(ids) or row["actual_rf_hz"] <= 0:
                 raise ValueError("invalid source observation arrays / RF metadata")
             order = np.argsort(t, kind="stable")
+            partition = document.get("inventory", {}).get("partition", "chronological")
+            if partition == "randomized":
+                seed = int(hashlib.sha256(str(key).encode()).hexdigest()[:16], 16)
+                order = np.random.default_rng(seed).permutation(order)
             count = int(np.floor(len(t) * 0.6))
             if min(count, len(t) - count) < 2:
                 raise ValueError("source too short for chronological split")
             for part, is_train in ((order[:count], True), (order[count:], False)):
+                part = part[np.argsort(t[part], kind="stable")]
                 if max_per_partition and len(part) > max_per_partition:
                     part = part[
                         np.unique(
@@ -88,6 +94,7 @@ def load_observations(document, max_per_partition=8, individual=False):
                     np.array(values),
                     np.array(segments),
                     np.array(train, dtype=bool),
+                    partition=partition,
                 ),
             )
         )
@@ -131,6 +138,7 @@ def regional_catalogue(catalogue, reference_ns, region, clock_s=0.0):
     # +/-2 s future sensitivity. This is only a computational prefilter.
     cap = np.arccos(6350.0 / radius) + np.hypot(region.width_km, region.height_km) / 2 / 6300.0
     cap += np.deg2rad(4.0)
+    cap = np.minimum(cap, np.pi)
     selected = ids[np.any(cosine >= np.cos(cap), axis=1)]
     return selected, len(causal)
 
@@ -170,6 +178,15 @@ def summarize_grid(grid, total, heldout):
     }
 
 
+def episode_catalogue_indices(metadata, catalogue, selected, episode_id, *, conditional):
+    fixed = metadata.get("fixed_candidates", {})
+    if not fixed:
+        return selected
+    if not conditional:
+        raise ValueError("fixed candidates require explicit conditional identity provenance")
+    return [i for i in selected if catalogue.satellite_numbers[i] == fixed[episode_id]]
+
+
 def run(args):
     if args.output.exists():
         raise ValueError("output must be a fresh directory; never overwrite a completed experiment")
@@ -185,7 +202,11 @@ def run(args):
         )
     else:
         grid = region.grid(args.spacing_km, args.altitude_m, args.shifted_grid)
-    config = ScoreConfig(signal_sigma_hz=args.sigma_hz, effective_count=args.effective_count)
+    config = ScoreConfig(
+        signal_sigma_hz=args.sigma_hz,
+        effective_count=args.effective_count,
+        minimum_elevation_deg=getattr(args, "minimum_elevation_deg", -1.0),
+    )
     inventory_path = args.evidence / "inventory.json"
     inventory = json.loads(inventory_path.read_text())
     scans = sorted(
@@ -209,7 +230,7 @@ def run(args):
         "refinement_is_retrospective": args.points is not None,
         "scientific_status": "exploratory composite score, not calibrated confidence",
         "position_truth_used": False,
-        "prior_matched_norads_used": False,
+        "prior_matched_norads_used": inventory.get("prior_matched_norads_used", False),
         "orbit_corrections_used": False,
         "rf_association_is_retrospective": True,
     }
@@ -237,10 +258,18 @@ def run(args):
         arcs = load_observations(document, args.max_per_partition, args.individual_sources)
         scores, details = [], []
         for episode_id, arc in arcs:
-            p, v, ids = state_arrays(
-                catalogue, selected, reference_ns, arc.time_s, clock_s=args.clock_s
+            fixed_ids = metadata.get("fixed_candidates", {})
+            arc_selected = episode_catalogue_indices(
+                metadata,
+                catalogue,
+                selected,
+                episode_id,
+                conditional=inventory.get("prior_matched_norads_used", False),
             )
-            score = score_states(arc, p, v, grid, causal_count, config)
+            p, v, ids = state_arrays(
+                catalogue, arc_selected, reference_ns, arc.time_s, clock_s=args.clock_s
+            )
+            score = score_states(arc, p, v, grid, 1 if fixed_ids else causal_count, config)
             numbers = np.array(catalogue.satellite_numbers)[ids]
             best = score.pop("best_index")
             score["best_norad"] = np.where(

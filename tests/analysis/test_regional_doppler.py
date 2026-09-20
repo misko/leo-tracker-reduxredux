@@ -142,7 +142,7 @@ def test_continental_region_and_batched_projection_match_direct_geometry():
     assert len(grid) == 25
     assert np.max(np.abs(grid.latitude_deg)) <= 90
     with pytest.raises(ValueError, match="dimensions"):
-        Region(0, 0, 5001, 5000)
+        Region(0, 0, 30000, 30000)
     arc = arc_fixture()
     p, v = synthetic_states(region, arc.time_s)
     delta = p[None] - grid.ecef_km[:, None, None]
