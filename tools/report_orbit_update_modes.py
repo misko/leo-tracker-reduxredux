@@ -171,6 +171,42 @@ def main():
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    shifts = np.array([r["geometry"]["phase_s"] for r in geo])
+    p05, median, p95 = np.percentile(shifts, [5, 50, 95])
+    fig, ax = plt.subplots(figsize=(11, 6), layout="constrained")
+    edges = np.arange(np.floor(shifts.min() * 4) / 4, shifts.max() + 0.25, 0.25)
+    ax.axvspan(p05, p95, color="#e7eef5", label="Central 90% of tracks")
+    ax.hist(shifts, bins=edges, color="#3274a1", edgecolor="white", zorder=2)
+    ax.axvline(0, color="#444444", linestyle="--", label="No correction")
+    ax.axvline(median, color="#c45b20", linewidth=2, label=f"Median {median:+.2f} s")
+    ax.set(
+        xlabel="Orbital time correction τ (seconds): old orbit evaluated at t + τ",
+        ylabel="Number of tracks (0.25 s bins)",
+        title="Distribution of orbital time corrections\n"
+        f"{len(geo)} materially improved same-satellite tracks · "
+        f"{len(set(r['causal_norad'] for r in geo))} satellites",
+    )
+    ax.text(
+        0.98,
+        0.62,
+        f"5th–95th percentiles: {p05:+.2f} to {p95:+.2f} s\n"
+        f"Full range: {shifts.min():+.2f} to {shifts.max():+.2f} s",
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+    )
+    ax.legend(loc="upper right")
+    ax.grid(axis="y", alpha=0.2)
+    ax.set_axisbelow(True)
+    fig.supxlabel(
+        "Negative τ moves the old prediction backward along its orbit. "
+        "Receiver UTC is unchanged.\n"
+        "Retrospective diagnostic; one value per track, not an unbiased satellite population.",
+        fontsize=10,
+    )
+    fig.savefig(a.output / "time-corrections-histogram.png", dpi=180)
+    plt.close(fig)
+
     fig, axes = plt.subplots(2, 2, figsize=(13, 9), layout="constrained")
     gs = [r["geometry"] for r in geo]
     for name, label in names.items():

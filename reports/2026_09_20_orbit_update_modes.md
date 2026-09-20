@@ -127,6 +127,15 @@ near-perfect short-arc approximation is not globally interchangeable with a TLE.
 
 ## Concrete examples: what changed?
 
+The orbital time-correction histogram below uses one fitted phase per materially
+improved, same-satellite track: 302 tracks across 225 satellites. The median is
+**−0.98 s**, the central 90% spans **−2.96 to +0.68 s**, and the full range is
+**−6.73 to +2.39 s**. Negative values evaluate the old orbit at an earlier orbital
+time, with reception UTC unchanged. This is the selected improved-track cohort,
+not the distribution across all captures or an unbiased satellite population.
+
+![Distribution of orbital time corrections](2026_09_20_orbit_update_modes/time-corrections-histogram.png)
+
 The RMS columns below use the **same causal inferred receiver position and fixed
 UTC**, to avoid giving orbital updates credit for receiver-position improvement.
 Positive epoch age means before capture; negative means after capture.
