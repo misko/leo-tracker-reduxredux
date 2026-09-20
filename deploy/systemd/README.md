@@ -10,6 +10,50 @@ maintenance commands during the rollout window. Install the units in
 Workers additionally load `/etc/leo/worker.env`, which binds their exact
 `LEO_PIPELINE_RELEASE_ID` independently of the API and acquisition selectors.
 
+## Bounded adaptive recovery release
+
+Adaptive analysis may need a newer persisted-contract reader while the general
+worker pool remains pinned to its last qualified release. The templates under
+[`recovery/`](recovery/) provide a restart-safe, service-local binding for that
+case. They deliberately use an immutable 40-character release path rather than
+changing `current-worker`, so general processing and acquisition are unaffected.
+
+Render `@RELEASE@` only after the immutable release has passed
+`stage-production-release`. Install the rendered files at the matching absolute
+paths beneath `/etc/systemd/system`, owned by root with mode `0644`, then run
+`systemctl daemon-reload`. Use one schema-compatible SHA for the queue and
+adaptive workers. The transfer service may use a later repair SHA independently.
+For example:
+
+```text
+analysis_release=FULL_40_CHARACTER_SHA
+transfer_release=FULL_40_CHARACTER_SHA
+
+sudo install -d -m 0755 \
+  /etc/systemd/system/leo-adaptive-analysis-worker@.service.d \
+  /etc/systemd/system/leo-adaptive-analysis-queue.service.d \
+  /etc/systemd/system/leo-adaptive-spool-transfer.service.d
+sed "s/@RELEASE@/$analysis_release/g" \
+  deploy/systemd/recovery/leo-adaptive-analysis-worker@.service.d/80-immutable-release.conf.in \
+  | sudo tee /etc/systemd/system/leo-adaptive-analysis-worker@.service.d/80-immutable-release.conf >/dev/null
+sed "s/@RELEASE@/$analysis_release/g" \
+  deploy/systemd/recovery/leo-adaptive-analysis-queue.service.d/80-immutable-release.conf.in \
+  | sudo tee /etc/systemd/system/leo-adaptive-analysis-queue.service.d/80-immutable-release.conf >/dev/null
+sed "s/@RELEASE@/$transfer_release/g" \
+  deploy/systemd/recovery/leo-adaptive-spool-transfer.service.d/80-immutable-release.conf.in \
+  | sudo tee /etc/systemd/system/leo-adaptive-spool-transfer.service.d/80-immutable-release.conf >/dev/null
+sudo chmod 0644 /etc/systemd/system/leo-adaptive-{analysis-worker@,analysis-queue,spool-transfer}.service.d/80-immutable-release.conf
+sudo systemctl daemon-reload
+```
+
+Inspect the effective `WorkingDirectory` and `ExecStart` with `systemctl cat`
+before restarting only the adaptive units. Keep the queue timer stopped while
+qualifying one canary, run an explicit bounded `backfill-tracking` for captures
+older than the two-hour live window, and widen worker concurrency only after the
+canary seals both analysis and tracking manifests. A transfer run with
+`firmware_failed_count` is degraded: its per-session errors remain retryable and
+must be reviewed even though other publication lanes can checkpoint successfully.
+
 The environment file is required. All services fail closed if it is absent.
 Every service also makes `/mnt/qnap01` inaccessible, including read-only API
 and maintenance processes. The release link is changed only while all LEO
