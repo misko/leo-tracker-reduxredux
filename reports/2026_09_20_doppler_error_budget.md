@@ -1,5 +1,7 @@
 # Three directions toward better Doppler-only location
 
+**Reference correction (September 20):** the confirmed antenna is 37.84903264307456°, −122.4856541910174°. The real-data baseline is **5.43 km from that point**, not 4.14 km. Distances below explicitly refer to the older configured coordinate; synthetic/noise experiments remain as generated. See the [corrected evaluation](2026_09_20_matched_positioning.md).
+
 This extends the [48-hour sky/location study](2026_09_20_sky_48h_location.md) using its frozen **599 tracks / 20,937 observations** from the September 18–20 recordings. No new RF was collected and production analysis was not changed.
 
 **The 4.14 km displacement is far larger than this geometry's ideal independent-noise limit. However, none of the tested modelling changes provides a justified correction that removes it.** Timing is influential, catalogue predictions are influential, and the real residuals are strongly correlated. More flexible frequency fits can make the residuals smaller while making location worse.

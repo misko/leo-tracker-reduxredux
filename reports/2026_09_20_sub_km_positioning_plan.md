@@ -1,5 +1,7 @@
 # Toward sub-kilometre Doppler positioning: review and experiment plan
 
+**Reference resolved (September 20):** the user confirmed all scanner data at 37.84903264307456°, −122.4856541910174°. Re-evaluation puts the historical nominal “669 m” fit **1.76 km from the antenna**, and the current “4.14 km” fit **5.43 km away**. The review below preserves the historical claims and qualifications; the [matched replay report](2026_09_20_matched_positioning.md) supersedes their absolute-accuracy interpretation.
+
 Reviewed against remote main `029bb1bd`; the two new September 20 studies were then published as `faf42c5b` and `cff42f9b`. This document is a research plan, not an implemented positioning improvement. No capture or production changes are required for the first experiments.
 
 ## What the earlier reports actually achieved

@@ -1,5 +1,7 @@
 # Eight hours of Starlink scan tracking and positioning experiments
 
+**Evaluation correction (September 20):** the confirmed antenna location is 37.84903264307456°, −122.4856541910174°. The pooled nominal and configured-site-calibrated fits below are **1,758 m and 1,579 m from that antenna**, rather than the 669 m and 292 m distances to the old configuration. See the [corrected evaluation](2026_09_20_matched_positioning.md). Frozen results and historical methods are retained.
+
 Date: 2026-09-07 UTC
 
 Frozen review window: 07:49:15–15:49:15 UTC

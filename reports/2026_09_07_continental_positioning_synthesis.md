@@ -1,5 +1,7 @@
 # Starlink positioning: 1.8 km continental localization / 1.2 km conditional benchmark
 
+**Evaluation correction (September 20):** the user confirmed all recordings at 37.84903264307456°, −122.4856541910174°, close to the continental evaluation point but 1.29 km from the conditional benchmark reference. The conditional 669 m / 292 m pooled results are **1,758 m / 1,579 m from the actual antenna**. They do not demonstrate sub-km absolute accuracy. See the [matched replay and correction](2026_09_20_matched_positioning.md); original evidence is preserved below.
+
 **From received radio samples to an absolute position, and what limits resolution**
 
 Date: 7 September 2026. Evidence snapshot: remote `main` at

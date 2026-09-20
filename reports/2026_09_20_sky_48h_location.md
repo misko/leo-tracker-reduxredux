@@ -1,5 +1,7 @@
 # Sky coverage and location from 48 hours of adaptive scans
 
+**Reference correction (September 20):** the user confirmed the antenna at 37.84903264307456°, −122.4856541910174°. The 4.14 km distance below is to the old configured coordinate; this fit is **5.43 km from the actual antenna**. See the [corrected evaluation](2026_09_20_matched_positioning.md). Historical artifacts are preserved.
+
 Frozen window: **2026-09-18 05:36:00 to 2026-09-20 05:36:00 UTC**, selected by capture publication timestamp. No new RF collection. This is a retrospective research analysis, not a production positioning claim.
 
 ## Findings

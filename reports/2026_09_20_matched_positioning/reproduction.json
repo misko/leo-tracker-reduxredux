@@ -1,0 +1,27 @@
+{
+  "source_sha256": {
+    "compare_positioning_cohorts.py": "1128bd2e99466c356f9819cfdde67315d1db089d04253e35683ed89d7fc6646a",
+    "report_matched_positioning.py": "0c2ab1e5c1d1ca6a5121f7c3badd1b45b546292944c9b6e44197a6e735abde4f",
+    "replay_position_selection.py": "e5956fa65689746268c71952a8285429d81673f1a73205b56054c648ea6028a6",
+    "prepare_randomized_positioning.py": "654834ce527c0b574f9d989130e425b474434142195bb39e5f6aeb51259cda32",
+    "study_adaptive_sky_position.py": "6a3329822f33ad321093111315d141d74df1e74a157c368f5fe111ca1c53a0b9"
+  },
+  "tests_passed": 43,
+  "matched_run": "/tmp/leo-matched-position-clock",
+  "selection_output": "/tmp/leo-position-selection.json",
+  "fresh_wide_run": "/tmp/leo-wide-randomized-grid50",
+  "fresh_wide_log": "/tmp/leo-wide-randomized-grid50.log",
+  "reference": "reports/evaluation/2026_09_20_scanner_antenna_reference.json",
+  "commands": [
+    "OPENBLAS_NUM_THREADS=1 PYTHONPATH=src uv run --with scipy tools/compare_positioning_cohorts.py --historical-root reports/figures/2026_09_07_eight_hour_scan_pnt --blind-polish reports/figures/2026_09_07_blind_regional_pnt/region5000-polish2d.json --wide-run reports/figures/2026_09_07_blind_regional_pnt/region5000-fine --current-states reports/2026_09_20_doppler_error_budget/states.npz --current-polish reports/2026_09_20_sky_48h_location/fov-polish.json --output /tmp/fresh-matched-positioning",
+    "OPENBLAS_NUM_THREADS=1 PYTHONPATH=src uv run --with scipy tools/replay_position_selection.py --run /tmp/fresh-matched-positioning --output /tmp/fresh-position-selection.json --exact-source reports/figures/2026_09_07_eight_hour_scan_pnt",
+    "PYTHONPATH=src uv run tools/prepare_randomized_positioning.py --source reports/figures/2026_09_07_eight_hour_scan_pnt --output /tmp/fresh-randomized-evidence",
+    "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src uv run tools/study_adaptive_sky_position.py search --evidence /tmp/fresh-randomized-evidence --output /tmp/fresh-wide-grid50 --spacing-km 50 --workers 8 --max-per-partition 6"
+  ],
+  "fresh_search_process": {
+    "parent_pid": 1014808,
+    "tool_session": 28190,
+    "log": "/tmp/leo-wide-randomized-grid50.log",
+    "status_at_publication": "running; completion not claimed"
+  }
+}
