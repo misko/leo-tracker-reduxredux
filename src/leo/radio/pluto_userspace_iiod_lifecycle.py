@@ -5,7 +5,6 @@ from __future__ import annotations
 import importlib
 import subprocess
 import sys
-from collections.abc import Callable
 from pathlib import Path
 
 from leo.radio.persistent_hop_iiod_lifecycle import (
@@ -23,13 +22,11 @@ def _firmware_compatible_endpoint_probe(
     port: int,
     expected_serial: str,
     timeout_s: float,
-    *,
-    persistent_probe: Callable[[str, int, str, float], bool],
 ) -> bool:
     """Attest v0.53 stock iiOD without assuming its expanded scan-channel inventory."""
 
-    if port != 30_431:
-        return persistent_probe(host, port, expected_serial, timeout_s)
+    if port not in (30_431, 30_432):
+        return False
     iio_info = Path(sys.executable).with_name("iio_info")
     try:
         completed = subprocess.run(  # noqa: S603
@@ -47,9 +44,28 @@ def _firmware_compatible_endpoint_probe(
         line = raw_line.strip()
         if ": " in line:
             key, value = line.split(": ", 1)
-            if key in ("hw_serial", "iio,buffer-metadata"):
+            if key in (
+                "hw_serial",
+                "iio,buffer-metadata",
+                "iio,buffer-persistent-hop",
+                "iio,buffer-persistent-hop-request",
+                "iio,buffer-persistent-hop-event",
+                "iio,buffer-persistent-hop-status",
+                "iio,buffer-persistent-hop-cancel",
+            ):
                 fields[key] = value
-    return fields == {"hw_serial": expected_serial, "iio,buffer-metadata": "3"}
+    required = {"hw_serial": expected_serial, "iio,buffer-metadata": "3"}
+    if port == 30_432:
+        required.update(
+            {
+                "iio,buffer-persistent-hop": "1",
+                "iio,buffer-persistent-hop-request": "1",
+                "iio,buffer-persistent-hop-event": "1",
+                "iio,buffer-persistent-hop-status": "1",
+                "iio,buffer-persistent-hop-cancel": "1",
+            }
+        )
+    return fields == required
 
 
 def create_pluto_userspace_iiod_lifecycle(
@@ -62,7 +78,6 @@ def create_pluto_userspace_iiod_lifecycle(
     try:
         module = importlib.import_module("pluto_plus.userspace_iiod")
         deployment_type = module.UserspaceIiodDeployment
-        persistent_probe = module.persistent_hop_endpoint_probe
     except (AttributeError, ImportError) as error:
         raise PlutoUserspaceIiodLifecycleError(
             "installed pluto-plus-utils lacks the userspace iiOD deployment"
@@ -78,12 +93,6 @@ def create_pluto_userspace_iiod_lifecycle(
         binary_path=configuration.binary_path,
         known_hosts_path=configuration.known_hosts_path,
         password_path=configuration.password_path,
-        serial_probe=lambda host, port, serial, timeout: _firmware_compatible_endpoint_probe(
-            host,
-            port,
-            serial,
-            timeout,
-            persistent_probe=persistent_probe,
-        ),
+        serial_probe=_firmware_compatible_endpoint_probe,
         **companion_options,
     )

@@ -325,9 +325,29 @@ def _load_client(
     uri: str, expected_serial: str, *, metadata_extension: ScannerAdaptiveGlrtMetadataExtension
 ) -> Any:
     module = importlib.import_module("pluto_plus.hardware.iio_adaptive_hop")
-    return module.iio_adaptive_hop_client(
+    iio_module = importlib.import_module("pluto_plus.hardware.iio")
+    profiles = importlib.import_module("pluto_plus.setup_profiles")
+    adi_module = scanner_adi_module()
+
+    def radio_factory(selected_uri: str, selected_serial: str):
+        radio = iio_module.IioRadioDevice(
+            selected_uri,
+            serial=selected_serial,
+            radio_id=selected_serial,
+            adi_module=adi_module,
+            expected_metadata_abi=3,
+        )
+        radio.configure_rx_layout(profiles.AD9361_2R2T_TARGET_PROFILE.rx_layout_expectation)
+        return radio
+
+    return module.AdaptiveHopClient(
         uri,
         expected_serial=expected_serial,
-        metadata_extension=metadata_extension,
-        adi_module=scanner_adi_module(),
+        backend_factory=lambda selected: module.IioAdaptiveHopBackend(
+            selected,
+            expected_serial=expected_serial,
+            metadata_extension=metadata_extension,
+            adi_module=adi_module,
+            radio_factory=radio_factory,
+        ),
     )

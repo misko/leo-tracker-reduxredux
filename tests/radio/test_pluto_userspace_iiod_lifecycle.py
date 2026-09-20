@@ -54,7 +54,6 @@ def test_default_adapter_lazily_constructs_exact_ppu_deployment(
             events.append(("import", name))
             or SimpleNamespace(
                 UserspaceIiodDeployment=Deployment,
-                persistent_hop_endpoint_probe=lambda *_: True,
             )
         ),
     )
@@ -107,7 +106,6 @@ def test_default_adapter_delegates_binary_validation_to_ppu(
         "leo.radio.pluto_userspace_iiod_lifecycle.importlib.import_module",
         lambda _name: SimpleNamespace(
             UserspaceIiodDeployment=Deployment,
-            persistent_hop_endpoint_probe=lambda *_: True,
         ),
     )
     configuration = _configuration(tmp_path)
@@ -122,7 +120,6 @@ def test_companion_bundle_path_passes_only_through_the_optional_public_port(tmp_
         "leo.radio.pluto_userspace_iiod_lifecycle.importlib.import_module",
         lambda _name: SimpleNamespace(
             UserspaceIiodDeployment=lambda **kwargs: constructed.append(kwargs),
-            persistent_hop_endpoint_probe=lambda *_: True,
         ),
     )
     configuration = _configuration(tmp_path)
@@ -144,17 +141,28 @@ def test_stock_probe_accepts_v053_dual_rx_inventory_from_exact_iio_context(monke
         "leo.radio.pluto_userspace_iiod_lifecycle.subprocess.run",
         lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=output),
     )
-    delegated = []
-
-    def probe(*args):
-        delegated.append(args)
-        return True
-
     assert _firmware_compatible_endpoint_probe(
-        "192.168.1.21", 30_431, "serial-a", 10, persistent_probe=probe
+        "192.168.1.21", 30_431, "serial-a", 10
     )
-    assert not delegated
-    assert _firmware_compatible_endpoint_probe(
-        "192.168.1.21", 30_432, "serial-a", 10, persistent_probe=probe
+
+
+def test_alternate_probe_requires_every_persistent_hop_capability(monkeypatch):
+    base = b"hw_serial: serial-a\niio,buffer-metadata: 3\n"
+    capabilities = b"".join(
+        f"{name}: 1\n".encode()
+        for name in (
+            "iio,buffer-persistent-hop",
+            "iio,buffer-persistent-hop-request",
+            "iio,buffer-persistent-hop-event",
+            "iio,buffer-persistent-hop-status",
+            "iio,buffer-persistent-hop-cancel",
+        )
     )
-    assert delegated == [("192.168.1.21", 30_432, "serial-a", 10)]
+    result = SimpleNamespace(returncode=0, stdout=base + capabilities)
+    monkeypatch.setattr(
+        "leo.radio.pluto_userspace_iiod_lifecycle.subprocess.run",
+        lambda *args, **kwargs: result,
+    )
+    assert _firmware_compatible_endpoint_probe("192.168.1.21", 30_432, "serial-a", 10)
+    result.stdout = base + capabilities.replace(b"iio,buffer-persistent-hop-cancel: 1\n", b"")
+    assert not _firmware_compatible_endpoint_probe("192.168.1.21", 30_432, "serial-a", 10)
