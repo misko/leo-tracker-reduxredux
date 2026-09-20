@@ -302,3 +302,54 @@ coverage/identity rejection and order-independent binding to original episodes.
 - [Refit inference](2026_09_20_offline_orbit_sensitivity/reassociated-inference.json)
 - [Separate location evaluation](2026_09_20_offline_orbit_sensitivity/reassociated-evaluation.json)
 - [Reassociated observation states](2026_09_20_offline_orbit_sensitivity/reassociated-states.npz)
+
+### Verified sub-kilometre result on the archived 48-hour dataset
+
+The full-data, reassociated, recorded-bound shared-clock solution gives
+**37.8565733952° N, 122.4879088862° W**, with **861.55 m horizontal error**
+against the user-provided antenna reference. Exact SGP4 propagation at the
+fitted clock reproduces the interpolated result to substantially less than
+one metre. All 622 retained episodes and 21,702 observations contribute.
+Randomized held-out RMS is 86.69 Hz.
+
+| Verification | Outcome |
+|---|---|
+| Starting region | 9,000 × 9,000 statute miles, centred on Denver |
+| Global acquisition and two refinements | All three complete: 211 recordings, 684 RF episodes each |
+| Ground-truth location in inference | Not supplied; used only in separate evaluation |
+| Reassociated all-track exact result | 861.55 m |
+| Eight satellite-group removal fits | 752.5–972.7 m; all converge |
+| Eight recording-group removal fits | 777.0–924.4 m; all converge |
+| Smaller frozen quality subset | 1,159.46 m; not substituted for the full-data result |
+| Focused tests | 13 pass |
+
+This meets the requested numerical target for this archived dataset, with
+retrospective orbital updates. It is not a calibrated sub-kilometre guarantee
+for an unseen site or a real-time device. The shared clock is at its recorded
+upper bound (+99.65843 ms); independent absolute UTC calibration remains useful.
+The refinement is a local continuation of the original wide acquisition, and
+the research explored multiple models with known-site evaluation. Consequently,
+the deletion tests measure sensitivity, not independent out-of-sample success.
+No production scanner configuration was changed.
+
+The final provenance audit verified 215 parent-source hashes, the RF and
+catalogue source hashes, and complete disjoint worker coverage at all three
+search resolutions. It also found a metadata defect: merged configurations
+named the full inventory but retained worker zero's inventory digest. Each
+historical digest was verified against the actual worker-zero inventory, every
+worker inventory and RF source was checked, and merged membership was verified
+against the full inventory. Historical artifacts remain unchanged. Future
+merged configurations now bind the full inventory path and hash together,
+covered by a regression test. This metadata fix does not change the computed
+scores or positions.
+
+![Reassociated group-deletion verification](2026_09_20_offline_orbit_sensitivity/reassociated-stability/stability.png)
+
+- [Exact propagation and all 32 sensitivity fits](2026_09_20_offline_orbit_sensitivity/reassociated-verified.json)
+- [Evaluation of exact and deletion fits](2026_09_20_offline_orbit_sensitivity/reassociated-stability/evaluation.json)
+- [Wide-search provenance audit](2026_09_20_offline_orbit_sensitivity/verification-provenance.json)
+
+Reproduce verification with `--verify-shared` on
+`tools/refit_offline_reassociations.py`; render with
+`tools/report_orbit_clock_stability.py` using the resulting inference and the
+separate evaluation reference.

@@ -71,7 +71,12 @@ def main():
     axes[0].legend(fontsize=8)
     fig.suptitle(
         "Retrospective nearest-epoch orbits + recorded shared clock bounds\n"
-        "Frozen wide-search identities; reference used only for evaluation"
+        + (
+            "Reassociated identities frozen for sensitivity; "
+            if "rerank_digest" in source
+            else "Frozen wide-search identities; "
+        )
+        + "reference used only for evaluation"
     )
     fig.savefig(args.output / "stability.png", dpi=170)
     plt.close(fig)

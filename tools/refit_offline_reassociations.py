@@ -30,6 +30,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     for key in ["run", "rerank", "evidence", "timing-audit", "output"]:
         p.add_argument("--" + key, type=Path, required=True)
+    p.add_argument("--verify-shared", action="store_true")
     a = p.parse_args()
     state_path = a.output.with_suffix(".npz")
     if a.output.exists() or state_path.exists():
@@ -97,6 +98,51 @@ def main():
             )
             out["models"].append(dict(selection=selection, clock_model=mode, **result))
             print(selection, mode, result["latitude_deg"], result["longitude_deg"], flush=True)
+            if a.verify_shared and mode == "shared_recorded":
+                exact = {k: v.copy() for k, v in data.items()}
+                for i, row in enumerate(rows):
+                    episode_mask = data["episode"] == i
+                    if not np.any(mask & episode_mask):
+                        continue
+                    doc = json.loads(
+                        (a.evidence / "evidence" / (row["session_id"] + ".json")).read_text()
+                    )
+                    arc = dict(load_observations(doc, 0))[row["episode_id"]]
+                    pp, vv, valid = state_arrays(
+                        parse_element_sets(row["winning_tle_text"]),
+                        [0],
+                        doc["inventory"]["reference_utc_ns"],
+                        arc.time_s,
+                        clock_s=result["clock_s"],
+                    )
+                    if len(valid) != 1:
+                        raise ValueError("invalid exact winning orbit")
+                    exact["p"][episode_mask], exact["v"][episode_mask] = pp[0], vv[0]
+                out["models"][-1]["exact_clock_refit"] = fit(
+                    exact,
+                    Region(**parent["region"]),
+                    result["x_km"][:2],
+                    "observation",
+                    True,
+                    subset=mask,
+                )
+                for grouping in ["norad", "session"]:
+                    for fold in range(8):
+                        retained = mask & (data[grouping] % 8 != fold)
+                        check = fit(
+                            data,
+                            Region(**parent["region"]),
+                            parent["initial"],
+                            "observation",
+                            True,
+                            subset=retained,
+                            fit_clock=True,
+                            clock_bounds=shared_clock_bounds(bounds, data["session"][retained]),
+                        )
+                        out.setdefault("stability", []).append(
+                            dict(selection=selection, grouping=grouping, fold=fold, **check)
+                        )
+                print(selection, "verification complete", flush=True)
     np.savez_compressed(state_path, **data)
     out["states_digest"] = digest(state_path)
     write_json(a.output, out)
