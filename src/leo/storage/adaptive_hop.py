@@ -48,6 +48,7 @@ from leo.scanner.host_adaptive import (
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
+from leo.station.geometry import AdaptiveReceiverGeometryBindingV1
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError, BundleStateError
 from leo.storage.persistent_hop import PersistentHopQueueTelemetryV1
 from leo.storage.pinned import PinnedLocalRoot
@@ -195,13 +196,39 @@ class HostAdaptiveHopIqManifestV5(HostAdaptiveHopIqManifestV2):
     receipt: HostAdaptiveHopReceiptV5
 
 
+class GeometryBoundAdaptiveHopIqManifestV6(AdaptiveHopIqManifestV1):
+    """Dual-RX adaptive IQ with an immutable fixture and receiver mapping snapshot."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    receiver_geometry: AdaptiveReceiverGeometryBindingV1
+
+    @model_validator(mode="after")
+    def _geometry_matches_recording(self) -> Self:
+        binding = self.receiver_geometry
+        receipt = self.receipt
+        if (
+            binding.radio.radio_id != receipt.radio_id
+            or binding.radio.radio_serial != receipt.radio_serial
+            or tuple(item.receiver_id for item in binding.radio.assignments)
+            != receipt.plan.geometry.receiver_ids
+        ):
+            raise ValueError("adaptive receiver geometry differs from the recorded radio paths")
+        if (
+            self.created_utc_ns < binding.valid_from_utc_ns
+            or self.finalized_utc_ns > binding.valid_until_utc_ns
+        ):
+            raise ValueError("adaptive recording falls outside receiver geometry validity")
+        return self
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
         | HostAdaptiveHopIqManifestV2
         | HostAdaptiveHopIqManifestV3
         | HostAdaptiveHopIqManifestV4
-        | HostAdaptiveHopIqManifestV5,
+        | HostAdaptiveHopIqManifestV5
+        | GeometryBoundAdaptiveHopIqManifestV6,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -218,7 +245,7 @@ class _ManifestSeal(AdaptiveModel):
 @dataclass(frozen=True, slots=True)
 class PublishedAdaptiveHopIqSession:
     session_id: str
-    manifest: AdaptiveHopIqManifestV1
+    manifest: AdaptiveHopIqManifestV1 | GeometryBoundAdaptiveHopIqManifestV6
     manifest_sha256: str
 
 
@@ -374,20 +401,31 @@ class AdaptiveHopIqStore:
         self._root.close()
 
     def begin_queued(
-        self, session_id: str, plan: AdaptiveHopPlanV1, *, capacity_visits: int = 8
+        self,
+        session_id: str,
+        plan: AdaptiveHopPlanV1,
+        *,
+        capacity_visits: int = 8,
+        receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
     ) -> QueuedAdaptiveHopSessionWriter:
         from leo.storage.adaptive_hop_queue import QueuedAdaptiveHopSessionWriter
 
         if type(capacity_visits) is not int or not 1 <= capacity_visits <= 256:
             raise ValueError("adaptive storage queue capacity must be within 1..256")
-        writer = self.begin(session_id, plan)
+        writer = self.begin(session_id, plan, receiver_geometry=receiver_geometry)
         try:
             return QueuedAdaptiveHopSessionWriter(writer, capacity_visits=capacity_visits)
         except BaseException:
             writer.abort()
             raise
 
-    def begin(self, session_id: str, plan: AdaptiveHopPlanV1) -> AdaptiveHopSessionWriter:
+    def begin(
+        self,
+        session_id: str,
+        plan: AdaptiveHopPlanV1,
+        *,
+        receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
+    ) -> AdaptiveHopSessionWriter:
         if self._read_only:
             raise BundleStateError("adaptive IQ store is read-only")
         _identifier(session_id)
@@ -413,7 +451,9 @@ class AdaptiveHopIqStore:
         finally:
             namespace.close()
         try:
-            writer = AdaptiveHopSessionWriter(directory, session_id, plan)
+            writer = AdaptiveHopSessionWriter(
+                directory, session_id, plan, receiver_geometry=receiver_geometry
+            )
             if self._spool_root is None:
                 return writer
             return _SpoolingAdaptiveHopSessionWriter(writer, self, session_id)
@@ -843,10 +883,18 @@ class AdaptiveHopIqReader:
 
 
 class AdaptiveHopSessionWriter:
-    def __init__(self, directory: PinnedLocalRoot, session_id: str, plan: AdaptiveHopPlanV1):
+    def __init__(
+        self,
+        directory: PinnedLocalRoot,
+        session_id: str,
+        plan: AdaptiveHopPlanV1,
+        *,
+        receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
+    ):
         self._directory = directory
         self._session_id = session_id
         self._plan = plan
+        self._receiver_geometry = receiver_geometry
         self._receiver_count = len(plan.geometry.receiver_ids)
         self._bytes_per_sample = self._receiver_count * 4
         self._host_adaptive_version = (
@@ -983,6 +1031,8 @@ class AdaptiveHopSessionWriter:
                 if self._host_adaptive_version == 3
                 else HostAdaptiveHopIqManifestV2
                 if self._host_adaptive_version == 2
+                else GeometryBoundAdaptiveHopIqManifestV6
+                if self._receiver_geometry is not None
                 else AdaptiveHopIqManifestV1
             )
             manifest = manifest_model(
@@ -1010,6 +1060,11 @@ class AdaptiveHopSessionWriter:
                     ),
                 ),
                 queue_telemetry=queue_telemetry,
+                **(
+                    {"receiver_geometry": self._receiver_geometry}
+                    if self._receiver_geometry is not None
+                    else {}
+                ),
             )
             digest = sha256_digest(canonical_json_bytes(manifest.model_dump(mode="json")))
             payload = canonical_json_bytes(

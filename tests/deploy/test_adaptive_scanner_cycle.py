@@ -23,19 +23,14 @@ def _selection(epoch: int) -> tuple[str, str]:
     return fields["profile"], fields["rates"]
 
 
-def test_cycle_selects_ten_then_two_wide_slots() -> None:
-    # These values place the next slot at ordinals 3, 4 and 5.
-    assert _selection(1_201) == ("adaptive-single-rx0-10m-300s-v1", "10000000")
-    assert _selection(1_801) == (
-        "adaptive-single-rx0-random-15m-20m-300s-v1",
-        "15000000,20000000",
-    )
-    assert _selection(2_401) == (
-        "adaptive-single-rx0-random-15m-20m-300s-v1",
-        "15000000,20000000",
-    )
+def test_cycle_always_selects_dual_rx_2p5m() -> None:
+    expected = ("adaptive-dual-rx-2p5m-300s-v1", "2500000")
+    assert _selection(1_201) == expected
+    assert _selection(1_801) == expected
+    assert _selection(2_401) == expected
 
 
 def test_cycle_uses_upcoming_boundary_before_the_slot_starts() -> None:
-    assert _selection(1_799) == ("adaptive-single-rx0-10m-300s-v1", "10000000")
-    assert _selection(1_800) == ("adaptive-single-rx0-10m-300s-v1", "10000000")
+    expected = ("adaptive-dual-rx-2p5m-300s-v1", "2500000")
+    assert _selection(1_799) == expected
+    assert _selection(1_800) == expected
