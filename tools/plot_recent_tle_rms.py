@@ -147,6 +147,42 @@ def render(snapshot, output):
     fig2.suptitle("Residual distributions · same tracks and randomized evaluation samples")
     fig2.tight_layout()
     fig2.savefig(output / "heldout-rms-distribution.png", dpi=160)
+    scatter, axis = plt.subplots(figsize=(11, 8))
+    xmax = max(r["best_rms_hz"] for r in rows) * 1.06
+    ymax = max(r["runner_rms_hz"] for r in rows) * 1.06
+    axis.fill_between(
+        [0, 60], 300, ymax, color="#d8ead3", alpha=0.55, label="Best <60 Hz, runner-up >300 Hz"
+    )
+    for rate, color, marker in ((10, "#2166ac", "o"), (15, "#d95f02", "^"), (20, "#1b9e77", "s")):
+        group = [r for r in rows if r["rate_msps"] == rate]
+        axis.scatter(
+            [r["best_rms_hz"] for r in group],
+            [r["runner_rms_hz"] for r in group],
+            s=34,
+            alpha=0.7,
+            color=color,
+            marker=marker,
+            linewidths=0.4,
+            edgecolors="white",
+            label=f"{rate} MS/s · {len(group)} tracks",
+        )
+    axis.plot([0, xmax], [0, xmax], "--", color="#555555", linewidth=1.2, label="Equal RMS (y = x)")
+    axis.axvline(60, color="#709465", linestyle=":", linewidth=1)
+    axis.axhline(300, color="#709465", linestyle=":", linewidth=1)
+    axis.set(
+        xlim=(0, xmax),
+        ylim=(0, ymax),
+        xlabel="Best TLE · randomized held-out RMS (Hz)",
+        ylabel="Runner-up TLE · randomized held-out RMS (Hz)",
+    )
+    axis.set_title(
+        f"Best versus runner-up TLE · {len(rows)} tracks\n"
+        f"{summary['window_start'][:16]} – {summary['window_end'][:16]} UTC · linear axes"
+    )
+    axis.grid(alpha=0.18)
+    axis.legend(loc="upper right", framealpha=0.95)
+    scatter.tight_layout()
+    scatter.savefig(output / "heldout-rms-scatter.png", dpi=180)
     plt.close("all")
     (output / "summary.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps(summary), flush=True)
