@@ -178,7 +178,16 @@ def filter_span(evidence, output, minimum_span_s):
     write_json(output / "inventory.json", inventory)
 
 
-def search(evidence, output, spacing, points, workers, sigma_hz=250.0, minimum_elevation_deg=-1.0):
+def search(
+    evidence,
+    output,
+    spacing,
+    points,
+    workers,
+    sigma_hz=250.0,
+    minimum_elevation_deg=-1.0,
+    max_per_partition=3,
+):
     """Parallel scan shards, merged by chronological scan order; same scorer and grid."""
     output.mkdir(parents=True, exist_ok=False)
     inv = json.loads((evidence / "inventory.json").read_text())
@@ -208,7 +217,7 @@ def search(evidence, output, spacing, points, workers, sigma_hz=250.0, minimum_e
                 minimum_elevation_deg=minimum_elevation_deg,
                 effective_count=6.0,
                 clock_s=0.0,
-                max_per_partition=3,
+                max_per_partition=max_per_partition,
                 scan_limit=None,
                 shifted_grid=False,
                 individual_sources=False,
@@ -266,6 +275,7 @@ def main():
     p.add_argument("--minimum-span-s", type=float, default=30.0)
     p.add_argument("--sigma-hz", type=float, default=250.0)
     p.add_argument("--minimum-elevation-deg", type=float, default=-1.0)
+    p.add_argument("--max-per-partition", type=int, default=3)
     a = p.parse_args()
     if a.mode == "export":
         export(a.bulk_root, a.output, a.until_ns, a.workers)
@@ -280,6 +290,7 @@ def main():
             a.workers,
             a.sigma_hz,
             a.minimum_elevation_deg,
+            a.max_per_partition,
         )
 
 
