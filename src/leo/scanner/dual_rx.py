@@ -101,9 +101,9 @@ def compile_dual_rx_adaptive_2p5_scanner_intent(
         radio_serial=radio_serial,
         scheduled_for=canonical,
         cadence_ordinal=int(canonical.timestamp() // interval_seconds),
-        interval_seconds=interval_seconds,
+        interval_seconds=600.0,
         maximum_lateness_seconds=maximum_lateness_seconds,
-        run_duration_seconds=run_duration_seconds,
+        run_duration_seconds=300,
         configuration=configuration,
     )
     document = candidate.model_dump(mode="json", exclude={"intent_digest"})
