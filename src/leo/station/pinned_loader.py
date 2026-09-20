@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from leo.contracts.digests import sha256_digest
 from leo.station.authority import FixturePathAuthorityV1, StationReceiverTopologyV1
+from leo.station.geometry import StationReceiverGeometryV1
 
 _QNAP = "/mnt/qnap01"
 _SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -40,6 +41,10 @@ class StationAuthorityReader(Protocol):
     def read_fixture_authority(
         self, relative_path: str, *, expected_file_digest: str
     ) -> FixturePathAuthorityV1: ...
+
+    def read_geometry(
+        self, relative_path: str, *, expected_file_digest: str
+    ) -> StationReceiverGeometryV1: ...
 
 
 def require_root_owned(label: str, metadata: os.stat_result) -> None:
@@ -225,6 +230,15 @@ class PinnedStationAuthorityReader:
             relative_path,
             expected_file_digest=expected_file_digest,
             contract_type=FixturePathAuthorityV1,
+        )
+
+    def read_geometry(
+        self, relative_path: str, *, expected_file_digest: str
+    ) -> StationReceiverGeometryV1:
+        return self._loader.load_contract(
+            relative_path,
+            expected_file_digest=expected_file_digest,
+            contract_type=StationReceiverGeometryV1,
         )
 
 

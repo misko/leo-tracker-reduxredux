@@ -188,6 +188,11 @@ from leo.scanner import (
 )
 from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPolicyV1
 from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
+from leo.scanner.dual_rx import (
+    DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+    DualRxAdaptive2p5ScheduledScannerIntentV7,
+    compile_dual_rx_adaptive_2p5_scanner_intent,
+)
 from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource
 from leo.scanner.host_adaptive import (
     HOST_ADAPTIVE_PROFILE_ID,
@@ -205,6 +210,8 @@ from leo.scanner.host_adaptive_schedule import (
     compile_host_adaptive_rx0_scanner_intent,
     compile_host_adaptive_scanner_intent,
 )
+from leo.station.geometry import AdaptiveReceiverGeometryBindingV1
+from leo.station.pinned_loader import PinnedAuthorityJsonLoader, PinnedStationAuthorityReader
 from leo.station.resolver import FixtureAuthorityFileReference
 from leo.storage import (
     PersistentHopIqStore,
@@ -311,6 +318,8 @@ class CliSettings:
     station_authority_root: Path | None = None
     station_topology_relative_path: str | None = None
     station_topology_file_digest: str | None = None
+    station_geometry_relative_path: str | None = None
+    station_geometry_file_digest: str | None = None
     fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
     scanner_enabled: bool = False
     scanner_capture_mode: Literal["sequential", "persistent_hop"] = "sequential"
@@ -351,12 +360,33 @@ class CliSettings:
         )
         if self.scanner_profile not in (
             "alternating-2p5m-5m",
+            DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
             SINGLE_RX_PROFILE_ID,
             HOST_ADAPTIVE_PROFILE_ID,
             HOST_ADAPTIVE_RX0_PROFILE_ID,
             HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
         ):
             raise ValueError("unknown scheduled scanner profile")
+        dual_rx_2p5 = self.scanner_profile == DUAL_RX_ADAPTIVE_2P5_PROFILE_ID
+        if dual_rx_2p5 and (
+            not self.scanner_enabled
+            or self.scanner_capture_mode != "persistent_hop"
+            or self.scanner_hop_policy != "adaptive"
+            or not isinstance(self.scanner_glrt, ScannerGlrtOptions)
+            or self.scanner_glrt.mode != "positive-only-v1"
+            or self.scanner_run_seconds != 300
+            or self.scanner_dwell_ms != 120
+            or self.scanner_interval_seconds != 600
+            or len(self.radios) != 1
+            or self.scanner_adaptive_sample_rates_hz != (2_500_000,)
+            or self.station_authority_root is None
+            or self.station_geometry_relative_path is None
+            or self.station_geometry_file_digest is None
+        ):
+            raise ValueError(
+                "dual-RX 2.5 MS/s profile requires one radio, adaptive 600s cadence, "
+                "300s/120ms hopping, positive-only GLRT, and pinned geometry"
+            )
         if host_adaptive and (
             not self.scanner_enabled
             or self.scanner_capture_mode != "persistent_hop"
@@ -409,6 +439,8 @@ class CliSettings:
                     if self.scanner_profile == HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID
                     else (10_000_000,)
                     if host_adaptive
+                    else (2_500_000,)
+                    if dual_rx_2p5
                     else (2_500_000, 5_000_000)
                 )
                 for rate in rates
@@ -491,7 +523,7 @@ class CliSettings:
                     )
                 admitted_intervals = (
                     (600,)
-                    if host_adaptive
+                    if host_adaptive or dual_rx_2p5
                     else (600, 1200)
                     if self.scanner_profile == SINGLE_RX_PROFILE_ID
                     else (1200,)
@@ -504,7 +536,7 @@ class CliSettings:
                 ):
                     raise ValueError(
                         "persistent hopping requires 1200-second cadence "
-                        "(or 600 seconds for the single-RX profile), 300-second runs, "
+                        "(or 600 seconds for selected profiles), 300-second runs, "
                         "120 ms valid visits, and alternate iiOD port 30432"
                     )
                 binary = self.scanner_persistent_iiod_binary_path
@@ -670,6 +702,8 @@ class CliSettings:
                 ),
                 station_topology_relative_path=values.get("LEO_STATION_TOPOLOGY_RELATIVE_PATH"),
                 station_topology_file_digest=values.get("LEO_STATION_TOPOLOGY_FILE_DIGEST"),
+                station_geometry_relative_path=values.get("LEO_STATION_GEOMETRY_RELATIVE_PATH"),
+                station_geometry_file_digest=values.get("LEO_STATION_GEOMETRY_FILE_DIGEST"),
                 fixture_authorities=fixture_authorities,
                 scanner_enabled=_environment_bool(values, "LEO_SCANNER_ENABLED", False),
                 scanner_capture_mode=cast(
@@ -1542,7 +1576,9 @@ class LocalAcquisitionBackend:
         from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID, compile_single_rx_scanner_intent
 
         compiler = (
-            compile_single_rx_scanner_intent
+            compile_dual_rx_adaptive_2p5_scanner_intent
+            if self.settings.scanner_profile == DUAL_RX_ADAPTIVE_2P5_PROFILE_ID
+            else compile_single_rx_scanner_intent
             if self.settings.scanner_profile == SINGLE_RX_PROFILE_ID
             else compile_scheduled_scanner_run_intent_v1
         )
@@ -2059,6 +2095,11 @@ class LocalAcquisitionBackend:
                             before_publish=cleanup_before_publish,
                         )
                     else:
+                        receiver_geometry = (
+                            self._adaptive_receiver_geometry(configured)
+                            if isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV7)
+                            else None
+                        )
                         published = capture_adaptive_hop_to_store(
                             cast(AdaptiveHopRadio, radio),
                             plan,
@@ -2067,6 +2108,7 @@ class LocalAcquisitionBackend:
                             cancel=cancel,
                             queue_capacity_visits=self.settings.scanner_persistent_queue_capacity_visits,
                             before_publish=cleanup_before_publish,
+                            receiver_geometry=receiver_geometry,
                         )
                 except BaseException as primary:
                     if active and not cleanup_attempted:
@@ -3087,6 +3129,28 @@ class LocalAcquisitionBackend:
                     self.settings.bulk_root
                 )
         return self._adaptive_hop_store
+
+    def _adaptive_receiver_geometry(
+        self, configured: RadioConfigurationV1
+    ) -> AdaptiveReceiverGeometryBindingV1:
+        root = self.settings.station_authority_root
+        relative_path = self.settings.station_geometry_relative_path
+        digest = self.settings.station_geometry_file_digest
+        if root is None or relative_path is None or digest is None or configured.serial is None:
+            raise CliBackendError(
+                "dual-RX adaptive capture lacks its pinned receiver geometry",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        loader = PinnedAuthorityJsonLoader(root)
+        try:
+            geometry = PinnedStationAuthorityReader(loader).read_geometry(
+                relative_path, expected_file_digest=digest
+            )
+        finally:
+            loader.close()
+        return AdaptiveReceiverGeometryBindingV1.create(
+            geometry, radio_id=configured.radio_id, radio_serial=configured.serial
+        )
 
     def _admit_adaptive_spool(self, plan: PersistentHopPlanV1) -> None:
         root = self.settings.scanner_adaptive_spool_root

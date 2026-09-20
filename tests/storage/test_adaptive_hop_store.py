@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -10,6 +11,7 @@ from pydantic import ValidationError
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
+from leo.station.geometry import AdaptiveReceiverGeometryBindingV1, StationReceiverGeometryV1
 from leo.storage.adaptive_hop import AdaptiveHopIqManifestV1, AdaptiveHopIqStore
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError, BundleStateError
 from leo.storage.persistent_hop import (
@@ -32,6 +34,34 @@ def publish(tmp_path, *, rate=2_500_000, mode="adaptive", count=10):
 
 def session_path(tmp_path, session_id="adaptive-storage-test"):
     return tmp_path / "scanner-adaptive-recordings" / session_id
+
+
+def test_adaptive_manifest_seals_dual_receiver_fixture_geometry(tmp_path):
+    geometry_path = Path(__file__).parents[2] / (
+        "deploy/station/gauss-r21-lt3d-001a-20260920-v1.json"
+    )
+    geometry = StationReceiverGeometryV1.model_validate_json(geometry_path.read_bytes())
+    binding = AdaptiveReceiverGeometryBindingV1.create(
+        geometry,
+        radio_id="radio_pluto_19f2",
+        radio_serial="10400056f695001322002d0010ad1719f2",
+    )
+    receipt = receipt_fixture(
+        count=0,
+        radio_id=binding.radio.radio_id,
+        radio_serial=binding.radio.radio_serial,
+    )
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(receipt.session_id, receipt.plan, receiver_geometry=binding)
+    published = writer.finish(receipt, timing=None)
+    assert published.manifest.schema_version == 6
+    assert published.manifest.receiver_geometry == binding
+    assert published.manifest.receiver_geometry.fixture.fixture_part_id == "LT3D-001A"
+    assert tuple(
+        item.slot_id for item in published.manifest.receiver_geometry.radio.assignments
+    ) == ("negative-x", "positive-x")
+    assert store.verify(receipt.session_id) == published
+    store.close()
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
