@@ -37,6 +37,7 @@ from leo.scanner.adaptive_hop import (
     SessionId,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
+from leo.scanner.counter_utc import CounterUtcTimingV4
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopPlanV2,
     HostAdaptiveHopPlanV3,
@@ -105,6 +106,9 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
     compression: CompressionSettingsV1
     queue_telemetry: PersistentHopQueueTelemetryV1 | None = None
 
+    def _chunk_visit_limit(self) -> int:
+        return self._visits_per_chunk
+
     @model_validator(mode="after")
     def _manifest_is_complete(self) -> Self:
         receipt = self.receipt
@@ -134,7 +138,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                 or chunk.first_visit_index != next_visit
                 or chunk.sample_start != next_sample
                 or chunk.relative_path != f"iq-block-{index:06d}.ci16.zst"
-                or (index < len(self.chunks) - 1 and chunk.visit_count != self._visits_per_chunk)
+                or (index < len(self.chunks) - 1 and chunk.visit_count != self._chunk_visit_limit())
                 or next_visit + chunk.visit_count > receipt.complete_visit_count
                 or chunk.sample_count != chunk.visit_count * g.valid_visit_samples
                 or chunk.uncompressed_bytes != chunk.sample_count * self._bytes_per_sample
@@ -195,13 +199,40 @@ class HostAdaptiveHopIqManifestV5(HostAdaptiveHopIqManifestV2):
     receipt: HostAdaptiveHopReceiptV5
 
 
+class HostAdaptiveHopIqManifestV6(HostAdaptiveHopIqManifestV3):
+    """Counter/UTC evidence; published manifests V1--V5 remain unchanged."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    _timing_model: ClassVar[type] = CounterUtcTimingV4
+    receipt: (  # type: ignore[assignment]
+        HostAdaptiveHopReceiptV2
+        | HostAdaptiveHopReceiptV3
+        | HostAdaptiveHopReceiptV4
+        | HostAdaptiveHopReceiptV5
+    )
+    timing: CounterUtcTimingV4  # type: ignore[assignment]
+    chunks: Annotated[  # type: ignore[assignment]
+        tuple[HostAdaptiveHopIqChunkV2 | HostAdaptiveHopIqChunkV3, ...], Field(max_length=625)
+    ]
+
+    def _chunk_visit_limit(self) -> int:
+        return 8 if self.receipt.plan.geometry.sample_rate_hz == 10_000_000 else 4
+
+    @model_validator(mode="after")
+    def _counter_timing_end(self) -> Self:
+        if self.timing.final_device_sample_counter != self.receipt.terminal.final_counter:
+            raise ValueError("counter UTC end does not bind this source")
+        return self
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
         | HostAdaptiveHopIqManifestV2
         | HostAdaptiveHopIqManifestV3
         | HostAdaptiveHopIqManifestV4
-        | HostAdaptiveHopIqManifestV5,
+        | HostAdaptiveHopIqManifestV5
+        | HostAdaptiveHopIqManifestV6,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -950,7 +981,7 @@ class AdaptiveHopSessionWriter:
         self,
         receipt: AdaptiveHopReceiptV1,
         *,
-        timing: PersistentHopUtcTimingAuthorityV1 | None,
+        timing: PersistentHopUtcTimingAuthorityV1 | CounterUtcTimingV4 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
     ) -> PublishedAdaptiveHopIqSession:
         self._require_open()
@@ -975,7 +1006,9 @@ class AdaptiveHopSessionWriter:
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
             manifest_model: type[AdaptiveHopIqManifestV1] = (
-                HostAdaptiveHopIqManifestV5
+                HostAdaptiveHopIqManifestV6
+                if isinstance(timing, CounterUtcTimingV4)
+                else HostAdaptiveHopIqManifestV5
                 if getattr(receipt, "schema_version", None) == 5
                 else HostAdaptiveHopIqManifestV4
                 if getattr(receipt, "schema_version", None) == 4
@@ -990,7 +1023,7 @@ class AdaptiveHopSessionWriter:
                 created_utc_ns=self._created_ns,
                 finalized_utc_ns=time.time_ns(),
                 receipt=receipt,
-                timing=timing,
+                timing=timing,  # type: ignore[arg-type]  # Versioned factory selects V6 above.
                 chunks=tuple(self._chunks),
                 total_sample_count=receipt.valid_sample_count,
                 uncompressed_bytes=receipt.valid_sample_count * self._bytes_per_sample,
@@ -1068,7 +1101,7 @@ class _SpoolingAdaptiveHopSessionWriter(AdaptiveHopSessionWriter):
         self,
         receipt: AdaptiveHopReceiptV1,
         *,
-        timing: PersistentHopUtcTimingAuthorityV1 | None,
+        timing: PersistentHopUtcTimingAuthorityV1 | CounterUtcTimingV4 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
     ) -> PublishedAdaptiveHopIqSession:
         sealed = self._writer.finish(receipt, timing=timing, queue_telemetry=queue_telemetry)

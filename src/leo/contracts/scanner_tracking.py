@@ -11,6 +11,7 @@ from pydantic import Field, model_validator
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
+from leo.scanner.counter_utc import CounterUtcTimingV4
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.scanner.persistent_hop_tracking import (
     PersistentHopTleCandidateV1,
@@ -93,7 +94,7 @@ class TrackingInput:
     input_manifest_sha256: str
     analysis_manifest_sha256: str
     raw_recording_authority_digest: str
-    timing: PersistentHopUtcTimingAuthorityV1 | None
+    timing: PersistentHopUtcTimingAuthorityV1 | CounterUtcTimingV4 | None
     qualified: bool
     probes: tuple[TrackingProbe, ...]
     probe_ms: int = 20

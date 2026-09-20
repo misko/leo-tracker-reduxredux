@@ -328,6 +328,55 @@ def _receipt(document: dict, archive_digest: str):
 
 
 def _timing(document: dict, receipt):
+    if "counter_utc_timing" in document["evidence"]:
+        # Only acquisition/import needs PPU; sealed recording readers do not.
+        from pluto_plus.counter_utc import CounterUtcEvidence
+
+        from leo.contracts.digests import canonical_digest
+        from leo.scanner.counter_utc import CounterUtcTimingV4
+
+        raw = CounterUtcEvidence.model_validate(document["evidence"]["counter_utc_timing"])
+        if (raw.session, raw.generation) != (
+            document["setup"]["session"],
+            document["setup"]["generation"],
+        ):
+            raise ValueError("counter UTC evidence belongs to another capture")
+        expected_serial = document["evidence"].get("radio_serial")
+        if expected_serial is not None and raw.radio_serial != expected_serial:
+            raise ValueError("counter UTC radio identity differs from capture")
+        first, last = receipt.terminal.first_counter, receipt.terminal.final_counter
+        rate = receipt.plan.geometry.sample_rate_hz
+        qualified, reason, bound = raw.qualification(first, last, rate)
+        try:
+            earliest, latest = raw.interval(first)
+            estimate = (earliest + latest) // 2
+            display_width = latest - earliest
+        except ValueError:
+            # Retain an explicitly unqualified display time from the original
+            # transaction. Never silently fall back to its relaxed qualification.
+            legacy = document["evidence"].get("utc_timing", {})
+            before = legacy.get("begin_before_realtime_ns")
+            after = legacy.get("begin_after_realtime_ns")
+            if before is None or after is None:
+                raise ValueError(
+                    "unqualified counter timing lacks a display clock bracket"
+                ) from None
+            estimate = (before + after) // 2
+            display_width = after - before
+        payload = raw.model_dump(mode="json")
+        return CounterUtcTimingV4(
+            session_id=receipt.session_id,
+            session_start_device_sample_counter=first,
+            final_device_sample_counter=last,
+            sample_rate_hz=rate,
+            first_sample_estimate_utc_ns=estimate,
+            maximum_error_ns=bound,
+            display_bracket_width_ns=display_width,
+            qualification_limit_ns=raw.policy.maximum_error_ns,
+            failure_reasons=() if qualified else (reason,),
+            evidence=payload,
+            evidence_sha256=canonical_digest(payload),
+        )
     value = document["evidence"].get("utc_timing")
     if not value:
         return None

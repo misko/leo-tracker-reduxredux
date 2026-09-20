@@ -9,6 +9,7 @@ from leo.analysis.catalogue_eligibility import (
     exclude_labelled_starlink_debris,
     exclude_starlink_sgp4_failures,
 )
+from leo.analysis.counter_utc_sensitivity import match_counter_utc_sensitivity
 from leo.analysis.persistent_hop_tle_match import (
     PersistentHopTleMatchConfig,
     match_persistent_hop_track_to_tles,
@@ -33,6 +34,7 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingStatusV11,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
+from leo.scanner.counter_utc import CounterUtcTimingV4
 from leo.sky.propagation import count_element_sets
 
 
@@ -80,6 +82,11 @@ class ScannerTrackingService:
                 "selection": "eligible-first-longest-support-v1",
                 "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
                 "observer": self.site.model_dump(mode="json"),
+                **(
+                    {"utc_sensitivity": "counter-utc-frozen-split-25ms-grid-v1"}
+                    if isinstance(source.timing, CounterUtcTimingV4)
+                    else {}
+                ),
             }
         )
         product = status.product or ScannerTrackingProductV11(
@@ -170,7 +177,8 @@ class ScannerTrackingService:
                 update={
                     "tle_state": "unavailable",
                     "reasons": (
-                        "UTC bracket exceeds the two-second association policy; "
+                        "UTC timing does not satisfy its association policy "
+                        "(legacy: two-second association policy); "
                         "TLE comparison requires a qualified absolute UTC anchor.",
                     ),
                 }
@@ -242,20 +250,46 @@ class ScannerTrackingService:
                     save("tle-matching")
                     return self.products.analysis_status(session_id)
                 try:
-                    result = self.matcher(
-                        persistent_hop_tracklet_graph(
-                            item.hypothesis, item.representative.tracklet_id
-                        ),
-                        payload,
-                        tle_snapshot=eligible,
-                        observer_site=self.site,
-                        config=config,
+                    graph = persistent_hop_tracklet_graph(
+                        item.hypothesis, item.representative.tracklet_id
                     )
+                    sensitivity = None
+                    if isinstance(source.timing, CounterUtcTimingV4):
+                        sensitivity = match_counter_utc_sensitivity(
+                            graph,
+                            payload,
+                            maximum_error_ns=source.timing.maximum_error_ns,
+                            tle_snapshot=eligible,
+                            observer_site=self.site,
+                            config=config,
+                            matcher=self.matcher,
+                        )
+                        result = sensitivity.nominal
+                    else:
+                        result = self.matcher(
+                            graph,
+                            payload,
+                            tle_snapshot=eligible,
+                            observer_site=self.site,
+                            config=config,
+                        )
+                    summary = PersistentHopTrackingService._candidate_summary(item, result)
+                    if sensitivity is not None:
+                        reasons = tuple(
+                            sorted(set(summary.abstention_reasons + sensitivity.abstention_reasons))
+                        )
+                        summary = summary.model_copy(
+                            update={
+                                "abstention_recommended": bool(reasons),
+                                "abstention_reasons": reasons,
+                                "match_content_digest": sensitivity.content_digest,
+                            }
+                        )
                     product = product.model_copy(
                         update={
                             "tle_candidates": (
                                 *product.tle_candidates,
-                                PersistentHopTrackingService._candidate_summary(item, result),
+                                summary,
                             )
                         }
                     )
