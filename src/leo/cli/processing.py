@@ -166,7 +166,7 @@ class ProcessingBackendSettings:
     qualification_root: Path | None = None
     legacy_evidence_root: Path | None = None
     capture_evidence_root: Path | None = None
-    current_release_link: Path = Path("/opt/leo-tracker/current")
+    current_release_link: Path = Path("/opt/leo-tracker/current-worker")
     deployment_root: Path = Path("/opt/leo-tracker")
     scratch_root: Path = Path("/var/tmp")
     station_authority_root: Path | None = None
