@@ -19,6 +19,18 @@ def replay_module():
     return module
 
 
+def test_merged_inventory_replaces_shard_digest(tmp_path):
+    replay = replay_module()
+    inventory = tmp_path / "inventory.json"
+    inventory.write_text('{"scans": []}')
+    original = dict(inventory="shard.json", inventory_digest="old", spacing_km=50)
+    merged = replay.merged_inventory_configuration(original, inventory)
+    assert merged["inventory_digest"] == replay.digest(inventory)
+    assert merged["inventory"] == str(inventory)
+    assert merged["spacing_km"] == 50
+    assert original["inventory_digest"] == "old"
+
+
 def test_denver_9000_mile_prior_has_finite_spherical_coordinates():
     region = Region(39.7392, -104.9903, 9000 * 1.609344, 9000 * 1.609344)
     grid = region.grid(500)

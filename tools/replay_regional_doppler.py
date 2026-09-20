@@ -42,6 +42,16 @@ def digest(path):
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def merged_inventory_configuration(configuration, inventory_path):
+    """Replace shard inventory authority with the actual merged inventory."""
+    return dict(
+        configuration,
+        partition="randomized",
+        inventory=str(inventory_path),
+        inventory_digest=digest(inventory_path),
+    )
+
+
 def load_observations(document, max_per_partition=8, individual=False):
     """Only RF fields; no source observation may enter two scored episodes."""
     sources = {row["tracklet_id"]: row for row in document["series"]}

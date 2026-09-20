@@ -10,7 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
-from replay_regional_doppler import run, summarize_grid, write_json
+from replay_regional_doppler import merged_inventory_configuration, run, summarize_grid, write_json
 
 from leo.analysis.persistent_hop_trajectory import (
     persistent_hop_tracklet_graph,
@@ -248,7 +248,7 @@ def search(
         history.append(h)
     np.savez_compressed(output / "accumulated.npz", train=total, heldout=evaluation)
     config = json.loads((first / "configuration.json").read_text())
-    config.update(partition="randomized", inventory=str(evidence / "inventory.json"))
+    config = merged_inventory_configuration(config, evidence / "inventory.json")
     write_json(output / "configuration.json", config)
     write_json(output / "history.json", history)
     write_json(
