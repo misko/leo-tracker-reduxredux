@@ -78,13 +78,19 @@ def extract(root, assignments, clock_s=0.0):
     return {k: np.asarray(v) for k, v in arrays.items()}, dict(sources=sources, records=records)
 
 
-def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False):
+def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False, clock_groups=None):
     mask = np.ones(len(data["y"]), bool) if subset is None else subset
     d = {k: v[mask] for k, v in data.items()}
     train = d["training"].astype(bool)
     _, group = np.unique(d["segment"], return_inverse=True)
     counts = np.bincount(group[train])
     weight = np.ones(len(group)) if weighting == "observation" else 1 / np.sqrt(counts[group])
+    if clock_groups is not None and not fit_clock:
+        raise ValueError("clock groups require clock fitting")
+    labels, clock_index = np.unique(
+        np.zeros(len(group), int) if clock_groups is None else np.asarray(clock_groups)[mask],
+        return_inverse=True,
+    )
 
     def residual(x):
         receiver = region.points([x[0]], [x[1]], 0).ecef_km[0]
@@ -92,7 +98,7 @@ def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False):
         if fit_clock:
             # Quadratic interpolation of exact propagated states over +/-0.5 s.
             # Bound the clock to that interval; not an extrapolating orbit model.
-            tau = x[2]
+            tau = np.asarray(x[2:])[clock_index, None]
             p = (
                 p
                 + (d["p0.5"] - d["p-0.5"]) * tau
@@ -122,9 +128,9 @@ def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False):
     upper = [region.width_km / 2, region.height_km / 2]
     start = list(initial)
     if fit_clock:
-        lower.append(-0.5)
-        upper.append(0.5)
-        start.append(0.0)
+        lower.extend([-0.5] * len(labels))
+        upper.extend([0.5] * len(labels))
+        start.extend([0.0] * len(labels))
     answer = least_squares(
         objective,
         start,
@@ -152,9 +158,11 @@ def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False):
         source_segments=len(counts),
         episodes=len(np.unique(d["episode"])),
         converged=bool(answer.success),
-        clock_s=float(answer.x[2]) if fit_clock else 0.0,
+        clock_s=(float(answer.x[2]) if len(labels) == 1 else None) if fit_clock else 0.0,
+        clock_group_values=labels.tolist() if fit_clock else [],
+        clock_offsets_s=answer.x[2:].tolist() if fit_clock else [],
         clock_fitted=fit_clock,
-        clock_at_bound=bool(fit_clock and abs(answer.x[2]) > 0.499),
+        clock_at_bound=bool(fit_clock and np.any(abs(answer.x[2:]) > 0.499)),
         segment_training_rms=segment_rms,
     )
 

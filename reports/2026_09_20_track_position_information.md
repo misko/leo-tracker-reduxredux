@@ -87,6 +87,42 @@ independent orbit-error realizations.
 
 ## Reproduction and artifacts
 
+### Acquisition-rate timing check
+
+An additional conditional replay allows separate UTC corrections for 10, 15,
+and 20 MS/s instead of one common correction. Identities remain frozen and all
+clock parameters use fitting observations only, with the same ±0.5 s bounds.
+
+| Cohort | Clock model | Training RMS | Random evaluation RMS | Actual horizontal error |
+|---|---|---:|---:|---:|
+| All 599 tracks | Shared | 158.48 Hz | 158.79 Hz | 4,194.9 m |
+| All 599 tracks | Per sample rate | 158.13 Hz | 158.45 Hz | 4,246.0 m |
+| All 215 clean tracks | Shared | 68.45 Hz | 83.70 Hz | 4,469.1 m |
+| All 215 clean tracks | Per sample rate | 68.28 Hz | 83.89 Hz | 4,582.7 m |
+
+The all-track fit chooses −0.244, −0.341, and −0.438 seconds for 10/15/20 MS/s,
+respectively. These are inferred nuisance corrections, not measurements of a
+firmware delay. Separating them slightly lowers residual RMS but does not
+improve position. A single constant timing bias per sample rate therefore does
+not explain the remaining geographic error in this frozen-identity experiment.
+This does not rule out scan-dependent timing errors or a different timing model.
+
+The [inference](2026_09_20_track_position_information/sample-rate-clock-inference.json)
+and [evaluation receipt](2026_09_20_track_position_information/sample-rate-clock-evaluation.json)
+retain all four variants. Reproduce with:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src \
+uv run --no-project --with scipy --with matplotlib --with sgp4 \
+  --with pydantic --with pyyaml python tools/replay_sample_rate_clocks.py \
+  --states reports/2026_09_20_doppler_error_budget/states.npz \
+  --inference reports/2026_09_20_matched_positioning/inference.json \
+  --information reports/2026_09_20_track_position_information/information.json \
+  --output /tmp/leo-sample-rate-clocks-reproduction.json
+```
+
+### Track-information reproduction
+
 Run from the repository root in the scientific development environment:
 
 ```bash
