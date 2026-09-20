@@ -51,7 +51,7 @@ from leo.contracts.catalogue_association import (
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 
-_ALGORITHM_VERSION = "persistent-hop-randomized-residual-tle-match-v4"
+_ALGORITHM_VERSION = "persistent-hop-randomized-residual-tle-match-v5"
 
 
 class PersistentHopTleMatchInputError(ValueError):
@@ -163,8 +163,8 @@ class PersistentHopTleMatchResult:
     abstention_recommended: bool
     abstention_reasons: tuple[str, ...]
     content_digest: Sha256Digest
-    algorithm_version: Literal["persistent-hop-randomized-residual-tle-match-v4"] = field(
-        default="persistent-hop-randomized-residual-tle-match-v4", init=False
+    algorithm_version: Literal["persistent-hop-randomized-residual-tle-match-v5"] = field(
+        default="persistent-hop-randomized-residual-tle-match-v5", init=False
     )
     all_banks_built_before_response_scoring: Literal[True] = field(default=True, init=False)
     wrong_time_controls_are_observe_only: Literal[True] = field(default=True, init=False)
@@ -279,25 +279,8 @@ def match_persistent_hop_track_to_tles(
     if not persisted:
         reasons.append("catalogue-leader-did-not-persist-on-heldout")
 
-    nominal_training_winner = association.scores[0]
-    # A generic smooth curve is a diagnostic, not a veto of catalogue identity.
-    # Preserve its full score below; only catalogue and wrong-time gates abstain.
-    for field_match in field_matches:
-        if field_match.field_delta_s == 0:
-            continue
-        wrong_winner = field_match.association.scores[0]
-        if _control_materially_better(
-            wrong_winner.heldout_predictive_negative_log_score,
-            nominal_training_winner.heldout_predictive_negative_log_score,
-            evaluation_observation_count=len(evaluation_ids),
-            minimum_advantage_per_observation_nll=(
-                config.control_minimum_advantage_per_evaluation_observation_nll
-            ),
-        ):
-            reasons.append(
-                f"wrong-time-{field_match.field_delta_s:+d}s-"
-                "materially-better-on-randomized-evaluation"
-            )
+    # Polynomial and shifted-time comparisons remain full diagnostics below.
+    # Only the nominal catalogue comparison contributes association gates.
     reasons = sorted(set(reasons))
 
     payload = {
