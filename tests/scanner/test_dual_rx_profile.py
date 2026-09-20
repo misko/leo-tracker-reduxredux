@@ -3,9 +3,12 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
+from leo.contracts.digests import canonical_digest
 from leo.scanner.dual_rx import (
     DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+    LEGACY_DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
     DualRxAdaptive2p5ScheduledScannerIntentV7,
+    DualRxAdaptive2p5ScheduledScannerIntentV8,
     compile_dual_rx_adaptive_2p5_hop_plan,
     compile_dual_rx_adaptive_2p5_scanner_intent,
 )
@@ -20,7 +23,7 @@ def make_intent():
         radio_id="radio_pluto_19f2",
         radio_serial="10400056f695001322002d0010ad1719f2",
         scheduled_for=scheduled,
-        interval_seconds=600.0,
+        interval_seconds=360.0,
         maximum_lateness_seconds=300.0,
         run_duration_seconds=300.0,
         dwell_ms=120,
@@ -46,7 +49,7 @@ def test_dual_rx_profile_is_fixed_to_both_receivers_and_2p5m():
 
 def test_dual_rx_profile_does_not_validate_as_the_legacy_alternating_contract():
     intent = make_intent()
-    assert DualRxAdaptive2p5ScheduledScannerIntentV7.model_validate_json(
+    assert DualRxAdaptive2p5ScheduledScannerIntentV8.model_validate_json(
         intent.model_dump_json()
     ) == intent
     with pytest.raises(ValidationError):
@@ -65,4 +68,24 @@ def test_dual_rx_profile_rejects_rate_or_receiver_drift(field, value):
     payload = make_intent().model_dump(mode="json")
     payload["configuration"][field] = value
     with pytest.raises(ValidationError):
-        DualRxAdaptive2p5ScheduledScannerIntentV7.model_validate(payload)
+        DualRxAdaptive2p5ScheduledScannerIntentV8.model_validate(payload)
+
+
+def test_published_ten_minute_intent_remains_parseable() -> None:
+    payload = make_intent().model_dump(mode="json")
+    payload.update(
+        schema_version=7,
+        policy_id=LEGACY_DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+        cadence_ordinal=int(
+            datetime.fromisoformat(payload["scheduled_for"]).timestamp() // 600
+        ),
+        interval_seconds=600.0,
+    )
+    payload["intent_digest"] = canonical_digest(
+        {key: value for key, value in payload.items() if key != "intent_digest"}
+    )
+
+    parsed = parse_scheduled_scanner_intent(payload)
+
+    assert isinstance(parsed, DualRxAdaptive2p5ScheduledScannerIntentV7)
+    assert parsed.interval_seconds == 600

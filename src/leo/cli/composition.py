@@ -191,6 +191,7 @@ from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.dual_rx import (
     DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
     DualRxAdaptive2p5ScheduledScannerIntentV7,
+    DualRxAdaptive2p5ScheduledScannerIntentV8,
     compile_dual_rx_adaptive_2p5_hop_plan,
     compile_dual_rx_adaptive_2p5_scanner_intent,
 )
@@ -377,7 +378,7 @@ class CliSettings:
             or self.scanner_glrt.mode != "positive-only-v1"
             or self.scanner_run_seconds != 300
             or self.scanner_dwell_ms != 120
-            or self.scanner_interval_seconds != 600
+            or self.scanner_interval_seconds != 360
             or len(self.radios) != 1
             or self.scanner_adaptive_sample_rates_hz != (2_500_000,)
             or self.station_authority_root is None
@@ -385,7 +386,7 @@ class CliSettings:
             or self.station_geometry_file_digest is None
         ):
             raise ValueError(
-                "dual-RX 2.5 MS/s profile requires one radio, adaptive 600s cadence, "
+                "dual-RX 2.5 MS/s profile requires one radio, adaptive 360s cadence, "
                 "300s/120ms hopping, positive-only GLRT, and pinned geometry"
             )
         if host_adaptive and (
@@ -1990,7 +1991,13 @@ class LocalAcquisitionBackend:
                 kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
                 samples_per_block=self.settings.scanner_persistent_samples_per_block,
             )
-            if isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV7)
+            if isinstance(
+                intent,
+                (
+                    DualRxAdaptive2p5ScheduledScannerIntentV7,
+                    DualRxAdaptive2p5ScheduledScannerIntentV8,
+                ),
+            )
             else compile_scheduled_persistent_hop_plan_v1(
                 intent,
                 transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
@@ -2105,7 +2112,13 @@ class LocalAcquisitionBackend:
                     else:
                         receiver_geometry = (
                             self._adaptive_receiver_geometry(configured)
-                            if isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV7)
+                            if isinstance(
+                                intent,
+                                (
+                                    DualRxAdaptive2p5ScheduledScannerIntentV7,
+                                    DualRxAdaptive2p5ScheduledScannerIntentV8,
+                                ),
+                            )
                             else None
                         )
                         published = capture_adaptive_hop_to_store(
