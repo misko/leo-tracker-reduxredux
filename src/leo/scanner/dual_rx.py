@@ -10,6 +10,7 @@ from pydantic import model_validator
 
 from leo.contracts.digests import canonical_digest
 from leo.scanner.models import ScannerConfigurationV3, scheduled_low_band_targets
+from leo.scanner.persistent_hop import PersistentHopPlanV1, compile_persistent_hop_plan_v1
 from leo.scanner.schedule import (
     ScheduledScannerRunIntentV1,
     canonical_scheduled_scanner_operation_key,
@@ -110,3 +111,25 @@ def compile_dual_rx_adaptive_2p5_scanner_intent(
     return DualRxAdaptive2p5ScheduledScannerIntentV7.model_validate(
         {**document, "intent_digest": canonical_digest(document)}
     )
+
+
+def compile_dual_rx_adaptive_2p5_hop_plan(
+    intent: DualRxAdaptive2p5ScheduledScannerIntentV7,
+    *,
+    transition_guard_us: int = 1_000,
+    kernel_buffers: int = 8,
+    samples_per_block: int = 131_072,
+) -> PersistentHopPlanV1:
+    """Project the ten-minute profile onto the existing dual-RX hop geometry."""
+
+    intent = DualRxAdaptive2p5ScheduledScannerIntentV7.model_validate(intent)
+    plan = compile_persistent_hop_plan_v1(
+        sample_rate_hz=DUAL_RX_RATE_HZ,
+        kernel_buffers=kernel_buffers,
+        transition_guard_us=transition_guard_us,
+        gain_db=intent.configuration.gain_db,
+        samples_per_block=samples_per_block,
+    )
+    if tuple(profile.target for profile in plan.profiles) != intent.configuration.targets:
+        raise ValueError("dual-RX hopping targets disagree with the scheduled intent")
+    return plan

@@ -191,6 +191,7 @@ from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.dual_rx import (
     DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
     DualRxAdaptive2p5ScheduledScannerIntentV7,
+    compile_dual_rx_adaptive_2p5_hop_plan,
     compile_dual_rx_adaptive_2p5_scanner_intent,
 )
 from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource
@@ -1983,6 +1984,13 @@ class LocalAcquisitionBackend:
         geometry = (
             host_plan.geometry
             if host_plan is not None
+            else compile_dual_rx_adaptive_2p5_hop_plan(
+                intent,
+                transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
+                kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
+                samples_per_block=self.settings.scanner_persistent_samples_per_block,
+            )
+            if isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV7)
             else compile_scheduled_persistent_hop_plan_v1(
                 intent,
                 transition_guard_us=self.settings.scanner_persistent_transition_guard_us,

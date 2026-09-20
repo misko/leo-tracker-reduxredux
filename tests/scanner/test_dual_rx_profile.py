@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from leo.scanner.dual_rx import (
     DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
     DualRxAdaptive2p5ScheduledScannerIntentV7,
+    compile_dual_rx_adaptive_2p5_hop_plan,
     compile_dual_rx_adaptive_2p5_scanner_intent,
 )
 from leo.scanner.schedule import ScheduledScannerRunIntentV1
@@ -36,6 +37,11 @@ def test_dual_rx_profile_is_fixed_to_both_receivers_and_2p5m():
     assert intent.configuration.sample_rate_hz == 2_500_000
     assert intent.configuration.bandwidth_hz == 2_500_000
     assert parse_scheduled_scanner_intent(intent.model_dump(mode="json")) == intent
+    plan = compile_dual_rx_adaptive_2p5_hop_plan(intent)
+    assert plan.receiver_ids == (0, 1)
+    assert plan.sample_rate_hz == 2_500_000
+    assert plan.valid_visit_samples == 300_000
+    assert plan.nominal_device_sample_count == 750_000_000
 
 
 def test_dual_rx_profile_does_not_validate_as_the_legacy_alternating_contract():
