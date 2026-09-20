@@ -11,6 +11,7 @@ from leo.radio.persistent_hop_iiod_lifecycle import (
 )
 from leo.radio.pluto_userspace_iiod_lifecycle import (
     PlutoUserspaceIiodLifecycleError,
+    _firmware_compatible_endpoint_probe,
     create_pluto_userspace_iiod_lifecycle,
 )
 
@@ -50,7 +51,11 @@ def test_default_adapter_lazily_constructs_exact_ppu_deployment(
     monkeypatch.setattr(
         "leo.radio.pluto_userspace_iiod_lifecycle.importlib.import_module",
         lambda name: (
-            events.append(("import", name)) or SimpleNamespace(UserspaceIiodDeployment=Deployment)
+            events.append(("import", name))
+            or SimpleNamespace(
+                UserspaceIiodDeployment=Deployment,
+                persistent_hop_endpoint_probe=lambda *_: True,
+            )
         ),
     )
     configuration = _configuration(tmp_path)
@@ -66,9 +71,7 @@ def test_default_adapter_lazily_constructs_exact_ppu_deployment(
     assert arguments["binary_path"] == configuration.binary_path
     assert arguments["known_hosts_path"] == configuration.known_hosts_path
     assert arguments["password_path"] == configuration.password_path
-    # PPU owns endpoint attestation.  In particular, its v0.52-aware default
-    # configures the physical 1R1T/RX0 layout before probing radio 003a.
-    assert "serial_probe" not in arguments
+    assert callable(arguments["serial_probe"])
     lifecycle.enter_and_attest()
     lifecycle.exit_and_verify()
 
@@ -102,7 +105,10 @@ def test_default_adapter_delegates_binary_validation_to_ppu(
 
     monkeypatch.setattr(
         "leo.radio.pluto_userspace_iiod_lifecycle.importlib.import_module",
-        lambda _name: SimpleNamespace(UserspaceIiodDeployment=Deployment),
+        lambda _name: SimpleNamespace(
+            UserspaceIiodDeployment=Deployment,
+            persistent_hop_endpoint_probe=lambda *_: True,
+        ),
     )
     configuration = _configuration(tmp_path)
     configuration.binary_path.chmod(0o440)
@@ -115,7 +121,8 @@ def test_companion_bundle_path_passes_only_through_the_optional_public_port(tmp_
     monkeypatch.setattr(
         "leo.radio.pluto_userspace_iiod_lifecycle.importlib.import_module",
         lambda _name: SimpleNamespace(
-            UserspaceIiodDeployment=lambda **kwargs: constructed.append(kwargs)
+            UserspaceIiodDeployment=lambda **kwargs: constructed.append(kwargs),
+            persistent_hop_endpoint_probe=lambda *_: True,
         ),
     )
     configuration = _configuration(tmp_path)
@@ -124,3 +131,30 @@ def test_companion_bundle_path_passes_only_through_the_optional_public_port(tmp_
     manifest = configuration.binary_path.parent / "bundle.json"
     create_pluto_userspace_iiod_lifecycle(replace(configuration, bundle_manifest_path=manifest))
     assert constructed[-1]["bundle_manifest_path"] == manifest
+
+
+def test_stock_probe_accepts_v053_dual_rx_inventory_from_exact_iio_context(monkeypatch):
+    output = (
+        b"IIO context has 34 attributes:\n"
+        b"\thw_serial: serial-a\n"
+        b"\tiio,buffer-metadata: 3\n"
+        b"IIO context has 7 devices:\n"
+    )
+    monkeypatch.setattr(
+        "leo.radio.pluto_userspace_iiod_lifecycle.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=output),
+    )
+    delegated = []
+
+    def probe(*args):
+        delegated.append(args)
+        return True
+
+    assert _firmware_compatible_endpoint_probe(
+        "192.168.1.21", 30_431, "serial-a", 10, persistent_probe=probe
+    )
+    assert not delegated
+    assert _firmware_compatible_endpoint_probe(
+        "192.168.1.21", 30_432, "serial-a", 10, persistent_probe=probe
+    )
+    assert delegated == [("192.168.1.21", 30_432, "serial-a", 10)]
