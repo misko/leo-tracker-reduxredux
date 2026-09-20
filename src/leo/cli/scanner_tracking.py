@@ -14,7 +14,7 @@ from leo.contracts.scanner_tracking import (
     ArtifactName,
     ScannerTleReviewCandidateV1,
     ScannerTleTrackReviewV1,
-    ScannerTrackingStatusV10,
+    ScannerTrackingStatusV11,
 )
 from leo.contracts.sky import ObserverSiteV1
 from leo.operations.scanner_tle_review_report import build_report
@@ -144,7 +144,7 @@ def main():
                 except Exception as error:
                     prior = products.analysis_status(sid)
                     products.save(
-                        ScannerTrackingStatusV10(
+                        ScannerTrackingStatusV11(
                             session_id=sid,
                             state="failed",
                             phase=prior.phase,

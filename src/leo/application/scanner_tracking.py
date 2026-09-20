@@ -29,18 +29,18 @@ from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTleTrackReviewV1,
     ScannerTrackingInputs,
-    ScannerTrackingProductV10,
-    ScannerTrackingStatusV10,
+    ScannerTrackingProductV11,
+    ScannerTrackingStatusV11,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV10: ...
-    def save(self, status: ScannerTrackingStatusV10) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV11: ...
+    def save(self, status: ScannerTrackingStatusV11) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV10) -> None: ...
+    def publish(self, product: ScannerTrackingProductV11) -> None: ...
 
 
 class ScannerTrackingService:
@@ -73,7 +73,7 @@ class ScannerTrackingService:
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v10",
+                "algorithm": "scanner-shared-tracking-v11",
                 "utc_qualification_limit_ns": 2_000_000_000,
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
@@ -82,7 +82,7 @@ class ScannerTrackingService:
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV10(
+        product = status.product or ScannerTrackingProductV11(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -109,7 +109,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV10(
+                ScannerTrackingStatusV11(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
