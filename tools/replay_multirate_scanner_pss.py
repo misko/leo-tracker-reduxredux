@@ -21,6 +21,7 @@ from leo.storage.adaptive_hop import AdaptiveHopIqStore
 SERIAL = "104000bac4950008230026001b440a003a"
 BANK = tuple(float(v) for v in range(-1_200_000, 1_200_001, 200_000))
 SALT = "sixteen-hour-multirate-pss-v1"
+VISIT_POLICY = "retained-ordinal-with-event-binding-v2"
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -40,6 +41,26 @@ def select(indexes: list[int], manifest_sha256: str) -> int:
     return min(
         indexes,
         key=lambda i: hashlib.sha256(f"{SALT}:{manifest_sha256}:{i}".encode()).digest(),
+    )
+
+
+def retained_indexes_by_target(visits) -> dict[int, list[int]]:
+    """Storage reads use retained ordinals; firmware event IDs may have gaps."""
+    result: dict[int, list[int]] = {}
+    for ordinal, visit in enumerate(visits):
+        result.setdefault(visit.event.target_index, []).append(ordinal)
+    return result
+
+
+def cache_matches(path: Path, job: dict) -> bool:
+    try:
+        document = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    return (
+        document.get("visit_policy") == VISIT_POLICY
+        and document.get("session_id") == job["session_id"]
+        and document.get("source_manifest_sha256") == job["manifest_sha256"]
     )
 
 
@@ -79,18 +100,18 @@ def session_job(job: dict) -> dict:
             or geometry.sample_rate_hz != job["sample_rate_hz"]
         ):
             raise ValueError("frozen RX0 source binding differs")
-        by_target: dict[int, list[int]] = {}
-        for visit in receipt.visits:
-            by_target.setdefault(visit.event.target_index, []).append(visit.event.visit_index)
+        by_target = retained_indexes_by_target(receipt.visits)
         selected = {select(indexes, session.manifest_sha256) for indexes in by_target.values()}
         track_selected = set()
         for indexes in by_target.values():
             late = [
-                index for index in indexes
+                index
+                for index in indexes
                 if (
-                    receipt.visits[index].event.valid_start_counter
-                    - receipt.terminal.first_counter
-                ) / geometry.sample_rate_hz >= 120
+                    receipt.visits[index].event.valid_start_counter - receipt.terminal.first_counter
+                )
+                / geometry.sample_rate_hz
+                >= 120
             ]
             track_selected.update(late[:6])
         rows, tracking = [], []
@@ -99,8 +120,12 @@ def session_job(job: dict) -> dict:
             for index in sorted(selected | track_selected):
                 visit, raw = reader.read_visit_ci16(index)
                 event = visit.event
+                if event != receipt.visits[index].event:
+                    raise ValueError("retained PSS visit differs from selected capture event")
                 actual_center = event.actual_lo_frequency_hz + event.actual_if_offset_hz
-                reference = starlink_pss_channel_reference_hz(event.target.channel, event.target.edge)
+                reference = starlink_pss_channel_reference_hz(
+                    event.target.channel, event.target.edge
+                )
                 iq = (raw[:, 0, 0] + 1j * raw[:, 0, 1]).astype("complex64")
                 start = event.valid_start_counter - receipt.terminal.first_counter
                 half_band = min(geometry.bandwidth_hz, geometry.sample_rate_hz) / 2
@@ -152,7 +177,8 @@ def session_job(job: dict) -> dict:
                         "session_id": session.session_id,
                         "capture_start_utc": job["capture_start_utc"],
                         "sample_rate_hz": geometry.sample_rate_hz,
-                        "visit_index": index,
+                        "visit_index": event.visit_index,
+                        "retained_ordinal": index,
                         "target_index": event.target_index,
                         "channel": event.target.channel,
                         "edge": str(event.target.edge),
@@ -162,7 +188,8 @@ def session_job(job: dict) -> dict:
                         "source_end_counter": visit.valid_end_counter_exclusive,
                         "nominal_overlap_hz": (
                             band.overlap_hz(0)[1] - band.overlap_hz(0)[0]
-                            if band.overlap_hz(0) else 0
+                            if band.overlap_hz(0)
+                            else 0
                         ),
                         "comparison_selected": index in selected,
                         "tracking_selected": index in track_selected,
@@ -177,7 +204,9 @@ def session_job(job: dict) -> dict:
                     }
                 )
                 if index in track_selected:
-                    key = f"{session.session_id}:{receipt.stream_generation}:rx0:{event.target_index}"
+                    key = (
+                        f"{session.session_id}:{receipt.stream_generation}:rx0:{event.target_index}"
+                    )
                     tracker = trackers.setdefault(event.target_index, PssTracker(key))
                     time_s = (start + len(iq) / 2) / geometry.sample_rate_hz
                     estimate = tracker.update(key, time_s, observations)
@@ -185,19 +214,27 @@ def session_job(job: dict) -> dict:
                         {
                             "session_id": session.session_id,
                             "sample_rate_hz": geometry.sample_rate_hz,
-                            "visit_index": index,
+                            "visit_index": event.visit_index,
+                            "retained_ordinal": index,
                             "target_index": event.target_index,
                             "state": estimate.state,
                             "reason": estimate.reason,
                             "accepted_observations": estimate.accepted_observations,
                             "timing_sigma_ns": (
                                 estimate.timing_sigma_s * 1e9
-                                if estimate.timing_sigma_s is not None else None
+                                if estimate.timing_sigma_s is not None
+                                else None
                             ),
                             "cfo_sigma_hz": estimate.cfo_sigma_hz,
                         }
                     )
-        return {"session_id": session.session_id, "rows": rows, "tracking": tracking}
+        return {
+            "session_id": session.session_id,
+            "source_manifest_sha256": session.manifest_sha256,
+            "visit_policy": VISIT_POLICY,
+            "rows": rows,
+            "tracking": tracking,
+        }
     finally:
         store.close()
 
@@ -206,6 +243,8 @@ def aggregate(output: Path, expected_sessions: int) -> dict:
     documents = [json.loads(path.read_text()) for path in sorted(output.glob("session-*.json"))]
     if len(documents) != expected_sessions:
         raise ValueError(f"expected {expected_sessions} session products, found {len(documents)}")
+    if any(document.get("visit_policy") != VISIT_POLICY for document in documents):
+        raise ValueError("legacy PSS visit-index policy: rerun replay before aggregating")
     all_rows = [row for document in documents for row in document["rows"]]
     rows = [row for row in all_rows if row["comparison_selected"]]
     tracking = [row for document in documents for row in document["tracking"]]
@@ -225,12 +264,13 @@ def aggregate(output: Path, expected_sessions: int) -> dict:
                 "candidate_visits": sum(r["pss_candidate"] for r in group),
                 "timed_visits": len(timed),
                 "tracking_updates": sum(row["state"] == "tracking" for row in track_group),
-                "targets_reaching_tracking": len({
-                    row["target_index"] for row in track_group if row["state"] == "tracking"
-                }),
+                "targets_reaching_tracking": len(
+                    {row["target_index"] for row in track_group if row["state"] == "tracking"}
+                ),
                 "median_alternating_validation_rms_ns": (
                     float(np.median([r["alternating_validation_rms_ns"] for r in timed]))
-                    if timed else None
+                    if timed
+                    else None
                 ),
             }
         )
@@ -249,26 +289,31 @@ def aggregate(output: Path, expected_sessions: int) -> dict:
             "median_alternating_validation_rms_ns": float(np.median(values)) if values else None,
             "p10_p90_alternating_validation_rms_ns": (
                 [float(np.percentile(values, 10)), float(np.percentile(values, 90))]
-                if values else [None, None]
+                if values
+                else [None, None]
             ),
             "tracking_updates": sum(
-                row["state"] == "tracking" for row in tracking
-                if row["sample_rate_hz"] == rate
+                row["state"] == "tracking" for row in tracking if row["sample_rate_hz"] == rate
             ),
-            "sessions_reaching_tracking": len({
-                row["session_id"] for row in tracking
-                if row["sample_rate_hz"] == rate and row["state"] == "tracking"
-            }),
+            "sessions_reaching_tracking": len(
+                {
+                    row["session_id"]
+                    for row in tracking
+                    if row["sample_rate_hz"] == rate and row["state"] == "tracking"
+                }
+            ),
         }
     summary = {
         "protocol": {
-            "selection": "minimum sha256(salt:manifest_digest:visit_index) per present target",
+            "selection": "minimum sha256(salt:manifest_digest:retained_ordinal) per present target",
             "salt": SALT,
             "frequency_bank_hz": BANK,
             "candidate_only": True,
             "receiver_response": "ideal rectangular; analogue response uncalibrated",
             "timing_metric": "alternating-frame linear prediction RMS on strongest qualified mode",
-            "tracking_selection": "first six retained visits per present target at or after 120 seconds",
+            "tracking_selection": (
+                "first six retained visits per present target at or after 120 seconds"
+            ),
         },
         "sessions": expected_sessions,
         "by_sample_rate_hz": by_rate,
@@ -278,7 +323,11 @@ def aggregate(output: Path, expected_sessions: int) -> dict:
     labels = ["10", "15", "20"]
     rates = (10_000_000, 15_000_000, 20_000_000)
     values = [
-        [r["alternating_validation_rms_ns"] for r in rows if r["sample_rate_hz"] == rate and r["alternating_validation_rms_ns"] is not None]
+        [
+            r["alternating_validation_rms_ns"]
+            for r in rows
+            if r["sample_rate_hz"] == rate and r["alternating_validation_rms_ns"] is not None
+        ]
         for rate in rates
     ]
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -310,8 +359,7 @@ def aggregate(output: Path, expected_sessions: int) -> dict:
             color=colors[rate],
         )
         timed = [
-            (i, row) for i, row in points
-            if row["median_alternating_validation_rms_ns"] is not None
+            (i, row) for i, row in points if row["median_alternating_validation_rms_ns"] is not None
         ]
         axes[1].scatter(
             [i for i, _ in timed],
@@ -361,7 +409,11 @@ def main() -> None:
         }
         for row in sessions
     ]
-    pending = [job for job in jobs if not (args.output / f"session-{job['session_id']}.json").exists()]
+    pending = [
+        job
+        for job in jobs
+        if not cache_matches(args.output / f"session-{job['session_id']}.json", job)
+    ]
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
         for completed, result in enumerate(pool.map(session_job, pending), 1):
             path = args.output / f"session-{result['session_id']}.json"
