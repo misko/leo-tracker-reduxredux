@@ -18,6 +18,13 @@ from leo.qualification.release import _validate_deployed_release
 ReleaseValidator = Callable[[Path, str], None]
 _QNAP = Path("/mnt/qnap01")
 _SOURCE_MARKER = ".leo-release-source.json"
+_TRUSTED_SELECTOR_NAMES = frozenset(("current", "current-worker"))
+
+
+def _trusted_selector_name(current_link: Path, deployment_root: Path) -> str:
+    if current_link.parent != deployment_root or current_link.name not in _TRUSTED_SELECTOR_NAMES:
+        raise ValueError("current release selector is outside its deployment root")
+    return current_link.name
 
 
 def selected_current_revision(
@@ -34,15 +41,14 @@ def selected_current_revision(
 
     current_link = _canonical_absolute(current_link, "release selector")
     deployment_root = _canonical_absolute(deployment_root, "deployment root")
-    if current_link != deployment_root / "current":
-        raise ValueError("current release selector is outside its deployment root")
+    selector_name = _trusted_selector_name(current_link, deployment_root)
     root_fd = _open_absolute_directory(deployment_root)
     releases_fd: int | None = None
     release_fd: int | None = None
     try:
         releases_fd = _open_directory_at(root_fd, "releases")
         try:
-            target_text = os.readlink("current", dir_fd=root_fd)
+            target_text = os.readlink(selector_name, dir_fd=root_fd)
         except OSError as error:
             raise ValueError("current release selector is not a readable symlink") from error
         target = Path(target_text)
@@ -107,8 +113,7 @@ def load_trusted_current_release(
 
     current_link = _canonical_absolute(current_link, "release selector")
     deployment_root = _canonical_absolute(deployment_root, "deployment root")
-    if current_link != deployment_root / "current":
-        raise ValueError("current release selector is outside its deployment root")
+    selector_name = _trusted_selector_name(current_link, deployment_root)
     if deployment_root != Path("/opt/leo-tracker") and validator is None:
         raise ValueError("alternate deployment roots require an explicit release validator")
     root_fd = _open_absolute_directory(deployment_root)
@@ -120,7 +125,7 @@ def load_trusted_current_release(
         releases_fd = _open_directory_at(root_fd, "releases")
         metadata_root_fd = _open_directory_at(root_fd, "release-metadata")
         try:
-            target_text = os.readlink("current", dir_fd=root_fd)
+            target_text = os.readlink(selector_name, dir_fd=root_fd)
         except OSError as error:
             raise ValueError("current release selector is not a readable symlink") from error
         target = Path(target_text)
