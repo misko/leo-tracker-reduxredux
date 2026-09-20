@@ -24,7 +24,13 @@ def newest_causal(rows, measurement_ns):
     return max(eligible, key=lambda r: (r["epoch_utc_ns"], r["collected_utc_ns"], r["digest"]))
 
 
-def nearest_offline(rows, measurement_ns):
+def nearest_offline(rows, measurement_ns, side="nearest"):
+    if side not in {"nearest", "preceding", "succeeding"}:
+        raise ValueError("unknown epoch side")
+    if side == "preceding":
+        rows = [r for r in rows if r["epoch_utc_ns"] <= measurement_ns]
+    elif side == "succeeding":
+        rows = [r for r in rows if r["epoch_utc_ns"] >= measurement_ns]
     if not rows:
         raise ValueError("no archived element")
     return min(
@@ -116,6 +122,15 @@ def main():
             candidates[row["norad"]], meta["reference_utc_ns"]
         )
         old = nominal[path][row["norad"]]
+        bracket = {}
+        if a.nearest_offline:
+            for side in ["preceding", "succeeding"]:
+                try:
+                    bracket[side] = nearest_offline(
+                        candidates[row["norad"]], meta["reference_utc_ns"], side
+                    )
+                except ValueError:
+                    bracket[side] = None
         output["rows"].append(
             dict(
                 session_id=row["session_id"],
@@ -125,6 +140,7 @@ def main():
                 nominal_epoch_utc_ns=old,
                 nominal_tle_digest=meta["tle_digest"],
                 selected=selected,
+                offline_bracket=bracket,
                 strictly_newer_epoch=selected["epoch_utc_ns"] > old,
                 selected_collected_after_capture=selected["collected_utc_ns"]
                 >= meta["reference_utc_ns"],

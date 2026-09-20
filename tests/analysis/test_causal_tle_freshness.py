@@ -32,6 +32,12 @@ def test_offline_nearest_epoch_is_explicitly_different_from_causal(monkeypatch):
         dict(epoch_utc_ns=130, collected_utc_ns=150, digest="c"),
     ]
     assert nearest_offline(rows, 100) is rows[1]
+    assert nearest_offline(rows, 100, "preceding") is rows[0]
+    assert nearest_offline(rows, 100, "succeeding") is rows[1]
+    with pytest.raises(ValueError, match="no archived"):
+        nearest_offline(rows, 150, "succeeding")
+    with pytest.raises(ValueError, match="unknown epoch side"):
+        nearest_offline(rows, 100, "typo")
     assert newest_causal(rows, 100) is rows[0]
     with pytest.raises(ValueError, match="no archived"):
         nearest_offline([], 100)

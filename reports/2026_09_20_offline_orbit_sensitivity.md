@@ -82,3 +82,51 @@ No production timestamps, TLE policy, or scanner configuration changed.
 
 - [Selected element texts, epochs and provenance](2026_09_20_offline_orbit_sensitivity/nearest-epoch-audit.json)
 - [All fits and state-disagreement statistics](2026_09_20_offline_orbit_sensitivity/inference.json)
+
+## Follow-up: preceding, succeeding, and interpolated epochs
+
+The same archive audit now retains the nearest epoch on each side of recording
+start. Preceding epochs exist for all 622 assignments; succeeding epochs exist
+for 548. Median absolute distances are 8.31 h and 7.34 h respectively. This is
+still an offline comparison: even a preceding epoch can have been published
+after the capture. The causal default policy remains unchanged.
+
+| Orbit policy | All fixed error (m) | All shared-clock error (m) | Selected fixed error (m) | Selected shared-clock error (m) |
+|---|---:|---:|---:|---:|
+| Original causal catalogues | 4,800.8 | 3,805.0 | 4,582.8 | 3,887.7 |
+| Nearest epoch | 1,202.6 | 1,430.1 | 1,132.3 | 1,730.5 |
+| Nearest preceding epoch | 2,261.7 | 2,191.9 | 2,483.1 | 3,329.0 |
+| Nearest succeeding epoch | 1,483.9 | 1,318.2 | 1,322.3 | 1,501.3 |
+| Interpolated bracketing epochs | 1,315.9 | 1,469.9 | 1,204.2 | 1,772.2 |
+
+The succeeding-only run keeps the original state for the 74 assignments without
+a succeeding epoch and records those fallbacks. The interpolation experiment
+instead falls back to the nearest archived epoch when a complete nonzero-width
+bracket is unavailable. No track is silently deleted. These fallback policies
+are part of the experiment, not a claim of complete retrospective coverage.
+
+For a complete bracket, both TLEs are propagated to each observation time. The
+Earth-fixed positions are blended with the epoch-distance fraction, clamped
+to [0,1]. Velocity includes the derivative of that weight:
+`v = (1-w) v_before + w v_after + dw/dt (p_after-p_before)`.
+A finite-difference test verifies that blended velocity matches the derivative
+of blended position, including points outside the bracket. This is a smooth
+local ephemeris sensitivity experiment, not a new orbit determination or a
+dynamically constrained orbital solution. In particular, it need not represent
+an actual manoeuvre between element epochs.
+
+The selected fixed-clock evaluation RMS falls from 86.15 Hz for nearest epoch
+to 79.1 Hz for interpolation, while position error rises from 1,132 to 1,204 m.
+Again, residual reduction alone is insufficient to choose the most accurate
+position. None of these alternatives is selected by its reference error or
+promoted to production. Seven focused orbit-policy and interpolation tests pass.
+
+- [Epoch brackets and unavailable successors](2026_09_20_offline_orbit_sensitivity/bracketing-epoch-audit.json)
+- [Preceding-only fits](2026_09_20_offline_orbit_sensitivity/preceding-inference.json)
+- [Succeeding-only fits](2026_09_20_offline_orbit_sensitivity/succeeding-inference.json)
+- [Interpolated fits](2026_09_20_offline_orbit_sensitivity/interpolated-inference.json)
+
+Reproduction uses `--epoch-side preceding`, `succeeding`, or `interpolated` on
+`tools/replay_wide_alternative_tles.py` with the saved bracketing audit. All three
+require explicit offline provenance. Model inputs remain frozen from the same
+independent wide acquisition.
