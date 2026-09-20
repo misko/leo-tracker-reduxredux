@@ -3,7 +3,12 @@
 import numpy as np
 import pytest
 
-from leo.analysis.research.doppler_error_budget import information, profile, profile_shared_drift
+from leo.analysis.research.doppler_error_budget import (
+    information,
+    nuisance_project,
+    profile,
+    profile_shared_drift,
+)
 
 
 def test_offsets_use_training_only_and_support_matrix_jacobians():
@@ -56,3 +61,21 @@ def test_common_receiver_drift_preserves_distinct_offsets_and_evaluation():
     r = profile_shared_drift(y, g, session, train, t)
     np.testing.assert_allclose(r[train], 0, atol=1e-10)
     np.testing.assert_allclose(r[~train], 99, atol=1e-10)
+
+
+def test_nuisance_projection_removes_degenerate_position_direction():
+    t = np.linspace(-1, 1, 31)
+    j = np.column_stack([t, t * t])
+    a = np.column_stack([np.ones(len(t)), t])
+    out = nuisance_project(j, a)
+    np.testing.assert_allclose(out[:, 0], 0, atol=1e-14)
+    assert np.linalg.norm(out[:, 1]) > 1
+    np.testing.assert_allclose(a.T @ out, 0, atol=1e-13)
+    np.testing.assert_allclose(nuisance_project(j, a * [1e12, 1e-12]), out, atol=1e-14)
+
+
+def test_nuisance_projection_preserves_information_without_nuisance():
+    j = np.eye(2)
+    np.testing.assert_array_equal(nuisance_project(j, np.zeros((2, 1))), j)
+    with pytest.raises(ValueError, match="finite"):
+        nuisance_project(j, np.full((2, 1), np.nan))

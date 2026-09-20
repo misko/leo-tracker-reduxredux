@@ -67,6 +67,25 @@ def information(jacobian_hz_per_km, sigma_hz):
     return result
 
 
+def nuisance_project(jacobian, nuisance):
+    """Remove sensitivities reproducible by free nuisance parameters.
+
+    Inputs must already be whitened using the same observation noise model.
+    Call with fitting rows only when estimating fitting-data information.
+    Column normalization makes the rank decision independent of parameter units.
+    """
+    j, a = np.asarray(jacobian, float), np.asarray(nuisance, float)
+    if j.ndim != 2 or a.ndim != 2 or len(j) != len(a):
+        raise ValueError("compatible two-dimensional Jacobians required")
+    if not np.all(np.isfinite(j)) or not np.all(np.isfinite(a)):
+        raise ValueError("finite Jacobians required")
+    scale = np.linalg.norm(a, axis=0)
+    a = a[:, scale > 0] / scale[scale > 0]
+    if not a.shape[1]:
+        return j.copy()
+    return j - a @ np.linalg.lstsq(a, j, rcond=None)[0]
+
+
 def profile_shared_drift(value, segment, session, training, time):
     """Segment offsets plus one source-balanced linear drift per session."""
     residual = profile(value, segment, training)
