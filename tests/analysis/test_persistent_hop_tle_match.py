@@ -126,6 +126,24 @@ def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining(m
         )
 
     monkeypatch.setattr(matcher, "score_radio_polynomial_null", overwhelmingly_better_polynomial)
+    original_field = matcher._score_field
+
+    def overwhelmingly_better_wrong_time(field, **kwargs):
+        result = original_field(field, **kwargs)
+        if result.field_delta_s:
+            result = replace(
+                result,
+                association=replace(
+                    result.association,
+                    scores=tuple(
+                        replace(score, heldout_predictive_negative_log_score=-1e9)
+                        for score in result.association.scores
+                    ),
+                ),
+            )
+        return result
+
+    monkeypatch.setattr(matcher, "_score_field", overwhelmingly_better_wrong_time)
     payload = _snapshot_payload()
     graph = _zero_response_graph(payload)
     support = CataloguePredictionSupportV1.from_graph(graph)
@@ -197,6 +215,12 @@ def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining(m
     )
     assert not any(
         reason.startswith("radio-polynomial-null") for reason in result.abstention_reasons
+    )
+    assert not any(reason.startswith("wrong-time-") for reason in result.abstention_reasons)
+    assert all(
+        field.association.scores[0].heldout_predictive_negative_log_score == -1e9
+        for field in result.field_matches
+        if field.field_delta_s
     )
 
 
