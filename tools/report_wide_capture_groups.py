@@ -64,6 +64,8 @@ for ax, clock in zip(axes, [False, True], strict=True):
             if key[0] == "sample_rate_hz"
             else "CH" + row["group"]
             if key[0] == "channel"
+            else row["group"][5:13].replace("T", " ") + " UTC"
+            if key[0] == "utc_6h"
             else row["group"]
         )
         ax.scatter(
