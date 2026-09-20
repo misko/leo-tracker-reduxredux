@@ -205,7 +205,10 @@ def build_report(
     bulk_root: Path = Path("/srv/bulk/leo"),
     tle_root: Path = Path("/var/lib/leo/tle"),
     site_name: str = "spinnaker-sausalito",
+    maximum_tracks: int | None = None,
 ) -> dict:
+    if maximum_tracks is not None and maximum_tracks < 1:
+        raise ValueError("maximum tracks must be positive")
     sources = ScannerTrackingInputStore(bulk_root)
     try:
         source = sources.load(session_id)
@@ -253,6 +256,8 @@ def build_report(
     tracks: list[dict[str, Any]] = []
     for hypothesis in trajectory.hypotheses:
         for tracklet_id in hypothesis.tracklet_ids:
+            if maximum_tracks is not None and len(tracks) >= maximum_tracks:
+                break
             if tracklet_id in seen:
                 continue
             seen.add(tracklet_id)
@@ -355,6 +360,8 @@ def build_report(
                     "candidates": candidates,
                 }
             )
+        if maximum_tracks is not None and len(tracks) >= maximum_tracks:
+            break
 
     tracks.sort(key=lambda item: item["start_s"])
     fig, axes = plt.subplots(len(tracks), 1, figsize=(14, 3.4 * len(tracks)), squeeze=False)

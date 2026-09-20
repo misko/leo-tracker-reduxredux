@@ -37,6 +37,7 @@ def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str):
                 bulk_root=bulk_root,
                 tle_root=tle_root,
                 site_name=site_name,
+                maximum_tracks=32,
             )
             rendered = []
             for index, (track, filename) in enumerate(
