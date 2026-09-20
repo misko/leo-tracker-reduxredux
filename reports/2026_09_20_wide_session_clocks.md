@@ -117,3 +117,29 @@ The next transfer experiment repeats the full 9,000-mile search on the recent
 48-hour RF-only export (211 recordings / 684 tracks), rather than inheriting
 the earlier field-of-view-assisted identities. The historical 937–941 m result
 must not be represented as a demonstrated result on that newer corpus.
+
+## Independent Earth-rotation check
+
+The frame converter documents its approximation of UT1 by UTC. We checked
+the [IERS rapid-service file](https://datacenter.iers.org/products/eop/rapid/standard/finals2000A.all)
+rather than fitting an Earth-rotation correction from the antenna reference.
+The [audit excerpt](2026_09_20_fresh_wide_position/earth-rotation-audit.json)
+retains the source hash, retrieval time, exact daily rows, uncertainty, and
+observed/predicted flags.
+
+| UTC date at midnight | UT1−UTC | Status |
+|---|---:|---|
+| September 7 | +0.0006878 s | Rapid observed |
+| September 8 | +0.0002138 s | Rapid observed |
+| September 18 | −0.0091919 s | Predicted |
+| September 19 | −0.0097070 s | Predicted |
+| September 20 | −0.0102799 s | Predicted |
+
+One second of Earth rotation corresponds to approximately 465.1 m at the
+equator, less at the receiver latitude. These offsets therefore correspond
+to at most about 0.32 m on the historical day and 4.8 m on September 20.
+They cannot explain the kilometre-scale residual displacement. This is a
+rotation-scale bound, not an executed nonlinear position correction. No orbit
+epoch, recording timestamp, or production frame-conversion code was changed.
+The recently retrieved observed values are an offline audit, not a claim that
+this particular file was available during the historical recording.
