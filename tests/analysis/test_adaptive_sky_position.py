@@ -1,6 +1,7 @@
 """Wide prior geometry and randomized partition provenance for the sky study."""
 
 import importlib.util
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -69,3 +70,38 @@ def test_site_selected_ids_cannot_enter_a_blind_inventory():
         1,
         2,
     ]
+
+
+def test_refined_clock_is_forwarded_to_every_catalogue_search_shard(tmp_path, monkeypatch):
+    directory = Path(__file__).resolve().parents[2] / "tools"
+    monkeypatch.syspath_prepend(str(directory))
+    import study_adaptive_sky_position as module
+
+    evidence = tmp_path / "evidence"
+    (evidence / "evidence").mkdir(parents=True)
+    (evidence / "inventory.json").write_text(
+        json.dumps(
+            dict(
+                scans=[dict(included=True, reference_utc_ns=i, session_id=str(i)) for i in range(4)]
+            )
+        )
+    )
+
+    class CapturePool:
+        def __init__(self, max_workers):
+            assert max_workers == 2
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def map(self, function, tasks):
+            assert len(tasks) == 2
+            assert all(t.clock_s == -0.225 for t in tasks)
+            raise RuntimeError("captured all shard inputs")
+
+    monkeypatch.setattr(module, "ProcessPoolExecutor", CapturePool)
+    with pytest.raises(RuntimeError, match="captured all shard inputs"):
+        module.search(evidence, tmp_path / "run", 50, None, 2, clock_s=-0.225)

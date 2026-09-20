@@ -85,3 +85,16 @@ def test_replay_recovers_position_without_evaluation_leakage(monkeypatch):
     np.testing.assert_allclose(grouped["x_km"][:2], truth, atol=0.001)
     np.testing.assert_allclose(grouped["clock_offsets_s"], [0, 0.2], atol=1e-4)
     assert grouped["clock_s"] is None
+    elevated = region.points([truth[0]], [truth[1]], 300).ecef_km[0]
+    delta = np.array(shifted["0.2"]["p"]) - elevated
+    data["y"] = (
+        -REFERENCE_RF_HZ
+        / LIGHT_KM_S
+        * np.sum(delta * np.array(shifted["0.2"]["v"]), axis=1)
+        / np.linalg.norm(delta, axis=1)
+        + segment * 10000
+    )
+    height = module.fit(data, region, [0, 0], "observation", False, fit_clock=True, fit_height=True)
+    np.testing.assert_allclose(height["x_km"][:2], truth, atol=0.001)
+    assert abs(height["altitude_m"] - 300) < 1
+    assert abs(height["clock_s"] - 0.2) < 1e-4

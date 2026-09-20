@@ -57,6 +57,9 @@ def test_freeze_uses_training_mode_and_rejects_changed_inputs(tmp_path, monkeypa
     )
     _, assignments, _ = module.freeze_assignments(run, evidence)
     assert [a["norad"] for a in assignments] == [100, 101, 102]
+    parent["clock_s"] = -0.225
+    (run / "result.json").write_text(json.dumps(parent))
+    assert module.freeze_assignments(run, evidence)[1] == assignments
     source.write_text(source.read_text() + " ")
     with pytest.raises(ValueError, match="changed"):
         module.freeze_assignments(run, evidence)
