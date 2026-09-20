@@ -36,6 +36,21 @@ the recording-clock model must be interpreted as a nuisance sensitivity model.
 A subsequent physically constrained replay should use each recorded interval
 and separately represent orbit uncertainty, rather than conflating the two.
 
+The research replay now accepts `--timing-audit` on
+`tools/replay_wide_session_clocks.py`. It binds numerical session groups to
+recording identities through the frozen assignments, verifies their evidence
+UTC references against the manifest estimates, and constrains each correction
+to its recorded earliest/latest interval. Intervals outside the propagated
+±0.5 s domain are rejected rather than extrapolated. The existing unconstrained
+comparison remains available. This option has not changed production analysis.
+
+Validation: the new constraint test first failed because the fitter did not
+accept interval bounds, then passed after implementation. Five focused tests
+cover physical position/clock recovery, fitting/evaluation isolation, constrained
+clock estimates, invalid intervals, recording/reference mapping, and grouping.
+The constrained recent-wide replay is pending the independent search result;
+no position improvement is claimed from this implementation alone.
+
 [Manifest timing fields and manifest digests](2026_09_20_track_position_information/capture-timing-audit.json)
 were read through `AdaptiveHopIqStore.inspect`, without reading IQ or changing
 stored recordings. [Conditional recording-clock results](2026_09_20_recording_clock_transfer.md)

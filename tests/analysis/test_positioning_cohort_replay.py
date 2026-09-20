@@ -110,6 +110,36 @@ def test_replay_recovers_position_without_evaluation_leakage(monkeypatch):
     np.testing.assert_allclose(grouped["x_km"][:2], truth, atol=0.001)
     np.testing.assert_allclose(grouped["clock_offsets_s"], [0, 0.2], atol=1e-4)
     assert grouped["clock_s"] is None
+    constrained = module.fit(
+        data,
+        region,
+        [0, 0],
+        "observation",
+        False,
+        fit_clock=True,
+        clock_groups=clock_groups,
+        clock_bounds={0: (-0.05, 0.05), 1: (-0.1, 0.1)},
+    )
+    assert -0.05 <= constrained["clock_offsets_s"][0] <= 0.05
+    assert -0.1 <= constrained["clock_offsets_s"][1] <= 0.1
+    assert constrained["clock_at_bound"]
+    assert constrained["training_rms_hz"] > grouped["training_rms_hz"] + 0.01
+    for bounds in [
+        {0: (-0.1, 0.1)},
+        {0: (-0.6, 0.1), 1: (-0.1, 0.1)},
+        {0: (0.1, -0.1), 1: (-0.1, 0.1)},
+    ]:
+        with pytest.raises(ValueError, match="clock bounds"):
+            module.fit(
+                data,
+                region,
+                [0, 0],
+                "observation",
+                False,
+                fit_clock=True,
+                clock_groups=clock_groups,
+                clock_bounds=bounds,
+            )
     saved_y = data["y"].copy()
     data["y"][~train] += 1e6
     grouped_corrupted = module.fit(

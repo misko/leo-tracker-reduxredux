@@ -105,6 +105,7 @@ def fit(
     fit_clock=False,
     clock_groups=None,
     fit_height=False,
+    clock_bounds=None,
 ):
     mask = np.ones(len(data["y"]), bool) if subset is None else subset
     d = {k: v[mask] for k, v in data.items()}
@@ -118,6 +119,20 @@ def fit(
         np.zeros(len(group), int) if clock_groups is None else np.asarray(clock_groups)[mask],
         return_inverse=True,
     )
+    if clock_bounds is not None and not fit_clock:
+        raise ValueError("clock bounds require clock fitting")
+    intervals = np.tile([-0.5, 0.5], (len(labels), 1))
+    if clock_bounds is not None:
+        if any(label not in clock_bounds for label in labels):
+            raise ValueError("clock bounds missing a fitted group")
+        intervals = np.asarray([clock_bounds[label] for label in labels], dtype=float)
+        if (
+            intervals.shape != (len(labels), 2)
+            or not np.all(np.isfinite(intervals))
+            or np.any(intervals[:, 0] >= intervals[:, 1])
+            or np.any(abs(intervals) > 0.5)
+        ):
+            raise ValueError("clock bounds must be finite increasing intervals inside +/-0.5 s")
 
     clock_start = 3 if fit_height else 2
 
@@ -161,9 +176,9 @@ def fit(
         upper.append(5.0)
         start.append(0.0)
     if fit_clock:
-        lower.extend([-0.5] * len(labels))
-        upper.extend([0.5] * len(labels))
-        start.extend([0.0] * len(labels))
+        lower.extend(intervals[:, 0])
+        upper.extend(intervals[:, 1])
+        start.extend(np.clip(np.zeros(len(labels)), intervals[:, 0], intervals[:, 1]))
     answer = least_squares(
         objective,
         start,
@@ -198,7 +213,17 @@ def fit(
         clock_group_values=labels.tolist() if fit_clock else [],
         clock_offsets_s=answer.x[clock_start:].tolist() if fit_clock else [],
         clock_fitted=fit_clock,
-        clock_at_bound=bool(fit_clock and np.any(abs(answer.x[clock_start:]) > 0.499)),
+        clock_bounds_s=intervals.tolist() if fit_clock else [],
+        clock_at_bound=bool(
+            fit_clock
+            and np.any(
+                np.minimum(
+                    answer.x[clock_start:] - intervals[:, 0],
+                    intervals[:, 1] - answer.x[clock_start:],
+                )
+                < 0.001
+            )
+        ),
         segment_training_rms=segment_rms,
     )
 
