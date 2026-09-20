@@ -1,5 +1,9 @@
 # Strictly pre-capture TLEs versus retrospective positioning
 
+Follow-up: [what changed in the orbits, and which low-dimensional corrections
+explain it](2026_09_20_orbit_update_modes.md), including every materially improved
+episode and controls separating orbital changes from receiver-position changes.
+
 **Using only TLE information already collected before each capture, with element
 epochs also strictly before capture start, we obtain 4.50 km all-track position
 error—not sub-kilometre accuracy.** The otherwise corresponding retrospective
