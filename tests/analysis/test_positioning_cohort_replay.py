@@ -4,8 +4,30 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from leo.analysis.research.regional_doppler import LIGHT_KM_S, REFERENCE_RF_HZ, Region
+
+
+def test_pass_weights_do_not_multiply_evidence_for_duplicate_channels(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from compare_positioning_cohorts import fitting_weights
+
+    data = dict(
+        segment=np.array([0, 0, 1, 1, 2, 2]),
+        pass_group=np.array([7, 7, 7, 7, 8, 8]),
+        training=np.array([True, False, True, False, True, False]),
+    )
+    w = fitting_weights(data, "pass")
+    for group in [7, 8]:
+        assert np.sum(w[(data["pass_group"] == group) & data["training"]] ** 2) == pytest.approx(1)
+    # Extra evaluation observations must not change a pass's fitting weight.
+    extended = {
+        key: np.concatenate([value, value[~data["training"]]]) for key, value in data.items()
+    }
+    np.testing.assert_allclose(fitting_weights(extended, "pass")[:6], w)
+    with pytest.raises(ValueError, match="unknown fitting weight"):
+        fitting_weights(data, "typo")
 
 
 def test_replay_recovers_position_without_evaluation_leakage(monkeypatch):
@@ -48,6 +70,9 @@ def test_replay_recovers_position_without_evaluation_leakage(monkeypatch):
     data = dict(y=y, p=p, v=v, segment=segment, training=train, episode=segment)
     a = module.fit(data, region, [0, 0], "observation", False)
     np.testing.assert_allclose(a["x_km"], truth, atol=1e-5)
+    data["pass_group"] = segment // 2
+    balanced = module.fit(data, region, [0, 0], "pass", False)
+    np.testing.assert_allclose(balanced["x_km"], truth, atol=1e-5)
     data["y"] = y.copy()
     data["y"][~train] += 1e6
     b = module.fit(data, region, [0, 0], "observation", False)

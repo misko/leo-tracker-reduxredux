@@ -61,3 +61,50 @@ causal TLE snapshots, and a horizon constraint rather than the known-site FoV.
 Its identities and results must be evaluated separately. The historical
 sub-kilometre observation is not a demonstrated accuracy guarantee for the
 recent dataset.
+
+## Candidate-pass weighting audit
+
+The recent 599 source tracks represent 450 candidate satellite passes.
+113 passes contribute multiple source tracks, with up to five tracks per pass.
+Treating every source sample as equally informative can let a densely observed
+pass dominate. An alternative gives each pass total fitting weight one:
+each fitting residual is weighted by the inverse square root of the number of
+fitting observations in its pass. Evaluation samples do not set these weights.
+This is an equal-pass sensitivity test, not a full correlated-noise likelihood.
+
+The current pass IDs are inherited from the earlier error-budget state bundle.
+Historical groups are NORAD/recording pairs. All identities and cohort selections
+remain frozen. Every variant below is reported; none is selected by distance to
+the antenna reference. RMS columns remain unweighted observation RMS for
+comparability, even though the fitting objective is pass-balanced and robust.
+
+| Cohort | Shared clock fitted? | Candidate passes | Position error | Fitting RMS | Random evaluation RMS |
+|---|---|---:|---:|---:|---:|
+| Historical all | No | 269 | 2,128.6 m | 148.35 Hz | 173.13 Hz |
+| Historical all | Yes | 269 | 1,349.5 m | 142.50 Hz | 168.33 Hz |
+| Historical selected | No | 86 | 1,805.7 m | 80.17 Hz | 93.59 Hz |
+| Historical selected | Yes | 86 | 1,111.8 m | 79.71 Hz | 92.89 Hz |
+| Current all | No | 450 | 5,285.6 m | 158.94 Hz | 160.38 Hz |
+| Current all | Yes | 450 | 4,121.6 m | 158.79 Hz | 158.70 Hz |
+| Current selected | No | 173 | 4,880.1 m | 68.77 Hz | 84.41 Hz |
+| Current selected | Yes | 173 | 4,220.7 m | 68.53 Hz | 83.82 Hz |
+
+All fits converge. There is no per-recording clock in this experiment. Balancing
+passes changes the result but does not remove the remaining displacement. It
+does not explain the large historical/recent-corpus difference by itself.
+
+The [inference artifact](2026_09_20_track_position_information/pass-balanced-inference.json)
+contains input digests and all eight fits. Reproduce with:
+
+```bash
+PYTHONPATH=src:tools python tools/replay_pass_balanced_position.py \
+  --historical-run /tmp/leo-wide-randomized-polish \
+  --current-states reports/2026_09_20_doppler_error_budget/states.npz \
+  --current-parent reports/2026_09_20_matched_positioning/inference.json \
+  --current-information reports/2026_09_20_track_position_information/information.json \
+  --output NEW_OUTPUT.json
+```
+
+Tests verify equal total pass weights, independence from evaluation sample count,
+rejection of unknown weighting modes, and physical position recovery with the
+pass-balanced fitter. Default observation and segment weighting remain available.
