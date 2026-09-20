@@ -43,6 +43,46 @@ includes parent/state digests, clock values, both cohorts, and exact refits.
 The existing synthetic cohort replay test passes, including recovery of
 separate clock groups and invariance to evaluation-data corruption.
 
-Before treating this as the completed positioning result, test satellite/session
-stability and the active clock bounds using physically supported timing limits.
-Do not choose bounds or observations based on distance to the reference.
+## Stability and timing-authority audit
+
+The `--stability` option repeats the selected-cohort inference sixteen times,
+removing each NORAD-modulo-eight group, then each recording-index-modulo-eight
+group. All identities and the parent quality selection remain frozen, and each
+fit starts at the same parent wide-search mode. These are sensitivity tests,
+not independent geographic validations or confidence intervals.
+
+| Removed group | Satellite-group error (m) | Recording-group error (m) |
+|---|---:|---:|
+| 0 | 935.8 | 1043.2 |
+| 1 | 1147.8 | 999.7 |
+| 2 | 1228.0 | 1019.1 |
+| 3 | 1044.3 | 1013.2 |
+| 4 | 1036.5 | 998.8 |
+| 5 | 877.0 | 888.7 |
+| 6 | 1024.7 | 986.2 |
+| 7 | 879.7 | 966.2 |
+
+Only three of eight satellite removals and five of eight recording removals
+remain below one kilometre. All sixteen fits converge. The full-data result
+is reproducible, but is close enough to the threshold that ordinary source
+removal changes whether it passes. No removal is selected as the answer.
+
+The original [recording inventory](figures/2026_09_07_eight_hour_scan_pnt/inventory.json)
+contains host-bracketed device-counter timing for these scans. Full first-sample
+bracket widths range from **0.866439 to 1.923855 ms**, median **1.3336045 ms**.
+This bounds the recorded host/device transaction, not an independently surveyed
+absolute UTC error. Nevertheless, the fitted tens-to-hundreds-of-milliseconds
+corrections cannot be explained by these bracket widths. Their improvement may
+represent absorbed TLE/orbit error or other model mismatch. It is not evidence
+of a measured per-recording hardware clock defect, and does not justify changing
+capture timestamps or relaxing firmware timing qualification.
+
+[Full audit inference](2026_09_20_fresh_wide_position/session-clock-audit.json)
+stores both baseline fits, exact-propagation checks, and all sixteen removals.
+The grouped-clock synthetic test also verifies that corrupting evaluation CFO
+by 1 MHz does not alter fitted positions or clock corrections.
+
+The next model audit should separate independently bounded receiver timing from
+satellite orbit uncertainty, rather than widening clock limits until the answer
+is closer to the reference. No bound or observation is selected from reference
+distance. The sub-kilometre goal remains under validation.

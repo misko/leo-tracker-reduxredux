@@ -85,6 +85,14 @@ def test_replay_recovers_position_without_evaluation_leakage(monkeypatch):
     np.testing.assert_allclose(grouped["x_km"][:2], truth, atol=0.001)
     np.testing.assert_allclose(grouped["clock_offsets_s"], [0, 0.2], atol=1e-4)
     assert grouped["clock_s"] is None
+    saved_y = data["y"].copy()
+    data["y"][~train] += 1e6
+    grouped_corrupted = module.fit(
+        data, region, [0, 0], "observation", False, fit_clock=True, clock_groups=clock_groups
+    )
+    np.testing.assert_allclose(grouped_corrupted["x_km"], grouped["x_km"], atol=1e-8)
+    assert grouped_corrupted["evaluation_rms_hz"] > 9e5
+    data["y"] = saved_y
     elevated = region.points([truth[0]], [truth[1]], 300).ecef_km[0]
     delta = np.array(shifted["0.2"]["p"]) - elevated
     data["y"] = (

@@ -20,6 +20,7 @@ def main():
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence", type=Path)
+    parser.add_argument("--stability", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("fresh output required")
@@ -70,6 +71,24 @@ def main():
             )
         output["models"].append(dict(selection=selection, **result))
         print(selection, result["latitude_deg"], result["longitude_deg"], flush=True)
+    if args.stability:
+        output["stability"] = []
+        base = np.isin(data["episode"], ids)
+        for grouping in ["norad", "session"]:
+            for fold in range(8):
+                mask = base & (data[grouping] % 8 != fold)
+                result = fit(
+                    data,
+                    Region(**parent["region"]),
+                    parent["initial"],
+                    "observation",
+                    True,
+                    subset=mask,
+                    fit_clock=True,
+                    clock_groups=data["session"],
+                )
+                output["stability"].append(dict(grouping=grouping, fold=fold, **result))
+                print(grouping, fold, result["latitude_deg"], result["longitude_deg"], flush=True)
     write_json(args.output, output)
 
 
