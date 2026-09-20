@@ -12,6 +12,9 @@ def test_shared_endpoint_serves_partial_trajectory_and_closed_evidence(tmp_path,
     app = FastAPI()
     app.include_router(scanner_tracking_router(ScannerTrackingStore(tmp_path)))
     client = TestClient(app)
+    product = client.get("/api/v1/scanner/tracking/scan-test").json()["product"]
+    assert product["schema_version"] == 11
+    assert product["control_comparison_policy"] == "polynomial-and-wrong-time-diagnostic-only-v1"
     assert (
         client.get("/api/v1/scanner/tracking/scan-test").json()["product"]["tle_state"]
         == "unavailable"

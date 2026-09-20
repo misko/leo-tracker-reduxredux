@@ -329,6 +329,16 @@ class ScannerTrackingProductV10(ScannerTrackingProductV9):
         return self
 
 
+class ScannerTrackingProductV11(ScannerTrackingProductV10):
+    """Nominal catalogue gates; polynomial and wrong-time comparisons are diagnostics."""
+
+    schema_version: Literal[11] = 11  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v11"] = "scanner-shared-tracking-v11"  # type: ignore[assignment]
+    control_comparison_policy: Literal["polynomial-and-wrong-time-diagnostic-only-v1"] = (  # type: ignore[assignment]
+        "polynomial-and-wrong-time-diagnostic-only-v1"
+    )
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -409,6 +419,14 @@ class ScannerTrackingStatusV10(ContractModel):
     product: ScannerTrackingProductV10 | None = None
 
 
+class ScannerTrackingStatusV11(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV11 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -423,6 +441,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV8
         | ScannerTrackingStatusV9
         | ScannerTrackingStatusV10
+        | ScannerTrackingStatusV11
     ): ...
     def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
 
