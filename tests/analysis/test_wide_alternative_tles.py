@@ -4,6 +4,21 @@ import numpy as np
 import pytest
 
 
+def test_orbit_flags_use_signal_degradation_only(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from rerank_offline_orbit_flags import flagged
+
+    row = dict(
+        selected=True,
+        original_max_segment_training_rms_hz=26,
+        updated_max_segment_training_rms_hz=349,
+    )
+    assert flagged(row)
+    assert not flagged(dict(row, selected=False))
+    assert not flagged(dict(row, updated_max_segment_training_rms_hz=80))
+    assert flagged(dict(row, selected=False, updated_max_segment_training_rms_hz=2000))
+
+
 def test_residual_audit_rejects_mixed_parent_artifacts(monkeypatch, tmp_path):
     import json
     import sys
