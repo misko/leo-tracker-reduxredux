@@ -24,12 +24,26 @@ def newest_causal(rows, measurement_ns):
     return max(eligible, key=lambda r: (r["epoch_utc_ns"], r["collected_utc_ns"], r["digest"]))
 
 
+def nearest_offline(rows, measurement_ns):
+    if not rows:
+        raise ValueError("no archived element")
+    return min(
+        rows,
+        key=lambda r: (abs(r["epoch_utc_ns"] - measurement_ns), r["collected_utc_ns"], r["digest"]),
+    )
+
+
 def main():
     from leo.operations.tle_archive import TleArchiveReader
 
     p = argparse.ArgumentParser(description=__doc__)
     for key in ["archive", "evidence", "assignments", "output"]:
         p.add_argument("--" + key, type=Path, required=True)
+    p.add_argument(
+        "--nearest-offline",
+        action="store_true",
+        help="Allow later publications and select nearest epoch; not a causal device result",
+    )
     a = p.parse_args()
     if a.output.exists():
         raise ValueError("fresh output required")
@@ -47,7 +61,9 @@ def main():
     snapshots = [
         s
         for s in archive.list_snapshots()
-        if first - 7 * 86400 * 10**9 <= s.collected_utc_ns < last
+        if first - 7 * 86400 * 10**9
+        <= s.collected_utc_ns
+        < last + (7 * 86400 * 10**9 if a.nearest_offline else 0)
     ]
     cached, candidates = {}, {n: [] for n in wanted}
     for i, snapshot in enumerate(snapshots):
@@ -75,7 +91,12 @@ def main():
     output = dict(
         assignments_digest=digest(a.assignments),
         evaluation_location_used=False,
-        selection="maximum causal element epoch; then collection time and digest",
+        selection=(
+            "nearest archived epoch, including later publications; offline only"
+            if a.nearest_offline
+            else "maximum causal element epoch; then collection time and digest"
+        ),
+        offline_noncausal=a.nearest_offline,
         lookback_days=7,
         archive_snapshot_count=len(snapshots),
         rows=[],
@@ -91,7 +112,9 @@ def main():
             nominal[path] = dict(
                 zip(cat.satellite_numbers, cat.element_epoch_utc_ns(), strict=True)
             )
-        selected = newest_causal(candidates[row["norad"]], meta["reference_utc_ns"])
+        selected = (nearest_offline if a.nearest_offline else newest_causal)(
+            candidates[row["norad"]], meta["reference_utc_ns"]
+        )
         old = nominal[path][row["norad"]]
         output["rows"].append(
             dict(
@@ -103,6 +126,8 @@ def main():
                 nominal_tle_digest=meta["tle_digest"],
                 selected=selected,
                 strictly_newer_epoch=selected["epoch_utc_ns"] > old,
+                selected_collected_after_capture=selected["collected_utc_ns"]
+                >= meta["reference_utc_ns"],
             )
         )
     write_json(a.output, output)

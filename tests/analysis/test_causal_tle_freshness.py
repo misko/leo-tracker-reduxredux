@@ -22,6 +22,21 @@ def test_newest_epoch_respects_both_causal_times(monkeypatch):
         newest_causal(rows, 70)
 
 
+def test_offline_nearest_epoch_is_explicitly_different_from_causal(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from audit_causal_tle_freshness import nearest_offline, newest_causal
+
+    rows = [
+        dict(epoch_utc_ns=80, collected_utc_ns=90, digest="a"),
+        dict(epoch_utc_ns=101, collected_utc_ns=110, digest="b"),
+        dict(epoch_utc_ns=130, collected_utc_ns=150, digest="c"),
+    ]
+    assert nearest_offline(rows, 100) is rows[1]
+    assert newest_causal(rows, 100) is rows[0]
+    with pytest.raises(ValueError, match="no archived"):
+        nearest_offline([], 100)
+
+
 @pytest.mark.parametrize("epoch, collected", [(110, 90), (90, 110), (50, 60)])
 def test_replay_rejects_future_or_non_newer_elements(tmp_path, monkeypatch, epoch, collected):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
