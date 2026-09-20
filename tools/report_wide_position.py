@@ -21,14 +21,26 @@ def sha(path):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    for name in ["coarse", "fine", "polish", "height", "reference", "output"]:
+    for name in ["coarse", "fine", "polish", "reference", "output"]:
         p.add_argument("--" + name, type=Path, required=True)
+    p.add_argument("--height", type=Path)
+    p.add_argument("--clock-replay", type=Path, action="append", default=[])
     a = p.parse_args()
     a.output.mkdir(parents=True, exist_ok=False)
     # Seal inference before reading the independently supplied reference.
-    sources = {str(path): sha(path) for path in [a.polish / "inference.json", a.height]}
+    paths = [a.polish / "inference.json", *a.clock_replay]
+    if a.height:
+        paths.append(a.height)
+    sources = {str(path): sha(path) for path in paths}
     result = json.loads((a.polish / "inference.json").read_text())
-    height = json.loads(a.height.read_text())
+    if (
+        not result["complete"]
+        or result["position_truth_used"]
+        or result["prior_matched_norads_used"]
+    ):
+        raise ValueError("completed independent inference required")
+    height = json.loads(a.height.read_text()) if a.height else {"models": []}
+    clocks = [(path, json.loads(path.read_text())) for path in a.clock_replay]
     reference = json.loads(a.reference.read_text())
     rows = []
 
@@ -52,6 +64,9 @@ def main():
 
     for row in result["models"]:
         rows.append(evaluate(row["label"], row))
+    for path, replay in clocks:
+        for row in replay["models"]:
+            rows.append(evaluate(path.stem + ":" + row["selection"], row))
     rows.append(evaluate("exact-clock-refit", result["exact_clock_refit"]))
     folds = [
         evaluate("fold-" + str(row["excluded_norad_mod8"]), row)
@@ -75,7 +90,10 @@ def main():
     )
     for name in ["inference.json", "inputs.json", "exact-inputs.json", "states.npz"]:
         shutil.copy2(a.polish / name, a.output / name)
-    shutil.copy2(a.height, a.output / "height-inference.json")
+    if a.height:
+        shutil.copy2(a.height, a.output / "height-inference.json")
+    for path, _ in clocks:
+        shutil.copy2(path, a.output / path.name)
     for label, directory in [("coarse", a.coarse), ("fine", a.fine)]:
         destination = a.output / label
         destination.mkdir()
@@ -107,7 +125,7 @@ def main():
         aspect="equal",
     )
     fig.colorbar(colors, ax=axes[0], label="Training composite-score loss (clipped at 5,000)")
-    for row in rows[:4]:
+    for row in rows[:-1]:
         axes[1].plot(
             row["east_km"], row["north_km"], "o", label=f"{row['label']}: {row['error_m']:.0f} m"
         )
@@ -123,7 +141,7 @@ def main():
     axes[1].set(
         xlabel="Approximate east displacement from antenna (km)",
         ylabel="Approximate north displacement (km)",
-        title="Local fit: 1,067.7 m near miss",
+        title="Local estimates versus evaluation-only antenna reference",
         aspect="equal",
     )
     axes[1].legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2)
