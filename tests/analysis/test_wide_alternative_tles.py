@@ -4,6 +4,18 @@ import numpy as np
 import pytest
 
 
+def test_shared_clock_intersection_uses_only_selected_sessions(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from replay_wide_alternative_tles import shared_clock_bounds
+
+    bounds = {1: (-0.1, 0.12), 2: (-0.09, 0.11), 3: (0.2, 0.3)}
+    assert shared_clock_bounds(bounds, [1, 2, 1]) == {0: (-0.09, 0.11)}
+    with pytest.raises(ValueError, match="no shared interval"):
+        shared_clock_bounds(bounds, [1, 3])
+    with pytest.raises(KeyError):
+        shared_clock_bounds(bounds, [4])
+
+
 def test_blended_velocity_is_derivative_of_blended_position(monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
     from replay_wide_alternative_tles import blend_states
