@@ -213,7 +213,15 @@ def polish(
             "parent_result_digest": digest(run / "result.json"),
             "region": as_region(region),
             "position_truth_used": False,
-            "identity_source": "blind regional training mode",
+            "identity_source": (
+                "site-conditioned catalogue candidates; not blind geolocation"
+                if parent.get("prior_matched_norads_used")
+                else "blind regional training mode"
+            ),
+            "prior_matched_norads_used": parent.get("prior_matched_norads_used", False),
+            "catalogue_minimum_elevation_deg": parent.get("score", {}).get(
+                "minimum_elevation_deg", -1.0
+            ),
             "training_only_episode_gate": {
                 "minimum_signal_weight": min_signal_weight,
                 "maximum_training_rms_hz": max_train_rms_hz,

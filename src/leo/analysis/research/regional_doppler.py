@@ -31,8 +31,11 @@ class Region:
             raise ValueError("region must be finite")
         if not -85 <= self.latitude_deg <= 85 or not -180 <= self.longitude_deg <= 180:
             raise ValueError("region centre outside supported coordinates")
-        if not 0 < min(self.width_km, self.height_km) <= max(self.width_km, self.height_km) <= 5000:
-            raise ValueError("region dimensions must be in (0, 5000] km")
+        if (
+            min(self.width_km, self.height_km) <= 0
+            or np.hypot(self.width_km, self.height_km) / 2 >= np.pi * 6371.0088
+        ):
+            raise ValueError("region dimensions must be positive and corners short of the antipode")
 
     def coordinates(self, east_km, north_km):
         """Spherical azimuthal-equidistant map; WGS84 used for Doppler itself.
@@ -110,6 +113,7 @@ class ObservationArc:
     frequency_hz: np.ndarray
     segment: np.ndarray
     training: np.ndarray
+    partition: str = "chronological"
 
     def __post_init__(self):
         n = len(self.time_s)
@@ -126,7 +130,11 @@ class ObservationArc:
             mask = self.segment == group
             if min(np.sum(mask & self.training), np.sum(mask & ~self.training)) < 2:
                 raise ValueError("each segment needs two train and two test observations")
-            if max(self.time_s[mask & self.training]) >= min(self.time_s[mask & ~self.training]):
+            if self.partition not in {"chronological", "randomized"}:
+                raise ValueError("unknown observation partition")
+            if self.partition == "chronological" and max(self.time_s[mask & self.training]) >= min(
+                self.time_s[mask & ~self.training]
+            ):
                 raise ValueError("training observations must precede held-out observations")
 
 
