@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
+import leo.analysis.persistent_hop_tle_match as matcher
 from leo.analysis.catalogue_population import select_response_free_starlink_population
 from leo.analysis.catalogue_prediction import (
     ExactTauPolicy,
@@ -109,7 +112,20 @@ def _zero_response_graph(payload: str) -> PhysicalEpisodeGraphV1:
     return PhysicalEpisodeGraphV1.create(observations=observations, episodes=(episode,))
 
 
-def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining() -> None:
+def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining(monkeypatch) -> None:
+    original_null = matcher.score_radio_polynomial_null
+
+    def overwhelmingly_better_polynomial(*args, **kwargs):
+        result = original_null(*args, **kwargs)
+        return replace(
+            result,
+            scores=tuple(
+                replace(score, evaluation_predictive_negative_log_likelihood=-1e9)
+                for score in result.scores
+            ),
+        )
+
+    monkeypatch.setattr(matcher, "score_radio_polynomial_null", overwhelmingly_better_polynomial)
     payload = _snapshot_payload()
     graph = _zero_response_graph(payload)
     support = CataloguePredictionSupportV1.from_graph(graph)
@@ -176,6 +192,12 @@ def test_matches_a_frozen_300_second_style_track_and_keeps_identity_abstaining()
     assert result.source_observation_count == 151
     assert result.scored_observation_count == 128
     assert result.support_span_s == 300.02
+    assert (
+        result.radio_polynomial_null.scores[0].evaluation_predictive_negative_log_likelihood == -1e9
+    )
+    assert not any(
+        reason.startswith("radio-polynomial-null") for reason in result.abstention_reasons
+    )
 
 
 def test_time_balanced_scoring_keeps_the_endpoints_and_work_bound() -> None:

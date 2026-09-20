@@ -51,7 +51,7 @@ from leo.contracts.catalogue_association import (
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 
-_ALGORITHM_VERSION = "persistent-hop-randomized-residual-tle-match-v3"
+_ALGORITHM_VERSION = "persistent-hop-randomized-residual-tle-match-v4"
 
 
 class PersistentHopTleMatchInputError(ValueError):
@@ -133,7 +133,7 @@ class PersistentHopTleMatchConfig:
 
     @property
     def digest(self) -> Sha256Digest:
-        return canonical_digest(asdict(self))
+        return canonical_digest({"algorithm_version": _ALGORITHM_VERSION, **asdict(self)})
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,8 +163,8 @@ class PersistentHopTleMatchResult:
     abstention_recommended: bool
     abstention_reasons: tuple[str, ...]
     content_digest: Sha256Digest
-    algorithm_version: Literal["persistent-hop-randomized-residual-tle-match-v3"] = field(
-        default="persistent-hop-randomized-residual-tle-match-v3", init=False
+    algorithm_version: Literal["persistent-hop-randomized-residual-tle-match-v4"] = field(
+        default="persistent-hop-randomized-residual-tle-match-v4", init=False
     )
     all_banks_built_before_response_scoring: Literal[True] = field(default=True, init=False)
     wrong_time_controls_are_observe_only: Literal[True] = field(default=True, init=False)
@@ -280,18 +280,8 @@ def match_persistent_hop_track_to_tles(
         reasons.append("catalogue-leader-did-not-persist-on-heldout")
 
     nominal_training_winner = association.scores[0]
-    best_radio_nll = min(
-        item.evaluation_predictive_negative_log_likelihood for item in radio_null.scores
-    )
-    if _control_materially_better(
-        best_radio_nll,
-        nominal_training_winner.heldout_predictive_negative_log_score,
-        evaluation_observation_count=len(evaluation_ids),
-        minimum_advantage_per_observation_nll=(
-            config.control_minimum_advantage_per_evaluation_observation_nll
-        ),
-    ):
-        reasons.append("radio-polynomial-null-materially-better-on-randomized-evaluation")
+    # A generic smooth curve is a diagnostic, not a veto of catalogue identity.
+    # Preserve its full score below; only catalogue and wrong-time gates abstain.
     for field_match in field_matches:
         if field_match.field_delta_s == 0:
             continue
