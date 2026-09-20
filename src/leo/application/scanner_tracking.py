@@ -53,8 +53,8 @@ class ScannerTrackingService:
         observer_site: ObserverSiteV1,
         renderer,
         review_renderer: Callable[
-            [str], tuple[tuple[ScannerTleTrackReviewV1, bytes], ...]
-        ] = lambda _session_id: (),
+            [str], tuple[tuple[tuple[ScannerTleTrackReviewV1, bytes], ...], bool]
+        ] = lambda _session_id: ((), False),
         matcher=match_persistent_hop_track_to_tles,
         clock=time.monotonic,
     ):
@@ -297,7 +297,15 @@ class ScannerTrackingService:
                 capture_end_utc_ns=source.capture_end_utc_ns,
             ),
         )
-        reviews = self.review_renderer(session_id) if selected else ()
+        reviews, review_limit_reached = (
+            self.review_renderer(session_id) if selected else ((), False)
+        )
+        review_reasons = (
+            (
+                "TLE review traversal stopped at the 32-track artifact contract bound; "
+                "additional tracklets were not evaluated."
+            ),
+        ) if review_limit_reached else ()
         review_refs = tuple(
             self.products.put_artifact(
                 session_id,
@@ -311,6 +319,7 @@ class ScannerTrackingService:
                 "tle_state": state,
                 "artifacts": (*product.artifacts, ref, *review_refs),
                 "track_reviews": tuple(review for review, _payload in reviews),
+                "reasons": (*product.reasons, *review_reasons),
             }
         )
         self.products.publish(product)

@@ -28,7 +28,9 @@ from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 
 def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str):
-    def render(session_id: str) -> tuple[tuple[ScannerTleTrackReviewV1, bytes], ...]:
+    def render(
+        session_id: str,
+    ) -> tuple[tuple[tuple[ScannerTleTrackReviewV1, bytes], ...], bool]:
         with TemporaryDirectory(prefix="leo-tle-review-") as temporary:
             output = Path(temporary)
             report = build_report(
@@ -69,7 +71,7 @@ def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str):
                     ),
                 )
                 rendered.append((review, (output / filename).read_bytes()))
-            return tuple(rendered)
+            return tuple(rendered), bool(report["track_limit_reached"])
 
     return render
 
