@@ -198,6 +198,7 @@ def match_persistent_hop_track_to_tles(
     tle_snapshot: TleSnapshotRefV1,
     observer_site: ObserverSiteV1,
     config: PersistentHopTleMatchConfig,
+    partition_seed: Sha256Digest | None = None,
 ) -> PersistentHopTleMatchResult:
     """Match one frozen tracklet with randomized residual and wrong-time controls."""
 
@@ -229,7 +230,7 @@ def match_persistent_hop_track_to_tles(
         for field_delta_s in config.catalogue_fields_s
     )
 
-    split_seed = canonical_digest(
+    split_seed = partition_seed or canonical_digest(
         {
             "policy": "persistent-hop-fixed-orbit-randomized-residual-v1",
             "response_free_support_digest": support.content_digest,

@@ -47,9 +47,6 @@ from leo.scanner.single_rx import (
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.errors import BundleNotFoundError
 
-SERIAL = "104000bac4950008230026001b440a003a"
-URI = "ip:192.168.1.17"
-
 
 class UnsupportedFirmwareArchiveError(ValueError):
     """A sealed older archive cannot be represented by the canonical pilot contract."""
@@ -60,8 +57,20 @@ def _load(path: Path) -> tuple[dict, bytes]:
     document = json.loads(payload)
     if document.get("schema") != "org.leo.firmware-adaptive-iq/v1":
         raise ValueError("unsupported firmware adaptive archive")
-    if document.get("physical_receiver") != 0 or document["evidence"].get("radio_serial") != SERIAL:
-        raise ValueError("firmware archive is not the pinned radio RX0 source")
+    evidence = document.get("evidence")
+    if not isinstance(evidence, dict):
+        raise ValueError("firmware archive lacks capture evidence")
+    serial, uri = evidence.get("radio_serial"), evidence.get("radio_uri")
+    if document.get("physical_receiver") != 0:
+        raise ValueError("firmware archive is not an RX0 source")
+    if not isinstance(serial, str) or not serial or not isinstance(uri, str) or not uri:
+        raise ValueError("firmware archive lacks radio identity")
+    timing = evidence.get("counter_utc_timing")
+    if timing is not None:
+        if not isinstance(timing, dict):
+            raise ValueError("counter UTC evidence is malformed")
+        if timing.get("radio_serial") != serial:
+            raise ValueError("counter UTC radio identity differs from capture")
     return document, payload
 
 
@@ -210,6 +219,8 @@ def _events(
 
 
 def _receipt(document: dict, archive_digest: str):
+    evidence = document["evidence"]
+    serial, uri = evidence["radio_serial"], evidence["radio_uri"]
     plan = _plan(document)
     events = _events(document, plan)
     retained = tuple(index for index, entry in enumerate(document["visits"]) if entry["iq"])
@@ -284,9 +295,11 @@ def _receipt(document: dict, archive_digest: str):
         )
     common_receipt = dict(
         session_id=session_id,
-        radio_id="pluto-003a",
-        radio_serial=SERIAL,
-        radio_uri=URI,
+        # Preserve the established radio-id convention while deriving it from
+        # the sealed identity. The full serial remains separately bound.
+        radio_id=f"pluto-{serial[-4:]}",
+        radio_serial=serial,
+        radio_uri=uri,
         plan=plan,
         stream_generation=int(document["setup"]["session"]),
         source_span_attested=True,
@@ -328,6 +341,55 @@ def _receipt(document: dict, archive_digest: str):
 
 
 def _timing(document: dict, receipt):
+    if "counter_utc_timing" in document["evidence"]:
+        # Only acquisition/import needs PPU; sealed recording readers do not.
+        from pluto_plus.counter_utc import CounterUtcEvidence
+
+        from leo.contracts.digests import canonical_digest
+        from leo.scanner.counter_utc import CounterUtcTimingV4
+
+        raw = CounterUtcEvidence.model_validate(document["evidence"]["counter_utc_timing"])
+        if (raw.session, raw.generation) != (
+            document["setup"]["session"],
+            document["setup"]["generation"],
+        ):
+            raise ValueError("counter UTC evidence belongs to another capture")
+        expected_serial = document["evidence"].get("radio_serial")
+        if expected_serial is not None and raw.radio_serial != expected_serial:
+            raise ValueError("counter UTC radio identity differs from capture")
+        first, last = receipt.terminal.first_counter, receipt.terminal.final_counter
+        rate = receipt.plan.geometry.sample_rate_hz
+        qualified, reason, bound = raw.qualification(first, last, rate)
+        try:
+            earliest, latest = raw.interval(first)
+            estimate = (earliest + latest) // 2
+            display_width = latest - earliest
+        except ValueError:
+            # Retain an explicitly unqualified display time from the original
+            # transaction. Never silently fall back to its relaxed qualification.
+            legacy = document["evidence"].get("utc_timing", {})
+            before = legacy.get("begin_before_realtime_ns")
+            after = legacy.get("begin_after_realtime_ns")
+            if before is None or after is None:
+                raise ValueError(
+                    "unqualified counter timing lacks a display clock bracket"
+                ) from None
+            estimate = (before + after) // 2
+            display_width = after - before
+        payload = raw.model_dump(mode="json")
+        return CounterUtcTimingV4(
+            session_id=receipt.session_id,
+            session_start_device_sample_counter=first,
+            final_device_sample_counter=last,
+            sample_rate_hz=rate,
+            first_sample_estimate_utc_ns=estimate,
+            maximum_error_ns=bound,
+            display_bracket_width_ns=display_width,
+            qualification_limit_ns=raw.policy.maximum_error_ns,
+            failure_reasons=() if qualified else (reason,),
+            evidence=payload,
+            evidence_sha256=canonical_digest(payload),
+        )
     value = document["evidence"].get("utc_timing")
     if not value:
         return None
