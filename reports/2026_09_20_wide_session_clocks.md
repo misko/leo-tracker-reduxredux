@@ -86,3 +86,34 @@ The next model audit should separate independently bounded receiver timing from
 satellite orbit uncertainty, rather than widening clock limits until the answer
 is closer to the reference. No bound or observation is selected from reference
 distance. The sub-kilometre goal remains under validation.
+
+## Separate orbit-phase experiment
+
+The existing `polish_regional_doppler.py` was run against the same final wide
+grid, with all 484 retained episodes and recorded UTC fixed. Its alternative
+shares one orbit-phase correction per NORAD/TLE snapshot (269 groups), with
+the existing 0.5 s Gaussian prior and ±2 s bounds. It propagates the satellite
+at the displaced orbit epoch while retaining Earth rotation at the recorded
+UTC; it does not rewrite reception timestamps.
+
+| Model | Position error | Source-balanced fitting RMS | Source-balanced evaluation RMS |
+|---|---:|---:|---:|
+| Fixed recorded UTC, no orbit correction | 1,715.7 m | 137.17 Hz | 178.12 Hz |
+| Fixed recorded UTC, bounded orbit-phase corrections | 1,967.0 m | 121.57 Hz | 164.94 Hz |
+
+Both converge. This solver uses source-balanced robust weights, so compare
+these two rows to one another rather than directly interpreting their RMS
+difference from the observation-weighted recording-clock experiment.
+The lower residual does not translate into a better position. These results
+do not support promoting this orbit-correction model as the solution.
+
+Reproduce with `tools/polish_regional_doppler.py --run
+/tmp/leo-wide-randomized-grid05 --evidence /tmp/leo-wide-randomized-evidence
+--output NEW_OUTPUT.json`. The [complete orbit-phase result](2026_09_20_fresh_wide_position/orbit-phase-inference.json)
+records the assignments, regularization, fitted corrections, and convergence.
+Twenty regional-search, source-selection, and local-refinement tests pass.
+
+The next transfer experiment repeats the full 9,000-mile search on the recent
+48-hour RF-only export (211 recordings / 684 tracks), rather than inheriting
+the earlier field-of-view-assisted identities. The historical 937–941 m result
+must not be represented as a demonstrated result on that newer corpus.
