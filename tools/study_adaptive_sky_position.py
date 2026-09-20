@@ -187,6 +187,7 @@ def search(
     sigma_hz=250.0,
     minimum_elevation_deg=-1.0,
     max_per_partition=3,
+    clock_s=0.0,
 ):
     """Parallel scan shards, merged by chronological scan order; same scorer and grid."""
     output.mkdir(parents=True, exist_ok=False)
@@ -216,7 +217,7 @@ def search(
                 sigma_hz=sigma_hz,
                 minimum_elevation_deg=minimum_elevation_deg,
                 effective_count=6.0,
-                clock_s=0.0,
+                clock_s=clock_s,
                 max_per_partition=max_per_partition,
                 scan_limit=None,
                 shifted_grid=False,
@@ -276,6 +277,7 @@ def main():
     p.add_argument("--sigma-hz", type=float, default=250.0)
     p.add_argument("--minimum-elevation-deg", type=float, default=-1.0)
     p.add_argument("--max-per-partition", type=int, default=3)
+    p.add_argument("--clock-s", type=float, default=0.0)
     a = p.parse_args()
     if a.mode == "export":
         export(a.bulk_root, a.output, a.until_ns, a.workers)
@@ -291,6 +293,7 @@ def main():
             a.sigma_hz,
             a.minimum_elevation_deg,
             a.max_per_partition,
+            a.clock_s,
         )
 
 

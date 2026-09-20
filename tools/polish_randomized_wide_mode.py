@@ -27,8 +27,8 @@ def freeze_assignments(run, evidence):
         or parent.get("partition") != "randomized"
     ):
         raise ValueError("completed randomized RF-only parent required")
-    if parent["clock_s"] != 0 or parent["altitude_m"] != 0:
-        raise ValueError("this replay requires a zero-clock, zero-altitude parent")
+    if parent["altitude_m"] != 0:
+        raise ValueError("this replay requires a zero-altitude parent")
     if parent.get("individual_sources", False):
         raise ValueError("episode-based parent required")
     history = json.loads((run / "history.json").read_text())

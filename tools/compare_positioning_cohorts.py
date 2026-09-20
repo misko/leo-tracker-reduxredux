@@ -78,7 +78,17 @@ def extract(root, assignments, clock_s=0.0):
     return {k: np.asarray(v) for k, v in arrays.items()}, dict(sources=sources, records=records)
 
 
-def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False, clock_groups=None):
+def fit(
+    data,
+    region,
+    initial,
+    weighting,
+    robust,
+    subset=None,
+    fit_clock=False,
+    clock_groups=None,
+    fit_height=False,
+):
     mask = np.ones(len(data["y"]), bool) if subset is None else subset
     d = {k: v[mask] for k, v in data.items()}
     train = d["training"].astype(bool)
@@ -92,13 +102,15 @@ def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False, 
         return_inverse=True,
     )
 
+    clock_start = 3 if fit_height else 2
+
     def residual(x):
-        receiver = region.points([x[0]], [x[1]], 0).ecef_km[0]
+        receiver = region.points([x[0]], [x[1]], x[2] * 1000 if fit_height else 0).ecef_km[0]
         p, v = d["p"], d["v"]
         if fit_clock:
             # Quadratic interpolation of exact propagated states over +/-0.5 s.
             # Bound the clock to that interval; not an extrapolating orbit model.
-            tau = np.asarray(x[2:])[clock_index, None]
+            tau = np.asarray(x[clock_start:])[clock_index, None]
             p = (
                 p
                 + (d["p0.5"] - d["p-0.5"]) * tau
@@ -127,6 +139,10 @@ def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False, 
     lower = [-region.width_km / 2, -region.height_km / 2]
     upper = [region.width_km / 2, region.height_km / 2]
     start = list(initial)
+    if fit_height:
+        lower.append(-0.5)
+        upper.append(5.0)
+        start.append(0.0)
     if fit_clock:
         lower.extend([-0.5] * len(labels))
         upper.extend([0.5] * len(labels))
@@ -150,6 +166,9 @@ def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False, 
         x_km=answer.x.tolist(),
         latitude_deg=float(lat),
         longitude_deg=float(lon),
+        altitude_m=float(answer.x[2] * 1000) if fit_height else 0.0,
+        height_fitted=fit_height,
+        height_at_bound=bool(fit_height and (answer.x[2] < -0.499 or answer.x[2] > 4.999)),
         training_rms_hz=float(np.sqrt(np.mean(r[train] ** 2))),
         evaluation_rms_hz=float(np.sqrt(np.mean(r[~train] ** 2))),
         weighting=weighting,
@@ -158,11 +177,11 @@ def fit(data, region, initial, weighting, robust, subset=None, fit_clock=False, 
         source_segments=len(counts),
         episodes=len(np.unique(d["episode"])),
         converged=bool(answer.success),
-        clock_s=(float(answer.x[2]) if len(labels) == 1 else None) if fit_clock else 0.0,
+        clock_s=(float(answer.x[clock_start]) if len(labels) == 1 else None) if fit_clock else 0.0,
         clock_group_values=labels.tolist() if fit_clock else [],
-        clock_offsets_s=answer.x[2:].tolist() if fit_clock else [],
+        clock_offsets_s=answer.x[clock_start:].tolist() if fit_clock else [],
         clock_fitted=fit_clock,
-        clock_at_bound=bool(fit_clock and np.any(abs(answer.x[2:]) > 0.499)),
+        clock_at_bound=bool(fit_clock and np.any(abs(answer.x[clock_start:]) > 0.499)),
         segment_training_rms=segment_rms,
     )
 
