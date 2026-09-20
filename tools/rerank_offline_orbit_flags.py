@@ -27,6 +27,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     for key in ["archive", "run", "replay", "residual-audit", "evidence", "output"]:
         p.add_argument("--" + key, type=Path, required=True)
+    p.add_argument("--all-tracks", action="store_true")
     a = p.parse_args()
     if a.output.exists():
         raise ValueError("fresh output required")
@@ -36,7 +37,11 @@ def main():
     if any(x["parent_digest"] != digest(a.run / "inference.json") for x in [replay, residual]):
         raise ValueError("parent mismatch")
     # Signal-only exploratory trigger; never an automatic exclusion policy.
-    flags = [r for r in residual["rows"] if flagged(r)]
+    flags = [r for r in residual["rows"] if a.all_tracks or flagged(r)]
+    if a.all_tracks and {(r["session_id"], r["episode_id"], r["norad"]) for r in flags} != {
+        (r["session_id"], r["episode_id"], r["norad"]) for r in parent["assignments"]
+    }:
+        raise ValueError("full replay must include every original assignment")
     docs = {
         r["session_id"]: json.loads(
             (a.evidence / "evidence" / (r["session_id"] + ".json")).read_text()
@@ -99,12 +104,24 @@ def main():
                 ("\n".join(v[1].strip() for k, v in sorted(best[sid].items())) + "\n").encode()
             ).hexdigest(),
         )
+        result["winning_tle_text"] = best[sid][result["best_norad"]][1] if winner >= 0 else None
         results.append(result)
-        print(sid, row["norad"], "->", result["best_norad"], flush=True)
+        if not a.all_tracks or len(results) % 25 == 0:
+            print(
+                len(results),
+                "/",
+                len(flags),
+                sid,
+                row["norad"],
+                "->",
+                result["best_norad"],
+                flush=True,
+            )
     write_json(
         a.output,
         dict(
             offline_noncausal=True,
+            all_tracks=a.all_tracks,
             evaluation_location_used=False,
             parent_digest=digest(a.run / "inference.json"),
             replay_digest=digest(a.replay),

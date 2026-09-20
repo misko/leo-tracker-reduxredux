@@ -4,6 +4,17 @@ import numpy as np
 import pytest
 
 
+def test_reassociation_binding_preserves_original_cohort(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from refit_offline_reassociations import bind_rows
+
+    a = [dict(session_id="s", episode_id=str(i), norad=i) for i in [1, 2]]
+    assert bind_rows(a, list(reversed(a))) == a
+    for rows in [a[:1], a + [a[0]], [dict(a[0], norad=4), a[1]]]:
+        with pytest.raises(ValueError):
+            bind_rows(a, rows)
+
+
 def test_orbit_flags_use_signal_degradation_only(monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
     from rerank_offline_orbit_flags import flagged

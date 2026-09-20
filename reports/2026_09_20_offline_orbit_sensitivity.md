@@ -265,3 +265,40 @@ only bounds the audit work; it is not a production exclusion policy.
 
 [Reranking results, catalogue hashes and snapshot provenance](2026_09_20_offline_orbit_sensitivity/flagged-reranking.json)
 are reproducible with `tools/rerank_offline_orbit_flags.py`.
+
+### Full-cohort updated-catalogue reassociation
+
+Extending that same operation to every retained episode changes 26 of 622
+identities, including six of the original 190 quality-selected episodes. No
+episode is unassigned or discarded. All 21,702 observations and the frozen
+7,156-observation selection remain available. Candidate ranking uses training
+observations at the predetermined all-track fixed-clock replay position;
+it is local reassociation descended from the original global acquisition,
+not a repeated full-region search with retrospective catalogues.
+
+| Cohort | Clock model | Horizontal error (m) | Held-out RMS (Hz) |
+|---|---|---:|---:|
+| All | Fixed | 1184.0 | 87.25 |
+| All | Shared recorded bounds | 861.5 | 86.69 |
+| All | Per-recording recorded bounds | 1144.4 | 83.86 |
+| Frozen selection | Fixed | 1245.0 | 79.52 |
+| Frozen selection | Shared recorded bounds | 1159.5 | 79.05 |
+| Frozen selection | Per-recording recorded bounds | 1419.3 | 75.49 |
+
+All six fits converge. Updating identities reduces all-track held-out RMS from
+approximately 794 to 87 Hz while preserving an approximately 862 m shared-clock
+point estimate. The selected subset's former 999 m result does not survive
+reassociation. The all-track improvement is therefore scientifically more
+credible than the earlier high-residual fit, but still requires fresh exact
+propagation and group-deletion stability verification. It remains retrospective,
+conditional on archived orbital accuracy and recorded UTC bounds, and cannot
+yet establish reliable real-time sub-kilometre positioning.
+
+Reproduce with `--all-tracks` on `tools/rerank_offline_orbit_flags.py`, followed
+by `tools/refit_offline_reassociations.py`. Seven focused tests pass, including
+coverage/identity rejection and order-independent binding to original episodes.
+
+- [All candidate rerankings and winning element sets](2026_09_20_offline_orbit_sensitivity/full-reranking.json)
+- [Refit inference](2026_09_20_offline_orbit_sensitivity/reassociated-inference.json)
+- [Separate location evaluation](2026_09_20_offline_orbit_sensitivity/reassociated-evaluation.json)
+- [Reassociated observation states](2026_09_20_offline_orbit_sensitivity/reassociated-states.npz)
