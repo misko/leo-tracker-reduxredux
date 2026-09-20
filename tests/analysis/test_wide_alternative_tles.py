@@ -4,6 +4,17 @@ import numpy as np
 import pytest
 
 
+def test_stability_evaluation_distance(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from report_orbit_clock_stability import horizontal_error
+
+    ref = dict(latitude_deg=0, longitude_deg=0)
+    assert horizontal_error(ref, ref) == 0
+    assert horizontal_error(dict(latitude_deg=0, longitude_deg=1), ref) == pytest.approx(
+        111195.0802
+    )
+
+
 def test_shared_clock_intersection_uses_only_selected_sessions(monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
     from replay_wide_alternative_tles import shared_clock_bounds

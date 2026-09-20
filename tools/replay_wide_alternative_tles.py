@@ -52,7 +52,10 @@ def main():
         default="nearest",
     )
     parser.add_argument("--timing-audit", type=Path)
+    parser.add_argument("--verify-shared", action="store_true")
     args = parser.parse_args()
+    if args.verify_shared and (args.epoch_side != "nearest" or not args.timing_audit):
+        raise ValueError("shared verification requires nearest orbits and recorded timing")
     if args.output.exists():
         raise ValueError("fresh output required")
     parent_path = args.run / "inference.json"
@@ -192,6 +195,60 @@ def main():
                 )
                 out["models"].append(dict(selection=selection, clock_model=mode, **result))
                 print(selection, mode, result["latitude_deg"], result["longitude_deg"], flush=True)
+                if args.verify_shared and mode == "shared_recorded":
+                    if out["invalid_replacements"] or out["unavailable_replacements"]:
+                        raise ValueError("exact verification requires all replacements valid")
+                    exact = {k: v.copy() for k, v in data.items()}
+                    for i, row in enumerate(audit["rows"]):
+                        episode_mask = data["episode"] == i
+                        if not np.any(selected & episode_mask):
+                            continue
+                        doc = json.loads(
+                            (args.evidence / "evidence" / (row["session_id"] + ".json")).read_text()
+                        )
+                        arc = dict(load_observations(doc, 0))[row["episode_id"]]
+                        p, v, valid = state_arrays(
+                            parse_element_sets(row["selected"]["text"]),
+                            [0],
+                            row["measurement_utc_ns"],
+                            arc.time_s,
+                            clock_s=result["clock_s"],
+                        )
+                        if len(valid) != 1:
+                            raise ValueError("exact orbit propagation failed")
+                        exact["p"][episode_mask], exact["v"][episode_mask] = p[0], v[0]
+                    result["exact_clock_refit"] = fit(
+                        exact,
+                        Region(**parent["region"]),
+                        result["x_km"][:2],
+                        "observation",
+                        True,
+                        subset=mask,
+                    )
+                    # The model entry was copied before adding the nested verification.
+                    out["models"][-1]["exact_clock_refit"] = result["exact_clock_refit"]
+                    for grouping in ["norad", "session"]:
+                        for fold in range(8):
+                            retained = selected & (data[grouping] % 8 != fold)
+                            replay = fit(
+                                data,
+                                Region(**parent["region"]),
+                                parent["initial"],
+                                "observation",
+                                True,
+                                subset=retained,
+                                fit_clock=True,
+                                clock_bounds=shared_clock_bounds(bounds, data["session"][retained]),
+                            )
+                            out.setdefault("stability", []).append(
+                                dict(
+                                    selection=selection,
+                                    grouping=grouping,
+                                    fold=fold,
+                                    **replay,
+                                )
+                            )
+                    print(selection, "verification complete", flush=True)
     write_json(args.output, out)
 
 
