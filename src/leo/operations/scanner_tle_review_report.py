@@ -254,12 +254,14 @@ def build_report(
     by_id = {item.tracklet_id: item for item in trajectory.tracklets}
     seen: set[str] = set()
     tracks: list[dict[str, Any]] = []
+    track_limit_reached = False
     for hypothesis in trajectory.hypotheses:
         for tracklet_id in hypothesis.tracklet_ids:
-            if maximum_tracks is not None and len(tracks) >= maximum_tracks:
-                break
             if tracklet_id in seen:
                 continue
+            if maximum_tracks is not None and len(tracks) >= maximum_tracks:
+                track_limit_reached = True
+                break
             seen.add(tracklet_id)
             graph = persistent_hop_tracklet_graph(hypothesis, tracklet_id)
             rows = sorted(graph.observations, key=lambda item: item.support_center_utc_ns)
@@ -423,6 +425,8 @@ def build_report(
         ),
         "minimum_observations": 14,
         "minimum_span_s": 7,
+        "track_limit": maximum_tracks,
+        "track_limit_reached": track_limit_reached,
         "snapshot_digest": snapshot.digest,
         "snapshot_collected_utc_ns": snapshot.collected_utc_ns,
         "figure": figure.name,

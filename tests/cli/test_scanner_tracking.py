@@ -36,6 +36,7 @@ def test_review_renderer_bounds_report_before_expensive_track_work(
                 }
             ],
             "track_figures": [filename],
+            "track_limit_reached": True,
         }
 
     monkeypatch.setattr(scanner_tracking, "build_report", build_report)
@@ -45,6 +46,8 @@ def test_review_renderer_bounds_report_before_expensive_track_work(
     )("scan-test")
 
     assert observed["maximum_tracks"] == 32
-    assert len(rendered) == 1
-    assert rendered[0][0].artifact_name == "tle-review-01"
-    assert rendered[0][1] == b"png"
+    reviews, limit_reached = rendered
+    assert limit_reached is True
+    assert len(reviews) == 1
+    assert reviews[0][0].artifact_name == "tle-review-01"
+    assert reviews[0][1] == b"png"
