@@ -47,9 +47,6 @@ from leo.scanner.single_rx import (
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.errors import BundleNotFoundError
 
-SERIAL = "104000bac4950008230026001b440a003a"
-URI = "ip:192.168.1.17"
-
 
 class UnsupportedFirmwareArchiveError(ValueError):
     """A sealed older archive cannot be represented by the canonical pilot contract."""
@@ -60,8 +57,20 @@ def _load(path: Path) -> tuple[dict, bytes]:
     document = json.loads(payload)
     if document.get("schema") != "org.leo.firmware-adaptive-iq/v1":
         raise ValueError("unsupported firmware adaptive archive")
-    if document.get("physical_receiver") != 0 or document["evidence"].get("radio_serial") != SERIAL:
-        raise ValueError("firmware archive is not the pinned radio RX0 source")
+    evidence = document.get("evidence")
+    if not isinstance(evidence, dict):
+        raise ValueError("firmware archive lacks capture evidence")
+    serial, uri = evidence.get("radio_serial"), evidence.get("radio_uri")
+    if document.get("physical_receiver") != 0:
+        raise ValueError("firmware archive is not an RX0 source")
+    if not isinstance(serial, str) or not serial or not isinstance(uri, str) or not uri:
+        raise ValueError("firmware archive lacks radio identity")
+    timing = evidence.get("counter_utc_timing")
+    if timing is not None:
+        if not isinstance(timing, dict):
+            raise ValueError("counter UTC evidence is malformed")
+        if timing.get("radio_serial") != serial:
+            raise ValueError("counter UTC radio identity differs from capture")
     return document, payload
 
 
@@ -210,6 +219,8 @@ def _events(
 
 
 def _receipt(document: dict, archive_digest: str):
+    evidence = document["evidence"]
+    serial, uri = evidence["radio_serial"], evidence["radio_uri"]
     plan = _plan(document)
     events = _events(document, plan)
     retained = tuple(index for index, entry in enumerate(document["visits"]) if entry["iq"])
@@ -284,9 +295,11 @@ def _receipt(document: dict, archive_digest: str):
         )
     common_receipt = dict(
         session_id=session_id,
-        radio_id="pluto-003a",
-        radio_serial=SERIAL,
-        radio_uri=URI,
+        # Preserve the established radio-id convention while deriving it from
+        # the sealed identity. The full serial remains separately bound.
+        radio_id=f"pluto-{serial[-4:]}",
+        radio_serial=serial,
+        radio_uri=uri,
         plan=plan,
         stream_generation=int(document["setup"]["session"]),
         source_span_attested=True,

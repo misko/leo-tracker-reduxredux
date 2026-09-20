@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -116,6 +117,8 @@ def sparse_document(rate: int) -> dict:
         "visits": visits,
         "terminal": {"restore_after": final + 1},
         "evidence": {
+            "radio_serial": "1040007c4a94000211000b009186843ef2",
+            "radio_uri": "ip:192.168.1.18",
             "preparation": {"original": settings},
             "restoration": {"observed": settings},
         },
@@ -142,3 +145,43 @@ def test_sparse_firmware_receipt_preserves_source_gap_without_interpolation(
     assert receipt.valid_sample_count == 3 * rate * 120 // 1000
     assert receipt.transport_missing_sample_count == rate * 120 // 1000
     assert receipt.unclassified_sample_count >= receipt.transport_missing_sample_count
+
+
+def test_r18_archive_identity_is_bound_into_imported_receipt() -> None:
+    receipt = importer._receipt(sparse_document(10_000_000), "sha256:" + "b" * 64)
+
+    assert receipt.radio_id == "pluto-3ef2"
+    assert receipt.radio_serial == "1040007c4a94000211000b009186843ef2"
+    assert receipt.radio_uri == "ip:192.168.1.18"
+
+
+def test_r17_archive_keeps_legacy_radio_id() -> None:
+    value = sparse_document(10_000_000)
+    value["evidence"]["radio_serial"] = "104000bac4950008230026001b440a003a"
+    value["evidence"]["radio_uri"] = "ip:192.168.1.17"
+
+    receipt = importer._receipt(value, "sha256:" + "b" * 64)
+
+    assert receipt.radio_id == "pluto-003a"
+    assert receipt.radio_serial == "104000bac4950008230026001b440a003a"
+    assert receipt.radio_uri == "ip:192.168.1.17"
+
+
+def test_archive_rejects_counter_timing_from_a_different_radio(tmp_path) -> None:
+    value = sparse_document(10_000_000)
+    value["evidence"]["counter_utc_timing"] = {"radio_serial": "wrong-radio"}
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(value))
+
+    with pytest.raises(ValueError, match="counter UTC radio identity differs"):
+        importer._load(manifest)
+
+
+def test_archive_rejects_malformed_counter_timing_identity(tmp_path) -> None:
+    value = sparse_document(10_000_000)
+    value["evidence"]["counter_utc_timing"] = []
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(value))
+
+    with pytest.raises(ValueError, match="counter UTC evidence is malformed"):
+        importer._load(manifest)
