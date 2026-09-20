@@ -4,6 +4,39 @@ import numpy as np
 import pytest
 
 
+def test_residual_audit_rejects_mixed_parent_artifacts(monkeypatch, tmp_path):
+    import json
+    import sys
+
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
+    from audit_orbit_replay_residuals import main
+
+    (tmp_path / "inference.json").write_text("{}")
+    (tmp_path / "replay.json").write_text(json.dumps({"parent_digest": "wrong"}))
+    (tmp_path / "audit.json").write_text("{}")
+    output = tmp_path / "output.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit",
+            "--run",
+            str(tmp_path),
+            "--replay",
+            str(tmp_path / "replay.json"),
+            "--audit",
+            str(tmp_path / "audit.json"),
+            "--evidence",
+            str(tmp_path),
+            "--output",
+            str(output),
+        ],
+    )
+    with pytest.raises(ValueError, match="parent mismatch"):
+        main()
+    assert not output.exists()
+
+
 def test_stability_evaluation_distance(monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "tools"))
     from report_orbit_clock_stability import horizontal_error
