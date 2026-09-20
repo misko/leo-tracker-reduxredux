@@ -59,6 +59,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "group_limit": _TRACKING_GROUP_LIMIT,
             "tle_residual_partition": "deterministic-randomized-observation-v1",
             "control_comparison": "minimum-0.01-nll-per-evaluation-observation-v1",
+            "association_gates": "nominal-catalogue-only-v1",
             "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
             "propagation_screen": "capture-and-control-boundaries-v1",
         }

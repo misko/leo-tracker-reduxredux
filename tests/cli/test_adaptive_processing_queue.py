@@ -9,6 +9,24 @@ from leo.catalog.types import AdaptiveAnalysisJobLease
 from leo.cli import adaptive_processing_queue as subject
 
 
+def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
+    payloads = []
+    monkeypatch.setattr(
+        subject, "canonical_digest", lambda value: payloads.append(value) or "digest"
+    )
+    monkeypatch.setattr(
+        subject,
+        "resolve_preset",
+        lambda site: SimpleNamespace(model_dump=lambda **kwargs: {"site": site}),
+    )
+    subject._tracking_digest(
+        capture=SimpleNamespace(manifest_sha256="capture"),
+        metrics_manifest_sha256="metrics",
+        site="test",
+    )
+    assert payloads[0]["association_gates"] == "nominal-catalogue-only-v1"
+
+
 def _lease() -> AdaptiveAnalysisJobLease:
     return AdaptiveAnalysisJobLease(
         job_id=7,
