@@ -17,6 +17,23 @@ from leo.analysis.research.regional_doppler import LIGHT_KM_S, REFERENCE_RF_HZ, 
 from leo.sky.propagation import parse_element_sets
 
 
+def fitting_weights(data, weighting):
+    """Equal total fitting weight per selected unit; evaluation adds no weight."""
+    if weighting == "observation":
+        return np.ones(len(data["segment"]))
+    if weighting == "segment":
+        units = data["segment"]
+    elif weighting == "pass":
+        units = data["pass_group"]
+    else:
+        raise ValueError("unknown fitting weight unit")
+    _, group = np.unique(units, return_inverse=True)
+    count = np.bincount(group[data["training"].astype(bool)], minlength=group.max() + 1)
+    if np.any(count == 0):
+        raise ValueError("every weight unit needs fitting observations")
+    return 1 / np.sqrt(count[group])
+
+
 def extract(root, assignments, clock_s=0.0):
     arrays = {
         k: [] for k in ("y", "segment", "training", "p", "v", "episode", "norad", "session", "time")
@@ -94,7 +111,7 @@ def fit(
     train = d["training"].astype(bool)
     _, group = np.unique(d["segment"], return_inverse=True)
     counts = np.bincount(group[train])
-    weight = np.ones(len(group)) if weighting == "observation" else 1 / np.sqrt(counts[group])
+    weight = fitting_weights(d, weighting)
     if clock_groups is not None and not fit_clock:
         raise ValueError("clock groups require clock fitting")
     labels, clock_index = np.unique(
