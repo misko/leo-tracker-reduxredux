@@ -89,7 +89,7 @@ def test_completed_old_analysis_enqueues_tracking_without_live_window_cutoff(
             "session_id": "scan-fw-0123456789abcdef",
             "input_manifest_digest": capture.manifest_sha256,
             "configuration_digest": "tracking-digest",
-            "priority": 100,
+            "priority": 0,
         }
     ]
 
