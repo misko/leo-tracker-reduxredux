@@ -137,7 +137,7 @@ def test_external_metadata_seals_exact_immutable_tree(tmp_path: Path) -> None:
     _validate(release, metadata)
 
 
-@pytest.mark.parametrize("runtime", (None, "948d6a246bb937fe3a62ed15233d9f592ab71d6a"))
+@pytest.mark.parametrize("runtime", (None, "e96d196ba276588f1e0f8a2a9376c37a471b8b95"))
 def test_bundle_inventory_is_sealed_independently_of_runtime_selection(
     tmp_path: Path, runtime: str | None
 ) -> None:
@@ -169,7 +169,7 @@ def test_resealed_modified_bundle_is_not_the_reviewed_candidate(tmp_path: Path) 
         _validate(release, metadata)
 
 
-SCANNER_GLRT_SOURCE = "948d6a246bb937fe3a62ed15233d9f592ab71d6a"
+SCANNER_GLRT_SOURCE = "e96d196ba276588f1e0f8a2a9376c37a471b8b95"
 
 
 def test_scanner_runtime_is_an_exact_additional_identity_not_a_new_default(tmp_path: Path) -> None:
