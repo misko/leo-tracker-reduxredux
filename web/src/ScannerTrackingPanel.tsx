@@ -12,8 +12,18 @@ type Product = {
     support_span_s: number; abstention_recommended: boolean; abstention_reasons: string[];
     leading_candidate_persisted_on_heldout?: boolean;
     heldout_runner_negative_log_score_margin?: number | null }>;
+  position_diagnostic?: {
+    state: "insufficient" | "diagnostic" | "failed";
+    conditional_on_site_assisted_identity: true; position_fix_claimed: false;
+    source_count: number; track_count: number; fit_observation_count: number;
+    evaluation_observation_count: number; candidate_latitude_deg: number | null;
+    candidate_longitude_deg: number | null; training_rms_hz: number | null;
+    evaluation_rms_hz: number | null; jacobian_rank: number | null;
+    condition_number: number | null; boundary_hit: boolean | null;
+    reasons: string[]; runtime_ms: number;
+  };
   artifacts: Array<{
-    name: "trajectory" | "trajectory-tle" | `tle-review-${string}`;
+    name: "trajectory" | "trajectory-tle" | "position-diagnostic" | `tle-review-${string}`;
     sha256: string;
   }>;
 };
@@ -22,6 +32,7 @@ type Status = { session_id: string; state: string; phase: string; failure_summar
 function artifactCaption(name: Product["artifacts"][number]["name"]): string {
   if (name === "trajectory") return "Measured trajectories";
   if (name === "trajectory-tle") return "TLE comparison";
+  if (name === "position-diagnostic") return "Bounded position diagnostic";
   return `Per-track TLE review ${Number(name.slice("tle-review-".length))}`;
 }
 
@@ -74,6 +85,13 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
             ? `Leader retained${c.heldout_runner_negative_log_score_margin == null ? "" : ` · runner +${c.heldout_runner_negative_log_score_margin.toFixed(3)} NLL`}`
             : "Leader changed"}</td>
           <td>{c.abstention_recommended ? `Abstain: ${c.abstention_reasons.join(", ")}` : "Candidate survived controls"}</td></tr>)}</tbody></table>}
+      {p.position_diagnostic && <section aria-label="Bounded position diagnostic">
+        <h4>Site-assisted position diagnostic</h4>
+        <p>{p.position_diagnostic.state === "diagnostic" && p.position_diagnostic.candidate_latitude_deg != null && p.position_diagnostic.candidate_longitude_deg != null
+          ? `Candidate ${p.position_diagnostic.candidate_latitude_deg.toFixed(5)}°, ${p.position_diagnostic.candidate_longitude_deg.toFixed(5)}° · training RMS ${p.position_diagnostic.training_rms_hz?.toFixed(1)} Hz · evaluation RMS ${p.position_diagnostic.evaluation_rms_hz?.toFixed(1)} Hz.`
+          : `Position diagnostic ${p.position_diagnostic.state}: ${p.position_diagnostic.reasons.join(", ")}.`}</p>
+        <p>{p.position_diagnostic.fit_observation_count} fit and {p.position_diagnostic.evaluation_observation_count} evaluation observations from {p.position_diagnostic.track_count} tracks. Conditional on site-assisted identity; no position fix is claimed.</p>
+      </section>}
       {p.artifacts.length > 0 && <div className="scanner-artifact-gallery" aria-label="Trajectory figures">
         {p.artifacts.map(artifact => {
           const artifactUrl = `${base}/${artifact.name}.png?sha256=${encodeURIComponent(artifact.sha256)}`;

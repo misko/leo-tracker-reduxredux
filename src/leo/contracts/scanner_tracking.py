@@ -10,6 +10,7 @@ from pydantic import Field, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
+from leo.contracts.scanner_position import SparseScanPositionDiagnosticV1
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.scanner.persistent_hop_tracking import (
@@ -55,6 +56,7 @@ ArtifactName = Literal[
     "tle-review-31",
     "tle-review-32",
 ]
+ArtifactNameV12 = ArtifactName | Literal["position-diagnostic"]
 
 
 @dataclass(frozen=True)
@@ -103,6 +105,12 @@ class TrackingInput:
 
 class TrackingArtifactV1(ContractModel):
     name: ArtifactName
+    sha256: Sha256Digest
+    byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+
+
+class TrackingArtifactV12(ContractModel):
+    name: ArtifactNameV12
     sha256: Sha256Digest
     byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
 
@@ -339,6 +347,22 @@ class ScannerTrackingProductV11(ScannerTrackingProductV10):
     )
 
 
+class ScannerTrackingProductV12(ScannerTrackingProductV11):
+    """Shared tracking plus a bounded site-assisted positioning diagnostic."""
+
+    schema_version: Literal[12] = 12  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v12"] = "scanner-shared-tracking-v12"  # type: ignore[assignment]
+    artifacts: tuple[TrackingArtifactV12, ...] = ()  # type: ignore[assignment]
+    position_diagnostic: SparseScanPositionDiagnosticV1 | None = None
+
+    @model_validator(mode="after")
+    def _position_artifact(self) -> Self:
+        names = {artifact.name for artifact in self.artifacts}
+        if self.position_diagnostic is not None and "position-diagnostic" not in names:
+            raise ValueError("position diagnostic lacks its independent PNG")
+        return self
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -427,6 +451,22 @@ class ScannerTrackingStatusV11(ContractModel):
     product: ScannerTrackingProductV11 | None = None
 
 
+class ScannerTrackingStatusV12(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV12 | None = None
+
+    @model_validator(mode="after")
+    def _terminal_product(self) -> Self:
+        if self.state == "complete" and (
+            self.product is None or self.product.position_diagnostic is None
+        ):
+            raise ValueError("complete V12 tracking status requires a position diagnostic product")
+        return self
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -442,8 +482,9 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV9
         | ScannerTrackingStatusV10
         | ScannerTrackingStatusV11
+        | ScannerTrackingStatusV12
     ): ...
-    def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
+    def artifact(self, session_id: str, name: ArtifactNameV12) -> bytes | None: ...
 
 
 class ScannerTrackingInputs(Protocol):

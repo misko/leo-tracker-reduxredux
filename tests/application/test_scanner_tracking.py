@@ -14,6 +14,7 @@ from leo.contracts.scanner_tracking import (
     TrackingInput,
     TrackingProbe,
 )
+from leo.operations.scanner_position import build_scan_position_diagnostic
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from tests.analysis.test_persistent_hop_trajectory import _candidate
@@ -183,6 +184,7 @@ def service(
         tle_archive=SimpleNamespace(select_latest_before=select, read=lambda _: raw),
         observer_site=_site(),
         renderer=lambda *a, **k: PNG,
+        position_renderer=build_scan_position_diagnostic,
         review_renderer=review_renderer,
         matcher=fail,
         clock=clock,
@@ -298,7 +300,7 @@ def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, mo
     result = runner.run("scan-test")
 
     assert result.product.track_reviews == (review,)
-    assert result.product.analysis_id == "scanner-shared-tracking-v11"
+    assert result.product.analysis_id == "scanner-shared-tracking-v12"
     assert store.artifact("scan-test", "tle-review-01") == PNG + b"review"
 
 
