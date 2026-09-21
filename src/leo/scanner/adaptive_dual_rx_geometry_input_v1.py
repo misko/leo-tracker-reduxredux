@@ -11,7 +11,7 @@ from pydantic import Field, StringConstraints, model_validator
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.scanner.adaptive_hop import AdaptiveModel, SessionId
 from leo.station.authority import UtcNs
-from leo.station.geometry import UnitVectorV1
+from leo.station.geometry import CartesianVectorMetersV1, UnitVectorV1
 
 EvidenceUri = Annotated[str, StringConstraints(min_length=1, max_length=2048)]
 Finite = Annotated[float, Field(allow_inf_nan=False)]
@@ -74,6 +74,38 @@ class AdaptiveDualRxChainCalibrationV1(AdaptiveModel):
         return self
 
 
+class AdaptiveDualRxPhaseCenterPathV1(AdaptiveModel):
+    schema_version: Literal[1] = 1
+    receiver_id: Annotated[int, Field(strict=True, ge=0, le=1)]
+    physical_receiver_id: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    slot_id: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    phase_center_offset_from_mount_m: CartesianVectorMetersV1
+
+
+class AdaptiveDualRxPhaseCenterRefinementV1(AdaptiveModel):
+    """Surveyed phase centers and cable mapping refining one captured snapshot."""
+
+    schema_version: Literal[1] = 1
+    valid_from_utc_ns: UtcNs
+    valid_until_utc_ns: Annotated[int, Field(gt=0, le=9_223_372_036_854_775_807)]
+    paths: Annotated[tuple[AdaptiveDualRxPhaseCenterPathV1, ...], Field(min_length=2, max_length=2)]
+    evidence_uri: EvidenceUri
+    evidence_sha256: Sha256Digest
+    measurement_truth_verified: Literal[True]
+    refinement_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _canonical_paths_and_digest(self) -> Self:
+        if self.valid_until_utc_ns <= self.valid_from_utc_ns:
+            raise ValueError("phase-center refinement validity interval must be non-empty")
+        if tuple(path.receiver_id for path in self.paths) != (0, 1):
+            raise ValueError("phase-center refinement must use canonical RX0/RX1 order")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"refinement_digest"}))
+        if self.refinement_digest != expected:
+            raise ValueError("phase-center refinement digest differs from its content")
+        return self
+
+
 class AdaptiveDualRxDirectionRowV1(AdaptiveModel):
     """Independent source identity and direction for one retained hypothesis."""
 
@@ -112,6 +144,7 @@ class AdaptiveDualRxGeometryInputV1(AdaptiveModel):
     valid_from_utc_ns: UtcNs
     valid_until_utc_ns: Annotated[int, Field(gt=0, le=9_223_372_036_854_775_807)]
     fixture_pose: AdaptiveDualRxFixturePoseV1
+    phase_center_refinement: AdaptiveDualRxPhaseCenterRefinementV1 | None = None
     chain_calibration: AdaptiveDualRxChainCalibrationV1
     direction_evidence_uri: EvidenceUri
     direction_evidence_sha256: Sha256Digest

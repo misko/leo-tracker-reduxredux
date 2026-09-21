@@ -13,6 +13,8 @@ from leo.scanner.adaptive_dual_rx_geometry_input_v1 import (
     AdaptiveDualRxDirectionRowV1,
     AdaptiveDualRxFixturePoseV1,
     AdaptiveDualRxGeometryInputV1,
+    AdaptiveDualRxPhaseCenterPathV1,
+    AdaptiveDualRxPhaseCenterRefinementV1,
 )
 from leo.station.geometry import (
     AdaptiveReceiverGeometryBindingV1,
@@ -37,7 +39,7 @@ def _binding() -> AdaptiveReceiverGeometryBindingV1:
             slot_id=slot_id,
             mount_reference_position_m=CartesianVectorMetersV1(x=x, y=0, z=0),
             mount_axis_unit=_unit(0, 0, 1),
-            rf_phase_center_position_m=CartesianVectorMetersV1(x=x, y=0, z=0),
+            rf_phase_center_position_m=None,
             rf_boresight_unit=_unit(0, 0, 1),
         )
         for slot_id, x in (("left", -0.04), ("right", 0.04))
@@ -61,8 +63,8 @@ def _binding() -> AdaptiveReceiverGeometryBindingV1:
                 receiver_id=index,
                 physical_receiver_id=f"lnb-{index}",
                 slot_id=slot,
-                mapping_status="verified",
-                mapping_evidence="bench continuity measurement",
+                mapping_status="provisional",
+                mapping_evidence="capture-time receiver order only",
             )
             for index, slot in enumerate(("left", "right"))
         ),
@@ -123,6 +125,26 @@ def _inputs(binding: AdaptiveReceiverGeometryBindingV1) -> AdaptiveDualRxGeometr
         evidence_sha256=digest("6"),
         measurement_truth_verified=True,
     )
+    refinement_values = {
+        "valid_from_utc_ns": 1_700_000_000_000_000_000,
+        "valid_until_utc_ns": 1_900_000_000_000_000_000,
+        "paths": tuple(
+            AdaptiveDualRxPhaseCenterPathV1(
+                receiver_id=index,
+                physical_receiver_id=f"lnb-{index}",
+                slot_id=slot,
+                phase_center_offset_from_mount_m=CartesianVectorMetersV1(x=0, y=0, z=0),
+            ).model_dump(mode="json")
+            for index, slot in enumerate(("left", "right"))
+        ),
+        "evidence_uri": "phase-center-and-cable-survey.json",
+        "evidence_sha256": digest("8"),
+        "measurement_truth_verified": True,
+    }
+    refinement = AdaptiveDualRxPhaseCenterRefinementV1(
+        **refinement_values,
+        refinement_digest=canonical_digest({"schema_version": 1, **refinement_values}),
+    )
     values = {
         "session_id": "scan-hop-phase-v2",
         "input_manifest_sha256": digest("1"),
@@ -131,6 +153,7 @@ def _inputs(binding: AdaptiveReceiverGeometryBindingV1) -> AdaptiveDualRxGeometr
         "valid_from_utc_ns": 1_700_000_000_000_000_000,
         "valid_until_utc_ns": 1_900_000_000_000_000_000,
         "fixture_pose": pose.model_dump(mode="json"),
+        "phase_center_refinement": refinement.model_dump(mode="json"),
         "chain_calibration": calibration.model_dump(mode="json"),
         "direction_evidence_uri": "directions.json",
         "direction_evidence_sha256": digest("7"),
@@ -192,3 +215,38 @@ def test_geometry_input_cannot_retarget_a_phase_hypothesis() -> None:
     )
     with pytest.raises(ValueError, match="changed the phase hypothesis frequencies"):
         reconstruct_product_geometry(capture, (visit(0),), retargeted)
+
+
+@pytest.mark.parametrize("change", ["missing", "conflicting"])
+def test_retrospective_phase_center_refinement_fails_closed(change: str) -> None:
+    binding = _binding()
+    inputs = _inputs(binding)
+    if change == "missing":
+        inputs = inputs.model_copy(update={"phase_center_refinement": None})
+    else:
+        assert inputs.phase_center_refinement is not None
+        paths = list(inputs.phase_center_refinement.paths)
+        paths[0] = paths[0].model_copy(update={"physical_receiver_id": "different-lnb"})
+        inputs = inputs.model_copy(
+            update={
+                "phase_center_refinement": inputs.phase_center_refinement.model_copy(
+                    update={"paths": tuple(paths)}
+                )
+            }
+        )
+    capture = SimpleNamespace(
+        receipt=SimpleNamespace(session_id="scan-hop-phase-v2"),
+        created_utc_ns=1_799_999_999_000_000_000,
+        finalized_utc_ns=1_800_000_100_000_000_000,
+        receiver_geometry=binding,
+        timing=SimpleNamespace(
+            qualified=True,
+            first_sample_estimate_utc_ns=1_800_000_000_000_000_000,
+        ),
+    )
+
+    result = reconstruct_product_geometry(capture, (visit(0),), inputs)
+
+    assert result.state == "unavailable"
+    assert "receiver_mapping_unverified" in result.reasons
+    assert "rf_phase_centers_unverified" in result.reasons

@@ -87,7 +87,10 @@ centers, fixture-to-ENU pose, and differential receiver-chain phase/group-delay
 calibration remain unverified. Absolute geometric phase and a unique path-length
 interpretation are therefore unavailable. The calibrated estimator reports
 this state explicitly and retains integer-cycle candidates when those inputs
-become available.
+become available. Its versioned input can refine the immutable capture snapshot
+retrospectively: a surveyed phase-center offset and verified cable mapping must
+bind the exact captured geometry digest and cover the installation time. A
+missing, expired, or conflicting refinement remains unavailable.
 
 ## Reproduction
 
