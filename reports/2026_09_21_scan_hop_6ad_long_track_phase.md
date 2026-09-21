@@ -1,5 +1,7 @@
 # Saved-IQ phase on the longest recent dual-RX track
 
+Timing correction: this historical v1 report plots tracking-candidate centers. The [phase-connection audit](2026_09_21_long_track_phase_connection_audit.md) supplies v2 evidence using the phase fits' actual centers on the device-counter timebase; their span is 45.749233 seconds. The v1 evidence below is retained unchanged.
+
 ## Result
 
 Twenty deterministic, evenly spaced visits from the longest dual-receiver track in the frozen recent-eight-hour inventory were replayed from saved IQ. All 20 phase estimates bind back to the exact persisted RX0/RX1 track pair using phase-blind, symbol-alias-aware frequency matching. The selected support spans 45.694 s.
