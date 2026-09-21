@@ -1,0 +1,1188 @@
+{
+  "scope": "known-site beam calibration transfer; not positioning or blind localization",
+  "geometry_basis": "nominal-sgp4",
+  "input_phase_alignment": null,
+  "nominal_phase_mismatch_bound": {
+    "max_db": 0.9423594747601007,
+    "max_residual_sigma": 0.8016891399544641
+  },
+  "input": {
+    "points": 2982,
+    "sessions": 55,
+    "satellites": 105,
+    "lanes": [
+      [
+        1,
+        "lower"
+      ],
+      [
+        1,
+        "upper"
+      ],
+      [
+        2,
+        "lower"
+      ],
+      [
+        2,
+        "upper"
+      ],
+      [
+        3,
+        "lower"
+      ],
+      [
+        3,
+        "upper"
+      ],
+      [
+        4,
+        "lower"
+      ],
+      [
+        4,
+        "upper"
+      ]
+    ]
+  },
+  "models": {
+    "linear-east": "per-lane intercepts plus shared east direction cosine",
+    "linear-east-north": "per-lane intercepts plus shared east and north cosines",
+    "robust-quadratic": "Huber IRLS with per-lane intercepts and a fixed second-order east/north surface"
+  },
+  "blocks": [
+    {
+      "block": 0,
+      "sessions": 14,
+      "points": 806,
+      "start_utc_ns": 1789970970252646221,
+      "end_utc_ns": 1789979543454899826,
+      "session_ids": [
+        "scan-hop-460013f8a7df7a72",
+        "scan-hop-8b064f9c2d7066ac",
+        "scan-hop-4aef188cf9462da5",
+        "scan-hop-c22ed634112b900c",
+        "scan-hop-ebce43741b89bdf1",
+        "scan-hop-38ddaf728885054f",
+        "scan-hop-717cefb2ac3fdadf",
+        "scan-hop-7971a66e0896df20",
+        "scan-hop-73a490a9debd1e9d",
+        "scan-hop-1a3679fc1c9fd7bf",
+        "scan-hop-8b1c5110e2fad852",
+        "scan-hop-3ac4256c8bdb2bca",
+        "scan-hop-943046d6fb85ec92",
+        "scan-hop-3aba7954745c0b7a"
+      ]
+    },
+    {
+      "block": 1,
+      "sessions": 14,
+      "points": 770,
+      "start_utc_ns": 1789979954841522171,
+      "end_utc_ns": 1789985762821439114,
+      "session_ids": [
+        "scan-hop-41e7ed10d3d52cd1",
+        "scan-hop-1bec690f93ce0b1e",
+        "scan-hop-7fbf7bca214d0958",
+        "scan-hop-34c0b0e1ae062f97",
+        "scan-hop-49071904d91ca6eb",
+        "scan-hop-7fda2d155e6e1a1a",
+        "scan-hop-1b83fb54ac5af24b",
+        "scan-hop-a9af4e4b77a20bdc",
+        "scan-hop-fdee4a852c49e0ae",
+        "scan-hop-f3fa86c3c9915233",
+        "scan-hop-2a74986a434a9878",
+        "scan-hop-b85ead33b243a9d7",
+        "scan-hop-ede0be76a09fbcd9",
+        "scan-hop-597d327be52d6fec"
+      ]
+    },
+    {
+      "block": 2,
+      "sessions": 14,
+      "points": 804,
+      "start_utc_ns": 1789985941208704874,
+      "end_utc_ns": 1789991584051554683,
+      "session_ids": [
+        "scan-hop-b158f63a64278e61",
+        "scan-hop-45b6c11838a3e033",
+        "scan-hop-46ab481b8e0fa04a",
+        "scan-hop-26f38bc0f5577d7c",
+        "scan-hop-2a0a89b753ed7832",
+        "scan-hop-fa900582aaef634d",
+        "scan-hop-e765492d673ecc27",
+        "scan-hop-56b26a40cfeca91f",
+        "scan-hop-01b11a5d776e7369",
+        "scan-hop-d7cc71f5a28f8b32",
+        "scan-hop-3dcd6395f2675920",
+        "scan-hop-8efde145a7b2158a",
+        "scan-hop-bd5ae3e8c50448cd",
+        "scan-hop-b6b88d05b8499863"
+      ]
+    },
+    {
+      "block": 3,
+      "sessions": 13,
+      "points": 602,
+      "start_utc_ns": 1789991682539043231,
+      "end_utc_ns": 1789997713694061210,
+      "session_ids": [
+        "scan-hop-ec2503803f23aaaa",
+        "scan-hop-6e977f7cb9c578af",
+        "scan-hop-8a431c8465d7c62e",
+        "scan-hop-76e969f7da82de8f",
+        "scan-hop-c07e26fcb7280fda",
+        "scan-hop-e46d3aba244cf641",
+        "scan-hop-692ffbe028d18930",
+        "scan-hop-22cdc9b9d8bb1d2f",
+        "scan-hop-959b57f1730cc7a5",
+        "scan-hop-f6ec83681b6626df",
+        "scan-hop-f8caee6d08673576",
+        "scan-hop-e6ba619a89a0f227",
+        "scan-hop-c151a82d9c78b338"
+      ]
+    }
+  ],
+  "folds": [
+    {
+      "evaluation_block": 1,
+      "training_blocks": [
+        0
+      ],
+      "training_sessions": 14,
+      "evaluation_sessions": 14,
+      "training_points": 806,
+      "evaluation_points": 770,
+      "supported_evaluation_points": 712,
+      "unsupported_evaluation_points": 58,
+      "models": [
+        {
+          "model": "linear-east",
+          "coefficients": [
+            -1.3796520113944897,
+            -2.033161818481709,
+            -1.503093298977411,
+            -1.5323871433253775,
+            -2.20018107787915,
+            -1.5514224601571918,
+            -1.8732877031727782,
+            15.589847291744405
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ]
+          ],
+          "fit_iterations": 1,
+          "metrics": {
+            "weighted_rms_db": 1.3236830594813138,
+            "weighted_bias_db": 0.2261244449238201,
+            "weighted_scatter_db": 1.304225661979439,
+            "weighted_mae_db": 1.0860024964076544,
+            "point_rms_db": 1.2704652224399016
+          }
+        },
+        {
+          "model": "linear-east-north",
+          "coefficients": [
+            -1.381687020240871,
+            -2.0228821614369963,
+            -1.4991502494858335,
+            -1.5183173295345915,
+            -2.207615336799316,
+            -1.545221823984723,
+            -1.8841197436333905,
+            15.593637684942774,
+            -0.15798373698585366
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ]
+          ],
+          "fit_iterations": 1,
+          "metrics": {
+            "weighted_rms_db": 1.3120936798624736,
+            "weighted_bias_db": 0.21296725227769756,
+            "weighted_scatter_db": 1.2946948575600103,
+            "weighted_mae_db": 1.0746617272234404,
+            "point_rms_db": 1.2528202976765734
+          }
+        },
+        {
+          "model": "robust-quadratic",
+          "coefficients": [
+            -1.1669081434916344,
+            -1.6177807697839874,
+            -1.137965411227972,
+            -1.546241466940877,
+            -1.7305581705059752,
+            -1.7615349328807746,
+            -1.3655930606867672,
+            21.492937638609487,
+            -0.3078199969852242,
+            -34.76287405741045,
+            -3.207406358293652,
+            -1.7122576361327733
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ]
+          ],
+          "fit_iterations": 27,
+          "metrics": {
+            "weighted_rms_db": 2.0442555633230235,
+            "weighted_bias_db": 0.4193712918487046,
+            "weighted_scatter_db": 2.000776981012697,
+            "weighted_mae_db": 1.410155442305173,
+            "point_rms_db": 1.5588629167141854
+          }
+        }
+      ]
+    },
+    {
+      "evaluation_block": 2,
+      "training_blocks": [
+        0,
+        1
+      ],
+      "training_sessions": 28,
+      "evaluation_sessions": 14,
+      "training_points": 1576,
+      "evaluation_points": 804,
+      "supported_evaluation_points": 804,
+      "unsupported_evaluation_points": 0,
+      "models": [
+        {
+          "model": "linear-east",
+          "coefficients": [
+            -1.387418369816825,
+            -1.4807352277554369,
+            -1.135162666048326,
+            -1.183278831406295,
+            -2.7822332292780168,
+            -1.4775987841988738,
+            -1.5716466199312302,
+            -0.9371541009807937,
+            14.596024808736367
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ],
+            [
+              4,
+              "upper"
+            ]
+          ],
+          "fit_iterations": 1,
+          "metrics": {
+            "weighted_rms_db": 1.2657230857776334,
+            "weighted_bias_db": 0.5494019017162112,
+            "weighted_scatter_db": 1.140268600050473,
+            "weighted_mae_db": 0.9997472080467198,
+            "point_rms_db": 1.3019770521598821
+          }
+        },
+        {
+          "model": "linear-east-north",
+          "coefficients": [
+            -1.4433061583589404,
+            -1.5614792925145249,
+            -1.2076559935329865,
+            -1.2608336305414138,
+            -2.9506499668201696,
+            -1.4448692874297626,
+            -1.651607637223794,
+            -1.0315866708173835,
+            14.977288737389653,
+            -1.4879257367179077
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ],
+            [
+              4,
+              "upper"
+            ]
+          ],
+          "fit_iterations": 1,
+          "metrics": {
+            "weighted_rms_db": 1.2126172746921375,
+            "weighted_bias_db": 0.4903397497142266,
+            "weighted_scatter_db": 1.1090570700969253,
+            "weighted_mae_db": 0.958389077452827,
+            "point_rms_db": 1.2291645929761426
+          }
+        },
+        {
+          "model": "robust-quadratic",
+          "coefficients": [
+            -1.2149364641412268,
+            -1.4261266652981988,
+            -1.0791401110228884,
+            -1.30762991246036,
+            -2.5589756109045325,
+            -1.424839441131673,
+            -1.3985703652120982,
+            -0.9307440862038489,
+            14.76437743460227,
+            -1.2395857812497868,
+            -4.653006730848207,
+            3.6394776279673438,
+            1.2594019867065511
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ],
+            [
+              4,
+              "upper"
+            ]
+          ],
+          "fit_iterations": 50,
+          "metrics": {
+            "weighted_rms_db": 1.118758715104565,
+            "weighted_bias_db": 0.38194505344277063,
+            "weighted_scatter_db": 1.0515412682215648,
+            "weighted_mae_db": 0.8853851067737409,
+            "point_rms_db": 1.1166668293471236
+          }
+        }
+      ]
+    },
+    {
+      "evaluation_block": 3,
+      "training_blocks": [
+        0,
+        1,
+        2
+      ],
+      "training_sessions": 42,
+      "evaluation_sessions": 13,
+      "training_points": 2380,
+      "evaluation_points": 602,
+      "supported_evaluation_points": 602,
+      "unsupported_evaluation_points": 0,
+      "models": [
+        {
+          "model": "linear-east",
+          "coefficients": [
+            -1.3465246472902395,
+            -1.4296505964821513,
+            -1.0721714282743586,
+            -1.228462896952697,
+            -2.1136919144188733,
+            -1.1519153279949306,
+            -1.4371710516992415,
+            -1.0921503020160974,
+            14.709082266128611
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ],
+            [
+              4,
+              "upper"
+            ]
+          ],
+          "fit_iterations": 1,
+          "metrics": {
+            "weighted_rms_db": 1.4042786266869598,
+            "weighted_bias_db": -0.17470603442168758,
+            "weighted_scatter_db": 1.3933686744384854,
+            "weighted_mae_db": 1.0937093533187265,
+            "point_rms_db": 1.2309175309975964
+          }
+        },
+        {
+          "model": "linear-east-north",
+          "coefficients": [
+            -1.4373349383936789,
+            -1.5000126095170376,
+            -1.1870611303185599,
+            -1.3182780099783997,
+            -2.2998009162881883,
+            -1.3388614981241558,
+            -1.5755996421750387,
+            -1.1881683216421985,
+            15.111572737121389,
+            -1.779891342516625
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ],
+            [
+              4,
+              "upper"
+            ]
+          ],
+          "fit_iterations": 1,
+          "metrics": {
+            "weighted_rms_db": 1.375046063715416,
+            "weighted_bias_db": -0.20340838925958565,
+            "weighted_scatter_db": 1.359917903594949,
+            "weighted_mae_db": 1.0365553279931563,
+            "point_rms_db": 1.1612484107279295
+          }
+        },
+        {
+          "model": "robust-quadratic",
+          "coefficients": [
+            -1.178152101684352,
+            -1.3748153293602314,
+            -1.0160963808946022,
+            -1.3010810075427393,
+            -1.6495522221408752,
+            -1.092491315932149,
+            -1.3341054395043292,
+            -1.005381810969742,
+            14.90463299753598,
+            -1.8376132747729668,
+            -5.510951743819964,
+            5.804150288891551,
+            0.2901012459216896
+          ],
+          "fitted_lanes": [
+            [
+              1,
+              "lower"
+            ],
+            [
+              1,
+              "upper"
+            ],
+            [
+              2,
+              "lower"
+            ],
+            [
+              2,
+              "upper"
+            ],
+            [
+              3,
+              "lower"
+            ],
+            [
+              3,
+              "upper"
+            ],
+            [
+              4,
+              "lower"
+            ],
+            [
+              4,
+              "upper"
+            ]
+          ],
+          "fit_iterations": 50,
+          "metrics": {
+            "weighted_rms_db": 1.4106919599857002,
+            "weighted_bias_db": -0.3652698333288632,
+            "weighted_scatter_db": 1.3625820176518555,
+            "weighted_mae_db": 1.021612892386551,
+            "point_rms_db": 1.0811686314055555
+          }
+        }
+      ]
+    }
+  ],
+  "aggregate": [
+    {
+      "model": "linear-east",
+      "metrics": {
+        "weighted_rms_db": 1.3331104357212764,
+        "weighted_bias_db": 0.19642489625382417,
+        "weighted_scatter_db": 1.3185600835610964,
+        "weighted_mae_db": 1.0608465345953304,
+        "point_rms_db": 1.2715094360296153
+      },
+      "session_bias": {
+        "groups": 40,
+        "bias_rms_db": 0.6692778643461609,
+        "bias_median_abs_db": 0.36283182341440834,
+        "bias_p90_abs_db": 1.2376430589896736,
+        "largest_abs_bias": [
+          {
+            "group": "scan-hop-b6b88d05b8499863",
+            "points": 99,
+            "bias_db": 1.418513946335569,
+            "rms_db": 1.708798683714634
+          },
+          {
+            "group": "scan-hop-c151a82d9c78b338",
+            "points": 42,
+            "bias_db": 1.3669887097140603,
+            "rms_db": 1.7888976109345043
+          },
+          {
+            "group": "scan-hop-e765492d673ecc27",
+            "points": 85,
+            "bias_db": 1.3241086639141135,
+            "rms_db": 1.6227979042286826
+          },
+          {
+            "group": "scan-hop-597d327be52d6fec",
+            "points": 27,
+            "bias_db": 1.2945218641121679,
+            "rms_db": 1.3840225645304987
+          },
+          {
+            "group": "scan-hop-f3fa86c3c9915233",
+            "points": 7,
+            "bias_db": -1.2313231917538408,
+            "rms_db": 1.7146292447359337
+          },
+          {
+            "group": "scan-hop-c07e26fcb7280fda",
+            "points": 66,
+            "bias_db": -1.1867202263989793,
+            "rms_db": 1.3823309067881684
+          },
+          {
+            "group": "scan-hop-7fda2d155e6e1a1a",
+            "points": 33,
+            "bias_db": 1.1330556829714102,
+            "rms_db": 1.324253558662663
+          },
+          {
+            "group": "scan-hop-1b83fb54ac5af24b",
+            "points": 58,
+            "bias_db": 1.0703478923117407,
+            "rms_db": 1.8715740928546327
+          },
+          {
+            "group": "scan-hop-49071904d91ca6eb",
+            "points": 9,
+            "bias_db": 1.0215276406664016,
+            "rms_db": 1.324661159663692
+          },
+          {
+            "group": "scan-hop-22cdc9b9d8bb1d2f",
+            "points": 131,
+            "bias_db": -0.7945139754692462,
+            "rms_db": 1.228328796209566
+          }
+        ]
+      },
+      "satellite_bias": {
+        "groups": 75,
+        "bias_rms_db": 0.9904160795694364,
+        "bias_median_abs_db": 0.5549449613783237,
+        "bias_p90_abs_db": 1.5422712836023678,
+        "largest_abs_bias": [
+          {
+            "group": "59673",
+            "points": 3,
+            "bias_db": -2.6465946912455602,
+            "rms_db": 2.878023600560175
+          },
+          {
+            "group": "56460",
+            "points": 1,
+            "bias_db": -2.5446684125521535,
+            "rms_db": 2.5446684125521535
+          },
+          {
+            "group": "68005",
+            "points": 4,
+            "bias_db": -2.306141382488063,
+            "rms_db": 2.381138467805139
+          },
+          {
+            "group": "67500",
+            "points": 52,
+            "bias_db": 1.9553150943333426,
+            "rms_db": 2.1672299963510357
+          },
+          {
+            "group": "59095",
+            "points": 41,
+            "bias_db": 1.9408139849519945,
+            "rms_db": 2.103622368604997
+          },
+          {
+            "group": "66978",
+            "points": 2,
+            "bias_db": 1.8412893540425,
+            "rms_db": 1.8445336025419947
+          },
+          {
+            "group": "59837",
+            "points": 43,
+            "bias_db": 1.6606875905022838,
+            "rms_db": 2.068873374726522
+          },
+          {
+            "group": "60030",
+            "points": 32,
+            "bias_db": 1.5461134064487145,
+            "rms_db": 1.656016031633328
+          },
+          {
+            "group": "61891",
+            "points": 25,
+            "bias_db": 1.5365080993328473,
+            "rms_db": 1.9884276289711014
+          },
+          {
+            "group": "64811",
+            "points": 1,
+            "bias_db": 1.5075936215170707,
+            "rms_db": 1.5075936215170707
+          }
+        ]
+      },
+      "session_residual_fraction": 0.2488967977419081,
+      "satellite_residual_fraction": 0.50475871066763,
+      "session_cluster_bootstrap": {
+        "sessions": 40,
+        "repetitions": 2000,
+        "weighted_rms_95_db": [
+          1.2154308510783343,
+          1.4405492628065373
+        ],
+        "weighted_bias_95_db": [
+          -0.03607619677114099,
+          0.43064673975746054
+        ],
+        "cluster_mean_se_db": 0.11916465149800712,
+        "effective_independent_points_for_mean": 122.43482200746583
+      }
+    },
+    {
+      "model": "linear-east-north",
+      "metrics": {
+        "weighted_rms_db": 1.3027857038112778,
+        "weighted_bias_db": 0.16333081736986846,
+        "weighted_scatter_db": 1.29250672499308,
+        "weighted_mae_db": 1.0245862424346963,
+        "point_rms_db": 1.218375474440648
+      },
+      "session_bias": {
+        "groups": 40,
+        "bias_rms_db": 0.5953161491785969,
+        "bias_median_abs_db": 0.27109206064888286,
+        "bias_p90_abs_db": 1.0991821954436043,
+        "largest_abs_bias": [
+          {
+            "group": "scan-hop-e765492d673ecc27",
+            "points": 85,
+            "bias_db": 1.4332399450709037,
+            "rms_db": 1.6988304079776089
+          },
+          {
+            "group": "scan-hop-f3fa86c3c9915233",
+            "points": 7,
+            "bias_db": -1.2621638284956622,
+            "rms_db": 1.7391870357983732
+          },
+          {
+            "group": "scan-hop-597d327be52d6fec",
+            "points": 27,
+            "bias_db": 1.237233980561595,
+            "rms_db": 1.3308654535216098
+          },
+          {
+            "group": "scan-hop-b6b88d05b8499863",
+            "points": 99,
+            "bias_db": 1.1889636545352917,
+            "rms_db": 1.5806888951619735
+          },
+          {
+            "group": "scan-hop-7fda2d155e6e1a1a",
+            "points": 33,
+            "bias_db": 1.08920647776675,
+            "rms_db": 1.2806972619142225
+          },
+          {
+            "group": "scan-hop-c07e26fcb7280fda",
+            "points": 66,
+            "bias_db": -1.013717137537918,
+            "rms_db": 1.2798035315156815
+          },
+          {
+            "group": "scan-hop-1b83fb54ac5af24b",
+            "points": 58,
+            "bias_db": 1.0091127683092422,
+            "rms_db": 1.824901714242854
+          },
+          {
+            "group": "scan-hop-49071904d91ca6eb",
+            "points": 9,
+            "bias_db": 1.0038877649367062,
+            "rms_db": 1.3080550253235728
+          },
+          {
+            "group": "scan-hop-c151a82d9c78b338",
+            "points": 42,
+            "bias_db": 0.9209018408933844,
+            "rms_db": 1.4682003838709168
+          },
+          {
+            "group": "scan-hop-7fbf7bca214d0958",
+            "points": 4,
+            "bias_db": 0.6811795905572826,
+            "rms_db": 1.0491456849391474
+          }
+        ]
+      },
+      "satellite_bias": {
+        "groups": 75,
+        "bias_rms_db": 0.9478406792548548,
+        "bias_median_abs_db": 0.4708947919180352,
+        "bias_p90_abs_db": 1.5089652623923637,
+        "largest_abs_bias": [
+          {
+            "group": "59673",
+            "points": 3,
+            "bias_db": -2.9419595138700045,
+            "rms_db": 3.1614838309772857
+          },
+          {
+            "group": "56460",
+            "points": 1,
+            "bias_db": -2.567765768019108,
+            "rms_db": 2.567765768019108
+          },
+          {
+            "group": "68005",
+            "points": 4,
+            "bias_db": -2.4965333285169047,
+            "rms_db": 2.564147731200553
+          },
+          {
+            "group": "66978",
+            "points": 2,
+            "bias_db": 2.0272712590727533,
+            "rms_db": 2.029783880861704
+          },
+          {
+            "group": "67500",
+            "points": 52,
+            "bias_db": 1.8554075631505365,
+            "rms_db": 2.0634777493754863
+          },
+          {
+            "group": "63329",
+            "points": 11,
+            "bias_db": 1.8415783479335481,
+            "rms_db": 2.0872218644776037
+          },
+          {
+            "group": "59837",
+            "points": 43,
+            "bias_db": 1.5860754617663513,
+            "rms_db": 2.0077524532949282
+          },
+          {
+            "group": "64811",
+            "points": 1,
+            "bias_db": 1.5196487930442153,
+            "rms_db": 1.5196487930442153
+          },
+          {
+            "group": "60030",
+            "points": 32,
+            "bias_db": 1.492939966414586,
+            "rms_db": 1.606344833836942
+          },
+          {
+            "group": "64188",
+            "points": 40,
+            "bias_db": 1.4753974751571137,
+            "rms_db": 1.7889495928909869
+          }
+        ]
+      },
+      "session_residual_fraction": 0.24216526650006887,
+      "satellite_residual_fraction": 0.48488828904928405,
+      "session_cluster_bootstrap": {
+        "sessions": 40,
+        "repetitions": 2000,
+        "weighted_rms_95_db": [
+          1.1786152482524017,
+          1.413004952286397
+        ],
+        "weighted_bias_95_db": [
+          -0.07213915668762451,
+          0.3646345399673574
+        ],
+        "cluster_mean_se_db": 0.11081469479928391,
+        "effective_independent_points_for_mean": 136.04134389883
+      }
+    },
+    {
+      "model": "robust-quadratic",
+      "metrics": {
+        "weighted_rms_db": 1.5837931513836319,
+        "weighted_bias_db": 0.14579438777808415,
+        "weighted_scatter_db": 1.5770684014531864,
+        "weighted_mae_db": 1.1119650797210052,
+        "point_rms_db": 1.2737702137543807
+      },
+      "session_bias": {
+        "groups": 40,
+        "bias_rms_db": 0.7395205781909208,
+        "bias_median_abs_db": 0.2943736493002249,
+        "bias_p90_abs_db": 1.2146142372165183,
+        "largest_abs_bias": [
+          {
+            "group": "scan-hop-1b83fb54ac5af24b",
+            "points": 58,
+            "bias_db": 2.3317663498640693,
+            "rms_db": 3.2189582503957084
+          },
+          {
+            "group": "scan-hop-597d327be52d6fec",
+            "points": 27,
+            "bias_db": 2.3036573877001243,
+            "rms_db": 2.551207073677027
+          },
+          {
+            "group": "scan-hop-f3fa86c3c9915233",
+            "points": 7,
+            "bias_db": -1.4409413707169847,
+            "rms_db": 1.770489799752729
+          },
+          {
+            "group": "scan-hop-49071904d91ca6eb",
+            "points": 9,
+            "bias_db": 1.2452654903805802,
+            "rms_db": 1.4381475254363847
+          },
+          {
+            "group": "scan-hop-7fda2d155e6e1a1a",
+            "points": 33,
+            "bias_db": 1.2112085424205115,
+            "rms_db": 1.6251059060834319
+          },
+          {
+            "group": "scan-hop-e765492d673ecc27",
+            "points": 85,
+            "bias_db": 1.2066312623797213,
+            "rms_db": 1.522701489408453
+          },
+          {
+            "group": "scan-hop-b6b88d05b8499863",
+            "points": 99,
+            "bias_db": 0.9289137499129118,
+            "rms_db": 1.3157247264727754
+          },
+          {
+            "group": "scan-hop-c07e26fcb7280fda",
+            "points": 66,
+            "bias_db": -0.906229496727514,
+            "rms_db": 1.1297283134289218
+          },
+          {
+            "group": "scan-hop-fa900582aaef634d",
+            "points": 2,
+            "bias_db": 0.6381839996053196,
+            "rms_db": 0.7252374586829541
+          },
+          {
+            "group": "scan-hop-22cdc9b9d8bb1d2f",
+            "points": 131,
+            "bias_db": -0.6106611529652848,
+            "rms_db": 1.0625038188324887
+          }
+        ]
+      },
+      "satellite_bias": {
+        "groups": 75,
+        "bias_rms_db": 1.325340759654765,
+        "bias_median_abs_db": 0.462185906158654,
+        "bias_p90_abs_db": 1.80200758855923,
+        "largest_abs_bias": [
+          {
+            "group": "64811",
+            "points": 1,
+            "bias_db": 6.777128575565655,
+            "rms_db": 6.777128575565655
+          },
+          {
+            "group": "56460",
+            "points": 1,
+            "bias_db": -3.310762454939936,
+            "rms_db": 3.310762454939936
+          },
+          {
+            "group": "58238",
+            "points": 9,
+            "bias_db": 3.2079667559456735,
+            "rms_db": 3.352724800423323
+          },
+          {
+            "group": "59673",
+            "points": 3,
+            "bias_db": -3.2064493127441556,
+            "rms_db": 3.451267387119189
+          },
+          {
+            "group": "59837",
+            "points": 43,
+            "bias_db": 3.2011071548647836,
+            "rms_db": 3.530558104287924
+          },
+          {
+            "group": "68005",
+            "points": 4,
+            "bias_db": -2.7736568908974326,
+            "rms_db": 2.8333667163993663
+          },
+          {
+            "group": "60030",
+            "points": 32,
+            "bias_db": 1.9587909444623663,
+            "rms_db": 2.2110488367662864
+          },
+          {
+            "group": "60334",
+            "points": 18,
+            "bias_db": 1.8515027035773501,
+            "rms_db": 2.035338916613826
+          },
+          {
+            "group": "58543",
+            "points": 23,
+            "bias_db": 1.727764916032047,
+            "rms_db": 1.9230720791032414
+          },
+          {
+            "group": "66978",
+            "points": 2,
+            "bias_db": 1.6391011338365598,
+            "rms_db": 1.6418535382820265
+          }
+        ]
+      },
+      "session_residual_fraction": 0.31761505203600093,
+      "satellite_residual_fraction": 0.6372772581306545,
+      "session_cluster_bootstrap": {
+        "sessions": 40,
+        "repetitions": 2000,
+        "weighted_rms_95_db": [
+          1.2276684380279888,
+          2.011704549113899
+        ],
+        "weighted_bias_95_db": [
+          -0.16379189524180604,
+          0.47227081037072044
+        ],
+        "cluster_mean_se_db": 0.16371159025614085,
+        "effective_independent_points_for_mean": 92.79876704177356
+      }
+    }
+  ],
+  "interpretation": "Chronological transfer measures whether an earlier known-site detector-response calibration predicts later captures. Catalogue directions and clear review leaders remain selection-conditioned; no coordinate error is used.",
+  "geometry_note": "Diagnostic only: ENU directions use nominal SGP4. Prior phase-aligned analysis bounds the resulting response change at 0.9423594747601007 dB / 0.8016891399544641 residual sigma; this is not a deployable phase-consistent calibration.",
+  "finding": "The forward-transfer east+north model has 1.303 dB weighted RMS. Session means account descriptively for 24.2% of residual variation, versus 48.5% for satellite grouping. The latter is confounded by which satellites occur in which sessions. Session drift is material but does not dominate the residual variance in this diagnostic. The robust quadratic surface does not improve consistently across future blocks."
+}
