@@ -1497,6 +1497,7 @@ def _warn_release_pressure(*, release_root: Path = RELEASE_ROOT) -> None:
 def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     stage_only = bool(getattr(args, "stage_only", False))
     fast = bool(getattr(args, "fast", False))
+    api_only = bool(getattr(args, "api_only", False))
     if stage_only and args.revision is None:
         raise OpsError("--stage-only requires an explicit --revision FULL_SHA")
     if stage_only and args.plan:
@@ -1505,8 +1506,14 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         raise OpsError("--stage-only cannot be combined with --full")
     if stage_only and fast:
         raise OpsError("--stage-only cannot be combined with --fast")
+    if stage_only and api_only:
+        raise OpsError("--stage-only cannot be combined with --api-only")
     if args.full and fast:
         raise OpsError("--full cannot be combined with --fast")
+    if args.full and api_only:
+        raise OpsError("--full cannot be combined with --api-only")
+    if fast and api_only:
+        raise OpsError("--fast cannot be combined with --api-only")
     if _run_git("status", "--porcelain"):
         raise OpsError("deployment planning requires a clean worktree")
     target = args.revision or _run_git("rev-parse", "origin/main")
@@ -1520,7 +1527,7 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
             "stage-only may instead use the clean local HEAD"
         )
     current = _selected_release_revision()
-    current_api = _selected_component_release_revision("api") if fast else None
+    current_api = _selected_component_release_revision("api") if fast or api_only else None
     comparison = current_api if fast and current_api is not None else current
     paths = (
         tuple(_git_lines("diff", "--name-only", f"{comparison}..{target}")) if comparison else ()
@@ -1538,7 +1545,9 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         args.full or {"deployment", "migration"}.intersection(impact) or len(service_impact) > 1
     )
     mode = (
-        "fast-api-only"
+        "qualified-api-only"
+        if api_only
+        else "fast-api-only"
         if fast_eligible
         else "full"
         if guarded_full_cutover
@@ -1548,7 +1557,7 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         if not service_impact
         else "minimal"
     )
-    full_cutover = bool(impact) and not fast_eligible and guarded_full_cutover
+    full_cutover = bool(impact) and not fast_eligible and not api_only and guarded_full_cutover
     return {
         "schema_version": 1,
         "kind": "leo-deployment-plan",
@@ -1562,7 +1571,7 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         "mode": mode,
         "services_to_restart": (
             ["api"]
-            if fast_eligible
+            if fast_eligible or api_only
             else [name for name in ("api", "worker", "acquisition") if name in impact]
         ),
         "migration_required": False if fast_eligible else "migration" in impact,
@@ -1572,6 +1581,7 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         "fast_eligible": fast_eligible,
         "fast_rejected_paths": list(rejected_fast_paths),
         "fast_target_seconds": FAST_DEPLOY_TARGET_SECONDS if fast else None,
+        "api_only_requested": api_only,
     }
 
 
@@ -1606,6 +1616,27 @@ def _deploy(args: argparse.Namespace) -> int:
     if not impact:
         print(f"NO-OP target={target} has no runtime impact")
         return 0
+    if bool(getattr(args, "api_only", False)):
+        if os.geteuid() != 0:
+            raise OpsError("mutating deployment requires root; rerun with sudo")
+        current_api = document.get("current_api_revision")
+        if current is None or current_api is None:
+            raise OpsError("API-only deploy requires reviewed global and API component selectors")
+        _require_matching_test_receipt(
+            target=target,
+            changed=tuple(document["changed_paths"]),
+        )
+        _stage_release(target)
+        document["release_qualification_receipt"] = str(_release_qualification(target))
+        release = RELEASE_ROOT / "releases" / target
+        database_url = _environment_values(PRODUCTION_ENVIRONMENT.read_bytes())["LEO_DATABASE_URL"]
+        if _migration_required(release=release, database_url=database_url):
+            raise OpsError("API-only deploy refuses a target whose database is not at Alembic head")
+        return _deploy_api_release(
+            target=target,
+            previous=str(current_api),
+            plan=document,
+        )
     if bool(getattr(args, "fast", False)):
         rejected = tuple(document["fast_rejected_paths"])
         if rejected:
@@ -1719,7 +1750,13 @@ def _deploy_api_release(
         receipt = {
             "schema_version": 1,
             "kind": "leo-deployment-receipt",
-            "mode": "fast-api-only" if require_pre_staged else "api-only",
+            "mode": (
+                "fast-api-only"
+                if require_pre_staged
+                else "qualified-api-only"
+                if plan.get("api_only_requested")
+                else "api-only"
+            ),
             "previous_revision": previous,
             "target_revision": target,
             "duration_seconds": duration_seconds,
@@ -3074,6 +3111,11 @@ def parser() -> argparse.ArgumentParser:
         "--fast",
         action="store_true",
         help=("switch only the API to a pre-staged API/UI-only revision; refuse broader changes"),
+    )
+    deploy.add_argument(
+        "--api-only",
+        action="store_true",
+        help=("deploy only the API after full target qualification and a no-migration check"),
     )
     deploy.add_argument("--revision")
     releases = commands.add_parser(

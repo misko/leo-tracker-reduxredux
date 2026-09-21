@@ -118,6 +118,15 @@ decision before cutover with:
 ./ops deploy --fast --plan --revision "$release_revision"
 ```
 
+`sudo ./ops deploy --api-only --revision FULL_SHA` is the guarded API-only path for a target whose
+source delta is broader than the fast boundary. It requires a full developer test receipt covering
+every changed path, stages and runs the sealed exact-target release qualification, and verifies that
+the production database is already at that release's Alembic head before selecting or restarting
+the API. Its plan retains the complete changed-path and runtime-impact inventory while setting
+`mode` to `qualified-api-only` and `services_to_restart` to only `api`. It does not change global,
+worker, or acquisition selectors or environments and does not run radio probes. It cannot be
+combined with `--full`, `--fast`, or `--stage-only`.
+
 After any required Alembic upgrade and before worker startup, cutover reads the complete production
 resource-capacity inventory and requires exactly `streaming=16,cpu=8,memory=4,heavy=16`; any row
 drift, omission, duplication, or addition blocks startup. Deployment does not resume the durable

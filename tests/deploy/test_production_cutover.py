@@ -973,11 +973,20 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
         _call("probe_live_station_radios", release)
 
 
-@pytest.mark.parametrize("selected_index", [0, 1, 2])
+@pytest.mark.parametrize(
+    ("selected_index", "profile"),
+    [
+        (0, "single-rx-random-10m-300s-v1"),
+        (1, "adaptive-dual-rx-2p5m-edge-random-300s-360s-v1"),
+        (2, "single-rx-random-10m-300s-v1"),
+        (2, "adaptive-dual-rx-2p5m-edge-random-300s-360s-v1"),
+    ],
+)
 def test_single_rx_live_probe_checks_only_selected_frozen_radio(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     selected_index: int,
+    profile: str,
 ) -> None:
     payload = _live_station_probe_payload()
     if selected_index == 2:
@@ -998,7 +1007,7 @@ def test_single_rx_live_probe_checks_only_selected_frozen_radio(
         "receiver_count": 2,
     }
     environment = {
-        "LEO_SCANNER_PROFILE": "single-rx-random-10m-300s-v1",
+        "LEO_SCANNER_PROFILE": profile,
         "LEO_SCANNER_RADIO_ID": radio["radio_id"],
         "LEO_RADIOS_JSON": json.dumps([configured]),
     }
@@ -1011,8 +1020,13 @@ def test_single_rx_live_probe_checks_only_selected_frozen_radio(
     function = SCRIPT_GLOBALS["probe_live_station_radios"]
     monkeypatch.setitem(function.__globals__, "command", fake_command)
     assert function(tmp_path, scanner_environment=environment) == payload
-    assert calls[-1][-1] == radio["radio_id"]
-    assert "radio_id != sys.argv[1]" in calls[-1][-2]
+    program = calls[-1][7]
+    assert calls[-1][8] == radio["radio_id"]
+    assert "radio_id != sys.argv[1]" in program
+    assert "configure_rx_layout" in program
+    if radio["radio_id"] == "radio_pluto_003a":
+        expected_layout = "2r2t" if profile.startswith("adaptive-dual-rx") else "1r1t"
+        assert calls[-1][9] == expected_layout
     configured["host"] = "192.0.2.1"
     environment["LEO_RADIOS_JSON"] = json.dumps([configured])
     with pytest.raises(ValueError, match="frozen station identity"):
@@ -1035,6 +1049,9 @@ def test_live_probe_accepts_every_reviewed_single_radio_scanner_profile() -> Non
         "adaptive-single-rx-random-10m-300s-v1",
         "adaptive-single-rx0-10m-300s-v1",
         "adaptive-single-rx0-random-15m-20m-300s-v1",
+        "adaptive-dual-rx-2p5m-300s-v1",
+        "adaptive-dual-rx-2p5m-300s-360s-v1",
+        "adaptive-dual-rx-2p5m-edge-random-300s-360s-v1",
     }
 
 

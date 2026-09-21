@@ -14,6 +14,20 @@ from leo.cli import create_cli
 
 PROJECT_ROOT = Path(__file__).parents[2]
 UNIT_ROOT = PROJECT_ROOT / "deploy" / "systemd"
+
+
+def test_adaptive_workers_provision_position_tracking_root() -> None:
+    for relative in (
+        "leo-adaptive-analysis-worker@.service",
+        "recovery/leo-adaptive-analysis-worker@.service.d/80-immutable-release.conf.in",
+    ):
+        commands = (UNIT_ROOT / relative).read_text().splitlines()
+        command = next(line for line in commands if line.endswith("/scanner-shared-tracking-v14"))
+        assert command.startswith("ExecStartPre=+/usr/bin/install -d ")
+        assert "-o leo -g leo" in command
+        assert "0750" in command
+
+
 ENV_EXAMPLE = PROJECT_ROOT / "deploy" / "etc" / "leo" / "leo.env.example"
 ACQUISITION_ENV_EXAMPLE = PROJECT_ROOT / "deploy" / "etc" / "leo" / "acquisition.env.example"
 RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "runbook.md"

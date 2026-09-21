@@ -300,6 +300,16 @@ SINGLE_RADIO_SCANNER_PROFILES = frozenset(
         "adaptive-single-rx-random-10m-300s-v1",
         "adaptive-single-rx0-10m-300s-v1",
         "adaptive-single-rx0-random-15m-20m-300s-v1",
+        "adaptive-dual-rx-2p5m-300s-v1",
+        "adaptive-dual-rx-2p5m-300s-360s-v1",
+        "adaptive-dual-rx-2p5m-edge-random-300s-360s-v1",
+    }
+)
+DUAL_RX_SCANNER_PROFILES = frozenset(
+    {
+        "adaptive-dual-rx-2p5m-300s-v1",
+        "adaptive-dual-rx-2p5m-300s-360s-v1",
+        "adaptive-dual-rx-2p5m-edge-random-300s-360s-v1",
     }
 )
 LIVE_STATION_PROBE_PROGRAM = """
@@ -321,7 +331,7 @@ for radio_id, host, serial in targets:
     if len(sys.argv) > 1 and radio_id != sys.argv[1]:
         continue
     device_factory = None
-    if radio_id == "radio_pluto_003a":
+    if radio_id == "radio_pluto_003a" and len(sys.argv) > 2 and sys.argv[2] == "1r1t":
         def rx0_device(uri, **kwargs):
             device = IioRadioDevice(uri, **kwargs)
             device.configure_rx_layout(AD9361_1R1T_TARGET_PROFILE.rx_layout_expectation)
@@ -1374,7 +1384,7 @@ def probe_live_station_radios(
     selection: tuple[str, ...] = ()
     if scanner_environment is not None:
         if scanner_environment.get("LEO_SCANNER_PROFILE") not in SINGLE_RADIO_SCANNER_PROFILES:
-            raise ValueError("narrow live probe requires the single-RX scanner profile")
+            raise ValueError("narrow live probe requires a declared single-radio scanner profile")
         bindings = _scanner_radio_bindings(scanner_environment)
         selected = bindings["LEO_SCANNER_RADIO_ID"]
         if selected == "radio_pluto_003a":
@@ -1395,6 +1405,13 @@ def probe_live_station_radios(
         ) != (frozen[0][1], frozen[0][2].removeprefix("ip:"), 2):
             raise ValueError("selected scanner radio differs from the frozen station identity")
         selection = (selected,)
+        if selected == "radio_pluto_003a":
+            layout = (
+                "2r2t"
+                if scanner_environment["LEO_SCANNER_PROFILE"] in DUAL_RX_SCANNER_PROFILES
+                else "1r1t"
+            )
+            selection = (selected, layout)
     output = command(
         "runuser",
         "-u",
