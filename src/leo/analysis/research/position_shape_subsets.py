@@ -66,8 +66,8 @@ def shape_preserving_order(
             )
             selected.append(remaining.pop(chosen))
         ordered_points[track] = [r.observation_id for r in selected]
-    for rows in strata.values():
-        rows.sort()
+    for stratum_rows in strata.values():
+        stratum_rows.sort()
     bin_order = sorted(strata, key=lambda b: _hash_order(seed, "shape-bin-v1", str(b)))
     track_order = [
         strata[b][i][1]

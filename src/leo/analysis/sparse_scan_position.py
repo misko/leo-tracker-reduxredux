@@ -192,7 +192,9 @@ def infer_sparse_scan_position(
             final_reasons.append("ill-conditioned-information")
         if boundary:
             final_reasons.append("solution-at-search-boundary")
-        state = "complete" if not final_reasons else "insufficient"
+        state: Literal["complete", "insufficient", "numerical-failure"] = (
+            "complete" if not final_reasons else "insufficient"
+        )
         return SparseScanPositionResult(
             state,
             tuple(final_reasons),

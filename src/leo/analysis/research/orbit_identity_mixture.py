@@ -127,8 +127,8 @@ def fit_shared_satellite_map(
     flat_design = []
     flat_point_candidate = []
     candidate_episode = []
-    candidate_rate = []
-    candidate_log_prior = []
+    candidate_rate: list[int] = []
+    candidate_log_prior: list[float] = []
     null_component = []
     candidate_offset = 0
     for episode_index, item in enumerate(prepared):

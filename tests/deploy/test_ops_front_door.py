@@ -180,6 +180,17 @@ def test_web_change_selects_only_web_component_and_api_impact() -> None:
     assert OPS.runtime_impacts_for_paths(("web/src/App.tsx",), selected) == ("api",)
 
 
+def test_mechanical_design_assets_do_not_require_a_runtime_cutover() -> None:
+    paths = (
+        "3d_prints/LT3D-001-dual-lnbf-stand/generate.py",
+        "3d_prints/LT3D-001-dual-lnbf-stand/LT3D-001A-dual-lnbf-stand.stl",
+        "3d_prints/LT3D-001-dual-lnbf-stand/dual-lnbf-t-holder-preview.png",
+    )
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+    assert [component.name for component in selected] == ["mechanical-design"]
+    assert OPS.runtime_impacts_for_paths(paths, selected) == ()
+
+
 def test_test_only_change_selects_its_owner_without_runtime_impact() -> None:
     paths = ("tests/processing/test_processing_service.py",)
     selected = OPS.components_for_paths(paths, OPS.load_components())

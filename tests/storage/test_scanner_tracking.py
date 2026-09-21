@@ -18,9 +18,7 @@ def test_v12_backfill_preserves_v11_and_serves_position_diagnostic(tmp_path, mon
     runner, store = service(tmp_path, monkeypatch)
     current = runner.run("scan-test").product
     legacy = ScannerTrackingProductV11.model_validate(
-        current.model_dump(
-            exclude={"schema_version", "analysis_id", "position_diagnostic"}
-        )
+        current.model_dump(exclude={"schema_version", "analysis_id", "position_diagnostic"})
         | {
             "artifacts": [
                 a.model_dump() for a in current.artifacts if a.name != "position-diagnostic"

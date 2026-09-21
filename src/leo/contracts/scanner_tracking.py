@@ -342,8 +342,8 @@ class ScannerTrackingProductV11(ScannerTrackingProductV10):
 
     schema_version: Literal[11] = 11  # type: ignore[assignment]
     analysis_id: Literal["scanner-shared-tracking-v11"] = "scanner-shared-tracking-v11"  # type: ignore[assignment]
-    control_comparison_policy: Literal["polynomial-and-wrong-time-diagnostic-only-v1"] = (  # type: ignore[assignment]
-        "polynomial-and-wrong-time-diagnostic-only-v1"
+    control_comparison_policy: Literal["polynomial-and-wrong-time-diagnostic-only-v1"] = (
+        "polynomial-and-wrong-time-diagnostic-only-v1"  # type: ignore[assignment]
     )
 
 
