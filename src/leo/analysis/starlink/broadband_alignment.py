@@ -326,13 +326,17 @@ def estimate_broadband_alignment(
     spectral_residual = np.angle(corrected_spectral * np.exp(-1j * intercept))
     residual_variance = float(np.average(spectral_residual**2, weights=weight))
     frequency_information = float(np.sum(weight * centered_frequency**2) / np.sum(weight))
+    effective_bin_count = max(
+        1.0, float(np.sum(weight) ** 2 / np.sum(weight**2)) / smoothing
+    )
     delay_se = (
-        math.sqrt(residual_variance / max(frequency_information, 1e-30))
+        math.sqrt(residual_variance / max(frequency_information * effective_bin_count, 1e-30))
         * sample_rate_hz
         / (2 * np.pi)
-        * math.sqrt(smoothing)
     )
-    phase_se = math.sqrt(residual_variance / len(indexes)) * math.sqrt(smoothing)
+    # The bounded profile grid itself limits reported delay precision.
+    delay_se = max(delay_se, float(delay_grid[1] - delay_grid[0]) / math.sqrt(12))
+    phase_se = math.sqrt(residual_variance / effective_bin_count)
     transfer = smooth_cross[indexes] / np.maximum(smooth_power0[indexes], 1e-30)
     if channel_smoothing_bins > 1:
         kernel = np.ones(channel_smoothing_bins) / channel_smoothing_bins
