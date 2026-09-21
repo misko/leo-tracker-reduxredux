@@ -23,6 +23,9 @@ Render `@RELEASE@` only after the immutable release has passed
 paths beneath `/etc/systemd/system`, owned by root with mode `0644`, then run
 `systemctl daemon-reload`. Use one schema-compatible SHA for the queue and
 adaptive workers. The transfer service may use a later repair SHA independently.
+The worker override creates the versioned V12 tracking root before dropping to
+the `leo` service identity; session directories and immutable artifacts remain
+owned and written by `leo`.
 For example:
 
 ```text
