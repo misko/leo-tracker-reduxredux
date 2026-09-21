@@ -424,11 +424,24 @@ def _alias_score(
     return score
 
 
-def run(bulk_root: Path, overlap_evidence_path: Path, raw_evidence_path: Path) -> dict[str, Any]:
+def run(
+    bulk_root: Path,
+    overlap_evidence_path: Path,
+    raw_evidence_path: Path,
+    *,
+    visit_indexes: tuple[int, ...] = VISITS,
+    include_timing: bool = False,
+    derive_missing_overlap: bool = False,
+) -> dict[str, Any]:
     overlap_document = json.loads(overlap_evidence_path.read_text(encoding="utf-8"))
     raw_document = json.loads(raw_evidence_path.read_text(encoding="utf-8"))
     overlap_by_visit = {row["visit_index"]: row for row in overlap_document["visits"]}
     raw_by_visit = {row["visit_index"]: row for row in raw_document["visits"]}
+    raw_tool = (
+        _load_sibling("report_adaptive_dual_rx_raw_coherence.py", "_matched_pilot_raw_coherence")
+        if derive_missing_overlap
+        else None
+    )
     store = AdaptiveHopIqStore(bulk_root, read_only=True)
     rows = []
     try:
@@ -443,7 +456,7 @@ def run(bulk_root: Path, overlap_evidence_path: Path, raw_evidence_path: Path) -
                 qin_edge_pilot_frame(rate, "lower", symbol_roll=CONTROL_SYMBOL_ROLL),
                 np.complex128,
             )
-            for visit_index in VISITS:
+            for visit_index in visit_indexes:
                 analysis = analyze_adaptive_hop_visit(
                     source, visit_index, configuration=configuration
                 )
@@ -458,10 +471,23 @@ def run(bulk_root: Path, overlap_evidence_path: Path, raw_evidence_path: Path) -
                 receiver_offset = float(raw_by_visit[visit_index]["train_peak"]["frequency_hz"])
                 iq = source.read_visit(visit_index)
                 lattices = frame_lattice_pairs(len(iq), rate, epochs, len(exact_template))
+                if visit_index in overlap_by_visit:
+                    overlap_blocks = overlap_by_visit[visit_index]["source_overlap_evidence"][
+                        "blocks"
+                    ]
+                elif raw_tool is not None:
+                    corrected_iq, _ = raw_tool.remove_common_phase_nuisance(
+                        iq, rate, receiver_offset, frequencies
+                    )
+                    overlap_blocks = raw_tool.source_overlap_evidence(
+                        corrected_iq, rate, receiver_offset, frequencies
+                    )["blocks"]
+                else:
+                    raise ValueError(
+                        f"missing frozen source-overlap evidence for visit {visit_index}"
+                    )
                 qualified_blocks = [
-                    block
-                    for block in overlap_by_visit[visit_index]["source_overlap_evidence"]["blocks"]
-                    if block["both_sources_qualified"] is True
+                    block for block in overlap_blocks if block["both_sources_qualified"] is True
                 ]
                 reference = len(iq) / 2
                 eligible_frames = []
@@ -660,24 +686,31 @@ def run(bulk_root: Path, overlap_evidence_path: Path, raw_evidence_path: Path) -
                             )
                         )
                     blocks.append(block_result)
-                rows.append(
-                    {
-                        "visit_index": visit_index,
-                        "source_epochs": list(epochs),
-                        "source_tracking_frequencies_hz": list(frequencies),
-                        "receiver_offset_authority_hz": receiver_offset,
-                        "global_reference_sample": reference,
-                        "paired_frame_count": len(lattices),
-                        "eligible_frame_count": len(eligible_frames),
-                        "selected_symbol_aliases": list(selected_aliases),
-                        "alias_winner_runner_ratio": alias_ratio,
-                        "alias_scores": alias_rows,
-                        "qualified_block_count": sum(
-                            block["state"] == "qualified" for block in blocks
-                        ),
-                        "blocks": blocks,
-                    }
-                )
+                visit_row = {
+                    "visit_index": visit_index,
+                    "source_epochs": list(epochs),
+                    "source_tracking_frequencies_hz": list(frequencies),
+                    "receiver_offset_authority_hz": receiver_offset,
+                    "global_reference_sample": reference,
+                    "paired_frame_count": len(lattices),
+                    "eligible_frame_count": len(eligible_frames),
+                    "selected_symbol_aliases": list(selected_aliases),
+                    "alias_winner_runner_ratio": alias_ratio,
+                    "alias_scores": alias_rows,
+                    "qualified_block_count": sum(block["state"] == "qualified" for block in blocks),
+                    "blocks": blocks,
+                }
+                if include_timing:
+                    origin_s = (
+                        float(analysis.valid_start_counter - analysis.source_origin_counter) / rate
+                    )
+                    visit_row["valid_visit_origin_s"] = origin_s
+                    for block in blocks:
+                        for frame in block["frames"]:
+                            frame["exact_time_s"] = origin_s + (
+                                frame["sample_start"] + frame["sample_end"] - 1
+                            ) / (2 * rate)
+                rows.append(visit_row)
     finally:
         store.close()
     body = {
@@ -704,6 +737,8 @@ def run(bulk_root: Path, overlap_evidence_path: Path, raw_evidence_path: Path) -
         },
         "rows": rows,
     }
+    if include_timing:
+        body["sample_rate_hz"] = rate
     body["evidence_sha256"] = sha256_digest(canonical_json_bytes(body))
     return body
 
@@ -715,10 +750,7 @@ def render(document: dict[str, Any], path: Path) -> None:
         axes[0].errorbar(
             [block["start_ms"] for block in blocks],
             [block["wrapped_phase_deg"] for block in blocks],
-            yerr=[
-                block["conditional_adjacent_pair_phase_standard_error_deg"]
-                for block in blocks
-            ],
+            yerr=[block["conditional_adjacent_pair_phase_standard_error_deg"] for block in blocks],
             fmt="o-",
             capsize=3,
             label=f"visit {row['visit_index']}",
