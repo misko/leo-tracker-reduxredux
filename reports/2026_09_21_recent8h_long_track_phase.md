@@ -24,7 +24,7 @@ The first pass finds a second shared source candidate at scan 34c0b0e1ae062f97, 
 
 ## Could the changes be orbital?
 
-The [geometry/orbit scenario report](2026_09_21_phase_change_geometry_scenarios.md) supplies distributions for LEO, MEO, and ideal GEO cases, with the recorded observing location and Earth rotation. It uses the LT3D-001A mechanical geometry and explicitly varies unknown RF phase-center offsets, holder pose, source separation, heading, and beam selection assumptions.
+The [geometry/orbit scenario report](2026_09_21_phase_change_geometry_scenarios.md) supplies distributions for LEO, MEO, and ideal GEO cases, with the recorded observing location and Earth rotation. It uses the LT3D-001A mechanical geometry, an explicitly illustrative holder pose, and sensitivity cases for unknown RF phase-center offsets, source separation, heading, and beam selection assumptions.
 
 Changes of tens of degrees over several seconds can be physically plausible for this baseline and Ku-band frequency. Large changes within tens of milliseconds are a different question: even the fastest illustrated 350-km orbit and largest illustrated 114.7-mm baseline permit only about 1.48 degrees of two-source double-difference change over 20 ms. This is a scenario bound, not a measured phase-center bound. Geometry cannot be used to choose an otherwise unverified phase alias. The scenario distributions do not validate the observed phase trajectory or resolve its instrumental terms.
 
