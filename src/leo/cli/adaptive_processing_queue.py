@@ -47,7 +47,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     preset = resolve_preset(site)
     return canonical_digest(
         {
-            "analysis_id": "scanner-shared-tracking-v11",
+            "analysis_id": "scanner-shared-tracking-v12",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -57,6 +57,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "metrics_manifest": metrics_manifest_sha256,
             "observer_site": preset.model_dump(mode="json"),
             "group_limit": _TRACKING_GROUP_LIMIT,
+            "review_limit": 128,
             "tle_residual_partition": "deterministic-randomized-observation-v1",
             "control_comparison": "minimum-0.01-nll-per-evaluation-observation-v1",
             "association_gates": "nominal-catalogue-only-v1",
@@ -197,6 +198,8 @@ def _command_for_lease(*, lease, bulk_root: Path, site: str) -> list[str]:
             str(_SLICE_SECONDS),
             "--maximum-sessions",
             "1",
+            "--review-limit",
+            "128",
             "--queue-worker",
         ]
     raise ValueError(f"unsupported adaptive queue job kind: {lease.job_kind}")
