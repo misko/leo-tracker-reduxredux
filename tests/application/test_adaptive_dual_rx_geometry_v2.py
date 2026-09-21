@@ -117,6 +117,7 @@ def _inputs(binding: AdaptiveReceiverGeometryBindingV1) -> AdaptiveDualRxGeometr
         source_identity_verified=True,
         pilot_phase_half_cycle=0,
         pilot_phase_branch_verified=True,
+        pilot_phase_branch_method="shared injected calibration reference",
     )
     pose = AdaptiveDualRxFixturePoseV1(
         fixture_x_axis_enu=_unit(1, 0, 0),
