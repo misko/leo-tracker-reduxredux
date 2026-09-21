@@ -9,9 +9,14 @@ from leo.analysis.starlink.adaptive_dual_rx_phase_extract import (
     extract_dual_receiver_phase,
     extract_dual_receiver_phase_branch_lifted,
     extract_dual_receiver_phase_with_offset_authority,
+    extract_dual_receiver_phase_with_offset_authority_shared_residual,
     shared_frame_starts,
 )
-from leo.analysis.starlink.templates import FRAME_RATE_HZ, qin_edge_pilot_frame
+from leo.analysis.starlink.templates import (
+    FRAME_RATE_HZ,
+    OFDM_SYMBOL_DURATION_S,
+    qin_edge_pilot_frame,
+)
 
 RATE = 2_500_000.0
 
@@ -255,6 +260,71 @@ def test_offset_authority_recorrelates_a_common_symbol_alias_and_reference(
     assert np.angle(np.exp(1j * (reverse.wrapped_phase_rad + result.wrapped_phase_rad))) == (
         pytest.approx(0.0, abs=1e-8)
     )
+
+
+@pytest.mark.parametrize("authority_error_hz", (-30.0, 0.0, 30.0))
+def test_shared_residual_keeps_contiguous_symbol_halves_on_one_phase_origin(
+    authority_error_hz: float,
+) -> None:
+    iq, epoch, seeds = _synthetic_dual_iq()
+    receiver_offset_hz = -701_296.75 - -82_137.25
+
+    halves = tuple(
+        extract_dual_receiver_phase_with_offset_authority_shared_residual(
+            iq,
+            RATE,
+            "lower",
+            epoch,
+            seeds,
+            receiver_offset_hz + authority_error_hz,
+            symbol_indices=symbols,
+        ).observation
+        for symbols in (np.arange(2, 34), np.arange(34, 66))
+    )
+    fixed_sample = 0.5 * (halves[0].center_sample + halves[1].center_sample)
+
+    phases = tuple(
+        observation.wrapped_phase_rad
+        + 2
+        * np.pi
+        * observation.relative_frequency_hz
+        * (fixed_sample - observation.center_sample)
+        / RATE
+        for observation in halves
+    )
+    assert all(observation.frame_frequency_branch_lift is None for observation in halves)
+    assert all(
+        observation.receivers[0].within_frame_residual_cfo_hz
+        == observation.receivers[1].within_frame_residual_cfo_hz
+        for observation in halves
+    )
+    assert all(
+        observation.relative_frequency_hz == pytest.approx(receiver_offset_hz, abs=0.08)
+        for observation in halves
+    )
+    expected_centroid_bias_deg = authority_error_hz * 32 * OFDM_SYMBOL_DURATION_S * 360.0
+    assert np.degrees(np.angle(np.exp(1j * (phases[0] - phases[1])))) == pytest.approx(
+        expected_centroid_bias_deg, abs=0.05
+    )
+
+    if authority_error_hz == 0.0:
+        full = extract_dual_receiver_phase_with_offset_authority_shared_residual(
+            iq, RATE, "lower", epoch, seeds, receiver_offset_hz
+        ).observation
+        expected_phase = (
+            0.91
+            - (-0.37)
+            + 2
+            * np.pi
+            * (
+                -701_296.75 * (full.center_sample - seeds[1].reference_sample)
+                - -82_137.25 * (full.center_sample - seeds[0].reference_sample)
+            )
+            / RATE
+        )
+        assert np.degrees(
+            np.angle(np.exp(1j * (full.wrapped_phase_rad - expected_phase)))
+        ) == pytest.approx(0.0, abs=0.04)
 
 
 def test_offset_authority_remains_explicit_when_the_supplied_symbol_branch_is_wrong() -> None:

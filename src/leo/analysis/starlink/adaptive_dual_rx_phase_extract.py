@@ -130,6 +130,7 @@ def extract_dual_receiver_phase(
     frame_radius: int = 9,
     symbol_indices: npt.NDArray[np.integer] | None = None,
     lift_frame_frequency_branch: bool = False,
+    share_within_frame_residual: bool = False,
 ) -> DualReceiverPhaseObservation:
     """Extract a wrapped local RX1-minus-RX0 pilot phase.
 
@@ -160,10 +161,14 @@ def extract_dual_receiver_phase(
     if symbols.ndim != 1 or len(symbols) < 8 or np.any(np.diff(symbols) <= 0):
         raise ValueError("pilot symbols must be ordered and contain at least eight entries")
     symbol_steps = np.diff(symbols)
-    if lift_frame_frequency_branch and np.any(symbol_steps != symbol_steps[0]):
-        raise ValueError("branch-lifted pilot symbols must have one uniform stride")
+    if (lift_frame_frequency_branch or share_within_frame_residual) and np.any(
+        symbol_steps != symbol_steps[0]
+    ):
+        raise ValueError("frequency-estimating pilot symbols must have one uniform stride")
     coarse_frequency_interval_s = (
-        int(symbol_steps[0]) * OFDM_SYMBOL_DURATION_S if lift_frame_frequency_branch else None
+        int(symbol_steps[0]) * OFDM_SYMBOL_DURATION_S
+        if lift_frame_frequency_branch or share_within_frame_residual
+        else None
     )
     starts = shared_frame_starts(
         len(values), sample_rate_hz, frame_epoch_sample, frame_radius=frame_radius
@@ -174,7 +179,7 @@ def extract_dual_receiver_phase(
         sample_rate_hz, OFDM_SYMBOL_DURATION_S, symbols, exact
     )
 
-    series: list[ReceiverFrameSeries] = []
+    correlations: list[tuple[np.ndarray, np.ndarray]] = []
     for receiver, seed in enumerate(seeds):
         exact_correlations = correlate_pilot_symbols(
             values,
@@ -198,12 +203,27 @@ def extract_dual_receiver_phase(
             sample_rate_hz,
             OFDM_SYMBOL_DURATION_S,
         )
+        correlations.append((exact_correlations, control_correlations))
+
+    shared_residual_hz = None
+    if share_within_frame_residual:
+        _, _, shared_residual_hz, _ = coherent_pilot_frames(
+            np.concatenate([row[0] for row in correlations], axis=0),
+            np.concatenate([row[1] for row in correlations], axis=0),
+            offsets_s,
+            OFDM_SYMBOL_DURATION_S,
+            coarse_frequency_sample_interval_s=coarse_frequency_interval_s,
+        )
+
+    series: list[ReceiverFrameSeries] = []
+    for receiver, (exact_correlations, control_correlations) in enumerate(correlations):
         frames, controls, residual_hz, ratio = coherent_pilot_frames(
             exact_correlations,
             control_correlations,
             offsets_s,
             OFDM_SYMBOL_DURATION_S,
             coarse_frequency_sample_interval_s=coarse_frequency_interval_s,
+            forced_residual_hz=shared_residual_hz,
         )
         series.append(
             ReceiverFrameSeries(
@@ -368,6 +388,59 @@ def extract_dual_receiver_phase_with_offset_authority(
         applied,
         frame_radius=frame_radius,
         symbol_indices=symbol_indices,
+    )
+    return ReceiverOffsetAuthorityApplication(
+        receiver_offset_authority_hz=receiver_offset_authority_hz,
+        common_reference_sample=reference,
+        original_seeds=seeds,
+        applied_seeds=applied,
+        observation=observation,
+    )
+
+
+def extract_dual_receiver_phase_with_offset_authority_shared_residual(
+    iq: npt.NDArray[np.complexfloating],
+    sample_rate_hz: float,
+    edge: StarlinkEdge | str,
+    frame_epoch_sample: int,
+    seeds: tuple[ReceiverPhaseSeed, ReceiverPhaseSeed],
+    receiver_offset_authority_hz: float,
+    *,
+    common_reference_sample: float | None = None,
+    frame_radius: int = 9,
+    symbol_indices: npt.NDArray[np.integer] | None = None,
+) -> ReceiverOffsetAuthorityApplication:
+    """Research estimator with one phase-blind pilot residual shared by both RX.
+
+    The independent offset authority must already identify RX1-minus-RX0 to
+    within the principal 750 Hz inter-frame interval.  The common residual is
+    selected by summed coherent magnitude across receivers, so receiver phase
+    cannot tune it.  Sharing it prevents independent pilot-symbol aliases from
+    defining different phase origins for separated symbol windows.
+    """
+
+    if len(seeds) != 2 or not math.isfinite(receiver_offset_authority_hz):
+        raise ValueError("receiver offset authority and dual seeds must be finite")
+    reference = (
+        seeds[0].reference_sample
+        if common_reference_sample is None
+        else float(common_reference_sample)
+    )
+    if not math.isfinite(reference):
+        raise ValueError("common receiver offset authority reference must be finite")
+    applied = (
+        ReceiverPhaseSeed(seeds[0].acquired_cfo_hz, reference),
+        ReceiverPhaseSeed(seeds[0].acquired_cfo_hz + receiver_offset_authority_hz, reference),
+    )
+    observation = extract_dual_receiver_phase(
+        iq,
+        sample_rate_hz,
+        edge,
+        frame_epoch_sample,
+        applied,
+        frame_radius=frame_radius,
+        symbol_indices=symbol_indices,
+        share_within_frame_residual=True,
     )
     return ReceiverOffsetAuthorityApplication(
         receiver_offset_authority_hz=receiver_offset_authority_hz,

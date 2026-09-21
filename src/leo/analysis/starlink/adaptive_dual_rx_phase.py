@@ -132,6 +132,7 @@ def coherent_pilot_frames(
     fft_size: int = 512,
     *,
     coarse_frequency_sample_interval_s: float | None = None,
+    forced_residual_hz: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, float, float]:
     """Coherently sum pilot symbols with every frame referenced to its origin."""
     exact = np.asarray(exact_correlations, dtype=np.complex128)
@@ -148,6 +149,8 @@ def coherent_pilot_frames(
     )
     if not np.isfinite(coarse_interval_s) or coarse_interval_s <= 0:
         raise ValueError("coarse frequency sample interval must be finite and positive")
+    if forced_residual_hz is not None and not np.isfinite(forced_residual_hz):
+        raise ValueError("forced residual frequency must be finite")
     spectrum = np.fft.fft(exact, n=fft_size, axis=1)
     power = np.sum(abs(spectrum) ** 2, axis=0)
     coarse_hz = float(np.fft.fftfreq(fft_size, d=coarse_interval_s)[int(np.argmax(power))])
@@ -156,19 +159,22 @@ def coherent_pilot_frames(
         rotation = np.exp(-2j * np.pi * frequency_hz * offsets)
         return float(np.sum(abs(np.sum(exact * rotation[None, :], axis=1)) ** 2))
 
-    half_bin_hz = 1 / (2 * fft_size * coarse_interval_s)
-    grid = coarse_hz + np.linspace(-half_bin_hz, half_bin_hz, 33)
-    scores = np.asarray([score(float(value)) for value in grid])
-    peak = int(np.argmax(scores))
-    if 0 < peak < len(grid) - 1:
-        x = grid[peak - 1 : peak + 2]
-        y = scores[peak - 1 : peak + 2]
-        curvature = y[0] - 2 * y[1] + y[2]
-        adjustment = 0.0 if curvature == 0 else 0.5 * (y[0] - y[2]) / curvature
-        adjustment = float(np.clip(adjustment, -1.0, 1.0))
-        residual_hz = float(x[1] + adjustment * (x[1] - x[0]))
+    if forced_residual_hz is None:
+        half_bin_hz = 1 / (2 * fft_size * coarse_interval_s)
+        grid = coarse_hz + np.linspace(-half_bin_hz, half_bin_hz, 33)
+        scores = np.asarray([score(float(value)) for value in grid])
+        peak = int(np.argmax(scores))
+        if 0 < peak < len(grid) - 1:
+            x = grid[peak - 1 : peak + 2]
+            y = scores[peak - 1 : peak + 2]
+            curvature = y[0] - 2 * y[1] + y[2]
+            adjustment = 0.0 if curvature == 0 else 0.5 * (y[0] - y[2]) / curvature
+            adjustment = float(np.clip(adjustment, -1.0, 1.0))
+            residual_hz = float(x[1] + adjustment * (x[1] - x[0]))
+        else:
+            residual_hz = float(grid[peak])
     else:
-        residual_hz = float(grid[peak])
+        residual_hz = float(forced_residual_hz)
     rotation = np.exp(-2j * np.pi * residual_hz * offsets)
     exact_frames = np.sum(exact * rotation[None, :], axis=1)
     control_frames = np.sum(control * rotation[None, :], axis=1)
