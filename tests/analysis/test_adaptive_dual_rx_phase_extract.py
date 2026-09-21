@@ -128,11 +128,20 @@ def test_branch_lifted_extractor_uses_within_frame_frequency_authority(
         epoch,
         seeds,  # type: ignore[arg-type]
     )
+    strided = extract_dual_receiver_phase_branch_lifted(
+        iq,
+        RATE,
+        "lower",
+        epoch,
+        seeds,  # type: ignore[arg-type]
+        symbol_indices=np.arange(2, 66, 2),
+    )
 
     expected_frequency_hz = actual[1] - actual[0]
     assert legacy.frame_frequency_branch_lift is None
     assert abs(legacy.relative_frequency_hz - expected_frequency_hz) >= 749.0
     assert result.relative_frequency_hz == pytest.approx(expected_frequency_hz, abs=0.02)
+    assert strided.relative_frequency_hz == pytest.approx(expected_frequency_hz, abs=0.04)
     resolution = result.frame_frequency_branch_lift
     assert resolution is not None
     assert resolution.selected_frame_alias_index == expected_alias_index
@@ -154,6 +163,21 @@ def test_branch_lifted_extractor_uses_within_frame_frequency_authority(
     )
     phase_error_deg = np.degrees(np.angle(np.exp(1j * (result.wrapped_phase_rad - expected_phase))))
     assert phase_error_deg == pytest.approx(0.0, abs=0.03)
+    strided_expected_phase = (
+        receiver_phase[1]
+        - receiver_phase[0]
+        + 2
+        * np.pi
+        * (
+            actual[1] * (strided.center_sample - references[1])
+            - actual[0] * (strided.center_sample - references[0])
+        )
+        / RATE
+    )
+    strided_phase_error_deg = np.degrees(
+        np.angle(np.exp(1j * (strided.wrapped_phase_rad - strided_expected_phase)))
+    )
+    assert strided_phase_error_deg == pytest.approx(0.0, abs=0.07)
 
 
 @pytest.mark.parametrize("wrong_alias_hz", [SYMBOL_ALIAS_HZ / 2, SYMBOL_ALIAS_HZ])
