@@ -141,9 +141,7 @@ def test_stock_probe_accepts_v053_dual_rx_inventory_from_exact_iio_context(monke
         "leo.radio.pluto_userspace_iiod_lifecycle.subprocess.run",
         lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=output),
     )
-    assert _firmware_compatible_endpoint_probe(
-        "192.168.1.21", 30_431, "serial-a", 10
-    )
+    assert _firmware_compatible_endpoint_probe("192.168.1.21", 30_431, "serial-a", 10)
 
 
 def test_alternate_probe_requires_every_persistent_hop_capability(monkeypatch):

@@ -239,9 +239,7 @@ def _enqueue_tracking_after_analysis(
                 site=site,
             ),
             priority=(
-                100
-                if capture.manifest.created_utc_ns > time.time_ns() - 2 * 3600 * 10**9
-                else 0
+                100 if capture.manifest.created_utc_ns > time.time_ns() - 2 * 3600 * 10**9 else 0
             ),
         )
     finally:

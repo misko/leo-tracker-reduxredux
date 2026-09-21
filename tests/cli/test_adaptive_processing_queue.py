@@ -237,9 +237,7 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
     )
 
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
-    assert calls == [
-        {"job_id": 7, "worker_id": "worker-1", "outcome": "already_complete"}
-    ]
+    assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "already_complete"}]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:
