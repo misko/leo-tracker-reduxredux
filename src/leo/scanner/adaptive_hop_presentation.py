@@ -104,6 +104,15 @@ class AdaptiveHopAnalysisStatusV1(AdaptiveModel):
         return self
 
 
+class EdgeAdaptiveOverviewManifestV4(AdaptiveHopOverviewManifestV1):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+
+
+class EdgeAdaptiveAnalysisStatusV4(AdaptiveHopAnalysisStatusV1):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    overview: EdgeAdaptiveOverviewManifestV4 | None
+
+
 @dataclass(frozen=True, slots=True)
 class RenderedAdaptiveOverview:
     artifacts: dict[str, bytes]

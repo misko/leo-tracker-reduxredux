@@ -211,6 +211,38 @@ def _last_json(stdout: str) -> dict[str, object]:
     return payloads[-1] if payloads else {}
 
 
+def _enqueue_tracking_after_analysis(
+    *,
+    bulk_root: Path,
+    session_id: str,
+    site: str,
+    catalog: CatalogRepository,
+) -> bool:
+    """Queue tracking from sealed metrics without applying the live-window cutoff."""
+    captures = AdaptiveHopIqStore(bulk_root, read_only=True)
+    presentation = AdaptiveHopAnalysisPresentationStore(bulk_root)
+    tracking = ScannerTrackingStore(bulk_root, read_only=True)
+    try:
+        capture = captures.inspect(session_id)
+        status = presentation.status_for_capture(capture, probe_stride_ms=120)
+        if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
+            raise ValueError("completed adaptive analysis lacks sealed overview authority")
+        if tracking.analysis_status(session_id).state == "complete":
+            return False
+        return catalog.enqueue_adaptive_tracking_job(
+            session_id=session_id,
+            input_manifest_digest=capture.manifest_sha256,
+            configuration_digest=_tracking_digest(
+                capture=capture,
+                metrics_manifest_sha256=status.metrics_manifest_sha256,
+                site=site,
+            ),
+            priority=100,
+        )
+    finally:
+        captures.close()
+
+
 def run_once(
     *,
     bulk_root: Path,
@@ -242,6 +274,13 @@ def run_once(
         and payload.get("state") == "metrics_complete"
         and payload.get("overview_state") == "ready"
     ) or (lease.job_kind == "adaptive_tracking" and payload.get("state") == "complete"):
+        if lease.job_kind == "adaptive_scan":
+            _enqueue_tracking_after_analysis(
+                bulk_root=bulk_root,
+                session_id=lease.session_id,
+                site=site,
+                catalog=catalog,
+            )
         catalog.complete_job(
             job_id=lease.job_id,
             worker_id=worker_id,

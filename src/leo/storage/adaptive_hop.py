@@ -30,7 +30,9 @@ from leo.contracts.recording import CompressionSettingsV1
 from leo.domain.iq import receiver_major_complex_to_ci16
 from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV1,
+    AdaptiveHopPlanV2,
     AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     Counter,
@@ -221,6 +223,13 @@ class GeometryBoundAdaptiveHopIqManifestV6(AdaptiveHopIqManifestV1):
         return self
 
 
+class EdgeBoundAdaptiveHopIqManifestV7(GeometryBoundAdaptiveHopIqManifestV6):
+    """Geometry-bound dual-RX IQ with an attested one-edge scheduler mask."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    receipt: AdaptiveHopReceiptV2  # type: ignore[assignment]
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
@@ -228,7 +237,8 @@ class _ManifestSeal(AdaptiveModel):
         | HostAdaptiveHopIqManifestV3
         | HostAdaptiveHopIqManifestV4
         | HostAdaptiveHopIqManifestV5
-        | GeometryBoundAdaptiveHopIqManifestV6,
+        | GeometryBoundAdaptiveHopIqManifestV6
+        | EdgeBoundAdaptiveHopIqManifestV7,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -245,7 +255,11 @@ class _ManifestSeal(AdaptiveModel):
 @dataclass(frozen=True, slots=True)
 class PublishedAdaptiveHopIqSession:
     session_id: str
-    manifest: AdaptiveHopIqManifestV1 | GeometryBoundAdaptiveHopIqManifestV6
+    manifest: (
+        AdaptiveHopIqManifestV1
+        | GeometryBoundAdaptiveHopIqManifestV6
+        | EdgeBoundAdaptiveHopIqManifestV7
+    )
     manifest_sha256: str
 
 
@@ -403,7 +417,7 @@ class AdaptiveHopIqStore:
     def begin_queued(
         self,
         session_id: str,
-        plan: AdaptiveHopPlanV1,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
         *,
         capacity_visits: int = 8,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
@@ -422,7 +436,7 @@ class AdaptiveHopIqStore:
     def begin(
         self,
         session_id: str,
-        plan: AdaptiveHopPlanV1,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
         *,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
     ) -> AdaptiveHopSessionWriter:
@@ -434,6 +448,8 @@ class AdaptiveHopIqStore:
             if isinstance(plan, HostAdaptiveHopPlanV3)
             else HostAdaptiveHopPlanV2
             if isinstance(plan, HostAdaptiveHopPlanV2)
+            else AdaptiveHopPlanV2
+            if isinstance(plan, AdaptiveHopPlanV2)
             else AdaptiveHopPlanV1
         )
         plan = plan_model.model_validate(plan.model_dump())
@@ -887,7 +903,7 @@ class AdaptiveHopSessionWriter:
         self,
         directory: PinnedLocalRoot,
         session_id: str,
-        plan: AdaptiveHopPlanV1,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
         *,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
     ):
@@ -996,7 +1012,7 @@ class AdaptiveHopSessionWriter:
 
     def finish(
         self,
-        receipt: AdaptiveHopReceiptV1,
+        receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
         *,
         timing: PersistentHopUtcTimingAuthorityV1 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
@@ -1012,6 +1028,8 @@ class AdaptiveHopSessionWriter:
                 if self._host_adaptive_version == 3
                 else HostAdaptiveHopReceiptV2
                 if self._host_adaptive_version == 2
+                else AdaptiveHopReceiptV2
+                if isinstance(self._plan, AdaptiveHopPlanV2)
                 else AdaptiveHopReceiptV1
             )
             receipt = receipt_model.model_validate(receipt.model_dump())
@@ -1031,6 +1049,8 @@ class AdaptiveHopSessionWriter:
                 if self._host_adaptive_version == 3
                 else HostAdaptiveHopIqManifestV2
                 if self._host_adaptive_version == 2
+                else EdgeBoundAdaptiveHopIqManifestV7
+                if isinstance(receipt, AdaptiveHopReceiptV2) and self._receiver_geometry is not None
                 else GeometryBoundAdaptiveHopIqManifestV6
                 if self._receiver_geometry is not None
                 else AdaptiveHopIqManifestV1
@@ -1121,7 +1141,7 @@ class _SpoolingAdaptiveHopSessionWriter(AdaptiveHopSessionWriter):
 
     def finish(
         self,
-        receipt: AdaptiveHopReceiptV1,
+        receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
         *,
         timing: PersistentHopUtcTimingAuthorityV1 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,

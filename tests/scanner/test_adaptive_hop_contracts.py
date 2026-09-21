@@ -3,8 +3,15 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPolicyV1, AdaptiveHopReceiptV1
-from leo.scanner.persistent_hop import PersistentHopSessionReceiptV1
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopPlanV1,
+    AdaptiveHopPlanV2,
+    AdaptiveHopPolicyV1,
+    AdaptiveHopPolicyV2,
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+)
+from leo.scanner.persistent_hop import PersistentHopSessionReceiptV1, compile_persistent_hop_plan_v1
 from tests.scanner.adaptive_hop_fixtures import receipt_fixture
 
 
@@ -105,6 +112,21 @@ def test_adaptive_revalidates_unchecked_clones_at_boundaries():
             policy=receipt.plan.policy,
             geometry=receipt.plan.geometry.model_copy(update={"bandwidth_hz": 5_000_000}),
         )
+
+
+def test_one_edge_receipt_rejects_state_or_visits_outside_mask() -> None:
+    plan = AdaptiveHopPlanV2(
+        geometry=compile_persistent_hop_plan_v1(sample_rate_hz=2_500_000),
+        policy=AdaptiveHopPolicyV2(mode="adaptive", generation=71, allowed_target_mask=0x0F),
+    )
+    receipt = receipt_fixture(plan=plan, count=4, receipt_factory=AdaptiveHopReceiptV2)
+    assert AdaptiveHopReceiptV2.model_validate_json(receipt.model_dump_json()) == receipt
+    assert {event.target_index for event in receipt.events} <= {0, 1, 2, 3}
+
+    payload = receipt.model_dump(mode="json")
+    payload["events"][1]["decision"]["active_mask"] = 0x10
+    with pytest.raises(ValidationError, match="escaped"):
+        AdaptiveHopReceiptV2.model_validate(payload)
 
 
 def test_empty_cancel_retains_raw_terminal_without_inventing_elapsed_time():

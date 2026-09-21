@@ -8,7 +8,13 @@ from dataclasses import dataclass
 from threading import Event
 from typing import Protocol, cast
 
-from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopReceiptV1, AdaptiveHopVisitV1
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopPlanV1,
+    AdaptiveHopPlanV2,
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+    AdaptiveHopVisitV1,
+)
 from leo.scanner.adaptive_hop_ports import (
     AdaptiveHopRadio,
     AdaptiveHopVisitBlock,
@@ -29,7 +35,7 @@ from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 
 @dataclass(frozen=True, slots=True)
 class CapturedAdaptiveHopSession:
-    receipt: AdaptiveHopReceiptV1
+    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2
     timing: PersistentHopUtcTimingAuthorityV1 | None
 
 
@@ -67,7 +73,7 @@ class AdaptiveHopCaptureError(RuntimeError):
 
 def capture_adaptive_hop_session(
     radio: AdaptiveHopRadio,
-    plan: AdaptiveHopPlanV1,
+    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
     *,
     session_id: str,
     visit_sink: Callable[[AdaptiveHopVisitBlock], None],
@@ -75,6 +81,7 @@ def capture_adaptive_hop_session(
     realtime_ns: Callable[[], int] = time.time_ns,
     monotonic_ns: Callable[[], int] = time.monotonic_ns,
 ) -> CapturedAdaptiveHopSession:
+    masked = isinstance(plan, AdaptiveHopPlanV2)
     receipt, timing = _capture(
         radio,
         plan,
@@ -83,8 +90,8 @@ def capture_adaptive_hop_session(
         cancel=cancel,
         realtime_ns=realtime_ns,
         monotonic_ns=monotonic_ns,
-        plan_model=AdaptiveHopPlanV1,
-        receipt_model=AdaptiveHopReceiptV1,
+        plan_model=AdaptiveHopPlanV2 if masked else AdaptiveHopPlanV1,
+        receipt_model=AdaptiveHopReceiptV2 if masked else AdaptiveHopReceiptV1,
         timing_model=PersistentHopUtcTimingAuthorityV1,
     )
     return CapturedAdaptiveHopSession(receipt, timing)

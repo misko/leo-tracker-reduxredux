@@ -52,6 +52,10 @@ def parse_scheduled_scanner_intent(payload: dict) -> ScheduledScannerRunIntentV1
         from leo.scanner.dual_rx import DualRxAdaptive2p5ScheduledScannerIntentV8
 
         return DualRxAdaptive2p5ScheduledScannerIntentV8.model_validate(payload)
+    if version == 9:
+        from leo.scanner.dual_rx import DualRxAdaptive2p5ScheduledScannerIntentV9
+
+        return DualRxAdaptive2p5ScheduledScannerIntentV9.model_validate(payload)
     if version == 2:
         return SingleRxScheduledScannerIntentV2.model_validate(payload)
     if version == 3:

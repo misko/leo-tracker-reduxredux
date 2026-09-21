@@ -162,16 +162,19 @@ from leo.scanner.adaptive_hop_history import (
     AdaptiveHopHistoryPageV1,
     AdaptiveHopPresentationReader,
     AdaptiveHopSessionDetailV1,
+    EdgeAdaptiveSessionDetailV4,
 )
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisPresentationReader,
     AdaptiveHopAnalysisStatusV1,
     AdaptiveOverviewArtifact,
+    EdgeAdaptiveAnalysisStatusV4,
 )
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
 from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
     AdaptiveHistoryPageV3,
+    AdaptiveHistoryPageV4,
     AdaptiveHistoryReaderV2,
     HostAdaptiveSessionDetailV2,
     HostAdaptiveSessionDetailV3,
@@ -451,17 +454,17 @@ def create_app(
     @v3_router.api_route(
         "/scanner/adaptive-sessions",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3,
+        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3 | AdaptiveHistoryPageV4,
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3,
+        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3 | AdaptiveHistoryPageV4,
     )
     def adaptive_history_v2(
         cursor: Annotated[int, Query(ge=0)] = 0,
         limit: Annotated[int, Query(ge=1, le=20)] = 20,
-    ) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3:
+    ) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3 | AdaptiveHistoryPageV4:
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
         try:
@@ -475,19 +478,25 @@ def create_app(
         "/scanner/adaptive-sessions/{session_id}",
         methods=["GET", "HEAD"],
         response_model=(
-            AdaptiveHopSessionDetailV1 | HostAdaptiveSessionDetailV2 | HostAdaptiveSessionDetailV3
+            AdaptiveHopSessionDetailV1
+            | HostAdaptiveSessionDetailV2
+            | HostAdaptiveSessionDetailV3
+            | EdgeAdaptiveSessionDetailV4
         ),
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions/{session_id}",
         methods=["GET", "HEAD"],
         response_model=(
-            AdaptiveHopSessionDetailV1 | HostAdaptiveSessionDetailV2 | HostAdaptiveSessionDetailV3
+            AdaptiveHopSessionDetailV1
+            | HostAdaptiveSessionDetailV2
+            | HostAdaptiveSessionDetailV3
+            | EdgeAdaptiveSessionDetailV4
         ),
     )
     def adaptive_detail_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
-    ) -> AdaptiveHopSessionDetailV1 | None:
+    ) -> AdaptiveHopSessionDetailV1 | EdgeAdaptiveSessionDetailV4 | None:
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
         try:
@@ -507,6 +516,7 @@ def create_app(
             AdaptiveHopAnalysisStatusV1
             | HostAdaptiveAnalysisStatusV2
             | HostAdaptiveAnalysisStatusV3
+            | EdgeAdaptiveAnalysisStatusV4
         ),
     )
     @v2_router.api_route(
@@ -516,13 +526,14 @@ def create_app(
             AdaptiveHopAnalysisStatusV1
             | HostAdaptiveAnalysisStatusV2
             | HostAdaptiveAnalysisStatusV3
+            | EdgeAdaptiveAnalysisStatusV4
         ),
     )
     def adaptive_analysis_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
         response: Response,
         probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 10,
-    ) -> AdaptiveHopAnalysisStatusV1:
+    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4:
         return _adaptive_analysis_status(session_id, response, probe_stride_ms)
 
     @router.api_route(
@@ -536,13 +547,13 @@ def create_app(
         probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 10,
     ) -> AdaptiveHopAnalysisStatusV1:
         status = _adaptive_analysis_status(session_id, response, probe_stride_ms)
-        if isinstance(status, HostAdaptiveAnalysisStatusV2):
+        if isinstance(status, (HostAdaptiveAnalysisStatusV2, EdgeAdaptiveAnalysisStatusV4)):
             raise HTTPException(status_code=404, detail="native adaptive analysis requires API v2")
         return status
 
     def _adaptive_analysis_status(
         session_id: str, response: Response, probe_stride_ms: int
-    ) -> AdaptiveHopAnalysisStatusV1:
+    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4:
         if adaptive_hop_analysis is None:
             raise HTTPException(
                 status_code=404, detail="adaptive analysis presentation is unavailable"

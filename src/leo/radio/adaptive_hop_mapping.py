@@ -13,10 +13,14 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopDecisionV1,
     AdaptiveHopEventV1,
     AdaptiveHopPlanV1,
+    AdaptiveHopPlanV2,
     AdaptiveHopPolicyV1,
+    AdaptiveHopPolicyV2,
     AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
     AdaptiveHopTerminalV1,
     AdaptiveHopVisitV1,
+    validate_adaptive_hop_plan,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import (
@@ -28,21 +32,30 @@ from leo.scanner.ports import ScanRadioIdentity
 _REASONS = ("warmup", "weighted", "exploration", "none_active", "fault_fallback")
 
 
-def load_adaptive_policy(plan: AdaptiveHopPlanV1) -> Any:
-    plan = AdaptiveHopPlanV1.model_validate(plan)
+def load_adaptive_policy(plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2) -> Any:
+    plan = validate_adaptive_hop_plan(plan)
     return _load_policy(plan.policy)
 
 
-def _load_policy(policy: AdaptiveHopPolicyV1) -> Any:
-    policy = AdaptiveHopPolicyV1.model_validate(policy)
+def _load_policy(policy: AdaptiveHopPolicyV1 | AdaptiveHopPolicyV2) -> Any:
     module = importlib.import_module("pluto_plus.adaptive_hop")
+    if isinstance(policy, AdaptiveHopPolicyV2):
+        policy = AdaptiveHopPolicyV2.model_validate(policy)
+        return module.AdaptiveHopPolicyV3(
+            generation=policy.generation,
+            mode=module.AdaptiveHopMode[policy.mode.upper()],
+            eligible_target_mask=policy.allowed_target_mask,
+        )
+    policy = AdaptiveHopPolicyV1.model_validate(policy)
     return module.AdaptiveHopPolicyV2(
         generation=policy.generation,
         mode=module.AdaptiveHopMode[policy.mode.upper()],
     )
 
 
-def map_adaptive_event(event: Any, choice: Any, plan: AdaptiveHopPlanV1) -> AdaptiveHopEventV1:
+def map_adaptive_event(
+    event: Any, choice: Any, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2
+) -> AdaptiveHopEventV1:
     event.pack()
     choice.pack(event)
     expected_kind = "STARTUP" if event.dwell_index == 0 else "RETUNE"
@@ -81,7 +94,9 @@ def map_adaptive_event(event: Any, choice: Any, plan: AdaptiveHopPlanV1) -> Adap
     )
 
 
-def map_adaptive_visit(upstream: Any, plan: AdaptiveHopPlanV1) -> AdaptiveHopVisitV1:
+def map_adaptive_visit(
+    upstream: Any, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2
+) -> AdaptiveHopVisitV1:
     event = map_adaptive_event(upstream.event, upstream.choice, plan)
     profile = upstream.profile
     if (
@@ -105,7 +120,9 @@ def map_adaptive_visit(upstream: Any, plan: AdaptiveHopPlanV1) -> AdaptiveHopVis
     return visit
 
 
-def map_adaptive_sampled_visit(sampled: Any, plan: AdaptiveHopPlanV1) -> AdaptiveHopVisitBlock:
+def map_adaptive_sampled_visit(
+    sampled: Any, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2
+) -> AdaptiveHopVisitBlock:
     evidence = map_adaptive_visit(sampled.visit, plan)
     values = np.asarray(sampled.samples)
     if values.dtype != np.complex64 or values.shape != (2, evidence.valid_sample_count):
@@ -116,27 +133,35 @@ def map_adaptive_sampled_visit(sampled: Any, plan: AdaptiveHopPlanV1) -> Adaptiv
 def map_adaptive_capture(
     upstream: Any,
     *,
-    plan: AdaptiveHopPlanV1,
+    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
     identity: ScanRadioIdentity,
     session_id: str,
-) -> AdaptiveHopReceiptV1:
+) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
     module = importlib.import_module("pluto_plus.adaptive_hop_client")
     if not isinstance(upstream, module.AdaptiveHopCaptureReceiptV2):
         raise ValueError("adaptive application requires an explicit V2 capture receipt")
-    plan = AdaptiveHopPlanV1.model_validate(plan)
-    return _map_capture(upstream, plan=plan, identity=identity, session_id=session_id)
+    plan = validate_adaptive_hop_plan(plan)
+    return _map_capture(
+        upstream,
+        plan=plan,
+        identity=identity,
+        session_id=session_id,
+        receipt_model=(
+            AdaptiveHopReceiptV2 if isinstance(plan, AdaptiveHopPlanV2) else AdaptiveHopReceiptV1
+        ),
+    )
 
 
 def _map_capture(
     upstream: Any,
     *,
-    plan: AdaptiveHopPlanV1,
+    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
     identity: ScanRadioIdentity,
     session_id: str,
     terminal_model: type[AdaptiveHopTerminalV1] = AdaptiveHopTerminalV1,
     receipt_model: type[AdaptiveHopReceiptV1] = AdaptiveHopReceiptV1,
     receipt_fields: dict[str, Any] | None = None,
-) -> AdaptiveHopReceiptV1:
+) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
     """Shared source accounting after each public adapter admits its exact major."""
     stream = upstream.stream
     stream.request.pack()

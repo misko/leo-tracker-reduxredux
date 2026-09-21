@@ -8,7 +8,14 @@ from pydantic import Field, model_validator
 
 from leo.contracts.digests import Sha256Digest, canonical_json_bytes, sha256_digest
 from leo.contracts.scanner_glrt_frame import U64
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveModel, Count, Index, SessionId
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+    AdaptiveModel,
+    Count,
+    Index,
+    SessionId,
+)
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     AdaptiveHopVisitAnalysisV1,
@@ -102,3 +109,21 @@ class AdaptiveHopMetricsManifestV1(AdaptiveModel):
         ):
             raise ValueError("adaptive metrics manifest does not cover every complete visit")
         return self
+
+
+class EdgeAdaptiveAnalysisBindingV4(AdaptiveHopAnalysisBindingV1):
+    """Analysis binding that retains the one-edge source receipt."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    receipt: AdaptiveHopReceiptV2  # type: ignore[assignment]
+
+
+class EdgeAdaptiveVisitReferenceV4(AdaptiveHopVisitReferenceV1):
+    schema_version: Literal[4] = 4
+    _filename_version: ClassVar[int] = 4
+    relative_path: Annotated[str, Field(pattern=r"^visit-[0-9]{6}\.v4\.json\.zst$")]
+
+
+class EdgeAdaptiveMetricsManifestV4(AdaptiveHopMetricsManifestV1):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    visits: Annotated[tuple[EdgeAdaptiveVisitReferenceV4, ...], Field(max_length=2500)]

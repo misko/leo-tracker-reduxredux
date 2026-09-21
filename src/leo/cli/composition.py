@@ -186,12 +186,19 @@ from leo.scanner import (
     compile_scheduled_scanner_run_intent_v1,
     current_low_band_targets,
 )
-from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPolicyV1
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopPlanV1,
+    AdaptiveHopPlanV2,
+    AdaptiveHopPolicyV1,
+    AdaptiveHopPolicyV2,
+)
 from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.dual_rx import (
     DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+    DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
     DualRxAdaptive2p5ScheduledScannerIntentV7,
     DualRxAdaptive2p5ScheduledScannerIntentV8,
+    DualRxAdaptive2p5ScheduledScannerIntentV9,
     compile_dual_rx_adaptive_2p5_hop_plan,
     compile_dual_rx_adaptive_2p5_scanner_intent,
 )
@@ -363,13 +370,17 @@ class CliSettings:
         if self.scanner_profile not in (
             "alternating-2p5m-5m",
             DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+            DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
             SINGLE_RX_PROFILE_ID,
             HOST_ADAPTIVE_PROFILE_ID,
             HOST_ADAPTIVE_RX0_PROFILE_ID,
             HOST_ADAPTIVE_RX0_MULTIRATE_PROFILE_ID,
         ):
             raise ValueError("unknown scheduled scanner profile")
-        dual_rx_2p5 = self.scanner_profile == DUAL_RX_ADAPTIVE_2P5_PROFILE_ID
+        dual_rx_2p5 = self.scanner_profile in (
+            DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+            DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
+        )
         if dual_rx_2p5 and (
             not self.scanner_enabled
             or self.scanner_capture_mode != "persistent_hop"
@@ -1581,7 +1592,8 @@ class LocalAcquisitionBackend:
 
         compiler = (
             compile_dual_rx_adaptive_2p5_scanner_intent
-            if self.settings.scanner_profile == DUAL_RX_ADAPTIVE_2P5_PROFILE_ID
+            if self.settings.scanner_profile
+            in (DUAL_RX_ADAPTIVE_2P5_PROFILE_ID, DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID)
             else compile_single_rx_scanner_intent
             if self.settings.scanner_profile == SINGLE_RX_PROFILE_ID
             else compile_scheduled_scanner_run_intent_v1
@@ -1630,11 +1642,14 @@ class LocalAcquisitionBackend:
                 HostAdaptiveRx0MultirateScheduledScannerIntentV6,
             ),
         )
-        if host_adaptive_intent:
+        durable_adaptive_intent = host_adaptive_intent or isinstance(
+            intent, DualRxAdaptive2p5ScheduledScannerIntentV9
+        )
+        if durable_adaptive_intent:
             # The queue payload is the immutable authority for this slot.  In
             # particular, do not recompile it from the process's current
-            # profile, mode, or detector release: those may legitimately have
-            # changed between persistence and a retry after restart.
+            # profile, mode, detector release, or random edge: those may
+            # legitimately differ from a fresh compilation after restart.
             configured = next(
                 (radio for radio in self.settings.radios if radio.radio_id == intent.radio_id),
                 None,
@@ -1998,6 +2013,7 @@ class LocalAcquisitionBackend:
                 (
                     DualRxAdaptive2p5ScheduledScannerIntentV7,
                     DualRxAdaptive2p5ScheduledScannerIntentV8,
+                    DualRxAdaptive2p5ScheduledScannerIntentV9,
                 ),
             )
             else compile_scheduled_persistent_hop_plan_v1(
@@ -2028,6 +2044,14 @@ class LocalAcquisitionBackend:
             if (
                 receipt.plan.geometry != geometry
                 or (host_plan is not None and receipt.plan != host_plan)
+                or (
+                    isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV9)
+                    and (
+                        not isinstance(receipt.plan, AdaptiveHopPlanV2)
+                        or receipt.plan.policy.allowed_target_mask
+                        != (0x0F if intent.configuration.selected_edge == "lower" else 0xF0)
+                    )
+                )
                 or receipt.plan.policy.mode != mode
                 or receipt.radio_id != configured.radio_id
                 or receipt.radio_serial != configured.serial
@@ -2064,6 +2088,17 @@ class LocalAcquisitionBackend:
         plan = (
             host_plan
             if host_plan is not None
+            else AdaptiveHopPlanV2(
+                geometry=geometry,
+                policy=AdaptiveHopPolicyV2(
+                    mode=mode,
+                    generation=secrets.randbits(64) or 1,
+                    allowed_target_mask=(
+                        0x0F if intent.configuration.selected_edge == "lower" else 0xF0
+                    ),
+                ),
+            )
+            if isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV9)
             else AdaptiveHopPlanV1(
                 geometry=geometry,
                 policy=AdaptiveHopPolicyV1(mode=mode, generation=secrets.randbits(64) or 1),
@@ -2119,6 +2154,7 @@ class LocalAcquisitionBackend:
                                 (
                                     DualRxAdaptive2p5ScheduledScannerIntentV7,
                                     DualRxAdaptive2p5ScheduledScannerIntentV8,
+                                    DualRxAdaptive2p5ScheduledScannerIntentV9,
                                 ),
                             )
                             else None

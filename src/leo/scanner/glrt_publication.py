@@ -4,7 +4,11 @@ from typing import Protocol
 
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
 from leo.contracts.scanner_glrt_session import ScannerGlrtSessionEvidenceV1
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+    validate_adaptive_hop_receipt,
+)
 from leo.scanner.persistent_hop import (
     PersistentHopSessionReceiptV1,
     persistent_hop_wire_session_id,
@@ -67,7 +71,7 @@ def validate_glrt_capture_binding(
 
 def validate_glrt_adaptive_binding(
     publication: ScannerGlrtPublicationV1,
-    receipt: AdaptiveHopReceiptV1,
+    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
     *,
     input_manifest_sha256: str,
 ) -> None:
@@ -79,7 +83,7 @@ def validate_glrt_adaptive_binding(
     IQ and before RF stopped. Consumers must show retained-IQ status separately.
     """
     publication = ScannerGlrtPublicationV1.model_validate(publication.model_dump())
-    receipt = AdaptiveHopReceiptV1.model_validate(receipt)
+    receipt = validate_adaptive_hop_receipt(receipt)
     if (
         publication.session_id != receipt.session_id
         or publication.input_manifest_sha256 != input_manifest_sha256

@@ -24,13 +24,13 @@ def _selection(epoch: int) -> tuple[str, str]:
 
 
 def test_cycle_always_selects_dual_rx_2p5m() -> None:
-    expected = ("adaptive-dual-rx-2p5m-300s-360s-v1", "2500000")
+    expected = ("adaptive-dual-rx-2p5m-edge-random-300s-360s-v1", "2500000")
     assert _selection(1_201) == expected
     assert _selection(1_801) == expected
     assert _selection(2_401) == expected
 
 
 def test_cycle_uses_upcoming_boundary_before_the_slot_starts() -> None:
-    expected = ("adaptive-dual-rx-2p5m-300s-360s-v1", "2500000")
+    expected = ("adaptive-dual-rx-2p5m-edge-random-300s-360s-v1", "2500000")
     assert _selection(1_799) == expected
     assert _selection(1_800) == expected
