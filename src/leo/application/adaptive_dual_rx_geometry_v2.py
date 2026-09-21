@@ -35,10 +35,27 @@ def _calibrated_geometry(
 ) -> CalibratedPhaseGeometry:
     assignments = {item.receiver_id: item for item in binding.radio.assignments}
     slots = {item.slot_id: item for item in binding.fixture.slots}
+    refinement = inputs.phase_center_refinement
+    refined = {} if refinement is None else {item.receiver_id: item for item in refinement.paths}
+    refinement_matches = refinement is not None and all(
+        refined[receiver_id].physical_receiver_id == assignments[receiver_id].physical_receiver_id
+        and refined[receiver_id].slot_id == assignments[receiver_id].slot_id
+        for receiver_id in (0, 1)
+    )
     centers = []
     for receiver_id in (0, 1):
-        center = slots[assignments[receiver_id].slot_id].rf_phase_center_position_m
-        if center is None:
+        slot = slots[assignments[receiver_id].slot_id]
+        center = slot.rf_phase_center_position_m
+        if refinement_matches:
+            mount = slot.mount_reference_position_m
+            offset = refined[receiver_id].phase_center_offset_from_mount_m
+            centers.append(
+                np.asarray(
+                    (mount.x + offset.x, mount.y + offset.y, mount.z + offset.z),
+                    dtype=float,
+                )
+            )
+        elif center is None:
             centers.append(None)
         else:
             centers.append(np.asarray((center.x, center.y, center.z), dtype=float))
@@ -49,16 +66,25 @@ def _calibrated_geometry(
         {
             "receiver_geometry_binding_digest": binding.binding_digest,
             "fixture_pose_evidence_sha256": inputs.fixture_pose.evidence_sha256,
+            "phase_center_refinement_digest": (
+                None if refinement is None else refinement.refinement_digest
+            ),
         }
     )
     return CalibratedPhaseGeometry(
         baseline_enu_m=None if baseline is None else tuple(map(float, baseline)),
         baseline_standard_error_m=inputs.fixture_pose.baseline_standard_error_m,
         geometry_digest=digest,
-        receiver_mapping_verified=all(
-            item.mapping_status == "verified" for item in binding.radio.assignments
+        receiver_mapping_verified=(
+            refinement_matches
+            if refinement is not None
+            else all(item.mapping_status == "verified" for item in binding.radio.assignments)
         ),
-        phase_centers_verified=all(center is not None for center in centers),
+        phase_centers_verified=(
+            refinement_matches and refinement.measurement_truth_verified
+            if refinement is not None
+            else all(center is not None for center in centers)
+        ),
         enu_pose_verified=inputs.fixture_pose.measurement_truth_verified,
     )
 
@@ -81,6 +107,13 @@ def reconstruct_product_geometry(
         and capture.finalized_utc_ns <= inputs.valid_until_utc_ns
         and inputs.chain_calibration.valid_from_utc_ns <= capture.created_utc_ns
         and capture.finalized_utc_ns <= inputs.chain_calibration.valid_until_utc_ns
+        and (
+            inputs.phase_center_refinement is None
+            or (
+                inputs.phase_center_refinement.valid_from_utc_ns <= capture.created_utc_ns
+                and capture.finalized_utc_ns <= inputs.phase_center_refinement.valid_until_utc_ns
+            )
+        )
     ):
         raise ValueError("geometry or chain calibration validity does not cover capture")
     timing = capture.timing
