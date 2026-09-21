@@ -10,8 +10,12 @@ from pathlib import Path
 
 import numpy as np
 from report_adaptive_dual_rx_raw_coherence import cross_ambiguity_peak
+from report_recent_dual_rx_single_track_phase import (
+    MAXIMUM_ALIAS_AWARE_BINDING_ERROR_HZ,
+    _track_points,
+)
 
-from leo.analysis.starlink.adaptive_dual_rx_phase import SYMBOL_ALIAS_HZ
+from leo.analysis.starlink.adaptive_dual_rx_phase import SYMBOL_ALIAS_HZ, circular_frequency_delta
 from leo.analysis.starlink.adaptive_dual_rx_phase_extract import (
     ReceiverPhaseSeed,
     extract_dual_receiver_phase_with_offset_authority,
@@ -26,7 +30,12 @@ from leo.scanner.adaptive_hop_analysis import (
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
 
-VISITS = (1354, 1428)
+DEFAULT_VISITS = (1354, 1428)
+DEVELOPMENT_VISITS = frozenset(DEFAULT_VISITS)
+TRACK_IDS = (
+    "sha256:dad96c3afcf9b500c0423a9829dd442a6cf8215fd89cd4083ab0533e7b400c32",
+    "sha256:d118aba06b8fdacf35a464cafbcc12e69c4affe1d6f931cd0d15cf8a016433ec",
+)
 
 
 def _phase_at(observation: object, sample: float, rate: float) -> float:
@@ -70,22 +79,100 @@ def _extract(
     ).observation
 
 
-def run(bulk_root: Path, session_id: str) -> dict[str, object]:
+def select_track_pair(pairs: list[object], rx0_hz: float, rx1_hz: float) -> tuple[int, object]:
+    """Bind one phase-blind pair to the persisted RX0/RX1 track frequencies."""
+    candidates = []
+    for index, pair in enumerate(pairs):
+        errors = (
+            abs(circular_frequency_delta(rx0_hz, pair[0].fractional_tracking_cfo_hz)),  # type: ignore[index,union-attr]
+            abs(circular_frequency_delta(rx1_hz, pair[1].fractional_tracking_cfo_hz)),  # type: ignore[index,union-attr]
+        )
+        candidates.append((max(errors), sum(errors), index, pair))
+    if not candidates:
+        raise ValueError("no phase-blind receiver pair")
+    maximum, _, index, pair = min(candidates)
+    if maximum > MAXIMUM_ALIAS_AWARE_BINDING_ERROR_HZ:
+        raise ValueError(f"minimum track binding error {maximum:.3f} Hz exceeds gate")
+    return index, pair
+
+
+def summarize(rows: list[dict[str, object]]) -> dict[str, object]:
+    output: dict[str, object] = {}
+    all_visits = frozenset(int(row["visit_index"]) for row in rows)
+    for name, selected in (
+        ("development", DEVELOPMENT_VISITS & all_visits),
+        ("validation", all_visits - DEVELOPMENT_VISITS),
+    ):
+        accepted = [
+            row for row in rows if row["visit_index"] in selected and row["state"] == "evaluated"
+        ]
+        metrics = {}
+        for key in (
+            "historical_abs_half_difference_deg",
+            "shared_abs_half_difference_deg",
+            "abs_full_phase_shift_at_common_center_deg",
+        ):
+            values = np.asarray([row[key] for row in accepted], dtype=float)
+            metrics[key] = (
+                None
+                if not len(values)
+                else {
+                    "minimum": float(np.min(values)),
+                    "median": float(np.median(values)),
+                    "maximum": float(np.max(values)),
+                }
+            )
+        output[name] = {
+            "selected_visit_count": len(selected),
+            "evaluated_visit_count": len(accepted),
+            "failed_visit_count": len(selected) - len(accepted),
+            "metrics": metrics,
+        }
+    return output
+
+
+def run(bulk_root: Path, session_id: str, visits: tuple[int, ...]) -> dict[str, object]:
+    if not visits or len(visits) > 20 or len(set(visits)) != len(visits):
+        raise ValueError("select between one and twenty unique visits")
     store = AdaptiveHopIqStore(bulk_root, read_only=True)
     rows = []
     try:
         inspected = store.inspect(session_id)
+        rx0_points, rx1_points, track_reconstruction = _track_points(
+            bulk_root, session_id, TRACK_IDS
+        )
         with AdaptiveHopAnalysisInputStore(store).source(session_id) as source:
             configuration = AdaptiveHopAnalysisConfigurationV1(
                 sample_rate_hz=source.receipt.plan.geometry.sample_rate_hz,
                 probe_stride_ms=10,
             )
             rate = configuration.sample_rate_hz
-            for visit_index in VISITS:
-                iq = source.read_visit(visit_index)
-                authority = cross_ambiguity_peak(iq[: len(iq) // 2], rate).frequency_hz
-                visit = analyze_adaptive_hop_visit(source, visit_index, configuration=configuration)
-                pair = _phase_blind_pairs(visit)[0]
+            for visit_index in visits:
+                try:
+                    iq = source.read_visit(visit_index)
+                    authority = cross_ambiguity_peak(iq[: len(iq) // 2], rate).frequency_hz
+                    visit = analyze_adaptive_hop_visit(
+                        source, visit_index, configuration=configuration
+                    )
+                    track0, track1 = rx0_points[visit_index], rx1_points[visit_index]
+                    pair_index, pair = select_track_pair(
+                        _phase_blind_pairs(visit),
+                        track0.tracking_cfo_hz,
+                        track1.tracking_cfo_hz,
+                    )
+                except Exception as error:  # Preserve selection and input failures per visit.
+                    rows.append(
+                        {
+                            "visit_index": visit_index,
+                            "cohort": (
+                                "development" if visit_index in DEVELOPMENT_VISITS else "validation"
+                            ),
+                            "state": "failed_before_extraction",
+                            "error_type": type(error).__name__,
+                            "error": str(error),
+                        }
+                    )
+                    continue
                 left, right, _, probe_start = pair
                 references = tuple(
                     probe_start + item.integer_epoch_sample + item.fractional_epoch_offset_samples
@@ -156,6 +243,17 @@ def run(bulk_root: Path, session_id: str) -> dict[str, object]:
                 rows.append(
                     {
                         "visit_index": visit_index,
+                        "cohort": (
+                            "development" if visit_index in DEVELOPMENT_VISITS else "validation"
+                        ),
+                        "state": "evaluated",
+                        "selected_pair_index": pair_index,
+                        "selection_uses_phase": False,
+                        "track_candidate_ids": [track0.candidate_id, track1.candidate_id],
+                        "track_tracking_cfo_hz": [
+                            track0.tracking_cfo_hz,
+                            track1.tracking_cfo_hz,
+                        ],
                         "broadband_authority_hz": authority,
                         "common_reference_sample": references[0],
                         "full_window_comparison": {
@@ -195,6 +293,27 @@ def run(bulk_root: Path, session_id: str) -> dict[str, object]:
                             ),
                         },
                         **methods,
+                        "historical_abs_half_difference_deg": abs(
+                            methods["historical"]["contiguous_half_phase_difference_deg"]
+                        ),
+                        "shared_abs_half_difference_deg": abs(
+                            methods["shared_residual"]["contiguous_half_phase_difference_deg"]
+                        ),
+                        "abs_full_phase_shift_at_common_center_deg": abs(
+                            math.degrees(
+                                float(
+                                    np.angle(
+                                        np.exp(
+                                            1j
+                                            * (
+                                                _phase_at(shared, historical.center_sample, rate)
+                                                - historical.wrapped_phase_rad
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
                         "wrong_symbol_authority_controls": controls,
                     }
                 )
@@ -203,10 +322,15 @@ def run(bulk_root: Path, session_id: str) -> dict[str, object]:
             "kind": "adaptive_dual_rx_shared_residual_half_window_research",
             "session_id": session_id,
             "input_manifest_sha256": inspected.manifest_sha256,
-            "selected_visit_indexes": list(VISITS),
+            "selected_visit_indexes": list(visits),
+            "development_visit_indexes": sorted(DEVELOPMENT_VISITS & set(visits)),
+            "validation_visit_indexes": sorted(set(visits) - DEVELOPMENT_VISITS),
+            "track_ids": list(TRACK_IDS),
+            "track_reconstruction": track_reconstruction,
             "frequency_selection_uses_phase": False,
             "published_phase_v2_modified": False,
             "visits": rows,
+            "summary": summarize(rows),
         }
         document["evidence_sha256"] = sha256_digest(canonical_json_bytes(document))
         return document
@@ -218,9 +342,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--session-id", required=True)
+    parser.add_argument("--visits", default=",".join(map(str, DEFAULT_VISITS)))
     parser.add_argument("--json", type=Path, required=True)
     args = parser.parse_args()
-    document = run(args.bulk_root, args.session_id)
+    document = run(
+        args.bulk_root,
+        args.session_id,
+        tuple(int(value) for value in args.visits.split(",") if value),
+    )
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
 
