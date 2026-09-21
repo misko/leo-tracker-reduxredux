@@ -137,15 +137,29 @@ choose a phase or delay alias.
 ## Frequency tracklet scope
 
 A rolling-origin check on the 14-state frequency tracklet used the preceding
-six to eight points to predict each next point. Both tracks are sources on RX0:
-linear source-A/source-B RMSE was 189/193 Hz; quadratic was 183/238 Hz; cubic
-was 207/278 Hz. A fixed first-nine to last-five test made cubic source-B error
-1,176 Hz. The detector CFO grid is spaced about 443.9 Hz, but sub-bin
-refinement left the linear errors nearly unchanged at 189/201 Hz, so grid
-quantization does not explain the residual. A linear frequency prior is the
-appropriate lean default for selecting aliases. Higher-order models do not
-improve this corpus consistently, and none supplies phase continuity; each
-dwell must allow a fresh phase intercept.
+six to eight points to predict each next point. Both tracks are sources on RX0.
+The first comparison incorrectly tagged both CFOs with the double-difference
+phase midpoint; that gave linear source-A/source-B RMSE of 189/193 Hz. The
+actual GLRT64 correlation-energy centroids differ from that midpoint by -43.73
+to +56.77 ms. Using each source's own measurement time gives:
+
+| CFO estimate | Model | Source A RMSE | Source B RMSE |
+| --- | --- | ---: | ---: |
+| Frozen 443.9 Hz-grid estimate | Linear | 63.09 Hz | 175.16 Hz |
+| Frozen 443.9 Hz-grid estimate | Quadratic | 31.48 Hz | 281.14 Hz |
+| Frozen 443.9 Hz-grid estimate | Cubic | 58.65 Hz | 316.89 Hz |
+| Continuous exact-DTFT refinement | Linear | 71.34 Hz | 113.76 Hz |
+| Continuous exact-DTFT refinement | Quadratic | 52.03 Hz | 146.88 Hz |
+| Continuous exact-DTFT refinement | Cubic | 84.32 Hz | 191.85 Hz |
+
+Correct timestamps remove most of source A's apparent residual and materially
+help source B. Continuous sub-bin refinement helps source B but slightly hurts
+source A, so detector-grid quantization is not the single limiting error.
+Quadratic prediction improves source A in this tracklet, while linear prediction
+is better for source B; cubic improves neither. Linear is therefore the safe
+default branch prior, with a per-tracklet escalation to quadratic only after a
+repeatable held-out benefit. None of these models supplies phase continuity;
+each dwell must allow a fresh phase intercept.
 
 ![Three-visit signal-subband control](figures/2026_09_21_adaptive_dual_rx_local_phase/scan-hop-28d7592ea614f624-signal-subband-v1.png)
 
@@ -165,6 +179,10 @@ The three-visit subband JSON has file SHA-256
 `a690e1cb264039edfc242b384acb2a08bbff2f6ff9f65b0f85182d3bb63b1038`
 and canonical evidence digest
 `sha256:4ed65a1ffee89602e4b2988e5c37cc441f9bc0b771332ad683dae7af787bb8fd`.
+The source-timestamp and continuous-frequency-refinement JSON has file SHA-256
+`4781c434bf7f0e19a138912935e360e9942e8e98d74ad9a6cc049c3c6c85fca8`
+and canonical evidence digest
+`sha256:936306a11c4ed60a556f8f0e0dab4d8b374c01c6e1915163d967e6dae054d1e1`.
 
 ```bash
 sudo -u leo env PYTHONPATH=src MPLCONFIGDIR=/tmp/leo-mpl \
@@ -183,4 +201,10 @@ sudo -u leo env PYTHONPATH=src MPLCONFIGDIR=/tmp/leo-mpl \
   --subband-visits 1065,1109,1136 \
   --json /tmp/scan-hop-28d-signal-subband-v1.json \
   --png /tmp/scan-hop-28d-signal-subband-v1.png
+
+sudo -u leo env PYTHONPATH=src \
+  .venv/bin/python tools/report_adaptive_dual_rx_frequency_refinement.py \
+  --bulk-root /srv/bulk/leo \
+  --summary reports/figures/2026_09_21_adaptive_dual_rx_local_phase/scan-hop-28d7592ea614f624-dense-phase-summary-v1.json \
+  --output /tmp/scan-hop-28d7592ea614f624-continuous-frequency-refinement-v1.json
 ```
