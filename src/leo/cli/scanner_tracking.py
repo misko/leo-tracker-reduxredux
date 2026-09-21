@@ -14,9 +14,10 @@ from leo.contracts.scanner_tracking import (
     ArtifactName,
     ScannerTleReviewCandidateV1,
     ScannerTleTrackReviewV1,
-    ScannerTrackingStatusV11,
+    ScannerTrackingStatusV12,
 )
 from leo.contracts.sky import ObserverSiteV1
+from leo.operations.scanner_position import build_scan_position_diagnostic
 from leo.operations.scanner_tle_review_report import build_report
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.persistent_hop_tracking import render_persistent_hop_tracking_png
@@ -112,6 +113,7 @@ def main():
                 label=site.label,
             ),
             renderer=render_persistent_hop_tracking_png,
+            position_renderer=build_scan_position_diagnostic,
             review_renderer=_review_renderer(
                 bulk_root=args.bulk_root,
                 tle_root=args.tle_root,
@@ -144,7 +146,7 @@ def main():
                 except Exception as error:
                     prior = products.analysis_status(sid)
                     products.save(
-                        ScannerTrackingStatusV11(
+                        ScannerTrackingStatusV12(
                             session_id=sid,
                             state="failed",
                             phase=prior.phase,

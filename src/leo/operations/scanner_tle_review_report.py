@@ -219,7 +219,8 @@ def build_report(
     )
     selection_protocol_digest = canonical_digest(
         {
-            "algorithm": "scanner-shared-tracking-v11",
+            "algorithm": "scanner-shared-tracking-v12",
+            "position": "scanner-conditional-position-v1",
             "utc_qualification_limit_ns": 2_000_000_000,
             "trajectory": trajectory_config.digest,
             "group_limit": 4,

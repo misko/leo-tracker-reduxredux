@@ -29,18 +29,18 @@ from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTleTrackReviewV1,
     ScannerTrackingInputs,
-    ScannerTrackingProductV11,
-    ScannerTrackingStatusV11,
+    ScannerTrackingProductV12,
+    ScannerTrackingStatusV12,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV11: ...
-    def save(self, status: ScannerTrackingStatusV11) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV12: ...
+    def save(self, status: ScannerTrackingStatusV12) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV11) -> None: ...
+    def publish(self, product: ScannerTrackingProductV12) -> None: ...
 
 
 class ScannerTrackingService:
@@ -52,6 +52,7 @@ class ScannerTrackingService:
         tle_archive,
         observer_site: ObserverSiteV1,
         renderer,
+        position_renderer=None,
         review_renderer: Callable[
             [str], tuple[tuple[ScannerTleTrackReviewV1, bytes], ...]
         ] = lambda _session_id: (),
@@ -61,6 +62,7 @@ class ScannerTrackingService:
         self.inputs, self.products, self.archive = inputs, products, tle_archive
         self.site, self.renderer, self.review_renderer = observer_site, renderer, review_renderer
         self.matcher, self.clock = matcher, clock
+        self.position_renderer = position_renderer
 
     def run(self, session_id: str, *, maximum_seconds: float = 180, group_limit: int = 4):
         if not 0 < maximum_seconds <= 1800 or not 1 <= group_limit <= 32:
@@ -73,7 +75,8 @@ class ScannerTrackingService:
         trajectory_config = PersistentHopTrajectoryConfig()
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v11",
+                "algorithm": "scanner-shared-tracking-v12",
+                "position": "scanner-conditional-position-v1",
                 "utc_qualification_limit_ns": 2_000_000_000,
                 "trajectory": trajectory_config.digest,
                 "group_limit": group_limit,
@@ -82,7 +85,7 @@ class ScannerTrackingService:
                 "observer": self.site.model_dump(mode="json"),
             }
         )
-        product = status.product or ScannerTrackingProductV11(
+        product = status.product or ScannerTrackingProductV12(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -109,10 +112,29 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV11(
+                ScannerTrackingStatusV12(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
+
+        def publish(trajectory=None, catalogue_payload=None):
+            nonlocal product
+            if self.position_renderer is None:
+                raise ValueError("tracking V12 requires a configured position diagnostic renderer")
+            diagnostic, png = self.position_renderer(
+                source=source,
+                trajectory=trajectory,
+                product=product,
+                catalogue_payload=catalogue_payload,
+            )
+            position_ref = self.products.put_artifact(session_id, "position-diagnostic", png)
+            product = product.model_copy(
+                update={
+                    "position_diagnostic": diagnostic,
+                    "artifacts": (*product.artifacts, position_ref),
+                }
+            )
+            self.products.publish(product)
 
         save("trajectory")
         try:
@@ -130,7 +152,7 @@ class ScannerTrackingService:
                     "reasons": (str(error),),
                 }
             )
-            self.products.publish(product)
+            publish()
             return self.products.analysis_status(session_id)
         config = PersistentHopTleMatchConfig(
             selection_protocol_digest=policy_digest, nominal_rf_hz=trajectory_config.canonical_rf_hz
@@ -175,9 +197,10 @@ class ScannerTrackingService:
                     ),
                 }
             )
-            self.products.publish(product)
+            publish(trajectory)
             return self.products.analysis_status(session_id)
         save("tle-matching")
+        payload = None
         if selected:
             try:
                 earliest = min(c.support_start_utc_ns for c in candidates)
@@ -230,7 +253,7 @@ class ScannerTrackingService:
                         "reasons": (f"{type(error).__name__}: {error}",),
                     }
                 )
-                self.products.publish(product)
+                publish(trajectory)
                 return self.products.analysis_status(session_id)
             completed = {c.physical_group_id for c in product.tle_candidates} | {
                 c.physical_group_id for c in product.unscored_groups
@@ -313,7 +336,7 @@ class ScannerTrackingService:
                 "track_reviews": tuple(review for review, _payload in reviews),
             }
         )
-        self.products.publish(product)
+        publish(trajectory, payload)
         return self.products.analysis_status(session_id)
 
 

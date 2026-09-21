@@ -86,3 +86,26 @@ it("shows randomized leader persistence and runner margin", async () => {
   expect(screen.getByText("Leader retained · runner +0.495 NLL")).toBeInTheDocument();
   expect(screen.getByText("Candidate survived controls")).toBeInTheDocument();
 });
+
+it("shows the bounded position JSON and position PNG without calling it a fix", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+    session_id: "scan-test", state: "complete", phase: "complete", product: {
+      ...product,
+      position_diagnostic: {
+        state: "diagnostic", conditional_on_site_assisted_identity: true, position_fix_claimed: false,
+        source_count: 2, track_count: 2, fit_observation_count: 12, evaluation_observation_count: 4,
+        candidate_latitude_deg: 39.7392, candidate_longitude_deg: -104.9903,
+        training_rms_hz: 12.2, evaluation_rms_hz: 15.4, jacobian_rank: 2,
+        condition_number: 42, boundary_hit: false, reasons: [], runtime_ms: 8,
+      },
+      artifacts: [...product.artifacts, { name: "position-diagnostic", sha256: "position" }],
+    },
+  }) }));
+  render(<ScannerTrackingPanel sessionId="scan-test" />);
+  expect(await screen.findByText(/Candidate 39.73920°, -104.99030°/)).toBeInTheDocument();
+  expect(screen.getByText(/no position fix is claimed/i)).toBeInTheDocument();
+  expect(screen.getByText("Bounded position diagnostic")).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "position-diagnostic for scan-test" })).toHaveAttribute(
+    "src", expect.stringContaining("/position-diagnostic.png"),
+  );
+});

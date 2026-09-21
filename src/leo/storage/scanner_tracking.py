@@ -9,7 +9,7 @@ from pydantic import TypeAdapter
 
 from leo.contracts.digests import sha256_digest
 from leo.contracts.scanner_tracking import (
-    ArtifactName,
+    ArtifactNameV12,
     ScannerTrackingProductV1,
     ScannerTrackingProductV2,
     ScannerTrackingProductV3,
@@ -21,6 +21,7 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingProductV9,
     ScannerTrackingProductV10,
     ScannerTrackingProductV11,
+    ScannerTrackingProductV12,
     ScannerTrackingStatusV1,
     ScannerTrackingStatusV2,
     ScannerTrackingStatusV3,
@@ -32,8 +33,9 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingStatusV9,
     ScannerTrackingStatusV10,
     ScannerTrackingStatusV11,
+    ScannerTrackingStatusV12,
     SessionId,
-    TrackingArtifactV1,
+    TrackingArtifactV12,
 )
 from leo.storage.adaptive_hop_analysis import _publish, _read, _seal, _unseal
 from leo.storage.pinned import PinnedLocalRoot
@@ -49,7 +51,7 @@ class ScannerTrackingStore:
         self.root, self.read_only = root, read_only
 
     @contextmanager
-    def directory(self, session_id: str, *, create: bool = False, version: int = 11):
+    def directory(self, session_id: str, *, create: bool = False, version: int = 12):
         TypeAdapter(SessionId).validate_python(session_id)
         if create and self.read_only:
             raise PermissionError("tracking store is read-only")
@@ -66,7 +68,8 @@ class ScannerTrackingStore:
     def status(
         self, session_id: str
     ) -> (
-        ScannerTrackingStatusV11
+        ScannerTrackingStatusV12
+        | ScannerTrackingStatusV11
         | ScannerTrackingStatusV10
         | ScannerTrackingStatusV9
         | ScannerTrackingStatusV8
@@ -78,9 +81,12 @@ class ScannerTrackingStore:
         | ScannerTrackingStatusV2
         | ScannerTrackingStatusV1
     ):
-        current = self._status_v11(session_id)
+        current = self._status_v12(session_id)
         if current.state != "pending":
             return current
+        current_v11 = self._status_v11(session_id)
+        if current_v11.state != "pending":
+            return current_v11
         current_v10 = self._status_v10(session_id)
         if current_v10.state != "pending":
             return current_v10
@@ -118,14 +124,38 @@ class ScannerTrackingStore:
             return current
         return legacy if legacy.state != "pending" else current
 
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV11:
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV12:
         """Return only the current analysis version's state for queue workers.
 
         Public readers retain the newest published historical product while a
         newer analysis version is pending.  Workers must instead see that
-        pending V11 state so an intentional policy revision is actually run.
+        pending V12 state so an intentional policy revision is actually run.
         """
-        return self._status_v11(session_id)
+        return self._status_v12(session_id)
+
+    def _status_v12(self, session_id: str) -> ScannerTrackingStatusV12:
+        try:
+            with self.directory(session_id, version=12) as directory:
+                try:
+                    product = _unseal(
+                        _read(directory, "manifest.json", _LIMIT), ScannerTrackingProductV12
+                    )
+                    return ScannerTrackingStatusV12(
+                        session_id=session_id, state="complete", phase="complete", product=product
+                    )
+                except FileNotFoundError:
+                    try:
+                        return _unseal(
+                            _read(directory, "checkpoint.json", _LIMIT), ScannerTrackingStatusV12
+                        )
+                    except FileNotFoundError:
+                        return ScannerTrackingStatusV12(session_id=session_id)
+        except FileNotFoundError:
+            return ScannerTrackingStatusV12(session_id=session_id)
+        except ValueError as error:
+            if isinstance(error.__cause__, FileNotFoundError):
+                return ScannerTrackingStatusV12(session_id=session_id)
+            raise
 
     def _status_v11(self, session_id: str) -> ScannerTrackingStatusV11:
         try:
@@ -366,8 +396,8 @@ class ScannerTrackingStore:
                 return ScannerTrackingStatusV1(session_id=session_id)
             raise
 
-    def save(self, status: ScannerTrackingStatusV11) -> None:
-        status = ScannerTrackingStatusV11.model_validate(status.model_dump())
+    def save(self, status: ScannerTrackingStatusV12) -> None:
+        status = ScannerTrackingStatusV12.model_validate(status.model_dump())
         with self.directory(status.session_id, create=True) as directory:
             try:
                 _read(directory, "manifest.json", _LIMIT)
@@ -386,12 +416,12 @@ class ScannerTrackingStore:
             os.fsync(directory.fileno())
 
     def put_artifact(
-        self, session_id: str, name: ArtifactName, payload: bytes
-    ) -> TrackingArtifactV1:
-        TypeAdapter(ArtifactName).validate_python(name)
+        self, session_id: str, name: ArtifactNameV12, payload: bytes
+    ) -> TrackingArtifactV12:
+        TypeAdapter(ArtifactNameV12).validate_python(name)
         if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValueError("tracking artifact is not PNG")
-        reference = TrackingArtifactV1(
+        reference = TrackingArtifactV12(
             name=name, sha256=sha256_digest(payload), byte_count=len(payload)
         )
         with self.directory(session_id, create=True) as directory:
@@ -404,8 +434,10 @@ class ScannerTrackingStore:
                     raise ValueError("tracking artifact is immutable")
         return reference
 
-    def publish(self, product: ScannerTrackingProductV11) -> None:
-        product = ScannerTrackingProductV11.model_validate(product.model_dump())
+    def publish(self, product: ScannerTrackingProductV12) -> None:
+        product = ScannerTrackingProductV12.model_validate(product.model_dump())
+        if product.position_diagnostic is None:
+            raise ValueError("cannot finalize tracking without a position diagnostic")
         if product.tle_state == "pending":
             raise ValueError("cannot finalize pending TLE comparisons")
         with self.directory(product.session_id, create=True) as directory:
@@ -422,8 +454,8 @@ class ScannerTrackingStore:
                 if previous != payload:
                     raise ValueError("tracking publication is immutable")
 
-    def artifact(self, session_id: str, name: ArtifactName) -> bytes | None:
-        TypeAdapter(ArtifactName).validate_python(name)
+    def artifact(self, session_id: str, name: ArtifactNameV12) -> bytes | None:
+        TypeAdapter(ArtifactNameV12).validate_python(name)
         product = self.status(session_id).product
         ref = next((r for r in product.artifacts if r.name == name), None) if product else None
         if ref is None:
@@ -431,12 +463,16 @@ class ScannerTrackingStore:
         assert product is not None
         with self.directory(
             session_id,
-            version=11
+            version=12
+            if product.analysis_id == "scanner-shared-tracking-v12"
+            else 11
             if product.analysis_id == "scanner-shared-tracking-v11"
             else 10
             if product.analysis_id == "scanner-shared-tracking-v10"
             else 9
             if product.analysis_id == "scanner-shared-tracking-v9"
+            else 8
+            if product.analysis_id == "scanner-shared-tracking-v8"
             else 7
             if product.analysis_id == "scanner-shared-tracking-v7"
             else 6
