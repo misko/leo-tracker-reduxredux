@@ -1,0 +1,198 @@
+{
+  "scope": "known-site local Fisher sensitivity; fixed candidate identities; not accuracy proof",
+  "representative_calibration_sensitivity": {
+    "slope_sigma_fraction": 0.05,
+    "heading_sigma_deg": 3.0,
+    "lane_intercept_sigma_db": 0.25,
+    "pass_level_sigma_db": 0.25,
+    "status": "representative sensitivity point, not measured calibration truth"
+  },
+  "phase_alignment": {
+    "method": "fixed-known-site linearized ridge Doppler profile; response excluded",
+    "phase_rate_sigma_s_h": 0.09176615913014215,
+    "doppler_sigma_hz": 250.0,
+    "maximum_absolute_rate_s_h": 0.15572552340207288,
+    "research_only": true
+  },
+  "response_cross_validation": [
+    {
+      "fold": 0,
+      "baseline_group_balanced_rms_db": 1.5522890533354932,
+      "east": {
+        "coefficients": [
+          17.186230455897395
+        ],
+        "evaluation_group_balanced_rms_db": 0.8625076469589197
+      },
+      "east_north": {
+        "coefficients": [
+          16.36611886920699,
+          -1.9175375261380667
+        ],
+        "evaluation_group_balanced_rms_db": 0.8682922615287227
+      }
+    },
+    {
+      "fold": 1,
+      "baseline_group_balanced_rms_db": 1.582328779481517,
+      "east": {
+        "coefficients": [
+          17.539761481435725
+        ],
+        "evaluation_group_balanced_rms_db": 0.9541812313029289
+      },
+      "east_north": {
+        "coefficients": [
+          17.157944490373623,
+          -1.1729244666377614
+        ],
+        "evaluation_group_balanced_rms_db": 0.9557707544709194
+      }
+    },
+    {
+      "fold": 2,
+      "baseline_group_balanced_rms_db": 1.6013495303608776,
+      "east": {
+        "coefficients": [
+          16.78089708639992
+        ],
+        "evaluation_group_balanced_rms_db": 0.8377073655858068
+      },
+      "east_north": {
+        "coefficients": [
+          16.845613975991,
+          0.16020018295728777
+        ],
+        "evaluation_group_balanced_rms_db": 0.8384058458771604
+      }
+    }
+  ],
+  "temporal_noise_model": {
+    "white_sigma_db": 0.5723747878276683,
+    "correlated_sigma_db": 1.0911964687606277,
+    "correlation_time_s": 11.819386200037087,
+    "bins": [
+      {
+        "lag_s": 0.175,
+        "semivariance_db2": 0.2928074505017583,
+        "pairs": 237
+      },
+      {
+        "lag_s": 0.425,
+        "semivariance_db2": 0.29527279923065713,
+        "pairs": 801
+      },
+      {
+        "lag_s": 0.625,
+        "semivariance_db2": 0.4295005822381215,
+        "pairs": 1315
+      },
+      {
+        "lag_s": 0.875,
+        "semivariance_db2": 0.40161992709683636,
+        "pairs": 1079
+      },
+      {
+        "lag_s": 1.25,
+        "semivariance_db2": 0.4545655995508807,
+        "pairs": 2379
+      },
+      {
+        "lag_s": 1.75,
+        "semivariance_db2": 0.540029358091396,
+        "pairs": 2079
+      },
+      {
+        "lag_s": 2.5,
+        "semivariance_db2": 0.6259793454682437,
+        "pairs": 4733
+      },
+      {
+        "lag_s": 4.0,
+        "semivariance_db2": 0.6870437673221335,
+        "pairs": 8247
+      },
+      {
+        "lag_s": 6.5,
+        "semivariance_db2": 0.7623601467970641,
+        "pairs": 10853
+      },
+      {
+        "lag_s": 10.0,
+        "semivariance_db2": 0.976980267020902,
+        "pairs": 11526
+      },
+      {
+        "lag_s": 16.0,
+        "semivariance_db2": 1.2957314655298184,
+        "pairs": 12891
+      },
+      {
+        "lag_s": 25.0,
+        "semivariance_db2": 1.5722525818734965,
+        "pairs": 4847
+      },
+      {
+        "lag_s": 40.0,
+        "semivariance_db2": 0.9254025232043526,
+        "pairs": 585
+      }
+    ]
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "observations": 972,
+      "representatives": 35,
+      "pass_lane_groups": 40,
+      "slope_db_per_direction_cosine": 17.186230455897395,
+      "doppler_major_95_m": 5800.287819349889,
+      "current_representative_combined_major_95_m": 5729.840888002605,
+      "correlated_all_points_combined_major_95_m": 5676.21282445045,
+      "combined_reduction_m": 124.07499489943893,
+      "combined_reduction_percent": 2.1391178983484576,
+      "required_independent_pass_multiplier_for_1km": 2028.0743240932125,
+      "free_pass_offset_beam_major_95_m": 1054193.731121845,
+      "free_pass_offset_and_drift_beam_major_95_m": 1683812.2496273364,
+      "information_rank": 2
+    },
+    {
+      "fold": 1,
+      "observations": 961,
+      "representatives": 31,
+      "pass_lane_groups": 35,
+      "slope_db_per_direction_cosine": 17.539761481435725,
+      "doppler_major_95_m": 4542.673304123957,
+      "current_representative_combined_major_95_m": 4470.455795872837,
+      "correlated_all_points_combined_major_95_m": 4436.346985667914,
+      "combined_reduction_m": 106.32631845604283,
+      "combined_reduction_percent": 2.340611163024139,
+      "required_independent_pass_multiplier_for_1km": 2523.641307697784,
+      "free_pass_offset_beam_major_95_m": 1244243.9751459677,
+      "free_pass_offset_and_drift_beam_major_95_m": 2215387.161814227,
+      "information_rank": 2
+    },
+    {
+      "fold": 2,
+      "observations": 1049,
+      "representatives": 39,
+      "pass_lane_groups": 46,
+      "slope_db_per_direction_cosine": 16.78089708639992,
+      "doppler_major_95_m": 5055.513065771367,
+      "current_representative_combined_major_95_m": 4965.806965335133,
+      "correlated_all_points_combined_major_95_m": 4917.096979006093,
+      "combined_reduction_m": 138.41608676527449,
+      "combined_reduction_percent": 2.7379236284132724,
+      "required_independent_pass_multiplier_for_1km": 1950.8500600647462,
+      "free_pass_offset_beam_major_95_m": 812092.368731399,
+      "free_pass_offset_and_drift_beam_major_95_m": 1801142.6478789928,
+      "information_rank": 2
+    }
+  ],
+  "limitations": [
+    "Phase rates use a linearized ridge profile, not the production robust IRLS profile.",
+    "The exponential covariance is an empirical short-window model from the same corpus.",
+    "Fisher bounds are local random-error sensitivity and exclude identity, orbit, calibration bias, and selection error.",
+    "Beam rates are Doppler-profiled conditionally; the beam term does not jointly refit phase nuisances."
+  ]
+}
