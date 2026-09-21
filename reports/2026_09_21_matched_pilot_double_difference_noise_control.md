@@ -57,3 +57,31 @@ Corrected raw frequency authority and a common phase reference are still
 required across both source extractions. Shared timing and a high pilot/control
 ratio alone do not validate the fourth-order double-difference observable.
 No production estimator or saved-IQ product was changed for this calculation.
+
+## Cross-receiver correlated residuals survive the first correction
+
+Subtracting the exact within-receiver covariance from each source cross term
+is sufficient for the independent-receiver Gaussian null above, but not for a
+shared residual. For unit-variance matched outputs let
+
+```
+C_r = m_rB conjugate(m_rA) - E[m_rB conjugate(m_rA)]
+```
+
+For jointly proper Gaussian noise, the remaining expectation is
+
+```
+E[C_1 conjugate(C_0)]
+  = E[m_1B conjugate(m_0B)] E[m_0A conjugate(m_1A)].
+```
+
+If both cross-receiver correlations equal a real kappa, this is `kappa^2`.
+Another 300,000-realization check (seed 20260922, within-receiver template
+correlation 0.5) gave corrected mean real parts 0.00115, 0.24804, and 0.80441
+for kappa 0, 0.5, and 0.9 respectively, versus expectations 0, 0.25, and 0.81.
+
+Thus a joint-template least-squares estimator with within-receiver covariance
+subtraction still needs residual cross-receiver diagnostics and qualified
+pilot-versus-control evidence. Shared residual energy cannot automatically be
+classified as independent receiver noise. Disjoint sample splits likewise do
+not establish independence when the residual is temporally correlated.
