@@ -115,6 +115,8 @@ def _inputs(binding: AdaptiveReceiverGeometryBindingV1) -> AdaptiveDualRxGeometr
         direction_standard_error_rad=1e-5,
         association_method="independent catalogue and RF-frequency association",
         source_identity_verified=True,
+        pilot_phase_half_cycle=0,
+        pilot_phase_branch_verified=True,
     )
     pose = AdaptiveDualRxFixturePoseV1(
         fixture_x_axis_enu=_unit(1, 0, 0),

@@ -40,6 +40,7 @@ class AdaptiveDualRxDoubleDifferenceHypothesisV2(AdaptiveModel):
     exact_to_control_power_ratio_floor: Annotated[float, Field(gt=0, allow_inf_nan=False)]
     association_uses_phase: Literal[False] = False
     alias_resolved: Literal[False] = False
+    pilot_phase_ambiguity: Literal["modulo_pi"] = "modulo_pi"
 
     @model_validator(mode="after")
     def _time_separation_closes(self) -> Self:
@@ -140,6 +141,7 @@ class AdaptiveDualRxPhaseManifestV2(AdaptiveModel):
     phase_continuity_across_retunes: Literal[False] = False
     association_uses_phase: Literal[False] = False
     aliases_resolved: Literal[False] = False
+    pilot_phase_ambiguity: Literal["modulo_pi"] = "modulo_pi"
     artifact: AdaptiveDualRxPhaseTimeFigureV2 | None
     finalized_utc_ns: U64
 

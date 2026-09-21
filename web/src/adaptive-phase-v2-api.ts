@@ -13,6 +13,7 @@ export interface AdaptivePhaseV2Manifest {
   hypothesis_count: number; geometry_phase_state: "unavailable" | "ambiguous" | "conditionally_unique";
   geometry_phase_reason: string; receiver_product: "rx1_times_conjugate_rx0";
   phase_continuity_across_retunes: false; association_uses_phase: false; aliases_resolved: false;
+  pilot_phase_ambiguity: "modulo_pi";
   artifact: AdaptivePhaseV2Figure | null; finalized_utc_ns: string;
 }
 export interface AdaptivePhaseV2Status {
@@ -55,6 +56,7 @@ export async function getAdaptivePhaseV2(capture: AdaptiveCapture, signal?: Abor
       || manifest.session_id !== value.session_id || manifest.input_manifest_sha256 !== value.input_manifest_sha256
       || !digest(manifest.glrt_binding_sha256) || !digest(manifest.glrt_metrics_manifest_sha256)
       || manifest.association_uses_phase !== false || manifest.aliases_resolved !== false
+      || manifest.pilot_phase_ambiguity !== "modulo_pi"
       || manifest.phase_continuity_across_retunes !== false || manifest.receiver_product !== "rx1_times_conjugate_rx0"
       || manifest.state !== value.state || !count(manifest.hypothesis_count, 70000)
       || (manifest.state === "ready") !== (manifest.artifact !== null)
