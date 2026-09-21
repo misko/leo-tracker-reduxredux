@@ -87,9 +87,7 @@ def test_one_edge_manifest_preserves_mask_and_geometry_as_v7(tmp_path):
     )
     plan = AdaptiveHopPlanV2(
         geometry=legacy.plan.geometry,
-        policy=AdaptiveHopPolicyV2(
-            mode="adaptive", generation=71, allowed_target_mask=0xF0
-        ),
+        policy=AdaptiveHopPolicyV2(mode="adaptive", generation=71, allowed_target_mask=0xF0),
     )
     payload = legacy.model_dump(mode="json")
     payload.update(schema_version=2, plan=plan.model_dump(mode="json"))

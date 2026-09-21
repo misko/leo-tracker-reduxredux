@@ -72,7 +72,7 @@ class AdaptiveHopPolicyV2(AdaptiveHopPolicyV1):
 
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     policy_id: Literal["three-miss-two-second-one-edge-v1"] = (  # type: ignore[assignment]
-        "three-miss-two-second-one-edge-v1"
+        "three-miss-two-second-one-edge-v1"  # type: ignore[assignment]
     )
     allowed_target_mask: Literal[0x0F, 0xF0]
 

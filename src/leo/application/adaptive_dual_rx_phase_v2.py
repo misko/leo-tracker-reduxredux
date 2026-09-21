@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import math
+from typing import Literal, cast
 
 import numpy as np
 
@@ -47,7 +48,9 @@ def _phase_blind_pairs(
 ) -> list[tuple[AdaptiveHopFractionalCandidateV1, AdaptiveHopFractionalCandidateV1, float, int]]:
     probes = {(probe.probe_index, probe.receiver_id): probe for probe in visit.probes}
     frame_period = visit.configuration.sample_rate_hz / 750.0
-    output = []
+    output: list[
+        tuple[AdaptiveHopFractionalCandidateV1, AdaptiveHopFractionalCandidateV1, float, int]
+    ] = []
     probe_indexes = sorted(
         {key[0] for key in probes if (key[0], 0) in probes and (key[0], 1) in probes}
     )
@@ -81,7 +84,9 @@ def _phase_blind_pairs(
         output.extend(
             (left[i], right[j], offset, probe_start_samples) for i, j, offset, _ in selected
         )
-    distinct = []
+    distinct: list[
+        tuple[AdaptiveHopFractionalCandidateV1, AdaptiveHopFractionalCandidateV1, float, int]
+    ] = []
     for pair in sorted(
         output,
         key=lambda item: (
@@ -160,7 +165,7 @@ def extract_phase_visit_v2(
     pairs = _phase_blind_pairs(visit)
     extracted = [(pair, _extract_pair(iq, visit, pair)) for pair in pairs]
     qualified = [(pair, result) for pair, result in extracted if result is not None]
-    hypotheses = []
+    hypotheses: list[AdaptiveDualRxDoubleDifferenceHypothesisV2] = []
     sample_rate_hz = visit.configuration.sample_rate_hz
     visit_origin_s = (visit.valid_start_counter - visit.source_origin_counter) / sample_rate_hz
     for (low_pair, low), (high_pair, high) in itertools.combinations(qualified, 2):
@@ -235,9 +240,16 @@ def extract_phase_visit_v2(
                 ),
             )
         )
-    state = "qualified" if hypotheses else "insufficient_signal"
+    state: Literal["qualified", "insufficient_signal"] = (
+        "qualified" if hypotheses else "insufficient_signal"
+    )
     if hypotheses:
-        reason = "phase_blind_two_signal_hypotheses"
+        reason: Literal[
+            "phase_blind_two_signal_hypotheses",
+            "fewer_than_two_phase_blind_receiver_pairs",
+            "fewer_than_two_phase_quality_pairs",
+            "no_alias_distinct_two_signal_hypothesis",
+        ] = "phase_blind_two_signal_hypotheses"
     elif len(pairs) < 2:
         reason = "fewer_than_two_phase_blind_receiver_pairs"
     elif len(qualified) < 2:
@@ -250,7 +262,7 @@ def extract_phase_visit_v2(
         glrt_binding_sha256=glrt_binding_sha256,
         visit_index=visit.visit_index,
         target_index=visit.target_index,
-        edge=visit.target.edge,
+        edge=cast(Literal["lower", "upper"], visit.target.edge),
         state=state,
         reason=reason,
         consistent_receiver_pair_count=len(pairs),

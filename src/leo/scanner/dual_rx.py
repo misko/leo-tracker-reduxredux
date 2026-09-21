@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import secrets
 from datetime import UTC, datetime
-from typing import ClassVar, Literal, Self
+from typing import ClassVar, Literal, Self, cast
 
 from pydantic import model_validator
 
@@ -26,7 +26,7 @@ DUAL_RX_RATE_HZ: Literal[2_500_000] = 2_500_000
 class DualRxAdaptive2p5ScannerConfigurationV7(ScannerConfigurationV3):
     schema_version: Literal[7] = 7  # type: ignore[assignment]
     band_plan_id: Literal["starlink-low-ch1-ch4-dual-rx-2p5m-v1"] = (  # type: ignore[assignment]
-        "starlink-low-ch1-ch4-dual-rx-2p5m-v1"
+        "starlink-low-ch1-ch4-dual-rx-2p5m-v1"  # type: ignore[assignment]
     )
     sample_rate_hz: Literal[2_500_000] = DUAL_RX_RATE_HZ
     bandwidth_hz: Literal[2_500_000] = DUAL_RX_RATE_HZ
@@ -47,7 +47,7 @@ class DualRxAdaptive2p5ScannerConfigurationV7(ScannerConfigurationV3):
 class DualRxAdaptive2p5ScheduledScannerIntentV7(ScheduledScannerRunIntentV1):
     schema_version: Literal[7] = 7  # type: ignore[assignment]
     policy_id: Literal["adaptive-dual-rx-2p5m-300s-v1"] = (  # type: ignore[assignment]
-        DUAL_RX_ADAPTIVE_2P5_PROFILE_ID
+        cast(Literal["adaptive-dual-rx-2p5m-300s-v1"], DUAL_RX_ADAPTIVE_2P5_PROFILE_ID)  # type: ignore[assignment]
     )
     required_interval_seconds: ClassVar[int] = 600
     run_duration_seconds: Literal[300] = 300
@@ -78,7 +78,7 @@ class DualRxAdaptive2p5ScheduledScannerIntentV8(ScheduledScannerRunIntentV1):
 
     schema_version: Literal[8] = 8  # type: ignore[assignment]
     policy_id: Literal["adaptive-dual-rx-2p5m-300s-360s-v1"] = (  # type: ignore[assignment]
-        DUAL_RX_ADAPTIVE_2P5_PROFILE_ID
+        cast(Literal["adaptive-dual-rx-2p5m-300s-360s-v1"], DUAL_RX_ADAPTIVE_2P5_PROFILE_ID)  # type: ignore[assignment]
     )
     required_interval_seconds: ClassVar[int] = 360
     run_duration_seconds: Literal[300] = 300
@@ -119,7 +119,7 @@ def choose_dual_rx_edge() -> Literal["lower", "upper"]:
 class DualRxAdaptive2p5EdgeScannerConfigurationV8(DualRxAdaptive2p5ScannerConfigurationV7):
     schema_version: Literal[8] = 8  # type: ignore[assignment]
     band_plan_id: Literal["starlink-low-ch1-ch4-one-edge-dual-rx-2p5m-v1"] = (  # type: ignore[assignment]
-        "starlink-low-ch1-ch4-one-edge-dual-rx-2p5m-v1"
+        "starlink-low-ch1-ch4-one-edge-dual-rx-2p5m-v1"  # type: ignore[assignment]
     )
     selected_edge: Literal["lower", "upper"]
 
@@ -129,7 +129,10 @@ class DualRxAdaptive2p5ScheduledScannerIntentV9(ScheduledScannerRunIntentV1):
 
     schema_version: Literal[9] = 9  # type: ignore[assignment]
     policy_id: Literal["adaptive-dual-rx-2p5m-edge-random-300s-360s-v1"] = (  # type: ignore[assignment]
-        DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID
+        cast(
+            Literal["adaptive-dual-rx-2p5m-edge-random-300s-360s-v1"],
+            DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
+        )  # type: ignore[assignment]
     )
     required_interval_seconds: ClassVar[int] = 360
     run_duration_seconds: Literal[300] = 300

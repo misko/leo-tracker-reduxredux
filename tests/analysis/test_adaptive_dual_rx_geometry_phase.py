@@ -46,10 +46,14 @@ def observation(**changes) -> GeometryPhaseObservation:
     low_direction = (0.0, 0.0, 1.0)
     high_direction = (0.1, 0.0, math.sqrt(0.99))
     baseline = (0.08, 0.0, 0.0)
-    predicted = 2 * math.pi / SPEED_OF_LIGHT_M_S * sum(
-        component
-        * (high_rf_hz * high - low_rf_hz * low)
-        for component, high, low in zip(baseline, high_direction, low_direction, strict=True)
+    predicted = (
+        2
+        * math.pi
+        / SPEED_OF_LIGHT_M_S
+        * sum(
+            component * (high_rf_hz * high - low_rf_hz * low)
+            for component, high, low in zip(baseline, high_direction, low_direction, strict=True)
+        )
     )
     hardware = 2 * math.pi * 3.2e-9 * (high_rf_hz - low_rf_hz) + 0.13
     asynchronous = 7.0 * 0.0004

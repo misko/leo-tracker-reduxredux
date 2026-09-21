@@ -80,9 +80,7 @@ class ReceiverFixtureDefinitionV1(ContractModel):
     schema_version: Literal[1] = 1
     fixture_part_id: Identifier
     geometry_revision: Identifier
-    coordinate_frame: Literal["fixture-local-right-front-up"] = (
-        "fixture-local-right-front-up"
-    )
+    coordinate_frame: Literal["fixture-local-right-front-up"] = "fixture-local-right-front-up"
     slots: Annotated[tuple[ReceiverFixtureSlotV1, ...], Field(min_length=2, max_length=2)]
     design_uri: EvidenceUri
     design_sha256: Sha256Digest
@@ -246,9 +244,7 @@ class StationReceiverGeometryV1(ContractModel):
         fixtures: tuple[ReceiverFixtureDefinitionV1, ...],
         radios: tuple[RadioReceiverGeometryV1, ...],
     ) -> StationReceiverGeometryV1:
-        ordered_fixtures = tuple(
-            sorted(fixtures, key=_fixture_key)
-        )
+        ordered_fixtures = tuple(sorted(fixtures, key=_fixture_key))
         ordered_radios = tuple(sorted(radios, key=_radio_key))
         values = {
             "schema_version": 1,
@@ -340,9 +336,7 @@ class CaptureReceiverGeometryBindingV1(ContractModel):
     hardware_binding_digest: Sha256Digest
     station_geometry_revision: Identifier
     station_geometry_digest: Sha256Digest
-    paths: Annotated[
-        tuple[CapturedReceiverGeometryPathV1, ...], Field(min_length=1, max_length=4)
-    ]
+    paths: Annotated[tuple[CapturedReceiverGeometryPathV1, ...], Field(min_length=1, max_length=4)]
     binding_digest: Sha256Digest
 
     @model_validator(mode="after")
@@ -486,7 +480,14 @@ class AdaptiveReceiverGeometryBindingV1(ContractModel):
             "fixture": fixture.model_dump(mode="json"),
         }
         return cls(
-            **values,
+            schema_version=1,
+            station_id=geometry.station_id,
+            station_geometry_revision=geometry.geometry_revision,
+            station_geometry_digest=geometry.geometry_digest,
+            valid_from_utc_ns=geometry.valid_from_utc_ns,
+            valid_until_utc_ns=geometry.valid_until_utc_ns,
+            radio=radio,
+            fixture=fixture,
             binding_digest=canonical_digest(values),
         )
 

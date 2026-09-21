@@ -8,6 +8,7 @@ import re
 import stat
 import time
 from pathlib import Path
+from typing import Literal
 from uuid import uuid4
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
@@ -238,7 +239,7 @@ class AdaptiveDualRxPhaseStoreV2:
         glrt_binding_sha256: str,
         glrt_metrics_manifest_sha256: str,
         total_visit_count: int,
-        geometry_phase_state: str,
+        geometry_phase_state: Literal["unavailable", "ambiguous", "conditionally_unique"],
         geometry_phase_reason: str,
         png: bytes | None,
         geometry: AdaptiveDualRxGeometrySummaryV2 | None = None,
