@@ -54,6 +54,18 @@ class ReceiverFrameSeries:
 
 
 @dataclass(frozen=True, slots=True)
+class FrameFrequencyBranchLift:
+    """Conditional evidence used to lift a receiver-product frequency branch."""
+
+    principal_product_residual_cfo_hz: float
+    within_frame_receiver_residual_difference_hz: float
+    selected_frame_alias_index: int
+    lifted_product_residual_cfo_hz: float
+    authority_disagreement_hz: float
+    branch_selection_gap_hz: float
+
+
+@dataclass(frozen=True, slots=True)
 class DualReceiverPhaseObservation:
     center_sample: float
     wrapped_phase_rad: float
@@ -63,6 +75,18 @@ class DualReceiverPhaseObservation:
     phase_standard_error_deg: float
     independent_frame_count: int
     receivers: tuple[ReceiverFrameSeries, ReceiverFrameSeries]
+    frame_frequency_branch_lift: FrameFrequencyBranchLift | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReceiverOffsetAuthorityApplication:
+    """An observation rebound to an independent RX1-minus-RX0 CFO authority."""
+
+    receiver_offset_authority_hz: float
+    common_reference_sample: float
+    original_seeds: tuple[ReceiverPhaseSeed, ReceiverPhaseSeed]
+    applied_seeds: tuple[ReceiverPhaseSeed, ReceiverPhaseSeed]
+    observation: DualReceiverPhaseObservation
 
 
 def shared_frame_starts(
@@ -105,6 +129,7 @@ def extract_dual_receiver_phase(
     *,
     frame_radius: int = 9,
     symbol_indices: npt.NDArray[np.integer] | None = None,
+    lift_frame_frequency_branch: bool = False,
 ) -> DualReceiverPhaseObservation:
     """Extract a wrapped local RX1-minus-RX0 pilot phase.
 
@@ -192,12 +217,36 @@ def extract_dual_receiver_phase(
         * np.maximum(np.abs(series[1].frame_phasors), np.finfo(float).tiny)
     )
     center_sample = float(np.average(starts, weights=weights))
-    fitted_hz, corrected_phase_rad, resultant = fit_linear_phasor(
+    principal_hz, corrected_phase_rad, resultant = fit_linear_phasor(
         receiver_product,
         starts / sample_rate_hz,
         weights,
         center_sample / sample_rate_hz,
     )
+    fitted_hz = principal_hz
+    branch_lift = None
+    if lift_frame_frequency_branch:
+        authority_hz = (
+            series[1].within_frame_residual_cfo_hz - series[0].within_frame_residual_cfo_hz
+        )
+        alias_index = round((authority_hz - principal_hz) / FRAME_RATE_HZ)
+        alias_center_hz = principal_hz + alias_index * FRAME_RATE_HZ
+        fitted_hz, corrected_phase_rad, resultant = fit_linear_phasor(
+            receiver_product,
+            starts / sample_rate_hz,
+            weights,
+            center_sample / sample_rate_hz,
+            minimum_frequency_hz=alias_center_hz - FRAME_RATE_HZ / 2,
+            maximum_frequency_hz=alias_center_hz + FRAME_RATE_HZ / 2,
+        )
+        branch_lift = FrameFrequencyBranchLift(
+            principal_product_residual_cfo_hz=principal_hz,
+            within_frame_receiver_residual_difference_hz=authority_hz,
+            selected_frame_alias_index=alias_index,
+            lifted_product_residual_cfo_hz=fitted_hz,
+            authority_disagreement_hz=authority_hz - fitted_hz,
+            branch_selection_gap_hz=FRAME_RATE_HZ - 2 * abs(authority_hz - alias_center_hz),
+        )
     frame_times_s = starts / sample_rate_hz
     centered_s = frame_times_s - center_sample / sample_rate_hz
     unit_product = receiver_product / np.maximum(abs(receiver_product), np.finfo(float).tiny)
@@ -227,4 +276,96 @@ def extract_dual_receiver_phase(
         phase_standard_error_deg=circular_phase_standard_error_deg(resultant, len(starts)),
         independent_frame_count=len(starts),
         receivers=(series[0], series[1]),
+        frame_frequency_branch_lift=branch_lift,
+    )
+
+
+def extract_dual_receiver_phase_branch_lifted(
+    iq: npt.NDArray[np.complexfloating],
+    sample_rate_hz: float,
+    edge: StarlinkEdge | str,
+    frame_epoch_sample: int,
+    seeds: tuple[ReceiverPhaseSeed, ReceiverPhaseSeed],
+    *,
+    frame_radius: int = 9,
+    symbol_indices: npt.NDArray[np.integer] | None = None,
+) -> DualReceiverPhaseObservation:
+    """Extract phase with a conditional lift of the 750 Hz frequency branch.
+
+    The individual receiver residuals are estimated from the pilot symbols
+    within each frame.  Their difference chooses the integer 750 Hz branch of
+    the receiver-product slope before phase is evaluated or propagated.  The
+    published V2 extractor keeps its historical unresolved behavior through
+    :func:`extract_dual_receiver_phase`; new analyses must opt into this
+    additive estimator explicitly.  Callers must retain the authority
+    disagreement and competing-branch gap; this local evidence does not
+    resolve the separate pilot-symbol CFO ambiguity.
+    """
+
+    return extract_dual_receiver_phase(
+        iq,
+        sample_rate_hz,
+        edge,
+        frame_epoch_sample,
+        seeds,
+        frame_radius=frame_radius,
+        symbol_indices=symbol_indices,
+        lift_frame_frequency_branch=True,
+    )
+
+
+def extract_dual_receiver_phase_with_offset_authority(
+    iq: npt.NDArray[np.complexfloating],
+    sample_rate_hz: float,
+    edge: StarlinkEdge | str,
+    frame_epoch_sample: int,
+    seeds: tuple[ReceiverPhaseSeed, ReceiverPhaseSeed],
+    receiver_offset_authority_hz: float,
+    *,
+    common_reference_sample: float | None = None,
+    frame_radius: int = 9,
+    symbol_indices: npt.NDArray[np.integer] | None = None,
+) -> ReceiverOffsetAuthorityApplication:
+    """Re-correlate both receivers on one independently established CFO branch.
+
+    A broadband cross-ambiguity measurement can establish RX1-minus-RX0 CFO
+    without using the Qin symbol alias.  RX1 is then seeded at RX0 plus that
+    offset and both derotations use one reference sample.  This makes a common
+    pilot-symbol alias and template response cancel in RX1 times conjugate RX0.
+
+    The authority must be bound and persisted by the calling analysis.  This
+    function does not infer or validate it from the pilot being measured.
+    """
+
+    if len(seeds) != 2 or not math.isfinite(receiver_offset_authority_hz):
+        raise ValueError("receiver offset authority and dual seeds must be finite")
+    reference = (
+        seeds[0].reference_sample
+        if common_reference_sample is None
+        else float(common_reference_sample)
+    )
+    if not math.isfinite(reference):
+        raise ValueError("common receiver offset authority reference must be finite")
+    applied = (
+        ReceiverPhaseSeed(seeds[0].acquired_cfo_hz, reference),
+        ReceiverPhaseSeed(
+            seeds[0].acquired_cfo_hz + receiver_offset_authority_hz,
+            reference,
+        ),
+    )
+    observation = extract_dual_receiver_phase_branch_lifted(
+        iq,
+        sample_rate_hz,
+        edge,
+        frame_epoch_sample,
+        applied,
+        frame_radius=frame_radius,
+        symbol_indices=symbol_indices,
+    )
+    return ReceiverOffsetAuthorityApplication(
+        receiver_offset_authority_hz=receiver_offset_authority_hz,
+        common_reference_sample=reference,
+        original_seeds=seeds,
+        applied_seeds=applied,
+        observation=observation,
     )
