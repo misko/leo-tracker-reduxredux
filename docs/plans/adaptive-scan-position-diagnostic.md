@@ -31,7 +31,7 @@ initial diagnostic. Report the identity conditioning prominently.
 
 ## Integration
 
-1. Add an immutable position V1 contract inside a new tracking V12 publication;
+1. Add an immutable position V1 contract inside a new tracking V14 publication;
    retain readers for all published tracking versions.
 2. At the end of tracking, prepare position evidence from canonical measured
    observations and the frozen catalogue. Both catalogue availability and each

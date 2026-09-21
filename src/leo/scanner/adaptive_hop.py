@@ -67,6 +67,16 @@ class AdaptiveHopPolicyV1(AdaptiveModel):
     unhealthy_limit: Literal[3] = 3
 
 
+class AdaptiveHopPolicyV2(AdaptiveHopPolicyV1):
+    """Adaptive policy restricted to one four-channel Starlink edge."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    policy_id: Literal["three-miss-two-second-one-edge-v1"] = (  # type: ignore[assignment]
+        "three-miss-two-second-one-edge-v1"
+    )
+    allowed_target_mask: Literal[0x0F, 0xF0]
+
+
 class AdaptiveHopPlanV1(AdaptiveModel):
     schema_version: Literal[1] = 1
     kind: Literal["starlink_adaptive_hop_plan"] = "starlink_adaptive_hop_plan"
@@ -80,6 +90,11 @@ class AdaptiveHopPlanV1(AdaptiveModel):
         # band/IF coverage, 300 s / 120 ms and two recorded receiver rules.
         PersistentHopPlanV1.model_validate(self.geometry.model_dump())
         return self
+
+
+class AdaptiveHopPlanV2(AdaptiveHopPlanV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    policy: AdaptiveHopPolicyV2  # type: ignore[assignment]
 
 
 class AdaptiveHopDecisionV1(AdaptiveModel):
@@ -421,3 +436,51 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             )
             for p in self.plan.geometry.profiles
         )
+
+
+class AdaptiveHopReceiptV2(AdaptiveHopReceiptV1):
+    """Receipt proving every actual and proposed target stayed on one edge."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    plan: AdaptiveHopPlanV2  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _events_stay_inside_allowed_targets(self) -> Self:
+        allowed = self.plan.policy.allowed_target_mask
+        for event in self.events:
+            decision = event.decision
+            if (
+                not (allowed & (1 << event.target_index))
+                or not (allowed & (1 << decision.proposed_target))
+                or (decision.active_mask | decision.quiet_mask) & ~allowed
+            ):
+                raise ValueError("adaptive event escaped its one-edge target mask")
+        return self
+
+
+AdaptiveHopPlan = AdaptiveHopPlanV1 | AdaptiveHopPlanV2
+AdaptiveHopReceipt = AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2
+
+
+def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
+    """Admit each published plan major through its own closed model."""
+
+    version = (
+        value.schema_version
+        if isinstance(value, AdaptiveHopPlanV1)
+        else value.get("schema_version")
+    )
+    model = AdaptiveHopPlanV2 if version == 2 else AdaptiveHopPlanV1
+    return model.model_validate(value)
+
+
+def validate_adaptive_hop_receipt(value: Any) -> AdaptiveHopReceipt:
+    """Admit each published receipt major through its own closed model."""
+
+    version = (
+        value.schema_version
+        if isinstance(value, AdaptiveHopReceiptV1)
+        else value.get("schema_version")
+    )
+    model = AdaptiveHopReceiptV2 if version == 2 else AdaptiveHopReceiptV1
+    return model.model_validate(value)

@@ -1,6 +1,6 @@
 # Bounded positioning within adaptive scan analysis
 
-The tracking V12 pipeline adds a conditional position diagnostic after TLE
+The tracking V14 pipeline adds a conditional position diagnostic after TLE
 matching, using the existing adaptive processing queue. Each terminal analysis
 publishes position JSON and an independently served PNG, including an explicit
 insufficient-evidence result when a scan cannot support the calculation.
@@ -26,8 +26,8 @@ is explicitly conditional, not a blind or calibrated position fix.
 - Constant offsets fitted only from fitting observations. Rank, conditioning
   and search-boundary checks can make a result insufficient.
 - Catalogue availability and selected element epochs must precede capture start.
-- Published tracking versions 1–11 remain readable. New queue bindings and
-  publications use V12; existing data is not rewritten in place.
+- Published tracking versions 1–13 remain readable. New queue bindings and
+  publications use V14; existing data is not rewritten in place.
 
 ## Archived replay
 
@@ -65,6 +65,13 @@ PYTHONPATH=src OPENBLAS_NUM_THREADS=1 .venv/bin/python tools/qualify_scan_positi
 This command only reads archived scanner evidence and writes to its requested
 output directory. Runtime rollout and production HTTP verification remain
 required before this report can claim the feature is live.
+
+Release integration preserves the deployed V12/V13 tracking formats, bounded
+review selection, and dual-receiver capture/phase-analysis changes. The initial
+positioning branch used V12 before that live release history was reconciled;
+the integrated position publication uses V14 to avoid reinterpreting existing
+tracking products. The initial deployment stopped before cutover, so it did not
+replace the running acquisition or API releases.
 
 See the [integration plan](../docs/plans/adaptive-scan-position-diagnostic.md)
 and [sparse-position research](2026_09_21_sparse_position_exploration.md).

@@ -39,6 +39,7 @@ class TransferSummary:
     firmware_unsupported: tuple[dict[str, str], ...]
     unchanged_count: int
     deferred_firmware_count: int = 0
+    firmware_failed: tuple[dict[str, str], ...] = ()
 
     def as_json(self) -> dict[str, Any]:
         # IDs are current-run deltas, never the repeatedly emitted history.
@@ -49,6 +50,8 @@ class TransferSummary:
             "firmware_imported_session_ids": self.firmware_imported_session_ids,
             "firmware_unsupported_count": len(self.firmware_unsupported),
             "firmware_unsupported": self.firmware_unsupported,
+            "firmware_failed_count": len(self.firmware_failed),
+            "firmware_failed": self.firmware_failed,
             "unchanged_count": self.unchanged_count,
             "deferred_firmware_count": self.deferred_firmware_count,
         }
@@ -234,6 +237,7 @@ def transfer_pending(
         ledger = _load_ledger(ledger_path)
         imported: list[str] = []
         unsupported: list[dict[str, str]] = []
+        failed: list[dict[str, str]] = []
         unchanged = 0
         attempted = 0
         deferred = 0
@@ -276,9 +280,20 @@ def transfer_pending(
         with ThreadPoolExecutor(
             max_workers=max(1, min(_MAXIMUM_PARALLEL_IMPORTS, attempted))
         ) as executor:
-            results = executor.map(lambda item: importer(item[0].parent, bulk_root), selected)
-            completed = zip(selected, results, strict=True)
-            for (manifest, session_id, digest), (status, detail) in completed:
+            submitted = tuple(
+                (item, executor.submit(importer, item[0].parent, bulk_root)) for item in selected
+            )
+            for (manifest, session_id, digest), future in submitted:
+                try:
+                    status, detail = future.result()
+                except Exception as error:
+                    failed.append(
+                        {
+                            "session_id": session_id,
+                            "reason": f"{type(error).__name__}: {error}",
+                        }
+                    )
+                    continue
                 if status == "imported":
                     imported.append(detail)
                     entry: dict[str, str] = {
@@ -302,7 +317,12 @@ def transfer_pending(
                 if status == "imported":
                     _retire_imported_archive(manifest.parent, firmware_root)
         return TransferSummary(
-            tuple(recovered), tuple(imported), tuple(unsupported), unchanged, deferred
+            published_session_ids=tuple(recovered),
+            firmware_imported_session_ids=tuple(imported),
+            firmware_unsupported=tuple(unsupported),
+            unchanged_count=unchanged,
+            deferred_firmware_count=deferred,
+            firmware_failed=tuple(failed),
         )
     finally:
         os.close(lock_fd)

@@ -56,7 +56,16 @@ ArtifactName = Literal[
     "tle-review-31",
     "tle-review-32",
 ]
-ArtifactNameV12 = ArtifactName | Literal["position-diagnostic"]
+ArtifactNameV12 = Annotated[
+    str,
+    Field(
+        pattern=(
+            r"^(?:trajectory|trajectory-tle|"
+            r"tle-review-(?:0[1-9]|[1-9][0-9]|1[01][0-9]|12[0-8]))$"
+        )
+    ),
+]
+ArtifactNameV14 = ArtifactNameV12 | Literal["position-diagnostic"]
 
 
 @dataclass(frozen=True)
@@ -109,8 +118,16 @@ class TrackingArtifactV1(ContractModel):
     byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
 
 
-class TrackingArtifactV12(ContractModel):
+class TrackingArtifactV2(ContractModel):
+    """Tracking artifact namespace extended through review 128 for V12."""
+
     name: ArtifactNameV12
+    sha256: Sha256Digest
+    byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+
+
+class TrackingArtifactV14(ContractModel):
+    name: ArtifactNameV14
     sha256: Sha256Digest
     byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
 
@@ -347,12 +364,50 @@ class ScannerTrackingProductV11(ScannerTrackingProductV10):
     )
 
 
+class ScannerTleTrackReviewV2(ScannerTleTrackReviewV1):
+    artifact_name: ArtifactNameV12  # type: ignore[assignment]
+
+
 class ScannerTrackingProductV12(ScannerTrackingProductV11):
-    """Shared tracking plus a bounded site-assisted positioning diagnostic."""
+    """Bounded, explicitly accounted per-track TLE review evidence."""
 
     schema_version: Literal[12] = 12  # type: ignore[assignment]
     analysis_id: Literal["scanner-shared-tracking-v12"] = "scanner-shared-tracking-v12"  # type: ignore[assignment]
-    artifacts: tuple[TrackingArtifactV12, ...] = ()  # type: ignore[assignment]
+    review_limit: Annotated[int, Field(ge=1, le=128)] = 128
+    review_eligible_count: Annotated[int, Field(ge=0)] = 0
+    review_count: Annotated[int, Field(ge=0)] = 0
+    deferred_review_count: Annotated[int, Field(ge=0)] = 0
+    artifacts: tuple[TrackingArtifactV2, ...] = ()  # type: ignore[assignment]
+    track_reviews: tuple[ScannerTleTrackReviewV2, ...] = ()  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _review_accounting(self) -> Self:
+        if self.review_count != len(self.track_reviews):
+            raise ValueError("TLE review count differs from its evidence")
+        if self.review_count > self.review_limit:
+            raise ValueError("TLE reviews exceed their configured limit")
+        if self.review_eligible_count != self.review_count + self.deferred_review_count:
+            raise ValueError("TLE review accounting differs")
+        return self
+
+
+class ScannerTrackingProductV13(ScannerTrackingProductV12):
+    """Longest-support-first bounded per-track TLE review evidence."""
+
+    schema_version: Literal[13] = 13  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v13"] = "scanner-shared-tracking-v13"  # type: ignore[assignment]
+    review_limit: Annotated[int, Field(ge=1, le=128)] = 64  # type: ignore[assignment]
+    review_selection_policy: Literal["longest-support-observations-identity-v1"] = (
+        "longest-support-observations-identity-v1"
+    )
+
+
+class ScannerTrackingProductV14(ScannerTrackingProductV13):
+    """Shared tracking plus a bounded site-assisted positioning diagnostic."""
+
+    schema_version: Literal[14] = 14  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v14"] = "scanner-shared-tracking-v14"  # type: ignore[assignment]
+    artifacts: tuple[TrackingArtifactV14, ...] = ()  # type: ignore[assignment]
     position_diagnostic: SparseScanPositionDiagnosticV1 | None = None
 
     @model_validator(mode="after")
@@ -458,12 +513,28 @@ class ScannerTrackingStatusV12(ContractModel):
     failure_summary: str | None = None
     product: ScannerTrackingProductV12 | None = None
 
+
+class ScannerTrackingStatusV13(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV13 | None = None
+
+
+class ScannerTrackingStatusV14(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV14 | None = None
+
     @model_validator(mode="after")
     def _terminal_product(self) -> Self:
         if self.state == "complete" and (
             self.product is None or self.product.position_diagnostic is None
         ):
-            raise ValueError("complete V12 tracking status requires a position diagnostic product")
+            raise ValueError("complete V14 tracking status requires a position diagnostic product")
         return self
 
 
@@ -483,8 +554,10 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV10
         | ScannerTrackingStatusV11
         | ScannerTrackingStatusV12
+        | ScannerTrackingStatusV13
+        | ScannerTrackingStatusV14
     ): ...
-    def artifact(self, session_id: str, name: ArtifactNameV12) -> bytes | None: ...
+    def artifact(self, session_id: str, name: ArtifactNameV14) -> bytes | None: ...
 
 
 class ScannerTrackingInputs(Protocol):

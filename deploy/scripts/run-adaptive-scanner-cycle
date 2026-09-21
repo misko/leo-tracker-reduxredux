@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Choose the profile for the next canonical ten-minute slot.  Profile-specific
-# operation keys keep retries stable; the multirate profile makes its own
-# durable 15/20 MS/s choice from that key.
+# The production scanner is pinned to the dual-receiver 2.5 MS/s profile.
 now_epoch="${LEO_SCANNER_CYCLE_NOW_EPOCH:-$(date -u +%s)}"
-next_ordinal=$(((now_epoch + 599) / 600))
-if ((next_ordinal % 3 == 0)); then
-    export LEO_SCANNER_PROFILE=adaptive-single-rx0-10m-300s-v1
-    export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=10000000
-else
-    export LEO_SCANNER_PROFILE=adaptive-single-rx0-random-15m-20m-300s-v1
-    export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=15000000,20000000
-fi
+cadence_seconds=360
+next_ordinal=$(((now_epoch + cadence_seconds - 1) / cadence_seconds))
+export LEO_SCANNER_PROFILE=adaptive-dual-rx-2p5m-edge-random-300s-360s-v1
+export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=2500000
 
 echo "adaptive scanner cycle: slot=${next_ordinal} profile=${LEO_SCANNER_PROFILE} rates=${LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ}"
 if [[ "${LEO_SCANNER_CYCLE_DRY_RUN:-}" == "1" ]]; then

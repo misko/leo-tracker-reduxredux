@@ -24,11 +24,13 @@ const digest = (value: unknown): value is string => typeof value === "string" &&
 const count = (value: unknown, maximum: number): value is number => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= maximum;
 
 export async function getAdaptivePhase(capture: AdaptiveCapture, signal?: AbortSignal, probeStrideMs = 120): Promise<AdaptivePhaseStatus | null> {
-  const response = await fetch(`/api/v${capture.schema_version}/scanner/adaptive-sessions/${encodeURIComponent(capture.session_id)}/analysis/dual-rx-phase?probe_stride_ms=${probeStrideMs}`, { signal, cache: "no-store" });
+  const routeVersion = capture.schema_version === 4 ? 3 : capture.schema_version;
+  const response = await fetch(`/api/v${routeVersion}/scanner/adaptive-sessions/${encodeURIComponent(capture.session_id)}/analysis/dual-rx-phase?probe_stride_ms=${probeStrideMs}`, { signal, cache: "no-store" });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Adaptive phase request failed (${response.status})`);
   const value = await response.json() as AdaptivePhaseStatus;
-  const receivers = capture.schema_version === 1 ? [0, 1] : [capture.physical_receiver];
+  const receivers = capture.schema_version === 2 || capture.schema_version === 3
+    ? [capture.physical_receiver] : [0, 1];
   if (!value || value.schema_version !== 1 || value.kind !== "adaptive_dual_rx_phase_status"
       || value.session_id !== capture.session_id || value.input_manifest_sha256 !== capture.input_manifest_sha256
       || !Array.isArray(value.receiver_ids) || value.receiver_ids.length !== receivers.length || value.receiver_ids.some((rx, i) => rx !== receivers[i])

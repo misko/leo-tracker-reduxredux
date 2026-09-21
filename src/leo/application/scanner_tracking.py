@@ -27,20 +27,20 @@ from leo.application.scanner_trajectory import (
 )
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
-    ScannerTleTrackReviewV1,
+    ScannerTleTrackReviewV2,
     ScannerTrackingInputs,
-    ScannerTrackingProductV12,
-    ScannerTrackingStatusV12,
+    ScannerTrackingProductV14,
+    ScannerTrackingStatusV14,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV12: ...
-    def save(self, status: ScannerTrackingStatusV12) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV14: ...
+    def save(self, status: ScannerTrackingStatusV14) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV12) -> None: ...
+    def publish(self, product: ScannerTrackingProductV14) -> None: ...
 
 
 class ScannerTrackingService:
@@ -54,13 +54,17 @@ class ScannerTrackingService:
         renderer,
         position_renderer=None,
         review_renderer: Callable[
-            [str], tuple[tuple[ScannerTleTrackReviewV1, bytes], ...]
-        ] = lambda _session_id: (),
+            [str], tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]
+        ] = lambda _session_id: ((), 0),
+        review_limit: int = 64,
         matcher=match_persistent_hop_track_to_tles,
         clock=time.monotonic,
     ):
+        if not 1 <= review_limit <= 128:
+            raise ValueError("TLE review limit must be between 1 and 128")
         self.inputs, self.products, self.archive = inputs, products, tle_archive
         self.site, self.renderer, self.review_renderer = observer_site, renderer, review_renderer
+        self.review_limit = review_limit
         self.matcher, self.clock = matcher, clock
         self.position_renderer = position_renderer
 
@@ -73,19 +77,28 @@ class ScannerTrackingService:
             return status
         source = self.inputs.load(session_id)
         trajectory_config = PersistentHopTrajectoryConfig()
+        matching_policy = {
+            "algorithm": "scanner-shared-tracking-v12",
+            "utc_qualification_limit_ns": 2_000_000_000,
+            "trajectory": trajectory_config.digest,
+            "group_limit": group_limit,
+            "selection": "eligible-first-longest-support-v1",
+            "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
+            "observer": self.site.model_dump(mode="json"),
+            "review_limit": 128,
+        }
+        matching_policy_digest = canonical_digest(matching_policy)
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v12",
+                **matching_policy,
+                "algorithm": "scanner-shared-tracking-v14",
                 "position": "scanner-conditional-position-v1",
-                "utc_qualification_limit_ns": 2_000_000_000,
-                "trajectory": trajectory_config.digest,
-                "group_limit": group_limit,
-                "selection": "eligible-first-longest-support-v1",
-                "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
-                "observer": self.site.model_dump(mode="json"),
+                "review_limit": self.review_limit,
+                "review_selection_policy": "longest-support-observations-identity-v1",
+                "matching_policy_digest": matching_policy_digest,
             }
         )
-        product = status.product or ScannerTrackingProductV12(
+        product = status.product or ScannerTrackingProductV14(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -97,6 +110,7 @@ class ScannerTrackingService:
             tle_state="pending",
             observer_site=self.site,
             group_limit=group_limit,
+            review_limit=self.review_limit,
             trajectory_time_basis=(
                 "qualified-utc"
                 if timing_is_qualified_for_tle(source.timing)
@@ -112,7 +126,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV12(
+                ScannerTrackingStatusV14(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -120,7 +134,7 @@ class ScannerTrackingService:
         def publish(trajectory=None, catalogue_payload=None):
             nonlocal product
             if self.position_renderer is None:
-                raise ValueError("tracking V12 requires a configured position diagnostic renderer")
+                raise ValueError("tracking V14 requires a configured position diagnostic renderer")
             diagnostic, png = self.position_renderer(
                 source=source,
                 trajectory=trajectory,
@@ -155,7 +169,8 @@ class ScannerTrackingService:
             publish()
             return self.products.analysis_status(session_id)
         config = PersistentHopTleMatchConfig(
-            selection_protocol_digest=policy_digest, nominal_rf_hz=trajectory_config.canonical_rf_hz
+            selection_protocol_digest=matching_policy_digest,
+            nominal_rf_hz=trajectory_config.canonical_rf_hz,
         )
         product = product.model_copy(update={"tle_match_config_digest": config.digest})
         work, total = eligible_groups(trajectory, config)
@@ -320,7 +335,21 @@ class ScannerTrackingService:
                 capture_end_utc_ns=source.capture_end_utc_ns,
             ),
         )
-        reviews = self.review_renderer(session_id) if selected else ()
+        reviews, review_eligible_count = self.review_renderer(session_id) if selected else ((), 0)
+        review_count = len(reviews)
+        if review_count > review_eligible_count:
+            raise ValueError("TLE review renderer accounting differs")
+        deferred_review_count = review_eligible_count - review_count
+        review_reasons = (
+            (
+                (
+                    f"TLE review traversal deferred {deferred_review_count} eligible tracklets "
+                    f"at the configured {self.review_limit}-review bound."
+                ),
+            )
+            if deferred_review_count
+            else ()
+        )
         review_refs = tuple(
             self.products.put_artifact(
                 session_id,
@@ -334,6 +363,10 @@ class ScannerTrackingService:
                 "tle_state": state,
                 "artifacts": (*product.artifacts, ref, *review_refs),
                 "track_reviews": tuple(review for review, _payload in reviews),
+                "review_eligible_count": review_eligible_count,
+                "review_count": review_count,
+                "deferred_review_count": deferred_review_count,
+                "reasons": (*product.reasons, *review_reasons),
             }
         )
         publish(trajectory, payload)

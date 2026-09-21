@@ -9,7 +9,7 @@ from leo.application.scanner_trajectory import project_scanner_candidates
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTleReviewCandidateV1,
-    ScannerTleTrackReviewV1,
+    ScannerTleTrackReviewV2,
     TrackingCandidate,
     TrackingInput,
     TrackingProbe,
@@ -142,7 +142,7 @@ def service(
     archive_error=False,
     clock=lambda: 0,
     input_source=None,
-    review_renderer=lambda _session_id: (),
+    review_renderer=lambda _session_id: ((), 0),
 ):
     # Real reconstruction of known tracks; only the costly catalogue matcher is fault-injected.
     rows = tuple(
@@ -270,7 +270,7 @@ def test_budget_resume_and_failed_group_receipts(tmp_path, monkeypatch):
 
 
 def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, monkeypatch):
-    review = ScannerTleTrackReviewV1(
+    review = ScannerTleTrackReviewV2(
         tracklet_id=canonical_digest({"tracklet": 1}),
         channel=2,
         edge="upper",
@@ -294,13 +294,18 @@ def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, mo
     runner, store = service(
         tmp_path,
         monkeypatch,
-        review_renderer=lambda _session_id: ((review, PNG + b"review"),),
+        review_renderer=lambda _session_id: (((review, PNG + b"review"),), 1),
     )
 
     result = runner.run("scan-test")
 
     assert result.product.track_reviews == (review,)
-    assert result.product.analysis_id == "scanner-shared-tracking-v12"
+    assert result.product.analysis_id == "scanner-shared-tracking-v14"
+    assert result.product.position_diagnostic is not None
+    assert result.product.review_limit == 64
+    assert result.product.review_selection_policy == "longest-support-observations-identity-v1"
+    assert result.product.review_eligible_count == result.product.review_count == 1
+    assert result.product.deferred_review_count == 0
     assert store.artifact("scan-test", "tle-review-01") == PNG + b"review"
 
 

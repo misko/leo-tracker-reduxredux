@@ -7,7 +7,7 @@ import threading
 import time
 from contextlib import suppress
 
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopReceiptV2
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
@@ -115,7 +115,10 @@ class QueuedAdaptiveHopSessionWriter:
             raise BundleStateError("adaptive storage worker did not stop; publication refused")
 
     def finish(
-        self, receipt: AdaptiveHopReceiptV1, *, timing: PersistentHopUtcTimingAuthorityV1 | None
+        self,
+        receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
+        *,
+        timing: PersistentHopUtcTimingAuthorityV1 | None,
     ) -> PublishedAdaptiveHopIqSession:
         if self._closed:
             raise BundleStateError("adaptive storage queue is closed")

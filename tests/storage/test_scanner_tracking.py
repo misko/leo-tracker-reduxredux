@@ -6,18 +6,19 @@ import pytest
 from leo.contracts.scanner_tracking import (
     ScannerTrackingProductV1,
     ScannerTrackingProductV6,
-    ScannerTrackingProductV11,
-    ScannerTrackingStatusV12,
+    ScannerTrackingProductV12,
+    ScannerTrackingProductV13,
+    ScannerTrackingStatusV14,
 )
 from leo.storage.adaptive_hop_analysis import _seal
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from tests.application.test_scanner_tracking import PNG, service
 
 
-def test_v12_backfill_preserves_v11_and_serves_position_diagnostic(tmp_path, monkeypatch):
+def test_v14_backfill_preserves_v13_and_serves_position_diagnostic(tmp_path, monkeypatch):
     runner, store = service(tmp_path, monkeypatch)
     current = runner.run("scan-test").product
-    legacy = ScannerTrackingProductV11.model_validate(
+    legacy = ScannerTrackingProductV13.model_validate(
         current.model_dump(exclude={"schema_version", "analysis_id", "position_diagnostic"})
         | {
             "artifacts": [
@@ -25,8 +26,8 @@ def test_v12_backfill_preserves_v11_and_serves_position_diagnostic(tmp_path, mon
             ]
         }
     )
-    source = tmp_path / "scanner-shared-tracking-v12" / "scan-test"
-    old = tmp_path / "scanner-shared-tracking-v11" / "scan-test"
+    source = tmp_path / "scanner-shared-tracking-v14" / "scan-test"
+    old = tmp_path / "scanner-shared-tracking-v13" / "scan-test"
     shutil.copytree(source, old)
     manifest = _seal(legacy)
     (old / "manifest.json").write_bytes(manifest)
@@ -35,10 +36,45 @@ def test_v12_backfill_preserves_v11_and_serves_position_diagnostic(tmp_path, mon
     assert store.status("scan-test").product == legacy
     assert store.artifact("scan-test", "trajectory") == PNG
     updated = runner.run("scan-test").product
-    assert updated.schema_version == 12
+    assert updated.schema_version == 14
     assert updated.position_diagnostic is not None
+    assert updated.review_limit == 64
+    assert updated.review_selection_policy == "longest-support-observations-identity-v1"
+    assert updated.tle_match_config_digest == legacy.tle_match_config_digest
+    assert updated.control_comparison_policy == "polynomial-and-wrong-time-diagnostic-only-v1"
     assert store.status("scan-test").product == updated
     assert (old / "manifest.json").read_bytes() == manifest
+
+
+def test_v14_reader_preserves_v12_publication(tmp_path, monkeypatch):
+    runner, store = service(tmp_path, monkeypatch)
+    current = runner.run("scan-test").product
+    legacy = ScannerTrackingProductV12.model_validate(
+        current.model_dump(
+            exclude={
+                "schema_version",
+                "analysis_id",
+                "review_selection_policy",
+                "position_diagnostic",
+            }
+        )
+        | {
+            "artifacts": [
+                artifact.model_dump()
+                for artifact in current.artifacts
+                if artifact.name != "position-diagnostic"
+            ]
+        }
+    )
+    source = tmp_path / "scanner-shared-tracking-v14" / "scan-test"
+    old = tmp_path / "scanner-shared-tracking-v12" / "scan-test"
+    shutil.copytree(source, old)
+    (old / "manifest.json").write_bytes(_seal(legacy))
+    shutil.rmtree(source.parent)
+
+    assert store.status("scan-test").product == legacy
+    assert store.artifact("scan-test", "trajectory") == PNG
+    assert store.analysis_status("scan-test").state == "pending"
 
 
 def test_pending_read_is_read_only_and_rejects_unsafe_ids(tmp_path):
@@ -48,7 +84,7 @@ def test_pending_read_is_read_only_and_rejects_unsafe_ids(tmp_path):
     with pytest.raises(ValueError):
         store.status("../escape")
     with pytest.raises(PermissionError):
-        store.save(ScannerTrackingStatusV12(session_id="scan-test"))
+        store.save(ScannerTrackingStatusV14(session_id="scan-test"))
     with pytest.raises(ValueError):
         ScannerTrackingStore(Path("/mnt/qnap01"))
 
@@ -58,10 +94,10 @@ def test_sealed_publication_tamper_detection_and_immutability(tmp_path, monkeypa
     product = runner.run("scan-test").product
     store.publish(product)
     with pytest.raises(ValueError):
-        store.save(ScannerTrackingStatusV12(session_id="scan-test"))
+        store.save(ScannerTrackingStatusV14(session_id="scan-test"))
     with pytest.raises(ValueError):
         store.put_artifact("scan-test", "trajectory", PNG + b"changed")
-    (tmp_path / "scanner-shared-tracking-v12" / "scan-test" / "trajectory.png").write_bytes(
+    (tmp_path / "scanner-shared-tracking-v14" / "scan-test" / "trajectory.png").write_bytes(
         PNG + b"changed"
     )
     with pytest.raises(ValueError, match="digest"):
@@ -84,6 +120,11 @@ def test_legacy_utc_blocked_publication_is_pending_for_v2_reconstruction(tmp_pat
                     "control_comparison_policy",
                     "track_reviews",
                     "position_diagnostic",
+                    "review_limit",
+                    "review_eligible_count",
+                    "review_count",
+                    "deferred_review_count",
+                    "review_selection_policy",
                 }
             ),
             "trajectory_state": "unsupported",
@@ -101,8 +142,8 @@ def test_legacy_utc_blocked_publication_is_pending_for_v2_reconstruction(tmp_pat
             "tle_match_config_digest": None,
         }
     )
-    current_directory = tmp_path / "scanner-shared-tracking-v12"
-    shutil.rmtree(current_directory)
+    current_root = tmp_path / "scanner-shared-tracking-v14"
+    shutil.rmtree(current_root)
     directory = tmp_path / "scanner-shared-tracking-v1" / "scan-test"
     directory.mkdir(parents=True)
     (directory / "manifest.json").write_bytes(_seal(legacy))
@@ -126,6 +167,11 @@ def test_public_status_keeps_v6_while_v7_worker_sees_pending(tmp_path, monkeypat
                 "control_comparison_policy",
                 "track_reviews",
                 "position_diagnostic",
+                "review_limit",
+                "review_eligible_count",
+                "review_count",
+                "deferred_review_count",
+                "review_selection_policy",
             }
         )
         | {
@@ -134,8 +180,8 @@ def test_public_status_keeps_v6_while_v7_worker_sees_pending(tmp_path, monkeypat
             ]
         }
     )
-    current_directory = tmp_path / "scanner-shared-tracking-v12"
-    shutil.rmtree(current_directory)
+    current_root = tmp_path / "scanner-shared-tracking-v14"
+    shutil.rmtree(current_root)
     directory = tmp_path / "scanner-shared-tracking-v6" / "scan-test"
     directory.mkdir(parents=True)
     (directory / "manifest.json").write_bytes(_seal(legacy))

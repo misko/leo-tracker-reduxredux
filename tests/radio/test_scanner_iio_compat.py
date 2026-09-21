@@ -95,21 +95,42 @@ def test_child_probe_has_finite_timeout_and_rejects_unverified_output(monkeypatc
 
 
 def test_adaptive_loader_keeps_extension_and_injects_receive_facade(monkeypatch):
+    import pluto_plus.hardware.iio as ppu_iio
     import pluto_plus.hardware.iio_adaptive_hop as ppu
 
     from leo.radio.pluto_adaptive_hop import _load_client
 
     extension = object()
-    client = object()
+    constructed = {}
 
-    def create(uri, *, expected_serial, metadata_extension, adi_module):
-        assert (uri, expected_serial) == ("ip:192.168.1.20:30432", "serial")
-        assert metadata_extension is extension
-        assert callable(adi_module.ad9361)
-        return client
+    class Radio:
+        def __init__(self, uri, **kwargs):
+            constructed["radio"] = (uri, kwargs)
 
-    monkeypatch.setattr(ppu, "iio_adaptive_hop_client", create)
-    assert _load_client("ip:192.168.1.20:30432", "serial", metadata_extension=extension) is client
+        def configure_rx_layout(self, expectation):
+            constructed["layout"] = expectation
+
+    class Backend:
+        def __init__(self, uri, **kwargs):
+            constructed["backend"] = (uri, kwargs)
+
+    class Client:
+        def __init__(self, uri, **kwargs):
+            constructed["client"] = (uri, kwargs)
+
+    monkeypatch.setattr(ppu_iio, "IioRadioDevice", Radio)
+    monkeypatch.setattr(ppu, "IioAdaptiveHopBackend", Backend)
+    monkeypatch.setattr(ppu, "AdaptiveHopClient", Client)
+    client = _load_client("ip:192.168.1.20:30432", "serial", metadata_extension=extension)
+    assert isinstance(client, Client)
+    _, client_kwargs = constructed["client"]
+    backend = client_kwargs["backend_factory"]("ip:192.168.1.20:30432")
+    assert isinstance(backend, Backend)
+    _, backend_kwargs = constructed["backend"]
+    radio = backend_kwargs["radio_factory"]("ip:192.168.1.20:30432", "serial")
+    assert isinstance(radio, Radio)
+    assert constructed["layout"].receiver_channels == (0, 1)
+    assert backend_kwargs["metadata_extension"] is extension
 
 
 def test_host_adaptive_loader_configures_physical_rx0_layout(monkeypatch):

@@ -1,0 +1,4 @@
+[Service]
+WorkingDirectory=/opt/leo-tracker/releases/@RELEASE@
+ExecStart=
+ExecStart=/usr/bin/flock --nonblock --conflict-exit-code 0 /run/leo-adaptive-pipeline.lock /opt/leo-tracker/releases/@RELEASE@/.venv/bin/python -m leo.cli.adaptive_spool_transfer --bulk-root /srv/bulk/leo --spool-root /srv/postgres-nvme/leo-scanner-spool

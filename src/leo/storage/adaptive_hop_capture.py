@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from threading import Event
 
-from leo.scanner.adaptive_hop import AdaptiveHopPlanV1
+from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPlanV2
 from leo.scanner.adaptive_hop_application import (
     capture_adaptive_hop_session,
     capture_host_adaptive_hop_session,
@@ -13,20 +13,31 @@ from leo.scanner.adaptive_hop_application import (
 from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.host_adaptive import HostAdaptiveHopPlanV2, HostAdaptiveHopPlanV3
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio
+from leo.station.geometry import AdaptiveReceiverGeometryBindingV1
 from leo.storage.adaptive_hop import AdaptiveHopIqStore, PublishedAdaptiveHopIqSession
 
 
 def capture_adaptive_hop_to_store(
     radio: AdaptiveHopRadio,
-    plan: AdaptiveHopPlanV1,
+    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
     *,
     session_id: str,
     store: AdaptiveHopIqStore,
     cancel: Event,
     queue_capacity_visits: int = 8,
     before_publish: Callable[[], None] | None = None,
+    receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
 ) -> PublishedAdaptiveHopIqSession:
-    writer = store.begin_queued(session_id, plan, capacity_visits=queue_capacity_visits)
+    writer = (
+        store.begin_queued(
+            session_id,
+            plan,
+            capacity_visits=queue_capacity_visits,
+            receiver_geometry=receiver_geometry,
+        )
+        if receiver_geometry is not None
+        else store.begin_queued(session_id, plan, capacity_visits=queue_capacity_visits)
+    )
     try:
         capture = capture_adaptive_hop_session(
             radio,

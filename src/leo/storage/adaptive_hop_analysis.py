@@ -31,12 +31,17 @@ from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisStatusV1,
     AdaptiveHopFigureV1,
     AdaptiveHopOverviewManifestV1,
+    EdgeAdaptiveAnalysisStatusV4,
+    EdgeAdaptiveOverviewManifestV4,
     RenderedAdaptiveOverview,
 )
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
+    EdgeAdaptiveAnalysisBindingV4,
+    EdgeAdaptiveMetricsManifestV4,
+    EdgeAdaptiveVisitReferenceV4,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveVisitAnalysisV2,
@@ -63,7 +68,7 @@ _NAMESPACE = "scanner-adaptive-analysis"
 _MAX_BINDING = 32 * 1024 * 1024
 _MAX_VISIT = 2 * 1024 * 1024
 _MAX_MANIFEST = 4 * 1024 * 1024
-_VISIT = re.compile(r"visit-([0-9]{6})\.v[123]\.json\.zst")
+_VISIT = re.compile(r"visit-([0-9]{6})\.v[1234]\.json\.zst")
 
 
 def _read(directory: PinnedLocalRoot, name: str, maximum: int) -> bytes:
@@ -155,6 +160,8 @@ class AdaptiveHopAnalysisStore:
             if isinstance(binding, HostAdaptiveAnalysisBindingV3)
             else HostAdaptiveAnalysisBindingV2
             if isinstance(binding, HostAdaptiveAnalysisBindingV2)
+            else EdgeAdaptiveAnalysisBindingV4
+            if isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
             else AdaptiveHopAnalysisBindingV1
         )
         binding = binding_model.model_validate(binding.model_dump())
@@ -224,6 +231,7 @@ class AdaptiveHopAnalysisJob:
         self._version = binding.schema_version
         wide = isinstance(binding, HostAdaptiveAnalysisBindingV3)
         host = isinstance(binding, HostAdaptiveAnalysisBindingV2)
+        edge = isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
         self._visit_model: type[AdaptiveHopVisitAnalysisV1] = (
             HostAdaptiveVisitAnalysisV3
             if wide
@@ -236,6 +244,8 @@ class AdaptiveHopAnalysisJob:
             if wide
             else HostAdaptiveVisitReferenceV2
             if host
+            else EdgeAdaptiveVisitReferenceV4
+            if edge
             else AdaptiveHopVisitReferenceV1
         )
         self._metrics_model: type[AdaptiveHopMetricsManifestV1] = (
@@ -243,6 +253,8 @@ class AdaptiveHopAnalysisJob:
             if wide
             else HostAdaptiveMetricsManifestV2
             if host
+            else EdgeAdaptiveMetricsManifestV4
+            if edge
             else AdaptiveHopMetricsManifestV1
         )
         self._overview_model: type[AdaptiveHopOverviewManifestV1] = (
@@ -250,6 +262,8 @@ class AdaptiveHopAnalysisJob:
             if wide
             else HostAdaptiveOverviewManifestV2
             if host
+            else EdgeAdaptiveOverviewManifestV4
+            if edge
             else AdaptiveHopOverviewManifestV1
         )
         self._status_model: type[AdaptiveHopAnalysisStatusV1] = (
@@ -257,6 +271,8 @@ class AdaptiveHopAnalysisJob:
             if wide
             else HostAdaptiveAnalysisStatusV2
             if host
+            else EdgeAdaptiveAnalysisStatusV4
+            if edge
             else AdaptiveHopAnalysisStatusV1
         )
 

@@ -26,7 +26,14 @@ from leo.radio.scanner_glrt_metadata import (
     ScannerGlrtOptions,
 )
 from leo.radio.scanner_iio_compat import scanner_adi_module
-from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopReceiptV1, AdaptiveHopVisitV1
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopPlanV1,
+    AdaptiveHopPlanV2,
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+    AdaptiveHopVisitV1,
+    validate_adaptive_hop_plan,
+)
 from leo.scanner.adaptive_hop_ports import AdaptiveHopSession, AdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import persistent_hop_wire_session_id
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
@@ -100,12 +107,14 @@ class PlutoAdaptiveHopRadio:
         self._classification_error = None
         return self.identity
 
-    def begin_session(self, plan: AdaptiveHopPlanV1, *, session_id: str) -> AdaptiveHopSession:
+    def begin_session(
+        self, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2, *, session_id: str
+    ) -> AdaptiveHopSession:
         if not self._opened:
             raise PlutoAdaptiveHopError("adaptive radio must be opened first")
         if self._session is not None:
             raise PlutoAdaptiveHopError("adaptive radio already owns a session")
-        plan = AdaptiveHopPlanV1.model_validate(plan)
+        plan = validate_adaptive_hop_plan(plan)
         wire_id = persistent_hop_wire_session_id(session_id)
         extension = ScannerAdaptiveGlrtMetadataExtension(
             self._options, session=wire_id, generation=plan.policy.generation
@@ -167,7 +176,7 @@ class _PlutoAdaptiveHopSession:
         self,
         upstream: Any,
         *,
-        plan: AdaptiveHopPlanV1,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
         identity: ScanRadioIdentity,
         session_id: str,
         read_ahead: int,
@@ -180,7 +189,7 @@ class _PlutoAdaptiveHopSession:
         self._cancel = threading.Event()
         self._done = threading.Event()
         self._error: BaseException | None = None
-        self._receipt: AdaptiveHopReceiptV1 | None = None
+        self._receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | None = None
         self._produced: list[AdaptiveHopVisitV1] = []
         self._evidence: ScannerGlrtSessionEvidenceV1 | None = None
         self._classification_error: str | None = None
@@ -192,7 +201,7 @@ class _PlutoAdaptiveHopSession:
         self._producer.start()
 
     @property
-    def plan(self) -> AdaptiveHopPlanV1:
+    def plan(self) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2:
         return self._plan
 
     @property
@@ -238,7 +247,7 @@ class _PlutoAdaptiveHopSession:
                 self._terminal()
                 raise StopIteration from None
 
-    def finish(self) -> AdaptiveHopReceiptV1:
+    def finish(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
         if not self.complete:
             if not self._cancel.is_set():
                 raise PlutoAdaptiveHopError("adaptive finish requires draining the visit stream")
@@ -259,7 +268,7 @@ class _PlutoAdaptiveHopSession:
         if self._producer.is_alive():
             raise PlutoAdaptiveHopError("adaptive producer did not stop after cancellation")
 
-    def _terminal(self) -> AdaptiveHopReceiptV1:
+    def _terminal(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
         if self._error is not None:
             raise self._error
         if self._receipt is None:
@@ -278,7 +287,7 @@ class _PlutoAdaptiveHopSession:
                 continue
         self._produced.append(block.evidence)
 
-    def _map_receipt(self) -> AdaptiveHopReceiptV1:
+    def _map_receipt(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
         receipt = map_adaptive_capture(
             self._upstream.receipt,
             plan=self.plan,
@@ -325,9 +334,29 @@ def _load_client(
     uri: str, expected_serial: str, *, metadata_extension: ScannerAdaptiveGlrtMetadataExtension
 ) -> Any:
     module = importlib.import_module("pluto_plus.hardware.iio_adaptive_hop")
-    return module.iio_adaptive_hop_client(
+    iio_module = importlib.import_module("pluto_plus.hardware.iio")
+    profiles = importlib.import_module("pluto_plus.setup_profiles")
+    adi_module = scanner_adi_module()
+
+    def radio_factory(selected_uri: str, selected_serial: str):
+        radio = iio_module.IioRadioDevice(
+            selected_uri,
+            serial=selected_serial,
+            radio_id=selected_serial,
+            adi_module=adi_module,
+            expected_metadata_abi=3,
+        )
+        radio.configure_rx_layout(profiles.AD9361_2R2T_TARGET_PROFILE.rx_layout_expectation)
+        return radio
+
+    return module.AdaptiveHopClient(
         uri,
         expected_serial=expected_serial,
-        metadata_extension=metadata_extension,
-        adi_module=scanner_adi_module(),
+        backend_factory=lambda selected: module.IioAdaptiveHopBackend(
+            selected,
+            expected_serial=expected_serial,
+            metadata_extension=metadata_extension,
+            adi_module=adi_module,
+            radio_factory=radio_factory,
+        ),
     )

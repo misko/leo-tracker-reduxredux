@@ -25,6 +25,75 @@ def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
         site="test",
     )
     assert payloads[0]["association_gates"] == "nominal-catalogue-only-v1"
+    assert payloads[0]["analysis_id"] == "scanner-shared-tracking-v14"
+    assert payloads[0]["position"] == "scanner-conditional-position-v1"
+
+
+def test_completed_old_analysis_enqueues_tracking_without_live_window_cutoff(
+    monkeypatch, tmp_path
+) -> None:
+    capture = SimpleNamespace(
+        manifest_sha256="sha256:" + "1" * 64,
+        manifest=SimpleNamespace(created_utc_ns=1),
+    )
+    status = SimpleNamespace(
+        state="figures_ready",
+        metrics_manifest_sha256="sha256:" + "2" * 64,
+    )
+    calls: list[dict[str, object]] = []
+
+    class Captures:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def inspect(self, session_id):
+            assert session_id == "scan-fw-0123456789abcdef"
+            return capture
+
+        def close(self):
+            pass
+
+    class Presentation:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def status_for_capture(self, actual, *, probe_stride_ms):
+            assert actual is capture
+            assert probe_stride_ms == 120
+            return status
+
+    class Tracking:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def analysis_status(self, session_id):
+            assert session_id == "scan-fw-0123456789abcdef"
+            return SimpleNamespace(state="pending")
+
+    class Catalog:
+        def enqueue_adaptive_tracking_job(self, **kwargs):
+            calls.append(kwargs)
+            return True
+
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", Captures)
+    monkeypatch.setattr(subject, "AdaptiveHopAnalysisPresentationStore", Presentation)
+    monkeypatch.setattr(subject, "ScannerTrackingStore", Tracking)
+    monkeypatch.setattr(subject, "_tracking_digest", lambda **_kwargs: "tracking-digest")
+
+    assert subject._enqueue_tracking_after_analysis(
+        bulk_root=tmp_path,
+        session_id="scan-fw-0123456789abcdef",
+        site="test-site",
+        catalog=Catalog(),
+    )
+    assert calls == [
+        {
+            "session_id": "scan-fw-0123456789abcdef",
+            "input_manifest_digest": capture.manifest_sha256,
+            "configuration_digest": "tracking-digest",
+            "priority": 0,
+        }
+    ]
 
 
 def _lease() -> AdaptiveAnalysisJobLease:
@@ -53,6 +122,11 @@ def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(subject, "_catalog", Catalog)
     monkeypatch.setattr(
+        subject,
+        "_enqueue_tracking_after_analysis",
+        lambda **kwargs: calls.append(("enqueue-tracking", kwargs)) or True,
+    )
+    monkeypatch.setattr(
         subject.subprocess,
         "run",
         lambda *args, **kwargs: SimpleNamespace(
@@ -63,7 +137,17 @@ def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
     )
 
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
-    assert calls == [("complete", {"job_id": 7, "worker_id": "worker-1", "outcome": "complete"})]
+    assert calls[0][0] == "enqueue-tracking"
+    enqueue = calls[0][1]
+    assert isinstance(enqueue, dict)
+    assert enqueue["bulk_root"] == tmp_path
+    assert enqueue["session_id"] == "scan-fw-0123456789abcdef"
+    assert enqueue["site"] == "spinnaker-sausalito"
+    assert isinstance(enqueue["catalog"], Catalog)
+    assert calls[1] == (
+        "complete",
+        {"job_id": 7, "worker_id": "worker-1", "outcome": "complete"},
+    )
 
 
 def test_run_once_yields_checkpointed_slice(monkeypatch, tmp_path) -> None:
@@ -102,6 +186,13 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     command: list[str] = []
     monkeypatch.setattr(subject, "_catalog", Catalog)
     monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            analysis_status=lambda _session_id: SimpleNamespace(state="pending")
+        ),
+    )
+    monkeypatch.setattr(
         subject.subprocess,
         "run",
         lambda args, **kwargs: (
@@ -113,7 +204,42 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
     assert "leo.cli.scanner_tracking" in command
     assert "--queue-worker" in command
+    assert command[command.index("--review-limit") + 1] == "64"
     assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "complete"}]
+
+
+def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
+    monkeypatch, tmp_path
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    class Catalog:
+        def claim_adaptive_job(self, **kwargs):
+            return replace(_lease(), job_kind="adaptive_tracking", resource_class="heavy")
+
+        def complete_job(self, **kwargs):
+            calls.append(kwargs)
+
+    monkeypatch.setattr(subject, "_catalog", Catalog)
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            analysis_status=lambda _session_id: SimpleNamespace(state="complete")
+        ),
+    )
+    monkeypatch.setattr(
+        subject.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("sealed V13 tracking must not be rerun")
+        ),
+    )
+
+    assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
+    assert calls == [
+        {"job_id": 7, "worker_id": "worker-1", "outcome": "already_complete"}
+    ]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:

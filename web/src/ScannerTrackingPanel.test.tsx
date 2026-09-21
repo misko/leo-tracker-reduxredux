@@ -7,6 +7,8 @@ const product = {
   session_id: "scan-test", input_manifest_sha256: "sha256:test", sample_rate_hz: 2500000,
   trajectory_state: "complete", tle_state: "unavailable", reasons: [],
   physical_group_count: 8, eligible_group_count: 4, attempted_group_count: 4, deferred_group_count: 0,
+  review_limit: 64, review_eligible_count: 1, review_count: 1, deferred_review_count: 0,
+  review_selection_policy: "longest-support-observations-identity-v1",
   catalogue_exclusions: [{ catalog_number: 69730, name: "STARLINK-34343 DEB", reason: "catalogue-labelled-debris" }],
   unscored_groups: [{ physical_group_id: "group", reason: "catalogue population propagation is incomplete" }],
   tle_candidates: [], artifacts: [
@@ -30,6 +32,7 @@ it.each([2500000, 5000000, 10000000])("shows every published figure and actual f
   expect(images[2]).toHaveAttribute("src", expect.stringContaining("tle-review-01.png"));
   expect(images[2]).toHaveAttribute("src", expect.stringContaining("sha256=c"));
   expect(screen.getByText("Per-track TLE review 1")).toBeInTheDocument();
+  expect(screen.getByText(/1 of 1 eligible track reviews rendered · 0 deferred · limit 64.*longest support span/)).toBeInTheDocument();
   expect(screen.getAllByRole("link", { name: /Open .* PNG/ })).toHaveLength(3);
   expect(screen.getByRole("link", { name: "Download tracking evidence" })).toBeInTheDocument();
 });
