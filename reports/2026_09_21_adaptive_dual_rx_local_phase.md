@@ -39,6 +39,21 @@ product for this session should therefore end in the explicit
 `insufficient_signal` state; it cannot produce a truthful double-difference
 phase-time PNG from this binding.
 
+The newer lower-only `scan-hop-cf9d7fa138a6295c` was also checked under a
+separate, content-addressed 10 ms probe policy. The bounded canary selected all
+15 visits where the sealed 120 ms metrics showed at least two alias-distinct
+RX0 modes. Dense re-analysis read only those 15 saved IQ visits and completed
+in 19 seconds. It found many repeated-window detections (up to 75 passed
+candidates across both receivers in one visit), but alias-aware mode collapse
+left at most one phase-blind RX pair per visit. No visit supplied a two-signal
+double difference. This result is specific to the selected visits and analysis
+policy; it does not claim that the recording contains no other signals. The
+[bounded dense canary](figures/2026_09_21_adaptive_dual_rx_local_phase/scan-hop-cf9d7fa138a6295c-dense-phase-canary-v1.json)
+binds the result to input manifest
+`sha256:6da06480ca6ea58a7a50ce510eaccb381792796fbdc578936f8afce87c58265f`
+and 10 ms analysis binding
+`sha256:1eee926b4b4eee45526e29a6b06084ea36989f488b194bd3d4f5777986127d9d`.
+
 ## Frozen-reference check
 
 Before running the new extractor, the checked-in historical report consumer was

@@ -10,10 +10,16 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
+from leo.analysis.starlink.adaptive_dual_rx_geometry_phase import (  # noqa: E402
+    GeometryPhaseReconstruction,
+)
 from leo.scanner.adaptive_dual_rx_phase_product_v2 import AdaptiveDualRxPhaseVisitV2  # noqa: E402
 
 
-def render_adaptive_dual_rx_phase_v2(visits: tuple[AdaptiveDualRxPhaseVisitV2, ...]) -> bytes:
+def render_adaptive_dual_rx_phase_v2(
+    visits: tuple[AdaptiveDualRxPhaseVisitV2, ...],
+    geometry: GeometryPhaseReconstruction | None = None,
+) -> bytes:
     rows = [(visit, item) for visit in visits for item in visit.hypotheses]
     if not rows:
         raise ValueError("no double-difference hypothesis is available to render")
@@ -26,7 +32,11 @@ def render_adaptive_dual_rx_phase_v2(visits: tuple[AdaptiveDualRxPhaseVisitV2, .
     lower_only = all(visit.edge == "lower" for visit, _ in rows)
     upper_only = all(visit.edge == "upper" for visit, _ in rows)
     color_min, color_max = (0, 3) if lower_only else (4, 7) if upper_only else (0, 7)
-    figure, axes = plt.subplots(3, 1, figsize=(11, 10), sharex=True, layout="constrained")
+    geometry_ready = geometry is not None and geometry.state == "available"
+    row_count = 6 if geometry_ready else 3
+    figure, axes = plt.subplots(
+        row_count, 1, figsize=(11, 17 if geometry_ready else 10), layout="constrained"
+    )
     scatter = axes[0].scatter(
         time_s, phase_deg, c=target, cmap="tab10", vmin=color_min, vmax=color_max, alpha=0.8
     )
@@ -45,11 +55,43 @@ def render_adaptive_dual_rx_phase_v2(visits: tuple[AdaptiveDualRxPhaseVisitV2, .
     axes[2].scatter(time_s, async_ms, c=target, cmap="tab10", vmin=color_min, vmax=color_max)
     axes[2].set_ylabel("signal-center offset (ms)")
     axes[2].set_xlabel("seconds from capture origin")
+    if geometry_ready:
+        assert geometry is not None
+        geometry_time_s = np.asarray(
+            [(point.utc_ns - geometry.points[0].utc_ns) / 1e9 for point in geometry.points]
+        )
+        corrected_deg = np.degrees([point.corrected_wrapped_rad for point in geometry.points])
+        predicted_deg = np.degrees(
+            [point.predicted_geometry_wrapped_rad for point in geometry.points]
+        )
+        axes[3].plot(geometry_time_s, corrected_deg, "o", label="hardware-corrected measured")
+        axes[3].plot(geometry_time_s, predicted_deg, "x", label="calibrated geometry")
+        axes[3].set_ylabel("wrapped phase (deg)")
+        axes[3].set_xlabel("seconds from first calibrated point")
+        axes[3].legend(loc="best")
+        best = [
+            min(point.ambiguity_candidates, key=lambda item: abs(item.residual_rad))
+            for point in geometry.points
+        ]
+        axes[4].axhline(0, color="0.3", linewidth=0.8)
+        axes[4].plot(geometry_time_s, [item.normalized_residual for item in best], "o")
+        axes[4].set_ylabel("best residual / σ")
+        axes[4].set_xlabel("seconds from first calibrated point")
+        axes[5].bar(
+            geometry_time_s,
+            [len(point.ambiguity_candidates) for point in geometry.points],
+            width=0.04,
+        )
+        axes[5].set_ylabel("retained cycle candidates")
+        axes[5].set_xlabel("seconds from first calibrated point")
     for axis in axes:
         axis.grid(alpha=0.2)
-    figure.suptitle(
-        "Adaptive dual-RX phase versus time — measured double difference; geometry unavailable"
+    geometry_label = (
+        f"calibrated geometry {geometry.ambiguity_state}"
+        if geometry_ready and geometry is not None
+        else "geometry unavailable"
     )
+    figure.suptitle(f"Adaptive dual-RX phase versus time — {geometry_label}")
     stream = BytesIO()
     figure.savefig(stream, format="png", dpi=180)
     plt.close(figure)

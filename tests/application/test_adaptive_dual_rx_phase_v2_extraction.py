@@ -40,7 +40,7 @@ def test_pairing_requires_one_to_one_common_receiver_offset() -> None:
     left = (candidate(100, -90_000), candidate(400, -60_000))
     right = (candidate(101, -650_000), candidate(401, -620_000))
     visit = SimpleNamespace(
-        configuration=SimpleNamespace(sample_rate_hz=2_500_000),
+        configuration=SimpleNamespace(sample_rate_hz=2_500_000, probe_stride_ms=120),
         probes=(
             SimpleNamespace(receiver_id=0, probe_index=0, candidates=left),
             SimpleNamespace(receiver_id=1, probe_index=0, candidates=right),
@@ -51,6 +51,30 @@ def test_pairing_requires_one_to_one_common_receiver_offset() -> None:
 
     assert len(pairs) == 2
     assert {pair[2] for pair in pairs} == {-560_000.0}
+
+
+def test_dense_pairing_preserves_probe_sample_origins() -> None:
+    visit = SimpleNamespace(
+        configuration=SimpleNamespace(sample_rate_hz=2_500_000, probe_stride_ms=10),
+        probes=tuple(
+            SimpleNamespace(
+                receiver_id=receiver,
+                probe_index=probe,
+                candidates=(
+                    candidate(
+                        100 + receiver,
+                        -90_000 + 30_000 * probe - 560_000 * receiver,
+                    ),
+                ),
+            )
+            for probe in (0, 1)
+            for receiver in (0, 1)
+        ),
+    )
+
+    pairs = subject._phase_blind_pairs(visit)
+
+    assert [pair[3] for pair in pairs] == [0, 25_000]
 
 
 def _observation(center: float, phase: float, relative_hz: float):
@@ -79,8 +103,8 @@ def _observation(center: float, phase: float, relative_hz: float):
 
 def test_visit_retains_alias_hypothesis_without_phase_selection(monkeypatch) -> None:
     pairs = [
-        (candidate(100, -90_000), candidate(101, -650_000), -560_000.0),
-        (candidate(400, -60_000), candidate(401, -620_000), -560_000.0),
+        (candidate(100, -90_000), candidate(101, -650_000), -560_000.0, 0),
+        (candidate(400, -60_000), candidate(401, -620_000), -560_000.0, 0),
     ]
     outputs = iter((_observation(1000.0, 0.2, -560_100.0), _observation(1010.0, 0.5, -559_900.0)))
     monkeypatch.setattr(subject, "_phase_blind_pairs", lambda visit: pairs)
@@ -114,9 +138,9 @@ def test_visit_retains_alias_hypothesis_without_phase_selection(monkeypatch) -> 
 
 def test_alias_rejection_keeps_hypothesis_indexes_contiguous(monkeypatch) -> None:
     pairs = [
-        (candidate(100, -90_000), candidate(101, -650_000), -560_000.0),
-        (candidate(400, -90_000), candidate(401, -650_000), -560_000.0),
-        (candidate(700, -60_000), candidate(701, -620_000), -560_000.0),
+        (candidate(100, -90_000), candidate(101, -650_000), -560_000.0, 0),
+        (candidate(400, -90_000), candidate(401, -650_000), -560_000.0, 0),
+        (candidate(700, -60_000), candidate(701, -620_000), -560_000.0, 0),
     ]
     outputs = iter(
         (
@@ -149,8 +173,8 @@ def test_alias_rejection_keeps_hypothesis_indexes_contiguous(monkeypatch) -> Non
 
 def test_visit_reports_when_all_phase_blind_pairs_are_pilot_aliases(monkeypatch) -> None:
     pairs = [
-        (candidate(100, -90_000), candidate(101, -650_000), -560_000.0),
-        (candidate(400, -90_000), candidate(401, -650_000), -560_000.0),
+        (candidate(100, -90_000), candidate(101, -650_000), -560_000.0, 0),
+        (candidate(400, -90_000), candidate(401, -650_000), -560_000.0, 0),
     ]
     outputs = iter((_observation(1000.0, 0.2, -560_100.0), _observation(1010.0, 0.3, -560_000.0)))
     monkeypatch.setattr(subject, "_phase_blind_pairs", lambda visit: pairs)

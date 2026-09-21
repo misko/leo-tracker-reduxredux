@@ -44,46 +44,98 @@ def _timing_residual_samples(
 
 def _phase_blind_pairs(
     visit: AdaptiveHopVisitAnalysisV1,
-) -> list[tuple[AdaptiveHopFractionalCandidateV1, AdaptiveHopFractionalCandidateV1, float]]:
-    probes = {probe.receiver_id: probe for probe in visit.probes if probe.probe_index == 0}
-    if set(probes) != {0, 1}:
-        return []
-    left = tuple(item for item in probes[0].candidates if item.passed_fractional_margin_gate)
-    right = tuple(item for item in probes[1].candidates if item.passed_fractional_margin_gate)
+) -> list[tuple[AdaptiveHopFractionalCandidateV1, AdaptiveHopFractionalCandidateV1, float, int]]:
+    probes = {(probe.probe_index, probe.receiver_id): probe for probe in visit.probes}
     frame_period = visit.configuration.sample_rate_hz / 750.0
-    edges = []
-    for left_index, left_candidate in enumerate(left):
-        for right_index, right_candidate in enumerate(right):
-            if (
-                _timing_residual_samples(left_candidate, right_candidate, frame_period)
-                > _TIMING_GATE_SAMPLES
-            ):
-                continue
-            receiver_offset_hz = (
-                right_candidate.fractional_tracking_cfo_hz
-                - left_candidate.fractional_tracking_cfo_hz
+    output = []
+    probe_indexes = sorted(
+        {key[0] for key in probes if (key[0], 0) in probes and (key[0], 1) in probes}
+    )
+    for probe_index in probe_indexes:
+        left = tuple(
+            item for item in probes[probe_index, 0].candidates if item.passed_fractional_margin_gate
+        )
+        right = tuple(
+            item for item in probes[probe_index, 1].candidates if item.passed_fractional_margin_gate
+        )
+        edges = []
+        for left_index, left_candidate in enumerate(left):
+            for right_index, right_candidate in enumerate(right):
+                if (
+                    _timing_residual_samples(left_candidate, right_candidate, frame_period)
+                    > _TIMING_GATE_SAMPLES
+                ):
+                    continue
+                receiver_offset_hz = (
+                    right_candidate.fractional_tracking_cfo_hz
+                    - left_candidate.fractional_tracking_cfo_hz
+                )
+                quality = min(left_candidate.fractional_margin, right_candidate.fractional_margin)
+                edges.append((left_index, right_index, receiver_offset_hz, quality))
+        selected = select_consistent_receiver_pairs(edges)
+        probe_start_samples = (
+            probe_index
+            * visit.configuration.probe_stride_ms
+            * (visit.configuration.sample_rate_hz // 1000)
+        )
+        output.extend(
+            (left[i], right[j], offset, probe_start_samples) for i, j, offset, _ in selected
+        )
+    distinct = []
+    for pair in sorted(
+        output,
+        key=lambda item: (
+            -min(item[0].fractional_margin, item[1].fractional_margin),
+            item[3],
+            item[0].fractional_tracking_cfo_hz,
+        ),
+    ):
+        if any(
+            abs(
+                circular_frequency_delta(
+                    pair[0].fractional_tracking_cfo_hz,
+                    retained[0].fractional_tracking_cfo_hz,
+                )
             )
-            quality = min(left_candidate.fractional_margin, right_candidate.fractional_margin)
-            edges.append((left_index, right_index, receiver_offset_hz, quality))
-    selected = select_consistent_receiver_pairs(edges)
-    return [(left[i], right[j], offset) for i, j, offset, _ in selected]
+            < _MINIMUM_DISTINCT_SIGNAL_SEPARATION_HZ
+            or abs(
+                circular_frequency_delta(
+                    pair[1].fractional_tracking_cfo_hz,
+                    retained[1].fractional_tracking_cfo_hz,
+                )
+            )
+            < _MINIMUM_DISTINCT_SIGNAL_SEPARATION_HZ
+            for retained in distinct
+        ):
+            continue
+        distinct.append(pair)
+        if len(distinct) == 8:
+            break
+    return distinct
 
 
 def _extract_pair(
     iq: np.ndarray,
     visit: AdaptiveHopVisitAnalysisV1,
-    pair: tuple[AdaptiveHopFractionalCandidateV1, AdaptiveHopFractionalCandidateV1, float],
+    pair: tuple[
+        AdaptiveHopFractionalCandidateV1,
+        AdaptiveHopFractionalCandidateV1,
+        float,
+        int,
+    ],
 ) -> DualReceiverPhaseObservation | None:
-    left, right, _ = pair
+    left, right, _, probe_start_samples = pair
     references = tuple(
-        candidate.integer_epoch_sample + candidate.fractional_epoch_offset_samples
+        probe_start_samples
+        + candidate.integer_epoch_sample
+        + candidate.fractional_epoch_offset_samples
         for candidate in (left, right)
     )
     observation = extract_dual_receiver_phase(
         iq,
         visit.configuration.sample_rate_hz,
         visit.target.edge,
-        left.integer_epoch_sample,
+        probe_start_samples + left.integer_epoch_sample,
         (
             ReceiverPhaseSeed(left.acquired_cfo_hz, references[0]),
             ReceiverPhaseSeed(right.acquired_cfo_hz, references[1]),

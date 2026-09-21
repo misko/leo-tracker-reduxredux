@@ -97,6 +97,26 @@ class AdaptiveDualRxPhaseTimeFigureV2(AdaptiveModel):
     byte_count: Annotated[int, Field(strict=True, gt=0, le=MAX_ADAPTIVE_PHASE_PNG_BYTES)]
 
 
+class AdaptiveDualRxGeometrySummaryV2(AdaptiveModel):
+    input_digest: Sha256Digest
+    receiver_geometry_binding_digest: Sha256Digest
+    geometry_digest: Sha256Digest
+    calibration_digest: Sha256Digest
+    direction_evidence_sha256: Sha256Digest
+    state: Literal["unavailable", "ambiguous", "conditionally_unique"]
+    reasons: Annotated[tuple[str, ...], Field(min_length=1, max_length=8)]
+    point_count: Count
+    ambiguity_candidate_count: Annotated[int, Field(strict=True, ge=0, le=1_190_000)]
+    residual_rms_rad: Annotated[float, Field(ge=0, allow_inf_nan=False)] | None
+
+    @model_validator(mode="after")
+    def _evidence_matches_state(self) -> Self:
+        available = self.state != "unavailable"
+        if available != (self.point_count > 0 and self.residual_rms_rad is not None):
+            raise ValueError("geometry summary state contradicts its points")
+        return self
+
+
 class AdaptiveDualRxPhaseManifestV2(AdaptiveModel):
     schema_version: Literal[2] = 2
     kind: Literal["adaptive_dual_rx_phase_manifest"] = "adaptive_dual_rx_phase_manifest"
@@ -115,6 +135,7 @@ class AdaptiveDualRxPhaseManifestV2(AdaptiveModel):
     hypothesis_count: Annotated[int, Field(strict=True, ge=0, le=70_000)]
     geometry_phase_state: Literal["unavailable", "ambiguous", "conditionally_unique"]
     geometry_phase_reason: str
+    geometry: AdaptiveDualRxGeometrySummaryV2 | None = None
     receiver_product: Literal["rx1_times_conjugate_rx0"] = "rx1_times_conjugate_rx0"
     phase_continuity_across_retunes: Literal[False] = False
     association_uses_phase: Literal[False] = False
@@ -132,6 +153,8 @@ class AdaptiveDualRxPhaseManifestV2(AdaptiveModel):
             or ready != (self.qualified_visit_count > 0 and self.hypothesis_count > 0)
             or self.qualified_visit_count > self.checkpoint_visit_count
             or not self.geometry_phase_reason
+            or (self.geometry_phase_state != "unavailable" and self.geometry is None)
+            or (self.geometry is not None and self.geometry.state != self.geometry_phase_state)
         ):
             raise ValueError("adaptive phase V2 state contradicts its evidence")
         return self
