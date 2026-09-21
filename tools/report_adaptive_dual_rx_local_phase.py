@@ -186,14 +186,35 @@ def render(document: dict[str, Any], output: Path) -> None:
     resultants = np.asarray([row["resultant_length"] for row in rows])
     ratios = np.asarray([row["exact_to_control_power_ratio_floor"] for row in rows])
     targets = np.asarray([row["target_index"] for row in rows])
+    color_min, color_max = (
+        (0, 3)
+        if all(row.get("edge") == "lower" for row in rows)
+        else (4, 7)
+        if all(row.get("edge") == "upper" for row in rows)
+        else (0, 7)
+    )
     figure, axes = plt.subplots(3, 1, figsize=(11, 10), sharex=True, layout="constrained")
-    scatter = axes[0].scatter(time_s, phase_deg, c=targets, cmap="tab10", vmin=0, vmax=7)
+    scatter = axes[0].scatter(
+        time_s, phase_deg, c=targets, cmap="tab10", vmin=color_min, vmax=color_max
+    )
     axes[0].errorbar(time_s, phase_deg, yerr=sigma_deg, fmt="none", color="0.45", alpha=0.55)
     axes[0].set_ylabel("wrapped phase (deg)")
     axes[0].set_ylim(-190, 190)
     axes[0].set_title("Local RX1−RX0 Qin-pilot phase; each visit reacquired independently")
-    figure.colorbar(scatter, ax=axes[0], label="target index", ticks=range(8))
-    axes[1].scatter(time_s, frequency_khz, c=targets, cmap="tab10", vmin=0, vmax=7)
+    figure.colorbar(
+        scatter,
+        ax=axes[0],
+        label="target index",
+        ticks=range(color_min, color_max + 1),
+    )
+    axes[1].scatter(
+        time_s,
+        frequency_khz,
+        c=targets,
+        cmap="tab10",
+        vmin=color_min,
+        vmax=color_max,
+    )
     axes[1].set_ylabel("RX1−RX0 frequency (kHz)")
     axes[2].plot(time_s, resultants, "o-", label="phase resultant")
     axes[2].plot(time_s, np.minimum(ratios / 10.0, 1.0), "s--", label="control ratio / 10")

@@ -158,6 +158,7 @@ from leo.scanner import (
     ScannerReportV5,
 )
 from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatusV1
+from leo.scanner.adaptive_dual_rx_phase_product_v2 import AdaptiveDualRxPhaseStatusV2
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopHistoryPageV1,
     AdaptiveHopPresentationReader,
@@ -698,6 +699,86 @@ def create_app(
                 "ETag": f'"{artifact_sha256}"',
                 "Cache-Control": "private, max-age=3600, immutable",
                 "Content-Disposition": 'inline; filename="adaptive-dual-rx-phase-progression.png"',
+            },
+        )
+
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase-v2",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveDualRxPhaseStatusV2,
+    )
+    @v2_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase-v2",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveDualRxPhaseStatusV2,
+    )
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase-v2",
+        methods=["GET", "HEAD"],
+        response_model=AdaptiveDualRxPhaseStatusV2,
+    )
+    def adaptive_phase_status_v2(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        response: Response,
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 120,
+    ) -> AdaptiveDualRxPhaseStatusV2:
+        if adaptive_hop_analysis is None:
+            raise HTTPException(status_code=404, detail="adaptive phase V2 is unavailable")
+        try:
+            status = adaptive_hop_analysis.phase_status_v2(
+                session_id, probe_stride_ms=probe_stride_ms
+            )
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive phase V2 metadata unavailable"
+            ) from error
+        if status is None:
+            raise HTTPException(status_code=404, detail="adaptive session not found")
+        response.headers["Cache-Control"] = "no-store"
+        return status
+
+    @v3_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase-v2/artifact.png",
+        methods=["GET", "HEAD"],
+    )
+    @v2_router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase-v2/artifact.png",
+        methods=["GET", "HEAD"],
+    )
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/dual-rx-phase-v2/artifact.png",
+        methods=["GET", "HEAD"],
+    )
+    def adaptive_phase_artifact_v2(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        glrt_binding_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        artifact_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 120,
+    ) -> Response:
+        if adaptive_hop_analysis is None:
+            raise HTTPException(status_code=404, detail="adaptive phase V2 is unavailable")
+        try:
+            payload = adaptive_hop_analysis.phase_artifact_v2(
+                session_id,
+                glrt_binding_sha256=glrt_binding_sha256,
+                artifact_sha256=artifact_sha256,
+                probe_stride_ms=probe_stride_ms,
+            )
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="adaptive phase V2 figure unavailable"
+            ) from error
+        if payload is None:
+            raise HTTPException(status_code=404, detail="adaptive phase V2 figure unpublished")
+        return Response(
+            content=payload,
+            media_type="image/png",
+            headers={
+                "ETag": f'"{artifact_sha256}"',
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": (
+                    'inline; filename="adaptive-dual-rx-double-difference-time.png"'
+                ),
             },
         )
 

@@ -58,6 +58,7 @@ class DualReceiverPhaseObservation:
     center_sample: float
     wrapped_phase_rad: float
     relative_frequency_hz: float
+    relative_frequency_standard_error_hz: float
     resultant_length: float
     phase_standard_error_deg: float
     independent_frame_count: int
@@ -197,6 +198,17 @@ def extract_dual_receiver_phase(
         weights,
         center_sample / sample_rate_hz,
     )
+    frame_times_s = starts / sample_rate_hz
+    centered_s = frame_times_s - center_sample / sample_rate_hz
+    unit_product = receiver_product / np.maximum(abs(receiver_product), np.finfo(float).tiny)
+    residual_rad = np.angle(
+        unit_product * np.exp(-1j * (corrected_phase_rad + 2 * np.pi * fitted_hz * centered_s))
+    )
+    weighted_residual_variance = float(np.average(residual_rad**2, weights=weights))
+    frequency_information = float(np.sum(weights * centered_s**2))
+    frequency_standard_error_hz = math.sqrt(
+        weighted_residual_variance * float(np.sum(weights)) / max(frequency_information, 1e-30)
+    ) / (2 * np.pi * math.sqrt(max(len(starts) - 2, 1)))
     phase_rad = restore_receiver_relative_phase(
         corrected_phase_rad,
         (seeds[0].acquired_cfo_hz, seeds[1].acquired_cfo_hz),
@@ -210,6 +222,7 @@ def extract_dual_receiver_phase(
         relative_frequency_hz=receiver_relative_frequency_hz(
             (seeds[0].acquired_cfo_hz, seeds[1].acquired_cfo_hz), fitted_hz
         ),
+        relative_frequency_standard_error_hz=frequency_standard_error_hz,
         resultant_length=resultant,
         phase_standard_error_deg=circular_phase_standard_error_deg(resultant, len(starts)),
         independent_frame_count=len(starts),

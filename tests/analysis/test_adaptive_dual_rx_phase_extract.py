@@ -30,11 +30,7 @@ def _synthetic_dual_iq() -> tuple[np.ndarray, int, tuple[ReceiverPhaseSeed, Rece
             phase = (
                 common[frame_index]
                 + receiver_phase[receiver]
-                + 2
-                * np.pi
-                * actual[receiver]
-                * (absolute - references[receiver])
-                / RATE
+                + 2 * np.pi * actual[receiver] * (absolute - references[receiver]) / RATE
             )
             iq[absolute, receiver] += template * np.exp(1j * phase)
     seeds = tuple(
@@ -51,6 +47,7 @@ def test_extracts_phase_from_same_indices_and_restores_cfo_once() -> None:
 
     assert result.receivers[0].frame_starts == result.receivers[1].frame_starts
     assert result.relative_frequency_hz == pytest.approx(-619159.5, abs=0.08)
+    assert result.relative_frequency_standard_error_hz < 0.1
     expected = (
         0.91
         - (-0.37)
