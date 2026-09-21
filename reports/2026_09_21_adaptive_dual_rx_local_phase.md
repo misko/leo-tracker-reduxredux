@@ -69,9 +69,12 @@ double difference. After accounting for the opposite high/low orientation and
 the Qin pilot's unresolved half-cycle branch, the new measurements agree with
 the frozen reference at 9.51° RMS and 18.58° maximum wrapped error. The
 [saved-IQ positive control](figures/2026_09_21_adaptive_dual_rx_local_phase/scan-hop-bfc60ea18ace593b-saved-iq-positive-v1.json)
-records every visit and comparison. This validates the actual IQ extractor and
-common-offset/asynchronous path; it does not resolve the pilot half-cycle,
-source identity, or geometric phase.
+records every visit and comparison. This reproduced that historical estimator,
+but later raw-IQ work found that the estimator had unresolved receiver-frequency
+branches. The [corrected raw-authority replay](2026_09_21_bfc60_raw_authority_negative_control.md)
+does not reproduce the old phase (38.28° modulo-pi RMS, 71.82° maximum). The old
+agreement is therefore estimator self-consistency rather than physical phase
+validation. Neither replay resolves source identity or geometric phase.
 
 ## Binding and method
 
