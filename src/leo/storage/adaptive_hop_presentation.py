@@ -7,8 +7,12 @@ from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatus
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisStatusV1,
     AdaptiveOverviewArtifact,
+    EdgeAdaptiveAnalysisStatusV4,
 )
-from leo.scanner.adaptive_hop_products import AdaptiveHopAnalysisBindingV1
+from leo.scanner.adaptive_hop_products import (
+    AdaptiveHopAnalysisBindingV1,
+    EdgeAdaptiveAnalysisBindingV4,
+)
 from leo.scanner.host_adaptive_presentation import (
     HostAdaptiveAnalysisStatusV2,
     HostAdaptiveAnalysisStatusV3,
@@ -81,6 +85,8 @@ class AdaptiveHopAnalysisPresentationStore:
                     if isinstance(binding, HostAdaptiveAnalysisBindingV3)
                     else HostAdaptiveAnalysisStatusV2
                     if isinstance(binding, HostAdaptiveAnalysisBindingV2)
+                    else EdgeAdaptiveAnalysisStatusV4
+                    if isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
                     else AdaptiveHopAnalysisStatusV1
                 )
                 return status_model(

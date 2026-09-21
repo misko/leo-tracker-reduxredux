@@ -219,6 +219,31 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
         return self
 
 
+class EdgeAdaptiveHistoryItemV4(AdaptiveHopHistoryItemV1):
+    """Dual-RX history with the persisted per-scan edge policy."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    analysis_state: Literal["separate_product"] = "separate_product"  # type: ignore[assignment]
+    radio_serial: Annotated[str, Field(min_length=1, max_length=128)]
+    selected_edge: Literal["lower", "upper"]
+    allowed_target_mask: Literal[0x0F, 0xF0]
+
+    @model_validator(mode="after")
+    def _edge_matches_mask_and_coverage(self) -> Self:
+        expected = 0x0F if self.selected_edge == "lower" else 0xF0
+        excluded = (
+            self.target_coverage[4:] if self.selected_edge == "lower" else self.target_coverage[:4]
+        )
+        if self.allowed_target_mask != expected or any(row.retained_visits for row in excluded):
+            raise ValueError("one-edge history differs from its attested scheduler mask")
+        return self
+
+
+class EdgeAdaptiveSessionDetailV4(AdaptiveHopSessionDetailV1):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    capture: EdgeAdaptiveHistoryItemV4  # type: ignore[assignment]
+
+
 class AdaptiveHopPresentationReader(Protocol):
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1: ...
 

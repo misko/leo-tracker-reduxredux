@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import secrets
 from datetime import UTC, datetime
 from typing import ClassVar, Literal, Self
 
@@ -18,6 +19,7 @@ from leo.scanner.schedule import (
 
 LEGACY_DUAL_RX_ADAPTIVE_2P5_PROFILE_ID = "adaptive-dual-rx-2p5m-300s-v1"
 DUAL_RX_ADAPTIVE_2P5_PROFILE_ID = "adaptive-dual-rx-2p5m-300s-360s-v1"
+DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID = "adaptive-dual-rx-2p5m-edge-random-300s-360s-v1"
 DUAL_RX_RATE_HZ: Literal[2_500_000] = 2_500_000
 
 
@@ -102,6 +104,61 @@ class DualRxAdaptive2p5ScheduledScannerIntentV8(ScheduledScannerRunIntentV1):
         return self
 
 
+def _edge_from_random_bit(bit: int) -> Literal["lower", "upper"]:
+    if type(bit) is not int or bit not in (0, 1):
+        raise ValueError("dual-RX edge choice requires one exact random bit")
+    return "upper" if bit else "lower"
+
+
+def choose_dual_rx_edge() -> Literal["lower", "upper"]:
+    """One cryptographic Bernoulli(0.5) draw, persisted in the scan intent."""
+
+    return _edge_from_random_bit(secrets.randbits(1))
+
+
+class DualRxAdaptive2p5EdgeScannerConfigurationV8(DualRxAdaptive2p5ScannerConfigurationV7):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    band_plan_id: Literal["starlink-low-ch1-ch4-one-edge-dual-rx-2p5m-v1"] = (  # type: ignore[assignment]
+        "starlink-low-ch1-ch4-one-edge-dual-rx-2p5m-v1"
+    )
+    selected_edge: Literal["lower", "upper"]
+
+
+class DualRxAdaptive2p5ScheduledScannerIntentV9(ScheduledScannerRunIntentV1):
+    """One durable lower-or-upper edge choice for an entire six-minute slot."""
+
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    policy_id: Literal["adaptive-dual-rx-2p5m-edge-random-300s-360s-v1"] = (  # type: ignore[assignment]
+        DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID
+    )
+    required_interval_seconds: ClassVar[int] = 360
+    run_duration_seconds: Literal[300] = 300
+    configuration: DualRxAdaptive2p5EdgeScannerConfigurationV8
+
+    @model_validator(mode="after")
+    def _intent_is_closed(self) -> Self:
+        if self.scheduled_for.tzinfo is None or self.scheduled_for.utcoffset() is None:
+            raise ValueError("scheduled scanner clock must be timezone-aware")
+        seconds = self.scheduled_for.astimezone(UTC).timestamp()
+        if (
+            self.interval_seconds != self.required_interval_seconds
+            or self.operation_key != canonical_scheduled_scanner_operation_key(self.scheduled_for)
+            or self.cadence_ordinal != int(seconds // self.interval_seconds)
+            or not math.isclose(
+                seconds,
+                self.cadence_ordinal * self.interval_seconds,
+                rel_tol=0,
+                abs_tol=1e-6,
+            )
+        ):
+            raise ValueError("dual-RX one-edge intent differs from its durable slot")
+        if self.intent_digest != canonical_digest(
+            self.model_dump(mode="json", exclude={"intent_digest"})
+        ):
+            raise ValueError("dual-RX one-edge intent digest does not match content")
+        return self
+
+
 def compile_dual_rx_adaptive_2p5_scanner_intent(
     *,
     operation_key: str,
@@ -115,19 +172,20 @@ def compile_dual_rx_adaptive_2p5_scanner_intent(
     gain_db: float,
     margin_gate: float,
     maximum_acquisition_candidates: int,
-) -> DualRxAdaptive2p5ScheduledScannerIntentV8:
+) -> DualRxAdaptive2p5ScheduledScannerIntentV9:
     if interval_seconds != 360 or run_duration_seconds != 300 or dwell_ms != 120:
         raise ValueError("dual-RX profile requires 360s cadence and 300s/120ms hopping")
     if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
         raise ValueError("scheduled scanner clock must be timezone-aware")
     canonical = scheduled_for.astimezone(UTC)
-    configuration = DualRxAdaptive2p5ScannerConfigurationV7(
+    configuration = DualRxAdaptive2p5EdgeScannerConfigurationV8(
         gain_db=gain_db,
         glrt64_margin_gate=margin_gate,
         maximum_acquisition_candidates=maximum_acquisition_candidates,
         targets=scheduled_low_band_targets(bandwidth_hz=DUAL_RX_RATE_HZ),
+        selected_edge=choose_dual_rx_edge(),
     )
-    candidate = DualRxAdaptive2p5ScheduledScannerIntentV8.model_construct(
+    candidate = DualRxAdaptive2p5ScheduledScannerIntentV9.model_construct(
         intent_digest="sha256:" + "0" * 64,
         operation_key=operation_key,
         radio_id=radio_id,
@@ -140,14 +198,15 @@ def compile_dual_rx_adaptive_2p5_scanner_intent(
         configuration=configuration,
     )
     document = candidate.model_dump(mode="json", exclude={"intent_digest"})
-    return DualRxAdaptive2p5ScheduledScannerIntentV8.model_validate(
+    return DualRxAdaptive2p5ScheduledScannerIntentV9.model_validate(
         {**document, "intent_digest": canonical_digest(document)}
     )
 
 
 def compile_dual_rx_adaptive_2p5_hop_plan(
     intent: DualRxAdaptive2p5ScheduledScannerIntentV7
-    | DualRxAdaptive2p5ScheduledScannerIntentV8,
+    | DualRxAdaptive2p5ScheduledScannerIntentV8
+    | DualRxAdaptive2p5ScheduledScannerIntentV9,
     *,
     transition_guard_us: int = 1_000,
     kernel_buffers: int = 8,
@@ -156,7 +215,9 @@ def compile_dual_rx_adaptive_2p5_hop_plan(
     """Project either published cadence onto the existing dual-RX hop geometry."""
 
     intent_type = (
-        DualRxAdaptive2p5ScheduledScannerIntentV8
+        DualRxAdaptive2p5ScheduledScannerIntentV9
+        if isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV9)
+        else DualRxAdaptive2p5ScheduledScannerIntentV8
         if isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV8)
         else DualRxAdaptive2p5ScheduledScannerIntentV7
     )

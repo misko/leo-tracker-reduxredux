@@ -16,6 +16,7 @@ from leo.contracts.digests import Sha256Digest
 from leo.contracts.scanner_glrt_frame import U64
 from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     SessionId,
@@ -267,6 +268,11 @@ class AdaptiveHopAnalysisSource:
         return output
 
 
+class EdgeAdaptiveHopAnalysisSourceV2(AdaptiveHopAnalysisSource):
+    _receipt_model: ClassVar[type[AdaptiveHopReceiptV2]] = AdaptiveHopReceiptV2
+    receipt: AdaptiveHopReceiptV2 = field(init=False)
+
+
 def _fractional_candidate(
     response: Glrt64CandidateResponse,
     *,
@@ -433,12 +439,15 @@ def _analyze_loaded_visit(
 
 def validate_adaptive_analysis_binding(
     product: AdaptiveHopVisitAnalysisV1,
-    receipt: AdaptiveHopReceiptV1,
+    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
     *,
     input_manifest_sha256: str,
 ) -> None:
     product = AdaptiveHopVisitAnalysisV1.model_validate(product.model_dump())
-    receipt = AdaptiveHopReceiptV1.model_validate(receipt.model_dump())
+    receipt_model = (
+        AdaptiveHopReceiptV2 if isinstance(receipt, AdaptiveHopReceiptV2) else AdaptiveHopReceiptV1
+    )
+    receipt = receipt_model.model_validate(receipt.model_dump())
     _compare_source_fields(product, receipt, input_manifest_sha256)
 
 

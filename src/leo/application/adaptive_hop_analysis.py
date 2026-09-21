@@ -13,6 +13,7 @@ from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     AdaptiveHopAnalysisSource,
     AdaptiveHopVisitAnalysisV1,
+    EdgeAdaptiveHopAnalysisSourceV2,
     analyze_adaptive_hop_visit,
     analyze_adaptive_hop_visit_batch,
 )
@@ -20,6 +21,7 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
+    EdgeAdaptiveAnalysisBindingV4,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveAnalysisConfigurationV2,
@@ -138,6 +140,8 @@ class AdaptiveHopAnalysisService:
                 if wide
                 else HostAdaptiveAnalysisBindingV2
                 if self._host_adaptive
+                else EdgeAdaptiveAnalysisBindingV4
+                if isinstance(source, EdgeAdaptiveHopAnalysisSourceV2)
                 else AdaptiveHopAnalysisBindingV1
             )
             binding = binding_model(

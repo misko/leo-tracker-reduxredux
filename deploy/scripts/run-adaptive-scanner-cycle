@@ -5,7 +5,7 @@ set -euo pipefail
 now_epoch="${LEO_SCANNER_CYCLE_NOW_EPOCH:-$(date -u +%s)}"
 cadence_seconds=360
 next_ordinal=$(((now_epoch + cadence_seconds - 1) / cadence_seconds))
-export LEO_SCANNER_PROFILE=adaptive-dual-rx-2p5m-300s-360s-v1
+export LEO_SCANNER_PROFILE=adaptive-dual-rx-2p5m-edge-random-300s-360s-v1
 export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=2500000
 
 echo "adaptive scanner cycle: slot=${next_ordinal} profile=${LEO_SCANNER_PROFILE} rates=${LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ}"

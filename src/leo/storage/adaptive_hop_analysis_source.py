@@ -6,8 +6,11 @@ from contextlib import contextmanager
 import numpy as np
 import numpy.typing as npt
 
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopVisitV1
-from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisSource
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopReceiptV2, AdaptiveHopVisitV1
+from leo.scanner.adaptive_hop_analysis import (
+    AdaptiveHopAnalysisSource,
+    EdgeAdaptiveHopAnalysisSourceV2,
+)
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
@@ -36,7 +39,7 @@ class _BoundReader:
         return self._reader.session.manifest_sha256
 
     @property
-    def receipt(self) -> AdaptiveHopReceiptV1:
+    def receipt(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
         return self._reader.session.manifest.receipt
 
     def read_visit_ci16(self, index: int) -> tuple[AdaptiveHopVisitV1, npt.NDArray[np.int16]]:
@@ -62,6 +65,8 @@ class AdaptiveHopAnalysisInputStore:
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV3)
                 else HostAdaptiveAnalysisSource
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV2)
+                else EdgeAdaptiveHopAnalysisSourceV2
+                if isinstance(reader.session.manifest.receipt, AdaptiveHopReceiptV2)
                 else AdaptiveHopAnalysisSource
             )
             yield model(_BoundReader(reader))
