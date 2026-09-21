@@ -130,6 +130,8 @@ def coherent_pilot_frames(
     symbol_reference_offsets_s: np.ndarray,
     symbol_duration_s: float,
     fft_size: int = 512,
+    *,
+    coarse_frequency_sample_interval_s: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, float, float]:
     """Coherently sum pilot symbols with every frame referenced to its origin."""
     exact = np.asarray(exact_correlations, dtype=np.complex128)
@@ -139,15 +141,22 @@ def coherent_pilot_frames(
         raise ValueError("exact and control correlations must be matching matrices")
     if exact.shape[1] != len(offsets):
         raise ValueError("one symbol reference offset is required per correlation column")
+    coarse_interval_s = (
+        symbol_duration_s
+        if coarse_frequency_sample_interval_s is None
+        else coarse_frequency_sample_interval_s
+    )
+    if not np.isfinite(coarse_interval_s) or coarse_interval_s <= 0:
+        raise ValueError("coarse frequency sample interval must be finite and positive")
     spectrum = np.fft.fft(exact, n=fft_size, axis=1)
     power = np.sum(abs(spectrum) ** 2, axis=0)
-    coarse_hz = float(np.fft.fftfreq(fft_size, d=symbol_duration_s)[int(np.argmax(power))])
+    coarse_hz = float(np.fft.fftfreq(fft_size, d=coarse_interval_s)[int(np.argmax(power))])
 
     def score(frequency_hz: float) -> float:
         rotation = np.exp(-2j * np.pi * frequency_hz * offsets)
         return float(np.sum(abs(np.sum(exact * rotation[None, :], axis=1)) ** 2))
 
-    half_bin_hz = 1 / (2 * fft_size * symbol_duration_s)
+    half_bin_hz = 1 / (2 * fft_size * coarse_interval_s)
     grid = coarse_hz + np.linspace(-half_bin_hz, half_bin_hz, 33)
     scores = np.asarray([score(float(value)) for value in grid])
     peak = int(np.argmax(scores))

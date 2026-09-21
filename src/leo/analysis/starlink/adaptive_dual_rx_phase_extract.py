@@ -159,6 +159,12 @@ def extract_dual_receiver_phase(
     )
     if symbols.ndim != 1 or len(symbols) < 8 or np.any(np.diff(symbols) <= 0):
         raise ValueError("pilot symbols must be ordered and contain at least eight entries")
+    symbol_steps = np.diff(symbols)
+    if lift_frame_frequency_branch and np.any(symbol_steps != symbol_steps[0]):
+        raise ValueError("branch-lifted pilot symbols must have one uniform stride")
+    coarse_frequency_interval_s = (
+        int(symbol_steps[0]) * OFDM_SYMBOL_DURATION_S if lift_frame_frequency_branch else None
+    )
     starts = shared_frame_starts(
         len(values), sample_rate_hz, frame_epoch_sample, frame_radius=frame_radius
     )
@@ -197,6 +203,7 @@ def extract_dual_receiver_phase(
             control_correlations,
             offsets_s,
             OFDM_SYMBOL_DURATION_S,
+            coarse_frequency_sample_interval_s=coarse_frequency_interval_s,
         )
         series.append(
             ReceiverFrameSeries(
