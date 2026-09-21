@@ -4,6 +4,12 @@ Date: 2026-09-21. Scope: saved-IQ analysis of one existing simultaneous dual-RX
 adaptive scan. No RF was collected. Status: measured receiver-phase double
 differences recovered; a coherent cross-retune slope is not established.
 
+**Superseded for physical phase interpretation.** A later raw-IQ audit found
+that the pilot-only estimator admitted both 750 Hz frame-rate aliases and a
+227.27 kHz symbol alias. The corrected frequency and phase-control evidence is
+in `2026_09_21_scan_hop_28d_raw_iq_phase_audit.md`. The V2 products below are
+retained as immutable historical evidence.
+
 ## Result
 
 The complete production phase V2 pass processed all 2,360 visits using the
