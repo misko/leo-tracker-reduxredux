@@ -37,6 +37,8 @@ class TrackPointEvidence:
     tracking_cfo_hz: float
     support_center_utc_ns: int
     candidate_id: str
+    valid_start_counter: int
+    sample_rate_hz: int
 
 
 def _track_points(
@@ -50,6 +52,11 @@ def _track_points(
     finally:
         source.close()
     candidates = project_scanner_candidates(tracking_input)
+    visit_starts = {}
+    for probe in tracking_input.probes:
+        previous = visit_starts.setdefault(probe.visit_index, probe.valid_start_counter)
+        if previous != probe.valid_start_counter:
+            raise ValueError("inconsistent device start counter within visit")
     config = PersistentHopTrajectoryConfig()
     trajectory = reconstruct_persistent_hop_trajectories(candidates, config=config)
     candidate_by_id = {item.candidate_id: item for item in candidates}
@@ -73,6 +80,8 @@ def _track_points(
                 tracking_cfo_hz=candidate.measured_cfo_hz,
                 support_center_utc_ns=candidate.support_center_utc_ns,
                 candidate_id=candidate.candidate_id,
+                valid_start_counter=visit_starts[candidate.visit_index],
+                sample_rate_hz=tracking_input.sample_rate_hz,
             )
         output.append(points)
     return (
@@ -129,14 +138,26 @@ def bind_phase_rows(
                 }
             )
             continue
-        center_utc_ns = round((track0.support_center_utc_ns + track1.support_center_utc_ns) / 2)
+        if (track0.valid_start_counter, track0.sample_rate_hz) != (
+            track1.valid_start_counter, track1.sample_rate_hz
+        ):
+            raise ValueError("receiver phase timing authorities differ")
+        phase_center_sample = float(pair["center_sample"])
+        if not math.isfinite(phase_center_sample) or phase_center_sample < 0:
+            raise ValueError("phase center must be a finite nonnegative local sample")
+        center_utc_ns = track0.support_center_utc_ns + round(
+            (track1.support_center_utc_ns - track0.support_center_utc_ns) / 2
+        )
         output.append(
             {
                 "visit_index": visit_index,
                 "state": "bound_instrument_inclusive_single_difference",
                 "selected_pair_index": pair_index,
                 "selection_uses_phase": False,
-                "support_center_utc_ns": center_utc_ns,
+                "tracking_support_center_utc_ns": center_utc_ns,
+                "phase_visit_start_device_counter": track0.valid_start_counter,
+                "phase_center_local_sample": phase_center_sample,
+                "sample_rate_hz": track0.sample_rate_hz,
                 "receiver_support_center_difference_ns": (
                     track1.support_center_utc_ns - track0.support_center_utc_ns
                 ),
@@ -187,10 +208,21 @@ def summarize_phase_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     ]
     if not accepted:
         return {"state": "unavailable_no_bound_phase_rows"}
-    accepted.sort(key=lambda row: row["support_center_utc_ns"])
-    reference = accepted[0]["support_center_utc_ns"]
+    accepted.sort(key=lambda row: (
+        row["phase_visit_start_device_counter"], row["phase_center_local_sample"]
+    ))
+    reference = accepted[0]
     for row in accepted:
-        row["relative_time_s"] = (row["support_center_utc_ns"] - reference) / 1e9
+        if row["sample_rate_hz"] != reference["sample_rate_hz"]:
+            raise ValueError("phase rows have different sample rates")
+        # Subtract large counters as integers before adding fractional local samples.
+        row["relative_time_s"] = (
+            (
+                row["phase_visit_start_device_counter"]
+                - reference["phase_visit_start_device_counter"]
+            )
+            + (row["phase_center_local_sample"] - reference["phase_center_local_sample"])
+        ) / row["sample_rate_hz"]
     phases = np.radians([row["phase_deg"] for row in accepted])
     resultant = float(abs(np.mean(np.exp(1j * phases))))
     steps = []
@@ -276,7 +308,8 @@ def run(
     rows = bind_phase_rows(raw["visits"], rx0_points, rx1_points)
     summary = summarize_phase_rows(rows)
     body = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "time_reference": "phase_fit_center_on_device_counter_timebase",
         "kind": "recent_dual_rx_single_track_instrument_inclusive_phase_research",
         "session_id": raw["session_id"],
         "input_manifest_sha256": raw["input_manifest_sha256"],

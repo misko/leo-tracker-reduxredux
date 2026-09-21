@@ -25,6 +25,8 @@ def _point(visit: int, receiver: int, frequency: float):
         tracking_cfo_hz=frequency,
         support_center_utc_ns=1_000_000_000 + visit * 1_000_000,
         candidate_id=f"candidate-{receiver}-{visit}",
+        valid_start_counter=2**58 + visit * 2500,
+        sample_rate_hz=2_500_000,
     )
 
 
@@ -33,6 +35,7 @@ def _pair(rx0: float, rx1: float, phase: float) -> dict:
         "rx0_tracking_cfo_hz": rx0,
         "rx1_tracking_cfo_hz": rx1,
         "phase_rad": phase,
+        "center_sample": 1000.25,
         "phase_standard_error_deg": 3.0,
         "resultant_length": 0.95,
         "exact_to_control_power_ratio_floor": 12.0,
@@ -84,3 +87,17 @@ def test_summary_keeps_wrapped_changes_and_refuses_continuous_unwrap() -> None:
     assert 0 < summary["wrapped_adjacent_changes"][0]["wrapped_phase_change_deg"] < 30
     assert summary["continuous_phase_unwrap_claimed"] is False
     assert summary["geometric_phase_claimed"] is False
+
+
+def test_phase_time_uses_fit_center_and_exact_counter_difference() -> None:
+    first = _pair(100.0, 200.0, 0.1)
+    second = _pair(110.0, 210.0, 0.2)
+    second["center_sample"] = 1200.75
+    rows = subject.bind_phase_rows(
+        [_visit(1, [first]), _visit(2, [second])],
+        {1: _point(1, 0, 100.0), 2: _point(2, 0, 110.0)},
+        {1: _point(1, 1, 200.0), 2: _point(2, 1, 210.0)},
+    )
+    summary = subject.summarize_phase_rows(rows)
+    assert summary["time_span_s"] == (2500 + 200.5) / 2_500_000
+    assert rows[1]["relative_time_s"] != 0.001  # tracking-candidate time is different
