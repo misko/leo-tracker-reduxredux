@@ -498,10 +498,10 @@ def plots(r, output):
         ax.invert_yaxis()
         for row, (_, entry) in enumerate(entries):
             value = entry[field]
-            xpos = min(value+12, 650) if field == 'evaluation_rms_hz' else value+100
-            ax.text(xpos, row, f'{value:,.0f}', va='center', fontsize=8)
+            xpos = min(value + 12, 650) if field == "evaluation_rms_hz" else value + 100
+            ax.text(xpos, row, f"{value:,.0f}", va="center", fontsize=8)
     axes[0].set_xlim(0, 1300)
-    axes[0].set_title('Shared-pass outlier clipped; exact value labelled')
+    axes[0].set_title("Shared-pass outlier clipped; exact value labelled")
     axes[1].set_xlim(0, 18500)
     fig.suptitle("Model sensitivity: lower frequency residual need not mean better location")
     fig.savefig(output / "03-model-and-orbit-sensitivity.png", dpi=160)

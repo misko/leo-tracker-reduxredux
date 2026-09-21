@@ -114,8 +114,8 @@ def causal_catalogues(
 
 def doppler(p: np.ndarray, v: np.ndarray, receiver: np.ndarray) -> np.ndarray:
     delta = p - receiver
-    return -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(delta * v, axis=-1) / np.linalg.norm(
-        delta, axis=-1
+    return (
+        -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(delta * v, axis=-1) / np.linalg.norm(delta, axis=-1)
     )
 
 
@@ -129,12 +129,16 @@ def visibility(
 
 def interpolate(episode: Episode, clock_s: float) -> tuple[np.ndarray, np.ndarray]:
     tau = float(clock_s)
-    p = episode.p + (episode.p_plus - episode.p_minus) * tau + 2 * (
-        episode.p_plus + episode.p_minus - 2 * episode.p
-    ) * tau * tau
-    v = episode.v + (episode.v_plus - episode.v_minus) * tau + 2 * (
-        episode.v_plus + episode.v_minus - 2 * episode.v
-    ) * tau * tau
+    p = (
+        episode.p
+        + (episode.p_plus - episode.p_minus) * tau
+        + 2 * (episode.p_plus + episode.p_minus - 2 * episode.p) * tau * tau
+    )
+    v = (
+        episode.v
+        + (episode.v_plus - episode.v_minus) * tau
+        + 2 * (episode.v_plus + episode.v_minus - 2 * episode.v) * tau * tau
+    )
     return p, v
 
 
@@ -222,13 +226,18 @@ def screen_episode(
     selected = np.asarray(sorted(retained), dtype=int)
     if not len(selected):
         raise ValueError("empty candidate shortlist")
-    return norads[selected], p[selected], v[selected], {
-        "catalogue_size": catalogue.count,
-        "valid_candidates": len(valid),
-        "shortlist_size": len(selected),
-        "log_likelihood_margin": margin,
-        "probe_tail_checks": diagnostics,
-    }
+    return (
+        norads[selected],
+        p[selected],
+        v[selected],
+        {
+            "catalogue_size": catalogue.count,
+            "valid_candidates": len(valid),
+            "shortlist_size": len(selected),
+            "log_likelihood_margin": margin,
+            "probe_tail_checks": diagnostics,
+        },
+    )
 
 
 def build_episodes(
@@ -281,8 +290,21 @@ def build_episodes(
             raise ValueError("shortlisted candidate invalid at a clock interpolation endpoint")
         episodes.append(
             Episode(
-                key[0], key[1], row["best_norad"], arc.frequency_hz, arc.segment,
-                arc.training, cat.count, norad, p, v, pm, vm, pp, vp, screening
+                key[0],
+                key[1],
+                row["best_norad"],
+                arc.frequency_hz,
+                arc.segment,
+                arc.training,
+                cat.count,
+                norad,
+                p,
+                v,
+                pm,
+                vm,
+                pp,
+                vp,
+                screening,
             )
         )
         if (index + 1) % 25 == 0:
@@ -299,9 +321,7 @@ def fit_modes(episodes, region, starts, bounds, clock_model, clock_bounds, confi
         grid = region.points([x[0]], [x[1]])
         clock = x[2] if clock_model == "shared_recorded" else 0.0
         return -sum(
-            episode_statistics(ep, grid.ecef_km[0], grid.up[0], clock, config)[
-                "train_log_evidence"
-            ]
+            episode_statistics(ep, grid.ecef_km[0], grid.up[0], clock, config)["train_log_evidence"]
             for ep in episodes
         )
 
@@ -314,7 +334,10 @@ def fit_modes(episodes, region, starts, bounds, clock_model, clock_bounds, confi
         if clock_model == "shared_recorded":
             x0.append(float(np.clip(0.0, *clock_bounds)))
         answer = minimize(
-            objective, x0, method="Powell", bounds=scipy_bounds,
+            objective,
+            x0,
+            method="Powell",
+            bounds=scipy_bounds,
             options={"xtol": 2e-4, "ftol": 1e-9, "maxiter": 80},
         )
         modes.append(
@@ -396,14 +419,22 @@ def full_tail_check(episodes, catalogues, evidence_root, region, model, config):
         arc = dict(load_observations(doc, 0))[episode.episode_id]
         cat = parse_element_sets(catalogues[episode.session_id].text)
         p, v, valid = state_arrays(
-            cat, list(range(len(cat.satellite_numbers))), doc["inventory"]["reference_utc_ns"],
-            arc.time_s, clock_s=clock,
+            cat,
+            list(range(len(cat.satellite_numbers))),
+            doc["inventory"]["reference_utc_ns"],
+            arc.time_s,
+            clock_s=clock,
         )
         predicted = doppler(p, v, grid.ecef_km[0])
         visible = visibility(p, grid.ecef_km[0], grid.up[0], arc.training)
         stats = mixture_statistics(
-            arc.frequency_hz[None] - predicted, arc.frequency_hz, arc.segment, arc.training,
-            len(cat.satellite_numbers), visible=visible, config=config,
+            arc.frequency_hz[None] - predicted,
+            arc.frequency_hz,
+            arc.segment,
+            arc.training,
+            len(cat.satellite_numbers),
+            visible=visible,
+            config=config,
         )
         valid_norad = np.asarray(cat.satellite_numbers)[valid]
         kept = np.isin(valid_norad, episode.candidate_norad)
@@ -462,9 +493,7 @@ def main():
     ]
     centre = np.asarray(
         next(
-            m
-            for m in strict["models"]
-            if m["selection"] == "all" and m["clock_model"] == "fixed"
+            m for m in strict["models"] if m["selection"] == "all" and m["clock_model"] == "fixed"
         )["x_km"][:2]
     )
     for radius in (100.0, 300.0):
@@ -495,10 +524,13 @@ def main():
         "shortlist_size_min": min(len(e.candidate_norad) for e in episodes),
         "shortlist_size_median": float(np.median([len(e.candidate_norad) for e in episodes])),
         "shortlist_size_max": max(len(e.candidate_norad) for e in episodes),
-        "probe_maximum_omitted_signal_fraction": float(max(
-            check["omitted_signal_fraction"]
-            for episode in episodes for check in episode.screening["probe_tail_checks"]
-        )),
+        "probe_maximum_omitted_signal_fraction": float(
+            max(
+                check["omitted_signal_fraction"]
+                for episode in episodes
+                for check in episode.screening["probe_tail_checks"]
+            )
+        ),
         "probes": [
             {"label": label, "x_km": point.tolist()}
             for label, point in zip(labels, points, strict=True)
@@ -531,9 +563,7 @@ def main():
     models = []
     for clock_model in ["fixed", "shared_recorded"]:
         model = fit_modes(episodes, region, starts, bounds, clock_model, clock_bounds, config)
-        model["tail_check"] = full_tail_check(
-            episodes, catalogues, root, region, model, config
-        )
+        model["tail_check"] = full_tail_check(episodes, catalogues, root, region, model, config)
         if model["tail_check"]["episodes_above_1e-4"]:
             raise ValueError("candidate truncation tail exceeded declared bound at fitted mode")
         models.append(model)

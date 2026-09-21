@@ -152,8 +152,11 @@ def _plot(result, output):
 
     def display(value):
         aliases = {
-            "observation": "obs", "segment": "episode", "satellite": "sat",
-            "fixed": "fixed UTC", "shared_recorded": "shared clock",
+            "observation": "obs",
+            "segment": "episode",
+            "satellite": "sat",
+            "fixed": "fixed UTC",
+            "shared_recorded": "shared clock",
             "candidate_identity_mixture": "identity mixture",
         }
         return aliases.get(str(value), str(value).replace("_", " "))

@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 import trimesh
 
-
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("dual_lnbf_generate", HERE / "generate.py")
 assert SPEC and SPEC.loader
@@ -38,10 +37,10 @@ def test_clip_contract() -> None:
     clip = generate.annular_clip(width_mm=10.0)
     assert clip.is_watertight
     assert clip.is_volume
-    assert generate.BORE_DIAMETER_MM == pytest.approx(39.9)
-    assert generate.AXIS_SPACING_MM == pytest.approx(80.0)
-    assert generate.OUTWARD_TILT_DEG == pytest.approx(10.0)
-    assert generate.CLIP_SWEEP_DEG == pytest.approx(360.0)
+    assert pytest.approx(39.9) == generate.BORE_DIAMETER_MM
+    assert pytest.approx(80.0) == generate.AXIS_SPACING_MM
+    assert pytest.approx(10.0) == generate.OUTWARD_TILT_DEG
+    assert pytest.approx(360.0) == generate.CLIP_SWEEP_DEG
 
 
 def test_bridge_is_behind_both_circular_bores() -> None:

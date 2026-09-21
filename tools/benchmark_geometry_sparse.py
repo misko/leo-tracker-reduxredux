@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Prepare and run a truth-blind causal-geometry sparse position experiment."""
+
 from __future__ import annotations
 
 import argparse
@@ -45,36 +46,64 @@ def prepare(source_plan: Path, output: Path, seeds=(0, 1, 2)):
     root = Path(__file__).parents[1]
     for seed in seeds:
         order = geometry_packet_order(
-            ids, states["training"], states["track"], states["time_s"], states["age_h"],
-            states["p_km"], states["v_km_s"], states["phase_p_minus_km"],
-            states["phase_v_minus_km_s"], states["phase_p_plus_km"],
-            states["phase_v_plus_km_s"], receiver_grid, seed=seed, candidate_limit=9,
-            max_count=math.floor(count/8))
-        for fraction in (1/32, 1/16, 1/8):
-            fitting_ids = tuple(sorted(order[:math.floor(count*fraction)]))
+            ids,
+            states["training"],
+            states["track"],
+            states["time_s"],
+            states["age_h"],
+            states["p_km"],
+            states["v_km_s"],
+            states["phase_p_minus_km"],
+            states["phase_v_minus_km_s"],
+            states["phase_p_plus_km"],
+            states["phase_v_plus_km_s"],
+            receiver_grid,
+            seed=seed,
+            candidate_limit=9,
+            max_count=math.floor(count / 8),
+        )
+        for fraction in (1 / 32, 1 / 16, 1 / 8):
+            fitting_ids = tuple(sorted(order[: math.floor(count * fraction)]))
             tracks = {by_id[x].track_id for x in fitting_ids}
             subset = PositionSubset(
-                "density", fraction, seed, fitting_ids, evaluation,
+                "density",
+                fraction,
+                seed,
+                fitting_ids,
+                evaluation,
                 tuple(x for x in evaluation if by_id[x].track_id not in tracks),
-                tuple(sorted(all_tracks-tracks)), "geometry-fisher-packet3-v1")
+                tuple(sorted(all_tracks - tracks)),
+                "geometry-fisher-packet3-v1",
+            )
             job = deepcopy(original)
             job.pop("job_id", None)
             job.update(
-                model="geometry-fisher-formal", model_config={}, subset=asdict(subset),
-                subset_id=subset.subset_id, subset_aliases=[],
+                model="geometry-fisher-formal",
+                model_config={},
+                subset=asdict(subset),
+                subset_id=subset.subset_id,
+                subset_aliases=[],
                 subset_metrics=_subset_metrics(subset, by_id, count),
-                numerical_source_hash=file_hash(root/"src/leo/analysis/research/formal_orbit.py"),
-                sampling_source_hash=file_hash(root/"src/leo/analysis/research/position_geometry_subsets.py"))
+                numerical_source_hash=file_hash(root / "src/leo/analysis/research/formal_orbit.py"),
+                sampling_source_hash=file_hash(
+                    root / "src/leo/analysis/research/position_geometry_subsets.py"
+                ),
+            )
             job["job_id"] = canonical_hash(job)
             jobs.append(job)
     result = {
-        "schema":"position-subset-plan-v1", "jobs":jobs,
-        "manifest_hash":manifest["manifest_hash"],
-        "config_hash":canonical_hash({"design":"geometry-fisher-packet3-v1", "seeds":list(seeds)}),
-        "experiment":"causal-orbit-geometry-fisher",
+        "schema": "position-subset-plan-v1",
+        "jobs": jobs,
+        "manifest_hash": manifest["manifest_hash"],
+        "config_hash": canonical_hash(
+            {"design": "geometry-fisher-packet3-v1", "seeds": list(seeds)}
+        ),
+        "experiment": "causal-orbit-geometry-fisher",
         "selection_contract": {
-            "responses_used": False, "truth_used": False, "future_tles_used": False,
-            "receiver_grid_km": [[x,y] for y in axis for x in axis],
+            "responses_used": False,
+            "truth_used": False,
+            "future_tles_used": False,
+            "receiver_grid_km": [[x, y] for y in axis for x in axis],
             "nuisance_projection": "per-track constant plus causal orbit-phase-rate direction",
         },
     }
@@ -106,11 +135,21 @@ def main():
             p.error("seed-count must be 1..3")
         prepare(a.source_plan, a.output, tuple(range(a.seed_count)))
     elif a.command == "run":
-        run_plan(read_json(a.plan), "benchmark_position_subsets:formal_fixed_identity_adapter",
-                 a.result_dir, a.workers)
+        run_plan(
+            read_json(a.plan),
+            "benchmark_position_subsets:formal_fixed_identity_adapter",
+            a.result_dir,
+            a.workers,
+        )
     else:
-        summarize_plan(read_json(a.plan), a.result_dir, a.output, a.figure,
-                       a.truth_latitude_deg, a.truth_longitude_deg)
+        summarize_plan(
+            read_json(a.plan),
+            a.result_dir,
+            a.output,
+            a.figure,
+            a.truth_latitude_deg,
+            a.truth_longitude_deg,
+        )
 
 
 if __name__ == "__main__":

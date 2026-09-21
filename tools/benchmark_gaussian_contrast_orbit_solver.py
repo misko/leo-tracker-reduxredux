@@ -39,13 +39,19 @@ def _load_inputs(job):
     manifest = json.loads(manifest_path.read_text())
     ids = np.asarray([row["observation_id"] for row in manifest["observations"]])
     data = GaussianContrastOrbitData(
-        y_hz=states["y_hz"], training=states["training"], segment=states["segment"],
-        track=states["track"], source=states["source"], age_h=states["age_h"],
-        p_km=states["p_km"], v_km_s=states["v_km_s"],
+        y_hz=states["y_hz"],
+        training=states["training"],
+        segment=states["segment"],
+        track=states["track"],
+        source=states["source"],
+        age_h=states["age_h"],
+        p_km=states["p_km"],
+        v_km_s=states["v_km_s"],
         phase_p_minus_km=states["phase_p_minus_km"],
         phase_v_minus_km_s=states["phase_v_minus_km_s"],
         phase_p_plus_km=states["phase_p_plus_km"],
-        phase_v_plus_km_s=states["phase_v_plus_km_s"], time_s=states["time_s"],
+        phase_v_plus_km_s=states["phase_v_plus_km_s"],
+        time_s=states["time_s"],
         observation_id=ids,
     )
     return data, ids, Region(**config["region"]), states_path, manifest_path
@@ -54,9 +60,12 @@ def _load_inputs(job):
 def run_job(job):
     started = time.monotonic()
     common = {
-        "job_id": job["job_id"], "subset_id": job["subset_id"],
-        "seed": job["subset"]["seed"], "fraction": job["subset"]["fraction"],
-        "method": job["subset"]["method"], "starts": [],
+        "job_id": job["job_id"],
+        "subset_id": job["subset_id"],
+        "seed": job["subset"]["seed"],
+        "fraction": job["subset"]["fraction"],
+        "method": job["subset"]["method"],
+        "starts": [],
     }
     try:
         data, ids, region, states_path, manifest_path = _load_inputs(job)
@@ -69,33 +78,46 @@ def run_job(job):
                     data, region, start, config, fitting_mask=selected
                 )
                 fits.append(fit)
-                common["starts"].append({
-                    "initial_x_km": start, "converged": fit.converged,
-                    "negative_log_posterior": fit.negative_log_posterior,
-                    "nuisance_iterations": fit.nuisance_iterations,
-                    "nuisance_backtracks": fit.nuisance_backtracks,
-                    "nuisance_scaled_step": fit.nuisance_scaled_step,
-                })
+                common["starts"].append(
+                    {
+                        "initial_x_km": start,
+                        "converged": fit.converged,
+                        "negative_log_posterior": fit.negative_log_posterior,
+                        "nuisance_iterations": fit.nuisance_iterations,
+                        "nuisance_backtracks": fit.nuisance_backtracks,
+                        "nuisance_scaled_step": fit.nuisance_scaled_step,
+                    }
+                )
             except Exception as error:
-                common["starts"].append({
-                    "initial_x_km": start, "failure": type(error).__name__, "reason": str(error),
-                })
+                common["starts"].append(
+                    {
+                        "initial_x_km": start,
+                        "failure": type(error).__name__,
+                        "reason": str(error),
+                    }
+                )
         if not fits:
             return {**common, "status": "failed", "seconds": time.monotonic() - started}
         best = min(fits, key=lambda fit: fit.negative_log_posterior)
         return {
-            **common, "status": "converged" if best.converged else "nonconverged",
+            **common,
+            "status": "converged" if best.converged else "nonconverged",
             "fit": dataclasses.asdict(best),
             "fitting_observations": int(np.sum(selected & data.training)),
             "seconds": time.monotonic() - started,
             "provenance": {
-                "states": str(states_path), "states_sha256": _hash(states_path),
-                "manifest": str(manifest_path), "manifest_sha256": _hash(manifest_path),
+                "states": str(states_path),
+                "states_sha256": _hash(states_path),
+                "manifest": str(manifest_path),
+                "manifest_sha256": _hash(manifest_path),
             },
         }
     except Exception as error:
         return {
-            **common, "status": "failed", "failure": type(error).__name__, "reason": str(error),
+            **common,
+            "status": "failed",
+            "failure": type(error).__name__,
+            "reason": str(error),
             "seconds": time.monotonic() - started,
         }
 
@@ -127,7 +149,8 @@ def main():
     args = parser.parse_args()
     plan = json.loads(args.plan.read_text())
     jobs = [
-        job for job in plan["jobs"]
+        job
+        for job in plan["jobs"]
         if job["model"] == "formal-orbit-correction-v6"
         and job["subset"]["method"] == "density"
         and job["subset"]["seed"] in (0, 1, 2)
@@ -145,12 +168,15 @@ def main():
         fit = row.get("fit")
         if fit is not None:
             row["horizontal_error_m"] = _error_m(
-                fit["latitude_deg"], fit["longitude_deg"],
-                args.truth_latitude_deg, args.truth_longitude_deg,
+                fit["latitude_deg"],
+                fit["longitude_deg"],
+                args.truth_latitude_deg,
+                args.truth_longitude_deg,
             )
     payload = {
         "schema": "gaussian-contrast-map-rate-benchmark-v1",
-        "plan": str(args.plan), "plan_sha256": _hash(args.plan),
+        "plan": str(args.plan),
+        "plan_sha256": _hash(args.plan),
         "solver_sha256": _hash(
             Path(__file__).parents[1]
             / "src/leo/analysis/research/gaussian_contrast_orbit_solver.py"

@@ -76,7 +76,8 @@ def summarize_trials(trials, *, independent=True):
             "conditional_coverage": count / len(uncertainty) if uncertainty else None,
             "covered_fraction_all_trials": count / len(trials) if trials else None,
             "wilson_95_interval": _wilson(count, len(uncertainty))
-            if independent and uncertainty else None,
+            if independent and uncertainty
+            else None,
         }
     return {
         "trials": len(trials),
