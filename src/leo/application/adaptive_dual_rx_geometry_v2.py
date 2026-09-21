@@ -151,7 +151,9 @@ def reconstruct_product_geometry(
         observations.append(
             GeometryPhaseObservation(
                 utc_ns=utc_ns,
-                wrapped_double_difference_rad=item.wrapped_high_minus_low_rad,
+                wrapped_double_difference_rad=(
+                    item.wrapped_high_minus_low_rad + math.pi * row.pilot_phase_half_cycle
+                ),
                 measurement_standard_error_rad=item.standard_error_rad,
                 low_rf_hz=row.low_rf_hz,
                 high_rf_hz=row.high_rf_hz,

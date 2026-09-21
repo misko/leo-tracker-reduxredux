@@ -124,6 +124,8 @@ class AdaptiveDualRxDirectionRowV1(AdaptiveModel):
     association_method: Annotated[str, StringConstraints(min_length=1, max_length=128)]
     association_uses_phase: Literal[False] = False
     source_identity_verified: Literal[True]
+    pilot_phase_half_cycle: Literal[0, 1]
+    pilot_phase_branch_verified: Literal[True]
 
     @model_validator(mode="after")
     def _two_distinct_sources(self) -> Self:

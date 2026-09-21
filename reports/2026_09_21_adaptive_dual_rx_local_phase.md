@@ -63,6 +63,16 @@ re-run unchanged against its five frozen inputs. It reproduced the 11-point
 degrees, and median cross-gap rate-prediction error 82.21919068 degrees. No
 golden input or historical output was updated.
 
+The new extractor was then run read-only on those exact eleven saved-IQ visits
+using their sealed 120 ms GLRT binding. All eleven again produced a two-signal
+double difference. After accounting for the opposite high/low orientation and
+the Qin pilot's unresolved half-cycle branch, the new measurements agree with
+the frozen reference at 9.51° RMS and 18.58° maximum wrapped error. The
+[saved-IQ positive control](figures/2026_09_21_adaptive_dual_rx_local_phase/scan-hop-bfc60ea18ace593b-saved-iq-positive-v1.json)
+records every visit and comparison. This validates the actual IQ extractor and
+common-offset/asynchronous path; it does not resolve the pilot half-cycle,
+source identity, or geometric phase.
+
 ## Binding and method
 
 The machine-readable [V2 evidence](figures/2026_09_21_adaptive_dual_rx_local_phase/scan-hop-24ad6788936de72f-local-phase-v2.json)

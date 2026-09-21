@@ -64,7 +64,7 @@ function PhaseV2Figure({ status, probeStrideMs }: { status: AdaptivePhaseV2Statu
   return <figure className="adaptive-analysis-figure adaptive-phase-replay">
     <figcaption>
       <h4>Dual-RX phase versus time</h4>
-      <p>Every point is a retained two-signal hypothesis formed after phase-blind, one-to-one RX pairing with a common receiver-frequency offset. CFO aliases remain unresolved and lines do not bridge retunes or gaps.</p>
+      <p>Every point is a retained two-signal hypothesis formed after phase-blind, one-to-one RX pairing with a common receiver-frequency offset. CFO aliases and the pilot half-cycle phase branch remain unresolved; lines do not bridge retunes or gaps.</p>
       <p>{manifest.qualified_visit_count} qualified visits · {manifest.hypothesis_count} retained hypotheses. Geometry phase: {manifest.geometry_phase_state.replace("_", " ")} — {manifest.geometry_phase_reason}.</p>
     </figcaption>
     {failed ? <p role="alert">The phase-versus-time figure could not be loaded.</p> : <>

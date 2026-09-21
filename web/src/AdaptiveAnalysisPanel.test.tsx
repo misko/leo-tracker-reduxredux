@@ -63,7 +63,7 @@ function phaseV2Fixture(sessionId = capture.session_id): AdaptivePhaseV2Status {
       checkpoint_visit_count: capture.retained_visits, qualified_visit_count: 4, hypothesis_count: 6,
       geometry_phase_state: "unavailable", geometry_phase_reason: "calibration unavailable",
       receiver_product: "rx1_times_conjugate_rx0", phase_continuity_across_retunes: false,
-      association_uses_phase: false, aliases_resolved: false, finalized_utc_ns: "1789000000000000000",
+      association_uses_phase: false, aliases_resolved: false, pilot_phase_ambiguity: "modulo_pi", finalized_utc_ns: "1789000000000000000",
       artifact: { name: "dual-rx-double-difference-time", content_type: "image/png", sha256: sha("e"), byte_count: 1234 },
     },
   };
@@ -139,7 +139,7 @@ describe("adaptive analysis publication", () => {
     render(<AdaptiveAnalysisPanel capture={capture} />);
     const image = await screen.findByRole("img", { name: "Dual-RX phase versus time" });
     expect(image).toHaveAttribute("src", expect.stringContaining("dual-rx-phase-v2/artifact.png"));
-    expect(screen.getByText(/CFO aliases remain unresolved/)).toBeInTheDocument();
+    expect(screen.getByText(/CFO aliases and the pilot half-cycle phase branch remain unresolved/)).toBeInTheDocument();
     expect(screen.getByText(/Geometry phase: unavailable/)).toBeInTheDocument();
   });
 
