@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import cast
 
 import numpy as np
 
@@ -42,7 +43,7 @@ def _calibrated_geometry(
         and refined[receiver_id].slot_id == assignments[receiver_id].slot_id
         for receiver_id in (0, 1)
     )
-    centers = []
+    centers: list[np.ndarray | None] = []
     for receiver_id in (0, 1):
         slot = slots[assignments[receiver_id].slot_id]
         center = slot.rf_phase_center_position_m
@@ -72,7 +73,11 @@ def _calibrated_geometry(
         }
     )
     return CalibratedPhaseGeometry(
-        baseline_enu_m=None if baseline is None else tuple(map(float, baseline)),
+        baseline_enu_m=(
+            None
+            if baseline is None
+            else cast(tuple[float, float, float], tuple(map(float, baseline)))
+        ),
         baseline_standard_error_m=inputs.fixture_pose.baseline_standard_error_m,
         geometry_digest=digest,
         receiver_mapping_verified=(

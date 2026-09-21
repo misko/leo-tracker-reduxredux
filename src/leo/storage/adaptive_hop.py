@@ -18,7 +18,7 @@ from collections.abc import Iterator
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, ClassVar, Literal, Self
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal, Self, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -1055,7 +1055,7 @@ class AdaptiveHopSessionWriter:
                 if self._receiver_geometry is not None
                 else AdaptiveHopIqManifestV1
             )
-            manifest = manifest_model(
+            manifest = cast(Any, manifest_model)(
                 session_id=self._session_id,
                 created_utc_ns=self._created_ns,
                 finalized_utc_ns=time.time_ns(),

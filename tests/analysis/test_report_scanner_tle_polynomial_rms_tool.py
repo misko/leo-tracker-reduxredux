@@ -28,9 +28,7 @@ def test_review_selection_keeps_longest_64_with_deterministic_ties() -> None:
 
     assert len(selected) == 64
     assert [item[0] for item in selected[:3]] == ["tie-a", "tie-b", "tie-c"]
-    assert [item[4] for item in selected] == sorted(
-        (item[4] for item in selected), reverse=True
-    )
+    assert [item[4] for item in selected] == sorted((item[4] for item in selected), reverse=True)
     assert "track-005" not in {item[0] for item in selected}
 
 

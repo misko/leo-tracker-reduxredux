@@ -200,6 +200,11 @@ def reconstruct_geometry_phase(
 
     baseline = _vector(geometry.baseline_enu_m)
     assert baseline is not None
+    assert geometry.baseline_standard_error_m is not None
+    assert calibration.differential_group_delay_s is not None
+    assert calibration.group_delay_standard_error_s is not None
+    assert calibration.residual_double_difference_rad is not None
+    assert calibration.residual_standard_error_rad is not None
     baseline_sigma = float(geometry.baseline_standard_error_m)
     group_delay_s = float(calibration.differential_group_delay_s)
     group_delay_sigma_s = float(calibration.group_delay_standard_error_s)
@@ -233,6 +238,7 @@ def reconstruct_geometry_phase(
         low_direction = _unit(observation.low_direction_enu)
         high_direction = _unit(observation.high_direction_enu)
         assert low_direction is not None and high_direction is not None
+        assert observation.direction_standard_error_rad is not None
         direction_sigma = float(observation.direction_standard_error_rad)
         if direction_sigma < 0 or not math.isfinite(direction_sigma):
             raise ValueError("direction uncertainty must be finite and non-negative")
@@ -248,30 +254,36 @@ def reconstruct_geometry_phase(
         delta_frequency_hz = observation.high_rf_hz - observation.low_rf_hz
         hardware_rad = 2.0 * math.pi * group_delay_s * delta_frequency_hz + residual_hw_rad
         delta_time_s = (observation.high_frame_utc_ns - observation.low_frame_utc_ns) / 1e9
+        common_mode_rate = observation.common_mode_rate_rad_s
+        common_mode_rate_sigma = observation.common_mode_rate_standard_error_rad_s
         if delta_time_s and (
-            not math.isfinite(float(observation.common_mode_rate_rad_s))
-            or not math.isfinite(float(observation.common_mode_rate_standard_error_rad_s))
-            or float(observation.common_mode_rate_standard_error_rad_s) < 0
+            common_mode_rate is None
+            or common_mode_rate_sigma is None
+            or not math.isfinite(common_mode_rate)
+            or not math.isfinite(common_mode_rate_sigma)
+            or common_mode_rate_sigma < 0
         ):
             raise ValueError("asynchronous common-mode calibration must be finite")
-        asynchronous_rad = (
-            0.0
-            if delta_time_s == 0
-            else float(observation.common_mode_rate_rad_s) * delta_time_s
-        )
-        asynchronous_sigma_rad = (
-            0.0
-            if delta_time_s == 0
-            else abs(delta_time_s) * float(observation.common_mode_rate_standard_error_rad_s)
-        )
-        geometry_sigma_rad = 2.0 * math.pi / SPEED_OF_LIGHT_M_S * math.sqrt(
-            (float(np.linalg.norm(wave_difference)) * baseline_sigma) ** 2
-            + (
-                float(np.linalg.norm(baseline))
-                * direction_sigma
-                * math.hypot(observation.high_rf_hz, observation.low_rf_hz)
+        if delta_time_s:
+            assert common_mode_rate is not None and common_mode_rate_sigma is not None
+            asynchronous_rad = common_mode_rate * delta_time_s
+            asynchronous_sigma_rad = abs(delta_time_s) * common_mode_rate_sigma
+        else:
+            asynchronous_rad = 0.0
+            asynchronous_sigma_rad = 0.0
+        geometry_sigma_rad = (
+            2.0
+            * math.pi
+            / SPEED_OF_LIGHT_M_S
+            * math.sqrt(
+                (float(np.linalg.norm(wave_difference)) * baseline_sigma) ** 2
+                + (
+                    float(np.linalg.norm(baseline))
+                    * direction_sigma
+                    * math.hypot(observation.high_rf_hz, observation.low_rf_hz)
+                )
+                ** 2
             )
-            ** 2
         )
         hardware_sigma_rad = math.hypot(
             2.0 * math.pi * abs(delta_frequency_hz) * group_delay_sigma_s,

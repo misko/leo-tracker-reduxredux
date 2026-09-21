@@ -61,13 +61,10 @@ def test_adaptive_negotiation_accepts_explicit_eligible_targets() -> None:
         legacy.geometry,
         AdaptiveHopPolicyV3(**dc.asdict(legacy.policy), eligible_target_mask=0x0F),
     )
-    packet = request.append_to_tandem_request(
-        TandemSessionRequestV1(mode=TandemMode.HOLD), 131072
-    )
+    packet = request.append_to_tandem_request(TandemSessionRequestV1(mode=TandemMode.HOLD), 131072)
     attrs["iio,buffer-adaptive-hop-eligible-targets"] = "1"
     assert (
-        decode_request(port.negotiate(packet, attrs, drain_supported=True)).legacy_request
-        == packet
+        decode_request(port.negotiate(packet, attrs, drain_supported=True)).legacy_request == packet
     )
 
 
