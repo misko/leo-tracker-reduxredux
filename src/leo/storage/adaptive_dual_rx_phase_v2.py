@@ -13,6 +13,7 @@ from uuid import uuid4
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.scanner.adaptive_dual_rx_phase_product import MAX_ADAPTIVE_PHASE_PNG_BYTES
 from leo.scanner.adaptive_dual_rx_phase_product_v2 import (
+    AdaptiveDualRxGeometrySummaryV2,
     AdaptiveDualRxPhaseManifestV2,
     AdaptiveDualRxPhaseTimeFigureV2,
     AdaptiveDualRxPhaseVisitV2,
@@ -240,6 +241,7 @@ class AdaptiveDualRxPhaseStoreV2:
         geometry_phase_state: str,
         geometry_phase_reason: str,
         png: bytes | None,
+        geometry: AdaptiveDualRxGeometrySummaryV2 | None = None,
     ) -> AdaptiveDualRxPhaseManifestV2:
         indexes = self.completed_visits(session_id, input_manifest_sha256, glrt_binding_sha256)
         if indexes != tuple(range(total_visit_count)):
@@ -278,6 +280,7 @@ class AdaptiveDualRxPhaseStoreV2:
             hypothesis_count=hypotheses,
             geometry_phase_state=geometry_phase_state,
             geometry_phase_reason=geometry_phase_reason,
+            geometry=geometry,
             artifact=artifact,
             finalized_utc_ns=time.time_ns(),
         )

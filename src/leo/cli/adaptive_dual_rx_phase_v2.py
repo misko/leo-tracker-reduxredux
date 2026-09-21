@@ -4,15 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
+from leo.application.adaptive_dual_rx_geometry_v2 import reconstruct_product_geometry
 from leo.application.adaptive_dual_rx_phase_v2 import extract_phase_visit_v2
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.presentation.adaptive_dual_rx_phase_v2 import render_adaptive_dual_rx_phase_v2
+from leo.scanner.adaptive_dual_rx_geometry_input_v1 import AdaptiveDualRxGeometryInputV1
+from leo.scanner.adaptive_dual_rx_phase_product_v2 import AdaptiveDualRxGeometrySummaryV2
 from leo.scanner.host_adaptive_products import bind_actual_visit_analysis
 from leo.storage.adaptive_dual_rx_phase_v2 import AdaptiveDualRxPhaseStoreV2
-from leo.storage.adaptive_hop import AdaptiveHopIqStore
+from leo.storage.adaptive_hop import AdaptiveHopIqStore, GeometryBoundAdaptiveHopIqManifestV6
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
 
@@ -30,6 +34,7 @@ def run(
     *,
     probe_stride_ms: int,
     maximum_visits: int,
+    geometry_input: AdaptiveDualRxGeometryInputV1 | None = None,
 ) -> dict[str, object]:
     captures = AdaptiveHopIqStore(bulk_root, read_only=True)
     analyses = AdaptiveHopAnalysisStore(bulk_root, read_only=True)
@@ -79,7 +84,53 @@ def run(
                     for index in indexes
                 )
                 qualified = any(visit.hypotheses for visit in visits)
-                png = render_adaptive_dual_rx_phase_v2(visits) if qualified else None
+                geometry_result = None
+                geometry_summary = None
+                if geometry_input is not None:
+                    if not isinstance(inspected.manifest, GeometryBoundAdaptiveHopIqManifestV6):
+                        raise ValueError("geometry phase requires capture-bound receiver geometry")
+                    geometry_result = reconstruct_product_geometry(
+                        inspected.manifest, visits, geometry_input
+                    )
+                    residuals = [
+                        min(
+                            point.ambiguity_candidates, key=lambda item: abs(item.residual_rad)
+                        ).residual_rad
+                        for point in geometry_result.points
+                    ]
+                    assert geometry_result.geometry_digest is not None
+                    assert geometry_result.calibration_digest is not None
+                    geometry_summary = AdaptiveDualRxGeometrySummaryV2(
+                        input_digest=geometry_input.input_digest,
+                        receiver_geometry_binding_digest=(
+                            geometry_input.receiver_geometry_binding_digest
+                        ),
+                        geometry_digest=geometry_result.geometry_digest,
+                        calibration_digest=geometry_result.calibration_digest,
+                        direction_evidence_sha256=geometry_input.direction_evidence_sha256,
+                        state=geometry_result.ambiguity_state,
+                        reasons=geometry_result.reasons,
+                        point_count=len(geometry_result.points),
+                        ambiguity_candidate_count=sum(
+                            len(point.ambiguity_candidates) for point in geometry_result.points
+                        ),
+                        residual_rms_rad=(
+                            math.sqrt(sum(value * value for value in residuals) / len(residuals))
+                            if residuals
+                            else None
+                        ),
+                    )
+                png = (
+                    render_adaptive_dual_rx_phase_v2(visits, geometry_result) if qualified else None
+                )
+                geometry_state = (
+                    "unavailable" if geometry_result is None else geometry_result.ambiguity_state
+                )
+                geometry_reason = (
+                    "verified geometry/calibration/direction input was not supplied"
+                    if geometry_result is None
+                    else ";".join(geometry_result.reasons)
+                )
                 manifest = phases.finalize(
                     session_id=session_id,
                     input_manifest_sha256=binding.input_manifest_sha256,
@@ -88,12 +139,10 @@ def run(
                         canonical_json_bytes(metrics.model_dump(mode="json"))
                     ),
                     total_visit_count=len(indexes),
-                    geometry_phase_state="unavailable",
-                    geometry_phase_reason=(
-                        "verified phase-center baseline ENU pose, direction tracks, and "
-                        "receiver-chain phase calibration are unavailable"
-                    ),
+                    geometry_phase_state=geometry_state,
+                    geometry_phase_reason=geometry_reason,
                     png=png,
+                    geometry=geometry_summary,
                 )
         return {
             "state": "complete" if complete else "partial",
@@ -115,6 +164,7 @@ def main() -> None:
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--probe-stride-ms", type=int, choices=(10, 120), default=120)
     parser.add_argument("--maximum-visits", type=_bounded_visits, default=20)
+    parser.add_argument("--geometry-input", type=Path)
     args = parser.parse_args()
     try:
         print(
@@ -124,6 +174,13 @@ def main() -> None:
                     args.session_id,
                     probe_stride_ms=args.probe_stride_ms,
                     maximum_visits=args.maximum_visits,
+                    geometry_input=(
+                        None
+                        if args.geometry_input is None
+                        else AdaptiveDualRxGeometryInputV1.model_validate_json(
+                            args.geometry_input.read_bytes()
+                        )
+                    ),
                 ),
                 sort_keys=True,
             )
