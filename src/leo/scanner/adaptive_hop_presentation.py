@@ -14,6 +14,7 @@ from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisConfigurationV1
 
 if TYPE_CHECKING:
     from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatusV1
+    from leo.scanner.adaptive_dual_rx_phase_product_v2 import AdaptiveDualRxPhaseStatusV2
 
 AdaptiveOverviewArtifact = Literal["coverage", "glrt64-response", "cfo-trajectories"]
 OVERVIEW_ARTIFACTS: tuple[AdaptiveOverviewArtifact, ...] = (
@@ -142,6 +143,19 @@ class AdaptiveHopAnalysisPresentationReader(Protocol):
     ) -> AdaptiveDualRxPhaseStatusV1 | None: ...
 
     def phase_artifact(
+        self,
+        session_id: str,
+        *,
+        glrt_binding_sha256: str,
+        artifact_sha256: str,
+        probe_stride_ms: int = 120,
+    ) -> bytes | None: ...
+
+    def phase_status_v2(
+        self, session_id: str, *, probe_stride_ms: int = 120
+    ) -> AdaptiveDualRxPhaseStatusV2 | None: ...
+
+    def phase_artifact_v2(
         self,
         session_id: str,
         *,

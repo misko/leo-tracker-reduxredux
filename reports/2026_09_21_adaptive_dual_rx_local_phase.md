@@ -22,7 +22,22 @@ ten Qin-pilot frames at identical sample indices in the two receiver columns.
 
 The points are independent local reacquisitions. The plot intentionally leaves
 them wrapped and disconnected. It does not assert cycle continuity, transmitter
-identity, or geometry phase.
+identity, or geometry phase. This first diagnostic ranks one RX0/RX1 pair per
+visit; it does not prove that each pair is the same emitter across receivers.
+It is retained as exploratory evidence and is not eligible for production
+publication.
+
+A stricter follow-up applied one-to-one RX pairing with a common receiver CFO
+offset and then required two alias-distinct signals. In the first 20 candidate
+visits, every apparent second pair was either the same CFO or a 227.27 kHz pilot
+alias of the first. Zero of 20 supplied a valid two-signal double difference.
+The production V2 path therefore records these visits as insufficient signal
+rather than plotting the duplicate as a zero-degree phase measurement.
+A phase-blind metric inventory of all 2,359 visits in this GLRT binding found
+zero visits with two alias-distinct selected pairs. Completing the resumable V2
+product for this session should therefore end in the explicit
+`insufficient_signal` state; it cannot produce a truthful double-difference
+phase-time PNG from this binding.
 
 ## Frozen-reference check
 
