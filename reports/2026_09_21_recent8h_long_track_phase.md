@@ -22,6 +22,8 @@ Under an independently justified stable differential receiver/LNB phase model, a
 
 The first pass finds a second shared source candidate at scan 34c0b0e1ae062f97, visit 678. A further screen of twenty nearby visits (19 new visits and a reproduction of 678) finds two pairs only at 678. Thus no multi-visit reference trajectory is established. The generic raw tool's asynchronous-centroid double difference is not interpreted as a geometric measurement.
 
+A bounded full-frame matched-pilot follow-up at visit 678 also abstains: none of six 20-ms blocks passes the frozen simultaneous source-overlap gates (coherence at least 0.1 and matched-to-wrong control ratio at least 2 for both sources). Consequently no frames are eligible for a qualified double difference. Two source detections somewhere in the same dwell do not by themselves establish usable simultaneous support.
+
 ## Could the changes be orbital?
 
 The [geometry/orbit scenario report](2026_09_21_phase_change_geometry_scenarios.md) supplies distributions for LEO, MEO, and ideal GEO cases, with the recorded observing location and Earth rotation. It uses the LT3D-001A mechanical geometry, an explicitly illustrative holder pose, and sensitivity cases for unknown RF phase-center offsets, source separation, heading, and beam selection assumptions.
