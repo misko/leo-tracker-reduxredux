@@ -594,6 +594,107 @@ def test_fast_deployment_plan_uses_selected_api_delta_and_only_restarts_api(
     assert plan["capture_policy_id"] is None
 
 
+def test_qualified_api_only_plan_keeps_broad_impact_but_restarts_only_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "1" * 40
+    current_api = "2" * 40
+    target = "3" * 40
+
+    def fake_git(*arguments: str) -> str:
+        if arguments == ("status", "--porcelain"):
+            return ""
+        if arguments == ("rev-parse", "origin/main"):
+            return target
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(OPS, "_run_git", fake_git)
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(
+        OPS,
+        "_selected_component_release_revision",
+        lambda component: current_api if component == "api" else None,
+    )
+    monkeypatch.setattr(
+        OPS,
+        "_git_lines",
+        lambda *_arguments: ("src/leo/processing/worker.py", "src/leo/api/app.py"),
+    )
+
+    plan = OPS._deployment_plan(OPS.parser().parse_args(["deploy", "--api-only", "--plan"]))
+
+    assert plan["mode"] == "qualified-api-only"
+    assert plan["services_to_restart"] == ["api"]
+    assert plan["changed_paths"] == ["src/leo/processing/worker.py", "src/leo/api/app.py"]
+    assert set(plan["impact"]) == {"api", "worker"}
+    assert plan["worker_fence_required"] is True
+    assert plan["api_only_requested"] is True
+
+
+def test_qualified_api_only_deploy_guards_before_api_selector(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "1" * 40
+    current_api = "2" * 40
+    target = "3" * 40
+    plan = {
+        "impact": ["api", "worker"],
+        "target_revision": target,
+        "current_revision": current,
+        "current_api_revision": current_api,
+        "changed_paths": ["src/leo/processing/worker.py"],
+    }
+    environment = tmp_path / "leo.env"
+    environment.write_text("LEO_DATABASE_URL=postgresql:///leo_tracker\n")
+    order: list[str] = []
+    monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "RELEASE_ROOT", tmp_path)
+    monkeypatch.setattr(OPS, "_deployment_plan", lambda _args: plan)
+    monkeypatch.setattr(OPS.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(
+        OPS,
+        "_require_matching_test_receipt",
+        lambda **_kwargs: order.append("developer-receipt") or tmp_path / "tests.json",
+    )
+    monkeypatch.setattr(OPS, "_stage_release", lambda _target: order.append("stage"))
+    monkeypatch.setattr(
+        OPS,
+        "_release_qualification",
+        lambda _target: order.append("qualification") or tmp_path / "qualification.json",
+    )
+    monkeypatch.setattr(
+        OPS,
+        "_migration_required",
+        lambda **_kwargs: order.append("database-head") or False,
+    )
+    monkeypatch.setattr(
+        OPS,
+        "_deploy_api_release",
+        lambda **_kwargs: order.append("api-selector") or 0,
+    )
+    monkeypatch.setattr(
+        OPS,
+        "_deploy_full_release",
+        lambda **_kwargs: pytest.fail("API-only deployment entered full cutover"),
+    )
+
+    assert OPS._deploy(OPS.parser().parse_args(["deploy", "--api-only"])) == 0
+    assert order == [
+        "developer-receipt",
+        "stage",
+        "qualification",
+        "database-head",
+        "api-selector",
+    ]
+
+    order.clear()
+    monkeypatch.setattr(OPS, "_migration_required", lambda **_kwargs: True)
+    with pytest.raises(OPS.OpsError, match="database is not at Alembic head"):
+        OPS._deploy(OPS.parser().parse_args(["deploy", "--api-only"]))
+    assert "api-selector" not in order
+
+
 @pytest.mark.parametrize(
     "changed_path",
     (
@@ -854,6 +955,12 @@ def test_stage_only_accepts_only_main_or_clean_local_head(
             "cannot be combined with --fast",
         ),
         (("deploy", "--full", "--fast"), "cannot be combined with --fast"),
+        (("deploy", "--full", "--api-only"), "cannot be combined with --api-only"),
+        (("deploy", "--fast", "--api-only"), "cannot be combined with --api-only"),
+        (
+            ("deploy", "--stage-only", "--revision", "2" * 40, "--api-only"),
+            "cannot be combined with --api-only",
+        ),
     ),
 )
 def test_stage_only_rejects_ambiguous_modes(

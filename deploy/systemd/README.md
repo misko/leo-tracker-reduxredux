@@ -23,7 +23,7 @@ Render `@RELEASE@` only after the immutable release has passed
 paths beneath `/etc/systemd/system`, owned by root with mode `0644`, then run
 `systemctl daemon-reload`. Use one schema-compatible SHA for the queue and
 adaptive workers. The transfer service may use a later repair SHA independently.
-The worker override creates the versioned V12 tracking root before dropping to
+The worker override creates the versioned V12–V14 tracking roots before dropping to
 the `leo` service identity; session directories and immutable artifacts remain
 owned and written by `leo`.
 For example:
@@ -50,7 +50,10 @@ sudo systemctl daemon-reload
 ```
 
 Inspect the effective `WorkingDirectory` and `ExecStart` with `systemctl cat`
-before restarting only the adaptive units. Keep the queue timer stopped while
+before restarting only the adaptive units. Preserve the previous override files
+and active-worker inventory so a failed canary can restore the exact bindings.
+Never change acquisition or the general worker selector for this procedure.
+Keep the queue timer stopped while
 qualifying one canary, run an explicit bounded `backfill-tracking` for captures
 older than the two-hour live window, and widen worker concurrency only after the
 canary seals both analysis and tracking manifests. A transfer run with
