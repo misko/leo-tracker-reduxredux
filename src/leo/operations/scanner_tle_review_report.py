@@ -50,6 +50,20 @@ def _qualified_start_utc_ns(source) -> int:
     return source.timing.first_sample_estimate_utc_ns
 
 
+def _select_review_tracks(eligible_tracks: list[tuple], maximum_tracks: int | None) -> list[tuple]:
+    """Select longest support first with deterministic, response-free tie breaks."""
+
+    ranked = sorted(
+        eligible_tracks,
+        key=lambda item: (
+            -float(item[4]),
+            -len(item[2]),
+            item[0],
+        ),
+    )
+    return ranked if maximum_tracks is None else ranked[:maximum_tracks]
+
+
 def _apply_common_limits(left, right) -> None:
     """Apply an explicit union of both panels' linear X and Y limits."""
 
@@ -264,15 +278,13 @@ def build_report(
             t = np.asarray([(row.support_center_utc_ns - start) / 1e9 for row in rows])
             if len(t) < 14 or t[-1] - t[0] < 7:
                 continue
-            eligible_tracks.append((tracklet_id, graph, rows, t))
+            eligible_tracks.append((tracklet_id, graph, rows, t, float(t[-1] - t[0])))
 
     eligible_track_count = len(eligible_tracks)
-    selected_tracks = (
-        eligible_tracks if maximum_tracks is None else eligible_tracks[:maximum_tracks]
-    )
+    selected_tracks = _select_review_tracks(eligible_tracks, maximum_tracks)
     track_limit_reached = len(selected_tracks) < eligible_track_count
     tracks: list[dict[str, Any]] = []
-    for tracklet_id, graph, rows, t in selected_tracks:
+    for tracklet_id, graph, rows, t, _span_s in selected_tracks:
         y = np.asarray([row.measured_cfo_hz for row in rows])
         support = CataloguePredictionSupportV1.from_graph(graph)
         split_seed = canonical_digest(
@@ -368,7 +380,6 @@ def build_report(
             }
         )
 
-    tracks.sort(key=lambda item: item["start_s"])
     fig, axes = plt.subplots(len(tracks), 1, figsize=(14, 3.4 * len(tracks)), squeeze=False)
     colours = {1: "#2166ac", 2: "#1b9e77", 3: "#7b3294"}
     for axis, track in zip(axes[:, 0], tracks, strict=True):
@@ -429,6 +440,7 @@ def build_report(
         "minimum_observations": 14,
         "minimum_span_s": 7,
         "track_limit": maximum_tracks,
+        "track_selection_policy": "longest-support-observations-identity-v1",
         "track_limit_reached": track_limit_reached,
         "eligible_track_count": eligible_track_count,
         "deferred_track_count": eligible_track_count - len(tracks),
@@ -453,7 +465,7 @@ def main() -> None:
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
     parser.add_argument("--tle-root", type=Path, default=Path("/var/lib/leo/tle"))
     parser.add_argument("--site", default="spinnaker-sausalito")
-    parser.add_argument("--maximum-tracks", type=int, default=128)
+    parser.add_argument("--maximum-tracks", type=int, default=64)
     args = parser.parse_args()
     result = build_report(
         args.session_id,

@@ -298,7 +298,9 @@ def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, mo
     result = runner.run("scan-test")
 
     assert result.product.track_reviews == (review,)
-    assert result.product.analysis_id == "scanner-shared-tracking-v12"
+    assert result.product.analysis_id == "scanner-shared-tracking-v13"
+    assert result.product.review_limit == 64
+    assert result.product.review_selection_policy == "longest-support-observations-identity-v1"
     assert result.product.review_eligible_count == result.product.review_count == 1
     assert result.product.deferred_review_count == 0
     assert store.artifact("scan-test", "tle-review-01") == PNG + b"review"

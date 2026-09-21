@@ -113,7 +113,7 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
     assert "leo.cli.scanner_tracking" in command
     assert "--queue-worker" in command
-    assert command[command.index("--review-limit") + 1] == "128"
+    assert command[command.index("--review-limit") + 1] == "64"
     assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "complete"}]
 
 

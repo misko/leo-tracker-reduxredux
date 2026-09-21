@@ -383,6 +383,17 @@ class ScannerTrackingProductV12(ScannerTrackingProductV11):
         return self
 
 
+class ScannerTrackingProductV13(ScannerTrackingProductV12):
+    """Longest-support-first bounded per-track TLE review evidence."""
+
+    schema_version: Literal[13] = 13  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v13"] = "scanner-shared-tracking-v13"  # type: ignore[assignment]
+    review_limit: Annotated[int, Field(ge=1, le=128)] = 64  # type: ignore[assignment]
+    review_selection_policy: Literal["longest-support-observations-identity-v1"] = (
+        "longest-support-observations-identity-v1"
+    )
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -479,6 +490,14 @@ class ScannerTrackingStatusV12(ContractModel):
     product: ScannerTrackingProductV12 | None = None
 
 
+class ScannerTrackingStatusV13(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV13 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -495,6 +514,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV10
         | ScannerTrackingStatusV11
         | ScannerTrackingStatusV12
+        | ScannerTrackingStatusV13
     ): ...
     def artifact(self, session_id: str, name: ArtifactNameV12) -> bytes | None: ...
 
