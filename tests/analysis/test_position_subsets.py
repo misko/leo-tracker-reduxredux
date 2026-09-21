@@ -89,6 +89,22 @@ def test_duplicate_ids_rejected_and_hash_is_canonical() -> None:
     assert canonical_hash({"b": 1, "a": [2]}) == canonical_hash({"a": [2], "b": 1})
 
 
+def test_small_fractions_are_nested_exact_and_do_not_promote_discarded_training():
+    rows = _observations()
+    fractions = (1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1.0)
+    subsets = build_subset_matrix(rows, seeds=[2], fractions=fractions)
+    previous = set()
+    for fraction in fractions:
+        subset = next(x for x in subsets if x.method == "density" and x.fraction == fraction)
+        assert len(subset.fitting_ids) == int(28 * fraction)
+        assert previous <= set(subset.fitting_ids)
+        assert set(subset.evaluation_ids) <= {r.observation_id for r in rows if not r.fitting}
+        previous = set(subset.fitting_ids)
+    for invalid in ((), (0, 1), (0.5, 0.25, 1), (0.25, 0.25, 1), (0.25,)):
+        with pytest.raises(ValueError, match="fractions"):
+            build_subset_matrix(rows, fractions=invalid)
+
+
 def test_atomic_result_is_idempotent_and_refuses_collision(tmp_path) -> None:
     path = tmp_path / "job.json"
     payload = {"job_id": "abc", "input_hash": "sha256:i", "config_hash": "sha256:c"}

@@ -156,7 +156,9 @@ def plan_jobs(manifest: dict[str, Any], config: dict[str, Any]) -> list[dict[str
     rows = tuple(Observation(**x) for x in manifest["observations"])
     row_by_id = {x.observation_id: x for x in rows}
     full_count = sum(x.fitting for x in rows)
-    subsets = build_subset_matrix(rows, seeds=SEEDS)
+    subsets = build_subset_matrix(
+        rows, seeds=SEEDS, fractions=config.get("fractions", [0.25, 0.5, 1.0])
+    )
     config_hash = canonical_hash(config)
     jobs: list[dict[str, Any]] = []
     models = config.get("models", [{"name": config["model"]}])
@@ -503,6 +505,9 @@ def summarize_plan(
             "measurement_sigma_hz": result.get("measurement_sigma_hz"),
             "major_95_km": result.get("major_95_km"),
             "identifiability": result.get("identifiability"),
+            "nuisance_converged": result.get("nuisance_converged"),
+            "information_rank": result.get("information_rank"),
+            "information_condition": result.get("information_condition"),
             "nfev": result.get("nfev"),
             "supported_evaluation_observations": result.get("supported_evaluation_observations", 0),
             "unavailable_evaluation_observations": result.get(
@@ -530,7 +535,11 @@ def summarize_plan(
 def _plot_summary(rows: list[dict[str, Any]], path: Path) -> None:
     import matplotlib.pyplot as plt
 
-    usable = [x for x in rows if x.get("horizontal_error_m") is not None]
+    usable = [
+        x
+        for x in rows
+        if x.get("horizontal_error_m") is not None and x.get("status") == "converged"
+    ]
     display_models = {
         "formal orbit correction": (
             {"formal-orbit-correction", "formal-orbit-correction-v6"},
@@ -538,8 +547,12 @@ def _plot_summary(rows: list[dict[str, Any]], path: Path) -> None:
         ),
         "strict fixed-orbit baseline": ({"legacy-strict-fixed-orbit"}, "#c05621"),
     }
+    known = set().union(*(names for names, _ in display_models.values()))
+    for index, model in enumerate(sorted({row["model"] for row in usable} - known)):
+        display_models[model] = ({model}, f"C{index % 10}")
     fig, axes = plt.subplots(2, 2, figsize=(11, 8), constrained_layout=True)
-    fig.suptitle("Successful fits only; formal seeded failures 17/80", fontsize=12)
+    failures = sum(x.get("status") != "converged" for x in rows)
+    fig.suptitle(f"Converged fits only; {failures}/{len(rows)} runs did not converge", fontsize=12)
     for display_name, (model_versions, color) in display_models.items():
         for method, marker in (("density", "o"), ("pass", "s")):
             data = [x for x in usable if x["model"] in model_versions and x["method"] == method]

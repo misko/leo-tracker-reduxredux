@@ -177,6 +177,7 @@ def build_subset_matrix(
     seeds: Sequence[int] = tuple(range(20)),
     temporal_bins: int = 4,
     durations_s: Sequence[int] = (1800, 3600, 7200, 14400, 28800),
+    fractions: Sequence[float] = FRACTIONS,
 ) -> tuple[PositionSubset, ...]:
     """Create nested 25/50/100% density/pass subsets and primary duration windows.
 
@@ -185,6 +186,13 @@ def build_subset_matrix(
     """
     if temporal_bins <= 0:
         raise ValueError("temporal_bins must be positive")
+    if (
+        not fractions
+        or tuple(sorted(set(fractions))) != tuple(fractions)
+        or fractions[-1] != 1.0
+        or any(not 0 < f <= 1 for f in fractions)
+    ):
+        raise ValueError("fractions must be increasing, unique, in (0, 1], and end at 1")
     rows = _validate(tuple(observations), seeds)
     full_ids = tuple(sorted(x.observation_id for x in rows if x.fitting))
     evaluation, unsupported, unusable = _support(rows, set(full_ids))
@@ -197,7 +205,7 @@ def build_subset_matrix(
                     if method == "density"
                     else _passes(rows, seed, fraction)
                 )
-                for fraction in FRACTIONS[:-1]
+                for fraction in fractions[:-1]
             )
         output.append(
             PositionSubset(
@@ -216,7 +224,7 @@ def build_subset_matrix(
         start = min(x.timestamp_ns for x in fitting_rows)
         campaign_end = max(x.timestamp_ns for x in fitting_rows) + 1
         campaign_duration = campaign_end - start
-        for fraction in FRACTIONS:
+        for fraction in fractions:
             end = (
                 campaign_end
                 if fraction == 1.0

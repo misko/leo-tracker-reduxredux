@@ -19,7 +19,16 @@ def digest(path):
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def verify(states_path, fit_path, prior_path, reranking_path, region, tolerance_hz=0.2):
+def verify(
+    states_path,
+    fit_path,
+    prior_path,
+    reranking_path,
+    region,
+    tolerance_hz=0.2,
+    *,
+    allow_unfitted_sources=False,
+):
     if not np.isfinite(tolerance_hz) or tolerance_hz <= 0:
         raise ValueError("positive finite verification tolerance required")
     prior = json.loads(prior_path.read_text())
@@ -58,7 +67,9 @@ def verify(states_path, fit_path, prior_path, reranking_path, region, tolerance_
             raise ValueError("noncausal TLE")
         age = (capture - row["winning_epoch_utc_ns"]) / 3_600_000_000_000
         np.testing.assert_allclose(states["age_h"][mask], age, atol=1e-12, rtol=0)
-        correction = age * result["rate_corrections_s_h"][str(norad)]
+        rates = result["rate_corrections_s_h"]
+        rate = rates.get(str(norad), 0.0) if allow_unfitted_sources else rates[str(norad)]
+        correction = age * rate
         p, v, valid = state_arrays(
             parse_element_sets(row["winning_tle_text"]),
             [0],
@@ -102,6 +113,7 @@ def verify(states_path, fit_path, prior_path, reranking_path, region, tolerance_
         "p99_absolute_hz": float(np.quantile(np.abs(error), 0.99)),
         "tolerance_hz": tolerance_hz,
         "passed": maximum <= tolerance_hz,
+        "unfitted_sources_default_zero": allow_unfitted_sources,
         "inputs": {
             name: digest(path)
             for name, path in (
