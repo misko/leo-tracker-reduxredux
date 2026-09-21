@@ -11,10 +11,10 @@ from typing import cast
 
 from leo.application.scanner_tracking import ScannerTrackingService
 from leo.contracts.scanner_tracking import (
-    ArtifactName,
+    ArtifactNameV12,
     ScannerTleReviewCandidateV1,
-    ScannerTleTrackReviewV1,
-    ScannerTrackingStatusV11,
+    ScannerTleTrackReviewV2,
+    ScannerTrackingStatusV12,
 )
 from leo.contracts.sky import ObserverSiteV1
 from leo.operations.scanner_tle_review_report import build_report
@@ -27,10 +27,10 @@ from leo.storage.scanner_tracking import ScannerTrackingStore
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 
-def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str):
+def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str, review_limit: int):
     def render(
         session_id: str,
-    ) -> tuple[tuple[tuple[ScannerTleTrackReviewV1, bytes], ...], bool]:
+    ) -> tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]:
         with TemporaryDirectory(prefix="leo-tle-review-") as temporary:
             output = Path(temporary)
             report = build_report(
@@ -39,16 +39,16 @@ def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str):
                 bulk_root=bulk_root,
                 tle_root=tle_root,
                 site_name=site_name,
-                maximum_tracks=32,
+                maximum_tracks=review_limit,
             )
             rendered = []
             for index, (track, filename) in enumerate(
                 zip(report["tracks"], report["track_figures"], strict=True), start=1
             ):
-                if index > 32:
+                if index > review_limit:
                     raise ValueError("track review artifact count exceeds contract bound")
-                artifact_name = cast(ArtifactName, f"tle-review-{index:02d}")
-                review = ScannerTleTrackReviewV1(
+                artifact_name = cast(ArtifactNameV12, f"tle-review-{index:02d}")
+                review = ScannerTleTrackReviewV2(
                     tracklet_id=track["tracklet_id"],
                     channel=track["channel"],
                     edge=track["edge"],
@@ -71,7 +71,7 @@ def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str):
                     ),
                 )
                 rendered.append((review, (output / filename).read_bytes()))
-            return tuple(rendered), bool(report["track_limit_reached"])
+            return tuple(rendered), int(report["eligible_track_count"])
 
     return render
 
@@ -88,13 +88,18 @@ def main():
     parser.add_argument("--session-id")
     parser.add_argument("--maximum-seconds", type=float, default=180)
     parser.add_argument("--maximum-sessions", type=int, default=2)
+    parser.add_argument("--review-limit", type=int, default=128)
     parser.add_argument(
         "--queue-worker",
         action="store_true",
         help="The processing queue owns the session lease; do not take the standalone lock.",
     )
     args = parser.parse_args()
-    if not 0 < args.maximum_seconds <= 1800 or not 1 <= args.maximum_sessions <= 100:
+    if (
+        not 0 < args.maximum_seconds <= 1800
+        or not 1 <= args.maximum_sessions <= 100
+        or not 1 <= args.review_limit <= 128
+    ):
         parser.error("invalid work bounds")
     lock = nullcontext(True) if args.queue_worker else analysis_worker_lock(args.bulk_root)
     with lock as acquired:
@@ -119,7 +124,9 @@ def main():
                 bulk_root=args.bulk_root,
                 tle_root=args.tle_root,
                 site_name=args.site,
+                review_limit=args.review_limit,
             ),
+            review_limit=args.review_limit,
         )
         try:
             ids = (args.session_id,) if args.session_id else sources.session_ids()
@@ -147,7 +154,7 @@ def main():
                 except Exception as error:
                     prior = products.analysis_status(sid)
                     products.save(
-                        ScannerTrackingStatusV11(
+                        ScannerTrackingStatusV12(
                             session_id=sid,
                             state="failed",
                             phase=prior.phase,

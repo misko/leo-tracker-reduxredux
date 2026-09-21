@@ -55,6 +55,15 @@ ArtifactName = Literal[
     "tle-review-31",
     "tle-review-32",
 ]
+ArtifactNameV12 = Annotated[
+    str,
+    Field(
+        pattern=(
+            r"^(?:trajectory|trajectory-tle|"
+            r"tle-review-(?:0[1-9]|[1-9][0-9]|1[01][0-9]|12[0-8]))$"
+        )
+    ),
+]
 
 
 @dataclass(frozen=True)
@@ -103,6 +112,14 @@ class TrackingInput:
 
 class TrackingArtifactV1(ContractModel):
     name: ArtifactName
+    sha256: Sha256Digest
+    byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+
+
+class TrackingArtifactV2(ContractModel):
+    """Tracking artifact namespace extended through review 128 for V12."""
+
+    name: ArtifactNameV12
     sha256: Sha256Digest
     byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
 
@@ -339,6 +356,33 @@ class ScannerTrackingProductV11(ScannerTrackingProductV10):
     )
 
 
+class ScannerTleTrackReviewV2(ScannerTleTrackReviewV1):
+    artifact_name: ArtifactNameV12  # type: ignore[assignment]
+
+
+class ScannerTrackingProductV12(ScannerTrackingProductV11):
+    """Bounded, explicitly accounted per-track TLE review evidence."""
+
+    schema_version: Literal[12] = 12  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v12"] = "scanner-shared-tracking-v12"  # type: ignore[assignment]
+    review_limit: Annotated[int, Field(ge=1, le=128)] = 128
+    review_eligible_count: Annotated[int, Field(ge=0)] = 0
+    review_count: Annotated[int, Field(ge=0)] = 0
+    deferred_review_count: Annotated[int, Field(ge=0)] = 0
+    artifacts: tuple[TrackingArtifactV2, ...] = ()  # type: ignore[assignment]
+    track_reviews: tuple[ScannerTleTrackReviewV2, ...] = ()  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _review_accounting(self) -> Self:
+        if self.review_count != len(self.track_reviews):
+            raise ValueError("TLE review count differs from its evidence")
+        if self.review_count > self.review_limit:
+            raise ValueError("TLE reviews exceed their configured limit")
+        if self.review_eligible_count != self.review_count + self.deferred_review_count:
+            raise ValueError("TLE review accounting differs")
+        return self
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -427,6 +471,14 @@ class ScannerTrackingStatusV11(ContractModel):
     product: ScannerTrackingProductV11 | None = None
 
 
+class ScannerTrackingStatusV12(ContractModel):
+    session_id: SessionId
+    state: Literal["pending", "running", "complete", "failed"] = "pending"
+    phase: str = "waiting-for-analysis"
+    failure_summary: str | None = None
+    product: ScannerTrackingProductV12 | None = None
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -442,8 +494,9 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV9
         | ScannerTrackingStatusV10
         | ScannerTrackingStatusV11
+        | ScannerTrackingStatusV12
     ): ...
-    def artifact(self, session_id: str, name: ArtifactName) -> bytes | None: ...
+    def artifact(self, session_id: str, name: ArtifactNameV12) -> bytes | None: ...
 
 
 class ScannerTrackingInputs(Protocol):

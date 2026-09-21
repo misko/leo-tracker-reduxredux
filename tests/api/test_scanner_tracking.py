@@ -13,7 +13,8 @@ def test_shared_endpoint_serves_partial_trajectory_and_closed_evidence(tmp_path,
     app.include_router(scanner_tracking_router(ScannerTrackingStore(tmp_path)))
     client = TestClient(app)
     product = client.get("/api/v1/scanner/tracking/scan-test").json()["product"]
-    assert product["schema_version"] == 11
+    assert product["schema_version"] == 12
+    assert product["review_limit"] == 128
     assert product["control_comparison_policy"] == "polynomial-and-wrong-time-diagnostic-only-v1"
     assert (
         client.get("/api/v1/scanner/tracking/scan-test").json()["product"]["tle_state"]
@@ -25,4 +26,6 @@ def test_shared_endpoint_serves_partial_trajectory_and_closed_evidence(tmp_path,
     )
     assert client.get("/api/v1/scanner/tracking/scan-test/trajectory-tle.png").status_code == 404
     assert client.get("/api/v1/scanner/tracking/scan-test/unknown.png").status_code == 422
+    assert client.get("/api/v1/scanner/tracking/scan-test/tle-review-128.png").status_code == 404
+    assert client.get("/api/v1/scanner/tracking/scan-test/tle-review-129.png").status_code == 422
     assert client.get("/api/v1/scanner/tracking/another-scan").json()["state"] == "pending"

@@ -207,8 +207,8 @@ def build_report(
     site_name: str = "spinnaker-sausalito",
     maximum_tracks: int | None = None,
 ) -> dict:
-    if maximum_tracks is not None and maximum_tracks < 1:
-        raise ValueError("maximum tracks must be positive")
+    if maximum_tracks is not None and not 1 <= maximum_tracks <= 128:
+        raise ValueError("maximum tracks must be between 1 and 128")
     sources = ScannerTrackingInputStore(bulk_root)
     try:
         source = sources.load(session_id)
@@ -222,7 +222,7 @@ def build_report(
     )
     selection_protocol_digest = canonical_digest(
         {
-            "algorithm": "scanner-shared-tracking-v11",
+            "algorithm": "scanner-shared-tracking-v12",
             "utc_qualification_limit_ns": 2_000_000_000,
             "trajectory": trajectory_config.digest,
             "group_limit": 4,
@@ -253,117 +253,120 @@ def build_report(
 
     by_id = {item.tracklet_id: item for item in trajectory.tracklets}
     seen: set[str] = set()
-    tracks: list[dict[str, Any]] = []
-    track_limit_reached = False
+    eligible_tracks = []
     for hypothesis in trajectory.hypotheses:
         for tracklet_id in hypothesis.tracklet_ids:
             if tracklet_id in seen:
                 continue
-            if maximum_tracks is not None and len(tracks) >= maximum_tracks:
-                track_limit_reached = True
-                break
             seen.add(tracklet_id)
             graph = persistent_hop_tracklet_graph(hypothesis, tracklet_id)
             rows = sorted(graph.observations, key=lambda item: item.support_center_utc_ns)
             t = np.asarray([(row.support_center_utc_ns - start) / 1e9 for row in rows])
             if len(t) < 14 or t[-1] - t[0] < 7:
                 continue
-            y = np.asarray([row.measured_cfo_hz for row in rows])
-            support = CataloguePredictionSupportV1.from_graph(graph)
-            split_seed = canonical_digest(
-                {
-                    "policy": "persistent-hop-fixed-orbit-randomized-residual-v1",
-                    "response_free_support_digest": support.content_digest,
-                    "selection_protocol_digest": selection_protocol_digest,
+            eligible_tracks.append((tracklet_id, graph, rows, t))
+
+    eligible_track_count = len(eligible_tracks)
+    selected_tracks = (
+        eligible_tracks if maximum_tracks is None else eligible_tracks[:maximum_tracks]
+    )
+    track_limit_reached = len(selected_tracks) < eligible_track_count
+    tracks: list[dict[str, Any]] = []
+    for tracklet_id, graph, rows, t in selected_tracks:
+        y = np.asarray([row.measured_cfo_hz for row in rows])
+        support = CataloguePredictionSupportV1.from_graph(graph)
+        split_seed = canonical_digest(
+            {
+                "policy": "persistent-hop-fixed-orbit-randomized-residual-v1",
+                "response_free_support_digest": support.content_digest,
+                "selection_protocol_digest": selection_protocol_digest,
+            }
+        )
+        training_ids, _evaluation_ids = deterministic_randomized_observation_partition(
+            tuple(row.observation_id for row in rows),
+            training_fraction=0.6,
+            split_seed=split_seed,
+        )
+        training_id_set = set(training_ids)
+        training_mask = np.asarray(
+            [row.observation_id in training_id_set for row in rows], dtype=bool
+        )
+        times = t[None, :] + taus[:, None]
+        coarse_elevation = sample_grid(elevations, -507, 1, times)
+        eligible = np.flatnonzero(np.max(coarse_elevation, axis=(1, 2)) >= -0.1)
+        exact_times = tuple(start + round(float(value) * 1e9) for value in times.ravel())
+        exact_grid = SamplingGrid(exact_times, len(exact_times) // 2, 1.0)
+        exact = observe_grid(
+            propagate_grid(catalogue, exact_grid, catalog_indices[eligible].tolist()),
+            site,
+            exact_grid,
+        )
+        bank = doppler_shift_hz(11_200_000_000.0, exact.range_rate_km_s).reshape(
+            len(eligible), len(taus), len(t)
+        )
+        exact_elevation = exact.elevation_deg.reshape(bank.shape)
+        exact_visible = exact.usable & (np.max(exact_elevation, axis=(1, 2)) >= 0)
+        eligible = eligible[exact_visible]
+        bank = bank[exact_visible]
+        ranking = rank_curves(y, bank, training_mask=training_mask)
+        candidates: list[dict[str, Any]] = []
+        for index in ranking["order"][:5]:
+            tau_index = int(ranking["tau_indices"][index])
+            offset_hz = float(ranking["offsets"][index])
+            tle_cfo = bank[index, tau_index] + offset_hz
+            base_residual = y - tle_cfo
+            centered = (t - t[0]) / max(t[-1] - t[0], 1.0)
+            fits = {}
+            fitted_cfo = {}
+            postfit_residual = {}
+            for degree in (1, 2, 3):
+                coefficient = np.polyfit(
+                    centered[training_mask], base_residual[training_mask], degree
+                )
+                nuisance = np.polyval(coefficient, centered)
+                residual = base_residual - nuisance
+                fits[str(degree)] = {
+                    "training_rms_hz": _rms(residual[training_mask]),
+                    "heldout_rms_hz": _rms(residual[~training_mask]),
                 }
-            )
-            training_ids, _evaluation_ids = deterministic_randomized_observation_partition(
-                tuple(row.observation_id for row in rows),
-                training_fraction=0.6,
-                split_seed=split_seed,
-            )
-            training_id_set = set(training_ids)
-            training_mask = np.asarray(
-                [row.observation_id in training_id_set for row in rows], dtype=bool
-            )
-            times = t[None, :] + taus[:, None]
-            coarse_elevation = sample_grid(elevations, -507, 1, times)
-            eligible = np.flatnonzero(np.max(coarse_elevation, axis=(1, 2)) >= -0.1)
-            exact_times = tuple(start + round(float(value) * 1e9) for value in times.ravel())
-            exact_grid = SamplingGrid(exact_times, len(exact_times) // 2, 1.0)
-            exact = observe_grid(
-                propagate_grid(catalogue, exact_grid, catalog_indices[eligible].tolist()),
-                site,
-                exact_grid,
-            )
-            bank = doppler_shift_hz(11_200_000_000.0, exact.range_rate_km_s).reshape(
-                len(eligible), len(taus), len(t)
-            )
-            exact_elevation = exact.elevation_deg.reshape(bank.shape)
-            exact_visible = exact.usable & (np.max(exact_elevation, axis=(1, 2)) >= 0)
-            eligible = eligible[exact_visible]
-            bank = bank[exact_visible]
-            ranking = rank_curves(y, bank, training_mask=training_mask)
-            candidates: list[dict[str, Any]] = []
-            for index in ranking["order"][:5]:
-                tau_index = int(ranking["tau_indices"][index])
-                offset_hz = float(ranking["offsets"][index])
-                tle_cfo = bank[index, tau_index] + offset_hz
-                base_residual = y - tle_cfo
-                centered = (t - t[0]) / max(t[-1] - t[0], 1.0)
-                fits = {}
-                fitted_cfo = {}
-                postfit_residual = {}
-                for degree in (1, 2, 3):
-                    coefficient = np.polyfit(
-                        centered[training_mask], base_residual[training_mask], degree
-                    )
-                    nuisance = np.polyval(coefficient, centered)
-                    residual = base_residual - nuisance
-                    fits[str(degree)] = {
-                        "training_rms_hz": _rms(residual[training_mask]),
-                        "heldout_rms_hz": _rms(residual[~training_mask]),
-                    }
-                    fitted_cfo[str(degree)] = (tle_cfo + nuisance).tolist()
-                    postfit_residual[str(degree)] = residual.tolist()
-                candidate = {
-                    "catalog_number": int(numbers[eligible[index]]),
-                    "name": names[eligible[index]],
-                    "standard_rank": len(candidates) + 1,
-                    "selected_tau_s": float(taus[tau_index]),
-                    "offset_hz": offset_hz,
-                    "offset_only_training_rms_hz": float(ranking["training_rms"][index]),
-                    "offset_only_heldout_rms_hz": float(ranking["heldout_rms"][index]),
-                    "polynomial_residual_fits": fits,
+                fitted_cfo[str(degree)] = (tle_cfo + nuisance).tolist()
+                postfit_residual[str(degree)] = residual.tolist()
+            candidate = {
+                "catalog_number": int(numbers[eligible[index]]),
+                "name": names[eligible[index]],
+                "standard_rank": len(candidates) + 1,
+                "selected_tau_s": float(taus[tau_index]),
+                "offset_hz": offset_hz,
+                "offset_only_training_rms_hz": float(ranking["training_rms"][index]),
+                "offset_only_heldout_rms_hz": float(ranking["heldout_rms"][index]),
+                "polynomial_residual_fits": fits,
+            }
+            if len(candidates) < 2:
+                candidate["plot_evidence"] = {
+                    "time_s": t.tolist(),
+                    "training_mask": training_mask.tolist(),
+                    "measured_cfo_hz": y.tolist(),
+                    "tle_cfo_hz": tle_cfo.tolist(),
+                    "raw_tle_residual_hz": base_residual.tolist(),
+                    "fitted_cfo_hz": fitted_cfo,
+                    "postfit_residual_hz": postfit_residual,
                 }
-                if len(candidates) < 2:
-                    candidate["plot_evidence"] = {
-                        "time_s": t.tolist(),
-                        "training_mask": training_mask.tolist(),
-                        "measured_cfo_hz": y.tolist(),
-                        "tle_cfo_hz": tle_cfo.tolist(),
-                        "raw_tle_residual_hz": base_residual.tolist(),
-                        "fitted_cfo_hz": fitted_cfo,
-                        "postfit_residual_hz": postfit_residual,
-                    }
-                candidates.append(candidate)
-            tracklet = by_id[tracklet_id]
-            tracks.append(
-                {
-                    "tracklet_id": tracklet_id,
-                    "channel": tracklet.lane_key[0],
-                    "edge": tracklet.lane_key[1].value,
-                    "start_s": float(t[0]),
-                    "end_s": float(t[-1]),
-                    "span_s": float(t[-1] - t[0]),
-                    "observation_count": len(t),
-                    "training_count": int(training_mask.sum()),
-                    "heldout_count": int((~training_mask).sum()),
-                    "candidates": candidates,
-                }
-            )
-        if maximum_tracks is not None and len(tracks) >= maximum_tracks:
-            break
+            candidates.append(candidate)
+        tracklet = by_id[tracklet_id]
+        tracks.append(
+            {
+                "tracklet_id": tracklet_id,
+                "channel": tracklet.lane_key[0],
+                "edge": tracklet.lane_key[1].value,
+                "start_s": float(t[0]),
+                "end_s": float(t[-1]),
+                "span_s": float(t[-1] - t[0]),
+                "observation_count": len(t),
+                "training_count": int(training_mask.sum()),
+                "heldout_count": int((~training_mask).sum()),
+                "candidates": candidates,
+            }
+        )
 
     tracks.sort(key=lambda item: item["start_s"])
     fig, axes = plt.subplots(len(tracks), 1, figsize=(14, 3.4 * len(tracks)), squeeze=False)
@@ -427,6 +430,8 @@ def build_report(
         "minimum_span_s": 7,
         "track_limit": maximum_tracks,
         "track_limit_reached": track_limit_reached,
+        "eligible_track_count": eligible_track_count,
+        "deferred_track_count": eligible_track_count - len(tracks),
         "snapshot_digest": snapshot.digest,
         "snapshot_collected_utc_ns": snapshot.collected_utc_ns,
         "figure": figure.name,
@@ -448,6 +453,7 @@ def main() -> None:
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
     parser.add_argument("--tle-root", type=Path, default=Path("/var/lib/leo/tle"))
     parser.add_argument("--site", default="spinnaker-sausalito")
+    parser.add_argument("--maximum-tracks", type=int, default=128)
     args = parser.parse_args()
     result = build_report(
         args.session_id,
@@ -455,6 +461,7 @@ def main() -> None:
         bulk_root=args.bulk_root,
         tle_root=args.tle_root,
         site_name=args.site,
+        maximum_tracks=args.maximum_tracks,
     )
     print(
         json.dumps(
