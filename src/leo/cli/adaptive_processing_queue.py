@@ -237,7 +237,11 @@ def _enqueue_tracking_after_analysis(
                 metrics_manifest_sha256=status.metrics_manifest_sha256,
                 site=site,
             ),
-            priority=100,
+            priority=(
+                100
+                if capture.manifest.created_utc_ns > time.time_ns() - 2 * 3600 * 10**9
+                else 0
+            ),
         )
     finally:
         captures.close()
