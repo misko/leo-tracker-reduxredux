@@ -303,32 +303,40 @@ def fit_sparse_orbit(
                 or len(np.unique(data.segment[rows][mask])) != 1
             ):
                 raise ValueError("correlation track spans multiple identity/offset groups")
+
         def nuisance_loss(candidate):
             candidate_rate = candidate[len(segments) :]
             candidate_phase = data.age_h[rows] * candidate_rate[src]
             candidate_p = _quadratic_state(
-                data.p_km[rows], data.phase_p_minus_km[rows],
-                data.phase_p_plus_km[rows], candidate_phase,
+                data.p_km[rows],
+                data.phase_p_minus_km[rows],
+                data.phase_p_plus_km[rows],
+                candidate_phase,
                 config.phase_sensitivity_step_s,
             )
             candidate_v = _quadratic_state(
-                data.v_km_s[rows], data.phase_v_minus_km_s[rows],
-                data.phase_v_plus_km_s[rows], candidate_phase,
+                data.v_km_s[rows],
+                data.phase_v_minus_km_s[rows],
+                data.phase_v_plus_km_s[rows],
+                candidate_phase,
                 config.phase_sensitivity_step_s,
             )
-            candidate_y = np.asarray(
-                whitening @ (data.y_hz[rows] - doppler_hz(receiver, candidate_p, candidate_v))
-            ) / sigma
+            candidate_y = (
+                np.asarray(
+                    whitening @ (data.y_hz[rows] - doppler_hz(receiver, candidate_p, candidate_v))
+                )
+                / sigma
+            )
             candidate_r = candidate_y - offset_a * candidate[seg]
             likelihood = (
                 0.5 * np.sum(candidate_r**2)
                 if config.gaussian_noise
-                else 0.5 * (config.robust_df + 1)
+                else 0.5
+                * (config.robust_df + 1)
                 * np.sum(np.log1p(candidate_r**2 / config.robust_df))
             )
             return float(
-                likelihood
-                + 0.5 * np.sum((candidate_rate / config.phase_rate_sigma_s_h) ** 2)
+                likelihood + 0.5 * np.sum((candidate_rate / config.phase_rate_sigma_s_h) ** 2)
             )
 
         current_loss = nuisance_loss(beta)
@@ -410,9 +418,10 @@ def fit_sparse_orbit(
             proposal_offset_step = (
                 np.max(np.abs(proposal[: len(segments)] - beta[: len(segments)])) / sigma
             )
-            proposal_rate_step = np.max(
-                np.abs(proposal[len(segments) :] - beta[len(segments) :])
-            ) / config.phase_rate_sigma_s_h
+            proposal_rate_step = (
+                np.max(np.abs(proposal[len(segments) :] - beta[len(segments) :]))
+                / config.phase_rate_sigma_s_h
+            )
             proposal_scaled_step = float(max(proposal_offset_step, proposal_rate_step))
             step = 1.0
             iteration_backtracks = 0
@@ -426,26 +435,35 @@ def fit_sparse_orbit(
                 iteration_backtracks += 1
             if step < config.nuisance_min_step:
                 nuisance_termination = "line-search-failed"
-                nuisance_trace.append({
-                    "iteration": iteration, "objective": current_loss,
-                    "proposal_scaled_step": proposal_scaled_step,
-                    "accepted_scaled_step": 0.0, "step_fraction": 0.0,
-                    "backtracks": iteration_backtracks,
-                })
+                nuisance_trace.append(
+                    {
+                        "iteration": iteration,
+                        "objective": current_loss,
+                        "proposal_scaled_step": proposal_scaled_step,
+                        "accepted_scaled_step": 0.0,
+                        "step_fraction": 0.0,
+                        "backtracks": iteration_backtracks,
+                    }
+                )
                 break
             offset_step = np.max(np.abs(new[: len(segments)] - beta[: len(segments)])) / sigma
-            rate_step = np.max(
-                np.abs(new[len(segments) :] - beta[len(segments) :])
-            ) / config.phase_rate_sigma_s_h
+            rate_step = (
+                np.max(np.abs(new[len(segments) :] - beta[len(segments) :]))
+                / config.phase_rate_sigma_s_h
+            )
             nuisance_scaled_step = float(max(offset_step, rate_step))
             beta = new
             current_loss = new_loss
-            nuisance_trace.append({
-                "iteration": iteration, "objective": current_loss,
-                "proposal_scaled_step": proposal_scaled_step,
-                "accepted_scaled_step": nuisance_scaled_step,
-                "step_fraction": step, "backtracks": iteration_backtracks,
-            })
+            nuisance_trace.append(
+                {
+                    "iteration": iteration,
+                    "objective": current_loss,
+                    "proposal_scaled_step": proposal_scaled_step,
+                    "accepted_scaled_step": nuisance_scaled_step,
+                    "step_fraction": step,
+                    "backtracks": iteration_backtracks,
+                }
+            )
             if proposal_scaled_step < config.nuisance_tolerance:
                 nuisance_converged = True
                 nuisance_termination = "stationary-proposal"
@@ -496,9 +514,19 @@ def fit_sparse_orbit(
                 + 0.5 * (log_ratio / config.log_sigma_prior_width) ** 2
             )
         record = (
-            beta, segments, sources, nlp, r, weight, nuisance_converged, sigma,
-            nuisance_iterations, nuisance_backtracks, nuisance_scaled_step,
-            nuisance_termination, nuisance_trace,
+            beta,
+            segments,
+            sources,
+            nlp,
+            r,
+            weight,
+            nuisance_converged,
+            sigma,
+            nuisance_iterations,
+            nuisance_backtracks,
+            nuisance_scaled_step,
+            nuisance_termination,
+            nuisance_trace,
         )
         cache[tuple(np.asarray(value))] = record
         return record if details else nlp
@@ -545,9 +573,19 @@ def fit_sparse_orbit(
         if alternative.fun < answer.fun:
             answer = alternative
     (
-        beta, segments, sources, nlp, _, weight, nuisance_converged, sigma,
-        nuisance_iterations, nuisance_backtracks, nuisance_scaled_step,
-        nuisance_termination, nuisance_trace,
+        beta,
+        segments,
+        sources,
+        nlp,
+        _,
+        weight,
+        nuisance_converged,
+        sigma,
+        nuisance_iterations,
+        nuisance_backtracks,
+        nuisance_scaled_step,
+        nuisance_termination,
+        nuisance_trace,
     ) = profiled(answer.x, True)
     receiver = region.points([answer.x[0]], [answer.x[1]]).ecef_km[0]
     smap = {x: i for i, x in enumerate(segments)}
@@ -605,12 +643,12 @@ def fit_sparse_orbit(
         major = float(np.sqrt(5.991464547 * np.linalg.eigvalsh(covariance)[-1]))
     ident = (
         "identified"
-        if covariance is not None and major <= 10
+        if covariance is not None and major is not None and major <= 10
         else ("weak" if rank == dimension else "insufficient")
     )
     lat, lon = region.coordinates(*answer.x[:2])
     return SparseOrbitResult(
-        tuple(map(float, answer.x[:2])),
+        (float(answer.x[0]), float(answer.x[1])),
         float(lat),
         float(lon),
         {str(x): float(beta[len(segments) + i]) for i, x in enumerate(sources)},

@@ -513,12 +513,12 @@ def fit_formal_orbit(
         major = float(np.sqrt(5.991464547 * np.linalg.eigvalsh(covariance)[-1]))
     ident = (
         "identified"
-        if covariance is not None and major <= 10
+        if covariance is not None and major is not None and major <= 10
         else ("weak" if rank == dimension else "insufficient")
     )
     lat, lon = region.coordinates(*answer.x[:2])
     return FormalOrbitResult(
-        tuple(map(float, answer.x[:2])),
+        (float(answer.x[0]), float(answer.x[1])),
         float(lat),
         float(lon),
         {str(x): float(beta[len(segments) + i]) for i, x in enumerate(sources)},
