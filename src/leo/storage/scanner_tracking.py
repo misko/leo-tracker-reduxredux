@@ -22,6 +22,7 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingProductV10,
     ScannerTrackingProductV11,
     ScannerTrackingProductV12,
+    ScannerTrackingProductV13,
     ScannerTrackingStatusV1,
     ScannerTrackingStatusV2,
     ScannerTrackingStatusV3,
@@ -34,6 +35,7 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingStatusV10,
     ScannerTrackingStatusV11,
     ScannerTrackingStatusV12,
+    ScannerTrackingStatusV13,
     SessionId,
     TrackingArtifactV2,
 )
@@ -51,7 +53,7 @@ class ScannerTrackingStore:
         self.root, self.read_only = root, read_only
 
     @contextmanager
-    def directory(self, session_id: str, *, create: bool = False, version: int = 12):
+    def directory(self, session_id: str, *, create: bool = False, version: int = 13):
         TypeAdapter(SessionId).validate_python(session_id)
         if create and self.read_only:
             raise PermissionError("tracking store is read-only")
@@ -68,7 +70,8 @@ class ScannerTrackingStore:
     def status(
         self, session_id: str
     ) -> (
-        ScannerTrackingStatusV12
+        ScannerTrackingStatusV13
+        | ScannerTrackingStatusV12
         | ScannerTrackingStatusV11
         | ScannerTrackingStatusV10
         | ScannerTrackingStatusV9
@@ -81,9 +84,12 @@ class ScannerTrackingStore:
         | ScannerTrackingStatusV2
         | ScannerTrackingStatusV1
     ):
-        current = self._status_v12(session_id)
+        current = self._status_v13(session_id)
         if current.state != "pending":
             return current
+        current_v12 = self._status_v12(session_id)
+        if current_v12.state != "pending":
+            return current_v12
         current_v11 = self._status_v11(session_id)
         if current_v11.state != "pending":
             return current_v11
@@ -124,14 +130,38 @@ class ScannerTrackingStore:
             return current
         return legacy if legacy.state != "pending" else current
 
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV12:
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV13:
         """Return only the current analysis version's state for queue workers.
 
         Public readers retain the newest published historical product while a
         newer analysis version is pending.  Workers must instead see that
-        pending V12 state so an intentional policy revision is actually run.
+        pending V13 state so an intentional policy revision is actually run.
         """
-        return self._status_v12(session_id)
+        return self._status_v13(session_id)
+
+    def _status_v13(self, session_id: str) -> ScannerTrackingStatusV13:
+        try:
+            with self.directory(session_id, version=13) as directory:
+                try:
+                    product = _unseal(
+                        _read(directory, "manifest.json", _LIMIT), ScannerTrackingProductV13
+                    )
+                    return ScannerTrackingStatusV13(
+                        session_id=session_id, state="complete", phase="complete", product=product
+                    )
+                except FileNotFoundError:
+                    try:
+                        return _unseal(
+                            _read(directory, "checkpoint.json", _LIMIT), ScannerTrackingStatusV13
+                        )
+                    except FileNotFoundError:
+                        return ScannerTrackingStatusV13(session_id=session_id)
+        except FileNotFoundError:
+            return ScannerTrackingStatusV13(session_id=session_id)
+        except ValueError as error:
+            if isinstance(error.__cause__, FileNotFoundError):
+                return ScannerTrackingStatusV13(session_id=session_id)
+            raise
 
     def _status_v12(self, session_id: str) -> ScannerTrackingStatusV12:
         try:
@@ -396,8 +426,8 @@ class ScannerTrackingStore:
                 return ScannerTrackingStatusV1(session_id=session_id)
             raise
 
-    def save(self, status: ScannerTrackingStatusV12) -> None:
-        status = ScannerTrackingStatusV12.model_validate(status.model_dump())
+    def save(self, status: ScannerTrackingStatusV13) -> None:
+        status = ScannerTrackingStatusV13.model_validate(status.model_dump())
         with self.directory(status.session_id, create=True) as directory:
             try:
                 _read(directory, "manifest.json", _LIMIT)
@@ -434,8 +464,8 @@ class ScannerTrackingStore:
                     raise ValueError("tracking artifact is immutable")
         return reference
 
-    def publish(self, product: ScannerTrackingProductV12) -> None:
-        product = ScannerTrackingProductV12.model_validate(product.model_dump())
+    def publish(self, product: ScannerTrackingProductV13) -> None:
+        product = ScannerTrackingProductV13.model_validate(product.model_dump())
         if product.tle_state == "pending":
             raise ValueError("cannot finalize pending TLE comparisons")
         with self.directory(product.session_id, create=True) as directory:
@@ -461,7 +491,9 @@ class ScannerTrackingStore:
         assert product is not None
         with self.directory(
             session_id,
-            version=12
+            version=13
+            if product.analysis_id == "scanner-shared-tracking-v13"
+            else 12
             if product.analysis_id == "scanner-shared-tracking-v12"
             else 11
             if product.analysis_id == "scanner-shared-tracking-v11"

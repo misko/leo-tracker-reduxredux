@@ -14,7 +14,7 @@ from leo.contracts.scanner_tracking import (
     ArtifactNameV12,
     ScannerTleReviewCandidateV1,
     ScannerTleTrackReviewV2,
-    ScannerTrackingStatusV12,
+    ScannerTrackingStatusV13,
 )
 from leo.contracts.sky import ObserverSiteV1
 from leo.operations.scanner_tle_review_report import build_report
@@ -88,7 +88,7 @@ def main():
     parser.add_argument("--session-id")
     parser.add_argument("--maximum-seconds", type=float, default=180)
     parser.add_argument("--maximum-sessions", type=int, default=2)
-    parser.add_argument("--review-limit", type=int, default=128)
+    parser.add_argument("--review-limit", type=int, default=64)
     parser.add_argument(
         "--queue-worker",
         action="store_true",
@@ -154,7 +154,7 @@ def main():
                 except Exception as error:
                     prior = products.analysis_status(sid)
                     products.save(
-                        ScannerTrackingStatusV12(
+                        ScannerTrackingStatusV13(
                             session_id=sid,
                             state="failed",
                             phase=prior.phase,

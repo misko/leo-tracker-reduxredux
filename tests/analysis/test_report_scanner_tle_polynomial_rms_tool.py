@@ -7,7 +7,31 @@ from PIL import Image
 from leo.operations.scanner_tle_review_report import (
     _qualified_start_utc_ns,
     _render_track_plots,
+    _select_review_tracks,
 )
+
+
+def test_review_selection_keeps_longest_64_with_deterministic_ties() -> None:
+    tracks = [
+        (f"track-{index:03d}", object(), tuple(range(14)), object(), float(index))
+        for index in range(67)
+    ]
+    tracks.extend(
+        [
+            ("tie-c", object(), tuple(range(20)), object(), 100.0),
+            ("tie-b", object(), tuple(range(30)), object(), 100.0),
+            ("tie-a", object(), tuple(range(30)), object(), 100.0),
+        ]
+    )
+
+    selected = _select_review_tracks(tracks, 64)
+
+    assert len(selected) == 64
+    assert [item[0] for item in selected[:3]] == ["tie-a", "tie-b", "tie-c"]
+    assert [item[4] for item in selected] == sorted(
+        (item[4] for item in selected), reverse=True
+    )
+    assert "track-005" not in {item[0] for item in selected}
 
 
 def test_report_uses_current_two_second_utc_qualification_policy() -> None:

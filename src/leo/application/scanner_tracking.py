@@ -29,18 +29,18 @@ from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTleTrackReviewV2,
     ScannerTrackingInputs,
-    ScannerTrackingProductV12,
-    ScannerTrackingStatusV12,
+    ScannerTrackingProductV13,
+    ScannerTrackingStatusV13,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV12: ...
-    def save(self, status: ScannerTrackingStatusV12) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV13: ...
+    def save(self, status: ScannerTrackingStatusV13) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV12) -> None: ...
+    def publish(self, product: ScannerTrackingProductV13) -> None: ...
 
 
 class ScannerTrackingService:
@@ -55,7 +55,7 @@ class ScannerTrackingService:
         review_renderer: Callable[
             [str], tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]
         ] = lambda _session_id: ((), 0),
-        review_limit: int = 128,
+        review_limit: int = 64,
         matcher=match_persistent_hop_track_to_tles,
         clock=time.monotonic,
     ):
@@ -75,19 +75,27 @@ class ScannerTrackingService:
             return status
         source = self.inputs.load(session_id)
         trajectory_config = PersistentHopTrajectoryConfig()
+        matching_policy = {
+            "algorithm": "scanner-shared-tracking-v12",
+            "utc_qualification_limit_ns": 2_000_000_000,
+            "trajectory": trajectory_config.digest,
+            "group_limit": group_limit,
+            "selection": "eligible-first-longest-support-v1",
+            "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
+            "observer": self.site.model_dump(mode="json"),
+            "review_limit": 128,
+        }
+        matching_policy_digest = canonical_digest(matching_policy)
         policy_digest = canonical_digest(
             {
-                "algorithm": "scanner-shared-tracking-v12",
-                "utc_qualification_limit_ns": 2_000_000_000,
-                "trajectory": trajectory_config.digest,
-                "group_limit": group_limit,
-                "selection": "eligible-first-longest-support-v1",
-                "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
-                "observer": self.site.model_dump(mode="json"),
+                **matching_policy,
+                "algorithm": "scanner-shared-tracking-v13",
                 "review_limit": self.review_limit,
+                "review_selection_policy": "longest-support-observations-identity-v1",
+                "matching_policy_digest": matching_policy_digest,
             }
         )
-        product = status.product or ScannerTrackingProductV12(
+        product = status.product or ScannerTrackingProductV13(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -115,7 +123,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV12(
+                ScannerTrackingStatusV13(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -139,7 +147,8 @@ class ScannerTrackingService:
             self.products.publish(product)
             return self.products.analysis_status(session_id)
         config = PersistentHopTleMatchConfig(
-            selection_protocol_digest=policy_digest, nominal_rf_hz=trajectory_config.canonical_rf_hz
+            selection_protocol_digest=matching_policy_digest,
+            nominal_rf_hz=trajectory_config.canonical_rf_hz,
         )
         product = product.model_copy(update={"tle_match_config_digest": config.digest})
         work, total = eligible_groups(trajectory, config)
