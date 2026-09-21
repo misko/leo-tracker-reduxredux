@@ -15,9 +15,10 @@ candidate is the same source in both receivers.
 
 Signal-specific checks at visits 1065, 1109, and 1136 do validate two shared
 subbands, but only in 4/6, 4/6, and 2/6 phase-blind 20 ms overlap blocks. Their
-within-dwell phase differences are real instrument-inclusive observables in
-those blocks. They do not establish phase continuity between retuned dwells or
-a unique geometric phase. Unmatched candidates remain allowed.
+within-dwell high-minus-low receiver-phase double differences are
+instrument-inclusive observables in those blocks. They do not establish phase
+continuity between retuned dwells or a unique geometric phase. Unmatched
+candidates remain allowed.
 
 The earlier phase V2 and dense-progression slope are therefore superseded as
 physical phase interpretations. Their immutable artifacts remain useful as a
@@ -102,7 +103,12 @@ mixed double-difference results: contiguous-half disagreement changed from
 The final source-overlap gate uses 20 ms blocks, a 12 kHz subband, minimum
 coherence 0.10, and a matched/wrong-source ratio of at least 2. The gate is
 phase-blind and has an approximate time-bandwidth product of 240 per source.
-It retains these within-dwell observations:
+That nominal product is an upper bound on independent support because windowed
+FFT bins and waveform samples are correlated. A simple independent-sample
+coherence approximation gives roughly 13-26 degrees of phase uncertainty over
+the gate's 0.10-0.20 coherence range; the actual uncertainty can be larger.
+The phases below are therefore exploratory double differences rather than
+precision estimates. The gate retains these within-dwell observations:
 
 | Visit | Qualified overlap blocks | Start ms and wrapped high-low phase |
 | ---: | ---: | --- |
@@ -110,29 +116,36 @@ It retains these within-dwell observations:
 | 1109 | 4/6 | 40: +19.3 deg; 60: +36.4 deg; 80: -14.2 deg; 100: +18.7 deg |
 | 1136 | 2/6 | 20: +4.2 deg; 100: +1.9 deg |
 
-These are the recovered phase differences supported by simultaneous IQ. Phase
-may vary within a dwell because geometric path phase and channel phase vary.
-Each retune has a fresh unknown phase intercept, so a line through phases from
-different dwells is not a physical continuity result.
+These are recovered high-minus-low double differences: the RX1-minus-RX0 phase
+of the higher-frequency source minus the RX1-minus-RX0 phase of the
+lower-frequency source. Phase may vary within a dwell because geometric path
+phase and channel phase vary. Continuity across a retune is unverified, so the
+analysis must allow a fresh phase intercept for each dwell. A line through
+different dwells is not a physical continuity result without independent
+evidence that those intercepts are shared.
 
 For a verified receiver baseline `b = rx1 - rx0` and a unit direction `s`
-toward the source, the geometric convention is
-`phi_geom = 2*pi/lambda * dot(b, s)` for RX1 minus RX0. Converting the measured
-within-dwell observable to that term still requires verified LNB slot mapping,
-baseline orientation, source direction, and differential hardware/group-delay
-calibration. The nominal holder spacing alone cannot choose a phase or delay
-alias.
+toward one source, the geometric convention is
+`phi_geom = 2*pi/lambda * dot(b, s)` for RX1 minus RX0. The geometric prediction
+for the measured double difference is the higher-source term minus the
+lower-source term, using each source direction and wavelength. Converting the
+within-dwell observable to those terms still requires verified LNB slot
+mapping, baseline orientation, both source directions, and differential
+hardware/group-delay calibration. The nominal holder spacing alone cannot
+choose a phase or delay alias.
 
 ## Frequency tracklet scope
 
 A rolling-origin check on the 14-state frequency tracklet used the preceding
-six to eight points to predict each next point. Linear RX0/RX1 RMSE was
-189/193 Hz; quadratic was 183/238 Hz; cubic was 207/278 Hz. A fixed first-nine
-to last-five test made cubic RX1 error 1,176 Hz. The detector CFO grid is spaced
-about 443.9 Hz, which explains much of the residual. A linear frequency prior
-is the appropriate lean default for selecting aliases. Higher-order models do
-not improve this corpus consistently, and none supplies phase continuity; each
-dwell must fit a fresh phase intercept.
+six to eight points to predict each next point. Both tracks are sources on RX0:
+linear source-A/source-B RMSE was 189/193 Hz; quadratic was 183/238 Hz; cubic
+was 207/278 Hz. A fixed first-nine to last-five test made cubic source-B error
+1,176 Hz. The detector CFO grid is spaced about 443.9 Hz, but sub-bin
+refinement left the linear errors nearly unchanged at 189/201 Hz, so grid
+quantization does not explain the residual. A linear frequency prior is the
+appropriate lean default for selecting aliases. Higher-order models do not
+improve this corpus consistently, and none supplies phase continuity; each
+dwell must allow a fresh phase intercept.
 
 ![Three-visit signal-subband control](figures/2026_09_21_adaptive_dual_rx_local_phase/scan-hop-28d7592ea614f624-signal-subband-v1.png)
 
