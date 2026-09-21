@@ -285,7 +285,8 @@ def plot_report(body: dict, output_path: Path) -> None:
     for color, (name, rows) in zip(colors, body["single_source"].items(), strict=True):
         med = [rows[str(t)]["median_abs_deg"] for t in times]
         hi = [rows[str(t)]["q95_abs_deg"] for t in times]
-        axes[0].plot(times, np.maximum(med, 1e-5), marker="o", color=color, label=name)
+        label = f"{name} (zero; shown at plot floor)" if name.startswith("ideal GEO") else name
+        axes[0].plot(times, np.maximum(med, 1e-5), marker="o", color=color, label=label)
         axes[0].plot(times, np.maximum(hi, 1e-5), linestyle="--", color=color, alpha=0.75)
     axes[0].set_xscale("log")
     axes[0].set_yscale("log")
@@ -322,7 +323,11 @@ def plot_report(body: dict, output_path: Path) -> None:
     axes[1].set_title("550 km conditional geometry\n35 kHz source-frequency separation")
     axes[1].grid(alpha=0.25)
     axes[1].legend(fontsize=7)
-    fig.suptitle("LT3D-001A illustrative orbit-geometry phase distributions", fontsize=13)
+    fig.suptitle(
+        "LT3D-001A illustrative orbit-geometry phase distributions\n"
+        "97.36 mm baseline; midpoint axis at zenith and baseline east",
+        fontsize=13,
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=180)
     plt.close(fig)
