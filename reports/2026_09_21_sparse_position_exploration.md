@@ -33,6 +33,10 @@ exact-propagation agreement are required before an error is qualified.
 
 Failures remain in every denominator. Missing exact checks never count as passes.
 
+![Initial errors and qualification](2026_09_21_sparse_position_exploration/01-errors-and-qualification.png)
+
+![Convergence and qualification rates](2026_09_21_sparse_position_exploration/02-convergence-and-qualification.png)
+
 ## Completed 20-seed replication
 
 | Intervention | Budget | Converged | Exact pass / checked | Qualified sub-km | Qualified error min / median / max |
@@ -48,6 +52,8 @@ All 81 converged fits pass exact verification; 39 of 120 remain nonconverged.
 Packet-3 convergence falls from 17/20 at 399 observations to 2/20 at 1,597.
 Packet-5 reaches 20/20 at 798 observations, with 11/20 qualified sub-kilometre.
 These are conditional single-site rates.
+
+![All 120 sampling trials](2026_09_21_sparse_position_exploration/03-twenty-seed-errors-and-qualification.png)
 
 ## Distinct interventions
 
@@ -127,6 +133,9 @@ reaches its bound. More data can therefore increase numerical difficulty even
 while improving the available geometric information.
 
 ## Reproduction and scope
+
+This report extends the [positioning breakthroughs](2026_09_21_positioning_breakthroughs.md)
+and [full ablation and subsampling report](2026_09_21_position_ablation_report.md).
 
 ```bash
 artifact_dir=reports/artifacts/2026_09_21_sparse_position_exploration
