@@ -55,10 +55,11 @@ def test_actual_bundle_has_exact_order_bytes_and_no_execution(release: Path) -> 
     original = PROJECT_ROOT / "runtime/scanner-glrt"
     assert all(path.read_bytes() == (original / path.name).read_bytes() for path in paths)
     manifest = json.loads((original / "bundle.json").read_text())
-    assert manifest["daemon_bytes"] + sum(item["bytes"] for item in manifest["files"]) == 3477064
+    assert manifest["daemon_bytes"] + sum(item["bytes"] for item in manifest["files"]) == 3657168
     assert hashlib.sha256((original / "iiod").read_bytes()).hexdigest() == (
-        "5d4cdce3f96d51e4fac38bbcc51a63a7123ff54abd710fc386e75fc89d681af1"
+        "44412555e52c5d93eeebed46b3d7c35c8adea2b640d692d507a8a961a5434606"
     )
+    assert b"iio,buffer-adaptive-hop-eligible-targets" in (original / "iiod").read_bytes()
 
 
 def test_candidate_preserves_capture_guards_and_explicit_unknown_feedback(release: Path) -> None:

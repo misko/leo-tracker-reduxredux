@@ -6,6 +6,8 @@ type Product = {
   trajectory_state: string; tle_state: string; reasons: string[];
   physical_group_count: number; eligible_group_count: number; attempted_group_count: number;
   deferred_group_count: number;
+  review_limit?: number; review_eligible_count?: number; review_count?: number;
+  deferred_review_count?: number; review_selection_policy?: string;
   catalogue_exclusions: Array<{ catalog_number: number; name: string; reason: string }>;
   unscored_groups: Array<{ physical_group_id: string; reason: string }>;
   tle_candidates: Array<{ physical_group_id: string; leading_catalog_number: number | null;
@@ -68,6 +70,8 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
     {!p && !error && <p>Tracking will run automatically after scan analysis completes.</p>}
     {p && <>
       <p>{p.eligible_group_count} eligible of {p.physical_group_count} groups across hypotheses · {p.attempted_group_count} comparisons attempted · {p.deferred_group_count} deferred.</p>
+      {p.review_count !== undefined && p.review_eligible_count !== undefined &&
+        <p>{p.review_count} of {p.review_eligible_count} eligible track reviews rendered · {p.deferred_review_count ?? 0} deferred{p.review_limit === undefined ? "." : ` · limit ${p.review_limit}.`}{p.review_selection_policy === "longest-support-observations-identity-v1" && " Selected by longest support span, then observation count and stable track identity."}</p>}
       {p.tle_state === "pending" && <p>Measured trajectories are available; catalogue comparisons are still processing.</p>}
       {p.trajectory_state === "complete" && p.tle_state === "unavailable" &&
         (p.trajectory_time_basis === "device-counter-relative" ||

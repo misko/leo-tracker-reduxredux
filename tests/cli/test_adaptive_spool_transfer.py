@@ -123,8 +123,10 @@ def test_ledger_checkpoints_each_archive_before_later_failure(
             raise RuntimeError("injected")
         return "imported", archive.name
 
-    with pytest.raises(RuntimeError, match="injected"):
-        subject.transfer_pending(bulk, spool, importer=failing)
+    failed = subject.transfer_pending(bulk, spool, importer=failing)
+    assert failed.firmware_failed == (
+        {"session_id": "scan-fw-a", "reason": "RuntimeError: injected"},
+    )
     ledger = json.loads((spool / subject._LEDGER_NAME).read_bytes())
     assert set(ledger["entries"]) == {"scan-fw-b"}
 
@@ -171,8 +173,10 @@ def test_failed_and_unsupported_archives_are_not_retired(
     def failure(_archive: Path, _bulk: Path) -> tuple[str, str]:
         raise RuntimeError("copy failed")
 
-    with pytest.raises(RuntimeError, match="copy failed"):
-        subject.transfer_pending(bulk, spool, importer=failure)
+    failed_result = subject.transfer_pending(bulk, spool, importer=failure)
+    assert failed_result.firmware_failed == (
+        {"session_id": "scan-fw-failed", "reason": "RuntimeError: copy failed"},
+    )
     assert failed.is_dir()
 
     def unsupported(archive: Path, _bulk: Path) -> tuple[str, str]:

@@ -7,12 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV2
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopCoverageV1,
     AdaptiveHopHistoryItemV1,
     AdaptiveHopHistoryPageV1,
     AdaptiveHopSessionDetailV1,
     AdaptiveHopVisitViewV1,
+    EdgeAdaptiveHistoryItemV4,
+    EdgeAdaptiveSessionDetailV4,
 )
 from leo.scanner.glrt_publication import validate_glrt_adaptive_binding
 from leo.scanner.host_adaptive import (
@@ -23,6 +26,7 @@ from leo.scanner.host_adaptive import (
 from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
     AdaptiveHistoryPageV3,
+    AdaptiveHistoryPageV4,
     HostAdaptiveHistoryItemV2,
     HostAdaptiveHistoryItemV3,
     HostAdaptiveSessionDetailV2,
@@ -111,6 +115,14 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
                 ),
             ),
         )
+    elif isinstance(receipt, AdaptiveHopReceiptV2):
+        model = EdgeAdaptiveHistoryItemV4
+        mask = receipt.plan.policy.allowed_target_mask
+        fields = dict(
+            radio_serial=receipt.radio_serial,
+            selected_edge="lower" if mask == 0x0F else "upper",
+            allowed_target_mask=mask,
+        )
     return model(
         **fields,
         session_id=session.session_id,
@@ -150,7 +162,9 @@ class AdaptiveHopPresentationStore:
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1:
         return self._page(cursor=cursor, limit=limit, include_host=False)
 
-    def page_v2(self, *, cursor: int, limit: int) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3:
+    def page_v2(
+        self, *, cursor: int, limit: int
+    ) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3 | AdaptiveHistoryPageV4:
         result = self._page(cursor=cursor, limit=limit, include_host=True)
         assert isinstance(result, (AdaptiveHistoryPageV2, AdaptiveHistoryPageV3))
         return result
@@ -167,7 +181,9 @@ class AdaptiveHopPresentationStore:
                 else [
                     (s.manifest.finalized_utc_ns, s.session_id)
                     for s in store.iter_sessions()
-                    if not isinstance(s.manifest.receipt, HostAdaptiveHopReceiptV2)
+                    if not isinstance(
+                        s.manifest.receipt, (HostAdaptiveHopReceiptV2, AdaptiveHopReceiptV2)
+                    )
                 ]
             )
             sessions.sort(reverse=True)
@@ -177,7 +193,9 @@ class AdaptiveHopPresentationStore:
         finally:
             store.close()
         model: type[AdaptiveHopHistoryPageV1] = (
-            AdaptiveHistoryPageV3
+            AdaptiveHistoryPageV4
+            if include_host and any(isinstance(item, EdgeAdaptiveHistoryItemV4) for item in items)
+            else AdaptiveHistoryPageV3
             if include_host and any(isinstance(item, HostAdaptiveHistoryItemV3) for item in items)
             else AdaptiveHistoryPageV2
             if include_host
@@ -210,6 +228,7 @@ class AdaptiveHopPresentationStore:
         AdaptiveHopSessionDetailV1
         | HostAdaptiveSessionDetailV2
         | HostAdaptiveSessionDetailV3
+        | EdgeAdaptiveSessionDetailV4
         | None
     ):
         return self._detail(session_id, include_host=True)
@@ -220,6 +239,8 @@ class AdaptiveHopPresentationStore:
             return None
         receipt = session.manifest.receipt
         if isinstance(receipt, HostAdaptiveHopReceiptV2) and not include_host:
+            return None
+        if isinstance(receipt, AdaptiveHopReceiptV2) and not include_host:
             return None
         origin = receipt.terminal.first_counter
         rate = receipt.plan.geometry.sample_rate_hz
@@ -309,6 +330,8 @@ class AdaptiveHopPresentationStore:
                         )
                     )
             fields = dict(host_decisions=tuple(decision_views))
+        elif isinstance(receipt, AdaptiveHopReceiptV2):
+            model = EdgeAdaptiveSessionDetailV4
         return model(
             **fields,
             capture=_summary(session),

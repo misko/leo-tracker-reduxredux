@@ -15,6 +15,14 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.parametrize("command", ["status", "pause", "resume", "run"])
 def test_restart_control_commands_ignore_scanner_admission_only_in_child(tmp_path, command):
     script = (ROOT / "deploy/scripts/restart-current-acquisition").read_text()
+    for name in (
+        "LEO_SCANNER_GLRT_MODE",
+        "LEO_SCANNER_GLRT_ALGORITHM_SHA256",
+        "LEO_SCANNER_GLRT_CONFIGURATION_SHA256",
+        "LEO_SCANNER_GLRT_DRAIN_BUDGET_SECONDS",
+        "LEO_SCANNER_PERSISTENT_IIOD_BUNDLE_MANIFEST_PATH",
+    ):
+        assert name in script.split("unset ", 1)[1]
     function = script.split("run_leo() {", 1)[1].split("\n}", 1)[0]
     environment = tmp_path / "leo.env"
     component = tmp_path / "acquisition.env"

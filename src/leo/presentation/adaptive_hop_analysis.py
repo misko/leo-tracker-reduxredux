@@ -27,6 +27,8 @@ from leo.scanner.adaptive_hop_presentation import RenderedAdaptiveOverview
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
+    EdgeAdaptiveAnalysisBindingV4,
+    EdgeAdaptiveMetricsManifestV4,
 )
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
@@ -74,8 +76,11 @@ def project_adaptive_overview(
     manifest: AdaptiveHopMetricsManifestV1,
     visits: Iterable[AdaptiveHopVisitAnalysisV1],
 ) -> AdaptiveOverviewData:
-    binding = AdaptiveHopAnalysisBindingV1.model_validate(binding.model_dump())
-    manifest = AdaptiveHopMetricsManifestV1.model_validate(manifest.model_dump())
+    edge = isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
+    binding_model = EdgeAdaptiveAnalysisBindingV4 if edge else AdaptiveHopAnalysisBindingV1
+    metrics_model = EdgeAdaptiveMetricsManifestV4 if edge else AdaptiveHopMetricsManifestV1
+    binding = binding_model.model_validate(binding.model_dump())
+    manifest = metrics_model.model_validate(manifest.model_dump())
     return _project_overview(binding, manifest, visits)
 
 

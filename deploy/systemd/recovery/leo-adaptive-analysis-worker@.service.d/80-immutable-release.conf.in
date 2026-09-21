@@ -1,0 +1,6 @@
+[Service]
+WorkingDirectory=/opt/leo-tracker/releases/@RELEASE@
+ExecStartPre=+/usr/bin/install -d -m 0750 -o leo -g leo /srv/bulk/leo/scanner-shared-tracking-v12
+ExecStartPre=+/usr/bin/install -d -m 0750 -o leo -g leo /srv/bulk/leo/scanner-shared-tracking-v13
+ExecStart=
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/releases/@RELEASE@/.venv/bin/python -m leo.cli.adaptive_processing_queue --bulk-root /srv/bulk/leo worker --worker-id adaptive-worker-%i

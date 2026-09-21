@@ -47,7 +47,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     preset = resolve_preset(site)
     return canonical_digest(
         {
-            "analysis_id": "scanner-shared-tracking-v12",
+            "analysis_id": "scanner-shared-tracking-v14",
             "position": "scanner-conditional-position-v1",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
@@ -58,6 +58,8 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "metrics_manifest": metrics_manifest_sha256,
             "observer_site": preset.model_dump(mode="json"),
             "group_limit": _TRACKING_GROUP_LIMIT,
+            "review_limit": 64,
+            "review_selection_policy": "longest-support-observations-identity-v1",
             "tle_residual_partition": "deterministic-randomized-observation-v1",
             "control_comparison": "minimum-0.01-nll-per-evaluation-observation-v1",
             "association_gates": "nominal-catalogue-only-v1",
@@ -198,6 +200,8 @@ def _command_for_lease(*, lease, bulk_root: Path, site: str) -> list[str]:
             str(_SLICE_SECONDS),
             "--maximum-sessions",
             "1",
+            "--review-limit",
+            "64",
             "--queue-worker",
         ]
     raise ValueError(f"unsupported adaptive queue job kind: {lease.job_kind}")
@@ -206,6 +210,42 @@ def _command_for_lease(*, lease, bulk_root: Path, site: str) -> list[str]:
 def _last_json(stdout: str) -> dict[str, object]:
     payloads = [json.loads(line) for line in stdout.splitlines() if line.lstrip().startswith("{")]
     return payloads[-1] if payloads else {}
+
+
+def _enqueue_tracking_after_analysis(
+    *,
+    bulk_root: Path,
+    session_id: str,
+    site: str,
+    catalog: CatalogRepository,
+) -> bool:
+    """Queue tracking from sealed metrics without applying the live-window cutoff."""
+    captures = AdaptiveHopIqStore(bulk_root, read_only=True)
+    presentation = AdaptiveHopAnalysisPresentationStore(bulk_root)
+    tracking = ScannerTrackingStore(bulk_root, read_only=True)
+    try:
+        capture = captures.inspect(session_id)
+        status = presentation.status_for_capture(capture, probe_stride_ms=120)
+        if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
+            raise ValueError("completed adaptive analysis lacks sealed overview authority")
+        if tracking.analysis_status(session_id).state == "complete":
+            return False
+        return catalog.enqueue_adaptive_tracking_job(
+            session_id=session_id,
+            input_manifest_digest=capture.manifest_sha256,
+            configuration_digest=_tracking_digest(
+                capture=capture,
+                metrics_manifest_sha256=status.metrics_manifest_sha256,
+                site=site,
+            ),
+            priority=(
+                100
+                if capture.manifest.created_utc_ns > time.time_ns() - 2 * 3600 * 10**9
+                else 0
+            ),
+        )
+    finally:
+        captures.close()
 
 
 def run_once(
@@ -219,6 +259,17 @@ def run_once(
     lease = catalog.claim_adaptive_job(worker_id=worker_id, lease_for=_LEASE)
     if lease is None:
         return False
+    if lease.job_kind == "adaptive_tracking":
+        tracking_status = ScannerTrackingStore(bulk_root, read_only=True).analysis_status(
+            lease.session_id
+        )
+        if tracking_status.state == "complete":
+            catalog.complete_job(
+                job_id=lease.job_id,
+                worker_id=worker_id,
+                outcome="already_complete",
+            )
+            return True
     command = _command_for_lease(lease=lease, bulk_root=bulk_root, site=site)
     try:
         completed = subprocess.run(command, text=True, capture_output=True, check=False)
@@ -239,6 +290,13 @@ def run_once(
         and payload.get("state") == "metrics_complete"
         and payload.get("overview_state") == "ready"
     ) or (lease.job_kind == "adaptive_tracking" and payload.get("state") == "complete"):
+        if lease.job_kind == "adaptive_scan":
+            _enqueue_tracking_after_analysis(
+                bulk_root=bulk_root,
+                session_id=lease.session_id,
+                site=site,
+                catalog=catalog,
+            )
         catalog.complete_job(
             job_id=lease.job_id,
             worker_id=worker_id,

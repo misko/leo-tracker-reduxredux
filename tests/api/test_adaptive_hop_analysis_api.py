@@ -3,7 +3,12 @@ import pytest
 import leo.scanner.adaptive_hop_analysis as detector
 from leo.application.adaptive_hop_analysis import AdaptiveHopAnalysisService
 from leo.application.adaptive_hop_overview import AdaptiveHopOverviewService
+from leo.scanner.adaptive_dual_rx_phase_product_v2 import (
+    AdaptiveDualRxDoubleDifferenceHypothesisV2,
+    AdaptiveDualRxPhaseVisitV2,
+)
 from leo.storage.adaptive_dual_rx_phase import AdaptiveDualRxPhaseStore
+from leo.storage.adaptive_dual_rx_phase_v2 import AdaptiveDualRxPhaseStoreV2
 from leo.storage.adaptive_hop import AdaptiveHopIqReader, AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisJob, AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
@@ -54,6 +59,52 @@ def test_additive_status_progress_and_digest_bound_pngs_without_read_side_analys
         png=phase_png,
     )
     phase_store.close()
+    phase_v2_store = AdaptiveDualRxPhaseStoreV2(tmp_path)
+    for index in range(3):
+        phase_v2_store.write_visit(
+            AdaptiveDualRxPhaseVisitV2(
+                session_id=capture.session_id,
+                input_manifest_sha256=analysis_status.input_manifest_sha256,
+                glrt_binding_sha256=analysis_status.binding_sha256,
+                visit_index=index,
+                target_index=index,
+                edge="lower",
+                state="qualified",
+                reason="phase_blind_two_signal_hypotheses",
+                consistent_receiver_pair_count=2,
+                phase_quality_pair_count=2,
+                hypotheses=(
+                    AdaptiveDualRxDoubleDifferenceHypothesisV2(
+                        hypothesis_index=0,
+                        low_rx0_tracking_cfo_hz=-90_000,
+                        high_rx0_tracking_cfo_hz=-60_000,
+                        alias_aware_signal_separation_hz=30_000,
+                        receiver_offset_hz=-560_000,
+                        wrapped_high_minus_low_rad=0.2,
+                        standard_error_rad=0.1,
+                        common_session_time_s=float(index + 1),
+                        low_center_session_time_s=float(index + 1),
+                        high_center_session_time_s=float(index + 1),
+                        asynchronous_center_separation_s=0,
+                        asynchronous_correction_standard_error_rad=0,
+                        direct_common_frame_count=3,
+                        phase_resultant_floor=0.9,
+                        exact_to_control_power_ratio_floor=4,
+                    ),
+                ),
+            )
+        )
+    phase_v2_manifest = phase_v2_store.finalize(
+        session_id=capture.session_id,
+        input_manifest_sha256=analysis_status.input_manifest_sha256,
+        glrt_binding_sha256=analysis_status.binding_sha256,
+        glrt_metrics_manifest_sha256=analysis_status.metrics_manifest_sha256,
+        total_visit_count=3,
+        geometry_phase_state="unavailable",
+        geometry_phase_reason="calibration unavailable",
+        png=phase_png,
+    )
+    phase_v2_store.close()
     monkeypatch.setattr(
         AdaptiveHopIqReader, "read_visit_ci16", lambda *args: pytest.fail("API cannot read IQ")
     )
@@ -102,6 +153,20 @@ def test_additive_status_progress_and_digest_bound_pngs_without_read_side_analys
     )
     assert phase_image.status_code == 200 and phase_image.content == phase_png
     assert phase_image.headers["etag"] == f'"{phase_manifest.artifact.sha256}"'
+    phase_v2_route = route + "/dual-rx-phase-v2"
+    phase_v2 = client.get(phase_v2_route, params={"probe_stride_ms": 10})
+    assert phase_v2.status_code == 200 and phase_v2.json()["state"] == "ready"
+    assert phase_v2.json()["manifest"]["hypothesis_count"] == 3
+    assert phase_v2_manifest.artifact is not None
+    phase_v2_image = client.get(
+        phase_v2_route + "/artifact.png",
+        params={
+            "probe_stride_ms": 10,
+            "glrt_binding_sha256": analysis_status.binding_sha256,
+            "artifact_sha256": phase_v2_manifest.artifact.sha256,
+        },
+    )
+    assert phase_v2_image.status_code == 200 and phase_v2_image.content == phase_png
     assert client.head(phase_route, params={"probe_stride_ms": 10}).content == b""
     assert client.head(route).content == b"" and client.post(route).status_code == 405
     assert client.get(route, params={"probe_stride_ms": 120}).json()["state"] == "not_started"

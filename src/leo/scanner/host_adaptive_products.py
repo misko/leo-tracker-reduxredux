@@ -4,12 +4,13 @@ from typing import Annotated, ClassVar, Literal
 
 from pydantic import Field
 
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopReceiptV2
 from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisConfigurationV1
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
+    EdgeAdaptiveAnalysisBindingV4,
 )
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
@@ -72,6 +73,7 @@ def bind_actual_visit_analysis(
     """Resolve the exact persisted major for the supplied native recording."""
     wide = isinstance(receipt, HostAdaptiveHopReceiptV3)
     host = isinstance(receipt, HostAdaptiveHopReceiptV2)
+    edge = isinstance(receipt, AdaptiveHopReceiptV2)
     configuration_model: type[AdaptiveHopAnalysisConfigurationV1] = (
         HostAdaptiveAnalysisConfigurationV3
         if wide
@@ -84,6 +86,8 @@ def bind_actual_visit_analysis(
         if wide
         else HostAdaptiveAnalysisBindingV2
         if host
+        else EdgeAdaptiveAnalysisBindingV4
+        if edge
         else AdaptiveHopAnalysisBindingV1
     )
     return binding_model(

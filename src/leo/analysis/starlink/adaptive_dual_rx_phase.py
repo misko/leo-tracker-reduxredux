@@ -97,7 +97,7 @@ def correlate_pilot_symbols(
     frame_starts: np.ndarray,
     template: np.ndarray,
     frequency_hz: float,
-    reference_sample: int,
+    reference_sample: float,
     receiver: int,
     symbol_indices: np.ndarray,
     sample_rate_hz: float,
@@ -179,7 +179,7 @@ def restore_receiver_relative_phase(
     corrected_product_phase_rad: float,
     acquired_frequencies_hz: tuple[float, float],
     center_sample: float,
-    reference_samples: tuple[int, int],
+    reference_samples: tuple[float, float],
     sample_rate_hz: float,
 ) -> float:
     """Restore phase at a common sample without recounting GLRT residual CFO."""

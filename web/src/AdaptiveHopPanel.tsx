@@ -49,7 +49,7 @@ export function AdaptiveHopBrowser({ selectedId, onSelect }: {
       <tbody>{page.items.map(c => <tr key={c.session_id} className={selectedId === c.session_id ? "selected" : undefined}>
         <td><button type="button" className="scanner-row-button persistent-hop-row" onClick={() => onSelect(c.session_id)}>
           <time>{new Date(c.captured_at ?? c.recorded_at).toLocaleString()}</time><code>{c.session_id}</code>
-          <small>{c.mode} · {c.sample_rate_hz / 1e6} MS/s{c.schema_version !== 1 ? ` · RX${c.physical_receiver}` : ""} · {c.retained_visits}/{c.started_visits} visits retained</small>
+          <small>{c.mode} · {c.sample_rate_hz / 1e6} MS/s{c.schema_version === 2 || c.schema_version === 3 ? ` · RX${c.physical_receiver}` : c.schema_version === 4 ? ` · ${c.selected_edge} edge` : ""} · {c.retained_visits}/{c.started_visits} visits retained</small>
           <small>{c.captured_at === null ? "RF start unavailable; showing recording creation" : c.utc_qualified ? "Host-bracketed RF start" : "RF UTC estimate unqualified"}</small>
         </button></td><td>{duty(c.valid_duty_ppm)}<small className="persistent-terminal-state">{c.terminal_state}</small></td>
       </tr>)}</tbody>
@@ -110,6 +110,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
   if (error) return <p className="error-banner" role="alert">{error}</p>;
   if (!detail) return <p role="status">Loading adaptive capture…</p>;
   const c = detail.capture;
+  const hostAdaptive = c.schema_version === 2 || c.schema_version === 3;
   const choice = detail.visits[selected];
   const decision = detail.host_decisions?.[selected];
   const start = page * 50;
@@ -126,7 +127,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
       <div><dt>RF UTC estimate</dt><dd>{c.captured_at === null ? "Unavailable" : new Date(c.captured_at).toLocaleString()} · {c.utc_qualified ? "host-bracket qualified" : "unqualified"}</dd></div>
       <div><dt>UTC bracket width</dt><dd>{c.utc_bracket_width_ms === null ? "Unavailable" : `${c.utc_bracket_width_ms.toFixed(3)} ms`}</dd></div>
     </dl>
-    {c.schema_version !== 1 ? <section className="scanner-results-panel" aria-label="Host adaptive feedback">
+    {hostAdaptive ? <section className="scanner-results-panel" aria-label="Host adaptive feedback">
       <header><h3>Host decisions · RX{c.physical_receiver}</h3><small>{c.sample_rate_hz / 1e6} MS/s recording · 2.5 MS/s decimated decisions</small></header>
       <p>Radio <code>{c.radio_serial}</code> · six 20 ms screens and at most one confirmation per retained dwell.</p>
       <p>{c.host_feedback.healthy} healthy · {c.host_feedback.degraded} degraded · {c.host_feedback.unknown_feedback} unknown verdicts.</p>
@@ -134,8 +135,12 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
       <p>Maximum host result age: {c.host_feedback.maximum_host_result_age_ms?.toFixed(1) ?? "Unavailable"} ms. Acceptance confirms delivery; the actual hop choices below show the policy effect.</p>
       {c.host_feedback.first_feedback_error ? <p role="alert">{c.host_feedback.first_feedback_error}</p> : null}
     </section> : null}
+    {c.schema_version === 4 ? <section className="scanner-results-panel" aria-label="One-edge scan policy">
+      <header><h3>{c.selected_edge === "lower" ? "Lower" : "Upper"} edge selected for this scan</h3><small>50% draw persisted before radio startup</small></header>
+      <p>Radio <code>{c.radio_serial}</code> · allowed target mask <code>0x{c.allowed_target_mask.toString(16).padStart(2, "0")}</code>. Every actual and proposed hop in this receipt is confined to CH1–CH4 on this edge.</p>
+    </section> : null}
     <section className="scanner-results-panel" aria-label="Actual adaptive visit timeline">
-      <header><h3>Where the radio actually looked</h3><small>120 ms valid dwell · {c.schema_version !== 1 ? `RX${c.physical_receiver} retained` : "both receivers retained"}</small></header>
+      <header><h3>Where the radio actually looked</h3><small>120 ms valid dwell · {hostAdaptive ? `RX${c.physical_receiver} retained` : "both receivers retained"}</small></header>
       <Timeline detail={detail} />
       <p>Green: active · grey: quiet · blue: unobserved at the decision. These are scheduling states, not per-dwell detection verdicts. Outlined marks show the beginning of incomplete hops, not retained IQ.</p>
       {c.mode === "shadow" ? <p>Shadow mode: the radio kept fixed order. Proposals did not change its actual tuning.</p> : null}

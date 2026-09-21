@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Response
 
 from leo.contracts.scanner_tracking import (
-    ArtifactNameV12,
+    ArtifactNameV14,
     ScannerTrackingReader,
     ScannerTrackingStatusV1,
     ScannerTrackingStatusV2,
@@ -17,6 +17,8 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingStatusV10,
     ScannerTrackingStatusV11,
     ScannerTrackingStatusV12,
+    ScannerTrackingStatusV13,
+    ScannerTrackingStatusV14,
 )
 
 
@@ -25,7 +27,9 @@ def scanner_tracking_router(reader: ScannerTrackingReader | None) -> APIRouter:
 
     @router.get(
         "/{session_id}",
-        response_model=ScannerTrackingStatusV12
+        response_model=ScannerTrackingStatusV14
+        | ScannerTrackingStatusV13
+        | ScannerTrackingStatusV12
         | ScannerTrackingStatusV11
         | ScannerTrackingStatusV10
         | ScannerTrackingStatusV9
@@ -47,7 +51,7 @@ def scanner_tracking_router(reader: ScannerTrackingReader | None) -> APIRouter:
             raise HTTPException(409, "tracking evidence is invalid") from error
 
     @router.get("/{session_id}/{name}.png")
-    def artifact(session_id: str, name: ArtifactNameV12):
+    def artifact(session_id: str, name: ArtifactNameV14):
         if reader is None:
             raise HTTPException(404, "shared tracking is unavailable")
         try:
