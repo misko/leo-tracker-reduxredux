@@ -29,6 +29,7 @@ class FormalOrbitConfig:
     ar1_rho: float = 0.65
     correlation_time_s: float = 1.0
     robust_df: float = 4.0
+    gaussian_noise: bool = False
     phase_rate_bound_s_h: float = 0.25
     phase_sensitivity_step_s: float = 1.0
     max_nfev: int = 500
@@ -338,7 +339,11 @@ def fit_formal_orbit(
             phase_d = np.asarray(whitening @ derivative) / sigma
             wy = np.asarray(whitening @ (data.y_hz[rows] - base)) / sigma
             residual = wy - offset_a * beta[seg]
-            weight = (config.robust_df + 1) / (config.robust_df + residual**2)
+            weight = (
+                np.ones_like(residual)
+                if config.gaussian_noise
+                else (config.robust_df + 1) / (config.robust_df + residual**2)
+            )
             saa = np.bincount(seg, weight * offset_a**2, minlength=len(segments))
             sad = np.bincount(seg, weight * offset_a * phase_d, minlength=len(segments))
             say = np.bincount(seg, weight * offset_a * wy, minlength=len(segments))
@@ -392,6 +397,14 @@ def fit_formal_orbit(
             + len(sources) * np.log(config.phase_rate_sigma_s_h * np.sqrt(2 * np.pi))
             + 0.5 * np.sum((beta[len(segments) :] / config.phase_rate_sigma_s_h) ** 2)
         )
+        if config.gaussian_noise:
+            nlp = (
+                len(rows) * (np.log(sigma) + 0.5 * np.log(2 * np.pi))
+                + 0.5 * logdet
+                + 0.5 * np.sum(r * r)
+                + len(sources) * np.log(config.phase_rate_sigma_s_h * np.sqrt(2 * np.pi))
+                + 0.5 * np.sum((beta[len(segments) :] / config.phase_rate_sigma_s_h) ** 2)
+            )
         if config.infer_measurement_sigma:
             log_ratio = np.log(sigma / config.measurement_sigma_hz)
             nlp += (

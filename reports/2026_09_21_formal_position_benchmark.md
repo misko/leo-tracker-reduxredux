@@ -1,5 +1,10 @@
 # Formal positioning model and archived-data benchmark
 
+Follow-up: the [breakthrough summary](2026_09_21_positioning_breakthroughs.md)
+and [four-factor ablation / 1/32-data benchmark](2026_09_21_position_ablation_report.md)
+add 258 new fits, including all 16 model-switch combinations and explicit
+sparse-data convergence failures.
+
 The formal fixed-identity model reached **328 m horizontal error** on the
 archived 622-track campaign, using strictly pre-capture orbital information.
 This improves on the approximately 4.86 km strict fixed-orbit baseline, but does

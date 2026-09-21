@@ -84,6 +84,32 @@ def test_degenerate_geometry_is_reported():
     assert result.position_covariance_km2 is None or result.major_95_km > 10
 
 
+def test_gaussian_ablation_matches_normalized_independent_likelihood():
+    from leo.analysis.research.formal_orbit import doppler_hz
+
+    data, region, _ = _synthetic()
+    cfg = FormalOrbitConfig(
+        gaussian_noise=True,
+        ar1_rho=0,
+        infer_measurement_sigma=False,
+        measurement_sigma_hz=250,
+        phase_rate_bound_s_h=0,
+    )
+    fit = fit_formal_orbit(data, region, [0, 0], cfg)
+    receiver = region.points([fit.x_km[0]], [fit.x_km[1]]).ecef_km[0]
+    residual = data.y_hz - doppler_hz(receiver, data.p_km, data.v_km_s)
+    for segment, offset in fit.segment_offsets_hz.items():
+        residual[data.segment == int(segment)] -= offset
+    expected = np.sum(data.training) * np.log(250 * np.sqrt(2 * np.pi))
+    expected += np.sum((residual[data.training] / 250) ** 2) / 2
+    expected += len(fit.rate_corrections_s_h) * np.log(
+        cfg.phase_rate_sigma_s_h * np.sqrt(2 * np.pi)
+    )
+    assert np.isclose(fit.negative_log_posterior, expected, atol=1e-6)
+    assert all(rate == 0 for rate in fit.rate_corrections_s_h.values())
+    assert np.isclose(fit.robust_weight_ess, np.sum(data.training))
+
+
 def test_noise_bound_does_not_trap_simplex_after_distant_start():
     data, region, _ = _synthetic()
     result = fit_formal_orbit(

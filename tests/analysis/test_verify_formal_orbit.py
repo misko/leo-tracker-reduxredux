@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+import pytest
 import verify_formal_orbit as verification
 
 from leo.analysis.research.regional_doppler import Region
@@ -74,3 +75,19 @@ def test_exact_audit_uses_orbit_phase_and_detects_bad_interpolation(tmp_path, mo
     np.savez(states, **values)
     result = verification.verify(states, paths["fit"], paths["prior"], paths["reranking"], region)
     assert not result["passed"]
+    payload = json.loads(paths["fit"].read_text())
+    payload["rate_corrections_s_h"] = {}
+    paths["fit"].write_text(json.dumps(payload))
+    with pytest.raises(KeyError):
+        verification.verify(states, paths["fit"], paths["prior"], paths["reranking"], region)
+    result = verification.verify(
+        states,
+        paths["fit"],
+        paths["prior"],
+        paths["reranking"],
+        region,
+        allow_unfitted_sources=True,
+    )
+    assert result["passed"]
+    assert result["unfitted_sources_default_zero"]
+    assert calls[-1] == (0, 0.5)
