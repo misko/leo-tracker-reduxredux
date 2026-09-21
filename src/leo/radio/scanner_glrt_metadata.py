@@ -10,6 +10,7 @@ from __future__ import annotations
 import errno
 import math
 import secrets
+import struct
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -281,14 +282,25 @@ class ScannerAdaptiveGlrtMetadataExtension(ScannerGlrtMetadataExtension):
     def negotiate(
         self, request: bytes, attributes: Mapping[str, str], *, drain_supported: bool
     ) -> bytes:
-        from pluto_plus.adaptive_hop import AdaptiveHopRequestV2, require_adaptive_capabilities
+        from pluto_plus.adaptive_hop import (
+            ADAPTIVE_HOP_ELIGIBLE_TARGETS_FEATURE,
+            AdaptiveHopRequestV2,
+            AdaptiveHopRequestV3,
+            require_adaptive_capabilities,
+        )
 
         if self._attempted:
             raise ValueError("GLRT metadata extension is single-use")
         self._attempted = True
         if len(request) != 104 + 352 or self.options.mode != "positive-only-v1":
             raise ValueError("adaptive GLRT requires V2 and the positive-only profile")
-        hop = AdaptiveHopRequestV2.unpack(request[104:])
+        hop_request = request[104:]
+        features = struct.unpack_from("<I", hop_request, 8)[0]
+        hop = (
+            AdaptiveHopRequestV3.unpack(hop_request)
+            if features & ADAPTIVE_HOP_ELIGIBLE_TARGETS_FEATURE
+            else AdaptiveHopRequestV2.unpack(hop_request)
+        )
         hop.policy.require_pinned_policy()
         require_adaptive_capabilities(attributes, hop.policy)
         if hop.geometry.session_id != self.session or hop.policy.generation != self.generation:
