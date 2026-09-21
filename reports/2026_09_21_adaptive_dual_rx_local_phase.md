@@ -101,6 +101,9 @@ become available. Its versioned input can refine the immutable capture snapshot
 retrospectively: a surveyed phase-center offset and verified cable mapping must
 bind the exact captured geometry digest and cover the installation time. A
 missing, expired, or conflicting refinement remains unavailable.
+The pilot half-cycle branch is a separate authority: its method is recorded and
+must state that geometry was not used to select the branch. Fitting the desired
+geometry curve cannot promote an ambiguity to calibrated truth.
 
 ## Reproduction
 
