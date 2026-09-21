@@ -1,5 +1,7 @@
 # Full captured-bandwidth RX0/RX1 alignment
 
+Follow-on: [GLRT-guided most-likely observed phase, fixed references, and guided/unguided comparisons](2026_09_21_glrt_guided_broadband_phase.md).
+
 This research estimates the measurable relationship between two simultaneously recorded receiver signals. It does not require electrical calibration to estimate that relationship, and does not interpret the result as satellite geometric phase. Only recorded common bandwidth is used; no unrecorded part of the Starlink channel is assumed available.
 
 **Result:** the implemented model recovers the injected 2.375-sample delay to within 0.005 sample and achieves approximately 0.95 coherence on unseen synthetic IQ. On saved recordings, three of six selected dwells support common-phase tracking over approximately 1.75 MHz of common recorded bandwidth, with residual phase on disjoint validation frequencies between -2.85 and +3.28 degrees. Their broadband coherence is only 0.17–0.20: a weak common component aligns, while substantial noise/unshared signal remains. The other three cases do not support a precise broadband phase result. All cases are retained.

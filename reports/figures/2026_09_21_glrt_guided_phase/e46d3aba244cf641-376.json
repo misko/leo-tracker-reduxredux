@@ -1,0 +1,339 @@
+{
+  "session_id": "scan-hop-e46d3aba244cf641",
+  "visit_index": 376,
+  "input_manifest_sha256": "sha256:525e16d410db85bf13d998272413ab51155ddccbffd9312a2e7b3e70dc376e94",
+  "sample_rate_hz": 2500000,
+  "guides": [
+    {
+      "sample": 25000.0,
+      "relative_frequency_hz": -448073.8981313687,
+      "sigma_hz": 125.43318148795356,
+      "support_start_sample": 0,
+      "support_stop_sample": 50000,
+      "receivers": [
+        {
+          "frequency_hz": 311743.76625020476,
+          "sigma_hz": 119.68007095702222,
+          "frame_count": 15,
+          "bootstrap_error_quantiles_hz": [
+            -221.94602272727934,
+            217.09095348011988
+          ]
+        },
+        {
+          "frequency_hz": -136330.13188116395,
+          "sigma_hz": 37.552145530076196,
+          "frame_count": 15,
+          "bootstrap_error_quantiles_hz": [
+            -66.93059747869957,
+            69.35813210227934
+          ]
+        }
+      ],
+      "source_association": "strongest phase-blind timing/frequency pair per probe"
+    },
+    {
+      "sample": 75000.0,
+      "relative_frequency_hz": -448058.464704664,
+      "sigma_hz": 102.60738584648793,
+      "support_start_sample": 50000,
+      "support_stop_sample": 100000,
+      "receivers": [
+        {
+          "frequency_hz": 311704.9519030955,
+          "sigma_hz": 98.3802626033114,
+          "frame_count": 15,
+          "bootstrap_error_quantiles_hz": [
+            -208.07439630682347,
+            152.587890625
+          ]
+        },
+        {
+          "frequency_hz": -136353.5128015685,
+          "sigma_hz": 29.14789118192844,
+          "frame_count": 15,
+          "bootstrap_error_quantiles_hz": [
+            -41.614879261367605,
+            55.48650568182347
+          ]
+        }
+      ],
+      "source_association": "strongest phase-blind timing/frequency pair per probe"
+    }
+  ],
+  "implementation_sha256": {
+    "tools/report_glrt_guided_broadband_phase.py": "ab1a03657cae97be2b2a3177c28a6df74ec8793ad37356a50bb7782326ace724",
+    "src/leo/analysis/starlink/glrt_guided_broadband_phase.py": "1f34227b9e9c92773488ee8cfbe10db0f836676014bf895398272f9e6389ae6f",
+    "src/leo/analysis/starlink/broadband_alignment.py": "7ec3545e2cde0266071182cec71ae5b83a9eea8ea2568dc26e6201c71e088830",
+    "src/leo/analysis/starlink/pilot_methods.py": "c33de1f8ed7b3d8f1f1b7de659d6aa2b110f658338eb2753ae2c5161757a2857"
+  },
+  "edge_pilot_comparison": [
+    {
+      "center_sample": 127696.32182642471,
+      "controls": {
+        "common_reference_shift_phase_error_deg": 2.247379937922121e-08,
+        "common_symbol_alias_exact_to_control_floor": 16.653226013828494,
+        "common_symbol_alias_phase_error_deg": 2.1301230874115635,
+        "common_symbol_alias_resultant": 0.8586243744426443,
+        "contiguous_symbol_halves_phase_error_deg": 37.510221042121835,
+        "first_symbol_half_exact_to_control_floor": 10.081291679802932,
+        "first_symbol_half_resultant": 0.8676666992624333,
+        "second_symbol_half_exact_to_control_floor": 7.5634537904204375,
+        "second_symbol_half_resultant": 0.816873307902419
+      },
+      "exact_to_control_power_ratio_floor": 13.476872290726513,
+      "legacy_phase_rad": -0.900041940354454,
+      "legacy_relative_frequency_hz": -520352.8636692263,
+      "phase_rad": 2.5056932619026826,
+      "phase_standard_error_deg": 7.470163250492036,
+      "relative_frequency_hz": -675602.030704523,
+      "relative_frequency_standard_error_hz": 2.9657382900745066,
+      "resultant_length": 0.8508772891972224,
+      "rx0_acquired_cfo_hz": 383578.07364394784,
+      "rx0_tracking_cfo_hz": 311223.67023485515,
+      "rx1_applied_acquired_cfo_hz": -292028.9286792006,
+      "rx1_original_acquired_cfo_hz": -136532.72816694394,
+      "rx1_tracking_cfo_hz": -136532.72816694394
+    }
+  ],
+  "result": {
+    "data_only": {
+      "reference_sample": 75000.0,
+      "frequency_reference_hz": 354061.16159793246,
+      "relative_cfo_hz": -675606.8958200993,
+      "relative_cfo_rate_hz_s": 0.0,
+      "effective_delay_samples": -0.009999999999999787,
+      "observed_phase_rad": 1.210561607104226,
+      "parameter_covariance": [
+        [
+          0.9751994758399868,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          9940.207703635122,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009802990918704005
+        ]
+      ],
+      "parameter_covariance_order": [
+        "relative_cfo_hz",
+        "relative_cfo_rate_hz_s",
+        "observed_phase_rad"
+      ],
+      "conditional_phase_standard_error_rad": 0.09901005463438552,
+      "guide_residual_hz": [
+        260.27041600330267,
+        275.70384270802606
+      ],
+      "inference_kind": "broadband_data_only",
+      "effective_spectral_group_count": 89.34226363400133,
+      "training_block_count": 36,
+      "guide_bias_hz": 0.0,
+      "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+    },
+    "map_model": {
+      "reference_sample": 75000.0,
+      "frequency_reference_hz": 354061.16159793246,
+      "relative_cfo_hz": -675606.8541608846,
+      "relative_cfo_rate_hz_s": -3.2873513777422128,
+      "effective_delay_samples": -0.009999999999999787,
+      "observed_phase_rad": 1.213245673808928,
+      "parameter_covariance": [
+        [
+          0.9750487396695255,
+          0.012317346696328826,
+          0.0
+        ],
+        [
+          0.012317346696328824,
+          9937.696456890488,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009858567938356643
+        ]
+      ],
+      "parameter_covariance_order": [
+        "relative_cfo_hz",
+        "relative_cfo_rate_hz_s",
+        "observed_phase_rad"
+      ],
+      "conditional_phase_standard_error_rad": 0.09929032147372997,
+      "guide_residual_hz": [
+        260.16300976113416,
+        275.6621834933758
+      ],
+      "inference_kind": "conditional_composite_guide_penalized_map_same_iq_not_independent_posterior",
+      "effective_spectral_group_count": 89.34029868209193,
+      "training_block_count": 36,
+      "guide_bias_hz": 0.0,
+      "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+    },
+    "training": {
+      "coherence": 0.16846542421505536,
+      "phase_rad": 0.0014821273899471748,
+      "real_coherence": 0.16846523918095577,
+      "wrong_time_coherence": 0.0024557345240534124,
+      "normalized_complex_error": 0.9857076322573358,
+      "block_count": 36
+    },
+    "held_out": {
+      "coherence": 0.08683193312656814,
+      "phase_rad": 1.583954653101091,
+      "real_coherence": -0.0011425299393100488,
+      "wrong_time_coherence": 0.006050358180647755,
+      "normalized_complex_error": 1.0140363547301514,
+      "block_count": 36
+    },
+    "data_only_training": {
+      "coherence": 0.16842688736845798,
+      "phase_rad": 0.0014780385631258017,
+      "real_coherence": 0.16842670339597132,
+      "wrong_time_coherence": 0.0024429204981917642,
+      "normalized_complex_error": 0.985714216619979,
+      "block_count": 36
+    },
+    "data_only_held_out": {
+      "coherence": 0.08641736038601466,
+      "phase_rad": 1.5724944138811467,
+      "real_coherence": -0.0001467441331765047,
+      "wrong_time_coherence": 0.005998944579609017,
+      "normalized_complex_error": 1.013865623330598,
+      "block_count": 36
+    },
+    "selected_guide_count": 2,
+    "rejected_guide_count": 0,
+    "guide_symbol_branch_hz": [
+      -675346.625404096,
+      -675331.1919773913
+    ]
+  },
+  "evolution_result": {
+    "data_only": {
+      "reference_sample": 75000.0,
+      "frequency_reference_hz": 354061.16159793246,
+      "relative_cfo_hz": -675606.8958200993,
+      "relative_cfo_rate_hz_s": 0.0,
+      "effective_delay_samples": -0.009999999999999787,
+      "observed_phase_rad": 1.210561607104226,
+      "parameter_covariance": [
+        [
+          0.9751994758399868,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          9940.207703635122,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009802990918704005
+        ]
+      ],
+      "parameter_covariance_order": [
+        "relative_cfo_hz",
+        "relative_cfo_rate_hz_s",
+        "observed_phase_rad"
+      ],
+      "conditional_phase_standard_error_rad": 0.09901005463438552,
+      "guide_residual_hz": [
+        260.27041600330267,
+        275.70384270802606
+      ],
+      "inference_kind": "broadband_data_only",
+      "effective_spectral_group_count": 89.34226363400133,
+      "training_block_count": 36,
+      "guide_bias_hz": 0.0,
+      "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+    },
+    "map_model": {
+      "reference_sample": 75000.0,
+      "frequency_reference_hz": 354061.16159793246,
+      "relative_cfo_hz": -675606.8958174711,
+      "relative_cfo_rate_hz_s": 0.11660014655026486,
+      "effective_delay_samples": -0.009999999999999787,
+      "observed_phase_rad": 1.2104638396951672,
+      "parameter_covariance": [
+        [
+          0.9751994663304467,
+          7.770683260768535e-07,
+          0.0
+        ],
+        [
+          7.770683260761312e-07,
+          9938.702900518141,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009805398032506784
+        ]
+      ],
+      "parameter_covariance_order": [
+        "relative_cfo_hz",
+        "relative_cfo_rate_hz_s",
+        "observed_phase_rad"
+      ],
+      "conditional_phase_standard_error_rad": 0.09902220979410015,
+      "guide_residual_hz": [
+        -9.22780730726663,
+        6.203287394484505
+      ],
+      "inference_kind": "conditional_composite_guide_penalized_map_same_iq_not_independent_posterior",
+      "effective_spectral_group_count": 89.34227084476193,
+      "training_block_count": 36,
+      "guide_bias_hz": 269.50055268533674,
+      "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+    },
+    "training": {
+      "coherence": 0.1684253949363855,
+      "phase_rad": 0.0014779866687108319,
+      "real_coherence": 0.16842521097844737,
+      "wrong_time_coherence": 0.0024429986344272725,
+      "normalized_complex_error": 0.9857144716197529,
+      "block_count": 36
+    },
+    "held_out": {
+      "coherence": 0.08640110351617641,
+      "phase_rad": 1.5716294184971475,
+      "real_coherence": -7.198003407846492e-05,
+      "wrong_time_coherence": 0.0059967904509479085,
+      "normalized_complex_error": 1.0138530710713902,
+      "block_count": 36
+    },
+    "data_only_training": {
+      "coherence": 0.16842688736845798,
+      "phase_rad": 0.0014780385631258017,
+      "real_coherence": 0.16842670339597132,
+      "wrong_time_coherence": 0.0024429204981917642,
+      "normalized_complex_error": 0.985714216619979,
+      "block_count": 36
+    },
+    "data_only_held_out": {
+      "coherence": 0.08641736038601466,
+      "phase_rad": 1.5724944138811467,
+      "real_coherence": -0.0001467441331765047,
+      "wrong_time_coherence": 0.005998944579609017,
+      "normalized_complex_error": 1.013865623330598,
+      "block_count": 36
+    },
+    "selected_guide_count": 2,
+    "rejected_guide_count": 0,
+    "guide_symbol_branch_hz": [
+      -675346.625404096,
+      -675331.1919773913
+    ]
+  }
+}
