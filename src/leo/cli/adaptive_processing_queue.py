@@ -258,6 +258,17 @@ def run_once(
     lease = catalog.claim_adaptive_job(worker_id=worker_id, lease_for=_LEASE)
     if lease is None:
         return False
+    if lease.job_kind == "adaptive_tracking":
+        tracking_status = ScannerTrackingStore(bulk_root, read_only=True).analysis_status(
+            lease.session_id
+        )
+        if tracking_status.state == "complete":
+            catalog.complete_job(
+                job_id=lease.job_id,
+                worker_id=worker_id,
+                outcome="already_complete",
+            )
+            return True
     command = _command_for_lease(lease=lease, bulk_root=bulk_root, site=site)
     try:
         completed = subprocess.run(command, text=True, capture_output=True, check=False)

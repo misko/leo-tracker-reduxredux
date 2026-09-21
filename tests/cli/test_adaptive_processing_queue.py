@@ -184,6 +184,13 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     command: list[str] = []
     monkeypatch.setattr(subject, "_catalog", Catalog)
     monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            analysis_status=lambda _session_id: SimpleNamespace(state="pending")
+        ),
+    )
+    monkeypatch.setattr(
         subject.subprocess,
         "run",
         lambda args, **kwargs: (
@@ -197,6 +204,40 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     assert "--queue-worker" in command
     assert command[command.index("--review-limit") + 1] == "64"
     assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "complete"}]
+
+
+def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
+    monkeypatch, tmp_path
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    class Catalog:
+        def claim_adaptive_job(self, **kwargs):
+            return replace(_lease(), job_kind="adaptive_tracking", resource_class="heavy")
+
+        def complete_job(self, **kwargs):
+            calls.append(kwargs)
+
+    monkeypatch.setattr(subject, "_catalog", Catalog)
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            analysis_status=lambda _session_id: SimpleNamespace(state="complete")
+        ),
+    )
+    monkeypatch.setattr(
+        subject.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("sealed V13 tracking must not be rerun")
+        ),
+    )
+
+    assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
+    assert calls == [
+        {"job_id": 7, "worker_id": "worker-1", "outcome": "already_complete"}
+    ]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:
