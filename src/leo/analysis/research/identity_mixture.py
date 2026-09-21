@@ -79,10 +79,7 @@ class MixtureConfig:
     signal_prior: float = 0.5
 
     def __post_init__(self) -> None:
-        if not (
-            0 < self.signal_sigma_hz < self.unassigned_sigma_hz
-            and 0 < self.signal_prior < 1
-        ):
+        if not (0 < self.signal_sigma_hz < self.unassigned_sigma_hz and 0 < self.signal_prior < 1):
             raise ValueError("invalid identity-mixture scales or prior")
 
 
@@ -153,10 +150,6 @@ def mixture_statistics(
         "candidate_heldout_log_likelihood": test_ll,
         "profiled_offsets_hz": offsets,
         "unassigned_offsets_hz": null_offsets,
-        "posterior_train_mse_hz2": float(
-            posterior @ np.concatenate([train_sq, [null_train_sq]])
-        ),
-        "posterior_heldout_mse_hz2": float(
-            posterior @ np.concatenate([test_sq, [null_test_sq]])
-        ),
+        "posterior_train_mse_hz2": float(posterior @ np.concatenate([train_sq, [null_train_sq]])),
+        "posterior_heldout_mse_hz2": float(posterior @ np.concatenate([test_sq, [null_test_sq]])),
     }

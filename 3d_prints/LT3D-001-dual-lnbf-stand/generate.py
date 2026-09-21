@@ -4,6 +4,7 @@ The two neck axes are 80 mm apart and tilt 10 degrees away from one another.
 The closed rings share a rear bridge. A central web and crossed bottom foot make
 the holder free-standing while keeping its top-view footprint small.
 """
+
 from __future__ import annotations
 
 import math
@@ -11,7 +12,6 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
-
 
 HERE = Path(__file__).resolve().parent
 
@@ -39,7 +39,9 @@ BASE_ARM_WIDTH_MM = 18.0
 SEGMENTS = 160
 
 
-def _box(extents: tuple[float, float, float], center: tuple[float, float, float]) -> trimesh.Trimesh:
+def _box(
+    extents: tuple[float, float, float], center: tuple[float, float, float]
+) -> trimesh.Trimesh:
     transform = np.eye(4)
     transform[:3, 3] = center
     return trimesh.creation.box(extents=extents, transform=transform)
@@ -55,23 +57,31 @@ def annular_clip(width_mm: float = CLIP_WIDTH_MM) -> trimesh.Trimesh:
     vertices: list[list[float]] = []
     for angle in angles:
         c, s = math.cos(angle), math.sin(angle)
-        vertices.extend([
-            [inner * c, inner * s, z0],
-            [outer * c, outer * s, z0],
-            [inner * c, inner * s, z1],
-            [outer * c, outer * s, z1],
-        ])
+        vertices.extend(
+            [
+                [inner * c, inner * s, z0],
+                [outer * c, outer * s, z0],
+                [inner * c, inner * s, z1],
+                [outer * c, outer * s, z1],
+            ]
+        )
 
     faces: list[list[int]] = []
     for index in range(len(angles)):
         a, b = 4 * index, 4 * (index + 1)
         b %= 4 * len(angles)
-        faces.extend([
-            [a, b, b + 2], [a, b + 2, a + 2],              # inner wall
-            [a + 1, a + 3, b + 3], [a + 1, b + 3, b + 1],  # outer wall
-            [a, a + 1, b + 1], [a, b + 1, b],              # lower face
-            [a + 2, b + 2, b + 3], [a + 2, b + 3, a + 3],  # upper face
-        ])
+        faces.extend(
+            [
+                [a, b, b + 2],
+                [a, b + 2, a + 2],  # inner wall
+                [a + 1, a + 3, b + 3],
+                [a + 1, b + 3, b + 1],  # outer wall
+                [a, a + 1, b + 1],
+                [a, b + 1, b],  # lower face
+                [a + 2, b + 2, b + 3],
+                [a + 2, b + 3, a + 3],  # upper face
+            ]
+        )
     mesh = trimesh.Trimesh(vertices=np.asarray(vertices), faces=np.asarray(faces), process=True)
     trimesh.repair.fix_normals(mesh)
     return mesh

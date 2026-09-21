@@ -19,11 +19,13 @@ def test_singular_uncertainty_is_unavailable_not_zero_radius():
 
 
 def test_failures_remain_in_total_denominator():
-    result = summarize_trials([
-        {"converged": True, "error_km": [0.1, 0.0], "covariance_km2": np.eye(2).tolist()},
-        {"converged": False},
-        {"converged": True, "error_km": [2.0, 0.0], "covariance_km2": None},
-    ])
+    result = summarize_trials(
+        [
+            {"converged": True, "error_km": [0.1, 0.0], "covariance_km2": np.eye(2).tolist()},
+            {"converged": False},
+            {"converged": True, "error_km": [2.0, 0.0], "covariance_km2": None},
+        ]
+    )
     assert result["trials"] == 3
     assert result["failed_fixes"] == 1
     assert result["position_scored"] == 2
@@ -33,9 +35,10 @@ def test_failures_remain_in_total_denominator():
 
 
 def test_correlated_subsets_do_not_get_independent_binomial_interval():
-    result = summarize_trials([
-        {"converged": True, "error_km": [0.0, 0.0], "covariance_km2": np.eye(2).tolist()}
-    ], independent=False)
+    result = summarize_trials(
+        [{"converged": True, "error_km": [0.0, 0.0], "covariance_km2": np.eye(2).tolist()}],
+        independent=False,
+    )
     assert result["coverage"]["0.95"]["wilson_95_interval"] is None
 
 

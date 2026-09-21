@@ -73,13 +73,9 @@ def test_joint_fit_recovers_known_phase_rate_and_receiver(monkeypatch):
     time = np.linspace(-30, 30, count)
     region = Region(37.0, -122.0, 20.0, 20.0)
     receiver = region.points([0.0], [0.0]).ecef_km[0]
-    position = receiver + np.column_stack(
-        [300 + 7 * time, 500 - 4 * time, 800 + 0.01 * time**2]
-    )
+    position = receiver + np.column_stack([300 + 7 * time, 500 - 4 * time, 800 + 0.01 * time**2])
     velocity = np.column_stack([np.full(count, 7.0), np.full(count, -4.0), 0.02 * time])
-    acceleration = np.column_stack(
-        [np.zeros(count), np.zeros(count), np.full(count, 0.02)]
-    )
+    acceleration = np.column_stack([np.zeros(count), np.zeros(count), np.full(count, 0.02)])
     sensitivity = {
         "p-1": position - velocity + 0.5 * acceleration,
         "p1": position + velocity + 0.5 * acceleration,

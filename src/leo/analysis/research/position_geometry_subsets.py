@@ -5,6 +5,7 @@ scored with receiver-position Doppler Jacobians at a fixed external grid after
 projecting out a per-track offset and orbit phase-rate direction.  A greedy
 D-optimal traversal then favours complementary horizontal directions.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -23,11 +24,12 @@ def _jacobian(receiver, p, v, step_km=1.0):
     east /= np.linalg.norm(east)
     north = np.cross(up, east)
     axes = np.asarray((east, north)) * step_km
-    return np.column_stack([
-        (doppler_hz(receiver + axis, p, v) - doppler_hz(receiver - axis, p, v))
-        / (2 * step_km)
-        for axis in axes
-    ])
+    return np.column_stack(
+        [
+            (doppler_hz(receiver + axis, p, v) - doppler_hz(receiver - axis, p, v)) / (2 * step_km)
+            for axis in axes
+        ]
+    )
 
 
 def _projected_information(jacobian, nuisance):
@@ -70,8 +72,18 @@ def geometry_packet_order(
     times = np.asarray(time_s, float)
     grid = np.asarray(receiver_grid_ecef_km, float)
     n = len(ids)
-    arrays = (fit, labels, times, age_h, p_km, v_km_s, phase_p_minus_km,
-              phase_v_minus_km_s, phase_p_plus_km, phase_v_plus_km_s)
+    arrays = (
+        fit,
+        labels,
+        times,
+        age_h,
+        p_km,
+        v_km_s,
+        phase_p_minus_km,
+        phase_v_minus_km_s,
+        phase_p_plus_km,
+        phase_v_plus_km_s,
+    )
     if any(len(x) != n for x in arrays) or grid.ndim != 2 or grid.shape[1] != 3:
         raise ValueError("incompatible geometry arrays")
     if len(np.unique(ids)) != n:
@@ -88,8 +100,13 @@ def geometry_packet_order(
     for receiver in grid:
         j = _jacobian(receiver, np.asarray(p_km), np.asarray(v_km_s))
         d = phase_rate_design_hz_per_s_h(
-            receiver, phase_p_minus_km, phase_v_minus_km_s,
-            phase_p_plus_km, phase_v_plus_km_s, age_h)
+            receiver,
+            phase_p_minus_km,
+            phase_v_minus_km_s,
+            phase_p_plus_km,
+            phase_v_plus_km_s,
+            age_h,
+        )
         scale = np.sqrt(np.mean(np.sum(j[fit] ** 2, axis=1)))
         jac.append(j / max(scale, 1e-12))
         phase.append(np.asarray(d) / max(scale, 1e-12))
@@ -115,9 +132,9 @@ def geometry_packet_order(
                 choice = tuple(rows)
             else:
                 positions = np.unique(
-                    np.rint(
-                        np.linspace(0, len(rows) - 1, min(candidate_limit, len(rows)))
-                    ).astype(int)
+                    np.rint(np.linspace(0, len(rows) - 1, min(candidate_limit, len(rows)))).astype(
+                        int
+                    )
                 )
                 candidates = [rows[x] for x in positions]
                 best = None
@@ -130,7 +147,8 @@ def geometry_packet_order(
                     score0 = float(np.trace(info0))
                     tie = hashlib.sha256(
                         f"geometry-packet-v1\0{seed}\0".encode()
-                        + "\0".join(map(str, ids[list(choice0)])).encode()).digest()
+                        + "\0".join(map(str, ids[list(choice0)])).encode()
+                    ).digest()
                     key = (score0, tie)
                     if best is None or key > best[0]:
                         best = (key, tuple(choice0), info0)
@@ -141,12 +159,17 @@ def geometry_packet_order(
         # 2x2 marginal gain as the aggregate information changes.
         while packets and (max_count is None or len(output) < max_count):
             base_logdet = np.linalg.slogdet(total_info)[1]
-            index = max(range(len(packets)), key=lambda i: (
-                np.linalg.slogdet(total_info + packets[i][3])[1] - base_logdet,
-                packets[i][0]))
+            index = max(
+                range(len(packets)),
+                key=lambda i: (
+                    np.linalg.slogdet(total_info + packets[i][3])[1] - base_logdet,
+                    packets[i][0],
+                ),
+            )
             tie, label, choice, info = packets.pop(index)
-            allowed = len(choice) if max_count is None else min(
-                len(choice), max_count-len(output))
+            allowed = (
+                len(choice) if max_count is None else min(len(choice), max_count - len(output))
+            )
             output.extend(ids[list(choice)[:allowed]].tolist())
             total_info += info
             chosen = set(choice)

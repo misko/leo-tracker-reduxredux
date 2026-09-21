@@ -77,8 +77,20 @@ def synthetic_case(seed, misspecified=False, config=None):
         if misspecified:
             y[idx] += rng.normal(0, 3.0) * times[idx]
     data = FormalOrbitData(
-        y, np.ones(len(y), bool), tracks, tracks, sources, ages, p, v,
-        pm, vm, pp, vp, times, np.asarray([f"synthetic-{i}" for i in range(len(y))]),
+        y,
+        np.ones(len(y), bool),
+        tracks,
+        tracks,
+        sources,
+        ages,
+        p,
+        v,
+        pm,
+        vm,
+        pp,
+        vp,
+        times,
+        np.asarray([f"synthetic-{i}" for i in range(len(y))]),
     )
     return data, region, truth
 
@@ -92,15 +104,21 @@ def run_trial(task):
     try:
         fit = fit_formal_orbit(data, region, [0.0, 0.0], config)
         return {
-            **common, "converged": bool(fit.converged),
+            **common,
+            "converged": bool(fit.converged),
             "error_km": (np.asarray(fit.x_km) - truth).tolist(),
             "covariance_km2": fit.position_covariance_km2,
-            "fit": asdict(fit), "truth_x_km": truth.tolist(),
+            "fit": asdict(fit),
+            "truth_x_km": truth.tolist(),
             "seconds": time.monotonic() - started,
         }
     except (ValueError, np.linalg.LinAlgError) as error:
-        return {**common, "converged": False, "failure": str(error),
-                "seconds": time.monotonic() - started}
+        return {
+            **common,
+            "converged": False,
+            "failure": str(error),
+            "seconds": time.monotonic() - started,
+        }
 
 
 def main():
@@ -115,8 +133,10 @@ def main():
     config = asdict(FormalOrbitConfig())
     source = Path(__file__).read_bytes()
     protocol = {
-        "config": config, "trials_per_scenario": args.trials,
-        "seeds": list(range(args.trials)), "source_sha256": hashlib.sha256(source).hexdigest(),
+        "config": config,
+        "trials_per_scenario": args.trials,
+        "seeds": list(range(args.trials)),
+        "source_sha256": hashlib.sha256(source).hexdigest(),
         "model_source_sha256": hashlib.sha256(
             (Path(__file__).parents[1] / "src/leo/analysis/research/formal_orbit.py").read_bytes()
         ).hexdigest(),
@@ -135,6 +155,7 @@ def main():
         name: summarize_trials([r for r in rows if r["scenario"] == name]) for name in scenarios
     }
     output = {"protocol": protocol, "summaries": summaries, "trials": rows}
+
     # Identifiability condition numbers may be infinite; encode these as null.
     def finite(value):
         if isinstance(value, dict):
@@ -144,6 +165,7 @@ def main():
         if isinstance(value, float) and not np.isfinite(value):
             return None
         return value
+
     (args.output / "results.json").write_text(
         json.dumps(finite(output), indent=2, allow_nan=False) + "\n"
     )
@@ -154,18 +176,25 @@ def main():
             summary["coverage"][str(level)]["conditional_coverage"] for level in [0.5, 0.9, 0.95]
         ]
         axes[0].plot([0.5, 0.9, 0.95], rates, marker="o", label=name.replace("_", " "))
-        values = sorted(np.linalg.norm(r["error_km"]) * 1000 for r in rows
-                        if r["scenario"] == name and r["converged"])
+        values = sorted(
+            np.linalg.norm(r["error_km"]) * 1000
+            for r in rows
+            if r["scenario"] == name and r["converged"]
+        )
         if values:
             axes[1].plot(
                 values, np.arange(1, len(values) + 1) / len(values), label=name.replace("_", " ")
             )
     axes[0].plot([0, 1], [0, 1], "k--", linewidth=1)
-    axes[0].set(xlabel="Nominal region probability",
-                ylabel="Measured coverage among scored regions", ylim=(0, 1.02))
+    axes[0].set(
+        xlabel="Nominal region probability",
+        ylabel="Measured coverage among scored regions",
+        ylim=(0, 1.02),
+    )
     axes[1].axvline(1000, color="grey", linestyle="--")
-    axes[1].set(xlabel="Synthetic horizontal error (m)",
-                ylabel="Cumulative fraction of converged fits")
+    axes[1].set(
+        xlabel="Synthetic horizontal error (m)", ylabel="Cumulative fraction of converged fits"
+    )
     for axis in axes:
         axis.grid(alpha=0.2)
         axis.legend(fontsize=8)
