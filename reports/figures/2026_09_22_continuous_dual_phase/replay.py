@@ -103,9 +103,11 @@ def main():
     axes[3].plot(t,[r['held_band_coherence'] for r in tr],label='B-band amplitude coherence',color='tab:purple')
     axes[3].set_ylabel('Coherence');axes[4].set_ylabel('Frame timing change (µs)');axes[4].set_xlabel('Time from recording start (s)')
     for ax in axes:
+        for idx,edge in enumerate([49.80736,49.9122176,50.0170752,50.1219328,50.2267904]):
+            ax.axvline(edge,color='red',ls=':',alpha=.5,label='Refill boundary; continuity unknown' if idx==0 else None)
         ax.axvline(START+DURATION/2,color='gray',ls='--',label='Training / held-out boundary')
         ax.grid(alpha=.2);ax.legend(fontsize=8,loc='best');ax.set_xlim(START,START+DURATION)
-    fig.suptitle(f'{SESSION} · stream-0 · continuous fixed tuning\nSaved dual-RX IQ: GLRT and broadband phase on the same 500 ms interval',fontsize=13)
+    fig.suptitle(f'{SESSION} · stream-0 · PRE-FIX; RF continuity unknown\nFixed tuning; 500 ms stored IQ time; full-recording host duty 63.21%',fontsize=13)
     fig.savefig(args.output/'phase-and-glrt.png',dpi=170)
     zoom_start,zoom_stop=49.85,49.865
     zoom,za=plt.subplots(2,1,figsize=(12,6),sharex=True,constrained_layout=True)
@@ -128,6 +130,7 @@ def main():
     zoom.savefig(args.output/'frame-boundary-zoom.png',dpi=170)
     document['frame_timing']=dict(frame_rate_hz=FRAME_RATE_HZ,zoom_predictions=frame_predictions,
         caveat='Integer-sample GLRT timing hypotheses, not independently verified starts for every frame. Timing jumps prevent a global frame comb. No absolute frame IDs.')
+    document['continuity_correction']=dict(status='Pre-fix; RF continuity unknown; time axis is stored sample time',host_capture_span_s=94.921095577,host_duty_percent=63.210395576743,refill_boundaries_s=[49.80736,49.9122176,50.0170752,50.1219328,50.2267904])
     (args.output/'results.json').write_text(json.dumps(document,indent=2,allow_nan=False)+'\n')
     print('DONE',document['model'],tracking['tracked'],tracking['wrong_time'],flush=True)
 
