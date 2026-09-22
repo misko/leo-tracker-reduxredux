@@ -1,5 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+// Relative-phase fetching/rendering has its own component tests; keep these
+// existing overview polling assertions scoped to the overview component.
+vi.mock("./AdaptiveRelativePhase", () => ({ AdaptiveRelativePhase: () => <section aria-label="Broadband and pilot relative phase" /> }));
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus } from "./adaptive-analysis-api";

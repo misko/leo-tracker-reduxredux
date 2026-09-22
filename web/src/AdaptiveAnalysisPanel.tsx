@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AdaptiveRelativePhase } from "./AdaptiveRelativePhase";
 import type { AdaptiveCapture } from "./adaptive-api";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus, AdaptiveArtifact, AdaptiveFigure, AdaptiveProbeStride } from "./adaptive-analysis-api";
@@ -150,5 +151,6 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
     </> : null}
     {!status && phase?.state === "ready" ? <PhaseFigure status={phase} probeStrideMs={probeStrideMs} /> : null}
     {!status && phaseV2?.state === "ready" ? <PhaseV2Figure status={phaseV2} probeStrideMs={probeStrideMs} /> : null}
+    <AdaptiveRelativePhase sessionId={capture.session_id} />
   </section>;
 }

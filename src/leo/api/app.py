@@ -171,6 +171,7 @@ from leo.scanner.adaptive_hop_presentation import (
     AdaptiveOverviewArtifact,
     EdgeAdaptiveAnalysisStatusV4,
 )
+from leo.scanner.adaptive_relative_phase import RelativePhaseStatusV1
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
 from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
@@ -699,6 +700,65 @@ def create_app(
                 "ETag": f'"{artifact_sha256}"',
                 "Cache-Control": "private, max-age=3600, immutable",
                 "Content-Disposition": 'inline; filename="adaptive-dual-rx-phase-progression.png"',
+            },
+        )
+
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/relative-phase",
+        methods=["GET", "HEAD"],
+        response_model=RelativePhaseStatusV1,
+    )
+    def adaptive_relative_phase_status(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        response: Response,
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 120,
+    ):
+        if adaptive_hop_analysis is None:
+            raise HTTPException(status_code=404, detail="Adaptive analysis unavailable")
+        try:
+            result = adaptive_hop_analysis.relative_phase_status(
+                session_id, probe_stride_ms=probe_stride_ms
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409, detail="Relative phase metadata unavailable"
+            ) from exc
+        if result is None:
+            raise HTTPException(status_code=404, detail="Adaptive session not found")
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @router.api_route(
+        "/scanner/adaptive-sessions/{session_id}/analysis/relative-phase/{name}.png",
+        methods=["GET", "HEAD"],
+    )
+    def adaptive_relative_phase_png(
+        session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
+        name: Literal["relative-phase-overview", "relative-phase-dwells"],
+        binding_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        artifact_sha256: Annotated[str, Query(pattern=r"^sha256:[0-9a-f]{64}$")],
+        probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 120,
+    ):
+        if adaptive_hop_analysis is None:
+            raise HTTPException(status_code=404, detail="Adaptive analysis unavailable")
+        try:
+            data = adaptive_hop_analysis.relative_phase_artifact(
+                session_id,
+                name,
+                binding_sha256=binding_sha256,
+                artifact_sha256=artifact_sha256,
+                probe_stride_ms=probe_stride_ms,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=409, detail="Relative phase PNG unavailable") from exc
+        if data is None:
+            raise HTTPException(status_code=404, detail="Relative phase PNG unpublished")
+        return Response(
+            content=data,
+            media_type="image/png",
+            headers={
+                "ETag": f'"{artifact_sha256}"',
+                "Cache-Control": "private, max-age=3600, immutable",
             },
         )
 

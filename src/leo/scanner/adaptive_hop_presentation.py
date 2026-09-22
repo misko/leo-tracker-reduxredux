@@ -133,6 +133,17 @@ class RenderedAdaptiveOverview:
 
 
 class AdaptiveHopAnalysisPresentationReader(Protocol):
+    def relative_phase_status(self, session_id: str, *, probe_stride_ms: int = 120): ...
+    def relative_phase_artifact(
+        self,
+        session_id: str,
+        name: str,
+        *,
+        binding_sha256: str,
+        artifact_sha256: str,
+        probe_stride_ms: int = 120,
+    ) -> bytes | None: ...
+
     def status(
         self, session_id: str, *, probe_stride_ms: int = 10
     ) -> AdaptiveHopAnalysisStatusV1 | None: ...

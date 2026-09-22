@@ -34,6 +34,48 @@ class AdaptiveHopAnalysisPresentationStore:
     def __init__(self, root: Path):
         self._root = root
 
+    def relative_phase_status(self, session_id: str, *, probe_stride_ms: int = 120):
+        from leo.scanner.adaptive_relative_phase import (
+            RelativePhaseStatusV1,
+            relative_phase_binding,
+        )
+        from leo.storage.adaptive_relative_phase import RelativePhaseStore
+
+        binding = self._binding(session_id, probe_stride_ms)
+        if binding is None:
+            return None
+        digest = relative_phase_binding(binding.input_manifest_sha256, binding.sha256)
+        try:
+            with RelativePhaseStore(self._root, read_only=True).job(session_id, digest) as job:
+                manifest = job.manifest()
+        except FileNotFoundError:
+            manifest = None
+        if manifest is not None and (
+            manifest.input_manifest_sha256 != binding.input_manifest_sha256
+            or manifest.glrt_binding_sha256 != binding.sha256
+        ):
+            raise ValueError("Relative phase manifest changed its source binding")
+        return RelativePhaseStatusV1(
+            session_id=session_id,
+            input_manifest_sha256=binding.input_manifest_sha256,
+            binding_sha256=digest,
+            state="pending" if manifest is None else manifest.state,
+            manifest=manifest,
+        )
+
+    def relative_phase_artifact(
+        self, session_id, name, *, binding_sha256, artifact_sha256, probe_stride_ms=120
+    ):
+        from leo.storage.adaptive_relative_phase import RelativePhaseStore
+
+        status = self.relative_phase_status(session_id, probe_stride_ms=probe_stride_ms)
+        if status is None or status.manifest is None:
+            return None
+        if status.binding_sha256 != binding_sha256:
+            raise ValueError("Phase artifact source changed")
+        with RelativePhaseStore(self._root, read_only=True).job(session_id, binding_sha256) as job:
+            return job.artifact(name, artifact_sha256)
+
     def _binding(
         self, session_id: str, probe_stride_ms: int
     ) -> AdaptiveHopAnalysisBindingV1 | None:

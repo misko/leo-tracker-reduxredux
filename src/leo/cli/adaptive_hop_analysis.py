@@ -199,6 +199,20 @@ def main() -> None:
                 ).render_session(session_id, probe_stride_ms=args.probe_stride_ms)
                 payload["overview_state"] = "ready"
                 payload["overview_metrics_manifest_sha256"] = overview.metrics_manifest_sha256
+                from leo.cli.adaptive_relative_phase import run as run_relative_phase
+
+                try:
+                    relative_phase = run_relative_phase(
+                        args.bulk_root,
+                        session_id,
+                        probe_stride_ms=args.probe_stride_ms,
+                        maximum_seconds=120,
+                    )
+                except BlockingIOError:
+                    relative_phase = {"state": "partial"}
+                payload["relative_phase_state"] = relative_phase["state"]
+                if relative_phase["state"] != "complete":
+                    payload["state"] = "partial"
             phase = AdaptiveHopAnalysisPresentationStore(args.bulk_root).phase_status(
                 session_id, probe_stride_ms=args.probe_stride_ms
             )

@@ -82,11 +82,20 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
             capture = captures.inspect(session_id)
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             priority = 100 if capture.manifest.created_utc_ns > recent_cutoff else 0
-            if status.state != "figures_ready":
+            phase_pending = False
+            if status.state == "figures_ready" and indexed_utc_ns >= recent_cutoff:
+                relative_phase = presentation.relative_phase_status(session_id, probe_stride_ms=120)
+                phase_pending = relative_phase is None or relative_phase.state == "pending"
+            if status.state != "figures_ready" or phase_pending:
                 if catalog.enqueue_adaptive_analysis_job(
                     session_id=session_id,
                     input_manifest_digest=capture.manifest_sha256,
-                    configuration_digest=status.binding_sha256,
+                    configuration_digest=canonical_digest(
+                        {
+                            "metrics": status.binding_sha256,
+                            "relative_phase": "adaptive-broadband-pilot-relative-phase-v1",
+                        }
+                    ),
                     priority=priority,
                 ):
                     queued.append(session_id)
@@ -287,6 +296,7 @@ def run_once(
         lease.job_kind == "adaptive_scan"
         and payload.get("state") == "metrics_complete"
         and payload.get("overview_state") == "ready"
+        and payload.get("relative_phase_state") == "complete"
     ) or (lease.job_kind == "adaptive_tracking" and payload.get("state") == "complete"):
         if lease.job_kind == "adaptive_scan":
             _enqueue_tracking_after_analysis(
