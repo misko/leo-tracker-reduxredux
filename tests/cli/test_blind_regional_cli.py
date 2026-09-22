@@ -1,8 +1,10 @@
+from dataclasses import replace
 from types import SimpleNamespace
 
 from leo.analysis.blind_regional_association import (
     BlindRegionalMode,
     BlindRegionalResult,
+    BlindTrackAssociation,
 )
 from leo.cli.blind_regional import blind_regional_complete, configuration, evaluated_document
 from leo.contracts.blind_regional import BlindReferenceV1
@@ -97,3 +99,33 @@ def test_completion_verifies_current_configuration_capture_and_all_pngs(monkeypa
     assert not reads
     assert blind_regional_complete(tmp_path, "scan", expected_input_manifest_sha256="capture-a")
     assert reads == ["blind-association", "blind-position", "blind-position-modes"]
+
+
+def test_all_null_association_does_not_publish_arbitrary_position():
+    prepared, result = prepared_and_result()
+    prepared.tracks = (
+        SimpleNamespace(
+            track_id="unassigned",
+            support_center_utc_ns=(1, 2, 3, 4),
+            source_digest=prepared.source_digest,
+            observation_id=("a", "b", "c", "d"),
+        ),
+    )
+    association = BlindTrackAssociation(
+        track_id="unassigned",
+        association_state="unassigned",
+        top_candidates=(),
+        other_catalogue_weight=0.0,
+        null_weight=1.0,
+        time_s=(),
+        measured_hz=(),
+        prediction_hz=(),
+        training=(),
+    )
+    result = replace(result, modes=(replace(result.modes[0], track_associations=(association,)),))
+    document = evaluated_document(prepared, result, runtime_ms=1)
+    assert document.state == "insufficient"
+    assert document.position_modes == ()
+    assert document.tracks[0].state == "unassigned"
+    assert document.accounting.track_count == 1
+    assert "no-supported-catalogue-association" in document.reasons

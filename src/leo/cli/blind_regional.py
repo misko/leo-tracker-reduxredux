@@ -76,17 +76,26 @@ def evaluated_document(prepared, result, *, runtime_ms: int, reference=None):
     """The reference enters only after the blind numerical result exists."""
     from leo.cli.scan_position_methods import reference_error_m
 
-    modes = tuple(
-        BlindPositionModeV1(
-            rank=index,
-            state="diagnostic",
-            latitude_deg=mode.latitude_deg,
-            longitude_deg=mode.longitude_deg,
-            training_score=mode.training_log_evidence,
-            heldout_score=mode.heldout_log_evidence,
-            reasons=() if mode.refined else ("coarse-alternative-not-refined",),
+    no_signal_support = bool(prepared.tracks) and not any(
+        association.null_weight < 0.5
+        for mode in result.modes
+        for association in mode.track_associations
+    )
+    modes = (
+        tuple(
+            BlindPositionModeV1(
+                rank=index,
+                state="diagnostic",
+                latitude_deg=mode.latitude_deg,
+                longitude_deg=mode.longitude_deg,
+                training_score=mode.training_log_evidence,
+                heldout_score=mode.heldout_log_evidence,
+                reasons=() if mode.refined else ("coarse-alternative-not-refined",),
+            )
+            for index, mode in enumerate(result.modes, start=1)
         )
-        for index, mode in enumerate(result.modes, start=1)
+        if not no_signal_support
+        else ()
     )
     source_by_id = {track.track_id: track for track in prepared.tracks}
     tracks = []
@@ -202,8 +211,10 @@ def evaluated_document(prepared, result, *, runtime_ms: int, reference=None):
         )
         if reference is not None
         else None,
-        state=result.state,
-        reasons=result.reasons,
+        state="insufficient" if no_signal_support else result.state,
+        reasons=(*result.reasons, "no-supported-catalogue-association")
+        if no_signal_support
+        else result.reasons,
         diagnostics=diagnostics,
     )
 
