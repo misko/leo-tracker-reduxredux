@@ -14,6 +14,7 @@ from leo.contracts.base import ContractModel
 from leo.scanner.models import ScanTarget
 from leo.scanner.persistent_hop import (
     DualRxPersistentHopPlanV2,
+    Feature103DualRxPlanV3,
     PersistentHopPlanV1,
     PersistentHopRestorationReceiptV1,
     PersistentHopTargetCoverageV1,
@@ -110,6 +111,18 @@ class AdaptiveHopPlanV3(AdaptiveHopPlanV2):
         return self
 
 
+class AdaptiveHopPlanV4(AdaptiveHopPlanV2):
+    """Feature-103 dual-RX plan with source-attested variable transition gaps."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    geometry: Feature103DualRxPlanV3  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_revalidated(self) -> Self:
+        Feature103DualRxPlanV3.model_validate(self.geometry.model_dump())
+        return self
+
+
 class AdaptiveHopDecisionV1(AdaptiveModel):
     schema_version: Literal[1] = 1
     mode: AdaptiveMode
@@ -161,7 +174,11 @@ class AdaptiveHopEventV1(AdaptiveModel):
             or not self.invalid_start_counter
             <= self.transition_before_counter
             <= self.transition_after_counter
-            < self.valid_start_counter
+            <= self.valid_start_counter
+            or (
+                self.schema_version == 1
+                and self.transition_after_counter == self.valid_start_counter
+            )
             or self.decision.decision_counter > self.transition_before_counter
             or (self.visit_index and self.decision.decision_counter < self.invalid_start_counter)
             or (
@@ -176,6 +193,12 @@ class AdaptiveHopEventV1(AdaptiveModel):
         ):
             raise ValueError("adaptive event, actual tuning or decision binding is inconsistent")
         return self
+
+
+class AdaptiveHopEventV2(AdaptiveHopEventV1):
+    """Feature-103 event admitting a repeated target with no transition gap."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
 
 
 class AdaptiveHopVisitV1(AdaptiveModel):
@@ -194,6 +217,11 @@ class AdaptiveHopVisitV1(AdaptiveModel):
     @property
     def valid_sample_count(self) -> int:
         return self.valid_end_counter_exclusive - self.event.valid_start_counter
+
+
+class AdaptiveHopVisitV2(AdaptiveHopVisitV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    event: AdaptiveHopEventV2  # type: ignore[assignment]
 
 
 class AdaptiveHopTerminalV1(AdaptiveModel):
@@ -476,8 +504,30 @@ class AdaptiveHopReceiptV3(AdaptiveHopReceiptV2):
     plan: AdaptiveHopPlanV3  # type: ignore[assignment]
 
 
-AdaptiveHopPlan = AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3
-AdaptiveHopReceipt = AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3
+class AdaptiveHopReceiptV4(AdaptiveHopReceiptV2):
+    """Feature-103 dual-RX receipt preserving zero-gap repeated targets."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    plan: AdaptiveHopPlanV4  # type: ignore[assignment]
+    events: Annotated[tuple[AdaptiveHopEventV2, ...], Field(max_length=2500)]  # type: ignore[assignment]
+
+    @property
+    def visits(self) -> tuple[AdaptiveHopVisitV2, ...]:
+        return tuple(
+            AdaptiveHopVisitV2(
+                event=event,
+                valid_end_counter_exclusive=(
+                    event.valid_start_counter + self.plan.geometry.valid_visit_samples
+                ),
+            )
+            for event in self.events
+        )
+
+
+AdaptiveHopPlan = AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | AdaptiveHopPlanV4
+AdaptiveHopReceipt = (
+    AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | AdaptiveHopReceiptV4
+)
 
 
 def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
@@ -489,7 +539,9 @@ def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopPlanV3
+        AdaptiveHopPlanV4
+        if version == 4
+        else AdaptiveHopPlanV3
         if version == 3
         else AdaptiveHopPlanV2
         if version == 2
@@ -507,7 +559,9 @@ def validate_adaptive_hop_receipt(value: Any) -> AdaptiveHopReceipt:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopReceiptV3
+        AdaptiveHopReceiptV4
+        if version == 4
+        else AdaptiveHopReceiptV3
         if version == 3
         else AdaptiveHopReceiptV2
         if version == 2

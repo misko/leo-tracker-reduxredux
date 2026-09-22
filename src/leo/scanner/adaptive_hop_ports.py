@@ -12,10 +12,13 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV1,
     AdaptiveHopPlanV2,
     AdaptiveHopPlanV3,
+    AdaptiveHopPlanV4,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
+    AdaptiveHopReceiptV4,
     AdaptiveHopVisitV1,
+    AdaptiveHopVisitV2,
 )
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 from leo.scanner.ports import ScanRadioIdentity
@@ -31,10 +34,15 @@ class AdaptiveHopVisitBlock:
 
     samples: npt.NDArray[np.complex64]
     receiver_ids: tuple[int, int]
-    evidence: AdaptiveHopVisitV1
+    evidence: AdaptiveHopVisitV1 | AdaptiveHopVisitV2
 
     def __post_init__(self) -> None:
-        AdaptiveHopVisitV1.model_validate(self.evidence)
+        evidence_model = (
+            AdaptiveHopVisitV2
+            if getattr(self.evidence, "schema_version", None) == 2
+            else AdaptiveHopVisitV1
+        )
+        evidence_model.model_validate(self.evidence)
         values = np.asarray(self.samples)
         if (
             self.receiver_ids != (0, 1)
@@ -51,7 +59,9 @@ class AdaptiveHopVisitBlock:
 
 class AdaptiveHopSession(Protocol):
     @property
-    def plan(self) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3: ...
+    def plan(
+        self,
+    ) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | AdaptiveHopPlanV4: ...
 
     @property
     def complete(self) -> bool: ...
@@ -63,7 +73,11 @@ class AdaptiveHopSession(Protocol):
 
     def request_cancel(self) -> None: ...
 
-    def finish(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3: ...
+    def finish(
+        self,
+    ) -> (
+        AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | AdaptiveHopReceiptV4
+    ): ...
 
 
 class AdaptiveHopRadio(Protocol):
@@ -73,7 +87,10 @@ class AdaptiveHopRadio(Protocol):
     def open(self) -> ScanRadioIdentity: ...
 
     def begin_session(
-        self, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3, *, session_id: str
+        self,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | AdaptiveHopPlanV4,
+        *,
+        session_id: str,
     ) -> AdaptiveHopSession: ...
 
     def close(self) -> None: ...

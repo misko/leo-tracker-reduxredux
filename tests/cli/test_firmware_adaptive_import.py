@@ -1,10 +1,15 @@
+import json
 from pathlib import Path
 
+import numpy as np
 import pytest
+import zstandard as zstd
 
 import leo.cli.firmware_adaptive_import as importer
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV2, AdaptiveHopReceiptV3
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV4
 from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV4, HostAdaptiveHopReceiptV5
+from leo.storage.adaptive_hop import AdaptiveHopIqStore
+from leo.storage.adaptive_hop_history import AdaptiveHopPresentationStore
 
 
 def document(*, first_frequency: int = 959_687_498) -> dict:
@@ -172,7 +177,7 @@ def dual_document(rate: int, *, complete: bool = True) -> dict:
 
 @pytest.mark.parametrize(
     ("rate", "receipt_type"),
-    [(2_500_000, AdaptiveHopReceiptV2), (10_000_000, AdaptiveHopReceiptV3)],
+    [(2_500_000, AdaptiveHopReceiptV4), (10_000_000, AdaptiveHopReceiptV4)],
 )
 def test_dual_firmware_receipt_preserves_both_receivers(rate, receipt_type) -> None:
     receipt = importer._receipt(dual_document(rate), "sha256:" + "b" * 64)
@@ -182,6 +187,7 @@ def test_dual_firmware_receipt_preserves_both_receivers(rate, receipt_type) -> N
     assert receipt.radio_uri == importer.DUAL_URI
     assert receipt.plan.geometry.receiver_ids == (0, 1)
     assert receipt.plan.classification_receiver == 1
+    assert receipt.plan.geometry.transition_guard_samples == 0
     assert receipt.plan.policy.allowed_target_mask == 0x0F
     assert receipt.valid_sample_count == rate * 120 // 1000
 
@@ -189,6 +195,66 @@ def test_dual_firmware_receipt_preserves_both_receivers(rate, receipt_type) -> N
 def test_dual_firmware_receipt_refuses_unrepresented_sparse_iq() -> None:
     with pytest.raises(importer.UnsupportedFirmwareArchiveError, match="sparse dual"):
         importer._receipt(dual_document(2_500_000, complete=False), "sha256:" + "b" * 64)
+
+
+def test_dual_firmware_receipt_preserves_zero_gap_repeated_target() -> None:
+    value = dual_document(2_500_000)
+    dwell = 2_500_000 * 120 // 1000
+    final = value["visits"][0]["record"]["valid_end"]
+    first = value["visits"][0]
+    first["record"]["valid_start"] = final - 2 * dwell
+    first["record"]["valid_end"] = final - dwell
+    second = json.loads(json.dumps(first))
+    second["record"].update(
+        selection_counter=final - dwell,
+        transition_before=final - dwell,
+        valid_start=final - dwell,
+        valid_end=final,
+    )
+    value["visits"].append(second)
+
+    receipt = importer._receipt(value, "sha256:" + "b" * 64)
+
+    assert receipt.events[1].invalid_start_counter == receipt.events[1].valid_start_counter
+    assert receipt.events[1].transition_after_counter == receipt.events[1].valid_start_counter
+
+
+def test_dual_firmware_archive_publishes_v9_geometry_manifest(tmp_path) -> None:
+    archive = tmp_path / "scan-fw-dual-2500000"
+    archive.mkdir()
+    value = dual_document(2_500_000)
+    samples = 2_500_000 * 120 // 1000
+    raw = np.zeros((samples, 2, 2), dtype="<i2").tobytes()
+    compressed = zstd.ZstdCompressor(level=1).compress(raw)
+    (archive / "visit-000000.ci16.zst").write_bytes(compressed)
+    value["visits"][0]["iq"].update(
+        uncompressed_bytes=len(raw),
+        compressed_sha256=importer.sha256_digest(compressed),
+        uncompressed_sha256=importer.sha256_digest(raw),
+    )
+    value["evidence"]["utc_timing"] = {
+        "begin_before_realtime_ns": 1_790_000_000_000_000_000,
+        "begin_before_monotonic_ns": 1_000_000_000,
+        "begin_after_realtime_ns": 1_790_000_000_000_100_000,
+        "begin_after_monotonic_ns": 1_000_050_000,
+        "terminal_realtime_ns": 1_790_000_300_000_000_000,
+        "terminal_monotonic_ns": 301_000_000_000,
+    }
+    (archive / "manifest.json").write_text(json.dumps(value))
+    (tmp_path / "bulk").mkdir()
+
+    session_id = importer.import_archive(archive, tmp_path / "bulk")
+    store = AdaptiveHopIqStore(tmp_path / "bulk", read_only=True)
+    published = store.inspect(session_id)
+
+    assert published.manifest.schema_version == 9
+    assert published.manifest.receipt.plan.geometry.receiver_ids == (0, 1)
+    assert published.manifest.receiver_geometry.fixture.fixture_part_id == "LT3D-001A"
+    assert published.manifest.receiver_geometry.radio.assignments[0].mapping_status == "provisional"
+    store.close()
+    page = AdaptiveHopPresentationStore(tmp_path / "bulk").page_v2(cursor=0, limit=20)
+    assert page.items[0].session_id == session_id
+    assert page.items[0].sample_rate_hz == 2_500_000
 
 
 @pytest.mark.parametrize(

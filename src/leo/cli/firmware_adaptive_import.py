@@ -17,12 +17,13 @@ from leo.contracts.states import GainMode
 from leo.scanner.adaptive_hop import (
     AdaptiveHopDecisionV1,
     AdaptiveHopEventV1,
+    AdaptiveHopEventV2,
     AdaptiveHopPlanV2,
     AdaptiveHopPlanV3,
+    AdaptiveHopPlanV4,
     AdaptiveHopPolicyV1,
     AdaptiveHopPolicyV2,
-    AdaptiveHopReceiptV2,
-    AdaptiveHopReceiptV3,
+    AdaptiveHopReceiptV4,
     AdaptiveHopTerminalV1,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
@@ -41,12 +42,10 @@ from leo.scanner.host_adaptive import (
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.models import scheduled_low_band_targets
 from leo.scanner.persistent_hop import (
-    DualRxPersistentHopPlanV2,
-    DualRxPersistentHopTimingV2,
+    Feature103DualRxPlanV3,
+    Feature103DualRxTimingV3,
     PersistentHopProfileV1,
     PersistentHopRestorationReceiptV1,
-    PersistentHopUtcTimingAuthorityV1,
-    compile_persistent_hop_plan_v1,
     persistent_hop_wire_session_id,
 )
 from leo.scanner.single_rx import (
@@ -55,6 +54,7 @@ from leo.scanner.single_rx import (
     SingleRxMultiratePersistentHopPlanV3,
     SingleRxPersistentHopPlanV2,
 )
+from leo.station.geometry import AdaptiveReceiverGeometryBindingV1, StationReceiverGeometryV1
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.errors import BundleNotFoundError
 
@@ -62,6 +62,9 @@ SERIAL = "104000bac4950008230026001b440a003a"
 URI = "ip:192.168.1.17"
 DUAL_SERIAL = "10400056f695001322002d0010ad1719f2"
 DUAL_URI = "ip:192.168.1.21"
+DUAL_GEOMETRY_PATH = (
+    Path(__file__).resolve().parents[3] / "deploy/station/gauss-r21-lt3d-001a-20260920-v1.json"
+)
 
 
 class UnsupportedFirmwareArchiveError(ValueError):
@@ -92,6 +95,15 @@ def _load(path: Path) -> tuple[dict, bytes]:
 
 def _is_dual(document: dict) -> bool:
     return document.get("physical_receivers") == [0, 1]
+
+
+def _dual_geometry_binding() -> AdaptiveReceiverGeometryBindingV1:
+    geometry = StationReceiverGeometryV1.model_validate_json(DUAL_GEOMETRY_PATH.read_bytes())
+    return AdaptiveReceiverGeometryBindingV1.create(
+        geometry,
+        radio_id="radio_pluto_19f2",
+        radio_serial=DUAL_SERIAL,
+    )
 
 
 def _decision_configuration(
@@ -139,7 +151,13 @@ def _settings(value: dict, receiver_ids: tuple[int, ...] = (0,)) -> RadioSetting
 
 def _plan(
     document: dict,
-) -> AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3:
+) -> (
+    AdaptiveHopPlanV2
+    | AdaptiveHopPlanV3
+    | AdaptiveHopPlanV4
+    | HostAdaptiveHopPlanV2
+    | HostAdaptiveHopPlanV3
+):
     setup = document["setup"]
     rate = int(setup["source_rate_hz"])
     target_bandwidth_hz = rate if _is_dual(document) else 5_000_000
@@ -161,24 +179,19 @@ def _plan(
         dual_policy = AdaptiveHopPolicyV2(
             mode="adaptive", generation=int(setup["generation"]), allowed_target_mask=allowed_mask
         )
-        if rate == 2_500_000:
-            geometry = compile_persistent_hop_plan_v1(
-                sample_rate_hz=2_500_000,
-                transition_guard_us=1_000,
-                kernel_buffers=16,
-                samples_per_block=1_000_000,
-            )
-            return AdaptiveHopPlanV2(
-                geometry=geometry, policy=dual_policy, classification_receiver=1
-            )
-        geometry_10m = DualRxPersistentHopPlanV2(
-            transition_guard_samples=10_000,
+        if rate not in (2_500_000, 10_000_000):
+            raise UnsupportedFirmwareArchiveError("dual firmware archive rate is unsupported")
+        dual_rate = cast(Literal[2_500_000, 10_000_000], rate)
+        dual_geometry = Feature103DualRxPlanV3(
+            sample_rate_hz=dual_rate,
+            bandwidth_hz=dual_rate,
+            transition_guard_samples=0,
             kernel_buffers=16,
             samples_per_block=1_000_000,
             profiles=profiles,
         )
-        return AdaptiveHopPlanV3(
-            geometry=geometry_10m, policy=dual_policy, classification_receiver=1
+        return AdaptiveHopPlanV4(
+            geometry=dual_geometry, policy=dual_policy, classification_receiver=1
         )
     policy = AdaptiveHopPolicyV1(mode="adaptive", generation=int(setup["generation"]))
     decision = _decision_configuration(rate, setup["analysis_digest"])
@@ -218,13 +231,18 @@ def _plan(
 
 def _events(
     document: dict,
-    plan: AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | HostAdaptiveHopPlanV2 | HostAdaptiveHopPlanV3,
+    plan: AdaptiveHopPlanV2
+    | AdaptiveHopPlanV3
+    | AdaptiveHopPlanV4
+    | HostAdaptiveHopPlanV2
+    | HostAdaptiveHopPlanV3,
 ) -> tuple[AdaptiveHopEventV1, ...]:
     by_frequency = {
         target.if_center_hz: index
         for index, target in enumerate(profile.target for profile in plan.geometry.profiles)
     }
     events: list[AdaptiveHopEventV1] = []
+    event_model = AdaptiveHopEventV2 if isinstance(plan, AdaptiveHopPlanV4) else AdaptiveHopEventV1
     previous_end: int | None = None
     source_first = max(
         0,
@@ -246,7 +264,7 @@ def _events(
         transition_before = max(
             invalid_start, min(int(record["transition_before"]), transition_after)
         )
-        event = AdaptiveHopEventV1(
+        event = event_model(
             visit_index=ordinal,
             event_sequence=ordinal,
             device_event_id=ordinal + 1,
@@ -280,7 +298,7 @@ def _events(
 
 def _dual_receipt(document: dict):
     plan = _plan(document)
-    if not isinstance(plan, (AdaptiveHopPlanV2, AdaptiveHopPlanV3)):
+    if not isinstance(plan, AdaptiveHopPlanV4):
         raise TypeError("dual firmware archive produced a single-RX plan")
     events = _events(document, plan)
     if not events or any(entry["iq"] is None for entry in document["visits"]):
@@ -342,11 +360,7 @@ def _dual_receipt(document: dict):
             fastlock_inactive=True,
         ),
     )
-    return (
-        AdaptiveHopReceiptV3(**common)
-        if isinstance(plan, AdaptiveHopPlanV3)
-        else AdaptiveHopReceiptV2(**common)
-    )
+    return AdaptiveHopReceiptV4(**common)
 
 
 def _receipt(document: dict, archive_digest: str):
@@ -473,13 +487,8 @@ def _timing(document: dict, receipt):
     value = document["evidence"].get("utc_timing")
     if not value:
         return None
-    if isinstance(receipt, (AdaptiveHopReceiptV2, AdaptiveHopReceiptV3)):
-        dual_model = (
-            DualRxPersistentHopTimingV2
-            if receipt.plan.geometry.sample_rate_hz == 10_000_000
-            else PersistentHopUtcTimingAuthorityV1
-        )
-        return dual_model.from_host_bracket(
+    if isinstance(receipt, AdaptiveHopReceiptV4):
+        return Feature103DualRxTimingV3.from_host_bracket(
             session_id=receipt.session_id,
             session_start_device_sample_counter=receipt.terminal.first_counter,
             sample_rate_hz=receipt.plan.geometry.sample_rate_hz,
@@ -508,7 +517,11 @@ def import_archive(archive: Path, bulk_root: Path) -> str:
             return store.inspect(receipt.session_id).session_id
         except BundleNotFoundError:
             pass
-        writer = store.begin(receipt.session_id, receipt.plan)
+        writer = store.begin(
+            receipt.session_id,
+            receipt.plan,
+            receiver_geometry=_dual_geometry_binding() if _is_dual(document) else None,
+        )
         try:
             retained = getattr(
                 receipt, "retained_visit_indices", range(receipt.complete_visit_count)
