@@ -177,12 +177,12 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
             or len(self.visits) != self.capture.started_visits
             or tuple(v.visit_index for v in self.visits) != tuple(range(len(self.visits)))
             or (
-                self.capture.schema_version != 3
+                self.capture.schema_version not in (3, 7)
                 and tuple(v.retained for v in self.visits)
                 != tuple(i < self.capture.retained_visits for i in range(len(self.visits)))
             )
             or (
-                self.capture.schema_version == 3
+                self.capture.schema_version in (3, 7)
                 and sum(v.retained for v in self.visits) != self.capture.retained_visits
             )
         ):
