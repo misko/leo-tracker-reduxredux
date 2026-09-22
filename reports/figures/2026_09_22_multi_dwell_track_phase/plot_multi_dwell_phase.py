@@ -14,6 +14,7 @@ from scipy.signal import fftconvolve, firwin
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from leo.analysis.starlink.broadband_alignment import estimate_broadband_alignment
+from leo.analysis.starlink.broadband_phase_tracking import frequency_held_out_tracking
 from report_broadband_alignment import frozen_edge_evidence
 
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
@@ -150,6 +151,7 @@ def main():
                 receiver_cfo_seed_hz=seed,
                 cfo_search_half_width_hz=2_000,
             )
+            tracking = frequency_held_out_tracking(iq, RATE, alignment.model)
             values = common_band(compensate(iq, alignment.model))
             windows, profile = time_windows(values)
             event = source.visits[visit_index].event
@@ -164,11 +166,16 @@ def main():
                         "relative_cfo_hz": alignment.model.relative_cfo_hz,
                         "relative_cfo_rate_hz_s": alignment.model.relative_cfo_rate_hz_s,
                         "fractional_delay_samples": alignment.model.fractional_delay_samples,
+                        "phase_rad": alignment.model.phase_rad,
+                        "phase_standard_error_rad": alignment.model.phase_standard_error_rad,
+                        "frequency_reference_hz": alignment.model.frequency_reference_hz,
+                        "phase_uncertainty_kind": alignment.model.uncertainty_kind,
                         "selected_bandwidth_hz": (
                             max(alignment.model.frequency_hz) - min(alignment.model.frequency_hz)
                         ),
                     },
                     "edge_pair": by_visit[visit_index]["corrected_pairs"][0],
+                    "frequency_held_out_tracking": tracking,
                     "windows": windows,
                     "profile": profile,
                 }
@@ -241,6 +248,21 @@ def main():
                         [window["conditional_phase_jackknife_se_deg"] for window in row["windows"]]
                     )
                 ),
+                "edge_pilot_phase_deg": float(np.degrees(row["edge_pair"]["phase_rad"])),
+                "edge_pilot_phase_se_deg": row["edge_pair"]["phase_standard_error_deg"],
+                "broadband_intercept_phase_deg": float(np.degrees(row["model"]["phase_rad"])),
+                "broadband_intercept_phase_se_deg": float(
+                    np.degrees(row["model"]["phase_standard_error_rad"])
+                ),
+                "frequency_held_out_tracked_coherence": row["frequency_held_out_tracking"][
+                    "tracked"
+                ]["coherence"],
+                "frequency_held_out_residual_phase_deg": float(
+                    np.degrees(row["frequency_held_out_tracking"]["tracked"]["phase_rad"])
+                ),
+                "frequency_held_out_wrong_time_coherence": row["frequency_held_out_tracking"][
+                    "wrong_time"
+                ]["coherence"],
                 **row["model"],
             }
         )
@@ -263,6 +285,104 @@ def main():
     )
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     fig.savefig(args.output / "multi-dwell-summary.png", dpi=180)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(4, 3, figsize=(15, 13), sharex=True, sharey=True)
+    method_handles = None
+    for ax, row in zip(axes.flat, rows, strict=True):
+        centers = np.asarray([window["center_time_ms"] for window in row["windows"]])
+        rolling = np.asarray([window["phase_deg"] for window in row["windows"]])
+        scalar = ax.scatter(
+            centers,
+            rolling,
+            s=3,
+            color="black",
+            alpha=0.55,
+            label="Common-band scalar",
+        )
+        broadband = ax.errorbar(
+            row["model"]["reference_sample"] / RATE * 1_000,
+            np.degrees(row["model"]["phase_rad"]),
+            yerr=np.degrees(row["model"]["phase_standard_error_rad"]),
+            fmt="s",
+            color="tab:blue",
+            markersize=5,
+            capsize=2,
+            label="Broadband intercept",
+        )
+        edge = row["edge_pair"]
+        pilot = ax.errorbar(
+            edge["center_sample"] / RATE * 1_000,
+            np.degrees(edge["phase_rad"]),
+            yerr=edge["phase_standard_error_deg"],
+            fmt="^",
+            color="tab:red",
+            markersize=5,
+            capsize=2,
+            label="Edge pilot",
+        )
+        tracker_rows = row["frequency_held_out_tracking"]["rows"]
+        tracker_time = np.asarray([item["center_sample"] / RATE * 1_000 for item in tracker_rows])
+        tracker_a_residual = np.asarray([item["training_band_phase_rad"] for item in tracker_rows])
+        tracker_b_residual = np.asarray(
+            [item["held_band_residual_phase_rad"] for item in tracker_rows]
+        )
+        tracker_a = np.degrees(
+            np.angle(np.exp(1j * (row["model"]["phase_rad"] + tracker_a_residual)))
+        )
+        tracker_b = np.degrees(
+            np.angle(
+                np.exp(1j * (row["model"]["phase_rad"] + tracker_a_residual + tracker_b_residual))
+            )
+        )
+        tracked_a = ax.scatter(
+            tracker_time,
+            tracker_a,
+            s=9,
+            marker="o",
+            color="tab:green",
+            label="A-band tracked broadband gauge",
+        )
+        tracked_b = ax.scatter(
+            tracker_time,
+            tracker_b,
+            s=10,
+            marker="x",
+            color="tab:purple",
+            label="B-band inferred broadband gauge",
+        )
+        ax.axvline(60, color="black", linestyle="--", alpha=0.4)
+        ax.set_title(f"visit {row['visit_index']}  •  track +{row['track_elapsed_s']:.1f} s")
+        ax.set_xlim(2, 118)
+        ax.set_ylim(-180, 180)
+        ax.set_yticks((-180, -90, 0, 90, 180))
+        if method_handles is None:
+            method_handles = (scalar, broadband, pilot, tracked_a, tracked_b)
+    for ax in axes[-1, :]:
+        ax.set_xlabel("Time in 120 ms dwell (ms)")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Native wrapped phase (degrees)")
+    assert method_handles is not None
+    fig.legend(
+        method_handles,
+        [
+            "Common-band scalar",
+            "Broadband intercept",
+            "Edge pilot",
+            "A-band tracked broadband gauge",
+            "B-band inferred broadband gauge",
+        ],
+        loc="upper center",
+        ncol=3,
+        bbox_to_anchor=(0.5, 0.962),
+    )
+    fig.suptitle(
+        "Native phase observables from four methods on the same shared-track dwells\n"
+        "absolute offsets between method gauges are not physical disagreement",
+        y=0.995,
+    )
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.06, top=0.90, hspace=0.24, wspace=0.08)
+    fig.savefig(args.output / "multi-method-phase-comparison.png", dpi=180)
     plt.close(fig)
 
     csv_rows = []
@@ -288,6 +408,35 @@ def main():
             "visit_index,track_elapsed_s,dwell_center_time_ms,"
             "most_likely_rx1_minus_rx0_phase_deg,coherence_magnitude,"
             "minimum_normalized_prediction_error,conditional_phase_jackknife_se_deg"
+        ),
+        comments="",
+    )
+    method_rows = np.asarray(
+        [
+            (
+                row["visit_index"],
+                row["track_elapsed_s"],
+                row["edge_pilot_phase_deg"],
+                row["edge_pilot_phase_se_deg"],
+                row["broadband_intercept_phase_deg"],
+                row["broadband_intercept_phase_se_deg"],
+                row["frequency_held_out_tracked_coherence"],
+                row["frequency_held_out_wrong_time_coherence"],
+                row["frequency_held_out_residual_phase_deg"],
+            )
+            for row in summary
+        ]
+    )
+    np.savetxt(
+        args.output / "multi-method-summary.csv",
+        method_rows,
+        delimiter=",",
+        fmt="%.12g",
+        header=(
+            "visit_index,track_elapsed_s,edge_pilot_phase_deg,edge_pilot_phase_se_deg,"
+            "broadband_intercept_phase_deg,broadband_intercept_phase_se_deg,"
+            "frequency_held_out_tracked_coherence,frequency_held_out_wrong_time_coherence,"
+            "frequency_held_out_residual_phase_deg"
         ),
         comments="",
     )
