@@ -33,6 +33,8 @@ from leo.scanner.adaptive_hop_products import (
     EdgeAdaptiveMetricsManifestV4,
     Feature103AnalysisBindingV6,
     Feature103MetricsManifestV6,
+    Feature104AnalysisBindingV7,
+    Feature104MetricsManifestV7,
 )
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
@@ -88,7 +90,9 @@ def project_adaptive_overview(
     metrics_model: type[AdaptiveHopMetricsManifestV1] = (
         EdgeAdaptiveMetricsManifestV4 if edge else AdaptiveHopMetricsManifestV1
     )
-    if isinstance(binding, Feature103AnalysisBindingV6):
+    if isinstance(binding, Feature104AnalysisBindingV7):
+        binding_model, metrics_model = Feature104AnalysisBindingV7, Feature104MetricsManifestV7
+    elif isinstance(binding, Feature103AnalysisBindingV6):
         binding_model, metrics_model = Feature103AnalysisBindingV6, Feature103MetricsManifestV6
     elif isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5):
         binding_model, metrics_model = (

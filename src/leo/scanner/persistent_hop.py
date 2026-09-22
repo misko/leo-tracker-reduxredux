@@ -336,6 +336,78 @@ class Feature103DualRxPlanV3(PersistentHopPlanV1):
         return self
 
 
+class Feature104DualRxTimingV4(PersistentHopUtcTimingAuthorityV1):
+    """UTC authority for multirate feature-104 dual-RX captures."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000, 15_000_000]  # type: ignore[assignment]
+
+    @classmethod
+    def from_host_bracket(
+        cls,
+        *,
+        session_id: str,
+        session_start_device_sample_counter: int,
+        sample_rate_hz: Literal[2_500_000, 5_000_000, 10_000_000, 15_000_000],
+        begin_before_realtime_ns: int,
+        begin_before_monotonic_ns: int,
+        begin_after_realtime_ns: int,
+        begin_after_monotonic_ns: int,
+        terminal_realtime_ns: int,
+        terminal_monotonic_ns: int,
+        qualification_limit_ns: int = 2_000_000_000,
+    ) -> Feature104DualRxTimingV4:
+        if sample_rate_hz == 5_000_000:
+            raise ValueError("feature-104 production timing does not support 5 MS/s")
+        return cast(
+            Feature104DualRxTimingV4,
+            super().from_host_bracket(
+                session_id=session_id,
+                session_start_device_sample_counter=session_start_device_sample_counter,
+                sample_rate_hz=sample_rate_hz,  # type: ignore[arg-type]
+                begin_before_realtime_ns=begin_before_realtime_ns,
+                begin_before_monotonic_ns=begin_before_monotonic_ns,
+                begin_after_realtime_ns=begin_after_realtime_ns,
+                begin_after_monotonic_ns=begin_after_monotonic_ns,
+                terminal_realtime_ns=terminal_realtime_ns,
+                terminal_monotonic_ns=terminal_monotonic_ns,
+                qualification_limit_ns=qualification_limit_ns,
+            ),
+        )
+
+
+class Feature104DualRxPlanV4(PersistentHopPlanV1):
+    """Feature-104 dual-RX geometry extended to the 15 MS/s production rate."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000, 15_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 10_000_000, 15_000_000]  # type: ignore[assignment]
+    transition_guard_samples: Literal[0] = 0  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_exact(self) -> Self:
+        if self.bandwidth_hz != self.sample_rate_hz or not math.isfinite(self.gain_db):
+            raise ValueError("feature-104 dual-RX rate or gain is inconsistent")
+        expected = tuple(
+            PersistentHopProfileV1(
+                target_index=index,
+                fastlock_profile_index=index,
+                target=target,
+            )
+            for index, target in enumerate(
+                scheduled_low_band_targets(
+                    bandwidth_hz=(
+                        10_000_000 if self.sample_rate_hz == 15_000_000 else self.bandwidth_hz
+                    ),
+                    lnb_lo_hz=self.lnb_lo_hz,
+                )
+            )
+        )
+        if self.profiles != expected:
+            raise ValueError("feature-104 dual-RX targets must remain canonical")
+        return self
+
+
 def compile_persistent_hop_plan_v1(
     *,
     sample_rate_hz: Literal[2_500_000, 5_000_000],

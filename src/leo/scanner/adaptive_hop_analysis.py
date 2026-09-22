@@ -19,6 +19,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
+    AdaptiveHopReceiptV5,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     SessionId,
@@ -239,6 +240,17 @@ class Feature103VisitAnalysisV3(AdaptiveHopVisitAnalysisV1):
     configuration: Feature103AnalysisConfigurationV3  # type: ignore[assignment]
 
 
+class Feature104AnalysisConfigurationV4(AdaptiveHopAnalysisConfigurationV1):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000, 15_000_000]  # type: ignore[assignment]
+
+
+class Feature104VisitAnalysisV4(AdaptiveHopVisitAnalysisV1):
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    _allow_zero_gap: ClassVar[bool] = True
+    configuration: Feature104AnalysisConfigurationV4  # type: ignore[assignment]
+
+
 class AdaptiveHopAnalysisReader(Protocol):
     """A manifest-bound, lazy, dual-RX reader. Its caller owns closure."""
 
@@ -314,7 +326,14 @@ class Feature103AnalysisSourceV4(AdaptiveHopAnalysisSource):
     receipt: AdaptiveHopReceiptV4 = field(init=False)
 
 
+class Feature104AnalysisSourceV5(AdaptiveHopAnalysisSource):
+    _receipt_model: ClassVar[type[AdaptiveHopReceiptV5]] = AdaptiveHopReceiptV5
+    receipt: AdaptiveHopReceiptV5 = field(init=False)
+
+
 def _analysis_models(source):
+    if isinstance(source, Feature104AnalysisSourceV5):
+        return Feature104AnalysisConfigurationV4, Feature104VisitAnalysisV4
     if isinstance(source, Feature103AnalysisSourceV4):
         return Feature103AnalysisConfigurationV3, Feature103VisitAnalysisV3
     if isinstance(source, DualRx10mAdaptiveHopAnalysisSourceV3):
