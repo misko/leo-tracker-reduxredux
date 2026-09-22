@@ -1528,7 +1528,7 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         )
     current = _selected_release_revision()
     current_api = _selected_component_release_revision("api") if fast or api_only else None
-    comparison = current_api if fast and current_api is not None else current
+    comparison = current_api if current_api is not None else current
     paths = (
         tuple(_git_lines("diff", "--name-only", f"{comparison}..{target}")) if comparison else ()
     )
