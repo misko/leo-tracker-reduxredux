@@ -236,6 +236,36 @@ class PersistentHopPlanV1(ScannerModel):
         )
 
 
+class DualRxPersistentHopPlanV2(PersistentHopPlanV1):
+    """Native 10 MS/s dual-RX geometry; V1 remains closed at 2.5/5 MS/s."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    sample_rate_hz: Literal[10_000_000] = 10_000_000  # type: ignore[assignment]
+    bandwidth_hz: Literal[10_000_000] = 10_000_000  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_exact(self) -> Self:
+        if (
+            self.bandwidth_hz != self.sample_rate_hz
+            or not math.isfinite(self.gain_db)
+            or self.transition_guard_samples >= self.valid_visit_samples
+            or self.planned_valid_duty_ppm < self.minimum_valid_duty_ppm
+        ):
+            raise ValueError("dual-RX 10 MS/s hopping geometry is inconsistent")
+        expected = tuple(
+            PersistentHopProfileV1(target_index=i, fastlock_profile_index=i, target=target)
+            for i, target in enumerate(scheduled_low_band_targets(bandwidth_hz=10_000_000))
+        )
+        if self.profiles != expected:
+            raise ValueError("dual-RX 10 MS/s hopping targets must remain canonical")
+        return self
+
+
+class DualRxPersistentHopTimingV2(PersistentHopUtcTimingAuthorityV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    sample_rate_hz: Literal[10_000_000] = 10_000_000  # type: ignore[assignment]
+
+
 def compile_persistent_hop_plan_v1(
     *,
     sample_rate_hz: Literal[2_500_000, 5_000_000],

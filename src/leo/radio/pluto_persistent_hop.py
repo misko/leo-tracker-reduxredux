@@ -697,6 +697,17 @@ def _load_plan(plan: PersistentHopPlanV1) -> Any:
             else module.SingleRxPersistentHopPlanV2
         )
         extra["receiver_id"] = plan.receiver_ids[0]
+    elif plan.sample_rate_hz == 10_000_000:
+        plan_type = getattr(module, "DualRx10mPersistentHopPlanV4", None)
+        if plan_type is None:
+            base = module.PersistentHopPlanV1
+
+            class DualRx10mPersistentHopPlanV4(base):  # type: ignore[valid-type,misc]
+                def _validate_receiver_rate(self) -> None:
+                    if self.sample_rate_hz != 10_000_000:
+                        raise ValueError("dual-RX native plan must be 10 MS/s")
+
+            plan_type = DualRx10mPersistentHopPlanV4
     return plan_type(
         **extra,
         nominal_duration_seconds=plan.nominal_duration_seconds,

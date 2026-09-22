@@ -7,6 +7,7 @@ from leo.contracts.scanner_glrt_session import ScannerGlrtSessionEvidenceV1
 from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
     validate_adaptive_hop_receipt,
 )
 from leo.scanner.persistent_hop import (
@@ -71,7 +72,7 @@ def validate_glrt_capture_binding(
 
 def validate_glrt_adaptive_binding(
     publication: ScannerGlrtPublicationV1,
-    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
+    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3,
     *,
     input_manifest_sha256: str,
 ) -> None:

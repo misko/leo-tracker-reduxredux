@@ -114,6 +114,15 @@ class EdgeAdaptiveAnalysisStatusV4(AdaptiveHopAnalysisStatusV1):
     overview: EdgeAdaptiveOverviewManifestV4 | None
 
 
+class DualRx10mAdaptiveOverviewManifestV5(AdaptiveHopOverviewManifestV1):
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+
+
+class DualRx10mAdaptiveAnalysisStatusV5(AdaptiveHopAnalysisStatusV1):
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    overview: DualRx10mAdaptiveOverviewManifestV5 | None
+
+
 @dataclass(frozen=True, slots=True)
 class RenderedAdaptiveOverview:
     artifacts: dict[str, bytes]

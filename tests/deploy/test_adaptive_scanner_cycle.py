@@ -23,14 +23,18 @@ def _selection(epoch: int) -> tuple[str, str]:
     return fields["profile"], fields["rates"]
 
 
-def test_cycle_always_selects_dual_rx_2p5m() -> None:
-    expected = ("adaptive-dual-rx-2p5m-edge-random-300s-360s-v1", "2500000")
-    assert _selection(1_201) == expected
-    assert _selection(1_801) == expected
-    assert _selection(2_401) == expected
+def test_cycle_selects_only_dual_rx_2p5m_or_10m_and_both_occur() -> None:
+    allowed = {
+        ("adaptive-dual-rx-2p5m-edge-random-300s-360s-v1", "2500000"),
+        ("adaptive-dual-rx-10m-edge-random-300s-360s-v1", "10000000"),
+    }
+    selected = {_selection(slot * 360) for slot in range(100, 164)}
+    assert selected == allowed
+
+
+def test_cycle_selection_is_stable_within_a_durable_slot() -> None:
+    assert _selection(1_441) == _selection(1_799)
 
 
 def test_cycle_uses_upcoming_boundary_before_the_slot_starts() -> None:
-    expected = ("adaptive-dual-rx-2p5m-edge-random-300s-360s-v1", "2500000")
-    assert _selection(1_799) == expected
-    assert _selection(1_800) == expected
+    assert _selection(1_799) == _selection(1_800)

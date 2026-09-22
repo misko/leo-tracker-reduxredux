@@ -13,6 +13,7 @@ from pydantic import ConfigDict, Field, model_validator
 from leo.contracts.base import ContractModel
 from leo.scanner.models import ScanTarget
 from leo.scanner.persistent_hop import (
+    DualRxPersistentHopPlanV2,
     PersistentHopPlanV1,
     PersistentHopRestorationReceiptV1,
     PersistentHopTargetCoverageV1,
@@ -95,6 +96,18 @@ class AdaptiveHopPlanV1(AdaptiveModel):
 class AdaptiveHopPlanV2(AdaptiveHopPlanV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     policy: AdaptiveHopPolicyV2  # type: ignore[assignment]
+
+
+class AdaptiveHopPlanV3(AdaptiveHopPlanV2):
+    """One-edge native 10 MS/s dual-RX adaptive plan."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    geometry: DualRxPersistentHopPlanV2  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_revalidated(self) -> Self:
+        DualRxPersistentHopPlanV2.model_validate(self.geometry.model_dump())
+        return self
 
 
 class AdaptiveHopDecisionV1(AdaptiveModel):
@@ -458,8 +471,13 @@ class AdaptiveHopReceiptV2(AdaptiveHopReceiptV1):
         return self
 
 
-AdaptiveHopPlan = AdaptiveHopPlanV1 | AdaptiveHopPlanV2
-AdaptiveHopReceipt = AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2
+class AdaptiveHopReceiptV3(AdaptiveHopReceiptV2):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    plan: AdaptiveHopPlanV3  # type: ignore[assignment]
+
+
+AdaptiveHopPlan = AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3
+AdaptiveHopReceipt = AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3
 
 
 def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
@@ -470,7 +488,13 @@ def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
         if isinstance(value, AdaptiveHopPlanV1)
         else value.get("schema_version")
     )
-    model = AdaptiveHopPlanV2 if version == 2 else AdaptiveHopPlanV1
+    model = (
+        AdaptiveHopPlanV3
+        if version == 3
+        else AdaptiveHopPlanV2
+        if version == 2
+        else AdaptiveHopPlanV1
+    )
     return model.model_validate(value)
 
 
@@ -482,5 +506,11 @@ def validate_adaptive_hop_receipt(value: Any) -> AdaptiveHopReceipt:
         if isinstance(value, AdaptiveHopReceiptV1)
         else value.get("schema_version")
     )
-    model = AdaptiveHopReceiptV2 if version == 2 else AdaptiveHopReceiptV1
+    model = (
+        AdaptiveHopReceiptV3
+        if version == 3
+        else AdaptiveHopReceiptV2
+        if version == 2
+        else AdaptiveHopReceiptV1
+    )
     return model.model_validate(value)

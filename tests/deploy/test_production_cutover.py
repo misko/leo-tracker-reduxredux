@@ -1052,6 +1052,7 @@ def test_live_probe_accepts_every_reviewed_single_radio_scanner_profile() -> Non
         "adaptive-dual-rx-2p5m-300s-v1",
         "adaptive-dual-rx-2p5m-300s-360s-v1",
         "adaptive-dual-rx-2p5m-edge-random-300s-360s-v1",
+        "adaptive-dual-rx-10m-edge-random-300s-360s-v1",
     }
 
 

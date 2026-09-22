@@ -4,19 +4,26 @@ import pytest
 from pydantic import ValidationError
 
 from leo.contracts.digests import canonical_digest
+from leo.radio.pluto_persistent_hop import _load_plan
+from leo.scanner.adaptive_hop import AdaptiveHopPlanV3, AdaptiveHopPolicyV2, AdaptiveHopReceiptV3
 from leo.scanner.dual_rx import (
     DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
     DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
+    DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID,
     LEGACY_DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
     DualRxAdaptive2p5ScheduledScannerIntentV7,
     DualRxAdaptive2p5ScheduledScannerIntentV8,
     DualRxAdaptive2p5ScheduledScannerIntentV9,
+    DualRxAdaptive10mScheduledScannerIntentV10,
     _edge_from_random_bit,
     compile_dual_rx_adaptive_2p5_hop_plan,
     compile_dual_rx_adaptive_2p5_scanner_intent,
+    compile_dual_rx_adaptive_10m_hop_plan,
+    compile_dual_rx_adaptive_10m_scanner_intent,
 )
 from leo.scanner.schedule import ScheduledScannerRunIntentV1
 from leo.scanner.single_rx import parse_scheduled_scanner_intent
+from tests.scanner.adaptive_hop_fixtures import receipt_fixture
 
 
 def make_intent():
@@ -34,6 +41,56 @@ def make_intent():
         margin_gate=0.025,
         maximum_acquisition_candidates=8,
     )
+
+
+def make_10m_intent():
+    scheduled = datetime(2026, 9, 20, 22, 0, tzinfo=UTC)
+    return compile_dual_rx_adaptive_10m_scanner_intent(
+        operation_key="scheduled-scanner:20260920T220000Z",
+        radio_id="radio_pluto_19f2",
+        radio_serial="10400056f695001322002d0010ad1719f2",
+        scheduled_for=scheduled,
+        interval_seconds=360.0,
+        maximum_lateness_seconds=300.0,
+        run_duration_seconds=300.0,
+        dwell_ms=120,
+        gain_db=40,
+        margin_gate=0.025,
+        maximum_acquisition_candidates=8,
+    )
+
+
+def test_dual_rx_10m_profile_is_new_closed_contract() -> None:
+    intent = make_10m_intent()
+    assert intent.policy_id == DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID
+    assert intent.configuration.receiver_ids == (0, 1)
+    assert intent.configuration.sample_rate_hz == 10_000_000
+    assert parse_scheduled_scanner_intent(intent.model_dump(mode="json")) == intent
+    plan = compile_dual_rx_adaptive_10m_hop_plan(intent)
+    assert plan.receiver_ids == (0, 1)
+    assert plan.sample_rate_hz == 10_000_000
+    assert plan.valid_visit_samples == 1_200_000
+    assert plan.nominal_device_sample_count == 3_000_000_000
+    upstream = _load_plan(plan)
+    assert upstream.sample_rate_hz == 10_000_000
+    assert len(upstream.profiles) == 8
+    assert DualRxAdaptive10mScheduledScannerIntentV10.model_validate_json(
+        intent.model_dump_json()
+    ) == intent
+
+    adaptive_plan = AdaptiveHopPlanV3(
+        geometry=plan,
+        policy=AdaptiveHopPolicyV2(
+            mode="adaptive", generation=71, allowed_target_mask=0x0F
+        ),
+    )
+    receipt = receipt_fixture(
+        rate=10_000_000,
+        count=2,
+        plan=adaptive_plan,
+        receipt_factory=AdaptiveHopReceiptV3,
+    )
+    assert receipt.plan.geometry.sample_rate_hz == 10_000_000
 
 
 def test_dual_rx_profile_is_fixed_to_both_receivers_and_2p5m():

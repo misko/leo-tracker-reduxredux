@@ -11,6 +11,7 @@ from leo.contracts.scanner_glrt_frame import U64
 from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
     AdaptiveModel,
     Count,
     Index,
@@ -19,6 +20,8 @@ from leo.scanner.adaptive_hop import (
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     AdaptiveHopVisitAnalysisV1,
+    DualRx10mAdaptiveHopAnalysisConfigurationV2,
+    DualRx10mAdaptiveHopVisitAnalysisV2,
     _compare_source_fields,
 )
 
@@ -127,3 +130,22 @@ class EdgeAdaptiveVisitReferenceV4(AdaptiveHopVisitReferenceV1):
 class EdgeAdaptiveMetricsManifestV4(AdaptiveHopMetricsManifestV1):
     schema_version: Literal[4] = 4  # type: ignore[assignment]
     visits: Annotated[tuple[EdgeAdaptiveVisitReferenceV4, ...], Field(max_length=2500)]
+
+
+class DualRx10mAdaptiveAnalysisBindingV5(AdaptiveHopAnalysisBindingV1):
+    _visit_model: ClassVar[type[AdaptiveHopVisitAnalysisV1]] = DualRx10mAdaptiveHopVisitAnalysisV2
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    receipt: AdaptiveHopReceiptV3  # type: ignore[assignment]
+    configuration: DualRx10mAdaptiveHopAnalysisConfigurationV2  # type: ignore[assignment]
+
+
+class DualRx10mAdaptiveVisitReferenceV5(AdaptiveHopVisitReferenceV1):
+    schema_version: Literal[5] = 5
+    _filename_version: ClassVar[int] = 5
+    relative_path: Annotated[str, Field(pattern=r"^visit-[0-9]{6}\.v5\.json\.zst$")]
+
+
+class DualRx10mAdaptiveMetricsManifestV5(AdaptiveHopMetricsManifestV1):
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    configuration: DualRx10mAdaptiveHopAnalysisConfigurationV2  # type: ignore[assignment]
+    visits: Annotated[tuple[DualRx10mAdaptiveVisitReferenceV5, ...], Field(max_length=2500)]

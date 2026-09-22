@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from threading import Event
 
-from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPlanV2
+from leo.scanner.adaptive_hop import AdaptiveHopPlanV1, AdaptiveHopPlanV2, AdaptiveHopPlanV3
 from leo.scanner.adaptive_hop_application import (
     capture_adaptive_hop_session,
     capture_host_adaptive_hop_session,
@@ -19,7 +19,7 @@ from leo.storage.adaptive_hop import AdaptiveHopIqStore, PublishedAdaptiveHopIqS
 
 def capture_adaptive_hop_to_store(
     radio: AdaptiveHopRadio,
-    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
+    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3,
     *,
     session_id: str,
     store: AdaptiveHopIqStore,
