@@ -13,6 +13,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
+    AdaptiveHopReceiptV5,
     AdaptiveModel,
     Count,
     Index,
@@ -25,6 +26,8 @@ from leo.scanner.adaptive_hop_analysis import (
     DualRx10mAdaptiveHopVisitAnalysisV2,
     Feature103AnalysisConfigurationV3,
     Feature103VisitAnalysisV3,
+    Feature104AnalysisConfigurationV4,
+    Feature104VisitAnalysisV4,
     _compare_source_fields,
 )
 
@@ -171,3 +174,22 @@ class Feature103MetricsManifestV6(AdaptiveHopMetricsManifestV1):
     schema_version: Literal[6] = 6  # type: ignore[assignment]
     configuration: Feature103AnalysisConfigurationV3  # type: ignore[assignment]
     visits: Annotated[tuple[Feature103VisitReferenceV6, ...], Field(max_length=2500)]
+
+
+class Feature104AnalysisBindingV7(AdaptiveHopAnalysisBindingV1):
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    _visit_model: ClassVar[type[AdaptiveHopVisitAnalysisV1]] = Feature104VisitAnalysisV4
+    receipt: AdaptiveHopReceiptV5  # type: ignore[assignment]
+    configuration: Feature104AnalysisConfigurationV4  # type: ignore[assignment]
+
+
+class Feature104VisitReferenceV7(AdaptiveHopVisitReferenceV1):
+    schema_version: Literal[7] = 7
+    _filename_version: ClassVar[int] = 7
+    relative_path: Annotated[str, Field(pattern=r"^visit-[0-9]{6}\.v7\.json\.zst$")]
+
+
+class Feature104MetricsManifestV7(AdaptiveHopMetricsManifestV1):
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    configuration: Feature104AnalysisConfigurationV4  # type: ignore[assignment]
+    visits: Annotated[tuple[Feature104VisitReferenceV7, ...], Field(max_length=2500)]

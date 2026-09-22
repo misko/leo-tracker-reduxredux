@@ -15,6 +15,7 @@ from leo.scanner.models import ScanTarget
 from leo.scanner.persistent_hop import (
     DualRxPersistentHopPlanV2,
     Feature103DualRxPlanV3,
+    Feature104DualRxPlanV4,
     PersistentHopPlanV1,
     PersistentHopRestorationReceiptV1,
     PersistentHopTargetCoverageV1,
@@ -120,6 +121,18 @@ class AdaptiveHopPlanV4(AdaptiveHopPlanV2):
     @model_validator(mode="after")
     def _geometry_is_revalidated(self) -> Self:
         Feature103DualRxPlanV3.model_validate(self.geometry.model_dump())
+        return self
+
+
+class AdaptiveHopPlanV5(AdaptiveHopPlanV2):
+    """Feature-104 multirate dual-RX plan."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    geometry: Feature104DualRxPlanV4  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_revalidated(self) -> Self:
+        Feature104DualRxPlanV4.model_validate(self.geometry.model_dump())
         return self
 
 
@@ -524,9 +537,54 @@ class AdaptiveHopReceiptV4(AdaptiveHopReceiptV2):
         )
 
 
-AdaptiveHopPlan = AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | AdaptiveHopPlanV4
+class AdaptiveHopReceiptV5(AdaptiveHopReceiptV2):
+    """Feature-104 multirate dual-RX receipt with sparse retained IQ."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    plan: AdaptiveHopPlanV5  # type: ignore[assignment]
+    events: Annotated[tuple[AdaptiveHopEventV2, ...], Field(max_length=2500)]  # type: ignore[assignment]
+    retained_visit_indices: Annotated[tuple[int, ...], Field(max_length=2500)]
+    transport_missing_sample_count: Counter
+
+    @model_validator(mode="after")
+    def _sparse_transport_accounting_is_exact(self) -> Self:
+        skipped_visit_count = len(self.events) - len(self.retained_visit_indices)
+        maximum_gap_expansion = skipped_visit_count * (self.plan.geometry.valid_visit_samples - 1)
+        if not (
+            0 <= self.transport_missing_sample_count <= self.duty_denominator_sample_count
+            and self.unclassified_sample_count
+            <= self.transport_missing_sample_count + maximum_gap_expansion
+            and (not self.unclassified_sample_count or self.transport_missing_sample_count)
+        ):
+            raise ValueError("transport gaps do not bound unclassified source time")
+        return self
+
+    @property
+    def visits(self) -> tuple[AdaptiveHopVisitV2, ...]:
+        return tuple(
+            AdaptiveHopVisitV2(
+                event=event,
+                valid_end_counter_exclusive=(
+                    event.valid_start_counter + self.plan.geometry.valid_visit_samples
+                ),
+            )
+            for event in (self.events[index] for index in self.retained_visit_indices)
+        )
+
+
+AdaptiveHopPlan = (
+    AdaptiveHopPlanV1
+    | AdaptiveHopPlanV2
+    | AdaptiveHopPlanV3
+    | AdaptiveHopPlanV4
+    | AdaptiveHopPlanV5
+)
 AdaptiveHopReceipt = (
-    AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | AdaptiveHopReceiptV4
+    AdaptiveHopReceiptV1
+    | AdaptiveHopReceiptV2
+    | AdaptiveHopReceiptV3
+    | AdaptiveHopReceiptV4
+    | AdaptiveHopReceiptV5
 )
 
 
@@ -539,7 +597,9 @@ def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopPlanV4
+        AdaptiveHopPlanV5
+        if version == 5
+        else AdaptiveHopPlanV4
         if version == 4
         else AdaptiveHopPlanV3
         if version == 3
@@ -559,7 +619,9 @@ def validate_adaptive_hop_receipt(value: Any) -> AdaptiveHopReceipt:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopReceiptV4
+        AdaptiveHopReceiptV5
+        if version == 5
+        else AdaptiveHopReceiptV4
         if version == 4
         else AdaptiveHopReceiptV3
         if version == 3

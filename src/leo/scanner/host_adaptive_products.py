@@ -9,11 +9,13 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
+    AdaptiveHopReceiptV5,
 )
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     DualRx10mAdaptiveHopAnalysisConfigurationV2,
     Feature103AnalysisConfigurationV3,
+    Feature104AnalysisConfigurationV4,
 )
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
@@ -22,6 +24,7 @@ from leo.scanner.adaptive_hop_products import (
     DualRx10mAdaptiveAnalysisBindingV5,
     EdgeAdaptiveAnalysisBindingV4,
     Feature103AnalysisBindingV6,
+    Feature104AnalysisBindingV7,
 )
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
@@ -90,14 +93,18 @@ def bind_actual_visit_analysis(
     receipt: AdaptiveHopReceiptV1, *, input_manifest_sha256: str, probe_stride_ms: int = 10
 ) -> AdaptiveHopAnalysisBindingV1:
     """Resolve the exact persisted major for the supplied native recording."""
-    if isinstance(receipt, (AdaptiveHopReceiptV3, AdaptiveHopReceiptV4)):
+    if isinstance(receipt, (AdaptiveHopReceiptV3, AdaptiveHopReceiptV4, AdaptiveHopReceiptV5)):
         config: type[AdaptiveHopAnalysisConfigurationV1] = (
-            Feature103AnalysisConfigurationV3
+            Feature104AnalysisConfigurationV4
+            if isinstance(receipt, AdaptiveHopReceiptV5)
+            else Feature103AnalysisConfigurationV3
             if isinstance(receipt, AdaptiveHopReceiptV4)
             else DualRx10mAdaptiveHopAnalysisConfigurationV2
         )
         model: type[AdaptiveHopAnalysisBindingV1] = (
-            Feature103AnalysisBindingV6
+            Feature104AnalysisBindingV7
+            if isinstance(receipt, AdaptiveHopReceiptV5)
+            else Feature103AnalysisBindingV6
             if isinstance(receipt, AdaptiveHopReceiptV4)
             else DualRx10mAdaptiveAnalysisBindingV5
         )
