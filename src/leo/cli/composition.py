@@ -1708,7 +1708,7 @@ class LocalAcquisitionBackend:
                     ExitCode.INVALID_CONFIGURATION,
                 )
         if self.settings.scanner_capture_mode == "persistent_hop":
-            if host_adaptive_intent or (
+            if durable_adaptive_intent or (
                 self.settings.scanner_hop_policy != "fixed"
                 and intent.configuration.sample_rate_hz
                 in self.settings.scanner_adaptive_sample_rates_hz

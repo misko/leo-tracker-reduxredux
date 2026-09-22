@@ -11,7 +11,10 @@ from leo.cli.composition import CliSettings, CompositionHooks, LocalAcquisitionB
 from leo.cli.models import ExitCode
 from leo.radio.scanner_glrt_metadata import ScannerGlrtOptions
 from leo.scanner.adaptive_hop_application import AdaptiveHopCaptureError
-from leo.scanner.dual_rx import DUAL_RX_ADAPTIVE_2P5_PROFILE_ID
+from leo.scanner.dual_rx import (
+    DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+    DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID,
+)
 from leo.scanner.ports import ScanRadioIdentity
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.scanner_glrt import ScannerGlrtStore
@@ -49,6 +52,53 @@ def test_dual_rx_profile_admits_six_minute_persistent_cadence(tmp_path) -> None:
     )
 
     assert settings.scanner_interval_seconds == 360
+
+
+def test_durable_dual_rx_intent_keeps_adaptive_dispatch_across_rate_change(
+    tmp_path, monkeypatch
+) -> None:
+    common = {
+        "scanner_interval_seconds": 360,
+        "scanner_run_seconds": 300,
+        "scanner_dwell_ms": 120,
+        "scanner_hop_policy": "adaptive",
+        "scanner_glrt": OPTIONS,
+        "station_authority_root": tmp_path / "station-authority",
+        "station_geometry_relative_path": "geometry.json",
+        "station_geometry_file_digest": "sha256:" + "a" * 64,
+    }
+    original = LocalAcquisitionBackend(
+        _settings(
+            tmp_path,
+            scanner_profile=DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
+            scanner_adaptive_sample_rates_hz=(2_500_000,),
+            **common,
+        )
+    )
+    intent = original.scheduled_scanner_intent(
+        operation_key="scheduled-scanner:20260902T000000Z",
+        scheduled_for=datetime(2026, 9, 2, 0, 0, tzinfo=UTC),
+    )
+    changed = LocalAcquisitionBackend(
+        _settings(
+            tmp_path / "ten",
+            scanner_profile=DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID,
+            scanner_adaptive_sample_rates_hz=(10_000_000,),
+            **common,
+        )
+    )
+    monkeypatch.setattr(
+        LocalAcquisitionBackend,
+        "_capture_scheduled_adaptive_hop",
+        lambda self, restored, *, cancel: ("adaptive", restored),
+    )
+    monkeypatch.setattr(
+        LocalAcquisitionBackend,
+        "_capture_scheduled_persistent_hop",
+        lambda self, restored, *, cancel: ("fixed", restored),
+    )
+
+    assert changed.capture_scheduled_scanner(intent, cancel=Event()) == ("adaptive", intent)
 
 
 class ScheduledFixtureRadio:
