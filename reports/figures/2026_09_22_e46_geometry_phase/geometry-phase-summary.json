@@ -1,0 +1,78 @@
+{
+  "schema": "org.leo.report.e46-conditional-geometry-phase/v1",
+  "session_id": "scan-hop-e46d3aba244cf641",
+  "receiver_tracklet_ids": [
+    "sha256:e36b7b6bea061125e5a739521fe465b98cebc51539be5158d6da2a4e59d3791b",
+    "sha256:78c307f35318463a89d69c38f2b648d13bf892efaf11810f153bc09b8ddf2173"
+  ],
+  "shared_visits": 106,
+  "plotted_visits": [
+    376,
+    453,
+    486,
+    513,
+    537,
+    564,
+    588,
+    614,
+    638,
+    668,
+    697,
+    724
+  ],
+  "track_start_utc_ns": 1789994224176276795,
+  "track_duration_s": 44.3066512,
+  "rf_hz": 11190312500.0,
+  "site": {
+    "latitude_deg": 37.858988,
+    "longitude_deg": -122.478103,
+    "altitude_m": -29.0
+  },
+  "phase_sign": "RX1 minus RX0; phi=(360*f/c)*dot(p_RX1-p_RX0, source_unit)",
+  "nominal_pose": "fixture +x east; provisional RX0 negative-x, RX1 positive-x mapping",
+  "baselines_m": {
+    "mount centers, d=0 mm": 0.08,
+    "illustrative d=50 mm": 0.09736481776669303,
+    "illustrative d=100 mm": 0.11472963553338607
+  },
+  "candidates": {
+    "59925": {
+      "label": "leading Doppler candidate 59925 (STARLINK-31959)",
+      "tau_s": 1.0,
+      "line1": "1 59925U 24106D   26263.85093421  .00001298  00000-0  56685-4 0  9998",
+      "line2": "2 59925  43.0048 306.5158 0001592 267.6922  92.3748 15.27576664130411"
+    },
+    "60188": {
+      "label": "runner-up Doppler candidate 60188",
+      "tau_s": -5.0,
+      "line1": "1 60188U 24124F   26263.35622009  .00001523  00000-0  17426-4 0  9997",
+      "line2": "2 60188  53.1585 281.9890 0001190  84.5596 275.5558 15.69713691127103"
+    }
+  },
+  "leader_results": {
+    "azimuth_start_end_deg": [
+      285.61353191988815,
+      120.22040206976449
+    ],
+    "elevation_start_peak_end_deg": [
+      74.08832743548487,
+      87.64224988072668,
+      68.93957673810965
+    ],
+    "phase_change_deg_by_baseline": {
+      "mount centers, d=0 mm": 617.6526648536515,
+      "illustrative d=50 mm": 751.7204894573513,
+      "illustrative d=100 mm": 885.7883140610511
+    },
+    "nominal_rate_range_deg_s": [
+      14.851221087317867,
+      17.848401992564344
+    ]
+  },
+  "limits": [
+    "NORAD 59925 is a leading Doppler hypothesis, not a claimed identity.",
+    "The STL does not measure electrical phase-center offset.",
+    "The eastward installed pose and receiver-to-slot mapping are provisional.",
+    "Receiver/LNB/channel phase adds an unknown offset, and retunes break observed phase continuity."
+  ]
+}
