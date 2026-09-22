@@ -1,0 +1,74 @@
+{
+  "schema": "recent-joint-regional-global-execution-v1",
+  "truth_accessed": false,
+  "known_position_used": false,
+  "site_conditioned_candidates_used": false,
+  "cohort": {
+    "single_session_id": "scan-fw-1d05092feaa8f7d5",
+    "set_session_ids": [
+      "scan-fw-1d05092feaa8f7d5",
+      "scan-fw-e3bc0741ecf02704",
+      "scan-fw-3bee6be6e987a34f",
+      "scan-fw-64e06d86f4746e55",
+      "scan-fw-e201d79ba3234e2e"
+    ],
+    "track_count": 165,
+    "observation_count": 5432,
+    "selection": "strongest recent 300 s scan by exported RF observation count, plus four other recent same-radio 2.5 MS/s scans; selected before fitting"
+  },
+  "protocol": {
+    "region_width_height_km": 5000.0,
+    "spacing_km": 50.0,
+    "centres": {
+      "sacramento": [38.5816, -121.4944],
+      "reno": [39.5296, -119.8138],
+      "denver": [39.7392, -104.9903]
+    },
+    "partition": "chronological first 60 percent training, final 40 percent held out",
+    "maximum_observations_per_track_partition": 6,
+    "track_policy": "all exported source-disjoint RF tracklets; RX paths scored as separate arcs",
+    "identity_policy": "full causal Starlink catalogue with unassigned component; no fixed identities",
+    "thread_environment": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "benchmark": {
+    "centre": "sacramento",
+    "spacing_km": 250.0,
+    "cell_count": 400,
+    "elapsed_seconds": 25.1,
+    "maximum_rss_kib": 181316,
+    "cpu_percent": 99
+  },
+  "runs": {
+    "sacramento-50km": {
+      "elapsed_seconds": 372.40516734390985,
+      "maximum_rss_kib": 225704,
+      "cpu_percent": 99,
+      "final_latitude_deg": 37.90398740525912,
+      "final_longitude_deg": -122.34921470922835
+    },
+    "reno-50km": {
+      "elapsed_seconds": 380.0296722550411,
+      "maximum_rss_kib": 224060,
+      "cpu_percent": 99,
+      "final_latitude_deg": 37.92727918367501,
+      "final_longitude_deg": -122.37908082471127
+    },
+    "denver-50km": {
+      "elapsed_seconds": 385.81655804708134,
+      "maximum_rss_kib": 223492,
+      "cpu_percent": 99,
+      "final_latitude_deg": 37.73839652916277,
+      "final_longitude_deg": -122.43550466781697
+    }
+  },
+  "limitations": [
+    "single-scan acquisition is multimodal and changes across the three declared starting squares",
+    "receiver copies are separate source-balanced arcs; no paired-geometry independence claim is made",
+    "50 km global cells require identity-refreshing full-observation local refinement before a final position",
+    "geographic truth was unavailable to inference and is evaluated only after sealing"
+  ]
+}
