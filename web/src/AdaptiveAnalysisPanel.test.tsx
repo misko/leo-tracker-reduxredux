@@ -74,6 +74,25 @@ function phaseV2Fixture(sessionId = capture.session_id): AdaptivePhaseV2Status {
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive analysis publication", () => {
+  it("binds feature-104 schema-7 analysis without widening feature-103", async () => {
+    const c = {
+      ...capture, schema_version: 7 as const, sample_rate_hz: 15000000 as const,
+      bandwidth_hz: 15000000 as const, analysis_state: "separate_product" as const,
+      radio_serial: "10400056f695001322002d0010ad1719f2", selected_edge: "lower" as const,
+      allowed_target_mask: 15 as const,
+    };
+    const value = analysisFixture("figures_ready");
+    value.schema_version = 7;
+    value.configuration.schema_version = 4;
+    value.configuration.sample_rate_hz = 15000000;
+    value.overview!.schema_version = 7;
+    vi.stubGlobal("fetch", analysisFetch(value));
+    await expect(getAdaptiveAnalysis(c)).resolves.toEqual(value);
+    expect(adaptiveFigureUrl(value, value.overview!.artifacts[0])).toContain("/api/v3/");
+
+    value.configuration.schema_version = 3;
+    await expect(getAdaptiveAnalysis(c)).rejects.toThrow("source or configuration");
+  });
   it("binds the feature-103 dual RX overview to its native rate and source", async () => {
     const c = { ...capture, schema_version: 6 as const, sample_rate_hz: 10000000 as const, bandwidth_hz: 10000000 as const,
       analysis_state: "separate_product" as const, radio_serial: "test", selected_edge: "lower" as const, allowed_target_mask: 15 as const };

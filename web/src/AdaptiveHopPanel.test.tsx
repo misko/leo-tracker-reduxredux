@@ -8,6 +8,33 @@ const respond = (value: unknown, status = 200) => ({ ok: status === 200, status,
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive actual-visit presentation", () => {
+  it("admits only the declared feature-104 schema-7 rates and page major", async () => {
+    const legacy = adaptiveDetailFixture("feature104-test", 3);
+    const origin = BigInt(legacy.source_origin_counter!);
+    const scale = (counter: string) => String(origin + (BigInt(counter) - origin) * 6n);
+    const capture = {
+      ...legacy.capture, schema_version: 7 as const, sample_rate_hz: 15000000 as const,
+      bandwidth_hz: 15000000 as const, analysis_state: "separate_product" as const,
+      radio_serial: "10400056f695001322002d0010ad1719f2", selected_edge: "lower" as const,
+      allowed_target_mask: 15 as const,
+    };
+    const detail = {
+      ...legacy, schema_version: 7 as const, capture,
+      visits: legacy.visits.map(v => ({
+        ...v, proposed_target_index: v.target_index, valid_start_counter: scale(v.valid_start_counter),
+        valid_end_counter: v.valid_end_counter === null ? null : scale(v.valid_end_counter),
+        decision_counter: scale(v.decision_counter),
+      })),
+    };
+    const page = { schema_version: 6, kind: "adaptive_hop_history_page", items: [capture], cursor: 0, limit: 5, total: 1, next_cursor: null };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(respond(page)).mockResolvedValue(respond(detail)));
+    await expect(getAdaptiveSessions(0)).resolves.toEqual(page);
+    await expect(getAdaptiveSession("feature104-test")).resolves.toEqual(detail);
+
+    Object.assign(capture, { sample_rate_hz: 5000000, bandwidth_hz: 5000000 });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(page)));
+    await expect(getAdaptiveSessions(0)).rejects.toThrow("capture evidence");
+  });
   it("admits new dual RX history and preserves zero-gap visit timing", async () => {
     const detail = adaptiveDetailFixture("feature103-test", 3);
     const capture = { ...detail.capture, schema_version: 6, analysis_state: "separate_product", radio_serial: "test", selected_edge: "lower", allowed_target_mask: 15 };
