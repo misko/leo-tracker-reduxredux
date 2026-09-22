@@ -35,9 +35,40 @@ The common component is strongest in the middle of the track: median coherence r
 
 The conditional local phase estimates are much tighter than the failure of a global line: median deletion-jackknife SE is 3.4–7.7°, while the phase trajectory itself changes by many cycles. That supports a locally tracked phase/frequency model, with uncertainty propagated per window. It does not support joining absolute phase between retunes; retuning and receiver/LNB terms leave an unknown intercept for every dwell.
 
+## Comparison with the other phase approaches
+
+![Four phase approaches on the same dwells](figures/2026_09_22_multi_dwell_track_phase/multi-method-phase-comparison.png)
+
+The comparison retains four observables:
+
+- black: rolling common-band scalar phase from the preceding heatmaps;
+- blue square: one full-band cross-spectrum intercept at its declared reference time and frequency;
+- red triangle: source-specific known-edge-pilot phase at its own center sample;
+- green/purple: second-half phase tracked from A frequency groups and independently inferred from disjoint B groups, both in the fitted broadband-channel gauge.
+
+The edge-pilot, broadband-intercept and common-band scalar methods have different waveform, timing, frequency and channel-response gauges. Their absolute vertical separation is not a calibrated phase error and cannot be removed by assuming a shared satellite. The GLRT itself is phase-blind and therefore contributes source/timing/frequency evidence rather than another phase point.
+
+| Visit | Edge-pilot phase | Broadband intercept | A-tracked/B-held coherence | Wrong-time coherence | B residual phase |
+|---:|---:|---:|---:|---:|---:|
+| 376 | +143.6° ± 7.5° | +27.6° ± 1.0° | 0.170 | 0.009 | −2.8° |
+| 453 | +128.2° ± 3.8° | −169.9° ± 1.2° | 0.161 | 0.006 | +3.7° |
+| 486 | +67.4° ± 1.6° | −171.6° ± 0.9° | 0.227 | 0.009 | −1.3° |
+| 513 | −165.2° ± 4.1° | +0.4° ± 1.5° | 0.210 | 0.010 | −4.6° |
+| 537 | −16.5° ± 6.6° | +169.3° ± 1.7° | 0.191 | 0.013 | −3.3° |
+| 564 | −144.0° ± 5.3° | −98.7° ± 0.9° | 0.224 | 0.013 | +1.6° |
+| 588 | −17.4° ± 6.1° | +57.5° ± 1.0° | 0.199 | 0.004 | +3.3° |
+| 614 | +159.9° ± 2.3° | +32.8° ± 1.2° | 0.191 | 0.007 | −0.4° |
+| 638 | −111.9° ± 5.3° | +95.2° ± 1.2° | 0.168 | 0.002 | −3.8° |
+| 668 | +162.0° ± 3.1° | +44.2° ± 1.5° | 0.154 | 0.008 | +1.0° |
+| 697 | +47.9° ± 6.6° | −91.5° ± 1.6° | 0.131 | 0.005 | −0.1° |
+| 724 | +37.3° ± 6.0° | +99.5° ± 22.3° | 0.036 | 0.111 | −54.2° |
+
+For the first 11 visits, A-derived phase predicts the disjoint B bands with aggregate residual between −4.6° and +3.7°. Tracked coherence is 0.131–0.227, versus wrong-time controls of 0.002–0.013. This independently supports the moving broadband phase ridge. Visit 724 fails: tracked coherence 0.036 is below its 0.111 wrong-time control, its residual is −54.2°, and the broadband intercept uncertainty expands to 22.3°. It should remain unavailable for precise broadband phase interpretation despite its retained edge-pilot detection.
+
 ## Reproduction and artifacts
 
 - [All 2,796 window estimates](figures/2026_09_22_multi_dwell_track_phase/multi-dwell-windows.csv).
+- [Cross-method summary](figures/2026_09_22_multi_dwell_track_phase/multi-method-summary.csv).
 - [Full models, source bindings and results](figures/2026_09_22_multi_dwell_track_phase/multi-dwell-results.json).
 - [Reproduction script](figures/2026_09_22_multi_dwell_track_phase/plot_multi_dwell_phase.py).
 
