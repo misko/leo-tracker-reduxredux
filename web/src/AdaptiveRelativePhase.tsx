@@ -27,7 +27,7 @@ export function parseRelativePhase(value: unknown, sessionId: string): Status {
 
 function PhaseImage({ url, title }: { url: string; title: string }) {
   const [failed, setFailed] = useState(false);
-  return <figure><figcaption>{title}</figcaption>{failed ? <p role="alert">The relative phase PNG could not be loaded.</p>
+  return <figure className="adaptive-analysis-figure"><figcaption>{title}</figcaption>{failed ? <p role="alert">The relative phase PNG could not be loaded.</p>
     : <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={title} loading="lazy" onError={() => setFailed(true)} /></a>}</figure>;
 }
 
