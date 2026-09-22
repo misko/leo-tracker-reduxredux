@@ -27,8 +27,12 @@ from leo.scanner.adaptive_hop_presentation import RenderedAdaptiveOverview
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
+    DualRx10mAdaptiveAnalysisBindingV5,
+    DualRx10mAdaptiveMetricsManifestV5,
     EdgeAdaptiveAnalysisBindingV4,
     EdgeAdaptiveMetricsManifestV4,
+    Feature103AnalysisBindingV6,
+    Feature103MetricsManifestV6,
 )
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
@@ -77,8 +81,19 @@ def project_adaptive_overview(
     visits: Iterable[AdaptiveHopVisitAnalysisV1],
 ) -> AdaptiveOverviewData:
     edge = isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
-    binding_model = EdgeAdaptiveAnalysisBindingV4 if edge else AdaptiveHopAnalysisBindingV1
-    metrics_model = EdgeAdaptiveMetricsManifestV4 if edge else AdaptiveHopMetricsManifestV1
+    binding_model: type[AdaptiveHopAnalysisBindingV1] = (
+        EdgeAdaptiveAnalysisBindingV4 if edge else AdaptiveHopAnalysisBindingV1
+    )
+    metrics_model: type[AdaptiveHopMetricsManifestV1] = (
+        EdgeAdaptiveMetricsManifestV4 if edge else AdaptiveHopMetricsManifestV1
+    )
+    if isinstance(binding, Feature103AnalysisBindingV6):
+        binding_model, metrics_model = Feature103AnalysisBindingV6, Feature103MetricsManifestV6
+    elif isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5):
+        binding_model, metrics_model = (
+            DualRx10mAdaptiveAnalysisBindingV5,
+            DualRx10mAdaptiveMetricsManifestV5,
+        )
     binding = binding_model.model_validate(binding.model_dump())
     manifest = metrics_model.model_validate(manifest.model_dump())
     return _project_overview(binding, manifest, visits)

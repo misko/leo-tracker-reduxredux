@@ -10,7 +10,10 @@ from pydantic import Field, model_validator
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.scanner_glrt_frame import U64
 from leo.scanner.adaptive_hop import AdaptiveModel, Count, SessionId
-from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisConfigurationV1
+from leo.scanner.adaptive_hop_analysis import (
+    AdaptiveHopAnalysisConfigurationV1,
+    Feature103AnalysisConfigurationV3,
+)
 
 if TYPE_CHECKING:
     from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatusV1
@@ -121,6 +124,16 @@ class DualRx10mAdaptiveOverviewManifestV5(AdaptiveHopOverviewManifestV1):
 class DualRx10mAdaptiveAnalysisStatusV5(AdaptiveHopAnalysisStatusV1):
     schema_version: Literal[5] = 5  # type: ignore[assignment]
     overview: DualRx10mAdaptiveOverviewManifestV5 | None
+
+
+class Feature103OverviewManifestV6(AdaptiveHopOverviewManifestV1):
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+
+
+class Feature103AnalysisStatusV6(AdaptiveHopAnalysisStatusV1):
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    configuration: Feature103AnalysisConfigurationV3  # type: ignore[assignment]
+    overview: Feature103OverviewManifestV6 | None
 
 
 @dataclass(frozen=True, slots=True)

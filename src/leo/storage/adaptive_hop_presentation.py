@@ -8,11 +8,15 @@ from leo.scanner.adaptive_dual_rx_phase_product_v2 import AdaptiveDualRxPhaseSta
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisStatusV1,
     AdaptiveOverviewArtifact,
+    DualRx10mAdaptiveAnalysisStatusV5,
     EdgeAdaptiveAnalysisStatusV4,
+    Feature103AnalysisStatusV6,
 )
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
+    DualRx10mAdaptiveAnalysisBindingV5,
     EdgeAdaptiveAnalysisBindingV4,
+    Feature103AnalysisBindingV6,
 )
 from leo.scanner.host_adaptive_presentation import (
     HostAdaptiveAnalysisStatusV2,
@@ -125,7 +129,11 @@ class AdaptiveHopAnalysisPresentationStore:
                     return job.status()
             except BundleNotFoundError:
                 status_model: type[AdaptiveHopAnalysisStatusV1] = (
-                    HostAdaptiveAnalysisStatusV3
+                    Feature103AnalysisStatusV6
+                    if isinstance(binding, Feature103AnalysisBindingV6)
+                    else DualRx10mAdaptiveAnalysisStatusV5
+                    if isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5)
+                    else HostAdaptiveAnalysisStatusV3
                     if isinstance(binding, HostAdaptiveAnalysisBindingV3)
                     else HostAdaptiveAnalysisStatusV2
                     if isinstance(binding, HostAdaptiveAnalysisBindingV2)

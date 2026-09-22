@@ -255,6 +255,17 @@ class DualRx10mAdaptiveSessionDetailV5(AdaptiveHopSessionDetailV1):
     capture: DualRx10mAdaptiveHistoryItemV5  # type: ignore[assignment]
 
 
+class Feature103HistoryItemV6(EdgeAdaptiveHistoryItemV4):
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 5_000_000, 10_000_000]  # type: ignore[assignment]
+
+
+class Feature103SessionDetailV6(AdaptiveHopSessionDetailV1):
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    capture: Feature103HistoryItemV6  # type: ignore[assignment]
+
+
 class AdaptiveHopPresentationReader(Protocol):
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1: ...
 

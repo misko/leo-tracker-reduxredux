@@ -7,7 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV2, AdaptiveHopReceiptV3
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
+    AdaptiveHopReceiptV4,
+)
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopCoverageV1,
     AdaptiveHopHistoryItemV1,
@@ -18,6 +22,8 @@ from leo.scanner.adaptive_hop_history import (
     DualRx10mAdaptiveSessionDetailV5,
     EdgeAdaptiveHistoryItemV4,
     EdgeAdaptiveSessionDetailV4,
+    Feature103HistoryItemV6,
+    Feature103SessionDetailV6,
 )
 from leo.scanner.glrt_publication import validate_glrt_adaptive_binding
 from leo.scanner.host_adaptive import (
@@ -29,6 +35,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
     AdaptiveHistoryPageV3,
     AdaptiveHistoryPageV4,
+    AdaptiveHistoryPageV5,
     HostAdaptiveHistoryItemV2,
     HostAdaptiveHistoryItemV3,
     HostAdaptiveSessionDetailV2,
@@ -119,7 +126,9 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
         )
     elif isinstance(receipt, AdaptiveHopReceiptV2):
         model = (
-            DualRx10mAdaptiveHistoryItemV5
+            Feature103HistoryItemV6
+            if isinstance(receipt, AdaptiveHopReceiptV4)
+            else DualRx10mAdaptiveHistoryItemV5
             if isinstance(receipt, AdaptiveHopReceiptV3)
             else EdgeAdaptiveHistoryItemV4
         )
@@ -199,7 +208,13 @@ class AdaptiveHopPresentationStore:
         finally:
             store.close()
         model: type[AdaptiveHopHistoryPageV1] = (
-            AdaptiveHistoryPageV4
+            AdaptiveHistoryPageV5
+            if include_host
+            and any(
+                isinstance(item, (DualRx10mAdaptiveHistoryItemV5, Feature103HistoryItemV6))
+                for item in items
+            )
+            else AdaptiveHistoryPageV4
             if include_host and any(isinstance(item, EdgeAdaptiveHistoryItemV4) for item in items)
             else AdaptiveHistoryPageV3
             if include_host and any(isinstance(item, HostAdaptiveHistoryItemV3) for item in items)
@@ -338,7 +353,9 @@ class AdaptiveHopPresentationStore:
             fields = dict(host_decisions=tuple(decision_views))
         elif isinstance(receipt, AdaptiveHopReceiptV2):
             model = (
-                DualRx10mAdaptiveSessionDetailV5
+                Feature103SessionDetailV6
+                if isinstance(receipt, AdaptiveHopReceiptV4)
+                else DualRx10mAdaptiveSessionDetailV5
                 if isinstance(receipt, AdaptiveHopReceiptV3)
                 else EdgeAdaptiveSessionDetailV4
             )

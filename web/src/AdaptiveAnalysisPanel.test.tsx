@@ -74,6 +74,18 @@ function phaseV2Fixture(sessionId = capture.session_id): AdaptivePhaseV2Status {
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive analysis publication", () => {
+  it("binds the feature-103 dual RX overview to its native rate and source", async () => {
+    const c = { ...capture, schema_version: 6 as const, sample_rate_hz: 10000000 as const, bandwidth_hz: 10000000 as const,
+      analysis_state: "separate_product" as const, radio_serial: "test", selected_edge: "lower" as const, allowed_target_mask: 15 as const };
+    const value = analysisFixture("figures_ready");
+    value.schema_version = 6; value.configuration.schema_version = 3; value.configuration.sample_rate_hz = 10000000;
+    value.overview!.schema_version = 6;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    await expect(getAdaptiveAnalysis(c)).resolves.toEqual(value);
+    expect(adaptiveFigureUrl(value, value.overview!.artifacts[0])).toContain("/api/v3/");
+    value.configuration.sample_rate_hz = 2500000;
+    await expect(getAdaptiveAnalysis(c)).rejects.toThrow("source or configuration");
+  });
   it.each([15000000, 20000000] as const)("binds V3 analysis and all PNGs at %s S/s", async rate => {
     const native = multirateAdaptiveDetailFixture(rate).capture;
     const value = analysisFixture();

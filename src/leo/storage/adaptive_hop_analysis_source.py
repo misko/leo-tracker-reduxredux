@@ -10,12 +10,14 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
+    AdaptiveHopReceiptV4,
     AdaptiveHopVisitV1,
 )
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisSource,
     DualRx10mAdaptiveHopAnalysisSourceV3,
     EdgeAdaptiveHopAnalysisSourceV2,
+    Feature103AnalysisSourceV4,
 )
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
@@ -71,6 +73,8 @@ class AdaptiveHopAnalysisInputStore:
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV3)
                 else HostAdaptiveAnalysisSource
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV2)
+                else Feature103AnalysisSourceV4
+                if isinstance(reader.session.manifest.receipt, AdaptiveHopReceiptV4)
                 else DualRx10mAdaptiveHopAnalysisSourceV3
                 if isinstance(reader.session.manifest.receipt, AdaptiveHopReceiptV3)
                 else EdgeAdaptiveHopAnalysisSourceV2

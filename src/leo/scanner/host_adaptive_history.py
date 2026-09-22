@@ -9,8 +9,12 @@ from leo.scanner.adaptive_hop_history import (
     AdaptiveHopHistoryItemV1,
     AdaptiveHopHistoryPageV1,
     AdaptiveHopSessionDetailV1,
+    DualRx10mAdaptiveHistoryItemV5,
+    DualRx10mAdaptiveSessionDetailV5,
     EdgeAdaptiveHistoryItemV4,
     EdgeAdaptiveSessionDetailV4,
+    Feature103HistoryItemV6,
+    Feature103SessionDetailV6,
     Seconds,
     VisitCount,
 )
@@ -168,6 +172,22 @@ class AdaptiveHistoryPageV4(AdaptiveHistoryPageV3):
     ]
 
 
+class AdaptiveHistoryPageV5(AdaptiveHistoryPageV4):
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    items: Annotated[
+        tuple[
+            AdaptiveHopHistoryItemV1
+            | HostAdaptiveHistoryItemV2
+            | HostAdaptiveHistoryItemV3
+            | EdgeAdaptiveHistoryItemV4
+            | DualRx10mAdaptiveHistoryItemV5
+            | Feature103HistoryItemV6,
+            ...,
+        ],
+        Field(max_length=20),
+    ]
+
+
 class AdaptiveHistoryReaderV2(Protocol):
     def page_v2(
         self, *, cursor: int, limit: int
@@ -179,5 +199,7 @@ class AdaptiveHistoryReaderV2(Protocol):
         | HostAdaptiveSessionDetailV2
         | HostAdaptiveSessionDetailV3
         | EdgeAdaptiveSessionDetailV4
+        | DualRx10mAdaptiveSessionDetailV5
+        | Feature103SessionDetailV6
         | None
     ): ...
