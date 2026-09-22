@@ -5,6 +5,7 @@ This publication contains the completed phase/geometry reports and their support
 ## Start here
 
 - [Every-sample dual-RX phase plot](2026_09_22_per_sample_dual_rx_phase.md): raw and frequency/delay-compensated samples within a strong paired GLRT probe, with a 50-sample zoom and CSV.
+- [Multi-dwell shared-track phase](2026_09_22_multi_dwell_shared_track_phase.md): 12 frozen dwells from one 44.3-second paired RF track, with windowed phase heatmaps and coherence diagnostics.
 - [GLRT-guided observed receiver phase](2026_09_21_glrt_guided_broadband_phase.md): explicit phase references, uncertainty, frequency-change guidance, and guided versus unguided results.
 - [Full captured-bandwidth alignment](2026_09_21_full_bandwidth_rx_alignment.md): fractional delay, frequency/drift, channel response, synthetic recovery, and held-out IQ validation.
 - [Geometry completion audit](2026_09_21_geometric_phase_completion_audit.md): what the evidence establishes and what remains unresolved about geometric attribution.
