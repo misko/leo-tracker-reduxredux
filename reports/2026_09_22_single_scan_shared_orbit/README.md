@@ -78,6 +78,39 @@ constraint: differential geometric Doppler is small compared with these
 residuals, and installed phase centres, pose and differential receiver phase
 remain uncalibrated. This result is not a geometry-based accuracy claim.
 
+## Completed robust-loss trial (Reno initialization)
+
+A pseudo-Huber residual model, applied to both signal and null components, now
+converges and passes exact propagation replay on all 433,134 candidate/track
+cases. Maximum Doppler interpolation error is 0.00000464 Hz. It retains the same
+250 Hz signal scale, full catalogue, shared orbital prior and effective count.
+Constant offsets are profiled from training observations only. The first trial
+failed to converge inside the offset solver; safeguarded bracketing was corrected
+and tested before the successful run. Time-limited runs were resumed without
+changing the observations or using the reference position.
+
+| Frozen fitted solution | Evaluation error (km) | Gaussian held-out score | Pseudo-Huber held-out score |
+|---|---:|---:|---:|
+| Gaussian | 4.526 | -1629.461992 | -1682.540241 |
+| Pseudo-Huber | 4.141 | -1630.541502 | -1682.832601 |
+
+Both scoring columns use normalized densities and identical observations;
+higher is better. The legacy Gaussian outputs omit a common density constant,
+so 215.031617 was subtracted from their held-out scores for this table. The
+robust solution improves its own training objective by 0.644520 but worsens
+held-out prediction by 0.292361 under its own loss and 1.079510 under Gaussian
+loss. **It is not preferred on predictive evidence**, despite a smaller error
+against the evaluation site. Selecting it because of that error would use truth
+to choose the estimator. This is one fixed-scale robust trial, not evidence
+against every robust or correlated-noise model.
+
+![Robust trial held-out comparison](robust-comparison.png)
+
+The best numerical error in these completed single-scan trials is therefore
+4.141 km, while the predictively preferred result remains 4.526 km. Neither is
+sub-kilometre. New `robust-*` artifacts preserve the complete fit, exact receipts,
+cross-loss scores, evaluation binding and failed-run terminal receipts.
+
 The five-scan, 3.2-hour joint refinements are unfinished and excluded from this
 completed report. No validated eight-hour accuracy or calibrated coverage is
 claimed. No production changes were deployed.
