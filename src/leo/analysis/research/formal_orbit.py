@@ -79,6 +79,10 @@ class FormalOrbitData:
     phase_v_plus_km_s: np.ndarray
     time_s: np.ndarray
     observation_id: np.ndarray | None = None
+    phase_p_minus2_km: np.ndarray | None = None
+    phase_v_minus2_km_s: np.ndarray | None = None
+    phase_p_plus2_km: np.ndarray | None = None
+    phase_v_plus2_km_s: np.ndarray | None = None
 
     def __post_init__(self):
         n = len(self.y_hz)
@@ -99,6 +103,17 @@ class FormalOrbitData:
             raise ValueError("training must be boolean")
         if not all(np.all(np.isfinite(x)) for x in (self.y_hz, self.age_h, self.time_s, *states)):
             raise ValueError("formal-orbit inputs must be finite")
+        outer = (
+            self.phase_p_minus2_km,
+            self.phase_v_minus2_km_s,
+            self.phase_p_plus2_km,
+            self.phase_v_plus2_km_s,
+        )
+        if any(x is not None for x in outer):
+            if any(x is None for x in outer) or any(np.asarray(x).shape != (n, 3) for x in outer):
+                raise ValueError("all four phase +/-2 state arrays are required together")
+            if not all(np.all(np.isfinite(x)) for x in outer):
+                raise ValueError("phase +/-2 states must be finite")
 
 
 @dataclass(frozen=True)
@@ -154,6 +169,42 @@ def phase_rate_design_hz_per_s_h(
 def _quadratic_state(centre, minus, plus, phase_s, step_s):
     u = np.asarray(phase_s)[:, None] / step_s
     return centre + 0.5 * (plus - minus) * u + 0.5 * (plus + minus - 2 * centre) * u * u
+
+
+def phase_state(centre, minus, plus, phase_s, step_s, *, minus2=None, plus2=None):
+    """Interpolate propagated states at phase offsets, using quartic support when supplied."""
+    if (minus2 is None) != (plus2 is None):
+        raise ValueError("phase -2 and +2 states must be supplied together")
+    if minus2 is None:
+        return _quadratic_state(centre, minus, plus, phase_s, step_s)
+    u = np.asarray(phase_s)[:, None] / step_s
+    return (
+        np.asarray(minus2) * (u + 1) * u * (u - 1) * (u - 2) / 24
+        - np.asarray(minus) * (u + 2) * u * (u - 1) * (u - 2) / 6
+        + np.asarray(centre) * (u + 2) * (u + 1) * (u - 1) * (u - 2) / 4
+        - np.asarray(plus) * (u + 2) * (u + 1) * u * (u - 2) / 6
+        + np.asarray(plus2) * (u + 2) * (u + 1) * u * (u - 1) / 24
+    )
+
+
+def _data_phase_state(data, position, rows, phase_s, step_s):
+    stem = "p" if position else "v"
+    suffix = "km" if position else "km_s"
+
+    def take(name):
+        return getattr(data, name)[rows]
+
+    minus2 = getattr(data, f"phase_{stem}_minus2_{suffix}")
+    plus2 = getattr(data, f"phase_{stem}_plus2_{suffix}")
+    return phase_state(
+        take(f"{stem}_{suffix}"),
+        take(f"phase_{stem}_minus_{suffix}"),
+        take(f"phase_{stem}_plus_{suffix}"),
+        phase_s,
+        step_s,
+        minus2=None if minus2 is None else minus2[rows],
+        plus2=None if plus2 is None else plus2[rows],
+    )
 
 
 def whiten_ar1(matrix, track, time_s, rho, correlation_time_s):
@@ -289,47 +340,35 @@ def fit_formal_orbit(
         for _ in range(60):
             current_rate = beta[len(segments) :]
             phase = data.age_h[rows] * current_rate[src]
-            p = _quadratic_state(
-                data.p_km[rows],
-                data.phase_p_minus_km[rows],
-                data.phase_p_plus_km[rows],
-                phase,
-                config.phase_sensitivity_step_s,
-            )
-            v = _quadratic_state(
-                data.v_km_s[rows],
-                data.phase_v_minus_km_s[rows],
-                data.phase_v_plus_km_s[rows],
-                phase,
-                config.phase_sensitivity_step_s,
-            )
+            p = _data_phase_state(data, True, rows, phase, config.phase_sensitivity_step_s)
+            v = _data_phase_state(data, False, rows, phase, config.phase_sensitivity_step_s)
             base = doppler_hz(receiver, p, v)
             epsilon = 1e-5
-            pp = _quadratic_state(
-                data.p_km[rows],
-                data.phase_p_minus_km[rows],
-                data.phase_p_plus_km[rows],
+            pp = _data_phase_state(
+                data,
+                True,
+                rows,
                 phase + data.age_h[rows] * epsilon,
                 config.phase_sensitivity_step_s,
             )
-            vp = _quadratic_state(
-                data.v_km_s[rows],
-                data.phase_v_minus_km_s[rows],
-                data.phase_v_plus_km_s[rows],
+            vp = _data_phase_state(
+                data,
+                False,
+                rows,
                 phase + data.age_h[rows] * epsilon,
                 config.phase_sensitivity_step_s,
             )
-            pm = _quadratic_state(
-                data.p_km[rows],
-                data.phase_p_minus_km[rows],
-                data.phase_p_plus_km[rows],
+            pm = _data_phase_state(
+                data,
+                True,
+                rows,
                 phase - data.age_h[rows] * epsilon,
                 config.phase_sensitivity_step_s,
             )
-            vm = _quadratic_state(
-                data.v_km_s[rows],
-                data.phase_v_minus_km_s[rows],
-                data.phase_v_plus_km_s[rows],
+            vm = _data_phase_state(
+                data,
+                False,
+                rows,
                 phase - data.age_h[rows] * epsilon,
                 config.phase_sensitivity_step_s,
             )
@@ -368,20 +407,8 @@ def fit_formal_orbit(
             beta = new
         current_rate = beta[len(segments) :]
         phase = data.age_h[rows] * current_rate[src]
-        p = _quadratic_state(
-            data.p_km[rows],
-            data.phase_p_minus_km[rows],
-            data.phase_p_plus_km[rows],
-            phase,
-            config.phase_sensitivity_step_s,
-        )
-        v = _quadratic_state(
-            data.v_km_s[rows],
-            data.phase_v_minus_km_s[rows],
-            data.phase_v_plus_km_s[rows],
-            phase,
-            config.phase_sensitivity_step_s,
-        )
+        p = _data_phase_state(data, True, rows, phase, config.phase_sensitivity_step_s)
+        v = _data_phase_state(data, False, rows, phase, config.phase_sensitivity_step_s)
         wy = np.asarray(whitening @ (data.y_hz[rows] - doppler_hz(receiver, p, v))) / sigma
         r = wy - offset_a * beta[seg]
         t_normalization = (
@@ -462,20 +489,9 @@ def fit_formal_orbit(
     rmap = {x: i for i, x in enumerate(sources)}
     rate_all = np.asarray([beta[len(segments) + rmap[x]] if x in rmap else 0 for x in data.source])
     phase_all = data.age_h * rate_all
-    p_all = _quadratic_state(
-        data.p_km,
-        data.phase_p_minus_km,
-        data.phase_p_plus_km,
-        phase_all,
-        config.phase_sensitivity_step_s,
-    )
-    v_all = _quadratic_state(
-        data.v_km_s,
-        data.phase_v_minus_km_s,
-        data.phase_v_plus_km_s,
-        phase_all,
-        config.phase_sensitivity_step_s,
-    )
+    all_rows = np.arange(n)
+    p_all = _data_phase_state(data, True, all_rows, phase_all, config.phase_sensitivity_step_s)
+    v_all = _data_phase_state(data, False, all_rows, phase_all, config.phase_sensitivity_step_s)
     base_all = doppler_hz(receiver, p_all, v_all)
     nuisance_prediction = np.zeros(n)
     for i in range(n):
@@ -536,5 +552,10 @@ def fit_formal_orbit(
         float(np.sum(weight) ** 2 / np.sum(weight**2)),
         nuisance_converged,
         sigma,
+        approximation=(
+            "quartic five-state phase interpolation; iteratively relinearized profiled nuisances"
+            if data.phase_p_minus2_km is not None
+            else "quadratic phase states; iteratively relinearized profiled nuisances"
+        ),
         optimizer_restarts=restarts,
     )

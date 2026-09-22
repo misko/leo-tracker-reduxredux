@@ -5,6 +5,7 @@ from leo.analysis.research.formal_orbit import (
     FormalOrbitConfig,
     FormalOrbitData,
     fit_formal_orbit,
+    phase_state,
     whiten_ar1,
 )
 from leo.analysis.research.regional_doppler import Region
@@ -204,3 +205,39 @@ def test_strict_preparation_uses_orbit_phase_and_epoch_age_for_no_history():
         assert "availability" in str(error)
     else:
         raise AssertionError("missing catalogue availability accepted")
+
+
+def test_phase_state_quartic_matches_polynomial_oracle_and_quadratic_default():
+    phase = np.asarray([-1.7, -0.4, 0.6, 1.8])
+
+    def polynomial(x):
+        return np.column_stack((x**4 - 2 * x**3 + x, 3 * x**4 + x * x, -(x**3) + 2))
+
+    centre = polynomial(np.zeros(len(phase)))
+    minus = polynomial(np.full(len(phase), -1.0))
+    plus = polynomial(np.full(len(phase), 1.0))
+    actual = phase_state(
+        centre,
+        minus,
+        plus,
+        phase,
+        1.0,
+        minus2=polynomial(np.full(len(phase), -2.0)),
+        plus2=polynomial(np.full(len(phase), 2.0)),
+    )
+    np.testing.assert_allclose(actual, polynomial(phase), atol=1e-12)
+
+    def quadratic(x):
+        return np.column_stack((x * x + x, 2 * x * x - 3 * x, np.ones_like(x)))
+
+    np.testing.assert_allclose(
+        phase_state(
+            quadratic(np.zeros(len(phase))),
+            quadratic(np.full(len(phase), -1.0)),
+            quadratic(np.full(len(phase), 1.0)),
+            phase,
+            1.0,
+        ),
+        quadratic(phase),
+        atol=1e-12,
+    )

@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from typing import cast
 
 from leo.application.scanner_tracking import ScannerTrackingService
+from leo.cli.scan_position_methods import position_methods_complete, run_position_methods
 from leo.contracts.scanner_tracking import (
     ArtifactNameV12,
     ScannerTleReviewCandidateV1,
@@ -26,6 +27,34 @@ from leo.storage.analysis_worker_lock import analysis_worker_lock
 from leo.storage.errors import BundleNotFoundError
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
+
+
+def _position_methods_available(
+    *, bulk_root: Path, session_id: str, input_manifest_sha256: str
+) -> bool:
+    try:
+        return position_methods_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=input_manifest_sha256,
+        )
+    except (OSError, ValueError):
+        return False
+
+
+def _publish_position_methods_verified(
+    *, bulk_root: Path, tle_root: Path, session_id: str, input_manifest_sha256: str
+) -> None:
+    manifest = run_position_methods(bulk_root, tle_root, session_id)
+    if (
+        manifest.document.input_manifest_sha256 != input_manifest_sha256
+        or not position_methods_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=input_manifest_sha256,
+        )
+    ):
+        raise ValueError("position method publication failed completion verification")
 
 
 def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str, review_limit: int):
@@ -135,7 +164,14 @@ def main():
             pending = [
                 s
                 for s in ids
-                if products.analysis_status(s).state != "complete"
+                if (
+                    products.analysis_status(s).state != "complete"
+                    or not _position_methods_available(
+                        bulk_root=args.bulk_root,
+                        session_id=s,
+                        input_manifest_sha256=sources.load(s).input_manifest_sha256,
+                    )
+                )
                 and (args.session_id or products.analysis_status(s).state != "failed")
             ]
             pending.sort(
@@ -151,18 +187,39 @@ def main():
                     break
                 try:
                     status = service.run(sid, maximum_seconds=remaining)
+                    position_complete = False
+                    if status.state == "complete":
+                        source = sources.load(sid)
+                        _publish_position_methods_verified(
+                            bulk_root=args.bulk_root,
+                            tle_root=args.tle_root,
+                            session_id=sid,
+                            input_manifest_sha256=source.input_manifest_sha256,
+                        )
+                        position_complete = True
                 except BundleNotFoundError:
                     continue
                 except Exception as error:
                     prior = products.analysis_status(sid)
-                    products.save(
-                        ScannerTrackingStatusV14(
-                            session_id=sid,
-                            state="failed",
-                            phase=prior.phase,
-                            product=prior.product,
-                            failure_summary=f"{type(error).__name__}: {error}"[:512],
+                    if prior.state != "complete":
+                        products.save(
+                            ScannerTrackingStatusV14(
+                                session_id=sid,
+                                state="failed",
+                                phase=prior.phase,
+                                product=prior.product,
+                                failure_summary=f"{type(error).__name__}: {error}"[:512],
+                            )
                         )
+                    print(
+                        json.dumps(
+                            {
+                                "session_id": sid,
+                                "state": "failed",
+                                "reason": f"{type(error).__name__}: {error}"[:512],
+                            }
+                        ),
+                        flush=True,
                     )
                     failures.append(sid)
                 else:
@@ -171,6 +228,9 @@ def main():
                             {
                                 "session_id": sid,
                                 "state": status.state,
+                                "position_methods_state": "complete"
+                                if position_complete
+                                else "pending",
                                 "trajectory": status.product.trajectory_state
                                 if status.product
                                 else None,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PositionMethods } from "./PositionMethods";
 
 type Product = {
   session_id: string; input_manifest_sha256: string; sample_rate_hz: number;
@@ -108,6 +109,7 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
         })}
       </div>}
       <a href={base} download={`${sessionId}-tracking.json`}>Download tracking evidence</a>
+      <PositionMethods sessionId={sessionId} inputDigest={inputDigest} />
     </>}
     <p className="scanner-artifact-caption">Tracks are reconstructed before catalogue access. TLE comparisons use deterministic randomized evaluation samples, ±500 s wrong-time controls, and a radio-polynomial control. Candidate labels do not establish satellite identity.</p>
   </section>;

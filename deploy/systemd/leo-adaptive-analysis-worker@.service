@@ -20,6 +20,7 @@ ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-sh
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-shared-tracking-v10
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-shared-tracking-v11
 ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-shared-tracking-v14
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/scanner-position-methods-v1
 ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-worker/.venv/bin/python -m leo.cli.adaptive_processing_queue --bulk-root /srv/bulk/leo worker --worker-id adaptive-worker-%i
 Restart=on-failure
 RestartSec=5s

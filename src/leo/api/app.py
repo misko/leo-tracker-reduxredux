@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from leo.acquisition import CaptureAuthorityError
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
 from leo.api.native_recordings import native_recording_router
+from leo.api.position_methods import position_methods_router
 from leo.api.scanner_refinement import scanner_refinement_router
 from leo.api.scanner_tracking import scanner_tracking_router
 from leo.application.capture_control import OperatorCaptureControl
@@ -38,6 +39,7 @@ from leo.application.standard_reprocess import (
     StandardReprocessResultV1,
 )
 from leo.contracts.capture_control import CaptureControlStateV1
+from leo.contracts.position_methods import PositionMethodsReader
 from leo.contracts.scanner_glrt_publication import GLRT_SESSION_PATTERN, ScannerGlrtPublicationV1
 from leo.contracts.scanner_refinement import ScannerRefinementReader
 from leo.contracts.scanner_tracking import ScannerTrackingReader
@@ -229,6 +231,7 @@ def create_app(
     native_recordings: NativeRecordingReader | None = None,
     scanner_refinement: ScannerRefinementReader | None = None,
     scanner_tracking: ScannerTrackingReader | None = None,
+    position_methods: PositionMethodsReader | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
 
@@ -244,6 +247,7 @@ def create_app(
     app.include_router(scanner_refinement_router(scanner_refinement))
     app.include_router(scanner_refinement_router(scanner_refinement, version=2))
     app.include_router(scanner_tracking_router(scanner_tracking))
+    app.include_router(position_methods_router(position_methods))
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
     v2_router = APIRouter(prefix="/api/v2")
