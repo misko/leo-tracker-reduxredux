@@ -615,6 +615,7 @@ def test_qualified_api_only_plan_keeps_broad_impact_but_restarts_only_api(
         "_selected_component_release_revision",
         lambda component: current_api if component == "api" else None,
     )
+
     def changed_paths(*arguments: str) -> tuple[str, ...]:
         assert arguments == ("diff", "--name-only", f"{current_api}..{target}")
         return ("src/leo/processing/worker.py", "src/leo/api/app.py")
