@@ -4,6 +4,7 @@ After=network-online.target local-fs.target postgresql.service
 RequiresMountsFor=/srv/bulk/leo
 
 [Service]
+ExecStartPre=+/usr/bin/install -d -m 0750 -o leo -g leo /srv/bulk/leo/scanner-adaptive-relative-phase-v1
 Type=simple
 User=leo
 Group=leo

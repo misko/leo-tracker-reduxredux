@@ -5,6 +5,8 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import pytest
+
 from leo.catalog.types import AdaptiveAnalysisJobLease
 from leo.cli import adaptive_processing_queue as subject
 
@@ -131,7 +133,7 @@ def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
         "run",
         lambda *args, **kwargs: SimpleNamespace(
             returncode=0,
-            stdout='{"state":"metrics_complete","overview_state":"ready"}',
+            stdout='{"state":"metrics_complete","overview_state":"ready","relative_phase_state":"complete"}',
             stderr="",
         ),
     )
@@ -150,7 +152,14 @@ def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
     )
 
 
-def test_run_once_yields_checkpointed_slice(monkeypatch, tmp_path) -> None:
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"state":"partial"}',
+        '{"state":"metrics_complete","overview_state":"ready","relative_phase_state":"partial"}',
+    ],
+)
+def test_run_once_yields_checkpointed_slice(monkeypatch, tmp_path, payload) -> None:
     calls: list[dict[str, object]] = []
 
     class Catalog:
@@ -164,9 +173,7 @@ def test_run_once_yields_checkpointed_slice(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(
         subject.subprocess,
         "run",
-        lambda *args, **kwargs: SimpleNamespace(
-            returncode=0, stdout='{"state":"partial"}', stderr=""
-        ),
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=payload, stderr=""),
     )
 
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")

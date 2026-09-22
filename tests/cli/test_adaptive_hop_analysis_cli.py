@@ -162,7 +162,17 @@ def test_cli_persists_resumes_and_never_calls_radio(monkeypatch, tmp_path, capsy
 def test_cli_metrics_only_then_failed_render_can_resume_without_reanalyzing(
     monkeypatch, tmp_path, capsys
 ):
+    from leo.cli import adaptive_relative_phase
     from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
+
+    # The separately tested phase stage may legitimately inspect denser probes;
+    # this test checks that the original overview metrics are never rerun.
+    phase_calls = []
+    monkeypatch.setattr(
+        adaptive_relative_phase,
+        "run",
+        lambda *a, **kw: phase_calls.append(a) or {"state": "complete"},
+    )
 
     capture = publish_capture(tmp_path, count=2)
     monkeypatch.setattr(cli.os, "nice", lambda _: None)
@@ -189,6 +199,7 @@ def test_cli_metrics_only_then_failed_render_can_resume_without_reanalyzing(
     )
     monkeypatch.setattr(cli, "render_adaptive_hop_overview", renderer)
     cli.main()
+    assert len(phase_calls) == 1
     final = json.loads(capsys.readouterr().out)
     assert final["overview_state"] == "ready" and final["newly_analyzed_visits"] == 0
 
