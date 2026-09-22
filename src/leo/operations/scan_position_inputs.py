@@ -364,9 +364,7 @@ def prepare_scan_position_inputs(
         reviews = _saved_track_reviews(product)
         if reviews is None:
             exclusions.append(
-                PositionInputExclusion(
-                    session_id, None, "tracking-review-contract-unavailable"
-                )
+                PositionInputExclusion(session_id, None, "tracking-review-contract-unavailable")
             )
             continue
         if not reviews or product.original_tle_snapshot is None:
