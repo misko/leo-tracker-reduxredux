@@ -274,15 +274,23 @@ def prepare_scan_position_inputs(
     target_radio = target_source_value.radio_id
     candidates: list[tuple[str, int]] = []
     lower = target_start - round(history_hours * _NS_PER_H)
-    for session_id in inputs.session_ids():
+    metadata = getattr(inputs, "history_metadata", lambda: ())()
+    metadata_by_session = {item.session_id: item for item in metadata}
+    session_ids = tuple(metadata_by_session) if metadata else inputs.session_ids()
+    for session_id in session_ids:
+        item = metadata_by_session.get(session_id)
         try:
-            captured = inputs.captured_at(session_id)
+            captured = item.created_utc_ns if item is not None else inputs.captured_at(session_id)
         except Exception as error:
             exclusions.append(
                 PositionInputExclusion(session_id, None, "capture-time-unavailable", str(error))
             )
             continue
-        if session_id != target_session_id and lower <= captured < target_start:
+        if (
+            session_id != target_session_id
+            and lower <= captured < target_start
+            and (item is None or item.radio_id == target_radio)
+        ):
             candidates.append((session_id, captured))
     histories: list[tuple[str, int, Any]] = []
     for session_id, _captured in sorted(candidates, key=lambda item: (-item[1], item[0])):

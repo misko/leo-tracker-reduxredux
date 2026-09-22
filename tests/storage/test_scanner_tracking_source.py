@@ -32,6 +32,14 @@ def test_fixed_adapter_retains_legacy_numerical_projection(tmp_path, rate):
         published_chunks=lambda _: (chunk,),
     )
     source = reader.load(capture.session_id)
+    metadata = {item.session_id: item for item in reader.history_metadata()}[capture.session_id]
+    assert metadata.created_utc_ns == capture.manifest.created_utc_ns
+    assert metadata.capture_start_utc_ns == (
+        capture.manifest.timing.first_sample_estimate_utc_ns
+        if capture.manifest.timing is not None
+        else capture.manifest.created_utc_ns
+    )
+    assert metadata.radio_id == capture.manifest.receipt.radio_id
     assert source.sample_rate_hz == rate and source.capture_mode == "fixed"
     assert (
         not source.qualified

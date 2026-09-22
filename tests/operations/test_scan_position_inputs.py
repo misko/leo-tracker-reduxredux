@@ -221,6 +221,7 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
             "target": start,
             "new-incomplete": start - 1_000_000_000,
             "legacy-complete": start - 2_000_000_000,
+            "late-backdated": start - 9 * 3_600_000_000_000,
             "other-radio": start - 3_000_000_000,
             "older-complete": start - 4_000_000_000,
         }[session_id]
@@ -237,6 +238,7 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
         "target": source("target"),
         "new-incomplete": source("new-incomplete"),
         "legacy-complete": source("legacy-complete"),
+        "late-backdated": source("late-backdated"),
         "other-radio": source("other-radio", "radio-b"),
         "older-complete": source("older-complete"),
     }
@@ -265,6 +267,19 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
         load=lambda session_id: sources[session_id],
         session_ids=lambda: tuple(sources),
         captured_at=lambda session_id: sources[session_id].capture_start_utc_ns,
+        history_metadata=lambda: tuple(
+            SimpleNamespace(
+                session_id=session_id,
+                created_utc_ns=(
+                    start - 2_500_000_000
+                    if session_id == "late-backdated"
+                    else value.capture_start_utc_ns
+                ),
+                capture_start_utc_ns=value.capture_start_utc_ns,
+                radio_id=value.radio_id,
+            )
+            for session_id, value in sources.items()
+        ),
     )
     prepared = subject.prepare_scan_position_inputs(
         "target",
@@ -280,6 +295,7 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
     )
     assert prepared.target_source.radio_id == "radio-a"
     assert prepared.source_manifest[0]["session_id"] == "target"
+    assert all(item.session_id != "late-backdated" for item in prepared.provenance)
     assert any(
         item.session_id == "legacy-complete"
         and item.reason == "history-tracking-review-contract-unavailable"

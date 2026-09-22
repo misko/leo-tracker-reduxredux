@@ -118,6 +118,15 @@ def test_adaptive_store_lossless_actual_visit_roundtrip(tmp_path, rate, mode):
     publication_index = store.publication_index()
     assert publication_index[0][0] > 0
     assert publication_index[0][1] == published.session_id
+    tracking_index = store.tracking_metadata_index()
+    assert tracking_index == (
+        (
+            published.manifest.created_utc_ns,
+            published.manifest.timing.first_sample_estimate_utc_ns,
+            published.manifest.receipt.radio_id,
+            published.session_id,
+        ),
+    )
     assert [c.visit_count for c in published.manifest.chunks] == [8, 8, 8, 5]
     event, samples = store.read_visit_ci16(published, 25)
     assert event.event.target_index == (2 if mode == "adaptive" else 1)
