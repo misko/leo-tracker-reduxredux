@@ -264,6 +264,14 @@ def test_dual_firmware_archive_publishes_geometry_manifest(
     archive.mkdir()
     value = dual_document(rate)
     samples = rate * 120 // 1000
+    if rate == 15_000_000:
+        first = value["visits"][0]
+        for ordinal in range(1, 4):
+            repeated = json.loads(json.dumps(first))
+            for key in ("selection_counter", "transition_before", "valid_start", "valid_end"):
+                repeated["record"][key] += ordinal * samples
+            value["visits"].append(repeated)
+        value["terminal"]["restore_after"] += 3 * samples
     raw = np.zeros((samples, 2, 2), dtype="<i2").tobytes()
     compressed = zstd.ZstdCompressor(level=1).compress(raw)
     (archive / "visit-000000.ci16.zst").write_bytes(compressed)
@@ -272,6 +280,8 @@ def test_dual_firmware_archive_publishes_geometry_manifest(
         compressed_sha256=importer.sha256_digest(compressed),
         uncompressed_sha256=importer.sha256_digest(raw),
     )
+    for entry in value["visits"][1:]:
+        entry["iq"] = dict(value["visits"][0]["iq"])
     value["evidence"]["utc_timing"] = {
         "begin_before_realtime_ns": 1_790_000_000_000_000_000,
         "begin_before_monotonic_ns": 1_000_000_000,
@@ -309,7 +319,7 @@ def test_dual_firmware_archive_publishes_geometry_manifest(
         try:
             result = AdaptiveHopAnalysisService(
                 inputs=AdaptiveHopAnalysisInputStore(captures), products=products
-            ).analyze_session(session_id, maximum_visits=1, maximum_seconds=30, probe_stride_ms=120)
+            ).analyze_session(session_id, maximum_visits=4, maximum_seconds=30, probe_stride_ms=120)
             assert result.state == "metrics_complete"
         finally:
             products.close()
