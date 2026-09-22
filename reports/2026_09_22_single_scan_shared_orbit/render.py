@@ -22,3 +22,17 @@ axes[1].axhline(0, color="black", linewidth=0.7)
 axes[1].set(ylabel="Held-out log-score change (higher is better)", title="Matched Reno control comparison")
 fig.suptitle("300 s scan · 39 tracks · local shared-orbit refinement")
 fig.savefig(root / "comparison.png", dpi=160)
+
+control = json.loads((root / "artifacts/robust-gaussian-control-cross-loss.json").read_text())["rows"][0]
+robust = json.loads((root / "artifacts/robust-cross-loss.json").read_text())["rows"][0]
+losses = ["gaussian", "pseudo_huber"]
+changes = [robust["scores"][k]["heldout_log_predictive"]
+           - control["scores"][k]["heldout_log_predictive"] for k in losses]
+fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
+ax.bar(["Gaussian scoring", "Pseudo-Huber scoring"], changes, color="darkorange")
+ax.axhline(0, color="black", linewidth=.8)
+ax.set(ylabel="Held-out log-score change (higher is better)",
+       title="Robust fitted solution versus Gaussian fitted solution")
+for i, value in enumerate(changes):
+    ax.text(i, value / 2, f"{value:+.3f}", ha="center", va="center")
+fig.savefig(root / "robust-comparison.png", dpi=160)
