@@ -78,6 +78,7 @@ _MAX_CHUNK_BYTES = 64 * 1024 * 1024
 _CREATED_UTC_NS = re.compile(rb'"created_utc_ns":([0-9]{1,20})')
 _FINALIZED_UTC_NS = re.compile(rb'"finalized_utc_ns":([0-9]{1,20})')
 _FIRST_SAMPLE_ESTIMATE_UTC_NS = re.compile(rb'"first_sample_estimate_utc_ns":([0-9]{1,20})')
+_RADIO_ID = re.compile(rb'"radio_id":"([A-Za-z0-9._:-]{1,128})"')
 Digest = Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
 
 
@@ -837,6 +838,45 @@ class AdaptiveHopIqStore:
                 # recording timestamp is the truthful chronological fallback.
                 index.append((int(captured[0] if captured else created[0]), name))
             return tuple(sorted(index, reverse=True))
+        finally:
+            namespace.close()
+
+    def tracking_metadata_index(self) -> tuple[tuple[int, int, str, str], ...]:
+        """Return bounded capture metadata without decoding multi-megabyte receipts."""
+        history = dict((name, captured) for captured, name in self.history_index())
+        if not history:
+            return ()
+        namespace = self._root.child(_NAMESPACE)
+        try:
+            result = []
+            for name, captured in history.items():
+                directory = namespace.child(name)
+                try:
+                    prefix = _read_regular_prefix(
+                        directory,
+                        "manifest.json",
+                        maximum=_MAX_MANIFEST_BYTES,
+                        prefix_bytes=_MANIFEST_INDEX_PREFIX_BYTES,
+                    )
+                    suffix = _read_regular_suffix(
+                        directory,
+                        "manifest.json",
+                        maximum=_MAX_MANIFEST_BYTES,
+                        suffix_bytes=_MANIFEST_INDEX_SUFFIX_BYTES,
+                    )
+                finally:
+                    directory.close()
+                created = _CREATED_UTC_NS.findall(prefix)
+                radio = _RADIO_ID.findall(suffix)
+                radios = set(radio)
+                if len(created) == 1 and len(radios) == 1:
+                    result.append((int(created[0]), captured, radios.pop().decode("ascii"), name))
+                    continue
+                # Older sparse receipts can place these fields outside the bounded
+                # index windows. Preserve their eligibility through full validation.
+                manifest = self.inspect(name).manifest
+                result.append((manifest.created_utc_ns, captured, manifest.receipt.radio_id, name))
+            return tuple(result)
         finally:
             namespace.close()
 

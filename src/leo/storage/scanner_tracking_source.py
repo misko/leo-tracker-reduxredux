@@ -1,5 +1,6 @@
 """Manifest-verified adapters from both scanner layouts to the tracking port."""
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from leo.contracts.digests import canonical_digest
@@ -18,6 +19,14 @@ def _candidate(value) -> TrackingCandidate:
     )
 
 
+@dataclass(frozen=True)
+class TrackingSourceMetadata:
+    session_id: str
+    created_utc_ns: int
+    capture_start_utc_ns: int
+    radio_id: str
+
+
 class ScannerTrackingInputStore:
     def __init__(self, root: Path, *, adaptive_analysis_root: Path | None = None):
         self.fixed = PersistentHopIqStore.open_read_only(root)
@@ -32,7 +41,34 @@ class ScannerTrackingInputStore:
         self.adaptive_analysis.close()
 
     def session_ids(self) -> tuple[str, ...]:
-        return tuple(dict.fromkeys((*self.fixed.session_ids(), *self.adaptive.session_ids())))
+        return tuple(
+            dict.fromkeys(
+                (*self.fixed.session_ids(), *(x[1] for x in self.adaptive.publication_index()))
+            )
+        )
+
+    def history_metadata(self) -> tuple[TrackingSourceMetadata, ...]:
+        adaptive = tuple(
+            TrackingSourceMetadata(session_id, created, captured, radio)
+            for created, captured, radio, session_id in self.adaptive.tracking_metadata_index()
+        )
+        fixed = []
+        for session_id in self.fixed.session_ids():
+            manifest = self.fixed.inspect(session_id).manifest
+            timing = getattr(manifest, "timing", None)
+            fixed.append(
+                TrackingSourceMetadata(
+                    session_id,
+                    manifest.created_utc_ns,
+                    (
+                        timing.first_sample_estimate_utc_ns
+                        if timing is not None
+                        else manifest.created_utc_ns
+                    ),
+                    manifest.receipt.radio_id,
+                )
+            )
+        return tuple((*fixed, *adaptive))
 
     def captured_at(self, session_id: str) -> int:
         if self.adaptive.contains_session(session_id):
