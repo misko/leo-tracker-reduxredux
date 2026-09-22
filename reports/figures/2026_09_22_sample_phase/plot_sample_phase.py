@@ -58,12 +58,28 @@ def check_compensation():
     assert np.max(abs(error)) < 1e-4, "CFO/delay sign or centering error"
 
 
+def check_prediction_error_identity():
+    x = np.asarray([1 + 0j, 1j, -1 + 0j, -1j])
+    phase = 0.73
+    y = 2.5 * np.exp(1j * phase) * x
+    cross = np.sum(y * x.conj())
+    coherence = abs(cross) / np.sqrt(np.sum(abs(x) ** 2) * np.sum(abs(y) ** 2))
+    assert abs(coherence - 1) < 1e-12
+    assert abs(np.sqrt(1 - coherence**2)) < 1e-12
+    orthogonal = np.asarray([1 + 0j, -1j, -1 + 0j, 1j])
+    cross = np.sum(orthogonal * x.conj())
+    coherence = abs(cross) / np.sqrt(np.sum(abs(x) ** 2) * np.sum(abs(orthogonal) ** 2))
+    assert coherence == 0
+    assert np.sqrt(1 - coherence**2) == 1
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--research-root", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     args = p.parse_args()
     check_compensation()
+    check_prediction_error_identity()
     args.output.mkdir(parents=True, exist_ok=True)
     session, visit_index, rate = "scan-hop-e46d3aba244cf641", 588, 2_500_000
     evidence_path = (
@@ -84,6 +100,20 @@ def main():
                 sample_rate_hz=rate, probe_stride_ms=20
             ),
         )
+    paired_probe_intervals = []
+    for probe_index in sorted({probe.probe_index for probe in analysis.probes}):
+        probe_rows = tuple(probe for probe in analysis.probes if probe.probe_index == probe_index)
+        probe_pairs = _phase_blind_pairs(analysis.model_copy(update={"probes": probe_rows}))
+        if probe_pairs:
+            probe_start = probe_index * 20 * rate // 1000
+            paired_probe_intervals.append(
+                {
+                    "probe_index": probe_index,
+                    "start_sample": probe_start,
+                    "stop_sample": probe_start + 20 * rate // 1000,
+                    "pair_count": len(probe_pairs),
+                }
+            )
     probes = tuple(p for p in analysis.probes if p.probe_index == 1)
     pairs = _phase_blind_pairs(analysis.model_copy(update={"probes": probes}))
     assert pairs, "No dual GLRT pair in the preselected 20–40 ms probe"
@@ -232,6 +262,129 @@ def main():
     fig.tight_layout()
     fig.savefig(args.output / "constant-phase-profile.png", dpi=180)
     plt.close(fig)
+
+    window_samples = 5_000
+    stride_samples = 1_250
+    window_starts = np.arange(2_500, len(common) - window_samples - 2_500 + 1, stride_samples)
+    window_centers = window_starts + (window_samples - 1) / 2
+    window_rows = []
+    heatmap = []
+    for window_start, window_center in zip(window_starts, window_centers, strict=True):
+        window_stop = window_start + window_samples
+        window_cross = (
+            common[window_start:window_stop, 1] * common[window_start:window_stop, 0].conj()
+        )
+        window_cross_sum = np.sum(window_cross)
+        window_power0 = float(np.sum(abs(common[window_start:window_stop, 0]) ** 2))
+        window_power1 = float(np.sum(abs(common[window_start:window_stop, 1]) ** 2))
+        window_coherence = float(abs(window_cross_sum) / np.sqrt(window_power0 * window_power1))
+        window_phase = float(np.angle(window_cross_sum))
+        heatmap.append(window_coherence * np.cos(candidate_phase - window_phase))
+        window_groups = np.array_split(np.arange(window_samples), 10)
+        window_delete_phase = np.asarray(
+            [np.angle(window_cross_sum - np.sum(window_cross[group])) for group in window_groups]
+        )
+        window_delete_delta = np.angle(np.exp(1j * (window_delete_phase - window_phase)))
+        window_phase_se = float(np.sqrt(9 / 10 * np.sum(window_delete_delta**2)))
+        paired_detection = any(
+            interval["start_sample"] <= window_center < interval["stop_sample"]
+            for interval in paired_probe_intervals
+        )
+        window_rows.append(
+            (
+                window_start,
+                window_stop,
+                window_center / rate,
+                np.degrees(window_phase),
+                window_coherence,
+                np.sqrt(max(0.0, 1 - window_coherence**2)),
+                np.degrees(window_phase_se),
+                int(paired_detection),
+            )
+        )
+    heatmap = np.asarray(heatmap).T
+    np.savetxt(
+        args.output / "time-window-phase.csv",
+        np.asarray(window_rows),
+        delimiter=",",
+        fmt="%.12g",
+        header=(
+            "start_sample,stop_sample_exclusive,center_time_s,"
+            "most_likely_rx1_minus_rx0_phase_deg,coherence_magnitude,"
+            "minimum_normalized_prediction_error,conditional_phase_jackknife_se_deg,"
+            "inside_paired_glrt_probe"
+        ),
+        comments="",
+    )
+    centers_ms = window_centers / rate * 1_000
+    phases_deg = np.degrees(candidate_phase)
+    fig, (ax_heat, ax_metric) = plt.subplots(
+        2, 1, figsize=(13, 8), sharex=True, gridspec_kw={"height_ratios": (3, 1)}
+    )
+    limit = float(np.max(np.abs(heatmap)))
+    image = ax_heat.pcolormesh(
+        centers_ms,
+        phases_deg,
+        heatmap,
+        shading="nearest",
+        cmap="coolwarm",
+        vmin=-limit,
+        vmax=limit,
+        rasterized=True,
+    )
+    ax_heat.scatter(
+        centers_ms,
+        [row[3] for row in window_rows],
+        s=5,
+        color="black",
+        alpha=0.75,
+        label="Most-likely phase",
+    )
+    ax_heat.axvline(60, color="black", linestyle="--", alpha=0.7, label="Fit/held boundary")
+    ax_heat.set(
+        ylabel="Candidate RX1 − RX0 phase (degrees)",
+        ylim=(-180, 180),
+        yticks=(-180, -90, 0, 90, 180),
+        title=(
+            "Constant-phase score in overlapping 2 ms windows — visit 588\n"
+            "0.5 ms stride; fixed common-band frequency/drift/delay correction"
+        ),
+    )
+    ax_heat.legend(loc="upper right")
+    colorbar = fig.colorbar(image, ax=ax_heat, pad=0.01)
+    colorbar.set_label("Signed coherence")
+    metric_coherence = np.asarray([row[4] for row in window_rows])
+    metric_error = np.asarray([row[5] for row in window_rows])
+    (line_window_coherence,) = ax_metric.plot(
+        centers_ms, metric_coherence, color="tab:blue", label="Coherence magnitude"
+    )
+    ax_metric_error = ax_metric.twinx()
+    (line_window_error,) = ax_metric_error.plot(
+        centers_ms, metric_error, color="tab:orange", label="Minimum prediction error"
+    )
+    for interval_index, interval in enumerate(paired_probe_intervals):
+        ax_metric.axvspan(
+            interval["start_sample"] / rate * 1_000,
+            interval["stop_sample"] / rate * 1_000,
+            color="tab:green",
+            alpha=0.08,
+            label="Paired GLRT probe" if interval_index == 0 else None,
+        )
+    ax_metric.axvline(60, color="black", linestyle="--", alpha=0.7)
+    ax_metric.set(
+        xlabel="Time from dwell start (ms)",
+        ylabel="Coherence magnitude",
+        xlim=(centers_ms[0], centers_ms[-1]),
+    )
+    ax_metric_error.set_ylabel("Minimum normalized prediction error")
+    handles, labels = ax_metric.get_legend_handles_labels()
+    handles.append(line_window_error)
+    labels.append(line_window_error.get_label())
+    ax_metric.legend(handles, labels, loc="upper right", ncol=3)
+    ax_metric.grid(alpha=0.2)
+    fig.tight_layout()
+    fig.savefig(args.output / "time-phase-heatmap.png", dpi=180)
+    plt.close(fig)
     metadata = {
         "session_id": session,
         "visit_index": visit_index,
@@ -257,6 +410,17 @@ def main():
         "ten_contiguous_group_delete_jackknife_phase_se_deg": float(np.degrees(phase_jackknife_se)),
         "candidate_phase_grid_step_deg": 0.25,
         "ordinary_coherence_is_phase_invariant": True,
+        "time_heatmap": {
+            "window_samples": window_samples,
+            "window_duration_ms": window_samples / rate * 1_000,
+            "stride_samples": stride_samples,
+            "stride_ms": stride_samples / rate * 1_000,
+            "window_count": len(window_rows),
+            "first_center_ms": float(centers_ms[0]),
+            "last_center_ms": float(centers_ms[-1]),
+            "paired_glrt_probe_intervals": paired_probe_intervals,
+            "overlapping_windows_are_independent": False,
+        },
         "mean_unit_phasor_resultant": float(abs(np.mean(np.exp(1j * residual)))),
         "identity_claim": (
             "phase-blind paired Starlink candidate; individual satellite identity unverified"
