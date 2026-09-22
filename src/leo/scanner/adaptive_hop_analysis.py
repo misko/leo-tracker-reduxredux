@@ -6,7 +6,7 @@ import math
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Annotated, ClassVar, Literal, Protocol, Self
+from typing import Annotated, ClassVar, Literal, Protocol, Self, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -17,6 +17,7 @@ from leo.contracts.scanner_glrt_frame import U64
 from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     SessionId,
@@ -75,6 +76,17 @@ class AdaptiveHopAnalysisConfigurationV1(AdaptiveModel):
     @property
     def scheduled_probe_count(self) -> int:
         return (self.dwell_samples - self.probe_samples) // self.probe_stride_samples + 1
+
+
+class DualRx10mAdaptiveHopAnalysisConfigurationV2(AdaptiveHopAnalysisConfigurationV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    analyzer_id: Literal["adaptive-hop-fractional-glrt64-cfo-10m-v1"] = (  # type: ignore[assignment]
+        cast(  # type: ignore[assignment]
+            Literal["adaptive-hop-fractional-glrt64-cfo-10m-v1"],
+            "adaptive-hop-fractional-glrt64-cfo-10m-v1",
+        )
+    )
+    sample_rate_hz: Literal[10_000_000] = 10_000_000  # type: ignore[assignment]
 
 
 class AdaptiveHopFractionalCandidateV1(AdaptiveModel):
@@ -208,6 +220,11 @@ class AdaptiveHopVisitAnalysisV1(AdaptiveModel):
         return self
 
 
+class DualRx10mAdaptiveHopVisitAnalysisV2(AdaptiveHopVisitAnalysisV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    configuration: DualRx10mAdaptiveHopAnalysisConfigurationV2  # type: ignore[assignment]
+
+
 class AdaptiveHopAnalysisReader(Protocol):
     """A manifest-bound, lazy, dual-RX reader. Its caller owns closure."""
 
@@ -271,6 +288,11 @@ class AdaptiveHopAnalysisSource:
 class EdgeAdaptiveHopAnalysisSourceV2(AdaptiveHopAnalysisSource):
     _receipt_model: ClassVar[type[AdaptiveHopReceiptV2]] = AdaptiveHopReceiptV2
     receipt: AdaptiveHopReceiptV2 = field(init=False)
+
+
+class DualRx10mAdaptiveHopAnalysisSourceV3(AdaptiveHopAnalysisSource):
+    _receipt_model: ClassVar[type[AdaptiveHopReceiptV3]] = AdaptiveHopReceiptV3
+    receipt: AdaptiveHopReceiptV3 = field(init=False)
 
 
 def _fractional_candidate(
@@ -344,13 +366,22 @@ def analyze_adaptive_hop_visit(
     configuration: AdaptiveHopAnalysisConfigurationV1 | None = None,
 ) -> AdaptiveHopVisitAnalysisV1:
     """Reuse the existing detector, keeping only complete fractional decisions."""
-    cfg = configuration or AdaptiveHopAnalysisConfigurationV1(
-        sample_rate_hz=source.receipt.plan.geometry.sample_rate_hz
+    model = (
+        DualRx10mAdaptiveHopAnalysisConfigurationV2
+        if isinstance(source, DualRx10mAdaptiveHopAnalysisSourceV3)
+        else AdaptiveHopAnalysisConfigurationV1
     )
-    cfg = AdaptiveHopAnalysisConfigurationV1.model_validate(cfg.model_dump())
+    cfg = configuration or model.model_validate(
+        {"sample_rate_hz": source.receipt.plan.geometry.sample_rate_hz}
+    )
+    cfg = model.model_validate(cfg.model_dump())
     if cfg.sample_rate_hz != source.receipt.plan.geometry.sample_rate_hz:
         raise ValueError("adaptive analysis configuration changed source sample rate")
     samples = source.read_visit(visit_index)
+    if isinstance(source, DualRx10mAdaptiveHopAnalysisSourceV3):
+        return _analyze_loaded_visit(
+            source, visit_index, samples, cfg, DualRx10mAdaptiveHopVisitAnalysisV2
+        )
     return _analyze_loaded_visit(source, visit_index, samples, cfg)
 
 
@@ -367,13 +398,27 @@ def analyze_adaptive_hop_visit_batch(
     """
     if not 1 <= len(visit_indexes) <= 2 or len(set(visit_indexes)) != len(visit_indexes):
         raise ValueError("adaptive analysis batch must contain one or two distinct visits")
-    cfg = AdaptiveHopAnalysisConfigurationV1.model_validate(configuration.model_dump())
+    config_model = (
+        DualRx10mAdaptiveHopAnalysisConfigurationV2
+        if isinstance(source, DualRx10mAdaptiveHopAnalysisSourceV3)
+        else AdaptiveHopAnalysisConfigurationV1
+    )
+    cfg = config_model.model_validate(configuration.model_dump())
     if cfg.sample_rate_hz != source.receipt.plan.geometry.sample_rate_hz:
         raise ValueError("adaptive analysis configuration changed source sample rate")
     samples = tuple(source.read_visit(index) for index in visit_indexes)
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="leo-adaptive-glrt") as executor:
         futures = [
-            executor.submit(_analyze_loaded_visit, source, index, values, cfg)
+            executor.submit(
+                _analyze_loaded_visit,
+                source,
+                index,
+                values,
+                cfg,
+                DualRx10mAdaptiveHopVisitAnalysisV2,
+            )
+            if isinstance(source, DualRx10mAdaptiveHopAnalysisSourceV3)
+            else executor.submit(_analyze_loaded_visit, source, index, values, cfg)
             for index, values in zip(visit_indexes, samples, strict=True)
         ]
         for future in futures:
@@ -439,13 +484,17 @@ def _analyze_loaded_visit(
 
 def validate_adaptive_analysis_binding(
     product: AdaptiveHopVisitAnalysisV1,
-    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
+    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3,
     *,
     input_manifest_sha256: str,
 ) -> None:
     product = AdaptiveHopVisitAnalysisV1.model_validate(product.model_dump())
     receipt_model = (
-        AdaptiveHopReceiptV2 if isinstance(receipt, AdaptiveHopReceiptV2) else AdaptiveHopReceiptV1
+        AdaptiveHopReceiptV3
+        if isinstance(receipt, AdaptiveHopReceiptV3)
+        else AdaptiveHopReceiptV2
+        if isinstance(receipt, AdaptiveHopReceiptV2)
+        else AdaptiveHopReceiptV1
     )
     receipt = receipt_model.model_validate(receipt.model_dump())
     _compare_source_fields(product, receipt, input_manifest_sha256)

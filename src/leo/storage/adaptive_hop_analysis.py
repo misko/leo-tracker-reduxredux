@@ -24,13 +24,18 @@ import zstandard as zstd
 from pydantic import BaseModel
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
-from leo.scanner.adaptive_hop_analysis import AdaptiveHopVisitAnalysisV1
+from leo.scanner.adaptive_hop_analysis import (
+    AdaptiveHopVisitAnalysisV1,
+    DualRx10mAdaptiveHopVisitAnalysisV2,
+)
 from leo.scanner.adaptive_hop_presentation import (
     MAX_OVERVIEW_PNG_BYTES,
     OVERVIEW_ARTIFACTS,
     AdaptiveHopAnalysisStatusV1,
     AdaptiveHopFigureV1,
     AdaptiveHopOverviewManifestV1,
+    DualRx10mAdaptiveAnalysisStatusV5,
+    DualRx10mAdaptiveOverviewManifestV5,
     EdgeAdaptiveAnalysisStatusV4,
     EdgeAdaptiveOverviewManifestV4,
     RenderedAdaptiveOverview,
@@ -39,6 +44,9 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
+    DualRx10mAdaptiveAnalysisBindingV5,
+    DualRx10mAdaptiveMetricsManifestV5,
+    DualRx10mAdaptiveVisitReferenceV5,
     EdgeAdaptiveAnalysisBindingV4,
     EdgeAdaptiveMetricsManifestV4,
     EdgeAdaptiveVisitReferenceV4,
@@ -162,6 +170,8 @@ class AdaptiveHopAnalysisStore:
             if isinstance(binding, HostAdaptiveAnalysisBindingV2)
             else EdgeAdaptiveAnalysisBindingV4
             if isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
+            else DualRx10mAdaptiveAnalysisBindingV5
+            if isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5)
             else AdaptiveHopAnalysisBindingV1
         )
         binding = binding_model.model_validate(binding.model_dump())
@@ -232,11 +242,14 @@ class AdaptiveHopAnalysisJob:
         wide = isinstance(binding, HostAdaptiveAnalysisBindingV3)
         host = isinstance(binding, HostAdaptiveAnalysisBindingV2)
         edge = isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
+        dual_10m = isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5)
         self._visit_model: type[AdaptiveHopVisitAnalysisV1] = (
             HostAdaptiveVisitAnalysisV3
             if wide
             else HostAdaptiveVisitAnalysisV2
             if host
+            else DualRx10mAdaptiveHopVisitAnalysisV2
+            if dual_10m
             else AdaptiveHopVisitAnalysisV1
         )
         self._reference_model: type[AdaptiveHopVisitReferenceV1] = (
@@ -246,6 +259,8 @@ class AdaptiveHopAnalysisJob:
             if host
             else EdgeAdaptiveVisitReferenceV4
             if edge
+            else DualRx10mAdaptiveVisitReferenceV5
+            if dual_10m
             else AdaptiveHopVisitReferenceV1
         )
         self._metrics_model: type[AdaptiveHopMetricsManifestV1] = (
@@ -255,6 +270,8 @@ class AdaptiveHopAnalysisJob:
             if host
             else EdgeAdaptiveMetricsManifestV4
             if edge
+            else DualRx10mAdaptiveMetricsManifestV5
+            if dual_10m
             else AdaptiveHopMetricsManifestV1
         )
         self._overview_model: type[AdaptiveHopOverviewManifestV1] = (
@@ -264,6 +281,8 @@ class AdaptiveHopAnalysisJob:
             if host
             else EdgeAdaptiveOverviewManifestV4
             if edge
+            else DualRx10mAdaptiveOverviewManifestV5
+            if dual_10m
             else AdaptiveHopOverviewManifestV1
         )
         self._status_model: type[AdaptiveHopAnalysisStatusV1] = (
@@ -273,6 +292,8 @@ class AdaptiveHopAnalysisJob:
             if host
             else EdgeAdaptiveAnalysisStatusV4
             if edge
+            else DualRx10mAdaptiveAnalysisStatusV5
+            if dual_10m
             else AdaptiveHopAnalysisStatusV1
         )
 

@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The production scanner is pinned to the dual-receiver 2.5 MS/s profile.
+# Select one native rate once per durable six-minute slot. A slot-keyed hash is
+# stable across service restarts while remaining an unbiased 50/50 selection.
 now_epoch="${LEO_SCANNER_CYCLE_NOW_EPOCH:-$(date -u +%s)}"
 cadence_seconds=360
 next_ordinal=$(((now_epoch + cadence_seconds - 1) / cadence_seconds))
-export LEO_SCANNER_PROFILE=adaptive-dual-rx-2p5m-edge-random-300s-360s-v1
-export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=2500000
+selection_digest="$(printf 'leo-dual-rx-rate-v1:%s' "${next_ordinal}" | sha256sum)"
+selection_byte=$((16#${selection_digest:0:2}))
+if (( selection_byte & 1 )); then
+    export LEO_SCANNER_PROFILE=adaptive-dual-rx-10m-edge-random-300s-360s-v1
+    export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=10000000
+else
+    export LEO_SCANNER_PROFILE=adaptive-dual-rx-2p5m-edge-random-300s-360s-v1
+    export LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ=2500000
+fi
 
 echo "adaptive scanner cycle: slot=${next_ordinal} profile=${LEO_SCANNER_PROFILE} rates=${LEO_SCANNER_ADAPTIVE_SAMPLE_RATES_HZ}"
 if [[ "${LEO_SCANNER_CYCLE_DRY_RUN:-}" == "1" ]]; then

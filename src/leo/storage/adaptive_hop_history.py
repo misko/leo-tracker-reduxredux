@@ -7,13 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV2
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV2, AdaptiveHopReceiptV3
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopCoverageV1,
     AdaptiveHopHistoryItemV1,
     AdaptiveHopHistoryPageV1,
     AdaptiveHopSessionDetailV1,
     AdaptiveHopVisitViewV1,
+    DualRx10mAdaptiveHistoryItemV5,
+    DualRx10mAdaptiveSessionDetailV5,
     EdgeAdaptiveHistoryItemV4,
     EdgeAdaptiveSessionDetailV4,
 )
@@ -116,7 +118,11 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
             ),
         )
     elif isinstance(receipt, AdaptiveHopReceiptV2):
-        model = EdgeAdaptiveHistoryItemV4
+        model = (
+            DualRx10mAdaptiveHistoryItemV5
+            if isinstance(receipt, AdaptiveHopReceiptV3)
+            else EdgeAdaptiveHistoryItemV4
+        )
         mask = receipt.plan.policy.allowed_target_mask
         fields = dict(
             radio_serial=receipt.radio_serial,
@@ -331,7 +337,11 @@ class AdaptiveHopPresentationStore:
                     )
             fields = dict(host_decisions=tuple(decision_views))
         elif isinstance(receipt, AdaptiveHopReceiptV2):
-            model = EdgeAdaptiveSessionDetailV4
+            model = (
+                DualRx10mAdaptiveSessionDetailV5
+                if isinstance(receipt, AdaptiveHopReceiptV3)
+                else EdgeAdaptiveSessionDetailV4
+            )
         return model(
             **fields,
             capture=_summary(session),

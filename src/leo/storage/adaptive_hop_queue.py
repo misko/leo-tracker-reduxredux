@@ -7,7 +7,11 @@ import threading
 import time
 from contextlib import suppress
 
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopReceiptV2
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
+)
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
 from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
@@ -116,7 +120,7 @@ class QueuedAdaptiveHopSessionWriter:
 
     def finish(
         self,
-        receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
+        receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3,
         *,
         timing: PersistentHopUtcTimingAuthorityV1 | None,
     ) -> PublishedAdaptiveHopIqSession:

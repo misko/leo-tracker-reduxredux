@@ -11,8 +11,10 @@ from typing import Protocol, cast
 from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV1,
     AdaptiveHopPlanV2,
+    AdaptiveHopPlanV3,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
     AdaptiveHopVisitV1,
 )
 from leo.scanner.adaptive_hop_ports import (
@@ -27,7 +29,10 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV4,
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopRadio, HostAdaptiveHopVisitBlock
-from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
+from leo.scanner.persistent_hop import (
+    DualRxPersistentHopTimingV2,
+    PersistentHopUtcTimingAuthorityV1,
+)
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 from leo.scanner.ports import ScanRadioIdentity
 from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
@@ -35,7 +40,7 @@ from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 
 @dataclass(frozen=True, slots=True)
 class CapturedAdaptiveHopSession:
-    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2
+    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3
     timing: PersistentHopUtcTimingAuthorityV1 | None
 
 
@@ -73,7 +78,7 @@ class AdaptiveHopCaptureError(RuntimeError):
 
 def capture_adaptive_hop_session(
     radio: AdaptiveHopRadio,
-    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
+    plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3,
     *,
     session_id: str,
     visit_sink: Callable[[AdaptiveHopVisitBlock], None],
@@ -81,7 +86,13 @@ def capture_adaptive_hop_session(
     realtime_ns: Callable[[], int] = time.time_ns,
     monotonic_ns: Callable[[], int] = time.monotonic_ns,
 ) -> CapturedAdaptiveHopSession:
-    masked = isinstance(plan, AdaptiveHopPlanV2)
+    model = (
+        (AdaptiveHopPlanV3, AdaptiveHopReceiptV3, DualRxPersistentHopTimingV2)
+        if isinstance(plan, AdaptiveHopPlanV3)
+        else (AdaptiveHopPlanV2, AdaptiveHopReceiptV2, PersistentHopUtcTimingAuthorityV1)
+        if isinstance(plan, AdaptiveHopPlanV2)
+        else (AdaptiveHopPlanV1, AdaptiveHopReceiptV1, PersistentHopUtcTimingAuthorityV1)
+    )
     receipt, timing = _capture(
         radio,
         plan,
@@ -90,9 +101,9 @@ def capture_adaptive_hop_session(
         cancel=cancel,
         realtime_ns=realtime_ns,
         monotonic_ns=monotonic_ns,
-        plan_model=AdaptiveHopPlanV2 if masked else AdaptiveHopPlanV1,
-        receipt_model=AdaptiveHopReceiptV2 if masked else AdaptiveHopReceiptV1,
-        timing_model=PersistentHopUtcTimingAuthorityV1,
+        plan_model=model[0],
+        receipt_model=model[1],
+        timing_model=model[2],
     )
     return CapturedAdaptiveHopSession(receipt, timing)
 

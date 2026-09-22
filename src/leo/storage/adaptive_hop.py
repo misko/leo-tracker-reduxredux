@@ -31,8 +31,10 @@ from leo.domain.iq import receiver_major_complex_to_ci16
 from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV1,
     AdaptiveHopPlanV2,
+    AdaptiveHopPlanV3,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     Counter,
@@ -48,7 +50,10 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV5,
 )
 from leo.scanner.host_adaptive_ports import HostAdaptiveHopVisitBlock
-from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
+from leo.scanner.persistent_hop import (
+    DualRxPersistentHopTimingV2,
+    PersistentHopUtcTimingAuthorityV1,
+)
 from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
 from leo.station.geometry import AdaptiveReceiverGeometryBindingV1
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError, BundleStateError
@@ -230,6 +235,13 @@ class EdgeBoundAdaptiveHopIqManifestV7(GeometryBoundAdaptiveHopIqManifestV6):
     receipt: AdaptiveHopReceiptV2  # type: ignore[assignment]
 
 
+class DualRx10mEdgeAdaptiveHopIqManifestV8(GeometryBoundAdaptiveHopIqManifestV6):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = DualRxPersistentHopTimingV2
+    receipt: AdaptiveHopReceiptV3  # type: ignore[assignment]
+    timing: DualRxPersistentHopTimingV2 | None  # type: ignore[assignment]
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
@@ -238,7 +250,8 @@ class _ManifestSeal(AdaptiveModel):
         | HostAdaptiveHopIqManifestV4
         | HostAdaptiveHopIqManifestV5
         | GeometryBoundAdaptiveHopIqManifestV6
-        | EdgeBoundAdaptiveHopIqManifestV7,
+        | EdgeBoundAdaptiveHopIqManifestV7
+        | DualRx10mEdgeAdaptiveHopIqManifestV8,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -259,6 +272,7 @@ class PublishedAdaptiveHopIqSession:
         AdaptiveHopIqManifestV1
         | GeometryBoundAdaptiveHopIqManifestV6
         | EdgeBoundAdaptiveHopIqManifestV7
+        | DualRx10mEdgeAdaptiveHopIqManifestV8
     )
     manifest_sha256: str
 
@@ -417,7 +431,7 @@ class AdaptiveHopIqStore:
     def begin_queued(
         self,
         session_id: str,
-        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3,
         *,
         capacity_visits: int = 8,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
@@ -436,7 +450,7 @@ class AdaptiveHopIqStore:
     def begin(
         self,
         session_id: str,
-        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3,
         *,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
     ) -> AdaptiveHopSessionWriter:
@@ -448,6 +462,8 @@ class AdaptiveHopIqStore:
             if isinstance(plan, HostAdaptiveHopPlanV3)
             else HostAdaptiveHopPlanV2
             if isinstance(plan, HostAdaptiveHopPlanV2)
+            else AdaptiveHopPlanV3
+            if isinstance(plan, AdaptiveHopPlanV3)
             else AdaptiveHopPlanV2
             if isinstance(plan, AdaptiveHopPlanV2)
             else AdaptiveHopPlanV1
@@ -903,7 +919,7 @@ class AdaptiveHopSessionWriter:
         self,
         directory: PinnedLocalRoot,
         session_id: str,
-        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3,
         *,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
     ):
@@ -1012,7 +1028,7 @@ class AdaptiveHopSessionWriter:
 
     def finish(
         self,
-        receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2,
+        receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3,
         *,
         timing: PersistentHopUtcTimingAuthorityV1 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
@@ -1028,6 +1044,8 @@ class AdaptiveHopSessionWriter:
                 if self._host_adaptive_version == 3
                 else HostAdaptiveHopReceiptV2
                 if self._host_adaptive_version == 2
+                else AdaptiveHopReceiptV3
+                if isinstance(self._plan, AdaptiveHopPlanV3)
                 else AdaptiveHopReceiptV2
                 if isinstance(self._plan, AdaptiveHopPlanV2)
                 else AdaptiveHopReceiptV1
@@ -1049,6 +1067,8 @@ class AdaptiveHopSessionWriter:
                 if self._host_adaptive_version == 3
                 else HostAdaptiveHopIqManifestV2
                 if self._host_adaptive_version == 2
+                else DualRx10mEdgeAdaptiveHopIqManifestV8
+                if isinstance(receipt, AdaptiveHopReceiptV3) and self._receiver_geometry is not None
                 else EdgeBoundAdaptiveHopIqManifestV7
                 if isinstance(receipt, AdaptiveHopReceiptV2) and self._receiver_geometry is not None
                 else GeometryBoundAdaptiveHopIqManifestV6

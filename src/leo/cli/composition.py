@@ -189,6 +189,7 @@ from leo.scanner import (
 from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV1,
     AdaptiveHopPlanV2,
+    AdaptiveHopPlanV3,
     AdaptiveHopPolicyV1,
     AdaptiveHopPolicyV2,
 )
@@ -196,11 +197,15 @@ from leo.scanner.adaptive_hop_ports import AdaptiveHopRadio
 from leo.scanner.dual_rx import (
     DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
     DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
+    DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID,
     DualRxAdaptive2p5ScheduledScannerIntentV7,
     DualRxAdaptive2p5ScheduledScannerIntentV8,
     DualRxAdaptive2p5ScheduledScannerIntentV9,
+    DualRxAdaptive10mScheduledScannerIntentV10,
     compile_dual_rx_adaptive_2p5_hop_plan,
     compile_dual_rx_adaptive_2p5_scanner_intent,
+    compile_dual_rx_adaptive_10m_hop_plan,
+    compile_dual_rx_adaptive_10m_scanner_intent,
 )
 from leo.scanner.glrt_publication import ScannerGlrtEvidenceSource
 from leo.scanner.host_adaptive import (
@@ -219,6 +224,7 @@ from leo.scanner.host_adaptive_schedule import (
     compile_host_adaptive_rx0_scanner_intent,
     compile_host_adaptive_scanner_intent,
 )
+from leo.scanner.persistent_hop import DualRxPersistentHopPlanV2
 from leo.station.geometry import AdaptiveReceiverGeometryBindingV1
 from leo.station.pinned_loader import PinnedAuthorityJsonLoader, PinnedStationAuthorityReader
 from leo.station.resolver import FixtureAuthorityFileReference
@@ -371,6 +377,7 @@ class CliSettings:
             "alternating-2p5m-5m",
             DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
             DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
+            DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID,
             SINGLE_RX_PROFILE_ID,
             HOST_ADAPTIVE_PROFILE_ID,
             HOST_ADAPTIVE_RX0_PROFILE_ID,
@@ -381,6 +388,7 @@ class CliSettings:
             DUAL_RX_ADAPTIVE_2P5_PROFILE_ID,
             DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID,
         )
+        dual_rx_10m = self.scanner_profile == DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID
         if dual_rx_2p5 and (
             not self.scanner_enabled
             or self.scanner_capture_mode != "persistent_hop"
@@ -398,6 +406,25 @@ class CliSettings:
         ):
             raise ValueError(
                 "dual-RX 2.5 MS/s profile requires one radio, adaptive 360s cadence, "
+                "300s/120ms hopping, positive-only GLRT, and pinned geometry"
+            )
+        if dual_rx_10m and (
+            not self.scanner_enabled
+            or self.scanner_capture_mode != "persistent_hop"
+            or self.scanner_hop_policy != "adaptive"
+            or not isinstance(self.scanner_glrt, ScannerGlrtOptions)
+            or self.scanner_glrt.mode != "positive-only-v1"
+            or self.scanner_run_seconds != 300
+            or self.scanner_dwell_ms != 120
+            or self.scanner_interval_seconds != 360
+            or len(self.radios) != 1
+            or self.scanner_adaptive_sample_rates_hz != (10_000_000,)
+            or self.station_authority_root is None
+            or self.station_geometry_relative_path is None
+            or self.station_geometry_file_digest is None
+        ):
+            raise ValueError(
+                "dual-RX 10 MS/s profile requires one radio, adaptive 360s cadence, "
                 "300s/120ms hopping, positive-only GLRT, and pinned geometry"
             )
         if host_adaptive and (
@@ -454,6 +481,8 @@ class CliSettings:
                     if host_adaptive
                     else (2_500_000,)
                     if dual_rx_2p5
+                    else (10_000_000,)
+                    if dual_rx_10m
                     else (2_500_000, 5_000_000)
                 )
                 for rate in rates
@@ -536,7 +565,7 @@ class CliSettings:
                     )
                 admitted_intervals = (
                     (360,)
-                    if dual_rx_2p5
+                    if dual_rx_2p5 or dual_rx_10m
                     else (600,)
                     if host_adaptive
                     else (600, 1200)
@@ -1591,7 +1620,9 @@ class LocalAcquisitionBackend:
         from leo.scanner.single_rx import SINGLE_RX_PROFILE_ID, compile_single_rx_scanner_intent
 
         compiler = (
-            compile_dual_rx_adaptive_2p5_scanner_intent
+            compile_dual_rx_adaptive_10m_scanner_intent
+            if self.settings.scanner_profile == DUAL_RX_EDGE_ADAPTIVE_10M_PROFILE_ID
+            else compile_dual_rx_adaptive_2p5_scanner_intent
             if self.settings.scanner_profile
             in (DUAL_RX_ADAPTIVE_2P5_PROFILE_ID, DUAL_RX_EDGE_ADAPTIVE_2P5_PROFILE_ID)
             else compile_single_rx_scanner_intent
@@ -1643,7 +1674,11 @@ class LocalAcquisitionBackend:
             ),
         )
         durable_adaptive_intent = host_adaptive_intent or isinstance(
-            intent, DualRxAdaptive2p5ScheduledScannerIntentV9
+            intent,
+            (
+                DualRxAdaptive2p5ScheduledScannerIntentV9,
+                DualRxAdaptive10mScheduledScannerIntentV10,
+            ),
         )
         if durable_adaptive_intent:
             # The queue payload is the immutable authority for this slot.  In
@@ -2002,6 +2037,13 @@ class LocalAcquisitionBackend:
         geometry = (
             host_plan.geometry
             if host_plan is not None
+            else compile_dual_rx_adaptive_10m_hop_plan(
+                intent,
+                transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
+                kernel_buffers=self.settings.scanner_persistent_kernel_buffers,
+                samples_per_block=self.settings.scanner_persistent_samples_per_block,
+            )
+            if isinstance(intent, DualRxAdaptive10mScheduledScannerIntentV10)
             else compile_dual_rx_adaptive_2p5_hop_plan(
                 intent,
                 transition_guard_us=self.settings.scanner_persistent_transition_guard_us,
@@ -2045,7 +2087,13 @@ class LocalAcquisitionBackend:
                 receipt.plan.geometry != geometry
                 or (host_plan is not None and receipt.plan != host_plan)
                 or (
-                    isinstance(intent, DualRxAdaptive2p5ScheduledScannerIntentV9)
+                    isinstance(
+                        intent,
+                        (
+                            DualRxAdaptive2p5ScheduledScannerIntentV9,
+                            DualRxAdaptive10mScheduledScannerIntentV10,
+                        ),
+                    )
                     and (
                         not isinstance(receipt.plan, AdaptiveHopPlanV2)
                         or receipt.plan.policy.allowed_target_mask
@@ -2088,6 +2136,17 @@ class LocalAcquisitionBackend:
         plan = (
             host_plan
             if host_plan is not None
+            else AdaptiveHopPlanV3(
+                geometry=cast(DualRxPersistentHopPlanV2, geometry),
+                policy=AdaptiveHopPolicyV2(
+                    mode=mode,
+                    generation=secrets.randbits(64) or 1,
+                    allowed_target_mask=(
+                        0x0F if intent.configuration.selected_edge == "lower" else 0xF0
+                    ),
+                ),
+            )
+            if isinstance(intent, DualRxAdaptive10mScheduledScannerIntentV10)
             else AdaptiveHopPlanV2(
                 geometry=geometry,
                 policy=AdaptiveHopPolicyV2(
@@ -2155,6 +2214,7 @@ class LocalAcquisitionBackend:
                                     DualRxAdaptive2p5ScheduledScannerIntentV7,
                                     DualRxAdaptive2p5ScheduledScannerIntentV8,
                                     DualRxAdaptive2p5ScheduledScannerIntentV9,
+                                    DualRxAdaptive10mScheduledScannerIntentV10,
                                 ),
                             )
                             else None

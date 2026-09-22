@@ -11,8 +11,10 @@ import numpy.typing as npt
 from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV1,
     AdaptiveHopPlanV2,
+    AdaptiveHopPlanV3,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
     AdaptiveHopVisitV1,
 )
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
@@ -49,7 +51,7 @@ class AdaptiveHopVisitBlock:
 
 class AdaptiveHopSession(Protocol):
     @property
-    def plan(self) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2: ...
+    def plan(self) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3: ...
 
     @property
     def complete(self) -> bool: ...
@@ -61,7 +63,7 @@ class AdaptiveHopSession(Protocol):
 
     def request_cancel(self) -> None: ...
 
-    def finish(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2: ...
+    def finish(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3: ...
 
 
 class AdaptiveHopRadio(Protocol):
@@ -71,7 +73,7 @@ class AdaptiveHopRadio(Protocol):
     def open(self) -> ScanRadioIdentity: ...
 
     def begin_session(
-        self, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2, *, session_id: str
+        self, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3, *, session_id: str
     ) -> AdaptiveHopSession: ...
 
     def close(self) -> None: ...

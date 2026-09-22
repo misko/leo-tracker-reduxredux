@@ -116,7 +116,7 @@ class ScannerGlrtMetadataExtension:
             bandwidth_hz=hop.sample_rate_hz, lnb_lo_hz=9_750_000_000
         )
         if (
-            hop.sample_rate_hz not in (2_500_000, 5_000_000)
+            hop.sample_rate_hz not in (2_500_000, 5_000_000, 10_000_000)
             or hop.rf_bandwidth_hz != hop.sample_rate_hz
             or hop.dwell_samples != hop.sample_rate_hz * 120 // 1000
             or not 1 <= hop.dwell_count <= 2500

@@ -29,8 +29,10 @@ from leo.radio.scanner_iio_compat import scanner_adi_module
 from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV1,
     AdaptiveHopPlanV2,
+    AdaptiveHopPlanV3,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
     AdaptiveHopVisitV1,
     validate_adaptive_hop_plan,
 )
@@ -108,7 +110,7 @@ class PlutoAdaptiveHopRadio:
         return self.identity
 
     def begin_session(
-        self, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2, *, session_id: str
+        self, plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3, *, session_id: str
     ) -> AdaptiveHopSession:
         if not self._opened:
             raise PlutoAdaptiveHopError("adaptive radio must be opened first")
@@ -176,7 +178,7 @@ class _PlutoAdaptiveHopSession:
         self,
         upstream: Any,
         *,
-        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2,
+        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3,
         identity: ScanRadioIdentity,
         session_id: str,
         read_ahead: int,
@@ -189,7 +191,9 @@ class _PlutoAdaptiveHopSession:
         self._cancel = threading.Event()
         self._done = threading.Event()
         self._error: BaseException | None = None
-        self._receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | None = None
+        self._receipt: (
+            AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | None
+        ) = None
         self._produced: list[AdaptiveHopVisitV1] = []
         self._evidence: ScannerGlrtSessionEvidenceV1 | None = None
         self._classification_error: str | None = None
@@ -201,7 +205,7 @@ class _PlutoAdaptiveHopSession:
         self._producer.start()
 
     @property
-    def plan(self) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2:
+    def plan(self) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3:
         return self._plan
 
     @property
@@ -247,7 +251,7 @@ class _PlutoAdaptiveHopSession:
                 self._terminal()
                 raise StopIteration from None
 
-    def finish(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
+    def finish(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3:
         if not self.complete:
             if not self._cancel.is_set():
                 raise PlutoAdaptiveHopError("adaptive finish requires draining the visit stream")
@@ -268,7 +272,7 @@ class _PlutoAdaptiveHopSession:
         if self._producer.is_alive():
             raise PlutoAdaptiveHopError("adaptive producer did not stop after cancellation")
 
-    def _terminal(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
+    def _terminal(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3:
         if self._error is not None:
             raise self._error
         if self._receipt is None:
@@ -287,7 +291,7 @@ class _PlutoAdaptiveHopSession:
                 continue
         self._produced.append(block.evidence)
 
-    def _map_receipt(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
+    def _map_receipt(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3:
         receipt = map_adaptive_capture(
             self._upstream.receipt,
             plan=self.plan,

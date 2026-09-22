@@ -6,9 +6,15 @@ from contextlib import contextmanager
 import numpy as np
 import numpy.typing as npt
 
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopReceiptV2, AdaptiveHopVisitV1
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
+    AdaptiveHopVisitV1,
+)
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisSource,
+    DualRx10mAdaptiveHopAnalysisSourceV3,
     EdgeAdaptiveHopAnalysisSourceV2,
 )
 from leo.scanner.host_adaptive import (
@@ -39,7 +45,7 @@ class _BoundReader:
         return self._reader.session.manifest_sha256
 
     @property
-    def receipt(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2:
+    def receipt(self) -> AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3:
         return self._reader.session.manifest.receipt
 
     def read_visit_ci16(self, index: int) -> tuple[AdaptiveHopVisitV1, npt.NDArray[np.int16]]:
@@ -65,6 +71,8 @@ class AdaptiveHopAnalysisInputStore:
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV3)
                 else HostAdaptiveAnalysisSource
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV2)
+                else DualRx10mAdaptiveHopAnalysisSourceV3
+                if isinstance(reader.session.manifest.receipt, AdaptiveHopReceiptV3)
                 else EdgeAdaptiveHopAnalysisSourceV2
                 if isinstance(reader.session.manifest.receipt, AdaptiveHopReceiptV2)
                 else AdaptiveHopAnalysisSource
