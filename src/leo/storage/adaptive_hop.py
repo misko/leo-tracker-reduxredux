@@ -274,6 +274,7 @@ class Feature104AdaptiveHopIqChunkV10(AdaptiveHopIqChunkV1):
     schema_version: Literal[10] = 10  # type: ignore[assignment]
     chunk_index: Annotated[int, Field(strict=True, ge=0, le=624)]
     visit_count: Annotated[int, Field(strict=True, ge=1, le=4)]
+    sample_count: Annotated[int, Field(strict=True, gt=0, le=7_200_000)]
 
 
 class Feature104DualRxAdaptiveHopIqManifestV10(GeometryBoundAdaptiveHopIqManifestV6):
