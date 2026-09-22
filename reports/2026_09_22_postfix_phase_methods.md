@@ -1,5 +1,7 @@
 # Phase-method comparison on the verified post-fix dual-RX dwell
 
+Follow-up: [the right-hand wrapped pattern is rapid coherent phase winding](2026_09_22_postfix_phase_winding_diagnosis.md). Shorter-window IQ replay and unwrapped residual-frequency plots distinguish it from random phase and a training-split artifact.
+
 All applicable relative-phase estimators below were rerun on the **same saved IQ**, rather than overlaying results from different recordings. Input: `cap-20260825T010019-89c2889553e0`, stream-1, radio `.21`, RX0/RX1, **31.800–32.800 s**, 2.5 MS/s. Its [selection and counter-continuity verification](2026_09_22_postfix_dual_capture_selection.md) establish 100% device-counter duty after the continuity fix. The one-second slice has 2.5 million complex samples per receiver; the raw digest is checked against the selection receipt.
 
 **Main result:** a measurable common component supports time-varying inter-receiver phase tracking, but a frozen frequency/drift model does not predict the later phase well. Strong edge-pilot detection and high local pilot resultant do not establish agreement of phase between methods or across independently acquired probe epochs.
