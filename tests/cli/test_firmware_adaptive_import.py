@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 import leo.cli.firmware_adaptive_import as importer
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV2, AdaptiveHopReceiptV3
 from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV4, HostAdaptiveHopReceiptV5
 
 
@@ -120,6 +121,74 @@ def sparse_document(rate: int) -> dict:
             "restoration": {"observed": settings},
         },
     }
+
+
+def dual_document(rate: int, *, complete: bool = True) -> dict:
+    dwell = rate * 120 // 1000
+    guard = rate // 1000
+    final = 10_000_000_000
+    valid_start = final - dwell
+    settings = {
+        "center_frequency_hz": 1_000_000_000,
+        "sample_rate_hz": rate,
+        "bandwidth_hz": rate,
+        "gain_modes": ["manual", "manual"],
+        "gain_db": [40.0, 40.0],
+    }
+    return {
+        "schema": "org.leo.firmware-adaptive-iq/v1",
+        "sample_layout": "sample_rx_iq_interleaved",
+        "physical_receivers": [0, 1],
+        "classifier_physical_receiver": 1,
+        "session_id": f"scan-fw-dual-{rate}",
+        "setup": {
+            "source_rate_hz": rate,
+            "duration_ms": 300_000,
+            "generation": 7,
+            "session": 11,
+            "analysis_digest": "a" * 64,
+            "rx_mask": 3,
+        },
+        "visits": [
+            {
+                "iq": {"relative_path": "visit-000000.ci16.zst"} if complete else None,
+                "record": {
+                    "frequency_hz": 959_687_498 if rate == 2_500_000 else 960_000_000,
+                    "selection_counter": valid_start - 2 * guard,
+                    "transition_before": valid_start - guard,
+                    "valid_start": valid_start,
+                    "valid_end": final,
+                },
+            }
+        ],
+        "terminal": {"restore_after": final + 1},
+        "evidence": {
+            "radio_serial": importer.DUAL_SERIAL,
+            "preparation": {"original": settings},
+            "restoration": {"observed": settings},
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    ("rate", "receipt_type"),
+    [(2_500_000, AdaptiveHopReceiptV2), (10_000_000, AdaptiveHopReceiptV3)],
+)
+def test_dual_firmware_receipt_preserves_both_receivers(rate, receipt_type) -> None:
+    receipt = importer._receipt(dual_document(rate), "sha256:" + "b" * 64)
+
+    assert isinstance(receipt, receipt_type)
+    assert receipt.radio_serial == importer.DUAL_SERIAL
+    assert receipt.radio_uri == importer.DUAL_URI
+    assert receipt.plan.geometry.receiver_ids == (0, 1)
+    assert receipt.plan.classification_receiver == 1
+    assert receipt.plan.policy.allowed_target_mask == 0x0F
+    assert receipt.valid_sample_count == rate * 120 // 1000
+
+
+def test_dual_firmware_receipt_refuses_unrepresented_sparse_iq() -> None:
+    with pytest.raises(importer.UnsupportedFirmwareArchiveError, match="sparse dual"):
+        importer._receipt(dual_document(2_500_000, complete=False), "sha256:" + "b" * 64)
 
 
 @pytest.mark.parametrize(
