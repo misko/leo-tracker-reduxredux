@@ -615,15 +615,16 @@ def test_qualified_api_only_plan_keeps_broad_impact_but_restarts_only_api(
         "_selected_component_release_revision",
         lambda component: current_api if component == "api" else None,
     )
-    monkeypatch.setattr(
-        OPS,
-        "_git_lines",
-        lambda *_arguments: ("src/leo/processing/worker.py", "src/leo/api/app.py"),
-    )
+    def changed_paths(*arguments: str) -> tuple[str, ...]:
+        assert arguments == ("diff", "--name-only", f"{current_api}..{target}")
+        return ("src/leo/processing/worker.py", "src/leo/api/app.py")
+
+    monkeypatch.setattr(OPS, "_git_lines", changed_paths)
 
     plan = OPS._deployment_plan(OPS.parser().parse_args(["deploy", "--api-only", "--plan"]))
 
     assert plan["mode"] == "qualified-api-only"
+    assert plan["comparison_revision"] == current_api
     assert plan["services_to_restart"] == ["api"]
     assert plan["changed_paths"] == ["src/leo/processing/worker.py", "src/leo/api/app.py"]
     assert set(plan["impact"]) == {"api", "worker"}
