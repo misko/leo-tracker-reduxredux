@@ -12,14 +12,29 @@ from tests.storage.test_adaptive_hop_history import publish_capture
 from tests.storage.test_host_adaptive_hop_store import block
 
 
-def publish_native(root, *, receiver=0):
+def publish_native(root, *, receiver=0, timing_shift_ns=0):
     receipt = host_receipt(receiver=receiver, count=4, session_id="host-native-history")
     store = AdaptiveHopIqStore(root)
     writer = store.begin(receipt.session_id, receipt.plan)
     try:
         for i in range(receipt.complete_visit_count):
             writer.append(block(receipt, i))
-        return writer.finish(receipt, timing=timing_fixture(receipt, SingleRxHopTimingV2))
+        timing = timing_fixture(receipt, SingleRxHopTimingV2)
+        if timing_shift_ns:
+            timing = timing.model_copy(
+                update={
+                    "begin_before_realtime_ns": timing.begin_before_realtime_ns + timing_shift_ns,
+                    "begin_after_realtime_ns": timing.begin_after_realtime_ns + timing_shift_ns,
+                    "terminal_realtime_ns": timing.terminal_realtime_ns + timing_shift_ns,
+                    "first_sample_earliest_utc_ns": timing.first_sample_earliest_utc_ns
+                    + timing_shift_ns,
+                    "first_sample_estimate_utc_ns": timing.first_sample_estimate_utc_ns
+                    + timing_shift_ns,
+                    "first_sample_latest_utc_ns": timing.first_sample_latest_utc_ns
+                    + timing_shift_ns,
+                }
+            )
+        return writer.finish(receipt, timing=timing)
     finally:
         writer.abort()
         store.close()
@@ -63,7 +78,7 @@ def test_mixed_history_preserves_legacy_major_and_exposes_host_evidence(
 
 def test_combined_history_indexes_before_parsing_only_the_requested_page(tmp_path, monkeypatch):
     older = publish_capture(tmp_path, count=3, session_id="older-legacy")
-    newer = publish_native(tmp_path)
+    newer = publish_native(tmp_path, timing_shift_ns=1_000_000_000)
     inspected: list[str] = []
     original_inspect = AdaptiveHopIqStore.inspect
 

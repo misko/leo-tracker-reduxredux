@@ -73,8 +73,11 @@ _SPOOL_NAMESPACE = "scanner-adaptive-spool"
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MAX_MANIFEST_BYTES = 32 * 1024 * 1024
 _MANIFEST_INDEX_PREFIX_BYTES = 512 * 1024
+_MANIFEST_INDEX_SUFFIX_BYTES = 64 * 1024
 _MAX_CHUNK_BYTES = 64 * 1024 * 1024
+_CREATED_UTC_NS = re.compile(rb'"created_utc_ns":([0-9]{1,20})')
 _FINALIZED_UTC_NS = re.compile(rb'"finalized_utc_ns":([0-9]{1,20})')
+_FIRST_SAMPLE_ESTIMATE_UTC_NS = re.compile(rb'"first_sample_estimate_utc_ns":([0-9]{1,20})')
 Digest = Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
 
 
@@ -355,6 +358,29 @@ def _read_regular_prefix(
         after = os.fstat(descriptor)
         fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns", "st_nlink")
         if any(getattr(before, field) != getattr(after, field) for field in fields):
+            raise BundleCorruptionError("adaptive file changed during indexed read")
+        return payload
+    finally:
+        os.close(descriptor)
+
+
+def _read_regular_suffix(
+    directory: PinnedLocalRoot, name: str, *, maximum: int, suffix_bytes: int
+) -> bytes:
+    descriptor = os.open(
+        name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory.fileno()
+    )
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > maximum:
+            raise BundleCorruptionError("adaptive file is not a bounded single-link regular file")
+        size = min(before.st_size, suffix_bytes)
+        payload = os.pread(descriptor, size, before.st_size - size)
+        after = os.fstat(descriptor)
+        fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns", "st_nlink")
+        if len(payload) != size or any(
+            getattr(before, field) != getattr(after, field) for field in fields
+        ):
             raise BundleCorruptionError("adaptive file changed during indexed read")
         return payload
     finally:
@@ -769,7 +795,7 @@ class AdaptiveHopIqStore:
             namespace.close()
 
     def history_index(self) -> tuple[tuple[int, str], ...]:
-        """Return immutable publication keys without parsing every multi-megabyte receipt."""
+        """Return capture-time keys without parsing every multi-megabyte receipt."""
         try:
             os.stat(_NAMESPACE, dir_fd=self._root.fileno(), follow_symlinks=False)
         except FileNotFoundError:
@@ -792,16 +818,24 @@ class AdaptiveHopIqStore:
                             maximum=_MAX_MANIFEST_BYTES,
                             prefix_bytes=_MANIFEST_INDEX_PREFIX_BYTES,
                         )
+                        suffix = _read_regular_suffix(
+                            directory,
+                            "manifest.json",
+                            maximum=_MAX_MANIFEST_BYTES,
+                            suffix_bytes=_MANIFEST_INDEX_SUFFIX_BYTES,
+                        )
                     except FileNotFoundError:
                         continue
                 finally:
                     directory.close()
-                matches = _FINALIZED_UTC_NS.findall(prefix)
-                if len(matches) != 1:
-                    raise BundleCorruptionError(
-                        "adaptive manifest lacks one bounded finalization index"
-                    )
-                index.append((int(matches[0]), name))
+                created = _CREATED_UTC_NS.findall(prefix)
+                finalized = _FINALIZED_UTC_NS.findall(prefix)
+                captured = _FIRST_SAMPLE_ESTIMATE_UTC_NS.findall(suffix)
+                if len(created) != 1 or len(finalized) != 1 or len(captured) > 1:
+                    raise BundleCorruptionError("adaptive manifest lacks one bounded history index")
+                # Captures without samples have no timing authority. Their immutable
+                # recording timestamp is the truthful chronological fallback.
+                index.append((int(captured[0] if captured else created[0]), name))
             return tuple(sorted(index, reverse=True))
         finally:
             namespace.close()

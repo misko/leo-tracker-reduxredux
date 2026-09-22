@@ -18,13 +18,19 @@ def publish_capture(root, **kwargs):
     return publish_receipt(root, receipt)
 
 
-def publish_receipt(root, receipt):
+_DEFAULT_TIMING = object()
+
+
+def publish_receipt(root, receipt, *, timing=_DEFAULT_TIMING):
     store = AdaptiveHopIqStore(root)
     try:
         writer = store.begin(receipt.session_id, receipt.plan)
         for index in range(receipt.complete_visit_count):
             writer.append(block_fixture(receipt, index))
-        return writer.finish(receipt, timing=timing_fixture(receipt) if receipt.events else None)
+        resolved_timing = timing_fixture(receipt) if receipt.events else None
+        if timing is not _DEFAULT_TIMING:
+            resolved_timing = timing
+        return writer.finish(receipt, timing=resolved_timing)
     finally:
         store.close()
 
@@ -155,6 +161,30 @@ def test_read_only_pagination_is_publication_order_and_ignores_unpublished(tmp_p
     assert presentation.page(cursor=1, limit=1).items[0].session_id == first.session_id
     assert presentation.page(cursor=99, limit=1).items == ()
     assert presentation.detail("unpublished") is None
+
+
+def test_combined_history_orders_backfills_by_capture_time_not_publication_time(tmp_path):
+    newer = publish_capture(tmp_path, count=3, session_id="newer-live-capture")
+    older_receipt = receipt_fixture(count=3, session_id="older-backfilled-capture")
+    timing = timing_fixture(older_receipt)
+    shift_ns = 24 * 60 * 60 * 1_000_000_000
+    older_timing = timing.model_copy(
+        update={
+            "begin_before_realtime_ns": timing.begin_before_realtime_ns - shift_ns,
+            "begin_after_realtime_ns": timing.begin_after_realtime_ns - shift_ns,
+            "terminal_realtime_ns": timing.terminal_realtime_ns - shift_ns,
+            "first_sample_earliest_utc_ns": timing.first_sample_earliest_utc_ns - shift_ns,
+            "first_sample_estimate_utc_ns": timing.first_sample_estimate_utc_ns - shift_ns,
+            "first_sample_latest_utc_ns": timing.first_sample_latest_utc_ns - shift_ns,
+        }
+    )
+    older = publish_receipt(tmp_path, older_receipt, timing=older_timing)
+
+    page = AdaptiveHopPresentationStore(tmp_path).page_v2(cursor=0, limit=20)
+
+    assert [item.session_id for item in page.items] == [newer.session_id, older.session_id]
+    assert page.items[0].captured_at > page.items[1].captured_at
+    assert page.items[1].recorded_at > page.items[0].recorded_at
 
 
 @pytest.mark.parametrize("cursor,limit", [(-1, 1), (True, 1), (0, 0), (0, 21), (0, True)])
