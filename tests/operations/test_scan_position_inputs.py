@@ -220,8 +220,9 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
         instant = {
             "target": start,
             "new-incomplete": start - 1_000_000_000,
-            "other-radio": start - 2_000_000_000,
-            "older-complete": start - 3_000_000_000,
+            "legacy-complete": start - 2_000_000_000,
+            "other-radio": start - 3_000_000_000,
+            "older-complete": start - 4_000_000_000,
         }[session_id]
         return SimpleNamespace(
             session_id=session_id,
@@ -235,6 +236,7 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
     sources = {
         "target": source("target"),
         "new-incomplete": source("new-incomplete"),
+        "legacy-complete": source("legacy-complete"),
         "other-radio": source("other-radio", "radio-b"),
         "older-complete": source("older-complete"),
     }
@@ -249,6 +251,14 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
     def status(session_id):
         if session_id == "older-complete":
             return SimpleNamespace(state="complete", product=complete_product)
+        if session_id == "legacy-complete":
+            return SimpleNamespace(
+                state="complete",
+                product=SimpleNamespace(
+                    input_manifest_sha256="sha256:" + "3" * 64,
+                    analysis_manifest_sha256="sha256:" + "4" * 64,
+                ),
+            )
         return SimpleNamespace(state="pending", product=None)
 
     inputs = SimpleNamespace(
@@ -270,6 +280,49 @@ def test_history_limit_is_filled_by_completed_same_radio_sessions(monkeypatch):
     )
     assert prepared.target_source.radio_id == "radio-a"
     assert prepared.source_manifest[0]["session_id"] == "target"
+    assert any(
+        item.session_id == "legacy-complete"
+        and item.reason == "history-tracking-review-contract-unavailable"
+        for item in prepared.exclusions
+    )
+
+
+def test_legacy_target_without_review_contract_is_explicitly_excluded(monkeypatch):
+    start = 40_000_000_000_000
+    monkeypatch.setattr(subject, "timing_is_qualified_for_tle", lambda timing: True)
+    source = SimpleNamespace(
+        session_id="legacy-target",
+        radio_id="radio-a",
+        capture_start_utc_ns=start,
+        timing=SimpleNamespace(first_sample_estimate_utc_ns=start),
+        input_manifest_sha256="sha256:" + "3" * 64,
+        analysis_manifest_sha256="sha256:" + "4" * 64,
+    )
+    product = SimpleNamespace(
+        input_manifest_sha256=source.input_manifest_sha256,
+        analysis_manifest_sha256=source.analysis_manifest_sha256,
+        model_dump=lambda mode: {"schema_version": 2},
+    )
+    prepared = subject.prepare_scan_position_inputs(
+        "legacy-target",
+        inputs=SimpleNamespace(
+            load=lambda session_id: source,
+            session_ids=lambda: ("legacy-target",),
+            captured_at=lambda session_id: start,
+        ),
+        products=SimpleNamespace(
+            status=lambda session_id: SimpleNamespace(state="complete", product=product)
+        ),
+        archive=SimpleNamespace(),
+    )
+
+    assert prepared.episodes == prepared.target_episodes == ()
+    assert prepared.coverage.selected_session_count == 0
+    assert prepared.exclusions == (
+        subject.PositionInputExclusion(
+            "legacy-target", None, "tracking-review-contract-unavailable"
+        ),
+    )
 
 
 def test_unqualified_target_is_bindable_without_catalogue_or_corpus_traversal(monkeypatch):
