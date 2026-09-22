@@ -152,6 +152,86 @@ def main():
     fig.tight_layout(rect=(0, 0, 1, 0.90))
     fig.savefig(args.output / "sample-phase.png", dpi=180)
     cross = common[begin:end, 1] * common[begin:end, 0].conj()
+    power0 = float(np.sum(abs(common[begin:end, 0]) ** 2))
+    power1 = float(np.sum(abs(common[begin:end, 1]) ** 2))
+    cross_sum = np.sum(cross)
+    coherence = float(abs(cross_sum) / np.sqrt(power0 * power1))
+    best_phase = float(np.angle(cross_sum))
+    candidate_phase = np.linspace(-np.pi, np.pi, 1441)
+    signed_coherence = np.real(np.exp(-1j * candidate_phase) * cross_sum) / np.sqrt(power0 * power1)
+    best_gain = abs(cross_sum) / power0
+    normalized_error_squared = (
+        power1
+        + best_gain**2 * power0
+        - 2 * best_gain * np.real(np.exp(-1j * candidate_phase) * cross_sum)
+    ) / power1
+    profile = np.column_stack(
+        (
+            np.degrees(candidate_phase),
+            signed_coherence,
+            np.sqrt(normalized_error_squared),
+            np.full(len(candidate_phase), coherence),
+        )
+    )
+    np.savetxt(
+        args.output / "constant-phase-profile.csv",
+        profile,
+        delimiter=",",
+        fmt="%.12g",
+        header=(
+            "candidate_rx1_minus_rx0_phase_deg,signed_coherence,"
+            "normalized_prediction_error,ordinary_coherence_magnitude"
+        ),
+        comments="",
+    )
+    groups = np.array_split(np.arange(len(cross)), 10)
+    delete_phase = np.asarray([np.angle(cross_sum - np.sum(cross[group])) for group in groups])
+    delete_delta = np.angle(np.exp(1j * (delete_phase - best_phase)))
+    phase_jackknife_se = float(np.sqrt(9 / 10 * np.sum(delete_delta**2)))
+    fig, ax_error = plt.subplots(figsize=(10, 5))
+    ax_coherence = ax_error.twinx()
+    phase_degrees = np.degrees(candidate_phase)
+    (line_error,) = ax_error.plot(
+        phase_degrees,
+        np.sqrt(normalized_error_squared),
+        label="Normalized prediction error",
+        color="tab:blue",
+    )
+    (line_coherence,) = ax_coherence.plot(
+        phase_degrees,
+        signed_coherence,
+        label="Signed coherence",
+        color="tab:orange",
+    )
+    ax_coherence.axhline(coherence, color="tab:orange", alpha=0.25, linestyle=":")
+    ax_error.axvline(np.degrees(best_phase), color="black", alpha=0.7, linestyle="--")
+    ax_error.annotate(
+        f"best phase = {np.degrees(best_phase):+.2f}°\n"
+        f"conditional block SE = {np.degrees(phase_jackknife_se):.2f}°",
+        xy=(np.degrees(best_phase), np.sqrt(1 - coherence**2)),
+        xytext=(18, 18),
+        textcoords="offset points",
+        arrowprops={"arrowstyle": "->", "color": "black"},
+    )
+    ax_error.set(
+        xlabel="Candidate constant RX1 − RX0 phase (degrees)",
+        ylabel="Normalized prediction error (lower is better)",
+        xlim=(-180, 180),
+    )
+    ax_coherence.set_ylabel("Signed coherence (higher is better)")
+    ax_error.grid(alpha=0.2)
+    ax_error.legend(
+        [line_error, line_coherence],
+        [line_error.get_label(), line_coherence.get_label()],
+        loc="upper left",
+    )
+    fig.suptitle(
+        "Enumerating every constant phase offset — visit 588, 29–31 ms\n"
+        f"ordinary coherence magnitude is invariant at {coherence:.3f}"
+    )
+    fig.tight_layout()
+    fig.savefig(args.output / "constant-phase-profile.png", dpi=180)
+    plt.close(fig)
     metadata = {
         "session_id": session,
         "visit_index": visit_index,
@@ -170,12 +250,13 @@ def main():
         "glrt_relative_frequency_hz": offset,
         "common_bandpass_hz": [low, high],
         "filter_taps": 513,
-        "weighted_complex_coherence_of_plotted_interval": float(
-            abs(cross.sum())
-            / np.sqrt(
-                np.sum(abs(common[begin:end, 0]) ** 2) * np.sum(abs(common[begin:end, 1]) ** 2)
-            )
-        ),
+        "weighted_complex_coherence_of_plotted_interval": coherence,
+        "most_likely_constant_rx1_minus_rx0_phase_deg": float(np.degrees(best_phase)),
+        "rx1_correction_to_apply_deg": float(-np.degrees(best_phase)),
+        "minimum_normalized_prediction_error": float(np.sqrt(1 - coherence**2)),
+        "ten_contiguous_group_delete_jackknife_phase_se_deg": float(np.degrees(phase_jackknife_se)),
+        "candidate_phase_grid_step_deg": 0.25,
+        "ordinary_coherence_is_phase_invariant": True,
         "mean_unit_phasor_resultant": float(abs(np.mean(np.exp(1j * residual)))),
         "identity_claim": (
             "phase-blind paired Starlink candidate; individual satellite identity unverified"

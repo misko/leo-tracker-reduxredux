@@ -22,9 +22,20 @@ This plot is deliberately a direct waveform diagnostic. It does not equalize the
 
 **Observation:** even in this strong dual-detection probe, instantaneous phase differences are widely dispersed. The compensated common-band section has normalized complex coherence **0.2210** and unit-phasor resultant **0.1846**. A coherent common component is present, but noise, unshared signal, amplitude fades, and unequal channel response make individual waveform-sample phases poor standalone estimates of the common source phase. Strong GLRT detection benefits from known-waveform accumulation and does not imply high single-sample signal-to-noise ratio.
 
+## Enumerating the constant phase
+
+![Constant phase profile](figures/2026_09_22_sample_phase/constant-phase-profile.png)
+
+The profile enumerates 1,441 candidate RX1-minus-RX0 offsets at 0.25-degree spacing. For each candidate `phi`, it evaluates signed coherence, where larger is better, and normalized prediction error for `Y ≈ a exp(j phi) X`, where smaller is better.
+
+Both select **+102.57° RX1-minus-RX0**, equivalent to applying **−102.57°** to RX1. A ten-contiguous-group deletion jackknife gives **2.13° conditional standard error**. This interval does not include uncertainty from candidate identity, channel-response equalization, model selection, calibration, or geometry.
+
+Ordinary coherence magnitude is **0.2210 for every candidate constant phase**: taking the magnitude removes the phase rotation. It cannot select the offset by itself. Signed coherence has the expected cosine profile, peaking at +0.2210; the minimum normalized prediction error is **0.9753**. Thus the preferred constant is identifiable, but it aligns only a weak fraction of the total waveform energy. It is also an interval/common-band phase, not directly interchangeable with the full-band channel-intercept phase at another frequency reference.
+
 ## Data and reproduction
 
 - [Every plotted sample as CSV](figures/2026_09_22_sample_phase/sample-phase.csv), including sample index, time, both phase differences and both receiver amplitudes.
+- [Enumerated offset scores as CSV](figures/2026_09_22_sample_phase/constant-phase-profile.csv).
 - [Metadata and exact GLRT candidates](figures/2026_09_22_sample_phase/metadata.json), including raw manifest, model, and script hashes.
 - [Plotting script](figures/2026_09_22_sample_phase/plot_sample_phase.py).
 
