@@ -64,7 +64,7 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
             or self.sample_rate_hz != self.bandwidth_hz
             or self.retained_visits > self.started_visits
             or (
-                self.schema_version != 3
+                self.schema_version not in (3, 7)
                 and self.retained_visits
                 != max(0, self.started_visits - (self.terminal_state == "cancelled"))
             )
