@@ -167,6 +167,12 @@ def _rank_reviews(reviews, graphs) -> list[Any]:
     return sorted(reviews, key=key)
 
 
+def _saved_track_reviews(product) -> tuple[Any, ...] | None:
+    """Return persisted review evidence, or None for pre-review product contracts."""
+    reviews = getattr(product, "track_reviews", None)
+    return None if reviews is None else tuple(reviews)
+
+
 def _propagate(satellite, utc_ns: np.ndarray, orbit_shift_s: float = 0.0):
     shifted = utc_ns + round(orbit_shift_s * _NS_PER_S)
     jd, fraction = julian_day_from_utc_ns(shifted)
@@ -292,13 +298,28 @@ def prepare_scan_position_inputs(
             continue
         if source.radio_id == target_radio and lower <= start < target_start:
             history_status = products.status(session_id)
+            history_reviews = (
+                _saved_track_reviews(history_status.product)
+                if history_status.product is not None
+                else None
+            )
             if (
                 history_status.state != "complete"
                 or history_status.product is None
-                or not history_status.product.track_reviews
+                or not history_reviews
             ):
                 exclusions.append(
-                    PositionInputExclusion(session_id, None, "history-tracking-review-not-complete")
+                    PositionInputExclusion(
+                        session_id,
+                        None,
+                        (
+                            "history-tracking-review-contract-unavailable"
+                            if history_status.state == "complete"
+                            and history_status.product is not None
+                            and history_reviews is None
+                            else "history-tracking-review-not-complete"
+                        ),
+                    )
                 )
                 continue
             histories.append((session_id, start, source))
@@ -340,7 +361,15 @@ def prepare_scan_position_inputs(
                 PositionInputExclusion(session_id, None, "tracking-product-source-digest-mismatch")
             )
             continue
-        if not product.track_reviews or product.original_tle_snapshot is None:
+        reviews = _saved_track_reviews(product)
+        if reviews is None:
+            exclusions.append(
+                PositionInputExclusion(
+                    session_id, None, "tracking-review-contract-unavailable"
+                )
+            )
+            continue
+        if not reviews or product.original_tle_snapshot is None:
             exclusions.append(
                 PositionInputExclusion(session_id, None, "saved-review-or-snapshot-unavailable")
             )
@@ -362,8 +391,8 @@ def prepare_scan_position_inputs(
             )
             continue
         graphs = _graph_by_tracklet(trajectory)
-        reviews = _rank_reviews(product.track_reviews, graphs)
-        saved_review_count += len(reviews)
+        ranked_reviews = _rank_reviews(reviews, graphs)
+        saved_review_count += len(ranked_reviews)
         try:
             digest = _selection_digest(_review_site(product.observer_site))
         except ValueError as error:
@@ -383,7 +412,7 @@ def prepare_scan_position_inputs(
             digest,
         )
         prepared_sessions.append(
-            (session_id, start, source, product, catalogue, graphs, reviews, digest)
+            (session_id, start, source, product, catalogue, graphs, ranked_reviews, digest)
         )
 
     target_tracks: list[tuple[tuple[Any, ...], Any]] = []
