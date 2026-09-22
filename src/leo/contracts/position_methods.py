@@ -65,6 +65,7 @@ class PositionMethodResultV1(ContractModel):
             raise ValueError("position result numbers must be finite")
         if any(not key.strip() for key in self.diagnostics):
             raise ValueError("diagnostic names must be non-empty")
+
         def require_finite(value: JsonValue) -> None:
             if isinstance(value, float) and not math.isfinite(value):
                 raise ValueError("diagnostic numbers must be finite")
@@ -98,9 +99,10 @@ class PositionMethodsDocumentV1(ContractModel):
             self.source_rolling_cohort
         ):
             raise ValueError("position source cohort contains duplicate sessions")
-        if canonical_digest(
-            [item.model_dump(mode="json") for item in self.source_rolling_cohort]
-        ) != self.source_rolling_cohort_sha256:
+        if (
+            canonical_digest([item.model_dump(mode="json") for item in self.source_rolling_cohort])
+            != self.source_rolling_cohort_sha256
+        ):
             raise ValueError("position source cohort digest differs")
         target = next(
             (item for item in self.source_rolling_cohort if item.session_id == self.session_id),

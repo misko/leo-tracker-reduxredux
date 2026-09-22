@@ -34,9 +34,7 @@ def position_methods_router(reader: PositionMethodsReader | None) -> APIRouter:
     def status(session_id: Identifier):
         return read("status", session_id)
 
-    @router.api_route(
-        "/{session_id}/position-methods/{method}.png", methods=["GET", "HEAD"]
-    )
+    @router.api_route("/{session_id}/position-methods/{method}.png", methods=["GET", "HEAD"])
     def artifact(
         session_id: Identifier,
         method: PositionMethod,
@@ -45,9 +43,7 @@ def position_methods_router(reader: PositionMethodsReader | None) -> APIRouter:
         status_value = read("status", session_id)
         if status_value.manifest is None:
             raise HTTPException(404, "Position method PNG has not been published")
-        reference = next(
-            item for item in status_value.manifest.artifacts if item.method == method
-        )
+        reference = next(item for item in status_value.manifest.artifacts if item.method == method)
         if sha256 != reference.sha256:
             raise HTTPException(409, "Position method PNG digest query differs")
         payload = read("artifact", session_id, method)

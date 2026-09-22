@@ -246,9 +246,7 @@ def test_run_once_does_not_complete_tracking_from_stdout_without_persisted_sidec
         ),
     )
     checks = iter((False, False))
-    monkeypatch.setattr(
-        subject, "position_methods_complete", lambda *_, **__: next(checks)
-    )
+    monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: next(checks))
     monkeypatch.setattr(
         subject.subprocess,
         "run",
@@ -299,9 +297,7 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
 
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
     assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "already_complete"}]
-    assert observed == [
-        {"expected_input_manifest_sha256": "sha256:" + "1" * 64}
-    ]
+    assert observed == [{"expected_input_manifest_sha256": "sha256:" + "1" * 64}]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:

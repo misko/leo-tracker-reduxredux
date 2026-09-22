@@ -266,7 +266,7 @@ def prepare_scan_position_inputs(
         )
     target_start = _capture_start(target_source_value)
     target_radio = target_source_value.radio_id
-    candidates = []
+    candidates: list[tuple[str, int]] = []
     lower = target_start - round(history_hours * _NS_PER_H)
     for session_id in inputs.session_ids():
         try:
@@ -278,7 +278,7 @@ def prepare_scan_position_inputs(
             continue
         if session_id != target_session_id and lower <= captured < target_start:
             candidates.append((session_id, captured))
-    histories = []
+    histories: list[tuple[str, int, Any]] = []
     for session_id, _captured in sorted(candidates, key=lambda item: (-item[1], item[0])):
         if len(histories) >= maximum_history_sessions:
             break
@@ -304,8 +304,8 @@ def prepare_scan_position_inputs(
             histories.append((session_id, start, source))
     selected_sessions = [(target_session_id, target_start, target_source_value), *histories]
 
-    prepared_sessions = []
-    provenance = []
+    prepared_sessions: list[tuple[Any, ...]] = []
+    provenance: list[PositionInputProvenance] = []
     saved_review_count = 0
     for session_id, start, source in selected_sessions:
         status = products.status(session_id)
@@ -386,8 +386,8 @@ def prepare_scan_position_inputs(
             (session_id, start, source, product, catalogue, graphs, reviews, digest)
         )
 
-    target_tracks = []
-    history_by_session = []
+    target_tracks: list[tuple[tuple[Any, ...], Any]] = []
+    history_by_session: list[list[tuple[tuple[Any, ...], Any]]] = []
     for item in prepared_sessions:
         if item[0] == target_session_id:
             target_tracks = [(item, review) for review in item[6][:maximum_target_tracks]]
@@ -396,13 +396,13 @@ def prepare_scan_position_inputs(
     chosen = list(target_tracks)
     cursor = 0
     while len(chosen) < maximum_total_tracks and any(
-        cursor < len(rows) for rows in history_by_session
+        cursor < len(session_tracks) for session_tracks in history_by_session
     ):
-        for rows in history_by_session:
+        for session_tracks in history_by_session:
             if len(chosen) >= maximum_total_tracks:
                 break
-            if cursor < len(rows):
-                chosen.append(rows[cursor])
+            if cursor < len(session_tracks):
+                chosen.append(session_tracks[cursor])
         cursor += 1
 
     episodes: list[ScanPositionEpisode] = []
@@ -421,14 +421,17 @@ def prepare_scan_position_inputs(
                 )
             )
             continue
-        rows = sorted(
+        observation_rows = sorted(
             graph.observations, key=lambda row: (row.support_center_utc_ns, row.observation_id)
         )
-        ids = tuple(row.observation_id for row in rows)
-        if len(rows) > maximum_observations_per_track:
+        ids = tuple(row.observation_id for row in observation_rows)
+        if len(observation_rows) > maximum_observations_per_track:
             exclusions.append(
                 PositionInputExclusion(
-                    session_id, review.tracklet_id, "observation-bound-exceeded", str(len(rows))
+                    session_id,
+                    review.tracklet_id,
+                    "observation-bound-exceeded",
+                    str(len(observation_rows)),
                 )
             )
             continue
@@ -500,7 +503,7 @@ def prepare_scan_position_inputs(
                 PositionInputExclusion(session_id, review.tracklet_id, "candidate-not-causal", bad)
             )
             continue
-        utc_ns = np.asarray([row.support_center_utc_ns for row in rows], dtype=np.int64)
+        utc_ns = np.asarray([row.support_center_utc_ns for row in observation_rows], dtype=np.int64)
         positions, velocities = [], []
         minus_p, minus_v, plus_p, plus_v = [], [], [], []
         minus2_p, minus2_v, plus2_p, plus2_v = [], [], [], []
@@ -533,7 +536,7 @@ def prepare_scan_position_inputs(
             track_id=f"{session_id}:{review.tracklet_id}",
             pass_id=f"{session_id}:{review.candidates[0].catalog_number}",
             observation_id=np.asarray(ids),
-            observed_hz=np.asarray([row.measured_cfo_hz for row in rows], dtype=float),
+            observed_hz=np.asarray([row.measured_cfo_hz for row in observation_rows], dtype=float),
             training=np.asarray([identity in training_set for identity in ids], dtype=bool),
             time_s=(utc_ns - start).astype(float) / _NS_PER_S,
             candidate_id=np.asarray(
@@ -622,15 +625,29 @@ def verify_orbit_fit(
         corrections = result.diagnostics.get("rate_corrections_s_h", {})
         latitude, longitude = result.latitude_deg, result.longitude_deg
     receiver = geodetic_to_ecef_km(latitude, longitude, altitude_m)
-    errors = []
+    errors: list[float] = []
     compared = 0
     for episode, runtime in zip(prepared.episodes, prepared._runtime, strict=True):
         source = str(episode.candidate_id[0])
         rate = corrections.get(source, corrections.get(int(episode.candidate_id[0]), 0.0))
-        age = episode.orbit_age_h[0]
+        age_states = episode.orbit_age_h
+        position_minus = episode.phase_position_minus_ecef_km
+        position_plus = episode.phase_position_plus_ecef_km
+        velocity_minus = episode.phase_velocity_minus_ecef_km_s
+        velocity_plus = episode.phase_velocity_plus_ecef_km_s
+        if (
+            age_states is None
+            or position_minus is None
+            or position_plus is None
+            or velocity_minus is None
+            or velocity_plus is None
+        ):
+            raise ValueError("orbit-fit audit requires ages and phase states")
+        age = age_states[0]
         shift = np.asarray(age) * float(rate)
         satellite = runtime.satellites[0]
-        exact_p, exact_v = [], []
+        exact_p: list[np.ndarray] = []
+        exact_v: list[np.ndarray] = []
         for utc, seconds in zip(runtime.observation_utc_ns, shift, strict=True):
             p, v = _propagate(satellite, np.asarray([utc]), float(seconds))
             exact_p.append(p[0])
@@ -639,8 +656,8 @@ def verify_orbit_fit(
         centre_v = episode.velocity_ecef_km_s[0]
         approximate_p = phase_state(
             centre_p,
-            episode.phase_position_minus_ecef_km[0],
-            episode.phase_position_plus_ecef_km[0],
+            position_minus[0],
+            position_plus[0],
             shift,
             1.0,
             minus2=(
@@ -656,8 +673,8 @@ def verify_orbit_fit(
         )
         approximate_v = phase_state(
             centre_v,
-            episode.phase_velocity_minus_ecef_km_s[0],
-            episode.phase_velocity_plus_ecef_km_s[0],
+            velocity_minus[0],
+            velocity_plus[0],
             shift,
             1.0,
             minus2=(
@@ -676,12 +693,14 @@ def verify_orbit_fit(
         )
         errors.extend(map(float, difference))
         compared += len(difference)
-    values = np.asarray(errors, dtype=float)
+    values: np.ndarray = np.asarray(errors, dtype=np.float64)
     return {
         "schema": "scan-position-orbit-phase-state-exact-audit-v1",
         "compared_observation_count": compared,
         "maximum_absolute_doppler_error_hz": float(np.max(np.abs(values))) if len(values) else None,
-        "rms_doppler_error_hz": float(np.sqrt(np.mean(values * values))) if len(values) else None,
+        "rms_doppler_error_hz": (
+            float(np.sqrt(np.mean(np.square(values)))) if len(values) else None
+        ),
         "earth_rotation_time_basis": "original-observation-utc",
         "truth_used": False,
     }

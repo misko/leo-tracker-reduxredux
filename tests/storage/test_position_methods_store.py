@@ -101,9 +101,7 @@ def test_traversal_qnap_and_publication_conflict_are_rejected(tmp_path):
         PositionMethodsStore(__import__("pathlib").Path("/mnt/qnap01/sidecars"))
     unsafe = tmp_path / "unsafe"
     unsafe.mkdir()
-    (unsafe / "scanner-position-methods-v1").symlink_to(
-        tmp_path, target_is_directory=True
-    )
+    (unsafe / "scanner-position-methods-v1").symlink_to(tmp_path, target_is_directory=True)
     with pytest.raises(ValueError):
         PositionMethodsStore(unsafe).status("scan-one")
     writer = PositionMethodsStore(tmp_path, read_only=False)

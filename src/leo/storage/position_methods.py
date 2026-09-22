@@ -68,9 +68,7 @@ class PositionMethodsStore:
             raw = _read(directory, "document.json", _LIMIT)
         if raw != expected or sha256_digest(raw) != manifest.document_sha256:
             raise ValueError("position method document digest differs")
-        return PositionMethodsStatusV1(
-            session_id=session_id, state="complete", manifest=manifest
-        )
+        return PositionMethodsStatusV1(session_id=session_id, state="complete", manifest=manifest)
 
     def complete(self, session_id: str) -> bool:
         return self.status(session_id).state == "complete"

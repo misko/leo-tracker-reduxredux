@@ -336,9 +336,7 @@ def run_once(
         lease.job_kind == "adaptive_tracking"
         and payload.get("state") == "complete"
         and payload.get("position_methods_state") == "complete"
-        and ScannerTrackingStore(bulk_root, read_only=True)
-        .analysis_status(lease.session_id)
-        .state
+        and ScannerTrackingStore(bulk_root, read_only=True).analysis_status(lease.session_id).state
         == "complete"
         and _position_methods_complete(
             bulk_root,

@@ -34,7 +34,9 @@ in the position model; no vertical position estimate is reported.
 
 Missing support, unqualified UTC, nonconvergence, weak geometry, and failed exact
 orbit verification produce explicit status PNGs and null coordinates/errors.
-The orbit approximation must agree with exact SGP4 at the fitted corrections
+The orbit approximation uses five propagated states (nominal, +/-1 s and +/-2 s)
+with quartic interpolation, retaining the quadratic path for older research callers.
+It must agree with exact SGP4 at the fitted corrections
 within 0.2 Hz maximum; that tolerance is not adjusted to obtain a position.
 
 The JSON contains coordinates, reference error, residuals, candidate weights,
