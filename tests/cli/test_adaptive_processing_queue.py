@@ -202,6 +202,7 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
         ),
     )
     monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: True)
+    monkeypatch.setattr(subject, "blind_regional_complete", lambda *_, **__: True)
     monkeypatch.setattr(
         subject.subprocess,
         "run",
@@ -266,6 +267,7 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
 ) -> None:
     calls: list[dict[str, object]] = []
     observed = []
+    monkeypatch.setattr(subject, "blind_regional_complete", lambda *_, **__: True)
     monkeypatch.setattr(
         subject,
         "position_methods_complete",
@@ -298,6 +300,21 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
     assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "already_complete"}]
     assert observed == [{"expected_input_manifest_sha256": "sha256:" + "1" * 64}]
+
+
+def test_assisted_completion_does_not_hide_missing_blind_product(monkeypatch, tmp_path):
+    monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: True)
+    observed = []
+    monkeypatch.setattr(
+        subject,
+        "blind_regional_complete",
+        lambda *_, **kwargs: observed.append(kwargs) or False,
+    )
+    digest = "sha256:" + "1" * 64
+    assert not subject._position_methods_complete(
+        tmp_path, "scan-test", expected_input_manifest_sha256=digest
+    )
+    assert observed == [{"expected_input_manifest_sha256": digest}]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:

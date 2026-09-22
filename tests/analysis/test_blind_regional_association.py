@@ -46,6 +46,47 @@ def _track(region, name, catalog_number, phase):
     )
 
 
+def _diverse_tracks(region):
+    receiver = region.points([150.0], [-100.0]).ecef_km[0]
+    time = np.arange(64, dtype=float) * 5.0
+    tracks = []
+    for index in range(6):
+        normal = np.asarray([np.cos(0.37 * index), np.sin(0.37 * index), 0.4 + 0.07 * index])
+        normal /= np.linalg.norm(normal)
+        axis_a = np.cross(normal, [0.0, 0.0, 1.0])
+        if np.linalg.norm(axis_a) < 0.1:
+            axis_a = np.cross(normal, [0.0, 1.0, 0.0])
+        axis_a /= np.linalg.norm(axis_a)
+        axis_b = np.cross(normal, axis_a)
+        states_p, states_v = [], []
+        for offset in (0.0, 0.65):
+            angle = 0.31 * index + offset + time * (7.5 / 7000)
+            position = 7000 * (np.cos(angle)[:, None] * axis_a + np.sin(angle)[:, None] * axis_b)
+            velocity = 7.5 * (-np.sin(angle)[:, None] * axis_a + np.cos(angle)[:, None] * axis_b)
+            states_p.append(position)
+            states_v.append(velocity)
+        delta = states_p[0] - receiver
+        measured = -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(
+            delta * states_v[0], axis=1
+        ) / np.linalg.norm(delta, axis=1) + 5000 * (index + 1)
+        tracks.append(
+            BlindRegionalTrack(
+                f"diverse-{index}",
+                tuple(f"diverse-{index}-{row}" for row in range(len(time))),
+                (2_000_000_000_000 + (time * 1e9).astype(np.int64)),
+                measured,
+                np.asarray([row % 5 < 3 for row in range(len(time))]),
+                np.asarray([10_000 + index * 2, 10_001 + index * 2]),
+                np.asarray(states_p),
+                np.asarray(states_v),
+                2,
+                "sha256:" + "4" * 64,
+                "sha256:" + str(index) * 64,
+            )
+        )
+    return tuple(tracks)
+
+
 def test_joint_search_is_blind_multimode_and_reopens_full_observations():
     region = Region(39.7392, -104.9903, 2000, 2000)
     tracks = (_track(region, "a", 100, 0.1), _track(region, "b", 200, 1.4))
@@ -140,3 +181,29 @@ def test_invalid_track_arrays_and_all_invisible_catalogue_are_explicit():
     assert association.association_state == "unassigned"
     assert association.top_candidates == () and association.null_weight == 1.0
     assert association.prediction_hz == association.measured_hz == ()
+
+
+def test_diverse_arcs_recover_known_synthetic_position_without_reference_input():
+    region = Region(39.7392, -104.9903, 1000, 1000)
+    result = solve_blind_regional_association(
+        _diverse_tracks(region),
+        region=region,
+        config=BlindRegionalConfig(
+            coarse_spacing_km=250,
+            alternative_mode_limit=4,
+            refinement_mode_limit=2,
+            refinement_grid_side=7,
+            refinement_half_width_km=(125, 25),
+            mode_separation_km=200,
+            score=ScoreConfig(minimum_elevation_deg=-90),
+        ),
+    )
+
+    leader = result.modes[0]
+    assert np.hypot(leader.east_km - 150, leader.north_km + 100) < 5
+    assert tuple(
+        association.top_candidates[0].catalog_number for association in leader.track_associations
+    ) == tuple(10_000 + index * 2 for index in range(6))
+    assert result.blind_positioning is True and result.site_conditioned is False
+    signature = solve_blind_regional_association.__annotations__
+    assert "reference" not in signature and "observer_site" not in signature

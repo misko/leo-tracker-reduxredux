@@ -218,14 +218,18 @@ def solve_blind_regional_association(
             )
         )
     refined.sort(key=lambda mode: (-mode.training_log_evidence, mode.east_km, mode.north_km))
-    reasons = (
-        ("full-observation-leader-was-not-refined",) if refined and not refined[0].refined else ()
-    )
+    reasons = [
+        "bounded-search-not-global-optimum",
+        "association-weights-uncalibrated",
+        "single-scan-identifiability-not-established",
+    ]
+    if refined and not refined[0].refined:
+        reasons.append("full-observation-leader-was-not-refined")
     full_count = sum(len(row.utc_ns) for row in ordered)
     search_count = sum(len(search[row.track_id]) for row in ordered)
     return BlindRegionalResult(
         "diagnostic",
-        reasons,
+        tuple(reasons),
         True,
         False,
         len(ordered),

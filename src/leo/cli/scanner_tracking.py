@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from typing import cast
 
 from leo.application.scanner_tracking import ScannerTrackingService
+from leo.cli.blind_regional import blind_regional_complete, run_blind_regional
 from leo.cli.scan_position_methods import position_methods_complete, run_position_methods
 from leo.contracts.scanner_tracking import (
     ArtifactNameV12,
@@ -34,6 +35,10 @@ def _position_methods_available(
 ) -> bool:
     try:
         return position_methods_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=input_manifest_sha256,
+        ) and blind_regional_complete(
             bulk_root,
             session_id,
             expected_input_manifest_sha256=input_manifest_sha256,
@@ -188,6 +193,7 @@ def main():
                 try:
                     status = service.run(sid, maximum_seconds=remaining)
                     position_complete = False
+                    blind_complete = False
                     if status.state == "complete":
                         source = sources.load(sid)
                         _publish_position_methods_verified(
@@ -197,6 +203,14 @@ def main():
                             input_manifest_sha256=source.input_manifest_sha256,
                         )
                         position_complete = True
+                        run_blind_regional(args.bulk_root, args.tle_root, sid)
+                        blind_complete = blind_regional_complete(
+                            args.bulk_root,
+                            sid,
+                            expected_input_manifest_sha256=source.input_manifest_sha256,
+                        )
+                        if not blind_complete:
+                            raise ValueError("blind regional publication failed verification")
                 except BundleNotFoundError:
                     continue
                 except Exception as error:
@@ -231,6 +245,7 @@ def main():
                                 "position_methods_state": "complete"
                                 if position_complete
                                 else "pending",
+                                "blind_regional_state": "complete" if blind_complete else "pending",
                                 "trajectory": status.product.trajectory_state
                                 if status.product
                                 else None,

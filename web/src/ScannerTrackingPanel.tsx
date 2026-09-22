@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PositionMethods } from "./PositionMethods";
+import { BlindRegionalTracking } from "./BlindRegionalTracking";
 
 type Product = {
   session_id: string; input_manifest_sha256: string; sample_rate_hz: number;
@@ -63,9 +64,10 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
     return () => { active = false; controller.abort(); clearInterval(timer); };
   }, [base, sessionId, inputDigest]);
   const p = status?.product;
-  return <section className="scanner-artifact-panel" aria-label="Shared satellite trajectory tracking">
-    <header><div><span>TRAJECTORY AND CATALOGUE EVIDENCE</span><h3>Cross-channel Doppler trajectories</h3></div>
+  return <><section className="scanner-artifact-panel" aria-label="Shared satellite trajectory tracking">
+    <header><div><span>TRAJECTORY AND CATALOGUE EVIDENCE</span><h3>Sausalito-assisted tracking and positioning</h3></div>
       <small>{p ? `${p.sample_rate_hz / 1e6} MS/s · trajectories: ${p.trajectory_state} · TLE: ${p.tle_state}` : status?.phase ?? "Loading tracking status…"}</small></header>
+    <p>This association uses the configured Sausalito receiver position. Its position estimates inherit that location-assisted satellite selection.</p>
     {error && <p role="alert">{error}</p>}
     {status?.failure_summary && <p role="alert">{status.failure_summary}</p>}
     {!p && !error && <p>Tracking will run automatically after scan analysis completes.</p>}
@@ -112,5 +114,5 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
       <PositionMethods sessionId={sessionId} inputDigest={inputDigest} />
     </>}
     <p className="scanner-artifact-caption">Tracks are reconstructed before catalogue access. TLE comparisons use deterministic randomized evaluation samples, ±500 s wrong-time controls, and a radio-polynomial control. Candidate labels do not establish satellite identity.</p>
-  </section>;
+  </section><BlindRegionalTracking sessionId={sessionId} inputDigest={inputDigest} /></>;
 }

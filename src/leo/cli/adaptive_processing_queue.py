@@ -15,6 +15,7 @@ from pathlib import Path
 from sqlalchemy import Engine
 
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
+from leo.cli.blind_regional import blind_regional_complete
 from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
 from leo.sky.sites import resolve_preset
@@ -33,6 +34,10 @@ def _position_methods_complete(
 ) -> bool:
     try:
         return position_methods_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=expected_input_manifest_sha256,
+        ) and blind_regional_complete(
             bulk_root,
             session_id,
             expected_input_manifest_sha256=expected_input_manifest_sha256,
@@ -64,6 +69,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "analysis_id": "scanner-shared-tracking-v14",
             "position": "scanner-conditional-position-v1",
             "additional_position_methods": "scanner-position-methods-v1",
+            "blind_association_and_position": "scanner-blind-regional-v1",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,

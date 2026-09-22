@@ -55,7 +55,7 @@ export function PositionMethods({ sessionId, inputDigest }: { sessionId: string;
   const manifest = status?.manifest;
   return <section aria-label="Conditional position methods">
     <h4>Conditional position methods</h4>
-    <p>These estimates are conditional on catalogue identity and model assumptions. They are not GPS measurements or independent position fixes.</p>
+    <p>These estimates use Sausalito-assisted satellite candidates and are conditional on catalogue identity and model assumptions. They are not GPS measurements or independent position fixes.</p>
     {error && <p role="alert">{error}</p>}
     {!error && !manifest && <p>Position method evidence is pending.</p>}
     {manifest && <>
