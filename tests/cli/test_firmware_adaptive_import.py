@@ -266,12 +266,12 @@ def test_dual_firmware_archive_publishes_geometry_manifest(
     samples = rate * 120 // 1000
     if rate == 15_000_000:
         first = value["visits"][0]
-        for ordinal in range(1, 4):
+        for ordinal in range(1, 5):
             repeated = json.loads(json.dumps(first))
             for key in ("selection_counter", "transition_before", "valid_start", "valid_end"):
                 repeated["record"][key] += ordinal * samples
             value["visits"].append(repeated)
-        value["terminal"]["restore_after"] += 3 * samples
+        value["terminal"]["restore_after"] += 4 * samples
     raw = np.zeros((samples, 2, 2), dtype="<i2").tobytes()
     compressed = zstd.ZstdCompressor(level=1).compress(raw)
     (archive / "visit-000000.ci16.zst").write_bytes(compressed)
@@ -282,6 +282,8 @@ def test_dual_firmware_archive_publishes_geometry_manifest(
     )
     for entry in value["visits"][1:]:
         entry["iq"] = dict(value["visits"][0]["iq"])
+    if rate == 15_000_000:
+        value["visits"][-1]["iq"] = None
     value["evidence"]["utc_timing"] = {
         "begin_before_realtime_ns": 1_790_000_000_000_000_000,
         "begin_before_monotonic_ns": 1_000_000_000,
