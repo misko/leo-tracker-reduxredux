@@ -28,14 +28,33 @@ This plot is deliberately a direct waveform diagnostic. It does not equalize the
 
 The profile enumerates 1,441 candidate RX1-minus-RX0 offsets at 0.25-degree spacing. For each candidate `phi`, it evaluates signed coherence, where larger is better, and normalized prediction error for `Y ≈ a exp(j phi) X`, where smaller is better.
 
+Normalized prediction error is
+
+`||Y - a exp(j phi) X||2 / ||Y||2`,
+
+where `a` is the best positive scalar gain magnitude. Zero means the rotated/scaled RX0 waveform predicts RX1 perfectly. One means it performs about as well as predicting zero RX1 signal; values above one are worse. At the optimum, the squared error is `1 - coherence²`, so `1 - error²` is the fraction of RX1 energy described by this one-scalar linear model. Here, error 0.9753 corresponds to only **4.88%** described energy.
+
 Both select **+102.57° RX1-minus-RX0**, equivalent to applying **−102.57°** to RX1. A ten-contiguous-group deletion jackknife gives **2.13° conditional standard error**. This interval does not include uncertainty from candidate identity, channel-response equalization, model selection, calibration, or geometry.
 
 Ordinary coherence magnitude is **0.2210 for every candidate constant phase**: taking the magnitude removes the phase rotation. It cannot select the offset by itself. Signed coherence has the expected cosine profile, peaking at +0.2210; the minimum normalized prediction error is **0.9753**. Thus the preferred constant is identifiable, but it aligns only a weak fraction of the total waveform energy. It is also an interval/common-band phase, not directly interchangeable with the full-band channel-intercept phase at another frequency reference.
+
+## Phase candidates over the complete dwell
+
+![Phase-versus-time heatmap](figures/2026_09_22_sample_phase/time-phase-heatmap.png)
+
+The heatmap repeats the phase enumeration in **233 overlapping 2 ms windows**, advancing by 0.5 ms, from center time 2 to 118 ms. Color is signed coherence for each candidate constant phase; black points mark the maximum in each window. The lower panel shows phase-invariant coherence magnitude and the corresponding minimum normalized prediction error. Green shading marks 20 ms probes with a phase-blind paired GLRT candidate. The dashed line separates the original first-half model fit from its second-half application.
+
+The preferred phase forms a time-varying ridge rather than one horizontal constant. Some motion can be residual differential frequency/drift, channel or source changes, and paired-candidate switching. The fixed correction therefore does not support treating the entire 120 ms dwell as one constant phase. Overlapping windows are useful for visualization but are not independent measurements.
+
+Across the 233 windows, coherence ranges **0.1727–0.2328** with median **0.2062**. Minimum normalized prediction error ranges **0.9725–0.9850** with median **0.9785**, corresponding to roughly 3.0–5.4% of RX1 energy described by the scalar model. The conditional per-window deletion-jackknife phase SE has median **3.59°** and 90th percentile **4.99°**. All window centers lie inside one of the six nonoverlapping probes having a phase-blind paired GLRT candidate.
+
+The ridge is comparatively slow and irregular in the first 60 ms, then changes rapidly after approximately 82 ms while coherence remains similar. That points to residual phase evolution rather than simple disappearance of the common component. A better next model would estimate a smooth time-dependent residual phase or differential frequency while continuing to validate on disjoint frequency bands.
 
 ## Data and reproduction
 
 - [Every plotted sample as CSV](figures/2026_09_22_sample_phase/sample-phase.csv), including sample index, time, both phase differences and both receiver amplitudes.
 - [Enumerated offset scores as CSV](figures/2026_09_22_sample_phase/constant-phase-profile.csv).
+- [All time-window estimates as CSV](figures/2026_09_22_sample_phase/time-window-phase.csv).
 - [Metadata and exact GLRT candidates](figures/2026_09_22_sample_phase/metadata.json), including raw manifest, model, and script hashes.
 - [Plotting script](figures/2026_09_22_sample_phase/plot_sample_phase.py).
 
