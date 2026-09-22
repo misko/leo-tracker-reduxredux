@@ -60,17 +60,21 @@ publication retry, API digest binding, and immutable publication conflicts.
 
 ## Canary and coverage
 
-Two existing captures demonstrate successful execution and a **negative positioning result**:
+Two canaries demonstrate successful execution and a **negative positioning result**. The e3 row is
+the immutable production publication copied under `evidence/e3`; the e31 row is an unsealed research
+canary and is included only as exploratory context.
 
 | Capture | Tracks / observations used | Catalogue | Analysis time | Leading position | Revealed error |
 | --- | --- | --- | --- | --- | --- |
 | `scan-hop-e31b77794a04c236` | 32 / 844 | 11,129 | 59.04 s | 20.69527°, -68.56986° | 5,483.6 km |
-| `scan-fw-e3bc0741ecf02704` | 32 / 1,247 | 11,129 | 76.675 s | 36.62650°, 134.95654° | 8,540.3 km |
+| `scan-fw-e3bc0741ecf02704` | 32 / 1,247 | 11,108 | 121.284 s | 36.62650°, 134.95654° | 8,540.3 km |
 
 Both retain eight modes. The e31 input has 43 eligible tracks and 1,011 eligible observations;
 167 observations are omitted by declared limits. Its measured peak RSS is about 1.25 GiB.
 The e3 canary renders measured and predicted trajectories that look close despite a grossly wrong
 location. Its leading mode has 26 tracks above the conditional 0.5 association-weight threshold.
+Its production runtime was measured while the host was under concurrent load; a separate local run
+took 76.675 seconds, so neither value is a throughput guarantee.
 **That threshold does not validate identity or position.** Candidate weights are conditional on each
 trial location and are not calibrated global identity probabilities. A different satellite and a
 fitted constant offset can mimic a short Doppler arc at a distant receiver location.
