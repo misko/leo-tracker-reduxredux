@@ -24,23 +24,27 @@ def configuration():
     from leo.analysis.research.identity_mixture import MixtureConfig
     from leo.analysis.sparse_scan_position import DEFAULT_REGION
 
-    return {
-        "analysis_id": "scanner-position-methods-v1",
-        "target_track_limit": 64,
-        "rolling_track_limit": 128,
-        "history_hours": 8,
-        "history_session_limit": 16,
-        "observations_per_track_limit": 512,
-        "candidate_support": "saved-site-assisted-review-top5-uncertified",
-        "partition": "preserve-review-training-membership-v1",
-        "reference_evaluation_only": REFERENCE.model_dump(mode="json"),
-        "exact_orbit_tolerance_hz": 0.2,
-        "phase_state_interpolation": "quartic-five-point-1s-v1",
-        "formal_orbit": asdict(FormalOrbitConfig()),
-        "identity_mixture": asdict(MixtureConfig()),
-        "region": asdict(DEFAULT_REGION),
-        "expanded_sigma_hz": 250.0,
-    }
+    return json.loads(
+        json.dumps(
+            {
+                "analysis_id": "scanner-position-methods-v1",
+                "target_track_limit": 64,
+                "rolling_track_limit": 128,
+                "history_hours": 8,
+                "history_session_limit": 16,
+                "observations_per_track_limit": 512,
+                "candidate_support": "saved-site-assisted-review-top5-uncertified",
+                "partition": "preserve-review-training-membership-v1",
+                "reference_evaluation_only": REFERENCE.model_dump(mode="json"),
+                "exact_orbit_tolerance_hz": 0.2,
+                "phase_state_interpolation": "quartic-five-point-1s-v1",
+                "formal_orbit": asdict(FormalOrbitConfig()),
+                "identity_mixture": asdict(MixtureConfig()),
+                "region": asdict(DEFAULT_REGION),
+                "expanded_sigma_hz": 250.0,
+            }
+        )
+    )
 
 
 def position_methods_complete(

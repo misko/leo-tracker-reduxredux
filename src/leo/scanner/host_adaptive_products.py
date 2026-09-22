@@ -27,6 +27,7 @@ from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
     HostAdaptiveHopReceiptV3,
     HostAdaptiveHopReceiptV4,
+    HostAdaptiveHopReceiptV5,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveAnalysisConfigurationV2,
@@ -41,6 +42,13 @@ class HostAdaptiveAnalysisBindingV2(AdaptiveHopAnalysisBindingV1):
     _visit_model: ClassVar[type[HostAdaptiveVisitAnalysisV2]] = HostAdaptiveVisitAnalysisV2
     receipt: HostAdaptiveHopReceiptV2
     configuration: HostAdaptiveAnalysisConfigurationV2
+
+
+class HostAdaptiveAnalysisBindingV4(HostAdaptiveAnalysisBindingV2):
+    """Sparse native-10M receipt binding; retains V2 numerical products."""
+
+    schema_version: Literal[4] = 4  # type: ignore[assignment]
+    receipt: HostAdaptiveHopReceiptV5  # type: ignore[assignment]
 
 
 class HostAdaptiveVisitReferenceV2(AdaptiveHopVisitReferenceV1):
@@ -114,7 +122,9 @@ def bind_actual_visit_analysis(
         else AdaptiveHopAnalysisConfigurationV1
     )
     binding_model: type[AdaptiveHopAnalysisBindingV1] = (
-        HostAdaptiveAnalysisBindingV3
+        HostAdaptiveAnalysisBindingV4
+        if isinstance(receipt, HostAdaptiveHopReceiptV5)
+        else HostAdaptiveAnalysisBindingV3
         if wide
         else HostAdaptiveAnalysisBindingV2
         if host
