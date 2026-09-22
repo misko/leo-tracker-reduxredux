@@ -1,0 +1,28 @@
+{
+  "schema": "org.leo.research.report-artifacts/v1",
+  "report": "2026_09_22_paired_receiver_position_comparison.md",
+  "inputs": {
+    "/tmp/dual-full-export.npz": "57e221c443ba5b048cf8e98d9026d71aa12fb26247ce92e5de4651fcf17caafc",
+    "/tmp/dual-full-export.json": "1ff87309955b05c9c3c01804ce33de1c10a9f3a9b6ad6de86ffb8870e3e143e4",
+    "/tmp/dual-lnb-joint-identity/results.json": "6f6aea9a8f00251b70cbf6391e25331d1c483d586eda20156c9d38ebb1244e14"
+  },
+  "sources": {
+    "tools/compare_dual_lnb_position_identity.py": "9d4fc46b98a39e87a0a21f5e172ee983b14c62ded38fc58b7e6357511e3ee92d",
+    "tools/render_dual_lnb_position_comparison.py": "77f712a42a550034f9b6f82a722559caf429321a19d991229e822967f03aaaac",
+    "tests/analysis/test_compare_dual_lnb_position_identity_tool.py": "df0c7017f5950fc2019c39ed30f1b8f159eaa55562d23b10d852f705bfb1df2f"
+  },
+  "artifacts": {
+    "comparison.png": "a755d57ab1912b4d646573192724459b94959928c6d17b6fa43f5cc680da9000",
+    "prepared.npz": "57e221c443ba5b048cf8e98d9026d71aa12fb26247ce92e5de4651fcf17caafc",
+    "reproduction-sources.tar.gz": "435e608419419b3dc7c5f46b823c3fb6cc8d62f20957732f5dc846fe2ae3f7a9",
+    "results.json.gz": "96543968592043c5afa136da4d1ecf7519acec31b18250f6a97842b0313a036b",
+    "selection.json.gz": "c18389b7545b8a6f0bcb1e165a2ad0faff54e7960ec8892f6274c99f89ca697e"
+  },
+  "validation": {
+    "focused_tests_passed": 2,
+    "ruff": "passed",
+    "both_fits_converged": true,
+    "both_exact_orbit_gates_passed": true
+  },
+  "production_deployment": false
+}
