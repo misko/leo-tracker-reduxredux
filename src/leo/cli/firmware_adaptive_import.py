@@ -22,9 +22,11 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV2,
     AdaptiveHopPlanV3,
     AdaptiveHopPlanV4,
+    AdaptiveHopPlanV5,
     AdaptiveHopPolicyV1,
     AdaptiveHopPolicyV2,
     AdaptiveHopReceiptV4,
+    AdaptiveHopReceiptV5,
     AdaptiveHopTerminalV1,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
@@ -45,6 +47,8 @@ from leo.scanner.models import scheduled_low_band_targets
 from leo.scanner.persistent_hop import (
     Feature103DualRxPlanV3,
     Feature103DualRxTimingV3,
+    Feature104DualRxPlanV4,
+    Feature104DualRxTimingV4,
     PersistentHopProfileV1,
     PersistentHopRestorationReceiptV1,
     persistent_hop_wire_session_id,
@@ -85,7 +89,7 @@ def _load(path: Path) -> tuple[dict, bytes]:
         and document.get("sample_layout") == "sample_rx_iq_interleaved"
         and document["evidence"].get("radio_serial") == DUAL_SERIAL
         and document.get("setup", {}).get("rx_mask") == 3
-        and document.get("setup", {}).get("source_rate_hz") in (2_500_000, 10_000_000)
+        and document.get("setup", {}).get("source_rate_hz") in (2_500_000, 10_000_000, 15_000_000)
     )
     if not (legacy or dual):
         raise ValueError("firmware archive is not the pinned radio RX0 source")
@@ -156,12 +160,15 @@ def _plan(
     AdaptiveHopPlanV2
     | AdaptiveHopPlanV3
     | AdaptiveHopPlanV4
+    | AdaptiveHopPlanV5
     | HostAdaptiveHopPlanV2
     | HostAdaptiveHopPlanV3
 ):
     setup = document["setup"]
     rate = int(setup["source_rate_hz"])
-    target_bandwidth_hz = rate if _is_dual(document) else 5_000_000
+    target_bandwidth_hz = (
+        (10_000_000 if rate == 15_000_000 else rate) if _is_dual(document) else 5_000_000
+    )
     profiles = tuple(
         PersistentHopProfileV1(target_index=index, fastlock_profile_index=index, target=target)
         for index, target in enumerate(scheduled_low_band_targets(bandwidth_hz=target_bandwidth_hz))
@@ -180,19 +187,26 @@ def _plan(
         dual_policy = AdaptiveHopPolicyV2(
             mode="adaptive", generation=int(setup["generation"]), allowed_target_mask=allowed_mask
         )
-        if rate not in (2_500_000, 10_000_000):
+        if rate not in (2_500_000, 10_000_000, 15_000_000):
             raise UnsupportedFirmwareArchiveError("dual firmware archive rate is unsupported")
-        dual_rate = cast(Literal[2_500_000, 10_000_000], rate)
-        dual_geometry = Feature103DualRxPlanV3(
-            sample_rate_hz=dual_rate,
-            bandwidth_hz=dual_rate,
+        geometry_fields = dict(
+            sample_rate_hz=rate,
+            bandwidth_hz=rate,
             transition_guard_samples=0,
             kernel_buffers=16,
             samples_per_block=1_000_000,
             profiles=profiles,
         )
+        if rate == 15_000_000:
+            return AdaptiveHopPlanV5(
+                geometry=Feature104DualRxPlanV4.model_validate(geometry_fields),
+                policy=dual_policy,
+                classification_receiver=1,
+            )
         return AdaptiveHopPlanV4(
-            geometry=dual_geometry, policy=dual_policy, classification_receiver=1
+            geometry=Feature103DualRxPlanV3.model_validate(geometry_fields),
+            policy=dual_policy,
+            classification_receiver=1,
         )
     policy = AdaptiveHopPolicyV1(mode="adaptive", generation=int(setup["generation"]))
     decision = _decision_configuration(rate, setup["analysis_digest"])
@@ -243,7 +257,11 @@ def _events(
         for index, target in enumerate(profile.target for profile in plan.geometry.profiles)
     }
     events: list[AdaptiveHopEventV1] = []
-    event_model = AdaptiveHopEventV2 if isinstance(plan, AdaptiveHopPlanV4) else AdaptiveHopEventV1
+    event_model = (
+        AdaptiveHopEventV2
+        if isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5))
+        else AdaptiveHopEventV1
+    )
     previous_end: int | None = None
     source_first = max(
         0,
@@ -299,18 +317,21 @@ def _events(
 
 def _dual_receipt(document: dict):
     plan = _plan(document)
-    if not isinstance(plan, AdaptiveHopPlanV4):
+    if not isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5)):
         raise TypeError("dual firmware archive produced a single-RX plan")
     events = _events(document, plan)
-    if not events or any(entry["iq"] is None for entry in document["visits"]):
+    if not events:
+        raise UnsupportedFirmwareArchiveError("dual firmware archive has no visits")
+    retained = tuple(index for index, entry in enumerate(document["visits"]) if entry["iq"])
+    if isinstance(plan, AdaptiveHopPlanV4) and len(retained) != len(events):
         raise UnsupportedFirmwareArchiveError(
-            "dual firmware archive is incomplete; sparse dual receipts are not published"
+            "feature-103 sparse dual firmware archive is unsupported"
         )
     session_id = document["session_id"]
     first = events[0].invalid_start_counter
     final = events[-1].valid_start_counter + plan.geometry.valid_visit_samples
     invalid = sum(event.valid_start_counter - event.invalid_start_counter for event in events)
-    valid = len(events) * plan.geometry.valid_visit_samples
+    valid = len(retained) * plan.geometry.valid_visit_samples
     denominator = final - first
     original = _settings(document["evidence"]["preparation"]["original"], (0, 1))
     restored = _settings(document["evidence"]["restoration"]["observed"], (0, 1))
@@ -345,7 +366,7 @@ def _dual_receipt(document: dict):
         kernel_buffers_readback=16,
         terminal=terminal,
         events=events,
-        complete_visit_count=len(events),
+        complete_visit_count=len(retained),
         valid_sample_count=valid,
         transition_invalid_sample_count=invalid,
         unclassified_sample_count=denominator - valid - invalid,
@@ -361,6 +382,14 @@ def _dual_receipt(document: dict):
             fastlock_inactive=True,
         ),
     )
+    if isinstance(plan, AdaptiveHopPlanV5):
+        return AdaptiveHopReceiptV5(
+            **common,
+            retained_visit_indices=retained,
+            transport_missing_sample_count=(
+                (len(events) - len(retained)) * plan.geometry.valid_visit_samples
+            ),
+        )
     return AdaptiveHopReceiptV4(**common)
 
 
@@ -488,7 +517,14 @@ def _timing(document: dict, receipt):
     value = document["evidence"].get("utc_timing")
     if not value:
         return None
-    if isinstance(receipt, AdaptiveHopReceiptV4):
+    if isinstance(receipt, (AdaptiveHopReceiptV4, AdaptiveHopReceiptV5)):
+        if isinstance(receipt, AdaptiveHopReceiptV5):
+            return Feature104DualRxTimingV4.from_host_bracket(
+                session_id=receipt.session_id,
+                session_start_device_sample_counter=receipt.terminal.first_counter,
+                sample_rate_hz=receipt.plan.geometry.sample_rate_hz,
+                **value,
+            )
         return Feature103DualRxTimingV3.from_host_bracket(
             session_id=receipt.session_id,
             session_start_device_sample_counter=receipt.terminal.first_counter,

@@ -266,6 +266,17 @@ class Feature103SessionDetailV6(AdaptiveHopSessionDetailV1):
     capture: Feature103HistoryItemV6  # type: ignore[assignment]
 
 
+class Feature104HistoryItemV7(EdgeAdaptiveHistoryItemV4):
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000, 15_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 10_000_000, 15_000_000]  # type: ignore[assignment]
+
+
+class Feature104SessionDetailV7(AdaptiveHopSessionDetailV1):
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    capture: Feature104HistoryItemV7  # type: ignore[assignment]
+
+
 class AdaptiveHopPresentationReader(Protocol):
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1: ...
 

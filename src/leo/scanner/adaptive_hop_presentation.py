@@ -13,6 +13,7 @@ from leo.scanner.adaptive_hop import AdaptiveModel, Count, SessionId
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     Feature103AnalysisConfigurationV3,
+    Feature104AnalysisConfigurationV4,
 )
 
 if TYPE_CHECKING:
@@ -134,6 +135,16 @@ class Feature103AnalysisStatusV6(AdaptiveHopAnalysisStatusV1):
     schema_version: Literal[6] = 6  # type: ignore[assignment]
     configuration: Feature103AnalysisConfigurationV3  # type: ignore[assignment]
     overview: Feature103OverviewManifestV6 | None
+
+
+class Feature104OverviewManifestV7(AdaptiveHopOverviewManifestV1):
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+
+
+class Feature104AnalysisStatusV7(AdaptiveHopAnalysisStatusV1):
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    configuration: Feature104AnalysisConfigurationV4  # type: ignore[assignment]
+    overview: Feature104OverviewManifestV7 | None
 
 
 @dataclass(frozen=True, slots=True)
