@@ -168,6 +168,7 @@ from leo.scanner.adaptive_hop_history import (
     DualRx10mAdaptiveSessionDetailV5,
     EdgeAdaptiveSessionDetailV4,
     Feature103SessionDetailV6,
+    Feature104SessionDetailV7,
 )
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisPresentationReader,
@@ -176,6 +177,7 @@ from leo.scanner.adaptive_hop_presentation import (
     DualRx10mAdaptiveAnalysisStatusV5,
     EdgeAdaptiveAnalysisStatusV4,
     Feature103AnalysisStatusV6,
+    Feature104AnalysisStatusV7,
 )
 from leo.scanner.adaptive_relative_phase import RelativePhaseStatusV1
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
@@ -184,6 +186,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV3,
     AdaptiveHistoryPageV4,
     AdaptiveHistoryPageV5,
+    AdaptiveHistoryPageV6,
     AdaptiveHistoryReaderV2,
     HostAdaptiveSessionDetailV2,
     HostAdaptiveSessionDetailV3,
@@ -468,7 +471,8 @@ def create_app(
         response_model=AdaptiveHistoryPageV2
         | AdaptiveHistoryPageV3
         | AdaptiveHistoryPageV4
-        | AdaptiveHistoryPageV5,
+        | AdaptiveHistoryPageV5
+        | AdaptiveHistoryPageV6,
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
@@ -476,12 +480,19 @@ def create_app(
         response_model=AdaptiveHistoryPageV2
         | AdaptiveHistoryPageV3
         | AdaptiveHistoryPageV4
-        | AdaptiveHistoryPageV5,
+        | AdaptiveHistoryPageV5
+        | AdaptiveHistoryPageV6,
     )
     def adaptive_history_v2(
         cursor: Annotated[int, Query(ge=0)] = 0,
         limit: Annotated[int, Query(ge=1, le=20)] = 20,
-    ) -> AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3 | AdaptiveHistoryPageV4:
+    ) -> (
+        AdaptiveHistoryPageV2
+        | AdaptiveHistoryPageV3
+        | AdaptiveHistoryPageV4
+        | AdaptiveHistoryPageV5
+        | AdaptiveHistoryPageV6
+    ):
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
         try:
@@ -501,6 +512,7 @@ def create_app(
             | EdgeAdaptiveSessionDetailV4
             | DualRx10mAdaptiveSessionDetailV5
             | Feature103SessionDetailV6
+            | Feature104SessionDetailV7
         ),
     )
     @v2_router.api_route(
@@ -513,6 +525,7 @@ def create_app(
             | EdgeAdaptiveSessionDetailV4
             | DualRx10mAdaptiveSessionDetailV5
             | Feature103SessionDetailV6
+            | Feature104SessionDetailV7
         ),
     )
     def adaptive_detail_v2(
@@ -540,6 +553,7 @@ def create_app(
             | EdgeAdaptiveAnalysisStatusV4
             | DualRx10mAdaptiveAnalysisStatusV5
             | Feature103AnalysisStatusV6
+            | Feature104AnalysisStatusV7
         ),
     )
     @v2_router.api_route(
@@ -552,6 +566,7 @@ def create_app(
             | EdgeAdaptiveAnalysisStatusV4
             | DualRx10mAdaptiveAnalysisStatusV5
             | Feature103AnalysisStatusV6
+            | Feature104AnalysisStatusV7
         ),
     )
     def adaptive_analysis_v2(

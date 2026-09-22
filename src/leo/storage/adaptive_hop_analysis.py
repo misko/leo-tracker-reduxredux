@@ -28,6 +28,7 @@ from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopVisitAnalysisV1,
     DualRx10mAdaptiveHopVisitAnalysisV2,
     Feature103VisitAnalysisV3,
+    Feature104VisitAnalysisV4,
 )
 from leo.scanner.adaptive_hop_presentation import (
     MAX_OVERVIEW_PNG_BYTES,
@@ -41,6 +42,8 @@ from leo.scanner.adaptive_hop_presentation import (
     EdgeAdaptiveOverviewManifestV4,
     Feature103AnalysisStatusV6,
     Feature103OverviewManifestV6,
+    Feature104AnalysisStatusV7,
+    Feature104OverviewManifestV7,
     RenderedAdaptiveOverview,
 )
 from leo.scanner.adaptive_hop_products import (
@@ -56,6 +59,9 @@ from leo.scanner.adaptive_hop_products import (
     Feature103AnalysisBindingV6,
     Feature103MetricsManifestV6,
     Feature103VisitReferenceV6,
+    Feature104AnalysisBindingV7,
+    Feature104MetricsManifestV7,
+    Feature104VisitReferenceV7,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveVisitAnalysisV2,
@@ -83,7 +89,7 @@ _NAMESPACE = "scanner-adaptive-analysis"
 _MAX_BINDING = 32 * 1024 * 1024
 _MAX_VISIT = 2 * 1024 * 1024
 _MAX_MANIFEST = 4 * 1024 * 1024
-_VISIT = re.compile(r"visit-([0-9]{6})\.v[123456]\.json\.zst")
+_VISIT = re.compile(r"visit-([0-9]{6})\.v[1234567]\.json\.zst")
 
 
 def _read(directory: PinnedLocalRoot, name: str, maximum: int) -> bytes:
@@ -171,7 +177,9 @@ class AdaptiveHopAnalysisStore:
         self, binding: AdaptiveHopAnalysisBindingV1, *, writable: bool = False
     ) -> Iterator[AdaptiveHopAnalysisJob]:
         binding_model = (
-            Feature103AnalysisBindingV6
+            Feature104AnalysisBindingV7
+            if isinstance(binding, Feature104AnalysisBindingV7)
+            else Feature103AnalysisBindingV6
             if isinstance(binding, Feature103AnalysisBindingV6)
             else HostAdaptiveAnalysisBindingV4
             if isinstance(binding, HostAdaptiveAnalysisBindingV4)
@@ -258,8 +266,11 @@ class AdaptiveHopAnalysisJob:
         edge = isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
         dual_10m = isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5)
         feature103 = isinstance(binding, Feature103AnalysisBindingV6)
+        feature104 = isinstance(binding, Feature104AnalysisBindingV7)
         self._visit_model: type[AdaptiveHopVisitAnalysisV1] = (
-            Feature103VisitAnalysisV3
+            Feature104VisitAnalysisV4
+            if feature104
+            else Feature103VisitAnalysisV3
             if feature103
             else HostAdaptiveVisitAnalysisV3
             if wide
@@ -270,7 +281,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopVisitAnalysisV1
         )
         self._reference_model: type[AdaptiveHopVisitReferenceV1] = (
-            Feature103VisitReferenceV6
+            Feature104VisitReferenceV7
+            if feature104
+            else Feature103VisitReferenceV6
             if feature103
             else HostAdaptiveVisitReferenceV3
             if wide
@@ -283,7 +296,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopVisitReferenceV1
         )
         self._metrics_model: type[AdaptiveHopMetricsManifestV1] = (
-            Feature103MetricsManifestV6
+            Feature104MetricsManifestV7
+            if feature104
+            else Feature103MetricsManifestV6
             if feature103
             else HostAdaptiveMetricsManifestV3
             if wide
@@ -296,7 +311,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopMetricsManifestV1
         )
         self._overview_model: type[AdaptiveHopOverviewManifestV1] = (
-            Feature103OverviewManifestV6
+            Feature104OverviewManifestV7
+            if feature104
+            else Feature103OverviewManifestV6
             if feature103
             else HostAdaptiveOverviewManifestV3
             if wide
@@ -309,7 +326,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopOverviewManifestV1
         )
         self._status_model: type[AdaptiveHopAnalysisStatusV1] = (
-            Feature103AnalysisStatusV6
+            Feature104AnalysisStatusV7
+            if feature104
+            else Feature103AnalysisStatusV6
             if feature103
             else HostAdaptiveAnalysisStatusV3
             if wide
