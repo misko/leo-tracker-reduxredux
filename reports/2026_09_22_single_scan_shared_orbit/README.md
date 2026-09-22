@@ -32,6 +32,29 @@ exclusions per fit are three rejected orbital objects across 39 episodes.
 This validates interpolation at the fitted solution, not global optimality.
 Evaluation coordinates were read only after fitting and exact replay.
 
+### Follow-up: matched elevation policy
+
+The original replay used a 0-degree elevation cutoff while fitting used the
+configured -1-degree cutoff. Replay now applies the fit policy to both exact and
+interpolated states. All three complete 433,134-case replays were repeated and
+pass; objective and held-out scores agree within 0.00000001. Positions and the
+reported errors are unchanged. The new `*-matched-elevation-{summary,receipt}.json`
+artifacts preserve these checks. A regression test explicitly exercises a
+-0.5-degree candidate that the two policies treat differently.
+
+For comparison across initializations, each cell below is original-orbit baseline
+error followed by shared-orbit joint error, in km. Centre distances are spherical
+horizontal distances to the evaluation site, used only for reporting.
+
+| Scan count | Sacramento: 119 km away | Reno: 298 km away | Denver: 1,528 km away |
+|---|---:|---:|---:|
+| 1 (300 seconds) | 10.700 → 4.526 | 10.697 → 4.526 | 10.697 → 4.526 |
+| 5 (3.2-hour span) | 5.667 → pending | 5.667 → pending | 5.665 → pending |
+
+The baseline already estimates position with uncertain associations; the added
+joint fit also estimates shared orbital corrections. Pending entries are not
+accuracy claims. There is no validated blind eight-hour comparison yet.
+
 All three fits agree on the leading signal candidate for every episode; three
 episodes have null-majority weight. The split trains on time blocks 0/2/4 and
 holds out blocks 1/3. It measures interpolation within the observed span, not
