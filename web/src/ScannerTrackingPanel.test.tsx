@@ -21,6 +21,8 @@ const product = {
 it.each([2500000, 5000000, 10000000])("shows every published figure and actual failures at %s samples/s", async rate => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ session_id: "scan-test", state: "complete", phase: "complete", product: { ...product, sample_rate_hz: rate } }) }));
   render(<ScannerTrackingPanel sessionId="scan-test" inputDigest="sha256:test" />);
+  expect(screen.getByRole("heading", { name: "Sausalito-assisted tracking and positioning" })).toBeInTheDocument();
+  expect(screen.getByText(/configured Sausalito receiver position/)).toBeInTheDocument();
   expect(await screen.findByText(/catalogue population propagation is incomplete/)).toBeInTheDocument();
   expect(screen.queryByText(/No group has the required/)).not.toBeInTheDocument();
   const images = screen.getAllByRole("img");
