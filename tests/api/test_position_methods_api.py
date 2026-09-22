@@ -32,9 +32,7 @@ def test_position_methods_api_requires_and_verifies_artifact_digest(tmp_path):
 def test_absent_position_methods_are_explicitly_pending(tmp_path):
     app = FastAPI()
     app.include_router(position_methods_router(PositionMethodsStore(tmp_path)))
-    response = TestClient(app).get(
-        "/api/v1/scanner/tracking/scan-missing/position-methods"
-    )
+    response = TestClient(app).get("/api/v1/scanner/tracking/scan-missing/position-methods")
     assert response.status_code == 200
     assert response.json() == {
         "schema_version": 1,

@@ -44,9 +44,7 @@ def test_position_method_publication_rejects_unverified_or_stale_output(
             document=SimpleNamespace(input_manifest_sha256=digest)
         ),
     )
-    monkeypatch.setattr(
-        scanner_tracking, "position_methods_complete", lambda *_, **__: False
-    )
+    monkeypatch.setattr(scanner_tracking, "position_methods_complete", lambda *_, **__: False)
     with pytest.raises(ValueError, match="completion verification"):
         scanner_tracking._publish_position_methods_verified(
             bulk_root=tmp_path,
