@@ -98,3 +98,30 @@ A separate queue compatibility repair adds a new binding major for sparse
 native-10M receipt V5 while preserving published V2 contracts and numerical
 products. This is required for the automatic queue to progress past those captures.
 See the operational documentation for policy and endpoint details.
+
+## Deployment and live verification
+
+Implementation release `b3850b12aec4e35d8924c4632af69f9ff1607247` was pushed to
+remote main and deployed to the API and all 16 adaptive analysis workers.
+The queue uses the same immutable release. Capture and spool-transfer timers
+remained active and their configuration was not changed. Existing worker leases
+were relinquished through normal shutdown, preserving published checkpoints.
+
+All required `./ops test --base 3b2516fd129678697e8329b510be8f66402a6ab6`
+checks passed, including component tests, typing, lint, formatting, web build and
+187 web tests. Production release qualification passed protected real-corpus,
+native science, PostgreSQL, web-build and Chromium lanes; see
+[qualification receipt](release-qualification.json).
+
+Before publishing the replay to the production artifact store, all 17 cohort
+capture, analysis and tracking-product digests were rechecked. The JSON and all
+three PNGs then passed HTTP integrity checks. Chromium navigated the live scanner
+history to the real target session and decoded all three PNGs successfully:
+[live UI screenshot](live-web-ui.png), [browser check](live-web-ui.json).
+The screenshot includes the coordinates and reference-error labels.
+
+[Worker cutover receipt](worker-cutover.json) records the exact release and
+protected timer states. Recent missing sidecars were automatically enqueued
+after the switch. At this report's deployment checkpoint, 13 tracking jobs were
+running their additional fits; historical backfill was still in progress.
+The successfully qualified target above is already published and visible.
