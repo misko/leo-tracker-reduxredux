@@ -70,6 +70,7 @@ from leo.scanner.host_adaptive_presentation import (
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
     HostAdaptiveAnalysisBindingV3,
+    HostAdaptiveAnalysisBindingV4,
     HostAdaptiveMetricsManifestV2,
     HostAdaptiveMetricsManifestV3,
     HostAdaptiveVisitReferenceV2,
@@ -172,6 +173,8 @@ class AdaptiveHopAnalysisStore:
         binding_model = (
             Feature103AnalysisBindingV6
             if isinstance(binding, Feature103AnalysisBindingV6)
+            else HostAdaptiveAnalysisBindingV4
+            if isinstance(binding, HostAdaptiveAnalysisBindingV4)
             else HostAdaptiveAnalysisBindingV3
             if isinstance(binding, HostAdaptiveAnalysisBindingV3)
             else HostAdaptiveAnalysisBindingV2
@@ -246,7 +249,10 @@ class AdaptiveHopAnalysisJob:
     ):
         self._directory, self.binding, self._writable = directory, binding, writable
         self._binding_sha256 = binding.sha256
-        self._version = binding.schema_version
+        # Sparse receipt V5 has a new binding, but unchanged V2 numerical products.
+        self._version = (
+            2 if isinstance(binding, HostAdaptiveAnalysisBindingV4) else binding.schema_version
+        )
         wide = isinstance(binding, HostAdaptiveAnalysisBindingV3)
         host = isinstance(binding, HostAdaptiveAnalysisBindingV2)
         edge = isinstance(binding, EdgeAdaptiveAnalysisBindingV4)

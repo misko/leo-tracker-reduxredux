@@ -40,6 +40,7 @@ from leo.scanner.host_adaptive_analysis import (
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
     HostAdaptiveAnalysisBindingV3,
+    HostAdaptiveAnalysisBindingV4,
 )
 
 
@@ -148,6 +149,8 @@ class AdaptiveHopAnalysisService:
             binding_model: type[AdaptiveHopAnalysisBindingV1] = (
                 Feature103AnalysisBindingV6
                 if isinstance(source, Feature103AnalysisSourceV4)
+                else HostAdaptiveAnalysisBindingV4
+                if source.receipt.schema_version == 5 and self._host_adaptive
                 else HostAdaptiveAnalysisBindingV3
                 if wide
                 else HostAdaptiveAnalysisBindingV2

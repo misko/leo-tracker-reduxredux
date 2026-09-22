@@ -57,6 +57,20 @@ def test_reference_evaluation_changes_error_not_estimate():
     assert fit["state"] == "complete"
 
 
+def test_full_configuration_is_finite_json_diagnostic():
+    from leo.cli.scan_position_methods import configuration
+
+    result = evaluated_result(
+        "expanded-doppler",
+        {
+            "state": "insufficient",
+            "reasons": ["no-tracks"],
+            "configuration": configuration(),
+        },
+    )
+    assert result.diagnostics["configuration"]["formal_orbit"]["sigma_bounds_hz"] == [5.0, 2000.0]
+
+
 def test_failed_fit_never_reports_coordinate_or_reference_error():
     result = evaluated_result(
         "orbit-corrected",

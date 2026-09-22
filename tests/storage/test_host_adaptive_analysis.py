@@ -15,15 +15,18 @@ from leo.scanner.adaptive_hop_products import (
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveAnalysisSource,
+    HostAdaptiveAnalysisSourceV5,
     analyze_host_adaptive_visit,
 )
 from leo.scanner.host_adaptive_presentation import HostAdaptiveOverviewManifestV2
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
+    HostAdaptiveAnalysisBindingV4,
     bind_actual_visit_analysis,
 )
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.errors import BundleCorruptionError
+from tests.scanner.host_adaptive_fixtures import sparse_host_receipt
 from tests.scanner.test_host_adaptive_analysis import Reader
 from tests.scanner.test_persistent_hop_standard_analysis import _fake_fractional_dwell
 
@@ -37,6 +40,57 @@ def fixture(monkeypatch, receiver=0):
     )
     products = tuple(analyze_host_adaptive_visit(source, i) for i in range(2))
     return binding, products
+
+
+def test_sparse_native_10m_receipt_uses_a_new_binding_and_existing_numerics(tmp_path):
+    receipt = sparse_host_receipt(session_id="sparse-native-10m-binding")
+    binding = bind_actual_visit_analysis(
+        receipt,
+        input_manifest_sha256="sha256:" + "1" * 64,
+        probe_stride_ms=120,
+    )
+    assert isinstance(binding, HostAdaptiveAnalysisBindingV4)
+    assert binding.schema_version == 4
+    assert binding.receipt.schema_version == 5
+    assert binding.receipt.retained_visit_indices == receipt.retained_visit_indices
+    assert binding.configuration.schema_version == 2
+    assert binding.configuration.sample_rate_hz == 10_000_000
+    with pytest.raises(ValueError):
+        HostAdaptiveAnalysisBindingV2.model_validate(binding.model_dump())
+    store = AdaptiveHopAnalysisStore(tmp_path)
+    try:
+        with store.job(binding, writable=True) as job:
+            assert job.binding == binding
+        with store.job(binding) as job:
+            assert job.binding == binding
+    finally:
+        store.close()
+
+
+def test_sparse_binding_preserves_v2_checkpoint_and_presentation(tmp_path, monkeypatch):
+    reader = Reader(count=7)
+    reader.receipt = sparse_host_receipt()
+    source = HostAdaptiveAnalysisSourceV5(reader)
+    monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    binding = bind_actual_visit_analysis(
+        reader.receipt, input_manifest_sha256=reader.input_manifest_sha256
+    )
+    store = AdaptiveHopAnalysisStore(tmp_path)
+    try:
+        with store.job(binding, writable=True) as job:
+            for index in range(len(source.visits)):
+                reference = job.write_visit(analyze_host_adaptive_visit(source, index))
+                assert reference.relative_path.endswith(".v2.json.zst")
+            metrics = job.finalize_metrics()
+            projection = project_host_adaptive_overview(binding, metrics, job.published_visits())
+            assert projection is not None
+            rendered = render_host_adaptive_hop_overview(
+                binding, metrics, job.published_visits(), test_data="synthetic"
+            )
+            job.publish_overview(rendered)
+            assert job.status().state == "figures_ready"
+    finally:
+        store.close()
 
 
 @pytest.mark.parametrize("receiver", [0, 1])

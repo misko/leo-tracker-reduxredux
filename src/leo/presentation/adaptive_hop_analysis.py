@@ -37,6 +37,7 @@ from leo.scanner.adaptive_hop_products import (
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
     HostAdaptiveAnalysisBindingV3,
+    HostAdaptiveAnalysisBindingV4,
     HostAdaptiveMetricsManifestV2,
     HostAdaptiveMetricsManifestV3,
 )
@@ -105,7 +106,13 @@ def project_host_adaptive_overview(
     visits: Iterable[AdaptiveHopVisitAnalysisV1],
 ) -> AdaptiveOverviewData:
     wide = isinstance(binding, HostAdaptiveAnalysisBindingV3)
-    binding_model = HostAdaptiveAnalysisBindingV3 if wide else HostAdaptiveAnalysisBindingV2
+    binding_model = (
+        HostAdaptiveAnalysisBindingV4
+        if isinstance(binding, HostAdaptiveAnalysisBindingV4)
+        else HostAdaptiveAnalysisBindingV3
+        if wide
+        else HostAdaptiveAnalysisBindingV2
+    )
     manifest_model = HostAdaptiveMetricsManifestV3 if wide else HostAdaptiveMetricsManifestV2
     binding = binding_model.model_validate(binding.model_dump())
     manifest = manifest_model.model_validate(manifest.model_dump())

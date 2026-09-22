@@ -96,10 +96,10 @@ def test_second_parallel_failure_keeps_first_checkpoint(monkeypatch, tmp_path):
     inputs, products, worker = service(monkeypatch, tmp_path)
     real = detector._analyze_loaded_visit
 
-    def fail(source, index, samples, cfg):
+    def fail(source, index, samples, cfg, *product_model):
         if index == 1:
             raise RuntimeError("second parallel visit failed")
-        return real(source, index, samples, cfg)
+        return real(source, index, samples, cfg, *product_model)
 
     monkeypatch.setattr(detector, "_analyze_loaded_visit", fail)
     with pytest.raises(RuntimeError, match="second parallel"):
