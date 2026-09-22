@@ -1,0 +1,409 @@
+{
+  "byte_exact_archive": false,
+  "description": "Compact NPZ files preserve grid arrays and per-session sums of per-episode training and heldout maps. Original NPZ containers and per-episode diagnostic arrays are absent. Their byte hashes remain in acquisition-seal.json, but omitted arrays cannot be reconstructed from this publication archive.",
+  "runs": {
+    "denver": {
+      "logical_mappings": {
+        "accumulated.npz::heldout": {
+          "maximum_absolute_reconstruction_difference": 9.094947017729282e-13,
+          "operation": "sum; floating addition order may differ",
+          "original_logical_array_digest": "sha256:3699f6446ad6df677416ce8cd0b7f7f8238dbc9f673a54eb39a883eed8da2a85",
+          "packed_keys": [
+            "scan-fw-1d05092feaa8f7d5_heldout",
+            "scan-fw-3bee6be6e987a34f_heldout",
+            "scan-fw-64e06d86f4746e55_heldout",
+            "scan-fw-e201d79ba3234e2e_heldout",
+            "scan-fw-e3bc0741ecf02704_heldout"
+          ],
+          "reconstructed_logical_array_digest": "sha256:98be8dce6b75c0db65b1f147ca0999094c7d2010487fef48c377aa4060d0b1ef"
+        },
+        "accumulated.npz::train": {
+          "maximum_absolute_reconstruction_difference": 4.547473508864641e-13,
+          "operation": "sum; floating addition order may differ",
+          "original_logical_array_digest": "sha256:b0f9892e714d5d816b1f54794362ab9657c74ddd2064b57dd78520a0dcb8c9bc",
+          "packed_keys": [
+            "scan-fw-1d05092feaa8f7d5_train",
+            "scan-fw-3bee6be6e987a34f_train",
+            "scan-fw-64e06d86f4746e55_train",
+            "scan-fw-e201d79ba3234e2e_train",
+            "scan-fw-e3bc0741ecf02704_train"
+          ],
+          "reconstructed_logical_array_digest": "sha256:162c84ce56de6d6ddb1dd48f1b7d7559015c11266754d5322588853809d73044"
+        },
+        "grid.npz::altitude_m": {
+          "logical_array_digest": "sha256:f399cb7214f98b60f10a95d6d8b02fa4fb09764979550b859f2c1206eebe653a",
+          "operation": "identity",
+          "packed_key": "grid_altitude_m"
+        },
+        "grid.npz::east_km": {
+          "logical_array_digest": "sha256:914f10846bcb3a79f5e6e4d9c5823d004003448a81a00022a25fbaa7d6765214",
+          "operation": "identity",
+          "packed_key": "grid_east_km"
+        },
+        "grid.npz::ecef_km": {
+          "logical_array_digest": "sha256:ef5c608260b41fc23d718a4dd44b82e52122d8a612d37b494e18055b4ea54092",
+          "operation": "identity",
+          "packed_key": "grid_ecef_km"
+        },
+        "grid.npz::latitude_deg": {
+          "logical_array_digest": "sha256:5bc72771b50cfdea554f746906c82de9cd6bd3e0145559bc2f91283c17ecbc50",
+          "operation": "identity",
+          "packed_key": "grid_latitude_deg"
+        },
+        "grid.npz::longitude_deg": {
+          "logical_array_digest": "sha256:80a4a687a01aac92cb0a1d77e1cc0b54b5ba3c61b4903fab8b950433531e3768",
+          "operation": "identity",
+          "packed_key": "grid_longitude_deg"
+        },
+        "grid.npz::north_km": {
+          "logical_array_digest": "sha256:74e72d3762c2bb8e7aa1e96324972b48d5506a42e5a9ab75419c591d32dc79ef",
+          "operation": "identity",
+          "packed_key": "grid_north_km"
+        },
+        "grid.npz::up": {
+          "logical_array_digest": "sha256:d68d1a7f98f63585125677bf8229baacbc76281c9ed075927f024769da9a45d1",
+          "operation": "identity",
+          "packed_key": "grid_up"
+        },
+        "scan-fw-1d05092feaa8f7d5.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:8e876021012ec033477c5c24646b2a9078cc1ea3d8b673f76f3c5445c67dc4b4",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-1d05092feaa8f7d5_heldout"
+        },
+        "scan-fw-1d05092feaa8f7d5.npz::train_logbf": {
+          "logical_array_digest": "sha256:a9bcdf51d7e9926157817e45b5f6fd6139f1a047eeddada2f2ca2427da93f820",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-1d05092feaa8f7d5_train"
+        },
+        "scan-fw-3bee6be6e987a34f.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:e9cd831a49e0f60ca2b230f8435548cd0519c169eada257d969a5b9a1ae7c1eb",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-3bee6be6e987a34f_heldout"
+        },
+        "scan-fw-3bee6be6e987a34f.npz::train_logbf": {
+          "logical_array_digest": "sha256:de7244721c9cb7e211c3e4938b5b3d10bbee2b9f50e81ff4244ff2366ecb2ac6",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-3bee6be6e987a34f_train"
+        },
+        "scan-fw-64e06d86f4746e55.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:f83f20aa7caeb11b2fce504223f8c7a691de5725744991b2a9ca0ad8c5ba35d7",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-64e06d86f4746e55_heldout"
+        },
+        "scan-fw-64e06d86f4746e55.npz::train_logbf": {
+          "logical_array_digest": "sha256:ef70cad08cdd640a9bb44fe19ee2abaa7fc003f69df2400796f5164913c268eb",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-64e06d86f4746e55_train"
+        },
+        "scan-fw-e201d79ba3234e2e.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:f11a7d66aef047125edf43b6178f6b5563f5b4791cb011af41395561b5f518ff",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e201d79ba3234e2e_heldout"
+        },
+        "scan-fw-e201d79ba3234e2e.npz::train_logbf": {
+          "logical_array_digest": "sha256:7416db80478885974b387bb55e19ff397ce7c97906fb1275621a8ceec10ad4c7",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e201d79ba3234e2e_train"
+        },
+        "scan-fw-e3bc0741ecf02704.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:f80ebf4038d57f26adb637cc4fe22d1af521600e2ca797703fe992c1ea26cc1a",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e3bc0741ecf02704_heldout"
+        },
+        "scan-fw-e3bc0741ecf02704.npz::train_logbf": {
+          "logical_array_digest": "sha256:65a3abe2b3ed835f7f88719f827838d5d91a4d84b35f34b8201bcc646efe94be",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e3bc0741ecf02704_train"
+        }
+      },
+      "omitted_original_npz_containers": [
+        "grid.npz",
+        "accumulated.npz",
+        "scan-fw-1d05092feaa8f7d5.npz",
+        "scan-fw-3bee6be6e987a34f.npz",
+        "scan-fw-64e06d86f4746e55.npz",
+        "scan-fw-e201d79ba3234e2e.npz",
+        "scan-fw-e3bc0741ecf02704.npz"
+      ],
+      "omitted_per_episode_arrays": [
+        "train_logbf",
+        "heldout_logbf",
+        "best_train_rms_hz",
+        "best_test_rms_hz",
+        "signal_weight",
+        "best_norad"
+      ],
+      "packed_file": "per-scan-score-maps.npz",
+      "packed_file_digest": "sha256:6fb36e7a3ca91f1b10d314f1c433f17e963604d905085c3b2f313d01728f46cb"
+    },
+    "reno": {
+      "logical_mappings": {
+        "accumulated.npz::heldout": {
+          "maximum_absolute_reconstruction_difference": 9.094947017729282e-13,
+          "operation": "sum; floating addition order may differ",
+          "original_logical_array_digest": "sha256:6051099ffea89f90801b5d2d8b36da43eedf4c6e351542d34009815304acc6d7",
+          "packed_keys": [
+            "scan-fw-1d05092feaa8f7d5_heldout",
+            "scan-fw-3bee6be6e987a34f_heldout",
+            "scan-fw-64e06d86f4746e55_heldout",
+            "scan-fw-e201d79ba3234e2e_heldout",
+            "scan-fw-e3bc0741ecf02704_heldout"
+          ],
+          "reconstructed_logical_array_digest": "sha256:3b984b022399cc0d61ec4fd36cec3385132f42dc432b0063587db666365ea018"
+        },
+        "accumulated.npz::train": {
+          "maximum_absolute_reconstruction_difference": 4.547473508864641e-13,
+          "operation": "sum; floating addition order may differ",
+          "original_logical_array_digest": "sha256:daa82056df340119b4fdd3c2597cee5805c9c76a5eb089cb64b90a5449b0b18c",
+          "packed_keys": [
+            "scan-fw-1d05092feaa8f7d5_train",
+            "scan-fw-3bee6be6e987a34f_train",
+            "scan-fw-64e06d86f4746e55_train",
+            "scan-fw-e201d79ba3234e2e_train",
+            "scan-fw-e3bc0741ecf02704_train"
+          ],
+          "reconstructed_logical_array_digest": "sha256:bf4e1f3a124aca0bafa2d21ad6dfa5d5f1fa8697d4258e87daa54af7a156711f"
+        },
+        "grid.npz::altitude_m": {
+          "logical_array_digest": "sha256:f399cb7214f98b60f10a95d6d8b02fa4fb09764979550b859f2c1206eebe653a",
+          "operation": "identity",
+          "packed_key": "grid_altitude_m"
+        },
+        "grid.npz::east_km": {
+          "logical_array_digest": "sha256:914f10846bcb3a79f5e6e4d9c5823d004003448a81a00022a25fbaa7d6765214",
+          "operation": "identity",
+          "packed_key": "grid_east_km"
+        },
+        "grid.npz::ecef_km": {
+          "logical_array_digest": "sha256:44ba1575c78ce3cb0a7227100afb71d758cd2516d00e57df994d72eaf8819e93",
+          "operation": "identity",
+          "packed_key": "grid_ecef_km"
+        },
+        "grid.npz::latitude_deg": {
+          "logical_array_digest": "sha256:6f81b1a6558126dcb4d5fb924c126dc9bc8d544d389011b2bd27aa7f1fd92aaa",
+          "operation": "identity",
+          "packed_key": "grid_latitude_deg"
+        },
+        "grid.npz::longitude_deg": {
+          "logical_array_digest": "sha256:75cf1e6ba21f70814cfef16a088f165ebaca34501fd75c99d497ad504cfd4b03",
+          "operation": "identity",
+          "packed_key": "grid_longitude_deg"
+        },
+        "grid.npz::north_km": {
+          "logical_array_digest": "sha256:74e72d3762c2bb8e7aa1e96324972b48d5506a42e5a9ab75419c591d32dc79ef",
+          "operation": "identity",
+          "packed_key": "grid_north_km"
+        },
+        "grid.npz::up": {
+          "logical_array_digest": "sha256:a522db8cffb32f348da7a286fba7fc53d54d22a3153965a3cb69daf35e7302dc",
+          "operation": "identity",
+          "packed_key": "grid_up"
+        },
+        "scan-fw-1d05092feaa8f7d5.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:10898c6f04122e191a10ddc0d26b6195645970c54f4bc2e5aea1b6c0e1bdac0f",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-1d05092feaa8f7d5_heldout"
+        },
+        "scan-fw-1d05092feaa8f7d5.npz::train_logbf": {
+          "logical_array_digest": "sha256:5dc23f3be8bd3a167be9ac7da29ed236f24df96e2959775d0652fbedcfbe7894",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-1d05092feaa8f7d5_train"
+        },
+        "scan-fw-3bee6be6e987a34f.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:025b369d6d28c49a2c3eea6b3290ff2f8d1ac1cced7ce04df760bc26ebb28a82",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-3bee6be6e987a34f_heldout"
+        },
+        "scan-fw-3bee6be6e987a34f.npz::train_logbf": {
+          "logical_array_digest": "sha256:49fc7fb5c644eccadd22dafd3cda06c45d6f859154051155bfa273aa3b6f8d57",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-3bee6be6e987a34f_train"
+        },
+        "scan-fw-64e06d86f4746e55.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:d27cceada40b58d7fa312553c0ff17cf45e037bc449fad878c69b234b24e6fb0",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-64e06d86f4746e55_heldout"
+        },
+        "scan-fw-64e06d86f4746e55.npz::train_logbf": {
+          "logical_array_digest": "sha256:ebbe837da23291dc014a3bf037035d6648b12f79d183b66ec33bd47f8d2626b8",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-64e06d86f4746e55_train"
+        },
+        "scan-fw-e201d79ba3234e2e.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:af982154fba60e3c4f6437d01b80ba3ed610f1bf7567a277a6d336c48aeba57a",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e201d79ba3234e2e_heldout"
+        },
+        "scan-fw-e201d79ba3234e2e.npz::train_logbf": {
+          "logical_array_digest": "sha256:9c9e9be46d72e9db9a76c34509de3baf372bce96fc31eae51b56a0639bc3953d",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e201d79ba3234e2e_train"
+        },
+        "scan-fw-e3bc0741ecf02704.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:1ec0473b8aee806e6c2421d1d500a8eac23290124ca6693fb4e92c5c7ddc5f90",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e3bc0741ecf02704_heldout"
+        },
+        "scan-fw-e3bc0741ecf02704.npz::train_logbf": {
+          "logical_array_digest": "sha256:192849ab4f571d6b6af1c7b52e4f67e8f33bbfc1f8c0fa866051d902ad34d462",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e3bc0741ecf02704_train"
+        }
+      },
+      "omitted_original_npz_containers": [
+        "grid.npz",
+        "accumulated.npz",
+        "scan-fw-1d05092feaa8f7d5.npz",
+        "scan-fw-3bee6be6e987a34f.npz",
+        "scan-fw-64e06d86f4746e55.npz",
+        "scan-fw-e201d79ba3234e2e.npz",
+        "scan-fw-e3bc0741ecf02704.npz"
+      ],
+      "omitted_per_episode_arrays": [
+        "train_logbf",
+        "heldout_logbf",
+        "best_train_rms_hz",
+        "best_test_rms_hz",
+        "signal_weight",
+        "best_norad"
+      ],
+      "packed_file": "per-scan-score-maps.npz",
+      "packed_file_digest": "sha256:f184743a3d1e2c366d540273985435fb3888bb2add0abac0c8e6d2c4966903fc"
+    },
+    "sacramento": {
+      "logical_mappings": {
+        "accumulated.npz::heldout": {
+          "maximum_absolute_reconstruction_difference": 9.094947017729282e-13,
+          "operation": "sum; floating addition order may differ",
+          "original_logical_array_digest": "sha256:2ab2aac91c7f2f32d2e4abe98d8d4dfcfab4faff5577d1d751639af3adf5c450",
+          "packed_keys": [
+            "scan-fw-1d05092feaa8f7d5_heldout",
+            "scan-fw-3bee6be6e987a34f_heldout",
+            "scan-fw-64e06d86f4746e55_heldout",
+            "scan-fw-e201d79ba3234e2e_heldout",
+            "scan-fw-e3bc0741ecf02704_heldout"
+          ],
+          "reconstructed_logical_array_digest": "sha256:2d25670e5518334251e9e1f4e325be8dc7cfe06891d2ce8c5ec2f4b87ac2f56a"
+        },
+        "accumulated.npz::train": {
+          "maximum_absolute_reconstruction_difference": 4.547473508864641e-13,
+          "operation": "sum; floating addition order may differ",
+          "original_logical_array_digest": "sha256:67e3e7cc1deaaaf15c56f1a09893126e4c82778636017b460749c600b0aec17e",
+          "packed_keys": [
+            "scan-fw-1d05092feaa8f7d5_train",
+            "scan-fw-3bee6be6e987a34f_train",
+            "scan-fw-64e06d86f4746e55_train",
+            "scan-fw-e201d79ba3234e2e_train",
+            "scan-fw-e3bc0741ecf02704_train"
+          ],
+          "reconstructed_logical_array_digest": "sha256:8b8e8bd1fcf3b4106cd5101fdfdbfa680a848cdc5dcfa0590e28d700f9814c38"
+        },
+        "grid.npz::altitude_m": {
+          "logical_array_digest": "sha256:f399cb7214f98b60f10a95d6d8b02fa4fb09764979550b859f2c1206eebe653a",
+          "operation": "identity",
+          "packed_key": "grid_altitude_m"
+        },
+        "grid.npz::east_km": {
+          "logical_array_digest": "sha256:914f10846bcb3a79f5e6e4d9c5823d004003448a81a00022a25fbaa7d6765214",
+          "operation": "identity",
+          "packed_key": "grid_east_km"
+        },
+        "grid.npz::ecef_km": {
+          "logical_array_digest": "sha256:2308731781c8544a9d72654c2d43178db02aa00dc236f3895138cbabc01c9fd9",
+          "operation": "identity",
+          "packed_key": "grid_ecef_km"
+        },
+        "grid.npz::latitude_deg": {
+          "logical_array_digest": "sha256:8d3d2adef9549e806161ae52a046fe8cb8131b254c3f2543d4b6855888f98c9f",
+          "operation": "identity",
+          "packed_key": "grid_latitude_deg"
+        },
+        "grid.npz::longitude_deg": {
+          "logical_array_digest": "sha256:438a003d0b379912faa79f7917bf5df083c3a0cf2d5b432514be83f71d082726",
+          "operation": "identity",
+          "packed_key": "grid_longitude_deg"
+        },
+        "grid.npz::north_km": {
+          "logical_array_digest": "sha256:74e72d3762c2bb8e7aa1e96324972b48d5506a42e5a9ab75419c591d32dc79ef",
+          "operation": "identity",
+          "packed_key": "grid_north_km"
+        },
+        "grid.npz::up": {
+          "logical_array_digest": "sha256:8456bf8037e4fb73051de2fb89165c62620bc2e4bbbd87c4e8926a1e46c6cc02",
+          "operation": "identity",
+          "packed_key": "grid_up"
+        },
+        "scan-fw-1d05092feaa8f7d5.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:7fb7ef61780f7a9566504021ac97bdf33a178a5f2b35fd9ef66720a526a6ee65",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-1d05092feaa8f7d5_heldout"
+        },
+        "scan-fw-1d05092feaa8f7d5.npz::train_logbf": {
+          "logical_array_digest": "sha256:39ab742662916c656e5481a6176360e77333f58bdd299486abe7539fa276471a",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-1d05092feaa8f7d5_train"
+        },
+        "scan-fw-3bee6be6e987a34f.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:8024d6e4571b9649ae81998134ff5c1deee3899eb4682b92c365bea2905181c9",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-3bee6be6e987a34f_heldout"
+        },
+        "scan-fw-3bee6be6e987a34f.npz::train_logbf": {
+          "logical_array_digest": "sha256:925ab4d01cbdef6df66c4f310b70d4f37a5b55b129d41306d26ad977d9fefc5e",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-3bee6be6e987a34f_train"
+        },
+        "scan-fw-64e06d86f4746e55.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:b1a970790c029c975400064fb534c0132192ecb8738fba3741879c70755c815d",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-64e06d86f4746e55_heldout"
+        },
+        "scan-fw-64e06d86f4746e55.npz::train_logbf": {
+          "logical_array_digest": "sha256:baddd169f265f9aecf40b5b95986b808b0c40cc56e760bceced7114db0599fd3",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-64e06d86f4746e55_train"
+        },
+        "scan-fw-e201d79ba3234e2e.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:e4394c0bb1f575d009915198f20954c870ddd5f17237854abc99c5f751ecd162",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e201d79ba3234e2e_heldout"
+        },
+        "scan-fw-e201d79ba3234e2e.npz::train_logbf": {
+          "logical_array_digest": "sha256:b373494f0443b926aaeb8f0dbeb3c1552b7c945bd4d33789f3bc866c06b72646",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e201d79ba3234e2e_train"
+        },
+        "scan-fw-e3bc0741ecf02704.npz::heldout_logbf": {
+          "logical_array_digest": "sha256:73763d05c2a676ebae955495397b38656a10b3ecc62d4dd12826b2a444a6a042",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e3bc0741ecf02704_heldout"
+        },
+        "scan-fw-e3bc0741ecf02704.npz::train_logbf": {
+          "logical_array_digest": "sha256:98ed8308ddb1d598c425a5f4ef72ea5dc62e51364c894334ef38911ab1129cfc",
+          "operation": "sum over episode axis",
+          "packed_key": "scan-fw-e3bc0741ecf02704_train"
+        }
+      },
+      "omitted_original_npz_containers": [
+        "grid.npz",
+        "accumulated.npz",
+        "scan-fw-1d05092feaa8f7d5.npz",
+        "scan-fw-3bee6be6e987a34f.npz",
+        "scan-fw-64e06d86f4746e55.npz",
+        "scan-fw-e201d79ba3234e2e.npz",
+        "scan-fw-e3bc0741ecf02704.npz"
+      ],
+      "omitted_per_episode_arrays": [
+        "train_logbf",
+        "heldout_logbf",
+        "best_train_rms_hz",
+        "best_test_rms_hz",
+        "signal_weight",
+        "best_norad"
+      ],
+      "packed_file": "per-scan-score-maps.npz",
+      "packed_file_digest": "sha256:a06dc23ab1c7518d376884c86e6fa69aa32895ff4461b444ecd4a23de8ee537b"
+    }
+  },
+  "schema": "five-block-score-map-repacking-v1"
+}
