@@ -15,6 +15,7 @@ from pathlib import Path
 from sqlalchemy import Engine
 
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
+from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
 from leo.sky.sites import resolve_preset
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
@@ -25,6 +26,19 @@ _LEASE = timedelta(minutes=20)
 _SLICE_SECONDS = 560
 _TRACKING_SITE = "spinnaker-sausalito"
 _TRACKING_GROUP_LIMIT = 4
+
+
+def _position_methods_complete(
+    bulk_root: Path, session_id: str, *, expected_input_manifest_sha256: str
+) -> bool:
+    try:
+        return position_methods_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=expected_input_manifest_sha256,
+        )
+    except (OSError, ValueError):
+        return False
 
 
 def _catalog() -> CatalogRepository:
@@ -49,6 +63,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
         {
             "analysis_id": "scanner-shared-tracking-v14",
             "position": "scanner-conditional-position-v1",
+            "additional_position_methods": "scanner-position-methods-v1",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -104,7 +119,13 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
                 continue
             if status.metrics_manifest_sha256 is None:
                 raise ValueError("figures-ready adaptive analysis lacks metrics authority")
-            if tracking.analysis_status(session_id).state == "complete":
+            if tracking.analysis_status(
+                session_id
+            ).state == "complete" and _position_methods_complete(
+                bulk_root,
+                session_id,
+                expected_input_manifest_sha256=capture.manifest_sha256,
+            ):
                 continue
             if catalog.enqueue_adaptive_tracking_job(
                 session_id=session_id,
@@ -154,7 +175,13 @@ def enqueue_tracking_backfill(
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
                 continue
-            if tracking.analysis_status(session_id).state == "complete":
+            if tracking.analysis_status(
+                session_id
+            ).state == "complete" and _position_methods_complete(
+                bulk_root,
+                session_id,
+                expected_input_manifest_sha256=capture.manifest_sha256,
+            ):
                 continue
             if catalog.enqueue_adaptive_tracking_job(
                 session_id=session_id,
@@ -237,7 +264,11 @@ def _enqueue_tracking_after_analysis(
         status = presentation.status_for_capture(capture, probe_stride_ms=120)
         if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
             raise ValueError("completed adaptive analysis lacks sealed overview authority")
-        if tracking.analysis_status(session_id).state == "complete":
+        if tracking.analysis_status(session_id).state == "complete" and _position_methods_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=capture.manifest_sha256,
+        ):
             return False
         return catalog.enqueue_adaptive_tracking_job(
             session_id=session_id,
@@ -270,7 +301,11 @@ def run_once(
         tracking_status = ScannerTrackingStore(bulk_root, read_only=True).analysis_status(
             lease.session_id
         )
-        if tracking_status.state == "complete":
+        if tracking_status.state == "complete" and _position_methods_complete(
+            bulk_root,
+            lease.session_id,
+            expected_input_manifest_sha256=lease.input_manifest_digest,
+        ):
             catalog.complete_job(
                 job_id=lease.job_id,
                 worker_id=worker_id,
@@ -297,7 +332,20 @@ def run_once(
         and payload.get("state") == "metrics_complete"
         and payload.get("overview_state") == "ready"
         and payload.get("relative_phase_state") == "complete"
-    ) or (lease.job_kind == "adaptive_tracking" and payload.get("state") == "complete"):
+    ) or (
+        lease.job_kind == "adaptive_tracking"
+        and payload.get("state") == "complete"
+        and payload.get("position_methods_state") == "complete"
+        and ScannerTrackingStore(bulk_root, read_only=True)
+        .analysis_status(lease.session_id)
+        .state
+        == "complete"
+        and _position_methods_complete(
+            bulk_root,
+            lease.session_id,
+            expected_input_manifest_sha256=lease.input_manifest_digest,
+        )
+    ):
         if lease.job_kind == "adaptive_scan":
             _enqueue_tracking_after_analysis(
                 bulk_root=bulk_root,

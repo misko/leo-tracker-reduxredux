@@ -29,6 +29,7 @@ def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
     assert payloads[0]["association_gates"] == "nominal-catalogue-only-v1"
     assert payloads[0]["analysis_id"] == "scanner-shared-tracking-v14"
     assert payloads[0]["position"] == "scanner-conditional-position-v1"
+    assert payloads[0]["additional_position_methods"] == "scanner-position-methods-v1"
 
 
 def test_completed_old_analysis_enqueues_tracking_without_live_window_cutoff(
@@ -192,19 +193,25 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
 
     command: list[str] = []
     monkeypatch.setattr(subject, "_catalog", Catalog)
+    states = iter(("pending", "complete"))
     monkeypatch.setattr(
         subject,
         "ScannerTrackingStore",
         lambda *_args, **_kwargs: SimpleNamespace(
-            analysis_status=lambda _session_id: SimpleNamespace(state="pending")
+            analysis_status=lambda _session_id: SimpleNamespace(state=next(states))
         ),
     )
+    monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: True)
     monkeypatch.setattr(
         subject.subprocess,
         "run",
         lambda args, **kwargs: (
             command.extend(args)
-            or SimpleNamespace(returncode=0, stdout='{"state":"complete"}', stderr="")
+            or SimpleNamespace(
+                returncode=0,
+                stdout='{"state":"complete","position_methods_state":"complete"}',
+                stderr="",
+            )
         ),
     )
 
@@ -215,10 +222,57 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "complete"}]
 
 
+def test_run_once_does_not_complete_tracking_from_stdout_without_persisted_sidecar(
+    monkeypatch, tmp_path
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class Catalog:
+        def claim_adaptive_job(self, **kwargs):
+            return replace(_lease(), job_kind="adaptive_tracking", resource_class="heavy")
+
+        def complete_job(self, **kwargs):
+            calls.append(("complete", kwargs))
+
+        def yield_adaptive_analysis_job(self, **kwargs):
+            calls.append(("yield", kwargs))
+
+    monkeypatch.setattr(subject, "_catalog", Catalog)
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            analysis_status=lambda _session_id: SimpleNamespace(state="complete")
+        ),
+    )
+    checks = iter((False, False))
+    monkeypatch.setattr(
+        subject, "position_methods_complete", lambda *_, **__: next(checks)
+    )
+    monkeypatch.setattr(
+        subject.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stdout='{"state":"complete","position_methods_state":"complete"}',
+            stderr="",
+        ),
+    )
+
+    assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
+    assert calls == [("yield", {"job_id": 7, "worker_id": "worker-1"})]
+
+
 def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
     monkeypatch, tmp_path
 ) -> None:
     calls: list[dict[str, object]] = []
+    observed = []
+    monkeypatch.setattr(
+        subject,
+        "position_methods_complete",
+        lambda *_, **kwargs: observed.append(kwargs) or True,
+    )
 
     class Catalog:
         def claim_adaptive_job(self, **kwargs):
@@ -245,6 +299,9 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
 
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1")
     assert calls == [{"job_id": 7, "worker_id": "worker-1", "outcome": "already_complete"}]
+    assert observed == [
+        {"expected_input_manifest_sha256": "sha256:" + "1" * 64}
+    ]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:
