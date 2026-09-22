@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from importlib.resources import files
 from pathlib import Path
 from typing import Literal, cast
 
@@ -62,9 +63,7 @@ SERIAL = "104000bac4950008230026001b440a003a"
 URI = "ip:192.168.1.17"
 DUAL_SERIAL = "10400056f695001322002d0010ad1719f2"
 DUAL_URI = "ip:192.168.1.21"
-DUAL_GEOMETRY_PATH = (
-    Path(__file__).resolve().parents[3] / "deploy/station/gauss-r21-lt3d-001a-20260920-v1.json"
-)
+DUAL_GEOMETRY_RESOURCE = "gauss-r21-lt3d-001a-20260920-v1.json"
 
 
 class UnsupportedFirmwareArchiveError(ValueError):
@@ -98,7 +97,9 @@ def _is_dual(document: dict) -> bool:
 
 
 def _dual_geometry_binding() -> AdaptiveReceiverGeometryBindingV1:
-    geometry = StationReceiverGeometryV1.model_validate_json(DUAL_GEOMETRY_PATH.read_bytes())
+    geometry = StationReceiverGeometryV1.model_validate_json(
+        files("leo.station").joinpath(DUAL_GEOMETRY_RESOURCE).read_bytes()
+    )
     return AdaptiveReceiverGeometryBindingV1.create(
         geometry,
         radio_id="radio_pluto_19f2",

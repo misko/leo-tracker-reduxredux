@@ -192,6 +192,13 @@ def test_dual_firmware_receipt_preserves_both_receivers(rate, receipt_type) -> N
     assert receipt.valid_sample_count == rate * 120 // 1000
 
 
+def test_dual_geometry_is_an_installed_package_resource() -> None:
+    binding = importer._dual_geometry_binding()
+
+    assert binding.fixture.fixture_part_id == "LT3D-001A"
+    assert binding.radio.radio_serial == importer.DUAL_SERIAL
+
+
 def test_dual_firmware_receipt_refuses_unrepresented_sparse_iq() -> None:
     with pytest.raises(importer.UnsupportedFirmwareArchiveError, match="sparse dual"):
         importer._receipt(dual_document(2_500_000, complete=False), "sha256:" + "b" * 64)
