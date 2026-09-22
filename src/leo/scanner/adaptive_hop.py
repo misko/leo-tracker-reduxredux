@@ -520,7 +520,7 @@ class AdaptiveHopReceiptV4(AdaptiveHopReceiptV2):
                     event.valid_start_counter + self.plan.geometry.valid_visit_samples
                 ),
             )
-            for event in self.events
+            for event in self.events[: self.complete_visit_count]
         )
 
 

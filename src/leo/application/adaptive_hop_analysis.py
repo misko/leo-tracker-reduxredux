@@ -16,6 +16,8 @@ from leo.scanner.adaptive_hop_analysis import (
     DualRx10mAdaptiveHopAnalysisConfigurationV2,
     DualRx10mAdaptiveHopAnalysisSourceV3,
     EdgeAdaptiveHopAnalysisSourceV2,
+    Feature103AnalysisConfigurationV3,
+    Feature103AnalysisSourceV4,
     analyze_adaptive_hop_visit,
     analyze_adaptive_hop_visit_batch,
 )
@@ -25,6 +27,7 @@ from leo.scanner.adaptive_hop_products import (
     AdaptiveHopVisitReferenceV1,
     DualRx10mAdaptiveAnalysisBindingV5,
     EdgeAdaptiveAnalysisBindingV4,
+    Feature103AnalysisBindingV6,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveAnalysisConfigurationV2,
@@ -127,7 +130,9 @@ class AdaptiveHopAnalysisService:
                 raise ValueError("adaptive analysis input changed requested identity")
             wide = isinstance(source, HostAdaptiveAnalysisSourceV3)
             configuration_model: type[AdaptiveHopAnalysisConfigurationV1] = (
-                HostAdaptiveAnalysisConfigurationV3
+                Feature103AnalysisConfigurationV3
+                if isinstance(source, Feature103AnalysisSourceV4)
+                else HostAdaptiveAnalysisConfigurationV3
                 if wide
                 else HostAdaptiveAnalysisConfigurationV2
                 if self._host_adaptive
@@ -141,7 +146,9 @@ class AdaptiveHopAnalysisService:
                 probe_stride_ms=probe_stride_ms,
             )
             binding_model: type[AdaptiveHopAnalysisBindingV1] = (
-                HostAdaptiveAnalysisBindingV3
+                Feature103AnalysisBindingV6
+                if isinstance(source, Feature103AnalysisSourceV4)
+                else HostAdaptiveAnalysisBindingV3
                 if wide
                 else HostAdaptiveAnalysisBindingV2
                 if self._host_adaptive

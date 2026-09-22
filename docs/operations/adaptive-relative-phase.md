@@ -74,3 +74,11 @@ physical common-band filter instead of retaining that report's fixed band edges.
 These statistics are inter-method agreement, not errors against geometric truth.
 No RF was collected for this verification. Known-template tests cover upper/lower
 edges at 2.5 and 10 MS/s; real-data verification above is at 2.5 MS/s.
+
+The feature-103 capture format is admitted through new V6 analysis/history
+products and a V5 mixed history page. This preserves the original contracts,
+native 2.5/10 MS/s rates and zero-gap consecutive visits. Cancelled receipts
+expose only their complete retained visits. Previously these captures reached
+the legacy rate validator and made the entire adaptive history request fail
+with 409. The regression exercises source reading, checkpoint/resume, overview
+and phase PNG publication, and HTTP retrieval for a zero-gap 10 MS/s fixture.

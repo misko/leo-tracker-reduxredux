@@ -8,6 +8,18 @@ const respond = (value: unknown, status = 200) => ({ ok: status === 200, status,
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive actual-visit presentation", () => {
+  it("admits new dual RX history and preserves zero-gap visit timing", async () => {
+    const detail = adaptiveDetailFixture("feature103-test", 3);
+    const capture = { ...detail.capture, schema_version: 6, analysis_state: "separate_product", radio_serial: "test", selected_edge: "lower", allowed_target_mask: 15 };
+    const value = { ...detail, schema_version: 6, capture,
+      visits: detail.visits.map(v => ({ ...v, proposed_target_index: v.target_index, invalid_start_seconds: v.valid_start_seconds })) };
+    capture.mode = "adaptive";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
+    await expect(getAdaptiveSession("feature103-test")).resolves.toEqual(value);
+    const page = { schema_version: 5, kind: "adaptive_hop_history_page", items: [capture], cursor: 0, limit: 5, total: 1, next_cursor: null };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(page)));
+    await expect(getAdaptiveSessions(0)).resolves.toEqual(page);
+  });
   it.each([15000000, 20000000] as const)("validates and shows RX0 at %s S/s", async rate => {
     const detail = multirateAdaptiveDetailFixture(rate);
     expect(detail.host_decisions![0].schema_version).toBe(2);

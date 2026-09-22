@@ -24,7 +24,7 @@ const digest = (value: unknown): value is string => typeof value === "string" &&
 const count = (value: unknown, maximum: number): value is number => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= maximum;
 
 export async function getAdaptivePhase(capture: AdaptiveCapture, signal?: AbortSignal, probeStrideMs = 120): Promise<AdaptivePhaseStatus | null> {
-  const routeVersion = capture.schema_version === 4 ? 3 : capture.schema_version;
+  const routeVersion = capture.schema_version >= 4 ? 3 : capture.schema_version;
   const response = await fetch(`/api/v${routeVersion}/scanner/adaptive-sessions/${encodeURIComponent(capture.session_id)}/analysis/dual-rx-phase?probe_stride_ms=${probeStrideMs}`, { signal, cache: "no-store" });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Adaptive phase request failed (${response.status})`);

@@ -163,13 +163,17 @@ from leo.scanner.adaptive_hop_history import (
     AdaptiveHopHistoryPageV1,
     AdaptiveHopPresentationReader,
     AdaptiveHopSessionDetailV1,
+    DualRx10mAdaptiveSessionDetailV5,
     EdgeAdaptiveSessionDetailV4,
+    Feature103SessionDetailV6,
 )
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisPresentationReader,
     AdaptiveHopAnalysisStatusV1,
     AdaptiveOverviewArtifact,
+    DualRx10mAdaptiveAnalysisStatusV5,
     EdgeAdaptiveAnalysisStatusV4,
+    Feature103AnalysisStatusV6,
 )
 from leo.scanner.adaptive_relative_phase import RelativePhaseStatusV1
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
@@ -177,6 +181,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV2,
     AdaptiveHistoryPageV3,
     AdaptiveHistoryPageV4,
+    AdaptiveHistoryPageV5,
     AdaptiveHistoryReaderV2,
     HostAdaptiveSessionDetailV2,
     HostAdaptiveSessionDetailV3,
@@ -456,12 +461,18 @@ def create_app(
     @v3_router.api_route(
         "/scanner/adaptive-sessions",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3 | AdaptiveHistoryPageV4,
+        response_model=AdaptiveHistoryPageV2
+        | AdaptiveHistoryPageV3
+        | AdaptiveHistoryPageV4
+        | AdaptiveHistoryPageV5,
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveHistoryPageV2 | AdaptiveHistoryPageV3 | AdaptiveHistoryPageV4,
+        response_model=AdaptiveHistoryPageV2
+        | AdaptiveHistoryPageV3
+        | AdaptiveHistoryPageV4
+        | AdaptiveHistoryPageV5,
     )
     def adaptive_history_v2(
         cursor: Annotated[int, Query(ge=0)] = 0,
@@ -484,6 +495,8 @@ def create_app(
             | HostAdaptiveSessionDetailV2
             | HostAdaptiveSessionDetailV3
             | EdgeAdaptiveSessionDetailV4
+            | DualRx10mAdaptiveSessionDetailV5
+            | Feature103SessionDetailV6
         ),
     )
     @v2_router.api_route(
@@ -494,6 +507,8 @@ def create_app(
             | HostAdaptiveSessionDetailV2
             | HostAdaptiveSessionDetailV3
             | EdgeAdaptiveSessionDetailV4
+            | DualRx10mAdaptiveSessionDetailV5
+            | Feature103SessionDetailV6
         ),
     )
     def adaptive_detail_v2(
@@ -519,6 +534,8 @@ def create_app(
             | HostAdaptiveAnalysisStatusV2
             | HostAdaptiveAnalysisStatusV3
             | EdgeAdaptiveAnalysisStatusV4
+            | DualRx10mAdaptiveAnalysisStatusV5
+            | Feature103AnalysisStatusV6
         ),
     )
     @v2_router.api_route(
@@ -529,6 +546,8 @@ def create_app(
             | HostAdaptiveAnalysisStatusV2
             | HostAdaptiveAnalysisStatusV3
             | EdgeAdaptiveAnalysisStatusV4
+            | DualRx10mAdaptiveAnalysisStatusV5
+            | Feature103AnalysisStatusV6
         ),
     )
     def adaptive_analysis_v2(

@@ -50,7 +50,13 @@ export interface EdgeAdaptiveCaptureV4 extends Omit<LegacyAdaptiveCapture, "sche
   radio_serial: string; selected_edge: "lower" | "upper"; allowed_target_mask: 15 | 240;
 }
 export type HostAdaptiveCapture = HostAdaptiveCaptureV2 | HostAdaptiveCaptureV3;
-export type AdaptiveCapture = LegacyAdaptiveCapture | HostAdaptiveCapture | EdgeAdaptiveCaptureV4;
+export interface DualRx10mCaptureV5 extends Omit<EdgeAdaptiveCaptureV4, "schema_version" | "sample_rate_hz" | "bandwidth_hz"> {
+  schema_version: 5; sample_rate_hz: 10000000; bandwidth_hz: 10000000;
+}
+export interface Feature103CaptureV6 extends Omit<EdgeAdaptiveCaptureV4, "schema_version" | "sample_rate_hz" | "bandwidth_hz"> {
+  schema_version: 6; sample_rate_hz: 2500000 | 5000000 | 10000000; bandwidth_hz: 2500000 | 5000000 | 10000000;
+}
+export type AdaptiveCapture = LegacyAdaptiveCapture | HostAdaptiveCapture | EdgeAdaptiveCaptureV4 | DualRx10mCaptureV5 | Feature103CaptureV6;
 export interface HostDecisionNumericsV1 {
   schema_version: 1; outcome: "unknown" | "detected" | "not_detected";
   screen_mask: 63; confirmation_mask: number; screen_scores: number[];
@@ -82,13 +88,13 @@ export interface AdaptiveVisit {
 }
 
 export interface AdaptivePage {
-  schema_version: 1 | 2 | 3 | 4; kind: "adaptive_hop_history_page";
+  schema_version: 1 | 2 | 3 | 4 | 5; kind: "adaptive_hop_history_page";
   cursor: number; limit: number; total: number; next_cursor: number | null;
   items: AdaptiveCapture[];
 }
 
 export interface AdaptiveDetail {
-  schema_version: 1 | 2 | 3 | 4; kind: "adaptive_hop_session_detail";
+  schema_version: 1 | 2 | 3 | 4 | 5 | 6; kind: "adaptive_hop_session_detail";
   capture: AdaptiveCapture; source_origin_counter: string | null; visits: AdaptiveVisit[];
   host_decisions?: HostDecisionView[];
 }
@@ -106,14 +112,14 @@ function seconds(value: unknown): value is number {
 function optionalSeconds(value: unknown): boolean { return value === null || seconds(value); }
 
 function validateCapture(c: AdaptiveCapture): void {
-  if (!c || c.kind !== "adaptive_hop_history_item" || ![1, 2, 3, 4].includes(c.schema_version)
+  if (!c || c.kind !== "adaptive_hop_history_item" || ![1, 2, 3, 4, 5, 6].includes(c.schema_version)
       || typeof c.session_id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(c.session_id)
       || !/^sha256:[0-9a-f]{64}$/.test(c.input_manifest_sha256) || !counter(c.policy_generation)
       || !["adaptive", "shadow"].includes(c.mode) || typeof c.radio_id !== "string"
       || ![c.recorded_at, c.finalized_at].every(v => typeof v === "string" && Number.isFinite(Date.parse(v)))
       || (c.captured_at !== null && (typeof c.captured_at !== "string" || !Number.isFinite(Date.parse(c.captured_at))))
       || c.nominal_duration_seconds !== 300 || c.valid_visit_ms !== 120
-      || !(c.schema_version === 3 ? [15000000, 20000000].includes(c.sample_rate_hz) : c.schema_version === 2 ? c.sample_rate_hz === 10000000 : c.schema_version === 4 ? c.sample_rate_hz === 2500000 : [2500000, 5000000].includes(c.sample_rate_hz)) || c.bandwidth_hz !== c.sample_rate_hz
+      || !(c.schema_version === 6 ? [2500000, 5000000, 10000000].includes(c.sample_rate_hz) : c.schema_version === 5 ? c.sample_rate_hz === 10000000 : c.schema_version === 3 ? [15000000, 20000000].includes(c.sample_rate_hz) : c.schema_version === 2 ? c.sample_rate_hz === 10000000 : c.schema_version === 4 ? c.sample_rate_hz === 2500000 : [2500000, 5000000].includes(c.sample_rate_hz)) || c.bandwidth_hz !== c.sample_rate_hz
       || !integer(c.started_visits, 2500) || !integer(c.retained_visits, c.started_visits)
       || !integer(c.fallback_choices, c.started_visits)
       || !optionalSeconds(c.source_span_seconds) || !optionalSeconds(c.utc_bracket_width_ms)
@@ -127,7 +133,7 @@ function validateCapture(c: AdaptiveCapture): void {
       || c.analysis_state !== (c.schema_version !== 1 ? "separate_product" : "not_integrated") || !Array.isArray(c.target_coverage) || c.target_coverage.length !== 8) {
     throw new Error("Adaptive capture evidence is invalid");
   }
-  if (c.schema_version === 4) {
+  if (c.schema_version === 4 || c.schema_version === 5 || c.schema_version === 6) {
     const expectedMask = c.selected_edge === "lower" ? 15 : c.selected_edge === "upper" ? 240 : 0;
     const excluded = c.selected_edge === "lower" ? c.target_coverage.slice(4) : c.target_coverage.slice(0, 4);
     if (!c.radio_serial || c.allowed_target_mask !== expectedMask || excluded.some(row => row.retained_visits !== 0)) {
@@ -173,7 +179,7 @@ export async function getAdaptiveSessions(cursor: number, signal?: AbortSignal):
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Adaptive history request failed (${response.status})`);
   const page = await response.json() as AdaptivePage;
-  if (!page || ![1, 2, 3, 4].includes(page.schema_version) || page.kind !== "adaptive_hop_history_page"
+  if (!page || ![1, 2, 3, 4, 5].includes(page.schema_version) || page.kind !== "adaptive_hop_history_page"
       || page.cursor !== cursor || page.limit !== 5 || !integer(page.total)
       || !Array.isArray(page.items) || page.items.length > page.limit
       || (page.next_cursor !== null && page.next_cursor !== cursor + page.limit)) {
@@ -189,7 +195,7 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
   if (response.status === 404) response = await fetch(`/api/v1/scanner/adaptive-sessions/${encodeURIComponent(sessionId)}`, { signal });
   if (!response.ok) throw new Error(`Adaptive detail request failed (${response.status})`);
   const detail = await response.json() as AdaptiveDetail;
-  if (!detail || ![1, 2, 3, 4].includes(detail.schema_version) || detail.kind !== "adaptive_hop_session_detail") {
+  if (!detail || ![1, 2, 3, 4, 5, 6].includes(detail.schema_version) || detail.kind !== "adaptive_hop_session_detail") {
     throw new Error("Adaptive detail response is invalid");
   }
   validateCapture(detail.capture);
@@ -242,7 +248,7 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
         || !integer(v.consecutive_misses, 3) || !seconds(v.cooldown_remaining_seconds)
         || !["warmup", "weighted", "exploration", "none_active", "fault_fallback"].includes(v.reason)
         || (c.mode === "adaptive" && v.target_index !== v.proposed_target_index)
-        || (c.schema_version === 4 && ((c.allowed_target_mask & (1 << v.target_index)) === 0
+        || ((c.schema_version === 4 || c.schema_version === 5 || c.schema_version === 6) && ((c.allowed_target_mask & (1 << v.target_index)) === 0
           || (c.allowed_target_mask & (1 << v.proposed_target_index)) === 0
           || ((v.active_mask | v.quiet_mask) & ~c.allowed_target_mask) !== 0))
         || (c.mode === "shadow" && v.target_index !== i % 8)) {

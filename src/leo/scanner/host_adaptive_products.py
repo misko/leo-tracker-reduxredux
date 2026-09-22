@@ -4,13 +4,24 @@ from typing import Annotated, ClassVar, Literal
 
 from pydantic import Field
 
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV1, AdaptiveHopReceiptV2
-from leo.scanner.adaptive_hop_analysis import AdaptiveHopAnalysisConfigurationV1
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopReceiptV1,
+    AdaptiveHopReceiptV2,
+    AdaptiveHopReceiptV3,
+    AdaptiveHopReceiptV4,
+)
+from leo.scanner.adaptive_hop_analysis import (
+    AdaptiveHopAnalysisConfigurationV1,
+    DualRx10mAdaptiveHopAnalysisConfigurationV2,
+    Feature103AnalysisConfigurationV3,
+)
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
     AdaptiveHopMetricsManifestV1,
     AdaptiveHopVisitReferenceV1,
+    DualRx10mAdaptiveAnalysisBindingV5,
     EdgeAdaptiveAnalysisBindingV4,
+    Feature103AnalysisBindingV6,
 )
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
@@ -71,6 +82,27 @@ def bind_actual_visit_analysis(
     receipt: AdaptiveHopReceiptV1, *, input_manifest_sha256: str, probe_stride_ms: int = 10
 ) -> AdaptiveHopAnalysisBindingV1:
     """Resolve the exact persisted major for the supplied native recording."""
+    if isinstance(receipt, (AdaptiveHopReceiptV3, AdaptiveHopReceiptV4)):
+        config: type[AdaptiveHopAnalysisConfigurationV1] = (
+            Feature103AnalysisConfigurationV3
+            if isinstance(receipt, AdaptiveHopReceiptV4)
+            else DualRx10mAdaptiveHopAnalysisConfigurationV2
+        )
+        model: type[AdaptiveHopAnalysisBindingV1] = (
+            Feature103AnalysisBindingV6
+            if isinstance(receipt, AdaptiveHopReceiptV4)
+            else DualRx10mAdaptiveAnalysisBindingV5
+        )
+        return model(
+            receipt=receipt,
+            input_manifest_sha256=input_manifest_sha256,
+            configuration=config.model_validate(
+                dict(
+                    sample_rate_hz=receipt.plan.geometry.sample_rate_hz,
+                    probe_stride_ms=probe_stride_ms,
+                )
+            ),
+        )
     wide = isinstance(receipt, HostAdaptiveHopReceiptV3)
     host = isinstance(receipt, HostAdaptiveHopReceiptV2)
     edge = isinstance(receipt, AdaptiveHopReceiptV2)

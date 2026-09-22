@@ -27,6 +27,7 @@ from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopVisitAnalysisV1,
     DualRx10mAdaptiveHopVisitAnalysisV2,
+    Feature103VisitAnalysisV3,
 )
 from leo.scanner.adaptive_hop_presentation import (
     MAX_OVERVIEW_PNG_BYTES,
@@ -38,6 +39,8 @@ from leo.scanner.adaptive_hop_presentation import (
     DualRx10mAdaptiveOverviewManifestV5,
     EdgeAdaptiveAnalysisStatusV4,
     EdgeAdaptiveOverviewManifestV4,
+    Feature103AnalysisStatusV6,
+    Feature103OverviewManifestV6,
     RenderedAdaptiveOverview,
 )
 from leo.scanner.adaptive_hop_products import (
@@ -50,6 +53,9 @@ from leo.scanner.adaptive_hop_products import (
     EdgeAdaptiveAnalysisBindingV4,
     EdgeAdaptiveMetricsManifestV4,
     EdgeAdaptiveVisitReferenceV4,
+    Feature103AnalysisBindingV6,
+    Feature103MetricsManifestV6,
+    Feature103VisitReferenceV6,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveVisitAnalysisV2,
@@ -76,7 +82,7 @@ _NAMESPACE = "scanner-adaptive-analysis"
 _MAX_BINDING = 32 * 1024 * 1024
 _MAX_VISIT = 2 * 1024 * 1024
 _MAX_MANIFEST = 4 * 1024 * 1024
-_VISIT = re.compile(r"visit-([0-9]{6})\.v[1234]\.json\.zst")
+_VISIT = re.compile(r"visit-([0-9]{6})\.v[123456]\.json\.zst")
 
 
 def _read(directory: PinnedLocalRoot, name: str, maximum: int) -> bytes:
@@ -164,7 +170,9 @@ class AdaptiveHopAnalysisStore:
         self, binding: AdaptiveHopAnalysisBindingV1, *, writable: bool = False
     ) -> Iterator[AdaptiveHopAnalysisJob]:
         binding_model = (
-            HostAdaptiveAnalysisBindingV3
+            Feature103AnalysisBindingV6
+            if isinstance(binding, Feature103AnalysisBindingV6)
+            else HostAdaptiveAnalysisBindingV3
             if isinstance(binding, HostAdaptiveAnalysisBindingV3)
             else HostAdaptiveAnalysisBindingV2
             if isinstance(binding, HostAdaptiveAnalysisBindingV2)
@@ -243,8 +251,11 @@ class AdaptiveHopAnalysisJob:
         host = isinstance(binding, HostAdaptiveAnalysisBindingV2)
         edge = isinstance(binding, EdgeAdaptiveAnalysisBindingV4)
         dual_10m = isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5)
+        feature103 = isinstance(binding, Feature103AnalysisBindingV6)
         self._visit_model: type[AdaptiveHopVisitAnalysisV1] = (
-            HostAdaptiveVisitAnalysisV3
+            Feature103VisitAnalysisV3
+            if feature103
+            else HostAdaptiveVisitAnalysisV3
             if wide
             else HostAdaptiveVisitAnalysisV2
             if host
@@ -253,7 +264,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopVisitAnalysisV1
         )
         self._reference_model: type[AdaptiveHopVisitReferenceV1] = (
-            HostAdaptiveVisitReferenceV3
+            Feature103VisitReferenceV6
+            if feature103
+            else HostAdaptiveVisitReferenceV3
             if wide
             else HostAdaptiveVisitReferenceV2
             if host
@@ -264,7 +277,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopVisitReferenceV1
         )
         self._metrics_model: type[AdaptiveHopMetricsManifestV1] = (
-            HostAdaptiveMetricsManifestV3
+            Feature103MetricsManifestV6
+            if feature103
+            else HostAdaptiveMetricsManifestV3
             if wide
             else HostAdaptiveMetricsManifestV2
             if host
@@ -275,7 +290,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopMetricsManifestV1
         )
         self._overview_model: type[AdaptiveHopOverviewManifestV1] = (
-            HostAdaptiveOverviewManifestV3
+            Feature103OverviewManifestV6
+            if feature103
+            else HostAdaptiveOverviewManifestV3
             if wide
             else HostAdaptiveOverviewManifestV2
             if host
@@ -286,7 +303,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopOverviewManifestV1
         )
         self._status_model: type[AdaptiveHopAnalysisStatusV1] = (
-            HostAdaptiveAnalysisStatusV3
+            Feature103AnalysisStatusV6
+            if feature103
+            else HostAdaptiveAnalysisStatusV3
             if wide
             else HostAdaptiveAnalysisStatusV2
             if host
