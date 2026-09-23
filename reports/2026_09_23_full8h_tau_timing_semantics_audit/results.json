@@ -1,0 +1,327 @@
+{
+  "bindings": {
+    "installed_ppu_host_adapter": "sha256:c36dd52366b8f5fadd1a4541030f300b3c3033a49d2cd452de2889c3f8b49eab",
+    "installed_ppu_metadata_capture": "sha256:7ae798faab89c6b85977f38d200d88be0117d32e9fcf988e3fde52b78ae90471",
+    "installed_ppu_persistent_backend": "sha256:30273d4fe4ffa33583679d38ba0861da9292b078598137894e16330f49ee5662",
+    "qualification_results": "sha256:7fc5b9c534046a5e24cbd650782c09cd638a23f231935c2cc59e1ce3c93f762a",
+    "shared_epoch_inference": "sha256:203a025e4e0b4945c78476f716d7f1b9c08a071f1d658ea4012b507ff2b80263",
+    "src/leo/radio/pluto_host_adaptive.py": "sha256:7eef79462cd7549af1e66707cdf4b0e754c2db1629132a9de18fd114cb594c3f",
+    "src/leo/scanner/adaptive_hop_application.py": "sha256:8fe267812029593f383dc0838372b890bc7d76e31a1360967ebbb2dee9f4719c",
+    "src/leo/scanner/persistent_hop.py": "sha256:2fd1cc73e273e8fdb79c79672d84ce70dc62304ce81906084516429476fb7b98",
+    "src/leo/scanner/persistent_hop_ports.py": "sha256:e5c16d6c6793b8f99806ef78417096bc1dc4f50256380981c65862eb42a19432"
+  },
+  "installed_ppu": {
+    "current_semantics": {
+      "anchor_measurement": "IioMetadataCaptureSession.open captures eight host-monotonic intervals around ADC_SAMPLE_COUNTER_LOW_REG register reads after the MetadataBuffer constructor returns, spaced 5 ms apart, then captures a host realtime mapping.",
+      "first_sample_mapping": "first_sample_clock_bracket extends those low-32 counter anchors near the ABI header first_sample_counter, fits host monotonic time versus counter under a rate tolerance, adds fit plus realtime-map uncertainty, and maps interval endpoints to realtime.",
+      "host_adapter": "iio_host_adaptive_hop.py only subclasses IioPersistentHopBackend; it contains no independent start_clock_bracket implementation.",
+      "not_a_receive_timestamp": "The current path does not use an IQ receive timestamp or a direct first-buffer-begin timestamp. It is an inferred first-counter time from post-OPEN FPGA register counter reads and the sequence-zero metadata header counter.",
+      "open_then_refine": "IioPersistentHopBackend first stores capture.open_clock_bracket after metadata OPEN, then on ABI-3 block sequence zero replaces it with capture.first_sample_clock_bracket(evidence.block_first_counter, sample_rate_hz)."
+    },
+    "distribution": "pluto-plus-utils",
+    "historical_limit": "The qualification metadata identifies stream_generation and timing algorithm but contains no pluto-plus-utils version, installed-file digest, wheel RECORD binding, or capture-time source provenance. Therefore the current installed implementation cannot be asserted as the exact historical capture implementation.",
+    "inspected_files": {
+      "installed_ppu_host_adapter": ".venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_host_adaptive_hop.py",
+      "installed_ppu_metadata_capture": ".venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_metadata.py",
+      "installed_ppu_persistent_backend": ".venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_persistent_hop.py"
+    },
+    "version": "0.1.0"
+  },
+  "membership": {
+    "inference_scan_count": 72,
+    "qualification_scan_count": 72,
+    "same_session_id_set": true
+  },
+  "schema": "full8h-tau-timing-semantics-audit/v1",
+  "scope": "only frozen Sep21 00Z 72-scan TRAIN qualification metadata and sealed shared-epoch inference",
+  "source_references": [
+    {
+      "lines": "40-47, 87-111",
+      "path": "src/leo/scanner/persistent_hop.py",
+      "purpose": "timing authority stated meaning and bracket calculation"
+    },
+    {
+      "lines": "171-175, 213-231",
+      "path": "src/leo/scanner/adaptive_hop_application.py",
+      "purpose": "capture brackets begin_session and binds terminal.first_counter"
+    },
+    {
+      "lines": "371-379, 402-431",
+      "path": "src/leo/radio/pluto_host_adaptive.py",
+      "purpose": "host-adaptive wrapper copies upstream bracket and refreshes after block zero"
+    },
+    {
+      "lines": "18-25",
+      "path": "src/leo/scanner/persistent_hop_ports.py",
+      "purpose": "upstream bracket port contract only"
+    },
+    {
+      "lines": "292, 302-333",
+      "path": ".venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_persistent_hop.py",
+      "purpose": "current backend stores broad OPEN bracket then replaces it using sequence-zero ABI header first counter"
+    },
+    {
+      "lines": "1216-1244",
+      "path": ".venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_metadata.py",
+      "purpose": "current first-counter fit and uncertainty-to-realtime interval"
+    },
+    {
+      "lines": "1246-1282, 1287-1318",
+      "path": ".venv/lib/python3.13/site-packages/pluto_plus/hardware/iio_metadata.py",
+      "purpose": "current metadata OPEN timing and post-OPEN host-bracketed FPGA register counter anchors"
+    }
+  ],
+  "source_semantics": {
+    "claim_supported_by_repository": "The timing authority computes a UTC interval from host before/after monotonic/realtime readings and stores it with receipt.terminal.first_counter; its doc states begin_session starts device sampling before return and treats the first device counter as bounded by those host readings.",
+    "current_installed_conclusion": "Current installed PPU source performs a counter-fit refinement, not merely an OPEN bracket: it maps sequence-zero header first_counter through post-OPEN host-bracketed FPGA register reads. This establishes the current code path but not the physical latency/error properties of register reads.",
+    "historical_conclusion": "No qualifying artifact binds this current PPU package/version/file hashes to the September capture. The audit therefore makes no historical source-identity claim.",
+    "host_adaptive_path": "The host-adaptive wrapper copies upstream start_clock_bracket; after first produced visit it refreshes because its comment says IIO replaces broad OPEN bracket when block zero arrives and can bind the FPGA counter.",
+    "interpretation_limit": "Fitted taus are penalized model nuisance parameters coupled to location, selected tracks, catalogue prediction, and per-track CFO. Their seconds-scale values are not a direct measurement of host timestamp error; no timing bug conclusion follows.",
+    "unproven_boundary": "This repository exposes the upstream start_clock_bracket as an interface value, but does not contain the lower-level IIO implementation that timestamps OPEN/block zero or proves its bracket bounds receipt.terminal.first_counter after driver/USB buffering. Thus metadata alone cannot establish a physical sample-epoch error bound for this adaptive-IIO generation."
+  },
+  "tau_summaries": [
+    {
+      "abs_tau_s_quantiles_10_50_90_100": [
+        0.028371530018661384,
+        0.2323856715392344,
+        0.5264175326642727,
+        0.8806843464536247
+      ],
+      "abs_tau_to_bracket_width_ratio_quantiles_50_90_100": [
+        177.2675376042722,
+        445.5572580440749,
+        742.0763563155762
+      ],
+      "active_tau_count": 70,
+      "first_scan_abs_tau_over_width": 495.4114769060182,
+      "first_scan_id": "scan-hop-85afa91453f8847b",
+      "first_scan_tau_s": -0.6293410155727912,
+      "prior": "sacramento",
+      "scale_s": 0.2,
+      "tau_s_quantiles_0_10_50_90_100": [
+        -0.8806843464536247,
+        -0.5264175326642727,
+        -0.2189325682112854,
+        0.07749262765099159,
+        0.3534887251557154
+      ]
+    },
+    {
+      "abs_tau_s_quantiles_10_50_90_100": [
+        0.3404807615677537,
+        0.7686058536155762,
+        1.351420431410643,
+        2.497998017512622
+      ],
+      "abs_tau_to_bracket_width_ratio_quantiles_50_90_100": [
+        585.3976470092812,
+        1230.8900466913153,
+        2104.8463894968436
+      ],
+      "active_tau_count": 72,
+      "first_scan_abs_tau_over_width": 1211.8182890193987,
+      "first_scan_id": "scan-hop-85afa91453f8847b",
+      "first_scan_tau_s": -1.539421245272903,
+      "prior": "sacramento",
+      "scale_s": 1.0,
+      "tau_s_quantiles_0_10_50_90_100": [
+        -2.497998017512622,
+        -1.351420431410643,
+        -0.7686058536155762,
+        -0.33945735571776486,
+        0.6518946058602886
+      ]
+    },
+    {
+      "abs_tau_s_quantiles_10_50_90_100": [
+        0.42885041577554234,
+        0.8680297116805986,
+        1.49866975217299,
+        2.7266669726622292
+      ],
+      "abs_tau_to_bracket_width_ratio_quantiles_50_90_100": [
+        663.5144273446674,
+        1397.0812193555826,
+        2297.525895750389
+      ],
+      "active_tau_count": 71,
+      "first_scan_abs_tau_over_width": 1315.3411845924559,
+      "first_scan_id": "scan-hop-85afa91453f8847b",
+      "first_scan_tau_s": -1.6709305204351805,
+      "prior": "sacramento",
+      "scale_s": 5.0,
+      "tau_s_quantiles_0_10_50_90_100": [
+        -2.7266669726622292,
+        -1.4986697521729901,
+        -0.8680297116805986,
+        -0.42795700207276616,
+        0.5960298856858708
+      ]
+    },
+    {
+      "abs_tau_s_quantiles_10_50_90_100": [
+        0.028555097745523856,
+        0.23235557122550596,
+        0.5261661281101883,
+        0.8805109015616503
+      ],
+      "abs_tau_to_bracket_width_ratio_quantiles_50_90_100": [
+        177.18394293513103,
+        445.4582951706409,
+        741.9302093402425
+      ],
+      "active_tau_count": 70,
+      "first_scan_abs_tau_over_width": 495.2421412606096,
+      "first_scan_id": "scan-hop-85afa91453f8847b",
+      "first_scan_tau_s": -0.6291259017290028,
+      "prior": "reno",
+      "scale_s": 0.2,
+      "tau_s_quantiles_0_10_50_90_100": [
+        -0.8805109015616503,
+        -0.5261661281101884,
+        -0.21915124568608818,
+        0.07769284058057224,
+        0.3535825513016099
+      ]
+    },
+    {
+      "abs_tau_s_quantiles_10_50_90_100": [
+        0.3404622868352714,
+        0.7683827311610062,
+        1.3515477675621443,
+        2.497903231879869
+      ],
+      "abs_tau_to_bracket_width_ratio_quantiles_50_90_100": [
+        585.2596429921973,
+        1230.866372938119,
+        2104.7665218606494
+      ],
+      "active_tau_count": 72,
+      "first_scan_abs_tau_over_width": 1211.6982118520125,
+      "first_scan_id": "scan-hop-85afa91453f8847b",
+      "first_scan_tau_s": -1.5392687064440855,
+      "prior": "reno",
+      "scale_s": 1.0,
+      "tau_s_quantiles_0_10_50_90_100": [
+        -2.497903231879869,
+        -1.3515477675621443,
+        -0.7683827311610062,
+        -0.3393231074027155,
+        0.652157634408592
+      ]
+    },
+    {
+      "abs_tau_s_quantiles_10_50_90_100": [
+        0.428794121668681,
+        0.8678318389250554,
+        1.4994756099184285,
+        2.726611985228521
+      ],
+      "abs_tau_to_bracket_width_ratio_quantiles_50_90_100": [
+        663.5076954720745,
+        1397.0782262641067,
+        2297.4795626066084
+      ],
+      "active_tau_count": 71,
+      "first_scan_abs_tau_over_width": 1315.2483645989216,
+      "first_scan_id": "scan-hop-85afa91453f8847b",
+      "first_scan_tau_s": -1.6708126074845941,
+      "prior": "reno",
+      "scale_s": 5.0,
+      "tau_s_quantiles_0_10_50_90_100": [
+        -2.726611985228521,
+        -1.4994756099184288,
+        -0.8678318389250554,
+        -0.42784495480597307,
+        0.5962552216884466
+      ]
+    }
+  ],
+  "timing_metadata": {
+    "algorithm": "host-bracketed-device-counter-utc-v1",
+    "all_timing_qualified": true,
+    "first_sample_bracket_width_ns_quantiles_0_10_50_90_100": [
+      838139,
+      1098859,
+      1337504,
+      1514142,
+      2344813
+    ],
+    "first_scan_bracket_width_ns": 1270340,
+    "first_scan_id": "scan-hop-85afa91453f8847b",
+    "stream_generation": [
+      "adaptive-iio-00000008304522dd",
+      "adaptive-iio-0000053f1e841b4b",
+      "adaptive-iio-000005926c6e5ebf",
+      "adaptive-iio-000008d7a5930b2a",
+      "adaptive-iio-000009b210b71aeb",
+      "adaptive-iio-00000e320677d9ca",
+      "adaptive-iio-00000e5867005fa1",
+      "adaptive-iio-00000f658cfcfc8d",
+      "adaptive-iio-00001071896f9392",
+      "adaptive-iio-000013f6d52bc31c",
+      "adaptive-iio-0000151d98ed7e56",
+      "adaptive-iio-000018494234c68b",
+      "adaptive-iio-000018c072f437a3",
+      "adaptive-iio-00001b81bb9ca723",
+      "adaptive-iio-00001e9bc6e1ba17",
+      "adaptive-iio-00001f44fa14ffb4",
+      "adaptive-iio-00001f4569177b22",
+      "adaptive-iio-000020b0252471ab",
+      "adaptive-iio-00002144f05f3cfd",
+      "adaptive-iio-000022816eaa92f2",
+      "adaptive-iio-0000238b712031ae",
+      "adaptive-iio-00002439aa2f8cb9",
+      "adaptive-iio-0000252d36264d6d",
+      "adaptive-iio-00002967a08807a0",
+      "adaptive-iio-00002ad14e942ef7",
+      "adaptive-iio-00002ddaf7836738",
+      "adaptive-iio-00002e95037d2f11",
+      "adaptive-iio-000031b6dcae5d64",
+      "adaptive-iio-0000333025189092",
+      "adaptive-iio-000034a6401cdb5d",
+      "adaptive-iio-000034e5a8d418b7",
+      "adaptive-iio-0000365c52fc6e06",
+      "adaptive-iio-000036614f97bcd1",
+      "adaptive-iio-000039c04f4179c1",
+      "adaptive-iio-00003a868d05db4a",
+      "adaptive-iio-00003bfe5fc4fac3",
+      "adaptive-iio-00003cbbfe4174a5",
+      "adaptive-iio-000042ce744c0c64",
+      "adaptive-iio-000043fdfb981aa1",
+      "adaptive-iio-0000447b812f5ebd",
+      "adaptive-iio-00004705721f608a",
+      "adaptive-iio-000047393584ebb7",
+      "adaptive-iio-00004837402707be",
+      "adaptive-iio-00004ad952b6557a",
+      "adaptive-iio-00004e8ea3caa970",
+      "adaptive-iio-0000518ba4b41e46",
+      "adaptive-iio-0000521ef65d681a",
+      "adaptive-iio-000053f9d1bde062",
+      "adaptive-iio-000057604443eecd",
+      "adaptive-iio-000059b2d99810b5",
+      "adaptive-iio-00005a2da94df03e",
+      "adaptive-iio-00005ad60df25275",
+      "adaptive-iio-00005da84dd5f71e",
+      "adaptive-iio-00005ddea9a7e3e6",
+      "adaptive-iio-0000609cd69a22be",
+      "adaptive-iio-00006119b8e5f4db",
+      "adaptive-iio-000064404693bd79",
+      "adaptive-iio-000065db72e7ea3d",
+      "adaptive-iio-000068ab04ccb3f4",
+      "adaptive-iio-0000699ab3dfd326",
+      "adaptive-iio-00006dbfc5558984",
+      "adaptive-iio-00006e4cf5645c02",
+      "adaptive-iio-0000706df4594140",
+      "adaptive-iio-0000712ed454e304",
+      "adaptive-iio-0000729ee8cfa1ad",
+      "adaptive-iio-000073e14b07d037",
+      "adaptive-iio-000075330450e831",
+      "adaptive-iio-0000766316658a61",
+      "adaptive-iio-0000766511bbc4ae",
+      "adaptive-iio-00007ad59e4377ed",
+      "adaptive-iio-00007be76175b7d3",
+      "adaptive-iio-00007f744ba9aecc"
+    ]
+  }
+}
