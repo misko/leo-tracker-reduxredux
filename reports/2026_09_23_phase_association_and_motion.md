@@ -16,7 +16,9 @@ all three rates; they do not yet isolate the geometric component of that phase.
 **Validation-policy update:** subsequent experiments use seeded random group
 holdouts as requested. The measurements below were already completed with the
 documented first-half/later-half split; they remain historical results under
-that protocol and have not been rerun or relabeled as random-holdout results.
+that protocol and have not been relabeled as random-holdout results. A separate
+[random-group replay](2026_09_23_random_phase_association.md) now evaluates the
+same frozen dwell selection with train-only fitting and explicit group controls.
 
 All five scans are 300-second pre-rotation recordings from the same radio. The
 anchor is the user-requested scan. The nearest preceding 10 and 15 MS/s recordings

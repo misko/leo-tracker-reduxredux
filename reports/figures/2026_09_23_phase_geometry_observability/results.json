@@ -1,0 +1,175 @@
+{
+  "cases": {
+    "calibrated_single_baseline_phase_plus_doppler_velocity": {
+      "matrix": [
+        [
+          0.3500481349280564,
+          -0.20002750567317512,
+          0.9151258384547762
+        ],
+        [
+          0.07019730425867113,
+          0.005601540423616495,
+          -0.02562704743804546
+        ]
+      ],
+      "parameter_names": [
+        "vx_m_s",
+        "vy_m_s",
+        "vz_m_s"
+      ],
+      "rank": 2,
+      "right_nullspace_basis": [
+        [
+          1.4988545237493782e-16,
+          0.9769348311628836,
+          0.21353766801374496
+        ]
+      ],
+      "singular_values": [
+        1.0,
+        0.07493853708669318
+      ]
+    },
+    "same_velocity_with_free_phase_rate_nuisance": {
+      "matrix": [
+        [
+          0.3500481349280564,
+          -0.20002750567317512,
+          0.9151258384547762
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "parameter_names": [
+        "vx_m_s",
+        "vy_m_s",
+        "vz_m_s"
+      ],
+      "rank": 1,
+      "right_nullspace_basis": [
+        [
+          0.20002750567317512,
+          0.9703632766931201,
+          0.13558800912897567
+        ],
+        [
+          -0.9151258384547764,
+          0.13558800912897567,
+          0.37968485823493614
+        ]
+      ],
+      "singular_values": [
+        1.0,
+        0.0
+      ]
+    },
+    "single_source_direction_with_free_electrical_phase": {
+      "matrix": [
+        [
+          19.18169760215728,
+          1.0
+        ]
+      ],
+      "parameter_names": [
+        "baseline_projected_direction_cosine",
+        "electrical_phase_rad"
+      ],
+      "rank": 1,
+      "right_nullspace_basis": [
+        [
+          -0.05206232827310231,
+          0.9986438373988915
+        ]
+      ],
+      "singular_values": [
+        19.20774642951656
+      ]
+    },
+    "two_simultaneous_sources_shared_electrical_phase": {
+      "matrix": [
+        [
+          19.18169760215728,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          19.18169760215728,
+          1.0
+        ]
+      ],
+      "parameter_names": [
+        "source_a_baseline_projected_direction_cosine",
+        "source_b_baseline_projected_direction_cosine",
+        "electrical_phase_rad"
+      ],
+      "rank": 2,
+      "right_nullspace_basis": [
+        [
+          -0.05199191427631746,
+          -0.051991914276317455,
+          0.9972931774056053
+        ]
+      ],
+      "singular_values": [
+        19.233759978241547,
+        19.18169760215728
+      ]
+    },
+    "two_source_difference_after_common_phase_cancellation": {
+      "matrix": [
+        [
+          19.18169760215728,
+          -19.18169760215728
+        ]
+      ],
+      "parameter_names": [
+        "source_a_baseline_projected_direction_cosine",
+        "source_b_baseline_projected_direction_cosine"
+      ],
+      "rank": 1,
+      "right_nullspace_basis": [
+        [
+          0.7071067811865475,
+          0.7071067811865476
+        ]
+      ],
+      "singular_values": [
+        27.127016898310302
+      ]
+    }
+  },
+  "interpretation": [
+    "The calibrated single-baseline plus Doppler case has rank two for three velocity components; it cannot recover total speed or a 3D velocity vector.",
+    "A free phase-rate nuisance absorbs the only transverse projection in this two-row toy problem, leaving the radial projection only.",
+    "A same-time two-source difference cancels only a common, frequency-matched electrical phase. It constrains a relative projected direction, not either absolute direction or range."
+  ],
+  "kind": "synthetic_phase_geometry_local_observability_v1",
+  "scope": "explicit simulated truth; no saved-IQ values or measured station calibration",
+  "truth": {
+    "baseline_m": [
+      0.08,
+      0.0,
+      0.0
+    ],
+    "geometric_phase_rad_modulo_2pi": 0.431332163209541,
+    "geometric_phase_rate_hz": 0.012838449274624048,
+    "line_of_sight_unit": [
+      0.3500481349280564,
+      -0.20002750567317512,
+      0.9151258384547762
+    ],
+    "radial_velocity_projection_m_s": -1721.7367550818549,
+    "range_m": 500000.0,
+    "relative_velocity_m_s": [
+      1500.0,
+      6200.0,
+      -1100.0
+    ],
+    "rf_hz": 11440312500.0
+  }
+}

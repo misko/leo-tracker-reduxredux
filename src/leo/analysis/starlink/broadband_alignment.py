@@ -71,6 +71,52 @@ def _robust_polynomial(time_s: np.ndarray, phase: np.ndarray, weight: np.ndarray
     return coefficients
 
 
+def _group_phase_fit(time_s, phasors, groups, degree):
+    """Fit local frequency/rate with independent intercepts across group gaps.
+
+    Only unwrap inside a supplied group. Independent group intercepts prevent
+    an assumed integer-cycle connection across missing or held-out intervals.
+    """
+    labels = np.unique(groups)
+    phase = np.empty(len(time_s))
+    for group in labels:
+        selected = groups == group
+        if np.sum(selected) < 3:
+            raise ValueError("each phase-fit group needs at least three blocks")
+        # A conservative ambiguity screen, not proof that no cycle slips exist.
+        increments = np.angle(phasors[selected][1:] * phasors[selected][:-1].conj())
+        if np.any(abs(increments) >= 0.9 * np.pi):
+            raise ValueError("ambiguous local phase increment near pi")
+        phase[selected] = np.unwrap(np.angle(phasors[selected]))
+    columns = [groups == group for group in labels] + [time_s]
+    if degree == 2:
+        columns.append(0.5 * time_s**2)
+    design = np.column_stack(columns).astype(float)
+    if np.linalg.matrix_rank(design) < design.shape[1]:
+        raise ValueError("grouped carrier fit is underdetermined")
+    weight = abs(phasors)
+    fitted_weight = weight.copy()
+    for _ in range(6):
+        root = np.sqrt(fitted_weight)
+        fitted = np.linalg.lstsq(design * root[:, None], phase * root, rcond=None)[0]
+        residual = phase - design @ fitted
+        scale = 1.4826 * np.median(abs(residual - np.median(residual))) + 1e-12
+        fitted_weight = weight * np.minimum(1, 1.5 * scale / np.maximum(abs(residual), 1e-30))
+    coefficients = np.array(
+        [
+            float(np.angle(np.mean(np.exp(1j * fitted[: len(labels)])))),
+            fitted[len(labels)],
+            fitted[-1] if degree == 2 else 0.0,
+        ]
+    )
+    covariance = np.linalg.pinv(design.T @ design) * float(
+        np.sum(residual**2) / max(len(time_s) - design.shape[1], 1)
+    )
+    frequency_variance = float(covariance[len(labels), len(labels)])
+    rate_variance = float(covariance[-1, -1]) if degree == 2 else 0.0
+    return coefficients, phase, residual, frequency_variance, rate_variance
+
+
 def _derotate(values: np.ndarray, rate: float, model: BroadbandAlignmentModel) -> np.ndarray:
     sample = np.arange(len(values), dtype=float)
     delta_s = (sample - model.reference_sample) / rate
@@ -110,8 +156,17 @@ def estimate_broadband_alignment(
     channel_smoothing_bins: int = 0,
     spectral_guard_hz: float = 0.0,
     maximum_delay_samples: int = 8,
+    training_block_indices: tuple[int, ...] | None = None,
+    training_group_ids: tuple[int, ...] | None = None,
+    heldout_block_indices: tuple[int, ...] | None = None,
+    heldout_group_ids: tuple[int, ...] | None = None,
+    random_seed: int = 3107,
 ) -> BroadbandAlignmentResult:
-    """Fit on the first time partition and validate unchanged on the second.
+    """Fit a frozen channel on training data and validate on unused blocks.
+
+    Explicit training blocks preserve physical timestamps across a random group
+    split. Their group IDs also define randomized inner model-selection folds.
+    The historical first/second partition remains available for legacy callers.
 
     Frequencies use RX0 coordinates. A bin is eligible only when both its RX0
     frequency and its physical RX1 partner ``f + relative_cfo`` lie inside the
@@ -125,7 +180,67 @@ def estimate_broadband_alignment(
     split = int(len(values) * training_fraction)
     if not block_samples <= split <= len(values) - block_samples:
         raise ValueError("training fraction leaves insufficient train or held data")
-    train = values[:split]
+    random_blocks = training_block_indices is not None
+    training_mask = None
+    selected_starts = None
+    groups = None
+    explicit_held_starts = None
+    if random_blocks:
+        indexes = np.asarray(training_block_indices)
+        group_array = np.asarray(training_group_ids)
+        count = len(values) // block_samples
+        if (
+            indexes.ndim != 1
+            or len(indexes) < 6
+            or indexes.dtype.kind not in "iu"
+            or len(np.unique(indexes)) != len(indexes)
+            or np.any(indexes < 0)
+            or np.any(indexes >= count)
+            or len(indexes) >= count
+            or group_array.shape != indexes.shape
+            or group_array.dtype.kind not in "iu"
+            or len(np.unique(group_array)) < 3
+        ):
+            raise ValueError(
+                "random training requires distinct valid blocks and at least three groups"
+            )
+        order = np.argsort(indexes)
+        selected_starts = indexes[order] * block_samples
+        groups = group_array[order]
+        for group in np.unique(groups):
+            if np.any(np.diff(indexes[order][groups == group]) != 1):
+                raise ValueError("training blocks within each group must be consecutive")
+        if heldout_block_indices is not None:
+            held_indexes = np.asarray(heldout_block_indices)
+            held_groups = np.asarray(heldout_group_ids)
+            if (
+                held_indexes.ndim != 1
+                or held_indexes.dtype.kind not in "iu"
+                or len(held_indexes) < 2
+                or len(np.unique(held_indexes)) != len(held_indexes)
+                or np.any(held_indexes < 0)
+                or np.any(held_indexes >= count)
+                or len(np.intersect1d(indexes, held_indexes))
+                or held_groups.shape != held_indexes.shape
+                or held_groups.dtype.kind not in "iu"
+                or len(np.intersect1d(groups, held_groups))
+            ):
+                raise ValueError("held blocks must be distinct, valid and disjoint from training")
+            explicit_held_starts = np.sort(held_indexes) * block_samples
+        else:
+            raise ValueError("random group fitting requires explicit held blocks and groups")
+        training_mask = np.zeros(len(values), dtype=bool)
+        for start in selected_starts:
+            training_mask[start : start + block_samples] = True
+        train = values
+    else:
+        if (
+            training_group_ids is not None
+            or heldout_block_indices is not None
+            or heldout_group_ids is not None
+        ):
+            raise ValueError("training groups and held blocks require explicit training blocks")
+        train = values[:split]
     size = 1 << math.ceil(math.log2(len(train)))
     frequencies = np.fft.fftshift(np.fft.fftfreq(size, 1 / sample_rate_hz))
     seed = 0.0 if receiver_cfo_seed_hz is None else float(receiver_cfo_seed_hz)
@@ -139,6 +254,13 @@ def estimate_broadband_alignment(
         else:
             left, right = train[-lag:, 0], train[: len(train) + lag, 1]
         candidate_product = right * np.conj(left)
+        if training_mask is not None:
+            if lag >= 0:
+                valid = training_mask[: len(train) - lag or None] & training_mask[lag:]
+            else:
+                valid = training_mask[-lag:] & training_mask[: len(train) + lag]
+            # Both receiver samples must belong to training, including lag edges.
+            candidate_product = np.where(valid, candidate_product, 0.0)
         candidate_spectrum = np.fft.fftshift(
             np.fft.fft(candidate_product * np.hanning(len(candidate_product)), size)
         )
@@ -149,7 +271,13 @@ def estimate_broadband_alignment(
     _, integer_delay, product, spectrum = best
     coarse = float(frequencies[np.flatnonzero(bounded)[np.argmax(abs(spectrum[bounded]))]])
 
-    starts = np.arange(0, len(product) - block_samples + 1, block_samples)
+    starts = (
+        np.arange(0, len(product) - block_samples + 1, block_samples)
+        if selected_starts is None
+        else selected_starts
+    )
+    if selected_starts is not None and starts[-1] + block_samples > len(product):
+        raise ValueError("training block reaches beyond lag-valid samples")
     centers = starts + (block_samples - 1) / 2
     reference = float(np.average(centers))
     block_phasor = np.asarray(
@@ -164,61 +292,112 @@ def estimate_broadband_alignment(
         ]
     )
     time_s = (centers - reference) / sample_rate_hz
-    block_phase = np.unwrap(np.angle(block_phasor))
-    coefficients = _robust_polynomial(time_s, block_phase, abs(block_phasor))
-    internal = max(3, 2 * len(time_s) // 3)
-    linear_design = np.column_stack((np.ones(internal), time_s[:internal]))
-    root = np.sqrt(abs(block_phasor[:internal]))
-    linear = np.linalg.lstsq(
-        linear_design * root[:, None], block_phase[:internal] * root, rcond=None
-    )[0]
-    quadratic_training = _robust_polynomial(
-        time_s[:internal], block_phase[:internal], abs(block_phasor[:internal])
+    block_phase = np.unwrap(np.angle(block_phasor)) if groups is None else np.angle(block_phasor)
+    coefficients = (
+        _robust_polynomial(time_s, block_phase, abs(block_phasor))
+        if groups is None
+        else _group_phase_fit(time_s, block_phasor, groups, 2)[0]
     )
-    held_time = time_s[internal:]
-    quadratic_selected = True
-    if len(held_time):
-        linear_residual = np.angle(
-            np.exp(1j * (block_phase[internal:] - linear[0] - linear[1] * held_time))
+    if groups is not None:
+        # Every selection fold consists of whole training groups, randomized
+        # once. No outer held samples enter phase unwrapping or complexity choice.
+        shuffled = np.random.default_rng(random_seed).permutation(np.unique(groups))
+        cv = {1: [], 2: []}
+        for withheld in np.array_split(shuffled, min(3, len(shuffled))):
+            held = np.isin(groups, withheld)
+            retained = ~held
+            for degree in (1, 2):
+                params = _group_phase_fit(
+                    time_s[retained], block_phasor[retained], groups[retained], degree
+                )[0]
+                for group in withheld:
+                    selected = groups == group
+                    tt = time_s[selected]
+                    zz = block_phasor[selected]
+                    # Wrapped within-group increments need no held unwrap or
+                    # fitted held phase offset. Never bridge distinct groups.
+                    residual = np.angle(
+                        zz[1:]
+                        * zz[:-1].conj()
+                        * np.exp(-1j * (params[1] * np.diff(tt) + 0.5 * params[2] * np.diff(tt**2)))
+                    )
+                    cv[degree].extend(residual)
+        quadratic_selected = np.sqrt(np.mean(np.square(cv[2]))) < 0.8 * np.sqrt(
+            np.mean(np.square(cv[1]))
         )
-        linear_error = np.sqrt(np.mean(linear_residual**2))
-        quadratic_residual = np.angle(
-            np.exp(
-                1j
-                * (
-                    block_phase[internal:]
-                    - quadratic_training[0]
-                    - quadratic_training[1] * held_time
-                    - 0.5 * quadratic_training[2] * held_time**2
+        coefficients, block_phase, grouped_residual, grouped_fvar, grouped_rvar = _group_phase_fit(
+            time_s, block_phasor, groups, 2 if quadratic_selected else 1
+        )
+    if groups is None:
+        internal = max(3, 2 * len(time_s) // 3)
+        linear_design = np.column_stack((np.ones(internal), time_s[:internal]))
+        root = np.sqrt(abs(block_phasor[:internal]))
+        linear = np.linalg.lstsq(
+            linear_design * root[:, None], block_phase[:internal] * root, rcond=None
+        )[0]
+        quadratic_training = _robust_polynomial(
+            time_s[:internal], block_phase[:internal], abs(block_phasor[:internal])
+        )
+        held_time = time_s[internal:]
+        quadratic_selected = True
+        if len(held_time):
+            linear_residual = np.angle(
+                np.exp(1j * (block_phase[internal:] - linear[0] - linear[1] * held_time))
+            )
+            linear_error = np.sqrt(np.mean(linear_residual**2))
+            quadratic_residual = np.angle(
+                np.exp(
+                    1j
+                    * (
+                        block_phase[internal:]
+                        - quadratic_training[0]
+                        - quadratic_training[1] * held_time
+                        - 0.5 * quadratic_training[2] * held_time**2
+                    )
                 )
             )
-        )
-        quadratic_error = np.sqrt(np.mean(quadratic_residual**2))
-        if not quadratic_error < 0.8 * linear_error:
-            quadratic_selected = False
-            full_design = np.column_stack((np.ones(len(time_s)), time_s))
-            full_root = np.sqrt(abs(block_phasor))
-            selected = np.linalg.lstsq(
-                full_design * full_root[:, None], block_phase * full_root, rcond=None
-            )[0]
-            coefficients = np.asarray((selected[0], selected[1], 0.0))
+            quadratic_error = np.sqrt(np.mean(quadratic_residual**2))
+            if not quadratic_error < 0.8 * linear_error:
+                quadratic_selected = False
+                full_design = np.column_stack((np.ones(len(time_s)), time_s))
+                full_root = np.sqrt(abs(block_phasor))
+                selected = np.linalg.lstsq(
+                    full_design * full_root[:, None], block_phase * full_root, rcond=None
+                )[0]
+                coefficients = np.asarray((selected[0], selected[1], 0.0))
     cfo = coarse + coefficients[1] / (2 * np.pi)
     rate_hz_s = coefficients[2] / (2 * np.pi)
 
-    time_design = np.column_stack((np.ones(len(time_s)), time_s, 0.5 * time_s**2))
-    time_residual = np.unwrap(np.angle(block_phasor)) - time_design @ coefficients
-    time_covariance = np.linalg.pinv(time_design.T @ time_design) * float(
-        np.sum(time_residual**2) / max(len(time_s) - 3, 1)
-    )
-    cfo_se = math.sqrt(max(float(time_covariance[1, 1]), 0.0)) / (2 * np.pi)
-    rate_se = math.sqrt(max(float(time_covariance[2, 2]), 0.0)) / (2 * np.pi)
+    if groups is None:
+        time_design = np.column_stack((np.ones(len(time_s)), time_s, 0.5 * time_s**2))
+        time_residual = np.unwrap(np.angle(block_phasor)) - time_design @ coefficients
+        time_covariance = np.linalg.pinv(time_design.T @ time_design) * float(
+            np.sum(time_residual**2) / max(len(time_s) - 3, 1)
+        )
+        cfo_se = math.sqrt(max(float(time_covariance[1, 1]), 0.0)) / (2 * np.pi)
+        rate_se = math.sqrt(max(float(time_covariance[2, 2]), 0.0)) / (2 * np.pi)
+    else:
+        cfo_se = math.sqrt(max(grouped_fvar, 0)) / (2 * np.pi)
+        rate_se = math.sqrt(max(grouped_rvar, 0)) / (2 * np.pi)
     leave_chunk_parameters = []
-    for omitted in np.array_split(np.arange(len(time_s)), min(4, len(time_s))):
+    omissions = (
+        np.array_split(np.arange(len(time_s)), min(4, len(time_s)))
+        if groups is None
+        else [np.flatnonzero(groups == group) for group in np.unique(groups)]
+    )
+    for omitted in omissions:
         retained = np.ones(len(time_s), dtype=bool)
         retained[omitted] = False
         if np.sum(retained) < 3:
             continue
-        if quadratic_selected:
+        if groups is not None:
+            refit = _group_phase_fit(
+                time_s[retained],
+                block_phasor[retained],
+                groups[retained],
+                2 if quadratic_selected else 1,
+            )[0]
+        elif quadratic_selected:
             refit = _robust_polynomial(
                 time_s[retained], block_phase[retained], abs(block_phasor[retained])
             )
@@ -355,8 +534,14 @@ def estimate_broadband_alignment(
         "conditional_weighted_fit_scatter_not_calibrated_ci",
     )
 
-    def validate(segment: np.ndarray, global_start: int) -> AlignmentValidation:
-        local_starts = np.arange(0, len(segment) - block_samples + 1, block_samples)
+    def validate(
+        segment: np.ndarray, global_start: int, explicit_starts=None
+    ) -> AlignmentValidation:
+        local_starts = (
+            np.arange(0, len(segment) - block_samples + 1, block_samples)
+            if explicit_starts is None
+            else explicit_starts
+        )
         absolute = np.arange(global_start, global_start + len(segment), dtype=float)
         delta_s = (absolute - model.reference_sample) / sample_rate_hz
         rotation = np.exp(
@@ -368,7 +553,7 @@ def estimate_broadband_alignment(
         wrong_time = np.roll(derotated, max(1, len(segment) // 5 + 17))
         transfer = np.asarray(model.channel_transfer)
         predicted_parts, observed_parts, raw_parts, wrong_parts = [], [], [], []
-        for start in local_starts:
+        for i, start in enumerate(local_starts):
             left = np.fft.fftshift(np.fft.fft(segment[start : start + block_samples, 0] * window))[
                 indexes
             ]
@@ -378,9 +563,11 @@ def estimate_broadband_alignment(
             raw = np.fft.fftshift(np.fft.fft(segment[start : start + block_samples, 1] * window))[
                 indexes
             ]
-            wrong = np.fft.fftshift(np.fft.fft(wrong_time[start : start + block_samples] * window))[
-                indexes
-            ]
+            wrong_values = wrong_time[start : start + block_samples]
+            if explicit_starts is not None:
+                wrong_start = local_starts[(i + max(1, len(local_starts) // 2)) % len(local_starts)]
+                wrong_values = derotated[wrong_start : wrong_start + block_samples]
+            wrong = np.fft.fftshift(np.fft.fft(wrong_values * window))[indexes]
             predicted_parts.append(transfer * left)
             observed_parts.append(observed)
             raw_parts.append(raw)
@@ -411,14 +598,29 @@ def estimate_broadband_alignment(
             float(error),
         )
 
+    training_validation = (
+        validate(train, 0) if selected_starts is None else validate(values, 0, selected_starts)
+    )
+    held_starts = (
+        None
+        if selected_starts is None
+        else np.setdiff1d(
+            np.arange(0, len(values) - block_samples + 1, block_samples), selected_starts
+        )
+    )
+    if explicit_held_starts is not None:
+        held_starts = explicit_held_starts
+    held_validation = (
+        validate(values[split:], split) if held_starts is None else validate(values, 0, held_starts)
+    )
     return BroadbandAlignmentResult(
         model,
-        validate(train, 0),
-        validate(values[split:], split),
+        training_validation,
+        held_validation,
         tuple(map(float, fft_frequency)),
         tuple(map(float, bin_coherence)),
         tuple(map(float, np.angle(smooth_cross))),
         tuple(map(bool, physical_overlap)),
         tuple(map(float, time_s)),
-        tuple(map(float, np.unwrap(np.angle(block_phasor)))),
+        tuple(map(float, block_phase)),
     )
