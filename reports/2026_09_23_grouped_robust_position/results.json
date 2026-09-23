@@ -1,0 +1,1279 @@
+{
+  "cache_manifest_sha256": {
+    "reports/2026_09_23_day_position_validation/replication/block_01/cache": "sha256:7554f23a62228c0a84438585eaee16800b975946b48c8e656ef002cffabcfb8a",
+    "reports/2026_09_23_day_position_validation/replication/block_02/cache": "sha256:d922468f3f6a339eab425d1111b4d03b4b8621b1f4b2fca2312592a48247ed3d",
+    "reports/2026_09_23_day_position_validation/replication/block_03/cache": "sha256:9082962d53bdb0e5ff749b6a3e3ee9209ef8961bbe87ddf072cffe2eeaecaa80",
+    "reports/2026_09_23_day_position_validation/replication/block_04/cache": "sha256:7d708f3606c93113316fa424ae463dc3bb757070d16b473109a7ddb698b0fe61",
+    "reports/2026_09_23_day_position_validation/replication/block_05/cache": "sha256:37408d050ad815c585d553cbb4c4fc5d9dd7c6c68c85de7089eeb168b02e514d",
+    "reports/2026_09_23_day_position_validation/replication/block_06/cache": "sha256:417ebe63505427a8b5142da94abea8c73ecebb718853dbe8339b04d10a4950c2",
+    "reports/2026_09_23_day_position_validation/replication/block_07/cache": "sha256:e6a7622be3bbb19abf2ca9237d0335bdeaa2dd47ad0f64e676831300f5f1aeef",
+    "reports/2026_09_23_day_position_validation/replication/block_08/cache": "sha256:741360eafaa1030323309bee144fd30ac187369e37260bab20b2b213dd2ca3ad",
+    "reports/2026_09_23_sixteen_scan_comparison/joint/cache": "sha256:64cad13603ddd02fae36d9f65827e113945a08dd0a522b44d3c17de8a102280e"
+  },
+  "candidate_scope": "conditional union of identities from prior published analyses; those published identity choices used reserved rows",
+  "hyperparameter_fit": "none; all three objectives and the 150 Hz robust scale were frozen before validation",
+  "inference_runtime_s": 106.35251316195354,
+  "inventory_sha256": "sha256:8155853576c278fb0a81590b6e99202bf2e9c6a575849a7f53367d5e9d4f1f1c",
+  "max_evaluations_per_seed": 150,
+  "position_truth_used": false,
+  "post_seal_runtime_s": 12.702132889069617,
+  "random_seed": 20260923,
+  "reference_coordinate": {
+    "latitude_deg": 37.84903264307456,
+    "longitude_deg": -122.4856541910174,
+    "role": "post-seal evaluation only"
+  },
+  "schema": "position-grouped-robust/v1",
+  "split_manifest_sha256": "sha256:55479748b0912fcc5b92cd1110758aa1da5a30fbf6dffd2f4130082f8296c884",
+  "test_evidence_accessed": false,
+  "test_ids_read_only_for_exclusion": true,
+  "test_partition_accessed": false,
+  "validation_group_ids": [
+    "utc2h-20260922T1800Z",
+    "utc2h-20260923T0800Z"
+  ],
+  "windows": [
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 29,
+              "latitude_deg": 37.84429046325995,
+              "longitude_deg": -122.51836770128692,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.8352468841584,
+                -122.50506966661892
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 123.88728033505758
+            },
+            {
+              "converged": true,
+              "evaluations": 28,
+              "latitude_deg": 37.843824623886604,
+              "longitude_deg": -122.51867983465274,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.81155625230456,
+                -122.51746950750427
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 123.89208394424195
+            },
+            {
+              "converged": true,
+              "evaluations": 25,
+              "latitude_deg": 37.844805376825235,
+              "longitude_deg": -122.51817632534285,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.82340156823148,
+                -122.5112695870616
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 123.8892259117304
+            }
+          ],
+          "loss": "capped800",
+          "method": "duration_capped800",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 146.84118052377045,
+            "common_reserved_uncapped_rmse_hz": 202.5248450111061,
+            "converged": true,
+            "deletion_score_influence": [
+              {
+                "objective_change_hz": -3.4260626550716893,
+                "omitted_session_id": "scan-fw-f835999e917f8264"
+              },
+              {
+                "objective_change_hz": 0.4526753761178526,
+                "omitted_session_id": "scan-fw-6fdbf14afd5bb8cc"
+              },
+              {
+                "objective_change_hz": 1.8500480672388306,
+                "omitted_session_id": "scan-fw-0120007f9880ed1a"
+              },
+              {
+                "objective_change_hz": 4.058169888894682,
+                "omitted_session_id": "scan-fw-0847a0c9dfef4378"
+              },
+              {
+                "objective_change_hz": -0.4435555327770828,
+                "omitted_session_id": "scan-fw-525ec2bdd6d72e72"
+              },
+              {
+                "objective_change_hz": -4.042733306391725,
+                "omitted_session_id": "scan-fw-a5590056fbb039c0"
+              },
+              {
+                "objective_change_hz": 1.4008560692084018,
+                "omitted_session_id": "scan-fw-c7fa658940337818"
+              },
+              {
+                "objective_change_hz": 0.9594886407153069,
+                "omitted_session_id": "scan-fw-53a405ae9a5de3ce"
+              },
+              {
+                "objective_change_hz": 0.5412953667712799,
+                "omitted_session_id": "scan-fw-2737189b469f63ed"
+              },
+              {
+                "objective_change_hz": -1.2563855585681551,
+                "omitted_session_id": "scan-fw-29d81f76a2b35595"
+              }
+            ],
+            "evaluation_only_error_km": 2.9204356222278802,
+            "evaluations": 29,
+            "latitude_deg": 37.84429046325995,
+            "longitude_deg": -122.51836770128692,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 146.84118052377045,
+            "outside_trial_count": 0,
+            "reference_error_km": 2.9204356222278802,
+            "reserved_capped800_rmse_hz": 146.84118052377045,
+            "reserved_uncapped_rmse_hz": 202.5248450111061,
+            "seed": [
+              37.8352468841584,
+              -122.50506966661892
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 123.88728033505758
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 25,
+              "latitude_deg": 37.84469878845526,
+              "longitude_deg": -122.51840279650176,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.8352468841584,
+                -122.50506966661892
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 107.29008596752615
+            },
+            {
+              "converged": true,
+              "evaluations": 25,
+              "latitude_deg": 37.845276345078005,
+              "longitude_deg": -122.51814455633242,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.81155625230456,
+                -122.51746950750427
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 107.29332421151605
+            },
+            {
+              "converged": true,
+              "evaluations": 24,
+              "latitude_deg": 37.8438910701846,
+              "longitude_deg": -122.51843511440535,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.82340156823148,
+                -122.5112695870616
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 107.29219743514751
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "duration_robust150",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 146.84788969110525,
+            "common_reserved_uncapped_rmse_hz": 202.5163885421165,
+            "converged": true,
+            "deletion_score_influence": [
+              {
+                "objective_change_hz": -0.5461462621736501,
+                "omitted_session_id": "scan-fw-f835999e917f8264"
+              },
+              {
+                "objective_change_hz": -0.04575703836675871,
+                "omitted_session_id": "scan-fw-6fdbf14afd5bb8cc"
+              },
+              {
+                "objective_change_hz": 0.33425546910926585,
+                "omitted_session_id": "scan-fw-0120007f9880ed1a"
+              },
+              {
+                "objective_change_hz": 2.960175596960511,
+                "omitted_session_id": "scan-fw-0847a0c9dfef4378"
+              },
+              {
+                "objective_change_hz": -0.6251792330200772,
+                "omitted_session_id": "scan-fw-525ec2bdd6d72e72"
+              },
+              {
+                "objective_change_hz": -2.2892401332478727,
+                "omitted_session_id": "scan-fw-a5590056fbb039c0"
+              },
+              {
+                "objective_change_hz": 0.8733838793377231,
+                "omitted_session_id": "scan-fw-c7fa658940337818"
+              },
+              {
+                "objective_change_hz": 0.2055024709849107,
+                "omitted_session_id": "scan-fw-53a405ae9a5de3ce"
+              },
+              {
+                "objective_change_hz": -0.3711463097001655,
+                "omitted_session_id": "scan-fw-2737189b469f63ed"
+              },
+              {
+                "objective_change_hz": -0.5235777023312096,
+                "omitted_session_id": "scan-fw-29d81f76a2b35595"
+              }
+            ],
+            "evaluation_only_error_km": 2.9156112895070407,
+            "evaluations": 25,
+            "latitude_deg": 37.84469878845526,
+            "longitude_deg": -122.51840279650176,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 127.2146547182576,
+            "outside_trial_count": 0,
+            "reference_error_km": 2.9156112895070407,
+            "reserved_capped800_rmse_hz": 146.84788969110525,
+            "reserved_uncapped_rmse_hz": 202.5163885421165,
+            "seed": [
+              37.8352468841584,
+              -122.50506966661892
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 107.29008596752615
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 28,
+              "latitude_deg": 37.84289458923652,
+              "longitude_deg": -122.51758126329864,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.8352468841584,
+                -122.50506966661892
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 107.57711747868355
+            },
+            {
+              "converged": true,
+              "evaluations": 20,
+              "latitude_deg": 37.84314316636707,
+              "longitude_deg": -122.51843630437928,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.81155625230456,
+                -122.51746950750427
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 107.58619762356113
+            },
+            {
+              "converged": true,
+              "evaluations": 25,
+              "latitude_deg": 37.84430366784086,
+              "longitude_deg": -122.5174542794444,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.82340156823148,
+                -122.5112695870616
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 107.57687093144453
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "equal_scan_robust150",
+          "outer_weighting": "equal_scan",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 146.81322965629076,
+            "common_reserved_uncapped_rmse_hz": 202.53133570699794,
+            "converged": true,
+            "deletion_score_influence": [
+              {
+                "objective_change_hz": -0.6976572598381523,
+                "omitted_session_id": "scan-fw-f835999e917f8264"
+              },
+              {
+                "objective_change_hz": 0.007784748068445424,
+                "omitted_session_id": "scan-fw-6fdbf14afd5bb8cc"
+              },
+              {
+                "objective_change_hz": 0.21347183295068817,
+                "omitted_session_id": "scan-fw-0120007f9880ed1a"
+              },
+              {
+                "objective_change_hz": 2.8200629173618807,
+                "omitted_session_id": "scan-fw-0847a0c9dfef4378"
+              },
+              {
+                "objective_change_hz": -0.5319121833053515,
+                "omitted_session_id": "scan-fw-525ec2bdd6d72e72"
+              },
+              {
+                "objective_change_hz": -2.6696047327175734,
+                "omitted_session_id": "scan-fw-a5590056fbb039c0"
+              },
+              {
+                "objective_change_hz": 1.6599602520030317,
+                "omitted_session_id": "scan-fw-c7fa658940337818"
+              },
+              {
+                "objective_change_hz": 0.23825734599324733,
+                "omitted_session_id": "scan-fw-53a405ae9a5de3ce"
+              },
+              {
+                "objective_change_hz": -0.22912274208323424,
+                "omitted_session_id": "scan-fw-2737189b469f63ed"
+              },
+              {
+                "objective_change_hz": -0.9022149146864109,
+                "omitted_session_id": "scan-fw-29d81f76a2b35595"
+              }
+            ],
+            "evaluation_only_error_km": 2.8413146233585103,
+            "evaluations": 25,
+            "latitude_deg": 37.84430366784086,
+            "longitude_deg": -122.5174542794444,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 125.01828432141689,
+            "outside_trial_count": 0,
+            "reference_error_km": 2.8413146233585103,
+            "reserved_capped800_rmse_hz": 146.81322965629076,
+            "reserved_uncapped_rmse_hz": 202.53133570699794,
+            "seed": [
+              37.82340156823148,
+              -122.5112695870616
+            ],
+            "seed_id": 3,
+            "training_rmse_hz": 107.57687093144453
+          }
+        }
+      ],
+      "elapsed_span_seconds": 5749.762782,
+      "seeds": [
+        [
+          37.8352468841584,
+          -122.50506966661892
+        ],
+        [
+          37.81155625230456,
+          -122.51746950750427
+        ],
+        [
+          37.82340156823148,
+          -122.5112695870616
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-f835999e917f8264",
+        "scan-fw-6fdbf14afd5bb8cc",
+        "scan-fw-0120007f9880ed1a",
+        "scan-fw-0847a0c9dfef4378",
+        "scan-fw-525ec2bdd6d72e72",
+        "scan-fw-a5590056fbb039c0",
+        "scan-fw-c7fa658940337818",
+        "scan-fw-53a405ae9a5de3ce",
+        "scan-fw-2737189b469f63ed",
+        "scan-fw-29d81f76a2b35595"
+      ],
+      "summed_nominal_capture_seconds": 3000,
+      "view": "whole_randomized_group",
+      "window_id": "utc2h-20260922T1800Z"
+    },
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 29,
+              "latitude_deg": 37.593221480018826,
+              "longitude_deg": -122.35830282211211,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.622429243690696,
+                -122.41691122054961
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 144.82790085992286
+            },
+            {
+              "converged": true,
+              "evaluations": 24,
+              "latitude_deg": 37.78528168788496,
+              "longitude_deg": -122.46269558208758,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.75715699306074,
+                -122.44420376079852
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 157.5720052800286
+            },
+            {
+              "converged": true,
+              "evaluations": 61,
+              "latitude_deg": 37.593724037546124,
+              "longitude_deg": -122.35774557956778,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.68979311837572,
+                -122.43055749067406
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 144.82653273216732
+            }
+          ],
+          "loss": "capped800",
+          "method": "duration_capped800",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 177.51578538493365,
+            "common_reserved_uncapped_rmse_hz": 207.9855292148186,
+            "converged": true,
+            "deletion_score_influence": [],
+            "evaluation_only_error_km": 30.53693829547982,
+            "evaluations": 61,
+            "latitude_deg": 37.593724037546124,
+            "longitude_deg": -122.35774557956778,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 177.51578538493365,
+            "outside_trial_count": 0,
+            "reference_error_km": 30.53693829547982,
+            "reserved_capped800_rmse_hz": 177.51578538493365,
+            "reserved_uncapped_rmse_hz": 207.9855292148186,
+            "seed": [
+              37.68979311837572,
+              -122.43055749067406
+            ],
+            "seed_id": 3,
+            "training_rmse_hz": 144.82653273216732
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 30,
+              "latitude_deg": 37.621291548378196,
+              "longitude_deg": -122.38445272445588,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.622429243690696,
+                -122.41691122054961
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 114.50942547970382
+            },
+            {
+              "converged": true,
+              "evaluations": 22,
+              "latitude_deg": 37.78679261317794,
+              "longitude_deg": -122.46522060650165,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.75715699306074,
+                -122.44420376079852
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 111.71623802694056
+            },
+            {
+              "converged": true,
+              "evaluations": 40,
+              "latitude_deg": 37.65070807351489,
+              "longitude_deg": -122.44863446363539,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.68979311837572,
+                -122.43055749067406
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 116.78233487629453
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "duration_robust150",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 109.11550510225707,
+            "common_reserved_uncapped_rmse_hz": 109.11550510225707,
+            "converged": true,
+            "deletion_score_influence": [],
+            "evaluation_only_error_km": 7.149747169618372,
+            "evaluations": 22,
+            "latitude_deg": 37.78679261317794,
+            "longitude_deg": -122.46522060650165,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 96.91109623491822,
+            "outside_trial_count": 0,
+            "reference_error_km": 7.149747169618372,
+            "reserved_capped800_rmse_hz": 109.11550510225707,
+            "reserved_uncapped_rmse_hz": 109.11550510225707,
+            "seed": [
+              37.75715699306074,
+              -122.44420376079852
+            ],
+            "seed_id": 2,
+            "training_rmse_hz": 111.71623802694056
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 30,
+              "latitude_deg": 37.621291548378196,
+              "longitude_deg": -122.38445272445588,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.622429243690696,
+                -122.41691122054961
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 114.50942547970382
+            },
+            {
+              "converged": true,
+              "evaluations": 22,
+              "latitude_deg": 37.78679261317794,
+              "longitude_deg": -122.46522060650165,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.75715699306074,
+                -122.44420376079852
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 111.71623802694056
+            },
+            {
+              "converged": true,
+              "evaluations": 40,
+              "latitude_deg": 37.65070807351489,
+              "longitude_deg": -122.44863446363539,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.68979311837572,
+                -122.43055749067406
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 116.78233487629453
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "equal_scan_robust150",
+          "outer_weighting": "equal_scan",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 109.11550510225707,
+            "common_reserved_uncapped_rmse_hz": 109.11550510225707,
+            "converged": true,
+            "deletion_score_influence": [],
+            "evaluation_only_error_km": 7.149747169618372,
+            "evaluations": 22,
+            "latitude_deg": 37.78679261317794,
+            "longitude_deg": -122.46522060650165,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 96.91109623491822,
+            "outside_trial_count": 0,
+            "reference_error_km": 7.149747169618372,
+            "reserved_capped800_rmse_hz": 109.11550510225707,
+            "reserved_uncapped_rmse_hz": 109.11550510225707,
+            "seed": [
+              37.75715699306074,
+              -122.44420376079852
+            ],
+            "seed_id": 2,
+            "training_rmse_hz": 111.71623802694056
+          }
+        }
+      ],
+      "elapsed_span_seconds": 300.0,
+      "seeds": [
+        [
+          37.622429243690696,
+          -122.41691122054961
+        ],
+        [
+          37.75715699306074,
+          -122.44420376079852
+        ],
+        [
+          37.68979311837572,
+          -122.43055749067406
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-f835999e917f8264"
+      ],
+      "summed_nominal_capture_seconds": 300,
+      "view": "predeclared_first_scan",
+      "window_id": "utc2h-20260922T1800Z-first-scan"
+    },
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 34,
+              "latitude_deg": 37.79779684487389,
+              "longitude_deg": -122.42015322911422,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.97167898598718,
+                -122.58399790990018
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 149.90711463946067
+            },
+            {
+              "converged": true,
+              "evaluations": 40,
+              "latitude_deg": 37.84026425708862,
+              "longitude_deg": -122.48147451686256,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.0513415323648,
+                -122.63726134704922
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 148.4216423227765
+            },
+            {
+              "converged": true,
+              "evaluations": 38,
+              "latitude_deg": 37.84051782753535,
+              "longitude_deg": -122.48169255572071,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.01151025917599,
+                -122.6106296284747
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 148.42308521378902
+            }
+          ],
+          "loss": "capped800",
+          "method": "duration_capped800",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 155.37807843712304,
+            "common_reserved_uncapped_rmse_hz": 169.30664049638145,
+            "converged": true,
+            "deletion_score_influence": [
+              {
+                "objective_change_hz": -10.677720498144538,
+                "omitted_session_id": "scan-fw-9f976649d8b948db"
+              },
+              {
+                "objective_change_hz": -3.624702580134141,
+                "omitted_session_id": "scan-fw-629ae15bd261499b"
+              },
+              {
+                "objective_change_hz": 3.9897322811790445,
+                "omitted_session_id": "scan-fw-b7f43e85d51f3b4f"
+              },
+              {
+                "objective_change_hz": 3.49853462796753,
+                "omitted_session_id": "scan-fw-1d64e776fd2ce41f"
+              },
+              {
+                "objective_change_hz": 0.3307732796598941,
+                "omitted_session_id": "scan-fw-45880d68d43ba2fb"
+              },
+              {
+                "objective_change_hz": 1.5608631951938605,
+                "omitted_session_id": "scan-fw-894676bdae3d7b2c"
+              },
+              {
+                "objective_change_hz": 3.45031093335308,
+                "omitted_session_id": "scan-fw-5897fdb10f7a1b99"
+              },
+              {
+                "objective_change_hz": 1.2732120264684852,
+                "omitted_session_id": "scan-fw-3cbfa1a0728c7f83"
+              },
+              {
+                "objective_change_hz": 2.912122762825277,
+                "omitted_session_id": "scan-fw-b6104701869aac86"
+              },
+              {
+                "objective_change_hz": -0.7287073477356785,
+                "omitted_session_id": "scan-fw-13abc38caa0ff9de"
+              },
+              {
+                "objective_change_hz": 2.0756927421113858,
+                "omitted_session_id": "scan-fw-d7e932a70bca7b3a"
+              },
+              {
+                "objective_change_hz": -5.172655985654359,
+                "omitted_session_id": "scan-fw-ec9d9b576dbd198c"
+              }
+            ],
+            "evaluation_only_error_km": 1.0417887672698856,
+            "evaluations": 40,
+            "latitude_deg": 37.84026425708862,
+            "longitude_deg": -122.48147451686256,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 155.37807843712304,
+            "outside_trial_count": 0,
+            "reference_error_km": 1.0417887672698856,
+            "reserved_capped800_rmse_hz": 155.37807843712304,
+            "reserved_uncapped_rmse_hz": 169.30664049638145,
+            "seed": [
+              38.0513415323648,
+              -122.63726134704922
+            ],
+            "seed_id": 2,
+            "training_rmse_hz": 148.4216423227765
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 35,
+              "latitude_deg": 37.8395854801278,
+              "longitude_deg": -122.4790629123417,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.97167898598718,
+                -122.58399790990018
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 115.01796416072698
+            },
+            {
+              "converged": true,
+              "evaluations": 38,
+              "latitude_deg": 37.83931108345122,
+              "longitude_deg": -122.47774837898604,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.0513415323648,
+                -122.63726134704922
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 115.01962905846594
+            },
+            {
+              "converged": true,
+              "evaluations": 41,
+              "latitude_deg": 37.83815698769162,
+              "longitude_deg": -122.47811101275197,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.01151025917599,
+                -122.6106296284747
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 115.01849714799876
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "duration_robust150",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 155.44505688096936,
+            "common_reserved_uncapped_rmse_hz": 169.3238445446738,
+            "converged": true,
+            "deletion_score_influence": [
+              {
+                "objective_change_hz": -4.485192666110393,
+                "omitted_session_id": "scan-fw-9f976649d8b948db"
+              },
+              {
+                "objective_change_hz": -1.9375147277400373,
+                "omitted_session_id": "scan-fw-629ae15bd261499b"
+              },
+              {
+                "objective_change_hz": 1.7944235360323262,
+                "omitted_session_id": "scan-fw-b7f43e85d51f3b4f"
+              },
+              {
+                "objective_change_hz": 1.798098184822436,
+                "omitted_session_id": "scan-fw-1d64e776fd2ce41f"
+              },
+              {
+                "objective_change_hz": -0.6720030466846936,
+                "omitted_session_id": "scan-fw-45880d68d43ba2fb"
+              },
+              {
+                "objective_change_hz": 0.6296732255842983,
+                "omitted_session_id": "scan-fw-894676bdae3d7b2c"
+              },
+              {
+                "objective_change_hz": 1.4503243694079657,
+                "omitted_session_id": "scan-fw-5897fdb10f7a1b99"
+              },
+              {
+                "objective_change_hz": 0.0021650021759000992,
+                "omitted_session_id": "scan-fw-3cbfa1a0728c7f83"
+              },
+              {
+                "objective_change_hz": 1.5418337494021301,
+                "omitted_session_id": "scan-fw-b6104701869aac86"
+              },
+              {
+                "objective_change_hz": -0.8524092902882074,
+                "omitted_session_id": "scan-fw-13abc38caa0ff9de"
+              },
+              {
+                "objective_change_hz": 1.2861686129370753,
+                "omitted_session_id": "scan-fw-d7e932a70bca7b3a"
+              },
+              {
+                "objective_change_hz": -0.8576378486291674,
+                "omitted_session_id": "scan-fw-ec9d9b576dbd198c"
+              }
+            ],
+            "evaluation_only_error_km": 1.1993665304344667,
+            "evaluations": 35,
+            "latitude_deg": 37.8395854801278,
+            "longitude_deg": -122.4790629123417,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 124.81090374927288,
+            "outside_trial_count": 0,
+            "reference_error_km": 1.1993665304344667,
+            "reserved_capped800_rmse_hz": 155.44505688096936,
+            "reserved_uncapped_rmse_hz": 169.3238445446738,
+            "seed": [
+              37.97167898598718,
+              -122.58399790990018
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 115.01796416072698
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 38,
+              "latitude_deg": 37.83910314980554,
+              "longitude_deg": -122.47906531560099,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.97167898598718,
+                -122.58399790990018
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 113.24277020901994
+            },
+            {
+              "converged": true,
+              "evaluations": 42,
+              "latitude_deg": 37.840079210892625,
+              "longitude_deg": -122.47960850166675,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.0513415323648,
+                -122.63726134704922
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 113.24666993286067
+            },
+            {
+              "converged": true,
+              "evaluations": 46,
+              "latitude_deg": 37.83952211525509,
+              "longitude_deg": -122.47992808657395,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.01151025917599,
+                -122.6106296284747
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 113.23951294682777
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "equal_scan_robust150",
+          "outer_weighting": "equal_scan",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 155.3447231005906,
+            "common_reserved_uncapped_rmse_hz": 169.23756331513812,
+            "converged": true,
+            "deletion_score_influence": [
+              {
+                "objective_change_hz": -4.084160539018427,
+                "omitted_session_id": "scan-fw-9f976649d8b948db"
+              },
+              {
+                "objective_change_hz": -3.308632673026125,
+                "omitted_session_id": "scan-fw-629ae15bd261499b"
+              },
+              {
+                "objective_change_hz": 1.397237222319987,
+                "omitted_session_id": "scan-fw-b7f43e85d51f3b4f"
+              },
+              {
+                "objective_change_hz": 1.8498539657888244,
+                "omitted_session_id": "scan-fw-1d64e776fd2ce41f"
+              },
+              {
+                "objective_change_hz": -0.735256141973224,
+                "omitted_session_id": "scan-fw-45880d68d43ba2fb"
+              },
+              {
+                "objective_change_hz": 0.3753296810878197,
+                "omitted_session_id": "scan-fw-894676bdae3d7b2c"
+              },
+              {
+                "objective_change_hz": 1.1742215737621393,
+                "omitted_session_id": "scan-fw-5897fdb10f7a1b99"
+              },
+              {
+                "objective_change_hz": -0.13589237306609903,
+                "omitted_session_id": "scan-fw-3cbfa1a0728c7f83"
+              },
+              {
+                "objective_change_hz": 1.9049288076858346,
+                "omitted_session_id": "scan-fw-b6104701869aac86"
+              },
+              {
+                "objective_change_hz": -0.854163207463742,
+                "omitted_session_id": "scan-fw-13abc38caa0ff9de"
+              },
+              {
+                "objective_change_hz": 2.902818481383889,
+                "omitted_session_id": "scan-fw-d7e932a70bca7b3a"
+              },
+              {
+                "objective_change_hz": -0.6997915348641186,
+                "omitted_session_id": "scan-fw-ec9d9b576dbd198c"
+              }
+            ],
+            "evaluation_only_error_km": 1.1709680582368367,
+            "evaluations": 46,
+            "latitude_deg": 37.83952211525509,
+            "longitude_deg": -122.47992808657395,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 124.87159795744195,
+            "outside_trial_count": 0,
+            "reference_error_km": 1.1709680582368367,
+            "reserved_capped800_rmse_hz": 155.3447231005906,
+            "reserved_uncapped_rmse_hz": 169.23756331513812,
+            "seed": [
+              38.01151025917599,
+              -122.6106296284747
+            ],
+            "seed_id": 3,
+            "training_rmse_hz": 113.23951294682777
+          }
+        }
+      ],
+      "elapsed_span_seconds": 7043.164869,
+      "seeds": [
+        [
+          37.97167898598718,
+          -122.58399790990018
+        ],
+        [
+          38.0513415323648,
+          -122.63726134704922
+        ],
+        [
+          38.01151025917599,
+          -122.6106296284747
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-9f976649d8b948db",
+        "scan-fw-629ae15bd261499b",
+        "scan-fw-b7f43e85d51f3b4f",
+        "scan-fw-1d64e776fd2ce41f",
+        "scan-fw-45880d68d43ba2fb",
+        "scan-fw-894676bdae3d7b2c",
+        "scan-fw-5897fdb10f7a1b99",
+        "scan-fw-3cbfa1a0728c7f83",
+        "scan-fw-b6104701869aac86",
+        "scan-fw-13abc38caa0ff9de",
+        "scan-fw-d7e932a70bca7b3a",
+        "scan-fw-ec9d9b576dbd198c"
+      ],
+      "summed_nominal_capture_seconds": 3600,
+      "view": "whole_randomized_group",
+      "window_id": "utc2h-20260923T0800Z"
+    },
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 28,
+              "latitude_deg": 37.79721829923962,
+              "longitude_deg": -122.21639004627882,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.79253148588513,
+                -122.20566063801466
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 120.95970738001698
+            },
+            {
+              "converged": true,
+              "evaluations": 24,
+              "latitude_deg": 37.75929969643576,
+              "longitude_deg": -122.27229863191751,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.76031272744162,
+                -122.30209149385597
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 124.15785076666455
+            },
+            {
+              "converged": true,
+              "evaluations": 29,
+              "latitude_deg": 37.79682554904621,
+              "longitude_deg": -122.21649783107206,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.776422106663375,
+                -122.25387606593532
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 120.9620602477667
+            }
+          ],
+          "loss": "capped800",
+          "method": "duration_capped800",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 148.22590844939265,
+            "common_reserved_uncapped_rmse_hz": 148.22590844939265,
+            "converged": true,
+            "deletion_score_influence": [],
+            "evaluation_only_error_km": 24.342158138675092,
+            "evaluations": 28,
+            "latitude_deg": 37.79721829923962,
+            "longitude_deg": -122.21639004627882,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 148.22590844939265,
+            "outside_trial_count": 0,
+            "reference_error_km": 24.342158138675092,
+            "reserved_capped800_rmse_hz": 148.22590844939265,
+            "reserved_uncapped_rmse_hz": 148.22590844939265,
+            "seed": [
+              37.79253148588513,
+              -122.20566063801466
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 120.95970738001698
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 25,
+              "latitude_deg": 37.794975791305056,
+              "longitude_deg": -122.21630921284377,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.79253148588513,
+                -122.20566063801466
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 108.20178949067406
+            },
+            {
+              "converged": true,
+              "evaluations": 21,
+              "latitude_deg": 37.75781761025411,
+              "longitude_deg": -122.27258709932474,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.76031272744162,
+                -122.30209149385597
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 110.34831170796261
+            },
+            {
+              "converged": true,
+              "evaluations": 26,
+              "latitude_deg": 37.795902239720036,
+              "longitude_deg": -122.21562678309843,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.776422106663375,
+                -122.25387606593532
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 108.20706979476753
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "duration_robust150",
+          "outer_weighting": "duration",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 148.39083978276796,
+            "common_reserved_uncapped_rmse_hz": 148.39083978276796,
+            "converged": true,
+            "deletion_score_influence": [],
+            "evaluation_only_error_km": 24.40960974178278,
+            "evaluations": 25,
+            "latitude_deg": 37.794975791305056,
+            "longitude_deg": -122.21630921284377,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 124.96394280212911,
+            "outside_trial_count": 0,
+            "reference_error_km": 24.40960974178278,
+            "reserved_capped800_rmse_hz": 148.39083978276796,
+            "reserved_uncapped_rmse_hz": 148.39083978276796,
+            "seed": [
+              37.79253148588513,
+              -122.20566063801466
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 108.20178949067406
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 25,
+              "latitude_deg": 37.794975791305056,
+              "longitude_deg": -122.21630921284377,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.79253148588513,
+                -122.20566063801466
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 108.20178949067406
+            },
+            {
+              "converged": true,
+              "evaluations": 21,
+              "latitude_deg": 37.75781761025411,
+              "longitude_deg": -122.27258709932474,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.76031272744162,
+                -122.30209149385597
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 110.34831170796261
+            },
+            {
+              "converged": true,
+              "evaluations": 26,
+              "latitude_deg": 37.795902239720036,
+              "longitude_deg": -122.21562678309843,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.776422106663375,
+                -122.25387606593532
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 108.20706979476753
+            }
+          ],
+          "loss": "pseudo_huber_150hz",
+          "method": "equal_scan_robust150",
+          "outer_weighting": "equal_scan",
+          "selected": {
+            "common_reserved_capped800_rmse_hz": 148.39083978276796,
+            "common_reserved_uncapped_rmse_hz": 148.39083978276796,
+            "converged": true,
+            "deletion_score_influence": [],
+            "evaluation_only_error_km": 24.40960974178278,
+            "evaluations": 25,
+            "latitude_deg": 37.794975791305056,
+            "longitude_deg": -122.21630921284377,
+            "message": "Optimization terminated successfully.",
+            "native_reserved_objective": 124.96394280212911,
+            "outside_trial_count": 0,
+            "reference_error_km": 24.40960974178278,
+            "reserved_capped800_rmse_hz": 148.39083978276796,
+            "reserved_uncapped_rmse_hz": 148.39083978276796,
+            "seed": [
+              37.79253148588513,
+              -122.20566063801466
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 108.20178949067406
+          }
+        }
+      ],
+      "elapsed_span_seconds": 300.0,
+      "seeds": [
+        [
+          37.79253148588513,
+          -122.20566063801466
+        ],
+        [
+          37.76031272744162,
+          -122.30209149385597
+        ],
+        [
+          37.776422106663375,
+          -122.25387606593532
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-9f976649d8b948db"
+      ],
+      "summed_nominal_capture_seconds": 300,
+      "view": "predeclared_first_scan",
+      "window_id": "utc2h-20260923T0800Z-first-scan"
+    }
+  ]
+}
