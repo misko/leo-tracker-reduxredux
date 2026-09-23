@@ -56,7 +56,8 @@ def frame_starts(epoch, left, right):
         [
             epoch + round(k * FS / 750)
             for k in range(low, high + 1)
-            if left <= epoch + round(k * FS / 750) and epoch + round(k * FS / 750) + length <= right
+            if left + 117 <= epoch + round(k * FS / 750)
+            and epoch + round(k * FS / 750) + length + 117 <= right
         ],
         dtype=int,
     )
@@ -77,6 +78,8 @@ def correlations(iq, read_start, starts, shift, model, receiver, template):
     for start in starts + shift:
         absolute = start + offsets
         local = absolute - read_start
+        if local.min() < 0 or local.max() >= len(iq):
+            raise ValueError("correlation support escapes bounded IQ read")
         phase = carrier_phase(model, absolute / FS)
         output.append(
             np.sum(iq[local, receiver] * np.exp(-1j * phase) * np.conj(template[offsets]))
@@ -90,7 +93,7 @@ def source_phase(iq, read_start, center_s, duration_ms, source, frozen_shift, lo
     starts = frame_starts(EPOCHS[source], center - half, center + half)
     if len(starts) < 6:
         return None
-    train = split_frames(len(starts), int(center_s * 100) + duration_ms + ord(source))
+    train = split_frames(len(starts), int(center_s * 100) + duration_ms)
     exact = qin_edge_pilot_frame(FS, "upper")
     control = qin_edge_pilot_frame(FS, "upper", symbol_roll=17)
     shifts = range(-80, 81) if local_timing else (frozen_shift,)
@@ -110,7 +113,13 @@ def source_phase(iq, read_start, center_s, duration_ms, source, frozen_shift, lo
         )
     product = coeff[1] * np.conj(coeff[0])
     weights = np.sqrt(abs(coeff[0]) * abs(coeff[1]))
-    actual_starts = starts + shift
+    symbol_reference = np.mean(
+        np.arange(
+            round(2 * FS * OFDM_SYMBOL_DURATION_S),
+            round(66 * FS * OFDM_SYMBOL_DURATION_S),
+        )
+    )
+    actual_starts = starts + shift + symbol_reference
     frequency, phase, resultant = fit_linear_phasor(
         product[train], actual_starts[train] / FS, weights[train], center_s
     )
@@ -119,8 +128,22 @@ def source_phase(iq, read_start, center_s, duration_ms, source, frozen_shift, lo
     )
     held_unit = product[~train] / np.maximum(abs(product[~train]), 1e-30)
     held_resultant = float(abs(np.average(held_unit * np.conj(predicted), weights=weights[~train])))
+    held_phase = float(
+        np.angle(
+            np.average(
+                held_unit
+                * np.exp(-2j * np.pi * frequency * (actual_starts[~train] / FS - center_s)),
+                weights=weights[~train],
+            )
+        )
+    )
     restored = wrap(
         phase
+        + carrier_phase(MODELS[source][1], center_s)
+        - carrier_phase(MODELS[source][0], center_s)
+    )
+    held_restored = wrap(
+        held_phase
         + carrier_phase(MODELS[source][1], center_s)
         - carrier_phase(MODELS[source][0], center_s)
     )
@@ -132,8 +155,10 @@ def source_phase(iq, read_start, center_s, duration_ms, source, frozen_shift, lo
     ]
     wrong_power = sum(float(np.sum(abs(c[~train]) ** 2)) for c in wrong)
     return {
-        "phase_pre_restore_rad": float(phase),
-        "phase_restored_rad": float(restored),
+        "train_phase_pre_restore_rad": float(phase),
+        "train_phase_restored_rad": float(restored),
+        "held_phase_pre_restore_rad": held_phase,
+        "held_phase_restored_rad": float(held_restored),
         "timing_shift_samples": shift,
         "train_frames": int(np.sum(train)),
         "held_frames": int(np.sum(~train)),
@@ -190,8 +215,8 @@ def main():
                         if any(value is None for value in sources.values())
                         else float(
                             wrap(
-                                sources["A"]["phase_restored_rad"]
-                                - sources["B"]["phase_restored_rad"]
+                                sources["A"]["held_phase_restored_rad"]
+                                - sources["B"]["held_phase_restored_rad"]
                             )
                         )
                     )
@@ -200,8 +225,8 @@ def main():
                         if any(value is None for value in sources.values())
                         else float(
                             wrap(
-                                sources["A"]["phase_pre_restore_rad"]
-                                - sources["B"]["phase_pre_restore_rad"]
+                                sources["A"]["held_phase_pre_restore_rad"]
+                                - sources["B"]["held_phase_pre_restore_rad"]
                             )
                         )
                     )
