@@ -15,30 +15,37 @@ import numpy as np
 from leo.contracts.adaptive_tle_position import (
     AdaptiveTleAccountingV1,
     AdaptiveTleCandidateV1,
-    AdaptiveTlePositionDocumentV1,
-    AdaptiveTlePriorResultV1,
-    AdaptiveTleRegionV1,
+    AdaptiveTlePositionDocumentV2,
+    AdaptiveTlePriorResultV2,
+    AdaptiveTleRegionV2,
 )
 from leo.contracts.digests import canonical_digest
 from leo.presentation.adaptive_tle_position import render_adaptive_tle_position
-from leo.storage.adaptive_tle_position import AdaptiveTlePositionStore
+from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV2
 
-PRIORS = {"sacramento": (38.5816, -121.4944), "reno": (39.5296, -119.8138)}
+PRIORS = {
+    "sacramento": (38.5816, -121.4944, 250.0),
+    "reno": (39.5296, -119.8138, 500.0),
+}
 REFERENCE = (37.84903264307456, -122.4856541910174)
 _WORKER_TRACKS = None
 
 
 def configuration():
     return {
-        "analysis_id": "scanner-adaptive-tle-position-v1",
+        "analysis_id": "scanner-adaptive-tle-position-v2",
         "priors": {
-            name: {"latitude_deg": lat, "longitude_deg": lon, "radius_km": 500}
-            for name, (lat, lon) in PRIORS.items()
+            name: {"latitude_deg": lat, "longitude_deg": lon, "radius_km": radius}
+            for name, (lat, lon, radius) in PRIORS.items()
         },
         "tracks": {"minimum_span_s": 3, "minimum_observations": 6, "limit": None},
         "partition": "cf510316-fixed-partition-v1",
         "taus_s": list(range(-5, 6)),
-        "search": {"levels_km": [100, 50, 25, 12.5], "budget_points": 400},
+        "search": {
+            "region_size_km": 1000,
+            "levels_km": [100, 50, 25, 12.5],
+            "budget_points": 400,
+        },
         "objective": "duration-weighted-capped-rmse-800hz-v1",
         "identity_selection": "randomized-evaluation-rms-v1",
         "qualifying_threshold_hz": 200,
@@ -53,7 +60,7 @@ def adaptive_tle_position_complete(
     expected_input=None,
     expected_analysis=None,
 ):
-    store = AdaptiveTlePositionStore(root)
+    store = AdaptiveTlePositionStoreV2(root)
     status = store.status(session_id)
     if status.manifest is None:
         return False
@@ -158,7 +165,7 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
     from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
     destination = output_root or root
-    store = AdaptiveTlePositionStore(destination, read_only=False)
+    store = AdaptiveTlePositionStoreV2(destination, read_only=False)
     source_reader = ScannerTrackingInputStore(root)
     try:
         current_source = source_reader.load(session_id)
@@ -183,7 +190,7 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
                     session_id, inputs=source_store, archive=TleArchiveReader(tle_root)
                 )
             except AdaptiveTleInputUnavailable as error:
-                document = AdaptiveTlePositionDocumentV1(
+                document = AdaptiveTlePositionDocumentV2(
                     session_id=session_id,
                     input_manifest_sha256=source.input_manifest_sha256,
                     analysis_manifest_sha256=source.analysis_manifest_sha256,
@@ -207,11 +214,13 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
         prior_results, point_inventory, selected_tracks, finest_tracks = [], {}, {}, {}
         traces, frontiers = {}, {}
         context = multiprocessing.get_context("fork")
-        for name, (latitude, longitude) in PRIORS.items():
+        for name, (latitude, longitude, radius_km) in PRIORS.items():
             evaluator = RegionalTrackPredictionEvaluator(banks, _point_factory(latitude, longitude))
             with context.Pool(workers, initializer=_worker_start, initargs=(evaluator,)) as pool:
                 result = adaptive_best_first_search(
-                    lambda points: pool.map(_worker_point, np.asarray(points).tolist())
+                    lambda points: pool.map(_worker_point, np.asarray(points).tolist()),
+                    radius_km=radius_km,
+                    region_size_km=1000,
                 )
             spacing = {
                 (row["east_km"], row["north_km"]): row["spacing_km"]
@@ -235,10 +244,12 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
                 runtime_ms=round((time.monotonic() - started) * 1000),
             )
             prior_results.append(
-                AdaptiveTlePriorResultV1(
+                AdaptiveTlePriorResultV2(
                     name=name,
-                    region=AdaptiveTleRegionV1(
-                        center_latitude_deg=latitude, center_longitude_deg=longitude
+                    region=AdaptiveTleRegionV2(
+                        center_latitude_deg=latitude,
+                        center_longitude_deg=longitude,
+                        radius_km=radius_km,
                     ),
                     search_complete=result.complete,
                     stop_reason=result.stop_reason,
@@ -280,7 +291,7 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
                 },
             }
         )
-        document = AdaptiveTlePositionDocumentV1(
+        document = AdaptiveTlePositionDocumentV2(
             session_id=session_id,
             input_manifest_sha256=prepared.input_manifest_sha256,
             analysis_manifest_sha256=prepared.analysis_manifest_sha256,
@@ -313,7 +324,7 @@ def main():
             {
                 "state": "complete",
                 "session_id": args.session_id,
-                "adaptive_tle_position_state": manifest.document.state,
+                "adaptive_tle_position_v2_state": manifest.document.state,
             }
         )
     )

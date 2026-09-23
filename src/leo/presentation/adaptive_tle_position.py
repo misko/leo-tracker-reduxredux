@@ -81,15 +81,15 @@ def render_adaptive_tle_position(document) -> bytes:
                 )
             axis.set(
                 title=(
-                    f"{prior.name.title()} 500 km prior\n"
+                    f"{prior.name.title()} {prior.region.radius_km:g} km prior\n"
                     f"selected {prior.selected.capped_weighted_rmse_hz:.2f} Hz · "
                     f"{prior.accounting.eligible_track_count} tracks · "
                     f"{prior.accounting.eligible_observation_count} observations"
                 ),
                 xlabel="East of prior centre (km)",
                 ylabel="North of prior centre (km)",
-                xlim=(-500, 500),
-                ylim=(-500, 500),
+                xlim=(-prior.region.radius_km, prior.region.radius_km),
+                ylim=(-prior.region.radius_km, prior.region.radius_km),
             )
             axis.set_aspect("equal")
             axis.grid(alpha=0.2)

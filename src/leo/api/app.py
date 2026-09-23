@@ -40,7 +40,10 @@ from leo.application.standard_reprocess import (
     StandardReprocessor,
     StandardReprocessResultV1,
 )
-from leo.contracts.adaptive_tle_position import AdaptiveTlePositionReader
+from leo.contracts.adaptive_tle_position import (
+    AdaptiveTlePositionReader,
+    AdaptiveTlePositionReaderV2,
+)
 from leo.contracts.blind_regional import BlindRegionalReader
 from leo.contracts.capture_control import CaptureControlStateV1
 from leo.contracts.position_methods import PositionMethodsReader
@@ -241,6 +244,7 @@ def create_app(
     position_methods: PositionMethodsReader | None = None,
     blind_regional: BlindRegionalReader | None = None,
     adaptive_tle_position: AdaptiveTlePositionReader | None = None,
+    adaptive_tle_position_v2: AdaptiveTlePositionReaderV2 | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
 
@@ -259,6 +263,7 @@ def create_app(
     app.include_router(position_methods_router(position_methods))
     app.include_router(blind_regional_router(blind_regional))
     app.include_router(adaptive_tle_position_router(adaptive_tle_position))
+    app.include_router(adaptive_tle_position_router(adaptive_tle_position_v2, version=2))
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
     v2_router = APIRouter(prefix="/api/v2")

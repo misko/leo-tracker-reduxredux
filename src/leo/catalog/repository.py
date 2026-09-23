@@ -2286,6 +2286,22 @@ class CatalogRepository:
             )
             if existing is not None:
                 return False
+            if job_kind == "adaptive_tracking":
+                superseded = session.execute(
+                    select(ProcessingJob)
+                    .where(
+                        ProcessingJob.job_kind == job_kind,
+                        ProcessingJob.adaptive_session_id == session_id,
+                        ProcessingJob.adaptive_input_manifest_digest == input_manifest_digest,
+                        ProcessingJob.adaptive_configuration_digest != configuration_digest,
+                        ProcessingJob.state == JobState.PENDING.value,
+                    )
+                    .with_for_update()
+                ).scalars()
+                for job in superseded:
+                    job.state = JobState.CANCELLED.value
+                    job.outcome = "superseded-by-tracking-policy"
+                    job.error = None
             session.add(
                 ProcessingJob(
                     run_id=None,

@@ -35,7 +35,11 @@ from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 
 def _position_methods_available(
-    *, bulk_root: Path, session_id: str, input_manifest_sha256: str
+    *,
+    bulk_root: Path,
+    session_id: str,
+    input_manifest_sha256: str,
+    analysis_manifest_sha256: str,
 ) -> bool:
     try:
         return (
@@ -53,6 +57,7 @@ def _position_methods_available(
                 bulk_root,
                 session_id,
                 expected_input=input_manifest_sha256,
+                expected_analysis=analysis_manifest_sha256,
             )
         )
     except (OSError, ValueError):
@@ -187,6 +192,7 @@ def main():
                         bulk_root=args.bulk_root,
                         session_id=s,
                         input_manifest_sha256=sources.load(s).input_manifest_sha256,
+                        analysis_manifest_sha256=sources.load(s).analysis_manifest_sha256,
                     )
                 )
                 and (args.session_id or products.analysis_status(s).state != "failed")
@@ -229,6 +235,7 @@ def main():
                             args.bulk_root,
                             sid,
                             expected_input=source.input_manifest_sha256,
+                            expected_analysis=source.analysis_manifest_sha256,
                         )
                         if not adaptive_position_complete:
                             raise ValueError(
@@ -269,7 +276,7 @@ def main():
                                 if position_complete
                                 else "pending",
                                 "blind_regional_state": "complete" if blind_complete else "pending",
-                                "adaptive_tle_position_state": (
+                                "adaptive_tle_position_v2_state": (
                                     "complete" if adaptive_position_complete else "pending"
                                 ),
                                 "trajectory": status.product.trajectory_state

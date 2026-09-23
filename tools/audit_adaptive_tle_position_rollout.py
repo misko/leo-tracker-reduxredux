@@ -16,14 +16,14 @@ import tempfile
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 from PIL import Image, UnidentifiedImageError
 
 from leo.contracts.digests import canonical_json_bytes
-from leo.storage.adaptive_tle_position import AdaptiveTlePositionStore
+from leo.storage.adaptive_tle_position import AdaptiveTlePositionStore, AdaptiveTlePositionStoreV2
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 _ROOT = Path(__file__).parents[1]
@@ -36,6 +36,31 @@ _SOURCES = (
     _ROOT / "src/leo/analysis/adaptive_tle_prediction.py",
     _ROOT / "src/leo/operations/adaptive_tle_position_inputs.py",
 )
+
+
+class _Version(NamedTuple):
+    number: int
+    analysis_id: str
+    api_suffix: str
+    store_type: type[AdaptiveTlePositionStore]
+
+
+def _version(number: int) -> _Version:
+    if number == 1:
+        return _Version(
+            1,
+            "scanner-adaptive-tle-position-v1",
+            "adaptive-tle-position",
+            AdaptiveTlePositionStore,
+        )
+    if number == 2:
+        return _Version(
+            2,
+            "scanner-adaptive-tle-position-v2",
+            "adaptive-tle-position-v2",
+            AdaptiveTlePositionStoreV2,
+        )
+    raise ValueError("adaptive TLE position audit version must be 1 or 2")
 
 
 def _sha256(payload: bytes) -> str:
@@ -112,11 +137,13 @@ def _http_get(url: str, timeout_seconds: float) -> bytes:
         return response.read()
 
 
-def _verify_api(*, api_base: str, session_id: str, manifest: Any, timeout_seconds: float) -> None:
+def _verify_api(
+    *, api_base: str, session_id: str, manifest: Any, version: _Version, timeout_seconds: float
+) -> None:
     """Verify the deployed read-only routes against the immutable store manifest."""
     base = (
         f"{api_base.rstrip('/')}/api/v1/scanner/tracking/"
-        f"{quote(session_id, safe='')}/adaptive-tle-position"
+        f"{quote(session_id, safe='')}/{version.api_suffix}"
     )
     payload = json.loads(_http_get(base, timeout_seconds))
     served = payload.get("manifest")
@@ -153,9 +180,11 @@ def audit_rollout(
     tracking_inputs: ScannerTrackingInputStore | None = None,
     api_base: str | None = None,
     api_timeout_seconds: float = 10,
+    version: int = 2,
 ) -> dict[str, Any]:
     """Verify each frozen session through the immutable public publication port."""
     session_ids = _inventory_session_ids(inventory)
+    target = _version(version)
     states = {state: 0 for state in ("pending", "diagnostic", "insufficient", "failed")}
     aggregate_masks = {
         "tracks": 0,
@@ -176,6 +205,15 @@ def audit_rollout(
                 rows.append(row)
                 continue
             manifest, document = status.manifest, status.manifest.document
+            if (
+                document.schema_version != target.number
+                or document.analysis_id != target.analysis_id
+            ):
+                raise ValueError("publication document differs from requested version")
+            if target.number == 2 and tuple(
+                prior.region.radius_km for prior in document.priors
+            ) not in ((), (250.0, 500.0)):
+                raise ValueError("V2 publication prior radii differ from Sacramento 250/Reno 500")
             states[document.state] += 1
             row.update(
                 document_sha256=manifest.document_sha256,
@@ -213,6 +251,7 @@ def audit_rollout(
                     api_base=api_base,
                     session_id=session_id,
                     manifest=manifest,
+                    version=target,
                     timeout_seconds=api_timeout_seconds,
                 )
                 api_count += 1
@@ -244,6 +283,8 @@ def audit_rollout(
     return {
         "schema": "adaptive-tle-position-rollout-audit/v1",
         "purpose": "read-only publication integrity and scientific-state audit; no truth used",
+        "target_version": target.number,
+        "target_analysis_id": target.analysis_id,
         "inventory_sha256": _sha256(canonical_json_bytes(inventory)),
         "frozen_window": inventory.get("frozen_window"),
         "source_sha256": _source_digests(),
@@ -282,6 +323,7 @@ def main() -> None:
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--inventory", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--version", type=int, choices=(1, 2), default=2)
     parser.add_argument(
         "--api-base",
         help="optional deployed API base, for example http://127.0.0.1:8000",
@@ -298,12 +340,14 @@ def main() -> None:
         parser.error("api timeout must be positive")
     inputs = ScannerTrackingInputStore(args.bulk_root)
     try:
+        target = _version(args.version)
         receipt = audit_rollout(
-            AdaptiveTlePositionStore(args.bulk_root),
+            target.store_type(args.bulk_root),
             inventory,
             tracking_inputs=inputs,
             api_base=args.api_base,
             api_timeout_seconds=args.api_timeout_seconds,
+            version=target.number,
         )
     finally:
         inputs.close()

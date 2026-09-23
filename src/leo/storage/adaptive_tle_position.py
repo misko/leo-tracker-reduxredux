@@ -13,8 +13,11 @@ from pydantic import TypeAdapter
 from leo.contracts.adaptive_tle_position import (
     AdaptiveTleArtifactV1,
     AdaptiveTlePositionDocumentV1,
+    AdaptiveTlePositionDocumentV2,
     AdaptiveTlePositionManifestV1,
+    AdaptiveTlePositionManifestV2,
     AdaptiveTlePositionStatusV1,
+    AdaptiveTlePositionStatusV2,
     SessionId,
 )
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
@@ -25,6 +28,14 @@ _LIMIT = 16 * 1024 * 1024
 
 
 class AdaptiveTlePositionStore:
+    namespace = "scanner-adaptive-tle-position-v1"
+    manifest_model: type[AdaptiveTlePositionManifestV1] | type[AdaptiveTlePositionManifestV2] = (
+        AdaptiveTlePositionManifestV1
+    )
+    status_model: type[AdaptiveTlePositionStatusV1] | type[AdaptiveTlePositionStatusV2] = (
+        AdaptiveTlePositionStatusV1
+    )
+
     def __init__(self, root: Path, *, read_only: bool = True):
         resolved = root.resolve()
         if resolved == Path("/mnt/qnap01") or Path("/mnt/qnap01") in resolved.parents:
@@ -39,32 +50,32 @@ class AdaptiveTlePositionStore:
         root = PinnedLocalRoot(self.root)
         directory = None
         try:
-            directory = root.child("scanner-adaptive-tle-position-v1", session_id, create=create)
+            directory = root.child(self.namespace, session_id, create=create)
             yield directory
         finally:
             if directory is not None:
                 directory.close()
             root.close()
 
-    def status(self, session_id: str) -> AdaptiveTlePositionStatusV1:
+    def status(self, session_id: str):
         try:
             with self._directory(session_id) as directory:
-                manifest = _unseal(
-                    _read(directory, "manifest.json", _LIMIT), AdaptiveTlePositionManifestV1
-                )
+                manifest = _unseal(_read(directory, "manifest.json", _LIMIT), self.manifest_model)
                 raw = _read(directory, "document.json", _LIMIT)
             if raw != canonical_json_bytes(manifest.document.model_dump(mode="json")):
                 raise ValueError("adaptive TLE position document encoding differs")
             if sha256_digest(raw) != manifest.document_sha256:
                 raise ValueError("adaptive TLE position document digest differs")
-            return AdaptiveTlePositionStatusV1(
-                session_id=session_id, state="complete", manifest=manifest
+            return self.status_model(
+                session_id=session_id,
+                state="complete",
+                manifest=manifest,  # type: ignore[arg-type]
             )
         except FileNotFoundError:
-            return AdaptiveTlePositionStatusV1(session_id=session_id)
+            return self.status_model(session_id=session_id)
         except ValueError as error:
             if isinstance(error.__cause__, FileNotFoundError):
-                return AdaptiveTlePositionStatusV1(session_id=session_id)
+                return self.status_model(session_id=session_id)
             raise
 
     @contextmanager
@@ -88,14 +99,16 @@ class AdaptiveTlePositionStore:
                 fcntl.flock(descriptor, fcntl.LOCK_UN)
                 os.close(descriptor)
 
-    def publish(self, document: AdaptiveTlePositionDocumentV1, image: bytes):
+    def publish(
+        self, document: AdaptiveTlePositionDocumentV1 | AdaptiveTlePositionDocumentV2, image: bytes
+    ):
         if self.read_only:
             raise PermissionError("adaptive TLE position store is read-only")
         if not image.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValueError("adaptive TLE position artifact is not PNG")
         raw = canonical_json_bytes(document.model_dump(mode="json"))
-        manifest = AdaptiveTlePositionManifestV1(
-            document=document,
+        manifest = self.manifest_model(  # type: ignore[arg-type]
+            document=document,  # type: ignore[arg-type]
             document_sha256=sha256_digest(raw),
             artifacts=(AdaptiveTleArtifactV1(sha256=sha256_digest(image), byte_count=len(image)),),
         )
@@ -136,3 +149,9 @@ class AdaptiveTlePositionStore:
         if len(payload) != reference.byte_count or sha256_digest(payload) != reference.sha256:
             raise ValueError("adaptive TLE position PNG digest differs")
         return payload
+
+
+class AdaptiveTlePositionStoreV2(AdaptiveTlePositionStore):
+    namespace = "scanner-adaptive-tle-position-v2"
+    manifest_model = AdaptiveTlePositionManifestV2
+    status_model = AdaptiveTlePositionStatusV2

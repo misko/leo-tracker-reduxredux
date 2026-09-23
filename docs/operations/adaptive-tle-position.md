@@ -1,12 +1,12 @@
 # Adaptive all-track position analysis
 
 The standard adaptive tracking job publishes the additive
-`scanner-adaptive-tle-position-v1` product after scanner analysis. Existing
+`scanner-adaptive-tle-position-v2` product after scanner analysis. Existing
 assisted positioning and Denver-region products keep their own contracts.
 
 This product reconstructs every eligible track with at least three seconds of
-support and six observations. It searches separate Sacramento and Reno priors,
-each with a 500 km radius, at 100, 50, 25 and 12.5 km spacings with a budget of
+support and six observations. It searches separate Sacramento (250 km radius)
+and Reno (500 km radius) priors at 100, 50, 25 and 12.5 km spacings with a budget of
 400 evaluated positions per prior. It retains the best evaluated point across
 all levels and reports the best finest-level point separately. An unfinished
 frontier is explicitly reported; a completed artifact is not a globally
@@ -25,14 +25,19 @@ selected before the capture, without using the true receiver location.
 
 The read-only API exposes the manifest and machine-readable document at:
 
-`/api/v1/scanner/tracking/{session_id}/adaptive-tle-position`
+`/api/v1/scanner/tracking/{session_id}/adaptive-tle-position-v2`
 
 The manifest binds the map at
-`/api/v1/scanner/tracking/{session_id}/adaptive-tle-position/map.png?sha256=...`.
+`/api/v1/scanner/tracking/{session_id}/adaptive-tle-position-v2/map.png?sha256=...`.
 The web tracking panel displays the map, per-prior selected coordinates and
 scores, track/observation counts, budget status, and a JSON download. Scientific
 insufficiency is labeled with its reason; transport or processing failure must
 not be reported as a successful numerical result.
+
+The original v1 contract, namespace and `/adaptive-tle-position` routes remain
+readable for the former 500 km / 500 km analysis. They are not substituted for
+missing v2 results. The different prior radii require a new immutable publication
+and configuration digest; old artifacts are never relabeled or overwritten.
 
 The local immutable store owns its namespace beneath the configured bulk root.
 QNAP is not a writable destination. New tracking jobs use the existing `memory`

@@ -6,20 +6,31 @@ from fastapi import APIRouter, HTTPException, Path, Query, Response
 
 from leo.contracts.adaptive_tle_position import (
     AdaptiveTlePositionReader,
+    AdaptiveTlePositionReaderV2,
     AdaptiveTlePositionStatusV1,
+    AdaptiveTlePositionStatusV2,
 )
 from leo.contracts.digests import Sha256Digest
 
 Identifier = Annotated[str, Path(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
 
 
-def adaptive_tle_position_router(reader: AdaptiveTlePositionReader | None) -> APIRouter:
+def adaptive_tle_position_router(
+    reader: AdaptiveTlePositionReader | AdaptiveTlePositionReaderV2 | None,
+    *,
+    version: int = 1,
+) -> APIRouter:
+    if version not in (1, 2):
+        raise ValueError("adaptive TLE position API version must be 1 or 2")
     router = APIRouter(prefix="/api/v1/scanner/tracking")
+    suffix = "adaptive-tle-position" if version == 1 else "adaptive-tle-position-v2"
 
     @router.api_route(
-        "/{session_id}/adaptive-tle-position",
+        f"/{{session_id}}/{suffix}",
         methods=["GET", "HEAD"],
-        response_model=AdaptiveTlePositionStatusV1,
+        response_model=(
+            AdaptiveTlePositionStatusV1 if version == 1 else AdaptiveTlePositionStatusV2
+        ),
     )
     def status(session_id: Identifier):
         if reader is None:
@@ -31,7 +42,7 @@ def adaptive_tle_position_router(reader: AdaptiveTlePositionReader | None) -> AP
                 409, "adaptive TLE position evidence failed verification"
             ) from error
 
-    @router.api_route("/{session_id}/adaptive-tle-position/map.png", methods=["GET", "HEAD"])
+    @router.api_route(f"/{{session_id}}/{suffix}/map.png", methods=["GET", "HEAD"])
     def artifact(session_id: Identifier, sha256: Annotated[Sha256Digest, Query()]):
         if reader is None:
             raise HTTPException(404, "adaptive TLE position evidence is unavailable")

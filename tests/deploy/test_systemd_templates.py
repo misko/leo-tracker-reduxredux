@@ -32,6 +32,12 @@ def test_adaptive_workers_provision_position_tracking_root() -> None:
         assert adaptive.startswith("ExecStartPre=+/usr/bin/install -d ")
         assert "-o leo -g leo" in adaptive
         assert "0750" in adaptive
+        adaptive_v2 = next(
+            line for line in commands if line.endswith("/scanner-adaptive-tle-position-v2")
+        )
+        assert adaptive_v2.startswith("ExecStartPre=+/usr/bin/install -d ")
+        assert "-o leo -g leo" in adaptive_v2
+        assert "0750" in adaptive_v2
 
 
 ENV_EXAMPLE = PROJECT_ROOT / "deploy" / "etc" / "leo" / "leo.env.example"
