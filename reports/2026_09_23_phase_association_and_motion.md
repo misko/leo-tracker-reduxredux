@@ -44,6 +44,9 @@ channel: eight dwells per scan, 24 total. Reuse the original 2.5 MS/s evidence;
 replay the same complete method pipeline on the 16 high-rate dwells. There are
 2.88 seconds of selected IQ per receiver across the three scans, not a replay
 of all 1,500 seconds of recording. The original one-dwell abstention is retained.
+All eight anchor dwells use upper channel edges; all sixteen selected high-rate
+dwells use lower edges. This is an additional RF-band/edge confound, not an
+equal-signal sampling-rate experiment.
 
 | Rate / paired example | Native supported / selected | Median supported spline B RMS | Median refined pilot/scalar RMS | Pilot-comparable supported dwells |
 | --- | ---: | ---: | ---: | ---: |

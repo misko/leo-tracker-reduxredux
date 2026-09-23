@@ -102,7 +102,7 @@ def run():
             details.append(d)
     save('summary.json',summary);save('per-dwell.json',details)
     with (ROOT/'per-dwell.csv').open('w') as handle:
-        writer=csv.DictWriter(handle,fieldnames=list(dict.fromkeys(k for r in details for k in r)))
+        writer=csv.DictWriter(handle,fieldnames=list(dict.fromkeys(k for r in details for k in r)),lineterminator='\n')
         writer.writeheader();writer.writerows(details)
     save('validation.json',dict(production_parity_rows=parity,production_parity_count=len(parity),
         selected_dwell_count=len(details),unchanged_selection=True,
