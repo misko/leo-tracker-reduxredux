@@ -76,6 +76,56 @@ treated as a continuous phase arc. A future replay must use these outcomes as
 discovery information and freeze its qualification protocol before inspecting
 phase responses.
 
+## Receiver-frequency consistency
+
+The [closure enumeration](figures/2026_09_23_independent_phase/geometry-sensitivity/raw-candidate-cfo-closures.json)
+retains all 71 timing-compatible candidate-member combinations. For each it
+computes `dA = f1A − f0A`, `dB = f1B − f0B`, and closure `dB − dA`.
+No nearest-frequency combination or per-probe alias is selected.
+
+| Probe time (s) | Member combinations | Full-alias-wrapped closure range (Hz) |
+|---:|---:|---:|
+| 3.775 | 3 | +321 to +557 |
+| 19.025 | 3 | −217 to −164 |
+| 25.900 | 10 | −741 to −90 |
+| 26.400 | 3 | +268 to +461 |
+| 28.200 | 20 | −137 to +757 |
+| 30.850 | 32 | −324 to +244 |
+
+Wrapping at half the native alias period gives the same ranges. Raw closures
+still differ by large alias shifts; the artifact preserves them. These ranges
+are spreads over discrete candidate hypotheses, **not confidence intervals**.
+The archived estimates do not supply the independent error model needed to
+declare a statistical common-offset pass. The metadata is compatible enough
+to motivate a bounded source-isolation replay; it does not resolve receiver
+phase drift or prove shared-source identity. The [builder](figures/2026_09_23_independent_phase/geometry-sensitivity/build_candidate_cfo_closures.py)
+binds the input artifact hash and needs no IQ access.
+
+RX0's minimum source-component CFO separations modulo the native alias are
+approximately 60.716, 30.738, 75.320, 75.181, 74.578, and 73.550 kHz in the
+same time order. These six surviving pairs are outside the 2.5 kHz initial
+Hough gate. Consequently, the general possibility of merging close-Doppler
+signals described above is **not evidence that it caused the loss of these
+specific six pairs**. Their isolated support must be investigated separately.
+
+## Required source-isolation replay
+
+Single-template correlations cannot establish that a weaker candidate is
+independent of a stronger waveform. A useful next replay must fit both known
+pilot templates jointly on the same saved mixed IQ, record their Gram-matrix
+conditioning, and measure each template's incremental held response beyond the
+other. Fixed rolled-pilot, wrong-carrier, and swapped-epoch controls must receive
+the same fitting opportunity. Alias representatives, masks, and any timing
+transport must be frozen using training data before held responses are read.
+
+Random whole groups must share the same assignment across both sources and
+receivers and have disjoint underlying sample support, including guards for
+template and filter boundaries. Each source keeps its actual pilot epoch;
+two-source differencing at different epochs requires supported transport with
+uncertainty rather than silently assuming simultaneous receiver phase. A local
+source-isolation pass would justify studying phase further, not an orbit or
+receiver-position claim.
+
 ## Qualification boundary
 
 Any candidate grouping below is a phase-blind diagnostic, not a satellite
