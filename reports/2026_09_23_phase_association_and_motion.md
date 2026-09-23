@@ -13,6 +13,11 @@ all three rates; they do not yet isolate the geometric component of that phase.
 
 ## Measured 2.5 / 10 / 15 MS/s examples
 
+**Validation-policy update:** subsequent experiments use seeded random group
+holdouts as requested. The measurements below were already completed with the
+documented first-half/later-half split; they remain historical results under
+that protocol and have not been rerun or relabeled as random-holdout results.
+
 All five scans are 300-second pre-rotation recordings from the same radio. The
 anchor is the user-requested scan. The nearest preceding 10 and 15 MS/s recordings
 are included even though their receiver overlap is poor. To examine actual
@@ -194,8 +199,11 @@ are more directly useful for this motion observable than sample rate alone.
 
 1. **Verify a shared waveform before linking receiver detections.** Start with
    the existing phase-blind timing/frequency pair candidates. Fit carrier and
-   response on an initial temporal partition, track on A frequency groups, and
-   check B groups and wrong-time controls. Preserve abstentions. This tests
+   response on randomly assigned training blocks distributed across the dwell.
+   Freeze that fit, track on A frequency groups in the randomly held blocks,
+   and check B groups and wrong-time controls. Keep overlapping windows and
+   their filter support in the same partition or exclude boundary windows.
+   Preserve abstentions. This tests
    whether a coherent common signal exists; it does not identify a NORAD object.
 2. **Require evidence beyond a shared pilot pattern.** The known edge pilots
    repeat across satellites. Evaluate withheld non-pilot occupied bins, wrong
@@ -210,8 +218,8 @@ are more directly useful for this motion observable than sample rate alone.
    branches. Do not fit an independent unrestricted offset to every proposed
    satellite and then count its good fit as association evidence.
 4. **Add geometric phase only after calibration.** Score candidate ephemeris
-   directions with a circular likelihood. Fit calibration on other dwells and
-   validate on unseen times/sources. Marginalize wrap/π branches rather than
+   directions with a circular likelihood. Fit calibration on randomly assigned
+   training dwells and validate on held-out dwell/source groups. Marginalize wrap/π branches rather than
    selecting whichever branch makes the preferred candidate fit. Use the known
    receiver position for initial association validation; do not simultaneously
    let receiver position, satellite orbit, clock, and phase calibration move
@@ -248,7 +256,8 @@ For a short verified coherent arc, combine frequency and phase with a local
 model `φ(t)=φ0+2π[f0 Δt+0.5 fdot Δt²]`. A spline is useful for describing residual
 receiver phase and detecting discontinuities; differentiating a flexible spline
 does not turn it into an orbital-speed measurement. Any phase-derived correction
-must improve withheld per-frame CFO prediction over the frequency-only baseline.
+must improve randomly held-out whole-frame CFO reconstruction over the
+frequency-only baseline. This evaluates reconstruction, not future forecasting.
 Retain a free phase intercept per proven continuity segment and terminate phase
 connection on a slip, frame-reference change, or retune.
 
@@ -297,18 +306,33 @@ calibrate phase or prove an orbit association.
 
 ## Concrete promotion experiment
 
-Freeze complete scans into development and unseen-day evaluation sets, stratified
-by rate, RF channel, receiver imbalance, and rotation state. The five scans in
-this report are development examples, not a random sample or independent truth.
+Use **seeded random group holdouts throughout**, not a first-half/second-half
+split or a chronological day cutoff. Randomly assign complete scan or source-arc
+groups to development and evaluation, stratified by rate, RF channel, receiver
+imbalance, and rotation state where group counts permit. Keep linked observations
+from the same arc together. For within-dwell numerical checks, randomly assign
+whole non-overlapping blocks or pilot frames across the full dwell; preserve
+correlation groups and exclude filter/window support crossing the split.
+
+Freeze and record seeds, group definitions and explicit assignments before
+evaluating methods. Fit carrier, response, calibration, pilot offsets and model
+selection using training groups only. An inner model-selection split must also
+be randomized by group. For A-to-B transfer, A in a held block is the declared
+tracking input and B is the evaluation target; do not call that whole-block
+prediction. Genuine whole-block reconstruction may not use its A data either.
+Use identical assignments for every method comparison, retain abstentions, and
+report random-held-out reconstruction separately from any causal forecast claim.
+The five scans in this report remain development examples, not a random sample
+or independent truth.
 
 | Candidate change | Baseline | Required evaluation |
 | --- | --- | --- |
 | Phase-supported receiver pairing | Timing/CFO pair rules | Correct-pair retention versus wrong-pair and wrong-time acceptance; abstentions included |
 | Joint receiver-offset/alias constraint | Independent alias decisions | Withheld pilot/CFO residuals, branch stability, false-pair controls |
 | Equal-duration phase blocks | Fixed 4096 samples | Same-dwell support, B discrepancy, bandwidth and runtime; no retuning on B results |
-| Phase-aided local frequency | Independent frame CFO | Future/withheld-symbol CFO prediction, slip rate, coverage, bias under synthetic known motion |
+| Phase-aided local frequency | Independent frame CFO | Randomly held-out whole-frame CFO reconstruction, slip rate, coverage, bias under synthetic known motion |
 | Calibrated phase candidate score | Existing Doppler-only candidate score | Held-out candidate ranking and null separation; independently known IDs where available |
-| Position/orbit refinement | Frozen Doppler-only search and orbit prior | Held-out time/frequency fit, receiver-position reference error, nuisance/geometry rank, sensitivity to catalog epoch |
+| Position/orbit refinement | Frozen Doppler-only search and orbit prior | Randomly held-out group fit, receiver-position reference error, nuisance/geometry rank, sensitivity to catalog epoch |
 
 Keep the Doppler search candidate set, initial grids, and computation budget fixed
 for the phase ablation. Otherwise better coarse-cell coverage can masquerade as
