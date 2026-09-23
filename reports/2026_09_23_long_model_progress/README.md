@@ -19,6 +19,7 @@ or validation generalization. Validation/test track outcomes remain closed.
 | 16 scans, fixed identities + epoch scale 0.2 s | 9.301 km | 9.296 km | 326.78 / 327.40 Hz |
 | 16 scans, fixed identities + epoch scale 1 s | 6.678 km | 6.654 km | 322.09 / 322.77 Hz |
 | 16 scans, fixed identities + epoch scale 5 s | 5.782 km | 5.754 km | 322.04 / 322.72 Hz |
+| 72 scans, full eight-hour group, blind zero-epoch baseline | 7.548 km | 7.651 km | 311.97 / 311.99 Hz |
 
 Rows labeled simply 'epoch' share one correction per scan; satellite-epoch rows
 share one per selected satellite and have no scan term. The satellite model
@@ -77,6 +78,15 @@ RMS changes only from 321 to 326 Hz. These are conditional sensitivity examples,
 not measured receiver accuracy or a noise-distribution accuracy guarantee.
 The shared generator/fitter cannot detect common-mode physical-model errors.
 
+A predeclared 20-seed extension retains that support and fits both starts for
+paired noise-only and noise-plus-epoch cases (80 fits, all solver-success flags).
+For independent 300 Hz noise, median/P90 error is 320/559 m and 45% of seeds are
+below 300 m. The stipulated satellite perturbations raise median/P90 to
+450/1,221 m, with 35% below 300 m. All perturbations use direct shifted-epoch
+SGP4, not cached interpolation. These percentages describe the stipulated
+synthetic noise model, not field reliability; both starts agree and must not
+be counted as independent noise trials.
+
 ![Synthetic recovery controls](../2026_09_23_long_position_synthetic_control/synthetic_control.png)
 
 A separate TRAIN-only local curvature audit explains a risk of adding timing
@@ -91,9 +101,12 @@ optima. Lower residuals can accompany weaker localization.
 
 ## Next evidence required
 
-The complete first eight-hour TRAIN group now has 72 verified causal caches,
-with zero export failures. The full-group baseline is the next duration test;
-the completed six/sixteen views cover only about 35/107 minutes elapsed.
+The complete first eight-hour TRAIN group now has a finished blind baseline
+covering 72 scans and 3,587 tracks. The two starts yield 7.55 and 7.65 km error,
+with about 312 Hz complementary-row capped RMS. Cache preparation took 6.77 s
+and the two sequential prior searches took 1,897.59 s. This improves on the
+roughly 10 km shorter-view baseline but does not establish sub-kilometre accuracy.
+The six/sixteen views cover only about 35/107 minutes elapsed.
 Synthetic success will not count as achieving the real-data accuracy objective.
 
 The current experiment priorities are:
@@ -125,8 +138,10 @@ test group closed until model selection is complete.
 - [Full eight-hour cache manifest and receipts](../2026_09_23_long_training_cache_full8h/README.md).
 - [Frozen train/validation/test manifest](../2026_09_23_long_inventory_complete/manifest.json).
 - [Synthetic known-position control](../2026_09_23_long_position_synthetic_control/README.md).
+- [Twenty-seed paired synthetic sensitivity](../2026_09_23_long_position_synthetic_multiseed/README.md).
 - [Epoch versus position-curvature audit](../2026_09_23_long_epoch_identifiability/README.md).
 - [Conditional satellite-epoch fits and solver diagnostics](../2026_09_23_long_satellite_epoch_position/README.md).
+- [Full eight-hour blind baseline](../2026_09_23_long_training_full8h_position/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
