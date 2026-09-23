@@ -12,10 +12,21 @@ or validation generalization. Validation/test track outcomes remain closed.
 | 6 scans, fixed identities + epoch scale 0.2 s | 9.435 km | 9.439 km | 304.83 / 304.83 Hz |
 | 6 scans, fixed identities + epoch scale 1 s | 6.400 km | 6.400 km | 302.69 / 302.69 Hz |
 | 6 scans, fixed identities + epoch scale 5 s | 5.091 km | 5.090 km | 302.27 / 302.26 Hz |
+| 6 scans, fixed identities + satellite epoch scale 0.2 s | 9.356 km | 9.356 km | 289.82 / 289.82 Hz |
+| 6 scans, fixed identities + satellite epoch scale 1 s | 8.035 km | 8.035 km | 207.57 / 207.57 Hz |
+| 6 scans, fixed identities + satellite epoch scale 5 s | 4.951 km | 4.951 km | 183.32 / 183.32 Hz |
 | 16 scans, blind zero-epoch baseline | 10.039 km | 9.909 km | 334.71 / 335.04 Hz |
 | 16 scans, fixed identities + epoch scale 0.2 s | 9.301 km | 9.296 km | 326.78 / 327.40 Hz |
 | 16 scans, fixed identities + epoch scale 1 s | 6.678 km | 6.654 km | 322.09 / 322.77 Hz |
 | 16 scans, fixed identities + epoch scale 5 s | 5.782 km | 5.754 km | 322.04 / 322.72 Hz |
+
+Rows labeled simply 'epoch' share one correction per scan; satellite-epoch rows
+share one per selected satellite and have no scan term. The satellite model
+lowers residuals substantially but still misses by kilometres. All six arms
+satisfy the declared objective/step stopping rule, without certified stationarity;
+the 5 s arms have three active timing bounds. The accepted solver recomputes the
+coupled position/free-epoch step when a bound prevents an outward epoch update.
+This corrects a line-search stall in the preserved unprojected attempt.
 
 All settings are reported; no setting was selected by geographic error. These
 are nested views of TRAIN, not independent validation. The epoch fit fixes each
@@ -23,7 +34,7 @@ identity from the blind baseline and profiles its constant CFO on training rows.
 It is therefore conditional inference, not a new full-catalogue association
 search. Its fitted shifts may absorb clock, orbit, association or track-model
 errors and are not physical clock estimates. The regularization scales are not
-calibrated timing uncertainties. Ten of twelve numerical polish runs converged;
+calibrated timing uncertainties. For the scan-epoch model, ten of twelve numerical polish runs converged;
 eleven arms converged in at least one optimization stage. One scale-5 Sacramento
 arm remains line-search limited, with a converged Reno counterpart in the same
 basin. No visibility or timing-boundary violations occurred.
@@ -115,6 +126,7 @@ test group closed until model selection is complete.
 - [Frozen train/validation/test manifest](../2026_09_23_long_inventory_complete/manifest.json).
 - [Synthetic known-position control](../2026_09_23_long_position_synthetic_control/README.md).
 - [Epoch versus position-curvature audit](../2026_09_23_long_epoch_identifiability/README.md).
+- [Conditional satellite-epoch fits and solver diagnostics](../2026_09_23_long_satellite_epoch_position/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
