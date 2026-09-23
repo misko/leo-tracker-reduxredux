@@ -43,11 +43,11 @@ diagnostic.  It must not be treated as a decoded payload or a source-isolated
 phase.
 
 A predeclared circular affine phase predictor (one intercept and a principal
-slope grid from -12.5 to +12.5 Hz) is fit separately for each arm using training groups
-only and scored modulo pi on held groups.  This compares internal phase
-repeatability.  The 20 ms cadence makes other slope aliases indistinguishable
-under modulo-pi scoring, so the reported slope is only a principal coordinate.
-It does not estimate satellite motion.
+slope grid from -25 to +25 Hz) is fit separately for each arm using training groups
+only and scored modulo 2π on held groups.  This compares internal phase
+repeatability.  The complex cross-vector has ordinary 2π periodicity, and the
+20 ms cadence makes slopes separated by 50 Hz indistinguishable.  The reported
+slope is only a principal coordinate.  It does not estimate satellite motion.
 
 The result can show whether retaining high-rate bandwidth improves this fixed
 known-pilot or raw cross-receiver diagnostic for these two saved dwells.  It

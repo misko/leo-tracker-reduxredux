@@ -34,16 +34,21 @@ def split_groups(count: int, seed: int = SEED) -> tuple[list[int], list[int]]:
 
 
 def circular_affine(time_s: np.ndarray, phase: np.ndarray, train: np.ndarray) -> tuple[float, float]:
-    # At 20-ms group centers, modulo-pi phase makes slopes separated by 25 Hz
-    # equivalent.  Keep the deterministic principal representative.
-    grid = np.linspace(-12.5, 12.5, 801)
+    # The complex cross-vector phase is 2π periodic.  At 20-ms centers slopes
+    # separated by 50 Hz are equivalent; retain the principal representative.
+    grid = np.linspace(-25., 25., 801)
     score = []
     for hz in grid:
-        z = np.exp(2j * (phase[train] - 2 * np.pi * hz * time_s[train]))
+        z = np.exp(1j * (phase[train] - 2 * np.pi * hz * time_s[train]))
         score.append(abs(np.mean(z)))
     hz = float(grid[int(np.argmax(score))])
-    intercept = float(.5 * np.angle(np.mean(np.exp(2j * (phase[train] - 2*np.pi*hz*time_s[train])))))
+    intercept = float(np.angle(np.mean(np.exp(1j * (phase[train] - 2*np.pi*hz*time_s[train])))))
     return intercept, hz
+
+
+def wrapped_phase_error(phase: np.ndarray, prediction: np.ndarray) -> np.ndarray:
+    """The known complex pilot-vector cross phase has its ordinary 2π gauge."""
+    return np.angle(np.exp(1j * (phase - prediction)))
 
 
 def _design(times: np.ndarray, fs: float, epoch: int, cfo: float, edge: str, roll: int) -> np.ndarray:
@@ -141,7 +146,7 @@ def run() -> None:
         for arm,color in (("full","tab:blue"),("narrow_2p5","tab:orange")):
             t=np.array([r['time_s'] for r in case]); p=np.array([r['arms'][arm]['pilot_phase_rad'] for r in case]); train=np.array([r['partition']=='train' for r in case]); held=~train
             intercept,hz=circular_affine(t,p,train)
-            err=.5*np.angle(np.exp(2j*(p-(intercept+2*np.pi*hz*t))))
+            err=wrapped_phase_error(p, intercept+2*np.pi*hz*t)
             summary['arms'][arm]={"train_phase_resultant":float(abs(np.mean(np.exp(2j*err[train])))),"held_phase_resultant":float(abs(np.mean(np.exp(2j*err[held])))),"held_phase_rms_rad":float(np.sqrt(np.mean(err[held]**2))),"training_only_slope_hz":hz,"median_exact_projection_rx0":float(np.median([r['arms'][arm]['exact_projection_rx0'] for r in case])),"median_exact_projection_rx1":float(np.median([r['arms'][arm]['exact_projection_rx1'] for r in case])),"median_broadband_cross_coherence":float(np.median([r['arms'][arm]['broadband_cross_coherence'] for r in case]))}
             ax.plot(t[train]*1e3, p[train], 'o', color=color, label=f'{arm} train')
             ax.plot(t[held]*1e3, p[held], 'x', color=color, label=f'{arm} held')
