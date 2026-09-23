@@ -89,7 +89,11 @@ Requalify and render the frozen report without corpus access:
 ```
 
 Figures: [best cost versus evaluations](best-cost-vs-evaluations.png),
-[visited points](visited-points.png), and [runtime comparison](runtime.png).
+[visited points](visited-points.png), [position close-ups](visited-points-closeup.png),
+and [runtime comparison](runtime.png). The maps overlay the true Sausalito
+reference as a black plus after inference; red stars mark the selected grid
+centers. Dashed connectors show their separation. The close-ups span 60 km
+and report great-circle position error. The reference is never a search input.
 
 `baseline-retroactive-qualification.json` binds the completed exact-centre
 400-point baseline to the current deterministic input protocol. Its 34-track
