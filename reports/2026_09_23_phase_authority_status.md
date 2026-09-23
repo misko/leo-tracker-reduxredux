@@ -146,6 +146,10 @@ trajectory associations, not absence of saved per-probe candidate material.
 The next available route is phase-blind qualification of those unassociated
 candidates: timing, fixed alias consistency, persistent separate support, and
 cross-receiver compatibility must precede any phase-based source choice.
+The [subsequent raw-candidate screen](2026_09_23_unassociated_phase_candidates.md)
+finds six isolated probe opportunities with two timing-compatible component
+pairs. They are candidate material for source-isolation tests, not a validated
+two-source phase arc.
 
 The [builder](figures/2026_09_23_independent_phase/geometry-sensitivity/build_full_capture_branch_quartets.py)
 reads digest-verified analysis products, without opening IQ, fitting phase, or
