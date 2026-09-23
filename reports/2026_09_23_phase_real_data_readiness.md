@@ -61,6 +61,15 @@ phase-rate diagnostic is also negative: phase augmentation did not improve held
 prediction over its GLRT reference. Reusing it as a positive authority would be
 outcome-driven.
 
+Separate stream-0/stream-1 joint-pilot replays do contain several truthful
+20 ms two-source waveform positives, and the stream-1 28.2 s development example
+admits nearly compatible independent receiver offsets. Those are useful
+isolation results, so “no isolated source exists” would be wrong. They do not
+supply continuous multi-second gauge transport, calibrated dual-chain phase,
+secure candidate membership, or overlap with the surveyed-position population.
+The 100 microsecond follow-up also failed its held phase-stability gate. These
+short examples therefore cannot populate the required real position comparison.
+
 ## Smallest input that unlocks the comparison
 
 One externally calibrated, counter-continuous dual-receiver campaign is enough
