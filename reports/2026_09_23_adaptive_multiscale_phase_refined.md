@@ -1,5 +1,14 @@
 # Adaptive phase replay with train-only within-frame CFO refinement
 
+**Phase information is recoverable inside these adaptive dwells.** All five
+tested 120 ms visits have random-held-frame two-source differential coherence
+of 0.922–0.963 before separately removing each source's rate. Independent 20 ms
+chunks also recover strong pilot evidence. Two processing problems explain the
+apparent failures: summing symbols before residual-frequency correction loses
+coherence, and separately subtracting fitted source rates can introduce a
+false trend into their difference. These are results for this fixed development
+cohort, not a measured success rate across adaptive scans.
+
 This retrospective development replay reran the fixed five-visit
 `scan-hop-28d7592ea614f624` cohort after correcting the first replay's missing
 within-frame CFO refinement. It read the same 0.60 s of existing IQ under the
@@ -49,7 +58,9 @@ correction required before coherent summation, while V2 adds it.
 Using only that cached frame export, nearest A/B frames were paired within the
 predeclared half-frame bound. The table retains all pairs and reports circular
 resultants before and after independently removing each source's saved
-receiver-product rate. Both use the same 45 held-by-both pairs.
+receiver-product rate. Both use the same 45 held-by-both pairs and pair weight
+`sqrt(w_A*w_B)`, where each saved source weight is
+`sqrt(abs(c_RX0)*abs(c_RX1))`.
 
 | visit | paired frames | maximum gap | held-by-both | DD resultant before source-rate removal | DD resultant after separate source-rate removal |
 |---:|---:|---:|---:|---:|---:|
@@ -89,3 +100,17 @@ alignment, or continuity claim.
 Machine evidence: [results JSON](figures/2026_09_23_adaptive_multiscale_phase_refined/results.json), binding SHA-256 `6512cc01121272221956b88328425ed6c97a1d6174791579795c16771ff7968b`,
 protocol SHA-256 `f3ce9ffa6b4b2f0031ecae5971d86ba97651f017d17ebd17d5723feb247d1917`,
 and executed source SHA-256 `31d380c262d5d72748a027507dcf1619c2b8554c59a7e62636542e474004d73b`.
+
+The executed source was frozen at `2509800a` and the protocol at `ff6ac3e0`;
+the only subsequent replay-source change wraps one line for lint compliance.
+Eight focused tests pass, including the synthetic phase-origin check and
+equivalence of scalar and vectorized fractional correlations. No new RF was
+collected; the analysis uses 0.60 s of unique saved IQ, with a second read for
+the visualization-only export.
+
+The next association experiment should form the paired source differential
+before estimating its rate, or fit a shared receiver phase term jointly with
+source differences. Candidate/timing-swap controls should then test whether
+that observable distinguishes bindings. Linking it across retunes still
+requires consistent source and carrier-branch handling; this report does not
+yet estimate satellite speed, direction, or orbit.
