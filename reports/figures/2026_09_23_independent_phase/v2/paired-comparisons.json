@@ -1,0 +1,57 @@
+{
+  "scope": "descriptive bootstrap; no post-held model tuning",
+  "seed": 20260925,
+  "resamples": 10000,
+  "comparisons": [
+    {
+      "reference": "glrt_candidate",
+      "proposed": "phase_candidate",
+      "paired_held_visits": 12,
+      "mean_nll_gain": -0.0011991743740071836,
+      "paired_visit_bootstrap_95_percentile": [
+        -0.015731215384938393,
+        0.016308809204635046
+      ]
+    },
+    {
+      "reference": "phase_constant_rate",
+      "proposed": "phase_candidate",
+      "paired_held_visits": 12,
+      "mean_nll_gain": 6.7568246591581635,
+      "paired_visit_bootstrap_95_percentile": [
+        4.300838650310023,
+        9.569054769555239
+      ]
+    },
+    {
+      "reference": "phase_wrong_time",
+      "proposed": "phase_candidate",
+      "paired_held_visits": 12,
+      "mean_nll_gain": 2.508685662063221,
+      "paired_visit_bootstrap_95_percentile": [
+        1.805582775226998,
+        3.1452537754056342
+      ]
+    },
+    {
+      "reference": "glrt_constant_rate",
+      "proposed": "glrt_candidate",
+      "paired_held_visits": 12,
+      "mean_nll_gain": 6.8307508704718956,
+      "paired_visit_bootstrap_95_percentile": [
+        4.342201806397141,
+        9.60850289196236
+      ]
+    },
+    {
+      "reference": "glrt_wrong_time",
+      "proposed": "glrt_candidate",
+      "paired_held_visits": 12,
+      "mean_nll_gain": 2.6155417440874342,
+      "paired_visit_bootstrap_95_percentile": [
+        1.8222616866741468,
+        3.344419074974147
+      ]
+    }
+  ]
+}

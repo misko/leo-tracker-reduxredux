@@ -1,6 +1,7 @@
 """Descriptive whole-dwell comparisons for the sealed circular score."""
 
 import json
+import math
 
 import matplotlib
 
@@ -8,10 +9,82 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from tools.research.evaluate_independent_phase_v2 import DIRECTORY
+from tools.research.evaluate_independent_phase_v2 import DIRECTORY, ROOT
+from tools.research.fit_independent_phase import digest, regional_grid
+
+
+def position_diagnostic():
+    """Post-selection reference diagnostic; never supplied to inference."""
+    reference_path = ROOT / "reports/evaluation/2026_09_20_scanner_antenna_reference.json"
+    reference = json.loads(reference_path.read_text())
+    model_path = DIRECTORY / "training-model.json"
+    model = json.loads(model_path.read_text())
+    rows = []
+    for name in ("glrt_candidate", "phase_candidate"):
+        site = model["arms"][name]["site"]
+        lat1, lon1, lat2, lon2 = map(
+            math.radians,
+            (
+                reference["latitude_deg"],
+                reference["longitude_deg"],
+                site["latitude_deg"],
+                site["longitude_deg"],
+            ),
+        )
+        haversine = (
+            math.sin((lat2 - lat1) / 2) ** 2
+            + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+        )
+        rows.append(
+            {
+                "model": name,
+                "latitude_deg": site["latitude_deg"],
+                "longitude_deg": site["longitude_deg"],
+                "reference_error_km": 2 * 6371.0088 * math.asin(math.sqrt(haversine)),
+            }
+        )
+    _, grid = regional_grid()
+    nearest = None
+    for site in grid:
+        lat1, lon1, lat2, lon2 = map(
+            math.radians,
+            (
+                reference["latitude_deg"],
+                reference["longitude_deg"],
+                site["latitude_deg"],
+                site["longitude_deg"],
+            ),
+        )
+        h = (
+            math.sin((lat2 - lat1) / 2) ** 2
+            + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+        )
+        distance = 2 * 6371.0088 * math.asin(math.sqrt(h))
+        if nearest is None or distance < nearest["reference_error_km"]:
+            nearest = {
+                "latitude_deg": site["latitude_deg"],
+                "longitude_deg": site["longitude_deg"],
+                "reference_error_km": distance,
+            }
+    (DIRECTORY / "position-diagnostic.json").write_text(
+        json.dumps(
+            {
+                "scope": "post-hoc evaluation of frozen selections; no truth used for fitting",
+                "metric": "horizontal spherical haversine; mean Earth radius 6371.0088 km",
+                "reference_sha256": digest(reference_path),
+                "model_sha256": digest(model_path),
+                "reference_authority": reference["authority"],
+                "nearest_frozen_grid_site": nearest,
+                "rows": rows,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
 
 
 def main():
+    position_diagnostic()
     result = json.loads((DIRECTORY / "held-evaluation.json").read_text())
     models = result["models"]
     comparisons = []
