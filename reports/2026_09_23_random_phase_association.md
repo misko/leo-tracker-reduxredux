@@ -5,6 +5,10 @@ comparison with seeded random group validation. It tests whether RX0 and RX1
 share a coherent waveform component. It does not yet demonstrate improved
 named-satellite association or position accuracy.
 
+The follow-up [source-seeded pilot study](2026_09_23_source_seeded_phase.md)
+tests local CFO alternatives and incremental phase-rate feedback on independent
+held odd symbols at all three rates.
+
 ## Protocol
 
 The selections are unchanged from the [multirate report](2026_09_23_phase_association_and_motion.md):

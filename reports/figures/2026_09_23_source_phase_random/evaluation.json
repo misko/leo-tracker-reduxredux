@@ -1,0 +1,1108 @@
+{
+  "input_sha256": "1e4130e3db63ab957570588c51c1504ac844173a008262bc8b123700db4e6347",
+  "source_sha256": {
+    "evaluator": "ac6c0d2b5fd26f32475586e4948fb5e88a809b2505e0c7a405810d92e36a518f",
+    "candidate_phase_validation": "758c255f22dfe54dd07618124a3f3e152fa3abdb529099a047881fb3b6a9b481"
+  },
+  "seed": 20260923,
+  "training_groups": [
+    0,
+    3,
+    5
+  ],
+  "comparison": "constant versus linear CFO fit to train-even frames",
+  "source_scope": "one training-only GLRT-seeded waveform hypothesis",
+  "source_binding_claimed": false,
+  "held_response": "odd-fold CFO and channel-vector phase advances",
+  "held_odd_used_for_selection_or_gating": false,
+  "satellite_identity_claimed": false,
+  "orbit_improvement_claimed": false,
+  "results": [
+    {
+      "session_id": "scan-fw-1aa1d50103d97388",
+      "visit": 544,
+      "sample_rate_hz": 2500000,
+      "state": "evaluated",
+      "receivers": [
+        {
+          "receiver_id": 0,
+          "seed_choice": {
+            "seed_cfo_hz": [
+              379040.2868987425,
+              428756.1959896528
+            ],
+            "selected_branch_index": 1,
+            "refined_baseline_branch_index": 1,
+            "training_even_margin": [
+              -0.0019717002238097046,
+              0.08676357401555346
+            ],
+            "selection_used_held_odd": false
+          },
+          "selected_train_even_branch": {
+            "receiver_id": 0,
+            "training_groups": [
+              0,
+              3,
+              5
+            ],
+            "held_groups": [
+              1,
+              2,
+              4
+            ],
+            "training_supported_frame_count": 42,
+            "held_even_supported_frame_count": 41,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.09361718091379977,
+                "median_odd_control_coherence": 0.010780384262739365,
+                "median_odd_exact_minus_control": 0.08291019665686428,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 41,
+                "median_odd_exact_coherence": 0.09357265648987666,
+                "median_odd_control_coherence": 0.010745976573633376,
+                "median_odd_exact_minus_control": 0.08253442126928294,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "total_frame_count": 84,
+            "training_pair_count": 21,
+            "held_pair_count": 20,
+            "frequency_model_reference_s": 0.06347519047619046,
+            "constant_cfo_hz": 428669.05141992134,
+            "linear_cfo_at_reference_hz": 428669.0514199211,
+            "linear_cfo_rate_hz_s": -3870.593956080491,
+            "held_odd_cfo_rms_hz": {
+              "constant": 103.87481124301391,
+              "linear": 25.87311145467727
+            },
+            "phase_informed_rate": {
+              "grid_half_width_hz_s": 5000.0,
+              "grid_point_count": 41,
+              "cfo_intercept_frozen_to_train_even_line_hz": 428669.0514199211,
+              "baseline_rate_hz_s": -3870.593956080491,
+              "selected_rate_hz_s": -3870.593956080491,
+              "selected_delta_hz_s": 0.0,
+              "selected_on_training_phase_only": true,
+              "selected_at_grid_boundary": false,
+              "fitted_phase_bias_hz": -137.39170276574475,
+              "training_composite_score": 3.519762011012014,
+              "held_composite_score": 3.506715517205091,
+              "held_phase_metrics": {
+                "rms_rad": 0.2520382573713417,
+                "resultant": 0.883546381678846
+              },
+              "held_odd_cfo_rms_hz": 25.87311145467727,
+              "held_data_used_for_selection": false
+            },
+            "phase_bias_scope": "finite-principal-branch-minus187.5-to187.5Hz-conditional",
+            "exact_375hz_periodicity_claimed": false,
+            "fitted_phase_bias_hz": {
+              "constant_train_even_cfo": 100.15411529490171,
+              "linear_train_even_cfo": -137.39170276574475
+            },
+            "training_composite_score": {
+              "constant_train_even_cfo": 1.576331226404817,
+              "linear_train_even_cfo": 3.519762011012014
+            },
+            "held_composite_score": {
+              "constant_train_even_cfo": -0.30033181510244217,
+              "linear_train_even_cfo": 3.506715517205091
+            },
+            "held_phase_metrics": {
+              "constant": {
+                "rms_rad": 0.9105435678839287,
+                "resultant": 0.17575670479844344
+              },
+              "linear": {
+                "rms_rad": 0.2520382573713417,
+                "resultant": 0.883546381678846
+              }
+            },
+            "candidate_contrast_rms_rad": [
+              [
+                0.0,
+                0.995212491803595
+              ],
+              [
+                0.995212491803595,
+                0.0
+              ]
+            ],
+            "maximum_candidate_contrast_rad": 0.995212491803595,
+            "identifiable_after_nuisance": true,
+            "per_held_group": [
+              {
+                "group_id": 1,
+                "pair_count": 7,
+                "median_channel_similarity": 0.8427173557360281,
+                "constant": {
+                  "rms_rad": 0.8671583953091725,
+                  "resultant": 0.8893921822397867
+                },
+                "linear": {
+                  "rms_rad": 0.2215416415466906,
+                  "resultant": 0.9162770453240944
+                }
+              },
+              {
+                "group_id": 2,
+                "pair_count": 6,
+                "median_channel_similarity": 0.8637118068816936,
+                "constant": {
+                  "rms_rad": 1.269098579227386,
+                  "resultant": 0.7458405959799818
+                },
+                "linear": {
+                  "rms_rad": 0.2822984171219088,
+                  "resultant": 0.8550317037461653
+                }
+              },
+              {
+                "group_id": 4,
+                "pair_count": 7,
+                "median_channel_similarity": 0.8493701442735018,
+                "constant": {
+                  "rms_rad": 0.4861479462685387,
+                  "resultant": 0.7409508000590534
+                },
+                "linear": {
+                  "rms_rad": 0.253192866392408,
+                  "resultant": 0.8779004851557096
+                }
+              }
+            ],
+            "held_odd_used_for_selection_or_gating": false,
+            "held_frame_coverage_conditioned_on_even_support": true
+          },
+          "refined_seed_only_baseline": {
+            "total_frame_count": 84,
+            "training_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.09361718091379977,
+                "median_odd_control_coherence": 0.010780384262739365,
+                "median_odd_exact_minus_control": 0.08291019665686428,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 41,
+                "median_odd_exact_coherence": 0.09357265648987666,
+                "median_odd_control_coherence": 0.010745976573633376,
+                "median_odd_exact_minus_control": 0.08253442126928294,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "train_even_branch_state": "selected",
+            "phase_model_scored": false
+          }
+        },
+        {
+          "receiver_id": 1,
+          "seed_choice": {
+            "seed_cfo_hz": [
+              -245515.4066704128
+            ],
+            "selected_branch_index": 0,
+            "refined_baseline_branch_index": 0,
+            "training_even_margin": [
+              0.09906361609792343
+            ],
+            "selection_used_held_odd": false
+          },
+          "selected_train_even_branch": {
+            "receiver_id": 1,
+            "training_groups": [
+              0,
+              3,
+              5
+            ],
+            "held_groups": [
+              1,
+              2,
+              4
+            ],
+            "training_supported_frame_count": 42,
+            "held_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11085032733841255,
+                "median_odd_control_coherence": 0.010910807550094777,
+                "median_odd_exact_minus_control": 0.09970580883109023,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11085032733841255,
+                "median_odd_control_coherence": 0.010910807550094777,
+                "median_odd_exact_minus_control": 0.09970580883109023,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "total_frame_count": 84,
+            "training_pair_count": 21,
+            "held_pair_count": 21,
+            "frequency_model_reference_s": 0.06347519047619046,
+            "constant_cfo_hz": -245733.32249752458,
+            "linear_cfo_at_reference_hz": -245733.32249752447,
+            "linear_cfo_rate_hz_s": -3786.0506118367,
+            "held_odd_cfo_rms_hz": {
+              "constant": 105.61197472748037,
+              "linear": 48.65858630539605
+            },
+            "phase_informed_rate": {
+              "grid_half_width_hz_s": 5000.0,
+              "grid_point_count": 41,
+              "cfo_intercept_frozen_to_train_even_line_hz": -245733.32249752447,
+              "baseline_rate_hz_s": -3786.0506118367,
+              "selected_rate_hz_s": -3786.0506118367,
+              "selected_delta_hz_s": 0.0,
+              "selected_on_training_phase_only": true,
+              "selected_at_grid_boundary": false,
+              "fitted_phase_bias_hz": -139.39103632122627,
+              "training_composite_score": 3.338490120203289,
+              "held_composite_score": 3.263510783337445,
+              "held_phase_metrics": {
+                "rms_rad": 0.3158321092525279,
+                "resultant": 0.8202084756422783
+              },
+              "held_odd_cfo_rms_hz": 48.65858630539605,
+              "held_data_used_for_selection": false
+            },
+            "phase_bias_scope": "finite-principal-branch-minus187.5-to187.5Hz-conditional",
+            "exact_375hz_periodicity_claimed": false,
+            "fitted_phase_bias_hz": {
+              "constant_train_even_cfo": 113.52465844718427,
+              "linear_train_even_cfo": -139.39103632122627
+            },
+            "training_composite_score": {
+              "constant_train_even_cfo": 1.6284008992394448,
+              "linear_train_even_cfo": 3.338490120203289
+            },
+            "held_composite_score": {
+              "constant_train_even_cfo": -0.29361467123373225,
+              "linear_train_even_cfo": 3.263510783337445
+            },
+            "held_phase_metrics": {
+              "constant": {
+                "rms_rad": 0.9698649873097689,
+                "resultant": 0.13316989682906058
+              },
+              "linear": {
+                "rms_rad": 0.3158321092525279,
+                "resultant": 0.8202084756422783
+              }
+            },
+            "candidate_contrast_rms_rad": [
+              [
+                0.0,
+                1.0293813280926543
+              ],
+              [
+                1.0293813280926543,
+                0.0
+              ]
+            ],
+            "maximum_candidate_contrast_rad": 1.0293813280926543,
+            "identifiable_after_nuisance": true,
+            "per_held_group": [
+              {
+                "group_id": 1,
+                "pair_count": 7,
+                "median_channel_similarity": 0.8434837904099828,
+                "constant": {
+                  "rms_rad": 1.0332996734473274,
+                  "resultant": 0.7258235573726336
+                },
+                "linear": {
+                  "rms_rad": 0.2660893920872746,
+                  "resultant": 0.8840098733773427
+                }
+              },
+              {
+                "group_id": 2,
+                "pair_count": 7,
+                "median_channel_similarity": 0.8492656199868446,
+                "constant": {
+                  "rms_rad": 1.2476995484582667,
+                  "resultant": 0.7241955163303266
+                },
+                "linear": {
+                  "rms_rad": 0.3709426845070192,
+                  "resultant": 0.8038521001659062
+                }
+              },
+              {
+                "group_id": 4,
+                "pair_count": 7,
+                "median_channel_similarity": 0.873412639128494,
+                "constant": {
+                  "rms_rad": 0.4443556036091114,
+                  "resultant": 0.8997808076880573
+                },
+                "linear": {
+                  "rms_rad": 0.30140956178272243,
+                  "resultant": 0.9048925139758661
+                }
+              }
+            ],
+            "held_odd_used_for_selection_or_gating": false,
+            "held_frame_coverage_conditioned_on_even_support": true
+          },
+          "refined_seed_only_baseline": {
+            "total_frame_count": 84,
+            "training_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11085032733841255,
+                "median_odd_control_coherence": 0.010910807550094777,
+                "median_odd_exact_minus_control": 0.09970580883109023,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11085032733841255,
+                "median_odd_control_coherence": 0.010910807550094777,
+                "median_odd_exact_minus_control": 0.09970580883109023,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "train_even_branch_state": "selected",
+            "phase_model_scored": false
+          }
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-9b88653c7a012fc2",
+      "visit": 760,
+      "sample_rate_hz": 10000000,
+      "state": "evaluated",
+      "receivers": [
+        {
+          "receiver_id": 0,
+          "seed_choice": {
+            "seed_cfo_hz": [
+              163465.8228925098
+            ],
+            "selected_branch_index": 0,
+            "refined_baseline_branch_index": 0,
+            "training_even_margin": [
+              0.09992075768386588
+            ],
+            "selection_used_held_odd": false
+          },
+          "selected_train_even_branch": {
+            "receiver_id": 0,
+            "training_groups": [
+              0,
+              3,
+              5
+            ],
+            "held_groups": [
+              1,
+              2,
+              4
+            ],
+            "training_supported_frame_count": 42,
+            "held_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11033369091290987,
+                "median_odd_control_coherence": 0.009846169802591936,
+                "median_odd_exact_minus_control": 0.09981802707919579,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11033369091290987,
+                "median_odd_control_coherence": 0.009846169802591936,
+                "median_odd_exact_minus_control": 0.09981802707919579,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "total_frame_count": 84,
+            "training_pair_count": 21,
+            "held_pair_count": 21,
+            "frequency_model_reference_s": 0.06395259761904762,
+            "constant_cfo_hz": 163266.38850615776,
+            "linear_cfo_at_reference_hz": 163266.38850615767,
+            "linear_cfo_rate_hz_s": -3629.869115977633,
+            "held_odd_cfo_rms_hz": {
+              "constant": 104.91268394489354,
+              "linear": 27.37494333907842
+            },
+            "phase_informed_rate": {
+              "grid_half_width_hz_s": 5000.0,
+              "grid_point_count": 41,
+              "cfo_intercept_frozen_to_train_even_line_hz": 163266.38850615767,
+              "baseline_rate_hz_s": -3629.869115977633,
+              "selected_rate_hz_s": -3879.869115977633,
+              "selected_delta_hz_s": -250.0,
+              "selected_on_training_phase_only": true,
+              "selected_at_grid_boundary": false,
+              "fitted_phase_bias_hz": 47.42169276907697,
+              "training_composite_score": 3.7179965905874917,
+              "held_composite_score": 3.4914029204840205,
+              "held_phase_metrics": {
+                "rms_rad": 0.25764829179724447,
+                "resultant": 0.8953350014170153
+              },
+              "held_odd_cfo_rms_hz": 26.788125463306297,
+              "held_data_used_for_selection": false
+            },
+            "phase_bias_scope": "finite-principal-branch-minus187.5-to187.5Hz-conditional",
+            "exact_375hz_periodicity_claimed": false,
+            "fitted_phase_bias_hz": {
+              "constant_train_even_cfo": -91.78190603132289,
+              "linear_train_even_cfo": 47.1717760746418
+            },
+            "training_composite_score": {
+              "constant_train_even_cfo": 1.5537391898565165,
+              "linear_train_even_cfo": 3.6929177559921036
+            },
+            "held_composite_score": {
+              "constant_train_even_cfo": -1.1531411892457155,
+              "linear_train_even_cfo": 3.5970834421893305
+            },
+            "held_phase_metrics": {
+              "constant": {
+                "rms_rad": 1.0566633109592949,
+                "resultant": 0.2884920185990864
+              },
+              "linear": {
+                "rms_rad": 0.22853891766236595,
+                "resultant": 0.9155341604041147
+              }
+            },
+            "candidate_contrast_rms_rad": [
+              [
+                0.0,
+                1.02676718548843
+              ],
+              [
+                1.02676718548843,
+                0.0
+              ]
+            ],
+            "maximum_candidate_contrast_rad": 1.02676718548843,
+            "identifiable_after_nuisance": true,
+            "per_held_group": [
+              {
+                "group_id": 1,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9284556645109328,
+                "constant": {
+                  "rms_rad": 1.169131402950254,
+                  "resultant": 0.9754109705874828
+                },
+                "linear": {
+                  "rms_rad": 0.2183611309171066,
+                  "resultant": 0.9846723004733927
+                }
+              },
+              {
+                "group_id": 2,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9502281217419362,
+                "constant": {
+                  "rms_rad": 1.328931983876868,
+                  "resultant": 0.829309856498508
+                },
+                "linear": {
+                  "rms_rad": 0.22879283511526446,
+                  "resultant": 0.9093613913824189
+                }
+              },
+              {
+                "group_id": 4,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9417818435678841,
+                "constant": {
+                  "rms_rad": 0.46549286036097387,
+                  "resultant": 0.8341369632096363
+                },
+                "linear": {
+                  "rms_rad": 0.23803858040951834,
+                  "resultant": 0.8910183231531538
+                }
+              }
+            ],
+            "held_odd_used_for_selection_or_gating": false,
+            "held_frame_coverage_conditioned_on_even_support": true
+          },
+          "refined_seed_only_baseline": {
+            "total_frame_count": 84,
+            "training_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11033369091290987,
+                "median_odd_control_coherence": 0.009846169802591936,
+                "median_odd_exact_minus_control": 0.09981802707919579,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.11033369091290987,
+                "median_odd_control_coherence": 0.009846169802591936,
+                "median_odd_exact_minus_control": 0.09981802707919579,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "train_even_branch_state": "selected",
+            "phase_model_scored": false
+          }
+        },
+        {
+          "receiver_id": 1,
+          "seed_choice": {
+            "seed_cfo_hz": [
+              -399100.0,
+              -286795.3124999972
+            ],
+            "selected_branch_index": 0,
+            "refined_baseline_branch_index": 1,
+            "training_even_margin": [
+              0.13988915925308365,
+              0.007650291648910942
+            ],
+            "selection_used_held_odd": false
+          },
+          "selected_train_even_branch": {
+            "receiver_id": 1,
+            "training_groups": [
+              0,
+              3,
+              5
+            ],
+            "held_groups": [
+              1,
+              2,
+              4
+            ],
+            "training_supported_frame_count": 42,
+            "held_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.14825130395933955,
+                "median_odd_control_coherence": 0.00998178630006066,
+                "median_odd_exact_minus_control": 0.13804701279609116,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.14825130395933955,
+                "median_odd_control_coherence": 0.00998178630006066,
+                "median_odd_exact_minus_control": 0.13804701279609116,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "total_frame_count": 84,
+            "training_pair_count": 21,
+            "held_pair_count": 21,
+            "frequency_model_reference_s": 0.06395269761904762,
+            "constant_cfo_hz": -400356.02458705805,
+            "linear_cfo_at_reference_hz": -400356.0245870579,
+            "linear_cfo_rate_hz_s": -3288.076257258196,
+            "held_odd_cfo_rms_hz": {
+              "constant": 79.93121102914813,
+              "linear": 36.242235296745044
+            },
+            "phase_informed_rate": {
+              "grid_half_width_hz_s": 5000.0,
+              "grid_point_count": 41,
+              "cfo_intercept_frozen_to_train_even_line_hz": -400356.0245870579,
+              "baseline_rate_hz_s": -3288.076257258196,
+              "selected_rate_hz_s": -3788.076257258196,
+              "selected_delta_hz_s": -500.0,
+              "selected_on_training_phase_only": true,
+              "selected_at_grid_boundary": false,
+              "fitted_phase_bias_hz": 28.55298233922025,
+              "training_composite_score": 3.479124050271428,
+              "held_composite_score": 2.8117613723162584,
+              "held_phase_metrics": {
+                "rms_rad": 0.4030332131695948,
+                "resultant": 0.8453876901789226
+              },
+              "held_odd_cfo_rms_hz": 43.117335571090244,
+              "held_data_used_for_selection": false
+            },
+            "phase_bias_scope": "finite-principal-branch-minus187.5-to187.5Hz-conditional",
+            "exact_375hz_periodicity_claimed": false,
+            "fitted_phase_bias_hz": {
+              "constant_train_even_cfo": -103.15311562812396,
+              "linear_train_even_cfo": 28.178107297567465
+            },
+            "training_composite_score": {
+              "constant_train_even_cfo": 1.5358920830888714,
+              "linear_train_even_cfo": 3.2985658960334603
+            },
+            "held_composite_score": {
+              "constant_train_even_cfo": -0.9612297168770237,
+              "linear_train_even_cfo": 3.152591411638704
+            },
+            "held_phase_metrics": {
+              "constant": {
+                "rms_rad": 1.032549746965408,
+                "resultant": 0.38433133807853365
+              },
+              "linear": {
+                "rms_rad": 0.33696724423894947,
+                "resultant": 0.9012660037722414
+              }
+            },
+            "candidate_contrast_rms_rad": [
+              [
+                0.0,
+                1.0753828910794498
+              ],
+              [
+                1.0753828910794498,
+                0.0
+              ]
+            ],
+            "maximum_candidate_contrast_rad": 1.0753828910794498,
+            "identifiable_after_nuisance": true,
+            "per_held_group": [
+              {
+                "group_id": 1,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9480508030079652,
+                "constant": {
+                  "rms_rad": 1.343007405118569,
+                  "resultant": 0.9203668240470165
+                },
+                "linear": {
+                  "rms_rad": 0.29727000379536456,
+                  "resultant": 0.9847781144037794
+                }
+              },
+              {
+                "group_id": 2,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9625468269148234,
+                "constant": {
+                  "rms_rad": 1.1119641869271426,
+                  "resultant": 0.960344618049913
+                },
+                "linear": {
+                  "rms_rad": 0.41026070158721073,
+                  "resultant": 0.9306977859455398
+                }
+              },
+              {
+                "group_id": 4,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9567722102811714,
+                "constant": {
+                  "rms_rad": 0.39792423482760036,
+                  "resultant": 0.838754735521504
+                },
+                "linear": {
+                  "rms_rad": 0.2897541589807625,
+                  "resultant": 0.8541024769040834
+                }
+              }
+            ],
+            "held_odd_used_for_selection_or_gating": false,
+            "held_frame_coverage_conditioned_on_even_support": true
+          },
+          "refined_seed_only_baseline": {
+            "total_frame_count": 84,
+            "training_even_supported_frame_count": 19,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.0173898046099557,
+                "median_odd_control_coherence": 0.010071989238343671,
+                "median_odd_exact_minus_control": 0.006717059848750933,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 20,
+                "median_odd_exact_coherence": 0.016886155265832883,
+                "median_odd_control_coherence": 0.009801113436908752,
+                "median_odd_exact_minus_control": 0.00689423911533254,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "train_even_branch_state": "rejected",
+            "phase_model_scored": false
+          }
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-894676bdae3d7b2c",
+      "visit": 475,
+      "sample_rate_hz": 15000000,
+      "state": "evaluated",
+      "receivers": [
+        {
+          "receiver_id": 0,
+          "seed_choice": {
+            "seed_cfo_hz": [
+              164160.92600118543
+            ],
+            "selected_branch_index": 0,
+            "refined_baseline_branch_index": 0,
+            "training_even_margin": [
+              0.07455520751484757
+            ],
+            "selection_used_held_odd": false
+          },
+          "selected_train_even_branch": {
+            "receiver_id": 0,
+            "training_groups": [
+              0,
+              3,
+              5
+            ],
+            "held_groups": [
+              1,
+              2,
+              4
+            ],
+            "training_supported_frame_count": 42,
+            "held_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.08748637836824233,
+                "median_odd_control_coherence": 0.009971461473601718,
+                "median_odd_exact_minus_control": 0.07668684701038192,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.08748637836824233,
+                "median_odd_control_coherence": 0.009971461473601718,
+                "median_odd_exact_minus_control": 0.07668684701038192,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "total_frame_count": 84,
+            "training_pair_count": 21,
+            "held_pair_count": 21,
+            "frequency_model_reference_s": 0.06326206666666666,
+            "constant_cfo_hz": 164206.5328824259,
+            "linear_cfo_at_reference_hz": 164206.53288242588,
+            "linear_cfo_rate_hz_s": -3512.6360973420556,
+            "held_odd_cfo_rms_hz": {
+              "constant": 100.738810390873,
+              "linear": 30.772267226544805
+            },
+            "phase_informed_rate": {
+              "grid_half_width_hz_s": 5000.0,
+              "grid_point_count": 41,
+              "cfo_intercept_frozen_to_train_even_line_hz": 164206.53288242588,
+              "baseline_rate_hz_s": -3512.6360973420556,
+              "selected_rate_hz_s": -3762.6360973420556,
+              "selected_delta_hz_s": -250.0,
+              "selected_on_training_phase_only": true,
+              "selected_at_grid_boundary": false,
+              "fitted_phase_bias_hz": 33.55131622792402,
+              "training_composite_score": 3.5594022169317463,
+              "held_composite_score": 3.754752605073721,
+              "held_phase_metrics": {
+                "rms_rad": 0.17864033933193477,
+                "resultant": 0.9431406653906593
+              },
+              "held_odd_cfo_rms_hz": 30.76257864255568,
+              "held_data_used_for_selection": false
+            },
+            "phase_bias_scope": "finite-principal-branch-minus187.5-to187.5Hz-conditional",
+            "exact_375hz_periodicity_claimed": false,
+            "fitted_phase_bias_hz": {
+              "constant_train_even_cfo": -111.77524158613795,
+              "linear_train_even_cfo": 33.676274575141605
+            },
+            "training_composite_score": {
+              "constant_train_even_cfo": 1.5727184572418296,
+              "linear_train_even_cfo": 3.547904257341774
+            },
+            "held_composite_score": {
+              "constant_train_even_cfo": -0.7459824265162682,
+              "linear_train_even_cfo": 3.782731393896857
+            },
+            "held_phase_metrics": {
+              "constant": {
+                "rms_rad": 0.9985302307202686,
+                "resultant": 0.20603733632676652
+              },
+              "linear": {
+                "rms_rad": 0.16784599073562714,
+                "resultant": 0.9480717206965656
+              }
+            },
+            "candidate_contrast_rms_rad": [
+              [
+                0.0,
+                1.029257168959577
+              ],
+              [
+                1.029257168959577,
+                0.0
+              ]
+            ],
+            "maximum_candidate_contrast_rad": 1.029257168959577,
+            "identifiable_after_nuisance": true,
+            "per_held_group": [
+              {
+                "group_id": 1,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9550124451776751,
+                "constant": {
+                  "rms_rad": 0.9747984715131299,
+                  "resultant": 0.9605648990897024
+                },
+                "linear": {
+                  "rms_rad": 0.1491097398898346,
+                  "resultant": 0.9570357592309336
+                }
+              },
+              {
+                "group_id": 2,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9439904620754987,
+                "constant": {
+                  "rms_rad": 1.3625554861044618,
+                  "resultant": 0.8893710436055116
+                },
+                "linear": {
+                  "rms_rad": 0.18012818676442469,
+                  "resultant": 0.9414906305461938
+                }
+              },
+              {
+                "group_id": 4,
+                "pair_count": 7,
+                "median_channel_similarity": 0.930407206584683,
+                "constant": {
+                  "rms_rad": 0.42941629243557855,
+                  "resultant": 0.9252226949579363
+                },
+                "linear": {
+                  "rms_rad": 0.17273375935531282,
+                  "resultant": 0.9464282745855791
+                }
+              }
+            ],
+            "held_odd_used_for_selection_or_gating": false,
+            "held_frame_coverage_conditioned_on_even_support": true
+          },
+          "refined_seed_only_baseline": {
+            "total_frame_count": 84,
+            "training_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.08748637836824233,
+                "median_odd_control_coherence": 0.009971461473601718,
+                "median_odd_exact_minus_control": 0.07668684701038192,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.08748637836824233,
+                "median_odd_control_coherence": 0.009971461473601718,
+                "median_odd_exact_minus_control": 0.07668684701038192,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "train_even_branch_state": "selected",
+            "phase_model_scored": false
+          }
+        },
+        {
+          "receiver_id": 1,
+          "seed_choice": {
+            "seed_cfo_hz": [
+              -399400.0,
+              -287095.3124999972
+            ],
+            "selected_branch_index": 0,
+            "refined_baseline_branch_index": 1,
+            "training_even_margin": [
+              0.13000852617086225,
+              0.004297072974560553
+            ],
+            "selection_used_held_odd": false
+          },
+          "selected_train_even_branch": {
+            "receiver_id": 1,
+            "training_groups": [
+              0,
+              3,
+              5
+            ],
+            "held_groups": [
+              1,
+              2,
+              4
+            ],
+            "training_supported_frame_count": 42,
+            "held_even_supported_frame_count": 42,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.1366193023296913,
+                "median_odd_control_coherence": 0.010826255798647669,
+                "median_odd_exact_minus_control": 0.12561368852124166,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.1366193023296913,
+                "median_odd_control_coherence": 0.010826255798647669,
+                "median_odd_exact_minus_control": 0.12561368852124166,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "total_frame_count": 84,
+            "training_pair_count": 21,
+            "held_pair_count": 21,
+            "frequency_model_reference_s": 0.06326206666666666,
+            "constant_cfo_hz": -400434.6339274141,
+            "linear_cfo_at_reference_hz": -400434.6339274139,
+            "linear_cfo_rate_hz_s": -3720.9320102208007,
+            "held_odd_cfo_rms_hz": {
+              "constant": 117.76558940811202,
+              "linear": 33.94485411772301
+            },
+            "phase_informed_rate": {
+              "grid_half_width_hz_s": 5000.0,
+              "grid_point_count": 41,
+              "cfo_intercept_frozen_to_train_even_line_hz": -400434.6339274139,
+              "baseline_rate_hz_s": -3720.9320102208007,
+              "selected_rate_hz_s": -3720.9320102208007,
+              "selected_delta_hz_s": 0.0,
+              "selected_on_training_phase_only": true,
+              "selected_at_grid_boundary": false,
+              "fitted_phase_bias_hz": 24.679273575474838,
+              "training_composite_score": 3.5992908332523244,
+              "held_composite_score": 3.460011305866162,
+              "held_phase_metrics": {
+                "rms_rad": 0.26899445633848773,
+                "resultant": 0.8656895827076261
+              },
+              "held_odd_cfo_rms_hz": 33.94485411772301,
+              "held_data_used_for_selection": false
+            },
+            "phase_bias_scope": "finite-principal-branch-minus187.5-to187.5Hz-conditional",
+            "exact_375hz_periodicity_claimed": false,
+            "fitted_phase_bias_hz": {
+              "constant_train_even_cfo": -114.89920026657781,
+              "linear_train_even_cfo": 24.679273575474838
+            },
+            "training_composite_score": {
+              "constant_train_even_cfo": 2.003976015193509,
+              "linear_train_even_cfo": 3.5992908332523244
+            },
+            "held_composite_score": {
+              "constant_train_even_cfo": 0.00413573560660252,
+              "linear_train_even_cfo": 3.460011305866162
+            },
+            "held_phase_metrics": {
+              "constant": {
+                "rms_rad": 0.9350915031387246,
+                "resultant": 0.22145023312125972
+              },
+              "linear": {
+                "rms_rad": 0.26899445633848773,
+                "resultant": 0.8656895827076261
+              }
+            },
+            "candidate_contrast_rms_rad": [
+              [
+                0.0,
+                1.013508379413389
+              ],
+              [
+                1.013508379413389,
+                0.0
+              ]
+            ],
+            "maximum_candidate_contrast_rad": 1.013508379413389,
+            "identifiable_after_nuisance": true,
+            "per_held_group": [
+              {
+                "group_id": 1,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9615289063230466,
+                "constant": {
+                  "rms_rad": 0.802373026931701,
+                  "resultant": 0.8254051729964798
+                },
+                "linear": {
+                  "rms_rad": 0.35088847828784403,
+                  "resultant": 0.8377489719859087
+                }
+              },
+              {
+                "group_id": 2,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9716240975786903,
+                "constant": {
+                  "rms_rad": 1.3741362214464927,
+                  "resultant": 0.9023636704395354
+                },
+                "linear": {
+                  "rms_rad": 0.18265773300384064,
+                  "resultant": 0.9401637095482029
+                }
+              },
+              {
+                "group_id": 4,
+                "pair_count": 7,
+                "median_channel_similarity": 0.9557464303347619,
+                "constant": {
+                  "rms_rad": 0.3018866149532525,
+                  "resultant": 0.8748538488563335
+                },
+                "linear": {
+                  "rms_rad": 0.24614524371040492,
+                  "resultant": 0.9424470655630871
+                }
+              }
+            ],
+            "held_odd_used_for_selection_or_gating": false,
+            "held_frame_coverage_conditioned_on_even_support": true
+          },
+          "refined_seed_only_baseline": {
+            "total_frame_count": 84,
+            "training_even_supported_frame_count": 4,
+            "held_odd_exact_control": {
+              "all_held_opportunities": {
+                "frame_count": 42,
+                "median_odd_exact_coherence": 0.014730014675870137,
+                "median_odd_control_coherence": 0.011271086035636407,
+                "median_odd_exact_minus_control": 0.0029892165870313934,
+                "held_odd_used_for_conditioning": false
+              },
+              "even_conditioned_subset": {
+                "frame_count": 3,
+                "median_odd_exact_coherence": 0.01910030713556941,
+                "median_odd_control_coherence": 0.009595927906191805,
+                "median_odd_exact_minus_control": 0.009819098447807184,
+                "held_odd_used_for_conditioning": false
+              }
+            },
+            "train_even_branch_state": "rejected",
+            "phase_model_scored": false
+          }
+        }
+      ]
+    }
+  ]
+}
