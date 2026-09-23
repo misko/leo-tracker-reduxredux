@@ -10,6 +10,8 @@ component-tested vectorization of the same correlations and parameters.
 
 ![Held double differences](figures/2026_09_23_adaptive_multiscale_phase_refined/phase-by-duration.png)
 
+![Saved within-dwell frame phases](figures/2026_09_23_adaptive_multiscale_phase_refined/phase-within-dwells.png)
+
 All 30 visit/duration/mode rows returned. The table summarizes the five
 visits. Coherence and control ratios use the weaker of the two sources in each
 visit; values are median (worst). The phase quantities are absolute wrapped
@@ -32,6 +34,15 @@ connection, source identity, satellite association, direction, or orbit.
 The 120 ms reference is an internal result of the same development replay,
 not truth. The five visits were previously exposed during the raw-branch audit,
 so this is not a fresh randomized validation.
+
+The frame plot is a visualization-only replay of the saved 120 ms frozen-timing
+fits. It reuses each saved timing shift, within-frame residual, and
+receiver-product rate, and asserts its held circular mean equals the stored
+held phase. Its points have that saved rate removed and are wrapped at the
+dwell center; their curved or discontinuous appearance is neither a new fit
+nor a physical phase trajectory. The unrefined V1 and refined V2 outcomes are
+not competing measurements of a hardware change: V1 omitted the symbol-wise
+correction required before coherent summation, while V2 adds it.
 
 Each source's residual CFO is fitted only on its seeded random whole-frame
 training group before the 64-symbol coherent sum. That frozen residual and the
