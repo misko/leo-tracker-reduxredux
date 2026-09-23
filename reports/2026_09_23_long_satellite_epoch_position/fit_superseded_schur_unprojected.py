@@ -1,0 +1,431 @@
+#!/usr/bin/env python3
+"""Fit position and conditional per-satellite epoch effects on TRAIN[:6]."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+from scipy.optimize import minimize, minimize_scalar
+
+SCALES = (0.2, 1.0, 5.0)
+
+
+def digest(path):
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def load_module(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def prepare(single, cache_root, session_ids, baseline_scans):
+    tracks = []
+    bindings = []
+    for session_id, baseline_scan in zip(session_ids, baseline_scans, strict=True):
+        directory = cache_root / session_id
+        receipt_path, cache_path = directory / "cache_receipt.json", directory / "state_cache.npz"
+        receipt = json.loads(receipt_path.read_text())
+        archive = np.load(cache_path, allow_pickle=False)
+        arrays = {key: archive[key] for key in archive.files}
+        candidate_index = {str(value): index for index, value in enumerate(arrays["candidate_id"])}
+        evidence = {row["track_id"]: row for row in receipt["prepared_evidence"]["tracks"]}
+        for selected in baseline_scan["tracks"]:
+            source = evidence[selected["track_id"]]
+            index = candidate_index[selected["candidate_id"]]
+            times = np.asarray(source["times_s"], dtype=float)
+            tracks.append(
+                {
+                    "session_id": session_id,
+                    "track_id": source["track_id"],
+                    "candidate_id": selected["candidate_id"],
+                    "times_s": times,
+                    "measured_hz": np.asarray(source["measured_hz"], dtype=float),
+                    "training_mask": np.asarray(source["training_mask"], dtype=bool),
+                    "weight_s": int(len(np.unique(np.floor(times)))),
+                    "grid_ns": arrays["receive_plus_tau_offset_ns"],
+                    "position": arrays["position_ecef_km"][index],
+                    "velocity": arrays["velocity_ecef_km_s"][index],
+                }
+            )
+        bindings.append(
+            {"session_id": session_id, "receipt": digest(receipt_path), "cache": digest(cache_path)}
+        )
+    return tracks, bindings
+
+
+def interpolate(track, eta):
+    grid = track["grid_ns"]
+    query = np.rint((track["times_s"] + eta) * 1e9).astype(np.int64)
+    if np.any(query < grid[0]) or np.any(query > grid[-1]):
+        raise ValueError("epoch query outside cache")
+    fraction = (query - grid[0]) / float(grid[1] - grid[0])
+    low = np.floor(fraction).astype(int)
+    high = np.minimum(low + 1, len(grid) - 1)
+    weight = fraction - low
+    position = track["position"][low] * (1 - weight)[:, None]
+    position += track["position"][high] * weight[:, None]
+    velocity = track["velocity"][low] * (1 - weight)[:, None]
+    velocity += track["velocity"][high] * weight[:, None]
+    return position, velocity
+
+
+def track_score(single, track, receiver, up, eta, include_evaluation=False):
+    position, velocity = interpolate(track, eta)
+    delta = position - receiver
+    distance = np.linalg.norm(delta, axis=1)
+    visible = bool(np.max(np.sum(delta * up, axis=1) / distance) >= 0)
+    prediction = (
+        -single.REFERENCE_RF_HZ / single.LIGHT_KM_S * np.sum(delta * velocity, axis=1) / distance
+    )
+    training = track["training_mask"]
+    residual = track["measured_hz"] - prediction
+    cfo = float(np.mean(residual[training]))
+    error = residual - cfo
+    train_rms = float(np.sqrt(np.mean(error[training] ** 2))) if visible else 800.0
+    row = {
+        "session_id": track["session_id"],
+        "track_id": track["track_id"],
+        "candidate_id": track["candidate_id"],
+        "frequency_offset_hz": cfo,
+        "training_rms_hz": train_rms,
+        "weight_s": track["weight_s"],
+        "visible": visible,
+    }
+    if include_evaluation:
+        row["evaluation_rms_hz"] = (
+            float(np.sqrt(np.mean(error[~training] ** 2))) if visible else 800.0
+        )
+    return row
+
+
+def score(single, tracks, point, etas, scale, include_evaluation=False):
+    receiver, up = single.receiver_ecef(*point)
+    rows = [
+        track_score(single, track, receiver, up, etas[track["candidate_id"]], include_evaluation)
+        for track in tracks
+    ]
+    total = sum(row["weight_s"] for row in rows)
+    capped = sum(row["weight_s"] * min(800.0, row["training_rms_hz"]) ** 2 for row in rows)
+    uncapped = sum(row["weight_s"] * row["training_rms_hz"] ** 2 for row in rows)
+    penalty = 800.0**2 * sum((value / scale) ** 2 for value in etas.values())
+    return {
+        "penalized_objective_rmse_hz": float(np.sqrt((capped + penalty) / total)),
+        "training_capped800_rmse_hz": float(np.sqrt(capped / total)),
+        "training_uncapped_rmse_hz": float(np.sqrt(uncapped / total)),
+        "visibility_failure_count": sum(not row["visible"] for row in rows),
+        "rows": rows,
+    }
+
+
+def centered_residual(single, track, point, eta):
+    receiver, _ = single.receiver_ecef(*point)
+    position, velocity = interpolate(track, eta)
+    delta = position - receiver
+    distance = np.linalg.norm(delta, axis=1)
+    prediction = (
+        -single.REFERENCE_RF_HZ / single.LIGHT_KM_S * np.sum(delta * velocity, axis=1) / distance
+    )
+    mask = track["training_mask"]
+    residual = track["measured_hz"][mask] - prediction[mask]
+    return residual - residual.mean()
+
+
+def coupled_polish(single, tracks, prior, position, etas, scale):
+    centre, trace = prior[:2], []
+    for iteration in range(1, 51):
+        point = single.offset_coordinate(centre, *position)
+        current = score(single, tracks, point, etas, scale)
+        active = {row["track_id"]: row["training_rms_hz"] < 800 for row in current["rows"]}
+        hpp, gp = np.zeros((2, 2)), np.zeros(2)
+        penalty = 800.0**2 / scale**2
+        blocks = {key: [penalty, np.zeros(2), penalty * value] for key, value in etas.items()}
+        for track in tracks:
+            if not active[track["track_id"]]:
+                continue
+            sat, eta = track["candidate_id"], etas[track["candidate_id"]]
+            residual = centered_residual(single, track, point, eta)
+            columns = []
+            for axis in range(2):
+                plus, minus = position.copy(), position.copy()
+                plus[axis] += 0.1
+                minus[axis] -= 0.1
+                columns.append(
+                    (
+                        centered_residual(
+                            single, track, single.offset_coordinate(centre, *plus), eta
+                        )
+                        - centered_residual(
+                            single, track, single.offset_coordinate(centre, *minus), eta
+                        )
+                    )
+                    / 0.2
+                )
+            a = np.column_stack(columns)
+            lo, hi = max(-5.0, eta - 0.01), min(5.0, eta + 0.01)
+            b = (
+                centered_residual(single, track, point, hi)
+                - centered_residual(single, track, point, lo)
+            ) / (hi - lo)
+            weight = track["weight_s"] / len(residual)
+            hpp += weight * a.T @ a
+            gp += weight * a.T @ residual
+            blocks[sat][0] += weight * float(b @ b)
+            blocks[sat][1] += weight * (a.T @ b)
+            blocks[sat][2] += weight * float(b @ residual)
+        schur, right = hpp.copy(), -gp.copy()
+        for d, q, g in blocks.values():
+            schur -= np.outer(q, q) / d
+            right += q * g / d
+        try:
+            dp = np.linalg.solve(schur, right)
+        except np.linalg.LinAlgError:
+            trace.append({"iteration": iteration, "accepted": False, "reason": "singular"})
+            break
+        de = {key: (-g - q @ dp) / d for key, (d, q, g) in blocks.items()}
+        accepted = False
+        for fraction in (1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125):
+            trial_position = position + fraction * dp
+            if np.hypot(*trial_position) > prior[2]:
+                continue
+            trial_etas = {
+                key: float(np.clip(value + fraction * de[key], -5, 5))
+                for key, value in etas.items()
+            }
+            trial = score(
+                single, tracks, single.offset_coordinate(centre, *trial_position), trial_etas, scale
+            )
+            if (
+                trial["visibility_failure_count"] == 0
+                and trial["penalized_objective_rmse_hz"] < current["penalized_objective_rmse_hz"]
+            ):
+                gain = current["penalized_objective_rmse_hz"] - trial["penalized_objective_rmse_hz"]
+                position, etas, accepted = trial_position, trial_etas, True
+                trace.append(
+                    {
+                        "iteration": iteration,
+                        "accepted": True,
+                        "objective_rmse_hz": trial["penalized_objective_rmse_hz"],
+                        "fraction": fraction,
+                    }
+                )
+                if gain < 0.001 or (
+                    np.linalg.norm(fraction * dp) < 0.01
+                    and max(abs(fraction * x) for x in de.values()) < 0.002
+                ):
+                    return position, etas, trace, True
+                break
+        if not accepted:
+            trace.append({"iteration": iteration, "accepted": False, "reason": "backtrack"})
+            break
+    return position, etas, trace, False
+
+
+def fit_arm(single, tracks, prior_name, baseline, scale):
+    prior = single.PRIORS[prior_name]
+    centre = prior[:2]
+    position = np.asarray([baseline["selected"]["east_km"], baseline["selected"]["north_km"]])
+    satellites = sorted({track["candidate_id"] for track in tracks})
+    grouped = {
+        satellite: [track for track in tracks if track["candidate_id"] == satellite]
+        for satellite in satellites
+    }
+    etas = {satellite: 0.0 for satellite in satellites}
+
+    def point():
+        return single.offset_coordinate(centre, position[0], position[1])
+
+    trace = []
+    previous = score(single, tracks, point(), etas, scale)["penalized_objective_rmse_hz"]
+    for iteration in range(1, 6):
+        receiver, up = single.receiver_ecef(*point())
+        for satellite in satellites:
+
+            def satellite_loss(value, selected=satellite, fixed_receiver=receiver, fixed_up=up):
+                rows = [
+                    track_score(single, track, fixed_receiver, fixed_up, value)
+                    for track in grouped[selected]
+                ]
+                data = sum(
+                    row["weight_s"] * min(800.0, row["training_rms_hz"]) ** 2 for row in rows
+                )
+                return data + 800.0**2 * (value / scale) ** 2
+
+            candidate = minimize_scalar(
+                satellite_loss,
+                bounds=(-5.0, 5.0),
+                method="bounded",
+                options={"xatol": 0.002, "maxiter": 40},
+            )
+            if candidate.fun < satellite_loss(etas[satellite]):
+                etas[satellite] = float(candidate.x)
+
+        def position_loss(values):
+            if np.hypot(*values) > prior[2]:
+                return 1e6 + np.hypot(*values) - prior[2]
+            trial = single.offset_coordinate(centre, values[0], values[1])
+            return score(single, tracks, trial, etas, scale)["penalized_objective_rmse_hz"]
+
+        fit = minimize(
+            position_loss,
+            position,
+            method="Powell",
+            bounds=[(-prior[2], prior[2]), (-prior[2], prior[2])],
+            options={"maxfev": 100, "xtol": 0.02, "ftol": 1e-5},
+        )
+        if fit.fun < position_loss(position):
+            position = np.asarray(fit.x)
+        current = score(single, tracks, point(), etas, scale)["penalized_objective_rmse_hz"]
+        trace.append(
+            {
+                "iteration": iteration,
+                "objective_rmse_hz": current,
+                "position_success": bool(fit.success),
+                "position_evaluations": int(fit.nfev),
+            }
+        )
+        if previous - current < 0.01:
+            break
+        previous = current
+    position, etas, polish_trace, polish_converged = coupled_polish(
+        single, tracks, prior, position, etas, scale
+    )
+    final = score(single, tracks, point(), etas, scale)
+    return {
+        "prior": prior_name,
+        "scale_s": scale,
+        "latitude_deg": point()[0],
+        "longitude_deg": point()[1],
+        "east_km": float(position[0]),
+        "north_km": float(position[1]),
+        "etas_s": etas,
+        "eta_boundary_count": int(
+            sum(np.isclose(abs(value), 5.0, atol=0.002) for value in etas.values())
+        ),
+        "active_eta_count": sum(abs(value) >= 0.01 for value in etas.values()),
+        "satellite_count": len(satellites),
+        "iterations": len(trace),
+        "trace": trace,
+        "polish_iterations": len(polish_trace),
+        "polish_trace": polish_trace,
+        "polish_converged": polish_converged,
+        **{key: value for key, value in final.items() if key != "rows"},
+        "fixed_tracks": final["rows"],
+    }
+
+
+def run(args):
+    if args.output.exists():
+        raise FileExistsError("fresh output required")
+    single = load_module(args.single_tool, "satellite_epoch_single")
+    baseline = json.loads(args.baseline.read_text())
+    manifest = json.loads(args.manifest.read_text())
+    sessions = manifest["partitions"]["train"]["session_ids"][:6]
+    baseline_view = next(view for view in baseline["views"] if view["scan_count"] == 6)
+    started = time.monotonic()
+    arms, parity, bindings = [], [], None
+    for baseline_search in baseline_view["searches"]:
+        tracks, current_bindings = prepare(
+            single, args.cache_root, sessions, baseline_search["selected"]["scans"]
+        )
+        bindings = current_bindings
+        point = (
+            baseline_search["selected"]["latitude_deg"],
+            baseline_search["selected"]["longitude_deg"],
+        )
+        zero = {track["candidate_id"]: 0.0 for track in tracks}
+        base = score(single, tracks, point, zero, 1.0)
+        parity.append(
+            {
+                "prior": baseline_search["prior"],
+                **{key: value for key, value in base.items() if key != "rows"},
+            }
+        )
+        for scale in SCALES:
+            arms.append(fit_arm(single, tracks, baseline_search["prior"], baseline_search, scale))
+    inference = {
+        "schema": "conditional-satellite-epoch-position/v1",
+        "position_truth_used": False,
+        "reserved_rows_used": False,
+        "session_ids": sessions,
+        "scales_s": SCALES,
+        "baseline_parity": parity,
+        "arms": arms,
+        "runtime_s": time.monotonic() - started,
+        "bindings": {
+            "manifest": digest(args.manifest),
+            "baseline": digest(args.baseline),
+            "single_tool": digest(args.single_tool),
+            "tool": digest(Path(__file__)),
+            "caches": bindings,
+        },
+    }
+    args.output.mkdir(parents=True)
+    payload = json.dumps(inference, indent=2, sort_keys=True) + "\n"
+    (args.output / "inference.json").write_text(payload)
+    (args.output / "inference.sha256").write_text(
+        hashlib.sha256(payload.encode()).hexdigest() + "\n"
+    )
+    results = json.loads(payload)
+    for arm in results["arms"]:
+        baseline_search = next(
+            row for row in baseline_view["searches"] if row["prior"] == arm["prior"]
+        )
+        tracks, _ = prepare(single, args.cache_root, sessions, baseline_search["selected"]["scans"])
+        held = score(
+            single,
+            tracks,
+            (arm["latitude_deg"], arm["longitude_deg"]),
+            arm["etas_s"],
+            arm["scale_s"],
+            True,
+        )
+        total = sum(row["weight_s"] for row in held["rows"])
+        arm["reserved_capped800_rmse_hz"] = float(
+            np.sqrt(
+                sum(
+                    row["weight_s"] * min(800.0, row["evaluation_rms_hz"]) ** 2
+                    for row in held["rows"]
+                )
+                / total
+            )
+        )
+        arm["reserved_uncapped_rmse_hz"] = float(
+            np.sqrt(
+                sum(row["weight_s"] * row["evaluation_rms_hz"] ** 2 for row in held["rows"]) / total
+            )
+        )
+        arm["reference_error_km"] = single.haversine_km(
+            (arm["latitude_deg"], arm["longitude_deg"]), single.REFERENCE
+        )
+    results["reference_coordinate"] = {
+        "latitude_deg": single.REFERENCE[0],
+        "longitude_deg": single.REFERENCE[1],
+        "role": "post-seal only",
+    }
+    (args.output / "results.json").write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--cache-root", type=Path, required=True)
+    parser.add_argument("--baseline", type=Path, required=True)
+    parser.add_argument("--single-tool", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    run(parser.parse_args())
+
+
+if __name__ == "__main__":
+    main()
