@@ -1,10 +1,11 @@
 # Long-cohort model experiments: timing helps, short-track removal does not
 
-The frozen blind TRAIN baseline remains about 10 km from the reference after
-six or sixteen scans. A conditional fit of shared per-scan epoch shifts reduces
-the reported errors to about 5–6 km at the weakest tested regularization. This
-is meaningful development progress, but it does not establish sub-300 m accuracy
-or validation generalization. Validation/test track outcomes remain closed.
+The frozen blind TRAIN baseline is about 10 km from the reference after six or
+sixteen scans and 7.6 km across the full eight-hour group. A conditional fit of
+shared per-scan epoch shifts reduces these errors to about 5–6 km in the shorter
+views and 1.57 km in the full group at the weakest tested regularization. This is
+development progress, but it does not establish sub-300 m accuracy or validation
+generalization. Validation/test track outcomes remain closed.
 
 | TRAIN view / model | Sacramento error | Reno error | Common held capped RMS, Sac / Reno |
 |---|---:|---:|---:|
@@ -20,6 +21,12 @@ or validation generalization. Validation/test track outcomes remain closed.
 | 16 scans, fixed identities + epoch scale 1 s | 6.678 km | 6.654 km | 322.09 / 322.77 Hz |
 | 16 scans, fixed identities + epoch scale 5 s | 5.782 km | 5.754 km | 322.04 / 322.72 Hz |
 | 72 scans, full eight-hour group, blind zero-epoch baseline | 7.548 km | 7.651 km | 311.97 / 311.99 Hz |
+| 72 scans, fixed identities + scan epoch scale 0.2 s | 6.179 km | 6.181 km | 300.95 / 300.92 Hz |
+| 72 scans, fixed identities + scan epoch scale 1 s | 2.236 km | 2.237 km | 294.03 / 293.97 Hz |
+| 72 scans, fixed identities + scan epoch scale 5 s | 1.566 km | 1.568 km | 293.91 / 293.85 Hz |
+| 72 scans, fixed identities + global epoch scale 0.2 s | 1.887 km | 1.889 km | 302.63 / 302.59 Hz |
+| 72 scans, fixed identities + global epoch scale 1 s | 1.698 km | 1.706 km | 302.65 / 302.61 Hz |
+| 72 scans, fixed identities + global epoch scale 5 s | 1.690 km | 1.698 km | 302.65 / 302.61 Hz |
 
 Rows labeled simply 'epoch' share one correction per scan; satellite-epoch rows
 share one per selected satellite and have no scan term. The satellite model
@@ -52,6 +59,18 @@ the same population. The fixed-location audit agrees: 3–10 s tracks carry only
 1–2% of capped training loss. Their removal is not a supported remedy here.
 
 ![Duration ablation with baseline](../2026_09_23_long_training_duration_ablation/reference_error.png)
+
+The full-group fixed-baseline audit also finds distributed residual loss: the
+top ten tracks account for only 5.0% and the top ten scans for 28.8% of capped
+loss. Only 47–48 of 1,400 selected candidate IDs occur in two scans; none in more
+than two. This is descriptive evidence about the selected catalogue assignments,
+not verification of true identities or a proof of the error's physical cause.
+
+Fitted epoch terms are much larger than the saved first-sample host brackets,
+whose median width is 1.34 ms in this group. The installed PPU source maps FPGA
+counters to host time using bracketed register reads; it does not simply stamp
+packet receipt. Exact historical package provenance remains unverified. Large
+fitted shifts therefore must not be presented as measured capture-clock errors.
 
 The two priors agree on all 476 six-scan identities and 1,124/1,130 sixteen-scan
 identities. This is stability between nearby selected solutions, not evidence
@@ -107,6 +126,16 @@ with about 312 Hz complementary-row capped RMS. Cache preparation took 6.77 s
 and the two sequential prior searches took 1,897.59 s. This improves on the
 roughly 10 km shorter-view baseline but does not establish sub-kilometre accuracy.
 The six/sixteen views cover only about 35/107 minutes elapsed.
+The full-group shared scan-epoch experiment improves error to 1.57 km at the
+weakest tested regularization, with no timing-boundary or visibility failures.
+All six arms meet a heuristic stopping rule, without certified stationarity.
+These conditional fits retain the baseline identities, so alternating catalogue
+reassignment and continuous fitting is the next direct test of that limitation.
+One global epoch term instead of 72 independent scan terms gives 1.69–1.89 km
+full-group error across all tested scales. Thus much of the localization gain
+can be reproduced by a simpler model, although its held frequency RMS is worse
+(about 303 Hz). The global fit reaches roughly −0.94 s at weak regularization;
+this remains an empirical nuisance, not independent evidence of clock bias.
 Synthetic success will not count as achieving the real-data accuracy objective.
 
 The current experiment priorities are:
@@ -142,6 +171,10 @@ test group closed until model selection is complete.
 - [Epoch versus position-curvature audit](../2026_09_23_long_epoch_identifiability/README.md).
 - [Conditional satellite-epoch fits and solver diagnostics](../2026_09_23_long_satellite_epoch_position/README.md).
 - [Full eight-hour blind baseline](../2026_09_23_long_training_full8h_position/README.md).
+- [Full eight-hour conditional scan-epoch fit](../2026_09_23_long_full8h_shared_epoch_position/README.md).
+- [Full eight-hour training residual concentration](../2026_09_23_long_full8h_residual_audit/README.md).
+- [Fitted epoch versus host-timing semantics](../2026_09_23_full8h_tau_timing_semantics_audit/README.md).
+- [One global epoch term across six/sixteen/seventy-two scans](../2026_09_23_long_global_epoch_position/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
