@@ -19,6 +19,18 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def resolve_nominees(row):
+    result = {}
+    for rx in ("0", "1"):
+        by_rank = {
+            p["candidate_rank"]: p
+            for component in row["receiver_components"][rx]
+            for p in component
+        }
+        result[rx] = [by_rank[rank] for rank in row["nominees"][rx]]
+    return result
+
+
 def run_models(iq, picks, index):
     """Identical frozen within-snippet calibration and response policy as stream-1."""
     n = np.arange(COUNT)
@@ -138,10 +150,9 @@ def main():
             if row["status"] == "eligible":
                 raw = reader.read(row["sample_start"], COUNT, receiver_ids=(0, 1))
                 iq = (raw[:, :, 0].astype(float) + 1j * raw[:, :, 1].astype(float)) / 32768
-                result.update(
-                    raw_sha256=hashlib.sha256(raw.tobytes()).hexdigest(), nominees=row["nominees"]
-                )
-                result.update(run_models(iq, row["nominees"], index))
+                picks = resolve_nominees(row)
+                result.update(raw_sha256=hashlib.sha256(raw.tobytes()).hexdigest(), nominees=picks)
+                result.update(run_models(iq, picks, index))
             path = args.output / f"probe-{index}.json"
             path.write_text(json.dumps(result, default=serial, indent=2, allow_nan=False) + "\n")
             outputs[path.name] = digest(path)
