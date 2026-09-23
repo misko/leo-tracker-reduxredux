@@ -1,0 +1,111 @@
+{
+  "schema": "adaptive-tle-position-v2-backfill-read-only-audit/v1",
+  "observed_utc": "2026-09-23T14:21:30Z",
+  "scope": {
+    "frozen_inventory": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_23_adaptive_best_first_rollout/inventory.json",
+    "target_version": 2,
+    "target_analysis_id": "scanner-adaptive-tle-position-v2",
+    "bulk_root": "/srv/bulk/leo",
+    "qnap_access": "none",
+    "queue_or_worker_mutation": false
+  },
+  "watcher": {
+    "unit": "leo-adaptive-position-v2-completion-audit-20260923.service",
+    "state": "active/running",
+    "started_utc": "2026-09-23T06:15:56Z",
+    "latest_progress_receipt": "/tmp/adaptive-position-v2-completion-polls/progress-20260923T141950144356Z-0107.json",
+    "latest_store_receipt": "/tmp/adaptive-position-v2-completion-polls/store-20260923T141641963339Z-0107.json",
+    "polling": "read-only store and source-manifest audit; served API audit is deferred until zero pending"
+  },
+  "frozen_inventory_audit": {
+    "inventory_sha256": "sha256:28b574ded4ef193242fb8a7c2aa462006e4099ce2964da03d592e4c1f59c1fb4",
+    "auditor_source_sha256": {
+      "tools/audit_adaptive_tle_position_rollout.py": "sha256:cea4fce2ca5b055e644bb64f9186a4089ba52eb2f8895d1a66b5b8558fccb6b5",
+      "src/leo/analysis/adaptive_tle_position.py": "sha256:ff64ecfa3dea9665b7ceb6536353364010af0e584a7b75aea472f0a43c4f5267",
+      "src/leo/analysis/adaptive_tle_prediction.py": "sha256:b55e38ed27a0cd5f14fe8066307702a1fe19d56ba17b73c01fe138f0433dfcc0",
+      "src/leo/cli/adaptive_tle_position.py": "sha256:96e11a36bcc8e10008414d64ac9adf77088de4c5e6f3d39fd492b8df648ce8fe",
+      "src/leo/contracts/adaptive_tle_position.py": "sha256:33024679b26bd677ec6d62c67493fce4caee1eaac91cfffd05f3fe43444fc1be",
+      "src/leo/operations/adaptive_tle_position_inputs.py": "sha256:2b2c68c2eab3bd26d60c9d366fa6b1dc8cc580b3b7b77ca549f8cf2383fdd477",
+      "src/leo/storage/adaptive_tle_position.py": "sha256:efc841fe9b1c50fc76d713da3b27953319b925603ae4a7cd9916cff62a25e2df"
+    },
+    "frozen_session_count": 165,
+    "publication_states": {
+      "diagnostic": 164,
+      "insufficient": 0,
+      "failed": 0,
+      "pending": 1
+    },
+    "invalid_publication_count": 0,
+    "verified_map_png_count": 164,
+    "current_source_manifest_match_count": 164,
+    "fixed_split_totals": {
+      "tracks": 5178,
+      "observations": 136151,
+      "training_observations": 79517,
+      "heldout_observations": 56634,
+      "partition_seeds": 5178
+    },
+    "selection_declarations": {
+      "known_position_used_for_inference": false,
+      "position_fix_claimed": false,
+      "reference_metrics_labeled_evaluation_only": true
+    }
+  },
+  "remaining_session": {
+    "session_id": "scan-hop-6cd2560365a058bc",
+    "publication_state": "pending",
+    "queue_job_id": 44457,
+    "queue_job_kind": "adaptive_tracking",
+    "queue_state": "failed",
+    "attempt_count": 32,
+    "max_attempts": 32,
+    "first_failed_attempt_utc": "2026-09-23T07:16:18Z",
+    "terminal_failed_attempt_utc": "2026-09-23T09:17:37Z",
+    "repeated_failure": "PersistentHopTrajectoryProjectionError: capture lacks complete counter-continuity authority",
+    "tracking_evidence": {
+      "manifest": "/srv/bulk/leo/scanner-shared-tracking-v14/scan-hop-6cd2560365a058bc/manifest.json",
+      "trajectory_state": "unsupported",
+      "tle_state": "unavailable",
+      "reason": "capture lacks complete counter-continuity authority"
+    },
+    "v2_store_state": "only an empty writer lock exists; no V2 document or PNG was published"
+  },
+  "queue_and_worker_observations": {
+    "observed_utc": "2026-09-23T14:24:30Z",
+    "active_workers": 17,
+    "worker_unit_states": "all active/running",
+    "memory_capacity": 4,
+    "active_memory_leases": 3,
+    "active_tracking_leases": 1,
+    "active_scan_leases": 2,
+    "terminal_adaptive_tracking_failures_in_catalog": 1,
+    "terminal_failure_session_ids": ["scan-hop-6cd2560365a058bc"],
+    "worker_journal_error_entries_2026_09_23T05_50_to_14_22_utc": 0
+  },
+  "completion_assessment": {
+    "classification": "blocked by one terminal input/trajectory-authority failure, not by worker throughput or memory capacity",
+    "evidence": [
+      "164 of 165 frozen publications passed the immutable PNG and current input/analysis-manifest audit",
+      "the sole remaining job has no live lease and exhausted its retry budget more than five hours before this audit",
+      "three of four memory leases were occupied by unrelated normal work while all 17 workers remained active"
+    ],
+    "do_not_infer": "The audit does not diagnose or change the capture's counter continuity, requeue its terminal job, or treat the missing V2 publication as a valid scientific insufficiency result."
+  },
+  "runtime_comparison": {
+    "main_commit": "512b79e99b4b1968d746111828fa0a7d11f176f4",
+    "deployed_release": "fb152566148e662dc22d7948607fd65998f033a9",
+    "commit_level_difference": "512b79e9 relative to fb152566 adds only 37 files beneath reports/2026_09_23_adaptive_best_first_rollout",
+    "backend_python_source": {
+      "main_file_count": 575,
+      "release_file_count": 575,
+      "byte_comparison": "identical for all .py and .pyi paths under src",
+      "non_source_workspace_artifact": "main has a local _native_acquisition.cpython-313-x86_64-linux-gnu.so absent from the release source tree"
+    },
+    "physical_workspace_caveat": "The deploy worktree is not wholly byte-identical to the release: local/skip-worktree UI files web/src/adaptive-api.ts and web/src/AdaptiveHopPanel.test.tsx, plus generated web/dist assets, differ physically. They are outside the committed 512b-vs-fb152 change and outside the Python worker runtime."
+  },
+  "read_only_receipts": {
+    "queue_snapshot": "/tmp/adaptive-position-v2-queue-state-20260923T1421.json",
+    "queue_query_script_sha256": "sha256:92f6a070780e1d0ffe005f0657ba6f3abab8a9a7de47010fdc165178bac30a99",
+    "queue_snapshot_sha256": "sha256:a2adb42ed5bc914ac63cad34511045e8c06b800df24c60262cc3abe0883d5269"
+  }
+}
