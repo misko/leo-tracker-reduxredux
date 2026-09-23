@@ -80,3 +80,25 @@ or weak support. It is unsuitable as a relaxed source-association or position
 gate until an experiment has independent source labels and a calibration that
 resolves the receiver/alias gauge. The full 301-visit replay completed before
 the user narrowed scope; this report intentionally does not aggregate it.
+
+The four additional RX1-anchored screened visits are 204 (R=0.821), 1093
+(0.969), 1117 (0.960), and 1124 (0.948). Their fixed wrong-time controls are
+0.270, 0.132, 0.068, and 0.251, respectively. Visit 204 is visibly noisier;
+its amplitude-weighted resultant should not be mistaken for uniformly clean
+frames. No candidates were removed from the figures based on their results.
+
+![All candidate-pair phase traces](figures/2026_09_23_relaxed_adaptive_coherence/random30-double-difference.png)
+
+![Random versus reference coherence](figures/2026_09_23_relaxed_adaptive_coherence/random30-coherence.png)
+
+The [30-dwell single-source gallery](figures/2026_09_23_relaxed_adaptive_coherence/random30-phase-gallery.png)
+uses each arm's primary metadata-ranked candidate, with the saved training-only
+120 ms phase rate removed. It is a different observable from the two-source
+difference above and includes no new fit or phase centering.
+
+Reproducible artifacts: [source metrics](figures/2026_09_23_relaxed_adaptive_coherence/source-metrics.csv),
+[pair metrics](figures/2026_09_23_relaxed_adaptive_coherence/pair-metrics.csv),
+[sample results](figures/2026_09_23_relaxed_adaptive_coherence/sample-results.json), and
+[cached frame measurements](figures/2026_09_23_relaxed_adaptive_coherence/sample-frames.jsonl.gz).
+Reference rows are explicitly marked. Render with
+`tools/research/plot_relaxed_coherence_sample.py`; no IQ access or fitting is required.
