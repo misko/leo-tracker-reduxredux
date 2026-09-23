@@ -1,0 +1,2114 @@
+{
+  "schema": "best-first-fine-resolution-objective-audit/v1",
+  "status": "descriptive audit of fixed selected 12.5 km cells; no truth data or track exclusion decision",
+  "source_output": "/home/mouse9911/.cache/leo-research/cf510316-prior-comparison-v1/best-first-search-parent-linear-v1",
+  "source_result_digests": {
+    "sacramento": "sha256:e2f76f1ef866d287a6973eb2e295379e78d1783585222aafe5d4f6e6718fa426",
+    "reno": "sha256:98a355b153716d36541e7e0a36c4e51c38286219f25b6f7137bc7db7cf4cee3d"
+  },
+  "source_frozen_track_evidence_digest": "sha256:d2acd33a3a148b2157f3b54d55e0fce341092fb23e2240387c7841eb2a893c4a",
+  "objective": "sum(weight_s * min(heldout_rms_hz,800)^2) / sum(weight_s), unmatched=800; all 34 tracks retained",
+  "cities": {
+    "sacramento": {
+      "selected_coordinate_km": [
+        -93.75,
+        -81.25
+      ],
+      "selected_rmse_hz": 185.0136233125215,
+      "selected_mse_hz2": 34230.0408112276,
+      "track_count": 34,
+      "weight_total_s": 452.0,
+      "capped_loss_total_hz2_s": 15471978.446674874,
+      "capped_objective_mse_hz2": 34230.0408112276,
+      "capped_objective_rmse_hz": 185.0136233125215,
+      "matched_uncapped_weighted_rms_hz": 190.91542212654642,
+      "matched_weight_s": 452.0,
+      "unmatched_track_ids": [],
+      "uncapped_at_or_above_800_track_count": 1,
+      "tau_boundary_track_ids": [
+        "sha256:eec3395afa004acfaf0072a85ea51be48638bac07af82d6f00267288acd59c9a",
+        "sha256:db01bc154eacb56b100fa93bc4c8932a32fe78d50d7d3a95845ed39f50ef6ae4",
+        "sha256:7b8082eff2787d0cb53c7fe33929888d3302f52dfd425163fb446a8fbcaef9ff",
+        "sha256:6d5074f3771d74c9c055c96040a759b33e0f4be4f85e70ca48b26629edbde828",
+        "sha256:4cb055aa01c353ebe668749ff8fa41280630d4ec8344ab426911b1bdac64a7d6",
+        "sha256:1ab4e7acd1b1099c5537f31a8aebd2f1ec160370304505149c55256c4ad6a91a"
+      ],
+      "loss_concentration": {
+        "top3_share": 0.7071800520411761,
+        "top5_share": 0.7611688319988321,
+        "hhi": 0.3932718257501919
+      },
+      "top_contributors": [
+        {
+          "track_id": "sha256:eec3395afa004acfaf0072a85ea51be48638bac07af82d6f00267288acd59c9a",
+          "weight_s": 15.0,
+          "heldout_rms_hz": 840.747018340534,
+          "capped_rms_hz": 800.0,
+          "capped_loss_hz2_s": 9600000.0,
+          "best_candidate": {
+            "norad": 67453,
+            "tau_s": 5.0,
+            "training_rms_hz": 523.6893315777451,
+            "heldout_rms_hz": 840.747018340534,
+            "qualifies": {
+              "800.0": false
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.6204765623922623
+        },
+        {
+          "track_id": "sha256:e164f064f43985871710f17b2be885328e3b861f8c019b0d0164472887b046af",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 387.9450672246332,
+          "capped_rms_hz": 387.9450672246332,
+          "capped_loss_hz2_s": 752506.8759196259,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": 3.0,
+            "training_rms_hz": 134.1093430935791,
+            "heldout_rms_hz": 387.9450672246332,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.04863675828616147
+        },
+        {
+          "track_id": "sha256:9dc8e83c15ed95594c2551150a7027a69442e3bf79000e89f1ede9474ec0a3dd",
+          "weight_s": 20.0,
+          "heldout_rms_hz": 171.60530982167552,
+          "capped_rms_hz": 171.60530982167552,
+          "capped_loss_hz2_s": 588967.6471798648,
+          "best_candidate": {
+            "norad": 56144,
+            "tau_s": 0.0,
+            "training_rms_hz": 127.992357279865,
+            "heldout_rms_hz": 171.60530982167552,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.038066731362752224
+        },
+        {
+          "track_id": "sha256:c933257998484a85099dc2ff3984783917f3b73b71bf800c14161531ac52c365",
+          "weight_s": 32.0,
+          "heldout_rms_hz": 117.10041498671904,
+          "capped_rms_hz": 117.10041498671904,
+          "capped_loss_hz2_s": 438800.2300819781,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 80.17942476153175,
+            "heldout_rms_hz": 117.10041498671904,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.028360964410229117
+        },
+        {
+          "track_id": "sha256:4428833a4f0cadce87ebedfeeaf3936a187c5d08bcb52ca38237e66a9381492d",
+          "weight_s": 25.0,
+          "heldout_rms_hz": 125.93855800113792,
+          "capped_rms_hz": 125.93855800113792,
+          "capped_loss_hz2_s": 396513.0097851495,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 0.0,
+            "training_rms_hz": 138.0615223245039,
+            "heldout_rms_hz": 125.93855800113792,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.02562781554742698
+        },
+        {
+          "track_id": "sha256:352ebc8874a3434d5e760c49621be36ab709d2b634a0bc05debbe27cd6db5fe2",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 156.15963679464892,
+          "capped_rms_hz": 156.15963679464892,
+          "capped_loss_hz2_s": 317015.8181298767,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 144.84186345069344,
+            "heldout_rms_hz": 156.15963679464892,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.020489675526791304
+        },
+        {
+          "track_id": "sha256:56b483852f4e2da333591d7a00e699e033a667bca2163adfe90fcceb2f6403c5",
+          "weight_s": 19.0,
+          "heldout_rms_hz": 117.68263579984719,
+          "capped_rms_hz": 117.68263579984719,
+          "capped_loss_hz2_s": 263134.85260719,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 98.86558473872391,
+            "heldout_rms_hz": 117.68263579984719,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01700718841576082
+        },
+        {
+          "track_id": "sha256:f387a6637b3b73037b6a7da0e77c64ac5f6984514817794e552549927c154eb1",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 188.89839750105128,
+          "capped_rms_hz": 188.89839750105128,
+          "capped_loss_hz2_s": 249778.2320492562,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 1.0,
+            "training_rms_hz": 85.39196166537619,
+            "heldout_rms_hz": 188.89839750105128,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01614391028982701
+        },
+        {
+          "track_id": "sha256:06f103db7dcbe6d9d3b48a57d610542148644c13ecba9c8a63760f296771ee2c",
+          "weight_s": 22.0,
+          "heldout_rms_hz": 106.3497448158073,
+          "capped_rms_hz": 106.3497448158073,
+          "capped_loss_hz2_s": 248825.90089252128,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": -1.0,
+            "training_rms_hz": 90.87043356920854,
+            "heldout_rms_hz": 106.3497448158073,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.016082358293744724
+        },
+        {
+          "track_id": "sha256:c2bb85e82b30a793cdc94aabf62fea225ff7336bb5cca547be6961e44da64542",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 182.59695642196147,
+          "capped_rms_hz": 182.59695642196147,
+          "capped_loss_hz2_s": 233391.53946194582,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 127.43631995387686,
+            "heldout_rms_hz": 182.59695642196147,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.015084789593415226
+        }
+      ],
+      "tracks_by_capped_loss": [
+        {
+          "track_id": "sha256:eec3395afa004acfaf0072a85ea51be48638bac07af82d6f00267288acd59c9a",
+          "weight_s": 15.0,
+          "heldout_rms_hz": 840.747018340534,
+          "capped_rms_hz": 800.0,
+          "capped_loss_hz2_s": 9600000.0,
+          "best_candidate": {
+            "norad": 67453,
+            "tau_s": 5.0,
+            "training_rms_hz": 523.6893315777451,
+            "heldout_rms_hz": 840.747018340534,
+            "qualifies": {
+              "800.0": false
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.6204765623922623
+        },
+        {
+          "track_id": "sha256:e164f064f43985871710f17b2be885328e3b861f8c019b0d0164472887b046af",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 387.9450672246332,
+          "capped_rms_hz": 387.9450672246332,
+          "capped_loss_hz2_s": 752506.8759196259,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": 3.0,
+            "training_rms_hz": 134.1093430935791,
+            "heldout_rms_hz": 387.9450672246332,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.04863675828616147
+        },
+        {
+          "track_id": "sha256:9dc8e83c15ed95594c2551150a7027a69442e3bf79000e89f1ede9474ec0a3dd",
+          "weight_s": 20.0,
+          "heldout_rms_hz": 171.60530982167552,
+          "capped_rms_hz": 171.60530982167552,
+          "capped_loss_hz2_s": 588967.6471798648,
+          "best_candidate": {
+            "norad": 56144,
+            "tau_s": 0.0,
+            "training_rms_hz": 127.992357279865,
+            "heldout_rms_hz": 171.60530982167552,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.038066731362752224
+        },
+        {
+          "track_id": "sha256:c933257998484a85099dc2ff3984783917f3b73b71bf800c14161531ac52c365",
+          "weight_s": 32.0,
+          "heldout_rms_hz": 117.10041498671904,
+          "capped_rms_hz": 117.10041498671904,
+          "capped_loss_hz2_s": 438800.2300819781,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 80.17942476153175,
+            "heldout_rms_hz": 117.10041498671904,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.028360964410229117
+        },
+        {
+          "track_id": "sha256:4428833a4f0cadce87ebedfeeaf3936a187c5d08bcb52ca38237e66a9381492d",
+          "weight_s": 25.0,
+          "heldout_rms_hz": 125.93855800113792,
+          "capped_rms_hz": 125.93855800113792,
+          "capped_loss_hz2_s": 396513.0097851495,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 0.0,
+            "training_rms_hz": 138.0615223245039,
+            "heldout_rms_hz": 125.93855800113792,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.02562781554742698
+        },
+        {
+          "track_id": "sha256:352ebc8874a3434d5e760c49621be36ab709d2b634a0bc05debbe27cd6db5fe2",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 156.15963679464892,
+          "capped_rms_hz": 156.15963679464892,
+          "capped_loss_hz2_s": 317015.8181298767,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 144.84186345069344,
+            "heldout_rms_hz": 156.15963679464892,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.020489675526791304
+        },
+        {
+          "track_id": "sha256:56b483852f4e2da333591d7a00e699e033a667bca2163adfe90fcceb2f6403c5",
+          "weight_s": 19.0,
+          "heldout_rms_hz": 117.68263579984719,
+          "capped_rms_hz": 117.68263579984719,
+          "capped_loss_hz2_s": 263134.85260719,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 98.86558473872391,
+            "heldout_rms_hz": 117.68263579984719,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01700718841576082
+        },
+        {
+          "track_id": "sha256:f387a6637b3b73037b6a7da0e77c64ac5f6984514817794e552549927c154eb1",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 188.89839750105128,
+          "capped_rms_hz": 188.89839750105128,
+          "capped_loss_hz2_s": 249778.2320492562,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 1.0,
+            "training_rms_hz": 85.39196166537619,
+            "heldout_rms_hz": 188.89839750105128,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01614391028982701
+        },
+        {
+          "track_id": "sha256:06f103db7dcbe6d9d3b48a57d610542148644c13ecba9c8a63760f296771ee2c",
+          "weight_s": 22.0,
+          "heldout_rms_hz": 106.3497448158073,
+          "capped_rms_hz": 106.3497448158073,
+          "capped_loss_hz2_s": 248825.90089252128,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": -1.0,
+            "training_rms_hz": 90.87043356920854,
+            "heldout_rms_hz": 106.3497448158073,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.016082358293744724
+        },
+        {
+          "track_id": "sha256:c2bb85e82b30a793cdc94aabf62fea225ff7336bb5cca547be6961e44da64542",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 182.59695642196147,
+          "capped_rms_hz": 182.59695642196147,
+          "capped_loss_hz2_s": 233391.53946194582,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 127.43631995387686,
+            "heldout_rms_hz": 182.59695642196147,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.015084789593415226
+        },
+        {
+          "track_id": "sha256:0a3c046639138922d4fd0c3cf682f510b20e63b31467ff76be435c636878207a",
+          "weight_s": 14.0,
+          "heldout_rms_hz": 128.97620007767546,
+          "capped_rms_hz": 128.97620007767546,
+          "capped_loss_hz2_s": 232888.04261067198,
+          "best_candidate": {
+            "norad": 56144,
+            "tau_s": -4.0,
+            "training_rms_hz": 92.29069028376685,
+            "heldout_rms_hz": 128.97620007767546,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.015052247093888797
+        },
+        {
+          "track_id": "sha256:dd1a4e2f4ccb2533b6ed7f20e7bafaa9bd9c81f4cde5b62bd356e865397484c6",
+          "weight_s": 17.0,
+          "heldout_rms_hz": 114.20444134749505,
+          "capped_rms_hz": 114.20444134749505,
+          "capped_loss_hz2_s": 221725.12519938842,
+          "best_candidate": {
+            "norad": 66325,
+            "tau_s": -2.0,
+            "training_rms_hz": 100.04356805838539,
+            "heldout_rms_hz": 114.20444134749505,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01433075452913651
+        },
+        {
+          "track_id": "sha256:9f6890a709562ff7f016b37ae3684fef14c60e08f774976dd41c762835c3331a",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 124.67832202379716,
+          "capped_rms_hz": 124.67832202379716,
+          "capped_loss_hz2_s": 202080.89177470564,
+          "best_candidate": {
+            "norad": 66116,
+            "tau_s": -1.0,
+            "training_rms_hz": 81.20313628958043,
+            "heldout_rms_hz": 124.67832202379716,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.013061089276409598
+        },
+        {
+          "track_id": "sha256:19ac339dc5b9d95bc6a480bec5c061cd46951d252fb3dc3c18e9222f61f82c5d",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 182.22931003126646,
+          "capped_rms_hz": 182.22931003126646,
+          "capped_loss_hz2_s": 199245.1286068286,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 100.38716564975006,
+            "heldout_rms_hz": 182.22931003126646,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.012877805465767627
+        },
+        {
+          "track_id": "sha256:baf916f707e2918324ccf9be7611dd250c2098f3a1ca9ac1d093dbe5006d8e01",
+          "weight_s": 11.0,
+          "heldout_rms_hz": 133.59344191025778,
+          "capped_rms_hz": 133.59344191025778,
+          "capped_loss_hz2_s": 196319.2849357236,
+          "best_candidate": {
+            "norad": 66325,
+            "tau_s": -2.0,
+            "training_rms_hz": 51.495527438796955,
+            "heldout_rms_hz": 133.59344191025778,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.012688699484190087
+        },
+        {
+          "track_id": "sha256:8280279d6e32f790c5f3287d28c1b6acf2ae20d405e817ee66dbe9f9bf368577",
+          "weight_s": 23.0,
+          "heldout_rms_hz": 90.03026625294213,
+          "capped_rms_hz": 90.03026625294213,
+          "capped_loss_hz2_s": 186425.32335623994,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 0.0,
+            "training_rms_hz": 59.08261942555454,
+            "heldout_rms_hz": 90.03026625294213,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.012049223310306842
+        },
+        {
+          "track_id": "sha256:a7736bc62f28ff8a7f53de67936f296c621cbecd917795829d117f885d041a2a",
+          "weight_s": 23.0,
+          "heldout_rms_hz": 80.99231285409383,
+          "capped_rms_hz": 80.99231285409383,
+          "capped_loss_hz2_s": 150874.35905347447,
+          "best_candidate": {
+            "norad": 66116,
+            "tau_s": -1.0,
+            "training_rms_hz": 85.74464021119736,
+            "heldout_rms_hz": 80.99231285409383,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.009751458714441223
+        },
+        {
+          "track_id": "sha256:39ea14ca3aeb11810a70153808ac2777c928052b6deb2b5a4bbdc8c71c610df3",
+          "weight_s": 10.0,
+          "heldout_rms_hz": 119.5792896227983,
+          "capped_rms_hz": 119.5792896227983,
+          "capped_loss_hz2_s": 142992.06506693078,
+          "best_candidate": {
+            "norad": 67623,
+            "tau_s": -3.0,
+            "training_rms_hz": 68.48193209480819,
+            "heldout_rms_hz": 119.5792896227983,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.009242002602302074
+        },
+        {
+          "track_id": "sha256:1ff5702144e7916dc3323d469673b940eae23cb4e4f1bd09576ddcaca0d66693",
+          "weight_s": 17.0,
+          "heldout_rms_hz": 88.75711279929048,
+          "capped_rms_hz": 88.75711279929048,
+          "capped_loss_hz2_s": 133923.02623192157,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 0.0,
+            "training_rms_hz": 79.08165993711606,
+            "heldout_rms_hz": 88.75711279929048,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.008655843639744944
+        },
+        {
+          "track_id": "sha256:3f63384f7287e475891f9bc57705606771194965e537746cfb6eec43bee6cb74",
+          "weight_s": 18.0,
+          "heldout_rms_hz": 81.95555928542505,
+          "capped_rms_hz": 81.95555928542505,
+          "capped_loss_hz2_s": 120900.84656016277,
+          "best_candidate": {
+            "norad": 66325,
+            "tau_s": -2.0,
+            "training_rms_hz": 88.32418865562427,
+            "heldout_rms_hz": 81.95555928542505,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0078141814233296
+        },
+        {
+          "track_id": "sha256:7b8082eff2787d0cb53c7fe33929888d3302f52dfd425163fb446a8fbcaef9ff",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 134.12038255952362,
+          "capped_rms_hz": 134.12038255952362,
+          "capped_loss_hz2_s": 107929.66210747781,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -5.0,
+            "training_rms_hz": 30.75899464162403,
+            "heldout_rms_hz": 134.12038255952362,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.006975815179646483
+        },
+        {
+          "track_id": "sha256:db01bc154eacb56b100fa93bc4c8932a32fe78d50d7d3a95845ed39f50ef6ae4",
+          "weight_s": 9.0,
+          "heldout_rms_hz": 100.98142574221868,
+          "capped_rms_hz": 100.98142574221868,
+          "capped_loss_hz2_s": 91775.23510438102,
+          "best_candidate": {
+            "norad": 63074,
+            "tau_s": -5.0,
+            "training_rms_hz": 158.8216081179845,
+            "heldout_rms_hz": 100.98142574221868,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.005931706498990418
+        },
+        {
+          "track_id": "sha256:4c2432f160ebd30e6108e5c394cb809589662b9119855acbb9c77405a310da92",
+          "weight_s": 10.0,
+          "heldout_rms_hz": 80.40451467858726,
+          "capped_rms_hz": 80.40451467858726,
+          "capped_loss_hz2_s": 64648.85980699154,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 150.50116347196118,
+            "heldout_rms_hz": 80.40451467858726,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.004178448155793896
+        },
+        {
+          "track_id": "sha256:f9866a804922313de878dec07865d8e10b0815252746f322b161378e85bc0bba",
+          "weight_s": 25.0,
+          "heldout_rms_hz": 47.483922889003466,
+          "capped_rms_hz": 47.483922889003466,
+          "capped_loss_hz2_s": 56368.073323220684,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 61.83537375495589,
+            "heldout_rms_hz": 47.483922889003466,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0036432362879444745
+        },
+        {
+          "track_id": "sha256:86e37b3255bd863adb88c310cdf614e7b005cdbcabe13e340a0fe3c05c3e4980",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 63.9886199762343,
+          "capped_rms_hz": 63.9886199762343,
+          "capped_loss_hz2_s": 53229.065324018105,
+          "best_candidate": {
+            "norad": 62996,
+            "tau_s": -2.0,
+            "training_rms_hz": 79.4276381209765,
+            "heldout_rms_hz": 63.9886199762343,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.003440352861624992
+        },
+        {
+          "track_id": "sha256:dfee5907050019602eb874a850a8a78ce4aaeeecc81cf8fb21202c21a49d4766",
+          "weight_s": 11.0,
+          "heldout_rms_hz": 69.19971301704138,
+          "capped_rms_hz": 69.19971301704138,
+          "capped_loss_hz2_s": 52674.60309804974,
+          "best_candidate": {
+            "norad": 66325,
+            "tau_s": -2.0,
+            "training_rms_hz": 41.58463335783298,
+            "heldout_rms_hz": 69.19971301704138,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0034045163182973657
+        },
+        {
+          "track_id": "sha256:6d5074f3771d74c9c055c96040a759b33e0f4be4f85e70ca48b26629edbde828",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 89.75780138421152,
+          "capped_rms_hz": 89.75780138421152,
+          "capped_loss_hz2_s": 40282.31454663782,
+          "best_candidate": {
+            "norad": 57840,
+            "tau_s": -5.0,
+            "training_rms_hz": 9.1042536508832,
+            "heldout_rms_hz": 89.75780138421152,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.002603565839073089
+        },
+        {
+          "track_id": "sha256:e876e02de58c300e25ead1af1555e1d26ac1cd2a8d32f50f21706580a0425392",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 66.03286428616903,
+          "capped_rms_hz": 66.03286428616903,
+          "capped_loss_hz2_s": 30522.374160849322,
+          "best_candidate": {
+            "norad": 67623,
+            "tau_s": -2.0,
+            "training_rms_hz": 63.79359019454522,
+            "heldout_rms_hz": 66.03286428616903,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0019727518536848125
+        },
+        {
+          "track_id": "sha256:f69edc4d64104e69147b92ddab5c732f06bae4fd91f99f2069a3c0f082b9621a",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 66.2108422306711,
+          "capped_rms_hz": 66.2108422306711,
+          "capped_loss_hz2_s": 26303.253773368917,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": -1.0,
+            "training_rms_hz": 17.995977894845016,
+            "heldout_rms_hz": 66.2108422306711,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0017000575501074217
+        },
+        {
+          "track_id": "sha256:40540510172034519707706037338abff567cb40a577be0fed6193cdf38de526",
+          "weight_s": 14.0,
+          "heldout_rms_hz": 42.948022640971125,
+          "capped_rms_hz": 42.948022640971125,
+          "capped_loss_hz2_s": 25823.457082771158,
+          "best_candidate": {
+            "norad": 56144,
+            "tau_s": 0.0,
+            "training_rms_hz": 17.547495511930652,
+            "heldout_rms_hz": 42.948022640971125,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0016690468624793715
+        },
+        {
+          "track_id": "sha256:dee1eeb94c21910035be284c90152b459bd216ed777cc758f830203e6236ba5c",
+          "weight_s": 14.0,
+          "heldout_rms_hz": 41.833417466719276,
+          "capped_rms_hz": 41.833417466719276,
+          "capped_loss_hz2_s": 24500.487437227388,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 43.749945518244054,
+            "heldout_rms_hz": 41.833417466719276,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.001583539398123506
+        },
+        {
+          "track_id": "sha256:0730db607cbcbdedd44fccb09a9daee897444454aa8fed412b0e8be7d3d018ec",
+          "weight_s": 4.0,
+          "heldout_rms_hz": 62.3182324442825,
+          "capped_rms_hz": 62.3182324442825,
+          "capped_loss_hz2_s": 15534.248379918496,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": 1.0,
+            "training_rms_hz": 19.947643255820086,
+            "heldout_rms_hz": 62.3182324442825,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.001004024691054104
+        },
+        {
+          "track_id": "sha256:1ab4e7acd1b1099c5537f31a8aebd2f1ec160370304505149c55256c4ad6a91a",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 29.3497108939583,
+          "capped_rms_hz": 29.3497108939583,
+          "capped_loss_hz2_s": 5168.433177353607,
+          "best_candidate": {
+            "norad": 57840,
+            "tau_s": 5.0,
+            "training_rms_hz": 16.498221757705913,
+            "heldout_rms_hz": 29.3497108939583,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0003340512136290087
+        },
+        {
+          "track_id": "sha256:4cb055aa01c353ebe668749ff8fa41280630d4ec8344ab426911b1bdac64a7d6",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 13.492070628000864,
+          "capped_rms_hz": 13.492070628000864,
+          "capped_loss_hz2_s": 910.179849154818,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": 5.0,
+            "training_rms_hz": 34.67970816884835,
+            "heldout_rms_hz": 13.492070628000864,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 5.882763166273847e-05
+        }
+      ]
+    },
+    "reno": {
+      "selected_coordinate_km": [
+        -243.75,
+        -181.25
+      ],
+      "selected_rmse_hz": 184.51095863043363,
+      "selected_mse_hz2": 34044.29385472159,
+      "track_count": 34,
+      "weight_total_s": 452.0,
+      "capped_loss_total_hz2_s": 15388020.822334157,
+      "capped_objective_mse_hz2": 34044.29385472159,
+      "capped_objective_rmse_hz": 184.51095863043363,
+      "matched_uncapped_weighted_rms_hz": 188.553933954023,
+      "matched_weight_s": 452.0,
+      "unmatched_track_ids": [],
+      "uncapped_at_or_above_800_track_count": 1,
+      "tau_boundary_track_ids": [
+        "sha256:0a3c046639138922d4fd0c3cf682f510b20e63b31467ff76be435c636878207a",
+        "sha256:eec3395afa004acfaf0072a85ea51be48638bac07af82d6f00267288acd59c9a",
+        "sha256:baf916f707e2918324ccf9be7611dd250c2098f3a1ca9ac1d093dbe5006d8e01",
+        "sha256:7b8082eff2787d0cb53c7fe33929888d3302f52dfd425163fb446a8fbcaef9ff",
+        "sha256:4cb055aa01c353ebe668749ff8fa41280630d4ec8344ab426911b1bdac64a7d6",
+        "sha256:1ab4e7acd1b1099c5537f31a8aebd2f1ec160370304505149c55256c4ad6a91a"
+      ],
+      "loss_concentration": {
+        "top3_share": 0.7278370621057817,
+        "top5_share": 0.7749531636569098,
+        "hhi": 0.39871556272120107
+      },
+      "top_contributors": [
+        {
+          "track_id": "sha256:eec3395afa004acfaf0072a85ea51be48638bac07af82d6f00267288acd59c9a",
+          "weight_s": 15.0,
+          "heldout_rms_hz": 827.9189998213211,
+          "capped_rms_hz": 800.0,
+          "capped_loss_hz2_s": 9600000.0,
+          "best_candidate": {
+            "norad": 67453,
+            "tau_s": 5.0,
+            "training_rms_hz": 502.33354962033513,
+            "heldout_rms_hz": 827.9189998213211,
+            "qualifies": {
+              "800.0": false
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.6238619060137071
+        },
+        {
+          "track_id": "sha256:4428833a4f0cadce87ebedfeeaf3936a187c5d08bcb52ca38237e66a9381492d",
+          "weight_s": 25.0,
+          "heldout_rms_hz": 181.81676054178573,
+          "capped_rms_hz": 181.81676054178573,
+          "capped_loss_hz2_s": 826433.3603477261,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": -1.0,
+            "training_rms_hz": 119.21678187593197,
+            "heldout_rms_hz": 181.81676054178573,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.05370628035206722
+        },
+        {
+          "track_id": "sha256:e164f064f43985871710f17b2be885328e3b861f8c019b0d0164472887b046af",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 393.32899882987596,
+          "capped_rms_hz": 393.32899882987596,
+          "capped_loss_hz2_s": 773538.5066025628,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": 3.0,
+            "training_rms_hz": 130.74049070898036,
+            "heldout_rms_hz": 393.32899882987596,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.05026887574000744
+        },
+        {
+          "track_id": "sha256:06f103db7dcbe6d9d3b48a57d610542148644c13ecba9c8a63760f296771ee2c",
+          "weight_s": 22.0,
+          "heldout_rms_hz": 130.4640918741401,
+          "capped_rms_hz": 130.4640918741401,
+          "capped_loss_hz2_s": 374459.34390796954,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": -1.0,
+            "training_rms_hz": 97.29778671210713,
+            "heldout_rms_hz": 130.4640918741401,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.02433447083490293
+        },
+        {
+          "track_id": "sha256:c933257998484a85099dc2ff3984783917f3b73b71bf800c14161531ac52c365",
+          "weight_s": 32.0,
+          "heldout_rms_hz": 104.66676404009539,
+          "capped_rms_hz": 104.66676404009539,
+          "capped_loss_hz2_s": 350564.20782800013,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 62.700451859139584,
+            "heldout_rms_hz": 104.66676404009539,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.022781630716225156
+        },
+        {
+          "track_id": "sha256:352ebc8874a3434d5e760c49621be36ab709d2b634a0bc05debbe27cd6db5fe2",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 163.97624743205236,
+          "capped_rms_hz": 163.97624743205236,
+          "capped_loss_hz2_s": 349546.7263846696,
+          "best_candidate": {
+            "norad": 60092,
+            "tau_s": -2.0,
+            "training_rms_hz": 164.3461698877902,
+            "heldout_rms_hz": 163.97624743205236,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.022715509058665807
+        },
+        {
+          "track_id": "sha256:8280279d6e32f790c5f3287d28c1b6acf2ae20d405e817ee66dbe9f9bf368577",
+          "weight_s": 23.0,
+          "heldout_rms_hz": 113.30106015455097,
+          "capped_rms_hz": 113.30106015455097,
+          "capped_loss_hz2_s": 295253.9953393391,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 0.0,
+            "training_rms_hz": 96.85378112349179,
+            "heldout_rms_hz": 113.30106015455097,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.019187262530266903
+        },
+        {
+          "track_id": "sha256:f387a6637b3b73037b6a7da0e77c64ac5f6984514817794e552549927c154eb1",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 205.20676135504516,
+          "capped_rms_hz": 205.20676135504516,
+          "capped_loss_hz2_s": 294768.70434078516,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 2.0,
+            "training_rms_hz": 85.93475441276809,
+            "heldout_rms_hz": 205.20676135504516,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.01915572559617012
+        },
+        {
+          "track_id": "sha256:56b483852f4e2da333591d7a00e699e033a667bca2163adfe90fcceb2f6403c5",
+          "weight_s": 19.0,
+          "heldout_rms_hz": 122.68430080397623,
+          "capped_rms_hz": 122.68430080397623,
+          "capped_loss_hz2_s": 285977.31561144994,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 104.72624874611475,
+            "heldout_rms_hz": 122.68430080397623,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01858441179104611
+        },
+        {
+          "track_id": "sha256:c2bb85e82b30a793cdc94aabf62fea225ff7336bb5cca547be6961e44da64542",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 182.38873046678233,
+          "capped_rms_hz": 182.38873046678233,
+          "capped_loss_hz2_s": 232859.54300899204,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 127.58932292506267,
+            "heldout_rms_hz": 182.38873046678233,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.015132520659903186
+        }
+      ],
+      "tracks_by_capped_loss": [
+        {
+          "track_id": "sha256:eec3395afa004acfaf0072a85ea51be48638bac07af82d6f00267288acd59c9a",
+          "weight_s": 15.0,
+          "heldout_rms_hz": 827.9189998213211,
+          "capped_rms_hz": 800.0,
+          "capped_loss_hz2_s": 9600000.0,
+          "best_candidate": {
+            "norad": 67453,
+            "tau_s": 5.0,
+            "training_rms_hz": 502.33354962033513,
+            "heldout_rms_hz": 827.9189998213211,
+            "qualifies": {
+              "800.0": false
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.6238619060137071
+        },
+        {
+          "track_id": "sha256:4428833a4f0cadce87ebedfeeaf3936a187c5d08bcb52ca38237e66a9381492d",
+          "weight_s": 25.0,
+          "heldout_rms_hz": 181.81676054178573,
+          "capped_rms_hz": 181.81676054178573,
+          "capped_loss_hz2_s": 826433.3603477261,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": -1.0,
+            "training_rms_hz": 119.21678187593197,
+            "heldout_rms_hz": 181.81676054178573,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.05370628035206722
+        },
+        {
+          "track_id": "sha256:e164f064f43985871710f17b2be885328e3b861f8c019b0d0164472887b046af",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 393.32899882987596,
+          "capped_rms_hz": 393.32899882987596,
+          "capped_loss_hz2_s": 773538.5066025628,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": 3.0,
+            "training_rms_hz": 130.74049070898036,
+            "heldout_rms_hz": 393.32899882987596,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.05026887574000744
+        },
+        {
+          "track_id": "sha256:06f103db7dcbe6d9d3b48a57d610542148644c13ecba9c8a63760f296771ee2c",
+          "weight_s": 22.0,
+          "heldout_rms_hz": 130.4640918741401,
+          "capped_rms_hz": 130.4640918741401,
+          "capped_loss_hz2_s": 374459.34390796954,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": -1.0,
+            "training_rms_hz": 97.29778671210713,
+            "heldout_rms_hz": 130.4640918741401,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.02433447083490293
+        },
+        {
+          "track_id": "sha256:c933257998484a85099dc2ff3984783917f3b73b71bf800c14161531ac52c365",
+          "weight_s": 32.0,
+          "heldout_rms_hz": 104.66676404009539,
+          "capped_rms_hz": 104.66676404009539,
+          "capped_loss_hz2_s": 350564.20782800013,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 62.700451859139584,
+            "heldout_rms_hz": 104.66676404009539,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.022781630716225156
+        },
+        {
+          "track_id": "sha256:352ebc8874a3434d5e760c49621be36ab709d2b634a0bc05debbe27cd6db5fe2",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 163.97624743205236,
+          "capped_rms_hz": 163.97624743205236,
+          "capped_loss_hz2_s": 349546.7263846696,
+          "best_candidate": {
+            "norad": 60092,
+            "tau_s": -2.0,
+            "training_rms_hz": 164.3461698877902,
+            "heldout_rms_hz": 163.97624743205236,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.022715509058665807
+        },
+        {
+          "track_id": "sha256:8280279d6e32f790c5f3287d28c1b6acf2ae20d405e817ee66dbe9f9bf368577",
+          "weight_s": 23.0,
+          "heldout_rms_hz": 113.30106015455097,
+          "capped_rms_hz": 113.30106015455097,
+          "capped_loss_hz2_s": 295253.9953393391,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 0.0,
+            "training_rms_hz": 96.85378112349179,
+            "heldout_rms_hz": 113.30106015455097,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.019187262530266903
+        },
+        {
+          "track_id": "sha256:f387a6637b3b73037b6a7da0e77c64ac5f6984514817794e552549927c154eb1",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 205.20676135504516,
+          "capped_rms_hz": 205.20676135504516,
+          "capped_loss_hz2_s": 294768.70434078516,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 2.0,
+            "training_rms_hz": 85.93475441276809,
+            "heldout_rms_hz": 205.20676135504516,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": false,
+          "capped_loss_share": 0.01915572559617012
+        },
+        {
+          "track_id": "sha256:56b483852f4e2da333591d7a00e699e033a667bca2163adfe90fcceb2f6403c5",
+          "weight_s": 19.0,
+          "heldout_rms_hz": 122.68430080397623,
+          "capped_rms_hz": 122.68430080397623,
+          "capped_loss_hz2_s": 285977.31561144994,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 104.72624874611475,
+            "heldout_rms_hz": 122.68430080397623,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01858441179104611
+        },
+        {
+          "track_id": "sha256:c2bb85e82b30a793cdc94aabf62fea225ff7336bb5cca547be6961e44da64542",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 182.38873046678233,
+          "capped_rms_hz": 182.38873046678233,
+          "capped_loss_hz2_s": 232859.54300899204,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 127.58932292506267,
+            "heldout_rms_hz": 182.38873046678233,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.015132520659903186
+        },
+        {
+          "track_id": "sha256:86e37b3255bd863adb88c310cdf614e7b005cdbcabe13e340a0fe3c05c3e4980",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 127.0380859649432,
+          "capped_rms_hz": 127.0380859649432,
+          "capped_loss_hz2_s": 209802.7787132719,
+          "best_candidate": {
+            "norad": 62996,
+            "tau_s": -3.0,
+            "training_rms_hz": 83.54218815716565,
+            "heldout_rms_hz": 127.0380859649432,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.013634162647399356
+        },
+        {
+          "track_id": "sha256:19ac339dc5b9d95bc6a480bec5c061cd46951d252fb3dc3c18e9222f61f82c5d",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 184.32295995626632,
+          "capped_rms_hz": 184.32295995626632,
+          "capped_loss_hz2_s": 203849.72140223611,
+          "best_candidate": {
+            "norad": 62286,
+            "tau_s": -2.0,
+            "training_rms_hz": 100.00327058801007,
+            "heldout_rms_hz": 184.32295995626632,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.01324729955566273
+        },
+        {
+          "track_id": "sha256:1ff5702144e7916dc3323d469673b940eae23cb4e4f1bd09576ddcaca0d66693",
+          "weight_s": 17.0,
+          "heldout_rms_hz": 105.76009291857164,
+          "capped_rms_hz": 105.76009291857164,
+          "capped_loss_hz2_s": 190148.35332046344,
+          "best_candidate": {
+            "norad": 58749,
+            "tau_s": 0.0,
+            "training_rms_hz": 94.97115946659079,
+            "heldout_rms_hz": 105.76009291857164,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.012356907721653347
+        },
+        {
+          "track_id": "sha256:9f6890a709562ff7f016b37ae3684fef14c60e08f774976dd41c762835c3331a",
+          "weight_s": 13.0,
+          "heldout_rms_hz": 113.11770631255305,
+          "capped_rms_hz": 113.11770631255305,
+          "capped_loss_hz2_s": 166343.00125836904,
+          "best_candidate": {
+            "norad": 66116,
+            "tau_s": -2.0,
+            "training_rms_hz": 87.93895701215055,
+            "heldout_rms_hz": 113.11770631255305,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.010809902272613187
+        },
+        {
+          "track_id": "sha256:9dc8e83c15ed95594c2551150a7027a69442e3bf79000e89f1ede9474ec0a3dd",
+          "weight_s": 20.0,
+          "heldout_rms_hz": 88.47135461852335,
+          "capped_rms_hz": 88.47135461852335,
+          "capped_loss_hz2_s": 156543.61176073024,
+          "best_candidate": {
+            "norad": 56144,
+            "tau_s": -1.0,
+            "training_rms_hz": 75.89759133134908,
+            "heldout_rms_hz": 88.47135461852335,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.010173082917429056
+        },
+        {
+          "track_id": "sha256:a7736bc62f28ff8a7f53de67936f296c621cbecd917795829d117f885d041a2a",
+          "weight_s": 23.0,
+          "heldout_rms_hz": 82.34761230358696,
+          "capped_rms_hz": 82.34761230358696,
+          "capped_loss_hz2_s": 155965.9727983429,
+          "best_candidate": {
+            "norad": 66116,
+            "tau_s": -1.0,
+            "training_rms_hz": 101.572256334534,
+            "heldout_rms_hz": 82.34761230358696,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.010135544694089187
+        },
+        {
+          "track_id": "sha256:baf916f707e2918324ccf9be7611dd250c2098f3a1ca9ac1d093dbe5006d8e01",
+          "weight_s": 11.0,
+          "heldout_rms_hz": 116.32843661213165,
+          "capped_rms_hz": 116.32843661213165,
+          "capped_loss_hz2_s": 148855.35681085006,
+          "best_candidate": {
+            "norad": 62738,
+            "tau_s": 5.0,
+            "training_rms_hz": 49.92264021595363,
+            "heldout_rms_hz": 116.32843661213165,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.009673456939621601
+        },
+        {
+          "track_id": "sha256:7b8082eff2787d0cb53c7fe33929888d3302f52dfd425163fb446a8fbcaef9ff",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 134.17763463391867,
+          "capped_rms_hz": 134.17763463391867,
+          "capped_loss_hz2_s": 108021.82581572022,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -5.0,
+            "training_rms_hz": 30.43918397326269,
+            "heldout_rms_hz": 134.17763463391867,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.007019864806716239
+        },
+        {
+          "track_id": "sha256:0a3c046639138922d4fd0c3cf682f510b20e63b31467ff76be435c636878207a",
+          "weight_s": 14.0,
+          "heldout_rms_hz": 87.79987645721273,
+          "capped_rms_hz": 87.79987645721273,
+          "capped_loss_hz2_s": 107923.45628262546,
+          "best_candidate": {
+            "norad": 56144,
+            "tau_s": -5.0,
+            "training_rms_hz": 145.69364879085305,
+            "heldout_rms_hz": 87.79987645721273,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.007013472202090178
+        },
+        {
+          "track_id": "sha256:db01bc154eacb56b100fa93bc4c8932a32fe78d50d7d3a95845ed39f50ef6ae4",
+          "weight_s": 9.0,
+          "heldout_rms_hz": 99.58383868287494,
+          "capped_rms_hz": 99.58383868287494,
+          "capped_loss_hz2_s": 89252.46834135175,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": -1.0,
+            "training_rms_hz": 30.626599443438533,
+            "heldout_rms_hz": 99.58383868287494,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.005800126564152474
+        },
+        {
+          "track_id": "sha256:dd1a4e2f4ccb2533b6ed7f20e7bafaa9bd9c81f4cde5b62bd356e865397484c6",
+          "weight_s": 17.0,
+          "heldout_rms_hz": 67.92482201747683,
+          "capped_rms_hz": 67.92482201747683,
+          "capped_loss_hz2_s": 78434.28458380039,
+          "best_candidate": {
+            "norad": 66325,
+            "tau_s": -2.0,
+            "training_rms_hz": 93.75042607742668,
+            "heldout_rms_hz": 67.92482201747683,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.005097100237215753
+        },
+        {
+          "track_id": "sha256:40540510172034519707706037338abff567cb40a577be0fed6193cdf38de526",
+          "weight_s": 14.0,
+          "heldout_rms_hz": 69.28804592084012,
+          "capped_rms_hz": 69.28804592084012,
+          "capped_loss_hz2_s": 67211.66630539829,
+          "best_candidate": {
+            "norad": 56144,
+            "tau_s": 0.0,
+            "training_rms_hz": 27.784584685091534,
+            "heldout_rms_hz": 69.28804592084012,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.004367791484129482
+        },
+        {
+          "track_id": "sha256:f9866a804922313de878dec07865d8e10b0815252746f322b161378e85bc0bba",
+          "weight_s": 25.0,
+          "heldout_rms_hz": 49.32558859457299,
+          "capped_rms_hz": 49.32558859457299,
+          "capped_loss_hz2_s": 60825.34225502673,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 60.53289686778974,
+            "heldout_rms_hz": 49.32558859457299,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.003952772286787193
+        },
+        {
+          "track_id": "sha256:dfee5907050019602eb874a850a8a78ce4aaeeecc81cf8fb21202c21a49d4766",
+          "weight_s": 11.0,
+          "heldout_rms_hz": 70.28890746231028,
+          "capped_rms_hz": 70.28890746231028,
+          "capped_loss_hz2_s": 54345.83563469739,
+          "best_candidate": {
+            "norad": 66325,
+            "tau_s": -2.0,
+            "training_rms_hz": 40.44250998338719,
+            "heldout_rms_hz": 70.28890746231028,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0035316975628093706
+        },
+        {
+          "track_id": "sha256:4c2432f160ebd30e6108e5c394cb809589662b9119855acbb9c77405a310da92",
+          "weight_s": 10.0,
+          "heldout_rms_hz": 73.2680462446026,
+          "capped_rms_hz": 73.2680462446026,
+          "capped_loss_hz2_s": 53682.06600501225,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 136.04844610214064,
+            "heldout_rms_hz": 73.2680462446026,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.003488562085066727
+        },
+        {
+          "track_id": "sha256:f69edc4d64104e69147b92ddab5c732f06bae4fd91f99f2069a3c0f082b9621a",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 74.40780397004421,
+          "capped_rms_hz": 74.40780397004421,
+          "capped_loss_hz2_s": 33219.12774986716,
+          "best_candidate": {
+            "norad": 66258,
+            "tau_s": 1.0,
+            "training_rms_hz": 40.73761880043742,
+            "heldout_rms_hz": 74.40780397004421,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0021587654535567664
+        },
+        {
+          "track_id": "sha256:3f63384f7287e475891f9bc57705606771194965e537746cfb6eec43bee6cb74",
+          "weight_s": 18.0,
+          "heldout_rms_hz": 40.43386676929705,
+          "capped_rms_hz": 40.43386676929705,
+          "capped_loss_hz2_s": 29428.156474510753,
+          "best_candidate": {
+            "norad": 66325,
+            "tau_s": -2.0,
+            "training_rms_hz": 44.29633453906309,
+            "heldout_rms_hz": 40.43386676929705,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0019124068529851972
+        },
+        {
+          "track_id": "sha256:39ea14ca3aeb11810a70153808ac2777c928052b6deb2b5a4bbdc8c71c610df3",
+          "weight_s": 10.0,
+          "heldout_rms_hz": 53.03635482449063,
+          "capped_rms_hz": 53.03635482449063,
+          "capped_loss_hz2_s": 28128.549330692702,
+          "best_candidate": {
+            "norad": 67623,
+            "tau_s": -4.0,
+            "training_rms_hz": 75.87244367576538,
+            "heldout_rms_hz": 53.03635482449063,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0018279510832131807
+        },
+        {
+          "track_id": "sha256:6d5074f3771d74c9c055c96040a759b33e0f4be4f85e70ca48b26629edbde828",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 66.4939907748605,
+          "capped_rms_hz": 66.4939907748605,
+          "capped_loss_hz2_s": 22107.25404583617,
+          "best_candidate": {
+            "norad": 57840,
+            "tau_s": -1.0,
+            "training_rms_hz": 11.262082278378628,
+            "heldout_rms_hz": 66.4939907748605,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0014366535047671447
+        },
+        {
+          "track_id": "sha256:dee1eeb94c21910035be284c90152b459bd216ed777cc758f830203e6236ba5c",
+          "weight_s": 14.0,
+          "heldout_rms_hz": 34.35157413647143,
+          "capped_rms_hz": 34.35157413647143,
+          "capped_loss_hz2_s": 16520.429039148898,
+          "best_candidate": {
+            "norad": 66122,
+            "tau_s": -2.0,
+            "training_rms_hz": 42.87256099473638,
+            "heldout_rms_hz": 34.35157413647143,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0010735902446382946
+        },
+        {
+          "track_id": "sha256:e876e02de58c300e25ead1af1555e1d26ac1cd2a8d32f50f21706580a0425392",
+          "weight_s": 7.0,
+          "heldout_rms_hz": 40.69604035115592,
+          "capped_rms_hz": 40.69604035115592,
+          "capped_loss_hz2_s": 11593.173901840377,
+          "best_candidate": {
+            "norad": 62738,
+            "tau_s": -4.0,
+            "training_rms_hz": 29.341361829796835,
+            "heldout_rms_hz": 40.69604035115592,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0007533895382448441
+        },
+        {
+          "track_id": "sha256:0730db607cbcbdedd44fccb09a9daee897444454aa8fed412b0e8be7d3d018ec",
+          "weight_s": 4.0,
+          "heldout_rms_hz": 44.03368530356331,
+          "capped_rms_hz": 44.03368530356331,
+          "capped_loss_hz2_s": 7755.86176565299,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": 0.0,
+            "training_rms_hz": 22.337162318720775,
+            "heldout_rms_hz": 44.03368530356331,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": false,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.0005040194483228239
+        },
+        {
+          "track_id": "sha256:1ab4e7acd1b1099c5537f31a8aebd2f1ec160370304505149c55256c4ad6a91a",
+          "weight_s": 6.0,
+          "heldout_rms_hz": 26.329174757379207,
+          "capped_rms_hz": 26.329174757379207,
+          "capped_loss_hz2_s": 4159.352660427687,
+          "best_candidate": {
+            "norad": 57840,
+            "tau_s": 5.0,
+            "training_rms_hz": 15.945010109004404,
+            "heldout_rms_hz": 26.329174757379207,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 0.00027029809151225
+        },
+        {
+          "track_id": "sha256:4cb055aa01c353ebe668749ff8fa41280630d4ec8344ab426911b1bdac64a7d6",
+          "weight_s": 5.0,
+          "heldout_rms_hz": 10.014716239503326,
+          "capped_rms_hz": 10.014716239503326,
+          "capped_loss_hz2_s": 501.4727067888582,
+          "best_candidate": {
+            "norad": 66125,
+            "tau_s": 5.0,
+            "training_rms_hz": 37.60913236146706,
+            "heldout_rms_hz": 10.014716239503326,
+            "qualifies": {
+              "800.0": true
+            }
+          },
+          "tau_boundary": true,
+          "qualifies_200hz": true,
+          "capped_loss_share": 3.258851236157812e-05
+        }
+      ]
+    }
+  },
+  "cross_city_identity_consistency": {
+    "same_norad_count": 29,
+    "different_norad_count": 5,
+    "same_tau_count": 21,
+    "boundary_tau_either_city_count": 8,
+    "differing_norad_tracks": [
+      {
+        "track_id": "sha256:352ebc8874a3434d5e760c49621be36ab709d2b634a0bc05debbe27cd6db5fe2",
+        "sacramento_norad": 62286,
+        "reno_norad": 60092,
+        "same_norad": false,
+        "sacramento_tau_s": -2.0,
+        "reno_tau_s": -2.0,
+        "same_tau_s": true
+      },
+      {
+        "track_id": "sha256:baf916f707e2918324ccf9be7611dd250c2098f3a1ca9ac1d093dbe5006d8e01",
+        "sacramento_norad": 66325,
+        "reno_norad": 62738,
+        "same_norad": false,
+        "sacramento_tau_s": -2.0,
+        "reno_tau_s": 5.0,
+        "same_tau_s": false
+      },
+      {
+        "track_id": "sha256:db01bc154eacb56b100fa93bc4c8932a32fe78d50d7d3a95845ed39f50ef6ae4",
+        "sacramento_norad": 63074,
+        "reno_norad": 66125,
+        "same_norad": false,
+        "sacramento_tau_s": -5.0,
+        "reno_tau_s": -1.0,
+        "same_tau_s": false
+      },
+      {
+        "track_id": "sha256:e876e02de58c300e25ead1af1555e1d26ac1cd2a8d32f50f21706580a0425392",
+        "sacramento_norad": 67623,
+        "reno_norad": 62738,
+        "same_norad": false,
+        "sacramento_tau_s": -2.0,
+        "reno_tau_s": -4.0,
+        "same_tau_s": false
+      },
+      {
+        "track_id": "sha256:f69edc4d64104e69147b92ddab5c732f06bae4fd91f99f2069a3c0f082b9621a",
+        "sacramento_norad": 66125,
+        "reno_norad": 66258,
+        "same_norad": false,
+        "sacramento_tau_s": -1.0,
+        "reno_tau_s": 1.0,
+        "same_tau_s": false
+      }
+    ]
+  },
+  "cross_city_track_rows": [
+    {
+      "track_id": "sha256:06f103db7dcbe6d9d3b48a57d610542148644c13ecba9c8a63760f296771ee2c",
+      "sacramento_norad": 66125,
+      "reno_norad": 66125,
+      "same_norad": true,
+      "sacramento_tau_s": -1.0,
+      "reno_tau_s": -1.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:0730db607cbcbdedd44fccb09a9daee897444454aa8fed412b0e8be7d3d018ec",
+      "sacramento_norad": 66125,
+      "reno_norad": 66125,
+      "same_norad": true,
+      "sacramento_tau_s": 1.0,
+      "reno_tau_s": 0.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:0a3c046639138922d4fd0c3cf682f510b20e63b31467ff76be435c636878207a",
+      "sacramento_norad": 56144,
+      "reno_norad": 56144,
+      "same_norad": true,
+      "sacramento_tau_s": -4.0,
+      "reno_tau_s": -5.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:19ac339dc5b9d95bc6a480bec5c061cd46951d252fb3dc3c18e9222f61f82c5d",
+      "sacramento_norad": 62286,
+      "reno_norad": 62286,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:1ab4e7acd1b1099c5537f31a8aebd2f1ec160370304505149c55256c4ad6a91a",
+      "sacramento_norad": 57840,
+      "reno_norad": 57840,
+      "same_norad": true,
+      "sacramento_tau_s": 5.0,
+      "reno_tau_s": 5.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:1ff5702144e7916dc3323d469673b940eae23cb4e4f1bd09576ddcaca0d66693",
+      "sacramento_norad": 58749,
+      "reno_norad": 58749,
+      "same_norad": true,
+      "sacramento_tau_s": 0.0,
+      "reno_tau_s": 0.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:352ebc8874a3434d5e760c49621be36ab709d2b634a0bc05debbe27cd6db5fe2",
+      "sacramento_norad": 62286,
+      "reno_norad": 60092,
+      "same_norad": false,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:39ea14ca3aeb11810a70153808ac2777c928052b6deb2b5a4bbdc8c71c610df3",
+      "sacramento_norad": 67623,
+      "reno_norad": 67623,
+      "same_norad": true,
+      "sacramento_tau_s": -3.0,
+      "reno_tau_s": -4.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:3f63384f7287e475891f9bc57705606771194965e537746cfb6eec43bee6cb74",
+      "sacramento_norad": 66325,
+      "reno_norad": 66325,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:40540510172034519707706037338abff567cb40a577be0fed6193cdf38de526",
+      "sacramento_norad": 56144,
+      "reno_norad": 56144,
+      "same_norad": true,
+      "sacramento_tau_s": 0.0,
+      "reno_tau_s": 0.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:4428833a4f0cadce87ebedfeeaf3936a187c5d08bcb52ca38237e66a9381492d",
+      "sacramento_norad": 58749,
+      "reno_norad": 58749,
+      "same_norad": true,
+      "sacramento_tau_s": 0.0,
+      "reno_tau_s": -1.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:4c2432f160ebd30e6108e5c394cb809589662b9119855acbb9c77405a310da92",
+      "sacramento_norad": 66122,
+      "reno_norad": 66122,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:4cb055aa01c353ebe668749ff8fa41280630d4ec8344ab426911b1bdac64a7d6",
+      "sacramento_norad": 66125,
+      "reno_norad": 66125,
+      "same_norad": true,
+      "sacramento_tau_s": 5.0,
+      "reno_tau_s": 5.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:56b483852f4e2da333591d7a00e699e033a667bca2163adfe90fcceb2f6403c5",
+      "sacramento_norad": 62286,
+      "reno_norad": 62286,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:6d5074f3771d74c9c055c96040a759b33e0f4be4f85e70ca48b26629edbde828",
+      "sacramento_norad": 57840,
+      "reno_norad": 57840,
+      "same_norad": true,
+      "sacramento_tau_s": -5.0,
+      "reno_tau_s": -1.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:7b8082eff2787d0cb53c7fe33929888d3302f52dfd425163fb446a8fbcaef9ff",
+      "sacramento_norad": 66122,
+      "reno_norad": 66122,
+      "same_norad": true,
+      "sacramento_tau_s": -5.0,
+      "reno_tau_s": -5.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:8280279d6e32f790c5f3287d28c1b6acf2ae20d405e817ee66dbe9f9bf368577",
+      "sacramento_norad": 58749,
+      "reno_norad": 58749,
+      "same_norad": true,
+      "sacramento_tau_s": 0.0,
+      "reno_tau_s": 0.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:86e37b3255bd863adb88c310cdf614e7b005cdbcabe13e340a0fe3c05c3e4980",
+      "sacramento_norad": 62996,
+      "reno_norad": 62996,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -3.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:9dc8e83c15ed95594c2551150a7027a69442e3bf79000e89f1ede9474ec0a3dd",
+      "sacramento_norad": 56144,
+      "reno_norad": 56144,
+      "same_norad": true,
+      "sacramento_tau_s": 0.0,
+      "reno_tau_s": -1.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:9f6890a709562ff7f016b37ae3684fef14c60e08f774976dd41c762835c3331a",
+      "sacramento_norad": 66116,
+      "reno_norad": 66116,
+      "same_norad": true,
+      "sacramento_tau_s": -1.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:a7736bc62f28ff8a7f53de67936f296c621cbecd917795829d117f885d041a2a",
+      "sacramento_norad": 66116,
+      "reno_norad": 66116,
+      "same_norad": true,
+      "sacramento_tau_s": -1.0,
+      "reno_tau_s": -1.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:baf916f707e2918324ccf9be7611dd250c2098f3a1ca9ac1d093dbe5006d8e01",
+      "sacramento_norad": 66325,
+      "reno_norad": 62738,
+      "same_norad": false,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": 5.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:c2bb85e82b30a793cdc94aabf62fea225ff7336bb5cca547be6961e44da64542",
+      "sacramento_norad": 66122,
+      "reno_norad": 66122,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:c933257998484a85099dc2ff3984783917f3b73b71bf800c14161531ac52c365",
+      "sacramento_norad": 66122,
+      "reno_norad": 66122,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:db01bc154eacb56b100fa93bc4c8932a32fe78d50d7d3a95845ed39f50ef6ae4",
+      "sacramento_norad": 63074,
+      "reno_norad": 66125,
+      "same_norad": false,
+      "sacramento_tau_s": -5.0,
+      "reno_tau_s": -1.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:dd1a4e2f4ccb2533b6ed7f20e7bafaa9bd9c81f4cde5b62bd356e865397484c6",
+      "sacramento_norad": 66325,
+      "reno_norad": 66325,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:dee1eeb94c21910035be284c90152b459bd216ed777cc758f830203e6236ba5c",
+      "sacramento_norad": 66122,
+      "reno_norad": 66122,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:dfee5907050019602eb874a850a8a78ce4aaeeecc81cf8fb21202c21a49d4766",
+      "sacramento_norad": 66325,
+      "reno_norad": 66325,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:e164f064f43985871710f17b2be885328e3b861f8c019b0d0164472887b046af",
+      "sacramento_norad": 66122,
+      "reno_norad": 66122,
+      "same_norad": true,
+      "sacramento_tau_s": 3.0,
+      "reno_tau_s": 3.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:e876e02de58c300e25ead1af1555e1d26ac1cd2a8d32f50f21706580a0425392",
+      "sacramento_norad": 67623,
+      "reno_norad": 62738,
+      "same_norad": false,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -4.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:eec3395afa004acfaf0072a85ea51be48638bac07af82d6f00267288acd59c9a",
+      "sacramento_norad": 67453,
+      "reno_norad": 67453,
+      "same_norad": true,
+      "sacramento_tau_s": 5.0,
+      "reno_tau_s": 5.0,
+      "same_tau_s": true
+    },
+    {
+      "track_id": "sha256:f387a6637b3b73037b6a7da0e77c64ac5f6984514817794e552549927c154eb1",
+      "sacramento_norad": 58749,
+      "reno_norad": 58749,
+      "same_norad": true,
+      "sacramento_tau_s": 1.0,
+      "reno_tau_s": 2.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:f69edc4d64104e69147b92ddab5c732f06bae4fd91f99f2069a3c0f082b9621a",
+      "sacramento_norad": 66125,
+      "reno_norad": 66258,
+      "same_norad": false,
+      "sacramento_tau_s": -1.0,
+      "reno_tau_s": 1.0,
+      "same_tau_s": false
+    },
+    {
+      "track_id": "sha256:f9866a804922313de878dec07865d8e10b0815252746f322b161378e85bc0bba",
+      "sacramento_norad": 66122,
+      "reno_norad": 66122,
+      "same_norad": true,
+      "sacramento_tau_s": -2.0,
+      "reno_tau_s": -2.0,
+      "same_tau_s": true
+    }
+  ]
+}
