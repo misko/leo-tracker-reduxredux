@@ -8,6 +8,15 @@ HERE = Path(__file__).parent
 data = json.loads((HERE / "results.json").read_text())
 roles = ("coarse50_rank1", "coarse50_rank2", "final_selected")
 labels = ("coarse 1", "coarse 2", "final")
+
+
+def fold_mean(selected, fraction):
+    return np.average(
+        [item["quantiles"][fraction]["held_deg"] for item in selected],
+        weights=[item["held_duration_s"] for item in selected],
+    )
+
+
 figure, axes = plt.subplots(3, 2, figsize=(10, 10), constrained_layout=True)
 for column, group in enumerate(("first_train", "second_train")):
     for row_index, fraction in enumerate(("0.5", "0.8", "0.95")):
@@ -19,15 +28,9 @@ for column, group in enumerate(("first_train", "second_train")):
                 if row["group"] == group and row["role"] == role and row["mapping"] == [0, 1]
             ]
 
-            def fold_mean(selected):
-                return np.average(
-                    [item["quantiles"][fraction]["held_deg"] for item in selected],
-                    weights=[item["held_duration_s"] for item in selected],
-                )
-
-            actual = fold_mean([item for item in rows if item["kind"] == "actual"])
+            actual = fold_mean([item for item in rows if item["kind"] == "actual"], fraction)
             controls = [
-                fold_mean([item for item in rows if item["permutation"] == permutation])
+                fold_mean([item for item in rows if item["permutation"] == permutation], fraction)
                 for permutation in range(data["control_count"])
             ]
             axis.boxplot(controls, positions=[index], widths=0.5, showfliers=True)
@@ -37,4 +40,4 @@ for column, group in enumerate(("first_train", "second_train")):
         axis.set_ylabel("held-fold cone (degrees)")
         axis.grid(axis="y", alpha=0.25)
 figure.suptitle("Duration-weighted fold means: actual RX labels vs 20 stratified shuffles")
-figure.savefig(HERE / "held_q95_controls.png", dpi=180)
+figure.savefig(HERE / "held_quantile_controls.png", dpi=180)

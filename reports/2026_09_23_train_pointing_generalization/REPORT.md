@@ -36,7 +36,7 @@ detection probabilities, or evidence that tracks outside a cone are invisible.
 The experiment used no truth, VAL/TEST, geographic optimization, candidate
 reselection, position fit, or new RF.
 
-![Held-fold 95 percent cones against controls](held_q95_controls.png)
+![Held-fold cone quantiles against controls](held_quantile_controls.png)
 
 `prepared_inputs.json` preserves and binds the exact six-location identities,
 durations, metadata/cache/TLE inputs produced through the sealed cone source.
