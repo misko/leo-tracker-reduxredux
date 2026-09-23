@@ -24,6 +24,9 @@ generalization. Validation/test track outcomes remain closed.
 | 72 scans, fixed identities + scan epoch scale 0.2 s | 6.179 km | 6.181 km | 300.95 / 300.92 Hz |
 | 72 scans, fixed identities + scan epoch scale 1 s | 2.236 km | 2.237 km | 294.03 / 293.97 Hz |
 | 72 scans, fixed identities + scan epoch scale 5 s | 1.566 km | 1.568 km | 293.91 / 293.85 Hz |
+| 72 scans, fixed identities + global epoch scale 0.2 s | 1.887 km | 1.889 km | 302.63 / 302.59 Hz |
+| 72 scans, fixed identities + global epoch scale 1 s | 1.698 km | 1.706 km | 302.65 / 302.61 Hz |
+| 72 scans, fixed identities + global epoch scale 5 s | 1.690 km | 1.698 km | 302.65 / 302.61 Hz |
 
 Rows labeled simply 'epoch' share one correction per scan; satellite-epoch rows
 share one per selected satellite and have no scan term. The satellite model
@@ -128,6 +131,11 @@ weakest tested regularization, with no timing-boundary or visibility failures.
 All six arms meet a heuristic stopping rule, without certified stationarity.
 These conditional fits retain the baseline identities, so alternating catalogue
 reassignment and continuous fitting is the next direct test of that limitation.
+One global epoch term instead of 72 independent scan terms gives 1.69–1.89 km
+full-group error across all tested scales. Thus much of the localization gain
+can be reproduced by a simpler model, although its held frequency RMS is worse
+(about 303 Hz). The global fit reaches roughly −0.94 s at weak regularization;
+this remains an empirical nuisance, not independent evidence of clock bias.
 Synthetic success will not count as achieving the real-data accuracy objective.
 
 The current experiment priorities are:
@@ -166,6 +174,7 @@ test group closed until model selection is complete.
 - [Full eight-hour conditional scan-epoch fit](../2026_09_23_long_full8h_shared_epoch_position/README.md).
 - [Full eight-hour training residual concentration](../2026_09_23_long_full8h_residual_audit/README.md).
 - [Fitted epoch versus host-timing semantics](../2026_09_23_full8h_tau_timing_semantics_audit/README.md).
+- [One global epoch term across six/sixteen/seventy-two scans](../2026_09_23_long_global_epoch_position/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
