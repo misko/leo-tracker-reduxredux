@@ -30,3 +30,10 @@ reasonable and more directly interpretable matched-track measure, and README
 labels it correctly; rename the protocol metric or add an actual Jaccard value
 to avoid a terminology mismatch. The report's limits on pruning, correlated
 prior agreement, and non-calibrated objective gaps are scientifically sound.
+
+Follow-up review: `plot.py` now filters levels with zero new evaluations, so
+the first-group one-scan traces visibly end at their actual 1.5625-km level.
+The regenerated plot has SHA-256
+`821074ec49788a3b2961e6b2c42d8584599a2ef4a84975e7e446cdbad0a05249`.
+The added regression test covers the zero-evaluation distinction; all three
+focused tests and Ruff pass. This resolves the publication defect.
