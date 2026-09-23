@@ -26,3 +26,13 @@ source aliases or changing the frozen cohort.
 The coherent helper references its output to each frame origin; subsequent
 product fitting therefore uses `(frame_start + timing_shift + fractional_epoch)
 / Fs` exactly once, without adding a pilot-symbol centroid.
+
+The first refined execution was stopped before it produced an output after a
+runtime audit found repeated scalar fractional interpolation would exceed the
+bounded runtime.  The replacement freezes the same source, binding, split,
+and numerical operations, but evaluates all concatenated pilot-symbol samples
+for a frame set in one `fractional_take` call and reduces them into the same 64
+symbol correlations.  A scalar-reference component test asserts equivalence.
+Local timing candidates likewise evaluate only their training frames, exactly
+matching the later `correlations[train]` use.  No IQ outcome was available
+when this implementation-only optimization was made.
