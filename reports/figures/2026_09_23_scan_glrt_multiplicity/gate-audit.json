@@ -1,0 +1,5097 @@
+{
+  "schema_version": 1,
+  "kind": "adaptive_glrt_multiplicity_gate_audit",
+  "iq_opened": false,
+  "session_id": "scan-hop-28d7592ea614f624",
+  "input_manifest_sha256": "sha256:f76cea9410b79073527bb0b615e017bff4460c09169613f8a43b8e3baac6c96f",
+  "analysis_binding_sha256": "sha256:e70d23f43351de8caf32bcf3e47efe9e035d3970873edf92b1a9edb3656b9ba4",
+  "probe_scope": "one published 20 ms probe at start 0 per 120 ms adaptive visit",
+  "rules": {
+    "fractional_margin": "candidate must pass persisted fractional-margin gate",
+    "timing": "RX epochs agree modulo 1/750 s within 9 samples",
+    "receiver_offset": "one-to-one edges share alias-aware RX1-RX0 CFO within 10 kHz",
+    "distinct_source": "reject if either RX tracking CFO is within 5 kHz modulo 1/4.4 us"
+  },
+  "summary": {
+    "published_visits": 2360,
+    "probe_count_2": 2360,
+    "rx0_passed_ge_1": 394,
+    "rx1_passed_ge_1": 1085,
+    "rx0_passed_ge_2": 199,
+    "rx1_passed_ge_2": 827,
+    "both_passed_ge_1": 301,
+    "both_passed_ge_2": 136,
+    "rx0_distinct_ge_2": 33,
+    "rx1_distinct_ge_2": 134,
+    "both_distinct_ge_2": 9,
+    "pre_distinct_pair_visits": 258,
+    "pre_distinct_multi_pair_visits": 112,
+    "pre_distinct_pairs": 375,
+    "distinctness_rejected_visits": 110,
+    "final_distinct_pair_visits": 258,
+    "final_distinct_multi_pair_visits": 5,
+    "final_distinct_pairs": 263,
+    "distinctness_rejected_pairs": 112,
+    "collision_both_receivers": 112,
+    "minimum_distance_100_to_5000_hz": 12,
+    "rx0_distance_100_to_5000_hz": 22,
+    "rx1_distance_100_to_5000_hz": 23,
+    "same_rx0_epoch_within_one_sample": 112,
+    "receiver_timing_within_one_sample": 112,
+    "minimum_distance_lt_1_hz": 91,
+    "rx1_distance_lt_1_hz": 76,
+    "rx0_distance_1_to_100_hz": 14,
+    "rx0_distance_lt_1_hz": 76,
+    "rx1_distance_1_to_100_hz": 13,
+    "minimum_distance_1_to_100_hz": 9
+  },
+  "by_channel": {
+    "ch1L": {
+      "published_visits": 496,
+      "probe_count_2": 496,
+      "rx0_passed_ge_1": 40,
+      "rx1_passed_ge_1": 157,
+      "rx0_passed_ge_2": 19,
+      "rx1_passed_ge_2": 105,
+      "both_passed_ge_1": 21,
+      "both_passed_ge_2": 2,
+      "rx0_distinct_ge_2": 0,
+      "rx1_distinct_ge_2": 23,
+      "both_distinct_ge_2": 0,
+      "pre_distinct_pair_visits": 13,
+      "pre_distinct_multi_pair_visits": 0,
+      "pre_distinct_pairs": 13,
+      "distinctness_rejected_visits": 0,
+      "final_distinct_pair_visits": 13,
+      "final_distinct_multi_pair_visits": 0,
+      "final_distinct_pairs": 13
+    },
+    "ch2L": {
+      "published_visits": 716,
+      "probe_count_2": 716,
+      "rx0_passed_ge_1": 148,
+      "rx1_passed_ge_1": 381,
+      "rx0_passed_ge_2": 80,
+      "rx1_passed_ge_2": 272,
+      "both_passed_ge_1": 108,
+      "both_passed_ge_2": 55,
+      "rx0_distinct_ge_2": 6,
+      "rx1_distinct_ge_2": 53,
+      "both_distinct_ge_2": 0,
+      "pre_distinct_pair_visits": 101,
+      "pre_distinct_multi_pair_visits": 54,
+      "pre_distinct_pairs": 157,
+      "distinctness_rejected_visits": 54,
+      "final_distinct_pair_visits": 101,
+      "final_distinct_multi_pair_visits": 0,
+      "final_distinct_pairs": 101,
+      "distinctness_rejected_pairs": 56,
+      "collision_both_receivers": 56,
+      "minimum_distance_100_to_5000_hz": 5,
+      "rx0_distance_100_to_5000_hz": 9,
+      "rx1_distance_100_to_5000_hz": 12,
+      "same_rx0_epoch_within_one_sample": 56,
+      "receiver_timing_within_one_sample": 56,
+      "minimum_distance_lt_1_hz": 46,
+      "rx1_distance_lt_1_hz": 35,
+      "rx0_distance_1_to_100_hz": 8,
+      "rx0_distance_lt_1_hz": 39,
+      "rx1_distance_1_to_100_hz": 9,
+      "minimum_distance_1_to_100_hz": 5
+    },
+    "ch3L": {
+      "published_visits": 553,
+      "probe_count_2": 553,
+      "rx0_passed_ge_1": 40,
+      "rx1_passed_ge_1": 244,
+      "rx0_passed_ge_2": 9,
+      "rx1_passed_ge_2": 203,
+      "both_passed_ge_1": 39,
+      "both_passed_ge_2": 9,
+      "rx0_distinct_ge_2": 1,
+      "rx1_distinct_ge_2": 5,
+      "both_distinct_ge_2": 0,
+      "pre_distinct_pair_visits": 39,
+      "pre_distinct_multi_pair_visits": 8,
+      "pre_distinct_pairs": 47,
+      "distinctness_rejected_visits": 8,
+      "final_distinct_pair_visits": 39,
+      "final_distinct_multi_pair_visits": 0,
+      "final_distinct_pairs": 39,
+      "distinctness_rejected_pairs": 8,
+      "collision_both_receivers": 8,
+      "minimum_distance_lt_1_hz": 3,
+      "rx0_distance_lt_1_hz": 1,
+      "rx1_distance_lt_1_hz": 3,
+      "same_rx0_epoch_within_one_sample": 8,
+      "receiver_timing_within_one_sample": 8,
+      "minimum_distance_100_to_5000_hz": 5,
+      "rx0_distance_100_to_5000_hz": 5,
+      "rx1_distance_100_to_5000_hz": 5,
+      "rx0_distance_1_to_100_hz": 2
+    },
+    "ch4L": {
+      "published_visits": 595,
+      "probe_count_2": 595,
+      "rx0_passed_ge_1": 166,
+      "rx1_passed_ge_1": 303,
+      "rx0_passed_ge_2": 91,
+      "rx1_passed_ge_2": 247,
+      "both_passed_ge_1": 133,
+      "both_passed_ge_2": 70,
+      "rx0_distinct_ge_2": 26,
+      "rx1_distinct_ge_2": 53,
+      "both_distinct_ge_2": 9,
+      "pre_distinct_pair_visits": 105,
+      "pre_distinct_multi_pair_visits": 50,
+      "pre_distinct_pairs": 158,
+      "distinctness_rejected_visits": 48,
+      "final_distinct_pair_visits": 105,
+      "final_distinct_multi_pair_visits": 5,
+      "final_distinct_pairs": 110,
+      "distinctness_rejected_pairs": 48,
+      "collision_both_receivers": 48,
+      "minimum_distance_lt_1_hz": 42,
+      "rx0_distance_lt_1_hz": 36,
+      "rx1_distance_100_to_5000_hz": 6,
+      "same_rx0_epoch_within_one_sample": 48,
+      "receiver_timing_within_one_sample": 48,
+      "minimum_distance_1_to_100_hz": 4,
+      "rx0_distance_100_to_5000_hz": 8,
+      "rx1_distance_1_to_100_hz": 4,
+      "rx1_distance_lt_1_hz": 38,
+      "rx0_distance_1_to_100_hz": 4,
+      "minimum_distance_100_to_5000_hz": 2
+    }
+  },
+  "distinctness_rejections": [
+    {
+      "visit_index": 295,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 138.93234949497855,
+      "rx1_alias_aware_distance_hz": 210.28959961413057,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.1294349117542879,
+      "rx0_source_epoch_separation_samples": 0.0006145264601400413,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 3277,
+          "fractional_epoch_samples": -0.013999668094107173,
+          "tracking_cfo_hz": 192830.41177197028,
+          "fractional_margin": 0.2149604335965047
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 3277,
+          "fractional_epoch_samples": -0.14343457984826646,
+          "tracking_cfo_hz": -256848.8125961924,
+          "fractional_margin": 0.23203506600627583
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 3277,
+          "fractional_epoch_samples": -0.014614194554330415,
+          "tracking_cfo_hz": 420242.0713941925,
+          "fractional_margin": 0.42524889668405297
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 3277,
+          "fractional_epoch_samples": -0.05397353254529718,
+          "tracking_cfo_hz": -256638.52299657828,
+          "fractional_margin": 0.3599160267699998
+        }
+      }
+    },
+    {
+      "visit_index": 324,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 222.75645482947584,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.09179115037159136,
+      "rx0_source_epoch_separation_samples": 0.05133976264323792,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1465,
+          "fractional_epoch_samples": -0.2648023128454574,
+          "tracking_cfo_hz": 177518.55944463375,
+          "fractional_margin": 0.2527391592280841
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1465,
+          "fractional_epoch_samples": -0.17301116247381548,
+          "tracking_cfo_hz": -272055.7705779218,
+          "fractional_margin": 0.408891235949278
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 1465,
+          "fractional_epoch_samples": -0.21346255020211763,
+          "tracking_cfo_hz": 404568.53026253154,
+          "fractional_margin": 0.5950268983448517
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1465,
+          "fractional_epoch_samples": -0.1730111624738147,
+          "tracking_cfo_hz": -272055.7705779219,
+          "fractional_margin": 0.4088912359491563
+        }
+      }
+    },
+    {
+      "visit_index": 326,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 87.03284191485727,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.006933551645715852,
+      "rx0_source_epoch_separation_samples": 0.0050636919120279344,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1778,
+          "fractional_epoch_samples": -0.28822293833868284,
+          "tracking_cfo_hz": 403534.7366172238,
+          "fractional_margin": 0.3040947731497353
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1778,
+          "fractional_epoch_samples": -0.2812893866930812,
+          "tracking_cfo_hz": -273106.0622984884,
+          "fractional_margin": 0.4115455490908887
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 1778,
+          "fractional_epoch_samples": -0.2831592464266852,
+          "tracking_cfo_hz": 403447.70377530897,
+          "fractional_margin": 0.6064148980643759
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1778,
+          "fractional_epoch_samples": -0.28128938669308273,
+          "tracking_cfo_hz": -273106.06229848845,
+          "fractional_margin": 0.41154554909095814
+        }
+      }
+    },
+    {
+      "visit_index": 332,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.015104104282272601,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2980,
+          "fractional_epoch_samples": 0.2815971100467431,
+          "tracking_cfo_hz": 400443.89204545453,
+          "fractional_margin": 0.6424232962198475
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2980,
+          "fractional_epoch_samples": 0.26649300576450136,
+          "tracking_cfo_hz": -276307.8924137009,
+          "fractional_margin": 0.38582830398465445
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2980,
+          "fractional_epoch_samples": 0.2815971100467431,
+          "tracking_cfo_hz": 400443.89204545453,
+          "fractional_margin": 0.6424232962198475
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2980,
+          "fractional_epoch_samples": 0.26649300576450136,
+          "tracking_cfo_hz": -276307.8924137009,
+          "fractional_margin": 0.38582830398465445
+        }
+      }
+    },
+    {
+      "visit_index": 334,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 65.63829156875727,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.05960551828593452,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2262,
+          "fractional_epoch_samples": 0.17914200870910246,
+          "tracking_cfo_hz": 399221.99347955355,
+          "fractional_margin": 0.603352312562567
+        },
+        "rx1": {
+          "rank": 5,
+          "epoch_sample": 2262,
+          "fractional_epoch_samples": 0.11953649042352878,
+          "tracking_cfo_hz": -50008.080605945885,
+          "fractional_margin": 0.3023262102901599
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2262,
+          "fractional_epoch_samples": 0.17914200870910246,
+          "tracking_cfo_hz": 399221.9934795535,
+          "fractional_margin": 0.603352312562567
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2262,
+          "fractional_epoch_samples": 0.19069113431475657,
+          "tracking_cfo_hz": -277346.4461702419,
+          "fractional_margin": 0.42313655675331285
+        }
+      }
+    },
+    {
+      "visit_index": 338,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 172.80338311602827,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.10166090133589023,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1132,
+          "fractional_epoch_samples": 0.0795617309925158,
+          "tracking_cfo_hz": 397113.7078075405,
+          "fractional_margin": 0.5865805856372946
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 1132,
+          "fractional_epoch_samples": -0.022099170343287594,
+          "tracking_cfo_hz": -52314.299475022446,
+          "fractional_margin": 0.32626758845517834
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1132,
+          "fractional_epoch_samples": 0.0795617309925158,
+          "tracking_cfo_hz": 397113.7078075405,
+          "fractional_margin": 0.5865805856372946
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1132,
+          "fractional_epoch_samples": 0.05535763050353695,
+          "tracking_cfo_hz": -279414.2233646337,
+          "fractional_margin": 0.4565933734035811
+        }
+      }
+    },
+    {
+      "visit_index": 344,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 93.14848677572445,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.04370826052581833,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2040,
+          "fractional_epoch_samples": -0.38985040646220426,
+          "tracking_cfo_hz": 393950.6093096045,
+          "fractional_margin": 0.5634951617931958
+        },
+        "rx1": {
+          "rank": 3,
+          "epoch_sample": 2040,
+          "fractional_epoch_samples": -0.4335586669880152,
+          "tracking_cfo_hz": -55264.14774724591,
+          "fractional_margin": 0.22431516160760437
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2040,
+          "fractional_epoch_samples": -0.38985040646220426,
+          "tracking_cfo_hz": 393950.6093096045,
+          "fractional_margin": 0.5634951617931958
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2040,
+          "fractional_epoch_samples": -0.40664271030371224,
+          "tracking_cfo_hz": -282630.0235067489,
+          "fractional_margin": 0.32107134763588174
+        }
+      }
+    },
+    {
+      "visit_index": 348,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.016741149152494472,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2383,
+          "fractional_epoch_samples": -0.4834238837015499,
+          "tracking_cfo_hz": 391804.72922291723,
+          "fractional_margin": 0.5735537789011884
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2383,
+          "fractional_epoch_samples": -0.4666827345491833,
+          "tracking_cfo_hz": -284832.8553159592,
+          "fractional_margin": 0.35584103813296164
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2383,
+          "fractional_epoch_samples": -0.4834238837015499,
+          "tracking_cfo_hz": 391804.72922291723,
+          "fractional_margin": 0.5735537789011884
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2383,
+          "fractional_epoch_samples": -0.4666827345491808,
+          "tracking_cfo_hz": -284832.85531595926,
+          "fractional_margin": 0.35584103813300816
+        }
+      }
+    },
+    {
+      "visit_index": 354,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.07327530868744248,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 154,
+          "fractional_epoch_samples": -0.07173338600787972,
+          "tracking_cfo_hz": 388623.1940980542,
+          "fractional_margin": 0.5320174999936937
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 154,
+          "fractional_epoch_samples": 0.0015419226795541916,
+          "tracking_cfo_hz": -287982.0591913687,
+          "fractional_margin": 0.4338020605779489
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 154,
+          "fractional_epoch_samples": -0.07173338600787972,
+          "tracking_cfo_hz": 388623.1940980542,
+          "fractional_margin": 0.5320174999936937
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 154,
+          "fractional_epoch_samples": 0.0015419226795513733,
+          "tracking_cfo_hz": -287982.05919136864,
+          "fractional_margin": 0.43380206057800114
+        }
+      }
+    },
+    {
+      "visit_index": 356,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 191.64075515748118,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.004036231004192814,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 3142,
+          "fractional_epoch_samples": -0.05998886029708912,
+          "tracking_cfo_hz": 387560.4915196267,
+          "fractional_margin": 0.5211335540085256
+        },
+        "rx1": {
+          "rank": 6,
+          "epoch_sample": 3142,
+          "fractional_epoch_samples": -0.05595262929277314,
+          "tracking_cfo_hz": -61532.803491468265,
+          "fractional_margin": 0.19010601435837457
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 3142,
+          "fractional_epoch_samples": -0.05998886029708475,
+          "tracking_cfo_hz": 387560.49151962664,
+          "fractional_margin": 0.521133554008513
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 3142,
+          "fractional_epoch_samples": -0.0015866744166035415,
+          "tracking_cfo_hz": -288997.171519353,
+          "fractional_margin": 0.3092286168743129
+        }
+      }
+    },
+    {
+      "visit_index": 360,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 212.68195669239503,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.011677984926905083,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 697,
+          "fractional_epoch_samples": 0.13714290038381718,
+          "tracking_cfo_hz": 385487.8828321574,
+          "fractional_margin": 0.5069636200009041
+        },
+        "rx1": {
+          "rank": 7,
+          "epoch_sample": 697,
+          "fractional_epoch_samples": 0.12546491545683588,
+          "tracking_cfo_hz": -64022.89834995878,
+          "fractional_margin": 0.1997990587024951
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 697,
+          "fractional_epoch_samples": 0.13714290038381718,
+          "tracking_cfo_hz": 385487.8828321574,
+          "fractional_margin": 0.5069636200009041
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 697,
+          "fractional_epoch_samples": 0.13079639626365222,
+          "tracking_cfo_hz": -291082.94366599363,
+          "fractional_margin": 0.314531227836137
+        }
+      }
+    },
+    {
+      "visit_index": 370,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.010019667761568485,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 74,
+          "fractional_epoch_samples": 0.372362354634678,
+          "tracking_cfo_hz": 380257.4196687522,
+          "fractional_margin": 0.5199636753799293
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 74,
+          "fractional_epoch_samples": 0.36234268687310006,
+          "tracking_cfo_hz": -296413.0729274674,
+          "fractional_margin": 0.37797702308960623
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 74,
+          "fractional_epoch_samples": 0.372362354634678,
+          "tracking_cfo_hz": 380257.4196687522,
+          "fractional_margin": 0.5199636753799293
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 74,
+          "fractional_epoch_samples": 0.3623426868730998,
+          "tracking_cfo_hz": -296413.07292746735,
+          "fractional_margin": 0.37797702308961634
+        }
+      }
+    },
+    {
+      "visit_index": 672,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 302.6843039880332,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.049362674842655,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 944,
+          "fractional_epoch_samples": -0.02677013171678173,
+          "tracking_cfo_hz": 399109.01834717963,
+          "fractional_margin": 0.5236061703200666
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 944,
+          "fractional_epoch_samples": -0.07613280655949084,
+          "tracking_cfo_hz": -50446.413806353696,
+          "fractional_margin": 0.20501889599771453
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 944,
+          "fractional_epoch_samples": -0.02677013171678173,
+          "tracking_cfo_hz": 399109.01834717963,
+          "fractional_margin": 0.5236061703200666
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 944,
+          "fractional_epoch_samples": -0.07404067738462589,
+          "tracking_cfo_hz": -277416.4567750929,
+          "fractional_margin": 0.29946459215907717
+        }
+      }
+    },
+    {
+      "visit_index": 814,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 225.59460474341176,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.025949107740416366,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 3131,
+          "fractional_epoch_samples": 0.24888156929078523,
+          "tracking_cfo_hz": 391115.03314754064,
+          "fractional_margin": 0.45061897915214577
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 3131,
+          "fractional_epoch_samples": 0.22293246155038177,
+          "tracking_cfo_hz": -285585.72869240405,
+          "fractional_margin": 0.17121193655895173
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 3131,
+          "fractional_epoch_samples": 0.24888156929078523,
+          "tracking_cfo_hz": 391115.03314754064,
+          "fractional_margin": 0.45061897915214577
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 3131,
+          "fractional_epoch_samples": 0.2973898253765143,
+          "tracking_cfo_hz": -285360.13408766064,
+          "fractional_margin": 0.27897334897044596
+        }
+      }
+    },
+    {
+      "visit_index": 827,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 137.99901084724115,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.10101292871422629,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1262,
+          "fractional_epoch_samples": 0.11150221548805317,
+          "tracking_cfo_hz": 384762.57206697576,
+          "fractional_margin": 0.34750504568092105
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 1262,
+          "fractional_epoch_samples": 0.010489286773983548,
+          "tracking_cfo_hz": -291413.9292319463,
+          "fractional_margin": 0.1689986414707393
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1262,
+          "fractional_epoch_samples": 0.11150221548805293,
+          "tracking_cfo_hz": 384762.5720669757,
+          "fractional_margin": 0.3475050456809004
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1262,
+          "fractional_epoch_samples": 0.009136112607185042,
+          "tracking_cfo_hz": -291551.92824279354,
+          "fractional_margin": 0.2153241715866809
+        }
+      }
+    },
+    {
+      "visit_index": 1020,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 205.41910162669956,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.04908016941544702,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 894,
+          "fractional_epoch_samples": 0.2977413486345027,
+          "tracking_cfo_hz": 434063.4073060261,
+          "fractional_margin": 0.3274047861250578
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 894,
+          "fractional_epoch_samples": 0.24866117921906847,
+          "tracking_cfo_hz": -15426.187684988996,
+          "fractional_margin": 0.29606793859113095
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 894,
+          "fractional_epoch_samples": 0.2977413486345027,
+          "tracking_cfo_hz": 434063.4073060261,
+          "fractional_margin": 0.3274047861250578
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 894,
+          "fractional_epoch_samples": 0.3665010793833737,
+          "tracking_cfo_hz": -242493.49585608958,
+          "fractional_margin": 0.4565278445335796
+        }
+      }
+    },
+    {
+      "visit_index": 1023,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 158.11636303298292,
+      "rx1_alias_aware_distance_hz": 56.18842257591314,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.015243801216001884,
+      "rx0_source_epoch_separation_samples": 0.003853272042761091,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2990,
+          "fractional_epoch_samples": 0.1500266043531241,
+          "tracking_cfo_hz": 205461.0049206246,
+          "fractional_margin": 0.3648696898032889
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2990,
+          "fractional_epoch_samples": 0.1652704055692024,
+          "tracking_cfo_hz": -244191.56881781027,
+          "fractional_margin": 0.30531211316300055
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 2990,
+          "fractional_epoch_samples": 0.15387987639596487,
+          "tracking_cfo_hz": 432575.6158303189,
+          "fractional_margin": 0.39712387454540876
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2990,
+          "fractional_epoch_samples": 0.1906693776139314,
+          "tracking_cfo_hz": -244247.75724038619,
+          "fractional_margin": 0.42440702216096854
+        }
+      }
+    },
+    {
+      "visit_index": 1027,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 404.53120256756665,
+      "rx1_alias_aware_distance_hz": 10.279956563201267,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.0678981171624855,
+      "rx0_source_epoch_separation_samples": 0.00013974143234918301,
+      "rejected": {
+        "rx0": {
+          "rank": 4,
+          "epoch_sample": 1803,
+          "fractional_epoch_samples": -0.20806495023874264,
+          "tracking_cfo_hz": 430450.53569331084,
+          "fractional_margin": 0.40459705595427575
+        },
+        "rx1": {
+          "rank": 5,
+          "epoch_sample": 1803,
+          "fractional_epoch_samples": -0.2759630674013835,
+          "tracking_cfo_hz": -246359.57220673055,
+          "fractional_margin": 0.30342372734637046
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1803,
+          "fractional_epoch_samples": -0.20792520880643303,
+          "tracking_cfo_hz": 430046.0044907433,
+          "fractional_margin": 0.35813186618360826
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1803,
+          "fractional_epoch_samples": -0.21368248672638449,
+          "tracking_cfo_hz": -246369.85216329375,
+          "fractional_margin": 0.3819470726266061
+        }
+      }
+    },
+    {
+      "visit_index": 1037,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 271.85001004868536,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.013405675055309985,
+      "rx0_source_epoch_separation_samples": 0.02131865352703244,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2803,
+          "fractional_epoch_samples": 0.17822436048067405,
+          "tracking_cfo_hz": 197758.47170537408,
+          "fractional_margin": 0.32087249632121995
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2803,
+          "fractional_epoch_samples": 0.1916300355360701,
+          "tracking_cfo_hz": -251712.86526061167,
+          "fractional_margin": 0.4057018861099065
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 2803,
+          "fractional_epoch_samples": 0.1995430140079666,
+          "tracking_cfo_hz": 424759.34896805265,
+          "fractional_margin": 0.39671028365685834
+        },
+        "rx1": {
+          "rank": 3,
+          "epoch_sample": 2803,
+          "fractional_epoch_samples": 0.19163003553607058,
+          "tracking_cfo_hz": -251712.8652606116,
+          "fractional_margin": 0.40570188610983043
+        }
+      }
+    },
+    {
+      "visit_index": 1045,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 368.5643511660164,
+      "rx1_alias_aware_distance_hz": 2.9103830456733704e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.07138437789254226,
+      "rx0_source_epoch_separation_samples": 0.01035036678825918,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 192,
+          "fractional_epoch_samples": -0.02367001073679485,
+          "tracking_cfo_hz": 420567.8264807048,
+          "fractional_margin": 0.33550494505130846
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 192,
+          "fractional_epoch_samples": 0.04771436715573658,
+          "tracking_cfo_hz": -256069.0340723127,
+          "fractional_margin": 0.4462280590072309
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 192,
+          "fractional_epoch_samples": -0.013319643948541076,
+          "tracking_cfo_hz": 420199.2621295388,
+          "fractional_margin": 0.4872466596732075
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 192,
+          "fractional_epoch_samples": 0.0477143671557356,
+          "tracking_cfo_hz": -256069.03407231273,
+          "fractional_margin": 0.4462280590072297
+        }
+      }
+    },
+    {
+      "visit_index": 1057,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 77.78083913269802,
+      "rx1_alias_aware_distance_hz": 159.91687193347025,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.06699555567320203,
+      "rx0_source_epoch_separation_samples": 0.01674851644474984,
+      "rejected": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 2353,
+          "fractional_epoch_samples": 0.015365288531433898,
+          "tracking_cfo_hz": 186728.6227510813,
+          "fractional_margin": 0.3507844631586531
+        },
+        "rx1": {
+          "rank": 3,
+          "epoch_sample": 2353,
+          "fractional_epoch_samples": -0.051630267141710394,
+          "tracking_cfo_hz": -35516.434034001606,
+          "fractional_margin": 0.33812505525911896
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 2353,
+          "fractional_epoch_samples": 0.0321138049764209,
+          "tracking_cfo_hz": 414079.13086294127,
+          "fractional_margin": 0.5549751836120288
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2353,
+          "fractional_epoch_samples": 0.010455277527435925,
+          "tracking_cfo_hz": -262629.2444347954,
+          "fractional_margin": 0.4519397076000668
+        }
+      }
+    },
+    {
+      "visit_index": 1077,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 105.11967761348933,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.011731798395203441,
+      "rx0_source_epoch_separation_samples": 0.030308469356441492,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2046,
+          "fractional_epoch_samples": -0.13102925978626553,
+          "tracking_cfo_hz": 403176.726936541,
+          "fractional_margin": 0.38406091451659324
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2046,
+          "fractional_epoch_samples": -0.14276105818148613,
+          "tracking_cfo_hz": -273564.6791830702,
+          "fractional_margin": 0.46980366761176806
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 2046,
+          "fractional_epoch_samples": -0.16133772914289546,
+          "tracking_cfo_hz": 403071.6072589275,
+          "fractional_margin": 0.7410837554160202
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2046,
+          "fractional_epoch_samples": -0.14276105818148577,
+          "tracking_cfo_hz": -273564.67918307026,
+          "fractional_margin": 0.46980366761178427
+        }
+      }
+    },
+    {
+      "visit_index": 1089,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.030507359419061686,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2230,
+          "fractional_epoch_samples": 0.25349020333876804,
+          "tracking_cfo_hz": 396360.9580897831,
+          "fractional_margin": 0.7204018735322683
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2230,
+          "fractional_epoch_samples": 0.222982843920102,
+          "tracking_cfo_hz": -280123.7486319361,
+          "fractional_margin": 0.3739897040790824
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2230,
+          "fractional_epoch_samples": 0.25349020333876804,
+          "tracking_cfo_hz": 396360.9580897831,
+          "fractional_margin": 0.7204018735322683
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2230,
+          "fractional_epoch_samples": 0.222982843920102,
+          "tracking_cfo_hz": -280123.7486319361,
+          "fractional_margin": 0.3739897040790824
+        }
+      }
+    },
+    {
+      "visit_index": 1093,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.04011896392239578,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1007,
+          "fractional_epoch_samples": 0.3051705411930278,
+          "tracking_cfo_hz": 394139.3077400822,
+          "fractional_margin": 0.7126314628315334
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1007,
+          "fractional_epoch_samples": 0.2650515772706165,
+          "tracking_cfo_hz": -282299.9663005169,
+          "fractional_margin": 0.4532829882087084
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1007,
+          "fractional_epoch_samples": 0.3051705411930278,
+          "tracking_cfo_hz": 394139.3077400822,
+          "fractional_margin": 0.7126314628315334
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1007,
+          "fractional_epoch_samples": 0.265051577270617,
+          "tracking_cfo_hz": -282299.96630051685,
+          "fractional_margin": 0.4532829882087345
+        }
+      }
+    },
+    {
+      "visit_index": 1097,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.07223744072871341,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2411,
+          "fractional_epoch_samples": -0.35057465407423033,
+          "tracking_cfo_hz": 391982.0165732521,
+          "fractional_margin": 0.6640442895598712
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2411,
+          "fractional_epoch_samples": -0.2783372133454346,
+          "tracking_cfo_hz": -284448.0689952162,
+          "fractional_margin": 0.44396873547038324
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2411,
+          "fractional_epoch_samples": -0.35057465407423033,
+          "tracking_cfo_hz": 391982.0165732521,
+          "fractional_margin": 0.6640442895598712
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2411,
+          "fractional_epoch_samples": -0.2783372133454346,
+          "tracking_cfo_hz": -284448.0689952162,
+          "fractional_margin": 0.44396873547038324
+        }
+      }
+    },
+    {
+      "visit_index": 1105,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.0347761117131995,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2155,
+          "fractional_epoch_samples": 0.3299255957643736,
+          "tracking_cfo_hz": 387596.0956148222,
+          "fractional_margin": 0.7022523948205737
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2155,
+          "fractional_epoch_samples": 0.2951494840513167,
+          "tracking_cfo_hz": -288913.150770393,
+          "fractional_margin": 0.40703833167554293
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2155,
+          "fractional_epoch_samples": 0.32992559576437275,
+          "tracking_cfo_hz": 387596.0956148221,
+          "fractional_margin": 0.702252394820642
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2155,
+          "fractional_epoch_samples": 0.2951494840513167,
+          "tracking_cfo_hz": -288913.150770393,
+          "fractional_margin": 0.40703833167554293
+        }
+      }
+    },
+    {
+      "visit_index": 1113,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.009166637350517703,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1181,
+          "fractional_epoch_samples": -0.11529866594569844,
+          "tracking_cfo_hz": 383317.61830349144,
+          "fractional_margin": 0.6487101013669404
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1181,
+          "fractional_epoch_samples": -0.12446530329609386,
+          "tracking_cfo_hz": -293135.401666155,
+          "fractional_margin": 0.41285695864295374
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1181,
+          "fractional_epoch_samples": -0.11529866594569844,
+          "tracking_cfo_hz": 383317.61830349144,
+          "fractional_margin": 0.6487101013669404
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1181,
+          "fractional_epoch_samples": -0.12446530329609386,
+          "tracking_cfo_hz": -293135.401666155,
+          "fractional_margin": 0.41285695864295374
+        }
+      }
+    },
+    {
+      "visit_index": 1117,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.0283319456409572,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 323,
+          "fractional_epoch_samples": -0.17353228195381143,
+          "tracking_cfo_hz": 381129.4383415706,
+          "fractional_margin": 0.6965302311760614
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 323,
+          "fractional_epoch_samples": -0.14520033631289544,
+          "tracking_cfo_hz": -295366.17536102975,
+          "fractional_margin": 0.4610905865822015
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 323,
+          "fractional_epoch_samples": -0.17353228195381143,
+          "tracking_cfo_hz": 381129.4383415706,
+          "fractional_margin": 0.6965302311760614
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 323,
+          "fractional_epoch_samples": -0.14520033631289528,
+          "tracking_cfo_hz": -295366.1753610298,
+          "fractional_margin": 0.46109058658225843
+        }
+      }
+    },
+    {
+      "visit_index": 1124,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.014119975725179756,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1799,
+          "fractional_epoch_samples": -0.1682369842812587,
+          "tracking_cfo_hz": 377404.0492957416,
+          "fractional_margin": 0.6580747604589271
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1799,
+          "fractional_epoch_samples": -0.15411700855601768,
+          "tracking_cfo_hz": -299025.7361924344,
+          "fractional_margin": 0.4486372110762544
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1799,
+          "fractional_epoch_samples": -0.1682369842812587,
+          "tracking_cfo_hz": 377404.0492957416,
+          "fractional_margin": 0.6580747604589271
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1799,
+          "fractional_epoch_samples": -0.1541170085560196,
+          "tracking_cfo_hz": -299025.7361924343,
+          "fractional_margin": 0.4486372110762608
+        }
+      }
+    },
+    {
+      "visit_index": 1132,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.04537102974188656,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 724,
+          "fractional_epoch_samples": -0.43588942870082487,
+          "tracking_cfo_hz": 373096.6500967156,
+          "fractional_margin": 0.7108021700119511
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 724,
+          "fractional_epoch_samples": -0.39051839895898144,
+          "tracking_cfo_hz": -303400.41121513135,
+          "fractional_margin": 0.4602178196890294
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 724,
+          "fractional_epoch_samples": -0.43588942870082487,
+          "tracking_cfo_hz": 373096.6500967156,
+          "fractional_margin": 0.7108021700119511
+        },
+        "rx1": {
+          "rank": 3,
+          "epoch_sample": 724,
+          "fractional_epoch_samples": -0.3905183989589813,
+          "tracking_cfo_hz": -303400.4112151313,
+          "fractional_margin": 0.4602178196890501
+        }
+      }
+    },
+    {
+      "visit_index": 1136,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.04500851708326081,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2896,
+          "fractional_epoch_samples": 0.3188201013102684,
+          "tracking_cfo_hz": 371000.8459102832,
+          "fractional_margin": 0.7121550806166015
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2896,
+          "fractional_epoch_samples": 0.27381158422701146,
+          "tracking_cfo_hz": -305474.8049118659,
+          "fractional_margin": 0.49297055363115017
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2896,
+          "fractional_epoch_samples": 0.3188201013102684,
+          "tracking_cfo_hz": 371000.8459102832,
+          "fractional_margin": 0.7121550806166015
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2896,
+          "fractional_epoch_samples": 0.2738115842270112,
+          "tracking_cfo_hz": -305474.80491186585,
+          "fractional_margin": 0.49297055363118214
+        }
+      }
+    },
+    {
+      "visit_index": 1140,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 92.82900149119087,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.06239239673709562,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1698,
+          "fractional_epoch_samples": 0.4526165498624818,
+          "tracking_cfo_hz": 368880.463579548,
+          "fractional_margin": 0.685705378101263
+        },
+        "rx1": {
+          "rank": 3,
+          "epoch_sample": 1699,
+          "fractional_epoch_samples": -0.6097758468745892,
+          "tracking_cfo_hz": -307662.8171782667,
+          "fractional_margin": 0.3083987994917084
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1698,
+          "fractional_epoch_samples": 0.4526165498624818,
+          "tracking_cfo_hz": 368880.463579548,
+          "fractional_margin": 0.685705378101263
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1699,
+          "fractional_epoch_samples": -0.5549126140807024,
+          "tracking_cfo_hz": -307569.9881767755,
+          "fractional_margin": 0.44166423594312193
+        }
+      }
+    },
+    {
+      "visit_index": 1148,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.5389123299100902,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.02706168880831683,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2731,
+          "fractional_epoch_samples": 0.21877732097524155,
+          "tracking_cfo_hz": 397517.19875685003,
+          "fractional_margin": 0.36380860972651924
+        },
+        "rx1": {
+          "rank": 5,
+          "epoch_sample": 2731,
+          "fractional_epoch_samples": 0.19171563216679077,
+          "tracking_cfo_hz": -51687.76190711942,
+          "fractional_margin": 0.3133142013260631
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2731,
+          "fractional_epoch_samples": 0.21877732097524155,
+          "tracking_cfo_hz": 397517.19875685003,
+          "fractional_margin": 0.36380860972651924
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2731,
+          "fractional_epoch_samples": 0.21728652858033412,
+          "tracking_cfo_hz": -278959.9502675168,
+          "fractional_margin": 0.420330112854963
+        }
+      }
+    },
+    {
+      "visit_index": 1164,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.028539287428202442,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 1348,
+          "fractional_epoch_samples": 0.2933959275129866,
+          "tracking_cfo_hz": 388471.34595715476,
+          "fractional_margin": 0.3841998736169087
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1348,
+          "fractional_epoch_samples": 0.32193521494119026,
+          "tracking_cfo_hz": -288042.51863202656,
+          "fractional_margin": 0.5038173050143914
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 1348,
+          "fractional_epoch_samples": 0.2933959275129866,
+          "tracking_cfo_hz": 388471.34595715476,
+          "fractional_margin": 0.3841998736169087
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1348,
+          "fractional_epoch_samples": 0.32193521494119026,
+          "tracking_cfo_hz": -288042.51863202656,
+          "fractional_margin": 0.5038173050143914
+        }
+      }
+    },
+    {
+      "visit_index": 1191,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.03886773013164202,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2802,
+          "fractional_epoch_samples": 0.014963402788897934,
+          "tracking_cfo_hz": 373178.443689651,
+          "fractional_margin": 0.43389218259452056
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2802,
+          "fractional_epoch_samples": -0.02390432734289241,
+          "tracking_cfo_hz": -303384.5717334502,
+          "fractional_margin": 0.49355032248997593
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2802,
+          "fractional_epoch_samples": 0.014963402788897934,
+          "tracking_cfo_hz": 373178.443689651,
+          "fractional_margin": 0.43389218259452056
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2802,
+          "fractional_epoch_samples": -0.023904327342897817,
+          "tracking_cfo_hz": -303384.57173345017,
+          "fractional_margin": 0.49355032249005887
+        }
+      }
+    },
+    {
+      "visit_index": 1195,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.03955388607482746,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.21456997009743947,
+          "tracking_cfo_hz": 370964.7394978146,
+          "fractional_margin": 0.42448258846264675
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.2541238561721692,
+          "tracking_cfo_hz": -305630.4797984876,
+          "fractional_margin": 0.5121311931746617
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.21456997009743947,
+          "tracking_cfo_hz": 370964.7394978146,
+          "fractional_margin": 0.42448258846264675
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.25412385617216765,
+          "tracking_cfo_hz": -305630.4797984877,
+          "fractional_margin": 0.5121311931745918
+        }
+      }
+    },
+    {
+      "visit_index": 1199,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.03483771046626316,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1076,
+          "fractional_epoch_samples": -0.18098578524661224,
+          "tracking_cfo_hz": 368777.9324912359,
+          "fractional_margin": 0.4435594703867808
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1076,
+          "fractional_epoch_samples": -0.14614807478026198,
+          "tracking_cfo_hz": -307872.5007310108,
+          "fractional_margin": 0.4202762295760827
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1076,
+          "fractional_epoch_samples": -0.18098578524661313,
+          "tracking_cfo_hz": 368777.93249123584,
+          "fractional_margin": 0.4435594703868548
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1076,
+          "fractional_epoch_samples": -0.14614807478026198,
+          "tracking_cfo_hz": -307872.5007310108,
+          "fractional_margin": 0.4202762295760827
+        }
+      }
+    },
+    {
+      "visit_index": 1207,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.045076703932409146,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2349,
+          "fractional_epoch_samples": -0.10733066519271253,
+          "tracking_cfo_hz": 334628.86623632367,
+          "fractional_margin": 0.5612663719453697
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2349,
+          "fractional_epoch_samples": -0.15240736912533392,
+          "tracking_cfo_hz": -341937.2293224693,
+          "fractional_margin": 0.369635928332802
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2349,
+          "fractional_epoch_samples": -0.10733066519271253,
+          "tracking_cfo_hz": 334628.86623632367,
+          "fractional_margin": 0.5612663719453697
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2349,
+          "fractional_epoch_samples": -0.15240736912533392,
+          "tracking_cfo_hz": -341937.2293224693,
+          "fractional_margin": 0.369635928332802
+        }
+      }
+    },
+    {
+      "visit_index": 1214,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.07451421756798027,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 630,
+          "fractional_epoch_samples": 0.2763396071677804,
+          "tracking_cfo_hz": 360474.24991144513,
+          "fractional_margin": 0.427886715889551
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 630,
+          "fractional_epoch_samples": 0.20182538959979096,
+          "tracking_cfo_hz": -316190.51505190047,
+          "fractional_margin": 0.34705954457875465
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 630,
+          "fractional_epoch_samples": 0.2763396071677804,
+          "tracking_cfo_hz": 360474.24991144513,
+          "fractional_margin": 0.427886715889551
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 630,
+          "fractional_epoch_samples": 0.20182538959978766,
+          "tracking_cfo_hz": -316190.5150519005,
+          "fractional_margin": 0.34705954457875565
+        }
+      }
+    },
+    {
+      "visit_index": 1313,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.06891492805607413,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2992,
+          "fractional_epoch_samples": 0.10310255971342207,
+          "tracking_cfo_hz": 397968.2542542484,
+          "fractional_margin": 0.39852685391734277
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2992,
+          "fractional_epoch_samples": 0.1720174877697539,
+          "tracking_cfo_hz": -278724.7356030991,
+          "fractional_margin": 0.5856737604235397
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2992,
+          "fractional_epoch_samples": 0.10310255971342207,
+          "tracking_cfo_hz": 397968.2542542484,
+          "fractional_margin": 0.39852685391734277
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2992,
+          "fractional_epoch_samples": 0.17201748776975503,
+          "tracking_cfo_hz": -278724.73560309917,
+          "fractional_margin": 0.5856737604235405
+        }
+      }
+    },
+    {
+      "visit_index": 1323,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.024248862075864963,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 376,
+          "fractional_epoch_samples": -0.5687576234393552,
+          "tracking_cfo_hz": 392456.0768914162,
+          "fractional_margin": 0.3950764335791608
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 375,
+          "fractional_epoch_samples": 0.4554912386364946,
+          "tracking_cfo_hz": -284261.90118251415,
+          "fractional_margin": 0.7095931284070996
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 376,
+          "fractional_epoch_samples": -0.5687576234393552,
+          "tracking_cfo_hz": 392456.0768914162,
+          "fractional_margin": 0.3950764335791608
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 375,
+          "fractional_epoch_samples": 0.455491238636493,
+          "tracking_cfo_hz": -284261.9011825141,
+          "fractional_margin": 0.7095931284071214
+        }
+      }
+    },
+    {
+      "visit_index": 1380,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.05641828750458444,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2863,
+          "fractional_epoch_samples": -0.14447328169782453,
+          "tracking_cfo_hz": 361440.697355855,
+          "fractional_margin": 0.470805768289887
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2863,
+          "fractional_epoch_samples": -0.20089156920235324,
+          "tracking_cfo_hz": -315191.6567005281,
+          "fractional_margin": 0.7363248126772611
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2863,
+          "fractional_epoch_samples": -0.14447328169782453,
+          "tracking_cfo_hz": 361440.697355855,
+          "fractional_margin": 0.470805768289887
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2863,
+          "fractional_epoch_samples": -0.20089156920235385,
+          "tracking_cfo_hz": -315191.65670052817,
+          "fractional_margin": 0.7363248126772401
+        }
+      }
+    },
+    {
+      "visit_index": 1395,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.032826182666212844,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2884,
+          "fractional_epoch_samples": -0.10174224865379125,
+          "tracking_cfo_hz": 353528.7356997802,
+          "fractional_margin": 0.484272879649333
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2884,
+          "fractional_epoch_samples": -0.13456843131996676,
+          "tracking_cfo_hz": -323221.19510959263,
+          "fractional_margin": 0.6702091959930403
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2884,
+          "fractional_epoch_samples": -0.10174224865379125,
+          "tracking_cfo_hz": 353528.7356997802,
+          "fractional_margin": 0.484272879649333
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2884,
+          "fractional_epoch_samples": -0.13456843131996676,
+          "tracking_cfo_hz": -323221.19510959263,
+          "fractional_margin": 0.6702091959930403
+        }
+      }
+    },
+    {
+      "visit_index": 1399,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.01061099124149223,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1264,
+          "fractional_epoch_samples": -0.19682180623427814,
+          "tracking_cfo_hz": 351479.5566070127,
+          "fractional_margin": 0.4493559318375199
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1264,
+          "fractional_epoch_samples": -0.1862108149929233,
+          "tracking_cfo_hz": -325263.3379861661,
+          "fractional_margin": 0.7500895775061588
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1264,
+          "fractional_epoch_samples": -0.19682180623427398,
+          "tracking_cfo_hz": 351479.55660701275,
+          "fractional_margin": 0.44935593183753575
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1264,
+          "fractional_epoch_samples": -0.1862108149929233,
+          "tracking_cfo_hz": -325263.3379861661,
+          "fractional_margin": 0.7500895775061588
+        }
+      }
+    },
+    {
+      "visit_index": 1403,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 23.228533236659132,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.02980747348647128,
+      "rx0_source_epoch_separation_samples": 0.0005524448690721329,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1392,
+          "fractional_epoch_samples": 0.5440169373594468,
+          "tracking_cfo_hz": 349363.4683513148,
+          "fractional_margin": 0.4791858370090043
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1393,
+          "fractional_epoch_samples": -0.4857905361270138,
+          "tracking_cfo_hz": -327389.60530768416,
+          "fractional_margin": 0.7515429240243265
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1393,
+          "fractional_epoch_samples": -0.4565355075096997,
+          "tracking_cfo_hz": 349386.69688455143,
+          "fractional_margin": 0.47953855363798603
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1393,
+          "fractional_epoch_samples": -0.4857905361270138,
+          "tracking_cfo_hz": -327389.60530768416,
+          "fractional_margin": 0.7515429240243265
+        }
+      }
+    },
+    {
+      "visit_index": 1411,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.019894724561254407,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2880,
+          "fractional_epoch_samples": 0.17501754140427517,
+          "tracking_cfo_hz": 345279.5243706629,
+          "fractional_margin": 0.401646091109425
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2880,
+          "fractional_epoch_samples": 0.15512281684303006,
+          "tracking_cfo_hz": -331424.0519826314,
+          "fractional_margin": 0.7418380179684743
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2880,
+          "fractional_epoch_samples": 0.17501754140427517,
+          "tracking_cfo_hz": 345279.5243706629,
+          "fractional_margin": 0.401646091109425
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2880,
+          "fractional_epoch_samples": 0.15512281684303006,
+          "tracking_cfo_hz": -331424.0519826314,
+          "fractional_margin": 0.7418380179684743
+        }
+      }
+    },
+    {
+      "visit_index": 1435,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.008494133044905539,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1266,
+          "fractional_epoch_samples": -0.08663535754557856,
+          "tracking_cfo_hz": 333089.7436437727,
+          "fractional_margin": 0.4843699077476161
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1266,
+          "fractional_epoch_samples": -0.0781412245006939,
+          "tracking_cfo_hz": -343634.7138244504,
+          "fractional_margin": 0.750479637207964
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1266,
+          "fractional_epoch_samples": -0.08663535754557856,
+          "tracking_cfo_hz": 333089.7436437727,
+          "fractional_margin": 0.4843699077476161
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1266,
+          "fractional_epoch_samples": -0.0781412245006939,
+          "tracking_cfo_hz": -343634.7138244504,
+          "fractional_margin": 0.750479637207964
+        }
+      }
+    },
+    {
+      "visit_index": 1439,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.04840624677672167,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.06010603373475197,
+          "tracking_cfo_hz": 331104.9544380692,
+          "fractional_margin": 0.41631682726633307
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.10851228051145503,
+          "tracking_cfo_hz": -345583.31095498323,
+          "fractional_margin": 0.7265359369289349
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.06010603373475197,
+          "tracking_cfo_hz": 331104.9544380692,
+          "fractional_margin": 0.41631682726633307
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.10851228051145503,
+          "tracking_cfo_hz": -345583.31095498323,
+          "fractional_margin": 0.7265359369289349
+        }
+      }
+    },
+    {
+      "visit_index": 1443,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.00867829626713501,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1570,
+          "fractional_epoch_samples": 0.23306540527195463,
+          "tracking_cfo_hz": 329103.5218392718,
+          "fractional_margin": 0.36693201688528854
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1570,
+          "fractional_epoch_samples": 0.24174370153904984,
+          "tracking_cfo_hz": -347570.956164071,
+          "fractional_margin": 0.6864507686994831
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1570,
+          "fractional_epoch_samples": 0.23306540527195332,
+          "tracking_cfo_hz": 329103.5218392719,
+          "fractional_margin": 0.36693201688530136
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1570,
+          "fractional_epoch_samples": 0.24174370153904984,
+          "tracking_cfo_hz": -347570.956164071,
+          "fractional_margin": 0.6864507686994831
+        }
+      }
+    },
+    {
+      "visit_index": 1459,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.0035674921882673516,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2321,
+          "fractional_epoch_samples": 0.19880420119227035,
+          "tracking_cfo_hz": 321433.9886032253,
+          "fractional_margin": 0.42356753337197256
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2321,
+          "fractional_epoch_samples": 0.19523670900370346,
+          "tracking_cfo_hz": -355437.9564260278,
+          "fractional_margin": 0.6143638027988025
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2321,
+          "fractional_epoch_samples": 0.19880420119227035,
+          "tracking_cfo_hz": 321433.9886032253,
+          "fractional_margin": 0.42356753337197256
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2321,
+          "fractional_epoch_samples": 0.19523670900370346,
+          "tracking_cfo_hz": -355437.9564260278,
+          "fractional_margin": 0.6143638027988025
+        }
+      }
+    },
+    {
+      "visit_index": 2090,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.05410439881097773,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1972,
+          "fractional_epoch_samples": 0.09543099249292213,
+          "tracking_cfo_hz": 437024.2871047361,
+          "fractional_margin": 0.3464479129101085
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 1972,
+          "fractional_epoch_samples": 0.04132659368200954,
+          "tracking_cfo_hz": -240000.0,
+          "fractional_margin": 0.6560885602252333
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1972,
+          "fractional_epoch_samples": 0.09543099249292213,
+          "tracking_cfo_hz": 437024.2871047361,
+          "fractional_margin": 0.3464479129101085
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1972,
+          "fractional_epoch_samples": 0.04132659368200954,
+          "tracking_cfo_hz": -240000.0,
+          "fractional_margin": 0.6560885602252333
+        }
+      }
+    },
+    {
+      "visit_index": 2113,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 92.78677766452893,
+      "rx1_alias_aware_distance_hz": 352.7132528256334,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.04965015977495568,
+      "rx0_source_epoch_separation_samples": 0.006567198923903561,
+      "rejected": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 1374,
+          "fractional_epoch_samples": 0.4222557481510079,
+          "tracking_cfo_hz": 197537.8418495892,
+          "fractional_margin": 0.2712089771166821
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1374,
+          "fractional_epoch_samples": 0.37260558837611435,
+          "tracking_cfo_hz": -25513.446643057832,
+          "fractional_margin": 0.5196615318269631
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 1374,
+          "fractional_epoch_samples": 0.4288229470748439,
+          "tracking_cfo_hz": 424903.355899981,
+          "fractional_margin": 0.3309165831061341
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1374,
+          "fractional_epoch_samples": 0.43728633816283147,
+          "tracking_cfo_hz": -252433.46066295946,
+          "fractional_margin": 0.6411078448721056
+        }
+      }
+    },
+    {
+      "visit_index": 2120,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 98.83785574673675,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.0020812428865610855,
+      "rx0_source_epoch_separation_samples": 0.006692090971228026,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 3257,
+          "fractional_epoch_samples": -0.08742310132932014,
+          "tracking_cfo_hz": 420858.0499793568,
+          "fractional_margin": 0.388129804602454
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 3257,
+          "fractional_epoch_samples": -0.08950434421596579,
+          "tracking_cfo_hz": -256213.13794586915,
+          "fractional_margin": 0.6290695308421845
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 3257,
+          "fractional_epoch_samples": -0.08073101035829962,
+          "tracking_cfo_hz": 420759.2121236101,
+          "fractional_margin": 0.5581956278146403
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 3257,
+          "fractional_epoch_samples": -0.08950434421596373,
+          "tracking_cfo_hz": -256213.1379458691,
+          "fractional_margin": 0.629069530842147
+        }
+      }
+    },
+    {
+      "visit_index": 2130,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 147.80954721849412,
+      "rx1_alias_aware_distance_hz": 273.72198777322774,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.039443311552304294,
+      "rx0_source_epoch_separation_samples": 0.0355125137119785,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 750,
+          "fractional_epoch_samples": -0.5502408334145814,
+          "tracking_cfo_hz": 415426.7782419971,
+          "fractional_margin": 0.2997260371851401
+        },
+        "rx1": {
+          "rank": 5,
+          "epoch_sample": 750,
+          "fractional_epoch_samples": -0.5107975218622478,
+          "tracking_cfo_hz": -261906.04598673104,
+          "fractional_margin": 0.4517426232454429
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 7,
+          "epoch_sample": 750,
+          "fractional_epoch_samples": -0.5147283197026691,
+          "tracking_cfo_hz": 415574.5877892156,
+          "fractional_margin": 0.5189051924439168
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 749,
+          "fractional_epoch_samples": 0.5327433702273494,
+          "tracking_cfo_hz": -261632.3239989578,
+          "fractional_margin": 0.6262561194608812
+        }
+      }
+    },
+    {
+      "visit_index": 2137,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 251.98745992488693,
+      "rx1_alias_aware_distance_hz": 119.34910183958709,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.036068100853754004,
+      "rx0_source_epoch_separation_samples": 0.013209802717483399,
+      "rejected": {
+        "rx0": {
+          "rank": 4,
+          "epoch_sample": 2993,
+          "fractional_epoch_samples": -0.10638593631141334,
+          "tracking_cfo_hz": 411717.94071243145,
+          "fractional_margin": 0.21982601263797022
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2993,
+          "fractional_epoch_samples": -0.14245403716481916,
+          "tracking_cfo_hz": -265431.92843137326,
+          "fractional_margin": 0.5695324815007492
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 2993,
+          "fractional_epoch_samples": -0.11959573902883194,
+          "tracking_cfo_hz": 411969.92817235633,
+          "fractional_margin": 0.32521887784138603
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2993,
+          "fractional_epoch_samples": -0.17928489933274835,
+          "tracking_cfo_hz": -38039.85205680641,
+          "fractional_margin": 0.435198132415628
+        }
+      }
+    },
+    {
+      "visit_index": 2140,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 169.51304023578996,
+      "rx1_alias_aware_distance_hz": 200.79288395150797,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.007602220600233522,
+      "rx0_source_epoch_separation_samples": 0.033001025700627906,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 290,
+          "fractional_epoch_samples": 0.1703964809586455,
+          "tracking_cfo_hz": 409882.3248296587,
+          "fractional_margin": 0.21936921161873313
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 290,
+          "fractional_epoch_samples": 0.17799870155888547,
+          "tracking_cfo_hz": -266834.4272222532,
+          "fractional_margin": 0.4184653162764558
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 290,
+          "fractional_epoch_samples": 0.20339750665924736,
+          "tracking_cfo_hz": 409712.81178942294,
+          "fractional_margin": 0.37109048891810253
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 290,
+          "fractional_epoch_samples": 0.2841435904319926,
+          "tracking_cfo_hz": -267035.2201062047,
+          "fractional_margin": 0.5719142098067497
+        }
+      }
+    },
+    {
+      "visit_index": 2143,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 110.01595033801277,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.1097341392155613,
+      "rx0_source_epoch_separation_samples": 0.04803126937304114,
+      "rejected": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 2450,
+          "fractional_epoch_samples": 0.3395895432071065,
+          "tracking_cfo_hz": 181012.45172811724,
+          "fractional_margin": 0.3142081515519234
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2450,
+          "fractional_epoch_samples": 0.4493236824228902,
+          "tracking_cfo_hz": -268664.0201972715,
+          "fractional_margin": 0.6388891022422308
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 2450,
+          "fractional_epoch_samples": 0.3876208125802173,
+          "tracking_cfo_hz": 408175.1630505065,
+          "fractional_margin": 0.5248065206346997
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2450,
+          "fractional_epoch_samples": 0.44932368242288756,
+          "tracking_cfo_hz": -268664.02019727154,
+          "fractional_margin": 0.6388891022422793
+        }
+      }
+    },
+    {
+      "visit_index": 2147,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 90.67568611298339,
+      "rx1_alias_aware_distance_hz": 88.04497582378099,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.06774512041511116,
+      "rx0_source_epoch_separation_samples": 0.00791085545961323,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2625,
+          "fractional_epoch_samples": 0.044726290059768206,
+          "tracking_cfo_hz": 178999.5257636099,
+          "fractional_margin": 0.3770089941895372
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2625,
+          "fractional_epoch_samples": 0.11247141047482444,
+          "tracking_cfo_hz": -270894.913703585,
+          "fractional_margin": 0.6372724692683123
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 2625,
+          "fractional_epoch_samples": 0.052637145519560925,
+          "tracking_cfo_hz": 406181.5773502242,
+          "fractional_margin": 0.583428496278722
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2625,
+          "fractional_epoch_samples": 0.019365840212312076,
+          "tracking_cfo_hz": -270982.95867940877,
+          "fractional_margin": 0.5275524710041927
+        }
+      }
+    },
+    {
+      "visit_index": 2150,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 88.28335278341547,
+      "rx1_alias_aware_distance_hz": 96.75805686728563,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.07014886440020973,
+      "rx0_source_epoch_separation_samples": 0.02187303568402399,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 227,
+          "fractional_epoch_samples": -0.11052967415833237,
+          "tracking_cfo_hz": 404659.96691624064,
+          "fractional_margin": 0.2896601212310275
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 227,
+          "fractional_epoch_samples": -0.18067853855854668,
+          "tracking_cfo_hz": -45199.65152803113,
+          "fractional_margin": 0.4390158044091364
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 227,
+          "fractional_epoch_samples": -0.08865663847430962,
+          "tracking_cfo_hz": 404571.6835634572,
+          "fractional_margin": 0.46595881095988173
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 227,
+          "fractional_epoch_samples": -0.1073701983675425,
+          "tracking_cfo_hz": -272569.1368576257,
+          "fractional_margin": 0.5942069399600048
+        }
+      }
+    },
+    {
+      "visit_index": 2153,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 331.96073682201677,
+      "rx1_alias_aware_distance_hz": 313.63965113656013,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.10955057271212354,
+      "rx0_source_epoch_separation_samples": 0.06873506096007986,
+      "rejected": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 2987,
+          "fractional_epoch_samples": 0.34061748132514924,
+          "tracking_cfo_hz": 175722.5857368221,
+          "fractional_margin": 0.2679026634956626
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2987,
+          "fractional_epoch_samples": 0.45016805403758714,
+          "tracking_cfo_hz": -274241.3402568433,
+          "fractional_margin": 0.5754459151728519
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 2987,
+          "fractional_epoch_samples": 0.4093525422854285,
+          "tracking_cfo_hz": 402663.35227272735,
+          "fractional_margin": 0.5889393540552419
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2987,
+          "fractional_epoch_samples": 0.4025945992311795,
+          "tracking_cfo_hz": -47282.252635252604,
+          "fractional_margin": 0.41960160556252873
+        }
+      }
+    },
+    {
+      "visit_index": 2157,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 328.72584595618537,
+      "rx1_alias_aware_distance_hz": 8.736562181205954,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.021277405436194385,
+      "rx0_source_epoch_separation_samples": 0.0226124828615184,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 392,
+          "fractional_epoch_samples": -0.35909229242447444,
+          "tracking_cfo_hz": 400772.6178914107,
+          "fractional_margin": 0.2530438217089907
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 392,
+          "fractional_epoch_samples": -0.38036969786063235,
+          "tracking_cfo_hz": -276393.3040175979,
+          "fractional_margin": 0.40908860556435445
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 392,
+          "fractional_epoch_samples": -0.3817047752860077,
+          "tracking_cfo_hz": 400443.89204545453,
+          "fractional_margin": 0.621374201378049
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 392,
+          "fractional_epoch_samples": -0.3504277135481655,
+          "tracking_cfo_hz": -276402.04057977913,
+          "fractional_margin": 0.5743580140687478
+        }
+      }
+    },
+    {
+      "visit_index": 2158,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.013340456503556197,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2203,
+          "fractional_epoch_samples": 0.4206297186526761,
+          "tracking_cfo_hz": 213183.5949215671,
+          "fractional_margin": 0.2503030298544065
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2203,
+          "fractional_epoch_samples": 0.40728926214917915,
+          "tracking_cfo_hz": -236977.83247680997,
+          "fractional_margin": 0.694913362600996
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2203,
+          "fractional_epoch_samples": 0.4206297186526761,
+          "tracking_cfo_hz": 213183.5949215671,
+          "fractional_margin": 0.2503030298544065
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2203,
+          "fractional_epoch_samples": 0.40728926214917915,
+          "tracking_cfo_hz": -236977.83247680997,
+          "fractional_margin": 0.694913362600996
+        }
+      }
+    },
+    {
+      "visit_index": 2160,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.03119037946305525,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1008,
+          "fractional_epoch_samples": 0.15523995212362784,
+          "tracking_cfo_hz": 398924.7845714869,
+          "fractional_margin": 0.6971452531826005
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1008,
+          "fractional_epoch_samples": 0.12404957266067218,
+          "tracking_cfo_hz": -278013.3609160008,
+          "fractional_margin": 0.5728755306612101
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1008,
+          "fractional_epoch_samples": 0.15523995212362784,
+          "tracking_cfo_hz": 398924.7845714869,
+          "fractional_margin": 0.6971452531826005
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1008,
+          "fractional_epoch_samples": 0.12404957266067218,
+          "tracking_cfo_hz": -278013.3609160008,
+          "fractional_margin": 0.5728755306612101
+        }
+      }
+    },
+    {
+      "visit_index": 2163,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.0007214052203607935,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 403,
+          "fractional_epoch_samples": 0.44533210801149986,
+          "tracking_cfo_hz": 397313.12414868793,
+          "fractional_margin": 0.6994488230257192
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 403,
+          "fractional_epoch_samples": 0.44605351323182246,
+          "tracking_cfo_hz": -279585.6000919638,
+          "fractional_margin": 0.5550282932226249
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 403,
+          "fractional_epoch_samples": 0.44533210801149986,
+          "tracking_cfo_hz": 397313.12414868793,
+          "fractional_margin": 0.6994488230257192
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 403,
+          "fractional_epoch_samples": 0.4460535132318223,
+          "tracking_cfo_hz": -279585.6000919637,
+          "fractional_margin": 0.5550282932226857
+        }
+      }
+    },
+    {
+      "visit_index": 2167,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.052356096492076176,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2711,
+          "fractional_epoch_samples": 0.2374232440957126,
+          "tracking_cfo_hz": 395115.7722433566,
+          "fractional_margin": 0.6834475057852156
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2711,
+          "fractional_epoch_samples": 0.18506714760375603,
+          "tracking_cfo_hz": -281797.0825503679,
+          "fractional_margin": 0.5868429732336983
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2711,
+          "fractional_epoch_samples": 0.2374232440957126,
+          "tracking_cfo_hz": 395115.7722433566,
+          "fractional_margin": 0.6834475057852156
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2711,
+          "fractional_epoch_samples": 0.18506714760375373,
+          "tracking_cfo_hz": -281797.082550368,
+          "fractional_margin": 0.5868429732337158
+        }
+      }
+    },
+    {
+      "visit_index": 2170,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.025046256541372713,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 738,
+          "fractional_epoch_samples": 0.19513362511241214,
+          "tracking_cfo_hz": 393522.8788689114,
+          "fractional_margin": 0.6489237180083748
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 738,
+          "fractional_epoch_samples": 0.17008736857099274,
+          "tracking_cfo_hz": -283396.9128641708,
+          "fractional_margin": 0.6165731178861641
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 738,
+          "fractional_epoch_samples": 0.19513362511241214,
+          "tracking_cfo_hz": 393522.8788689114,
+          "fractional_margin": 0.6489237180083748
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 738,
+          "fractional_epoch_samples": 0.17008736857099274,
+          "tracking_cfo_hz": -283396.9128641708,
+          "fractional_margin": 0.6165731178861641
+        }
+      }
+    },
+    {
+      "visit_index": 2173,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.008971326658411272,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1402,
+          "fractional_epoch_samples": -0.12096679382040704,
+          "tracking_cfo_hz": 391910.87118371786,
+          "fractional_margin": 0.6339936710724645
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1402,
+          "fractional_epoch_samples": -0.12993812047878087,
+          "tracking_cfo_hz": -285037.92743000435,
+          "fractional_margin": 0.6463234541225094
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1402,
+          "fractional_epoch_samples": -0.12096679382040704,
+          "tracking_cfo_hz": 391910.87118371786,
+          "fractional_margin": 0.6339936710724645
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1402,
+          "fractional_epoch_samples": -0.12993812047877934,
+          "tracking_cfo_hz": -285037.9274300044,
+          "fractional_margin": 0.6463234541224877
+        }
+      }
+    },
+    {
+      "visit_index": 2175,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 178.56938429464935,
+      "rx1_alias_aware_distance_hz": 168.7367812540906,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.05359310198525691,
+      "rx0_source_epoch_separation_samples": 0.03832471464716036,
+      "rejected": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 723,
+          "fractional_epoch_samples": 0.4959388640080663,
+          "tracking_cfo_hz": 205119.36135975993,
+          "fractional_margin": 0.3099528612912807
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 723,
+          "fractional_epoch_samples": 0.5495319659932854,
+          "tracking_cfo_hz": -244843.0424200271,
+          "fractional_margin": 0.6779894327938292
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 7,
+          "epoch_sample": 723,
+          "fractional_epoch_samples": 0.5342635786552097,
+          "tracking_cfo_hz": 432213.51924819255,
+          "fractional_margin": 0.43922053394248434
+        },
+        "rx1": {
+          "rank": 6,
+          "epoch_sample": 724,
+          "fractional_epoch_samples": -0.4956999248404041,
+          "tracking_cfo_hz": -17739.05192855392,
+          "fractional_margin": 0.558703598789896
+        }
+      }
+    },
+    {
+      "visit_index": 2177,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 10.194207371678203,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.04093508730306894,
+      "rx0_source_epoch_separation_samples": 0.00015800213645889016,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1183,
+          "fractional_epoch_samples": 0.37457365833188083,
+          "tracking_cfo_hz": 389721.2649624877,
+          "fractional_margin": 0.5618924502977226
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1183,
+          "fractional_epoch_samples": 0.4155087456349664,
+          "tracking_cfo_hz": -287114.94414145086,
+          "fractional_margin": 0.6200189543893597
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1184,
+          "fractional_epoch_samples": -0.6252683395316291,
+          "tracking_cfo_hz": 389731.45916985936,
+          "fractional_margin": 0.5621288895679657
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1183,
+          "fractional_epoch_samples": 0.41550874563496476,
+          "tracking_cfo_hz": -287114.9441414508,
+          "fractional_margin": 0.6200189543893558
+        }
+      }
+    },
+    {
+      "visit_index": 2180,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.010925153965786194,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 374,
+          "fractional_epoch_samples": -0.27898618188188395,
+          "tracking_cfo_hz": 388048.97168112796,
+          "fractional_margin": 0.5676144839157216
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 374,
+          "fractional_epoch_samples": -0.28991133584763834,
+          "tracking_cfo_hz": -288920.07540631515,
+          "fractional_margin": 0.6647762082796081
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 374,
+          "fractional_epoch_samples": -0.27898618188188395,
+          "tracking_cfo_hz": 388048.97168112796,
+          "fractional_margin": 0.5676144839157216
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 374,
+          "fractional_epoch_samples": -0.28991133584763884,
+          "tracking_cfo_hz": -288920.0754063151,
+          "fractional_margin": 0.6647762082796226
+        }
+      }
+    },
+    {
+      "visit_index": 2181,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 16.921433256327873,
+      "rx1_alias_aware_distance_hz": 2.9103830456733704e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.031556553789414465,
+      "rx0_source_epoch_separation_samples": 0.006808800558474104,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1833,
+          "fractional_epoch_samples": 0.12681872049065177,
+          "tracking_cfo_hz": 202265.4165102493,
+          "fractional_margin": 0.266013727035817
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1833,
+          "fractional_epoch_samples": 0.15837527428025275,
+          "tracking_cfo_hz": -247627.32829402282,
+          "fractional_margin": 0.7147012252202197
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 1833,
+          "fractional_epoch_samples": 0.13362752104910974,
+          "tracking_cfo_hz": 429555.0652162329,
+          "fractional_margin": 0.31185015448928216
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1833,
+          "fractional_epoch_samples": 0.15837527428025128,
+          "tracking_cfo_hz": -247627.3282940228,
+          "fractional_margin": 0.7147012252202344
+        }
+      }
+    },
+    {
+      "visit_index": 2183,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.012174516542302172,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 302,
+          "fractional_epoch_samples": 0.473985184058942,
+          "tracking_cfo_hz": 386459.6085261694,
+          "fractional_margin": 0.6252868480871454
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 302,
+          "fractional_epoch_samples": 0.46181066751665073,
+          "tracking_cfo_hz": -290464.39443118847,
+          "fractional_margin": 0.6864630558986786
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 302,
+          "fractional_epoch_samples": 0.473985184058942,
+          "tracking_cfo_hz": 386459.6085261694,
+          "fractional_margin": 0.6252868480871454
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 302,
+          "fractional_epoch_samples": 0.46181066751665245,
+          "tracking_cfo_hz": -290464.3944311885,
+          "fractional_margin": 0.6864630558986584
+        }
+      }
+    },
+    {
+      "visit_index": 2187,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.018460945685546903,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2666,
+          "fractional_epoch_samples": -0.13130975557928887,
+          "tracking_cfo_hz": 384289.36253311613,
+          "fractional_margin": 0.667088800823592
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2666,
+          "fractional_epoch_samples": -0.11284880989380576,
+          "tracking_cfo_hz": -292618.2212754223,
+          "fractional_margin": 0.6591105786564138
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2666,
+          "fractional_epoch_samples": -0.13130975557928887,
+          "tracking_cfo_hz": 384289.36253311613,
+          "fractional_margin": 0.667088800823592
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2666,
+          "fractional_epoch_samples": -0.11284880989380576,
+          "tracking_cfo_hz": -292618.2212754223,
+          "fractional_margin": 0.6591105786564138
+        }
+      }
+    },
+    {
+      "visit_index": 2188,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 129.23811843807925,
+      "rx1_alias_aware_distance_hz": 108.63204551587114,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.11250876088104178,
+      "rx0_source_epoch_separation_samples": 0.02132414883067213,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 943,
+          "fractional_epoch_samples": 0.2656320483276707,
+          "tracking_cfo_hz": 198664.60212564073,
+          "fractional_margin": 0.2804734558023146
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 943,
+          "fractional_epoch_samples": 0.3781408092086763,
+          "tracking_cfo_hz": -250996.52390752357,
+          "fractional_margin": 0.6798117079793276
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 943,
+          "fractional_epoch_samples": 0.2869561971583541,
+          "tracking_cfo_hz": 426066.56751680607,
+          "fractional_margin": 0.3524111591050033
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 943,
+          "fractional_epoch_samples": 0.30467400329114275,
+          "tracking_cfo_hz": -250887.8918620077,
+          "fractional_margin": 0.5697681898108761
+        }
+      }
+    },
+    {
+      "visit_index": 2190,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.037750472474499475,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 431,
+          "fractional_epoch_samples": 0.27840629064827344,
+          "tracking_cfo_hz": 382619.8934143683,
+          "fractional_margin": 0.6481819783917718
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 431,
+          "fractional_epoch_samples": 0.24065581817374465,
+          "tracking_cfo_hz": -294306.3668400833,
+          "fractional_margin": 0.6334899408184466
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 431,
+          "fractional_epoch_samples": 0.27840629064827344,
+          "tracking_cfo_hz": 382619.8934143683,
+          "fractional_margin": 0.6481819783917718
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 431,
+          "fractional_epoch_samples": 0.24065581817374201,
+          "tracking_cfo_hz": -294306.3668400834,
+          "fractional_margin": 0.6334899408184826
+        }
+      }
+    },
+    {
+      "visit_index": 2193,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.010545438764893333,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 3330,
+          "fractional_epoch_samples": 0.1755745776851094,
+          "tracking_cfo_hz": 381027.3186350514,
+          "fractional_margin": 0.6475591098315501
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 3330,
+          "fractional_epoch_samples": 0.16502913891992016,
+          "tracking_cfo_hz": -295896.63709615346,
+          "fractional_margin": 0.6101316274054261
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 3330,
+          "fractional_epoch_samples": 0.1755745776851094,
+          "tracking_cfo_hz": 381027.3186350514,
+          "fractional_margin": 0.6475591098315501
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 3330,
+          "fractional_epoch_samples": 0.16502913891992016,
+          "tracking_cfo_hz": -295896.63709615346,
+          "fractional_margin": 0.6101316274054261
+        }
+      }
+    },
+    {
+      "visit_index": 2195,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 316.8070424768375,
+      "rx1_alias_aware_distance_hz": 228.56779907783493,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.09196226327867407,
+      "rx0_source_epoch_separation_samples": 0.002660907405015678,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1440,
+          "fractional_epoch_samples": -0.07467993037878633,
+          "tracking_cfo_hz": 422724.5372345621,
+          "fractional_margin": 0.288683796941001
+        },
+        "rx1": {
+          "rank": 4,
+          "epoch_sample": 1440,
+          "fractional_epoch_samples": -0.16664219365759378,
+          "tracking_cfo_hz": -254432.3360364685,
+          "fractional_margin": 0.5233495279736162
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 4,
+          "epoch_sample": 1440,
+          "fractional_epoch_samples": -0.07734083778387595,
+          "tracking_cfo_hz": 423041.34427703894,
+          "fractional_margin": 0.4170422572092211
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1440,
+          "fractional_epoch_samples": -0.09113323164816603,
+          "tracking_cfo_hz": -254203.76823739067,
+          "fractional_margin": 0.6261877025220275
+        }
+      }
+    },
+    {
+      "visit_index": 2197,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 4.689105059427675,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.044737623537457694,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 432,
+          "fractional_epoch_samples": -0.47835683251565597,
+          "tracking_cfo_hz": 378923.988459352,
+          "fractional_margin": 0.6297376586085423
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 431,
+          "fractional_epoch_samples": 0.5663807910217741,
+          "tracking_cfo_hz": -298039.2947713897,
+          "fractional_margin": 0.6033456248108532
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 432,
+          "fractional_epoch_samples": -0.47835683251565597,
+          "tracking_cfo_hz": 378923.988459352,
+          "fractional_margin": 0.6297376586085423
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 432,
+          "fractional_epoch_samples": -0.4336290348070928,
+          "tracking_cfo_hz": -298034.60566633026,
+          "fractional_margin": 0.6034859275910089
+        }
+      }
+    },
+    {
+      "visit_index": 2198,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 8.942498140328098,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.01728091922848307,
+      "rx0_source_epoch_separation_samples": 0.012207488823037238,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 673,
+          "fractional_epoch_samples": -0.4013361645466911,
+          "tracking_cfo_hz": 421281.5007502686,
+          "fractional_margin": 0.2806820531669543
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 673,
+          "fractional_epoch_samples": -0.4186170837752028,
+          "tracking_cfo_hz": -255771.4034779857,
+          "fractional_margin": 0.6493668771766986
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 673,
+          "fractional_epoch_samples": -0.3891286757236951,
+          "tracking_cfo_hz": 421272.55825212825,
+          "fractional_margin": 0.5240579685470729
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 673,
+          "fractional_epoch_samples": -0.4186170837752025,
+          "tracking_cfo_hz": -255771.40347798576,
+          "fractional_margin": 0.6493668771766813
+        }
+      }
+    },
+    {
+      "visit_index": 2200,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.05542087009462193,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1460,
+          "fractional_epoch_samples": 0.10393923484639501,
+          "tracking_cfo_hz": 377287.5954459173,
+          "fractional_margin": 0.6571962282827247
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1460,
+          "fractional_epoch_samples": 0.15936010494093736,
+          "tracking_cfo_hz": -299627.56151406583,
+          "fractional_margin": 0.6446633426295634
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1460,
+          "fractional_epoch_samples": 0.10393923484639501,
+          "tracking_cfo_hz": 377287.5954459173,
+          "fractional_margin": 0.6571962282827247
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1460,
+          "fractional_epoch_samples": 0.1593601049409357,
+          "tracking_cfo_hz": -299627.5615140659,
+          "fractional_margin": 0.644663342629584
+        }
+      }
+    },
+    {
+      "visit_index": 2201,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 171.1603972838202,
+      "rx1_alias_aware_distance_hz": 256.43702871431015,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.06548816607642038,
+      "rx0_source_epoch_separation_samples": 0.07999309518891096,
+      "rejected": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 1774,
+          "fractional_epoch_samples": 0.3649807937777496,
+          "tracking_cfo_hz": 192837.96943738556,
+          "fractional_margin": 0.331034828571089
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1774,
+          "fractional_epoch_samples": 0.4304689598541118,
+          "tracking_cfo_hz": -257187.20407361566,
+          "fractional_margin": 0.6769931150258054
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 1774,
+          "fractional_epoch_samples": 0.4449738889666738,
+          "tracking_cfo_hz": 419939.536312829,
+          "fractional_margin": 0.640208099271124
+        },
+        "rx1": {
+          "rank": 3,
+          "epoch_sample": 1774,
+          "fractional_epoch_samples": 0.3745304548991854,
+          "tracking_cfo_hz": -257443.64110232997,
+          "fractional_margin": 0.5598754163689248
+        }
+      }
+    },
+    {
+      "visit_index": 2203,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 10.569808059721254,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.018175229759663125,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 778,
+          "fractional_epoch_samples": 0.4945234615463243,
+          "tracking_cfo_hz": 375647.1591756586,
+          "fractional_margin": 0.6447210278345544
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 778,
+          "fractional_epoch_samples": 0.4763482317867368,
+          "tracking_cfo_hz": -301336.4705208525,
+          "fractional_margin": 0.6206674593874673
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 778,
+          "fractional_epoch_samples": 0.4945234615463243,
+          "tracking_cfo_hz": 375647.1591756586,
+          "fractional_margin": 0.6447210278345544
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 779,
+          "fractional_epoch_samples": -0.5235942186022852,
+          "tracking_cfo_hz": -301325.90071279276,
+          "fractional_margin": 0.6212000291042508
+        }
+      }
+    },
+    {
+      "visit_index": 2205,
+      "channel": 3,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 404.7459193293762,
+      "rx1_alias_aware_distance_hz": 139.21069373883074,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.030147401880185498,
+      "rx0_source_epoch_separation_samples": 0.01057165585302755,
+      "rejected": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 1380,
+          "fractional_epoch_samples": 0.4923567330109028,
+          "tracking_cfo_hz": 191060.55615237786,
+          "fractional_margin": 0.2320286741376225
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1380,
+          "fractional_epoch_samples": 0.46220933113077733,
+          "tracking_cfo_hz": -259060.95940708945,
+          "fractional_margin": 0.6178429795446893
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 1380,
+          "fractional_epoch_samples": 0.4817850771578682,
+          "tracking_cfo_hz": 417928.53750577575,
+          "fractional_margin": 0.5407256346273492
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 1380,
+          "fractional_epoch_samples": 0.3938507376523526,
+          "tracking_cfo_hz": -259200.17010082828,
+          "fractional_margin": 0.4924179476548636
+        }
+      }
+    },
+    {
+      "visit_index": 2207,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.013589776872549919,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2041,
+          "fractional_epoch_samples": -0.3338905264207884,
+          "tracking_cfo_hz": 373562.1152655674,
+          "fractional_margin": 0.6693732982704049
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2041,
+          "fractional_epoch_samples": -0.3474803032933719,
+          "tracking_cfo_hz": -303280.46450355137,
+          "fractional_margin": 0.6053468920423032
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2041,
+          "fractional_epoch_samples": -0.3338905264207884,
+          "tracking_cfo_hz": 373562.1152655674,
+          "fractional_margin": 0.6693732982704049
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2041,
+          "fractional_epoch_samples": -0.3474803032933717,
+          "tracking_cfo_hz": -303280.4645035514,
+          "fractional_margin": 0.6053468920423585
+        }
+      }
+    },
+    {
+      "visit_index": 2210,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.001309663510255632,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2584,
+          "fractional_epoch_samples": 0.04985556638441314,
+          "tracking_cfo_hz": 371929.94904896966,
+          "fractional_margin": 0.682257844901099
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2584,
+          "fractional_epoch_samples": 0.04854590287403748,
+          "tracking_cfo_hz": -304989.14093044406,
+          "fractional_margin": 0.6557324852696508
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2584,
+          "fractional_epoch_samples": 0.04985556638441314,
+          "tracking_cfo_hz": 371929.94904896966,
+          "fractional_margin": 0.682257844901099
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2584,
+          "fractional_epoch_samples": 0.04854590287403748,
+          "tracking_cfo_hz": -304989.14093044406,
+          "fractional_margin": 0.6557324852696508
+        }
+      }
+    },
+    {
+      "visit_index": 2213,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.002977666654260247,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1311,
+          "fractional_epoch_samples": -0.4010224690446361,
+          "tracking_cfo_hz": 370372.64754971495,
+          "fractional_margin": 0.7151636558918628
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1311,
+          "fractional_epoch_samples": -0.40400013569885584,
+          "tracking_cfo_hz": -306567.1501011561,
+          "fractional_margin": 0.6619121407860309
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1311,
+          "fractional_epoch_samples": -0.4010224690446361,
+          "tracking_cfo_hz": 370372.64754971495,
+          "fractional_margin": 0.7151636558918628
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1311,
+          "fractional_epoch_samples": -0.40400013569885584,
+          "tracking_cfo_hz": -306567.1501011561,
+          "fractional_margin": 0.6619121407860309
+        }
+      }
+    },
+    {
+      "visit_index": 2217,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 291.4283344334981,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.05506308303711194,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.06132417790484655,
+          "tracking_cfo_hz": 368210.9580461488,
+          "fractional_margin": 0.7105164802638091
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.11638726094200234,
+          "tracking_cfo_hz": -81705.56496149744,
+          "fractional_margin": 0.49057968862363444
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.06132417790484655,
+          "tracking_cfo_hz": 368210.9580461488,
+          "fractional_margin": 0.7105164802638091
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.0653406110112706,
+          "tracking_cfo_hz": -308686.8638997912,
+          "fractional_margin": 0.621490733294686
+        }
+      }
+    },
+    {
+      "visit_index": 2217,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 228.99664654093795,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.014026942475538817,
+      "rx0_source_epoch_separation_samples": 0.010010509368839848,
+      "rejected": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.05131366853576246,
+          "tracking_cfo_hz": 141167.2274199625,
+          "fractional_margin": 0.3842013572524779
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.06534061101127397,
+          "tracking_cfo_hz": -308686.86389979115,
+          "fractional_margin": 0.6214907332946711
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.06132417790484655,
+          "tracking_cfo_hz": 368210.9580461488,
+          "fractional_margin": 0.7105164802638091
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2679,
+          "fractional_epoch_samples": -0.0653406110112706,
+          "tracking_cfo_hz": -308686.8638997912,
+          "fractional_margin": 0.621490733294686
+        }
+      }
+    },
+    {
+      "visit_index": 2221,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.001619546453412113,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 618,
+          "fractional_epoch_samples": -0.4235777492116872,
+          "tracking_cfo_hz": 366125.177048396,
+          "fractional_margin": 0.7025822073299925
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 618,
+          "fractional_epoch_samples": -0.42519729566502495,
+          "tracking_cfo_hz": -310880.8154723726,
+          "fractional_margin": 0.6505264778464124
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 618,
+          "fractional_epoch_samples": -0.4235777492116872,
+          "tracking_cfo_hz": 366125.177048396,
+          "fractional_margin": 0.7025822073299925
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 618,
+          "fractional_epoch_samples": -0.4251972956650249,
+          "tracking_cfo_hz": -310880.81547237263,
+          "fractional_margin": 0.6505264778464187
+        }
+      }
+    },
+    {
+      "visit_index": 2225,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.0387643746203139,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2531,
+          "fractional_epoch_samples": -0.37877976069649083,
+          "tracking_cfo_hz": 364014.2143217866,
+          "fractional_margin": 0.6851404492747774
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2531,
+          "fractional_epoch_samples": -0.34001538607623566,
+          "tracking_cfo_hz": -312955.4217024139,
+          "fractional_margin": 0.5856521952720334
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2531,
+          "fractional_epoch_samples": -0.37877976069649083,
+          "tracking_cfo_hz": 364014.2143217866,
+          "fractional_margin": 0.6851404492747774
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2531,
+          "fractional_epoch_samples": -0.34001538607623566,
+          "tracking_cfo_hz": -312955.4217024139,
+          "fractional_margin": 0.5856521952720334
+        }
+      }
+    },
+    {
+      "visit_index": 2228,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.012088198290769014,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 432,
+          "fractional_epoch_samples": -0.37064238993725734,
+          "tracking_cfo_hz": 362456.05026627495,
+          "fractional_margin": 0.6758260854167876
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 432,
+          "fractional_epoch_samples": -0.35855419164646174,
+          "tracking_cfo_hz": -314466.4847125448,
+          "fractional_margin": 0.6055418521203065
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 432,
+          "fractional_epoch_samples": -0.37064238993725734,
+          "tracking_cfo_hz": 362456.05026627495,
+          "fractional_margin": 0.6758260854167876
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 432,
+          "fractional_epoch_samples": -0.35855419164646174,
+          "tracking_cfo_hz": -314466.4847125448,
+          "fractional_margin": 0.6055418521203065
+        }
+      }
+    },
+    {
+      "visit_index": 2232,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.04049050139178689,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 837,
+          "fractional_epoch_samples": 0.33319316294051454,
+          "tracking_cfo_hz": 360365.75505914184,
+          "fractional_margin": 0.5641545898742604
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 837,
+          "fractional_epoch_samples": 0.2927026615486563,
+          "tracking_cfo_hz": -316617.70216451515,
+          "fractional_margin": 0.4753118630652263
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 837,
+          "fractional_epoch_samples": 0.33319316294051315,
+          "tracking_cfo_hz": 360365.7550591418,
+          "fractional_margin": 0.5641545898743094
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 837,
+          "fractional_epoch_samples": 0.2927026615486532,
+          "tracking_cfo_hz": -316617.7021645152,
+          "fractional_margin": 0.4753118630652563
+        }
+      }
+    },
+    {
+      "visit_index": 2235,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 2.0688435409101658,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.015653161684213046,
+      "rx0_source_epoch_separation_samples": 5.259952104097465e-06,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1952,
+          "fractional_epoch_samples": 0.539236644576542,
+          "tracking_cfo_hz": 358780.88872013945,
+          "fractional_margin": 0.5746494357319777
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1953,
+          "fractional_epoch_samples": -0.4451101937393052,
+          "tracking_cfo_hz": -318129.37167383713,
+          "fractional_margin": 0.5316232456266772
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1953,
+          "fractional_epoch_samples": -0.4607580954714415,
+          "tracking_cfo_hz": 358778.81987659854,
+          "fractional_margin": 0.5746379245775193
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1953,
+          "fractional_epoch_samples": -0.44511019373930444,
+          "tracking_cfo_hz": -318129.3716738372,
+          "fractional_margin": 0.5316232456267542
+        }
+      }
+    },
+    {
+      "visit_index": 2238,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.023308479251682,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.3296168629856349,
+          "tracking_cfo_hz": 357239.2636397149,
+          "fractional_margin": 0.6628717682026687
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.30630838373437363,
+          "tracking_cfo_hz": -319615.30772921117,
+          "fractional_margin": 0.5578999225836937
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.3296168629856349,
+          "tracking_cfo_hz": 357239.2636397149,
+          "fractional_margin": 0.6628717682026687
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.30630838373437363,
+          "tracking_cfo_hz": -319615.30772921117,
+          "fractional_margin": 0.5578999225836937
+        }
+      }
+    },
+    {
+      "visit_index": 2238,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 3.7376093713101,
+      "rx1_alias_aware_distance_hz": 15.307729211170226,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.04994378860010329,
+      "rx0_source_epoch_separation_samples": 0.07324002439145261,
+      "rejected": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.25637683859448335,
+          "tracking_cfo_hz": 357243.0012490862,
+          "fractional_margin": 0.3590824914350394
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.30632062719467884,
+          "tracking_cfo_hz": -319600.0,
+          "fractional_margin": 0.5579373998912142
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.3296168629856349,
+          "tracking_cfo_hz": 357239.2636397149,
+          "fractional_margin": 0.6628717682026687
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2565,
+          "fractional_epoch_samples": -0.30630838373437363,
+          "tracking_cfo_hz": -319615.30772921117,
+          "fractional_margin": 0.5578999225836937
+        }
+      }
+    },
+    {
+      "visit_index": 2242,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 15.0869160296279,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.05724730687165902,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 243,
+          "fractional_epoch_samples": 0.32557063308087064,
+          "tracking_cfo_hz": 355194.3421484252,
+          "fractional_margin": 0.6031296773578493
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 243,
+          "fractional_epoch_samples": 0.2683233262092097,
+          "tracking_cfo_hz": -94352.7371850482,
+          "fractional_margin": 0.37752151038042253
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 243,
+          "fractional_epoch_samples": 0.32557063308087064,
+          "tracking_cfo_hz": 355194.3421484252,
+          "fractional_margin": 0.6031296773578493
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 243,
+          "fractional_epoch_samples": 0.3382698025221975,
+          "tracking_cfo_hz": -321610.37754174584,
+          "fractional_margin": 0.5105828514038906
+        }
+      }
+    },
+    {
+      "visit_index": 2246,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 226.29308326300816,
+      "rx1_alias_aware_distance_hz": 328.65394451931934,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.16981884655029944,
+      "rx0_source_epoch_separation_samples": 0.03332351136901934,
+      "rejected": {
+        "rx0": {
+          "rank": 2,
+          "epoch_sample": 358,
+          "fractional_epoch_samples": -0.256343901896583,
+          "tracking_cfo_hz": 190043.26936985424,
+          "fractional_margin": 0.2251359672103666
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 358,
+          "fractional_epoch_samples": -0.42616274844689744,
+          "tracking_cfo_hz": -32726.804118751053,
+          "fractional_margin": 0.4262781628057473
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 4,
+          "epoch_sample": 358,
+          "fractional_epoch_samples": -0.2896674132656059,
+          "tracking_cfo_hz": 417542.2897258445,
+          "fractional_margin": 0.35934239832671916
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 358,
+          "fractional_epoch_samples": -0.425800782279552,
+          "tracking_cfo_hz": -259670.877446959,
+          "fractional_margin": 0.5738858991052773
+        }
+      }
+    },
+    {
+      "visit_index": 2263,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 24.987383398460224,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.00906670055428549,
+      "rx0_source_epoch_separation_samples": 0.01407403264875029,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1397,
+          "fractional_epoch_samples": -0.39640552661407435,
+          "tracking_cfo_hz": 408567.6410650799,
+          "fractional_margin": 0.2014506177753261
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1397,
+          "fractional_epoch_samples": -0.4054722271682893,
+          "tracking_cfo_hz": -268807.70233563,
+          "fractional_margin": 0.47218578184908977
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 5,
+          "epoch_sample": 1397,
+          "fractional_epoch_samples": -0.4104795592627014,
+          "tracking_cfo_hz": 408542.65368168143,
+          "fractional_margin": 0.3489782134806151
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1397,
+          "fractional_epoch_samples": -0.4054722271682885,
+          "tracking_cfo_hz": -268807.7023356301,
+          "fractional_margin": 0.4721857818491293
+        }
+      }
+    },
+    {
+      "visit_index": 2266,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 190.66551286849426,
+      "rx1_alias_aware_distance_hz": 52.27015669888351,
+      "minimum_distance_bucket": "1_to_100_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "1_to_100_hz",
+      "receiver_epoch_residual_samples": 0.10625577497432914,
+      "rx0_source_epoch_separation_samples": 0.030869768935190223,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 860,
+          "fractional_epoch_samples": -0.34288087560420016,
+          "tracking_cfo_hz": 406925.17297561467,
+          "fractional_margin": 0.2627719859496709
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 860,
+          "fractional_epoch_samples": -0.23662510062989492,
+          "tracking_cfo_hz": -270316.6190238083,
+          "fractional_margin": 0.508706639561909
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 7,
+          "epoch_sample": 860,
+          "fractional_epoch_samples": -0.31201110666908377,
+          "tracking_cfo_hz": 406734.5074627462,
+          "fractional_margin": 0.5471831362126709
+        },
+        "rx1": {
+          "rank": 6,
+          "epoch_sample": 860,
+          "fractional_epoch_samples": -0.3284605748974655,
+          "tracking_cfo_hz": -43096.1619077799,
+          "fractional_margin": 0.3715977978595134
+        }
+      }
+    },
+    {
+      "visit_index": 2273,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 298.69900024009985,
+      "rx1_alias_aware_distance_hz": 106.81592545969761,
+      "minimum_distance_bucket": "100_to_5000_hz",
+      "rx0_distance_bucket": "100_to_5000_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.04359761827618058,
+      "rx0_source_epoch_separation_samples": 0.017831341796863853,
+      "rejected": {
+        "rx0": {
+          "rank": 3,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.13139539022008873,
+          "tracking_cfo_hz": 176007.6114270409,
+          "fractional_margin": 0.26629582487615
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.08779777194370679,
+          "tracking_cfo_hz": -273971.20127792424,
+          "fractional_margin": 0.5226440544206256
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 6,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.11356404842315168,
+          "tracking_cfo_hz": 402981.63969952805,
+          "fractional_margin": 0.47077756159905976
+        },
+        "rx1": {
+          "rank": 4,
+          "epoch_sample": 2071,
+          "fractional_epoch_samples": 0.06011496596147956,
+          "tracking_cfo_hz": -46805.28993065667,
+          "fractional_margin": 0.4056563252206354
+        }
+      }
+    },
+    {
+      "visit_index": 2280,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.037738334679943364,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 3179,
+          "fractional_epoch_samples": -0.27984459423207875,
+          "tracking_cfo_hz": 399397.94998783525,
+          "fractional_margin": 0.5975036440367159
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 3179,
+          "fractional_epoch_samples": -0.24210625955237586,
+          "tracking_cfo_hz": -277585.02358146675,
+          "fractional_margin": 0.45087066827424793
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 3179,
+          "fractional_epoch_samples": -0.27984459423207875,
+          "tracking_cfo_hz": 399397.94998783525,
+          "fractional_margin": 0.5975036440367159
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 3179,
+          "fractional_epoch_samples": -0.24210625955237586,
+          "tracking_cfo_hz": -277585.02358146675,
+          "fractional_margin": 0.45087066827424793
+        }
+      }
+    },
+    {
+      "visit_index": 2284,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 111.6333444804186,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "100_to_5000_hz",
+      "receiver_epoch_residual_samples": 0.007382102747897079,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1129,
+          "fractional_epoch_samples": -0.2431906778477263,
+          "tracking_cfo_hz": 397274.01552157704,
+          "fractional_margin": 0.6033892583571361
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1129,
+          "fractional_epoch_samples": -0.235808575099871,
+          "tracking_cfo_hz": -279725.0993434567,
+          "fractional_margin": 0.3129983076818696
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1129,
+          "fractional_epoch_samples": -0.2431906778477263,
+          "tracking_cfo_hz": 397274.0155215771,
+          "fractional_margin": 0.6033892583571361
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1129,
+          "fractional_epoch_samples": -0.24889649713752726,
+          "tracking_cfo_hz": -279613.46599897626,
+          "fractional_margin": 0.46034332667170075
+        }
+      }
+    },
+    {
+      "visit_index": 2288,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.02541589924726395,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1345,
+          "fractional_epoch_samples": -0.08606975807224339,
+          "tracking_cfo_hz": 395157.3054210615,
+          "fractional_margin": 0.5814821220541533
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1345,
+          "fractional_epoch_samples": -0.060653858824840534,
+          "tracking_cfo_hz": -281751.3438329728,
+          "fractional_margin": 0.5193267972227006
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1345,
+          "fractional_epoch_samples": -0.08606975807224339,
+          "tracking_cfo_hz": 395157.3054210615,
+          "fractional_margin": 0.5814821220541533
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1345,
+          "fractional_epoch_samples": -0.06065385882484159,
+          "tracking_cfo_hz": -281751.34383297287,
+          "fractional_margin": 0.5193267972227262
+        }
+      }
+    },
+    {
+      "visit_index": 2296,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.00021032594986536424,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2955,
+          "fractional_epoch_samples": 0.2381556764826723,
+          "tracking_cfo_hz": 391024.0323885794,
+          "fractional_margin": 0.5696685304655285
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2955,
+          "fractional_epoch_samples": 0.23794535053255247,
+          "tracking_cfo_hz": -285898.5864173129,
+          "fractional_margin": 0.38921835528170035
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2955,
+          "fractional_epoch_samples": 0.2381556764826723,
+          "tracking_cfo_hz": 391024.0323885794,
+          "fractional_margin": 0.5696685304655285
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2955,
+          "fractional_epoch_samples": 0.23794535053255342,
+          "tracking_cfo_hz": -285898.58641731297,
+          "fractional_margin": 0.38921835528180504
+        }
+      }
+    },
+    {
+      "visit_index": 2300,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.031086742888419394,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2858,
+          "fractional_epoch_samples": 0.39547893815524415,
+          "tracking_cfo_hz": 388975.5603779075,
+          "fractional_margin": 0.6663312783662255
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2858,
+          "fractional_epoch_samples": 0.3643921952664708,
+          "tracking_cfo_hz": -287980.90847977356,
+          "fractional_margin": 0.49680369612596725
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2858,
+          "fractional_epoch_samples": 0.39547893815524415,
+          "tracking_cfo_hz": 388975.5603779075,
+          "fractional_margin": 0.6663312783662255
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2858,
+          "fractional_epoch_samples": 0.3643921952664708,
+          "tracking_cfo_hz": -287980.90847977356,
+          "fractional_margin": 0.49680369612596725
+        }
+      }
+    },
+    {
+      "visit_index": 2304,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.07846059514668013,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1142,
+          "fractional_epoch_samples": 0.2596307376286972,
+          "tracking_cfo_hz": 386890.9646773976,
+          "fractional_margin": 0.6637918373258124
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1142,
+          "fractional_epoch_samples": 0.18117014248193491,
+          "tracking_cfo_hz": -290079.61484381574,
+          "fractional_margin": 0.5079360949564117
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1142,
+          "fractional_epoch_samples": 0.2596307376286972,
+          "tracking_cfo_hz": 386890.9646773976,
+          "fractional_margin": 0.6637918373258124
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1142,
+          "fractional_epoch_samples": 0.1811701424819357,
+          "tracking_cfo_hz": -290079.6148438158,
+          "fractional_margin": 0.5079360949564763
+        }
+      }
+    },
+    {
+      "visit_index": 2307,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 25.142291040159762,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "1_to_100_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.009685005756182363,
+      "rx0_source_epoch_separation_samples": 0.00035463714084471576,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1999,
+          "fractional_epoch_samples": 0.5276923584050066,
+          "tracking_cfo_hz": 385369.0333599672,
+          "fractional_margin": 0.5980990574409702
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2000,
+          "fractional_epoch_samples": -0.46262263583894214,
+          "tracking_cfo_hz": -291626.49240088894,
+          "fractional_margin": 0.4335531728306796
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2000,
+          "fractional_epoch_samples": -0.47266227873601735,
+          "tracking_cfo_hz": 385343.891068927,
+          "fractional_margin": 0.5983023014848892
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2000,
+          "fractional_epoch_samples": -0.462622635838943,
+          "tracking_cfo_hz": -291626.492400889,
+          "fractional_margin": 0.43355317283068817
+        }
+      }
+    },
+    {
+      "visit_index": 2320,
+      "channel": 4,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.004744874971322588,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 356,
+          "fractional_epoch_samples": 0.12493672052375364,
+          "tracking_cfo_hz": 378626.131002764,
+          "fractional_margin": 0.6045639664312613
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 356,
+          "fractional_epoch_samples": 0.12019184555241862,
+          "tracking_cfo_hz": -298205.63608173927,
+          "fractional_margin": 0.4154092918104657
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 356,
+          "fractional_epoch_samples": 0.12493672052375364,
+          "tracking_cfo_hz": 378626.131002764,
+          "fractional_margin": 0.6045639664312613
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 356,
+          "fractional_epoch_samples": 0.12019184555241982,
+          "tracking_cfo_hz": -298205.6360817393,
+          "fractional_margin": 0.41540929181046743
+        }
+      }
+    },
+    {
+      "visit_index": 2336,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.02857739130149639,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 282,
+          "fractional_epoch_samples": -0.2132598099242866,
+          "tracking_cfo_hz": 371650.01458077924,
+          "fractional_margin": 0.5107385465162911
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 282,
+          "fractional_epoch_samples": -0.18468241862282392,
+          "tracking_cfo_hz": -305179.645026626,
+          "fractional_margin": 0.3414672323632776
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 282,
+          "fractional_epoch_samples": -0.2132598099242866,
+          "tracking_cfo_hz": 371650.01458077924,
+          "fractional_margin": 0.5107385465162911
+        },
+        "rx1": {
+          "rank": 2,
+          "epoch_sample": 282,
+          "fractional_epoch_samples": -0.18468241862282106,
+          "tracking_cfo_hz": -305179.64502662607,
+          "fractional_margin": 0.341467232363322
+        }
+      }
+    },
+    {
+      "visit_index": 2342,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.0937303640605478,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 1680,
+          "fractional_epoch_samples": -0.22177340896777728,
+          "tracking_cfo_hz": 368795.8224278624,
+          "fractional_margin": 0.5655392162289655
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 1680,
+          "fractional_epoch_samples": -0.12804304490720694,
+          "tracking_cfo_hz": -308137.15986192593,
+          "fractional_margin": 0.4180732873815546
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 1680,
+          "fractional_epoch_samples": -0.221773408967778,
+          "tracking_cfo_hz": 368795.8224278623,
+          "fractional_margin": 0.565539216228968
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 1680,
+          "fractional_epoch_samples": -0.12804304490720694,
+          "tracking_cfo_hz": -308137.15986192593,
+          "fractional_margin": 0.4180732873815546
+        }
+      }
+    },
+    {
+      "visit_index": 2349,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 5.820766091346741e-11,
+      "rx1_alias_aware_distance_hz": 0.0,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.042672621731526306,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2961,
+          "fractional_epoch_samples": 0.18791344856868086,
+          "tracking_cfo_hz": 365444.1176189216,
+          "fractional_margin": 0.4981191524771583
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2961,
+          "fractional_epoch_samples": 0.14524082683728876,
+          "tracking_cfo_hz": -311490.94998246245,
+          "fractional_margin": 0.3087261404387829
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2961,
+          "fractional_epoch_samples": 0.18791344856867934,
+          "tracking_cfo_hz": 365444.11761892156,
+          "fractional_margin": 0.49811915247714017
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2961,
+          "fractional_epoch_samples": 0.14524082683728876,
+          "tracking_cfo_hz": -311490.94998246245,
+          "fractional_margin": 0.3087261404387829
+        }
+      }
+    },
+    {
+      "visit_index": 2352,
+      "channel": 2,
+      "receiver_collision": "both_receivers",
+      "rx0_alias_aware_distance_hz": 0.0,
+      "rx1_alias_aware_distance_hz": 5.820766091346741e-11,
+      "minimum_distance_bucket": "lt_1_hz",
+      "rx0_distance_bucket": "lt_1_hz",
+      "rx1_distance_bucket": "lt_1_hz",
+      "receiver_epoch_residual_samples": 0.02381985080864979,
+      "rx0_source_epoch_separation_samples": 0.0,
+      "rejected": {
+        "rx0": {
+          "rank": 0,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.10746030572302771,
+          "tracking_cfo_hz": 364007.7924668995,
+          "fractional_margin": 0.5382078034107303
+        },
+        "rx1": {
+          "rank": 0,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.08364045491436607,
+          "tracking_cfo_hz": -312961.34909495205,
+          "fractional_margin": 0.34361115327871816
+        }
+      },
+      "retained_conflict": {
+        "rx0": {
+          "rank": 1,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.10746030572302771,
+          "tracking_cfo_hz": 364007.7924668995,
+          "fractional_margin": 0.5382078034107303
+        },
+        "rx1": {
+          "rank": 1,
+          "epoch_sample": 2640,
+          "fractional_epoch_samples": 0.08364045491436643,
+          "tracking_cfo_hz": -312961.349094952,
+          "fractional_margin": 0.3436111532787597
+        }
+      }
+    }
+  ]
+}
