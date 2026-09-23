@@ -1,6 +1,6 @@
 # Adaptive best-first TLE position rollout
 
-**Status: v2 deployed and canary-qualified; the frozen 24-hour v2 backfill is in progress.**
+**Status: v2 deployed, canary-qualified and browser-verified; the frozen 24-hour v2 backfill is in progress.**
 
 This directory records the qualification evidence and the fixed session inventory for promoting
 `scanner-adaptive-tle-position-v2` into the standard adaptive analysis pipeline. V2 changes only
@@ -41,8 +41,12 @@ they did not affect that panel.
   [worker activation and unchanged acquisition identity](worker-activation.json), and
   [browser screenshot](ui-canary.png) / [browser receipt](ui-canary.json)
 
-A production v2 browser receipt is still pending. The v1 screenshot demonstrates the shared panel
-and artifact-loading path but is not evidence that the v2 route was browser-verified.
+The actual v2 production browser check also passed for `scan-fw-f91acea118327e66`, using normal
+Scanner navigation, one history-page advance, and scrolling to the results panel. It displayed
+Sacramento 250 km and Reno 500 km with 31 tracks / 873 observations, loaded the digest-bound
+1560×720 PNG, and provided the v2 JSON download link. No JavaScript page errors were observed.
+See the [v2 screenshot](v2-ui-canary.png) and [browser receipt](v2-ui-canary.json). The older v1
+screenshot remains historical evidence only.
 
 The first four v2 estimator jobs completed successfully on their first attempts. Their cumulative
 two-prior numerical runtimes were 138.079 to 211.643 seconds, and sampled peak physical memory was
