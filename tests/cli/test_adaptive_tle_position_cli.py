@@ -8,8 +8,8 @@ from leo.cli.adaptive_tle_position import (
     configuration,
 )
 from leo.contracts.digests import canonical_digest
-from leo.storage.adaptive_tle_position import AdaptiveTlePositionStore
-from tests.contracts.test_adaptive_tle_position import document
+from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV2
+from tests.contracts.test_adaptive_tle_position import document_v2
 
 
 @dataclass(frozen=True)
@@ -27,15 +27,15 @@ def test_numerical_dataclass_tuples_are_normalized_before_contract_validation():
 
 
 def test_completion_rejects_stale_source_or_configuration(tmp_path):
-    writer = AdaptiveTlePositionStore(tmp_path, read_only=False)
-    writer.publish(document(), b"\x89PNG\r\n\x1a\nmap")
+    writer = AdaptiveTlePositionStoreV2(tmp_path, read_only=False)
+    writer.publish(document_v2(), b"\x89PNG\r\n\x1a\nmap")
     assert not adaptive_tle_position_complete(tmp_path, "scan-1")
-    changed = document().model_copy(
+    changed = document_v2().model_copy(
         update={"configuration_sha256": canonical_digest(configuration())}
     )
     other = tmp_path / "other"
     other.mkdir()
-    AdaptiveTlePositionStore(other, read_only=False).publish(changed, b"\x89PNG\r\n\x1a\nmap")
+    AdaptiveTlePositionStoreV2(other, read_only=False).publish(changed, b"\x89PNG\r\n\x1a\nmap")
     assert not adaptive_tle_position_complete(other, "scan-1", expected_input="sha256:" + "9" * 64)
     assert not adaptive_tle_position_complete(
         other, "scan-1", expected_analysis="sha256:" + "9" * 64

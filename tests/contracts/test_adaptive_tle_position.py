@@ -5,8 +5,11 @@ from leo.contracts.adaptive_tle_position import (
     AdaptiveTleAccountingV1,
     AdaptiveTleCandidateV1,
     AdaptiveTlePositionDocumentV1,
+    AdaptiveTlePositionDocumentV2,
     AdaptiveTlePriorResultV1,
+    AdaptiveTlePriorResultV2,
     AdaptiveTleRegionV1,
+    AdaptiveTleRegionV2,
 )
 
 DIGEST = "sha256:" + "1" * 64
@@ -58,6 +61,29 @@ def document():
     )
 
 
+def document_v2():
+    def value(name, radius):
+        legacy = prior(name)
+        return AdaptiveTlePriorResultV2(
+            **legacy.model_dump(exclude={"region"}),
+            region=AdaptiveTleRegionV2(
+                center_latitude_deg=38,
+                center_longitude_deg=-122,
+                radius_km=radius,
+            ),
+        )
+
+    return AdaptiveTlePositionDocumentV2(
+        session_id="scan-1",
+        input_manifest_sha256=DIGEST,
+        analysis_manifest_sha256=DIGEST,
+        configuration_sha256=DIGEST,
+        evidence_sha256=DIGEST,
+        state="diagnostic",
+        priors=(value("sacramento", 250), value("reno", 500)),
+    )
+
+
 def test_contract_requires_canonical_two_prior_inventory():
     assert [item.name for item in document().priors] == ["sacramento", "reno"]
     with pytest.raises(ValidationError, match="prior inventory"):
@@ -88,3 +114,18 @@ def test_contract_requires_candidates_for_each_diagnostic_prior():
     payload["priors"][0]["selected"] = None
     with pytest.raises(ValidationError, match="requires a selected"):
         AdaptiveTlePositionDocumentV1.model_validate(payload)
+
+
+def test_v2_contract_requires_250km_sacramento_and_500km_reno():
+    assert [item.region.radius_km for item in document_v2().priors] == [250, 500]
+    payload = document_v2().model_dump()
+    payload["priors"][0]["region"]["radius_km"] = 500
+    with pytest.raises(ValidationError, match="v2 prior radii"):
+        AdaptiveTlePositionDocumentV2.model_validate(payload)
+
+
+def test_v2_contract_rejects_nonfinite_nested_diagnostics():
+    payload = document_v2().model_dump()
+    payload["diagnostics"] = {"nested": [{"score": float("inf")}]}
+    with pytest.raises(ValidationError, match="must be finite"):
+        AdaptiveTlePositionDocumentV2.model_validate(payload)

@@ -22,7 +22,9 @@ from leo.contracts.digests import canonical_digest
 from leo.sky.sites import resolve_preset
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
+from leo.storage.errors import BundleNotFoundError
 from leo.storage.scanner_tracking import ScannerTrackingStore
+from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 _LEASE = timedelta(minutes=20)
 _SLICE_SECONDS = 560
@@ -34,24 +36,35 @@ def _position_methods_complete(
     bulk_root: Path, session_id: str, *, expected_input_manifest_sha256: str
 ) -> bool:
     try:
-        return (
-            position_methods_complete(
-                bulk_root,
-                session_id,
-                expected_input_manifest_sha256=expected_input_manifest_sha256,
-            )
-            and blind_regional_complete(
-                bulk_root,
-                session_id,
-                expected_input_manifest_sha256=expected_input_manifest_sha256,
-            )
-            and adaptive_tle_position_complete(
-                bulk_root,
-                session_id,
-                expected_input=expected_input_manifest_sha256,
-            )
+        legacy_complete = position_methods_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=expected_input_manifest_sha256,
+        ) and blind_regional_complete(
+            bulk_root,
+            session_id,
+            expected_input_manifest_sha256=expected_input_manifest_sha256,
         )
-    except (OSError, ValueError):
+        if not legacy_complete:
+            return False
+        if not adaptive_tle_position_complete(
+            bulk_root,
+            session_id,
+            expected_input=expected_input_manifest_sha256,
+        ):
+            return False
+        sources = ScannerTrackingInputStore(bulk_root)
+        try:
+            source = sources.load(session_id)
+        finally:
+            sources.close()
+        return adaptive_tle_position_complete(
+            bulk_root,
+            session_id,
+            expected_input=expected_input_manifest_sha256,
+            expected_analysis=source.analysis_manifest_sha256,
+        )
+    except (BundleNotFoundError, OSError, ValueError):
         return False
 
 
@@ -79,7 +92,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "position": "scanner-conditional-position-v1",
             "additional_position_methods": "scanner-position-methods-v1",
             "blind_association_and_position": "scanner-blind-regional-v1",
-            "adaptive_tle_position": "scanner-adaptive-tle-position-v1",
+            "adaptive_tle_position": "scanner-adaptive-tle-position-v2",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -352,7 +365,7 @@ def run_once(
         lease.job_kind == "adaptive_tracking"
         and payload.get("state") == "complete"
         and payload.get("position_methods_state") == "complete"
-        and payload.get("adaptive_tle_position_state") == "complete"
+        and payload.get("adaptive_tle_position_v2_state") == "complete"
         and ScannerTrackingStore(bulk_root, read_only=True).analysis_status(lease.session_id).state
         == "complete"
         and _position_methods_complete(

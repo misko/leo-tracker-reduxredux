@@ -11,6 +11,7 @@ from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
 
 SessionId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
+Reason = Annotated[str, Field(min_length=1, max_length=128)]
 
 
 class AdaptiveTleRegionV1(ContractModel):
@@ -157,5 +158,111 @@ class AdaptiveTlePositionStatusV1(ContractModel):
 
 class AdaptiveTlePositionReader(Protocol):
     def status(self, session_id: str) -> AdaptiveTlePositionStatusV1: ...
+
+    def artifact(self, session_id: str) -> bytes | None: ...
+
+
+class AdaptiveTleRegionV2(ContractModel):
+    center_latitude_deg: Annotated[float, Field(ge=-90, le=90)]
+    center_longitude_deg: Annotated[float, Field(ge=-180, le=180)]
+    radius_km: Annotated[float, Field(gt=0.0, le=500.0)]
+    altitude_m: Annotated[float, Field(ge=0.0, le=0.0)] = 0.0
+
+
+class AdaptiveTlePriorResultV2(ContractModel):
+    name: Literal["sacramento", "reno"]
+    region: AdaptiveTleRegionV2
+    search_complete: bool
+    stop_reason: Annotated[str, Field(min_length=1, max_length=128)]
+    accounting: AdaptiveTleAccountingV1
+    selected: AdaptiveTleCandidateV1 | None = None
+    finest: AdaptiveTleCandidateV1 | None = None
+
+    @model_validator(mode="after")
+    def _coherent(self) -> Self:
+        if self.finest is not None and self.selected is None:
+            raise ValueError("finest candidate requires a selected candidate")
+        return self
+
+
+class AdaptiveTlePositionDocumentV2(ContractModel):
+    schema_version: Literal[2] = 2
+    analysis_id: Literal["scanner-adaptive-tle-position-v2"] = "scanner-adaptive-tle-position-v2"
+    session_id: SessionId
+    input_manifest_sha256: Sha256Digest
+    analysis_manifest_sha256: Sha256Digest
+    configuration_sha256: Sha256Digest
+    evidence_sha256: Sha256Digest
+    known_position_used_for_inference: Literal[False] = False
+    position_fix_claimed: Literal[False] = False
+    identity_selection: Literal["randomized-evaluation-rms-v1"] = "randomized-evaluation-rms-v1"
+    objective: Literal["duration-weighted-capped-rmse-800hz-v1"] = (
+        "duration-weighted-capped-rmse-800hz-v1"
+    )
+    state: Literal["diagnostic", "insufficient", "failed"]
+    priors: Annotated[tuple[AdaptiveTlePriorResultV2, ...], Field(max_length=2)]
+    reasons: Annotated[tuple[Reason, ...], Field(max_length=64)] = ()
+    diagnostics: dict[str, JsonValue] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _coherent(self) -> Self:
+        def finite(value: JsonValue) -> None:
+            if isinstance(value, float) and not math.isfinite(value):
+                raise ValueError("adaptive TLE diagnostics must be finite")
+            if isinstance(value, list):
+                for child in value:
+                    finite(child)
+            elif isinstance(value, dict):
+                for child in value.values():
+                    finite(child)
+
+        finite(self.diagnostics)
+        names = tuple(prior.name for prior in self.priors)
+        if names not in ((), ("sacramento", "reno")):
+            raise ValueError("adaptive TLE prior inventory differs")
+        if names and tuple(prior.region.radius_km for prior in self.priors) != (250.0, 500.0):
+            raise ValueError("adaptive TLE v2 prior radii differ")
+        if (self.state == "diagnostic") != bool(self.priors):
+            raise ValueError("diagnostic state and prior results differ")
+        if self.state != "diagnostic" and not self.reasons:
+            raise ValueError("non-diagnostic adaptive TLE evidence requires a reason")
+        for prior in self.priors:
+            if prior.selected is None or prior.finest is None:
+                raise ValueError("diagnostic prior requires selected and finest candidates")
+            if prior.accounting.eligible_track_count > prior.accounting.reconstructed_track_count:
+                raise ValueError("eligible track accounting exceeds reconstructed tracks")
+        return self
+
+
+class AdaptiveTlePositionManifestV2(ContractModel):
+    schema_version: Literal[2] = 2
+    document: AdaptiveTlePositionDocumentV2
+    document_sha256: Sha256Digest
+    artifacts: tuple[AdaptiveTleArtifactV1, ...]
+
+    @model_validator(mode="after")
+    def _inventory(self) -> Self:
+        if tuple(item.name for item in self.artifacts) != ("map",):
+            raise ValueError("adaptive TLE position artifact inventory differs")
+        return self
+
+
+class AdaptiveTlePositionStatusV2(ContractModel):
+    schema_version: Literal[2] = 2
+    session_id: SessionId
+    state: Literal["pending", "complete"] = "pending"
+    manifest: AdaptiveTlePositionManifestV2 | None = None
+
+    @model_validator(mode="after")
+    def _coherent(self) -> Self:
+        if (self.state == "complete") != (self.manifest is not None):
+            raise ValueError("adaptive TLE position status and manifest differ")
+        if self.manifest is not None and self.manifest.document.session_id != self.session_id:
+            raise ValueError("adaptive TLE position session binding differs")
+        return self
+
+
+class AdaptiveTlePositionReaderV2(Protocol):
+    def status(self, session_id: str) -> AdaptiveTlePositionStatusV2: ...
 
     def artifact(self, session_id: str) -> bytes | None: ...

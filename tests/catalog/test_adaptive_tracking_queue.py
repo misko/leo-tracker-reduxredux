@@ -56,3 +56,26 @@ def test_tracking_enqueue_is_idempotent_for_the_same_policy_binding(catalog_harn
 
     assert repository.enqueue_adaptive_tracking_job(**arguments)
     assert not repository.enqueue_adaptive_tracking_job(**arguments)
+
+
+def test_new_tracking_policy_atomically_cancels_pending_old_policy(catalog_harness) -> None:
+    repository = catalog_harness.repository
+    common = {
+        "session_id": "scan-fw-tracking-superseded",
+        "input_manifest_digest": _digest("c"),
+    }
+    assert repository.enqueue_adaptive_tracking_job(**common, configuration_digest=_digest("d"))
+    assert repository.enqueue_adaptive_tracking_job(**common, configuration_digest=_digest("e"))
+    assert not repository.enqueue_adaptive_tracking_job(**common, configuration_digest=_digest("d"))
+    with catalog_harness.engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                "SELECT adaptive_configuration_digest, state, outcome "
+                "FROM processing_job WHERE adaptive_session_id = :session ORDER BY id"
+            ),
+            {"session": common["session_id"]},
+        ).all()
+    assert rows == [
+        (_digest("d"), "cancelled", "superseded-by-tracking-policy"),
+        (_digest("e"), "pending", None),
+    ]
