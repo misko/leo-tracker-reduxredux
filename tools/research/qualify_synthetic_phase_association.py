@@ -26,6 +26,7 @@ def candidate_bank(rng, truth):
         row["theta0"] += sign * scale * np.array([0.035, -0.035])
         row["omega"] += sign * scale * np.array([0.0008, -0.0008])
         row["range_rate"] += sign * scale * 0.12
+        row["range_accel"] += sign * scale * np.array([0.4, -0.4])
         rows.append(row)
     order = rng.permutation(len(rows))
     return [rows[i] for i in order], int(np.flatnonzero(order == 0)[0])
@@ -92,15 +93,21 @@ def fit_training(units):
                 phase_enabled=bool(resultant>=0.8 and ps<0.8))
 
 
+def candidate_losses(u, fit):
+    """Score candidates without consulting held truth labels."""
+    base=[]; aug=[]; control=[]
+    for c in u["candidates"]:
+        dr,pr=residuals(u,c); base.append(.5*np.sum((dr/fit["doppler_sigma"])**2))
+        phase=.5*np.sum((pr/fit["phase_sigma"])**2) if fit["phase_enabled"] else 0.0
+        aug.append(base[-1]+phase)
+        _,wrong=residuals(u,c,BASELINE_ANGLE+np.pi/2); control.append(base[-1]+.5*np.sum((wrong/fit["phase_sigma"])**2))
+    return base,aug,control
+
+
 def evaluate(units, fit):
     rows=[]
     for u in units:
-        base=[]; aug=[]; control=[]
-        for c in u["candidates"]:
-            dr,pr=residuals(u,c); base.append(.5*np.sum((dr/fit["doppler_sigma"])**2))
-            phase=.5*np.sum((pr/fit["phase_sigma"])**2) if fit["phase_enabled"] else 0.0
-            aug.append(base[-1]+phase)
-            _,wrong=residuals(u,c,BASELINE_ANGLE+np.pi/2); control.append(base[-1]+.5*np.sum((wrong/fit["phase_sigma"])**2))
+        base,aug,control=candidate_losses(u,fit)
         def metrics(loss):
             loss=np.asarray(loss); prob=np.exp(-(loss-loss.min())); prob/=prob.sum()
             rank=int(np.argsort(loss).tolist().index(u["label"])+1)
@@ -130,11 +137,11 @@ def main():
     seal=json.loads(a.seal.read_text())
     for name,want in seal.items():
         if hashlib.sha256((ROOT/name).read_bytes()).hexdigest()!=want: raise ValueError("sealed source changed")
-    units=[simulate_unit(i,REGIMES[i%3]) for i in range(36)]
     rng=np.random.default_rng(SEED); order=rng.permutation(36); train=set(order[:18].tolist())
     result={"schema":"synthetic-phase-association/v1","seed":SEED,"train_units":sorted(train),"held_units":sorted(set(range(36))-train),"regimes":{}}
     for regime in REGIMES:
-        tr=[u for u in units if u["index"] in train and u["regime"]==regime]; he=[u for u in units if u["index"] not in train and u["regime"]==regime]
+        units=[simulate_unit(i,regime) for i in range(36)]
+        tr=[u for u in units if u["index"] in train]; he=[u for u in units if u["index"] not in train]
         fit=fit_training(tr); rows=evaluate(he,fit); result["regimes"][regime]={"summary":summarize(rows,fit),"rows":rows}
     a.output.parent.mkdir(parents=True,exist_ok=True); a.output.write_text(json.dumps(result,indent=2)+"\n")
 
