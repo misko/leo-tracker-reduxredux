@@ -1,0 +1,112 @@
+"""Compare packed scoring to the frozen scalar implementation, without fitting."""
+
+import hashlib
+import importlib.util
+import json
+import sys
+import time
+from pathlib import Path
+
+import numpy as np  # noqa: F401 - retained for AST parity with executed source
+
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main():
+    here = Path(__file__).resolve().parent
+    reports = here.parent
+    single_path = reports / "2026_09_23_long_training_search/search.py"
+    multi_path = reports / "2026_09_23_long_training_search_multi/search.py"
+    single = load("frozen_single", single_path)
+    multi = load("frozen_multi", multi_path)
+    fast = load("packed_score", here / "score.py")
+    manifest_path = reports / "2026_09_23_long_inventory_complete/manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    session_id = manifest["partitions"]["train"]["session_ids"][0]
+    cache_root = Path("/tmp/leo-long-training-cache-first16")
+    receipt = cache_root / session_id / "cache_receipt.json"
+    cache = cache_root / session_id / "state_cache.npz"
+    session = multi.load_session(single, cache.parent, session_id)
+    packed = fast.pack(session["prepared"])
+    # Fixed sites from prior centres/offsets; no reference coordinate or results read.
+    sites = [
+        single.offset_coordinate(prior[:2], east, north)
+        for prior in single.PRIORS.values()
+        for east, north in ((0.0, 0.0), (-50.0, -50.0), (50.0, 50.0))
+    ]
+    rows = []
+    scalar_s = fast_s = 0.0
+    for latitude, longitude in sites:
+        started = time.perf_counter()
+        objective, scalar = single.score_point(
+            session["prepared"], session["candidate_ids"], latitude, longitude
+        )
+        scalar_s += time.perf_counter() - started
+        started = time.perf_counter()
+        value, winners, offsets, rms = fast.score(
+            packed, *single.receiver_ecef(latitude, longitude)
+        )
+        fast_s += time.perf_counter() - started
+        expected = [row["candidate_id"] for row in scalar]
+        actual = [str(session["candidate_ids"][w]) if w >= 0 else None for w in winners]
+        if expected != actual:
+            raise AssertionError("candidate assignments differ")
+        differences = [
+            abs(rms[i] - row["training_rms_hz"])
+            for i, row in enumerate(scalar)
+            if actual[i] is not None
+        ]
+        offset_differences = [
+            abs(offsets[i] - row["frequency_offset_hz"])
+            for i, row in enumerate(scalar)
+            if actual[i] is not None
+        ]
+        if (
+            abs(objective - value) > 1e-7
+            or max(differences) > 1e-6
+            or max(offset_differences) > 1e-6
+        ):
+            raise AssertionError("score equivalence tolerance exceeded")
+        rows.append(
+            {
+                "latitude_deg": latitude,
+                "longitude_deg": longitude,
+                "objective_delta_hz": value - objective,
+                "maximum_track_rms_delta_hz": max(differences),
+                "maximum_offset_delta_hz": max(offset_differences),
+                "identities_equal": True,
+            }
+        )
+    result = {
+        "session_id": session_id,
+        "points": rows,
+        "runtime_s": {"scalar": scalar_s, "packed": fast_s, "speed_ratio": scalar_s / fast_s},
+        "bindings": {
+            str(p): digest(p)
+            for p in (
+                Path(__file__),
+                here / "score.py",
+                single_path,
+                multi_path,
+                manifest_path,
+                receipt,
+                cache,
+            )
+        },
+    }
+    (here / "results.json").write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(result["runtime_s"]))
+
+
+if __name__ == "__main__":
+    main()
