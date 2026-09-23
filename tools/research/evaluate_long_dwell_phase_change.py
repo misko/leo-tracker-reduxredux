@@ -45,7 +45,7 @@ def main():
     windows = artifact["windows"]
     chosen = sparse_indices(len(windows))
     train_local, held_local = split_indices(len(chosen))
-    train_set, held_set = set(train_local), set(held_local)
+    train_set = set(train_local)
     rows = []
     for local, source_index in enumerate(chosen):
         window = windows[int(source_index)]
@@ -99,7 +99,10 @@ def main():
             "wrong_time_median_abs_error_deg": float(np.degrees(np.median(wrong_errors))),
             "affine_errors_deg": np.degrees(errors).tolist(),
         },
-        "interpretation": "conditional restored-model phase predictability; no source identity, geometry, or position claim",
+        "interpretation": (
+            "conditional restored-model phase predictability; no source identity, "
+            "geometry, or position claim"
+        ),
     }
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "result.json").write_text(json.dumps(result, indent=2) + "\n")
