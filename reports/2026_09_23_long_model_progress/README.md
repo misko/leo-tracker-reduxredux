@@ -151,8 +151,14 @@ An independent Astropy frame transform on the same direct-SGP4 states gives
 only 0.236 Hz RMS Doppler-shape disagreement after removing each track's mean.
 It finds no large frame/sign error on the tested support, but shares SGP4 and
 TLE inputs and does not validate orbit accuracy. All 79 caches for the second
-TRAIN group have been verified. Its baseline computation has finished; detailed
-review and structured-model replication remain before validation is opened.
+TRAIN group have been verified. Its 79-scan baseline gives 5.41–5.52 km error.
+The completed 48-arm global/per-scan timing replication gives a best full-group
+result of 0.886–0.887 km at scan scale 1 s; scan scale 5 s gives 1.10–1.11 km,
+and global timing gives 1.36–1.57 km. All settings are reported, not selected by
+reference error. None reaches 300 m. Short views remain worse: roughly 6 km for
+the strongest-performing one-scan setting. All 48 fits meet the declared
+stopping rule without timing-boundary or visibility failures. Joint catalogue
+reassignment on this second group remains before validation is opened.
 
 The current experiment priorities are:
 
@@ -194,6 +200,8 @@ test group closed until model selection is complete.
 - [Joint catalogue reassignment and scan-epoch fitting](../2026_09_23_long_joint_epoch_association/README.md).
 - [Independent Astropy frame/Doppler oracle](../2026_09_23_long_astropy_doppler_oracle/README.md).
 - [Second TRAIN group cache provenance](../2026_09_23_long_training_cache_second8h/README.md).
+- [Second TRAIN blind baseline at all durations](../2026_09_23_long_second8h_training_baseline/README.md).
+- [Second TRAIN timing-model replication, all 48 arms](../2026_09_23_second_train_epoch_replication/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
